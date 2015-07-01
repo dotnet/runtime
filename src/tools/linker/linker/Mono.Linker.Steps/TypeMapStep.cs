@@ -179,14 +179,18 @@ namespace Mono.Linker.Steps {
 			if (!type.HasMethods)
 				return null;
 
-			foreach (MethodDefinition candidate in type.Methods)
-				if (MethodMatch (candidate, method))
+			Dictionary<string,string> gp = null;
+			foreach (MethodDefinition candidate in type.Methods) {
+				if (MethodMatch (candidate, method, ref gp))
 					return candidate;
+				if (gp != null)
+					gp.Clear ();
+			}
 
 			return null;
 		}
 
-		static bool MethodMatch (MethodDefinition candidate, MethodDefinition method)
+		static bool MethodMatch (MethodDefinition candidate, MethodDefinition method, ref Dictionary<string,string> genericParameters)
 		{
 			if (!candidate.IsVirtual)
 				return false;
@@ -200,7 +204,9 @@ namespace Mono.Linker.Steps {
 			if (candidate.HasGenericParameters != method.HasGenericParameters)
 				return false;
 
-			if (!TypeMatch (candidate.ReturnType, method.ReturnType))
+			// we need to track what the generic parameter represent - as we cannot allow it to
+			// differ between the return type or any parameter
+			if (!TypeMatch (candidate.ReturnType, method.ReturnType, ref genericParameters))
 				return false;
 
 			if (!candidate.HasParameters)
@@ -212,37 +218,37 @@ namespace Mono.Linker.Steps {
 				return false;
 
 			for (int i = 0; i < cp.Count; i++) {
-				if (!TypeMatch (cp [i].ParameterType, mp [i].ParameterType))
+				if (!TypeMatch (cp [i].ParameterType, mp [i].ParameterType, ref genericParameters))
 					return false;
 			}
 
 			return true;
 		}
 
-		static bool TypeMatch (IModifierType a, IModifierType b)
+		static bool TypeMatch (IModifierType a, IModifierType b, ref Dictionary<string,string> gp)
 		{
-			if (!TypeMatch (a.ModifierType, b.ModifierType))
+			if (!TypeMatch (a.ModifierType, b.ModifierType, ref gp))
 				return false;
 
-			return TypeMatch (a.ElementType, b.ElementType);
+			return TypeMatch (a.ElementType, b.ElementType, ref gp);
 		}
 
-		static bool TypeMatch (TypeSpecification a, TypeSpecification b)
+		static bool TypeMatch (TypeSpecification a, TypeSpecification b, ref Dictionary<string,string> gp)
 		{
 			var gita = a as GenericInstanceType;
 			if (gita != null)
-				return TypeMatch (gita, (GenericInstanceType) b);
+				return TypeMatch (gita, (GenericInstanceType) b, ref gp);
 
 			var mta = a as IModifierType;
 			if (mta != null)
-				return TypeMatch (mta, (IModifierType) b);
+				return TypeMatch (mta, (IModifierType) b, ref gp);
 
-			return TypeMatch (a.ElementType, b.ElementType);
+			return TypeMatch (a.ElementType, b.ElementType, ref gp);
 		}
 
-		static bool TypeMatch (GenericInstanceType a, GenericInstanceType b)
+		static bool TypeMatch (GenericInstanceType a, GenericInstanceType b, ref Dictionary<string,string> gp)
 		{
-			if (!TypeMatch (a.ElementType, b.ElementType))
+			if (!TypeMatch (a.ElementType, b.ElementType, ref gp))
 				return false;
 
 			if (a.HasGenericArguments != b.HasGenericArguments)
@@ -257,23 +263,34 @@ namespace Mono.Linker.Steps {
 				return false;
 
 			for (int i = 0; i < gaa.Count; i++) {
-				if (!TypeMatch (gaa [i], gab [i]))
+				if (!TypeMatch (gaa [i], gab [i], ref gp))
 					return false;
 			}
 
 			return true;
 		}
 
-		static bool TypeMatch (TypeReference a, TypeReference b)
+		static bool TypeMatch (TypeReference a, TypeReference b, ref Dictionary<string,string> gp)
 		{
-			if (a is GenericParameter)
-				return true;
+			var gpa = a as GenericParameter;
+			if (gpa != null) {
+				if (gp == null)
+					gp = new Dictionary<string, string> ();
+				string match;
+				if (!gp.TryGetValue (gpa.FullName, out match)) {
+					// first use, we assume it will always be used this way
+					gp.Add (gpa.FullName, b.ToString ());
+					return true;
+				}
+				// re-use, it should match the previous usage
+				return match == b.ToString ();
+			}
 
 			if (a is TypeSpecification || b is TypeSpecification) {
 				if (a.GetType () != b.GetType ())
 					return false;
 
-				return TypeMatch ((TypeSpecification) a, (TypeSpecification) b);
+				return TypeMatch ((TypeSpecification) a, (TypeSpecification) b, ref gp);
 			}
 
 			return a.FullName == b.FullName;
