@@ -31,31 +31,32 @@ public class Directory_GetFileSystemEntries_str_str_so : Directory_GetFileSystem
     [Fact]
     public void IncludeSubDirectoryFiles()
     {
-        String testDir1Str = GetTestFileName();
-        String testDir11Str = GetTestFileName();
-        DirectoryInfo testDir = new DirectoryInfo(TestDirectory);
-        DirectoryInfo testDir1 = testDir.CreateSubdirectory(testDir1Str);
-        testDir1.CreateSubdirectory(testDir11Str);
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, testDir11Str, GetTestFileName())).Create())
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, GetTestFileName())).Create())
+        String testDir = GetTestFileName();
+        String testFile1 = Path.Combine(TestDirectory, GetTestFileName());
+        String testFile2 = Path.Combine(TestDirectory, testDir, GetTestFileName());
+        Directory.CreateDirectory(Path.Combine(TestDirectory, testDir));
+        using (File.Create(testFile1))
+        using (File.Create(testFile2))
         {
-            Assert.Equal(3, GetEntries(Path.Combine(TestDirectory, testDir1Str), "*", SearchOption.AllDirectories).Length);
+            String[] results = GetEntries(TestDirectory, "*", SearchOption.AllDirectories);
+            Assert.Contains(testFile1, results);
+            Assert.Contains(testFile2, results);
         }
     }
 
     [Fact]
     public void SearchPatternIncludeSubDirectories()
     {
-        String testDir1Str = GetTestFileName();
-        String testDir11Str = GetTestFileName();
-        DirectoryInfo testDir = new DirectoryInfo(TestDirectory);
-        DirectoryInfo testDir1 = testDir.CreateSubdirectory(testDir1Str);
-        testDir1.CreateSubdirectory(testDir11Str);
-
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, testDir11Str, GetTestFileName())).Create())
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, GetTestFileName())).Create())
+        String testDir = GetTestFileName();
+        String testFile1 = Path.Combine(TestDirectory, GetTestFileName());
+        String testFile2 = Path.Combine(TestDirectory, testDir, GetTestFileName());
+        Directory.CreateDirectory(Path.Combine(TestDirectory, testDir));
+        using (File.Create(testFile1))
+        using (File.Create(testFile2))
         {
-            Assert.Equal(3, GetEntries(TestDirectory, Path.Combine(testDir1Str, "*"), SearchOption.AllDirectories).Length);
+            String[] results = GetEntries(Directory.GetCurrentDirectory(), Path.Combine(new DirectoryInfo(TestDirectory).Name, "*"), SearchOption.AllDirectories);
+            Assert.Contains(testFile1, results);
+            Assert.Contains(testFile2, results);
         }
     }
 
@@ -68,6 +69,3 @@ public class Directory_GetFileSystemEntries_str_str_so : Directory_GetFileSystem
 
     #endregion
 }
-
-
-

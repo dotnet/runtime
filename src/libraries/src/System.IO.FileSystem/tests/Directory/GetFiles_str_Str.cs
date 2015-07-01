@@ -3,13 +3,7 @@
 
 using System;
 using System.IO;
-using System.Collections;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Text;
-using System.Threading;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
+using System.Linq;
 using Xunit;
 
 public class Directory_GetFiles_str_str : Directory_GetFiles_str
@@ -101,11 +95,11 @@ public class Directory_GetFiles_str_str : Directory_GetFiles_str
         String testDirPath = Path.Combine(TestDirectory, GetTestFilePath());
         DirectoryInfo testDirInfo = new DirectoryInfo(testDirPath);
         testDirInfo.Create();
-        using (new FileInfo(Path.Combine(testDirPath, "TestFile1")).Create())
-        using (new FileInfo(Path.Combine(testDirPath, "TestFile2")).Create())
-        using (new FileInfo(Path.Combine(testDirPath, "TestFile3")).Create())
-        using (new FileInfo(Path.Combine(testDirPath, "Test1File1")).Create())
-        using (new FileInfo(Path.Combine(testDirPath, "Test1File2")).Create())
+        using (File.Create(Path.Combine(testDirPath, "TestFile1")))
+        using (File.Create(Path.Combine(testDirPath, "TestFile2")))
+        using (File.Create(Path.Combine(testDirPath, "TestFile3")))
+        using (File.Create(Path.Combine(testDirPath, "Test1File1")))
+        using (File.Create(Path.Combine(testDirPath, "Test1File2")))
         {
             String[] results;
 
@@ -138,11 +132,11 @@ public class Directory_GetFiles_str_str : Directory_GetFiles_str
         testDirInfo.Create();
         String testFile1 = GetTestFileName() + "AAABB";
         String testFile2 = GetTestFileName() + "aaabb";
-        using (new FileInfo(Path.Combine(testDirPath, testFile1)).Create())
-        using (new FileInfo(Path.Combine(testDirPath, testFile2)).Create())
+        using (File.Create(Path.Combine(testDirPath, testFile1)))
+        using (File.Create(Path.Combine(testDirPath, testFile2)))
         {
             String[] results = GetFiles(testDirPath, "*BB*");
-            if (Interop.IsWindows)
+            if (Interop.IsWindows || Interop.IsOSX)
             {
                 Assert.Equal(2, results.Length);
                 Assert.Contains(Path.Combine(testDirPath, testFile1), results);
@@ -162,9 +156,9 @@ public class Directory_GetFiles_str_str : Directory_GetFiles_str
         String testDirPath = Path.Combine(TestDirectory, GetTestFilePath());
         DirectoryInfo testDirInfo = new DirectoryInfo(testDirPath);
         testDirInfo.Create();
-        using (new FileInfo(Path.Combine(testDirPath, "AAABB")).Create())
-        using (new FileInfo(Path.Combine(testDirPath, "AAABBC")).Create())
-        using (new FileInfo(Path.Combine(testDirPath, "CAAABB")).Create())
+        using (File.Create(Path.Combine(testDirPath, "AAABB")))
+        using (File.Create(Path.Combine(testDirPath, "AAABBC")))
+        using (File.Create(Path.Combine(testDirPath, "CAAABB")))
         {
             String[] results = GetFiles(testDirPath, "AAABB");
             Assert.Equal(1, results.Length);
@@ -180,7 +174,7 @@ public class Directory_GetFiles_str_str : Directory_GetFiles_str
         String testFile1Str = GetTestFileName();
         DirectoryInfo testDir = new DirectoryInfo(TestDirectory);
         testDir.CreateSubdirectory(testDir1Str);
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, testFile1Str)).Create())
+        using (File.Create(Path.Combine(TestDirectory, testDir1Str, testFile1Str)))
         {
             Assert.Equal(1, GetFiles(TestDirectory, Path.Combine(testDir1Str, "*")).Length);
         }
@@ -189,16 +183,16 @@ public class Directory_GetFiles_str_str : Directory_GetFiles_str
     [Fact]
     public void SearchPatternIgnoreSubDirectories()
     {
-        String testDir1Str = GetTestFileName();
-        String testDir11Str = GetTestFileName();
-        DirectoryInfo testDir = new DirectoryInfo(TestDirectory);
-        DirectoryInfo testDir1 = testDir.CreateSubdirectory(testDir1Str);
-        testDir1.CreateSubdirectory(testDir11Str);
-
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, testDir11Str, GetTestFileName())).Create())
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, GetTestFileName())).Create())
+        String testDir = GetTestFileName();
+        String testFile1 = Path.Combine(TestDirectory, GetTestFileName());
+        String testFile2 = Path.Combine(TestDirectory, testDir, GetTestFileName());
+        Directory.CreateDirectory(Path.Combine(TestDirectory, testDir));
+        using (File.Create(testFile1))
+        using (File.Create(testFile2))
         {
-            Assert.Equal(1, GetFiles(TestDirectory, Path.Combine(testDir1Str, "*")).Length);
+            String[] results = GetFiles(Directory.GetCurrentDirectory(), Path.Combine(new DirectoryInfo(TestDirectory).Name, "*"));
+            Assert.Contains(testFile1, results);
+            Assert.DoesNotContain(testFile2, results);
         }
     }
 
@@ -217,40 +211,10 @@ public class Directory_GetFiles_str_str : Directory_GetFiles_str
         String testFile3 = GetTestFileName();
         String searchPattern = String.Format("???{0}", testFile1.Substring(3));
 
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, testDir11Str, GetTestFileName())).Create())
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, testFile1)).Create())
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, testFile2)).Create())
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, testFile3)).Create())
-        {
-            String[] results = GetFiles(Path.Combine(TestDirectory, testDir1Str), searchPattern);
-            Assert.Equal(2, results.Length);
-            Assert.Contains(Path.Combine(TestDirectory, testDir1Str, testFile1), results);
-            Assert.Contains(Path.Combine(TestDirectory, testDir1Str, testFile2), results);
-
-            //suffix only should return the empty array
-            Assert.Empty(GetFiles(Path.Combine(TestDirectory, testDir1Str), testFile1.Substring(3)));
-        }
-    }
-
-    [Fact]
-    public void SearchPatternSuperset()
-    {
-        String testDir1Str = GetTestFileName();
-        String testDir11Str = GetTestFileName();
-        DirectoryInfo testDir = new DirectoryInfo(TestDirectory);
-        DirectoryInfo testDir1 = testDir.CreateSubdirectory(testDir1Str);
-        testDir1.CreateSubdirectory(testDir11Str);
-
-        String testFile1 = GetTestFileName();
-        String testFile2 = "ca1" + testFile1;
-        testFile1 = "ca2" + testFile1;
-        String testFile3 = GetTestFileName();
-        String searchPattern = String.Format("???{0}", testFile1.Substring(3));
-
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, testDir11Str, GetTestFileName())).Create())
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, testFile1)).Create())
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, testFile2)).Create())
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, testFile3)).Create())
+        using (File.Create(Path.Combine("\\\\?\\", TestDirectory, testDir1Str, testDir11Str, GetTestFileName())))
+        using (File.Create(Path.Combine(TestDirectory, testDir1Str, testFile1)))
+        using (File.Create(Path.Combine(TestDirectory, testDir1Str, testFile2)))
+        using (File.Create(Path.Combine(TestDirectory, testDir1Str, testFile3)))
         {
             String[] results = GetFiles(Path.Combine(TestDirectory, testDir1Str), searchPattern);
             Assert.Equal(2, results.Length);
@@ -266,9 +230,7 @@ public class Directory_GetFiles_str_str : Directory_GetFiles_str
     [ActiveIssue(846, PlatformID.AnyUnix)]
     public void CharacterTests()
     {
-        // TODO: [ActiveIssue(846)] Globalization on Unix
         //bug #417100 - not sure if this hard coded approach is safe in all 9x platforms!!!
-        //But RunAnotherScenario is probably more accurate
 
         int[] validGreaterThan128ButLessThans160 = { 129, 133, 141, 143, 144, 157 };
         for (int i = 0; i < validGreaterThan128ButLessThans160.Length; i++)
@@ -280,50 +242,11 @@ public class Directory_GetFiles_str_str : Directory_GetFiles_str
         {
             GetFiles(".", ((Char)i).ToString());
         }
-
-#if DESKTOP
-            try {
-                if(!RunAnotherScenario())
-                {
-                    iCountErrors++;
-                    printerr( "Error_2937efg! RunAnotherScenario failed");
-                }
-            } catch (Exception exc) {
-                iCountErrors++;
-                printerr( "Err_960tli! Incorrect exception thrown, exc=="+exc.ToString());
-            }
-#endif
-    }
-
-    [Fact]
-    public void ShortFileNames()
-    {
-        //bug VSWhdibey #580357 - A customer ran into an issue with Directory.GetFiles and short file name
-        //We search for files with "2006" and get some even though the directory doesn't contain any files with 2006
-
-        String[] files = { "20050512_1600_ImpressionPart106_ClickSummary.DAT", "20050512_1600_ImpressionPart126_ClickSummary.DAT", "20050512_1600_ImpressionPart40_ClickSummary.DAT", "20050512_1600_ImpressionPart42_ClickSummary.DAT", "20050512_1600_ImpressionPart44_ClickSummary.DAT", "20050512_1600_ImpressionPart46_ClickSummary.DAT", "20050512_1600_ImpressionPart48_ClickSummary.DAT", "20050512_1600_ImpressionPart50_ClickSummary.DAT", "20050512_1600_ImpressionPart52_ClickSummary.DAT", "20050512_1600_ImpressionPart54_ClickSummary.DAT", "20050512_1600_ImpressionPart56_ClickSummary.DAT", "20050512_1600_ImpressionPart58_ClickSummary.DAT", "20050513_1400_ImpressionPart116_ClickSummary.DAT", "20050513_1400_ImpressionPart41_ClickSummary.DAT", "20050513_1400_ImpressionPart43_ClickSummary.DAT", "20050513_1400_ImpressionPart45_ClickSummary.DAT", "20050513_1400_ImpressionPart47_ClickSummary.DAT", "20050513_1400_ImpressionPart49_ClickSummary.DAT", "20050513_1400_ImpressionPart51_ClickSummary.DAT", "20050513_1400_ImpressionPart53_ClickSummary.DAT", "20050513_1400_ImpressionPart55_ClickSummary.DAT", "20050513_1400_ImpressionPart57_ClickSummary.DAT", "20050513_1400_ImpressionPart59_ClickSummary.DAT" };
-        int i = 0;
-        String basePath = "laks";
-        String path;
-        do
-        {
-            path = String.Format("{0}_{1}", basePath, i++);
-        } while (Directory.Exists(path) || File.Exists(path));
-
-        Directory.CreateDirectory(path);
-        foreach (String file in files)
-        {
-            File.CreateText(Path.Combine(path, file)).Dispose();
-        }
-
-        Assert.Empty(GetFiles(path, "2006*"));
-
-        Directory.Delete(path, true);
     }
 
     #endregion
 
-    #region WindowsOnly
+    #region PlatformSpecific
 
     [Fact]
     [PlatformSpecific(PlatformID.Windows)]
@@ -343,9 +266,9 @@ public class Directory_GetFiles_str_str : Directory_GetFiles_str
         DirectoryInfo testDir1 = testDir.CreateSubdirectory(testDir1Str);
         testDir1.CreateSubdirectory(testDir11Str);
 
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, testDir11Str, GetTestFileName())).Create())
-        using (new FileInfo(Path.Combine(TestDirectory, GetTestFileName())).Create())
-        using (new FileInfo(Path.Combine(TestDirectory, GetTestFileName())).Create())
+        using (File.Create(Path.Combine(TestDirectory, testDir1Str, testDir11Str, GetTestFileName())))
+        using (File.Create(Path.Combine(TestDirectory, GetTestFileName())))
+        using (File.Create(Path.Combine(TestDirectory, GetTestFileName())))
         {
             Assert.Equal(2, GetFiles(TestDirectory, String.Format("{0}.???", new String('?', GetTestFileName().Length))).Length);
         }
@@ -353,7 +276,3 @@ public class Directory_GetFiles_str_str : Directory_GetFiles_str
 
     #endregion
 }
-
-
-
-

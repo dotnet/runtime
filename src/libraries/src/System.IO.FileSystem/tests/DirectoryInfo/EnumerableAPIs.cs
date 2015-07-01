@@ -5,21 +5,22 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
+using System.IO.FileSystem.Tests;
 using System.Linq;
 using Xunit;
 
 namespace EnumerableTests
 {
-    public class DirectoryInfo_EnumerableAPIs
+    public class DirectoryInfo_EnumerableAPIs : FileSystemTest
     {
         private static EnumerableUtils s_utils;
 
         [Fact]
-        public static void RunTests()
+        public void RunTests()
         {
             s_utils = new EnumerableUtils();
 
-            s_utils.CreateTestDirs();
+            s_utils.CreateTestDirs(TestDirectory);
 
             TestDirectoryInfoAPIs();
 
@@ -766,12 +767,12 @@ namespace EnumerableTests
             s_utils.PrintTestStatus("TestSearchOptionOutOfRangeDirectoryInfoFast", "DirectoryInfo*", failCount);
         }
 
-        private static void TestWhileEnumerating()
+        private void TestWhileEnumerating()
         {
             TestChangeWhileEnumerating();
         }
 
-        private static void TestChangeWhileEnumerating()
+        private void TestChangeWhileEnumerating()
         {
             DoGetDirectories_Add();
             DoGetFiles_Add();
@@ -781,12 +782,12 @@ namespace EnumerableTests
             DoGetFileSystemInfos_Delete();
         }
 
-        private static void DoGetDirectories_Add()
+        private void DoGetDirectories_Add()
         {
             String chkptFlag = "chkpt_dgdm_";
             int failCount = 0;
 
-            s_utils.CreateTestDirs();
+            s_utils.CreateTestDirs(TestDirectory);
 
             // directoryinfo
             DirectoryInfo di = new DirectoryInfo(s_utils.testDir);
@@ -824,12 +825,12 @@ namespace EnumerableTests
             s_utils.PrintTestStatus(testName, "DirectoryInfo.EnumerateDirectories", failCount);
         }
 
-        private static void DoGetDirectories_Delete()
+        private void DoGetDirectories_Delete()
         {
             String chkptFlag = "chkpt_dgdm_";
             int failCount = 0;
 
-            s_utils.CreateTestDirs();
+            s_utils.CreateTestDirs(TestDirectory);
 
             // directoryinfo
             DirectoryInfo di = new DirectoryInfo(s_utils.testDir);
@@ -867,12 +868,12 @@ namespace EnumerableTests
             s_utils.PrintTestStatus(testName, "DirectoryInfo.EnumerateDirectories", failCount);
         }
 
-        private static void DoGetFiles_Add()
+        private void DoGetFiles_Add()
         {
             String chkptFlag = "chkpt_dgfm_";
             int failCount = 0;
 
-            s_utils.CreateTestDirs();
+            s_utils.CreateTestDirs(TestDirectory);
 
             // directoryinfo
             DirectoryInfo di = new DirectoryInfo(s_utils.testDir);
@@ -910,12 +911,12 @@ namespace EnumerableTests
             s_utils.PrintTestStatus(testName, "DirectoryInfo.EnumerateFiles", failCount);
         }
 
-        private static void DoGetFiles_Delete()
+        private void DoGetFiles_Delete()
         {
             String chkptFlag = "chkpt_dgfm_";
             int failCount = 0;
 
-            s_utils.CreateTestDirs();
+            s_utils.CreateTestDirs(TestDirectory);
 
             // directoryinfo
             DirectoryInfo di = new DirectoryInfo(s_utils.testDir);
@@ -953,12 +954,12 @@ namespace EnumerableTests
             s_utils.PrintTestStatus(testName, "DirectoryInfo.EnumerateFiles", failCount);
         }
 
-        private static void DoGetFileSystemInfos_Add()
+        private void DoGetFileSystemInfos_Add()
         {
             String chkptFlag = "chkpt_dgim_";
             int failCount = 0;
 
-            s_utils.CreateTestDirs();
+            s_utils.CreateTestDirs(TestDirectory);
 
             // directoryinfo
             DirectoryInfo di = new DirectoryInfo(s_utils.testDir);
@@ -996,12 +997,12 @@ namespace EnumerableTests
             s_utils.PrintTestStatus(testName, "DirectoryInfo.EnumerateFileSystemInfos", failCount);
         }
 
-        private static void DoGetFileSystemInfos_Delete()
+        private void DoGetFileSystemInfos_Delete()
         {
             String chkptFlag = "chkpt_dgim_";
             int failCount = 0;
 
-            s_utils.CreateTestDirs();
+            s_utils.CreateTestDirs(TestDirectory);
 
             // directoryinfo
             DirectoryInfo di = new DirectoryInfo(s_utils.testDir);
