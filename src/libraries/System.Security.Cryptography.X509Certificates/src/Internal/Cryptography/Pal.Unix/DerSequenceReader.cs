@@ -12,6 +12,8 @@ namespace Internal.Cryptography.Pal
     /// </summary>
     internal class DerSequenceReader
     {
+        internal const byte ContextSpecificTagFlag = 0x80;
+
         private readonly byte[] _data;
         private readonly int _end;
         private int _position;
@@ -206,7 +208,7 @@ namespace Internal.Cryptography.Pal
             byte actual = data[position];
 
             // Context-specific datatypes cannot be tag-verified
-            if (actual >= 0x80)
+            if ((actual & ContextSpecificTagFlag) != 0)
             {
                 return;
             }
