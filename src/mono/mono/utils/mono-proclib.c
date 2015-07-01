@@ -808,8 +808,10 @@ mono_cpu_usage (MonoCpuUsageState *prev)
 	if (cpu_total_time > 0 && cpu_busy_time > 0)
 		cpu_usage = (gint32)(cpu_busy_time * 100 / cpu_total_time);
 
-	g_assert (cpu_usage >= 0);
-	g_assert (cpu_usage <= 100);
+	if (cpu_usage < 0 || cpu_usage > 100) {
+		g_error ("incorrect cpu usage %d, cpu_busy_time %lld cpu_total_time %lld\n", cpu_usage, cpu_busy_time, cpu_total_time);
+		return -1;
+	}
 
 	return cpu_usage;
 }
