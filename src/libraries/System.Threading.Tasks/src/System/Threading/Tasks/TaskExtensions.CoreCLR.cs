@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Threading.Tasks
 {
@@ -29,7 +30,7 @@ namespace System.Threading.Tasks
         {
             if (task == null)
                 throw new ArgumentNullException("task");
-            
+
             // Fast path for an already successfully completed outer task: just return the inner one.
             // As in the subsequent slower path, a null inner task is special-cased to mean cancellation.
             if (task.Status == TaskStatus.RanToCompletion && (task.CreationOptions & TaskCreationOptions.AttachedToParent) == 0)
@@ -160,6 +161,29 @@ namespace System.Threading.Tasks
         {
             Debug.Assert(task.IsCompleted);
 
+            // Before transferring the results, check to make sure we're not too deep on the stack.  Calling TrySet*
+            // will cause any synchronous continuations to be invoked, which is fine unless we're so deep that doing
+            // so overflows.  ContinueWith has built-in support for avoiding such stack dives, but that support is not
+            // (yet) part of await's infrastructure, so until it is we mimic it manually.  This matches the behavior
+            // employed by the Unwrap implementation in mscorlib. (If TryEnsureSufficientExecutionStack is made public 
+            // in the future, switch to using it to avoid the try/catch block and exception.)
+            try
+            {
+                RuntimeHelpers.EnsureSufficientExecutionStack();
+            }
+            catch (InsufficientExecutionStackException)
+            {
+                // This is very rare.  We're too deep to safely invoke
+                // TrySet* synchronously, so do so asynchronously instead.
+                Task.Factory.StartNew(s =>
+                {
+                    var t = (Tuple<TaskCompletionSource<TResult>, Task>)s;
+                    TrySetFromTask(t.Item1, t.Item2);
+                }, Tuple.Create(completionSource, task), CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
+                return true;
+            }
+
+            // Transfer the results from the supplied Task to the TaskCompletionSource.
             bool result = false;
             switch(task.Status)
             {
