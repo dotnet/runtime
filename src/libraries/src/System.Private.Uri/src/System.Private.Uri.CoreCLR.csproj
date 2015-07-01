@@ -11,6 +11,7 @@
     <NugetTargetFrameworkMoniker>DNXCore,Version=v5.0</NugetTargetFrameworkMoniker>
     <IgnoreArchitectureMismatches>true</IgnoreArchitectureMismatches>
     <PostFilterNugetReferences>true</PostFilterNugetReferences>
+    <NoWarn>0436</NoWarn> <!-- Suppress warnings for type conflicts between SafeFileHandle in partial facade and mscorlib -->
   </PropertyGroup>
 
   <!-- Default configurations to help VS understand the configurations -->
