@@ -1039,26 +1039,9 @@ namespace Internal.NativeCrypto
                 int halfModulusLength = (modulusLength + 1) / 2;
 
                 uint expAsDword = br.ReadUInt32();
-                byte[] exponent;
-                if (expAsDword == 0)
-                {
-                    exponent = new byte[] { 0 };
-                }
-                else
-                {
-                    LowLevelList<byte> exponentBytes = new LowLevelList<byte>();
-                    while (expAsDword != 0)
-                    {
-                        byte b = (byte)expAsDword;
-                        exponentBytes.Add(b);
-                        expAsDword >>= 8;
-                    }
-                    exponent = exponentBytes.ToArray();
-                    Array.Reverse(exponent);
-                }
 
                 RSAParameters rsaParameters = new RSAParameters();
-                rsaParameters.Exponent = exponent;
+                rsaParameters.Exponent = ExponentAsBytes(expAsDword);
                 rsaParameters.Modulus = br.ReadReversed(modulusLength);
                 if (includePrivateParameters)
                 {
@@ -1077,6 +1060,44 @@ namespace Internal.NativeCrypto
                 // For compat reasons, we throw an E_FAIL CrytoException if CAPI returns a smaller blob than expected.
                 // For compat reasons, we ignore the extra bits if the CAPI returns a larger blob than expected.
                 throw new CryptographicException(E_FAIL);
+            }
+        }
+
+        /// <summary>
+        /// Helper for converting a UInt32 exponent to bytes.
+        /// </summary>
+        private static byte[] ExponentAsBytes(uint exponent)
+        {
+            if (exponent <= 0xFF)
+            {
+                return new[] { (byte)exponent };
+            }
+            else if (exponent <= 0xFFFF)
+            {
+                return new[]
+                {
+                    (byte)(exponent >> 8),
+                    (byte)(exponent)
+                };
+            }
+            else if (exponent <= 0xFFFFFF)
+            {
+                return new[]
+                {
+                    (byte)(exponent >> 16),
+                    (byte)(exponent >> 8),
+                    (byte)(exponent)
+                };
+            }
+            else
+            {
+                return new[]
+                {
+                    (byte)(exponent >> 24),
+                    (byte)(exponent >> 16),
+                    (byte)(exponent >> 8),
+                    (byte)(exponent)
+                };
             }
         }
 
