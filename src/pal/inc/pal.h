@@ -599,32 +599,6 @@ PAL_DeleteExecWatchpoint(
 #endif
 
 
-PALIMPORT
-DWORD
-PALAPI
-PAL_PublishDacTableAddress(
-    IN PVOID baseAddress,
-    IN PVOID tableAddress,
-    IN ULONG tableSize
-    );
-
-PALIMPORT
-DWORD
-PALAPI
-PAL_GetDacTableAddress(
-    IN PVOID baseAddress,
-    OUT PVOID *tableAddress,
-    OUT PULONG tableSize
-    );
-
-PALIMPORT
-VOID
-PALAPI
-PAL_CleanupDacTableAddress(
-    IN PVOID baseAddress
-    );
-
-
 /******************* winuser.h Entrypoints *******************************/
 
 PALIMPORT
