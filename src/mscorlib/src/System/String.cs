@@ -2357,7 +2357,6 @@ namespace System {
             return LastIndexOfAny(anyOf,this.Length-1,this.Length);
         }
     
-        //ForceInline ... Jit can't recognize String.get_Length to determine that this is "fluff"
         [Pure]
         public int LastIndexOfAny(char [] anyOf, int startIndex) {
             return LastIndexOfAny(anyOf,startIndex,startIndex + 1);
