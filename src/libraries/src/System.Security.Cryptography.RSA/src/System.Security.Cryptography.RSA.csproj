@@ -31,6 +31,7 @@
     <Reference Include="System.Threading" />
   </ItemGroup>-->
   <ItemGroup>
+    <Compile Include="Internal\Cryptography\HashAlgorithmName.cs" />
     <Compile Include="System\Security\Cryptography\CspProviderFlags.cs" />
     <Compile Include="System\Security\Cryptography\ICspAsymmetricAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\KeyNumber.cs" />
@@ -59,6 +60,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.EnsureOpenSslInitialized.cs">
       <Link>Common\Interop\Unix\libcoreclr\Interop.EnsureOpenSslInitialized.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.ASN1.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.ASN1.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.Bignum.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.Bignum.cs</Link>
     </Compile>
@@ -70,6 +74,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.Rsa.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.Rsa.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeBignumHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeBignumHandle.Unix.cs</Link>
