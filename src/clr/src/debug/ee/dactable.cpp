@@ -58,7 +58,6 @@ void DacGlobals::Initialize()
 #ifdef FEATURE_SVR_GC
     g_dacTable.InitializeSVREntries(baseAddress);
 #endif
-    PAL_PublishDacTableAddress((PVOID)baseAddress, &g_dacTable, sizeof(g_dacTable));
 }
 
 // Initializes the non-SVR table entries
