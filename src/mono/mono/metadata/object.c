@@ -5796,9 +5796,7 @@ mono_async_result_invoke (MonoAsyncResult *ares, MonoObject **exc)
 
 	ac = (MonoAsyncCall*) ares->object_data;
 	if (!ac) {
-		thread->async_invoke_method = ((MonoDelegate*) ares->async_delegate)->method;
 		res = mono_runtime_delegate_invoke (ares->async_delegate, (void**) &ares->async_state, exc);
-		thread->async_invoke_method = NULL;
 	} else {
 		MonoArray *out_args = NULL;
 		gpointer wait_event = NULL;
@@ -5821,9 +5819,7 @@ mono_async_result_invoke (MonoAsyncResult *ares, MonoObject **exc)
 		if (!ac->cb_method) {
 			*exc = NULL;
 		} else {
-			thread->async_invoke_method = ac->cb_method;
 			mono_runtime_invoke (ac->cb_method, ac->cb_target, (gpointer*) &ares, exc);
-			thread->async_invoke_method = NULL;
 		}
 	}
 
