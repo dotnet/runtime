@@ -31,6 +31,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
       <Link>Common\Interop\Windows\BCrypt\Interop.NTSTATUS.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.CreateCryptographicException.cs">
+      <Link>Common\Interop\Windows\BCrypt\Interop.CreateCryptographicException.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\Security\Cryptography\RNGCryptoServiceProvider.Unix.cs" />
