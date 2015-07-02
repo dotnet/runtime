@@ -56,4 +56,6 @@ add_precompiled_header(stdafx.h stdafx.cpp DACCESS_SOURCES)
 
 add_library(daccess ${DACCESS_SOURCES})
 
-add_dependencies(daccess coreclr)
+if(CLR_CMAKE_PLATFORM_UNIX)
+    add_dependencies(daccess coreclr)
+endif(CLR_CMAKE_PLATFORM_UNIX)
