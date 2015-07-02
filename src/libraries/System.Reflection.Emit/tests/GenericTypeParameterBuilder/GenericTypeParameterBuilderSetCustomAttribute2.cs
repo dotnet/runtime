@@ -11,7 +11,7 @@ namespace System.Reflection.Emit.Tests
     public class GenericTypeParameterBuilderSetCustomAttribute
     {
         [Fact]
-        public void PosTest1()
+        public void TestSetCustomAttribute()
         {
             AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
@@ -33,7 +33,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionForNullBuilder()
         {
             AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);

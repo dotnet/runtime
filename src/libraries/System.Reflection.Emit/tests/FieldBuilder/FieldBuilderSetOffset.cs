@@ -11,7 +11,7 @@ namespace System.Reflection.Emit.Tests
     public class FieldBuilderSetOffset
     {
         [Fact]
-        public void PosTest1()
+        public void TestWithOffsetZero()
         {
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
                 new AssemblyName("FieldBuilderSetOffset_Assembly_PosTest1"), AssemblyBuilderAccess.Run);
@@ -23,7 +23,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithOffsetSmallPositiveValue1()
         {
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
                 new AssemblyName("FieldBuilderSetOffset_Assembly_PosTest2"), AssemblyBuilderAccess.Run);
@@ -35,7 +35,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestWithOffsetSmallPositiveValue2()
         {
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
                 new AssemblyName("FieldBuilderSetOffset_Assembly_PosTest3"), AssemblyBuilderAccess.Run);
@@ -47,7 +47,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestWithOffsetDifferentForTwoProperties()
         {
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
                 new AssemblyName("FieldBuilderSetOffset_Assembly_PosTest4"), AssemblyBuilderAccess.Run);
@@ -65,7 +65,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest5()
+        public void TestWithOffsetSameForTwoProperties()
         {
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
                 new AssemblyName("FieldBuilderSetOffset_Assembly_PosTest5"), AssemblyBuilderAccess.Run);
@@ -80,7 +80,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionForCreateTypeCalled()
         {
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
                 new AssemblyName("FieldBuilderSetOffset_Assembly_NegTest1"), AssemblyBuilderAccess.Run);
@@ -94,7 +94,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionForNegativeOffset()
         {
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
                 new AssemblyName("FieldBuilderSetOffset_Assembly_NegTest2"), AssemblyBuilderAccess.Run);

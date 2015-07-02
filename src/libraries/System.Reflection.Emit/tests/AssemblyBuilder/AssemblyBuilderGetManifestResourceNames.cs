@@ -11,13 +11,11 @@ namespace System.Reflection.Emit.Tests
 {
     public class AssemblyBuilderGetManifestResourceNames
     {
-        private const AssemblyBuilderAccess DefaultBuilderAccess = AssemblyBuilderAccess.Run;
-
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionOnDynamicAssembly()
         {
             AssemblyName name = new AssemblyName("NegTest1Assembly");
-            AssemblyBuilder builder = AssemblyBuilder.DefineDynamicAssembly(name, DefaultBuilderAccess);
+            AssemblyBuilder builder = AssemblyBuilder.DefineDynamicAssembly(name, AssemblyBuilderAccess.Run);
             Assert.Throws<NotSupportedException>(() => { string[] myName = builder.GetManifestResourceNames(); });
         }
     }

@@ -20,7 +20,7 @@ namespace System.Reflection.Emit.Tests
         private const int NumLoops = 5;
 
         [Fact]
-        public void PosTest1()
+        public void TestWithString()
         {
             ModuleBuilder modBuilder;
             TypeBuilder typeBuilder;
@@ -58,7 +58,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithEmbeddedNulls()
         {
             ModuleBuilder modBuilder;
             TypeBuilder typeBuilder;
@@ -91,69 +91,46 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionForNullName()
         {
-            try
-            {
-                ModuleBuilder modBuilder;
-                TypeBuilder typeBuilder;
-                Type newType;
-                string typeName = "";
-                string nestedTypeName = "";
+            ModuleBuilder modBuilder;
+            TypeBuilder typeBuilder;
+            string typeName = "";
+            string nestedTypeName = "";
 
-                modBuilder = CreateModule(
-                                     TestLibrary.Generator.GetString(true, MinAsmName, MaxAsmName),
-                                     TestLibrary.Generator.GetString(false, MinModName, MaxModName));
+            modBuilder = CreateModule(
+                                 TestLibrary.Generator.GetString(true, MinAsmName, MaxAsmName),
+                                 TestLibrary.Generator.GetString(false, MinModName, MaxModName));
 
-                typeName = TestLibrary.Generator.GetString(true, MinTypName, MaxTypName);  // name can not contain embedded nulls
-                nestedTypeName = null;
+            typeName = TestLibrary.Generator.GetString(true, MinTypName, MaxTypName);  // name can not contain embedded nulls
+            nestedTypeName = null;
 
-                typeBuilder = modBuilder.DefineType(typeName);
+            typeBuilder = modBuilder.DefineType(typeName);
 
-                // create nested type
-                typeBuilder.DefineNestedType(nestedTypeName);
-
-                newType = typeBuilder.CreateTypeInfo().AsType();
-
-                Assert.True(newType.Name.Equals(typeName));
-            }
-            catch (System.ArgumentNullException)
-            {
-                // expected
-            }
+            // create nested type
+            Assert.Throws<ArgumentNullException>(() => typeBuilder.DefineNestedType(nestedTypeName));
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionForEmptyName()
         {
-            try
-            {
-                ModuleBuilder modBuilder;
-                TypeBuilder typeBuilder;
-                Type newType;
-                string typeName = "";
-                string nestedTypeName = "";
 
-                modBuilder = CreateModule(
-                                     TestLibrary.Generator.GetString(true, MinAsmName, MaxAsmName),
-                                     TestLibrary.Generator.GetString(false, MinModName, MaxModName));
+            ModuleBuilder modBuilder;
+            TypeBuilder typeBuilder;
+            string typeName = "";
+            string nestedTypeName = "";
 
-                typeName = TestLibrary.Generator.GetString(true, MinTypName, MaxTypName);  // name can not contain embedded nulls
-                nestedTypeName = string.Empty;
+            modBuilder = CreateModule(
+                                 TestLibrary.Generator.GetString(true, MinAsmName, MaxAsmName),
+                                 TestLibrary.Generator.GetString(false, MinModName, MaxModName));
 
-                typeBuilder = modBuilder.DefineType(typeName);
+            typeName = TestLibrary.Generator.GetString(true, MinTypName, MaxTypName);  // name can not contain embedded nulls
+            nestedTypeName = string.Empty;
 
-                // create nested type
-                typeBuilder.DefineNestedType(nestedTypeName);
+            typeBuilder = modBuilder.DefineType(typeName);
 
-                newType = typeBuilder.CreateTypeInfo().AsType();
-
-                Assert.True(newType.Name.Equals(typeName));
-            }
-            catch (System.ArgumentException)
-            {
-                // expected
-            }
+            // create nested type
+            Assert.Throws<ArgumentException>(() => { typeBuilder.DefineNestedType(nestedTypeName); });
         }
 
         public ModuleBuilder CreateModule(string assemblyName, string modName)

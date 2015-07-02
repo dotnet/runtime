@@ -36,7 +36,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestNameOfRandomString()
         {
             string expectedName = new string((char)(TestLibrary.Generator.GetInt32() % ushort.MaxValue + 1), 1) +
                 TestLibrary.Generator.GetString(false, 1, 260);
@@ -45,21 +45,21 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithLanguageKeyword()
         {
             string expectedName = "class";
             ExecutePosTest(expectedName);
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestWithLongString()
         {
             string expectedName = new string('a', Int16.MaxValue);
             ExecutePosTest(expectedName);
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestWithSpecialCharacters()
         {
             string expectedName = "1A\0\t\v\r\n\n\uDC81\uDC91";
             ExecutePosTest(expectedName);

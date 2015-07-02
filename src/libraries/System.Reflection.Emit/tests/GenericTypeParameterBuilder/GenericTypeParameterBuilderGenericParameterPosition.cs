@@ -11,7 +11,7 @@ namespace System.Reflection.Emit.Tests
     public class GenericTypeParameterBuilderGenericParameterPosition
     {
         [Fact]
-        public void PosTest1()
+        public void TestGenericParameterPositionProperty()
         {
             AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
@@ -37,7 +37,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestGenericParameterPositionWithDifferentPosition()
         {
             AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);

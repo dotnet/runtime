@@ -39,7 +39,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestWithIntegerType()
         {
             MethodAttributes getMethodAttr = MethodAttributes.Public |
                                              MethodAttributes.SpecialName |
@@ -63,7 +63,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithBoolType()
         {
             MethodAttributes getMethodAttr = MethodAttributes.Public |
                                              MethodAttributes.SpecialName |
@@ -87,7 +87,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestWithSByteType()
         {
             MethodAttributes getMethodAttr = MethodAttributes.Public |
                                              MethodAttributes.SpecialName |
@@ -111,12 +111,12 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestWithShortType()
         {
             MethodAttributes getMethodAttr = MethodAttributes.Public |
                                              MethodAttributes.SpecialName |
                                              MethodAttributes.HideBySig;
-            Type returnType = typeof(Int16);
+            Type returnType = typeof(short);
             Type[] paramTypes = new Type[0];
             Int16 defaultValue = TestLibrary.Generator.GetInt16();
             object actualValue;
@@ -135,7 +135,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest5()
+        public void TestWithLongType()
         {
             MethodAttributes getMethodAttr = MethodAttributes.Public |
                                              MethodAttributes.SpecialName |
@@ -159,7 +159,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest6()
+        public void TestWithByteType()
         {
             MethodAttributes getMethodAttr = MethodAttributes.Public |
                                              MethodAttributes.SpecialName |
@@ -183,7 +183,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest7()
+        public void TestWithUShortType()
         {
             MethodAttributes getMethodAttr = MethodAttributes.Public |
                                              MethodAttributes.SpecialName |
@@ -207,7 +207,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest8()
+        public void TestWithUIntType()
         {
             MethodAttributes getMethodAttr = MethodAttributes.Public |
                                              MethodAttributes.SpecialName |
@@ -231,7 +231,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest9()
+        public void TestWithULongType()
         {
             MethodAttributes getMethodAttr = MethodAttributes.Public |
                                              MethodAttributes.SpecialName |
@@ -255,7 +255,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest10()
+        public void TestWithFloatType()
         {
             MethodAttributes getMethodAttr = MethodAttributes.Public |
                                              MethodAttributes.SpecialName |
@@ -279,7 +279,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest11()
+        public void TestWithDoubleType()
         {
             MethodAttributes getMethodAttr = MethodAttributes.Public |
                                              MethodAttributes.SpecialName |
@@ -303,7 +303,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest12()
+        public void TestWithDateTimeType()
         {
             MethodAttributes getMethodAttr = MethodAttributes.Public |
                                              MethodAttributes.SpecialName |
@@ -327,7 +327,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest13()
+        public void TestWithCharType()
         {
             MethodAttributes getMethodAttr = MethodAttributes.Public |
                                              MethodAttributes.SpecialName |
@@ -351,7 +351,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest14()
+        public void TestWithStringType()
         {
             MethodAttributes getMethodAttr = MethodAttributes.Public |
                                              MethodAttributes.SpecialName |
@@ -375,7 +375,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest15()
+        public void TestWithEnumType()
         {
             MethodAttributes getMethodAttr = MethodAttributes.Public |
                                              MethodAttributes.SpecialName |
@@ -400,7 +400,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest16()
+        public void TestWithObjectType()
         {
             MethodAttributes getMethodAttr = MethodAttributes.Public |
                                              MethodAttributes.SpecialName |

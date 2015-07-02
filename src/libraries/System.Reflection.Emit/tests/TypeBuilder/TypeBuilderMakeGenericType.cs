@@ -12,7 +12,7 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderMakeGenericType
     {
         [Fact]
-        public void PosTest1()
+        public void TestWithTwoGenericParamsWithPredefinedTypes()
         {
             string[] genericParab = new string[] { "U", "T" };
             string mscorlibFullName = typeof(int).GetTypeInfo().Assembly.FullName;
@@ -25,7 +25,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithTwoGenericParamsWithCustomTypes()
         {
             string[] genericParab = new string[] { "U", "T" };
             string expectedFullName = "testType[[System.Reflection.Emit.Tests.TBGenericTypeTestClass, System.Reflection.Emit.Tests, Version=999.999.999.999, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a],[System.Reflection.Emit.Tests.TBGenericTypeTestInterface, System.Reflection.Emit.Tests, Version=999.999.999.999, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a]]";
@@ -37,7 +37,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestWithSingleGenericParam()
         {
             string[] genericParab = new string[] { "U" };
             string mscorlibFullName = typeof(int).GetTypeInfo().Assembly.FullName;
@@ -50,7 +50,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionOnEmptyTypeArray()
         {
             ModuleBuilder testModBuilder = CreateModuleBuilder();
             TypeBuilder testTyBuilder = testModBuilder.DefineType("testType");
@@ -58,7 +58,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionOnNullTypeArray()
         {
             string[] genericParab = new string[] { "U", "T" };
             ModuleBuilder testModBuilder = CreateModuleBuilder();
@@ -68,7 +68,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest3()
+        public void TestThrowsExceptionOnNullInMemberOfTypeArray()
         {
             string[] genericParab = new string[] { "U", "T" };
             ModuleBuilder testModBuilder = CreateModuleBuilder();

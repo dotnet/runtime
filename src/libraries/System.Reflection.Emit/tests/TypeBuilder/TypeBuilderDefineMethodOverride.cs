@@ -24,7 +24,7 @@ namespace System.Reflection.Emit.Tests
     public class MethodBuilderDefineMethodOverride
     {
         [Fact]
-        public void PosTest1()
+        public void TestOnOverridenInterfaceMethod()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName();
@@ -54,7 +54,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestOnOverridenInterfaceMethodWithConflictingName()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName();
@@ -90,7 +90,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionForNullMethodInfoBody()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName();
@@ -106,7 +106,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionForNullMethodInfoDeclaration()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName();
@@ -122,7 +122,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest3()
+        public void TestThrowsExceptionForMethodInfoNotInClass()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName();
@@ -140,7 +140,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest4()
+        public void TestThrowsExceptionForCreateTypeCalled()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName();

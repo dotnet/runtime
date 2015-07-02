@@ -12,14 +12,14 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderName
     {
         [Fact]
-        public void PosTest1()
+        public void TestWithGeneric()
         {
             TypeBuilder myBuilder = CreateTypeBuilderWithGeneric();
             Assert.Equal("Sample", myBuilder.Name);
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithoutGeneric()
         {
             TypeBuilder myBuilder = CreateTypeBuilderWithoutGeneric();
             Assert.Equal("Test", myBuilder.Name);

@@ -24,7 +24,7 @@ namespace System.Reflection.Emit.Tests
     public class ModuleBuilderSetCustomAttribute1
     {
         [Fact]
-        public void PosTest1()
+        public void TestSetCustomAttribute()
         {
             AssemblyName TestAssemblyName = new AssemblyName();
             TestAssemblyName.Name = "TestAssembly";
@@ -39,7 +39,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionOnNullConstructorInfo()
         {
             AssemblyName TestAssemblyName = new AssemblyName();
             TestAssemblyName.Name = "TestAssembly";

@@ -20,49 +20,41 @@ namespace System.Reflection.Emit.Tests
         private const int MinStringLength = 1;
         private const int MaxStringLength = 128;
 
-        private TypeBuilder TestTypeBuilder
+        private TypeBuilder GetTestTypeBuilder()
         {
-            get
-            {
-                if (null == _testTypeBuilder)
-                {
-                    AssemblyName assemblyName = new AssemblyName(TestDynamicAssemblyName);
-                    AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
-                        assemblyName, TestAssemblyBuilderAccess);
+            AssemblyName assemblyName = new AssemblyName(TestDynamicAssemblyName);
+            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
+                assemblyName, TestAssemblyBuilderAccess);
 
-                    ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, TestDynamicModuleName);
-                    _testTypeBuilder = moduleBuilder.DefineType(TestDynamicTypeName, TestTypeAttributes);
-                }
-
-                return _testTypeBuilder;
-            }
+            ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, TestDynamicModuleName);
+            return moduleBuilder.DefineType(TestDynamicTypeName, TestTypeAttributes);
         }
 
-        private TypeBuilder _testTypeBuilder;
-
         [Fact]
-        public void PosTest1()
+        public void TestForEqualObjects1()
         {
             string methodName = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder1 = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder1 = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Public);
-            MethodBuilder builder2 = TestTypeBuilder.DefineMethod(methodName,
+            MethodBuilder builder2 = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Public);
 
             Assert.Equal(builder1.GetHashCode(), builder2.GetHashCode());
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestForEqualObjects2()
         {
             string methodName = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder1 = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder1 = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Public);
             string[] typeParamNames = { "T", "U" };
             GenericTypeParameterBuilder[] Parameters = builder1.DefineGenericParameters(typeParamNames);
-            MethodBuilder builder2 = TestTypeBuilder.DefineMethod(methodName,
+            MethodBuilder builder2 = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Public);
             Parameters = builder2.DefineGenericParameters(typeParamNames);
 
@@ -70,16 +62,17 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestForNonEqualObjects()
         {
             string methodName1 = null;
             string methodName2 = null;
             methodName1 = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             methodName2 = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
 
-            MethodBuilder builder1 = TestTypeBuilder.DefineMethod(methodName1,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder1 = typeBuilder.DefineMethod(methodName1,
                 MethodAttributes.Public);
-            MethodBuilder builder2 = TestTypeBuilder.DefineMethod(methodName2,
+            MethodBuilder builder2 = typeBuilder.DefineMethod(methodName2,
                 MethodAttributes.Public);
 
             Assert.NotEqual(builder1.GetHashCode(), builder2.GetHashCode());

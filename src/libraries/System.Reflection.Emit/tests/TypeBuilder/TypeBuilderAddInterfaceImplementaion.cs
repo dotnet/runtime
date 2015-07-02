@@ -50,7 +50,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestForAbstractClass()
         {
             Type expectedType;
             Type actualType;
@@ -78,7 +78,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestForGeneralClass()
         {
             Type expectedType;
             Type actualType;
@@ -125,7 +125,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestForInterface()
         {
             Type expectedType;
             Type actualType;
@@ -153,7 +153,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionForNullInterfaceType()
         {
             TypeBuilder testTypeBuilder;
 
@@ -162,7 +162,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionForCreateTypeCalled()
         {
             TypeBuilder testTypeBuilder;
             TypeBuilder testInterfaceBuilder;

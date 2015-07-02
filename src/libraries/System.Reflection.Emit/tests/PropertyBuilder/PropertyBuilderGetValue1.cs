@@ -32,7 +32,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionForNotSupported()
         {
             TypeBuilder myTypeBuilder;
             PropertyBuilder myPropertyBuilder;

@@ -25,7 +25,7 @@ namespace System.Reflection.Emit.Tests
     public class AssemblyBuilderSetCustomAttribute1
     {
         [Fact]
-        public void PosTest1()
+        public void TestSetCustomAttribute()
         {
             AssemblyBuilder asmBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("PT1"), AssemblyBuilderAccess.Run);
             ConstructorInfo c = typeof(ABAttribute1).GetConstructor(new Type[] { typeof(bool) });
@@ -35,14 +35,14 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionOnNullConstructorInfo()
         {
             AssemblyBuilder asmBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("NT1"), AssemblyBuilderAccess.Run);
             Assert.Throws<ArgumentNullException>(() => { asmBuilder.SetCustomAttribute(null, new byte[] { }); });
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionOnNullByteArray()
         {
             AssemblyBuilder asmBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("NT2"), AssemblyBuilderAccess.Run);
             ConstructorInfo dummyCtor = typeof(DateTime).GetConstructor(new Type[] { });

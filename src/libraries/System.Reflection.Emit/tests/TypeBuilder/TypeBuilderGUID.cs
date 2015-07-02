@@ -23,7 +23,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestGuid()
         {
             TypeBuilder typebuilder = GetTypeBuilder(TypeName);
             typebuilder.CreateTypeInfo().AsType();
@@ -31,7 +31,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionForCreateTypeNotCalled()
         {
             TypeBuilder typebuilder = GetTypeBuilder(TypeName);
             Assert.Throws<NotSupportedException>(() => { Guid guid = typebuilder.GUID; });

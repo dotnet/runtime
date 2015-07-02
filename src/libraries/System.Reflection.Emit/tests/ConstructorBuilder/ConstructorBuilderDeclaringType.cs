@@ -11,7 +11,7 @@ namespace System.Reflection.Emit.Tests
     public class ConstructorBuilderDeclaringType
     {
         [Fact]
-        public void PosTest1()
+        public void TestDeclaringType()
         {
             AssemblyName an = new AssemblyName();
             an.Name = "DynamicRandomAssembly";
@@ -35,7 +35,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestDeclaringTypeWithDifferentOverload()
         {
             AssemblyName an = new AssemblyName();
             an.Name = "DynamicRandomAssembly";

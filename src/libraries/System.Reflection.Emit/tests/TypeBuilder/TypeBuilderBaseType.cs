@@ -25,7 +25,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestWithInt32()
         {
             TypeBuilder typebuilder = GetTypeBuilder();
             typebuilder.SetParent(typeof(int));
@@ -34,7 +34,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithCustomClass()
         {
             TypeBuilder typebuilder = GetTypeBuilder();
             typebuilder.SetParent(typeof(TBTestClass1));
@@ -43,7 +43,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestWithGenericClass()
         {
             TypeBuilder typebuilder = GetTypeBuilder();
             typebuilder.SetParent(typeof(TBGenClass1<>));
@@ -52,7 +52,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestWithNullableType()
         {
             TypeBuilder typebuilder = GetTypeBuilder();
             typebuilder.SetParent(typeof(int?));
@@ -61,14 +61,14 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest5()
+        public void TestWithInterfaceType()
         {
             TypeBuilder typebuilder = GetTypeBuilder();
             Assert.Throws<ArgumentException>(() => { typebuilder.SetParent(typeof(TBInterfaceClass1)); });
         }
 
         [Fact]
-        public void PosTest6()
+        public void TestWithDefaultType()
         {
             TypeBuilder typebuilder = GetTypeBuilder();
             Type type = typebuilder.BaseType;

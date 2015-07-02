@@ -43,7 +43,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestValidDataWithMultipleParameters()
         {
             int i = 0;
             Type[] parameterTypes = new Type[]
@@ -73,7 +73,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestValidDataWithSingleParameter()
         {
             int i = 0;
 
@@ -101,7 +101,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestValidDataWithNullName()
         {
             int i = 0;
 
@@ -128,7 +128,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestValidDataWithMultipleParametersAndNullName()
         {
             int i = 0;
 
@@ -157,15 +157,16 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest5()
+        public void TestParameterWithZeroSequence()
         {
             CreateConstructorBuilder("PosTest5_Type1", new Type[] { }).DefineParameter(0, ParameterAttributes.None, "p");
             CreateConstructorBuilder("PosTest5_Type5", new Type[] { typeof(int) }).DefineParameter(0, ParameterAttributes.None, "p");
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionOnIncorrectPosition()
         {
+            // ArgumentOutOfRangeException should be thrown when position is less than or equal to zero, or it is greater than the number of parameters of the constructor.
             NegTestCaseVerificationHelper(CreateConstructorBuilder("NegTest1_Type2", new Type[] { }),
                 -1, ParameterAttributes.None, "p", typeof(ArgumentOutOfRangeException));
             NegTestCaseVerificationHelper(CreateConstructorBuilder("NegTest1_Type3", new Type[] { }),
@@ -175,7 +176,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionOnCreateTypeCalled()
         {
             ConstructorBuilder constructor = CreateConstructorBuilder("NegTest2_Type1", new Type[] { typeof(int) });
             constructor.GetILGenerator().Emit(OpCodes.Ret);

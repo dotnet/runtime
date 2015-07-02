@@ -37,34 +37,25 @@ namespace System.Reflection.Emit.Tests
             0x2a
         };
 
-        private TypeBuilder TestTypeBuilder
+        private TypeBuilder GetTestTypeBuilder()
         {
-            get
-            {
-                if (null == _testTypeBuilder)
-                {
-                    AssemblyName assemblyName = new AssemblyName(TestDynamicAssemblyName);
-                    AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
-                        assemblyName, TestAssemblyBuilderAccess);
+            AssemblyName assemblyName = new AssemblyName(TestDynamicAssemblyName);
+            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
+                assemblyName, TestAssemblyBuilderAccess);
 
-                    ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, TestDynamicModuleName);
-
-                    _testTypeBuilder = moduleBuilder.DefineType(TestDynamicTypeName, TestTypeAttributes);
-                }
-
-                return _testTypeBuilder;
-            }
+            ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, TestDynamicModuleName);
+            return moduleBuilder.DefineType(TestDynamicTypeName, TestTypeAttributes);
         }
 
-        private TypeBuilder _testTypeBuilder;
-
         [Fact]
-        public void PosTest1()
+        public void TestWithSingleGenericParameter()
         {
             string methodName = null;
 
             methodName = "PosTest1";
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 TestMethodAttributes);
 
             string[] typeParamNames = { "T" };
@@ -75,7 +66,7 @@ namespace System.Reflection.Emit.Tests
             ILGenerator ilgen = builder.GetILGenerator();
             ilgen.Emit(OpCodes.Ret);
 
-            Type type = TestTypeBuilder.CreateTypeInfo().AsType();
+            Type type = typeBuilder.CreateTypeInfo().AsType();
 
             MethodInfo method = type.GetMethod(builder.Name);
             ParameterInfo[] parameters = method.GetParameters();
@@ -83,12 +74,14 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithMultipleGenericParameters()
         {
             string methodName = null;
 
             methodName = "PosTest2";
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 TestMethodAttributes);
 
             string[] typeParamNames = { "T", "U" };
@@ -99,7 +92,7 @@ namespace System.Reflection.Emit.Tests
             ILGenerator ilgen = builder.GetILGenerator();
             ilgen.Emit(OpCodes.Ret);
 
-            Type type = TestTypeBuilder.CreateTypeInfo().AsType();
+            Type type = typeBuilder.CreateTypeInfo().AsType();
 
             MethodInfo method = type.GetMethod(builder.Name);
             ParameterInfo[] parameters = method.GetParameters();
@@ -107,13 +100,15 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestWithSingleGenericAndNonGenericParameter()
         {
             string methodName = null;
 
             methodName = "PosTest3";
             Type[] parameterTypes = new Type[] { typeof(int) };
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 TestMethodAttributes,
                 typeof(void),
                 parameterTypes);
@@ -126,7 +121,7 @@ namespace System.Reflection.Emit.Tests
             ILGenerator ilgen = builder.GetILGenerator();
             ilgen.Emit(OpCodes.Ret);
 
-            Type type = TestTypeBuilder.CreateTypeInfo().AsType();
+            Type type = typeBuilder.CreateTypeInfo().AsType();
 
             MethodInfo method = type.GetMethod(builder.Name);
             ParameterInfo[] parameters = method.GetParameters();
@@ -134,13 +129,13 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestAfterTypeCreated()
         {
             string methodName = null;
-            _testTypeBuilder = null;
             methodName = "PosTest4";
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Public);
             string[] typeParamNames = { "T" };
             Type[] typeParameters =
@@ -150,24 +145,26 @@ namespace System.Reflection.Emit.Tests
             ILGenerator ilgen = builder.GetILGenerator();
             ilgen.Emit(OpCodes.Ret);
 
-            Type type = TestTypeBuilder.CreateTypeInfo().AsType();
+            Type type = typeBuilder.CreateTypeInfo().AsType();
 
             builder.SetParameters(typeParameters);
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestOnNull()
         {
             string methodName = null;
             methodName = "NegTest1";
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 TestMethodAttributes);
 
             builder.SetParameters(null);
             ILGenerator ilgen = builder.GetILGenerator();
             ilgen.Emit(OpCodes.Ret);
 
-            Type type = TestTypeBuilder.CreateTypeInfo().AsType();
+            Type type = typeBuilder.CreateTypeInfo().AsType();
 
             MethodInfo method = type.GetMethod(builder.Name);
             ParameterInfo[] parameters = method.GetParameters();
@@ -175,18 +172,20 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestOnEmptyArray()
         {
             string methodName = null;
             methodName = "NegTest2";
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 TestMethodAttributes);
 
             builder.SetParameters(new Type[] { });
             ILGenerator ilgen = builder.GetILGenerator();
             ilgen.Emit(OpCodes.Ret);
 
-            Type type = TestTypeBuilder.CreateTypeInfo().AsType();
+            Type type = typeBuilder.CreateTypeInfo().AsType();
 
             MethodInfo method = type.GetMethod(builder.Name);
             ParameterInfo[] parameters = method.GetParameters();
@@ -194,18 +193,20 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest3()
+        public void TestWithNoParameters()
         {
             string methodName = null;
             methodName = "NegTest3";
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 TestMethodAttributes);
 
             builder.SetParameters();
             ILGenerator ilgen = builder.GetILGenerator();
             ilgen.Emit(OpCodes.Ret);
 
-            Type type = TestTypeBuilder.CreateTypeInfo().AsType();
+            Type type = typeBuilder.CreateTypeInfo().AsType();
 
             MethodInfo method = type.GetMethod(builder.Name);
             ParameterInfo[] parameters = method.GetParameters();
@@ -213,13 +214,14 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest4()
+        public void TestForNonGenericMethods()
         {
             string methodName = null;
             methodName = "NegTest4";
             Type[] parameterTypes = new Type[] { typeof(int) };
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 TestMethodAttributes,
                 typeof(void),
                 parameterTypes);
@@ -231,7 +233,7 @@ namespace System.Reflection.Emit.Tests
             ILGenerator ilgen = builder.GetILGenerator();
             ilgen.Emit(OpCodes.Ret);
 
-            Type type = TestTypeBuilder.CreateTypeInfo().AsType();
+            Type type = typeBuilder.CreateTypeInfo().AsType();
 
             MethodInfo method = type.GetMethod(builder.Name);
             ParameterInfo[] parameters = method.GetParameters();
@@ -239,14 +241,15 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest6()
+        public void TestWithParametersToNull()
         {
             string methodName = null;
 
             methodName = "NegTest6";
             Type[] parameterTypes = new Type[] { typeof(int) };
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 TestMethodAttributes,
                 typeof(void),
                 parameterTypes);
@@ -265,7 +268,7 @@ namespace System.Reflection.Emit.Tests
             ILGenerator ilgen = builder.GetILGenerator();
             ilgen.Emit(OpCodes.Ret);
 
-            Assert.Throws<ArgumentNullException>(() => { Type type = TestTypeBuilder.CreateTypeInfo().AsType(); });
+            Assert.Throws<ArgumentNullException>(() => { Type type = typeBuilder.CreateTypeInfo().AsType(); });
         }
 
         private void VerificationHelper(ParameterInfo[] parameters, Type[] parameterTypes, string[] parameterName)

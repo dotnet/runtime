@@ -46,85 +46,85 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestDefaultConstructor1()
         {
             ExePosTest(TypeAttributes.Public | TypeAttributes.Class, MethodAttributes.Public, BindingFlags.Public | BindingFlags.Instance);
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestDefaultConstructor2()
         {
             ExePosTest(TypeAttributes.Class | TypeAttributes.Public, MethodAttributes.Static, BindingFlags.Static | BindingFlags.NonPublic);
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestDefaultConstructor3()
         {
             ExePosTest(TypeAttributes.Class | TypeAttributes.Public, MethodAttributes.Family, BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestDefaultConstructor4()
         {
             ExePosTest(TypeAttributes.Class | TypeAttributes.Public, MethodAttributes.Assembly, BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
         [Fact]
-        public void PosTest5()
+        public void TestDefaultConstructor5()
         {
             ExePosTest(TypeAttributes.Class | TypeAttributes.Public, MethodAttributes.Private, BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
         [Fact]
-        public void PosTest6()
+        public void TestDefaultConstructor6()
         {
             ExePosTest(TypeAttributes.Class | TypeAttributes.Public, MethodAttributes.PrivateScope, BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
         [Fact]
-        public void PosTest7()
+        public void TestDefaultConstructor7()
         {
             ExePosTest(TypeAttributes.Class | TypeAttributes.Public, MethodAttributes.FamORAssem, BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
         [Fact]
-        public void PosTest8()
+        public void TestDefaultConstructor8()
         {
             ExePosTest(TypeAttributes.Class | TypeAttributes.Public, MethodAttributes.FamANDAssem, BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
         [Fact]
-        public void PosTest9()
+        public void TestDefaultConstructor9()
         {
             ExePosTest(TypeAttributes.Class | TypeAttributes.Public, MethodAttributes.Final | MethodAttributes.Public, BindingFlags.Instance | BindingFlags.Public);
         }
 
         [Fact]
-        public void PosTest10()
+        public void TestDefaultConstructor10()
         {
             ExePosTest(TypeAttributes.Class | TypeAttributes.Public, MethodAttributes.Final | MethodAttributes.Family, BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
         [Fact]
-        public void PosTest11()
+        public void TestDefaultConstructor11()
         {
             ExePosTest(TypeAttributes.Class | TypeAttributes.Public, MethodAttributes.SpecialName | MethodAttributes.Family, BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
         [Fact]
-        public void PosTest12()
+        public void TestDefaultConstructor12()
         {
             ExePosTest(TypeAttributes.Class | TypeAttributes.Public, MethodAttributes.UnmanagedExport | MethodAttributes.Family, BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
         [Fact]
-        public void PosTest13()
+        public void TestDefaultConstructor13()
         {
             ExePosTest(TypeAttributes.Class | TypeAttributes.Public, MethodAttributes.RTSpecialName | MethodAttributes.Family, BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
         [Fact]
-        public void PosTest14()
+        public void TestDefaultConstructor14()
         {
             ExePosTest(TypeAttributes.Class | TypeAttributes.Public, MethodAttributes.HideBySig | MethodAttributes.Family, BindingFlags.Instance | BindingFlags.NonPublic);
         }
@@ -147,7 +147,7 @@ namespace System.Reflection.Emit.Tests
 
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionForCreatetypeCalled()
         {
             TypeBuilder testTypeBuilder;
 
@@ -157,7 +157,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionForInterface()
         {
             TypeBuilder testTypeBuilder;
 
@@ -165,12 +165,11 @@ namespace System.Reflection.Emit.Tests
                                                                              TypeAttributes.Interface |
                                                                              TypeAttributes.Abstract);
 
-            testTypeBuilder.CreateTypeInfo().AsType();
             Assert.Throws<InvalidOperationException>(() => { testTypeBuilder.DefineDefaultConstructor(MethodAttributes.Public); });
         }
 
         [Fact]
-        public void NegTest3()
+        public void TestThrowsExceptionForNoDefaultConstructor()
         {
             TypeBuilder baseTestTypeBuilder, testTypeBuilder;
             ConstructorBuilder baseCtorBuilder;
@@ -206,7 +205,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest4()
+        public void TestThrowsExceptionForPrivateDefaultConstructor()
         {
             TypeBuilder baseTestTypeBuilder, testTypeBuilder;
             ConstructorBuilder baseCtorBuilder;
@@ -230,7 +229,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest5()
+        public void TestThrowsExceptionForPrivateScopeDefaultConstructor()
         {
             TypeBuilder baseTestTypeBuilder, testTypeBuilder;
             ConstructorBuilder baseCtorBuilder;

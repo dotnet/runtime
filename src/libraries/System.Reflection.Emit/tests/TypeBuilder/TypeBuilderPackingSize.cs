@@ -12,42 +12,42 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderPackingSize
     {
         [Fact]
-        public void PosTest1()
+        public void TestWithoutPackSizeGeneric()
         {
             TypeBuilder myBuilder = CreateGenericTypeBuilderWithoutPackSize();
             Assert.Equal(PackingSize.Unspecified, myBuilder.PackingSize);
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithSmallestPackSizeGeneric()
         {
             TypeBuilder myBuilder = CreateGenericTypeBuilderWithSmallestPackSize();
             Assert.Equal(PackingSize.Size1, myBuilder.PackingSize);
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestWithLargestPackSizeGeneric()
         {
             TypeBuilder myBuilder = CreateGenericTypeBuilderWithLargestPackSize();
             Assert.Equal(PackingSize.Size128, myBuilder.PackingSize);
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestWithoutPackSizeNonGeneric()
         {
             TypeBuilder myBuilder = CreateNonGenericTypeBuilderWithoutPackSize();
             Assert.Equal(PackingSize.Unspecified, myBuilder.PackingSize);
         }
 
         [Fact]
-        public void PosTest5()
+        public void TestWithSmallestPackSizeNonGeneric()
         {
             TypeBuilder myBuilder = CreateNonGenericTypeBuilderWithSmallestPackSize();
             Assert.Equal(PackingSize.Size1, myBuilder.PackingSize);
         }
 
         [Fact]
-        public void PosTest6()
+        public void TestWithLargestPackSizeNonGeneric()
         {
             TypeBuilder myBuilder = CreateNonGenericTypeBuilderWithLargestPackSize();
             Assert.Equal(PackingSize.Size128, myBuilder.PackingSize);

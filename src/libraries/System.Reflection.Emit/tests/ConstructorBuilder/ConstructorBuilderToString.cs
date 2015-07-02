@@ -11,7 +11,7 @@ namespace System.Reflection.Emit.Tests
     public class ConstructorBuilderToString
     {
         [Fact]
-        public void PosTest1()
+        public void TestToString()
         {
             AssemblyName an = new AssemblyName();
             an.Name = "DynamicRandomAssembly";
@@ -22,14 +22,14 @@ namespace System.Reflection.Emit.Tests
 
             Type[] parameterTypes = { typeof(int), typeof(double) };
 
-            System.Reflection.Emit.ConstructorBuilder cb =
+            ConstructorBuilder cb =
                 tb.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, parameterTypes, null, null);
 
             Assert.StartsWith("Name: .ctor", cb.ToString());
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestToStringWithDifferentOverload()
         {
             AssemblyName an = new AssemblyName();
             an.Name = "DynamicRandomAssembly";
@@ -40,7 +40,7 @@ namespace System.Reflection.Emit.Tests
 
             Type[] parameterTypes = { typeof(int), typeof(double) };
 
-            System.Reflection.Emit.ConstructorBuilder cb =
+            ConstructorBuilder cb =
                 tb.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, parameterTypes);
 
             Assert.StartsWith("Name: .ctor", cb.ToString());

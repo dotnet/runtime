@@ -24,7 +24,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestGenericParameterAttributes()
         {
             TypeBuilder typebuilder = GetTypeBuilder(TypeName);
             string[] argu = { "argu0" };

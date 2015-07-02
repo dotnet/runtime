@@ -12,21 +12,23 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderMakeArrayType1
     {
         [Fact]
-        public void PosTest1()
+        public void TestForAbstractType()
         {
             ModuleBuilder testModBuilder = CreateModuleBuilder();
             TypeBuilder testTyBuilder = testModBuilder.DefineType("testType", TypeAttributes.Public | TypeAttributes.Abstract);
             Type arrayType = testTyBuilder.MakeArrayType();
-            Assert.False(arrayType.GetTypeInfo().BaseType != typeof(Array) || arrayType.Name != "testType[]");
+            Assert.Equal(typeof(Array), arrayType.GetTypeInfo().BaseType);
+            Assert.Equal("testType[]", arrayType.Name);
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestForInstanceType()
         {
             ModuleBuilder testModBuilder = CreateModuleBuilder();
             TypeBuilder testTyBuilder = testModBuilder.DefineType("testType");
             Type arrayType = testTyBuilder.MakeArrayType();
-            Assert.False(arrayType.GetTypeInfo().BaseType != typeof(Array) || arrayType.Name != "testType[]");
+            Assert.Equal(typeof(Array), arrayType.GetTypeInfo().BaseType);
+            Assert.Equal("testType[]", arrayType.Name);
         }
 
         private ModuleBuilder CreateModuleBuilder()

@@ -32,7 +32,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestPropertyWithGetAccessor()
         {
             bool actualValue, expectedValue;
             TypeBuilder myTypeBuilder;
@@ -70,7 +70,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestPropertyWithSetAccessor()
         {
             bool actualValue, expectedValue;
             TypeBuilder myTypeBuilder;
@@ -106,7 +106,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestPropertyWithNoAccessors()
         {
             bool actualValue, expectedValue;
             TypeBuilder myTypeBuilder;
@@ -125,7 +125,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestPropertyWithPublicStaticGetAccessor()
         {
             bool actualValue, expectedValue;
             TypeBuilder myTypeBuilder;

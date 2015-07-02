@@ -32,35 +32,35 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestWithHasDefault()
         {
             PropertyAttributes propertyAttr = PropertyAttributes.HasDefault;
             ExecutePosTest(propertyAttr);
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithNone()
         {
             PropertyAttributes propertyAttr = PropertyAttributes.None;
             ExecutePosTest(propertyAttr);
         }
 
         [Fact]
-        public void PosTest8()
+        public void TestWithRTSpecialName()
         {
             PropertyAttributes propertyAttr = PropertyAttributes.RTSpecialName;
             ExecutePosTest(propertyAttr);
         }
 
         [Fact]
-        public void PosTest9()
+        public void TestWithSpecialName()
         {
             PropertyAttributes propertyAttr = PropertyAttributes.SpecialName;
             ExecutePosTest(propertyAttr);
         }
 
         [Fact]
-        public void PosTest10()
+        public void TestWithCombinations()
         {
             PropertyAttributes propertyAttr =
                                     PropertyAttributes.SpecialName |
