@@ -10,7 +10,9 @@ namespace System.Security.Cryptography
             ValidateGetBytesArgs(data);
             if (data.Length > 0)
             {
-                Interop.BCrypt.BCryptGenRandom(data);
+                Interop.BCrypt.NTSTATUS status = Interop.BCrypt.BCryptGenRandom(data, data.Length);
+                if (status != Interop.BCrypt.NTSTATUS.STATUS_SUCCESS)
+                    throw Interop.BCrypt.CreateCryptographicException(status);
             }
         }
     }
