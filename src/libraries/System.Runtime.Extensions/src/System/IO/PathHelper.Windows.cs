@@ -1,16 +1,10 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
-using System.Text;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Globalization;
-using System.Runtime.Versioning;
-using System.Security;
 using System.Diagnostics.Contracts;
-using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Security;
+using System.Text;
 
 namespace System.IO
 {
@@ -279,7 +273,7 @@ namespace System.IO
 
                     // We do not need to call GetLongPathName if we know it will fail becasue the path does not exist:
                     int lastErr = Marshal.GetLastWin32Error();
-                    if (lastErr == (int)Interop.ERROR_FILE_NOT_FOUND || lastErr == (int)Interop.ERROR_PATH_NOT_FOUND)
+                    if (lastErr == Interop.mincore.Errors.ERROR_FILE_NOT_FOUND || lastErr == Interop.mincore.Errors.ERROR_PATH_NOT_FOUND)
                         doNotTryExpandShortFileName = true;
 
                     return false;
@@ -321,7 +315,7 @@ namespace System.IO
 
                     // We do not need to call GetLongPathName if we know it will fail becasue the path does not exist:
                     int lastErr = Marshal.GetLastWin32Error();
-                    if ((int)Interop.ERROR_FILE_NOT_FOUND == lastErr || (int)Interop.ERROR_PATH_NOT_FOUND == lastErr)
+                    if (Interop.mincore.Errors.ERROR_FILE_NOT_FOUND == lastErr || Interop.mincore.Errors.ERROR_PATH_NOT_FOUND == lastErr)
                         doNotTryExpandShortFileName = true;
 
                     sb.Length = 0;
