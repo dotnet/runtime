@@ -25,6 +25,9 @@
 #include "dwreport.h"
 #include "primitives.h"
 #include "dbgutil.h"
+#ifdef FEATURE_PAL            
+#include <dactablerva.h>
+#endif
 
 #include "dwbucketmanager.hpp"
 
@@ -7196,20 +7199,14 @@ HRESULT
 ClrDataAccess::GetDacGlobals()
 {
 #ifdef FEATURE_PAL
-    PVOID dacTableAddress = nullptr;
-    ULONG dacTableSize = 0;
-    DWORD err = PAL_GetDacTableAddress((PVOID)m_globalBase, &dacTableAddress, &dacTableSize);
-    if (err != ERROR_SUCCESS)
-    {
-        return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
-    }
-
-    if (dacTableSize != sizeof(g_dacGlobals))
+#ifdef DAC_TABLE_SIZE
+    if (DAC_TABLE_SIZE != sizeof(g_dacGlobals))
     {
         return E_INVALIDARG;
     }
-
-    if (FAILED(ReadFromDataTarget(m_pTarget, (ULONG64)dacTableAddress, (BYTE*)&g_dacGlobals, dacTableSize)))
+#endif
+    ULONG64 dacTableAddress = m_globalBase + DAC_TABLE_RVA;
+    if (FAILED(ReadFromDataTarget(m_pTarget, dacTableAddress, (BYTE*)&g_dacGlobals, sizeof(g_dacGlobals))))
     {
         return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
     }
