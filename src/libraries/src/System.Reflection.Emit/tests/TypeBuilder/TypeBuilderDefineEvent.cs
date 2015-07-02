@@ -12,7 +12,7 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderDefineEvent
     {
         [Fact]
-        public void PosTest1()
+        public void TestDefineEvent()
         {
             AssemblyName myAsmName =
                 new AssemblyName("TypeBuilderGetFieldTest");
@@ -44,7 +44,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionForCreateTypeCalled()
         {
             AssemblyName myAsmName =
                 new AssemblyName("TypeBuilderGetFieldTest");
@@ -65,23 +65,16 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2() { GeneralNegativeTest(null, EventAttributes.None, typeof(int), typeof(ArgumentNullException)); }
+        public void TestThrowsExceptionForNullName() { GeneralNegativeTest(null, EventAttributes.None, typeof(int), typeof(ArgumentNullException)); }
 
         [Fact]
-        public void NegTest3() { GeneralNegativeTest("TestEvent", EventAttributes.None, null, typeof(ArgumentNullException)); }
+        public void TestThrowsExceptionForNullEventType() { GeneralNegativeTest("TestEvent", EventAttributes.None, null, typeof(ArgumentNullException)); }
 
         [Fact]
-        public void NegTest4() { GeneralNegativeTest("", EventAttributes.None, null, typeof(ArgumentException)); }
+        public void TestThrowsExceptionForEmptyName() { GeneralNegativeTest("", EventAttributes.None, null, typeof(ArgumentException)); }
 
         [Fact]
-        public void NegTest5() { GeneralNegativeTest("\0Testing", EventAttributes.None, null, typeof(ArgumentException)); }
-
-        [Fact]
-        public void NegTest6() { GeneralNegativeTest("Testing", (EventAttributes)(-1), typeof(int), null); }
-
-        [Fact]
-        public void NegTest7() { GeneralNegativeTest("Testing", (EventAttributes)(0x1000), typeof(int), null); }
-
+        public void TestThrowsExceptionForNullTerminatedName() { GeneralNegativeTest("\0Testing", EventAttributes.None, null, typeof(ArgumentException)); }
 
         public void GeneralNegativeTest(string name, EventAttributes attrs, Type eventType, Type expected)
         {
@@ -99,20 +92,13 @@ namespace System.Reflection.Emit.Tests
             GenericTypeParameterBuilder[] typeParams =
                 myType.DefineGenericParameters(typeParamNames);
 
-            if (expected != null)
+            Action test = () =>
             {
-                Action test = () =>
-                {
-                    myType.DefineEvent(name, attrs, eventType);
-                    Type t = myType.CreateTypeInfo().AsType();
-                };
+                myType.DefineEvent(name, attrs, eventType);
+                Type t = myType.CreateTypeInfo().AsType();
+            };
 
-                Assert.Throws(expected, test);
-            }
-            else
-            {
-                Type t1 = myType.CreateTypeInfo().AsType();
-            }
+            Assert.Throws(expected, test);
         }
     }
 }

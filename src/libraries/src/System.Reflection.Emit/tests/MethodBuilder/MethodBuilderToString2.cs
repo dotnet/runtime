@@ -13,7 +13,7 @@ namespace System.Reflection.Emit.Tests
     public class MethodBuilderToString
     {
         [Fact]
-        public void PosTest1()
+        public void TestOnNonGenericMethod()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName();
@@ -37,7 +37,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestOnGenericMethod()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName();

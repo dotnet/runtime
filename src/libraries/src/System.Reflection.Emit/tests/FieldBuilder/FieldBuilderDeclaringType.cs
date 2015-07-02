@@ -11,7 +11,7 @@ namespace System.Reflection.Emit.Tests
     public class FieldBuilderDeclaringType
     {
         [Fact]
-        public void PosTest1()
+        public void TestDeclaringTypeProperty()
         {
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
                 new AssemblyName("FieldBuilderDeclaringType_Assembly"), AssemblyBuilderAccess.Run);

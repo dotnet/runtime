@@ -24,7 +24,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestOnGenericType()
         {
             TypeBuilder typebuilder = GetTypeBuilder(TypeName);
             string[] argu = { "argu0", "argu1", "argu2" };
@@ -34,7 +34,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestOnNonGenericType()
         {
             TypeBuilder typebuilder = GetTypeBuilder(TypeName);
             bool boolvalue = typebuilder.IsGenericType;

@@ -13,7 +13,7 @@ namespace System.Reflection.Emit.Tests
     public class ModuleBuilderDefineType2
     {
         [Fact]
-        public void PosTest1()
+        public void TestWithNonPublicAttributeInModule()
         {
             string typeName = "testType";
             ModuleBuilder testModuleBuilder;
@@ -22,11 +22,12 @@ namespace System.Reflection.Emit.Tests
             testTypeBuilder = testModuleBuilder.DefineType(typeName, TypeAttributes.NotPublic);
 
             Type tpA = testTypeBuilder.CreateTypeInfo().AsType();
-            Assert.False(tpA.Name != typeName || tpA.GetTypeInfo().Attributes != TypeAttributes.NotPublic);
+            Assert.Equal(typeName, tpA.Name);
+            Assert.Equal(TypeAttributes.NotPublic, tpA.GetTypeInfo().Attributes);
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithInterfaceAttributeInModule()
         {
             string typeName = "testType";
             ModuleBuilder testModuleBuilder;
@@ -35,11 +36,12 @@ namespace System.Reflection.Emit.Tests
             TypeAttributes typeAttr = TypeAttributes.Interface;
             testTypeBuilder = testModuleBuilder.DefineType(typeName, typeAttr | TypeAttributes.Abstract);
             Type tpA = testTypeBuilder.CreateTypeInfo().AsType();
-            Assert.False(tpA.Name != typeName || tpA.GetTypeInfo().Attributes != (TypeAttributes.Interface | TypeAttributes.Abstract));
+            Assert.Equal(typeName, tpA.Name);
+            Assert.Equal((TypeAttributes.Interface | TypeAttributes.Abstract), tpA.GetTypeInfo().Attributes);
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestWithClassAttributeInModule()
         {
             string typeName = "testType";
             ModuleBuilder testModuleBuilder;
@@ -47,11 +49,12 @@ namespace System.Reflection.Emit.Tests
             testModuleBuilder = CreateModuleBuilder();
             testTypeBuilder = testModuleBuilder.DefineType(typeName, TypeAttributes.Class);
             Type tpA = testTypeBuilder.CreateTypeInfo().AsType();
-            Assert.False(tpA.Name != typeName || tpA.GetTypeInfo().Attributes != TypeAttributes.Class);
+            Assert.Equal(typeName, tpA.Name);
+            Assert.Equal(TypeAttributes.Class, tpA.GetTypeInfo().Attributes);
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestWithNullName()
         {
             string typeName = null;
             ModuleBuilder testModuleBuilder;
@@ -61,7 +64,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestWithSameNameTypeAlreadyExists()
         {
             string typeName = "testType";
             ModuleBuilder testModuleBuilder;

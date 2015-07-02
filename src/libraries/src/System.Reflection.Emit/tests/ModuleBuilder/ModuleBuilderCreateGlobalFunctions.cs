@@ -12,7 +12,7 @@ namespace System.Reflection.Emit.Tests
     public class ModuleBuilderCreateGlobalFunctions
     {
         [Fact]
-        public void PosTest1()
+        public void TestWithSingleGlobalMethod()
         {
             ModuleBuilder m1 = CreateModule("Foo", "Bar");
             MethodBuilder mb = m1.DefineGlobalMethod("MyMethod1", MethodAttributes.Static | MethodAttributes.Public,
@@ -24,7 +24,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithMultipleGlobalMethods()
         {
             ModuleBuilder m1 = CreateModule("Baz", "Quux");
             MethodBuilder mb = m1.DefineGlobalMethod("MyMethod1", MethodAttributes.Static | MethodAttributes.Public,
@@ -40,7 +40,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionOnMultipleCallsToCreateGlobalFunctions()
         {
             ModuleBuilder m1 = CreateModule("Grip", "Fang");
             MethodBuilder mb = m1.DefineGlobalMethod("MyMethod1", MethodAttributes.Static | MethodAttributes.Public,

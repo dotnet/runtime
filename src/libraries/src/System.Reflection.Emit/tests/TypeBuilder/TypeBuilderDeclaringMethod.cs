@@ -26,7 +26,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestOnGenericTypeParameter()
         {
             TypeBuilder typebuilder = GetTypeBuilder();
             string[] argu = { "argu0", "argu1", "argu2" };
@@ -40,7 +40,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestOnTypeBuilder()
         {
             TypeBuilder typebuilder = GetTypeBuilder();
             string[] argu = { "argu0", "argu1" };

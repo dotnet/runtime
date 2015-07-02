@@ -14,7 +14,7 @@ namespace System.Reflection.Emit.Tests
     public class ModuleBuilderDefineType3
     {
         [Fact]
-        public void PosTest1()
+        public void TestTypeWithNonPublicAttributeAndBaseTypeClassInModule()
         {
             string typeName = "testType";
             ModuleBuilder testModuleBuilder;
@@ -23,11 +23,13 @@ namespace System.Reflection.Emit.Tests
             Type parent = typeof(MBTestClass);
             testTypeBuilder = testModuleBuilder.DefineType(typeName, TypeAttributes.NotPublic, parent);
             Type tpA = testTypeBuilder.CreateTypeInfo().AsType();
-            Assert.False(tpA.Name != typeName || tpA.GetTypeInfo().Attributes != TypeAttributes.NotPublic || tpA.GetTypeInfo().BaseType != parent);
+            Assert.Equal(typeName, tpA.Name);
+            Assert.Equal(TypeAttributes.NotPublic, tpA.GetTypeInfo().Attributes);
+            Assert.Equal(parent, tpA.GetTypeInfo().BaseType);
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestTypeWithClassAttributeAndBaseTypeClassInModule()
         {
             string typeName = "testType";
             ModuleBuilder testModuleBuilder;
@@ -36,11 +38,13 @@ namespace System.Reflection.Emit.Tests
             Type parent = typeof(MBTestClass);
             testTypeBuilder = testModuleBuilder.DefineType(typeName, TypeAttributes.Class, parent);
             Type tpA = testTypeBuilder.CreateTypeInfo().AsType();
-            Assert.False(tpA.Name != typeName || tpA.GetTypeInfo().Attributes != TypeAttributes.Class || tpA.GetTypeInfo().BaseType != parent);
+            Assert.Equal(typeName, tpA.Name);
+            Assert.Equal(TypeAttributes.Class, tpA.GetTypeInfo().Attributes);
+            Assert.Equal(parent, tpA.GetTypeInfo().BaseType);
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestTypeWithNonPublicAttributeAndBaseTypeCreateTypeInModule()
         {
             string typeName = "testType";
             ModuleBuilder testModuleBuilder;
@@ -50,7 +54,9 @@ namespace System.Reflection.Emit.Tests
             Type parent = myTypeBuilder.CreateTypeInfo().AsType();
             testTypeBuilder = testModuleBuilder.DefineType(typeName, TypeAttributes.NotPublic, parent);
             Type tpA = testTypeBuilder.CreateTypeInfo().AsType();
-            Assert.False(tpA.Name != typeName || tpA.GetTypeInfo().Attributes != (TypeAttributes.NotPublic) || tpA.GetTypeInfo().BaseType != parent);
+            Assert.Equal(typeName, tpA.Name);
+            Assert.Equal(TypeAttributes.NotPublic, tpA.GetTypeInfo().Attributes);
+            Assert.Equal(parent, tpA.GetTypeInfo().BaseType);
         }
 
         [Fact]

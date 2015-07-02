@@ -13,7 +13,7 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderGetConstructor
     {
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionForDeclaringTypeOfConstructorNotGenericTypeDefinition()
         {
             AssemblyName myAsmName =
                 new AssemblyName("TypeBuilderGetMethodTest");
@@ -41,7 +41,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestGetConstructor()
         {
             AssemblyName myAsmName =
                 new AssemblyName("TypeBuilderGetMethodTest");
@@ -72,13 +72,13 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionForTypeNotTypeBuilder()
         {
             Assert.Throws<ArgumentException>(() => { TypeBuilder.GetConstructor(typeof(int), typeof(int).GetConstructor(new Type[0])); });
         }
 
         [Fact]
-        public void NegTest3()
+        public void TestThrowsExceptionForDeclaringTypeOfConstructorNotGenericTypeDefinitionOfType()
         {
             AssemblyName myAsmName =
                 new AssemblyName("TypeBuilderGetMethodTest");
@@ -118,7 +118,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest4()
+        public void TestThrowsExceptionForTypeNotGeneric()
         {
             AssemblyName myAsmName =
                 new AssemblyName("TypeBuilderGetMethodTest");

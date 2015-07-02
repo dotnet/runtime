@@ -32,7 +32,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestForPrivateSetAccessor()
         {
             TypeBuilder myTypeBuilder;
             PropertyBuilder myPropertyBuilder;
@@ -62,7 +62,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestForProtectedSetAccessor()
         {
             TypeBuilder myTypeBuilder;
             PropertyBuilder myPropertyBuilder;
@@ -92,7 +92,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestForInternalSetAccessor()
         {
             TypeBuilder myTypeBuilder;
             PropertyBuilder myPropertyBuilder;
@@ -122,7 +122,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestForPublicStaticSetAccessor()
         {
             TypeBuilder myTypeBuilder;
             PropertyBuilder myPropertyBuilder;
@@ -153,7 +153,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest5()
+        public void TestForPublicInstanceSetAccessor()
         {
             TypeBuilder myTypeBuilder;
             PropertyBuilder myPropertyBuilder;
@@ -183,7 +183,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionForNullMethodBuilder()
         {
             TypeBuilder myTypeBuilder;
             PropertyBuilder myPropertyBuilder;
@@ -198,7 +198,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionForCreateTypeCalled()
         {
             TypeBuilder myTypeBuilder;
             PropertyBuilder myPropertyBuilder;

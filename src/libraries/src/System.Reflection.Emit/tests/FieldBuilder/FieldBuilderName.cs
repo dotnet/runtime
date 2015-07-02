@@ -11,7 +11,7 @@ namespace System.Reflection.Emit.Tests
     public class FieldBuilderName
     {
         [Fact]
-        public void PosTest1()
+        public void TestNameProperty()
         {
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
                 new AssemblyName("FieldBuilderName_Assembly"), AssemblyBuilderAccess.Run);

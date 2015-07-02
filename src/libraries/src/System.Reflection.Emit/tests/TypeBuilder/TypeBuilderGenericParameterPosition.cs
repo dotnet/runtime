@@ -23,7 +23,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestGenericParameterPosition()
         {
             TypeBuilder typebuilder = GetTypeBuilder(TypeName);
             string[] argu = { "argu0", "argu1" };

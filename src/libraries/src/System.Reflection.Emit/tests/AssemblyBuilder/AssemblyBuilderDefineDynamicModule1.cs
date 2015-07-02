@@ -14,7 +14,7 @@ namespace System.Reflection.Emit.Tests
     public class AssemblyGetModuleTests
     {
         [Fact]
-        public void PosTest1()
+        public void TestCreateDynamicModule()
         {
             AssemblyName myAsmName = new AssemblyName("TestAssembly1");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
@@ -22,7 +22,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestDefineDynamicModuleDefined()
         {
             AssemblyName myAsmName = new AssemblyName("TestAssembly2");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
@@ -35,7 +35,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestDefineDynamicModuleWithLargeName()
         {
             AssemblyName myAsmName = new AssemblyName("TestAssembly3");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
@@ -43,7 +43,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionOnEmptyName()
         {
             AssemblyName myAsmName = new AssemblyName("TestAssembly4");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
@@ -51,7 +51,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionOnNullName()
         {
             AssemblyName myAsmName = new AssemblyName("TestAssembly5");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
@@ -59,7 +59,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest3()
+        public void TestThrowsExceptionOnNullTerminatedString()
         {
             AssemblyName myAsmName = new AssemblyName("TestAssembly6");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
@@ -69,7 +69,7 @@ namespace System.Reflection.Emit.Tests
 
 
         [Fact]
-        public void NegTest4()
+        public void TestThrowsExceptionOnMultipleModuleDefinition()
         {
             AssemblyName myAsmName = new AssemblyName("TestAssembly7");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);

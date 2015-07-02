@@ -35,7 +35,7 @@ namespace System.Reflection.Emit.Tests
         private ModuleBuilder _moduleBuilder;
 
         [Fact]
-        public void PosTest1()
+        public void TestWithValidArrayValuesAndVoidReturnTypeMethod()
         {
             CallingConventions[] conventions = new CallingConventions[] {
                 CallingConventions.Any,
@@ -59,7 +59,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithValidArrayValuesAndValueReturnTypeMethod()
         {
             CallingConventions[] conventions = new CallingConventions[] {
                 CallingConventions.Any,
@@ -83,7 +83,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestWithValidArrayValuesAndReferenceReturnTypeMethod()
         {
             CallingConventions[] conventions = new CallingConventions[] {
                 CallingConventions.Any,
@@ -107,7 +107,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestWithValidArrayValuesAndWithValueTypeParameterMethod()
         {
             CallingConventions[] conventions = new CallingConventions[] {
                 CallingConventions.Any,
@@ -149,7 +149,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest5()
+        public void TestWithValidArrayValuesAndReferenceTypeParameterMethod()
         {
             CallingConventions[] conventions = new CallingConventions[] {
                 CallingConventions.Any,
@@ -192,7 +192,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest6()
+        public void TestWithValidValuesJaggedDimensionArray()
         {
             CallingConventions[] conventions = new CallingConventions[] {
                 CallingConventions.Any,
@@ -238,7 +238,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest7()
+        public void TestWithValidValuesOnMultiDimensionArray()
         {
             CallingConventions[] conventions = new CallingConventions[] {
                 CallingConventions.Any,
@@ -284,7 +284,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest8()
+        public void TestWithParameterTypesToNull()
         {
             CallingConventions[] conventions = new CallingConventions[] {
                 CallingConventions.Any,
@@ -308,7 +308,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionWhenNotArray()
         {
             VerificationHelper(
                 TestModuleBuilder,
@@ -345,7 +345,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionOnNullArrayClassOrMethodName()
         {
             VerificationHelper(
                 TestModuleBuilder,

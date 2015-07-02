@@ -33,7 +33,7 @@ namespace System.Reflection.Emit.Tests
         private ModuleBuilder _testModuleBuilder;
 
         [Fact]
-        public void PosTest1()
+        public void TestIlGeneratorOnNonDefaultConstructor()
         {
             int i = 0;
             int randValue = 0;
@@ -71,7 +71,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionWithNoMethodyBody()
         {
             int randValue = 0;
             randValue = TestLibrary.Generator.GetInt16();
@@ -82,7 +82,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionOnDefaultConstructor()
         {
             int randValue = 0;
             randValue = TestLibrary.Generator.GetInt16();

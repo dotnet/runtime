@@ -11,7 +11,7 @@ namespace System.Reflection.Emit.Tests
     public class GenericTypeParameterBuilderSetGenericParameterAttributes
     {
         [Fact]
-        public void PosTest1()
+        public void TestContravariantGenericParameterAttribute()
         {
             AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
@@ -30,10 +30,11 @@ namespace System.Reflection.Emit.Tests
 
 
             TFirst.SetGenericParameterAttributes(gPA);
+            Assert.True(TFirst.GenericParameterAttributes.Equals(gPA));
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestCovariantGenericParameterAttribute()
         {
             AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
@@ -50,10 +51,11 @@ namespace System.Reflection.Emit.Tests
 
             GenericParameterAttributes gPA = GenericParameterAttributes.Covariant;
             TFirst.SetGenericParameterAttributes(gPA);
+            Assert.True(TFirst.GenericParameterAttributes.Equals(gPA));
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestConstraintGenericParameterAttribute()
         {
             AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
@@ -71,10 +73,11 @@ namespace System.Reflection.Emit.Tests
             GenericParameterAttributes gPA = GenericParameterAttributes.DefaultConstructorConstraint;
 
             TFirst.SetGenericParameterAttributes(gPA);
+            Assert.True(TFirst.GenericParameterAttributes.Equals(gPA));
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestGenericParameterAttributeWithNoneOption()
         {
             AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
@@ -92,10 +95,11 @@ namespace System.Reflection.Emit.Tests
             GenericParameterAttributes gPA = GenericParameterAttributes.None;
 
             TFirst.SetGenericParameterAttributes(gPA);
+            Assert.True(TFirst.GenericParameterAttributes.Equals(gPA));
         }
 
         [Fact]
-        public void PosTest5()
+        public void TestNotNullableConstraintGenericParameterAttribute()
         {
             AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
@@ -113,10 +117,11 @@ namespace System.Reflection.Emit.Tests
             GenericParameterAttributes gPA = GenericParameterAttributes.NotNullableValueTypeConstraint;
 
             TFirst.SetGenericParameterAttributes(gPA);
+            Assert.True(TFirst.GenericParameterAttributes.Equals(gPA));
         }
 
         [Fact]
-        public void PosTest6()
+        public void TestReferenceConstraintGenericParameterAttribute()
         {
             AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
@@ -134,10 +139,11 @@ namespace System.Reflection.Emit.Tests
             GenericParameterAttributes gPA = GenericParameterAttributes.ReferenceTypeConstraint;
 
             TFirst.SetGenericParameterAttributes(gPA);
+            Assert.True(TFirst.GenericParameterAttributes.Equals(gPA));
         }
 
         [Fact]
-        public void PosTest7()
+        public void TestSpecialConstraintMaskGenericParameterAttribute()
         {
             AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
@@ -155,10 +161,11 @@ namespace System.Reflection.Emit.Tests
             GenericParameterAttributes gPA = GenericParameterAttributes.SpecialConstraintMask;
 
             TFirst.SetGenericParameterAttributes(gPA);
+            Assert.True(TFirst.GenericParameterAttributes.Equals(gPA));
         }
 
         [Fact]
-        public void PosTest8()
+        public void TestVarianceMaskGenericParameterAttribute()
         {
             AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
@@ -176,6 +183,7 @@ namespace System.Reflection.Emit.Tests
             GenericParameterAttributes gPA = GenericParameterAttributes.VarianceMask;
 
             TFirst.SetGenericParameterAttributes(gPA);
+            Assert.True(TFirst.GenericParameterAttributes.Equals(gPA));
         }
     }
 }

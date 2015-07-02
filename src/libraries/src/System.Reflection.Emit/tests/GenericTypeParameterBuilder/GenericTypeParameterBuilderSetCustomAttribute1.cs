@@ -11,7 +11,7 @@ namespace System.Reflection.Emit.Tests
     public class GenericTypeParameterBuilderSetCustomAttribute1
     {
         [Fact]
-        public void PosTest1()
+        public void TestSetCustomAttribute()
         {
             AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
@@ -33,7 +33,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionOnNullConstructorInfo()
         {
             AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
@@ -54,13 +54,11 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionForNullByteArray()
         {
             AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
             ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, myAsmName.Name);
-
-            Type baseType = typeof(ExampleBase);
 
             TypeBuilder myType = myModule.DefineType("Sample", TypeAttributes.Public);
 
@@ -68,10 +66,9 @@ namespace System.Reflection.Emit.Tests
             GenericTypeParameterBuilder[] typeParams = myType.DefineGenericParameters(typeParamNames);
 
             GenericTypeParameterBuilder TFirst = typeParams[0];
+            ConstructorInfo con = typeof(HelperAttribute).GetConstructor(new Type[] { });
 
-            byte[] binaryAttribute = new byte[128];
-
-            Assert.Throws<ArgumentNullException>(() => { TFirst.SetCustomAttribute(null, binaryAttribute); });
+            Assert.Throws<ArgumentNullException>(() => { TFirst.SetCustomAttribute(con, null); });
         }
     }
 

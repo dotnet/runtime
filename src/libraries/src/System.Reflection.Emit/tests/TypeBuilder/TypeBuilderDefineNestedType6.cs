@@ -39,7 +39,7 @@ namespace System.Reflection.Emit.Tests
                                                        };
 
         [Fact]
-        public void PosTest1()
+        public void TestDefineNestedType()
         {
             ModuleBuilder modBuilder;
             TypeBuilder typeBuilder;
@@ -77,7 +77,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithEmbeddedNullsInName()
         {
             ModuleBuilder modBuilder;
             TypeBuilder typeBuilder;
@@ -110,7 +110,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestWithTypeAttributes()
         {
             ModuleBuilder modBuilder;
             TypeBuilder typeBuilder;
@@ -151,7 +151,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestWithNullparentType()
         {
             ModuleBuilder modBuilder;
             TypeBuilder typeBuilder;
@@ -180,7 +180,7 @@ namespace System.Reflection.Emit.Tests
 
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionForNullName()
         {
             ModuleBuilder modBuilder;
             TypeBuilder typeBuilder;
@@ -206,7 +206,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionForEmptyName()
         {
             ModuleBuilder modBuilder;
             TypeBuilder typeBuilder;

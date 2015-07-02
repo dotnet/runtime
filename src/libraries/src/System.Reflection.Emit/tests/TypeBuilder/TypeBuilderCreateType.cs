@@ -52,7 +52,7 @@ namespace System.Reflection.Emit.Tests
                                                        };
 
         [Fact]
-        public void PosTest1()
+        public void TestCreateType()
         {
             ModuleBuilder modBuilder;
             TypeBuilder typeBuilder;
@@ -76,7 +76,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestCreateTypeUsingAllTypeAttributes()
         {
             ModuleBuilder modBuilder;
             TypeBuilder typeBuilder;
@@ -103,7 +103,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestCreateTypeUsingNestedType()
         {
             ModuleBuilder modBuilder;
             TypeBuilder typeBuilder;
@@ -132,7 +132,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestCreateTypeUsingGenericType()
         {
             ModuleBuilder modBuilder;
             TypeBuilder typeBuilder;
@@ -162,7 +162,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionForInvalidTypeAttributes()
         {
             ModuleBuilder modBuilder;
             TypeBuilder typeBuilder;

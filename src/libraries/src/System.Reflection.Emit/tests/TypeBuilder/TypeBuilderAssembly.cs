@@ -23,7 +23,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestForAssemblyProperty()
         {
             string asmName = "assemblyname";
             TypeBuilder typebuilder = GetTypeBuilder(asmName, TypeName);

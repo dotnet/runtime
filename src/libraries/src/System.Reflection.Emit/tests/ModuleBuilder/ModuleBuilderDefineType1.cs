@@ -13,7 +13,7 @@ namespace System.Reflection.Emit.Tests
     public class ModuleBuilderDefineType1
     {
         [Fact]
-        public void PosTest1()
+        public void TestDefineType()
         {
             string typeName = "testType";
             ModuleBuilder testModuleBuilder;
@@ -25,7 +25,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestWithNullName()
         {
             string typeName = null;
             ModuleBuilder testModuleBuilder;
@@ -35,7 +35,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestWithTypeWithSameNameAlreadyExists()
         {
             string typeName = "testType";
             ModuleBuilder testModuleBuilder;
