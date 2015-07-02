@@ -1368,13 +1368,15 @@ mono_threadpool_ms_remove_domain_jobs (MonoDomain *domain, int timeout)
 void
 mono_threadpool_ms_suspend (void)
 {
-	threadpool->suspended = TRUE;
+	if (threadpool)
+		threadpool->suspended = TRUE;
 }
 
 void
 mono_threadpool_ms_resume (void)
 {
-	threadpool->suspended = FALSE;
+	if (threadpool)
+		threadpool->suspended = FALSE;
 }
 
 void
