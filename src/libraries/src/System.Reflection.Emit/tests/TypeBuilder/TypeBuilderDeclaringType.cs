@@ -25,7 +25,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestOnRootType()
         {
             TypeBuilder typebuilder = GetTypeBuilder();
             Type type = typebuilder.DeclaringType;
@@ -33,12 +33,13 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestOnNestedType()
         {
             TypeBuilder typebuilder = GetTypeBuilder();
             TypeBuilder typebuilder2 = typebuilder.DefineNestedType("typename");
             Type type = typebuilder2.DeclaringType;
-            Assert.False((type == null) || (type.Name != "TypeName"));
+            Assert.NotNull(type);
+            Assert.Equal("TypeName", type.Name);
         }
     }
 }

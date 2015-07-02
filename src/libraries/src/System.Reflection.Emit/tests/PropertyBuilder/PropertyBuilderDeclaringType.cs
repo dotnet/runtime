@@ -36,7 +36,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestPropertyInRootClass()
         {
             Type actualType;
             TypeBuilder myTypeBuilder;
@@ -57,7 +57,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestPropertyInNestedClass()
         {
             Type actualType;
             TypeBuilder myTypeBuilder, myNestedTypeBuilder;
@@ -82,7 +82,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestPropertyInRootInterface()
         {
             Type actualType;
             TypeBuilder myTypeBuilder;
@@ -102,7 +102,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestPropertyInDerivedClass()
         {
             Type actualType;
             TypeBuilder myTypeBuilder, myDerivedTypeBuilder;
@@ -128,7 +128,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest5()
+        public void TestPropertyInBaseClass()
         {
             Type actualType;
             TypeBuilder myTypeBuilder, myDerivedTypeBuilder;

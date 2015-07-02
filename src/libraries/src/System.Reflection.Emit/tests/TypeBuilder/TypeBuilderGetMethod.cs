@@ -13,7 +13,7 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderGetMethod
     {
         [Fact]
-        public void PosTest1()
+        public void TestOnGenericTypeMethod()
         {
             AssemblyName myAsmName =
                 new AssemblyName("TypeBuilderGetMethodTest");
@@ -45,7 +45,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestOnConstructedTypeMethod()
         {
             AssemblyName myAsmName =
                 new AssemblyName("TypeBuilderGetMethodTest");
@@ -81,13 +81,13 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionForTypeNotTypeBuilder()
         {
             Assert.Throws<ArgumentException>(() => { TypeBuilder.GetMethod(typeof(int), typeof(int).GetMethod("Parse", new Type[] { typeof(string) })); });
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionForMethodDefinitionNotInTypeGenericDefinition()
         {
             AssemblyName myAsmName =
                 new AssemblyName("TypeBuilderGetMethodTest");
@@ -123,7 +123,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest3()
+        public void TestThrowsExceptionOnMethodNotGenericTypeDefinition()
         {
             AssemblyName myAsmName =
                 new AssemblyName("TypeBuilderGetMethodTest");
@@ -168,7 +168,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest4()
+        public void TestThrowsExceptionForTypeIsNotGeneric()
         {
             AssemblyName myAsmName =
                 new AssemblyName("TypeBuilderGetMethodTest");

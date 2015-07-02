@@ -29,7 +29,7 @@ namespace System.Reflection.Emit.Tests
         private TypeBuilder _typeBuilder;
 
         [Fact]
-        public void PosTest1()
+        public void TestFieldTypeProperty()
         {
             VerificationHelper(TypeBuilder.DefineField("Field_PosTest1_1", typeof(object), FieldAttributes.Public), typeof(object));
             VerificationHelper(TypeBuilder.DefineField("Field_PosTest1_2", typeof(int), FieldAttributes.Public), typeof(int));

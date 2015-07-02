@@ -24,7 +24,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionForNotSupportedMethod()
         {
             CreateCallee();
             _myEnumBuilder = _myModuleBuilder.DefineEnum("myEnum", TypeAttributes.Public, typeof(int));

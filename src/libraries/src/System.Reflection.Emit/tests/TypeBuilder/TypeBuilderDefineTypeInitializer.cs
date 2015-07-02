@@ -14,7 +14,7 @@ namespace System.Reflection.Emit.Tests
     public class MethodBuilderDefineTypeInitializer
     {
         [Fact]
-        public void PosTest1()
+        public void TestDefineTypeInitializer()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName();
@@ -49,7 +49,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionForCreateTypeCalled()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName();

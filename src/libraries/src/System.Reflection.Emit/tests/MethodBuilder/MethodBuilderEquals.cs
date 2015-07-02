@@ -13,7 +13,7 @@ namespace System.Reflection.Emit.Tests
     public class MethodBuilderEquals
     {
         [Fact]
-        public void PosTest1()
+        public void TestRandomObject()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName();
@@ -30,7 +30,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithDifferentNames()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName();
@@ -50,7 +50,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestWithDifferentAttributes()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName();
@@ -72,7 +72,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestWithDifferentSignatures()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName();
@@ -92,7 +92,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest5()
+        public void TestWithEqualObjects()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName();
@@ -112,7 +112,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest6()
+        public void TestWithDifferentGenericArguments()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName();

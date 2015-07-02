@@ -36,63 +36,63 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestWithIntType()
         {
             Type expectedType = typeof(int);
             ExecutePosTest(expectedType);
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithByteType()
         {
             Type expectedType = typeof(byte);
             ExecutePosTest(expectedType);
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestWithDateTimeType()
         {
             Type expectedType = typeof(DateTime);
             ExecutePosTest(expectedType);
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestWithDoubleType()
         {
             Type expectedType = typeof(double);
             ExecutePosTest(expectedType);
         }
 
         [Fact]
-        public void PosTest5()
+        public void TestWithStringType()
         {
             Type expectedType = typeof(string);
             ExecutePosTest(expectedType);
         }
 
         [Fact]
-        public void PosTest6()
+        public void TestWithArrayType()
         {
             Type expectedType = typeof(int[]);
             ExecutePosTest(expectedType);
         }
 
         [Fact]
-        public void PosTest7()
+        public void TestWithInterfaceType()
         {
             Type expectedType = typeof(IFoo);
             ExecutePosTest(expectedType);
         }
 
         [Fact]
-        public void PosTest8()
+        public void TestWithEnumType()
         {
             Type expectedType = typeof(Colors);
             ExecutePosTest(expectedType);
         }
 
         [Fact]
-        public void PosTest9()
+        public void TestWithDelegateType()
         {
             Type expectedType = typeof(MySelector);
             ExecutePosTest(expectedType);

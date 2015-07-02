@@ -12,43 +12,47 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderMakeArrayType2
     {
         [Fact]
-        public void PosTest1()
+        public void TestWithInstanceType()
         {
             ModuleBuilder testModBuilder = CreateModuleBuilder();
             TypeBuilder testTyBuilder = testModBuilder.DefineType("testType");
             Type arrayType = testTyBuilder.MakeArrayType(1);
-            Assert.False(arrayType.GetTypeInfo().BaseType != typeof(Array) || arrayType.Name != "testType[*]");
+            Assert.Equal(typeof(Array), arrayType.GetTypeInfo().BaseType);
+            Assert.Equal("testType[*]", arrayType.Name);
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithMultiDimensionInstanceType()
         {
             ModuleBuilder testModBuilder = CreateModuleBuilder();
             TypeBuilder testTyBuilder = testModBuilder.DefineType("testType");
             Type arrayType = testTyBuilder.MakeArrayType(3);
-            Assert.False(arrayType.GetTypeInfo().BaseType != typeof(Array) || arrayType.Name != "testType[,,]");
+            Assert.Equal(typeof(Array), arrayType.GetTypeInfo().BaseType);
+            Assert.Equal("testType[,,]", arrayType.Name);
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestWithAbstractType()
         {
             ModuleBuilder testModBuilder = CreateModuleBuilder();
             TypeBuilder testTyBuilder = testModBuilder.DefineType("testType", TypeAttributes.Public | TypeAttributes.Abstract);
             Type arrayType = testTyBuilder.MakeArrayType(1);
-            Assert.False(arrayType.GetTypeInfo().BaseType != typeof(Array) || arrayType.Name != "testType[*]");
+            Assert.Equal(typeof(Array), arrayType.GetTypeInfo().BaseType);
+            Assert.Equal("testType[*]", arrayType.Name);
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestWithMultiDimensionAndAbstractType()
         {
             ModuleBuilder testModBuilder = CreateModuleBuilder();
             TypeBuilder testTyBuilder = testModBuilder.DefineType("testType", TypeAttributes.Public | TypeAttributes.Abstract);
             Type arrayType = testTyBuilder.MakeArrayType(3);
-            Assert.False(arrayType.GetTypeInfo().BaseType != typeof(Array) || arrayType.Name != "testType[,,]");
+            Assert.Equal(typeof(Array), arrayType.GetTypeInfo().BaseType);
+            Assert.Equal("testType[,,]", arrayType.Name);
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionForZeroRank()
         {
             ModuleBuilder testModBuilder = CreateModuleBuilder();
             TypeBuilder testTyBuilder = testModBuilder.DefineType("testType", TypeAttributes.Public | TypeAttributes.Abstract);
@@ -56,7 +60,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExcetpionForNegativeRank()
         {
             ModuleBuilder testModBuilder = CreateModuleBuilder();
             TypeBuilder testTyBuilder = testModBuilder.DefineType("testType");

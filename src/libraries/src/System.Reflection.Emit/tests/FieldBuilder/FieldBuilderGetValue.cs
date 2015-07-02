@@ -29,7 +29,7 @@ namespace System.Reflection.Emit.Tests
         private TypeBuilder _typeBuilder;
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionOnNull()
         {
             FieldBuilder field = TypeBuilder.DefineField("Field_NegTest1", typeof(int), FieldAttributes.Public);
             Assert.Throws<NotSupportedException>(() => { field.GetValue(null); });

@@ -28,7 +28,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestILGeneratorOnNonDefaultConstructor()
         {
             int i = 0;
             MethodAttributes[] attributes = new MethodAttributes[] {
@@ -64,8 +64,9 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionWithNoMethodyBody()
         {
+            // InvalidOperationException should be thrown when The constructor has MethodAttributes or MethodImplAttributes flags indicating that it should not have a method body.
             Assert.Throws<InvalidOperationException>(() =>
             {
                 ILGenerator generator = CreateConstructorBuilder("NegTest1_Type1", MethodAttributes.PinvokeImpl).GetILGenerator();
@@ -73,7 +74,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionOnDefaultConstructor()
         {
             TypeBuilder type = TestModuleBuilder.DefineType("NegTest2_Type1");
 

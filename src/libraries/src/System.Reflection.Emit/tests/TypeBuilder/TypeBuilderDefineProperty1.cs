@@ -13,7 +13,7 @@ namespace System.Reflection.Emit.Tests
         private static Type[] s_emptyTypes = new Type[0];
 
         [Fact]
-        public void PosTest1()
+        public void TestDefineProperty()
         {
             AssemblyName an = new AssemblyName();
             an.Name = "DynamicRandomAssembly";
@@ -43,7 +43,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestDefinePropertyWithGetAccessor()
         {
             AssemblyName an = new AssemblyName();
             an.Name = "Assembly1";
@@ -72,7 +72,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionOnEmptyName()
         {
             AssemblyName an = new AssemblyName();
             an.Name = "DynamicRandomAssembly";
@@ -88,7 +88,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionOnNullName()
         {
             AssemblyName an = new AssemblyName();
             an.Name = "DynamicRandomAssembly";
@@ -106,7 +106,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest3()
+        public void TestThrowsExceptionOnCreateTypeCalled()
         {
             AssemblyName an = new AssemblyName();
             an.Name = "DynamicRandomAssembly";

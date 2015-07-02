@@ -13,26 +13,34 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderDefineProperty
     {
         [Fact]
-        public void PosTest1() { GeneralPositiveTest(PropertyAttributes.None); }
-        [Fact]
-        public void PosTest2() { GeneralPositiveTest(PropertyAttributes.HasDefault); }
-        [Fact]
-        public void PosTest7() { GeneralPositiveTest(PropertyAttributes.RTSpecialName); }
-        [Fact]
-        public void PosTest8() { GeneralPositiveTest(PropertyAttributes.HasDefault); }
-        [Fact]
-        public void PosTest9() { GeneralPositiveTest((PropertyAttributes)(-1)); }
-        [Fact]
-        public void PosTest10() { GeneralPositiveTest((PropertyAttributes)0x0800); }
+        public void TestDefinePropertyWithAttribute1() { GeneralPositiveTest(PropertyAttributes.None); }
 
         [Fact]
-        public void NegTest1() { GeneralNegativeTest(null, typeof(ArgumentNullException)); }
+        public void TestDefinePropertyWithAttribute2() { GeneralPositiveTest(PropertyAttributes.HasDefault); }
+
         [Fact]
-        public void NegTest2() { GeneralNegativeTest(string.Empty, typeof(ArgumentException)); }
+        public void TestDefinePropertyWithAttribute3() { GeneralPositiveTest(PropertyAttributes.RTSpecialName); }
+
         [Fact]
-        public void NegTest3() { GeneralNegativeTest("\0", typeof(ArgumentException)); }
+        public void TestDefinePropertyWithAttribute4() { GeneralPositiveTest(PropertyAttributes.HasDefault); }
+
         [Fact]
-        public void NegTest4() { GeneralNegativeTest("\0Testing", typeof(ArgumentException)); }
+        public void TestDefinePropertyWithAttribute5() { GeneralPositiveTest((PropertyAttributes)(-1)); }
+
+        [Fact]
+        public void TestDefinePropertyWithAttribute6() { GeneralPositiveTest((PropertyAttributes)0x0800); }
+
+        [Fact]
+        public void TestThrowsExceptionForNullName() { GeneralNegativeTest(null, typeof(ArgumentNullException)); }
+
+        [Fact]
+        public void TestThrowsExceptionForEmptyName() { GeneralNegativeTest(string.Empty, typeof(ArgumentException)); }
+
+        [Fact]
+        public void TestThrowsExceptionForNullTerminatedString() { GeneralNegativeTest("\0", typeof(ArgumentException)); }
+
+        [Fact]
+        public void TestThrowsExceptionForNullCharacterInString() { GeneralNegativeTest("\0Testing", typeof(ArgumentException)); }
 
         public void GeneralPositiveTest(PropertyAttributes attr)
         {

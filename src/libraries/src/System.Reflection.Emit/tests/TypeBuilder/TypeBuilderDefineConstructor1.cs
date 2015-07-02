@@ -29,85 +29,85 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestForDefineConstructor1()
         {
             ExePosTest(TypeAttributes.Public | TypeAttributes.Class, MethodAttributes.Public, CallingConventions.HasThis, BindingFlags.Public | BindingFlags.Instance);
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestForDefineConstructor2()
         {
             ExePosTest(TypeAttributes.Class | TypeAttributes.Public, MethodAttributes.Static, new Type[0], CallingConventions.Standard, BindingFlags.Static | BindingFlags.NonPublic);
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestForDefineConstructor3()
         {
             ExePosTest(TypeAttributes.Class | TypeAttributes.Public, MethodAttributes.Family, CallingConventions.HasThis, BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestForDefineConstructor4()
         {
             ExePosTest(TypeAttributes.Class | TypeAttributes.Public, MethodAttributes.Assembly, CallingConventions.HasThis, BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
         [Fact]
-        public void PosTest5()
+        public void TestForDefineConstructor5()
         {
             ExePosTest(TypeAttributes.Class | TypeAttributes.Public, MethodAttributes.Private, CallingConventions.HasThis, BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
         [Fact]
-        public void PosTest6()
+        public void TestForDefineConstructor6()
         {
             ExePosTest(TypeAttributes.Class | TypeAttributes.Public, MethodAttributes.PrivateScope, CallingConventions.HasThis, BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
         [Fact]
-        public void PosTest7()
+        public void TestForDefineConstructor7()
         {
             ExePosTest(TypeAttributes.Class | TypeAttributes.Public, MethodAttributes.FamORAssem, CallingConventions.HasThis, BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
         [Fact]
-        public void PosTest8()
+        public void TestForDefineConstructor8()
         {
             ExePosTest(TypeAttributes.Class | TypeAttributes.Public, MethodAttributes.FamANDAssem, CallingConventions.HasThis, BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
         [Fact]
-        public void PosTest9()
+        public void TestForDefineConstructor9()
         {
             ExePosTest(TypeAttributes.Class | TypeAttributes.Public, MethodAttributes.Final | MethodAttributes.Public, CallingConventions.HasThis, BindingFlags.Instance | BindingFlags.Public);
         }
 
         [Fact]
-        public void PosTest10()
+        public void TestForDefineConstructor10()
         {
             ExePosTest(TypeAttributes.Class | TypeAttributes.Public, MethodAttributes.Final | MethodAttributes.Family, CallingConventions.HasThis, BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
         [Fact]
-        public void PosTest11()
+        public void TestForDefineConstructor11()
         {
             ExePosTest(TypeAttributes.Class | TypeAttributes.Public, MethodAttributes.SpecialName | MethodAttributes.Family, CallingConventions.HasThis, BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
         [Fact]
-        public void PosTest12()
+        public void TestForDefineConstructor12()
         {
             ExePosTest(TypeAttributes.Class | TypeAttributes.Public, MethodAttributes.UnmanagedExport | MethodAttributes.Family, CallingConventions.HasThis, BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
         [Fact]
-        public void PosTest13()
+        public void TestForDefineConstructor13()
         {
             ExePosTest(TypeAttributes.Class | TypeAttributes.Public, MethodAttributes.RTSpecialName | MethodAttributes.Family, CallingConventions.HasThis, BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
         [Fact]
-        public void PosTest14()
+        public void TestForDefineConstructor14()
         {
             ExePosTest(TypeAttributes.Class | TypeAttributes.Public, MethodAttributes.HideBySig | MethodAttributes.Family, CallingConventions.HasThis, BindingFlags.Instance | BindingFlags.NonPublic);
         }
@@ -164,7 +164,7 @@ namespace System.Reflection.Emit.Tests
 
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionForCreateTypeCalled()
         {
             TypeBuilder testTypeBuilder;
 
@@ -177,14 +177,13 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionForInterface()
         {
             TypeBuilder testTypeBuilder;
 
             testTypeBuilder = RetriveTestTypeBuilder(TypeAttributes.Public |
                                                                              TypeAttributes.Interface |
                                                                              TypeAttributes.Abstract);
-            testTypeBuilder.CreateTypeInfo().AsType();
             Assert.Throws<InvalidOperationException>(() =>
             {
                 testTypeBuilder.DefineConstructor(MethodAttributes.Public,

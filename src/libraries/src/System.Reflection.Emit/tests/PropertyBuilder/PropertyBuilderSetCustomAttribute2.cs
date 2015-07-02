@@ -33,7 +33,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestSetCustomAttribute()
         {
             MethodAttributes getMethodAttr = MethodAttributes.Public |
                                              MethodAttributes.SpecialName |
@@ -96,7 +96,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionOnNullConstructorInfo()
         {
             MethodAttributes getMethodAttr = MethodAttributes.Public |
                                              MethodAttributes.SpecialName |
@@ -113,7 +113,7 @@ namespace System.Reflection.Emit.Tests
 
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionOnCreateTypeCalled()
         {
             MethodAttributes getMethodAttr = MethodAttributes.Public |
                                              MethodAttributes.SpecialName |

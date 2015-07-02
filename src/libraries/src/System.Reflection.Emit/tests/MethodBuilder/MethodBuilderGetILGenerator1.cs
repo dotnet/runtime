@@ -20,272 +20,284 @@ namespace System.Reflection.Emit.Tests
         private const int MinStringLength = 1;
         private const int MaxStringLength = 128;
 
-        private TypeBuilder TestTypeBuilder
+        private TypeBuilder GetTestTypeBuilder()
         {
-            get
-            {
-                if (null == _testTypeBuilder)
-                {
-                    AssemblyName assemblyName = new AssemblyName(TestDynamicAssemblyName);
-                    AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
-                        assemblyName, TestAssemblyBuilderAccess);
+            AssemblyName assemblyName = new AssemblyName(TestDynamicAssemblyName);
+            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
+                assemblyName, TestAssemblyBuilderAccess);
 
-                    ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, TestDynamicModuleName);
-                    _testTypeBuilder = moduleBuilder.DefineType(TestDynamicTypeName, TestTypeAttributes);
-                }
-
-                return _testTypeBuilder;
-            }
+            ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, TestDynamicModuleName);
+            return moduleBuilder.DefineType(TestDynamicTypeName, TestTypeAttributes);
         }
 
-        private TypeBuilder _testTypeBuilder;
-
         [Fact]
-        public void PosTest1()
+        public void TestWithPublicAttribute()
         {
             string methodName = null;
 
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Public);
 
             Assert.NotNull(builder.GetILGenerator());
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithAssemblyAttribute()
         {
             string methodName = null;
 
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Assembly);
 
             Assert.NotNull(builder.GetILGenerator());
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestWithCheckAccessOnOverride()
         {
             string methodName = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.CheckAccessOnOverride);
 
             Assert.NotNull(builder.GetILGenerator());
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestWithFamAndAssem()
         {
             string methodName = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.FamANDAssem);
 
             Assert.NotNull(builder.GetILGenerator());
         }
 
         [Fact]
-        public void PosTest5()
+        public void TestWithFamily()
         {
             string methodName = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Family);
 
             Assert.NotNull(builder.GetILGenerator());
         }
 
         [Fact]
-        public void PosTest6()
+        public void TestWithFamOrAssem()
         {
             string methodName = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.FamORAssem);
 
             Assert.NotNull(builder.GetILGenerator());
         }
 
         [Fact]
-        public void PosTest7()
+        public void TestWithFinal()
         {
             string methodName = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Final);
 
             Assert.NotNull(builder.GetILGenerator());
         }
 
         [Fact]
-        public void PosTest8()
+        public void TestWithHasSecurity()
         {
             string methodName = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.HasSecurity);
 
             Assert.NotNull(builder.GetILGenerator());
         }
 
         [Fact]
-        public void PosTest9()
+        public void TestWithHideBySig()
         {
             string methodName = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.HideBySig);
 
             Assert.NotNull(builder.GetILGenerator());
         }
 
         [Fact]
-        public void PosTest10()
+        public void TestWithMemberAccessMask()
         {
             string methodName = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.MemberAccessMask);
 
             Assert.NotNull(builder.GetILGenerator());
         }
 
         [Fact]
-        public void PosTest11()
+        public void TestWithNewSlot()
         {
             string methodName = null;
 
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.NewSlot);
 
             Assert.NotNull(builder.GetILGenerator());
         }
 
         [Fact]
-        public void PosTest12()
+        public void TestWithPrivate()
         {
             string methodName = null;
 
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Private);
 
             Assert.NotNull(builder.GetILGenerator());
         }
 
         [Fact]
-        public void PosTest13()
+        public void TestWithPrivateScope()
         {
             string methodName = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.PrivateScope);
 
             Assert.NotNull(builder.GetILGenerator());
         }
 
         [Fact]
-        public void PosTest14()
+        public void TestWithRequireSecObject()
         {
             string methodName = null;
 
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.RequireSecObject);
 
             Assert.NotNull(builder.GetILGenerator());
         }
 
         [Fact]
-        public void PosTest16()
+        public void TestWithReuseSlot()
         {
             string methodName = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.ReuseSlot);
 
             Assert.NotNull(builder.GetILGenerator());
         }
 
         [Fact]
-        public void PosTest17()
+        public void TestWithRTSpecialName()
         {
             string methodName = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.RTSpecialName);
 
             Assert.NotNull(builder.GetILGenerator());
         }
 
         [Fact]
-        public void PosTest18()
+        public void TestWithSpecialName()
         {
             string methodName = null;
 
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.SpecialName);
 
             Assert.NotNull(builder.GetILGenerator());
         }
 
         [Fact]
-        public void PosTest19()
+        public void TestWithStatic()
         {
             string methodName = null;
 
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Static);
             Assert.NotNull(builder.GetILGenerator());
         }
 
         [Fact]
-        public void PosTest20()
+        public void TestWithUnManagedExport()
         {
             string methodName = null;
 
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.UnmanagedExport);
 
             Assert.NotNull(builder.GetILGenerator());
         }
 
         [Fact]
-        public void PosTest21()
+        public void TestWithVirtual()
         {
             string methodName = null;
 
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Virtual);
 
             Assert.NotNull(builder.GetILGenerator());
         }
 
         [Fact]
-        public void PosTest22()
+        public void TestWithVTableLayoutMask()
         {
             string methodName = null;
 
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.VtableLayoutMask);
 
             Assert.NotNull(builder.GetILGenerator());
         }
 
         [Fact]
-        public void PosTest23()
+        public void TestWithCombinations()
         {
             string methodName = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Assembly |
                 MethodAttributes.CheckAccessOnOverride |
                 MethodAttributes.FamORAssem |
@@ -306,24 +318,26 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionForPInvoke()
         {
             string methodName = null;
 
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.PinvokeImpl);
 
             Assert.Throws<InvalidOperationException>(() => { ILGenerator generator = builder.GetILGenerator(); });
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionOnInvalidMethodAttributeSet()
         {
             string methodName = null;
 
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Abstract |
                 MethodAttributes.PinvokeImpl);
 

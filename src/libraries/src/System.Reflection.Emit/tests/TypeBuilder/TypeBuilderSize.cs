@@ -12,35 +12,35 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderSize
     {
         [Fact]
-        public void PosTest1()
+        public void TestSizeAssignedInGenericTypeBuilder()
         {
             TypeBuilder myBuilder = CreateTypeBuilderWithGenericFilledSize();
             Assert.Equal(100, myBuilder.Size);
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestDefaultSizeIsZeroInGenericTypeBuilder()
         {
             TypeBuilder myBuilder = CreateTypeBuilderWithGenericIgnoreSize();
             Assert.Equal(0, myBuilder.Size);
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestSizeAssignedInNonGenericTypeBuilder()
         {
             TypeBuilder myBuilder = CreateTypeBuilderWithoutGenericFilledSize();
             Assert.Equal(100, myBuilder.Size);
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestDefaultSizeIsZeroInNonGenericTypeBuilder()
         {
             TypeBuilder myBuilder = CreateTypeBuilderWithoutGenericFilledSize();
             Assert.Equal(100, myBuilder.Size);
         }
 
         [Fact]
-        public void PosTest5()
+        public void TestSizeAssignedInNestedTypeBuilder()
         {
             TypeBuilder myBuilder = GetNestedTypeBuilder();
             Assert.Equal(100, myBuilder.Size);

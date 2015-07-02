@@ -11,7 +11,7 @@ namespace System.Reflection.Emit.Tests
     public class GenericTypeParameterBuilderMakeByRefType
     {
         [Fact]
-        public void PosTest1()
+        public void TestMakeByRefType()
         {
             AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);

@@ -22,7 +22,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestAssemblyQualifiedNameProperty()
         {
             var myModuleBuilder = CreateCallee();
             var myEnumBuilder = myModuleBuilder.DefineEnum("myEnum", TypeAttributes.Public, typeof(int));

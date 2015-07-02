@@ -33,7 +33,7 @@ namespace System.Reflection.Emit.Tests
         private TypeBuilder _typeBuilder;
 
         [Fact]
-        public void PosTest1()
+        public void TestSetCustomAttribute()
         {
             FieldBuilder field = TypeBuilder.DefineField("Field_PosTest1", typeof(object), FieldAttributes.Public);
             ConstructorInfo con = typeof(FBTestAttribute2).GetConstructor(new Type[] { });
@@ -43,14 +43,14 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionForNullBuilder()
         {
             FieldBuilder field = TypeBuilder.DefineField("Field_NegTest1", typeof(object), FieldAttributes.Public);
             Assert.Throws<ArgumentNullException>(() => { field.SetCustomAttribute(null); });
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionForCreateTypeCalled()
         {
             FieldBuilder field = TypeBuilder.DefineField("Field_NegTest2", typeof(object), FieldAttributes.Public);
             ConstructorInfo con = typeof(FBTestAttribute2).GetConstructor(new Type[] { });

@@ -11,7 +11,7 @@ namespace System.Reflection.Emit.Tests
     public class ConstructorBuilderInitLocals
     {
         [Fact]
-        public void PosTest1()
+        public void TestInitLocalsEqualsZero()
         {
             AssemblyName an = new AssemblyName();
             an.Name = "DynamicRandomAssembly";
@@ -33,7 +33,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestInitLocalsNonNull()
         {
             AssemblyName an = new AssemblyName();
             an.Name = "DynamicRandomAssembly";

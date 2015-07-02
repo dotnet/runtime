@@ -12,14 +12,14 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderIsGenericTypeDefinition
     {
         [Fact]
-        public void PosTest1()
+        public void TestOnGenericType()
         {
             TypeBuilder myBuilder = CreateTypeBuilderWithGeneric();
             Assert.True(myBuilder.IsGenericTypeDefinition);
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestOnNonGenericType()
         {
             TypeBuilder myBuilder = CreateTypeBuilderWithoutGeneric();
             Assert.False(myBuilder.IsGenericTypeDefinition);

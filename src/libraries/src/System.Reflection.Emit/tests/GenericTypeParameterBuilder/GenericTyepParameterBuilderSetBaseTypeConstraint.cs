@@ -11,7 +11,7 @@ namespace System.Reflection.Emit.Tests
     public class GenericTypeParameterBuilderSetBaseTypeConstraint
     {
         [Fact]
-        public void PosTest1()
+        public void TestWithStringBaseType()
         {
             AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
@@ -35,7 +35,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithNullArgument()
         {
             AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);

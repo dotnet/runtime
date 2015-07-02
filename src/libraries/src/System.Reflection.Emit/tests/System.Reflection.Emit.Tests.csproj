@@ -21,7 +21,6 @@
     <Compile Include="AssemblyBuilder\AssemblyBuilderDefineDynamicModule1.cs" />
     <Compile Include="AssemblyBuilder\AssemblyBuilderGetManifestResourceNames.cs" />
     <Compile Include="AssemblyBuilder\AssemblyBuilderGetManifestResourceStream1.cs" />
-    <Compile Include="AssemblyBuilder\AssemblyBuilderGetManifestResourceStream2.cs" />
     <Compile Include="AssemblyBuilder\AssemblyBuilderSetCustomAttribute.cs" />
     <Compile Include="AssemblyBuilder\AssemblyBuilderSetCustomAttribute2.cs" />
     <Compile Include="ConstructorBuilder\ConstructorBuilderAttributes.cs" />

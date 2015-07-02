@@ -11,7 +11,7 @@ namespace System.Reflection.Emit.Tests
     public class GenericTypeParameterBuilderMakeGenericType
     {
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionForNullTypeArguments()
         {
             AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
@@ -29,7 +29,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionForOneMemberArray()
         {
             AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
@@ -49,7 +49,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest3()
+        public void TestThrowsExceptionForIncorrectNumberOfTypeParams()
         {
             AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);

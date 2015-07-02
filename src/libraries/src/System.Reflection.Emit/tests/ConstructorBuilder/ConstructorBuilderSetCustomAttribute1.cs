@@ -24,7 +24,7 @@ namespace System.Reflection.Emit.Tests
     public class ConstructorBuilderSetCustomAttribute1
     {
         [Fact]
-        public void PosTest1()
+        public void TestSetCustomAttribute()
         {
             AssemblyName TestAssemblyName = new AssemblyName("TestAssembly");
             AssemblyBuilder TestAssemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(TestAssemblyName, AssemblyBuilderAccess.Run);
@@ -40,7 +40,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionOnNullConstructorInfo()
         {
             AssemblyName TestAssemblyName = new AssemblyName("TestAssembly");
             AssemblyBuilder TestAssemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(TestAssemblyName, AssemblyBuilderAccess.Run);

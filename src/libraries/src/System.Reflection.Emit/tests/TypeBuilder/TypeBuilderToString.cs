@@ -24,7 +24,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestForRandomTypeName()
         {
             string typename = TestLibrary.Generator.GetString(false, 8, 256);
 
@@ -46,7 +46,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithNumberStringName()
         {
             string typename = TestLibrary.Generator.GetInt32().ToString();
             TypeBuilder typebuilder = GetTypeBuilder(ModuleName, typename);
@@ -55,7 +55,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestWithWhitespaceInName()
         {
             string typename = TestLibrary.Generator.GetString(false, 8, 256);
             int len = typename.Length;
@@ -67,7 +67,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestWithWhiteSpaceAsName()
         {
             string typename = "  ";
             TypeBuilder typebuilder = GetTypeBuilder(ModuleName, typename);

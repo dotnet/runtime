@@ -12,21 +12,23 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderMakeByRefType
     {
         [Fact]
-        public void PosTest1()
+        public void TestWithInstanceType()
         {
             ModuleBuilder testModBuilder = CreateModuleBuilder();
             TypeBuilder testTyBuilder = testModBuilder.DefineType("testType");
             Type byRefType = testTyBuilder.MakeByRefType();
-            Assert.False(byRefType.GetTypeInfo().BaseType != typeof(Array) || byRefType.Name != "testType&");
+            Assert.Equal(typeof(Array), byRefType.GetTypeInfo().BaseType);
+            Assert.Equal("testType&", byRefType.Name);
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithAbstractType()
         {
             ModuleBuilder testModBuilder = CreateModuleBuilder();
             TypeBuilder testTyBuilder = testModBuilder.DefineType("testType", TypeAttributes.Public | TypeAttributes.Abstract);
             Type byRefType = testTyBuilder.MakeByRefType();
-            Assert.False(byRefType.GetTypeInfo().BaseType != typeof(Array) || byRefType.Name != "testType&");
+            Assert.Equal(typeof(Array), byRefType.GetTypeInfo().BaseType);
+            Assert.Equal("testType&", byRefType.Name);
         }
 
         private ModuleBuilder CreateModuleBuilder()

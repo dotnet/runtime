@@ -17,7 +17,7 @@ namespace System.Reflection.Emit.Tests
         typeof(int), typeof(uint), typeof(long), typeof(ulong) };
 
         [Fact]
-        public void PosTest1()
+        public void TestWithValueType()
         {
             List<object> myArray = new List<object>();
             myArray = GetVisibilityAttr(true);
@@ -31,7 +31,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestForNonVisibilityAttributes()
         {
             List<object> myArray = new List<object>();
             myArray = GetVisibilityAttr(false);
@@ -43,7 +43,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestForAlreadyExistingEnumWithSameName()
         {
             List<object> myArray = new List<object>();
 
@@ -57,7 +57,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest3()
+        public void TestWithNullName()
         {
             List<object> myArray = new List<object>();
 
@@ -71,7 +71,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest4()
+        public void TestWithEmptyName()
         {
             List<object> myArray = new List<object>();
             myArray = GetVisibilityAttr(true);
@@ -84,7 +84,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest5()
+        public void TestWithIncorrectVisibilityAttributes()
         {
             List<object> myArray = new List<object>();
             myArray = GetNestVisibilityAttr(true);
@@ -96,7 +96,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest6()
+        public void TestWithReferenceType()
         {
             List<object> myArray = new List<object>();
             myArray = GetVisibilityAttr(true);

@@ -11,7 +11,7 @@ namespace System.Reflection.Emit.Tests
     public class ModuleBuilderDefineInitializedData
     {
         [Fact]
-        public void PosTest1()
+        public void TestWithStaticAndPublic()
         {
             ModuleBuilder myModuleBuilder = GetModuleBuilder();
             // Define the initialized data field in the .sdata section of the PE file.
@@ -24,7 +24,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithStaticAndPrivate()
         {
             ModuleBuilder myModuleBuilder = GetModuleBuilder();
             // Define the initialized data field in the .sdata section of the PE file.
@@ -37,7 +37,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestIncludeStaticWithDefault()
         {
             ModuleBuilder myModuleBuilder = GetModuleBuilder();
             // Define the initialized data field in the .sdata section of the PE file.
@@ -50,7 +50,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionOnEmptyName()
         {
             ModuleBuilder myModuleBuilder = GetModuleBuilder();
             // Define the initialized data field in the .sdata section of the PE file.
@@ -61,7 +61,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionWithSizeOfDataLessThanZero()
         {
             ModuleBuilder myModuleBuilder = GetModuleBuilder();
             // Define the initialized data field in the .sdata section of the PE file.
@@ -73,7 +73,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest3()
+        public void TestThrowsExceptionWithSizeOfDateGreaterThan0x3f0000()
         {
             ModuleBuilder myModuleBuilder = GetModuleBuilder();
             // Define the initialized data field in the .sdata section of the PE file.
@@ -86,7 +86,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest4()
+        public void TestThrowsExceptionWithNullName()
         {
             ModuleBuilder myModuleBuilder = GetModuleBuilder();
 
@@ -99,7 +99,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest5()
+        public void TestThrowsExceptionWithNullData()
         {
             ModuleBuilder myModuleBuilder = GetModuleBuilder();
 
@@ -112,7 +112,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest6()
+        public void TestThrowsExceptionWhenCreateGlobalFunctionsPreviouslyCalled()
         {
             ModuleBuilder myModuleBuilder = GetModuleBuilder();
 

@@ -13,7 +13,7 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderGetField
     {
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionForDeclaringTypeOfFieldNotGeneric()
         {
             AssemblyName myAsmName =
                 new AssemblyName("TypeBuilderGetFieldTest");
@@ -39,7 +39,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestGetField()
         {
             AssemblyName myAsmName =
                 new AssemblyName("TypeBuilderGetFieldTest");
@@ -67,13 +67,13 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionForTypeIsNotTypeBuilder()
         {
             Assert.Throws<ArgumentException>(() => { TypeBuilder.GetField(typeof(int), typeof(int).GetField("MaxValue")); });
         }
 
         [Fact]
-        public void NegTest3()
+        public void TestThrowsExceptionForDeclaringTypeOfFieldNotGenericTypeDefinitionOfType()
         {
             AssemblyName myAsmName =
                 new AssemblyName("TypeBuilderGetFieldTest");
@@ -111,7 +111,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest4()
+        public void TestThrowsExceptionForTypeNotGeneric()
         {
             AssemblyName myAsmName =
                 new AssemblyName("TypeBuilderGetFieldTest");

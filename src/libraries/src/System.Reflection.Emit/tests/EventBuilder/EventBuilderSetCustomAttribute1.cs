@@ -37,7 +37,7 @@ namespace System.Reflection.Emit.Tests
         private const int ArraySize = 256;
 
         [Fact]
-        public void PosTest1()
+        public void TestSetCustomAttribute()
         {
             EventBuilder ev = TypeBuilder.DefineEvent("Event_PosTest1", EventAttributes.None, typeof(TestEventHandler));
             Type type = typeof(EvBMyAttribute1);
@@ -49,7 +49,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionOnNullConstructorInfo()
         {
             EventBuilder ev = TypeBuilder.DefineEvent("Event_NegTest1", EventAttributes.None, typeof(TestEventHandler));
             byte[] bytes = new byte[ArraySize];
@@ -57,7 +57,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionOnNullByteArray()
         {
             EventBuilder ev = TypeBuilder.DefineEvent("Event_NegTest1", EventAttributes.None, typeof(TestEventHandler));
             Type type = typeof(EvBMyAttribute1);
@@ -66,23 +66,16 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest3()
+        public void TestThrowsExceptionOnCreateTypeCalled()
         {
-            try
-            {
-                EventBuilder ev = TypeBuilder.DefineEvent("Event_NegTest3", EventAttributes.None, typeof(TestEventHandler));
-                Type type = typeof(EvBMyAttribute1);
-                ConstructorInfo con = type.GetConstructor(new Type[] { });
-                byte[] bytes = new byte[ArraySize];
-                TestLibrary.Generator.GetBytes(bytes);
-                TypeBuilder.CreateTypeInfo().AsType();
+            EventBuilder ev = TypeBuilder.DefineEvent("Event_NegTest3", EventAttributes.None, typeof(TestEventHandler));
+            Type type = typeof(EvBMyAttribute1);
+            ConstructorInfo con = type.GetConstructor(new Type[] { });
+            byte[] bytes = new byte[ArraySize];
+            TestLibrary.Generator.GetBytes(bytes);
+            TypeBuilder.CreateTypeInfo().AsType();
 
-                Assert.Throws<InvalidOperationException>(() => { ev.SetCustomAttribute(con, bytes); });
-            }
-            finally
-            {
-                _typeBuilder = null;
-            }
+            Assert.Throws<InvalidOperationException>(() => { ev.SetCustomAttribute(con, bytes); });
         }
     }
 }
