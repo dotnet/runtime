@@ -399,13 +399,6 @@ struct _MonoDomain {
 	MonoClass *sockaddr_class;
 	MonoClassField *sockaddr_data_field;
 
-	/* Used by threadpool.c */
-	MonoImage *system_image;
-	MonoClass *corlib_asyncresult_class;
-	MonoClass *socket_class;
-	MonoClass *ad_unloaded_ex_class;
-	MonoClass *process_class;
-
 	/* Cache function pointers for architectures  */
 	/* that require wrappers */
 	GHashTable *ftnptrs_hash;
