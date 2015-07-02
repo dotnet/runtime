@@ -216,4 +216,7 @@
   <data name="OpenCSP_Failed" xml:space="preserve">
     <value>OpenCSP failed with Error code </value>
   </data>
+  <data name="Cryptography_UnknownHashAlgorithm" xml:space="preserve">
+    <value>'{0}' is not a known hash algorithm.</value>
+  </data>
 </root>

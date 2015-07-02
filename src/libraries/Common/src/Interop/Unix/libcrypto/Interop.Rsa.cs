@@ -36,6 +36,14 @@ internal static partial class Interop
         [DllImport(Libraries.LibCrypto)]
         internal static extern int RSA_generate_key_ex(SafeRsaHandle rsa, int bits, SafeBignumHandle e, IntPtr zero);
 
+        [DllImport(Libraries.LibCrypto)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool RSA_sign(int type, byte[] m, int m_len, byte[] sigret, out int siglen, SafeRsaHandle rsa);
+
+        [DllImport(Libraries.LibCrypto)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool RSA_verify(int type, byte[] m, int m_len, byte[] sigbuf, int siglen, SafeRsaHandle rsa);
+
         internal static unsafe RSAParameters ExportRsaParameters(SafeRsaHandle key, bool includePrivateParameters)
         {
             Debug.Assert(

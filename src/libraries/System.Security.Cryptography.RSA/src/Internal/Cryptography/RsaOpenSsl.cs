@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Diagnostics;
+using System.IO;
 using System.Security.Cryptography;
 using System.Threading;
 
@@ -312,6 +314,114 @@ namespace Internal.Cryptography
         private static Exception CreateOpenSslException()
         {
             return new CryptographicException(Interop.libcrypto.GetOpenSslErrorString());
+        }
+
+        internal byte[] HashData(byte[] buffer, int offset, int count, HashAlgorithmName hashAlgorithmName)
+        {
+            using (HashAlgorithm hasher = GetHashAlgorithm(hashAlgorithmName))
+            {
+                return hasher.ComputeHash(buffer, offset, count);
+            }
+        }
+
+        internal byte[] HashData(Stream stream, HashAlgorithmName hashAlgorithmName)
+        {
+            using (HashAlgorithm hasher = GetHashAlgorithm(hashAlgorithmName))
+            {
+                return hasher.ComputeHash(stream);
+            }
+        }
+
+        internal byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithmName)
+        {
+            int algorithmNid = GetAlgorithmNid(hashAlgorithmName);
+            SafeRsaHandle rsa = _key.Value;
+            byte[] signature = new byte[Interop.libcrypto.RSA_size(rsa)];
+            int signatureSize;
+
+            bool success = Interop.libcrypto.RSA_sign(
+                algorithmNid,
+                hash,
+                hash.Length,
+                signature,
+                out signatureSize,
+                rsa);
+
+            if (!success)
+            {
+                throw CreateOpenSslException();
+            }
+
+            Debug.Assert(
+                signatureSize == signature.Length,
+                "RSA_sign reported an unexpected signature size",
+                "RSA_sign reported signatureSize was {0}, when {1} was expected",
+                signatureSize,
+                signature.Length);
+
+            return signature;
+        }
+
+        internal bool VerifyHash(byte[] hash, byte[] signature, HashAlgorithmName hashAlgorithmName)
+        {
+            int algorithmNid = GetAlgorithmNid(hashAlgorithmName);
+            SafeRsaHandle rsa = _key.Value;
+
+            return Interop.libcrypto.RSA_verify(
+                algorithmNid,
+                hash,
+                hash.Length,
+                signature,
+                signature.Length,
+                rsa);
+        }
+
+        private static int GetAlgorithmNid(HashAlgorithmName hashAlgorithmName)
+        {
+            // All of the current HashAlgorithmName values correspond to the SN values in OpenSSL 0.9.8.
+            // If there's ever a new one that doesn't, translate it here.
+            string sn = hashAlgorithmName.Name;
+
+            int nid = Interop.libcrypto.OBJ_sn2nid(sn);
+
+            if (nid == Interop.libcrypto.NID_undef)
+            {
+                throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmName.Name);
+            }
+
+            return nid;
+        }
+
+        private static HashAlgorithm GetHashAlgorithm(HashAlgorithmName hashAlgorithmName)
+        {
+            HashAlgorithm hasher;
+
+            if (hashAlgorithmName == HashAlgorithmName.MD5)
+            {
+                hasher = MD5.Create();
+            }
+            else if (hashAlgorithmName == HashAlgorithmName.SHA1)
+            {
+                hasher = SHA1.Create();
+            }
+            else if (hashAlgorithmName == HashAlgorithmName.SHA256)
+            {
+                hasher = SHA256.Create();
+            }
+            else if (hashAlgorithmName == HashAlgorithmName.SHA384)
+            {
+                hasher = SHA384.Create();
+            }
+            else if (hashAlgorithmName == HashAlgorithmName.SHA512)
+            {
+                hasher = SHA512.Create();
+            }
+            else
+            {
+                throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmName.Name);
+            }
+
+            return hasher;
         }
     }
 }
