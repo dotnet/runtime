@@ -8,14 +8,12 @@ namespace System.Security.Cryptography.Rsa.Tests
     public class KeyGeneration
     {
         [Fact]
-        [ActiveIssue(1984, PlatformID.AnyUnix)]
         public static void GenerateMinKey()
         {
             GenerateKey(rsa => GetMin(rsa.LegalKeySizes));
         }
 
         [Fact]
-        [ActiveIssue(1984, PlatformID.AnyUnix)]
         public static void GenerateSecondMinKey()
         {
             GenerateKey(rsa => GetSecondMin(rsa.LegalKeySizes));
