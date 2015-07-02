@@ -32,7 +32,7 @@ namespace System.Reflection.Emit.Tests
         private const int MethodBodyLength = 256;
 
         [Fact]
-        public void PosTest1()
+        public void TestOnAbstractMethod()
         {
             EventBuilder ev = TypeBuilder.DefineEvent("Event_PosTest1", EventAttributes.None, typeof(TestEventHandler));
             MethodBuilder method = TypeBuilder.DefineMethod("Method_PosTest1", MethodAttributes.Abstract | MethodAttributes.Virtual);
@@ -44,7 +44,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestOnInstanceMethod()
         {
             byte[] bytes = new byte[MethodBodyLength];
             TestLibrary.Generator.GetBytes(bytes);
@@ -61,7 +61,7 @@ namespace System.Reflection.Emit.Tests
 
 
         [Fact]
-        public void PosTest3()
+        public void TestOnStaticMethod()
         {
             byte[] bytes = new byte[MethodBodyLength];
             TestLibrary.Generator.GetBytes(bytes);
@@ -77,7 +77,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestOnPInvokeMethod()
         {
             EventBuilder ev = TypeBuilder.DefineEvent("Event_PosTest4", EventAttributes.None, typeof(TestEventHandler));
             MethodBuilder method = TypeBuilder.DefineMethod("Method_PosTest4", MethodAttributes.PinvokeImpl);
@@ -90,7 +90,7 @@ namespace System.Reflection.Emit.Tests
 
 
         [Fact]
-        public void PosTest5()
+        public void TestOnMultipleDifferentMethods()
         {
             byte[] bytes = new byte[MethodBodyLength];
             TestLibrary.Generator.GetBytes(bytes);
@@ -110,14 +110,14 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionOnNullBuilder()
         {
             EventBuilder ev = TypeBuilder.DefineEvent("Event_NegTest1", EventAttributes.None, typeof(TestEventHandler));
             Assert.Throws<ArgumentNullException>(() => { ev.SetRaiseMethod(null); });
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionOnCreateTypeCalled()
         {
             try
             {

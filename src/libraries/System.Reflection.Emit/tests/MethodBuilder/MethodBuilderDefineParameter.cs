@@ -13,7 +13,7 @@ namespace System.Reflection.Emit.Tests
     public class MethodBuilderDefineParameter
     {
         [Fact]
-        public void PosTest1()
+        public void TestDefineParameter()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName();
@@ -53,7 +53,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionForTypeCreated()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName();
@@ -78,7 +78,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionForNegativePosition()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName();
@@ -99,7 +99,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest3()
+        public void TestThrowsExceptionForNoParameters()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName();
@@ -114,7 +114,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest4()
+        public void TestThrowsExceptionForPositionGreaterThanNumberOfParameters()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName();

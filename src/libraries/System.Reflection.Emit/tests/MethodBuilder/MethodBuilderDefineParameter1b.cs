@@ -23,35 +23,26 @@ namespace System.Reflection.Emit.Tests
         private const AssemblyBuilderAccess TestAssemblyBuilderAccess = AssemblyBuilderAccess.Run;
         private const MethodAttributes TestMethodAttributes = MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual;
 
-        private TypeBuilder TestTypeBuilder
+        private TypeBuilder GetTestTypeBuilder()
         {
-            get
-            {
-                if (null == _testTypeBuilder)
-                {
-                    AssemblyName assemblyName = new AssemblyName(TestDynamicAssemblyName);
-                    AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
-                        assemblyName, TestAssemblyBuilderAccess);
+            AssemblyName assemblyName = new AssemblyName(TestDynamicAssemblyName);
+            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
+                assemblyName, TestAssemblyBuilderAccess);
 
-                    ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, TestDynamicModuleName);
-                    _testTypeBuilder = moduleBuilder.DefineType(TestDynamicTypeName, TypeAttributes.Abstract);
-                }
-
-                return _testTypeBuilder;
-            }
+            ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, TestDynamicModuleName);
+            return moduleBuilder.DefineType(TestDynamicTypeName, TypeAttributes.Abstract);
         }
 
-        private TypeBuilder _testTypeBuilder;
-
         [Fact]
-        public void PosTest1()
+        public void TestWithHasDefault()
         {
             string strParamName = null;
 
             strParamName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
 
             Type[] paramTypes = new Type[] { typeof(int) };
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(
                 PosTestDynamicMethodName,
                 TestMethodAttributes,
                 typeof(void),
@@ -66,7 +57,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestForEveryParameterAtributeFlag()
         {
             string strParamName = null;
 
@@ -86,7 +77,8 @@ namespace System.Reflection.Emit.Tests
                 paramTypes[i] = typeof(int);
             }
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(
                 PosTestDynamicMethodName,
                 TestMethodAttributes,
                 typeof(void),
@@ -104,14 +96,15 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest5()
+        public void TestForCombinationOfParamterAttributeFlags()
         {
             string strParamName = null;
 
             strParamName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
 
             Type[] paramTypes = new Type[] { typeof(int) };
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(
                 PosTestDynamicMethodName,
                 TestMethodAttributes,
                 typeof(void),
@@ -135,13 +128,14 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest6()
+        public void TestForNegativeFlag()
         {
             string strParamName = null;
             strParamName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
 
             Type[] paramTypes = new Type[] { typeof(int) };
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(
                 PosTestDynamicMethodName,
                 TestMethodAttributes,
                 typeof(void),
@@ -155,12 +149,13 @@ namespace System.Reflection.Emit.Tests
 
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionWithNoParameter()
         {
             string strParamName = null;
             strParamName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(
                 PosTestDynamicMethodName,
                 TestMethodAttributes);
             Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -170,7 +165,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionForNegativePosition()
         {
             string strParamName = null;
             int paramPos = 0;
@@ -182,7 +177,8 @@ namespace System.Reflection.Emit.Tests
                 paramPos = 0 - paramPos;
             }
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(
                 PosTestDynamicMethodName,
                 TestMethodAttributes);
             Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -192,7 +188,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest3()
+        public void TestThrowsExceptionForPositionGreaterThanNumberOfParameters()
         {
             string strParamName = null;
             int paramPos = 0;
@@ -206,7 +202,9 @@ namespace System.Reflection.Emit.Tests
                 paramPos = TestLibrary.Generator.GetInt32();
             }
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+
+            MethodBuilder builder = typeBuilder.DefineMethod(
                 PosTestDynamicMethodName,
                 TestMethodAttributes,
                 typeof(void),
@@ -218,7 +216,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest4()
+        public void TestThrowsExceptionForCreateTypeCalled()
         {
             string strParamName = null;
 
@@ -227,12 +225,16 @@ namespace System.Reflection.Emit.Tests
                 typeof(int)
             };
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+
+            MethodBuilder builder = typeBuilder.DefineMethod(
                 PosTestDynamicMethodName,
                 TestMethodAttributes,
                 typeof(void),
                 paramTypes);
-            TestTypeBuilder.CreateTypeInfo().AsType();
+
+            typeBuilder.CreateTypeInfo().AsType();
+
             Assert.Throws<InvalidOperationException>(() =>
             {
                 ParameterBuilder paramBuilder = builder.DefineParameter(1, ParameterAttributes.HasDefault, strParamName);

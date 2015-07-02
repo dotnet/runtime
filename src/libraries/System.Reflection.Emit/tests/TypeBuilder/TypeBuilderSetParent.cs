@@ -25,42 +25,42 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestWithStringParent()
         {
             TypeBuilder typebuilder = GetTypeBuilder();
             typebuilder.SetParent(typeof(string));
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithCustomClassParent()
         {
             TypeBuilder typebuilder = GetTypeBuilder();
             typebuilder.SetParent(typeof(TBSetParentTestClass));
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestWithCustomGenericClassParent()
         {
             TypeBuilder typebuilder = GetTypeBuilder();
             typebuilder.SetParent(typeof(TBSetParentGenClass<>));
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestWithNullableValueTypeParent()
         {
             TypeBuilder typebuilder = GetTypeBuilder();
             typebuilder.SetParent(typeof(int?));
         }
 
         [Fact]
-        public void PosTest5()
+        public void TestWithNullParent()
         {
             TypeBuilder typebuilder = GetTypeBuilder();
             typebuilder.SetParent(null);
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionForCreateTypeCalled()
         {
             TypeBuilder typebuilder = GetTypeBuilder();
             typebuilder.CreateTypeInfo().AsType();
@@ -68,7 +68,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionForNullParentAndInstanceIsInterfaceWithoutAbstractAttribute()
         {
             AssemblyName assemblyname = new AssemblyName("assemblyname");
 

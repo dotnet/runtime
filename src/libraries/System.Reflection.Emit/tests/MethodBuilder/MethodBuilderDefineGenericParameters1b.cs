@@ -13,7 +13,7 @@ namespace System.Reflection.Emit.Tests
     public class MethodBuilderDefineGenericParameters1b
     {
         [Fact]
-        public void PosTest1()
+        public void TestForDifferentTypes()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName(name);
@@ -44,7 +44,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionForEmptyArray()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName();
@@ -64,7 +64,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionForNull()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName();
@@ -82,7 +82,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest3()
+        public void TestThrowsExceptionForNullMember()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName();
@@ -102,7 +102,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest4()
+        public void TestThrowsExceptionForTypeCreated()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName();
@@ -127,7 +127,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest5()
+        public void TestThrowsExceptionForSetImplementationFlagsCalledPreviously()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName();
@@ -152,7 +152,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest6()
+        public void TestThrowsExceptionForParametersDefinedAlready()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName();

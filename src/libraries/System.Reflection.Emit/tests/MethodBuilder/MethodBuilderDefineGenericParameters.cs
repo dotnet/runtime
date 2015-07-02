@@ -24,29 +24,20 @@ namespace System.Reflection.Emit.Tests
             return TestLibrary.Utilities.GetModuleBuilder(asmbuild, TestDynamicModuleName);
         }
 
-        private TypeBuilder TestTypeBuilder
+        private TypeBuilder GetTestTypeBuilder()
         {
-            get
-            {
-                if (null == _testTypeBuilder)
-                {
-                    AssemblyName assemblyName = new AssemblyName(TestDynamicAssemblyName);
-                    AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
+            AssemblyName assemblyName = new AssemblyName(TestDynamicAssemblyName);
+            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
                         assemblyName, TestAssemblyBuilderAccess);
-                    ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, "Module1");
-                    _testTypeBuilder = moduleBuilder.DefineType(TestDynamicTypeName);
-                }
-
-                return _testTypeBuilder;
-            }
+            ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, "Module1");
+            return moduleBuilder.DefineType(TestDynamicTypeName);
         }
 
-        private TypeBuilder _testTypeBuilder;
-
         [Fact]
-        public void PosTest1()
+        public void TestWithSingleTypeParam()
         {
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(PosTestDynamicMethodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(PosTestDynamicMethodName,
                 MethodAttributes.Public);
             string[] typeParamNames = { "T" };
             GenericTypeParameterBuilder[] parameters = builder.DefineGenericParameters(typeParamNames);
@@ -56,9 +47,10 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithMultipleTypeParam()
         {
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(PosTestDynamicMethodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(PosTestDynamicMethodName,
                 MethodAttributes.Public);
             string[] typeParamNames = { "T", "U" };
             GenericTypeParameterBuilder[] parameters = builder.DefineGenericParameters(typeParamNames);
@@ -68,18 +60,20 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionOnSetImplementationFlagsCalledPreviously()
         {
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(PosTestDynamicMethodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(PosTestDynamicMethodName,
                 MethodAttributes.Public);
             builder.SetImplementationFlags(MethodImplAttributes.Managed);
             Assert.Throws<InvalidOperationException>(() => { GenericTypeParameterBuilder[] parameters = builder.DefineGenericParameters("T"); });
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionOnMethodCompleted()
         {
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(PosTestDynamicMethodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(PosTestDynamicMethodName,
                 MethodAttributes.Public);
             string[] typeParamNames = { "T" };
             GenericTypeParameterBuilder[] parameters = builder.DefineGenericParameters(typeParamNames);
@@ -87,26 +81,29 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest3()
+        public void TestThrowsExceptionForNull()
         {
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(PosTestDynamicMethodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(PosTestDynamicMethodName,
                 MethodAttributes.Public);
             Assert.Throws<ArgumentNullException>(() => { GenericTypeParameterBuilder[] parameters = builder.DefineGenericParameters(null); });
         }
 
         [Fact]
-        public void NegTest4()
+        public void TestThrowsExceptionForNullMember()
         {
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(PosTestDynamicMethodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(PosTestDynamicMethodName,
                 MethodAttributes.Public);
             string[] typeParamNames = new string[] { "T", null, "U" };
             Assert.Throws<ArgumentNullException>(() => { GenericTypeParameterBuilder[] parameters = builder.DefineGenericParameters(typeParamNames); });
         }
 
         [Fact]
-        public void NegTest5()
+        public void TestThrowsExceptionForEmptyArray()
         {
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(PosTestDynamicMethodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(PosTestDynamicMethodName,
                 MethodAttributes.Public);
             string[] typeParamNames = new string[] { };
             Assert.Throws<ArgumentException>(() => { GenericTypeParameterBuilder[] parameters = builder.DefineGenericParameters(typeParamNames); });

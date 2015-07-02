@@ -12,7 +12,7 @@ namespace System.Reflection.Emit.Tests
     public class ConstructorBuilderSetImplementationFlags
     {
         [Fact]
-        public void PosTest1()
+        public void TestImplFlags()
         {
             AssemblyName myAssemblyName = new AssemblyName();
             myAssemblyName.Name = "TempAssembly";
@@ -43,7 +43,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestImplFlagsNotChanged()
         {
             AssemblyName myAssemblyName = new AssemblyName();
             myAssemblyName.Name = "TempAssembly";
@@ -72,7 +72,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionOnCreateTypeCalled()
         {
             AssemblyName myAssemblyName = new AssemblyName();
             myAssemblyName.Name = "TempAssembly";

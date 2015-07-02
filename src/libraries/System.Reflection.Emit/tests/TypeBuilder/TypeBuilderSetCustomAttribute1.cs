@@ -24,16 +24,25 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestSetCustomAttribute()
         {
             TypeBuilder typebuilder = GetTypeBuilder();
             ConstructorInfo constructorinfo = typeof(ClassCreator).GetConstructor(new Type[] { typeof(string) });
             CustomAttributeBuilder cuatbu = new CustomAttributeBuilder(constructorinfo, new object[] { "hello" });
             typebuilder.SetCustomAttribute(cuatbu);
+
+            typebuilder.CreateTypeInfo().AsType();
+
+            // VERIFY
+            object[] attribs = typebuilder.GetCustomAttributes(false).Select(a => (object)a).ToArray();
+
+            Assert.Equal(1, attribs.Length);
+            Assert.True(attribs[0] is ClassCreator);
+            Assert.Equal("hello", ((ClassCreator)attribs[0]).Creator);
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionForNullBuilder()
         {
             TypeBuilder typebuilder = GetTypeBuilder();
             Assert.Throws<ArgumentNullException>(() => { typebuilder.SetCustomAttribute(null); });

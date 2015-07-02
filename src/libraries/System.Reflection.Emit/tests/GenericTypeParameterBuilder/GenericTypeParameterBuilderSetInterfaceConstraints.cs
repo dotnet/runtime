@@ -11,7 +11,7 @@ namespace System.Reflection.Emit.Tests
     public class GenericTypeParameterBuilderSetInterfaceConstraints
     {
         [Fact]
-        public void PosTest1()
+        public void TestInterfaceConstraintsOnCustomInterface()
         {
             AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
@@ -27,10 +27,14 @@ namespace System.Reflection.Emit.Tests
             GenericTypeParameterBuilder TFirst = typeParams[0];
 
             TFirst.SetInterfaceConstraints(typeof(IExample));
+            Type type = myType.CreateTypeInfo().AsType();
+            Type[] genericTypeParams = type.GetGenericArguments();
+            Assert.Equal(1, genericTypeParams.Length);
+            Assert.Equal(new Type[] { typeof(IExample) }, genericTypeParams[0].GetTypeInfo().GetGenericParameterConstraints());
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestInterfaceConstraintsOnNull()
         {
             AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
@@ -45,11 +49,15 @@ namespace System.Reflection.Emit.Tests
 
             GenericTypeParameterBuilder TFirst = typeParams[0];
             TFirst.SetInterfaceConstraints(null);
+            Type type = myType.CreateTypeInfo().AsType();
+            Type[] genericTypeParams = type.GetGenericArguments();
+            Assert.Equal(1, genericTypeParams.Length);
+            Assert.Equal(new Type[] { }, genericTypeParams[0].GetTypeInfo().GetGenericParameterConstraints());
         }
 
 
         [Fact]
-        public void PosTest3()
+        public void TestMultipleInterfaceConstraints()
         {
             AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
@@ -64,6 +72,10 @@ namespace System.Reflection.Emit.Tests
 
             GenericTypeParameterBuilder TFirst = typeParams[0];
             TFirst.SetInterfaceConstraints(new Type[] { typeof(IExample), typeof(IExampleA) });
+            Type type = myType.CreateTypeInfo().AsType();
+            Type[] genericTypeParams = type.GetGenericArguments();
+            Assert.Equal(1, genericTypeParams.Length);
+            Assert.Equal(new Type[] { typeof(IExample), typeof(IExampleA) }, genericTypeParams[0].GetTypeInfo().GetGenericParameterConstraints());
         }
     }
 

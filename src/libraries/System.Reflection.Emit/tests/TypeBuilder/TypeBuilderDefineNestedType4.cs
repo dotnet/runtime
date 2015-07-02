@@ -40,7 +40,7 @@ namespace System.Reflection.Emit.Tests
                                                        };
 
         [Fact]
-        public void PosTest1()
+        public void TestDefineType()
         {
             ModuleBuilder modBuilder;
             TypeBuilder typeBuilder;
@@ -77,7 +77,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithEmbeddedNullsInName()
         {
             ModuleBuilder modBuilder;
             TypeBuilder typeBuilder;
@@ -110,7 +110,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestWithTypeAttributes()
         {
             ModuleBuilder modBuilder;
             TypeBuilder typeBuilder;
@@ -151,7 +151,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestWithDefaultSize()
         {
             ModuleBuilder modBuilder;
             TypeBuilder typeBuilder;
@@ -179,7 +179,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest5()
+        public void TestWithMaxSizeValue()
         {
             ModuleBuilder modBuilder;
             TypeBuilder typeBuilder;
@@ -217,7 +217,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest6()
+        public void TestWithMinSizeValue()
         {
             ModuleBuilder modBuilder;
             TypeBuilder typeBuilder;
@@ -256,7 +256,7 @@ namespace System.Reflection.Emit.Tests
 
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionOnNullName()
         {
             ModuleBuilder modBuilder;
             TypeBuilder typeBuilder;
@@ -283,7 +283,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionOnEmptyName()
         {
             ModuleBuilder modBuilder;
             TypeBuilder typeBuilder;

@@ -26,7 +26,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestWithValidData()
         {
             ModuleBuilder builder = GetModuleBuilder();
             string fieldName = "PosTest1_";
@@ -66,7 +66,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithBoundaryData()
         {
             ModuleBuilder builder = GetModuleBuilder();
             string fieldName = "PosTest2_";
@@ -110,7 +110,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionWithZeroLengthName()
         {
             ModuleBuilder builder = GetModuleBuilder();
             FieldAttributes[] attributes = new FieldAttributes[] {
@@ -142,7 +142,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionWithInvalidSizeData()
         {
             int[] sizeValues = new int[] {
             0,
@@ -185,7 +185,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest3()
+        public void TestThrowsExceptionWithNullName()
         {
             ModuleBuilder builder = GetModuleBuilder();
             FieldAttributes[] attributes = new FieldAttributes[] {
@@ -217,7 +217,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest4()
+        public void TestThrowsExceptionOnCreateGlobalFunctionCalledPreviously()
         {
             FieldAttributes[] attributes = new FieldAttributes[] {
                 FieldAttributes.Assembly,

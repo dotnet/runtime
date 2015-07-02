@@ -35,7 +35,7 @@ namespace System.Reflection.Emit.Tests
         private TypeBuilder _typeBuilder;
 
         [Fact]
-        public void PosTest1()
+        public void TestSetCustomAttribute()
         {
             EventBuilder ev = TypeBuilder.DefineEvent("Event_PosTest1", EventAttributes.None, typeof(TestEventHandler));
             ConstructorInfo con = typeof(EvBMyAttribute2).GetConstructor(new Type[] { });
@@ -45,28 +45,21 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionOnNullBuilder()
         {
             EventBuilder ev = TypeBuilder.DefineEvent("Event_NegTest1", EventAttributes.None, typeof(TestEventHandler));
             Assert.Throws<ArgumentNullException>(() => { ev.SetCustomAttribute(null); });
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionOnCreateTypeCalled()
         {
-            try
-            {
-                EventBuilder ev = TypeBuilder.DefineEvent("Event_NegTest2", EventAttributes.None, typeof(TestEventHandler));
-                ConstructorInfo con = typeof(EvBMyAttribute2).GetConstructor(new Type[] { });
-                CustomAttributeBuilder attribute = new CustomAttributeBuilder(con, new object[] { });
-                TypeBuilder.CreateTypeInfo().AsType();
+            EventBuilder ev = TypeBuilder.DefineEvent("Event_NegTest2", EventAttributes.None, typeof(TestEventHandler));
+            ConstructorInfo con = typeof(EvBMyAttribute2).GetConstructor(new Type[] { });
+            CustomAttributeBuilder attribute = new CustomAttributeBuilder(con, new object[] { });
+            TypeBuilder.CreateTypeInfo().AsType();
 
-                Assert.Throws<InvalidOperationException>(() => { ev.SetCustomAttribute(attribute); });
-            }
-            finally
-            {
-                _typeBuilder = null;
-            }
+            Assert.Throws<InvalidOperationException>(() => { ev.SetCustomAttribute(attribute); });
         }
     }
 }

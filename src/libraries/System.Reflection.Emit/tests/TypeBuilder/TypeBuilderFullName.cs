@@ -23,7 +23,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestRandomString()
         {
             string typename = "StrPostest1";
             TypeBuilder typebuilder = GetTypeBuilder(typename);
@@ -32,7 +32,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestStringWithWhitespace()
         {
             string typename = "StrPostTest2";
             int number = GetInt32(1, typename.Length);
@@ -47,7 +47,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestOnNestedType()
         {
             string typename1 = "StrPosTest3_1";
             string typename2 = "StrPosTest3_2";
@@ -56,6 +56,7 @@ namespace System.Reflection.Emit.Tests
             string str = typebuilder2.FullName;
             Assert.Equal((typename1 + "+" + typename2), str);
         }
+
         private int GetInt32(int minValue, int maxValue)
         {
             if (minValue == maxValue)

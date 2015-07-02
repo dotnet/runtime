@@ -21,34 +21,24 @@ namespace System.Reflection.Emit.Tests
         private const int MinStringLength = 1;
         private const int MaxStringLength = 128;
 
-        private TypeBuilder TestTypeBuilder
+        private TypeBuilder GetTestTypeBuilder()
         {
-            get
-            {
-                if (null == _testTypeBuilder)
-                {
-                    AssemblyName assemblyName = new AssemblyName(TestDynamicAssemblyName);
-                    AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
-                        assemblyName, TestAssemblyBuilderAccess);
+            AssemblyName assemblyName = new AssemblyName(TestDynamicAssemblyName);
+            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
+                assemblyName, TestAssemblyBuilderAccess);
 
-                    ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, TestDynamicModuleName);
-
-                    _testTypeBuilder = moduleBuilder.DefineType(TestDynamicTypeName, TestTypeAttributes);
-                }
-
-                return _testTypeBuilder;
-            }
+            ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, TestDynamicModuleName);
+            return moduleBuilder.DefineType(TestDynamicTypeName, TestTypeAttributes);
         }
 
-        private TypeBuilder _testTypeBuilder;
-
         [Fact]
-        public void PosTest1()
+        public void TestWithSingleGenericParameter()
         {
             string methodName = null;
-            _testTypeBuilder = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 TestMethodAttributes);
 
             string[] typeParamNames = { "T" };
@@ -58,17 +48,18 @@ namespace System.Reflection.Emit.Tests
 
             builder.SetReturnType(desiredReturnType);
 
-            TestTypeBuilder.CreateTypeInfo().AsType();
+            typeBuilder.CreateTypeInfo().AsType();
 
             VerifyReturnType(builder, desiredReturnType);
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithMultipleGenericParameters()
         {
-            _testTypeBuilder = null;
             var methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 TestMethodAttributes);
 
             string[] typeParamNames = { "T", "U" };
@@ -78,19 +69,20 @@ namespace System.Reflection.Emit.Tests
 
             builder.SetReturnType(desiredReturnType);
 
-            TestTypeBuilder.CreateTypeInfo().AsType();
+            typeBuilder.CreateTypeInfo().AsType();
 
             VerifyReturnType(builder, desiredReturnType);
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestWithGenericAndNonGenericParameters()
         {
             string methodName = null;
 
-            _testTypeBuilder = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 TestMethodAttributes);
 
             string[] typeParamNames = { "T", "U" };
@@ -100,20 +92,20 @@ namespace System.Reflection.Emit.Tests
 
             builder.SetReturnType(desiredReturnType);
 
-            TestTypeBuilder.CreateTypeInfo().AsType();
+            typeBuilder.CreateTypeInfo().AsType();
 
             VerifyReturnType(builder, desiredReturnType);
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestNotSetReturnTypeOnNonGenericMethod()
         {
             string methodName = null;
-            _testTypeBuilder = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             Type[] parameterTypes = new Type[] { typeof(int) };
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 TestMethodAttributes,
                 typeof(int),
                 parameterTypes);
@@ -122,19 +114,19 @@ namespace System.Reflection.Emit.Tests
 
             builder.SetReturnType(desiredReturnType);
 
-            TestTypeBuilder.CreateTypeInfo().AsType();
+            typeBuilder.CreateTypeInfo().AsType();
 
             VerifyReturnType(builder, desiredReturnType);
         }
 
         [Fact]
-        public void PosTest5()
+        public void TestOverwriteGenericReturnTypeWithNonGenericType()
         {
             string methodName = null;
-            _testTypeBuilder = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 TestMethodAttributes);
 
             string[] typeParamNames = { "T", "U" };
@@ -145,19 +137,19 @@ namespace System.Reflection.Emit.Tests
             builder.SetReturnType(typeParameters[0].AsType());
             builder.SetReturnType(desiredReturnType);
 
-            TestTypeBuilder.CreateTypeInfo().AsType();
+            typeBuilder.CreateTypeInfo().AsType();
 
             VerifyReturnType(builder, desiredReturnType);
         }
 
         [Fact]
-        public void PosTest6()
+        public void TestOverwriteGenericReturnTypeWithGenericType()
         {
             string methodName = null;
-            _testTypeBuilder = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 TestMethodAttributes);
 
             string[] typeParamNames = { "T", "U" };
@@ -168,20 +160,20 @@ namespace System.Reflection.Emit.Tests
             builder.SetReturnType(typeParameters[0].AsType());
             builder.SetReturnType(desiredReturnType);
 
-            TestTypeBuilder.CreateTypeInfo().AsType();
+            typeBuilder.CreateTypeInfo().AsType();
 
             VerifyReturnType(builder, desiredReturnType);
         }
 
         [Fact]
-        public void PosTest7()
+        public void TestOverwriteNonGenericReturnTypeWithGenericType()
         {
             string methodName = null;
-            _testTypeBuilder = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             Type[] parameterTypes = new Type[] { typeof(int) };
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 TestMethodAttributes,
                 typeof(int),
                 parameterTypes);
@@ -193,20 +185,20 @@ namespace System.Reflection.Emit.Tests
 
             builder.SetReturnType(desiredReturnType);
 
-            TestTypeBuilder.CreateTypeInfo().AsType();
+            typeBuilder.CreateTypeInfo().AsType();
 
             VerifyReturnType(builder, desiredReturnType);
         }
 
         [Fact]
-        public void PosTest8()
+        public void TestAfterTypeCreated()
         {
             string methodName = null;
-            _testTypeBuilder = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             Type[] parameterTypes = new Type[] { typeof(int) };
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 TestMethodAttributes,
                 typeof(int),
                 parameterTypes);
@@ -216,17 +208,18 @@ namespace System.Reflection.Emit.Tests
                 builder.DefineGenericParameters(typeParamNames);
             Type desiredReturnType = typeParameters[0].AsType();
 
-            TestTypeBuilder.CreateTypeInfo().AsType();
+            typeBuilder.CreateTypeInfo().AsType();
 
             builder.SetReturnType(desiredReturnType);
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestNotThrowsOnNull()
         {
             string methodName = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 TestMethodAttributes);
 
             builder.SetReturnType(null);

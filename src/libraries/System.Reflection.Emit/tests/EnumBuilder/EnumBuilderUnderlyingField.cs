@@ -22,7 +22,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestUnderlyingFieldProperty()
         {
             var myModuleBuilder = CreateCallee();
             var myEnumBuilder = myModuleBuilder.DefineEnum("myEnum", TypeAttributes.Public, typeof(int));
@@ -33,7 +33,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestUnderlyingFieldWithNoLiteralDefined()
         {
             var myModuleBuilder = CreateCallee();
             var myEnumBuilder = myModuleBuilder.DefineEnum("myEnum", TypeAttributes.Public, typeof(int));

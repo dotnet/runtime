@@ -31,14 +31,14 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderGetElementType
     {
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionForNotSupported1()
         {
             TypeBuilder myBuilder = CreateMyTypeBuilder();
             Assert.Throws<NotSupportedException>(() => { myBuilder.GetElementType(); });
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionForNotSupported2()
         {
             AssemblyName myAsmName =
                 new AssemblyName("TypeBuilderGetFieldExample");

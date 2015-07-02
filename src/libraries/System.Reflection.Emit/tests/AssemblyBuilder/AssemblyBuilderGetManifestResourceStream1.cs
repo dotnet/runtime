@@ -12,13 +12,11 @@ namespace System.Reflection.Emit.Tests
 {
     public class AssemblyBuilderGetManifestResourceStream1
     {
-        private const AssemblyBuilderAccess DefaultBuilderAccess = AssemblyBuilderAccess.Run;
-
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionOnMethodNotSupported()
         {
             AssemblyName name = new AssemblyName("NegTest1Assembly");
-            AssemblyBuilder builder = AssemblyBuilder.DefineDynamicAssembly(name, DefaultBuilderAccess);
+            AssemblyBuilder builder = AssemblyBuilder.DefineDynamicAssembly(name, AssemblyBuilderAccess.Run);
             Assert.Throws<NotSupportedException>(() => { Stream myStream = builder.GetManifestResourceStream(""); });
         }
     }

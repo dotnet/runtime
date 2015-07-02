@@ -24,7 +24,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestWithAssemblyNameSet()
         {
             string assename = "assemblyname";
             TypeBuilder typebuilder = GetTypeBuilder(assename, TypeName);
@@ -33,7 +33,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithWhiteSpaceInName()
         {
             string assename = "ad df df";
             TypeBuilder typebuilder = GetTypeBuilder(assename, TypeName);
@@ -42,7 +42,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestWithTypeAndAssemblyNameSet()
         {
             string assename = "assebly name  ";
             string typename = "type name  ";
@@ -52,7 +52,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestWithTypeNameSet()
         {
             string assename = "assebly name  ";
             string typename = "-";

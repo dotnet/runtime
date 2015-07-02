@@ -11,7 +11,7 @@ namespace System.Reflection.Emit.Tests
     public class ConstructorBuilderName
     {
         [Fact]
-        public void PosTest1()
+        public void TestName()
         {
             AssemblyName an = new AssemblyName();
             an.Name = "DynamicRandomAssembly";

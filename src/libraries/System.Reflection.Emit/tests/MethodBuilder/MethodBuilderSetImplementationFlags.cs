@@ -22,35 +22,25 @@ namespace System.Reflection.Emit.Tests
         private const int MaxStringLength = 128;
         private const int ByteArraySize = 128;
 
-        private TypeBuilder TestTypeBuilder
+        private TypeBuilder GetTestTypeBuilder()
         {
-            get
-            {
-                if (null == _testTypeBuilder)
-                {
-                    AssemblyName assemblyName = new AssemblyName(TestDynamicAssemblyName);
-                    AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
-                        assemblyName, TestAssemblyBuilderAccess);
+            AssemblyName assemblyName = new AssemblyName(TestDynamicAssemblyName);
+            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
+                assemblyName, TestAssemblyBuilderAccess);
 
-                    ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, TestDynamicModuleName);
-
-                    _testTypeBuilder = moduleBuilder.DefineType(TestDynamicTypeName, TestTypeAttributes);
-                }
-
-                return _testTypeBuilder;
-            }
+            ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, TestDynamicModuleName);
+            return moduleBuilder.DefineType(TestDynamicTypeName, TestTypeAttributes);
         }
 
-        private TypeBuilder _testTypeBuilder;
-
         [Fact]
-        public void PosTest1()
+        public void TestWithCodeTypeMask()
         {
             string methodName = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             MethodImplAttributes desiredFlags = MethodImplAttributes.CodeTypeMask;
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Public);
 
             builder.SetImplementationFlags(desiredFlags);
@@ -60,13 +50,14 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithForwardRef()
         {
             string methodName = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             MethodImplAttributes desiredFlags = MethodImplAttributes.ForwardRef;
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Public);
 
             builder.SetImplementationFlags(desiredFlags);
@@ -76,13 +67,14 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestWithIL()
         {
             string methodName = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             MethodImplAttributes desiredFlags = MethodImplAttributes.IL;
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Public);
 
             builder.SetImplementationFlags(desiredFlags);
@@ -92,13 +84,14 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestWithInternalCall()
         {
             string methodName = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             MethodImplAttributes desiredFlags = MethodImplAttributes.InternalCall;
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Public);
 
             builder.SetImplementationFlags(desiredFlags);
@@ -108,13 +101,14 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest5()
+        public void TestWithManaged()
         {
             string methodName = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             MethodImplAttributes desiredFlags = MethodImplAttributes.Managed;
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Public);
 
             builder.SetImplementationFlags(desiredFlags);
@@ -124,13 +118,14 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest6()
+        public void TestWithManagedMask()
         {
             string methodName = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             MethodImplAttributes desiredFlags = MethodImplAttributes.ManagedMask;
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Public);
 
             builder.SetImplementationFlags(desiredFlags);
@@ -141,13 +136,14 @@ namespace System.Reflection.Emit.Tests
 
 
         [Fact]
-        public void PosTest8()
+        public void TestWithNative()
         {
             string methodName = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             MethodImplAttributes desiredFlags = MethodImplAttributes.Native;
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Public);
 
             builder.SetImplementationFlags(desiredFlags);
@@ -157,14 +153,15 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest9()
+        public void TestWithNoInlining()
         {
             string methodName = null;
 
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             MethodImplAttributes desiredFlags = MethodImplAttributes.NoInlining;
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Public);
 
             builder.SetImplementationFlags(desiredFlags);
@@ -174,13 +171,14 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest10()
+        public void TestWithOPTIL()
         {
             string methodName = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             MethodImplAttributes desiredFlags = MethodImplAttributes.OPTIL;
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Public);
 
             builder.SetImplementationFlags(desiredFlags);
@@ -190,13 +188,14 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest11()
+        public void TestWithPreserveSig()
         {
             string methodName = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             MethodImplAttributes desiredFlags = MethodImplAttributes.PreserveSig;
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Public);
 
             builder.SetImplementationFlags(desiredFlags);
@@ -206,14 +205,15 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest12()
+        public void TestWithRuntime()
         {
             string methodName = null;
 
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             MethodImplAttributes desiredFlags = MethodImplAttributes.Runtime;
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Public);
 
             builder.SetImplementationFlags(desiredFlags);
@@ -223,13 +223,14 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest13()
+        public void TestWithSynchronized()
         {
             string methodName = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             MethodImplAttributes desiredFlags = MethodImplAttributes.Synchronized;
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Public);
 
             builder.SetImplementationFlags(desiredFlags);
@@ -239,14 +240,15 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest14()
+        public void TestWithUnmanaged()
         {
             string methodName = null;
 
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             MethodImplAttributes desiredFlags = MethodImplAttributes.Unmanaged;
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Public);
 
             builder.SetImplementationFlags(desiredFlags);
@@ -256,17 +258,17 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionOnTypeCreated()
         {
             string methodName = null;
-            _testTypeBuilder = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             MethodImplAttributes desiredFlags = MethodImplAttributes.Unmanaged;
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
 
-            Type type = TestTypeBuilder.CreateTypeInfo().AsType();
+            Type type = typeBuilder.CreateTypeInfo().AsType();
 
             Assert.Throws<InvalidOperationException>(() => { builder.SetImplementationFlags(desiredFlags); });
         }

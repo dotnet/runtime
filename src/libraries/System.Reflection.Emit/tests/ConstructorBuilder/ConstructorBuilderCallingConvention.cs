@@ -15,7 +15,7 @@ namespace System.Reflection.Emit.Tests
         CallingConventions.VarArgs };
 
         [Fact]
-        public void PosTest1()
+        public void TestCallingConventions()
         {
             AssemblyName an = new AssemblyName();
             an.Name = "DynamicRandomAssembly";
@@ -36,7 +36,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestCallingConventionWithDifferentOverload()
         {
             AssemblyName an = new AssemblyName();
             an.Name = "DynamicRandomAssembly";

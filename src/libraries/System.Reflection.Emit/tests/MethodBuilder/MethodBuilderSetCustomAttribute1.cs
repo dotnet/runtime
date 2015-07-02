@@ -88,29 +88,18 @@ namespace System.Reflection.Emit.Tests
         private const int MaxStringLength = 128;
         private const int ByteArraySize = 128;
 
-        private TypeBuilder TestTypeBuilder
+        private TypeBuilder GetTestTypeBuilder()
         {
-            get
-            {
-                if (null == _testTypeBuilder)
-                {
-                    AssemblyName assemblyName = new AssemblyName(TestDynamicAssemblyName);
-                    AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
-                        assemblyName, TestAssemblyBuilderAccess);
+            AssemblyName assemblyName = new AssemblyName(TestDynamicAssemblyName);
+            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
+                assemblyName, TestAssemblyBuilderAccess);
 
-                    ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, TestDynamicModuleName);
-
-                    _testTypeBuilder = moduleBuilder.DefineType(TestDynamicTypeName, TestTypeAttributes);
-                }
-
-                return _testTypeBuilder;
-            }
+            ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, TestDynamicModuleName);
+            return moduleBuilder.DefineType(TestDynamicTypeName, TestTypeAttributes);
         }
 
-        private TypeBuilder _testTypeBuilder;
-
         [Fact]
-        public void PosTest1()
+        public void TestSetCustomAttribute()
         {
             string methodName = null;
 
@@ -120,14 +109,15 @@ namespace System.Reflection.Emit.Tests
 
             TestLibrary.Generator.GetBytes(binaryAttribute);
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Public);
 
             builder.SetCustomAttribute(typeof(CustomAttributeBuilderTest).GetConstructor(ctorParams), binaryAttribute);
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionOnNullConstructorInfo()
         {
             string methodName = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
@@ -135,20 +125,22 @@ namespace System.Reflection.Emit.Tests
 
             TestLibrary.Generator.GetBytes(binaryAttribute);
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Public);
 
             Assert.Throws<ArgumentNullException>(() => { builder.SetCustomAttribute(null, binaryAttribute); });
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionOnNullByteArray()
         {
             string methodName = null;
             methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             Type[] ctorParams = new Type[] { };
 
-            MethodBuilder builder = TestTypeBuilder.DefineMethod(methodName,
+            TypeBuilder typeBuilder = GetTestTypeBuilder();
+            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Public);
 
             Assert.Throws<ArgumentNullException>(() => { builder.SetCustomAttribute(typeof(CustomAttributeBuilderTest).GetConstructor(ctorParams), null); });

@@ -31,7 +31,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest1()
+        public void TestWithPublicSingleParameterIntReturnTypeMethod()
         {
             TypeBuilder myTypeBuilder;
             PropertyBuilder myPropertyBuilder;
@@ -67,7 +67,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithPrivateSingleParameterIntReturnTypeMethod()
         {
             TypeBuilder myTypeBuilder;
             PropertyBuilder myPropertyBuilder;
@@ -103,7 +103,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestWithPublicStaticSingleParameterIntReturnTypeMethod()
         {
             TypeBuilder myTypeBuilder;
             PropertyBuilder myPropertyBuilder;
@@ -146,7 +146,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionOnNullMethodBuilder()
         {
             TypeBuilder myTypeBuilder;
             PropertyBuilder myPropertyBuilder;
@@ -166,7 +166,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionOnCreateTypeCalled()
         {
             TypeBuilder myTypeBuilder;
             PropertyBuilder myPropertyBuilder;

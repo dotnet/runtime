@@ -41,7 +41,7 @@ namespace System.Reflection.Emit.Tests
         private TypeBuilder _typeBuilder;
 
         [Fact]
-        public void PosTest1()
+        public void TestForBool()
         {
             FieldBuilder field = TypeBuilder.DefineField("Field_PosTest1", typeof(Boolean), FieldAttributes.Public);
 
@@ -53,9 +53,9 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestForSByte()
         {
-            FieldBuilder field = TypeBuilder.DefineField("Field_PosTest2", typeof(SByte), FieldAttributes.Public);
+            FieldBuilder field = TypeBuilder.DefineField("Field_PosTest2", typeof(sbyte), FieldAttributes.Public);
 
             // set default value
             field.SetConstant(SByte.MinValue);
@@ -65,9 +65,9 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestForShort()
         {
-            FieldBuilder field = TypeBuilder.DefineField("Field_PosTest3", typeof(Int16), FieldAttributes.Public);
+            FieldBuilder field = TypeBuilder.DefineField("Field_PosTest3", typeof(short), FieldAttributes.Public);
 
             // set default value
             field.SetConstant(Int16.MaxValue);
@@ -77,7 +77,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestForInt()
         {
             FieldBuilder field = TypeBuilder.DefineField("Field_PosTest4", typeof(int), FieldAttributes.Public);
 
@@ -89,7 +89,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest5()
+        public void TestForLong()
         {
             FieldBuilder field = TypeBuilder.DefineField("Field_PosTest5", typeof(long), FieldAttributes.Public);
 
@@ -101,7 +101,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest6()
+        public void TestForByte()
         {
             FieldBuilder field = TypeBuilder.DefineField("Field_PosTest6", typeof(byte), FieldAttributes.Public);
 
@@ -113,7 +113,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest7()
+        public void TestForUShort()
         {
             FieldBuilder field = TypeBuilder.DefineField("Field_PosTest7", typeof(ushort), FieldAttributes.Public);
 
@@ -125,7 +125,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest8()
+        public void TestForUInt()
         {
             FieldBuilder field = TypeBuilder.DefineField("Field_PosTest8", typeof(uint), FieldAttributes.Public);
 
@@ -137,7 +137,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest9()
+        public void TestForULong()
         {
             FieldBuilder field = TypeBuilder.DefineField("Field_PosTest9", typeof(ulong), FieldAttributes.Public);
 
@@ -149,7 +149,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest10()
+        public void TestForFloat()
         {
             FieldBuilder field = TypeBuilder.DefineField("Field_PosTest10", typeof(float), FieldAttributes.Public);
 
@@ -161,7 +161,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest11()
+        public void TestForDouble()
         {
             FieldBuilder field = TypeBuilder.DefineField("Field_PosTest11", typeof(double), FieldAttributes.Public);
 
@@ -173,7 +173,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest12()
+        public void TestForDateTime()
         {
             FieldBuilder field = TypeBuilder.DefineField("Field_PosTest12", typeof(DateTime), FieldAttributes.Public);
 
@@ -185,7 +185,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest13()
+        public void TestForChar()
         {
             FieldBuilder field = TypeBuilder.DefineField("Field_PosTest13", typeof(Char), FieldAttributes.Public);
 
@@ -197,7 +197,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest14()
+        public void TestForString()
         {
             FieldBuilder field = TypeBuilder.DefineField("Field_PosTest14", typeof(string), FieldAttributes.Public);
 
@@ -209,7 +209,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest15()
+        public void TestForCustomType()
         {
             FieldBuilder field = TypeBuilder.DefineField("Field_PosTest15", typeof(FBTestEnum), FieldAttributes.Public);
 
@@ -221,7 +221,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest17()
+        public void TestForObject()
         {
             FieldBuilder field = TypeBuilder.DefineField("Field_PosTest17", typeof(object), FieldAttributes.Public);
 
@@ -230,7 +230,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest18()
+        public void TestForNullOnCustomType()
         {
             FieldBuilder field = TypeBuilder.DefineField("Field_PosTest18", typeof(FieldBuilderSetConstant), FieldAttributes.Public);
 
@@ -239,7 +239,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionOnCreateTypeCalled()
         {
             FieldBuilder field = TypeBuilder.DefineField("Field_NegTest1", typeof(int), FieldAttributes.Public);
 
@@ -249,7 +249,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExceptionForInvalidValueOnFieldType()
         {
             FieldBuilder field = TypeBuilder.DefineField("Field_NegTest2_Boolean", typeof(Boolean), FieldAttributes.Public);
             VerificationHelper(field, null, typeof(ArgumentException));
@@ -318,17 +318,17 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest3()
+        public void TestThrowsExceptionForStruct()
         {
             FieldBuilder field = TypeBuilder.DefineField("Field_NegTest3", typeof(FBTestStruct), FieldAttributes.Public);
             VerificationHelper(field, null, typeof(ArgumentException));
         }
 
         [Fact]
-        public void NegTest4()
+        public void TestThrowsExceptionForDecimal()
         {
             FieldBuilder field = TypeBuilder.DefineField("Field_PosTest16", typeof(Decimal), FieldAttributes.Public);
-            VerificationHelper(field, Decimal.One, typeof(ArgumentException));
+            VerificationHelper(field, decimal.One, typeof(ArgumentException));
         }
 
         private void VerificationHelper(FieldBuilder field, object value, Type expected)

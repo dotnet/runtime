@@ -12,28 +12,28 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderNamespace
     {
         [Fact]
-        public void PosTest1()
+        public void TestWithoutNamespaceSpecifiedGeneric()
         {
             TypeBuilder myBuilder = CreateGenericTypeBuilderWithoutNamespace();
             Assert.Equal("", myBuilder.Namespace);
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithNameSpaceSpecifiedGeneric()
         {
             TypeBuilder myBuilder = CreateGenericTypeBuilderWithNamespace();
             Assert.Equal("GenericTypeNamespace", myBuilder.Namespace);
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestWithoutNamespaceSpecifiedNonGeneric()
         {
             TypeBuilder myBuilder = CreateNonGenericTypeBuilderWithoutNamespace();
             Assert.Equal("", myBuilder.Namespace);
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestWithNamespaceSpecifiedNonGeneric()
         {
             TypeBuilder myBuilder = CreateNonGenericTypeBuilderWithNamespace();
             Assert.Equal("NonGenericTypeNamespace", myBuilder.Namespace);

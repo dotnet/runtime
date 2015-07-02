@@ -38,7 +38,7 @@ namespace System.Reflection.Emit.Tests
                                                        TypeAttributes.VisibilityMask,
                                                        };
         [Fact]
-        public void PosTest1()
+        public void TestDefineNestedType()
         {
             ModuleBuilder modBuilder;
             TypeBuilder typeBuilder;
@@ -76,7 +76,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest2()
+        public void TestWithEmbeddedNullsInName()
         {
             ModuleBuilder modBuilder;
             TypeBuilder typeBuilder;
@@ -109,7 +109,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest3()
+        public void TestWithTypeAttributesSet()
         {
             ModuleBuilder modBuilder;
             TypeBuilder typeBuilder;
@@ -150,7 +150,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void PosTest4()
+        public void TestWithNullParentType()
         {
             ModuleBuilder modBuilder;
             TypeBuilder typeBuilder;
@@ -179,7 +179,7 @@ namespace System.Reflection.Emit.Tests
 
 
         [Fact]
-        public void NegTest1()
+        public void TestThrowsExceptionForNullname()
         {
             ModuleBuilder modBuilder;
             TypeBuilder typeBuilder;
@@ -205,7 +205,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void NegTest2()
+        public void TestThrowsExcetpionForEmptyName()
         {
             ModuleBuilder modBuilder;
             TypeBuilder typeBuilder;
