@@ -8,12 +8,10 @@ internal partial class Interop
 {
     internal partial class BCrypt
     {
-        internal enum NTSTATUS : uint
+        internal static Exception CreateCryptographicException(NTSTATUS ntStatus)
         {
-            STATUS_SUCCESS = 0x0,
-            STATUS_NOT_FOUND = 0xc0000225,
-            STATUS_INVALID_PARAMETER = 0xc000000d,
-            STATUS_NO_MEMORY = 0xc0000017,
+            int hr = ((int)ntStatus) | 0x01000000;
+            return new CryptographicException(hr);
         }
     }
 }
