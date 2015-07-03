@@ -9,6 +9,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <NuGetTargetFrameworkMoniker>DNXCore,Version=v5.0</NuGetTargetFrameworkMoniker>
+	<!-- System.IO.Path conflicts between type in partial facade and in mscorlib -->
+    <NoWarn>0436</NoWarn> 
   </PropertyGroup>
 
   <!-- Default configurations to help VS understand the configurations -->
@@ -41,11 +43,21 @@
 
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="System\Diagnostics\Stopwatch.Windows.cs" />
+    <Compile Include="System\IO\Path.cs" /> <!-- TODO: Move this to the common group once Path.Unix.cs is implemented -->
+    <Compile Include="System\IO\Path.Windows.cs" />
+    <Compile Include="System\IO\Path.Win32.cs" />
+    <Compile Include="System\IO\PathHelper.Windows.cs" />
     <Compile Include="$(CommonPath)\System\IO\Win32Marshal.cs">
       <Link>System\IO\Win32Marshal.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
+      <Link>Common\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
+      <Link>Common\Interop\Windows\BCrypt\Interop.NTSTATUS.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Errors.cs">
       <Link>Interop\Windows\mincore\Interop.Errors.cs</Link>
@@ -53,8 +65,20 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
       <Link>Interop\Windows\mincore\Interop.FormatMessage.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetFullPathNameW.cs">
+      <Link>Interop\Windows\mincore\Interop.GetFullPathNameW.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLastError.cs">
       <Link>Interop\Windows\mincore\Interop.GetLastError.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLongPathNameW.cs">
+      <Link>Interop\Windows\mincore\Interop.GetLongPathNameW.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetTempFileNameW.cs">
+      <Link>Interop\Windows\mincore\Interop.GetTempFileNameW.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetTempPathW.cs">
+      <Link>Interop\Windows\mincore\Interop.GetTempPathW.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.QueryPerformanceCounter.cs">
       <Link>Interop\Windows\mincore\Interop.QueryPerformanceCounter.cs</Link>
@@ -62,7 +86,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.QueryPerformanceFrequency.cs">
       <Link>Interop\Windows\mincore\Interop.QueryPerformanceFrequency.cs</Link>
     </Compile>
-    
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
