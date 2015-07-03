@@ -3312,7 +3312,7 @@ void ZapInfo::recordRelocation(void *location, void *target,
         break;
 
     case IMAGE_REL_BASED_PTR:
-#ifdef _TARGET_AMD64_
+#if defined(_TARGET_AMD64_) && !defined(FEATURE_CORECLR)
         _ASSERTE(!"Why we are not using RIP relative address?");
 #endif
         *(UNALIGNED TADDR *)location = (TADDR)targetOffset;
