@@ -79,7 +79,7 @@ Other Information
 =================
 
 - [CoreFX Repo documentation](https://github.com/dotnet/corefx/tree/master/Documentation)
-- [Porting to .NET Core](https://github.com/dotnet/corefx/blob/master/Documentation/support-dotnet-core-instructions.md)
+- [Porting to .NET Core](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/support-dotnet-core-instructions.md)
 - [.NET Standards (Ecma)](project-docs/dotnet-standards.md)
 - [CLR Configuration Knobs](project-docs/clr-configuration-knobs.md)
 - [MSDN Entry for the CLR](http://msdn.microsoft.com/library/8bs2ecf4.aspx)
