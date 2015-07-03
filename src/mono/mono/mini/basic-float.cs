@@ -812,5 +812,13 @@ class Tests
 		short b = (short)a;
 		return b == 127 ? 0 : 1;
 	}
+
+	public static int test_10_rconv_to_u8 () {
+		ulong l = 10;
+		float f = (float)l;
+		l = (ulong)f;
+		return (int)l;
+	}
+
 }
 
