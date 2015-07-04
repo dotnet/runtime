@@ -128,12 +128,6 @@ namespace System.Reflection.Metadata.Ecma335
         DotTerminated = (byte)(StringHandleType.DotTerminatedString >> HeapHandleType.OffsetBitCount),
     }
 
-    internal enum NamespaceKind : byte
-    {
-        Plain = (byte)(NamespaceHandleType.Namespace >> HeapHandleType.OffsetBitCount),
-        Synthetic = (byte)(NamespaceHandleType.SyntheticNamespace >> HeapHandleType.OffsetBitCount),
-    }
-
     internal static class StringHandleType
     {
         // NUL-terminated UTF8 string on a #String heap.
@@ -154,26 +148,7 @@ namespace System.Reflection.Metadata.Ecma335
 
         // Reserved virtual strings that can be used in future:
         internal const uint ReservedVirtualString1 = HeapHandleType.VirtualBit | String | (2 << HeapHandleType.OffsetBitCount);
-        internal const uint ReservedVirtaulString2 = HeapHandleType.VirtualBit | String | (3 << HeapHandleType.OffsetBitCount);
-    }
-
-    internal static class NamespaceHandleType
-    {
-        // Namespace handle for namespace with types of its own
-        internal const uint Namespace = 0;
-
-        // Namespace handle for namespace with child namespaces but no types of its own           
-        internal const uint SyntheticNamespace = Namespace | (1 << HeapHandleType.OffsetBitCount);
-
-        // Reserved namespaces that can be used in future:
-        internal const uint ReservedNamespace1 = Namespace | (2 << HeapHandleType.OffsetBitCount);
-        internal const uint ReservedNamespace2 = Namespace | (3 << HeapHandleType.OffsetBitCount);
-
-        // Reserved virtual namespaces that can be used in future:
-        internal const uint ReservedVirtualNamespace1 = HeapHandleType.VirtualBit | Namespace;
-        internal const uint ReservedVirtualNamespace2 = HeapHandleType.VirtualBit | Namespace | (1 << HeapHandleType.OffsetBitCount);
-        internal const uint ReservedVirtualNamespace3 = HeapHandleType.VirtualBit | Namespace | (2 << HeapHandleType.OffsetBitCount);
-        internal const uint ReservedVirtualNamespace4 = HeapHandleType.VirtualBit | Namespace | (3 << HeapHandleType.OffsetBitCount);
+        internal const uint ReservedVirtualString2 = HeapHandleType.VirtualBit | String | (3 << HeapHandleType.OffsetBitCount);
     }
 
     internal static class HeapHandleType
@@ -230,25 +205,17 @@ namespace System.Reflection.Metadata.Ecma335
 
         internal const uint Blob = 0x71;        // #Blob heap
         internal const uint Guid = 0x72;        // #Guid heap
+        internal const uint Namespace = 0x73;   // #String heap but known to be the full name of a namespace
 
-        // #String heap and its modifications (up to 8 string kinds, virtaul and non-virtual)
-        internal const uint String = 0x78;
+        // #String heap and its modifications (up to 8 string kinds, virtual and non-virtual)
+        internal const uint String = 0x7c;
         internal const uint DotTerminatedString = String | ((StringHandleType.DotTerminatedString & ~HeapHandleType.VirtualBit) >> HeapHandleType.OffsetBitCount);
         internal const uint ReservedString1 = String | ((StringHandleType.ReservedString1 & ~HeapHandleType.VirtualBit) >> HeapHandleType.OffsetBitCount); 
-        internal const uint ReservedString2 = String | ((StringHandleType.ReservedString1 & ~HeapHandleType.VirtualBit) >> HeapHandleType.OffsetBitCount); 
+        internal const uint ReservedString2 = String | ((StringHandleType.ReservedString2 & ~HeapHandleType.VirtualBit) >> HeapHandleType.OffsetBitCount); 
         internal const uint VirtualString = VirtualBit | String;
         internal const uint WinRTPrefixedString = VirtualBit | String | ((StringHandleType.WinRTPrefixedString & ~HeapHandleType.VirtualBit) >> HeapHandleType.OffsetBitCount);
         internal const uint ReservedVirtualString1 = VirtualBit | String | ((StringHandleType.ReservedString1 & ~HeapHandleType.VirtualBit) >> HeapHandleType.OffsetBitCount);
         internal const uint ReservedVirtualString2 = VirtualBit | String | ((StringHandleType.ReservedString2 & ~HeapHandleType.VirtualBit) >> HeapHandleType.OffsetBitCount);
-
-        internal const uint Namespace = 0x7c;
-        internal const uint SyntheticNamespace = Namespace | ((NamespaceHandleType.SyntheticNamespace & ~HeapHandleType.VirtualBit) >> HeapHandleType.OffsetBitCount);
-        internal const uint ReservedNamespace1 = Namespace | ((NamespaceHandleType.ReservedNamespace1 & ~HeapHandleType.VirtualBit) >> HeapHandleType.OffsetBitCount);
-        internal const uint ReservedNamespace2 = Namespace | ((NamespaceHandleType.ReservedNamespace2 & ~HeapHandleType.VirtualBit) >> HeapHandleType.OffsetBitCount);
-        internal const uint ReservedVirtualNamespace1 = VirtualBit | Namespace | ((NamespaceHandleType.ReservedVirtualNamespace1 & ~HeapHandleType.VirtualBit) >> HeapHandleType.OffsetBitCount);
-        internal const uint ReservedVirtualNamespace2 = VirtualBit | Namespace | ((NamespaceHandleType.ReservedVirtualNamespace2 & ~HeapHandleType.VirtualBit) >> HeapHandleType.OffsetBitCount);
-        internal const uint ReservedVirtualNamespace3 = VirtualBit | Namespace | ((NamespaceHandleType.ReservedVirtualNamespace3 & ~HeapHandleType.VirtualBit) >> HeapHandleType.OffsetBitCount);
-        internal const uint ReservedVirtualNamespace4 = VirtualBit | Namespace | ((NamespaceHandleType.ReservedVirtualNamespace4 & ~HeapHandleType.VirtualBit) >> HeapHandleType.OffsetBitCount);
 
         internal const uint StringHeapTypeMask = HeapHandleType.NonVirtualTypeMask >> HeapHandleType.OffsetBitCount;
         internal const uint StringOrNamespaceMask = 0x7c;
@@ -266,11 +233,11 @@ namespace System.Reflection.Metadata.Ecma335
         {
             Debug.Assert((handleType & VirtualBit) == 0);
 
-            // Do not surface special string and namespace token sub-types (e.g. dot terminated, winrt prefixed, synthetic) 
-            // in public-facing handle type. Pretend that all strings/namespaces are just plain strings/namespaces.
+            // Do not surface special string token sub-types (e.g. dot terminated, winrt prefixed) 
+            // in public-facing handle type. Pretend that all strings are just plain strings.
             if (handleType > String)
             {
-                return (HandleKind)(handleType & ~StringHeapTypeMask);
+                return HandleKind.String;
             }
 
             return (HandleKind)handleType;
