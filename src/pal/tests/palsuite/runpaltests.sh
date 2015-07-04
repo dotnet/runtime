@@ -52,6 +52,16 @@ echo PAL tests will store their temporary files and output in $PAL_TEST_OUTPUT_D
 # Path to a file that will contains a list PAL tests that failed during the test run.
 PAL_FAILED_TEST_LIST=$PAL_TEST_OUTPUT_DIR/palfailedtests.txt
 
+# Path to a file that will contain the XUnit style test result for Jenkins
+# We use a temp file as at the end we have to prepend with the number of tests
+# and failures
+PAL_XUNIT_TEST_LIST_TMP=$PAL_TEST_OUTPUT_DIR/pal_tests.xml.tmp
+PAL_XUNIT_TEST_LIST=$PAL_TEST_OUTPUT_DIR/pal_tests.xml
+
+# Capturing stdout and stderr
+PAL_STDOUT_FILE=$PAL_TEST_OUTPUT_DIR/pal_stdout
+PAL_STDERR_FILE=$PAL_TEST_OUTPUT_DIR/pal_stderr
+
 # Remove the temporary test output directory
 rm -r $PAL_TEST_OUTPUT_DIR
 mkdir $PAL_TEST_OUTPUT_DIR
@@ -67,6 +77,17 @@ NUMBER_OF_FAILED_TESTS=0
 # Read PAL tests names from the $PAL_TEST_LIST file and run them one by one.
 while read TEST_NAME
 do
+  # Remove stdout/stderr files if they exist
+  rm -f $PAL_STDOUT_FILE
+  rm -f $PAL_STDERR_FILE
+  
+  # Save stdout/stderr
+  exec 3>&1 4>&2
+  
+  # Redirect to temp files
+  # Redirect stdout to the backed up stderr so tee outputs stderr to stderr
+  exec > >(tee "$PAL_STDOUT_FILE")
+  exec 2> >(tee "$PAL_STDERR_FILE" >&2)
 
   # Create path to a test executable to run
   TEST_COMMAND="$PAL_TEST_BUILD/$TEST_NAME"
@@ -75,11 +96,30 @@ do
 
   # Get exit code of the test process.
   TEST_EXIT_CODE=$?
+  
+  # Restore stdout/stderr
+  exec >&3 2>&4
+  
+  TEST_XUNIT_NAME=$(dirname $TEST_NAME)
+  TEST_XUNIT_CLASSNAME=$(dirname $TEST_XUNIT_NAME)
+  TEST_XUNIT_NAME=${TEST_XUNIT_NAME#*/}
+  TEST_XUNIT_NAME=${TEST_XUNIT_NAME#*/}
+  
+  TEST_XUNIT_NAME=$(echo $TEST_XUNIT_NAME | tr / .)
+  TEST_XUNIT_CLASSNAME=$(echo $TEST_XUNIT_CLASSNAME | tr / .)
+  
+  echo -n "<test name=\"$TEST_XUNIT_CLASSNAME.$TEST_XUNIT_NAME\" type=\"$TEST_XUNIT_CLASSNAME\" method=\"$TEST_XUNIT_NAME\" result=\"" >> $PAL_XUNIT_TEST_LIST_TMP
 
   # If the exit code is 0 then the test passed, otherwise record a failure.
   if [ "$TEST_EXIT_CODE" -eq "0" ]; then
     NUMBER_OF_PASSED_TESTS=$(($NUMBER_OF_PASSED_TESTS + 1))
+    echo "Pass\" />" >> $PAL_XUNIT_TEST_LIST_TMP
   else
+    echo "Fail\" >" >> $PAL_XUNIT_TEST_LIST_TMP
+    echo "<failure exception-type=\"Exit code: $TEST_EXIT_CODE\">" >> $PAL_XUNIT_TEST_LIST_TMP  
+    echo "<message><![CDATA[$(cat $PAL_STDERR_FILE)]]></message>" >> $PAL_XUNIT_TEST_LIST_TMP  
+    echo "</failure>" >> $PAL_XUNIT_TEST_LIST_TMP  
+    echo "</test>" >> $PAL_XUNIT_TEST_LIST_TMP
     FAILED_TEST="$TEST_NAME. Exit code: $TEST_EXIT_CODE"
     echo
 	echo FAILED: $FAILED_TEST
@@ -96,6 +136,21 @@ done < $PAL_TEST_LIST
 echo
 echo Finished running PAL tests.
 echo
+
+# Finish XUnit file, output to finished file with the number of failures, tests etc
+NUMBER_OF_TESTS=$(($NUMBER_OF_PASSED_TESTS + $NUMBER_OF_FAILED_TESTS))
+
+XUNIT_SUFFIX="</collection>\n"
+XUNIT_SUFFIX+="</assembly>\n"
+XUNIT_SUFFIX+="</assemblies>"
+
+XUNIT_PREFIX="<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+XUNIT_PREFIX+="<assemblies>\n"
+XUNIT_PREFIX+="<assembly name=\"PAL\" total=\"$NUMBER_OF_TESTS\" passed=\"$NUMBER_OF_PASSED_TESTS\" failed=\"$NUMBER_OF_FAILED_TESTS\" skipped=\"0\">\n"
+XUNIT_PREFIX+="<collection total=\"$NUMBER_OF_TESTS\" passed=\"$NUMBER_OF_PASSED_TESTS\" failed=\"$NUMBER_OF_FAILED_TESTS\" skipped=\"0\" name=\"palsuite\">"
+
+echo -e $XUNIT_SUFFIX >> $PAL_XUNIT_TEST_LIST_TMP
+echo -e $XUNIT_PREFIX | cat - $PAL_XUNIT_TEST_LIST_TMP > $PAL_XUNIT_TEST_LIST
 
 # If there were tests failures then print the list of failed tests
 if [ $NUMBER_OF_FAILED_TESTS -gt "0" ]; then
