@@ -131,6 +131,19 @@ namespace SkipFirstOnce.Namespace
     { }
 }
 
+// Same suffix shared by different namespaces
+namespace FxResources.Microsoft.CSharp
+{
+    public class Resources
+    { }
+}
+
+namespace Microsoft.CSharp
+{
+    public class Program
+    { }
+}
+
 // EXCEPTION: Forwarder namespace has a type forwarder: Forwarder.FwdType. This can be found in NamespaceForwardedCS.cs.
 namespace Forwarder
 {
