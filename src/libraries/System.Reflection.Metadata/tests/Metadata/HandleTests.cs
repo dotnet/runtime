@@ -297,11 +297,11 @@ namespace System.Reflection.Metadata.Tests
             Assert.Throws<InvalidCastException>(() => (MethodImplementationHandle)         new Handle((byte)(HandleType.VirtualBit | HandleType.MethodImpl), 1));
             Assert.Throws<InvalidCastException>(() => (UserStringHandle)new Handle((byte)(HandleType.VirtualBit | HandleType.UserString), 1));
             Assert.Throws<InvalidCastException>(() => (GuidHandle)new Handle((byte)(HandleType.VirtualBit | HandleType.Guid), 1));
-            Assert.Throws<InvalidCastException>(() => (NamespaceDefinitionHandle)new Handle((byte)(HandleType.VirtualBit | HandleType.Namespace), 1));
 
             var x1 = (AssemblyReferenceHandle)new Handle((byte)(HandleType.VirtualBit | HandleType.AssemblyRef), 1);
             var x2 = (StringHandle)new Handle((byte)(HandleType.VirtualBit | HandleType.String), 1);
             var x3 = (BlobHandle)new Handle((byte)(HandleType.VirtualBit | HandleType.Blob), 1);
+            var x4 = (NamespaceDefinitionHandle)new Handle((byte)(HandleType.VirtualBit | HandleType.Namespace), 1);
         }
 
         [Fact]
@@ -537,14 +537,16 @@ namespace System.Reflection.Metadata.Tests
         public void NamespaceKinds()
         {
             var full = NamespaceDefinitionHandle.FromFullNameOffset(123);
-            Assert.Equal(NamespaceKind.Plain, full.NamespaceKind);
             Assert.False(full.IsVirtual);
             Assert.Equal(123, full.GetHeapOffset());
 
-            var synthetic = NamespaceDefinitionHandle.FromSimpleNameOffset(123);
-            Assert.Equal(NamespaceKind.Synthetic, synthetic.NamespaceKind);
-            Assert.False(synthetic.IsVirtual);
-            Assert.Equal(123, synthetic.GetHeapOffset());
+            var virtual1 = NamespaceDefinitionHandle.FromVirtualIndex(123);
+            Assert.True(virtual1.IsVirtual);
+
+            var virtual2 = NamespaceDefinitionHandle.FromVirtualIndex((UInt32.MaxValue >> 3));
+            Assert.True(virtual2.IsVirtual);
+
+            Assert.Throws<BadImageFormatException>(() => NamespaceDefinitionHandle.FromVirtualIndex((UInt32.MaxValue >> 3) + 1));
         }
 
         [Fact]
@@ -561,21 +563,13 @@ namespace System.Reflection.Metadata.Tests
 
                     switch (i)
                     {
-                        // String and namespace have two extra bits to represent their kind that are hidden from the handle type
+                        // String has two extra bits to represent its kind that are hidden from the handle type
                         case (int)HandleKind.String:
                         case (int)HandleKind.String + 1:
                         case (int)HandleKind.String + 2:
                         case (int)HandleKind.String + 3:
                             Assert.Equal(HandleKind.String, handle.Kind);
                             break;
-
-                        case (int)HandleKind.NamespaceDefinition:
-                        case (int)HandleKind.NamespaceDefinition + 1:
-                        case (int)HandleKind.NamespaceDefinition + 2:
-                        case (int)HandleKind.NamespaceDefinition + 3:
-                            Assert.Equal(HandleKind.NamespaceDefinition, handle.Kind);
-                            break;
-
                         // all other types surface token type directly.
                         default:
                             Assert.Equal((int)handle.Kind, i);

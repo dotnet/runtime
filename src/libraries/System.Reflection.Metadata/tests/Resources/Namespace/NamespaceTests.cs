@@ -134,13 +134,22 @@ namespace SkipFirstOnce.Namespace
 // Same suffix shared by different namespaces
 namespace FxResources.Microsoft.CSharp
 {
-    public class Resources
+    public class FxResources
+    { }
+
+    public class Microsoft
+    { }
+
+    public class CSharp
     { }
 }
 
 namespace Microsoft.CSharp
 {
-    public class Program
+    public class Microsoft
+    { }
+
+    public class CSharp
     { }
 }
 

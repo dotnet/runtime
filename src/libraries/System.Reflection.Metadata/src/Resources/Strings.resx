@@ -300,4 +300,7 @@
   <data name="InvalidRowCount" xml:space="preserve">
     <value>Invalid row count: {0}</value>
   </data>
+  <data name="TooManySubnamespaces" xml:space="preserve">
+    <value>There are too many subnamespaces.</value>
+  </data>
 </root>
