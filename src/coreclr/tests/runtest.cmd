@@ -31,7 +31,7 @@ shift
 
 :: Check presence of VS
 if defined VS%__VSProductVersion%COMNTOOLS goto CheckMSbuild
-echo Installation of VS 2013 is a pre-requisite to build this repository.
+echo InVisual Studio 2013+ (Community is free) is a pre-requisite to build this repository.
 exit /b 1
 
 :CheckMSBuild
