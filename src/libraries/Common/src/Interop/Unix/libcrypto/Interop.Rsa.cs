@@ -83,16 +83,6 @@ internal static partial class Interop
                     rsaParameters.Q = ExtractBignum(rsaStructure->q, halfModulus);
                     rsaParameters.DQ = ExtractBignum(rsaStructure->dmq1, halfModulus);
                     rsaParameters.InverseQ = ExtractBignum(rsaStructure->iqmp, halfModulus);
-
-                    if (rsaParameters.D == null ||
-                        rsaParameters.P == null ||
-                        rsaParameters.DP == null ||
-                        rsaParameters.Q == null ||
-                        rsaParameters.DQ == null ||
-                        rsaParameters.InverseQ == null)
-                    {
-                        throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
-                    }
                 }
             }
             finally
