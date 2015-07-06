@@ -1,11 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Diagnostics;
-
-// TODO: This partial implementation is currently stubbed out and should not be
-//       included in the .csproj until completed.
+using System.Text;
 
 namespace System.IO
 {
@@ -17,13 +14,12 @@ namespace System.IO
 
         private const string DirectorySeparatorCharAsString = "/";
 
-        private static readonly char[] RealInvalidPathChars = { '\0' };
-        private static readonly char[] InvalidPathCharsWithAdditionalChecks = { '\0', '*', '?' }; // Used by HasIllegalCharacters
+        private static readonly char[] InvalidPathChars = { '\0' };
         private static readonly char[] InvalidFileNameChars = { '\0', '/' };
+        private static readonly char[] InvalidPathCharsWithAdditionalChecks = InvalidFileNameChars; // no additional checks on Unix
 
-        // TODO: Implement these values correctly (dynamically) for Unix
-        private static readonly int MaxPath = 4096;
-        private static readonly int MaxComponentLength = 255;
+        private static readonly int MaxPath = Interop.libc.MaxPath;
+        private static readonly int MaxComponentLength = Interop.libc.MaxName;
 
         private static bool IsDirectorySeparator(char c)
         {
@@ -43,23 +39,105 @@ namespace System.IO
 
         private static void EmulateFileIOPermissionChecks(string fullPath)
         {
-            CheckInvalidPathChars(fullPath, true);
+            // nop.  On Windows this checks for additional characters (e.g. '?', '*') 
+            // that are invalid in paths, but such characters are perfectly valid on Unix.
         }
 
         private static string NormalizePath(
-            string path, bool fullCheck, 
+            string path, bool fullCheck,
             int maxPathLength, bool expandShortPaths) // ignored on Unix
         {
             Debug.Assert(path != null);
 
-            // If we're doing a full path check, look for illegal path characters.
+            if (path.Length == 0)
+                throw new ArgumentException(SR.Arg_PathIllegal);
+
             if (fullCheck)
             {
                 CheckInvalidPathChars(path);
+
+                // Expand with current directory if necessary
+                if (!IsPathRooted(path))
+                {
+                    path = Combine(Interop.libc.getcwd(), path);
+                }
             }
 
-            // TODO: Implement this
-            throw new NotImplementedException();
+            // Remove "//", "/./", and "/../" from the path.  We would ideally use realpath
+            // to do this, but it resolves symlinks, requires that the file actually exist,
+            // and turns it into a full path, which we only want if fullCheck is true.
+            // Instead, we do the normalization manually, copying each character to the output, 
+            // except the ones we're removing, such that the builder contains the normalized path 
+            // at the end.
+            var sb = StringBuilderCache.Acquire(path.Length);
+            int componentCharCount = 0;
+            for (int i = 0; i < path.Length; i++)
+            {
+                char c = path[i];
+
+                if (IsDirectorySeparator(c) && i + 1 < path.Length)
+                {
+                    componentCharCount = 0;
+
+                    // Skip this character if it's a directory separator and if the next character is, too,
+                    // e.g. "parent//child" => "parent/child"
+                    if (IsDirectorySeparator(path[i + 1]))
+                    {
+                        continue;
+                    }
+
+                    // Skip this character and the next if it's referring to the current directory,
+                    // e.g. "parent/./child" =? "parent/child"
+                    if ((i + 2 == path.Length || IsDirectorySeparator(path[i + 2])) &&
+                        path[i + 1] == '.')
+                    {
+                        i++;
+                        continue;
+                    }
+
+                    // Skip this character and the next two if it's referring to the parent directory,
+                    // e.g. "parent/child/../grandchild" => "parent/grandchild"
+                    if (i + 2 < path.Length &&
+                        (i + 3 == path.Length || IsDirectorySeparator(path[i + 3])) &&
+                        path[i + 1] == '.' && path[i + 2] == '.')
+                    {
+                        // Unwind back to the last slash (and if there isn't one, clear out everything).
+                        int s;
+                        for (s = sb.Length - 1; s >= 0; s--)
+                        {
+                            if (IsDirectorySeparator(sb[s]))
+                            {
+                                sb.Length = s;
+                                break;
+                            }
+                        }
+                        if (s < 0)
+                            sb.Length = 0;
+
+                        i += 2;
+                        continue;
+                    }
+                }
+
+                if (++componentCharCount > MaxComponentLength)
+                {
+                    throw new PathTooLongException(SR.IO_PathTooLong);
+                }
+                sb.Append(c);
+            }
+
+            Debug.Assert(sb.Length < path.Length || sb.ToString() == path,
+                "Either we've removed characters, or the string should be unmodified from the input path.");
+
+            if (sb.Length > MaxPath)
+            {
+                throw new PathTooLongException(SR.IO_PathTooLong);
+            }
+
+            return
+                sb.Length == 0 ? (fullCheck ? DirectorySeparatorCharAsString : string.Empty) :
+                sb.Length == path.Length ? path :
+                sb.ToString();
         }
 
         private static string RemoveLongPathPrefix(string path)
@@ -69,15 +147,38 @@ namespace System.IO
 
         public static string GetTempPath()
         {
-            // TODO: Implement this
-            throw new NotImplementedException();
+            const string TempEnvVar = "TMPDIR";
+            const string DefaultTempPath = "/tmp/";
+
+            // Get the temp path from the TMPDIR environment variable.
+            // If it's not set, just return the default path.
+            // If it is, return it, ensuring it ends with a slash.
+            string path = Environment.GetEnvironmentVariable(TempEnvVar);
+            return
+                string.IsNullOrEmpty(path) ? DefaultTempPath :
+                IsDirectorySeparator(path[path.Length - 1]) ? path :
+                path + DirectorySeparatorChar;
         }
 
         private static string InternalGetTempFileName(bool checkHost)
         {
-            // TODO: Implement this
-            throw new NotImplementedException();
-        }s
+            const string Suffix = ".tmp";
+            const int SuffixByteLength = 4;
+
+            // mkstemps takes a char* and overwrites the XXXXXX with six characters
+            // that'll result in a unique file name.
+            string template = GetTempPath() + "tmpXXXXXX" + Suffix + "\0";
+            byte[] name = Encoding.UTF8.GetBytes(template);
+
+            // Create, open, and close the temp file.
+            int fd;
+            Interop.CheckIo(fd = Interop.libc.mkstemps(name, SuffixByteLength));
+            Interop.libc.close(fd); // ignore any errors from close; nothing to do if cleanup isn't possible
+
+            // 'name' is now the name of the file
+            Debug.Assert(name[name.Length - 1] == '\0');
+            return Encoding.UTF8.GetString(name, 0, name.Length - 1); // trim off the trailing '\0'
+        }
 
         public static bool IsPathRooted(string path)
         {
@@ -94,11 +195,17 @@ namespace System.IO
             return path.Length > 0 && IsDirectorySeparator(path[0]) ? 1 : 0;
         }
 
-        private static byte[] CreateCryptoRandomByteArray(int byteLength)
+        private static unsafe byte[] CreateCryptoRandomByteArray(int byteLength)
         {
-            // TODO: Implement this
-            throw new NotImplementedException();
+            var arr = new byte[byteLength];
+            fixed (byte* buf = arr)
+            {
+                if (Interop.libcrypto.RAND_pseudo_bytes(buf, arr.Length) == -1)
+                {
+                    throw new InvalidOperationException(SR.InvalidOperation_Cryptography);
+                }
+            }
+            return arr;
         }
     }
-
 }
