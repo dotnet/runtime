@@ -843,6 +843,11 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_defaults.generic_ireadonlylist_class = mono_class_from_name (
 	        mono_defaults.corlib, "System.Collections.Generic", "IReadOnlyList`1");
 
+	mono_defaults.threadpool_wait_callback_class = mono_class_from_name (
+		mono_defaults.corlib, "System.Threading", "_ThreadPoolWaitCallback");
+	mono_defaults.threadpool_perform_wait_callback_method = mono_class_get_method_from_name (
+		mono_defaults.threadpool_wait_callback_class, "PerformWaitCallback", 0);
+
 	domain->friendly_name = g_path_get_basename (filename);
 
 	return domain;

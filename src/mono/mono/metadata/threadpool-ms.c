@@ -572,23 +572,12 @@ worker_kill (ThreadPoolWorkingThread *thread)
 static void
 worker_thread (gpointer data)
 {
-	static MonoClass *threadpool_wait_callback_class = NULL;
-	static MonoMethod *perform_wait_callback_method = NULL;
 	MonoInternalThread *thread;
 	ThreadPoolDomain *tpdomain, *previous_tpdomain;
 	ThreadPoolCounter counter;
 	gboolean retire = FALSE;
 
 	g_assert (status >= STATUS_INITIALIZED);
-
-	if (!threadpool_wait_callback_class)
-		threadpool_wait_callback_class = mono_class_from_name (mono_defaults.corlib, "System.Threading", "_ThreadPoolWaitCallback");
-	g_assert (threadpool_wait_callback_class);
-
-	if (!perform_wait_callback_method)
-		perform_wait_callback_method = mono_class_get_method_from_name (threadpool_wait_callback_class, "PerformWaitCallback", 0);
-	g_assert (perform_wait_callback_method);
-
 	g_assert (threadpool);
 
 	thread = mono_thread_internal_current ();
@@ -646,7 +635,7 @@ worker_thread (gpointer data)
 		mono_thread_push_appdomain_ref (tpdomain->domain);
 		if (mono_domain_set (tpdomain->domain, FALSE)) {
 			MonoObject *exc = NULL;
-			MonoObject *res = mono_runtime_invoke (perform_wait_callback_method, NULL, NULL, &exc);
+			MonoObject *res = mono_runtime_invoke (mono_defaults.threadpool_perform_wait_callback_method, NULL, NULL, &exc);
 			if (exc)
 				mono_thread_internal_unhandled_exception (exc);
 			else if (res && *(MonoBoolean*) mono_object_unbox (res) == FALSE)

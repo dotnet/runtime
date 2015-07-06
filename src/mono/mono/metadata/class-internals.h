@@ -1107,6 +1107,8 @@ typedef struct {
 	MonoClass *customattribute_data_class;
 	MonoClass *critical_finalizer_object;
 	MonoClass *generic_ireadonlylist_class;
+	MonoClass *threadpool_wait_callback_class;
+	MonoMethod *threadpool_perform_wait_callback_method;
 } MonoDefaults;
 
 #ifdef DISABLE_REMOTING

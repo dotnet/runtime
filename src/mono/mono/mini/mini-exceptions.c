@@ -1560,18 +1560,17 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gboolean resume,
 			gboolean unhandled = FALSE;
 
 			/*
-			 * The exceptions caught by the mono_runtime_invoke () calls in mono_async_invoke () needs to be treated as
-			 * unhandled (#669836).
-			 * FIXME: The check below is hackish, but its hard to distinguish these runtime invoke calls from others
-			 * in the runtime.
+			 * The exceptions caught by the mono_runtime_invoke () calls
+			 * in the threadpool needs to be treated as unhandled (#669836).
+			 *
+			 * FIXME: The check below is hackish, but its hard to distinguish
+			 * these runtime invoke calls from others in the runtime.
 			 */
 			if (ji && jinfo_get_method (ji)->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE) {
-				if (prev_ji) {
-					MonoInternalThread *thread = mono_thread_internal_current ();
-					if (jinfo_get_method (prev_ji) == thread->async_invoke_method)
-						unhandled = TRUE;
-				}
+				if (prev_ji && jinfo_get_method (prev_ji) == mono_defaults.threadpool_perform_wait_callback_method)
+					unhandled = TRUE;
 			}
+
 			if (unhandled)
 				mono_debugger_agent_handle_exception (obj, ctx, NULL);
 			else
