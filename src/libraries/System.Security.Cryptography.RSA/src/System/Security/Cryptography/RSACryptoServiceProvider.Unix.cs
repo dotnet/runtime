@@ -17,11 +17,13 @@ namespace System.Security.Cryptography
         public RSACryptoServiceProvider()
         {
             _defer = new RSAOpenSsl();
+            _legalKeySizesValue = _defer.LegalKeySizes;
         }
 
         public RSACryptoServiceProvider(int dwKeySize)
         {
             _defer = new RSAOpenSsl(dwKeySize);
+            _legalKeySizesValue = _defer.LegalKeySizes;
         }
 
         public RSACryptoServiceProvider(int dwKeySize, CspParameters parameters)
