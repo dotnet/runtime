@@ -5971,6 +5971,7 @@ mono_llvm_emit_aot_data (const char *symbol, guint8 *data, int data_len)
 	type = LLVMArrayType (LLVMInt8Type (), data_len);
 	d = LLVMAddGlobal (lmodule->module, type, symbol);
 	LLVMSetInitializer (d, mono_llvm_create_constant_data_array (data, data_len));
+	mono_llvm_set_is_constant (d);
 }
 
 static void

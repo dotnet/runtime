@@ -90,6 +90,9 @@ mono_llvm_set_must_tail (LLVMValueRef call_ins);
 LLVMValueRef
 mono_llvm_create_constant_data_array (const uint8_t *data, int len);
 
+void
+mono_llvm_set_is_constant (LLVMValueRef global_var);
+
 G_END_DECLS
 
 #endif /* __MONO_MINI_LLVM_CPP_H__ */  

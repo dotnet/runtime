@@ -445,6 +445,12 @@ mono_llvm_create_constant_data_array (const uint8_t *data, int len)
 	return wrap(ConstantDataArray::get (*unwrap(LLVMGetGlobalContext ()), makeArrayRef(data, len)));
 }
 
+void
+mono_llvm_set_is_constant (LLVMValueRef global_var)
+{
+	unwrap<GlobalVariable>(global_var)->setConstant (true);
+}
+
 static cl::list<const PassInfo*, bool, PassNameParser>
 PassList(cl::desc("Optimizations available:"));
 
