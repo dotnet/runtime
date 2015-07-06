@@ -1,43 +1,123 @@
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" InitialTargets="_RestoreBuildToolsWrapper" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
   <!-- Inline task to bootstrap the build to enable downloading nuget.exe -->
   <UsingTask TaskName="DownloadFile" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v12.0.dll">
     <ParameterGroup>
-      <Address ParameterType="System.String" Required="true"/>
+      <Address ParameterType="System.String" Required="true" />
       <FileName ParameterType="System.String" Required="true" />
     </ParameterGroup>
     <Task>
       <Reference Include="System" />
+      <Reference Include="System.IO" />
       <Code Type="Fragment" Language="cs">
         <![CDATA[
-           var directory = System.IO.Path.GetDirectoryName(FileName);
-           System.IO.Directory.CreateDirectory(directory);
-           var client = new System.Net.WebClient();
-           client.Proxy = System.Net.WebRequest.DefaultWebProxy;
-           client.Proxy.Credentials = System.Net.CredentialCache.DefaultCredentials;
-           client.DownloadFile(Address, FileName);
+            var directory = System.IO.Path.GetDirectoryName(FileName);
+            Directory.CreateDirectory(directory);
+
+            var tempFile = Path.Combine(directory, Path.GetRandomFileName());
+            var client = new System.Net.WebClient();
+            client.Proxy = System.Net.WebRequest.DefaultWebProxy;
+            if (client.Proxy != null) client.Proxy.Credentials = System.Net.CredentialCache.DefaultCredentials;
+            var tryCount = 1;
+            var maxTries = 3;
+
+            while (tryCount <= maxTries)
+            {
+                try
+                {
+                    Log.LogMessage("Attempting to download {0}...", Address);
+                    client.DownloadFile(Address, tempFile);
+                    break;
+                }
+                catch (System.Net.WebException e)
+                {
+                    tryCount++;
+                    if (tryCount > maxTries)
+                    {
+                        throw;
+                    }
+                    else
+                    {
+                        Log.LogMessage(MessageImportance.High, "Download failed, retrying: {0}", e.Message);
+                    }
+                }
+            }
+
+            try
+            {
+                if (!File.Exists(FileName))
+                    File.Move(tempFile, FileName);
+            }
+            finally
+            {
+                if (File.Exists(tempFile))
+                    File.Delete(tempFile);
+            }
         ]]>
       </Code>
     </Task>
   </UsingTask>
 
+  <!--
+    Needed to avoid the IntialTargets from having an Output which ends up getting
+    added to the output references when you have a project to project reference.
+  -->
+  <Target Name="_RestoreBuildToolsWrapper" DependsOnTargets="_RestoreBuildTools" />
+
   <Target Name="_RestoreBuildTools"
-    BeforeTargets="Build"
-    Inputs="$(BuildToolsCoreCLRTargetInputs)"
-    Outputs="$(BuildToolsCoreCLRTargetOutputs)"
-    >
+          Inputs="$(MSBuildThisFileDirectory)dir.props;$(SourceDir).nuget/packages.$(OsEnvironment).config"
+          Outputs="$(ToolsDir)Microsoft.DotNet.Build.Tasks.dll;$(NugetToolPath);$(DnuToolPath)">
+    <Message Importance="High" Text="Restoring build tools..." />
+
+    <Copy Condition="Exists('$(NuGetCachedPath)')" SourceFiles="$(NuGetCachedPath)" DestinationFiles="$(NuGetToolPath)" SkipUnchangedFiles="true" />
 
     <!-- Download latest nuget.exe -->
-    <DownloadFile
-      Condition="!Exists($(NuGetToolPath))"
-      Address="https://nuget.org/nuget.exe"
-      FileName="$(NuGetToolPath)" />
+    <DownloadFile FileName="$(NuGetToolPath)"
+                  Address="https://www.nuget.org/nuget.exe"
+                  Condition="!Exists('$(NuGetToolPath)') and '$(OsEnvironment)'=='Windows_NT'" />
+
+    <Exec Command="curl -sSL --create-dirs -o $(NuGetToolPath) https://api.nuget.org/downloads/nuget.exe"
+          Condition="!Exists('$(NuGetToolPath)') and '$(OsEnvironment)'=='Unix'" />
+
+    <PropertyGroup>
+      <_RestoreBuildToolsCommand>$(NugetRestoreCommand) "$(SourceDir).nuget/packages.$(OsEnvironment).config"</_RestoreBuildToolsCommand>
+    </PropertyGroup>
 
     <!-- Restore build tools -->
-    <Exec
-      StandardOutputImportance="Low"
-      Command="&quot;$(NuGetToolPath)&quot; install &quot;$(PackagesGlobalConfig)&quot;  -o &quot;$(ToolsDir.Trim('\'))&quot; $(NuGetConfigCommandLine)" />
+    <Exec Command="$(_RestoreBuildToolsCommand)" StandardOutputImportance="Low" />
 
-    <Touch Files="$(BuildToolsInstallSemaphore)" AlwaysCreate="true" />
+    <!-- currently DNU doesn't support -ConfigFile: https://github.com/aspnet/dnx/issues/1693
+         Our DnuRestoreCommand doesn't force a config file  and we rely on the
+         directory probing for it to find nuget.config.  This works for restore from source,
+         but not restore from PackagesDir as happens for test project restore since PackagesDir
+         will not be under src.  To workaround, copy our nuget.config to packages. -->
+    <Copy Condition="Exists('$(NuGetConfigFile)')" SourceFiles="$(NuGetConfigFile)" DestinationFolder="$(PackagesDir)" SkipUnchangedFiles="true" />
+    <!-- Add this back if above comment becomes a problem -->
+    <!-- <Copy Condition="Exists('$(NuGetConfigFile)')" SourceFiles="$(NuGetConfigFile)" DestinationFolder="$(IntermediateOutputRootPath)" SkipUnchangedFiles="true" /> -->
+
+    <!-- Add DNU and Roslyn tool execute rights -->
+    <Exec Condition="'$(OsEnvironment)'=='Unix'"
+          Command="chmod a+x &quot;$(DnxPackageDir)/bin/dnu&quot;" />
+    <Exec Condition="'$(OsEnvironment)'=='Unix'"
+          Command="chmod a+x &quot;$(DnxPackageDir)/bin/dnx&quot;" />
+    <Exec Condition="'$(OsEnvironment)'=='Unix'"
+          Command="find '$(RoslynPackageDir)tools' -name &quot;*.exe&quot; -exec chmod &quot;+x&quot; '{}' ';'" />
+
+    <Error Condition="'$(ErrorIfBuildToolsRestoredFromIndividualProject)'=='true'"
+           Text="The build tools package was just restored and so we cannot continue the build of an individual project because targets from the build tools package were not able to be imported. Please retry the build the individual project again." />
+
+    <!--
+      There are cases where the inputs could be newer than the outputs but the
+      download or restore may not need to update. In such cases we need to touch
+      these files otherwise we continually run this target over and over for
+      every project until these files are cleaned (if the are ever cleaned).
+    -->
+    <Touch Files="$(ToolsDir)Microsoft.DotNet.Build.Tasks.dll;$(NugetToolPath);$(DnuToolPath)" />
   </Target>
+
+  <!-- Provide default empty targets for BuildAndTest and Test which can be hooked onto or overridden as necessary -->
+  <Target Name="BuildAndTest" DependsOnTargets="Build;Test" />
+
+  <Target Name="Test" />
 </Project>
