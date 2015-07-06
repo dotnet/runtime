@@ -578,17 +578,20 @@ internal static class Assert
         catch (Exception e) { throw WrapException(e, path, line); }
     }
 
-    public static void True(bool condition,
+    public static void True(bool condition, string userMessage = null,
         [CallerFilePath] string path = null, [CallerLineNumber] int line = 0)
     {
-        try { Xunit.Assert.True(condition); }
-        catch (Exception e) { throw WrapException(e, path, line); }
-    }
-
-    public static void True(bool condition, string userMessage,
-        [CallerFilePath] string path = null, [CallerLineNumber] int line = 0)
-    {
-        try { Xunit.Assert.True(condition, userMessage); }
+        try
+        {
+            if (userMessage == null)
+            {
+                Xunit.Assert.True(condition);
+            }
+            else
+            {
+                Xunit.Assert.True(condition, userMessage);
+            }
+        }
         catch (Exception e) { throw WrapException(e, path, line); }
     }
 
