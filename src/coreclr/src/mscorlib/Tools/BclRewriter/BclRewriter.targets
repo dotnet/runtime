@@ -5,7 +5,7 @@
   <!-- ********************************************************************************************* -->
 
   <PropertyGroup>
-    <BclRewriterCommand Condition="'$(BclRewriterCommand)'==''">$(BuildToolsCoreCLRLocation)\BclRewriter.exe</BclRewriterCommand>
+    <BclRewriterCommand Condition="'$(BclRewriterCommand)'==''">$(CoreCLRToolsDir)\BclRewriter.exe</BclRewriterCommand>
     <BclRewriterModelFile>$(MscorlibDir)model.xml</BclRewriterModelFile>
     <BclRewriterWorkDir>$(IntermediateOutputPath)\BclRewriter</BclRewriterWorkDir>
     <BclRewriterSymbolOutput>$(IntermediateOutputPath)\BclRewriter\$(TargetName).pdb</BclRewriterSymbolOutput>

@@ -25,7 +25,8 @@
   
       <AllTestDirsNonCanonicalPaths Include="$([System.IO.Directory]::GetDirectories(`$(XunitTestBinBase)`))" />
 
-      <AllTestDirsPaths Include="@(AllTestDirsNonCanonicalPaths)">
+      <AllTestDirsPaths Include="@(AllTestDirsNonCanonicalPaths)" />
+      <AllTestDirsPaths Include="@(AllTestDirsNonCanonicalPaths)" >
         <Path>$([System.IO.Path]::GetFullPath(%(Identity)))</Path>
       </AllTestDirsPaths>
 
@@ -43,8 +44,6 @@
                 TaskParameter="Filtered"
                 ItemName="TestDirectories"/>
         </RemoveDuplicates>
-    <Message Text= "TestDirectories= @(TestDirectories)"/>
-    <Message Text= "NonExcludedTestDirectories= @(NonExcludedTestDirectories)"/>
   </Target>
 
   
@@ -67,12 +66,10 @@ $(_XunitEpilog)
       <XunitVersionCompiled>2.0.0-beta5-build2785</XunitVersionCompiled>
       <XunitWrapperGenCsProj>
         <![CDATA[
-        <?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     
-    <Import Project="$(SourceDir)\dir.common.props" />
-    <Import Project="$(SourceDir)\packages\xunit.core.$(XunitVersionCompiled)\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid\xunit.core.props" Condition="Exists('$(SourceDir)\packages\xunit.core.$(XunitVersionCompiled)\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid\xunit.core.props')" />
-    <Import Project="%24(MSBuildExtensionsPath)\%24(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('%24(MSBuildExtensionsPath)\%24(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <Import Project="%24([MSBuild]::GetDirectoryNameOfFileAbove(%24(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Configuration Condition=" '%24(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '%24(Platform)' == '' ">AnyCPU</Platform>
@@ -80,11 +77,13 @@ $(_XunitEpilog)
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{95DFC527-4DC1-495E-97D7-E94EE1F7140D}</ProjectGuid>
     <OutputType>Library</OutputType>
+    <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <IsXunitWrapperProject>true</IsXunitWrapperProject>
+    <SkipSigning>true</SkipSigning>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <FileAlignment>512</FileAlignment>
-    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB}%3B{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
-    <ReferencePath>%24(ProgramFiles)\Common Files\microsoft shared\VSTT\11.0\UITestExtensionPackages</ReferencePath>
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <SolutionDir Condition="%24(SolutionDir) == '' Or %24(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
     <NuGetPackageImportStamp>7a9bfb7d</NuGetPackageImportStamp>
@@ -96,11 +95,6 @@ $(_XunitEpilog)
   <PropertyGroup Condition=" '%24(Configuration)|%24(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <CodeAnalysisDependentAssemblyPaths Condition=" '%24(VS100COMNTOOLS)' != '' " Include="%24(VS100COMNTOOLS)..\IDE\PrivateAssemblies">
-      <Visible>False</Visible>
-    </CodeAnalysisDependentAssemblyPaths>
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="$(XunitWrapper).cs" />
   </ItemGroup>
   <ItemGroup>
@@ -109,7 +103,7 @@ $(_XunitEpilog)
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
    <ItemGroup>
-    <ProjectReference Include="$(SourceDir)\Common\Desktop.Coreclr.TestWrapper\Desktop.Coreclr.TestWrapper.csproj">
+    <ProjectReference Include="$(SourceDir)Common\Desktop.Coreclr.TestWrapper\Desktop.Coreclr.TestWrapper.csproj">
       <Project>{8ffe99c0-22f8-4462-b839-970eac1b3472}</Project>
       <Name>coreclr</Name>
     </ProjectReference>
@@ -117,46 +111,31 @@ $(_XunitEpilog)
  
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="xunit.abstractions">
-      <HintPath>$(SourceDir)\packages\xunit.abstractions.$(XunitVersionCompiled)\lib\net35\xunit.abstractions.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="xunit.assert">
-      <HintPath>$(SourceDir)\packages\xunit.assert.$(XunitVersionCompiled)\lib\portable-net45+aspnetcore50+win+wpa81+wp80+monoandroid+monotouch10\xunit.assert.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="xunit.core">
-      <HintPath>$(SourceDir)\packages\xunit.core.$(XunitVersionCompiled)\lib\portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid\xunit.core.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
+    <Reference Include="System.Runtime" />
+    <Reference Include="mscorlib" />
   </ItemGroup>
+  <Import Project="%24([MSBuild]::GetDirectoryNameOfFileAbove(%24(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <PropertyGroup>
      <OutDir>$(XunitWrapperOutputIntermediatedDirBase)\XunitRunner\</OutDir>
-     <OutputPath>$(XunitWrapperOutputIntermediatedDirBase)\XunitRunner\</OutputPath>
   </PropertyGroup>
-  <Import Project="%24(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('$(SourceDir)\packages\xunit.core.$(XunitVersionCompiled)\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid\xunit.core.props')" Text="$([System.String]::Format('$(ErrorText)', '$(SourceDir)\packages\xunit.core.$(XunitVersionCompiled)\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid\xunit.core.props'))" />
-  </Target>
 </Project>
-
-
-  ]]>
+        ]]>
       </XunitWrapperGenCsProj>
       <XunitWrapperGenPackConfig>
         <![CDATA[
-        <?xml version="1.0" encoding="utf-8"?>
-       <packages>
-       <packages>
-      <package id="xunit" version="2.0.0-beta5-build2785" targetFramework="net45" />
-     <package id="xunit.abstractions" version="2.0.0-beta5-build2785" targetFramework="net45" />
-     <package id="xunit.assert" version="2.0.0-beta5-build2785" targetFramework="net45" />
-     <package id="xunit.core" version="2.0.0-beta5-build2785" targetFramework="net45" />
-</packages>
-      </packages>
+{
+  "dependencies": {
+    "xunit" : "2.0.0-beta5-build2785",
+    "xunit.abstractions" : "2.0.0-beta5-build2785",
+    "xunit.assert" : "2.0.0-beta5-build2785",
+    "xunit.core" : "2.0.0-beta5-build2785",
+    "xunit.execution" : "2.0.0-beta5-build2785",
+    "xunit.runners" : "2.0.0-beta5-build2785"
+  },
+  "frameworks": {
+    "net45": {}
+  }
+}
       ]]>
       </XunitWrapperGenPackConfig>
 
@@ -177,7 +156,7 @@ $(_XunitEpilog)
 
     <!-- Write the file -->
     <WriteLinesToFile
-      File="$(XunitWrapperSrcDir)\packages.config"
+      File="$(XunitWrapperSrcDir)\project.json"
       Lines="$(XunitWrapperGenPackConfig)"
       Overwrite="true" />
 
@@ -323,29 +302,30 @@ public class $([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)"
   </Target>
 
   <Target Name="GetListOfTestCmds">
-  <ItemGroup>
+    <ItemGroup>
       <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.cmd" />
-  </ItemGroup>
+    </ItemGroup>
   </Target> 
   
   <Import Project="tests.targets" />
   <Import Project="publishdependency.targets" />
-  <Target Name="CreateXunitWrappers"
-          DependsOnTargets="Clean"
-          AfterTargets="Build">
-
+ 
+  <Target Name="Build">
+    <!-- Default for building -->
     <MSBuild Projects="$(MSBuildProjectFile)"
-             Targets="CreateAllWrappers"
-             Properties="_CMDDIR=%(TestDirectories.Identity)" />
-
+         Targets="CreateAllWrappers"
+         Properties="_CMDDIR=%(TestDirectories.Identity)"
+         Condition=" '$(NoBuild)'!='true' " />
+         
+    <!-- Execution -->
+    
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="CopyDependecyToCoreRoot"
              Condition=" '$(NoRun)'!='true' "/>
          
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="RunTests"
              Condition=" '$(NoRun)'!='true' "/>
   </Target>
- 
-  <Target Name="Build" />
+  
   <Target Name="Clean">
     <RemoveDir Condition=" '$(NoBuild)'!='true'" Directories="$(XunitWrapperGeneratedCSDirBase);$(XunitWrapperOutputIntermediatedDirBase)" ContinueOnError="WarnAndContinue" /> 
   </Target>
