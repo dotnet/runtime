@@ -358,11 +358,15 @@ namespace EnumerableTests
             TestWeirdPathIter(emptyPath, "emptyPath", new ArgumentException());
 
             // whitespace-only path
-            char[] whitespacePathChars = { (char)0x9, (char)0xA };
-            String whitespacePath = new String(whitespacePathChars);
-            TestWeirdPathIter(whitespacePath, "whitespacePath", new ArgumentException());
+            if (Interop.IsWindows) // whitespace-only names are valid on Unix
+            {
+                char[] whitespacePathChars = { (char)0x9, (char)0xA };
+                String whitespacePath = new String(whitespacePathChars);
+                TestWeirdPathIter(whitespacePath, "whitespacePath", new ArgumentException());
+            }
 
-            if (Interop.IsWindows) // drive labels
+            // drive labels
+            if (Interop.IsWindows)
             {
                 // try to test a path that doesn't exist. Skip if can't find an unused drive
                 String pathNotExists = null;

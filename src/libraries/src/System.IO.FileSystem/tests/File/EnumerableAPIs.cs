@@ -277,7 +277,10 @@ namespace EnumerableTests
             // Read exceptions
             TestReadFileExceptions(nullFileName, "null path", Encoding.UTF8, new ArgumentNullException());
             TestReadFileExceptions(emptyFileName1, "empty path 1", Encoding.UTF8, new ArgumentException());
-            TestReadFileExceptions(emptyFileName2, "empty path 2", Encoding.UTF8, new ArgumentException());
+            if (Interop.IsWindows) // whitespace-only names are valid on Unix
+            {
+                TestReadFileExceptions(emptyFileName2, "empty path 2", Encoding.UTF8, new ArgumentException());
+            }
             TestReadFileExceptions(longPath, "long path", Encoding.UTF8, new PathTooLongException());
             if (notExistsFileName != null)
             {
@@ -288,7 +291,10 @@ namespace EnumerableTests
             // Write exceptions
             TestWriteFileExceptions(nullFileName, "null path", contents, Encoding.UTF8, new ArgumentNullException());
             TestWriteFileExceptions(emptyFileName1, "empty path 1", contents, Encoding.UTF8, new ArgumentException());
-            TestWriteFileExceptions(emptyFileName2, "empty path 2", contents, Encoding.UTF8, new ArgumentException());
+            if (Interop.IsWindows) // whitespace-only paths are valid on Unix
+            {
+                TestWriteFileExceptions(emptyFileName2, "empty path 2", contents, Encoding.UTF8, new ArgumentException());
+            }
             TestWriteFileExceptions(longPath, "long path", contents, Encoding.UTF8, new PathTooLongException());
             if (notExistsFileName != null)
             {
