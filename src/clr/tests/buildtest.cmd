@@ -81,13 +81,13 @@ for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "&
 
 :: Check presence of VS
 if defined VS%__VSProductVersion%COMNTOOLS goto CheckVSExistence
-echo Installation of VS 2013 is a pre-requisite to build this repository.
+echo Visual Studio 2013+ (Community is free) is a pre-requisite to build this repository.
 exit /b 1
 
 :CheckVSExistence
 :: Does VS 2013 or VS 2015 really exist?
 if exist "!VS%__VSProductVersion%COMNTOOLS!\..\IDE\devenv.exe" goto CheckMSBuild
-echo Installation of VS 2013 is a pre-requisite to build this repository.
+echo Visual Studio 2013+ (Community is free) is a pre-requisite to build this repository.
 exit /b 1
 
 :CheckMSBuild
