@@ -2502,7 +2502,7 @@ check_method_sharing (MonoCompile *cfg, MonoMethod *cmethod, gboolean *out_pass_
 		(cmethod->klass->generic_class || cmethod->klass->generic_container)) {
 		gboolean sharable = FALSE;
 
-		if (mono_method_is_generic_sharable (cmethod, TRUE))
+		if (mono_method_is_generic_sharable_full (cmethod, TRUE, TRUE, TRUE))
 			sharable = TRUE;
 
 		/*
@@ -2520,7 +2520,7 @@ check_method_sharing (MonoCompile *cfg, MonoMethod *cmethod, gboolean *out_pass_
 		mini_method_get_context (cmethod)->method_inst) {
 		g_assert (!pass_vtable);
 
-		if (mono_method_is_generic_sharable (cmethod, TRUE)) {
+		if (mono_method_is_generic_sharable_full (cmethod, TRUE, TRUE, TRUE)) {
 			pass_mrgctx = TRUE;
 		} else {
 			if (cfg->gsharedvt && mini_is_gsharedvt_signature (cfg, mono_method_signature (cmethod)))
