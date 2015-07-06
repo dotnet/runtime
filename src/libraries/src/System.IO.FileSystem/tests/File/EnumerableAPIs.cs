@@ -3,31 +3,30 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.IO;
-using System.Security;
+using System.IO.FileSystem.Tests;
 using Xunit;
 
 namespace EnumerableTests
 {
-    public class File_FileEnumerableTests
+    public class File_EnumerableAPIs : FileSystemTest
     {
         private static EnumerableUtils utils;
 
         [Fact]
-        public static void RunTests()
+        public void RunTests()
         {
             utils = new EnumerableUtils();
 
-            utils.CreateTestDirs();
+            utils.CreateTestDirs(TestDirectory);
 
             TestFileAPIs();
 
             TestFileExceptions();
 
             utils.DeleteTestDirs();
-            
+
             Assert.True(utils.Passed);
         }
 
@@ -42,7 +41,7 @@ namespace EnumerableTests
             TestFileWriteAllLines(true, true);
             TestFileReadAllLinesIterator();
         }
-        
+
         private static void TestFileReadAllLinesIterator()
         {
             IEnumerable<string> lines = File.ReadLines(Path.Combine(utils.testDir, "file1"));
@@ -53,16 +52,16 @@ namespace EnumerableTests
             try
             {
                 foreach (var line in lines)
-                { 
+                {
                 }
             }
-            catch(ObjectDisposedException)
+            catch (ObjectDisposedException)
             {
                 // Currently the test is not hooked to report in case of failures. It is best if we rethrow an exception until we rewrite the harness
                 Console.WriteLine("We should not get an ObjectDisposedException but got one ; Dev10 864262 regressed");
                 throw;
             }
-            
+
         }
 
         private static void TestFileWriteAllLines(bool useEncodingOverload, bool append)
@@ -78,7 +77,7 @@ namespace EnumerableTests
             String lineContent = "This is another line";
             String firstLineContent = "This is the first line";
             String[] contents = new String[10];
-            for (int i=0; i<contents.Length; i++) 
+            for (int i = 0; i < contents.Length; i++)
             {
                 contents[i] = lineContent;
             }
@@ -86,7 +85,7 @@ namespace EnumerableTests
             String file1 = Path.Combine(utils.testDir, "file1.out");
             if (append)
             {
-                File.WriteAllLines(file1, new String[] {firstLineContent});
+                File.WriteAllLines(file1, new String[] { firstLineContent });
             }
 
 
@@ -172,16 +171,16 @@ namespace EnumerableTests
             string testname = null;
             if (useEncodingOverload)
             {
-                testname = "File.ReadLines(path, Encoding)"; 
+                testname = "File.ReadLines(path, Encoding)";
             }
             else
             {
-                testname = "File.ReadLines(path)"; 
+                testname = "File.ReadLines(path)";
             }
             String file1 = Path.Combine(utils.testDir, "file1.out");
             String lineContent = "This is a line of test file content";
             String[] contents = new String[10];
-            for (int i=0; i<contents.Length; i++) 
+            for (int i = 0; i < contents.Length; i++)
             {
                 contents[i] = lineContent;
             }
@@ -308,8 +307,8 @@ namespace EnumerableTests
             TestReadFileExceptionsWithEncoding(fileName, fileNameDescription, encoding, expectedException, File.ReadLines, File.ReadLines, "File.ReadLines");
         }
 
-        private static void TestReadFileExceptionsDefaultEncoding(String path, String pathDescription, Exception expectedException, 
-                                                                    EnumerableUtils.ReadFastDelegate1 readDelegate, EnumerableUtils.ReadFastDelegate2 readDelegate2, String methodName )
+        private static void TestReadFileExceptionsDefaultEncoding(String path, String pathDescription, Exception expectedException,
+                                                                    EnumerableUtils.ReadFastDelegate1 readDelegate, EnumerableUtils.ReadFastDelegate2 readDelegate2, String methodName)
         {
             int failCount = 0;
             String chkptFlag = "chkpt_rfede_";
@@ -333,9 +332,9 @@ namespace EnumerableTests
             String testName = String.Format("TestReadFileExceptions({0})", pathDescription);
             utils.PrintTestStatus(testName, methodName, failCount);
         }
-      
-        private static void TestReadFileExceptionsWithEncoding(String path, String pathDescription, Encoding encoding, Exception expectedException, 
-                                                                    EnumerableUtils.ReadFastDelegate1 readDelegate, EnumerableUtils.ReadFastDelegate2 readDelegate2, String methodName )
+
+        private static void TestReadFileExceptionsWithEncoding(String path, String pathDescription, Encoding encoding, Exception expectedException,
+                                                                    EnumerableUtils.ReadFastDelegate1 readDelegate, EnumerableUtils.ReadFastDelegate2 readDelegate2, String methodName)
         {
             int failCount = 0;
             String chkptFlag = "chkpt_rfewe_";
@@ -367,13 +366,13 @@ namespace EnumerableTests
             TestWriteFileExceptionsDefaultEncoding(fileName, fileNameDescription, contents, expectedException, File.AppendAllLines, File.AppendAllLines, "File.AppendAllLines");
             TestWriteFileExceptionsWithEncoding(fileName, fileNameDescription, contents, encoding, expectedException, File.AppendAllLines, File.AppendAllLines, "File.AppendAllLines");
         }
-        
-        private static void TestWriteFileExceptionsDefaultEncoding(String path, String pathDescription, IEnumerable<String> contents, Exception expectedException, 
-                                                                    EnumerableUtils.WriteFastDelegate1 writeDelegate, EnumerableUtils.WriteFastDelegate2 writeDelegate2, String methodName )
+
+        private static void TestWriteFileExceptionsDefaultEncoding(String path, String pathDescription, IEnumerable<String> contents, Exception expectedException,
+                                                                    EnumerableUtils.WriteFastDelegate1 writeDelegate, EnumerableUtils.WriteFastDelegate2 writeDelegate2, String methodName)
         {
             int failCount = 0;
             String chkptFlag = "chkpt_wfede_";
-            
+
             try
             {
                 writeDelegate(path, contents);
@@ -394,8 +393,8 @@ namespace EnumerableTests
             utils.PrintTestStatus(testName, methodName, failCount);
         }
 
-        private static void TestWriteFileExceptionsWithEncoding(String path, String pathDescription, IEnumerable<String> contents, Encoding encoding, Exception expectedException, 
-                                                                    EnumerableUtils.WriteFastDelegate1 writeDelegate, EnumerableUtils.WriteFastDelegate2 writeDelegate2, String methodName )
+        private static void TestWriteFileExceptionsWithEncoding(String path, String pathDescription, IEnumerable<String> contents, Encoding encoding, Exception expectedException,
+                                                                    EnumerableUtils.WriteFastDelegate1 writeDelegate, EnumerableUtils.WriteFastDelegate2 writeDelegate2, String methodName)
         {
             int failCount = 0;
             String chkptFlag = "chkpt_wfewe_";

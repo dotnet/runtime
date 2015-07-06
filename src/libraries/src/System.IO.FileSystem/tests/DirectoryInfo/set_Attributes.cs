@@ -291,6 +291,7 @@ public class DirectoryInfo_set_Attributes
             Console.WriteLine("FAiL! " + s_strTFName + " ,iCountErrors==" + iCountErrors.ToString());
         }
 
+        FailSafeDirectoryOperations.DeleteDirectory(dirName, true);
         Assert.Equal(0, iCountErrors);
     }
 

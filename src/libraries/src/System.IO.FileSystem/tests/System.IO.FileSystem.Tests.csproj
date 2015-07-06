@@ -37,6 +37,8 @@
     <Compile Include="DirectoryInfo\Delete.cs" />
     <Compile Include="DirectoryInfo\Delete_bool.cs" />
     <Compile Include="DirectoryInfo\Exists.cs" />
+    <Compile Include="Directory\EnumerableAPIs.cs" />
+    <Compile Include="Directory\GetFileSystemEntries_str_str_so.cs" />
     <Compile Include="FileStream\Flush.Sharing.cs" />
     <Compile Include="FileStream\Flush_toDisk.cs" />
     <Compile Include="FileStream\SafeFileHandle.cs" />
@@ -86,7 +88,7 @@
     <Compile Include="PortedCommon\TemporaryDirectory.cs" />
     <Compile Include="PortedCommon\TemporaryFile.cs" />
     <Compile Include="PortedCommon\TemporaryFileSystemItem.cs" />
-    <Compile Include="DirectoryInfo\DirectoryInfo_EnumerableAPIs.cs" />
+    <Compile Include="DirectoryInfo\EnumerableAPIs.cs" />
     <Compile Include="DirectoryInfo\GetDirectories.cs" />
     <Compile Include="DirectoryInfo\GetDirectories_str.cs" />
     <Compile Include="DirectoryInfo\GetDirectories_str_so.cs" />
@@ -118,7 +120,7 @@
     <Compile Include="Directory\GetLastAccessTime_str.cs" />
     <Compile Include="Directory\GetLastWriteTime_str.cs" />
     <Compile Include="Directory\GetSetTimes.cs" />
-    <Compile Include="Directory\IEnumerator_IO_EnumerableAPIs.cs" />
+    <Compile Include="Directory\IEnumeratorsTests.cs" />
     <Compile Include="Directory\Modify_FailSafe.cs" />
     <Compile Include="Directory\Move_str_str.cs" />
     <Compile Include="Directory\ReparsePoints_MountVolume.cs" />
@@ -131,7 +133,6 @@
     <Compile Include="Directory\Delete_MountVolume.cs" />
     <Compile Include="Directory\Delete_str.cs" />
     <Compile Include="Directory\Delete_str_bool.cs" />
-    <Compile Include="Directory\Directory_EnumerableAPIs.cs" />
     <Compile Include="Directory\Exists.cs" />
     <Compile Include="Directory\GetCreationTime_str.cs" />
     <Compile Include="Directory\GetCurrentDirectory.cs" />
@@ -162,7 +163,7 @@
     <Compile Include="File\CreateText_str.cs" />
     <Compile Include="File\Delete_str.cs" />
     <Compile Include="File\Exists_str.cs" />
-    <Compile Include="File\File_EnumerableAPIs.cs" />
+    <Compile Include="File\EnumerableAPIs.cs" />
     <Compile Include="File\GetAttributes_str.cs" />
     <Compile Include="File\GetCreationTime_str.cs" />
     <Compile Include="File\GetLastAccessTime_str.cs" />
@@ -205,10 +206,6 @@
     <!-- Helpers -->
     <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Directory\" />
-    <Folder Include="FileInfo\" />
-    <Folder Include="File\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

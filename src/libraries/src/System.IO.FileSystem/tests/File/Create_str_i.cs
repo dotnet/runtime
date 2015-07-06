@@ -133,6 +133,7 @@ public class File_Create_str_i
                 printerr("Error_958bh! Incorrect file position==" + fs2.Position);
             }
             fs2.Dispose();
+            File.Delete(filName);
 
             // [] Create a file in root
             /* Test disabled because it modifies state outside the current working directory
@@ -187,6 +188,7 @@ public class File_Create_str_i
                 printerr("Error_t87gy! File not created, file==" + filName);
             }
             fs2.Dispose();
+            File.Delete(filName);
 
             strLoc = "loc_89tbh_1";
 
@@ -202,6 +204,7 @@ public class File_Create_str_i
                 printerr("Error_t87gy_1! File not created, file==" + filName);
             }
             fs2.Dispose();
+            File.Delete(filName);
 
             strLoc = "loc_89tbh_3";
 
@@ -217,8 +220,7 @@ public class File_Create_str_i
                 printerr("Error_t87gy_3! File not created, file==" + filName);
             }
             fs2.Dispose();
-
-
+            File.Delete(filName);
 
             if (File.Exists(filName))
                 File.Delete(filName);
