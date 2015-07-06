@@ -234,13 +234,16 @@
           "lib/DNXCore50/System.Text.Encoding.dll": {}
         }
       },
-      "System.Threading/4.0.0-beta-23024": {
+      "System.Threading/4.0.10-beta-23024": {
         "dependencies": {
           "System.Runtime": "4.0.0-beta-23024",
           "System.Threading.Tasks": "4.0.0-beta-23024"
         },
         "compile": {
           "ref/dotnet/System.Threading.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.Threading.dll": {}
         }
       },
       "System.Threading.Tasks/4.0.10-beta-23024": {
@@ -780,15 +783,16 @@
         "runtimes/win8-aot/lib/netcore50/System.Text.Encoding.dll"
       ]
     },
-    "System.Threading/4.0.0-beta-23024": {
-      "sha512": "d8tInqC0ux1JH918eIoffKi9+Wc0AkxUrhUDbQkLgNz8V7uBbu5WUaDJaTblAwgwwG50GzefXCweZP5NcVd0Lw==",
+    "System.Threading/4.0.10-beta-23024": {
+      "serviceable": true,
+      "sha512": "uoRg44bzPk9KE9Sg6rLZmGfUmFZBDc7y25692VYna/WW3Smip/aGX0ESXyuNvWA8k8oXdV4Z/M4ZKdB3ahtdDw==",
       "files": [
-        "License.rtf",
-        "System.Threading.4.0.0-beta-23024.nupkg",
-        "System.Threading.4.0.0-beta-23024.nupkg.sha512",
+        "System.Threading.4.0.10-beta-23024.nupkg",
+        "System.Threading.4.0.10-beta-23024.nupkg.sha512",
         "System.Threading.nuspec",
-        "lib/net45/_._",
-        "lib/win8/_._",
+        "lib/DNXCore50/System.Threading.dll",
+        "lib/net46/_._",
+        "lib/netcore50/System.Threading.dll",
         "ref/dotnet/System.Threading.dll",
         "ref/dotnet/System.Threading.xml",
         "ref/dotnet/de/System.Threading.xml",
@@ -800,19 +804,8 @@
         "ref/dotnet/ru/System.Threading.xml",
         "ref/dotnet/zh-hans/System.Threading.xml",
         "ref/dotnet/zh-hant/System.Threading.xml",
-        "ref/net45/_._",
-        "ref/netcore50/System.Threading.dll",
-        "ref/netcore50/System.Threading.xml",
-        "ref/netcore50/de/System.Threading.xml",
-        "ref/netcore50/es/System.Threading.xml",
-        "ref/netcore50/fr/System.Threading.xml",
-        "ref/netcore50/it/System.Threading.xml",
-        "ref/netcore50/ja/System.Threading.xml",
-        "ref/netcore50/ko/System.Threading.xml",
-        "ref/netcore50/ru/System.Threading.xml",
-        "ref/netcore50/zh-hans/System.Threading.xml",
-        "ref/netcore50/zh-hant/System.Threading.xml",
-        "ref/win8/_._"
+        "ref/net46/_._",
+        "runtimes/win8-aot/lib/netcore50/System.Threading.dll"
       ]
     },
     "System.Threading.Tasks/4.0.10-beta-23024": {
@@ -862,7 +855,7 @@
       "System.Runtime.Handles >= 4.0.0-beta-*",
       "System.Runtime.InteropServices >= 4.0.20-beta-*",
       "System.Text.Encoding >= 4.0.10-beta-*",
-      "System.Threading >= 4.0.0-beta-*",
+      "System.Threading >= 4.0.10-beta-*",
       "System.Threading.Tasks >= 4.0.10-beta-*"
     ],
     "DNXCore,Version=v5.0": []
