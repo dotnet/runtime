@@ -332,7 +332,6 @@ namespace System.IO
                 if (r >= m_maxPath)
                     throw new PathTooLongException(SR.IO_PathTooLong);
 
-
                 sb = Path.RemoveLongPathPrefix(sb);
                 Length = sb.Length;
                 return true;

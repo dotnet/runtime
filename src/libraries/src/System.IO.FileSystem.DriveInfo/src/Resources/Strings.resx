@@ -157,7 +157,7 @@
     <value>Could not find a part of the path '{0}'.</value>
   </data>
   <data name="IO_PathTooLong" xml:space="preserve">
-    <value>The specified path, file name, or both are too long. The fully qualified file name must be less than 260 characters, and the directory name must be less than 248 characters.</value>
+    <value>The specified file name or path is too long, or a component of the specified path is too long.</value>
   </data>
   <data name="IO_SharingViolation_File" xml:space="preserve">
     <value>The process cannot access the file '{0}' because it is being used by another process.</value>

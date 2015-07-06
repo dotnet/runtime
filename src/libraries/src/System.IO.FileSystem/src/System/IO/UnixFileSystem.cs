@@ -13,28 +13,9 @@ namespace System.IO
     /// <summary>Provides an implementation of FileSystem for Unix systems.</summary>
     internal sealed partial class UnixFileSystem : FileSystem
     {
-        /// <summary>The maximum path length for the system.  -1 if it hasn't yet been initialized.</summary>
-        private static int _maxPath = -1;
-        /// <summary>The maximum name length for the system.  -1 if it hasn't yet been initialized.</summary>
-        private static int _maxName = -1;
+        public override int MaxPath { get { return Interop.libc.MaxPath; } }
 
-        public override int MaxPath 
-        {
-            get
-            {
-                Interop.libc.GetPathConfValue(ref _maxPath, Interop.libc.PathConfNames._PC_PATH_MAX, Interop.libc.DEFAULT_PC_PATH_MAX);
-                return _maxPath;
-            } 
-        }
-
-        public override int MaxDirectoryPath 
-        {
-            get
-            {
-                Interop.libc.GetPathConfValue(ref _maxName, Interop.libc.PathConfNames._PC_NAME_MAX, Interop.libc.DEFAULT_PC_NAME_MAX);
-                return _maxName;
-            } 
-        }
+        public override int MaxDirectoryPath { get { return Interop.libc.MaxName; } }
 
         public override FileStreamBase Open(string fullPath, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, FileStream parent)
         {
@@ -588,14 +569,9 @@ namespace System.IO
             return name == "." || name == "..";
         }
 
-        public override unsafe string GetCurrentDirectory()
+        public override string GetCurrentDirectory()
         {
-            byte[] pathBuffer = new byte[MaxPath];
-            fixed (byte* ptr = pathBuffer)
-            {
-                while (Interop.CheckIoPtr((IntPtr)Interop.libc.getcwd(ptr, (IntPtr)pathBuffer.Length))) ;
-                return Marshal.PtrToStringAnsi((IntPtr)ptr);
-            }
+            return Interop.libc.getcwd();
         }
 
         public override void SetCurrentDirectory(string fullPath)
