@@ -142,7 +142,15 @@ namespace Internal.Cryptography
 
             CheckInvalidKey(key);
 
-            return Interop.libcrypto.ExportRsaParameters(key, includePrivateParameters);
+            RSAParameters rsaParameters = Interop.libcrypto.ExportRsaParameters(key, includePrivateParameters);
+            bool hasPrivateKey = rsaParameters.D != null;
+
+            if (hasPrivateKey != includePrivateParameters || !HasConsistentPrivateKey(ref rsaParameters))
+            {
+                throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
+            }
+
+            return rsaParameters;
         }
         
         public override unsafe void ImportParameters(RSAParameters parameters)
@@ -218,6 +226,12 @@ namespace Internal.Cryptography
             if (parameters.Modulus == null || parameters.Exponent == null)
                 throw new CryptographicException(SR.Argument_InvalidValue);
 
+            if (!HasConsistentPrivateKey(ref parameters))
+                throw new CryptographicException(SR.Argument_InvalidValue);
+        }
+
+        private static bool HasConsistentPrivateKey(ref RSAParameters parameters)
+        {
             if (parameters.D == null)
             {
                 if (parameters.P != null ||
@@ -226,7 +240,7 @@ namespace Internal.Cryptography
                     parameters.DQ != null ||
                     parameters.InverseQ != null)
                 {
-                    throw new CryptographicException(SR.Argument_InvalidValue);
+                    return false;
                 }
             }
             else
@@ -237,9 +251,11 @@ namespace Internal.Cryptography
                     parameters.DQ == null ||
                     parameters.InverseQ == null)
                 {
-                    throw new CryptographicException(SR.Argument_InvalidValue);
+                    return false;
                 }
             }
+
+            return true;
         }
 
         private static void CheckInvalidKey(SafeRsaHandle key)
