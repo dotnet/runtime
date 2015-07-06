@@ -3,11 +3,9 @@
 
 using System;
 using System.IO;
-using System.Collections;
-using System.Globalization;
-using System.Text;
-using System.Threading;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Xunit;
 
 public class Directory_GetDirectories_str
@@ -347,6 +345,33 @@ public class Directory_GetDirectories_str
     {
         Console.WriteLine("ERROR: ({0}, {1}, {2}) {3}", memberName, filePath, lineNumber, err);
     }
+
+    [Fact]
+    [PlatformSpecific(PlatformID.AnyUnix)]
+    public void EnumerateWithSymLinkToDirectory()
+    {
+        using (var containingFolder = new TemporaryDirectory())
+        {
+            // Test a symlink to a directory that does and then doesn't exist
+            using (var targetDir = new TemporaryDirectory())
+            {
+                // Create a symlink to a folder that exists
+                string linkPath = Path.Combine(containingFolder.Path, Path.GetRandomFileName());
+                Assert.Equal(0, symlink(targetDir.Path, linkPath));
+                Assert.True(Directory.Exists(linkPath));
+                Assert.Equal(1, Directory.GetDirectories(containingFolder.Path).Count());
+            }
+
+            // The target file is gone and the symlink still exists; since it can't be resolved,
+            // it's treated as a file rather than as a directory.
+            Assert.Equal(0, Directory.GetDirectories(containingFolder.Path).Count());
+            Assert.Equal(1, Directory.GetFiles(containingFolder.Path).Count());
+        }
+    }
+
+    [DllImport("libc", SetLastError = true)]
+    private static extern int symlink(string path1, string path2);
+
 }
 
 
