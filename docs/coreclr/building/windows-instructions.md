@@ -15,8 +15,9 @@ Visual Studio must be installed. Supported versions:
 
 - [Visual Studio Community 2013](http://go.microsoft.com/fwlink/?LinkId=517284) - **Free** for Open Source development!
 - [Visual Studio 2013 Update 3](http://www.visualstudio.com/downloads/download-visual-studio-vs) or later (Pro, Premium, Ultimate)
+- [Visual Studio 2015](https://www.visualstudio.com/downloads/visual-studio-2015-downloads-vs) (Community, Professional, Enterprise)
 
-Visual Studio Express is not supported. Visual Studio 2015 isn't supported yet (see [issue #30](https://github.com/dotnet/coreclr/issues/30)).
+Visual Studio Express is not supported.
 
 **Known Issues**
 
@@ -70,6 +71,8 @@ To build CoreCLR, run `build.cmd` from the root of the coreclr repository. This 
 
 	Product binaries are available at C:\git\coreclr\bin\Product\Windows_NT.x64.debug
 	Test binaries are available at C:\git\coreclr\bin\tests\Windows_NT.x64.debug
+
+**Note:** for building using Visual Studio 2015 the parameter `vs2015` should be added to the `build` command.
 
 **build /?** will list supported parameters.
 
