@@ -51,7 +51,6 @@ echo.
 set "__BinDir=%__RootBinDir%\Product\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__IntermediatesDir=%__RootBinDir%\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__PackagesBinDir=%__BinDir%\.nuget"
-set "__ToolsDir=%__RootBinDir%\tools"
 set "__TestBinDir=%__RootBinDir%\tests\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__TestIntermediatesDir=%__RootBinDir%\tests\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
 
@@ -183,7 +182,7 @@ call "!VS%__VSProductVersion%COMNTOOLS!\VsDevCmd.bat"
 echo Commencing build of mscorlib for %__BuildOS%.%__BuildArch%.%__BuildType%
 echo.
 set "__MScorlibBuildLog=%__LogsDir%\MScorlib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-%_msbuildexe% "%__ProjectFilesDir%\build.proj" %__MSBCleanBuildArgs% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=normal;LogFile="%__MScorlibBuildLog%" /p:OS=%__BuildOS% %__AdditionalMSBuildArgs%
+%_msbuildexe% "%__ProjectFilesDir%\build.proj" %__MSBCleanBuildArgs% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=normal;LogFile="%__MScorlibBuildLog%" /p:OSGroup=%__BuildOS% %__AdditionalMSBuildArgs%
 IF NOT ERRORLEVEL 1 (
   if defined __MscorlibOnly exit /b 0
   goto CrossGenMscorlib
@@ -208,7 +207,7 @@ exit /b 1
 echo.
 echo Commencing build of tests for %__BuildOS%.%__BuildArch%.%__BuildType%
 echo.
-call tests\buildtest.cmd
+call %__ProjectDir%\tests\buildtest.cmd
 IF NOT ERRORLEVEL 1 goto SuccessfulBuild
 echo Test binaries build failed. Refer !__MScorlibBuildLog! for details.
 exit /b 1
