@@ -126,6 +126,7 @@ public class DirectoryInfo_ToString
             Console.WriteLine("FAiL! " + s_strTFName + " ,iCountErrors==" + iCountErrors.ToString());
         }
 
+        FailSafeDirectoryOperations.DeleteDirectory(dirName, true);
         Assert.Equal(0, iCountErrors);
     }
 

@@ -23,7 +23,7 @@ public class File_Copy_str_str_b
         int iCountTestcases = 0;
         String strLoc = "Loc_000oo";
         String strValue = String.Empty;
-
+        String filName = Path.Combine(TestInfo.CurrentDirectory, Path.GetRandomFileName());
 
         try
         {
@@ -36,7 +36,6 @@ public class File_Copy_str_str_b
             StreamWriter sw2;
             StreamReader sr2;
             FileStream fs2;
-            String filName = Path.Combine(TestInfo.CurrentDirectory, Path.GetRandomFileName());
 
             try
             {
@@ -290,31 +289,31 @@ public class File_Copy_str_str_b
                 printerr("Error_28vc8! Unexpected exception, exc==" + exc.ToString());
             }
 
-/* Scenario disabled while porting because it accesses a file outside the test's working directory
-#if !TEST_WINRT  // Cannot access root
-            // [] Unecessary long but valid string
+            /* Scenario disabled while porting because it accesses a file outside the test's working directory
+            #if !TEST_WINRT  // Cannot access root
+                        // [] Unecessary long but valid string
 
-            strLoc = "Loc_478yb";
+                        strLoc = "Loc_478yb";
 
-            File.Delete("\\TestFile.tmp");
+                        File.Delete("\\TestFile.tmp");
 
-            File.Create(filName).Dispose();
-            fil2 = new FileInfo(filName);
+                        File.Create(filName).Dispose();
+                        fil2 = new FileInfo(filName);
 
-            File.Copy(fil2.Name, "..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\TestFile.tmp", false);
-            fil1 = new FileInfo(fil2.FullName.Substring(0, fil2.FullName.IndexOf("\\") + 1) + fil2.Name);
-            iCountTestcases++;
-            if (!fil1.FullName.Equals(fil2.FullName.Substring(0, fil2.FullName.IndexOf("\\") + 1) + fil2.Name))
-            {
-                Console.WriteLine(fil1.FullName);
-                iCountErrors++;
-                printerr("Error_298gc! Incorrect fullname set during copy");
-            }
-            new FileInfo(filName).Delete();
-            fil1.Delete();
-            File.Delete("\\TestFile.tmp");
-#endif
-*/
+                        File.Copy(fil2.Name, "..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\TestFile.tmp", false);
+                        fil1 = new FileInfo(fil2.FullName.Substring(0, fil2.FullName.IndexOf("\\") + 1) + fil2.Name);
+                        iCountTestcases++;
+                        if (!fil1.FullName.Equals(fil2.FullName.Substring(0, fil2.FullName.IndexOf("\\") + 1) + fil2.Name))
+                        {
+                            Console.WriteLine(fil1.FullName);
+                            iCountErrors++;
+                            printerr("Error_298gc! Incorrect fullname set during copy");
+                        }
+                        new FileInfo(filName).Delete();
+                        fil1.Delete();
+                        File.Delete("\\TestFile.tmp");
+            #endif
+            */
 
             // [] Copy over a file that already exists
 
@@ -354,6 +353,9 @@ public class File_Copy_str_str_b
             sr2.Dispose();
             fs3.Dispose();
             fil2.Delete();
+            fil1.Delete();
+            File.Delete(destFile);
+            File.Delete(filName);
 
             ///////////////////////////////////////////////////////////////////
             /////////////////////////// END TESTS /////////////////////////////
@@ -369,6 +371,7 @@ public class File_Copy_str_str_b
             Console.WriteLine("FAiL! " + s_strTFName + " ,iCountErrors==" + iCountErrors.ToString());
         }
 
+        FailSafeDirectoryOperations.DeleteDirectory(filName, true);
         Assert.Equal(0, iCountErrors);
     }
 

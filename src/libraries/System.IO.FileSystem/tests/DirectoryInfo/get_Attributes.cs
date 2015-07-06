@@ -315,6 +315,7 @@ public class DirectoryInfo_get_Attributes
         {
             Console.WriteLine("FAiL! " + s_strTFName + " ,iCountErrors==" + iCountErrors.ToString());
         }
+        FailSafeDirectoryOperations.DeleteDirectory(testDirectory, true);
 
         Assert.Equal(0, iCountErrors);
     }

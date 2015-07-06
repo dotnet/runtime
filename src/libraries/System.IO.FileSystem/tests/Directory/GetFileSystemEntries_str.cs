@@ -3,273 +3,218 @@
 
 using System;
 using System.IO;
-using System.Collections;
-using System.Globalization;
-using System.Text;
-using System.Runtime.CompilerServices;
+using System.IO.FileSystem.Tests;
 using Xunit;
 
-public class Directory_GetFileSystemEntries_str
+public class Directory_GetFileSystemEntries_str : FileSystemTest
 {
-    public static String s_strActiveBugNums = "";
-    public static String s_strDtTmVer = "2001/02/12 21:00";
-    public static String s_strClassMethod = "Directory.GetFileSystemEntries()";
-    public static String s_strTFName = "GetFileSystemEntries_str.cs";
+    #region Utilities
 
-    public static String s_strTFPath = Directory.GetCurrentDirectory();
+    /// <summary>
+    /// Indirection around Directory.GetFileSystemEntries that child test classes may
+    /// replace with a more fitting version
+    /// </summary>
+    public virtual String[] GetEntries(String dirName)
+    {
+        return Directory.GetFileSystemEntries(dirName);
+    }
+
+    #endregion
+
+    #region UniversalTests
 
     [Fact]
-    public static void runTest()
+    public void NullFileName()
     {
-        int iCountErrors = 0;
-        int iCountTestcases = 0;
-        String strLoc = "Loc_000oo";
-        String strValue = String.Empty;
-
-        try
-        {
-            DirectoryInfo dir2;
-            String dirName = "GetFileSystemEntries_str_TestDir";
-            String[] strArr;
-
-            if (Directory.Exists(dirName))
-                Directory.Delete(dirName, true);
-
-            strLoc = "Loc_4y982";
-
-            // [] With null string
-            iCountTestcases++;
-            try
-            {
-                Directory.GetFileSystemEntries(null);
-                iCountErrors++;
-                printerr("Error_0002! Expected exception not thrown");
-            }
-            catch (ArgumentNullException)
-            {
-            }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Error_0003! Unexpected exceptiont thrown: " + exc.ToString());
-            }
-
-            // [] With an empty string.
-            iCountTestcases++;
-            try
-            {
-                Directory.GetFileSystemEntries("");
-                iCountErrors++;
-                printerr("Error_0004! Expected exception not thrown");
-            }
-            catch (ArgumentException)
-            {
-            }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Error_0005! Unexpected exceptiont thrown: " + exc.ToString());
-            }
-
-            // [] With white spaces....
-            iCountTestcases++;
-            try
-            {
-                Directory.GetFileSystemEntries("            ");
-                iCountErrors++;
-                printerr("Error_0008! Expected exception not thrown");
-            }
-            catch (ArgumentException)
-            {
-            }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Error_0009! Unexpected exceptiont thrown: " + exc.ToString());
-            }
-
-            //Directory that doesn't exist
-            iCountTestcases++;
-            try
-            {
-                Directory.GetFileSystemEntries(dirName);
-                iCountErrors++;
-                printerr("Error_1001! Expected exception not thrown");
-            }
-            catch (DirectoryNotFoundException)
-            {
-            }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Error_1002! Unexpected exceptiont thrown: " + exc.ToString());
-            }
-
-            //TODO:: Add UNC path testcase.
-
-            if (Interop.IsWindows)
-            {
-                //With wild character's
-                iCountTestcases++;
-                try
-                {
-                    String strTempDir = Path.Combine("dls;d", "442349-0", "v443094(*)(+*$#$*") + new string(Path.DirectorySeparatorChar, 2);
-                    Directory.GetFileSystemEntries(strTempDir);
-                    iCountErrors++;
-                    printerr("Error_1003! Expected exception not thrown");
-                }
-                catch (ArgumentException)
-                {
-                }
-                catch (Exception exc)
-                {
-                    iCountErrors++;
-                    printerr("Error_1004! Unexpected exceptiont thrown: " + exc.ToString());
-                }
-            }
-
-            //With lot's of \'s at the end
-            iCountTestcases++;
-            try
-            {
-                String strTempDir = Directory.GetCurrentDirectory() + new string(Path.DirectorySeparatorChar, 5);
-                strArr = Directory.GetFileSystemEntries(strTempDir);
-                if (strArr == null || strArr.Length == 0)
-                {
-                    printerr("Error_1234!!! INvalid number of file system entries count :: " + strArr.Length);
-                    iCountErrors++;
-                }
-            }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Error_1006! Unexpected exceptiont thrown: " + exc.ToString());
-            }
-
-            //With the current directory
-            iCountTestcases++;
-            try
-            {
-                strArr = Directory.GetFileSystemEntries(s_strTFPath);
-                if (strArr == null || strArr.Length == 0)
-                {
-                    printerr("Error_2434!!! INvalid number of file system entries count :: " + strArr.Length);
-                    iCountErrors++;
-                }
-            }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Error_12321!!! Unexpected exceptiont thrown: " + exc.ToString());
-            }
-
-            //With valid directory
-            dir2 = new DirectoryInfo(dirName);
-            dir2.Create();
-
-            strArr = Directory.GetFileSystemEntries(dirName);
-            iCountTestcases++;
-            if (strArr.Length != 0)
-            {
-                iCountErrors++;
-                printerr("Error_207v7! Incorrect number of directories returned");
-            }
-
-            // [] Create a directorystructure get all the filesystementries
-            //-----------------------------------------------------------------
-            strLoc = "Loc_2398c";
-
-            dir2.CreateSubdirectory("TestDir1");
-            dir2.CreateSubdirectory("TestDir2");
-            dir2.CreateSubdirectory("TestDir3");
-            FileStream fs1 = new FileInfo(Path.Combine(dir2.ToString(), "TestFile1")).Create();
-            FileStream fs2 = new FileInfo(Path.Combine(dir2.ToString(), "TestFile2")).Create();
-            FileStream fs3 = new FileInfo(Path.Combine(dir2.ToString(), "Test.bat")).Create();
-            FileStream fs4 = new FileInfo(Path.Combine(dir2.ToString(), "Test.exe")).Create();
-
-            iCountTestcases++;
-            strArr = Directory.GetFileSystemEntries(dir2.Name);
-            iCountTestcases++;
-            if (strArr.Length != 7)
-            {
-                iCountErrors++;
-                printerr("Error_1yt75! Incorrect number of directories returned" + strArr.Length);
-            }
-
-            for (int iLoop = 0; iLoop < strArr.Length; iLoop++)
-                strArr[iLoop] = Path.GetFileName(strArr[iLoop]);
-
-            iCountTestcases++;
-            if (Array.IndexOf(strArr, "TestDir1") < 0)
-            {
-                iCountErrors++;
-                printerr("Error_4yg76! Incorrect name==" + strArr[0]);
-            }
-            iCountTestcases++;
-            if (Array.IndexOf(strArr, "TestDir2") < 0)
-            {
-                iCountErrors++;
-                printerr("Error_1987y! Incorrect name==" + strArr[1]);
-            }
-            iCountTestcases++;
-            if (Array.IndexOf(strArr, "TestDir3") < 0)
-            {
-                iCountErrors++;
-                printerr("Error_4yt76! Incorrect name==" + strArr[2]);
-            }
-            iCountTestcases++;
-            if (Array.IndexOf(strArr, "Test.bat") < 0)
-            {
-                iCountErrors++;
-                printerr("Error_3y775! Incorrect name==" + strArr[3]);
-            }
-            iCountTestcases++;
-            if (Array.IndexOf(strArr, "Test.exe") < 0)
-            {
-                iCountErrors++;
-                printerr("Error_90885! Incorrect name==" + strArr[4]);
-            }
-            iCountTestcases++;
-            if (Array.IndexOf(strArr, "TestFile1") < 0)
-            {
-                iCountErrors++;
-                printerr("Error_879by! Incorrect name==" + strArr[5]);
-            }
-            iCountTestcases++;
-            if (Array.IndexOf(strArr, "TestFile2") < 0)
-            {
-                iCountErrors++;
-                printerr("Error_29894! Incorrect name==" + strArr[6]);
-            }
-
-            fs1.Dispose();
-            fs2.Dispose();
-            fs3.Dispose();
-            fs4.Dispose();
-            if (Directory.Exists(dirName))
-                Directory.Delete(dirName, true);
-        }
-        catch (Exception exc_general)
-        {
-            ++iCountErrors;
-            printerr("Error Err_8888yyy!  strLoc==" + strLoc + ", exc_general==" + exc_general.ToString());
-        }
-        ////  Finish Diagnostics
-
-        if (iCountErrors != 0)
-        {
-            Console.WriteLine("FAiL! " + s_strTFName + " ,iCountErrors==" + iCountErrors.ToString());
-        }
-
-        Assert.Equal(0, iCountErrors);
+        Assert.Throws<ArgumentNullException>(() => GetEntries(null));
     }
 
-    public static void printerr(String err, [CallerMemberName] string memberName = "", [CallerFilePath] string filePath = "", [CallerLineNumber] int lineNumber = 0)
+    [Fact]
+    public void EmptyFileName()
     {
-        Console.WriteLine("ERROR: ({0}, {1}, {2}) {3}", memberName, filePath, lineNumber, err);
+        Assert.Throws<ArgumentException>(() => GetEntries(String.Empty));
     }
+
+    [Fact]
+    public void InvalidFileNames()
+    {
+        DirectoryInfo testDir = new DirectoryInfo(TestDirectory);
+        Assert.Throws<DirectoryNotFoundException>(() => GetEntries(","));
+        Assert.Throws<DirectoryNotFoundException>(() => GetEntries("DoesNotExist"));
+    }
+
+    [Fact]
+    public void NonexistentFile()
+    {
+        Assert.Throws<DirectoryNotFoundException>(() => GetEntries(GetTestFilePath()));
+    }
+
+    [Fact]
+    public void TrailingSlashes()
+    {
+        String strTempDir = Directory.GetCurrentDirectory() + new string(Path.DirectorySeparatorChar, 5);
+        String[] strArr = GetEntries(strTempDir);
+        Assert.NotNull(strArr);
+        Assert.NotEmpty(strArr);
+    }
+
+    [Fact]
+    public void CurrentDirectory()
+    {
+        String[] strArr = GetEntries(Directory.GetCurrentDirectory());
+        Assert.NotNull(strArr);
+        Assert.NotEmpty(strArr);
+    }
+
+    [Fact]
+    public void ValidDirectoryEmpty()
+    {
+        String testDir = Path.Combine(TestDirectory, GetTestFileName());
+        new DirectoryInfo(testDir).Create();
+        String[] strArr = GetEntries(testDir);
+        Assert.NotNull(strArr);
+        Assert.Empty(strArr);
+    }
+
+    [Fact]
+    public void ValidDirectoryNotEmpty()
+    {
+        using (File.Create(Path.Combine(TestDirectory, GetTestFileName())))
+        {
+            String[] strArr = GetEntries(TestDirectory);
+            Assert.NotNull(strArr);
+            Assert.NotEmpty(strArr);
+        }
+    }
+
+    [Fact]
+    public void NonexistentPath()
+    {
+        Assert.Throws<DirectoryNotFoundException>(() => GetEntries("ThisDirectoryShouldNotExist"));
+    }
+
+    [Fact]
+    public void GetEntriesThenDelete()
+    {
+        String testDirPath = Path.Combine(TestDirectory, GetTestFilePath());
+        DirectoryInfo testDirInfo = new DirectoryInfo(testDirPath);
+        testDirInfo.Create();
+        String testDir1 = GetTestFileName();
+        String testDir2 = GetTestFileName();
+        String testFile1 = GetTestFileName();
+        String testFile2 = GetTestFileName();
+        String testFile3 = GetTestFileName();
+        String testFile4 = GetTestFileName();
+        String testFile5 = GetTestFileName();
+        testDirInfo.CreateSubdirectory(testDir1);
+        testDirInfo.CreateSubdirectory(testDir2);
+        using (File.Create(Path.Combine(testDirPath, testFile1)))
+        using (File.Create(Path.Combine(testDirPath, testFile2)))
+        using (File.Create(Path.Combine(testDirPath, testFile3)))
+        {
+            String[] results;
+            using (File.Create(Path.Combine(testDirPath, testFile4)))
+            using (File.Create(Path.Combine(testDirPath, testFile5)))
+            {
+                results = GetEntries(testDirPath);
+                Assert.NotNull(results);
+                Assert.NotEmpty(results);
+                Assert.Contains(Path.Combine(testDirPath, testFile1), results);
+                Assert.Contains(Path.Combine(testDirPath, testFile2), results);
+                Assert.Contains(Path.Combine(testDirPath, testFile3), results);
+                Assert.Contains(Path.Combine(testDirPath, testFile4), results);
+                Assert.Contains(Path.Combine(testDirPath, testFile5), results);
+                Assert.Contains(Path.Combine(testDirPath, testDir1), results);
+                Assert.Contains(Path.Combine(testDirPath, testDir2), results);
+            }
+
+            File.Delete(Path.Combine(testDirPath, testFile4));
+            File.Delete(Path.Combine(testDirPath, testFile5));
+            FailSafeDirectoryOperations.DeleteDirectory(testDir1, true);
+
+            results = GetEntries(testDirPath);
+            Assert.NotNull(results);
+            Assert.NotEmpty(results);
+            Assert.Contains(Path.Combine(testDirPath, testFile1), results);
+            Assert.Contains(Path.Combine(testDirPath, testFile2), results);
+            Assert.Contains(Path.Combine(testDirPath, testFile3), results);
+            Assert.Contains(Path.Combine(testDirPath, testDir2), results);
+        }
+    }
+
+    [Fact]
+    public void IgnoreSubDirectoryFiles()
+    {
+        String testDir = GetTestFileName();
+        String testFile1 = Path.Combine(TestDirectory, GetTestFileName());
+        String testFile2 = Path.Combine(TestDirectory, testDir, GetTestFileName());
+        Directory.CreateDirectory(Path.Combine(TestDirectory, testDir));
+        using (File.Create(testFile1))
+        using (File.Create(testFile2))
+        {
+            String[] results = GetEntries(TestDirectory);
+            Assert.Contains(testFile1, results);
+            Assert.DoesNotContain(testFile2, results);
+        }
+    }
+
+    #endregion
+
+    #region PlatformSpecific
+
+    [Fact]
+    [PlatformSpecific(PlatformID.Windows)]
+    public void WildCharactersFileName()
+    {
+        String strTempDir = Path.Combine("dls;d", "442349-0", "v443094(*)(+*$#$*") + new string(Path.DirectorySeparatorChar, 3);
+        Assert.Throws<ArgumentException>(() => GetEntries(strTempDir));
+    }
+
+    [Fact]
+    [PlatformSpecific(PlatformID.Windows)]
+    public void WindowsFileNameWithSpaces()
+    {
+        Assert.Throws<ArgumentException>(() => GetEntries("\n"));
+        Assert.Throws<ArgumentException>(() => GetEntries("          "));
+        Assert.Throws<ArgumentException>(() => GetEntries(" "));
+        Assert.Throws<ArgumentException>(() => GetEntries(""));
+        Assert.Throws<ArgumentException>(() => GetEntries(">"));
+        Assert.Throws<ArgumentException>(() => GetEntries("\0"));
+    }
+
+    [Fact]
+    [PlatformSpecific(PlatformID.AnyUnix)]
+    [ActiveIssue(2205)]
+    public void UnixFileNameWithSpaces()
+    {
+        String testDirPath = Path.Combine(TestDirectory, GetTestFileName());
+        using (File.Create(Path.Combine(testDirPath, " ")))
+        using (File.Create(Path.Combine(testDirPath, "          ")))
+        using (File.Create(Path.Combine(testDirPath, "\n")))
+        {
+            String[] results = GetEntries(testDirPath);
+            Assert.Contains(Path.Combine(testDirPath, " "), results);
+            Assert.Contains(Path.Combine(testDirPath, "          "), results);
+            Assert.Contains(Path.Combine(testDirPath, "\n"), results);
+        }
+    }
+
+    [Fact]
+    [PlatformSpecific(PlatformID.AnyUnix)]
+    [ActiveIssue(2205)]
+    public void UnixDirectoryNameWithSpaces()
+    {
+        String testDirPath = Path.Combine(TestDirectory, GetTestFileName());
+        DirectoryInfo testDir = new DirectoryInfo(testDirPath);
+        testDir.CreateSubdirectory(" ");
+        testDir.CreateSubdirectory("\n");
+        testDir.CreateSubdirectory("          ");
+
+        String[] results = GetEntries(testDirPath);
+        Assert.Contains(Path.Combine(testDirPath, " "), results);
+        Assert.Contains(Path.Combine(testDirPath, "          "), results);
+        Assert.Contains(Path.Combine(testDirPath, "\n"), results);
+    }
+    #endregion
 }
-
-
-
 
