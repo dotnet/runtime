@@ -4,6 +4,8 @@
 using System;
 using System.IO;
 using System.IO.FileSystem.Tests;
+using System.Linq;
+using System.Runtime.InteropServices;
 using Xunit;
 
 public class Directory_GetFiles_str : FileSystemTest
@@ -156,5 +158,34 @@ public class Directory_GetFiles_str : FileSystemTest
         }
     }
 
+    [Fact]
+    [PlatformSpecific(PlatformID.AnyUnix)]
+    public void EnumerateWithSymLinkToFile()
+    {
+        using (var containingFolder = new TemporaryDirectory())
+        {
+            string linkPath;
+
+            // Test a symlink to a file that does and then doesn't exist
+            using (var targetFile = new TemporaryFile())
+            {
+                linkPath = Path.Combine(containingFolder.Path, Path.GetRandomFileName());
+                Assert.Equal(0, symlink(targetFile.Path, linkPath));
+                Assert.True(File.Exists(linkPath));
+                Assert.Equal(1, GetFiles(containingFolder.Path).Count());
+            }
+
+            // The symlink still exists even though the target file is gone.
+            Assert.Equal(1, GetFiles(containingFolder.Path).Count());
+
+            // The symlink is gone
+            File.Delete(linkPath);
+            Assert.Equal(0, GetFiles(containingFolder.Path).Count());
+        }
+    }
+
+    [DllImport("libc", SetLastError = true)]
+    private static extern int symlink(string path1, string path2);
+    
     #endregion
 }
