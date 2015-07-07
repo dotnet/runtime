@@ -1411,6 +1411,8 @@ method_jitted (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *ji, int resu
 		return;
 
 	register_method_local (prof, method, ji);
+
+	process_requests (prof);
 }
 
 static void
@@ -1477,6 +1479,8 @@ clause_exc (MonoProfiler *prof, MonoMethod *method, int clause_type, int clause_
 	emit_value (logbuffer, clause_num);
 	emit_method (prof, logbuffer, method);
 	EXIT_LOG (logbuffer);
+
+	process_requests (prof);
 }
 
 static void
@@ -1539,6 +1543,8 @@ thread_end (MonoProfiler *prof, uintptr_t tid)
 		EXIT_LOG (logbuffer);
 
 		send_buffer (prof, TLS_GET (GPtrArray, tlsmethodlist), logbuffer);
+
+		/* Don't process requests as the thread is detached from the runtime. */
 	}
 
 	TLS_SET (tlsbuffer, NULL);
