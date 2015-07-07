@@ -160,7 +160,7 @@ exit /b 1
 REM Build CoreCLR
 :BuildCoreCLR
 set "__CoreCLRBuildLog=%__LogsDir%\CoreCLR_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-%_msbuildexe% "%__IntermediatesDir%\install.vcxproj" %__MSBCleanBuildArgs% /nologo /maxcpucount /nodeReuse:false /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% /fileloggerparameters:Verbosity=diag;LogFile="%__CoreCLRBuildLog%"
+%_msbuildexe% "%__IntermediatesDir%\install.vcxproj" %__MSBCleanBuildArgs% /nologo /maxcpucount /nodeReuse:false /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% /fileloggerparameters:Verbosity=normal;LogFile="%__CoreCLRBuildLog%"
 IF NOT ERRORLEVEL 1 goto PerformMScorlibBuild
 echo Native component build failed. Refer !__CoreCLRBuildLog! for details.
 exit /b 1
@@ -183,7 +183,7 @@ call "!VS%__VSProductVersion%COMNTOOLS!\VsDevCmd.bat"
 echo Commencing build of mscorlib for %__BuildOS%.%__BuildArch%.%__BuildType%
 echo.
 set "__MScorlibBuildLog=%__LogsDir%\MScorlib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-%_msbuildexe% "%__ProjectFilesDir%\build.proj" %__MSBCleanBuildArgs% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diag;LogFile="%__MScorlibBuildLog%" /p:OS=%__BuildOS% %__AdditionalMSBuildArgs%
+%_msbuildexe% "%__ProjectFilesDir%\build.proj" %__MSBCleanBuildArgs% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=normal;LogFile="%__MScorlibBuildLog%" /p:OS=%__BuildOS% %__AdditionalMSBuildArgs%
 IF NOT ERRORLEVEL 1 (
   if defined __MscorlibOnly exit /b 0
   goto CrossGenMscorlib
