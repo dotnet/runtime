@@ -907,6 +907,11 @@ namespace System.Reflection.Metadata.Tests
             var expNamespaces = new[]
             {
                 "", // Global NS
+                "Microsoft",
+                "Microsoft.CSharp",
+                "FxResources",
+                "FxResources.Microsoft",
+                "FxResources.Microsoft.CSharp",
                 "NSTests",
                 "NSTests.WithNestedType",
                 "NSTests.Nested",
@@ -929,6 +934,9 @@ namespace System.Reflection.Metadata.Tests
             uniqueForwarders.Add("Forwarder", new[] { "FwdType" });
             uniqueForwarders.Add("Forwarder.NoDefs", new[] { "FwdType" });
             var uniqueDefinitions = new Dictionary<string, IList<string>>();
+            uniqueDefinitions.Add("Microsoft", new string[] { });
+            uniqueDefinitions.Add("FxResources", new string[] { });
+            uniqueDefinitions.Add("FxResources.Microsoft", new string[] { });
             uniqueDefinitions.Add("Forwarder.NoDefs", new string[] { });
             uniqueDefinitions.Add("SkipFirst", new string[] { });
             uniqueDefinitions.Add("SkipFirst.AndSecond", new string[] { });
