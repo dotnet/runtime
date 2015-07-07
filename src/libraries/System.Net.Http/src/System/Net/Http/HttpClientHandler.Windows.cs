@@ -103,15 +103,11 @@ namespace System.Net.Http
         {
             get
             {
-                return (_winHttpHandler.AutomaticRedirectionPolicy != AutomaticRedirectionPolicy.Never);
+                return _winHttpHandler.AutomaticRedirection;
             }
             set
             {
-                // The existing .NET Desktop HttpClientHandler based on the HWR stack allows HTTPS -> HTTP redirection by default.
-                // But, we're changing behavior to be more secure for ProjectK.
-                _winHttpHandler.AutomaticRedirectionPolicy = value ? 
-                    AutomaticRedirectionPolicy.DisallowHttpsToHttp : 
-                    AutomaticRedirectionPolicy.Never;
+                _winHttpHandler.AutomaticRedirection = value;
             }
         }
 
