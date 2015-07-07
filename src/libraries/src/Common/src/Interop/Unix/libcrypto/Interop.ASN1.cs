@@ -78,7 +78,7 @@ internal static partial class Interop
 
             if (bytesNeeded < 0)
             {
-                throw new CryptographicException(GetOpenSslErrorString());
+                throw CreateOpenSslCryptographicException();
             }
 
             Debug.Assert(bytesNeeded != 0, "OBJ_obj2txt reported a zero-length response");
@@ -95,7 +95,7 @@ internal static partial class Interop
 
                 if (bytesNeeded < 0)
                 {
-                    throw new CryptographicException(GetOpenSslErrorString());
+                    throw CreateOpenSslCryptographicException();
                 }
 
                 Debug.Assert(

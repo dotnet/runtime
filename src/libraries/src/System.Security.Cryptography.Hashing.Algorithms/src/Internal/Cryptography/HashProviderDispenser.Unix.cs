@@ -177,7 +177,7 @@ namespace Internal.Cryptography
             if (result != Success)
             {
                 Debug.Assert(result == 0);
-                throw new CryptographicException(Interop.libcrypto.GetOpenSslErrorString());
+                throw Interop.libcrypto.CreateOpenSslCryptographicException();
             }
         }
     }

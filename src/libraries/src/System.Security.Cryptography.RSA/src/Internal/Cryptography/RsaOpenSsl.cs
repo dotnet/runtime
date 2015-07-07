@@ -160,7 +160,7 @@ namespace Internal.Cryptography
             SafeRsaHandle key = Interop.libcrypto.RSA_new();
             bool imported = false;
 
-            CheckInvalidNewKey(key);
+            Interop.libcrypto.CheckValidOpenSslHandle(key);
 
             try
             {
@@ -266,19 +266,11 @@ namespace Internal.Cryptography
             }
         }
 
-        private static void CheckInvalidNewKey(SafeRsaHandle key)
-        {
-            if (key == null || key.IsInvalid)
-            {
-                throw CreateOpenSslException();
-            }
-        }
-
         private static void CheckReturn(int returnValue)
         {
             if (returnValue == -1)
             {
-                throw CreateOpenSslException();
+                throw Interop.libcrypto.CreateOpenSslCryptographicException();
             }
         }
 
@@ -289,7 +281,7 @@ namespace Internal.Cryptography
                 return;
             }
 
-            throw CreateOpenSslException();
+            throw Interop.libcrypto.CreateOpenSslCryptographicException();
         }
 
         private SafeRsaHandle GenerateKey()
@@ -297,7 +289,7 @@ namespace Internal.Cryptography
             SafeRsaHandle key = Interop.libcrypto.RSA_new();
             bool generated = false;
 
-            CheckInvalidNewKey(key);
+            Interop.libcrypto.CheckValidOpenSslHandle(key);
 
             try
             {
@@ -325,11 +317,6 @@ namespace Internal.Cryptography
             }
 
             return key;
-        }
-
-        private static Exception CreateOpenSslException()
-        {
-            return new CryptographicException(Interop.libcrypto.GetOpenSslErrorString());
         }
 
         internal byte[] HashData(byte[] buffer, int offset, int count, HashAlgorithmName hashAlgorithmName)
@@ -365,7 +352,7 @@ namespace Internal.Cryptography
 
             if (!success)
             {
-                throw CreateOpenSslException();
+                throw Interop.libcrypto.CreateOpenSslCryptographicException();
             }
 
             Debug.Assert(
