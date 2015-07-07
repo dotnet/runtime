@@ -982,6 +982,7 @@ namespace System.Linq.Parallel.Tests
 
         //
         // Stable Sort
+        // Ensures that indices issued during a query are stable, **not** that OrderBy returns a stable result on its own (it does not).
         //
         [Theory]
         [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(Sources))]
