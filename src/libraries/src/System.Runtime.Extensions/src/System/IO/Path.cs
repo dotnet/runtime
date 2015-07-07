@@ -165,25 +165,6 @@ namespace System.IO
             return string.Empty;
         }
 
-        // Expands the given path to a fully qualified path. 
-        [Pure]
-        [System.Security.SecuritySafeCritical]
-        public static string GetFullPath(string path)
-        {
-            string fullPath = GetFullPathInternal(path);
-
-            EmulateFileIOPermissionChecks(fullPath);
-
-            return fullPath;
-        }
-
-        // This method is package access to let us quickly get a string name
-        // while avoiding a security check.  This also serves a slightly
-        // different purpose - when we open a file, we need to resolve the
-        // path into a fully qualified, non-relative path name.  This
-        // method does that, finding the current drive &; directory.  But
-        // as long as we don't return this info to the user, we're good.  However,
-        // the public GetFullPath does need to do a security check.
         private static string GetFullPathInternal(string path)
         {
             if (path == null)
