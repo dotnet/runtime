@@ -14,6 +14,8 @@
   </PropertyGroup>
 
   <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Release|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU' " />
@@ -26,6 +28,7 @@
     <Compile Include="System\BitConverter.cs" />
     <Compile Include="System\IO\LowLevelTextWriter.cs" />
     <Compile Include="System\IO\LowLevelStringWriter.cs" />
+    <Compile Include="System\IO\Path.cs" />
     <Compile Include="System\Net\WebUtility.cs" />
     <Compile Include="System\Net\Configuration\UnicodeDecodingConformance.cs" />
     <Compile Include="System\Net\Configuration\UnicodeEncodingConformance.cs" />
@@ -43,7 +46,6 @@
 
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="System\Diagnostics\Stopwatch.Windows.cs" />
-    <Compile Include="System\IO\Path.cs" /> <!-- TODO: Move this to the common group once Path.Unix.cs is implemented -->
     <Compile Include="System\IO\Path.Windows.cs" />
     <Compile Include="System\IO\Path.Win32.cs" />
     <Compile Include="System\IO\PathHelper.Windows.cs" />
@@ -51,7 +53,7 @@
       <Link>System\IO\Win32Marshal.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
-      <Link>Interop\Windows\Interop.Libraries.cs</Link>
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
       <Link>Common\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs</Link>
@@ -60,41 +62,105 @@
       <Link>Common\Interop\Windows\BCrypt\Interop.NTSTATUS.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Errors.cs">
-      <Link>Interop\Windows\mincore\Interop.Errors.cs</Link>
+      <Link>Common\Interop\Windows\mincore\Interop.Errors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
-      <Link>Interop\Windows\mincore\Interop.FormatMessage.cs</Link>
+      <Link>Common\Interop\Windows\mincore\Interop.FormatMessage.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetFullPathNameW.cs">
-      <Link>Interop\Windows\mincore\Interop.GetFullPathNameW.cs</Link>
+      <Link>Common\Interop\Windows\mincore\Interop.GetFullPathNameW.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLastError.cs">
-      <Link>Interop\Windows\mincore\Interop.GetLastError.cs</Link>
+      <Link>Common\Interop\Windows\mincore\Interop.GetLastError.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLongPathNameW.cs">
-      <Link>Interop\Windows\mincore\Interop.GetLongPathNameW.cs</Link>
+      <Link>Common\Interop\Windows\mincore\Interop.GetLongPathNameW.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetTempFileNameW.cs">
-      <Link>Interop\Windows\mincore\Interop.GetTempFileNameW.cs</Link>
+      <Link>Common\Interop\Windows\mincore\Interop.GetTempFileNameW.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetTempPathW.cs">
-      <Link>Interop\Windows\mincore\Interop.GetTempPathW.cs</Link>
+      <Link>Common\Interop\Windows\mincore\Interop.GetTempPathW.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.QueryPerformanceCounter.cs">
-      <Link>Interop\Windows\mincore\Interop.QueryPerformanceCounter.cs</Link>
+      <Link>Common\Interop\Windows\mincore\Interop.QueryPerformanceCounter.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.QueryPerformanceFrequency.cs">
-      <Link>Interop\Windows\mincore\Interop.QueryPerformanceFrequency.cs</Link>
+      <Link>Common\Interop\Windows\mincore\Interop.QueryPerformanceFrequency.cs</Link>
     </Compile>
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\Diagnostics\Stopwatch.Unix.cs" />
+    <Compile Include="System\IO\Path.Unix.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
-      <Link>Interop\Unix\Interop.Libraries.cs</Link>
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
+      <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.IOErrors.cs">
+      <Link>Common\Interop\Unix\Interop.IOErrors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.close.cs">
+      <Link>Common\Interop\Unix\libc\Interop.close.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getcwd.cs">
+      <Link>Common\Interop\Unix\libc\Interop.getcwd.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.mkstemps.cs">
+      <Link>Common\Interop\Unix\libc\Interop.mkstemps.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.pathconf.cs">
+      <Link>Common\Interop\Unix\libc\Interop.mkstemps.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gnu_get_libc_version.cs">
+      <Link>Common\Interop\Unix\libc\Interop.gnu_get_libc_version.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs">
+      <Link>Common\Interop\Unix\libc\Interop.strerror.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.EnsureOpenSslInitialized.cs">
+      <Link>Common\Interop\Unix\libcoreclr\Interop.EnsureOpenSslInitialized.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.QueryPerformanceCounter.cs">
-      <Link>Interop\Unix\libcoreclr\Interop.QueryPerformanceCounter.cs</Link>
+      <Link>Common\Interop\Unix\libcoreclr\Interop.QueryPerformanceCounter.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.ERR.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.ERR.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.Initialization.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.Initialization.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.RAND.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.RAND.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
+    <Compile Include="$(CommonPath)\Interop\Linux\Interop.Errors.cs">
+      <Link>Common\Interop\Linux\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.PathConfNames.cs">
+      <Link>Common\Interop\Linux\libc\Interop.PathConfNames.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Errors.cs">
+      <Link>Common\Interop\OSX\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.PathConfNames.cs">
+      <Link>Common\Interop\OSX\libc\Interop.PathConfNames.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetsFreeBSD)' == 'true' ">
+    <Compile Include="$(CommonPath)\Interop\FreeBSD\Interop.Errors.cs">
+      <Link>Common\Interop\FreeBSD\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\FreeBSD\libc\Interop.PathConfNames.cs">
+      <Link>Common\Interop\FreeBSD\libc\Interop.PathConfNames.cs</Link>
     </Compile>
   </ItemGroup>
 

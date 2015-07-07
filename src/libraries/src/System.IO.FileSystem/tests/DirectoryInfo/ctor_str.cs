@@ -24,6 +24,7 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)] // whitespace-only names are valid on Unix
         public void Spaces()
         {
             Assert.Throws<ArgumentException>(() => new DirectoryInfo("      "));

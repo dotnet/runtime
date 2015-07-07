@@ -153,6 +153,9 @@
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non-negative number required.</value>
   </data>
+  <data name="ArgumentOutOfRange_FileLengthTooBig" xml:space="preserve">
+    <value>Specified file length was too large for the file system.</value>
+  </data>
   <data name="Arg_InvalidSearchPattern" xml:space="preserve">
     <value>Search pattern cannot contain \"..\" to move up directories and can be contained only internally in file/directory names, as in \"a..b\".</value>
   </data>
@@ -187,7 +190,7 @@
     <value>'{0}' must be greater than zero.</value>
   </data>
   <data name="IO_PathTooLong" xml:space="preserve">
-    <value>The specified path, file name, or both are too long. The fully qualified file name must be less than 260 characters, and the directory name must be less than 248 characters.</value>
+    <value>The specified file name or path is too long, or a component of the specified path is too long.</value>
   </data>
   <data name="IO_FileNotFound" xml:space="preserve">
     <value>Unable to find the specified file.</value>
@@ -218,6 +221,9 @@
   </data>
   <data name="IO_FileExists_Name" xml:space="preserve">
     <value>The file '{0}' already exists.</value>
+  </data>
+  <data name="InvalidOperation_Cryptography" xml:space="preserve">
+    <value>Unable to use cryptographic functionality.</value>
   </data>
   <data name="UnknownError_Num" xml:space="preserve">
     <value>Unknown error '{0}'.</value>

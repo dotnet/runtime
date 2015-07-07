@@ -28,6 +28,7 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)] // tabs are valid in file names on Unix
         public void MultipleTabCharacters()
         {
             Assert.Throws<ArgumentException>(() => new DirectoryInfo("\t\t\t\t"));
