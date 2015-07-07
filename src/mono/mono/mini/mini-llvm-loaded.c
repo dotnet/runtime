@@ -14,7 +14,7 @@
 typedef void (*MonoLLVMVoidFunc)(void);
 typedef void (*MonoLLVMCFGFunc)(MonoCompile *cfg);
 typedef void (*MonoLLVMEmitCallFunc)(MonoCompile *cfg, MonoCallInst *call);
-typedef void (*MonoLLVMCreateAotFunc)(const char *global_prefix, gboolean emit_dwarf);
+typedef void (*MonoLLVMCreateAotFunc)(MonoAssembly *assembly, const char *global_prefix, gboolean emit_dwarf, gboolean static_link);
 typedef void (*MonoLLVMEmitAotFunc)(const char *filename, const char *cu_name);
 typedef void (*MonoLLVMEmitAotInfoFunc)(MonoAotFileInfo *info, gboolean has_jitted_code);
 typedef void (*MonoLLVMEmitAotDataFunc)(const char *symbol, guint8 *data, int data_len);
@@ -56,10 +56,10 @@ mono_llvm_emit_call (MonoCompile *cfg, MonoCallInst *call)
 }
 
 void
-mono_llvm_create_aot_module (const char *global_prefix, gboolean emit_dwarf)
+mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, gboolean emit_dwarf, gboolean static_link)
 {
 	g_assert (mono_llvm_create_aot_module_fptr);
-	mono_llvm_create_aot_module_fptr (global_prefix, emit_dwarf);
+	mono_llvm_create_aot_module_fptr (assembly, global_prefix, emit_dwarf, static_link);
 }
 
 void

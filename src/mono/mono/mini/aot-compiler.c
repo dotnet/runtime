@@ -517,9 +517,9 @@ emit_info_symbol (MonoAotCompile *acfg, const char *name)
 	if (acfg->llvm) {
 		emit_label (acfg, name);
 		/* LLVM generated code references this */
-		sprintf (symbol, "%s%s", acfg->user_symbol_prefix, name);
+		sprintf (symbol, "%s%s%s", acfg->user_symbol_prefix, acfg->global_prefix, name);
 		emit_label (acfg, symbol);
-		emit_global (acfg, symbol, FALSE);
+		emit_global_inner (acfg, symbol, FALSE);
 	} else {
 		emit_label (acfg, name);
 	}
@@ -8458,7 +8458,7 @@ emit_globals (MonoAotCompile *acfg)
 	emit_section_change (acfg, ".data", 0);
 	/* This is not a global, since it is accessed by the init function */
 	emit_alignment (acfg, 8);
-	emit_label (acfg, symbol);
+	emit_info_symbol (acfg, symbol);
 
 	sprintf (symbol, "%sglobals_hash", acfg->temp_prefix);
 	emit_pointer (acfg, symbol);
@@ -9558,7 +9558,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 #ifdef ENABLE_LLVM
 	if (acfg->llvm) {
 		llvm_acfg = acfg;
-		mono_llvm_create_aot_module (acfg->global_prefix, TRUE);
+		mono_llvm_create_aot_module (acfg->image->assembly, acfg->global_prefix, TRUE, acfg->aot_opts.static_link);
 	}
 #endif
 
