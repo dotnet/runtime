@@ -259,7 +259,7 @@ namespace System.Linq.Parallel.Tests
             Assert.Null(labeled.Item.Min(x => (float?)x));
             Assert.Null(labeled.Item.Min(x => (double?)x));
             Assert.Null(labeled.Item.Min(x => (decimal?)x));
-            Assert.Null(labeled.Item.Min(x => new NotComparable(x)));
+            Assert.Null(labeled.Item.Min(x => new object()));
         }
 
         [Theory]
@@ -271,7 +271,7 @@ namespace System.Linq.Parallel.Tests
             Assert.Throws<InvalidOperationException>(() => labeled.Item.Min(x => (float)x));
             Assert.Throws<InvalidOperationException>(() => labeled.Item.Min(x => (double)x));
             Assert.Throws<InvalidOperationException>(() => labeled.Item.Min(x => (decimal)x));
-            Assert.Throws<InvalidOperationException>(() => labeled.Item.Min(x => KeyValuePair.Create(x, x)));
+            Assert.Throws<InvalidOperationException>(() => labeled.Item.Min(x => new NotComparable(x)));
         }
 
         [Theory]
@@ -296,7 +296,7 @@ namespace System.Linq.Parallel.Tests
             Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Min(x => (decimal)x));
             Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Min(x => (decimal?)x));
 
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Min(x => KeyValuePair.Create(x, x)));
+            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Min(x => new NotComparable(x)));
         }
 
         [Theory]
@@ -318,7 +318,7 @@ namespace System.Linq.Parallel.Tests
             Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.Min((Func<int, decimal>)(x => { throw new DeliberateTestException(); })));
             Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.Min((Func<int, decimal?>)(x => { throw new DeliberateTestException(); })));
 
-            Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.Min((Func<int, KeyValuePair<int, int>>)(x => { throw new DeliberateTestException(); })));
+            Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.Min((Func<int, NotComparable>)(x => { throw new DeliberateTestException(); })));
         }
 
         [Theory]
@@ -356,20 +356,10 @@ namespace System.Linq.Parallel.Tests
             Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<decimal?>)null).Min());
             Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Repeat((decimal?)0, 1).Min((Func<decimal?, decimal>)null));
 
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<KeyValuePair<int, int>>)null).Min());
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Repeat(0, 1).Min((Func<int, KeyValuePair<int, int>>)null));
+            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<NotComparable>)null).Min());
+            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Repeat(0, 1).Min((Func<int, NotComparable>)null));
             Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<object>)null).Min());
             Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Repeat(new object(), 1).Min((Func<object, object>)null));
-        }
-
-        private class NotComparable
-        {
-            private int x;
-
-            public NotComparable(int x)
-            {
-                this.x = x;
-            }
         }
     }
 }
