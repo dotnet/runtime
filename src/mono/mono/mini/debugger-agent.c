@@ -6518,6 +6518,19 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 			return ERR_INVALID_ARGUMENT;
 		}
 		memset (this_buf, 0, mono_class_instance_size (m->klass));
+	} else if (m->klass->valuetype && !strcmp (m->name, ".ctor")) {
+			/* Could be null */
+			guint8 *tmp_p;
+
+			int type = decode_byte (p, &tmp_p, end);
+			if (type == VALUE_TYPE_ID_NULL) {
+				memset (this_buf, 0, mono_class_instance_size (m->klass));
+				p = tmp_p;
+			} else {
+				err = decode_value (&m->klass->byval_arg, domain, this_buf, p, &p, end);
+				if (err)
+					return err;
+			}
 	} else {
 		err = decode_value (&m->klass->byval_arg, domain, this_buf, p, &p, end);
 		if (err)
@@ -6648,11 +6661,14 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 			out_args = TRUE;
 		buffer_add_byte (buf, 1 + (out_this ? 2 : 0) + (out_args ? 4 : 0));
 		if (sig->ret->type == MONO_TYPE_VOID) {
-			if (!strcmp (m->name, ".ctor") && !m->klass->valuetype) {
-				buffer_add_value (buf, &mono_defaults.object_class->byval_arg, &this, domain);
-			}
-			else
+			if (!strcmp (m->name, ".ctor")) {
+				if (!m->klass->valuetype)
+					buffer_add_value (buf, &mono_defaults.object_class->byval_arg, &this, domain);
+				else
+					buffer_add_value (buf, &m->klass->byval_arg, this_buf, domain);
+			} else {
 				buffer_add_value (buf, &mono_defaults.void_class->byval_arg, NULL, domain);
+			}
 		} else if (MONO_TYPE_IS_REFERENCE (sig->ret)) {
 			buffer_add_value (buf, sig->ret, &res, domain);
 		} else if (mono_class_from_mono_type (sig->ret)->valuetype || sig->ret->type == MONO_TYPE_PTR || sig->ret->type == MONO_TYPE_FNPTR) {
