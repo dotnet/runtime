@@ -401,7 +401,6 @@ namespace System.Diagnostics.ProcessTests
         }
 
         [Fact]
-        [ActiveIssue(2184, PlatformID.OSX)]
         public void Process_ProcessorTime()
         {
             Assert.True(_process.UserProcessorTime.TotalSeconds >= 0);
