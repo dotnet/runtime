@@ -83,16 +83,19 @@ public class FileInfo_Extension
                 printerr("Error_2004! Incorrect extension , file==" + file.Extension);
             }
 
-            strLoc = "Err_3003";
-            // No characters after the extension
-            //INFO: This should return basically ".". But that really doesn't make sense. 
-            iCountTestcases++;
-            fileName = "foo.";
-            file = new FileInfo(fileName);
-            if (file.Extension != "")
+            if (Interop.IsWindows) // assumes that a name ending with "." will be normalized to remove the "."
             {
-                iCountErrors++;
-                printerr("Error_3004! Incorrect extension , file==" + file.Extension);
+                strLoc = "Err_3003";
+                // No characters after the extension
+                //INFO: This should return basically ".". But that really doesn't make sense. 
+                iCountTestcases++;
+                fileName = "foo.";
+                file = new FileInfo(fileName);
+                if (file.Extension != "")
+                {
+                    iCountErrors++;
+                    printerr("Error_3004! Incorrect extension , file==" + file.Extension);
+                }
             }
 
             strLoc = "Err_4003";
@@ -107,29 +110,35 @@ public class FileInfo_Extension
                 printerr("Error_4004! Incorrect extension , file==" + file.Extension);
             }
 
-            strLoc = "Err_5003";
-            // Lots of dots at end of the fileectory name  
-            //INFO: This should return basically ".". But that really doesn't make sense.                               
-            iCountTestcases++;
-            extension = "..............";
-            fileName = "foo" + extension;
-            file = new FileInfo(fileName);
-            if (file.Extension != "")
+            if (Interop.IsWindows) // assumes that a name ending with "." will be normalized to remove the "."
             {
-                iCountErrors++;
-                printerr("Error_5004! Incorrect extension , file==" + file.Extension);
+                strLoc = "Err_5003";
+                // Lots of dots at end of the fileectory name  
+                //INFO: This should return basically ".". But that really doesn't make sense.                               
+                iCountTestcases++;
+                extension = "..............";
+                fileName = "foo" + extension;
+                file = new FileInfo(fileName);
+                if (file.Extension != "")
+                {
+                    iCountErrors++;
+                    printerr("Error_5004! Incorrect extension , file==" + file.Extension);
+                }
             }
 
-            strLoc = "Err_6003";
-            // Extension with exactly one characters. 
-            iCountTestcases++;
-            extension = "..............";
-            fileName = "foo.z" + extension;
-            file = new FileInfo(fileName);
-            if (file.Extension != ".z")
+            if (Interop.IsWindows) // assumes that a name ending with "." will be normalized to remove the "."
             {
-                iCountErrors++;
-                printerr("Error_6004! Incorrect extension , file==" + file.Extension);
+                strLoc = "Err_6003";
+                // Extension with exactly one characters. 
+                iCountTestcases++;
+                extension = "..............";
+                fileName = "foo.z" + extension;
+                file = new FileInfo(fileName);
+                if (file.Extension != ".z")
+                {
+                    iCountErrors++;
+                    printerr("Error_6004! Incorrect extension , file==" + file.Extension);
+                }
             }
 
             if (File.Exists(fileName))

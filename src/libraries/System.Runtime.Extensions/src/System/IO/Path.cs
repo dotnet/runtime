@@ -1,12 +1,11 @@
-using System;
-using System.Text;
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Security;
-using System.Runtime.CompilerServices;
-using System.Globalization;
-using System.Runtime.Versioning;
-using System.Diagnostics.Contracts;
-using System.Diagnostics;
+using System.Text;
 
 namespace System.IO
 {
@@ -74,7 +73,7 @@ namespace System.IO
             {
                 CheckInvalidPathChars(path);
 
-                string normalizedPath = NormalizePath(path, false);
+                string normalizedPath = NormalizePath(path, fullCheck: false);
 
                 // If there are no permissions for PathDiscovery to this path, we should NOT expand the short paths
                 // as this would leak information about paths to which the user would not have access to.
@@ -104,7 +103,7 @@ namespace System.IO
                         // Only re-normalize if the original path had a ~ in it.
                         if (path.IndexOf("~", StringComparison.Ordinal) != -1)
                         {
-                            normalizedPath = NormalizePath(path, /*fullCheck*/ false, /*expandShortPaths*/ false);
+                            normalizedPath = NormalizePath(path, fullCheck: false, expandShortPaths: false);
                         }
                     }
                     catch (PathTooLongException) { }
@@ -130,7 +129,7 @@ namespace System.IO
 
         public static char[] GetInvalidPathChars()
         {
-            return (char[])RealInvalidPathChars.Clone();
+            return (char[])InvalidPathChars.Clone();
         }
 
         public static char[] GetInvalidFileNameChars()
@@ -166,32 +165,13 @@ namespace System.IO
             return string.Empty;
         }
 
-        // Expands the given path to a fully qualified path. 
-        [Pure]
-        [System.Security.SecuritySafeCritical]
-        public static string GetFullPath(string path)
-        {
-            string fullPath = GetFullPathInternal(path);
-
-            EmulateFileIOPermissionChecks(fullPath);
-
-            return fullPath;
-        }
-
-        // This method is package access to let us quickly get a string name
-        // while avoiding a security check.  This also serves a slightly
-        // different purpose - when we open a file, we need to resolve the
-        // path into a fully qualified, non-relative path name.  This
-        // method does that, finding the current drive &; directory.  But
-        // as long as we don't return this info to the user, we're good.  However,
-        // the public GetFullPath does need to do a security check.
         private static string GetFullPathInternal(string path)
         {
             if (path == null)
                 throw new ArgumentNullException("path");
             Contract.EndContractBlock();
 
-            return NormalizePath(path, true);
+            return NormalizePath(path, fullCheck: true);
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
@@ -209,7 +189,7 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]  // auto-generated
         private static string NormalizePath(string path, bool fullCheck, int maxPathLength)
         {
-            return NormalizePath(path, fullCheck, maxPathLength, true);
+            return NormalizePath(path, fullCheck, maxPathLength, expandShortPaths: true);
         }
 
         // Returns the name and extension parts of the given path. The resulting
@@ -258,7 +238,7 @@ namespace System.IO
         public static string GetPathRoot(string path)
         {
             if (path == null) return null;
-            path = NormalizePath(path, false);
+            path = NormalizePath(path, fullCheck: false);
             return path.Substring(0, GetRootLength(path));
         }
 
@@ -282,7 +262,7 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]
         public static string GetTempFileName()
         {
-            return InternalGetTempFileName(true);
+            return InternalGetTempFileName(checkHost: true);
         }
 
         // Tests if a path includes a file extension. The result is
@@ -485,7 +465,7 @@ namespace System.IO
         private static bool HasIllegalCharacters(string path, bool checkAdditional)
         {
             Contract.Requires(path != null);
-            return path.IndexOfAny(checkAdditional ? InvalidPathCharsWithAdditionalChecks : RealInvalidPathChars) >= 0;
+            return path.IndexOfAny(checkAdditional ? InvalidPathCharsWithAdditionalChecks : InvalidPathChars) >= 0;
         }
 
         private static void CheckInvalidPathChars(string path, bool checkAdditional = false)
@@ -495,6 +475,5 @@ namespace System.IO
             if (HasIllegalCharacters(path, checkAdditional))
                 throw new ArgumentException(SR.Argument_InvalidPathChars, "path");
         }
-
     }
 }

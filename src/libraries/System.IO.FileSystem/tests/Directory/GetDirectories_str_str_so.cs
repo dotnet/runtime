@@ -610,21 +610,24 @@ public class Directory_GetDirectories_str_str_so
             */
 
             // Regression Test (DevDiv Bug927807): throw NotSupportException when there are whitespace before drive letter
-            try
+            if (Interop.IsWindows) // whitespace is valid in a file name on Unix, where the root is just a directory separator 
             {
-                string root = Path.GetPathRoot(Directory.GetCurrentDirectory());
+                try
+                {
+                    string root = Path.GetPathRoot(Directory.GetCurrentDirectory());
 
-                var fullPath = Path.GetFullPath(" " + root);
-                Eval(fullPath, root, "Wrong Full Path");
+                    var fullPath = Path.GetFullPath(" " + root);
+                    Eval(fullPath, root, "Wrong Full Path");
 
-                string pathStr = root + "test" + Path.DirectorySeparatorChar + "test.cs";
-                fullPath = Path.GetFullPath(" " + pathStr);
-                Eval(fullPath, pathStr, "Wrong Full Path");
-            }
-            catch (Exception ex)
-            {
-                s_pass = false;
-                Console.WriteLine("Bug927807! Exception caught in scenario: {0}", ex);
+                    string pathStr = root + "test" + Path.DirectorySeparatorChar + "test.cs";
+                    fullPath = Path.GetFullPath(" " + pathStr);
+                    Eval(fullPath, pathStr, "Wrong Full Path");
+                }
+                catch (Exception ex)
+                {
+                    s_pass = false;
+                    Console.WriteLine("Bug927807! Exception caught in scenario: {0}", ex);
+                }
             }
         }
         catch (Exception ex)

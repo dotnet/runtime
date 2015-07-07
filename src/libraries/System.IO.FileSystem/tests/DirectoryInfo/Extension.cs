@@ -72,17 +72,20 @@ public class DirectoryInfo_Extension
                 printerr("Error_2004! Incorrect extension , dir==" + dir.Extension);
             }
 
-            strLoc = "Err_3003";
-            // No characters after the extension
-            //INFO: This should return basically ".". But that really doesn't make sense. 
-            iCountTestcases++;
-            fileName = "foo.";
-            dir = new DirectoryInfo(fileName);
-            String test = Exten(fileName);
-            if (dir.Extension != "")
+            if (Interop.IsWindows) // assumes that a name ending with "." will be normalized to remove the "."
             {
-                iCountErrors++;
-                printerr("Error_3004! Incorrect extension , dir==" + dir.Extension);
+                strLoc = "Err_3003";
+                // No characters after the extension
+                //INFO: This should return basically ".". But that really doesn't make sense. 
+                iCountTestcases++;
+                fileName = "foo.";
+                dir = new DirectoryInfo(fileName);
+                String test = Exten(fileName);
+                if (dir.Extension != "")
+                {
+                    iCountErrors++;
+                    printerr("Error_3004! Incorrect extension , dir==" + dir.Extension);
+                }
             }
 
             strLoc = "Err_4003";
@@ -97,29 +100,35 @@ public class DirectoryInfo_Extension
                 printerr("Error_4004! Incorrect extension , dir==" + dir.Extension);
             }
 
-            strLoc = "Err_5003";
-            // Lots of dots at end of the directory name  
-            //INFO: This should return basically ".". But that really doesn't make sense.                               
-            iCountTestcases++;
-            extension = "..............";
-            fileName = "foo" + extension;
-            dir = new DirectoryInfo(fileName);
-            if (dir.Extension != "")
+            if (Interop.IsWindows) // assumes that a name ending with "." will be normalized to remove the "."
             {
-                iCountErrors++;
-                printerr("Error_5004! Incorrect extension , dir==" + dir.Extension);
+                strLoc = "Err_5003";
+                // Lots of dots at end of the directory name  
+                //INFO: This should return basically ".". But that really doesn't make sense.                               
+                iCountTestcases++;
+                extension = "..............";
+                fileName = "foo" + extension;
+                dir = new DirectoryInfo(fileName);
+                if (dir.Extension != "")
+                {
+                    iCountErrors++;
+                    printerr("Error_5004! Incorrect extension , dir==" + dir.Extension);
+                }
             }
 
-            strLoc = "Err_6003";
-            // Extension with exactly one character. 
-            iCountTestcases++;
-            extension = "..............";
-            fileName = "foo . z" + extension;
-            dir = new DirectoryInfo(fileName);
-            if (dir.Extension != ". z")
+            if (Interop.IsWindows) // assumes that a name ending with "." will be normalized to remove the "."
             {
-                iCountErrors++;
-                printerr("Error_6004! Incorrect extension , dir==" + dir.Extension);
+                strLoc = "Err_6003";
+                // Extension with exactly one character. 
+                iCountTestcases++;
+                extension = "..............";
+                fileName = "foo . z" + extension;
+                dir = new DirectoryInfo(fileName);
+                if (dir.Extension != ". z")
+                {
+                    iCountErrors++;
+                    printerr("Error_6004! Incorrect extension , dir==" + dir.Extension);
+                }
             }
 
             if (File.Exists(fileName))

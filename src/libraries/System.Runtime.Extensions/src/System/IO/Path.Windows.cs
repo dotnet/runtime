@@ -16,7 +16,7 @@ namespace System.IO
 
         private const string DirectorySeparatorCharAsString = "\\";
 
-        private static readonly char[] RealInvalidPathChars = 
+        private static readonly char[] InvalidPathChars = 
         { 
             '\"', '<', '>', '|', '\0', 
             (char)1, (char)2, (char)3, (char)4, (char)5, (char)6, (char)7, (char)8, (char)9, (char)10, 
@@ -98,14 +98,21 @@ namespace System.IO
             return i;
         }
 
-        // The following checks were originaly done by FileIOPermission and are retained for compatibility
-        private static void EmulateFileIOPermissionChecks(string fullPath)
+        // Expands the given path to a fully qualified path. 
+        [Pure]
+        [System.Security.SecuritySafeCritical]
+        public static string GetFullPath(string path)
         {
+            string fullPath = GetFullPathInternal(path);
+
+            // Emulate FileIOPermissions checks, retained for compatibility
             CheckInvalidPathChars(fullPath, true);
             if (fullPath.Length > 2 && fullPath.IndexOf(':', 2) != -1)
             {
                 throw new NotSupportedException(SR.Argument_PathFormatNotSupported);
             }
+
+            return fullPath;
         }
 
         [System.Security.SecurityCritical]  // auto-generated
