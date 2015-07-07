@@ -546,12 +546,10 @@ internal static partial class Interop
 
             // Get the PIDs rusage info
             int result = proc_pid_rusage(pid, RUSAGE_SELF, &info);
-            if (result <= 0)
+            if (result < 0)
             {
                 throw new Win32Exception(SR.RUsageFailure);
             }
-
-            Debug.Assert(result == Marshal.SizeOf<rusage_info_v3>());
 
             return info;
         }
