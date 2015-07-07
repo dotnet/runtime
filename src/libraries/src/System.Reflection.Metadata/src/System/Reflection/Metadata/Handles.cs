@@ -2713,61 +2713,66 @@ namespace System.Reflection.Metadata
     /// </summary>
     public struct NamespaceDefinitionHandle : IEquatable<NamespaceDefinitionHandle>
     {
-        // At this time, IsVirtual is always false because namespace names come from type definitions 
-        // and type forwarders only, which never get their namespaces projected.
-        // 
-        // For Namespace, the offset is to the null-terminated full name of the 
-        // namespace in the #String heap.
+        // Non-virtual (namespace having at least one type or forwarder of its own) 
+        // heap offset is to the null-terminated full name of the namespace in the 
+        // #String heap.
         //
-        // For SyntheticNamespace, the offset points to the dot-terminated simple name of the namespace
-        // in the #String heap. This is used to represent namespaces that are parents of other namespaces
-        // but no type definitions or forwarders of their own.
+        // Virtual (namespace having child namespaces but no types of its own) 
+        // the virtual index is an auto-incremented value and serves solely to 
+        // create unique values for indexing into the NamespaceCache.
 
         // bits:
-        //     31: IsVirtual (0)
-        // 29..31: type (non-virtual: Namespace, SyntheticNamespace)
+        //     31: IsVirtual
+        // 29..31: 0
         //  0..28: Heap offset or Virtual index
         private readonly uint _value;
 
         private NamespaceDefinitionHandle(uint value)
         {
-            // note: no virtual namespaces allowed
-            Debug.Assert((value & HeapHandleType.TypeMask) == NamespaceHandleType.Namespace ||
-                         (value & HeapHandleType.TypeMask) == NamespaceHandleType.SyntheticNamespace);
-
             _value = value;
         }
 
         internal static NamespaceDefinitionHandle FromFullNameOffset(int stringHeapOffset)
         {
-            return new NamespaceDefinitionHandle(NamespaceHandleType.Namespace | (uint)stringHeapOffset);
+            return new NamespaceDefinitionHandle((uint)stringHeapOffset);
         }
 
-        internal static NamespaceDefinitionHandle FromSimpleNameOffset(int stringHeapOffset)
+        internal static NamespaceDefinitionHandle FromVirtualIndex(uint virtualIndex)
         {
-            return new NamespaceDefinitionHandle(NamespaceHandleType.SyntheticNamespace | (uint)stringHeapOffset);
+            // we arbitrarily disallow 0 virtual index to simplify nil check.
+            Debug.Assert(virtualIndex != 0); 
+
+            if (!HeapHandleType.IsValidHeapOffset(virtualIndex))
+            {
+                // only a pathological assembly would hit this, but it must fit in 29 bits.
+                ThrowTooManySubnamespaces();
+            }
+
+            return new NamespaceDefinitionHandle(TokenTypeIds.VirtualBit | virtualIndex);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowTooManySubnamespaces()
+        {
+            throw new BadImageFormatException(SR.TooManySubnamespaces);
         }
 
         public static implicit operator Handle(NamespaceDefinitionHandle handle)
         {
-            // VTT... -> V111 11TT
             return new Handle(
-                (byte)((handle._value & HeapHandleType.VirtualBit) >> 24 | HandleType.Namespace | (handle._value & HeapHandleType.NonVirtualTypeMask) >> 2),
+                (byte)((handle._value & HeapHandleType.VirtualBit) >> 24 | HandleType.Namespace),
                 (int)(handle._value & HeapHandleType.OffsetMask));
         }
 
         public static explicit operator NamespaceDefinitionHandle(Handle handle)
         {
-            // namespaces currently can't be virtual:
-            if ((handle.VType & (HandleType.VirtualBit | HandleType.StringOrNamespaceMask)) != HandleType.Namespace)
+            if ((handle.VType & HandleType.TypeMask) != HandleType.Namespace)
             {
                 Handle.ThrowInvalidCast();
             }
 
-            // V111 11TT -> VTT...
             return new NamespaceDefinitionHandle(
-                (handle.VType & HandleType.VirtualBit) << 24 |
-                (handle.VType & HandleType.StringHeapTypeMask) << HeapHandleType.OffsetBitCount |
+                (handle.VType & HandleType.VirtualBit) << TokenTypeIds.RowIdBitCount |
                 (uint)handle.Offset);
         }
 
@@ -2775,8 +2780,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                // virtual strings are never nil, so include virtual bit
-                return (_value & (HeapHandleType.VirtualBit | HeapHandleType.OffsetMask)) == 0;
+                return _value == 0;
             }
         }
 
@@ -2791,19 +2795,13 @@ namespace System.Reflection.Metadata
             return (int)(_value & HeapHandleType.OffsetMask);
         }
 
-        internal NamespaceKind NamespaceKind
-        {
-            get { return (NamespaceKind)(_value >> HeapHandleType.OffsetBitCount); }
-        }
-
         internal bool HasFullName
         {
-            get { return NamespaceKind != NamespaceKind.Synthetic; }
+            get { return !IsVirtual; }
         }
 
         internal StringHandle GetFullName()
         {
-            Debug.Assert(!IsVirtual);
             Debug.Assert(HasFullName);
             return StringHandle.FromOffset(GetHeapOffset());
         }
