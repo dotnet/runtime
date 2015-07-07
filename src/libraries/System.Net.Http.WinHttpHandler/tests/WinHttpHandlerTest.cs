@@ -34,49 +34,47 @@ namespace WinHttpHandlerTests
         }
 
         [Fact]
-        public void AutomaticRedirectionPolicy_SetUsingInvalidEnum_ThrowsArgumentOutOfRangeException()
+        public void AutomaticRedirection_CtorAndGet_DefaultValueIsTrue()
         {
             var handler = new WinHttpHandler();
-
-            Assert.Throws<ArgumentOutOfRangeException>(
-                () => { handler.AutomaticRedirectionPolicy = (AutomaticRedirectionPolicy)100; });
+            
+            Assert.True(handler.AutomaticRedirection);
         }
 
         [Fact]
-        public void AutomaticRedirectionPolicy_SetAlways_NoExceptionThrown()
+        public void AutomaticRedirection_SetFalseAndGet_ValueIsFalse()
         {
             var handler = new WinHttpHandler();
-
-            handler.AutomaticRedirectionPolicy = AutomaticRedirectionPolicy.Always;
+            handler.AutomaticRedirection = false;
+            
+            Assert.False(handler.AutomaticRedirection);
         }
 
         [Fact]
-        public void AutomaticRedirectionPolicy_SetDisallowHttpsToHttp_NoExceptionThrown()
-        {
-            var handler = new WinHttpHandler();
-
-            handler.AutomaticRedirectionPolicy = AutomaticRedirectionPolicy.DisallowHttpsToHttp;
-        }
-
-        [Fact]
-        public void AutomaticRedirectionPolicy_SetNever_NoExceptionThrown()
-        {
-            var handler = new WinHttpHandler();
-
-            handler.AutomaticRedirectionPolicy = AutomaticRedirectionPolicy.Never;
-        }
-
-        [Fact]
-        public void AutomaticRedirectionPolicy_SetDisallowHttpsToHttp_ExpectedWinHttpHandleSettings()
+        public void AutomaticRedirection_SetTrue_ExpectedWinHttpHandleSettings()
         {
             var handler = new WinHttpHandler();
 
             SendRequestHelper(
                 handler,
-                delegate { handler.AutomaticRedirectionPolicy = AutomaticRedirectionPolicy.DisallowHttpsToHttp; });
+                delegate { handler.AutomaticRedirection = true; });
 
             Assert.Equal(
                 Interop.WinHttp.WINHTTP_OPTION_REDIRECT_POLICY_DISALLOW_HTTPS_TO_HTTP,
+                APICallHistory.WinHttpOptionRedirectPolicy);
+        }
+
+        [Fact]
+        public void AutomaticRedirection_SetFalse_ExpectedWinHttpHandleSettings()
+        {
+            var handler = new WinHttpHandler();
+
+            SendRequestHelper(
+                handler,
+                delegate { handler.AutomaticRedirection = false; });
+
+            Assert.Equal(
+                Interop.WinHttp.WINHTTP_OPTION_REDIRECT_POLICY_NEVER,
                 APICallHistory.WinHttpOptionRedirectPolicy);
         }
 
