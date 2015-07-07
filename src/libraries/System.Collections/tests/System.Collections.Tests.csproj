@@ -81,6 +81,7 @@
     <Compile Include="Generic\List\List_MiscMethods.cs" />
     <Compile Include="Generic\List\List_RemoveReverseTests.cs" />
     <Compile Include="Generic\List\List_SortTests.cs" />
+    <Compile Include="Generic\Queue\QueueTests.cs" />
     <Compile Include="Generic\SortedDictionary\SortedDictionaryUtils.cs" />
     <Compile Include="Generic\SortedDictionary\SortedDictionary_CtorTests.cs" />
     <Compile Include="Generic\SortedDictionary\SortedDictionary_KeyCollection.cs" />
