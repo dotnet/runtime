@@ -358,14 +358,16 @@ int _DbgBreakCheck(
     }
 
     DBGIGNORE* pDBGIFNORE = GetDBGIGNORE();
-    _DBGIGNOREDATA *psData = NULL;
-    int        i;
+    _DBGIGNOREDATA *psData;
+    int i;
+
     // Check for ignore all.
-    for (i=0, psData = pDBGIFNORE->Ptr();  i<pDBGIFNORE->Count();  i++, psData++)
+    for (i = 0, psData = pDBGIFNORE->Ptr();  i < pDBGIFNORE->Count();  i++, psData++)
     {
-        if (psData->iLine == iLine && SString::_stricmp(psData->rcFile, szFile) == 0 &&
-            psData->bIgnore == true)
-            return (false);
+        if (psData->iLine == iLine && SString::_stricmp(psData->rcFile, szFile) == 0 && psData->bIgnore == true)
+        {
+            return false;
+        }
     }
 
     CONTRACT_VIOLATION(FaultNotFatal | GCViolation | TakesLockViolation);
@@ -384,26 +386,29 @@ int _DbgBreakCheck(
         EX_TRY
         {
             ClrGetModuleFileName(0, modulePath);
-            debugOutput.Printf(W("Assert failure(PID %d [0x%08x], Thread: %d [0x%x]): %hs\n")
-                W("    File: %hs, Line: %d Image:\n"),
+            debugOutput.Printf(
+                W("\nAssert failure(PID %d [0x%08x], Thread: %d [0x%04x]): %hs\n")
+                W("    File: %hs Line: %d\n")
+                W("    Image: "),
                 GetCurrentProcessId(), GetCurrentProcessId(),
                 GetCurrentThreadId(), GetCurrentThreadId(),
                 szExpr, szFile, iLine);
             debugOutput.Append(modulePath);
-            debugOutput.Append(W("\n"));
-            
+            debugOutput.Append(W("\n\n"));
+         
             // Change format for message box.  The extra spaces in the title
             // are there to get around format truncation.
-            dialogOutput.Printf(W("%hs\n\n%hs, Line: %d\n\nAbort - Kill program\nRetry - Debug\nIgnore - Keep running\n")
+            dialogOutput.Printf(
+                W("%hs\n\n%hs, Line: %d\n\nAbort - Kill program\nRetry - Debug\nIgnore - Keep running\n")
                 W("\n\nImage:\n"), szExpr, szFile, iLine);
             dialogOutput.Append(modulePath);
             dialogOutput.Append(W("\n"));
-            dialogTitle.Printf(W("Assert Failure (PID %d, Thread %d/%x)        "),
+            dialogTitle.Printf(W("Assert Failure (PID %d, Thread %d/0x%04x)"),
                 GetCurrentProcessId(), GetCurrentThreadId(), GetCurrentThreadId());
             
             dialogIgnoreMessage.Printf(W("Ignore the assert for the rest of this run?\nYes - Assert will never fire again.\nNo - Assert will continue to fire.\n\n%hs\nLine: %d\n"),
                 szFile, iLine);
-            
+
             formattedMessages = TRUE;
         }
         EX_CATCH
@@ -418,7 +423,8 @@ int _DbgBreakCheck(
         WszOutputDebugString(debugOutput);
         fwprintf(stderr, W("%s"), (const WCHAR*)debugOutput);    
     }
-    else {
+    else 
+    {
         // Note: we cannot convert to unicode or concatenate in this situation.
         OutputDebugStringA(szLowMemoryAssertMessage);        
         OutputDebugStringA("\n");
@@ -440,7 +446,7 @@ int _DbgBreakCheck(
 
     if (ContinueOnAssert())
     {
-        return false; // don't stop debugger. No gui.
+        return false;       // don't stop debugger. No gui.
     }
 
     if (NoGuiOnAssert())
@@ -450,7 +456,7 @@ int _DbgBreakCheck(
 
     if (DebugBreakOnAssert())
     {
-        return(true);       // like a retry
+        return true;       // like a retry
     }
 
     if (IsDisplayingAssertDlg())
@@ -462,12 +468,14 @@ int _DbgBreakCheck(
         // user. So we just continue.
         return false;
     }
+
     SetDisplayingAssertDlg(TRUE);
 
     // Tell user there was an error.
     _DbgBreakCount++;
     int ret;
-    if (formattedMessages) {
+    if (formattedMessages)
+    {
         ret = UtilMessageBoxCatastrophicNonLocalized(
             W("%s"), dialogTitle, MB_ABORTRETRYIGNORE | MB_ICONEXCLAMATION, TRUE, (const WCHAR*)dialogOutput);
     }
@@ -497,7 +505,7 @@ int _DbgBreakCheck(
         {
             LaunchJITDebugger();
         }
-        return (true);
+        return true;
 
     // If we want to ignore the assert, find out if this is forever.
     case IDIGNORE:
@@ -519,11 +527,13 @@ int _DbgBreakCheck(
                                    "Ignore Assert Forever?",
                                    MB_ICONQUESTION | MB_YESNO) != IDYES) 
             {
-            break;
+                break;
             }                                  
         }
         if ((psData = pDBGIFNORE->Append()) == 0)
-            return (false);
+        {
+            return false;
+        }
         psData->bIgnore = true;
         psData->iLine = iLine;
         strcpy(psData->rcFile, szFile);
@@ -534,7 +544,7 @@ int _DbgBreakCheck(
         return true;
     }
 
-    return (false);
+    return false;
 }
 
 int _DbgBreakCheckNoThrow(
@@ -567,7 +577,7 @@ int _DbgBreakCheckNoThrow(
     }
     EX_END_CATCH(SwallowAllExceptions);
     
-    if (failed == TRUE)
+    if (failed)
     {
         return true;
     }
@@ -683,7 +693,9 @@ VOID DebBreakHr(HRESULT hr)
   #endif
 }
 
+#ifndef FEATURE_PAL
 CHAR g_szExprWithStack2[10480];
+#endif
 void *dbgForceToMemory;     // dummy pointer that pessimises enregistration
 
 #ifdef MDA_SUPPORTED
@@ -771,14 +783,21 @@ VOID DbgAssertDialog(const char *szFile, int iLine, const char *szExpr)
 #endif
     
     LONG lAlreadyOwned = InterlockedExchange((LPLONG)&g_BufferLock, 1);
-    if (fConstrained || dwAssertStacktrace == 0 || lAlreadyOwned == 1) {
-        if (1 == _DbgBreakCheckNoThrow(szFile, iLine, szExpr, fConstrained))
+    if (fConstrained || dwAssertStacktrace == 0 || lAlreadyOwned == 1)
+    {
+        if (_DbgBreakCheckNoThrow(szFile, iLine, szExpr, fConstrained))
+        {
             _DbgBreak();
-    } else {
+        }
+    } 
+    else
+    {
+        char *szExprToDisplay = (char*)szExpr;
+#ifdef FEATURE_PAL
+        BOOL fGotStackTrace = TRUE;
+#else
         BOOL fGotStackTrace = FALSE;
-        char *szExprToDisplay = &g_szExprWithStack2[0];
-
-#if !defined(DACCESS_COMPILE) && !defined(FEATURE_PAL)
+#ifndef DACCESS_COMPILE
         EX_TRY
         {
             FAULT_NOT_FATAL();
@@ -786,20 +805,20 @@ VOID DbgAssertDialog(const char *szFile, int iLine, const char *szExpr)
             _ASSERTE(szExprToDisplay == g_szExprWithStack2);
             strcat_s(szExprToDisplay, _countof(g_szExprWithStack2), "\n\n");
             GetStringFromStackLevels(1, 10, szExprToDisplay + strlen(szExprToDisplay));
+            szExprToDisplay = &g_szExprWithStack2[0];
             fGotStackTrace = TRUE;               
         }
         EX_CATCH
         {            
         }
         EX_END_CATCH(SwallowAllExceptions);
-#endif 
-
-        // If we failed to get the stack trace, simply display the assert without one.
-        if (!fGotStackTrace)
-            szExprToDisplay = (char*)szExpr;
+#endif  // DACCESS_COMPILE
+#endif  // FEATURE_PAL
         
-        if (1 == _DbgBreakCheckNoThrow(szFile, iLine, szExprToDisplay, !fGotStackTrace))
-            _DbgBreak();        
+        if (_DbgBreakCheckNoThrow(szFile, iLine, szExprToDisplay, !fGotStackTrace))
+        {
+            _DbgBreak();
+        }
         
         g_BufferLock = 0;
     }
