@@ -850,6 +850,8 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 
 	domain->friendly_name = g_path_get_basename (filename);
 
+	mono_profiler_appdomain_name (domain, domain->friendly_name);
+
 	return domain;
 }
 
@@ -1321,6 +1323,12 @@ mono_domain_get_id (MonoDomain *domain)
 	return domain->domain_id;
 }
 
+const char *
+mono_domain_get_friendly_name (MonoDomain *domain)
+{
+	return domain->friendly_name;
+}
+
 /*
  * mono_domain_alloc:
  *
@@ -1494,6 +1502,18 @@ MonoAppContext *
 mono_context_get (void)
 {
 	return GET_APPCONTEXT ();
+}
+
+gint32
+mono_context_get_id (MonoAppContext *context)
+{
+	return context->context_id;
+}
+
+gint32
+mono_context_get_domain_id (MonoAppContext *context)
+{
+	return context->domain_id;
 }
 
 /* LOCKING: the caller holds the lock for this domain */

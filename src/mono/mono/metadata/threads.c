@@ -2584,6 +2584,24 @@ ves_icall_System_Runtime_Remoting_Contexts_Context_RegisterContext (MonoAppConte
 	g_hash_table_insert (contexts, gch, gch);
 
 	mono_threads_unlock ();
+
+	mono_profiler_context_loaded (ctx);
+}
+
+void
+ves_icall_System_Runtime_Remoting_Contexts_Context_ReleaseContext (MonoAppContext *ctx)
+{
+	/*
+	 * NOTE: Since finalizers are unreliable for the purposes of ensuring
+	 * cleanup in exceptional circumstances, we don't actually do any
+	 * cleanup work here. We instead do this when we iterate the `contexts`
+	 * hash table. The only purpose of this finalizer, at the moment, is to
+	 * notify the profiler.
+	 */
+
+	//g_print ("Releasing context %d in domain %d\n", ctx->context_id, ctx->domain_id);
+
+	mono_profiler_context_unloaded (ctx);
 }
 
 void

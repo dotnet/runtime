@@ -5,7 +5,7 @@
 #define LOG_HEADER_ID 0x4D505A01
 #define LOG_VERSION_MAJOR 0
 #define LOG_VERSION_MINOR 4
-#define LOG_DATA_VERSION 11
+#define LOG_DATA_VERSION 12
 /*
  * Changes in data versions:
  * version 2: added offsets in heap walk
@@ -17,6 +17,7 @@
  * version 9: added MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING
  * version 10: added TYPE_COVERAGE
  * version 11: added thread ID to TYPE_SAMPLE_HIT
+ * version 12: added more load/unload events
  */
 
 enum {
@@ -36,16 +37,15 @@ enum {
 	TYPE_HEAP_OBJECT = 2 << 4,
 	TYPE_HEAP_ROOT   = 3 << 4,
 	/* extended type for TYPE_METADATA */
-	TYPE_START_LOAD   = 1 << 4,
 	TYPE_END_LOAD     = 2 << 4,
-	TYPE_START_UNLOAD = 3 << 4,
 	TYPE_END_UNLOAD   = 4 << 4,
-	TYPE_LOAD_ERR     = 1 << 7,
+	/* metadata type byte for TYPE_METADATA */
 	TYPE_CLASS     = 1,
 	TYPE_IMAGE     = 2,
 	TYPE_ASSEMBLY  = 3,
 	TYPE_DOMAIN    = 4,
 	TYPE_THREAD    = 5,
+	TYPE_CONTEXT   = 6,
 	/* extended type for TYPE_GC */
 	TYPE_GC_EVENT  = 1 << 4,
 	TYPE_GC_RESIZE = 2 << 4,

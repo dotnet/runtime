@@ -44,6 +44,10 @@ struct _ProfilerDesc {
 	MonoProfileAppDomainResult domain_end_load;
 	MonoProfileAppDomainFunc   domain_start_unload;
 	MonoProfileAppDomainFunc   domain_end_unload;
+	MonoProfileAppDomainFriendlyNameFunc   domain_name;
+
+	MonoProfileContextFunc context_load;
+	MonoProfileContextFunc context_unload;
 
 	MonoProfileAssemblyFunc   assembly_start_load;
 	MonoProfileAssemblyResult assembly_end_load;
@@ -379,6 +383,25 @@ mono_profiler_install_appdomain   (MonoProfileAppDomainFunc start_load, MonoProf
 	prof_list->domain_end_load = end_load;
 	prof_list->domain_start_unload = start_unload;
 	prof_list->domain_end_unload = end_unload;
+}
+
+void
+mono_profiler_install_appdomain_name (MonoProfileAppDomainFriendlyNameFunc domain_name_cb)
+{
+	if (!prof_list)
+		return;
+
+	prof_list->domain_name = domain_name_cb;
+}
+
+void
+mono_profiler_install_context (MonoProfileContextFunc load, MonoProfileContextFunc unload)
+{
+	if (!prof_list)
+		return;
+
+	prof_list->context_load = load;
+	prof_list->context_unload = unload;
 }
 
 void 
@@ -755,6 +778,30 @@ mono_profiler_appdomain_loaded (MonoDomain *domain, int result)
 		if ((prof->events & MONO_PROFILE_APPDOMAIN_EVENTS) && prof->domain_end_load)
 			prof->domain_end_load (prof->profiler, domain, result);
 	}
+}
+
+void
+mono_profiler_appdomain_name (MonoDomain *domain, const char *name)
+{
+	for (ProfilerDesc *prof = prof_list; prof; prof = prof->next)
+		if ((prof->events & MONO_PROFILE_APPDOMAIN_EVENTS) && prof->domain_name)
+			prof->domain_name (prof->profiler, domain, name);
+}
+
+void
+mono_profiler_context_loaded (MonoAppContext *context)
+{
+	for (ProfilerDesc *prof = prof_list; prof; prof = prof->next)
+		if ((prof->events & MONO_PROFILE_CONTEXT_EVENTS) && prof->context_load)
+			prof->context_load (prof->profiler, context);
+}
+
+void
+mono_profiler_context_unloaded (MonoAppContext *context)
+{
+	for (ProfilerDesc *prof = prof_list; prof; prof = prof->next)
+		if ((prof->events & MONO_PROFILE_CONTEXT_EVENTS) && prof->context_unload)
+			prof->context_unload (prof->profiler, context);
 }
 
 void 

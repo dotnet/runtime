@@ -217,20 +217,24 @@ typedef struct _LogBuffer LogBuffer;
  *
  * type metadata format:
  * type: TYPE_METADATA
- * exinfo: flags: TYPE_LOAD_ERR
+ * exinfo: one of: TYPE_END_LOAD, TYPE_END_UNLOAD (optional for TYPE_THREAD and TYPE_DOMAIN)
  * [time diff: uleb128] nanoseconds since last timing
  * [mtype: byte] metadata type, one of: TYPE_CLASS, TYPE_IMAGE, TYPE_ASSEMBLY, TYPE_DOMAIN,
- * TYPE_THREAD
+ * TYPE_THREAD, TYPE_CONTEXT
  * [pointer: sleb128] pointer of the metadata type depending on mtype
+ * [flags: uleb128] must be 0
  * if mtype == TYPE_CLASS
  *	[image: sleb128] MonoImage* as a pointer difference from ptr_base
- * 	[flags: uleb128] must be 0
  * 	[name: string] full class name
  * if mtype == TYPE_IMAGE
- * 	[flags: uleb128] must be 0
  * 	[name: string] image file name
- * if mtype == TYPE_THREAD
- * 	[flags: uleb128] must be 0
+ * if mtype == TYPE_ASSEMBLY
+ * 	[name: string] assembly name
+ * if mtype == TYPE_DOMAIN && exinfo == 0
+ * 	[name: string] domain friendly name
+ * if mtype == TYPE_CONTEXT
+ * 	[domain: sleb128] domain id as pointer
+ * if mtype == TYPE_THREAD && (format_version < 11 || (format_version > 10 && exinfo == 0))
  * 	[name: string] thread name
  *
  * type method format:
@@ -1185,6 +1189,85 @@ image_loaded (MonoProfiler *prof, MonoImage *image, int result)
 }
 
 static void
+image_unloaded (MonoProfiler *prof, MonoImage *image)
+{
+	const char *name = mono_image_get_filename (image);
+	int nlen = strlen (name) + 1;
+	LogBuffer *logbuffer = ensure_logbuf (16 + nlen);
+	uint64_t now = current_time ();
+
+	ENTER_LOG (logbuffer, "image-unload");
+	emit_byte (logbuffer, TYPE_END_UNLOAD | TYPE_METADATA);
+	emit_time (logbuffer, now);
+	emit_byte (logbuffer, TYPE_IMAGE);
+	emit_ptr (logbuffer, image);
+	emit_value (logbuffer, 0); /* flags */
+	memcpy (logbuffer->data, name, nlen);
+	logbuffer->data += nlen;
+	EXIT_LOG (logbuffer);
+
+	if (logbuffer->next)
+		safe_send (prof, logbuffer);
+
+	process_requests (prof);
+}
+
+static void
+assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly, int result)
+{
+	if (result != MONO_PROFILE_OK)
+		return;
+
+	char *name = mono_stringify_assembly_name (mono_assembly_get_name (assembly));
+	int nlen = strlen (name) + 1;
+	LogBuffer *logbuffer = ensure_logbuf (20 + nlen);
+	uint64_t now = current_time ();
+
+	ENTER_LOG (logbuffer, "assembly-load");
+	emit_byte (logbuffer, TYPE_END_LOAD | TYPE_METADATA);
+	emit_time (logbuffer, now);
+	emit_byte (logbuffer, TYPE_ASSEMBLY);
+	emit_ptr (logbuffer, assembly);
+	emit_value (logbuffer, 0); /* flags */
+	memcpy (logbuffer->data, name, nlen);
+	logbuffer->data += nlen;
+	EXIT_LOG (logbuffer);
+
+	mono_free (name);
+
+	if (logbuffer->next)
+		safe_send (prof, logbuffer);
+
+	process_requests (prof);
+}
+
+static void
+assembly_unloaded (MonoProfiler *prof, MonoAssembly *assembly)
+{
+	char *name = mono_stringify_assembly_name (mono_assembly_get_name (assembly));
+	int nlen = strlen (name) + 1;
+	LogBuffer *logbuffer = ensure_logbuf (20 + nlen);
+	uint64_t now = current_time ();
+
+	ENTER_LOG (logbuffer, "assembly-unload");
+	emit_byte (logbuffer, TYPE_END_UNLOAD | TYPE_METADATA);
+	emit_time (logbuffer, now);
+	emit_byte (logbuffer, TYPE_ASSEMBLY);
+	emit_ptr (logbuffer, assembly);
+	emit_value (logbuffer, 0); /* flags */
+	memcpy (logbuffer->data, name, nlen);
+	logbuffer->data += nlen;
+	EXIT_LOG (logbuffer);
+
+	mono_free (name);
+
+	if (logbuffer->next)
+		safe_send (prof, logbuffer);
+
+	process_requests (prof);
+}
+
+static void
 class_loaded (MonoProfiler *prof, MonoClass *klass, int result)
 {
 	uint64_t now;
@@ -1219,6 +1302,43 @@ class_loaded (MonoProfiler *prof, MonoClass *klass, int result)
 	EXIT_LOG (logbuffer);
 	if (logbuffer->next)
 		safe_send (prof, logbuffer);
+	process_requests (prof);
+}
+
+static void
+class_unloaded (MonoProfiler *prof, MonoClass *klass)
+{
+	char *name;
+
+	if (InterlockedRead (&runtime_inited))
+		name = mono_type_get_name (mono_class_get_type (klass));
+	else
+		name = type_name (klass);
+
+	int nlen = strlen (name) + 1;
+	MonoImage *image = mono_class_get_image (klass);
+	LogBuffer *logbuffer = ensure_logbuf (24 + nlen);
+	uint64_t now = current_time ();
+
+	ENTER_LOG (logbuffer, "class-unload");
+	emit_byte (logbuffer, TYPE_END_UNLOAD | TYPE_METADATA);
+	emit_time (logbuffer, now);
+	emit_byte (logbuffer, TYPE_CLASS);
+	emit_ptr (logbuffer, klass);
+	emit_ptr (logbuffer, image);
+	emit_value (logbuffer, 0); /* flags */
+	memcpy (logbuffer->data, name, nlen);
+	logbuffer->data += nlen;
+	EXIT_LOG (logbuffer);
+
+	if (runtime_inited)
+		mono_free (name);
+	else
+		free (name);
+
+	if (logbuffer->next)
+		safe_send (prof, logbuffer);
+
 	process_requests (prof);
 }
 
@@ -1385,16 +1505,152 @@ thread_start (MonoProfiler *prof, uintptr_t tid)
 {
 	//printf ("thread start %p\n", (void*)tid);
 	init_thread ();
+
+	LogBuffer *logbuffer = ensure_logbuf (20);
+	uint64_t now = current_time ();
+
+	ENTER_LOG (logbuffer, "thread-start");
+	emit_byte (logbuffer, TYPE_END_LOAD | TYPE_METADATA);
+	emit_time (logbuffer, now);
+	emit_byte (logbuffer, TYPE_THREAD);
+	emit_ptr (logbuffer, (void*) tid);
+	emit_value (logbuffer, 0); /* flags */
+	EXIT_LOG (logbuffer);
+
+	if (logbuffer->next)
+		safe_send (prof, logbuffer);
+
+	process_requests (prof);
 }
 
 static void
 thread_end (MonoProfiler *prof, uintptr_t tid)
 {
-	if (TLS_GET (LogBuffer, tlsbuffer))
-		send_buffer (prof, TLS_GET (GPtrArray, tlsmethodlist), TLS_GET (LogBuffer, tlsbuffer));
+	if (TLS_GET (LogBuffer, tlsbuffer)) {
+		LogBuffer *logbuffer = ensure_logbuf (20);
+		uint64_t now = current_time ();
+
+		ENTER_LOG (logbuffer, "thread-end");
+		emit_byte (logbuffer, TYPE_END_UNLOAD | TYPE_METADATA);
+		emit_time (logbuffer, now);
+		emit_byte (logbuffer, TYPE_THREAD);
+		emit_ptr (logbuffer, (void*) tid);
+		emit_value (logbuffer, 0); /* flags */
+		EXIT_LOG (logbuffer);
+
+		send_buffer (prof, TLS_GET (GPtrArray, tlsmethodlist), logbuffer);
+	}
 
 	TLS_SET (tlsbuffer, NULL);
 	TLS_SET (tlsmethodlist, NULL);
+}
+
+static void
+domain_loaded (MonoProfiler *prof, MonoDomain *domain, int result)
+{
+	if (result != MONO_PROFILE_OK)
+		return;
+
+	LogBuffer *logbuffer = ensure_logbuf (20);
+	uint64_t now = current_time ();
+
+	ENTER_LOG (logbuffer, "domain-start");
+	emit_byte (logbuffer, TYPE_END_LOAD | TYPE_METADATA);
+	emit_time (logbuffer, now);
+	emit_byte (logbuffer, TYPE_DOMAIN);
+	emit_ptr (logbuffer, (void*)(uintptr_t) mono_domain_get_id (domain));
+	emit_value (logbuffer, 0); /* flags */
+	EXIT_LOG (logbuffer);
+
+	if (logbuffer->next)
+		safe_send (prof, logbuffer);
+
+	process_requests (prof);
+}
+
+static void
+domain_unloaded (MonoProfiler *prof, MonoDomain *domain)
+{
+	LogBuffer *logbuffer = ensure_logbuf (20);
+	uint64_t now = current_time ();
+
+	ENTER_LOG (logbuffer, "domain-end");
+	emit_byte (logbuffer, TYPE_END_UNLOAD | TYPE_METADATA);
+	emit_time (logbuffer, now);
+	emit_byte (logbuffer, TYPE_DOMAIN);
+	emit_ptr (logbuffer, (void*)(uintptr_t) mono_domain_get_id (domain));
+	emit_value (logbuffer, 0); /* flags */
+	EXIT_LOG (logbuffer);
+
+	if (logbuffer->next)
+		safe_send (prof, logbuffer);
+
+	process_requests (prof);
+}
+
+static void
+domain_name (MonoProfiler *prof, MonoDomain *domain, const char *name)
+{
+	int nlen = strlen (name) + 1;
+	LogBuffer *logbuffer = ensure_logbuf (20 + nlen);
+	uint64_t now = current_time ();
+
+	ENTER_LOG (logbuffer, "domain-name");
+	emit_byte (logbuffer, TYPE_METADATA);
+	emit_time (logbuffer, now);
+	emit_byte (logbuffer, TYPE_DOMAIN);
+	emit_ptr (logbuffer, (void*)(uintptr_t) mono_domain_get_id (domain));
+	emit_value (logbuffer, 0); /* flags */
+	memcpy (logbuffer->data, name, nlen);
+	logbuffer->data += nlen;
+	EXIT_LOG (logbuffer);
+
+	if (logbuffer->next)
+		safe_send (prof, logbuffer);
+
+	process_requests (prof);
+}
+
+static void
+context_loaded (MonoProfiler *prof, MonoAppContext *context)
+{
+	LogBuffer *logbuffer = ensure_logbuf (28);
+	uint64_t now = current_time ();
+
+	ENTER_LOG (logbuffer, "context-start");
+	emit_byte (logbuffer, TYPE_END_LOAD | TYPE_METADATA);
+	emit_time (logbuffer, now);
+	emit_byte (logbuffer, TYPE_CONTEXT);
+	emit_ptr (logbuffer, (void*)(uintptr_t) mono_context_get_id (context));
+	emit_value (logbuffer, 0); /* flags */
+	emit_ptr (logbuffer, (void*)(uintptr_t) mono_context_get_domain_id (context));
+	EXIT_LOG (logbuffer);
+
+	if (logbuffer->next)
+		safe_send (prof, logbuffer);
+
+	process_requests (prof);
+}
+
+static void
+context_unloaded (MonoProfiler *prof, MonoAppContext *context)
+{
+	LogBuffer *logbuffer = ensure_logbuf (28);
+	uint64_t now = current_time ();
+
+	ENTER_LOG (logbuffer, "context-end");
+	emit_byte (logbuffer, TYPE_END_UNLOAD | TYPE_METADATA);
+	emit_time (logbuffer, now);
+	emit_byte (logbuffer, TYPE_CONTEXT);
+	emit_ptr (logbuffer, (void*)(uintptr_t) mono_context_get_id (context));
+	emit_value (logbuffer, 0); /* flags */
+	emit_ptr (logbuffer, (void*)(uintptr_t) mono_context_get_domain_id (context));
+	EXIT_LOG (logbuffer);
+
+	if (logbuffer->next)
+		safe_send (prof, logbuffer);
+
+	process_requests (prof);
 }
 
 static void
@@ -1414,6 +1670,11 @@ thread_name (MonoProfiler *prof, uintptr_t tid, const char *name)
 	memcpy (logbuffer->data, name, len);
 	logbuffer->data += len;
 	EXIT_LOG (logbuffer);
+
+	if (logbuffer->next)
+		safe_send (prof, logbuffer);
+
+	process_requests (prof);
 }
 
 typedef struct {
@@ -3904,7 +4165,8 @@ mono_profiler_startup (const char *desc)
 		MONO_PROFILE_GC_MOVES|MONO_PROFILE_CLASS_EVENTS|MONO_PROFILE_THREADS|
 		MONO_PROFILE_ENTER_LEAVE|MONO_PROFILE_JIT_COMPILATION|MONO_PROFILE_EXCEPTIONS|
 		MONO_PROFILE_MONITOR_EVENTS|MONO_PROFILE_MODULE_EVENTS|MONO_PROFILE_GC_ROOTS|
-		MONO_PROFILE_INS_COVERAGE;
+		MONO_PROFILE_INS_COVERAGE|MONO_PROFILE_APPDOMAIN_EVENTS|MONO_PROFILE_CONTEXT_EVENTS|
+		MONO_PROFILE_ASSEMBLY_EVENTS;
 
 	p = desc;
 	if (strncmp (p, "log", 3))
@@ -4091,8 +4353,12 @@ mono_profiler_startup (const char *desc)
 	mono_profiler_install_allocation (gc_alloc);
 	mono_profiler_install_gc_moves (gc_moves);
 	mono_profiler_install_gc_roots (gc_handle, gc_roots);
-	mono_profiler_install_class (NULL, class_loaded, NULL, NULL);
-	mono_profiler_install_module (NULL, image_loaded, NULL, NULL);
+	mono_profiler_install_appdomain (NULL, domain_loaded, NULL, domain_unloaded);
+	mono_profiler_install_appdomain_name (domain_name);
+	mono_profiler_install_context (context_loaded, context_unloaded);
+	mono_profiler_install_class (NULL, class_loaded, NULL, class_unloaded);
+	mono_profiler_install_module (NULL, image_loaded, NULL, image_unloaded);
+	mono_profiler_install_assembly (NULL, assembly_loaded, NULL, assembly_unloaded);
 	mono_profiler_install_thread (thread_start, thread_end);
 	mono_profiler_install_thread_name (thread_name);
 	mono_profiler_install_enter_leave (method_enter, method_leave);
