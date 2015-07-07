@@ -14,7 +14,7 @@ namespace System.Security.Cryptography
                 {
                     if (Interop.libcrypto.RAND_pseudo_bytes(buf, data.Length) == -1)
                     {
-                        throw new CryptographicException();
+                        throw Interop.libcrypto.CreateOpenSslCryptographicException();
                     }
                 }
             }

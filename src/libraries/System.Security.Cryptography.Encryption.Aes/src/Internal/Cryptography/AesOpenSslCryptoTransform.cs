@@ -305,12 +305,7 @@ namespace Internal.Cryptography
                 return;
             }
 
-            throw CreateOpenSslException();
-        }
-
-        private static Exception CreateOpenSslException()
-        {
-            return new CryptographicException(Interop.libcrypto.GetOpenSslErrorString());
+            throw Interop.libcrypto.CreateOpenSslCryptographicException();
         }
     }
 }
