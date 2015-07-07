@@ -943,7 +943,9 @@ inline void DbgWPrintf(const LPCWSTR wszFormat, ...)
     va_end(args);
 
     if (IsDebuggerPresent())
+    {
         OutputDebugStringW(wszBuffer);
+    }
     else
     {
         fwprintf(stdout, W("%s"), wszBuffer);
