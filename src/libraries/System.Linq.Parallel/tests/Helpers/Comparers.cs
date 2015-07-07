@@ -72,6 +72,24 @@ namespace Test
         }
     }
 
+    /// <summary>
+    /// Returns an extreme value from non-equal comparisons.
+    /// </summary>
+    /// <remarks>Helper for regression test against PLINQ's version of #2239 .</remarks>
+    /// <typeparam name="T">The type being compared.</typeparam>
+    internal class ExtremeComparer<T> : IComparer<T>
+    {
+        private IComparer<T> _def = Comparer<T>.Default;
+
+        public int Compare(T x, T y)
+        {
+            int direction = _def.Compare(x, y);
+            return direction == 0 ? 0 :
+                direction > 0 ? int.MaxValue :
+                int.MinValue;
+        }
+    }
+
     internal static class DelgatedComparable
     {
         public static DelegatedComparable<T> Delegate<T>(T value, IComparer<T> comparer) where T : IComparable<T>

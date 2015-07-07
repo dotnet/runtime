@@ -352,28 +352,9 @@ namespace System.Linq
         /// <exception cref="T:System.InvalidOperationException">
         /// WithCancellation is used multiple times in the query.
         /// </exception>
-        /// <exception cref="T:System.ObjectDisposedException">
-        /// The <see cref="T:System.Threading.CancellationTokenSource"/> associated with the <paramref name="cancellationToken"/> has been disposed.
-        /// </exception>
         public static ParallelQuery<TSource> WithCancellation<TSource>(this ParallelQuery<TSource> source, CancellationToken cancellationToken)
         {
             if (source == null) throw new ArgumentNullException("source");
-
-            // also a convenience check whether the cancellationTokenSource backing the token is already disposed.
-            // do this via a dummy registration as there is no public IsDipsosed property on CT.
-            CancellationTokenRegistration dummyRegistration = new CancellationTokenRegistration();
-            try
-            {
-                dummyRegistration = cancellationToken.Register(() => { });
-            }
-            catch (ObjectDisposedException)
-            {
-                throw new ArgumentException(SR.ParallelEnumerable_WithCancellation_TokenSourceDisposed, "cancellationToken");
-            }
-            finally
-            {
-                dummyRegistration.Dispose();
-            }
 
             QuerySettings settings = QuerySettings.Empty;
             settings.CancellationState = new CancellationState(cancellationToken);
