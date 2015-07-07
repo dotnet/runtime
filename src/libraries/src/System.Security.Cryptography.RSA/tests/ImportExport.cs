@@ -94,6 +94,30 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        public static void UnusualExponentImportExport()
+        {
+            // Most choices for the Exponent value in an RSA key use a Fermat prime.
+            // Since a Fermat prime is 2^(2^m) + 1, it always only has two bits set, and
+            // frequently has the form { 0x01, [some number of 0x00s], 0x01 }, which has the same
+            // representation in both big- and little-endian.
+            //
+            // The only real requirement for an Exponent value is that it be coprime to (p-1)(q-1).
+            // So here we'll use the (non-Fermat) prime value 433 (0x01B1) to ensure big-endian export.
+            RSAParameters unusualExponentParameters = TestData.UnusualExponentParameters;
+            RSAParameters exported;
+
+            using (RSA rsa = new RSACryptoServiceProvider())
+            {
+                rsa.ImportParameters(unusualExponentParameters);
+                exported = rsa.ExportParameters(true);
+            }
+
+            // Exponent is the most likely to fail, the rest just otherwise ensure that Export
+            // isn't losing data.
+            AssertKeyEquals(ref unusualExponentParameters, ref exported);
+        }
+
+        [Fact]
         public static void ImportReset()
         {
             using (RSA rsa = new RSACryptoServiceProvider())
