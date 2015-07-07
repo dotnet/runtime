@@ -62,8 +62,6 @@ namespace SortedSetTests
         [Fact]
         public static void TestSortedSetCountAssumptions()
         {
-            Console.WriteLine("Testing Assumptions about SortedSet special casing");
-
             SortedSet<int> set1 = new SortedSet<int>(new IntModEqualityComparer(5));
             SortedSet<int> set2 = new SortedSet<int>();
 
