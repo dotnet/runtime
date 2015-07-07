@@ -59,7 +59,7 @@ namespace System.Linq.Parallel.Tests
 
         public int Compare(int x, int y)
         {
-            return -x.CompareTo(y);
+            return y.CompareTo(x);
         }
     }
 
@@ -119,6 +119,24 @@ namespace System.Linq.Parallel.Tests
         public int CompareTo(DelegatedComparable<T> other)
         {
             return _comparer.Compare(Value, other.Value);
+        }
+    }
+
+    internal struct NotComparable
+    {
+        private readonly int _value;
+
+        public int Value
+        {
+            get
+            {
+                return _value;
+            }
+        }
+
+        public NotComparable(int x)
+        {
+            _value = x;
         }
     }
 }
