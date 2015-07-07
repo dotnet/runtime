@@ -5921,7 +5921,7 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 		LLVMBuilderRef lbuilder;
 		LLVMValueRef personality;
 
-		personality = LLVMAddFunction (lmodule, "mono_aot_personality", LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE));
+		personality = LLVMAddFunction (lmodule->module, "mono_aot_personality", LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE));
 		LLVMSetLinkage (personality, LLVMInternalLinkage);
 		lbb = LLVMAppendBasicBlock (personality, "BB0");
 		lbuilder = LLVMCreateBuilder ();
