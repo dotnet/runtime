@@ -35,17 +35,6 @@ namespace System.Net.Http
     }
 
 #if HTTP_DLL
-    internal enum AutomaticRedirectionPolicy
-#else
-    public enum AutomaticRedirectionPolicy
-#endif
-    {
-        Never = 0,
-        DisallowHttpsToHttp = 1,
-        Always = 2
-    }
-
-#if HTTP_DLL
     internal enum CookieUsePolicy
 #else
     public enum CookieUsePolicy
@@ -118,7 +107,7 @@ namespace System.Net.Http
         private object _lockObject = new object();
         private bool _doManualDecompressionCheck = false;
         private WinInetProxyHelper _proxyHelper = null;
-        private AutomaticRedirectionPolicy _automaticRedirectionPolicy = AutomaticRedirectionPolicy.DisallowHttpsToHttp;
+        private bool _automaticRedirection = true;
         private int _maxAutomaticRedirections = 50;
         private DecompressionMethods _automaticDecompression = DecompressionMethods.Deflate | DecompressionMethods.GZip;
         private CookieUsePolicy _cookieUsePolicy = CookieUsePolicy.UseInternalCookieStoreOnly;
@@ -162,24 +151,17 @@ namespace System.Net.Http
         }
 
         #region Properties
-        public AutomaticRedirectionPolicy AutomaticRedirectionPolicy
+        public bool AutomaticRedirection
         {
             get
             {
-                return _automaticRedirectionPolicy;
+                return _automaticRedirection;
             }
 
             set
             {
-                if (value != AutomaticRedirectionPolicy.Never
-                    && value != AutomaticRedirectionPolicy.DisallowHttpsToHttp
-                    && value != AutomaticRedirectionPolicy.Always)
-                {
-                    throw new ArgumentOutOfRangeException("value");
-                }
-
                 CheckDisposedOrStarted();
-                _automaticRedirectionPolicy = value;
+                _automaticRedirection = value;
             }
         }
 
@@ -1604,7 +1586,7 @@ namespace System.Net.Http
         {
             uint optionData = 0;
 
-            if (_automaticRedirectionPolicy != AutomaticRedirectionPolicy.Never)
+            if (_automaticRedirection)
             {
                 optionData = (uint)_maxAutomaticRedirections;
                 SetWinHttpOption(
@@ -1613,7 +1595,9 @@ namespace System.Net.Http
                     ref optionData);
             }
 
-            optionData = (uint)_automaticRedirectionPolicy;
+            optionData = _automaticRedirection ? 
+                Interop.WinHttp.WINHTTP_OPTION_REDIRECT_POLICY_DISALLOW_HTTPS_TO_HTTP :
+                Interop.WinHttp.WINHTTP_OPTION_REDIRECT_POLICY_NEVER;
             SetWinHttpOption(requestHandle, Interop.WinHttp.WINHTTP_OPTION_REDIRECT_POLICY, ref optionData);
         }
 
