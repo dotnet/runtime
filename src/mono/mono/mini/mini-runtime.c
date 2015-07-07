@@ -87,6 +87,7 @@ MONO_FAST_TLS_DECLARE(mono_jit_tls);
 gboolean mono_compile_aot = FALSE;
 /* If this is set, no code is generated dynamically, everything is taken from AOT files */
 gboolean mono_aot_only = FALSE;
+gboolean mono_llvm_only = FALSE;
 MonoAotMode mono_aot_mode = MONO_AOT_MODE_NONE;
 
 const char *mono_build_date;

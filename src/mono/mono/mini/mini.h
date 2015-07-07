@@ -177,6 +177,7 @@ typedef enum {
 	MONO_AOT_FILE_FLAG_FULL_AOT = 2,
 	MONO_AOT_FILE_FLAG_DEBUG = 4,
 	MONO_AOT_FILE_FLAG_LLVM_THUMB = 8,
+	MONO_AOT_FILE_FLAG_LLVM_ONLY = 16,
 } MonoAotFileFlags;
 
 /* This structure is stored in the AOT file */
@@ -494,6 +495,7 @@ extern gboolean mono_break_on_exc;
 extern int mono_exc_esp_offset;
 extern gboolean mono_compile_aot;
 extern gboolean mono_aot_only;
+extern gboolean mono_llvm_only;
 extern MonoAotMode mono_aot_mode;
 extern MonoMethodDesc *mono_inject_async_exc_method;
 extern int mono_inject_async_exc_pos;
@@ -1359,7 +1361,9 @@ typedef enum {
 	/* Whenever to compile with LLVM */
 	JIT_FLAG_LLVM = (1 << 3),
 	/* Whenever to disable direct calls to direct calls to icall functions */
-	JIT_FLAG_NO_DIRECT_ICALLS = (1 << 4)
+	JIT_FLAG_NO_DIRECT_ICALLS = (1 << 4),
+	/* Whenever to compile in llvm-only mode */
+	JIT_FLAG_LLVM_ONLY = (1 << 5)
 } JitFlags;
 
 /* Bit-fields in the MonoBasicBlock.region */
@@ -2333,7 +2337,7 @@ void     mono_llvm_init                     (void) MONO_LLVM_INTERNAL;
 void     mono_llvm_cleanup                  (void) MONO_LLVM_INTERNAL;
 void     mono_llvm_emit_method              (MonoCompile *cfg) MONO_LLVM_INTERNAL;
 void     mono_llvm_emit_call                (MonoCompile *cfg, MonoCallInst *call) MONO_LLVM_INTERNAL;
-void     mono_llvm_create_aot_module        (MonoAssembly *assembly, const char *global_prefix, gboolean emit_dwarf, gboolean static_link) MONO_LLVM_INTERNAL;
+void     mono_llvm_create_aot_module        (MonoAssembly *assembly, const char *global_prefix, gboolean emit_dwarf, gboolean static_link, gboolean llvm_only) MONO_LLVM_INTERNAL;
 void     mono_llvm_emit_aot_module          (const char *filename, const char *cu_name) MONO_LLVM_INTERNAL;
 void     mono_llvm_emit_aot_file_info       (MonoAotFileInfo *info, gboolean has_jitted_code) MONO_LLVM_INTERNAL;
 void     mono_llvm_emit_aot_data            (const char *symbol, guint8 *data, int data_len) MONO_LLVM_INTERNAL;

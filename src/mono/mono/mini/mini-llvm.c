@@ -72,6 +72,7 @@ typedef struct {
 	LLVMValueRef code_start, code_end;
 	gboolean has_jitted_code;
 	gboolean static_link;
+	gboolean llvm_only;
 } MonoLLVMModule;
 
 /*
@@ -6018,7 +6019,7 @@ mono_llvm_free_domain_info (MonoDomain *domain)
 }
 
 void
-mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, gboolean emit_dwarf, gboolean static_link)
+mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, gboolean emit_dwarf, gboolean static_link, gboolean llvm_only)
 {
 	MonoLLVMModule *lmodule = &aot_module;
 
@@ -6038,6 +6039,7 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	lmodule->external_symbols = TRUE;
 	lmodule->emit_dwarf = emit_dwarf;
 	lmodule->static_link = static_link;
+	lmodule->llvm_only = llvm_only;
 	/* The first few entries are reserved */
 	lmodule->max_got_offset = 16;
 

@@ -116,6 +116,7 @@ typedef struct MonoAotOptions {
 	gboolean no_instances;
 	gboolean gnu_asm;
 	gboolean llvm;
+	gboolean llvm_only;
 	int nthreads;
 	int ntrampolines;
 	int nrgctx_trampolines;
@@ -6628,7 +6629,11 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 		} else if (str_begins_with (arg, "gc-maps")) {
 			mini_gc_enable_gc_maps_for_aot ();
 		} else if (str_begins_with (arg, "dump")) {
-			opts->dump_json = TRUE;			
+			opts->dump_json = TRUE;
+		} else if (str_begins_with (arg, "llvmonly")) {
+			opts->mode = MONO_AOT_MODE_FULL;
+			opts->llvm = TRUE;
+			opts->llvm_only = TRUE;
 		} else if (str_begins_with (arg, "help") || str_begins_with (arg, "?")) {
 			printf ("Supported options for --aot:\n");
 			printf ("    outfile=\n");
@@ -6866,6 +6871,8 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		flags |= JIT_FLAG_FULL_AOT;
 	if (acfg->llvm)
 		flags |= JIT_FLAG_LLVM;
+	if (acfg->aot_opts.llvm_only)
+		flags |= JIT_FLAG_LLVM_ONLY;
 	if (acfg->aot_opts.no_direct_calls)
 		flags |= JIT_FLAG_NO_DIRECT_ICALLS;
 	cfg = mini_method_compile (method, acfg->opts, mono_get_root_domain (), flags, 0, index);
@@ -9502,6 +9509,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	if (acfg->llvm && acfg->thumb_mixed)
 		acfg->flags |= MONO_AOT_FILE_FLAG_LLVM_THUMB;
+	if (acfg->aot_opts.llvm_only)
+		acfg->flags |= MONO_AOT_FILE_FLAG_LLVM_ONLY;
 
 	acfg->assembly_name_sym = g_strdup (acfg->image->assembly->aname.name);
 	/* Get rid of characters which cannot occur in symbols */
@@ -9536,7 +9545,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 #ifdef ENABLE_LLVM
 	if (acfg->llvm) {
 		llvm_acfg = acfg;
-		mono_llvm_create_aot_module (acfg->image->assembly, acfg->global_prefix, TRUE, acfg->aot_opts.static_link);
+		mono_llvm_create_aot_module (acfg->image->assembly, acfg->global_prefix, TRUE, acfg->aot_opts.static_link, acfg->aot_opts.llvm_only);
 	}
 #endif
 

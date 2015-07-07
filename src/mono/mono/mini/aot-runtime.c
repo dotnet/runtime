@@ -1673,6 +1673,10 @@ check_usable (MonoAssembly *assembly, MonoAotFileInfo *info, char **out_msg)
 		msg = g_strdup_printf ("compiled with --aot=full");
 		usable = FALSE;
 	}
+	if (mono_llvm_only && !(info->flags & MONO_AOT_FILE_FLAG_LLVM_ONLY)) {
+		msg = g_strdup_printf ("not compiled with --aot=llvmonly");
+		usable = FALSE;
+	}
 #ifdef TARGET_ARM
 	/* mono_arch_find_imt_method () requires this */
 	if ((info->flags & MONO_AOT_FILE_FLAG_WITH_LLVM) && !mono_use_llvm) {
