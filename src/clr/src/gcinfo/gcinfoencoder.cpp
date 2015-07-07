@@ -1216,7 +1216,6 @@ void GcInfoEncoder::Build()
         UINT32 i;
         for(i = 0; i < m_NumSlots && m_SlotTable[i].IsRegister(); i++)
         {
-            GcSlotDesc* pSlotDesc = &m_SlotTable[i];
             if(m_SlotTable[i].IsDeleted())
             {
                 numDeleted++;
@@ -1226,7 +1225,6 @@ void GcInfoEncoder::Build()
 
         for(; i < m_NumSlots && !m_SlotTable[i].IsUntracked(); i++)
         {
-            GcSlotDesc* pSlotDesc = &m_SlotTable[i];
             if(m_SlotTable[i].IsDeleted())
             {
                 numDeleted++;
@@ -2013,7 +2011,6 @@ void GcInfoEncoder::SizeofSlotStateVarLengthVector(const BitArray &vector,
         sizeofRLENeg = 2;
 
         UINT32 rleStart = 0;
-        UINT32 rleDeleted = 0;
         bool fPrev = false;
         UINT32 i;
         for(i = 0; i < m_NumSlots && !m_SlotTable[i].IsUntracked(); i++)
