@@ -37,10 +37,10 @@ namespace System.IO
             return IsDirectorySeparator(c);
         }
 
-        private static void EmulateFileIOPermissionChecks(string fullPath)
+        // Expands the given path to a fully qualified path. 
+        public static string GetFullPath(string path)
         {
-            // nop.  On Windows this checks for additional characters (e.g. '?', '*') 
-            // that are invalid in paths, but such characters are perfectly valid on Unix.
+            return GetFullPathInternal(path);
         }
 
         private static string NormalizePath(
