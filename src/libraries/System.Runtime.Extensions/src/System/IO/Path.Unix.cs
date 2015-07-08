@@ -134,10 +134,12 @@ namespace System.IO
                 throw new PathTooLongException(SR.IO_PathTooLong);
             }
 
-            return
+            string result =
                 sb.Length == 0 ? (fullCheck ? DirectorySeparatorCharAsString : string.Empty) :
                 sb.Length == path.Length ? path :
                 sb.ToString();
+            StringBuilderCache.Release(sb);
+            return result;
         }
 
         private static string RemoveLongPathPrefix(string path)
