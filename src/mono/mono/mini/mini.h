@@ -197,6 +197,8 @@ typedef struct MonoAotFileInfo
 	gpointer llvm_got;
 	/* Mono EH Frame created by llc when using LLVM */
 	gpointer mono_eh_frame;
+	/* Points to the get_method () function in the LLVM image or NULL */
+	gpointer llvm_get_method;
 	gpointer jit_code_start;
 	gpointer jit_code_end;
 	gpointer method_addresses;

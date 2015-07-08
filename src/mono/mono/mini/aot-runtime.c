@@ -1993,6 +1993,12 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	for (i = 0; i < amodule->info.nmethods; ++i) {
 		void *addr = NULL;
 
+		if (amodule->info.llvm_get_method) {
+			gpointer (*get_method) (int) = amodule->info.llvm_get_method;
+
+			addr = get_method (i);
+		}
+
 		/* method_addresses () contains a table of branches, since the ios linker can update those correctly */
 		if (!addr && amodule->info.method_addresses) {
 			addr = get_call_table_entry (amodule->info.method_addresses, i);
@@ -2422,6 +2428,16 @@ compute_llvm_code_range (MonoAotModule *amodule, guint8 **code_start, guint8 **c
 	guint8 *p;
 	int version, fde_count;
 	gint32 *table;
+
+	if (amodule->info.llvm_get_method) {
+		gpointer (*get_method) (int) = amodule->info.llvm_get_method;
+
+		*code_start = get_method (-1);
+		*code_end = get_method (-2);
+
+		g_assert (*code_end > *code_start);
+		return;
+	}
 
 	g_assert (amodule->mono_eh_frame);
 
@@ -3619,6 +3635,14 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 	if (amodule->out_of_date)
 		return NULL;
 
+	if (amodule->info.llvm_get_method) {
+		/*
+		 * Obtain the method address by calling a generated function in the LLVM module.
+		 */
+		gpointer (*get_method) (int) = amodule->info.llvm_get_method;
+		code = get_method (method_index);
+	}
+
 	if (!code) {
 		if (amodule->methods [method_index] == GINT_TO_POINTER (-1)) {
 			if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT)) {
@@ -3632,9 +3656,8 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 			}
 			return NULL;
 		}
+		code = amodule->methods [method_index];
 	}
-
-	code = amodule->methods [method_index];
 
 	info = &amodule->blob [mono_aot_get_offset (amodule->method_info_offsets, method_index)];
 

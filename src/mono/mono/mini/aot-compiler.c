@@ -8566,6 +8566,8 @@ emit_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 		symbols [sindex ++] = NULL;
 		symbols [sindex ++] = NULL;
 	}
+	/* llvm_get_method */
+	symbols [sindex ++] = NULL;
 	symbols [sindex ++] = "jit_code_start";
 	symbols [sindex ++] = "jit_code_end";
 	symbols [sindex ++] = "method_addresses";
