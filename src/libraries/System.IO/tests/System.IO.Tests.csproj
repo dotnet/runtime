@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -14,7 +14,26 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
-    <Compile Include="System\IO\InvalidDataExceptionTests.cs" />
+    <Compile Include="BinaryWriter\BinaryWriter_WriteByteCharTests.cs" />
+    <Compile Include="BinaryWriter\BinaryWriter_WriteTests.cs" />
+    <Compile Include="BinaryWriter\BinaryWriterTests.cs" />
+    <Compile Include="InvalidDataException\InvalidDataExceptionTests.cs" />
+    <Compile Include="MemoryStream\Inputs.cs" />
+    <Compile Include="MemoryStream\MemoryStream_TryGetBufferTests.cs" />
+    <Compile Include="StreamReader\StreamReaderCtorTests.cs" />
+    <Compile Include="StreamReader\StreamReaderTests.cs" />
+    <Compile Include="StreamWriter\BaseStream.cs" />
+    <Compile Include="StreamWriter\CloseTests.cs" />
+    <Compile Include="StreamWriter\CtorTests.cs" />
+    <Compile Include="StreamWriter\FlushTests.cs" />
+    <Compile Include="StreamWriter\WriteTests.cs" />
+    <Compile Include="Stream\NullTests.cs" />
+    <Compile Include="Stream\StreamAsyncTests.cs" />
+    <Compile Include="Stream\StreamMethods.cs" />
+    <Compile Include="Stream\TestLeaveOpen.cs" />
+    <Compile Include="Stream\TimeoutTests.cs" />
+    <Compile Include="StringReader\StringReaderCtorTests.cs" />
+    <Compile Include="StringWriter\StringWriterTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Compile tests against the contract, but copy our local-built implementation for testing -->
