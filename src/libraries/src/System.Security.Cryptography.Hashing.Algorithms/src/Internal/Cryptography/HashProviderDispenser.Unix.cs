@@ -69,10 +69,8 @@ namespace Internal.Cryptography
                 }
 
                 _ctx = Interop.libcrypto.EVP_MD_CTX_create();
-                if (_ctx.IsInvalid)
-                {
-                    throw new CryptographicException();
-                }
+
+                Interop.libcrypto.CheckValidOpenSslHandle(_ctx);
 
                 Check(Interop.libcrypto.EVP_DigestInit_ex(_ctx, algorithmEvp, IntPtr.Zero));
             }

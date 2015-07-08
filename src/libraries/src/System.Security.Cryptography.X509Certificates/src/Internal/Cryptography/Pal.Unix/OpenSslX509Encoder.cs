@@ -198,7 +198,7 @@ namespace Internal.Cryptography.Pal
 
                     if (oidPtr == IntPtr.Zero)
                     {
-                        throw new CryptographicException();
+                        throw Interop.libcrypto.CreateOpenSslCryptographicException();
                     }
 
                     string oidValue = Interop.libcrypto.OBJ_obj2txt_helper(oidPtr);
