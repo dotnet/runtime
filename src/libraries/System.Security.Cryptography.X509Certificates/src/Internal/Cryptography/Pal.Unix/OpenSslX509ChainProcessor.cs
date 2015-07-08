@@ -53,10 +53,8 @@ namespace Internal.Cryptography.Pal
             using (SafeX509StoreHandle store = Interop.libcrypto.X509_STORE_new())
             using (SafeX509StoreCtxHandle storeCtx = Interop.libcrypto.X509_STORE_CTX_new())
             {
-                if (store.IsInvalid || storeCtx.IsInvalid)
-                {
-                    throw new CryptographicException();
-                }
+                Interop.libcrypto.CheckValidOpenSslHandle(store);
+                Interop.libcrypto.CheckValidOpenSslHandle(storeCtx);
 
                 foreach (X509Certificate2 cert in candidates)
                 {
@@ -64,7 +62,7 @@ namespace Internal.Cryptography.Pal
 
                     if (!Interop.libcrypto.X509_STORE_add_cert(store, pal.SafeHandle))
                     {
-                        throw new CryptographicException();
+                        throw Interop.libcrypto.CreateOpenSslCryptographicException();
                     }
                 }
 
@@ -75,7 +73,7 @@ namespace Internal.Cryptography.Pal
 
                 if (!Interop.libcrypto.X509_STORE_CTX_init(storeCtx, store, leafHandle, IntPtr.Zero))
                 {
-                    throw new CryptographicException(Interop.libcrypto.GetOpenSslErrorString());
+                    throw Interop.libcrypto.CreateOpenSslCryptographicException();
                 }
 
                 Interop.NativeCrypto.SetX509ChainVerifyTime(storeCtx, verificationTime);
@@ -84,7 +82,7 @@ namespace Internal.Cryptography.Pal
 
                 if (verify < 0)
                 {
-                    throw new CryptographicException(Interop.libcrypto.GetOpenSslErrorString());
+                    throw Interop.libcrypto.CreateOpenSslCryptographicException();
                 }
 
                 using (SafeX509StackHandle chainStack = Interop.libcrypto.X509_STORE_CTX_get1_chain(storeCtx))
@@ -123,7 +121,7 @@ namespace Internal.Cryptography.Pal
 
                         if (elementCertPtr == IntPtr.Zero)
                         {
-                            throw new CryptographicException();
+                            throw Interop.libcrypto.CreateOpenSslCryptographicException();
                         }
 
                         // Duplicate the certificate handle
