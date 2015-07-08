@@ -29,7 +29,7 @@ namespace System.Reflection.Internal
             // Negative start or size is handle by overflow to greater than maximum size = int.MaxValue. 
             if ((ulong)(unchecked((uint)start)) + unchecked((uint)size) > (ulong)this.Size)
             {
-                PEBinaryReader.ThrowImageTooSmallOrContainsInvalidOffsetOrCount();
+                Throw.ImageTooSmallOrContainsInvalidOffsetOrCount();
             }
 
             return GetMemoryBlockImpl(start, size);
