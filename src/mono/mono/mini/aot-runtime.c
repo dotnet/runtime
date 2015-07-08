@@ -4432,6 +4432,11 @@ init_plt (MonoAotModule *amodule)
 	if (amodule->plt_inited)
 		return;
 
+	if (amodule->info.plt_size <= 1) {
+		amodule->plt_inited = TRUE;
+		return;
+	}
+
 	tramp = mono_create_specific_trampoline (amodule, MONO_TRAMPOLINE_AOT_PLT, mono_get_root_domain (), NULL);
 
 	/*
