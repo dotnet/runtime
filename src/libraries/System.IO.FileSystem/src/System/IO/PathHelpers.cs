@@ -37,9 +37,21 @@ namespace System.IO
                 throw new ArgumentException(SR.Arg_Path2IsRooted, "path2");
         }
 
+        internal static bool IsRoot(string path)
+        {
+            return path.Length == GetRootLength(path);
+        }
+
         internal static bool EndsInDirectorySeparator(String path)
         {
             return path.Length > 0 && IsDirectorySeparator(path[path.Length - 1]);
+        }
+
+        internal static string TrimEndingDirectorySeparator(string path)
+        {
+            return EndsInDirectorySeparator(path) ?
+                path.Substring(0, path.Length - 1) :
+                path;
         }
     }
 }

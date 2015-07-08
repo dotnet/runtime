@@ -315,28 +315,6 @@ namespace System.IO
             return InternalGetFileDirectoryNames(path, path, searchPattern, true, true, searchOption);
         }
 
-
-        // Private class that holds search data that is passed around 
-        // in the heap based stack recursion
-        internal sealed class SearchData
-        {
-            public SearchData(String fullPath, String userPath, SearchOption searchOption)
-            {
-                Contract.Requires(fullPath != null && fullPath.Length > 0);
-                Contract.Requires(userPath != null && userPath.Length > 0);
-                Contract.Requires(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
-
-                this.fullPath = fullPath;
-                this.userPath = userPath;
-                this.searchOption = searchOption;
-            }
-
-            public readonly string fullPath;     // Fully qualified search path excluding the search criteria in the end (ex, c:\temp\bar\foo)
-            public readonly string userPath;     // User specified path (ex, bar\foo)
-            public readonly SearchOption searchOption;
-        }
-
-
         // Returns fully qualified user path of dirs/files that matches the search parameters. 
         // For recursive search this method will search through all the sub dirs  and execute 
         // the given search criteria against every dir.
