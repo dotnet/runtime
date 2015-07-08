@@ -5061,10 +5061,6 @@ VOID PALAPI HandleHardwareException(PAL_SEHException* ex)
             {
                 RtlRestoreContext(&ex->ContextRecord, &ex->ExceptionRecord);
             }
-            else
-            {
-                _ASSERTE(!"Looks like a random breakpoint/trap that was not prepared by the EE debugger");
-            }
         }
     }
 }
