@@ -51,8 +51,15 @@ public class PathCombineTests
     }
 
     [Fact]
-    [PlatformSpecific(PlatformID.Windows)]
     public static void ContainsInvalidCharWithoutRootedAfterArgumentNull()
+    {
+        //any path contains invalid character without rooted after (AE)
+        CommonCasesException<ArgumentException>("ab\0cd");
+    }
+
+    [Fact]
+    [PlatformSpecific(PlatformID.Windows)]
+    public static void ContainsInvalidCharWithoutRootedAfterArgumentNull_Windows()
     {
         //any path contains invalid character without rooted after (AE)
         CommonCasesException<ArgumentException>("ab\"cd");
@@ -66,8 +73,16 @@ public class PathCombineTests
     }
 
     [Fact]
-    [PlatformSpecific(PlatformID.Windows)]
     public static void ContainsInvalidCharWithRootedAfterArgumentNull()
+    {
+        //any path contains invalid character with rooted after (AE)
+        CommonCasesException<ArgumentException>("ab\0cd", s_separator + "abc");
+    }
+
+
+    [Fact]
+    [PlatformSpecific(PlatformID.Windows)]
+    public static void ContainsInvalidCharWithRootedAfterArgumentNull_Windows()
     {
         //any path contains invalid character with rooted after (AE)
         CommonCasesException<ArgumentException>("ab\"cd", s_separator + "abc");
@@ -75,7 +90,6 @@ public class PathCombineTests
         CommonCasesException<ArgumentException>("ab>cd", s_separator + "abc");
         CommonCasesException<ArgumentException>("ab|cd", s_separator + "abc");
         CommonCasesException<ArgumentException>("ab\bcd", s_separator + "abc");
-        CommonCasesException<ArgumentException>("ab\0cd", s_separator + "abc");
         CommonCasesException<ArgumentException>("ab\tcd", s_separator + "abc");
     }
 
@@ -110,6 +124,7 @@ public class PathCombineTests
     {
         //any path is single element
         CommonCases("abc");
+        CommonCases("abc" + s_separator);
     }
 
     [Fact]
@@ -119,10 +134,13 @@ public class PathCombineTests
         CommonCases(Path.Combine("abc", Path.Combine("def", "ghi")));
     }
 
-    public static void NoPathIsRooted()
+    [Fact]
+    public static void PathElementsAllSeparated()
     {
-        //no path is rooted
-        CommonCases("abc");
+        Verify(new string[] { "abc" + s_separator, "def" + s_separator });
+        Verify(new string[] { "abc" + s_separator, "def" + s_separator, "ghi" + s_separator });
+        Verify(new string[] { "abc" + s_separator, "def" + s_separator, "ghi" + s_separator, "jkl" + s_separator });
+        Verify(new string[] { "abc" + s_separator, "def" + s_separator, "ghi" + s_separator, "jkl" + s_separator, "mno" + s_separator });
     }
 
     private static void Verify(string[] paths)

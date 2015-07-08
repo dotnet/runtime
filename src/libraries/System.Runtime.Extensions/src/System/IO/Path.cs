@@ -311,7 +311,7 @@ namespace System.IO
             CheckInvalidPathChars(path2);
             CheckInvalidPathChars(path3);
 
-            return CombineNoChecks(CombineNoChecks(path1, path2), path3);
+            return CombineNoChecks(path1, path2, path3);
         }
 
         public static string Combine(params string[] paths)
@@ -400,6 +400,49 @@ namespace System.IO
             return IsDirectoryOrVolumeSeparator(ch) ?
                 path1 + path2 :
                 path1 + DirectorySeparatorCharAsString + path2;
+        }
+
+        private static string CombineNoChecks(string path1, string path2, string path3)
+        {
+            if (path1.Length == 0)
+                return CombineNoChecks(path2, path3);
+            if (path2.Length == 0)
+                return CombineNoChecks(path1, path3);
+            if (path3.Length == 0)
+                return CombineNoChecks(path1, path2);
+
+            if (IsPathRooted(path3))
+                return path3;
+            if (IsPathRooted(path2))
+                return CombineNoChecks(path2, path3);
+
+            bool hasSep1 = IsDirectoryOrVolumeSeparator(path1[path1.Length - 1]);
+            bool hasSep2 = IsDirectoryOrVolumeSeparator(path2[path2.Length - 1]);
+
+            if (hasSep1 && hasSep2)
+            {
+                return path1 + path2 + path3;
+            }
+            else if (hasSep1)
+            {
+                return path1 + path2 + DirectorySeparatorCharAsString + path3;
+            }
+            else if (hasSep2)
+            {
+                return path1 + DirectorySeparatorCharAsString + path2 + path3;
+            }
+            else
+            {
+                // string.Concat only has string-based overloads up to four arguments; after that requires allocating
+                // a params string[].  Instead, try to use a cached StringBuilder.
+                StringBuilder sb = StringBuilderCache.Acquire(path1.Length + path2.Length + path3.Length + 2);
+                sb.Append(path1)
+                  .Append(DirectorySeparatorChar)
+                  .Append(path2)
+                  .Append(DirectorySeparatorChar)
+                  .Append(path3);
+                return StringBuilderCache.GetStringAndRelease(sb);
+            }
         }
 
         private static readonly char[] s_Base32Char = {
