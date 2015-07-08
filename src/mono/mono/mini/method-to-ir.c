@@ -2407,6 +2407,29 @@ callvirt_to_call (int opcode)
 	return -1;
 }
 
+static int
+callvirt_to_call_reg (int opcode)
+{
+	switch (opcode) {
+	case OP_CALL_MEMBASE:
+		return OP_CALL_REG;
+	case OP_VOIDCALL_MEMBASE:
+		return OP_VOIDCALL_REG;
+	case OP_FCALL_MEMBASE:
+		return OP_FCALL_REG;
+	case OP_RCALL_MEMBASE:
+		return OP_RCALL_REG;
+	case OP_VCALL_MEMBASE:
+		return OP_VCALL_REG;
+	case OP_LCALL_MEMBASE:
+		return OP_LCALL_REG;
+	default:
+		g_assert_not_reached ();
+	}
+
+	return -1;
+}
+
 /* Either METHOD or IMT_ARG needs to be set */
 static void
 emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoMethod *method, MonoInst *imt_arg)
@@ -2729,11 +2752,32 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 	gboolean enable_for_aot = TRUE;
 	int context_used;
 	MonoCallInst *call;
+	MonoInst *call_target = NULL;
 	int rgctx_reg = 0;
 	gboolean need_unbox_trampoline;
 
 	if (!sig)
 		sig = mono_method_signature (method);
+
+	if ((cfg->flags & JIT_FLAG_LLVM_ONLY) && (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+		MonoInst *icall_args [16];
+		MonoInst *ins;
+
+		// FIXME: Optimize this
+
+		guint32 imt_slot = mono_method_get_imt_slot (method);
+
+		icall_args [0] = this;
+		EMIT_NEW_ICONST (cfg, icall_args [1], imt_slot);
+		if (imt_arg) {
+			icall_args [2] = imt_arg;
+		} else {
+			EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_METHODCONST, method);
+			icall_args [2] = ins;
+		}
+
+		call_target = mono_emit_jit_icall (cfg, mono_resolve_iface_call, icall_args);
+	}
 
 	if (rgctx_arg) {
 		rgctx_reg = mono_alloc_preg (cfg);
@@ -2766,6 +2810,26 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 		return mono_emit_calli (cfg, sig, args, addr, NULL, NULL);
 	}
 #endif
+
+	if ((cfg->flags & JIT_FLAG_LLVM_ONLY) && !call_target && virtual && (method->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
+		// FIXME: Vcall optimizations below
+		MonoInst *icall_args [16];
+		MonoInst *ins;
+
+		// FIXME: Optimize this
+
+		int slot = mono_method_get_vtable_index (method);
+
+		icall_args [0] = this;
+		EMIT_NEW_ICONST (cfg, icall_args [1], slot);
+		if (imt_arg) {
+			icall_args [2] = imt_arg;
+		} else {
+			EMIT_NEW_PCONST (cfg, ins, NULL);
+			icall_args [2] = ins;
+		}
+		call_target = mono_emit_jit_icall (cfg, mono_resolve_vcall, icall_args);
+	}
 
 	need_unbox_trampoline = method->klass == mono_defaults.object_class || (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE);
 
@@ -2846,6 +2910,13 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 			MONO_EMIT_NEW_CHECK_THIS (cfg, this_reg);
 
 			call->inst.opcode = callvirt_to_call (call->inst.opcode);
+		} else if (call_target) {
+			vtable_reg = alloc_preg (cfg);
+			MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vtable_reg, this_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
+
+			call->inst.opcode = callvirt_to_call_reg (call->inst.opcode);
+			call->inst.sreg1 = call_target->dreg;
+			call->inst.flags &= !MONO_INST_HAS_METHOD;
 		} else {
 			vtable_reg = alloc_preg (cfg);
 			MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vtable_reg, this_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));

@@ -691,6 +691,19 @@ register_icall (gpointer func, const char *name, const char *sigstr, gboolean av
 }
 
 static void
+register_icall_no_wrapper (gpointer func, const char *name, const char *sigstr)
+{
+	MonoMethodSignature *sig;
+
+	if (sigstr)
+		sig = mono_create_icall_signature (sigstr);
+	else
+		sig = NULL;
+
+	mono_register_jit_icall_full (func, name, sig, TRUE, FALSE, name);
+}
+
+static void
 register_dyn_icall (gpointer func, const char *name, const char *sigstr, gboolean save)
 {
 	MonoMethodSignature *sig;
@@ -2537,6 +2550,18 @@ mono_jit_create_remoting_trampoline (MonoDomain *domain, MonoMethod *method, Mon
 }
 #endif
 
+static void
+no_imt_trampoline (void)
+{
+	g_assert_not_reached ();
+}
+
+static void
+no_vcall_trampoline (void)
+{
+	g_assert_not_reached ();
+}
+
 static gpointer *vtable_trampolines;
 static int vtable_trampolines_size;
 
@@ -2544,6 +2569,15 @@ gpointer
 mini_get_vtable_trampoline (int slot_index)
 {
 	int index = slot_index + MONO_IMT_SIZE;
+
+	if (mono_llvm_only) {
+		/* Not used */
+		if (slot_index < 0)
+			/* The vtable/imt construction code in object.c depends on this being non-NULL */
+			return no_imt_trampoline;
+		else
+			return no_vcall_trampoline;
+	}
 
 	g_assert (slot_index >= - MONO_IMT_SIZE);
 	if (!vtable_trampolines || slot_index + MONO_IMT_SIZE >= vtable_trampolines_size) {
@@ -3387,6 +3421,9 @@ register_icalls (void)
 	register_icall (mono_aot_init_llvm_method, "mono_aot_init_llvm_method", "void ptr int", FALSE);
 	register_icall (mono_aot_init_gshared_method_this, "mono_aot_init_gshared_method_this", "void ptr int object", FALSE);
 	register_icall (mono_aot_init_gshared_method_rgctx, "mono_aot_init_gshared_method_rgctx", "void ptr int ptr", FALSE);
+
+	register_icall_no_wrapper (mono_resolve_iface_call, "mono_resolve_iface_call", "ptr object int ptr");
+	register_icall_no_wrapper (mono_resolve_vcall, "mono_resolve_vcall", "ptr object int ptr");
 
 #ifdef TARGET_IOS
 	register_icall (pthread_getspecific, "pthread_getspecific", "ptr ptr", TRUE);

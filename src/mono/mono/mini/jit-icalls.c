@@ -1303,3 +1303,159 @@ mono_fill_method_rgctx (MonoMethodRuntimeGenericContext *mrgctx, int index)
 {
 	return mono_method_fill_runtime_generic_context (mrgctx, index);
 }
+
+/*
+ * mono_resolve_iface_call:
+ *
+ *   Return the executable code for the iface method IMT_METHOD called on THIS.
+ */
+gpointer
+mono_resolve_iface_call (MonoObject *this, int imt_slot, MonoMethod *imt_method)
+{
+	MonoVTable *vt;
+	gpointer *imt, *vtable_slot;
+	MonoMethod *impl_method, *generic_virtual = NULL, *variant_iface = NULL;
+	gpointer addr, aot_addr;
+	gboolean need_rgctx_tramp = FALSE, need_unbox_tramp = FALSE;
+
+	// FIXME: Optimize this
+
+	if (!this)
+		/* The caller will handle it */
+		return NULL;
+
+	vt = this->vtable;
+	imt = (gpointer*)vt - MONO_IMT_SIZE;
+
+	vtable_slot = mini_resolve_imt_method (vt, imt + imt_slot, imt_method, &impl_method, &aot_addr, &need_rgctx_tramp, &variant_iface);
+
+	// FIXME: This can throw exceptions
+	addr = mono_compile_method (impl_method);
+	g_assert (addr);
+
+	if (imt_method->is_inflated && ((MonoMethodInflated*)imt_method)->context.method_inst) {
+		generic_virtual = imt_method;
+		need_rgctx_tramp = TRUE;
+	}
+
+	if (generic_virtual || variant_iface) {
+		if (vt->klass->valuetype) /*FIXME is this required variant iface?*/
+			need_unbox_tramp = TRUE;
+	} else {
+		if (impl_method->klass->valuetype)
+			need_unbox_tramp = TRUE;
+	}
+
+	addr = mini_add_method_trampoline (impl_method, addr, need_rgctx_tramp, need_unbox_tramp);
+
+	if (generic_virtual || variant_iface) {
+		MonoMethod *target = generic_virtual ? generic_virtual : variant_iface;
+
+		mono_method_add_generic_virtual_invocation (mono_domain_get (),
+													vt, imt + imt_slot,
+													target, addr);
+	}
+
+	*vtable_slot = addr;
+
+	return addr;
+}
+
+static gboolean
+is_generic_method_definition (MonoMethod *m)
+{
+	MonoGenericContext *context;
+	if (m->is_generic)
+		return TRUE;
+	if (!m->is_inflated)
+		return FALSE;
+
+	context = mono_method_get_context (m);
+	if (!context->method_inst)
+		return FALSE;
+	if (context->method_inst == mono_method_get_generic_container (((MonoMethodInflated*)m)->declaring)->context.method_inst)
+		return TRUE;
+	return FALSE;
+}
+
+/*
+ * mono_resolve_vcall:
+ *
+ *   Return the executable code for calling this->vtable [slot].
+ */
+gpointer
+mono_resolve_vcall (MonoObject *this, int slot, MonoMethod *imt_method)
+{
+	MonoVTable *vt;
+	MonoMethod *m, *generic_virtual = NULL;
+	gpointer *vtable_slot;
+	gpointer addr;
+	gboolean need_rgctx_tramp = FALSE, need_unbox_tramp = FALSE;
+
+	// FIXME: Optimize this
+
+	if (!this)
+		/* The caller will handle it */
+		return NULL;
+
+	vt = this->vtable;
+
+	vtable_slot = &(vt->vtable [slot]);
+
+	/* Same as in common_call_trampoline () */
+
+	/* Avoid loading metadata or creating a generic vtable if possible */
+	addr = mono_aot_get_method_from_vt_slot (mono_domain_get (), vt, slot);
+	if (addr && !vt->klass->valuetype) {
+		if (mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))
+			*vtable_slot = addr;
+
+		return mono_create_ftnptr (mono_domain_get (), addr);
+	}
+
+	m = mono_class_get_vtable_entry (vt->klass, slot);
+
+	if (is_generic_method_definition (m)) {
+		MonoError error;
+		MonoGenericContext context = { NULL, NULL };
+		MonoMethod *declaring;
+
+		if (m->is_inflated)
+			declaring = mono_method_get_declaring_generic_method (m);
+		else
+			declaring = m;
+
+		if (m->klass->generic_class)
+			context.class_inst = m->klass->generic_class->context.class_inst;
+		else
+			g_assert (!m->klass->generic_container);
+
+		generic_virtual = imt_method;
+		g_assert (generic_virtual);
+		g_assert (generic_virtual->is_inflated);
+		context.method_inst = ((MonoMethodInflated*)generic_virtual)->context.method_inst;
+
+		m = mono_class_inflate_generic_method_checked (declaring, &context, &error);
+		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+		/* FIXME: only do this if the method is sharable */
+		need_rgctx_tramp = TRUE;
+	}
+
+	if (generic_virtual) {
+		if (vt->klass->valuetype) /*FIXME is this required variant iface?*/
+			need_unbox_tramp = TRUE;
+	} else {
+		if (m->klass->valuetype)
+			need_unbox_tramp = TRUE;
+	}
+
+	// FIXME: This can throw exceptions
+	addr = mono_compile_method (m);
+	g_assert (addr);
+
+	addr = mini_add_method_trampoline (m, addr, need_rgctx_tramp, need_unbox_tramp);
+
+	*vtable_slot = addr;
+
+	return addr;
+}
