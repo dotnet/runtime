@@ -80,22 +80,22 @@ internal static partial class Interop
 
         internal static byte[] GetAsn1StringBytes(IntPtr asn1)
         {
-            return GetDynamicBuffer(GetAsn1StringBytes, asn1);
+            return GetDynamicBuffer((ptr, buf, i) => GetAsn1StringBytes(ptr, buf, i), asn1);
         }
 
         internal static byte[] GetX509Thumbprint(SafeX509Handle x509)
         {
-            return GetDynamicBuffer(GetX509Thumbprint, x509);
+            return GetDynamicBuffer((handle, buf, i) => GetX509Thumbprint(handle, buf, i), x509);
         }
 
         internal static byte[] GetX509NameRawBytes(IntPtr x509Name)
         {
-            return GetDynamicBuffer(GetX509NameRawBytes, x509Name);
+            return GetDynamicBuffer((ptr, buf, i) => GetX509NameRawBytes(ptr, buf, i), x509Name);
         }
 
         internal static byte[] GetX509PublicKeyParameterBytes(SafeX509Handle x509)
         {
-            return GetDynamicBuffer(GetX509PublicKeyParameterBytes, x509);
+            return GetDynamicBuffer((handle, buf, i) => GetX509PublicKeyParameterBytes(handle, buf, i), x509);
         }
 
         internal static void SetX509ChainVerifyTime(SafeX509StoreCtxHandle ctx, DateTime verifyTime)
