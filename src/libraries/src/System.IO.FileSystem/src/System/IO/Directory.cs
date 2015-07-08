@@ -351,8 +351,7 @@ namespace System.IO
 
             IEnumerable<String> enumerable = FileSystem.Current.EnumeratePaths(path, searchPattern, searchOption,
                 (includeFiles ? SearchTarget.Files : 0) | (includeDirs ? SearchTarget.Directories : 0));
-            List<String> fileList = new List<String>(enumerable);
-            return fileList.ToArray();
+            return EnumerableHelpers.ToArray(enumerable);
         }
 
         public static IEnumerable<String> EnumerateDirectories(String path)

@@ -179,9 +179,8 @@ namespace System.IO
             Contract.Requires(searchPattern != null);
             Contract.Requires(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
 
-            IEnumerable<FileInfo> enble = (IEnumerable<FileInfo>)FileSystem.Current.EnumerateFileSystemInfos(FullPath, searchPattern, searchOption, SearchTarget.Files);
-            List<FileInfo> fileList = new List<FileInfo>(enble);
-            return fileList.ToArray();
+            IEnumerable<FileInfo> enumerable = (IEnumerable<FileInfo>)FileSystem.Current.EnumerateFileSystemInfos(FullPath, searchPattern, searchOption, SearchTarget.Files);
+            return EnumerableHelpers.ToArray(enumerable);
         }
 
         // Returns an array of Files in the DirectoryInfo specified by path
@@ -228,8 +227,7 @@ namespace System.IO
             Contract.Requires(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
 
             IEnumerable<FileSystemInfo> enumerable = FileSystem.Current.EnumerateFileSystemInfos(FullPath, searchPattern, searchOption, SearchTarget.Both);
-            List<FileSystemInfo> fileList = new List<FileSystemInfo>(enumerable);
-            return fileList.ToArray();
+            return EnumerableHelpers.ToArray(enumerable);
         }
 
         // Returns an array of strongly typed FileSystemInfo entries which will contain a listing
@@ -274,8 +272,7 @@ namespace System.IO
             Contract.Requires(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
 
             IEnumerable<DirectoryInfo> enumerable = (IEnumerable<DirectoryInfo>)FileSystem.Current.EnumerateFileSystemInfos(FullPath, searchPattern, searchOption, SearchTarget.Directories);
-            List<DirectoryInfo> fileList = new List<DirectoryInfo>(enumerable);
-            return fileList.ToArray();
+            return EnumerableHelpers.ToArray(enumerable);
         }
 
         public IEnumerable<DirectoryInfo> EnumerateDirectories()
