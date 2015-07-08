@@ -68,7 +68,7 @@
 #endif
 
 /* Number of got entries shared between the JIT and LLVM GOT */
-#define N_COMMON_GOT_ENTRIES 6
+#define N_COMMON_GOT_ENTRIES 9
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 #define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (align - 1)) & (~(align - 1)))
@@ -98,6 +98,7 @@ typedef struct MonoAotModule {
 	guint32 image_table_len;
 	gboolean out_of_date;
 	gboolean plt_inited;
+	gboolean got_initializing;
 	guint8 *mem_begin;
 	guint8 *mem_end;
 	guint8 *jit_code_start;
@@ -212,7 +213,7 @@ static void
 compute_llvm_code_range (MonoAotModule *amodule, guint8 **code_start, guint8 **code_end);
 
 static gboolean
-init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, MonoClass **klass);
+init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, MonoClass *init_class);
 
 /*****************************************************/
 /*                 AOT RUNTIME                       */
@@ -1768,6 +1769,28 @@ init_gots (MonoAotModule *amodule)
 }
 
 static void
+init_amodule_got (MonoAotModule *amodule)
+{
+	MonoJumpInfo ji;
+
+	/* These can't be initialized in load_aot_module () */
+	if (!amodule->shared_got [6] && !amodule->got_initializing) {
+		amodule->got_initializing = TRUE;
+
+		memset (&ji, 0, sizeof (ji));
+		ji.type = MONO_PATCH_INFO_INTERNAL_METHOD;
+		ji.data.name = "mono_aot_init_llvm_method";
+		amodule->got_initializing = TRUE;
+		amodule->shared_got [6] = mono_resolve_patch_target (NULL, mono_get_root_domain (), NULL, &ji, FALSE);
+		ji.data.name = "mono_aot_init_gshared_method_this";
+		amodule->shared_got [7] = mono_resolve_patch_target (NULL, mono_get_root_domain (), NULL, &ji, FALSE);
+		ji.data.name = "mono_aot_init_gshared_method_rgctx";
+		amodule->shared_got [8] = mono_resolve_patch_target (NULL, mono_get_root_domain (), NULL, &ji, FALSE);
+		init_gots (amodule);
+	}
+}
+
+static void
 load_aot_module (MonoAssembly *assembly, gpointer user_data)
 {
 	char *aot_name;
@@ -2058,6 +2081,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	}
 
 	amodule->shared_got [5] = amodule;
+	/* Can't initialize the other shared got slots yet, they are initialized in init_amodule_got () */
 
 	init_gots (amodule);
 
@@ -3574,11 +3598,11 @@ register_jump_target_got_slot (MonoDomain *domain, MonoMethod *method, gpointer 
 static gpointer
 load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoMethod *method, guint32 token, int method_index)
 {
-	MonoClass *klass;
-	gboolean from_plt = method == NULL;
 	MonoJitInfo *jinfo = NULL;
 	guint8 *code = NULL, *info;
 	gboolean res;
+
+	init_amodule_got (amodule);
 
 	if (mono_profiler_get_events () & MONO_PROFILE_ENTER_LEAVE) {
 		if (mono_aot_only)
@@ -3644,9 +3668,11 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 		}
 	}
 
-	res = init_method (amodule, method_index, method, &klass);
-	if (!res)
-		goto cleanup;
+	if (!(is_llvm_code (amodule, code) && (amodule->info.flags & MONO_AOT_FILE_FLAG_LLVM_ONLY))) {
+		res = init_method (amodule, method_index, method, NULL);
+		if (!res)
+			goto cleanup;
+	}
 
 	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT)) {
 		char *full_name;
@@ -3688,9 +3714,6 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 		g_assert (jinfo);
 		mono_profiler_method_end_jit (method, jinfo, MONO_PROFILE_OK);
 	}
-
-	if (from_plt && klass && !klass->generic_container)
-		mono_runtime_class_init (mono_class_vtable (domain, klass));
 
 	return code;
 
@@ -3847,10 +3870,12 @@ mono_aot_find_method_index (MonoMethod *method)
 }
 
 static gboolean
-init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, MonoClass **klass)
+init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, MonoClass *init_class)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoMemPool *mp;
+	MonoClass *klass;
+	gboolean from_plt = method == NULL;
 	int pindex, n_patches;
 	guint8 *p;
 	MonoJitInfo *jinfo = NULL;
@@ -3862,10 +3887,10 @@ init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, M
 	p = info;
 
 	if (method) {
-		*klass = method->klass;
+		klass = method->klass;
 		decode_klass_ref (amodule, p, &p);
 	} else {
-		*klass = decode_klass_ref (amodule, p, &p);
+		klass = decode_klass_ref (amodule, p, &p);
 	}
 
 	n_patches = decode_value (p, &p);
@@ -3920,6 +3945,11 @@ init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, M
 	if (mini_get_debug_options ()->load_aot_jit_info_eagerly)
 		jinfo = mono_aot_find_jit_info (domain, amodule->assembly->image, code);
 
+	if (init_class)
+		mono_runtime_class_init (mono_class_vtable (domain, init_class));
+	else if (from_plt && klass && !klass->generic_container)
+		mono_runtime_class_init (mono_class_vtable (domain, klass));
+
 	return TRUE;
 
  cleanup:
@@ -3927,6 +3957,38 @@ init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, M
 		g_free (jinfo);
 
 	return FALSE;
+}
+
+void
+mono_aot_init_llvm_method (gpointer aot_module, guint32 method_index)
+{
+	gboolean res;
+
+	// FIXME: Handle failure
+	res = init_method ((MonoAotModule*)aot_module, method_index, NULL, NULL);
+	g_assert (res);
+}
+
+void
+mono_aot_init_gshared_method_this (gpointer aot_module, guint32 method_index, MonoObject *this)
+{
+	gboolean res;
+
+	// FIXME:
+	g_assert (this);
+
+	// FIXME: Handle failure
+	res = init_method ((MonoAotModule*)aot_module, method_index, NULL, this->vtable->klass);
+	g_assert (res);
+}
+
+void
+mono_aot_init_gshared_method_rgctx  (gpointer aot_module, guint32 method_index, MonoMethodRuntimeGenericContext *rgctx)
+{
+	gboolean res;
+
+	res = init_method ((MonoAotModule*)aot_module, method_index, NULL, rgctx->class_vtable->klass);
+	g_assert (res);
 }
 
 /*
@@ -4043,9 +4105,9 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 		/* Same for CompareExchange<T> and Exchange<T> */
 		/* Same for Volatile.Read<T>/Write<T> */
 		if (method_index == 0xffffff && method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE && method->klass->image == mono_defaults.corlib && 
-			((!strcmp (method->klass->name_space, "System.Threading") && !strcmp (method->klass->name, "Interlocked") && (!strcmp (method->name, "CompareExchange") || !strcmp (method->name, "Exchange")) && MONO_TYPE_IS_REFERENCE (mono_method_signature (method)->params [1])) ||
-			 (!strcmp (method->klass->name_space, "System.Threading") && !strcmp (method->klass->name, "Volatile") && (!strcmp (method->name, "Read") && MONO_TYPE_IS_REFERENCE (mono_method_signature (method)->ret))) ||
-			 (!strcmp (method->klass->name_space, "System.Threading") && !strcmp (method->klass->name, "Volatile") && (!strcmp (method->name, "Write") && MONO_TYPE_IS_REFERENCE (mono_method_signature (method)->params [1]))))) {
+			((!strcmp (method->klass->name_space, "System.Threading") && !strcmp (method->klass->name, "Interlocked") && (!strcmp (method->name, "CompareExchange") || !strcmp (method->name, "Exchange")) && MONO_TYPE_IS_REFERENCE (mini_type_get_underlying_type (NULL, mono_method_signature (method)->params [1]))) ||
+			 (!strcmp (method->klass->name_space, "System.Threading") && !strcmp (method->klass->name, "Volatile") && (!strcmp (method->name, "Read") && MONO_TYPE_IS_REFERENCE (mini_type_get_underlying_type (NULL, mono_method_signature (method)->ret)))) ||
+			 (!strcmp (method->klass->name_space, "System.Threading") && !strcmp (method->klass->name, "Volatile") && (!strcmp (method->name, "Write") && MONO_TYPE_IS_REFERENCE (mini_type_get_underlying_type (NULL, mono_method_signature (method)->params [1])))))) {
 			MonoError error;
 			MonoMethod *m;
 			MonoGenericContext ctx;

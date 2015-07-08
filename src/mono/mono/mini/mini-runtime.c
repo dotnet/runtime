@@ -87,6 +87,7 @@ MONO_FAST_TLS_DECLARE(mono_jit_tls);
 gboolean mono_compile_aot = FALSE;
 /* If this is set, no code is generated dynamically, everything is taken from AOT files */
 gboolean mono_aot_only = FALSE;
+/* Same as mono_aot_only, but only LLVM compiled code is used, no trampolines */
 gboolean mono_llvm_only = FALSE;
 MonoAotMode mono_aot_mode = MONO_AOT_MODE_NONE;
 
@@ -1879,9 +1880,16 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException
 		if ((code = mono_aot_get_method (domain, method))) {
 			MonoVTable *vtable;
 
-			vtable = mono_class_vtable (domain, method->klass);
-			g_assert (vtable);
-			mono_runtime_class_init (vtable);
+			/*
+			 * In llvm-only mode, method might be a shared method, so we can't initialize its class.
+			 * This is not a problem, since it will be initialized when the method is first
+			 * called by init_method ().
+			 */
+			if (!mono_llvm_only) {
+				vtable = mono_class_vtable (domain, method->klass);
+				g_assert (vtable);
+				mono_runtime_class_init (vtable);
+			}
 		}
 	}
 #endif
@@ -3366,6 +3374,10 @@ register_icalls (void)
 	register_icall (mono_fill_method_rgctx, "mono_method_fill_rgctx", "ptr ptr int", FALSE);
 
 	register_icall (mono_debugger_agent_user_break, "mono_debugger_agent_user_break", "void", FALSE);
+
+	register_icall (mono_aot_init_llvm_method, "mono_aot_init_llvm_method", "void ptr int", FALSE);
+	register_icall (mono_aot_init_gshared_method_this, "mono_aot_init_gshared_method_this", "void ptr int object", FALSE);
+	register_icall (mono_aot_init_gshared_method_rgctx, "mono_aot_init_gshared_method_rgctx", "void ptr int ptr", FALSE);
 
 #ifdef TARGET_IOS
 	register_icall (pthread_getspecific, "pthread_getspecific", "ptr ptr", TRUE);

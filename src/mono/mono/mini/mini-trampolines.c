@@ -1319,6 +1319,12 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean ad
 	return ji->code_start;
 }
 
+static void
+method_not_found (void)
+{
+	g_assert_not_reached ();
+}
+
 gpointer
 mono_create_jit_trampoline_in_domain (MonoDomain *domain, MonoMethod *method)
 {
@@ -1330,6 +1336,14 @@ mono_create_jit_trampoline_in_domain (MonoDomain *domain, MonoMethod *method)
 		
 		if (code)
 			return code;
+		if (mono_llvm_only) {
+			if (method->wrapper_type == MONO_WRAPPER_PROXY_ISINST || method->wrapper_type == MONO_WRAPPER_LDFLD_REMOTE ||
+				method->wrapper_type == MONO_WRAPPER_STFLD_REMOTE)
+				/* These wrappers are not generated */
+				return method_not_found;
+			/* Methods are lazily initialized on first call, so this can't lead recursion */
+			return mono_compile_method (method);
+		}
 	}
 
 	mono_domain_lock (domain);
