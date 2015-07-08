@@ -27,10 +27,7 @@ internal static partial class Interop
 
                 THandle handle = d2i(IntPtr.Zero, ppData, data.Length);
 
-                if (handle.IsInvalid)
-                {
-                    throw new CryptographicException(GetOpenSslErrorString());
-                }
+                CheckValidOpenSslHandle(handle);
 
                 return handle;
             }
@@ -43,7 +40,7 @@ internal static partial class Interop
 
             if (size < 1)
             {
-                throw new CryptographicException();
+                throw CreateOpenSslCryptographicException();
             }
 
             byte[] data = new byte[size];
