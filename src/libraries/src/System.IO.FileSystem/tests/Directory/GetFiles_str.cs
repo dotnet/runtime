@@ -143,7 +143,6 @@ public class Directory_GetFiles_str : FileSystemTest
 
     [Fact]
     [PlatformSpecific(PlatformID.AnyUnix)]
-    [ActiveIssue(2205)]
     public void UnixFilePathWithSpaces()
     {
         Assert.Throws<ArgumentException>(() => GetFiles("\0"));

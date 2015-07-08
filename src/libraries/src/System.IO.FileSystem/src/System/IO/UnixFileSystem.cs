@@ -538,8 +538,7 @@ namespace System.IO
 
             private static string NormalizeSearchPattern(string searchPattern)
             {
-                searchPattern = searchPattern.TrimEnd(PathHelpers.TrimEndChars);
-                if (searchPattern.Equals(".") || searchPattern == "*.*")
+                if (searchPattern == "." || searchPattern == "*.*")
                 {
                     searchPattern = "*";
                 }

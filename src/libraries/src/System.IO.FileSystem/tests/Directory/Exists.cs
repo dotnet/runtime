@@ -92,7 +92,7 @@ public class Directory_Exists
         }
     }
 
-
+    [PlatformSpecific(PlatformID.Windows)] // trailing whitespace is significant in filenames
     [Fact]
     public static void Exists_ExistingDirectoryWithNonSignificantTrailingWhiteSpaceAsPath_ReturnsTrue()
     {

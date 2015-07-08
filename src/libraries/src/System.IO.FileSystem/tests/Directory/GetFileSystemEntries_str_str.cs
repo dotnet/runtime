@@ -52,13 +52,6 @@ public class Directory_GetFileSystemEntries_str_str : Directory_GetFileSystemEnt
     }
 
     [Fact]
-    public void InvalidSearchPattern()
-    {
-        String strTempDir = Path.Combine("..ab ab.. .. abc..d", "abc..");
-        Assert.Throws<ArgumentException>(() => GetEntries(TestDirectory, strTempDir));
-    }
-
-    [Fact]
     public void SearchPatternWithTrailingStar()
     {
         DirectoryInfo testDir = new DirectoryInfo(TestDirectory);
@@ -154,7 +147,7 @@ public class Directory_GetFileSystemEntries_str_str : Directory_GetFileSystemEnt
 
     [Fact]
     [PlatformSpecific(PlatformID.Windows)]
-    public void WildCharactersSearchPattern()
+    public void WindowsWildCharactersSearchPattern()
     {
         String strTempDir = Path.Combine("dls;d", "442349-0", "v443094(*)(+*$#$*") +
                             new string(Path.DirectorySeparatorChar, 3);
@@ -163,7 +156,7 @@ public class Directory_GetFileSystemEntries_str_str : Directory_GetFileSystemEnt
 
     [Fact]
     [PlatformSpecific(PlatformID.Windows)]
-    public void SearchPatternWithSpaces()
+    public void WindowsSearchPatternWithSpaces()
     {
         Assert.Empty(GetEntries(TestDirectory, "           "));
         Assert.Empty(GetEntries(TestDirectory, "\n"));
@@ -174,8 +167,15 @@ public class Directory_GetFileSystemEntries_str_str : Directory_GetFileSystemEnt
     }
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)]
+    public void WindowsSearchPatternWithDoubleDots()
+    {
+        string strTempDir = Path.Combine("..ab ab.. .. abc..d", "abc..");
+        Assert.Throws<ArgumentException>(() => GetEntries(TestDirectory, strTempDir));
+    }
+
+    [Fact]
     [PlatformSpecific(PlatformID.AnyUnix)]
-    [ActiveIssue(2205)]
     public void UnixFilePathWithSpaces()
     {
         Assert.Throws<ArgumentException>(() => GetEntries("\0"));
@@ -188,6 +188,31 @@ public class Directory_GetFileSystemEntries_str_str : Directory_GetFileSystemEnt
             Assert.Contains(Path.Combine(TestDirectory, "          "), results);
             Assert.Contains(Path.Combine(TestDirectory, "\n"), results);
         }
+    }
+
+    [Fact]
+    [PlatformSpecific(PlatformID.AnyUnix)]
+    public void UnixSearchPatternWithSpaces()
+    {
+        Assert.Empty(GetEntries(TestDirectory, "           "));
+        Assert.Empty(GetEntries(TestDirectory, "\n"));
+        Assert.Empty(GetEntries(TestDirectory, " "));
+        Assert.Empty(GetEntries(TestDirectory, ""));
+        Assert.Throws<ArgumentException>(() => GetEntries(TestDirectory, "\0"));
+    }
+
+    [Fact]
+    [PlatformSpecific(PlatformID.AnyUnix)]
+    public void UnixSearchPatternWithDoubleDots()
+    {
+        // search pattern is valid but directory doesn't exist
+        Assert.Throws<DirectoryNotFoundException>(() => GetEntries(TestDirectory, Path.Combine("..ab ab.. .. abc..d", "abc..")));
+
+        // invalid search pattern trying to go up a directory with ..
+        Assert.Throws<ArgumentException>(() => GetEntries(TestDirectory, Path.Combine("..ab ab.. .. abc..d", "abc", "..")));
+        Assert.Throws<ArgumentException>(() => GetEntries(TestDirectory, Path.Combine("..ab ab.. .. abc..d", "..", "abc")));
+        Assert.Throws<ArgumentException>(() => GetEntries(TestDirectory, Path.Combine("..", "..ab ab.. .. abc..d", "abc")));
+        Assert.Throws<ArgumentException>(() => GetEntries(TestDirectory, Path.Combine("..", "..ab ab.. .. abc..d", "abc") + Path.DirectorySeparatorChar));
     }
 
     #endregion
