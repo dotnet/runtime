@@ -415,8 +415,9 @@ static void sigtrap_handler(int code, siginfo_t *siginfo, void *context)
     }
     else
     {
-        // Restore the original or default handler and restart h/w exception
-        restore_signal(code, &g_previous_sigtrap);
+        // We abort instead of restore the original or default handler and returning
+        // because returning from a SIGTRAP handler continues execution past the trap.
+        abort();
     }
 }
 
