@@ -28,7 +28,7 @@ class SString;
 bool GetStackTraceAtContext(SString & s, struct _CONTEXT * pContext);
 
 void _cdecl DbgWriteEx(LPCTSTR szFmt, ...);
-int _DbgBreakCheck(LPCSTR szFile, int iLine, LPCSTR szExpr, BOOL fConstrained = FALSE);
+bool _DbgBreakCheck(LPCSTR szFile, int iLine, LPCSTR szExpr, BOOL fConstrained = FALSE);
 
 extern VOID DbgAssertDialog(const char *szFile, int iLine, const char *szExpr);
 

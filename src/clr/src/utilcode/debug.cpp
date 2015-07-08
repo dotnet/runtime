@@ -339,7 +339,7 @@ static const char * szLowMemoryAssertMessage = "Assert failure (unable to format
 //*****************************************************************************
 // This function will handle ignore codes and tell the user what is happening.
 //*****************************************************************************
-int _DbgBreakCheck(
+bool _DbgBreakCheck(
     LPCSTR      szFile,
     int         iLine,
     LPCSTR      szExpr, 
@@ -547,7 +547,7 @@ int _DbgBreakCheck(
     return false;
 }
 
-int _DbgBreakCheckNoThrow(
+bool _DbgBreakCheckNoThrow(
     LPCSTR      szFile,
     int         iLine,
     LPCSTR      szExpr, 
@@ -565,8 +565,8 @@ int _DbgBreakCheckNoThrow(
         DebugBreak();
     }
 
-    int failed = false;
-    int result = false;
+    bool failed = false;
+    bool result = false;
     EX_TRY
     {
         result = _DbgBreakCheck(szFile, iLine, szExpr, fConstrained);
