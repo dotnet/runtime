@@ -88,8 +88,8 @@ namespace System.IO
         private const int STATE_FINISH = 4;
 
         private SearchResultHandler<TSource> _resultHandler;
-        private List<Directory.SearchData> _searchStack;
-        private Directory.SearchData _searchData;
+        private List<SearchData> _searchStack;
+        private SearchData _searchData;
         private String _searchCriteria;
         [System.Security.SecurityCritical]
         private SafeFindHandle _hnd = null;
@@ -119,7 +119,7 @@ namespace System.IO
 
             _oldMode = Interop.mincore.SetErrorMode(Interop.mincore.SEM_FAILCRITICALERRORS);
 
-            _searchStack = new List<Directory.SearchData>();
+            _searchStack = new List<SearchData>();
 
             String normalizedSearchPattern = NormalizeSearchPattern(searchPattern);
 
@@ -148,7 +148,7 @@ namespace System.IO
                 }
                 this._userPath = userPathTemp;
 
-                _searchData = new Directory.SearchData(_normalizedSearchPath, this._userPath, searchOption);
+                _searchData = new SearchData(_normalizedSearchPath, this._userPath, searchOption);
 
                 CommonInit();
             }
@@ -218,13 +218,13 @@ namespace System.IO
             this._userPath = userPath;
             this._searchOption = searchOption;
 
-            _searchStack = new List<Directory.SearchData>();
+            _searchStack = new List<SearchData>();
 
             if (searchCriteria != null)
             {
                 PathHelpers.CheckInvalidPathChars(fullPath, true);
 
-                _searchData = new Directory.SearchData(normalizedSearchPath, userPath, searchOption);
+                _searchData = new SearchData(normalizedSearchPath, userPath, searchOption);
                 CommonInit();
             }
             else
@@ -381,7 +381,7 @@ namespace System.IO
         }
 
         [System.Security.SecurityCritical]
-        private SearchResult CreateSearchResult(Directory.SearchData localSearchData, Interop.mincore.WIN32_FIND_DATA findData)
+        private SearchResult CreateSearchResult(SearchData localSearchData, Interop.mincore.WIN32_FIND_DATA findData)
         {
             string findData_fileName = findData.cFileName;
             Contract.Requires(findData_fileName.Length != 0 && !Path.IsPathRooted(findData_fileName),
@@ -400,7 +400,7 @@ namespace System.IO
         }
 
         [System.Security.SecurityCritical]  // auto-generated
-        private void AddSearchableDirsToStack(Directory.SearchData localSearchData)
+        private void AddSearchableDirsToStack(SearchData localSearchData)
         {
             Contract.Requires(localSearchData != null);
 
@@ -440,7 +440,7 @@ namespace System.IO
                         SearchOption option = localSearchData.searchOption;
 
                         // Setup search data for the sub directory and push it into the stack
-                        Directory.SearchData searchDataSubDir = new Directory.SearchData(tempFullPath, tempUserPath, option);
+                        SearchData searchDataSubDir = new SearchData(tempFullPath, tempUserPath, option);
 
                         _searchStack.Insert(incr++, searchDataSubDir);
                     }
@@ -616,6 +616,26 @@ namespace System.IO
                 return fi;
             }
         }
+    }
+
+    // Holds search data that is passed around 
+    // in the heap based stack recursion
+    internal sealed class SearchData
+    {
+        public SearchData(String fullPath, String userPath, SearchOption searchOption)
+        {
+            Contract.Requires(fullPath != null && fullPath.Length > 0);
+            Contract.Requires(userPath != null && userPath.Length > 0);
+            Contract.Requires(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
+
+            this.fullPath = fullPath;
+            this.userPath = userPath;
+            this.searchOption = searchOption;
+        }
+
+        public readonly string fullPath;     // Fully qualified search path excluding the search criteria in the end (ex, c:\temp\bar\foo)
+        public readonly string userPath;     // User specified path (ex, bar\foo)
+        public readonly SearchOption searchOption;
     }
 
     internal sealed class SearchResult
