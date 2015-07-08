@@ -5,7 +5,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
-using System.Runtime.CompilerServices;
 
 namespace System.Reflection.Metadata
 {
@@ -37,17 +36,11 @@ namespace System.Reflection.Metadata
             {
                 if (index < 0 || index >= _count)
                 {
-                    ThrowIndexOutOfRange();
+                    Throw.IndexOutOfRange();
                 }
 
                 return GenericParameterHandle.FromRowId(_firstRowId + index);
             }
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void ThrowIndexOutOfRange()
-        {
-            throw new ArgumentOutOfRangeException("index");
         }
 
         public Enumerator GetEnumerator()
@@ -151,17 +144,11 @@ namespace System.Reflection.Metadata
             {
                 if (index < 0 || index >= _count)
                 {
-                    ThrowIndexOutOfRange();
+                    Throw.IndexOutOfRange();
                 }
 
                 return GenericParameterConstraintHandle.FromRowId(_firstRowId + index);
             }
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void ThrowIndexOutOfRange()
-        {
-            throw new ArgumentOutOfRangeException("index");
         }
 
         public Enumerator GetEnumerator()
