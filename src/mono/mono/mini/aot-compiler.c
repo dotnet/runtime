@@ -7610,10 +7610,15 @@ emit_code (MonoAotCompile *acfg)
 #ifdef MONO_ARCH_AOT_SUPPORTED
 		int call_size;
 
-		if (acfg->cfgs [i])
-			arch_emit_direct_call (acfg, acfg->cfgs [i]->asm_symbol, FALSE, acfg->thumb_mixed && acfg->cfgs [i]->compile_llvm, NULL, &call_size);
-		else
+		if (acfg->cfgs [i]) {
+			if (acfg->aot_opts.llvm_only && acfg->cfgs [i]->compile_llvm)
+				/* Obtained by calling a generated function in the LLVM image */
+				arch_emit_direct_call (acfg, "method_addresses", FALSE, FALSE, NULL, &call_size);
+			else
+				arch_emit_direct_call (acfg, acfg->cfgs [i]->asm_symbol, FALSE, acfg->thumb_mixed && acfg->cfgs [i]->compile_llvm, NULL, &call_size);
+		} else {
 			arch_emit_direct_call (acfg, "method_addresses", FALSE, FALSE, NULL, &call_size);
+		}
 #endif
 	}
 
