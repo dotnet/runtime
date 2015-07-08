@@ -2851,7 +2851,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 
 		this_reg = this_ins->dreg;
 
-		if ((method->klass->parent == mono_defaults.multicastdelegate_class) && !strcmp (method->name, "Invoke")) {
+		if (!(cfg->flags & JIT_FLAG_LLVM_ONLY) && (method->klass->parent == mono_defaults.multicastdelegate_class) && !strcmp (method->name, "Invoke")) {
 			MonoInst *dummy_use;
 
 			MONO_EMIT_NULL_CHECK (cfg, this_reg);
@@ -4978,6 +4978,10 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	MonoInst *obj, *method_ins, *tramp_ins;
 	MonoDomain *domain;
 	guint8 **code_slot;
+
+	if (cfg->flags & JIT_FLAG_LLVM_ONLY)
+		/* FIXME: Optimize this */
+		return NULL;
 
 	if (virtual) {
 		MonoMethod *invoke = mono_get_delegate_invoke (klass);
