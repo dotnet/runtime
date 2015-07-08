@@ -184,10 +184,10 @@ public class Directory_GetFileSystemEntries_str : FileSystemTest
 
     [Fact]
     [PlatformSpecific(PlatformID.AnyUnix)]
-    [ActiveIssue(2205)]
     public void UnixFileNameWithSpaces()
     {
         String testDirPath = Path.Combine(TestDirectory, GetTestFileName());
+        Directory.CreateDirectory(testDirPath);
         using (File.Create(Path.Combine(testDirPath, " ")))
         using (File.Create(Path.Combine(testDirPath, "          ")))
         using (File.Create(Path.Combine(testDirPath, "\n")))
@@ -201,7 +201,6 @@ public class Directory_GetFileSystemEntries_str : FileSystemTest
 
     [Fact]
     [PlatformSpecific(PlatformID.AnyUnix)]
-    [ActiveIssue(2205)]
     public void UnixDirectoryNameWithSpaces()
     {
         String testDirPath = Path.Combine(TestDirectory, GetTestFileName());
@@ -214,6 +213,8 @@ public class Directory_GetFileSystemEntries_str : FileSystemTest
         Assert.Contains(Path.Combine(testDirPath, " "), results);
         Assert.Contains(Path.Combine(testDirPath, "          "), results);
         Assert.Contains(Path.Combine(testDirPath, "\n"), results);
+
+        testDir.Delete(true);
     }
     #endregion
 }

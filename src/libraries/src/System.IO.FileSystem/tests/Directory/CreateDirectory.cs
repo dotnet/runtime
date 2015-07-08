@@ -324,6 +324,7 @@ public class Directory_CreateDirectory
 #endif
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)] // whitespace in names is significant on Unix
     public static void CreateDirectory_NonSignificantTrailingWhiteSpace_TreatsAsNonSignificant()
     {
         using (TemporaryDirectory directory = new TemporaryDirectory())
