@@ -5956,7 +5956,8 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 		!(t->type == MONO_TYPE_I && type == MONO_TYPE_VALUETYPE) &&
 		!(t->type == MONO_TYPE_U && type == MONO_TYPE_VALUETYPE) &&
 		!(t->type == MONO_TYPE_PTR && type == MONO_TYPE_I8) &&
-		!(t->type == MONO_TYPE_GENERICINST && type == MONO_TYPE_VALUETYPE)) {
+		!(t->type == MONO_TYPE_GENERICINST && type == MONO_TYPE_VALUETYPE) &&
+		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_OBJECT)) {
 		char *name = mono_type_full_name (t);
 		DEBUG_PRINTF (1, "[%p] Expected value of type %s, got 0x%0x.\n", (gpointer)GetCurrentThreadId (), name, type);
 		g_free (name);
@@ -6020,9 +6021,27 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 		/* Fall through */
 		handle_vtype:
 	case MONO_TYPE_VALUETYPE:
-		err = decode_vtype (t, domain, addr,buf, &buf, limit);
-		if (err)
-			return err;
+		if (type == MONO_TYPE_OBJECT) {
+			/* Boxed vtype */
+			int objid = decode_objid (buf, &buf, limit);
+			int err;
+			MonoObject *obj;
+
+			err = get_object (objid, (MonoObject**)&obj);
+			if (err)
+				return err;
+			if (!obj)
+				return ERR_INVALID_ARGUMENT;
+			if (obj->vtable->klass != mono_class_from_mono_type (t)) {
+				DEBUG_PRINTF (1, "Expected type '%s', got object '%s'\n", mono_type_full_name (t), obj->vtable->klass->name);
+				return ERR_INVALID_ARGUMENT;
+			}
+			memcpy (addr, mono_object_unbox (obj), mono_class_value_size (obj->vtable->klass, NULL));
+		} else {
+			err = decode_vtype (t, domain, addr, buf, &buf, limit);
+			if (err)
+				return err;
+		}
 		break;
 	handle_ref:
 	default:
