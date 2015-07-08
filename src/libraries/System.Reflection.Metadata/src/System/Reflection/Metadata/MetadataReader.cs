@@ -816,19 +816,6 @@ namespace System.Reflection.Metadata
             }
         }
 
-        // TODO: move throw helpers to common place.
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void ThrowValueArgumentNull()
-        {
-            throw new ArgumentNullException("value");
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static void ThrowTableNotSorted(TableIndex tableIndex)
-        {
-            throw new BadImageFormatException(string.Format(SR.MetadataTableNotSorted, (int)tableIndex));
-        }
-
         #endregion
 
         #region Public APIs

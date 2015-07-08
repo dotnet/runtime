@@ -29,7 +29,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             if ((rowId & ~TokenTypeIds.RIDMask) != 0)
             {
-                Handle.ThrowInvalidCodedIndex();
+                Throw.InvalidCodedIndex();
             }
 
             return new EntityHandle(tokenType | rowId);
