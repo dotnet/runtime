@@ -5087,6 +5087,14 @@ mono_aot_get_unbox_trampoline (MonoMethod *method)
 		g_assert (amodule);
 	}
 
+	if (amodule->info.llvm_get_unbox_tramp) {
+		gpointer (*get_tramp) (int) = amodule->info.llvm_get_unbox_tramp;
+		code = get_tramp (method_index);
+
+		if (code)
+			return code;
+	}
+
 	ut = amodule->unbox_trampolines;
 	ut_end = amodule->unbox_trampolines_end;
 

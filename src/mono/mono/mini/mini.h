@@ -199,6 +199,8 @@ typedef struct MonoAotFileInfo
 	gpointer mono_eh_frame;
 	/* Points to the get_method () function in the LLVM image or NULL */
 	gpointer llvm_get_method;
+	/* Points to the get_unbox_tramp () function in the LLVM image or NULL */
+	gpointer llvm_get_unbox_tramp;
 	gpointer jit_code_start;
 	gpointer jit_code_end;
 	gpointer method_addresses;

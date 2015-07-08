@@ -50,6 +50,7 @@ typedef struct {
 	LLVMValueRef got_var;
 	const char *got_symbol;
 	const char *get_method_symbol;
+	const char *get_unbox_tramp_symbol;
 	GHashTable *plt_entries;
 	GHashTable *plt_entries_ji;
 	GHashTable *method_to_lmethod;
@@ -70,7 +71,7 @@ typedef struct {
 	MonoAotFileInfo aot_info;
 	const char *jit_got_symbol;
 	const char *eh_frame_symbol;
-	LLVMValueRef get_method;
+	LLVMValueRef get_method, get_unbox_tramp;
 	LLVMValueRef code_start, code_end;
 	LLVMValueRef inited_var;
 	int max_inited_idx, max_method_idx;
@@ -78,6 +79,7 @@ typedef struct {
 	gboolean static_link;
 	gboolean llvm_only;
 	GHashTable *idx_to_lmethod;
+	GHashTable *idx_to_unbox_tramp;
 } MonoLLVMModule;
 
 /*
@@ -2148,6 +2150,71 @@ emit_get_method (MonoLLVMModule *lmodule)
 	mark_as_used (lmodule, func);
 }
 
+/*
+ * emit_get_unbox_tramp:
+ *
+ *   Emit a function mapping method indexes to their unbox trampoline
+ */
+static void
+emit_get_unbox_tramp (MonoLLVMModule *lmodule)
+{
+	LLVMModuleRef module = lmodule->module;
+	LLVMValueRef func, switch_ins, m;
+	LLVMBasicBlockRef entry_bb, fail_bb, bb;
+	LLVMBasicBlockRef *bbs;
+	LLVMTypeRef rtype;
+	LLVMBuilderRef builder;
+	char *name;
+	int i;
+
+	/* Similar to emit_get_method () */
+
+	rtype = LLVMPointerType (LLVMInt8Type (), 0);
+	func = LLVMAddFunction (module, lmodule->get_unbox_tramp_symbol, LLVMFunctionType1 (rtype, LLVMInt32Type (), FALSE));
+	LLVMSetLinkage (func, LLVMExternalLinkage);
+	LLVMSetVisibility (func, LLVMHiddenVisibility);
+	LLVMAddFunctionAttr (func, LLVMNoUnwindAttribute);
+	lmodule->get_unbox_tramp = func;
+
+	entry_bb = LLVMAppendBasicBlock (func, "ENTRY");
+
+	bbs = g_new0 (LLVMBasicBlockRef, lmodule->max_method_idx + 1);
+	for (i = 0; i < lmodule->max_method_idx + 1; ++i) {
+		m = g_hash_table_lookup (lmodule->idx_to_unbox_tramp, GINT_TO_POINTER (i));
+		if (!m)
+			continue;
+
+		name = g_strdup_printf ("BB_%d", i);
+		bb = LLVMAppendBasicBlock (func, name);
+		g_free (name);
+		bbs [i] = bb;
+
+		builder = LLVMCreateBuilder ();
+		LLVMPositionBuilderAtEnd (builder, bb);
+
+		LLVMBuildRet (builder, LLVMBuildBitCast (builder, m, rtype, ""));
+	}
+
+	fail_bb = LLVMAppendBasicBlock (func, "FAIL");
+	builder = LLVMCreateBuilder ();
+	LLVMPositionBuilderAtEnd (builder, fail_bb);
+	LLVMBuildRet (builder, LLVMConstNull (rtype));
+
+	builder = LLVMCreateBuilder ();
+	LLVMPositionBuilderAtEnd (builder, entry_bb);
+
+	switch_ins = LLVMBuildSwitch (builder, LLVMGetParam (func, 0), fail_bb, 0);
+	for (i = 0; i < lmodule->max_method_idx + 1; ++i) {
+		m = g_hash_table_lookup (lmodule->idx_to_unbox_tramp, GINT_TO_POINTER (i));
+		if (!m)
+			continue;
+
+		LLVMAddCase (switch_ins, LLVMConstInt (LLVMInt32Type (), i, FALSE), bbs [i]);
+	}
+
+	mark_as_used (lmodule, func);
+}
+
 /* Add a function to mark the beginning of LLVM code */
 static void
 emit_llvm_code_start (MonoLLVMModule *lmodule)
@@ -2321,6 +2388,55 @@ emit_init_method (EmitContext *ctx)
 
 	builder = ctx->builder = create_builder (ctx);
 	LLVMPositionBuilderAtEnd (ctx->builder, inited_bb);
+}
+
+static void
+emit_unbox_tramp (EmitContext *ctx, const char *method_name, LLVMTypeRef method_type, LLVMValueRef method, int method_index)
+{
+	/*
+	 * Emit unbox trampoline using a tail call
+	 */
+	LLVMValueRef tramp, call, *args;
+	LLVMBuilderRef builder;
+	LLVMBasicBlockRef lbb;
+	char *tramp_name;
+	int i, nargs;
+
+	tramp_name = g_strdup_printf ("ut_%s", method_name);
+	tramp = LLVMAddFunction (ctx->lmodule->module, tramp_name, method_type);
+	LLVMSetFunctionCallConv (tramp, LLVMMono1CallConv);
+	LLVMSetLinkage (tramp, LLVMInternalLinkage);
+	LLVMAddFunctionAttr (tramp, LLVMNoUnwindAttribute);
+	if (ctx->rgctx_arg_pindex != -1)
+		LLVMAddAttribute (LLVMGetParam (tramp, ctx->rgctx_arg_pindex), LLVMInRegAttribute);
+
+	lbb = LLVMAppendBasicBlock (tramp, "");
+	builder = LLVMCreateBuilder ();
+	LLVMPositionBuilderAtEnd (builder, lbb);
+
+	nargs = LLVMCountParamTypes (method_type);
+	args = g_new0 (LLVMValueRef, nargs);
+	for (i = 0; i < nargs; ++i) {
+		args [i] = LLVMGetParam (tramp, i);
+		if (i == ctx->this_arg_pindex) {
+			LLVMTypeRef arg_type = LLVMTypeOf (args [i]);
+
+			args [i] = LLVMBuildPtrToInt (builder, args [i], IntPtrType (), "");
+			args [i] = LLVMBuildAdd (builder, args [i], LLVMConstInt (IntPtrType (), sizeof (MonoObject), FALSE), "");
+			args [i] = LLVMBuildIntToPtr (builder, args [i], arg_type, "");
+		}
+	}
+	call = LLVMBuildCall (builder, method, args, nargs, "");
+	LLVMSetInstructionCallConv (call, LLVMMono1CallConv);
+	if (ctx->rgctx_arg_pindex != -1)
+		LLVMAddInstrAttribute (call, 1 + ctx->rgctx_arg_pindex, LLVMInRegAttribute);
+	mono_llvm_set_must_tail (call);
+	if (LLVMGetReturnType (method_type) == LLVMVoidType ())
+		LLVMBuildRetVoid (builder);
+	else
+		LLVMBuildRet (builder, call);
+
+	g_hash_table_insert (ctx->lmodule->idx_to_unbox_tramp, GINT_TO_POINTER (method_index), tramp);
 }
 
 /*
@@ -5397,6 +5513,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 	if (linfo->rgctx_arg) {
 		ctx->rgctx_arg = LLVMGetParam (method, sinfo.rgctx_arg_pindex);
+		ctx->rgctx_arg_pindex = sinfo.rgctx_arg_pindex;
 		/*
 		 * We mark the rgctx parameter with the inreg attribute, which is mapped to
 		 * MONO_ARCH_RGCTX_REG in the Mono calling convention in llvm, i.e.
@@ -5404,6 +5521,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		 */
 		LLVMAddAttribute (ctx->rgctx_arg, LLVMInRegAttribute);
 		LLVMSetValueName (ctx->rgctx_arg, "rgctx");
+	} else {
+		ctx->rgctx_arg_pindex = -1;
 	}
 	if (cfg->vret_addr) {
 		values [cfg->vret_addr->dreg] = LLVMGetParam (method, sinfo.vret_arg_pindex);
@@ -5663,6 +5782,9 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		g_hash_table_insert (ctx->lmodule->method_to_lmethod, cfg->method, method);
 	if (ctx->lmodule->idx_to_lmethod)
 		g_hash_table_insert (ctx->lmodule->idx_to_lmethod, GINT_TO_POINTER (cfg->method_index), method);
+
+	if (ctx->lmodule->llvm_only && cfg->orig_method->klass->valuetype && !(cfg->orig_method->flags & METHOD_ATTRIBUTE_STATIC))
+		emit_unbox_tramp (ctx, method_name, method_type, method, cfg->method_index);
 
 	goto CLEANUP;
 
@@ -6304,6 +6426,7 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	lmodule->got_symbol = g_strdup_printf ("%s_llvm_got", global_prefix);
 	lmodule->eh_frame_symbol = g_strdup_printf ("%s_eh_frame", global_prefix);
 	lmodule->get_method_symbol = g_strdup_printf ("%s_get_method", global_prefix);
+	lmodule->get_unbox_tramp_symbol = g_strdup_printf ("%s_get_unbox_tramp", global_prefix);
 	lmodule->external_symbols = TRUE;
 	lmodule->emit_dwarf = emit_dwarf;
 	lmodule->static_link = static_link;
@@ -6342,6 +6465,7 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	lmodule->plt_entries_ji = g_hash_table_new (NULL, NULL);
 	lmodule->method_to_lmethod = g_hash_table_new (NULL, NULL);
 	lmodule->idx_to_lmethod = g_hash_table_new (NULL, NULL);
+	lmodule->idx_to_unbox_tramp = g_hash_table_new (NULL, NULL);
 }
 
 static LLVMValueRef
@@ -6458,7 +6582,8 @@ emit_aot_file_info (MonoLLVMModule *lmodule)
 	fields [tindex ++] = lmodule->got_var;
 	/* llc defines this directly */
 	fields [tindex ++] = LLVMAddGlobal (lmodule->module, eltype, lmodule->eh_frame_symbol);
-	fields [tindex ++] = aot_module.get_method;
+	fields [tindex ++] = lmodule->get_method;
+	fields [tindex ++] = lmodule->get_unbox_tramp;
 	if (TRUE || lmodule->has_jitted_code) {
 		fields [tindex ++] = AddJitGlobal (lmodule, eltype, "jit_code_start");
 		fields [tindex ++] = AddJitGlobal (lmodule, eltype, "jit_code_end");
@@ -6602,8 +6727,11 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 		LLVMDeleteGlobal (aot_module.inited_var);
 	}
 
-	if (aot_module.llvm_only)
+	if (aot_module.llvm_only) {
 		emit_get_method (&aot_module);
+		emit_get_unbox_tramp (&aot_module);
+	}
+
 	emit_llvm_used (&aot_module);
 	emit_dbg_info (&aot_module, filename, cu_name);
 	emit_aot_file_info (&aot_module);

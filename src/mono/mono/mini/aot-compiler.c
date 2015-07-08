@@ -7527,7 +7527,7 @@ emit_code (MonoAotCompile *acfg)
 		method = cfg->orig_method;
 
 		/* Emit unbox trampoline */
-		if (mono_aot_mode_is_full (&acfg->aot_opts) && cfg->orig_method->klass->valuetype) {
+		if (mono_aot_mode_is_full (&acfg->aot_opts) && cfg->orig_method->klass->valuetype && !(acfg->aot_opts.llvm_only && cfg->compile_llvm)) {
 			sprintf (symbol, "ut_%d", get_method_index (acfg, method));
 
 			emit_section_change (acfg, ".text", 0);
@@ -7639,7 +7639,7 @@ emit_code (MonoAotCompile *acfg)
 
 		method = cfg->orig_method;
 
-		if (mono_aot_mode_is_full (&acfg->aot_opts) && cfg->orig_method->klass->valuetype) {
+		if (mono_aot_mode_is_full (&acfg->aot_opts) && cfg->orig_method->klass->valuetype && !(acfg->aot_opts.llvm_only && cfg->compile_llvm)) {
 			index = get_method_index (acfg, method);
 
 			emit_int32 (acfg, index);
@@ -7669,7 +7669,7 @@ emit_code (MonoAotCompile *acfg)
 
 		method = cfg->orig_method;
 
-		if (mono_aot_mode_is_full (&acfg->aot_opts) && cfg->orig_method->klass->valuetype) {
+		if (mono_aot_mode_is_full (&acfg->aot_opts) && cfg->orig_method->klass->valuetype && !(acfg->aot_opts.llvm_only && cfg->compile_llvm)) {
 #ifdef MONO_ARCH_AOT_SUPPORTED
 			int call_size;
 
@@ -8567,6 +8567,8 @@ emit_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 		symbols [sindex ++] = NULL;
 	}
 	/* llvm_get_method */
+	symbols [sindex ++] = NULL;
+	/* llvm_get_unbox_tramp */
 	symbols [sindex ++] = NULL;
 	symbols [sindex ++] = "jit_code_start";
 	symbols [sindex ++] = "jit_code_end";
