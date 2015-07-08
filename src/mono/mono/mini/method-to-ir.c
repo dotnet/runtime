@@ -3420,18 +3420,26 @@ mono_patch_info_rgctx_entry_new (MonoMemPool *mp, MonoMethod *method, gboolean i
 	return res;
 }
 
-/*
- * emit_rgctx_fetch:
- *
- *   Emit IR to load the value of the rgctx entry ENTRY from the rgctx
- * given by RGCTX.
- */
 static inline MonoInst*
-emit_rgctx_fetch (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEntry *entry)
+emit_rgctx_fetch_inline (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEntry *entry)
 {
-	/* Inline version, not currently used */
-	// FIXME: This can be called from mono_decompose_vtype_opts (), which can't create new bblocks
+	MonoInst *args [16];
+	MonoInst *call;
+
+	// FIXME: No fastpath since the slot is not a compile time constant
+	args [0] = rgctx;
+	EMIT_NEW_AOTCONST (cfg, args [1], MONO_PATCH_INFO_RGCTX_SLOT_INDEX, entry);
+	if (entry->in_mrgctx)
+		call = mono_emit_jit_icall (cfg, mono_fill_method_rgctx, args);
+	else
+		call = mono_emit_jit_icall (cfg, mono_fill_class_rgctx, args);
+	return call;
 #if 0
+	/*
+	 * FIXME: This can be called during decompose, which is a problem since it creates
+	 * new bblocks.
+	 * Also, the fastpath doesn't work since the slot number is dynamically allocated.
+	 */
 	int i, slot, depth, index, rgctx_reg, val_reg, res_reg;
 	gboolean mrgctx;
 	MonoBasicBlock *is_null_bb, *end_bb;
@@ -3517,9 +3525,22 @@ emit_rgctx_fetch (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEntry *ent
 	MONO_START_BB (cfg, end_bb);
 
 	return res;
-#else
-	return mono_emit_abs_call (cfg, MONO_PATCH_INFO_RGCTX_FETCH, entry, helper_sig_rgctx_lazy_fetch_trampoline, &rgctx);
 #endif
+}
+
+/*
+ * emit_rgctx_fetch:
+ *
+ *   Emit IR to load the value of the rgctx entry ENTRY from the rgctx
+ * given by RGCTX.
+ */
+static inline MonoInst*
+emit_rgctx_fetch (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEntry *entry)
+{
+	if (cfg->flags & JIT_FLAG_LLVM_ONLY)
+		return emit_rgctx_fetch_inline (cfg, rgctx, entry);
+	else
+		return mono_emit_abs_call (cfg, MONO_PATCH_INFO_RGCTX_FETCH, entry, helper_sig_rgctx_lazy_fetch_trampoline, &rgctx);
 }
 
 static MonoInst*

@@ -5280,7 +5280,8 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		break;
 	case MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG:
 		break;
-	case MONO_PATCH_INFO_RGCTX_FETCH: {
+	case MONO_PATCH_INFO_RGCTX_FETCH:
+	case MONO_PATCH_INFO_RGCTX_SLOT_INDEX: {
 		MonoJumpInfoRgctxEntry *entry = patch_info->data.rgctx_entry;
 		guint32 offset;
 		guint8 *buf2, *p2;
@@ -6793,7 +6794,8 @@ can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 		}
 		break;
 	}
-	case MONO_PATCH_INFO_RGCTX_FETCH: {
+	case MONO_PATCH_INFO_RGCTX_FETCH:
+	case MONO_PATCH_INFO_RGCTX_SLOT_INDEX: {
 		MonoJumpInfoRgctxEntry *entry = patch_info->data.rgctx_entry;
 
 		if (!can_encode_method (acfg, entry->method))
@@ -6985,10 +6987,11 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 			switch (patch_info->type) {
 			case MONO_PATCH_INFO_RGCTX_FETCH:
+			case MONO_PATCH_INFO_RGCTX_SLOT_INDEX:
 			case MONO_PATCH_INFO_METHOD: {
 				MonoMethod *m = NULL;
 
-				if (patch_info->type == MONO_PATCH_INFO_RGCTX_FETCH) {
+				if (patch_info->type == MONO_PATCH_INFO_RGCTX_FETCH || patch_info->type == MONO_PATCH_INFO_RGCTX_SLOT_INDEX) {
 					MonoJumpInfoRgctxEntry *e = patch_info->data.rgctx_entry;
 
 					if (e->info_type == MONO_RGCTX_INFO_GENERIC_METHOD_CODE)
