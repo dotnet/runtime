@@ -6584,7 +6584,7 @@ emit_aot_file_info (MonoLLVMModule *lmodule)
 	fields [tindex ++] = LLVMAddGlobal (lmodule->module, eltype, lmodule->eh_frame_symbol);
 	fields [tindex ++] = lmodule->get_method;
 	fields [tindex ++] = lmodule->get_unbox_tramp;
-	if (TRUE || lmodule->has_jitted_code) {
+	if (lmodule->has_jitted_code) {
 		fields [tindex ++] = AddJitGlobal (lmodule, eltype, "jit_code_start");
 		fields [tindex ++] = AddJitGlobal (lmodule, eltype, "jit_code_end");
 		fields [tindex ++] = AddJitGlobal (lmodule, eltype, "method_addresses");
@@ -6623,7 +6623,7 @@ emit_aot_file_info (MonoLLVMModule *lmodule)
 	else
 		fields [tindex ++] = LLVMConstNull (eltype);
 	fields [tindex ++] = LLVMGetNamedGlobal (lmodule->module, "assembly_name");
-	if (TRUE || lmodule->has_jitted_code) {
+	if (lmodule->has_jitted_code) {
 		fields [tindex ++] = AddJitGlobal (lmodule, eltype, "plt");
 		fields [tindex ++] = AddJitGlobal (lmodule, eltype, "plt_end");
 		fields [tindex ++] = AddJitGlobal (lmodule, eltype, "unwind_info");

@@ -5902,15 +5902,18 @@ get_plt_entry_debug_sym (MonoAotCompile *acfg, MonoJumpInfo *ji, GHashTable *cac
 static void
 emit_plt (MonoAotCompile *acfg)
 {
-	char symbol [128];
 	int i;
 
+	if (!acfg->has_jitted_code) {
+		g_assert (acfg->plt_offset == 1);
+		return;
+	}
+
 	emit_line (acfg);
-	sprintf (symbol, "plt");
 
 	emit_section_change (acfg, ".text", 0);
 	emit_alignment_code (acfg, NACL_SIZE(16, kNaClAlignment));
-	emit_info_symbol (acfg, symbol);
+	emit_info_symbol (acfg, "plt");
 	emit_label (acfg, acfg->plt_symbol);
 
 	for (i = 0; i < acfg->plt_offset; ++i) {
@@ -6014,8 +6017,7 @@ emit_plt (MonoAotCompile *acfg)
 
 	emit_symbol_size (acfg, acfg->plt_symbol, ".");
 
-	sprintf (symbol, "plt_end");
-	emit_info_symbol (acfg, symbol);
+	emit_info_symbol (acfg, "plt_end");
 }
 
 /*
@@ -7481,6 +7483,9 @@ emit_code (MonoAotCompile *acfg)
 	gboolean saved_unbox_info = FALSE;
 	char symbol [256];
 
+	if (!acfg->has_jitted_code)
+		return;
+
 #if defined(TARGET_POWERPC64)
 	sprintf (symbol, ".Lgot_addr");
 	emit_section_change (acfg, ".text", 0);
@@ -8111,6 +8116,11 @@ emit_unwind_info (MonoAotCompile *acfg)
 {
 	int i;
 	char symbol [128];
+
+	if (!acfg->has_jitted_code) {
+		g_assert (acfg->unwind_ops->len == 0);
+		return;
+	}
 
 	/* 
 	 * The unwind info contains a lot of duplicates so we emit each unique
