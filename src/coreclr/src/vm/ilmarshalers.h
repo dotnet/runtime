@@ -235,7 +235,10 @@ public:
     {
     }
 
-    virtual ~ILMarshaler() {}
+    virtual ~ILMarshaler()
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
 
     void SetNDirectStubLinker(NDirectStubLinker* pslNDirect)
     {

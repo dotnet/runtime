@@ -186,7 +186,10 @@ public:
 
     virtual void FinishEmit(MethodDesc* pMD) = 0;
 
-    virtual ~StubState() {}
+    virtual ~StubState()
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
 };
 
 class ILStubState : public StubState
