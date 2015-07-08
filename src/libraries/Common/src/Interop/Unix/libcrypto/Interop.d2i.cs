@@ -40,7 +40,7 @@ internal static partial class Interop
 
             if (size < 1)
             {
-                throw new CryptographicException();
+                throw CreateOpenSslCryptographicException();
             }
 
             byte[] data = new byte[size];

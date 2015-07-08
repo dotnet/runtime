@@ -121,7 +121,7 @@ namespace Internal.Cryptography.Pal
 
                         if (elementCertPtr == IntPtr.Zero)
                         {
-                            throw new CryptographicException();
+                            throw Interop.libcrypto.CreateOpenSslCryptographicException();
                         }
 
                         // Duplicate the certificate handle
