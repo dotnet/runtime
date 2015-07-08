@@ -594,7 +594,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             if (!declaredSorted && !CheckSorted())
             {
-                MetadataReader.ThrowTableNotSorted(TableIndex.InterfaceImpl);
+                Throw.TableNotSorted(TableIndex.InterfaceImpl);
             }
         }
 
@@ -721,7 +721,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             if (!declaredSorted && !CheckSorted())
             {
-                MetadataReader.ThrowTableNotSorted(TableIndex.Constant);
+                Throw.TableNotSorted(TableIndex.Constant);
             }
         }
 
@@ -907,7 +907,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             if (!declaredSorted && !CheckSorted())
             {
-                MetadataReader.ThrowTableNotSorted(TableIndex.FieldMarshal);
+                Throw.TableNotSorted(TableIndex.FieldMarshal);
             }
         }
 
@@ -973,7 +973,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             if (!declaredSorted && !CheckSorted())
             {
-                MetadataReader.ThrowTableNotSorted(TableIndex.DeclSecurity);
+                Throw.TableNotSorted(TableIndex.DeclSecurity);
             }
         }
 
@@ -1053,7 +1053,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             if (!declaredSorted && !CheckSorted())
             {
-                MetadataReader.ThrowTableNotSorted(TableIndex.ClassLayout);
+                Throw.TableNotSorted(TableIndex.ClassLayout);
             }
         }
 
@@ -1117,7 +1117,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             if (!declaredSorted && !CheckSorted())
             {
-                MetadataReader.ThrowTableNotSorted(TableIndex.FieldLayout);
+                Throw.TableNotSorted(TableIndex.FieldLayout);
             }
         }
 
@@ -1475,7 +1475,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             if (!declaredSorted && !CheckSorted())
             {
-                MetadataReader.ThrowTableNotSorted(TableIndex.MethodSemantics);
+                Throw.TableNotSorted(TableIndex.MethodSemantics);
             }
         }
 
@@ -1572,7 +1572,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             if (!declaredSorted && !CheckSorted())
             {
-                MetadataReader.ThrowTableNotSorted(TableIndex.MethodImpl);
+                Throw.TableNotSorted(TableIndex.MethodImpl);
             }
         }
 
@@ -1721,7 +1721,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             if (!declaredSorted && !CheckSorted())
             {
-                MetadataReader.ThrowTableNotSorted(TableIndex.ImplMap);
+                Throw.TableNotSorted(TableIndex.ImplMap);
             }
         }
 
@@ -1790,7 +1790,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             if (!declaredSorted && !CheckSorted())
             {
-                MetadataReader.ThrowTableNotSorted(TableIndex.FieldRva);
+                Throw.TableNotSorted(TableIndex.FieldRva);
             }
         }
 
@@ -2358,7 +2358,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             if (!declaredSorted && !CheckSorted())
             {
-                MetadataReader.ThrowTableNotSorted(TableIndex.NestedClass);
+                Throw.TableNotSorted(TableIndex.NestedClass);
             }
         }
 
@@ -2430,7 +2430,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             if (!declaredSorted && !CheckSorted())
             {
-                MetadataReader.ThrowTableNotSorted(TableIndex.GenericParam);
+                Throw.TableNotSorted(TableIndex.GenericParam);
             }
         }
 
@@ -2571,7 +2571,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             if (!declaredSorted && !CheckSorted())
             {
-                MetadataReader.ThrowTableNotSorted(TableIndex.GenericParamConstraint);
+                Throw.TableNotSorted(TableIndex.GenericParamConstraint);
             }
         }
 

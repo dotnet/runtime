@@ -52,16 +52,9 @@ namespace System.Reflection.Metadata.Ecma335
             NamespaceData result;
             if (!_namespaceTable.TryGetValue(handle, out result))
             {
-                ThrowInvalidHandle();
+                Throw.InvalidHandle();
             }
             return result;
-        }
-
-        // TODO: move throw helpers to common place. 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        private static void ThrowInvalidHandle()
-        {
-            throw new BadImageFormatException(SR.InvalidHandle);
         }
 
         /// <summary>
