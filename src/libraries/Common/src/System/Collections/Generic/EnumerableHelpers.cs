@@ -7,6 +7,15 @@ namespace System.Collections.Generic
     internal static class EnumerableHelpers
     {
         /// <summary>Converts an enumerable to an array using the same logic as does List{T}.</summary>
+        internal static T[] ToArray<T>(IEnumerable<T> source)
+        {
+            int count;
+            T[] results = ToArray(source, out count);
+            Array.Resize(ref results, count);
+            return results;
+        }
+
+        /// <summary>Converts an enumerable to an array using the same logic as does List{T}.</summary>
         /// <param name="length">The number of items stored in the resulting array, 0-indexed.</param>
         /// <returns>
         /// The resulting array.  The length of the array may be greater than <paramref name="length"/>,
