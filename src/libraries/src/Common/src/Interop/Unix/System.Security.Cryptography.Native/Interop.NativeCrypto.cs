@@ -2,9 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 
 using Microsoft.Win32.SafeHandles;
 
@@ -12,11 +10,13 @@ internal static partial class Interop
 {
     internal static partial class NativeCrypto
     {
-        [DllImport(Libraries.CryptoInterop)]
-        internal static extern int GetX509Thumbprint(SafeX509Handle x509, byte[] buf, int cBuf);
+        private delegate int NegativeSizeReadMethod<in THandle>(THandle handle, byte[] buf, int cBuf);
 
         [DllImport(Libraries.CryptoInterop)]
-        internal static extern int GetX509NameRawBytes(IntPtr x509Name, byte[] buf, int cBuf);
+        private static extern int GetX509Thumbprint(SafeX509Handle x509, byte[] buf, int cBuf);
+
+        [DllImport(Libraries.CryptoInterop)]
+        private static extern int GetX509NameRawBytes(IntPtr x509Name, byte[] buf, int cBuf);
 
         [DllImport(Libraries.CryptoInterop)]
         internal static extern IntPtr GetX509NotBefore(SafeX509Handle x509);
@@ -34,7 +34,7 @@ internal static partial class Interop
         internal static extern IntPtr GetX509PublicKeyAlgorithm(SafeX509Handle x509);
 
         [DllImport(Libraries.CryptoInterop)]
-        internal static extern int GetX509PublicKeyParameterBytes(SafeX509Handle x509, byte[] buf, int cBuf);
+        private static extern int GetX509PublicKeyParameterBytes(SafeX509Handle x509, byte[] buf, int cBuf);
 
         [DllImport(Libraries.CryptoInterop)]
         internal static extern IntPtr GetX509PublicKeyBytes(SafeX509Handle x509);
@@ -80,23 +80,22 @@ internal static partial class Interop
 
         internal static byte[] GetAsn1StringBytes(IntPtr asn1)
         {
-            int negativeSize = GetAsn1StringBytes(asn1, null, 0);
+            return GetDynamicBuffer(GetAsn1StringBytes, asn1);
+        }
 
-            if (negativeSize > 0)
-            {
-                throw new CryptographicException();
-            }
+        internal static byte[] GetX509Thumbprint(SafeX509Handle x509)
+        {
+            return GetDynamicBuffer(GetX509Thumbprint, x509);
+        }
 
-            byte[] bytes = new byte[-negativeSize];
+        internal static byte[] GetX509NameRawBytes(IntPtr x509Name)
+        {
+            return GetDynamicBuffer(GetX509NameRawBytes, x509Name);
+        }
 
-            int ret = GetAsn1StringBytes(asn1, bytes, bytes.Length);
-
-            if (ret != 1)
-            {
-                throw new CryptographicException();
-            }
-
-            return bytes;
+        internal static byte[] GetX509PublicKeyParameterBytes(SafeX509Handle x509)
+        {
+            return GetDynamicBuffer(GetX509PublicKeyParameterBytes, x509);
         }
 
         internal static void SetX509ChainVerifyTime(SafeX509StoreCtxHandle ctx, DateTime verifyTime)
@@ -119,8 +118,29 @@ internal static partial class Interop
 
             if (succeeded != 1)
             {
-                throw new CryptographicException();
+                throw Interop.libcrypto.CreateOpenSslCryptographicException();
             }
+        }
+
+        private static byte[] GetDynamicBuffer<THandle>(NegativeSizeReadMethod<THandle> method, THandle handle)
+        {
+            int negativeSize = method(handle, null, 0);
+
+            if (negativeSize > 0)
+            {
+                throw Interop.libcrypto.CreateOpenSslCryptographicException();
+            }
+
+            byte[] bytes = new byte[-negativeSize];
+
+            int ret = method(handle, bytes, bytes.Length);
+
+            if (ret != 1)
+            {
+                throw Interop.libcrypto.CreateOpenSslCryptographicException();
+            }
+
+            return bytes;
         }
     }
 }

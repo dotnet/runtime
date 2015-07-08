@@ -104,22 +104,7 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                int negativeSize = Interop.NativeCrypto.GetX509Thumbprint(_cert, null, 0);
-
-                if (negativeSize >= 0)
-                {
-                    throw new CryptographicException();
-                }
-
-                byte[] buf = new byte[-negativeSize];
-                int ret = Interop.NativeCrypto.GetX509Thumbprint(_cert, buf, buf.Length);
-
-                if (ret != 1)
-                {
-                    throw new CryptographicException();
-                }
-
-                return buf;
+                return Interop.NativeCrypto.GetX509Thumbprint(_cert);
             }
         }
 
@@ -136,22 +121,7 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                int negativeLen = Interop.NativeCrypto.GetX509PublicKeyParameterBytes(_cert, null, 0);
-
-                if (negativeLen >= 0)
-                {
-                    throw new CryptographicException();
-                }
-
-                byte[] buf = new byte[-negativeLen];
-                int ret = Interop.NativeCrypto.GetX509PublicKeyParameterBytes(_cert, buf, buf.Length);
-
-                if (ret != 1)
-                {
-                    throw new CryptographicException();
-                }
-
-                return buf;
+                return Interop.NativeCrypto.GetX509PublicKeyParameterBytes(_cert);
             }
         }
 
@@ -343,21 +313,7 @@ namespace Internal.Cryptography.Pal
         {
             Interop.libcrypto.CheckValidOpenSslHandle(namePtr);
 
-            int negativeSize = Interop.NativeCrypto.GetX509NameRawBytes(namePtr, null, 0);
-
-            if (negativeSize > 0)
-            {
-                throw new CryptographicException();
-            }
-
-            byte[] buf = new byte[-negativeSize];
-            int ret = Interop.NativeCrypto.GetX509NameRawBytes(namePtr, buf, buf.Length);
-
-            if (ret != 1)
-            {
-                throw new CryptographicException();
-            }
-
+            byte[] buf = Interop.NativeCrypto.GetX509NameRawBytes(namePtr);
             return new X500DistinguishedName(buf);
         }
 
