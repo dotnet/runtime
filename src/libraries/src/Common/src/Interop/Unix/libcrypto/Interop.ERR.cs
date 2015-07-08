@@ -32,19 +32,39 @@ internal static partial class Interop
             const uint ReasonMask = 0x0FFF;
             const uint ERR_R_MALLOC_FAILURE = 64 | 1;
 
+            // The Windows cryptography library reports error codes through
+            // Marshal.GetLastWin32Error, which has a single value when the
+            // function exits, last writer wins.
+            //
+            // OpenSSL maintains an error queue. Calls to ERR_get_error read
+            // values out of the queue in the order that ERR_set_error wrote
+            // them. Nothing enforces that a single call into an OpenSSL
+            // function will guarantee at-most one error being set.
+            //
+            // In order to maintain parity in how error flows look between the
+            // Windows code and the OpenSSL-calling code, drain the queue
+            // whenever an Exception is desired, and report the exception
+            // related to the last value in the queue.
             uint error = ERR_get_error();
-            uint last = error;
+            uint lastRead = error;
 
-            while (last != 0)
+            // 0 (there's no named constant) is only returned when the calls
+            // to ERR_get_error exceed the calls to ERR_set_error.
+            while (lastRead != 0)
             {
-                last = ERR_get_error();
+                error = lastRead;
+                lastRead = ERR_get_error();
             }
 
+            // If we're in an error flow which results in an Exception, but
+            // no calls to ERR_set_error were made, throw the unadorned
+            // CryptographicException.
             if (error == 0)
             {
                 return new CryptographicException();
             }
 
+            // Inline version of the ERR_GET_REASON macro.
             uint reason = error & ReasonMask;
 
             if (reason == ERR_R_MALLOC_FAILURE)
@@ -52,6 +72,8 @@ internal static partial class Interop
                 return new OutOfMemoryException();
             }
 
+            // If there was an error code, and it wasn't something handled specially,
+            // use the OpenSSL error string as the message to a CryptographicException.
             return new CryptographicException(ERR_error_string_n(error));
         }
 
