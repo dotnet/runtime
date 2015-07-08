@@ -3495,7 +3495,7 @@ add_wrappers (MonoAotCompile *acfg)
 					has_nullable = TRUE;
 			}
 
-			if (info && !has_nullable) {
+			if (info && !has_nullable && !acfg->aot_opts.llvm_only) {
 				/* Supported by the dynamic runtime-invoke wrapper */
 				skip = TRUE;
 			}
@@ -3573,7 +3573,8 @@ add_wrappers (MonoAotCompile *acfg)
 			add_method (acfg, mono_marshal_get_runtime_invoke (method, FALSE));
 
 #ifdef MONO_ARCH_DYN_CALL_SUPPORTED
-		add_method (acfg, mono_marshal_get_runtime_invoke_dynamic ());
+		if (!acfg->aot_opts.llvm_only)
+			add_method (acfg, mono_marshal_get_runtime_invoke_dynamic ());
 #endif
 
 		/* stelemref */

@@ -2218,7 +2218,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		 * possible, built on top of the OP_DYN_CALL opcode provided by the JIT.
 		 */
 #ifdef MONO_ARCH_DYN_CALL_SUPPORTED
-		if (mono_aot_only || debug_options.dyn_runtime_invoke) {
+		if (!mono_llvm_only && (mono_aot_only || debug_options.dyn_runtime_invoke)) {
 			MonoType *ret_type;
 			MonoMethodSignature *sig = mono_method_signature (method);
 			gboolean supported = TRUE;
