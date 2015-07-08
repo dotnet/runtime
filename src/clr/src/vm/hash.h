@@ -139,7 +139,10 @@ public:
         m_ptr = ptr;
     }
 
-    virtual ~Compare() {}
+    virtual ~Compare()
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
 
     virtual UPTR CompareHelper(UPTR val1, UPTR storedval)
     {
