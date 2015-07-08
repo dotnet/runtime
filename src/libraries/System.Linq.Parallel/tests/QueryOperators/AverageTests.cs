@@ -14,6 +14,8 @@ namespace Test
         //
         // Average
         //
+
+        // Get a set of ranges from 0 to each count, with an extra parameter containing the expected average.
         public static IEnumerable<object[]> AverageData(object[] counts)
         {
             Func<int, double> average = x => (x - 1) / 2.0;
@@ -74,6 +76,16 @@ namespace Test
         public static void Average_Long_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, double average)
         {
             Average_Long(labeled, count, average);
+        }
+
+        [Theory]
+        [MemberData("Ranges", (object)(new int[] { 2 }), MemberType = typeof(UnorderedSources))]
+        public static void Average_Long_Overflow(Labeled<ParallelQuery<int>> labeled, int count)
+        {
+            Functions.AssertThrowsWrapped<OverflowException>(() => labeled.Item.Select(x => x == 0 ? 1 : long.MaxValue).Average());
+            Functions.AssertThrowsWrapped<OverflowException>(() => labeled.Item.Select(x => x == 0 ? (long?)1 : long.MaxValue).Average());
+            Functions.AssertThrowsWrapped<OverflowException>(() => labeled.Item.Average(x => x == 0 ? -1 : long.MinValue));
+            Functions.AssertThrowsWrapped<OverflowException>(() => labeled.Item.Average(x => x == 0 ? (long?)-1 : long.MinValue));
         }
 
         [Theory]
