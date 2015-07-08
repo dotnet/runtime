@@ -84,28 +84,30 @@ public class DirectoryInfo_GetFileSystemInfos_str
             }
             //-----------------------------------------------------------------
 
-            // [] ArgumentException for all whitespace
-            //-----------------------------------------------------------------
-            strLoc = "Loc_1190x";
+            if (Interop.IsWindows) // whitespace in names and periods at ends of search patterns is acceptable on Unix
+            {
+                // [] ArgumentException for all whitespace
+                //-----------------------------------------------------------------
+                strLoc = "Loc_1190x";
 
-            dir2 = new DirectoryInfo(".");
-            iCountTestcases++;
-            try
-            {
-                dir2.GetFileSystemInfos(Path.Combine("..ab ab.. .. abc..d", "abc.."));
-                iCountErrors++;
-                printerr("Error_2198y! Expected exception not thrown");
+                dir2 = new DirectoryInfo(".");
+                iCountTestcases++;
+                try
+                {
+                    dir2.GetFileSystemInfos(Path.Combine("..ab ab.. .. abc..d", "abc.."));
+                    iCountErrors++;
+                    printerr("Error_2198y! Expected exception not thrown");
+                }
+                catch (ArgumentException)
+                {
+                }
+                catch (Exception exc)
+                {
+                    iCountErrors++;
+                    printerr("Error_17888! Incorrect exception thrown, exc==" + exc.ToString());
+                }
+                //-----------------------------------------------------------------
             }
-            catch (ArgumentException)
-            {
-            }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Error_17888! Incorrect exception thrown, exc==" + exc.ToString());
-            }
-            //-----------------------------------------------------------------
-
 
 
             // [] Should return zero length array for an empty directory
