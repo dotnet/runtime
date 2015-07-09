@@ -49,7 +49,7 @@ namespace System.Numerics
             return quotient;
         }
 
-        public static uint[] Remainder(uint[] left, uint right)
+        public static uint Remainder(uint[] left, uint right)
         {
             Debug.Assert(left != null);
             Debug.Assert(left.Length >= 1);
@@ -63,7 +63,7 @@ namespace System.Numerics
                 carry = value % right;
             }
 
-            return new uint[] { (uint)carry };
+            return (uint)carry;
         }
 
         [SecuritySafeCritical]
@@ -79,18 +79,21 @@ namespace System.Numerics
             // Switching to unsafe pointers helps sparing
             // some nasty index calculations...
 
-            uint[] quotient = new uint[left.Length - right.Length + 1];
-            remainder = new uint[right.Length];
+            // NOTE: left will get overwritten, we need a local copy
 
-            fixed(uint* l = left, r = right, q = quotient, e = remainder)
+            uint[] localLeft = CreateCopy(left);
+            uint[] bits = new uint[left.Length - right.Length + 1];
+
+            fixed (uint* l = localLeft, r = right, b = bits)
             {
-                Divide(l, left.Length,
+                Divide(l, localLeft.Length,
                        r, right.Length,
-                       q, quotient.Length,
-                       e, remainder.Length);
+                       b, bits.Length);
             }
 
-            return quotient;
+            remainder = localLeft;
+
+            return bits;
         }
 
         [SecuritySafeCritical]
@@ -104,17 +107,19 @@ namespace System.Numerics
 
             // Same as above, but only returning the quotient.
 
-            uint[] quotient = new uint[left.Length - right.Length + 1];
+            // NOTE: left will get overwritten, we need a local copy
 
-            fixed (uint* l = left, r = right, q = quotient)
+            uint[] localLeft = CreateCopy(left);
+            uint[] bits = new uint[left.Length - right.Length + 1];
+
+            fixed (uint* l = localLeft, r = right, b = bits)
             {
-                Divide(l, left.Length,
+                Divide(l, localLeft.Length,
                        r, right.Length,
-                       q, quotient.Length,
-                       null, 0);
+                       b, bits.Length);
             }
 
-            return quotient;
+            return bits;
         }
 
         [SecuritySafeCritical]
@@ -128,203 +133,194 @@ namespace System.Numerics
 
             // Same as above, but only returning the remainder.
 
-            uint[] remainder = new uint[right.Length];
+            // NOTE: left will get overwritten, we need a local copy
 
-            fixed (uint* l = left, r = right, e = remainder)
+            uint[] localLeft = CreateCopy(left);
+
+            fixed (uint* l = localLeft, r = right)
             {
-                Divide(l, left.Length,
+                Divide(l, localLeft.Length,
                        r, right.Length,
-                       null, 0,
-                       e, remainder.Length);
+                       null, 0);
             }
 
-            return remainder;
+            return localLeft;
         }
 
         [SecuritySafeCritical]
         private unsafe static void Divide(uint* left, int leftLength,
                                           uint* right, int rightLength,
-                                          uint* quotient, int quotientLength,
-                                          uint* remainder, int remainderLength)
+                                          uint* bits, int bitsLength)
         {
             Debug.Assert(leftLength >= 1);
             Debug.Assert(rightLength >= 1);
             Debug.Assert(leftLength >= rightLength);
-            Debug.Assert(quotientLength == leftLength - rightLength + 1
-                || quotientLength == 0);
-            Debug.Assert(remainderLength == rightLength
-                || remainderLength == 0);
+            Debug.Assert(bitsLength == leftLength - rightLength + 1
+                || bitsLength == 0);
 
             // Executes the "grammar-school" algorithm for computing q = a / b.
             // Before calculating q_i, we get more bits into the highest bit
             // block of the divisor. Thus, guessing digits of the quotient
             // will be more precise. Additionally we'll get r = a % b.
 
-            int dividendLength = leftLength + 1;
-            int divisorLength = rightLength;
-            fixed (uint* dividend = new uint[dividendLength],
-                         divisor = new uint[divisorLength],
-                         guess = new uint[divisorLength + 1])
+            uint divHi = right[rightLength - 1];
+            uint divLo = rightLength > 1 ? right[rightLength - 2] : 0;
+
+            // We measure the leading zeros of the divisor
+            int shift = LeadingZeros(divHi);
+            int backShift = 32 - shift;
+
+            // And, we make sure the most significant bit is set
+            if (shift > 0)
             {
-                // This will create private copies of left and right, so we can
-                // modify the actual values of the dividend during computation
-                // without breaking immutability of the calling structure!
-                int shift = LeadingZeros(right[rightLength - 1]);
-                LeftShift(left, leftLength, dividend, dividendLength, shift);
-                LeftShift(right, rightLength, divisor, divisorLength, shift);
+                uint divNx = rightLength > 2 ? right[rightLength - 3] : 0;
 
-                // Measure dividend again; maybe there aren't any additional
-                // bits resulting of our shift above to the left?
-                if (dividend[dividendLength - 1] == 0)
-                    --dividendLength;
+                divHi = (divHi << shift) | (divLo >> backShift);
+                divLo = (divLo << shift) | (divNx >> backShift);
+            }
 
-                // These values will come in handy
-                uint divHi = divisor[divisorLength - 1];
-                uint divLo = divisorLength > 1 ? divisor[divisorLength - 2] : 0;
-                int guessLength = 0;
-                int delta = 0;
+            // Then, we divide all of the bits as we would do it using
+            // pen and paper: guessing the next digit, subtracting, ...
+            for (int i = leftLength; i >= rightLength; i--)
+            {
+                int n = i - rightLength;
+                uint t = i < leftLength ? left[i] : 0;
 
-                // First, we subtract the divisor until our dividend is smaller,
-                // if we shift the divisor so they have equal length. This will
-                // ensure that the highest digit of the dividend is smaller or
-                // equal to the highest digit of the divisor...
-                do
+                ulong valHi = ((ulong)t << 32) | left[i - 1];
+                uint valLo = i > 1 ? left[i - 2] : 0;
+
+                // We shifted the divisor, we shift the dividend too
+                if (shift > 0)
                 {
-                    int n = dividendLength - divisorLength;
-                    delta = Compare(dividend + n, divisorLength,
-                                    divisor, divisorLength);
-                    if (delta >= 0)
-                    {
-                        if (quotientLength != 0)
-                            ++quotient[n];
-                        SubtractSelf(dividend + n, divisorLength,
-                                     divisor, divisorLength);
-                    }
+                    uint valNx = i > 2 ? left[i - 3] : 0;
+
+                    valHi = (valHi << shift) | (valLo >> backShift);
+                    valLo = (valLo << shift) | (valNx >> backShift);
                 }
-                while (delta > 0);
 
-                // Then, we divide the rest of the bits as we would do it using
-                // pen and paper: guessing the next digit, subtracting, ...
-                for (int i = dividendLength - 1; i >= divisorLength; i--)
+                // First guess for the current digit of the quotient,
+                // which naturally must have only 32 bits...
+                ulong digit = valHi / divHi;
+                if (digit > 0xFFFFFFFF)
+                    digit = 0xFFFFFFFF;
+
+                // Our first guess may be a little bit to big
+                while (DivideGuessTooBig(digit, valHi, valLo, divHi, divLo))
+                    --digit;
+
+                if (digit > 0)
                 {
-                    int n = i - divisorLength;
+                    // Now it's time to subtract our current quotient
+                    uint carry = SubtractDivisor(left + n, leftLength - n,
+                                                 right, rightLength, digit);
+                    if (carry != t)
+                    {
+                        Debug.Assert(carry == t + 1);
 
-                    // First guess for the current digit of the quotient,
-                    // which naturally must have only 32 bits...
-                    ulong valHi = ((ulong)dividend[i] << 32) | dividend[i - 1];
-                    ulong digit = valHi / divHi;
-                    if (digit > 0xFFFFFFFF)
-                        digit = 0xFFFFFFFF;
-
-                    // Our first guess may be a little bit to big
-                    ulong check = divHi * digit + ((divLo * digit) >> 32);
-                    if (check > valHi)
+                        // Our guess was still exactly one too high
+                        carry = AddDivisor(left + n, leftLength - n,
+                                           right, rightLength);
                         --digit;
 
-                    // Our guess may be still a little bit to big
-                    do
-                    {
-                        MultiplyDivisor(divisor, divisorLength, digit, guess);
-                        guessLength = guess[divisorLength] == 0
-                                    ? divisorLength : divisorLength + 1;
-                        delta = Compare(dividend + n, guessLength,
-                                        guess, guessLength);
-                        if (delta < 0)
-                            --digit;
+                        Debug.Assert(carry == 1);
                     }
-                    while (delta < 0);
-
-                    // We have the digit!
-                    SubtractSelf(dividend + n, guessLength,
-                                 guess, guessLength);
-                    if (quotientLength != 0)
-                        quotient[n] = (uint)digit;
                 }
 
-                if (remainderLength != 0)
-                {
-                    // Repairing the remaining dividend gets the remainder
-                    RightShift(dividend, divisorLength,
-                               remainder, remainderLength,
-                               shift);
-                }
+                // We have the digit!
+                if (bitsLength != 0)
+                    bits[n] = (uint)digit;
+                if (i < leftLength)
+                    left[i] = 0;
             }
         }
 
         [SecuritySafeCritical]
-        private unsafe static void LeftShift(uint* value, int valueLength,
-                                             uint* target, int targetLength,
-                                             int shift)
+        private unsafe static uint AddDivisor(uint* left, int leftLength,
+                                              uint* right, int rightLength)
         {
-            Debug.Assert(valueLength >= 1);
-            Debug.Assert(targetLength == valueLength ||
-                         targetLength == valueLength + 1);
-            Debug.Assert(shift >= 0 && shift < 32);
+            Debug.Assert(leftLength >= 0);
+            Debug.Assert(rightLength >= 0);
+            Debug.Assert(leftLength >= rightLength);
 
-            if (shift > 0)
+            // Repairs the dividend, if the last subtract was too much
+
+            ulong carry = 0L;
+
+            for (int i = 0; i < rightLength; i++)
             {
-                int backShift = 32 - shift;
-                target[0] = value[0] << shift;
-                for (int i = 1; i < valueLength; i++)
-                {
-                    target[i] = (value[i] << shift)
-                        | (value[i - 1] >> backShift);
-                }
-                if (targetLength > valueLength)
-                {
-                    target[valueLength] =
-                        value[valueLength - 1] >> backShift;
-                }
+                ulong digit = (left[i] + carry) + right[i];
+                left[i] = (uint)digit;
+                carry = digit >> 32;
             }
-            else
-            {
-                for (int i = 0; i < valueLength; i++)
-                    target[i] = value[i];
-            }
+
+            return (uint)carry;
         }
 
         [SecuritySafeCritical]
-        private unsafe static void RightShift(uint* value, int valueLength,
-                                              uint* target, int targetLength,
-                                              int shift)
+        private unsafe static uint SubtractDivisor(uint* left, int leftLength,
+                                                   uint* right, int rightLength,
+                                                   ulong q)
         {
-            Debug.Assert(valueLength >= 1);
-            Debug.Assert(targetLength == valueLength);
-            Debug.Assert(shift >= 0 && shift < 32);
+            Debug.Assert(leftLength >= 0);
+            Debug.Assert(rightLength >= 0);
+            Debug.Assert(leftLength >= rightLength);
+            Debug.Assert(q <= 0xFFFFFFFF);
 
-            if (shift > 0)
+            // Combines a subtract and a multiply operation, which is naturally
+            // more efficient than multiplying and then subtracting...
+
+            ulong carry = 0L;
+
+            for (int i = 0; i < rightLength; i++)
             {
-                int backShift = 32 - shift;
-                for (int i = 0; i < valueLength - 1; i++)
-                {
-                    target[i] = (value[i] >> shift)
-                        | (value[i + 1] << backShift);
-                }
-                target[valueLength - 1] =
-                    (value[valueLength - 1] >> shift);
+                carry += right[i] * q;
+                uint digit = (uint)carry;
+                carry = carry >> 32;
+                if (left[i] < digit)
+                    ++carry;
+                left[i] -= digit;
             }
-            else
-            {
-                for (int i = 0; i < valueLength; i++)
-                    target[i] = value[i];
-            }
+
+            return (uint)carry;
         }
 
-        [SecuritySafeCritical]
-        private unsafe static void MultiplyDivisor(uint* left, int leftLength,
-                                                   ulong right, uint* bits)
+        private static bool DivideGuessTooBig(ulong q, ulong valHi, uint valLo,
+                                              uint divHi, uint divLo)
         {
-            Debug.Assert(leftLength >= 1);
-            Debug.Assert(right <= 0xFFFFFFFF);
+            Debug.Assert(q <= 0xFFFFFFFF);
 
-            ulong carry = 0UL;
-            for (int i = 0; i < leftLength; i++)
-            {
-                ulong digits = left[i] * right + carry;
-                bits[i] = (uint)digits;
-                carry = digits >> 32;
-            }
-            bits[leftLength] = (uint)carry;
+            // We multiply the two most significant limbs of the divisor
+            // with the current guess for the quotient. If those are bigger
+            // than the three most significant limbs of the current dividend
+            // we return true, which means the current guess is still too big.
+
+            ulong chkHi = divHi * q;
+            ulong chkLo = divLo * q;
+
+            chkHi = chkHi + (chkLo >> 32);
+            chkLo = chkLo & 0xFFFFFFFF;
+
+            if (chkHi < valHi)
+                return false;
+            if (chkHi > valHi)
+                return true;
+
+            if (chkLo < valLo)
+                return false;
+            if (chkLo > valLo)
+                return true;
+
+            return false;
+        }
+
+        private static uint[] CreateCopy(uint[] value)
+        {
+            Debug.Assert(value != null);
+            Debug.Assert(value.Length != 0);
+
+            var bits = new uint[value.Length];
+            Array.Copy(value, 0, bits, 0, bits.Length);
+            return bits;
         }
 
         private static int LeadingZeros(uint value)
