@@ -67,18 +67,20 @@ namespace System.Net.Http
         {
             CheckDisposed();
 
-            TaskCompletionSource<string> tcs = new TaskCompletionSource<string>();
+            var tcs = new TaskCompletionSource<string>(this);
 
-            LoadIntoBufferAsync().ContinueWithStandard(task =>
+            LoadIntoBufferAsync().ContinueWithStandard(tcs, (task, state) =>
             {
-                if (HttpUtilities.HandleFaultsAndCancelation(task, tcs))
+                var innerTcs = (TaskCompletionSource<string>)state;
+                var innerThis = (HttpContent)innerTcs.Task.AsyncState;
+                if (HttpUtilities.HandleFaultsAndCancelation(task, innerTcs))
                 {
                     return;
                 }
 
-                if (_bufferedContent.Length == 0)
+                if (innerThis._bufferedContent.Length == 0)
                 {
-                    tcs.TrySetResult(string.Empty);
+                    innerTcs.TrySetResult(string.Empty);
                     return;
                 }
 
@@ -90,21 +92,21 @@ namespace System.Net.Http
                 Encoding encoding = null;
                 int bomLength = -1;
 
-                byte[] data = this.GetDataBuffer(_bufferedContent);
+                byte[] data = innerThis.GetDataBuffer(innerThis._bufferedContent);
 
-                int dataLength = (int)_bufferedContent.Length; // Data is the raw buffer, it may not be full.
+                int dataLength = (int)innerThis._bufferedContent.Length; // Data is the raw buffer, it may not be full.
 
                 // If we do have encoding information in the 'Content-Type' header, use that information to convert
                 // the content to a string.
-                if ((Headers.ContentType != null) && (Headers.ContentType.CharSet != null))
+                if ((innerThis.Headers.ContentType != null) && (innerThis.Headers.ContentType.CharSet != null))
                 {
                     try
                     {
-                        encoding = Encoding.GetEncoding(Headers.ContentType.CharSet);
+                        encoding = Encoding.GetEncoding(innerThis.Headers.ContentType.CharSet);
                     }
                     catch (ArgumentException e)
                     {
-                        tcs.TrySetException(new InvalidOperationException(SR.net_http_content_invalid_charset, e));
+                        innerTcs.TrySetException(new InvalidOperationException(SR.net_http_content_invalid_charset, e));
                         return;
                     }
                 }
@@ -143,11 +145,11 @@ namespace System.Net.Http
                 {
                     // Drop the BOM when decoding the data.
                     string result = encoding.GetString(data, bomLength, dataLength - bomLength);
-                    tcs.TrySetResult(result);
+                    innerTcs.TrySetResult(result);
                 }
                 catch (Exception ex)
                 {
-                    tcs.TrySetException(ex);
+                    innerTcs.TrySetException(ex);
                 }
             });
 
@@ -158,13 +160,15 @@ namespace System.Net.Http
         {
             CheckDisposed();
 
-            TaskCompletionSource<byte[]> tcs = new TaskCompletionSource<byte[]>();
+            var tcs = new TaskCompletionSource<byte[]>(this);
 
-            LoadIntoBufferAsync().ContinueWithStandard(task =>
+            LoadIntoBufferAsync().ContinueWithStandard(tcs, (task, state) =>
             {
-                if (!HttpUtilities.HandleFaultsAndCancelation(task, tcs))
+                var innerTcs = (TaskCompletionSource<byte[]>)state;
+                var innerThis = (HttpContent)innerTcs.Task.AsyncState;
+                if (!HttpUtilities.HandleFaultsAndCancelation(task, innerTcs))
                 {
-                    tcs.TrySetResult(_bufferedContent.ToArray());
+                    innerTcs.TrySetResult(innerThis._bufferedContent.ToArray());
                 }
             });
 
@@ -175,7 +179,7 @@ namespace System.Net.Http
         {
             CheckDisposed();
 
-            TaskCompletionSource<Stream> tcs = new TaskCompletionSource<Stream>();
+            TaskCompletionSource<Stream> tcs = new TaskCompletionSource<Stream>(this);
 
             if (_contentReadStream == null && IsBuffered)
             {
@@ -194,12 +198,14 @@ namespace System.Net.Http
                 return tcs.Task;
             }
 
-            CreateContentReadStreamAsync().ContinueWithStandard(task =>
+            CreateContentReadStreamAsync().ContinueWithStandard(tcs, (task, state) =>
             {
-                if (!HttpUtilities.HandleFaultsAndCancelation(task, tcs))
+                var innerTcs = (TaskCompletionSource<Stream>)state;
+                var innerThis = (HttpContent)innerTcs.Task.AsyncState;
+                if (!HttpUtilities.HandleFaultsAndCancelation(task, innerTcs))
                 {
-                    _contentReadStream = task.Result;
-                    tcs.TrySetResult(_contentReadStream);
+                    innerThis._contentReadStream = task.Result;
+                    innerTcs.TrySetResult(innerThis._contentReadStream);
                 }
             });
 
@@ -232,19 +238,20 @@ namespace System.Net.Http
                 }
 
                 // If the copy operation fails, wrap the exception in an HttpRequestException() if appropriate.
-                task.ContinueWithStandard(copyTask =>
+                task.ContinueWithStandard(tcs, (copyTask, state) =>
                 {
+                    var innerTcs = (TaskCompletionSource<object>)state;
                     if (copyTask.IsFaulted)
                     {
-                        tcs.TrySetException(GetStreamCopyException(copyTask.Exception.GetBaseException()));
+                        innerTcs.TrySetException(GetStreamCopyException(copyTask.Exception.GetBaseException()));
                     }
                     else if (copyTask.IsCanceled)
                     {
-                        tcs.TrySetCanceled();
+                        innerTcs.TrySetCanceled();
                     }
                     else
                     {
-                        tcs.TrySetResult(null);
+                        innerTcs.TrySetResult(null);
                     }
                 });
             }
@@ -354,15 +361,17 @@ namespace System.Net.Http
 
         protected virtual Task<Stream> CreateContentReadStreamAsync()
         {
-            TaskCompletionSource<Stream> tcs = new TaskCompletionSource<Stream>();
+            var tcs = new TaskCompletionSource<Stream>(this);
             // By default just buffer the content to a memory stream. Derived classes can override this behavior
             // if there is a better way to retrieve the content as stream (e.g. byte array/string use a more efficient
             // way, like wrapping a read-only MemoryStream around the bytes/string)
-            LoadIntoBufferAsync().ContinueWithStandard(task =>
+            LoadIntoBufferAsync().ContinueWithStandard(tcs, (task, state) =>
             {
-                if (!HttpUtilities.HandleFaultsAndCancelation(task, tcs))
+                var innerTcs = (TaskCompletionSource<Stream>)state;
+                var innerThis = (HttpContent)innerTcs.Task.AsyncState;
+                if (!HttpUtilities.HandleFaultsAndCancelation(task, innerTcs))
                 {
-                    tcs.TrySetResult(_bufferedContent);
+                    innerTcs.TrySetResult(innerThis._bufferedContent);
                 }
             });
 
