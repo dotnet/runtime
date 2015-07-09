@@ -1427,9 +1427,18 @@ mono_create_delegate_trampoline_info (MonoDomain *domain, MonoClass *klass, Mono
 	return tramp_info;
 }
 
+static void
+no_delegate_trampoline (void)
+{
+	g_assert_not_reached ();
+}
+
 gpointer
 mono_create_delegate_trampoline (MonoDomain *domain, MonoClass *klass)
 {
+	if (mono_llvm_only)
+		return no_delegate_trampoline;
+
 	return mono_create_delegate_trampoline_info (domain, klass, NULL)->invoke_impl;
 }
 

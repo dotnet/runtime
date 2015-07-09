@@ -23,6 +23,16 @@ mono_ldftn (MonoMethod *method)
 {
 	gpointer addr;
 
+	if (mono_llvm_only) {
+		// FIXME: No error handling
+
+		addr = mono_compile_method (method);
+		g_assert (addr);
+
+		addr = mini_add_method_trampoline (method, addr, mono_method_needs_static_rgctx_invoke (method, FALSE), FALSE);
+		return addr;
+	}
+
 	addr = mono_create_jump_trampoline (mono_domain_get (), method, FALSE);
 
 	return mono_create_ftnptr (mono_domain_get (), addr);
