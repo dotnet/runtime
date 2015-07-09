@@ -45,7 +45,8 @@
 
   <!-- list of nuget package sources passed to nuget.exe -->
   <ItemGroup>
-    <NuGetSourceList Include="https://www.myget.org/F/dotnet-buildtools" />
+    <NuGetSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-buildtools" />
+    <NuGetSourceList Include="https:%2F%2Fwww.nuget.org/api/v2" />
   </ItemGroup>
 
   <!-- Common nuget properties -->
