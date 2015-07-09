@@ -39,12 +39,17 @@ namespace System.Diagnostics
                 // Set the values we have; all the other values don't have meaning or don't exist on OSX
                 Interop.libproc.proc_taskallinfo temp = info.Value;
                 unsafe { procInfo.ProcessName = Marshal.PtrToStringAnsi(new IntPtr(temp.pbsd.pbi_comm)); }
-                procInfo.BasePriority = temp.ptinfo.pti_priority;
+                procInfo.BasePriority = temp.pbsd.pbi_nice;
                 procInfo.HandleCount = Interop.libproc.GetFileDescriptorCountForPid(pid);
                 procInfo.VirtualBytes = (long)temp.ptinfo.pti_virtual_size;
                 procInfo.WorkingSet = (long)temp.ptinfo.pti_resident_size;
             }
 
+            // Get the sessionId for the given pid, getsid returns -1 on error
+            int sessionId = Interop.libc.getsid(pid);
+            if (sessionId != -1)
+                procInfo.SessionId = sessionId;
+            
             // Create a threadinfo for each thread in the process
             List<KeyValuePair<ulong, Interop.libproc.proc_threadinfo?>> lstThreads = Interop.libproc.GetAllThreadsInProcess(pid);
             foreach (KeyValuePair<ulong, Interop.libproc.proc_threadinfo?> t in lstThreads)
