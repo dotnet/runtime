@@ -3105,7 +3105,10 @@ namespace System.Linq
                 if (next == null) return index1 - index2;
                 return next.CompareKeys(index1, index2);
             }
-            return descending ? -c : c;
+            // -c will result in a negative value for int.MinValue (-int.MinValue == int.MinValue).
+            // Flipping keys earlier is more likely to trigger something strange in a comparer,
+            // particularly as it comes to the sort being stable.
+            return (descending != (c > 0)) ? 1 : -1;
         }
     }
 
