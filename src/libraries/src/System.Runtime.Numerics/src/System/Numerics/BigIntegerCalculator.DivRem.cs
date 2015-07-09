@@ -6,7 +6,7 @@ namespace System.Numerics
     internal static partial class BigIntegerCalculator
     {
         public static uint[] Divide(uint[] left, uint right,
-                                    out uint[] remainder)
+                                    out uint remainder)
         {
             Debug.Assert(left != null);
             Debug.Assert(left.Length >= 1);
@@ -24,7 +24,7 @@ namespace System.Numerics
                 quotient[i] = (uint)(value / right);
                 carry = value % right;
             }
-            remainder = new uint[] { (uint)carry };
+            remainder = (uint)carry;
 
             return quotient;
         }
