@@ -25,6 +25,12 @@
 #define TLS_VECTOR_OFFSET_10_9 0xe0
 #define TLS_VECTOR_OFFSET_10_11 0x100
 
+/* This is 2 slots less than the known low */
+#define TLS_PROBE_LOW_WATERMARK 0x50
+/* This is 28 slots above the know high, which is more than the known high-low*/
+#define TLS_PROBE_HIGH_WATERMARK 0x200
+
+
 static int tls_vector_offset;
 
 void *
@@ -114,6 +120,7 @@ mono_mach_arch_get_tls_value_from_thread (pthread_t thread, guint32 key)
 void
 mono_mach_init (pthread_key_t key)
 {
+	int i;
 	void *old_value = pthread_getspecific (key);
 	void *canary = (void*)0xDEADBEEFu;
 
@@ -134,6 +141,15 @@ mono_mach_init (pthread_key_t key)
 	tls_vector_offset = TLS_VECTOR_OFFSET_10_11;
 	if (mono_mach_arch_get_tls_value_from_thread (pthread_self (), key) == canary)
 		goto ok;
+
+	/*Fallback to scanning a large range of offsets*/
+	for (i = TLS_PROBE_LOW_WATERMARK; i <= TLS_PROBE_HIGH_WATERMARK; i += 4) {
+		tls_vector_offset = i;
+		if (mono_mach_arch_get_tls_value_from_thread (pthread_self (), key) == canary) {
+			g_warning ("Found new TLS offset at %d", i);
+			goto ok;
+		}
+	}
 
 	g_error ("could not discover the mach TLS offset");
 ok:
