@@ -1,18 +1,10 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.Globalization;
-using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 using System.Security;
-using System.Text;
-
-using Microsoft.Win32;
 
 namespace System.IO
 {
@@ -25,25 +17,8 @@ namespace System.IO
                 throw new ArgumentNullException("path");
             Contract.EndContractBlock();
 
-            Init(path);
-        }
-
-        [System.Security.SecurityCritical]
-        private void Init(String path)
-        {
-            // Special case "<DriveLetter>:" to point to "<CurrentDirectory>" instead
-            if ((path.Length == 2) && (path[1] == ':'))
-            {
-                OriginalPath = ".";
-            }
-            else
-            {
-                OriginalPath = path;
-            }
-
-            String fullPath = PathHelpers.GetFullPathInternal(path);
-
-            FullPath = fullPath;
+            OriginalPath = PathHelpers.ShouldReviseDirectoryPathToCurrent(path) ? "." : path;
+            FullPath = PathHelpers.GetFullPathInternal(path);
             DisplayPath = GetDisplayName(OriginalPath, FullPath);
         }
 
@@ -51,9 +26,9 @@ namespace System.IO
         internal DirectoryInfo(String fullPath, IFileSystemObject fileSystemObject) : base(fileSystemObject)
         {
             Debug.Assert(PathHelpers.GetRootLength(fullPath) > 0, "fullPath must be fully qualified!");
+            
             // Fast path when we know a DirectoryInfo exists.
             OriginalPath = Path.GetFileName(fullPath);
-
             FullPath = fullPath;
             DisplayPath = GetDisplayName(OriginalPath, FullPath);
         }
@@ -74,17 +49,20 @@ namespace System.IO
             [System.Security.SecuritySafeCritical]
             get
             {
-                String parentName;
-                // FullPath might be either "c:\bar" or "c:\bar\".  Handle 
-                // those cases, as well as avoiding mangling "c:\".
-                String s = FullPath;
-                if (s.Length > 3 && s[s.Length - 1] == Path.DirectorySeparatorChar)
-                    s = FullPath.Substring(0, FullPath.Length - 1);
-                parentName = Path.GetDirectoryName(s);
-                if (parentName == null)
-                    return null;
-                DirectoryInfo dir = new DirectoryInfo(parentName, null);
-                return dir;
+                string s = FullPath;
+
+                // FullPath might end in either "parent\child" or "parent\child", and in either case we want 
+                // the parent of child, not the child. Trim off an ending directory separator if there is one,
+                // but don't mangle the root.
+                if (!PathHelpers.IsRoot(s))
+                {
+                    s = PathHelpers.TrimEndingDirectorySeparator(s);
+                }
+
+                string parentName = Path.GetDirectoryName(s);
+                return parentName != null ? 
+                    new DirectoryInfo(parentName, null) :
+                    null;
             }
         }
 
@@ -457,40 +435,18 @@ namespace System.IO
             Debug.Assert(originalPath != null);
             Debug.Assert(fullPath != null);
 
-            String displayName = "";
-
-            // Special case "<DriveLetter>:" to point to "<CurrentDirectory>" instead
-            if ((originalPath.Length == 2) && (originalPath[1] == ':'))
-            {
-                displayName = ".";
-            }
-            else
-            {
-                displayName = GetDirName(fullPath);
-            }
-            return displayName;
+            return PathHelpers.ShouldReviseDirectoryPathToCurrent(originalPath) ?
+                "." :
+                GetDirName(fullPath);
         }
 
         private static String GetDirName(String fullPath)
         {
             Debug.Assert(fullPath != null);
 
-            String dirName = null;
-            if (fullPath.Length > 3)
-            {
-                String s = fullPath;
-                if (fullPath[fullPath.Length - 1] == Path.DirectorySeparatorChar)
-                {
-                    s = fullPath.Substring(0, fullPath.Length - 1);
-                }
-                dirName = Path.GetFileName(s);
-            }
-            else
-            {
-                dirName = fullPath;  // For rooted paths, like "c:\"
-            }
-            return dirName;
+            return PathHelpers.IsRoot(fullPath) ?
+                fullPath :
+                Path.GetFileName(PathHelpers.TrimEndingDirectorySeparator(fullPath));
         }
     }
 }
-

@@ -54,6 +54,28 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void DriveLetter_Windows()
+        {
+            // On Windows, DirectoryInfo will replace "<DriveLetter>:" with "."
+            var driveLetter = new DirectoryInfo(Directory.GetCurrentDirectory()[0] + ":");
+            var current = new DirectoryInfo(".");
+            Assert.Equal(current.Name, driveLetter.Name);
+            Assert.Equal(current.FullName, driveLetter.FullName);
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void DriveLetter_Unix()
+        {
+            // On Unix, there's no special casing for drive letters, which are valid file names
+            var driveLetter = new DirectoryInfo("C:");
+            var current = new DirectoryInfo(".");
+            Assert.Equal("C:", driveLetter.Name);
+            Assert.Equal(Path.Combine(current.FullName, "C:"), driveLetter.FullName);
+        }
+
+        [Fact]
         [ActiveIssue(1222)]
         public void TrailingWhitespace()
         {

@@ -11,6 +11,13 @@ namespace System.IO
             return path.Length > 0 && IsDirectorySeparator(path[0]) ? 1 : 0;
         }
 
+        internal static bool ShouldReviseDirectoryPathToCurrent(string path)
+        {
+            // Unlike on Windows, there are no special cases on Unix where we'd want to ignore
+            // user-provided path and instead automatically use the current directory.
+            return false;
+        }
+
         internal static void CheckSearchPattern(string searchPattern)
         {
             // ".." should not be used to move up directories. On Windows, this is more strict, and ".."
