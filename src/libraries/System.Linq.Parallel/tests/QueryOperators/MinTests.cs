@@ -105,6 +105,10 @@ namespace System.Linq.Parallel.Tests
             Assert.Equal(0, query.Select(x => (float?)x).Min());
             Assert.Equal(min, query.Min(x => -(float)x));
             Assert.Equal(min, query.Min(x => -(float?)x));
+            Assert.Equal(float.NegativeInfinity, query.Select(x => x == count / 2 ? float.NegativeInfinity : x).Min());
+            Assert.Equal(float.NegativeInfinity, query.Select(x => x == count / 2 ? (float?)float.NegativeInfinity : x).Min());
+            Assert.Equal(float.NaN, query.Select(x => x == count / 2 ? float.NaN : x).Min());
+            Assert.Equal(float.NaN, query.Select(x => x == count / 2 ? (float?)float.NaN : x).Min());
         }
 
         [Theory]
@@ -125,6 +129,21 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
+        [MemberData("MinData", (object)(new int[] { 3 }))]
+        public static void Min_Float_Special(Labeled<ParallelQuery<int>> labeled, int count, float min)
+        {
+            // Null is defined as 'least' when ordered, but is not the minimum.
+            Func<int, float?> translate = x =>
+                x % 3 == 0 ? (float?)null :
+                x % 3 == 1 ? float.MinValue :
+                float.NaN;
+
+            ParallelQuery<int> query = labeled.Item;
+            Assert.Equal(float.NaN, query.Select(x => x == count / 2 ? float.NaN : float.MinValue).Min());
+            Assert.Equal(float.NaN, query.Select(translate).Min());
+        }
+
+        [Theory]
         [MemberData("MinData", (object)(new int[] { 1, 2, 16 }))]
         public static void Min_Float_AllNull(Labeled<ParallelQuery<int>> labeled, int count, float min)
         {
@@ -142,6 +161,10 @@ namespace System.Linq.Parallel.Tests
             Assert.Equal(0, query.Select(x => (double?)x).Min());
             Assert.Equal(min, query.Min(x => -(double)x));
             Assert.Equal(min, query.Min(x => -(double?)x));
+            Assert.Equal(double.NegativeInfinity, query.Select(x => x == count / 2 ? double.NegativeInfinity : x).Min());
+            Assert.Equal(double.NegativeInfinity, query.Select(x => x == count / 2 ? (double?)double.NegativeInfinity : x).Min());
+            Assert.Equal(double.NaN, query.Select(x => x == count / 2 ? double.NaN : x).Min());
+            Assert.Equal(double.NaN, query.Select(x => x == count / 2 ? (double?)double.NaN : x).Min());
         }
 
         [Theory]
@@ -150,6 +173,21 @@ namespace System.Linq.Parallel.Tests
         public static void Min_Double_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, double min)
         {
             Min_Double(labeled, count, min);
+        }
+
+        [Theory]
+        [MemberData("MinData", (object)(new int[] { 3 }))]
+        public static void Min_Double_Special(Labeled<ParallelQuery<int>> labeled, int count, double min)
+        {
+            // Null is defined as 'least' when ordered, but is not the minimum.
+            Func<int, double?> translate = x =>
+                x % 3 == 0 ? (double?)null :
+                x % 3 == 1 ? double.MinValue :
+                double.NaN;
+
+            ParallelQuery<int> query = labeled.Item;
+            Assert.Equal(double.NaN, query.Select(x => x == count / 2 ? double.NaN : double.MinValue).Min());
+            Assert.Equal(double.NaN, query.Select(translate).Min());
         }
 
         [Theory]

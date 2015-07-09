@@ -106,6 +106,8 @@ namespace System.Linq.Parallel.Tests
             Assert.Equal(max, query.Select(x => (float?)x).Max());
             Assert.Equal(0, query.Max(x => -(float)x));
             Assert.Equal(0, query.Max(x => -(float?)x));
+            Assert.Equal(float.PositiveInfinity, query.Select(x => x == count / 2 ? float.PositiveInfinity : x).Max());
+            Assert.Equal(float.PositiveInfinity, query.Select(x => x == count / 2 ? (float?)float.PositiveInfinity : x).Max());
         }
 
         [Theory]
@@ -143,6 +145,8 @@ namespace System.Linq.Parallel.Tests
             Assert.Equal(max, query.Select(x => (double?)x).Max());
             Assert.Equal(0, query.Max(x => -(double)x));
             Assert.Equal(0, query.Max(x => -(double?)x));
+            Assert.Equal(double.PositiveInfinity, query.Select(x => x == count / 2 ? double.PositiveInfinity : x).Max());
+            Assert.Equal(double.PositiveInfinity, query.Select(x => x == count / 2 ? (double?)double.PositiveInfinity : x).Max());
         }
 
         [Theory]
