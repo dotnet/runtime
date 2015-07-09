@@ -10198,13 +10198,6 @@
       <Member Name="Remove(System.Object)" />
       <Member Name="RemoveAt(System.Int32)" />
     </Type>
-    <Type Status="ImplRoot" Name="System.Runtime.InteropServices.WindowsRuntime.ICustomPropertyProvider" Condition="FEATURE_COMINTEROP">
-      <Member Name="GetCustomProperty(System.String)" />
-      <Member Name="GetIndexedProperty(System.String,System.Type)" />
-      <Member Name="GetStringRepresentation" />
-      <Member MemberType="Property"  Name="Type" />
-      <Member Name="get_Type" />
-    </Type>
     <Type Status="ImplRoot" Name="System.Runtime.InteropServices.WindowsRuntime.CLRIReferenceImpl&lt;T&gt;" Condition="FEATURE_COMINTEROP">
       <Member Name="UnboxHelper(System.Object)" />
     </Type>
