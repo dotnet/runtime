@@ -163,6 +163,7 @@ mono_mach_get_tls_address_from_thread (pthread_t thread, pthread_key_t key)
 	 */
 	intptr_t *p = (intptr_t *) thread;
 	intptr_t **tsd = (intptr_t **) ((char*)p + tls_vector_offset);
+	g_assert (tls_vector_offset != -1);
 
 	return (void *) &tsd [key];
 }
@@ -201,7 +202,8 @@ mono_mach_init (pthread_key_t key)
 		}
 	}
 
-	g_error ("could not discover the mach TLS offset");
+	tls_vector_offset = -1;
+	g_warning ("could not discover the mach TLS offset");
 ok:
 	pthread_setspecific (key, old_value);
 }
