@@ -108,8 +108,10 @@ mono_exceptions_init (void)
 		mono_tramp_info_register (info, NULL);
 	}
 #ifdef MONO_ARCH_HAVE_RESTORE_STACK_SUPPORT
-	try_more_restore_tramp = mono_create_specific_trampoline (try_more_restore, MONO_TRAMPOLINE_RESTORE_STACK_PROT, mono_domain_get (), NULL);
-	restore_stack_protection_tramp = mono_create_specific_trampoline (restore_stack_protection, MONO_TRAMPOLINE_RESTORE_STACK_PROT, mono_domain_get (), NULL);
+	if (!mono_llvm_only) {
+		try_more_restore_tramp = mono_create_specific_trampoline (try_more_restore, MONO_TRAMPOLINE_RESTORE_STACK_PROT, mono_domain_get (), NULL);
+		restore_stack_protection_tramp = mono_create_specific_trampoline (restore_stack_protection, MONO_TRAMPOLINE_RESTORE_STACK_PROT, mono_domain_get (), NULL);
+	}
 #endif
 
 #ifdef MONO_ARCH_HAVE_EXCEPTIONS_INIT
@@ -1981,6 +1983,9 @@ mono_altstack_restore_prot (mgreg_t *regs, guint8 *code, gpointer *tramp_data, g
 gboolean
 mono_handle_soft_stack_ovf (MonoJitTlsData *jit_tls, MonoJitInfo *ji, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *siginfo, guint8* fault_addr)
 {
+	if (mono_llvm_only)
+		return FALSE;
+
 	/* we got a stack overflow in the soft-guard pages
 	 * There are two cases:
 	 * 1) managed code caused the overflow: we unprotect the soft-guard page
