@@ -1251,7 +1251,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 		param_types [pindex] = LLVMPointerType (param_types [pindex], 0);
 		pindex ++;
 	}
-	if (cinfo && cinfo->rgctx_arg) {
+	if (!ctx->lmodule->llvm_only && cinfo && cinfo->rgctx_arg) {
 		if (sinfo)
 			sinfo->rgctx_arg_pindex = pindex;
 		param_types [pindex] = ctx->lmodule->ptr_type;
@@ -1291,6 +1291,15 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 		if (sinfo)
 			sinfo->this_arg_pindex = pindex;
 		param_types [pindex ++] = ThisType ();
+	}
+	if (vretaddr && vret_arg_pindex == pindex)
+		param_types [pindex ++] = IntPtrType ();
+	if (ctx->lmodule->llvm_only && cinfo && cinfo->rgctx_arg) {
+		/* Pass the rgctx after 'this' */
+		if (sinfo)
+			sinfo->rgctx_arg_pindex = pindex;
+		param_types [pindex] = ctx->lmodule->ptr_type;
+		pindex ++;
 	}
 	if (vretaddr && vret_arg_pindex == pindex)
 		param_types [pindex ++] = IntPtrType ();
@@ -2407,7 +2416,7 @@ emit_unbox_tramp (EmitContext *ctx, const char *method_name, LLVMTypeRef method_
 	LLVMSetFunctionCallConv (tramp, LLVMMono1CallConv);
 	LLVMSetLinkage (tramp, LLVMInternalLinkage);
 	LLVMAddFunctionAttr (tramp, LLVMNoUnwindAttribute);
-	if (ctx->rgctx_arg_pindex != -1)
+	if (!ctx->lmodule->llvm_only && ctx->rgctx_arg_pindex != -1)
 		LLVMAddAttribute (LLVMGetParam (tramp, ctx->rgctx_arg_pindex), LLVMInRegAttribute);
 
 	lbb = LLVMAppendBasicBlock (tramp, "");
@@ -2428,7 +2437,7 @@ emit_unbox_tramp (EmitContext *ctx, const char *method_name, LLVMTypeRef method_
 	}
 	call = LLVMBuildCall (builder, method, args, nargs, "");
 	LLVMSetInstructionCallConv (call, LLVMMono1CallConv);
-	if (ctx->rgctx_arg_pindex != -1)
+	if (!ctx->lmodule->llvm_only && ctx->rgctx_arg_pindex != -1)
 		LLVMAddInstrAttribute (call, 1 + ctx->rgctx_arg_pindex, LLVMInRegAttribute);
 	mono_llvm_set_must_tail (call);
 	if (LLVMGetReturnType (method_type) == LLVMVoidType ())
@@ -2799,6 +2808,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 #endif
 	}
 	if (call->imt_arg_reg) {
+		g_assert (!ctx->lmodule->llvm_only);
 		g_assert (values [call->imt_arg_reg]);
 		g_assert (sinfo.imt_arg_pindex < nargs);
 #ifdef TARGET_ARM
@@ -2899,7 +2909,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 
 	if (cinfo && cinfo->ret.storage == LLVMArgVtypeByRef)
 		LLVMAddInstrAttribute (lcall, 1 + sinfo.vret_arg_pindex, LLVMStructRetAttribute);
-	if (call->rgctx_arg_reg)
+	if (!ctx->lmodule->llvm_only && call->rgctx_arg_reg)
 		LLVMAddInstrAttribute (lcall, 1 + sinfo.rgctx_arg_pindex, LLVMInRegAttribute);
 	if (call->imt_arg_reg)
 		LLVMAddInstrAttribute (lcall, 1 + sinfo.imt_arg_pindex, LLVMInRegAttribute);
@@ -5519,7 +5529,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		 * MONO_ARCH_RGCTX_REG in the Mono calling convention in llvm, i.e.
 		 * CC_X86_64_Mono in X86CallingConv.td.
 		 */
-		LLVMAddAttribute (ctx->rgctx_arg, LLVMInRegAttribute);
+		if (!ctx->lmodule->llvm_only)
+			LLVMAddAttribute (ctx->rgctx_arg, LLVMInRegAttribute);
 		LLVMSetValueName (ctx->rgctx_arg, "rgctx");
 	} else {
 		ctx->rgctx_arg_pindex = -1;

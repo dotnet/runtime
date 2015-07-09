@@ -2121,6 +2121,7 @@ typedef struct {
 	MonoVTable *vtable;
 	MonoDynCallInfo *dyn_call_info;
 	MonoClass *ret_box_class;
+	gboolean needs_rgctx;
 } RuntimeInvokeInfo;
 
 /**
@@ -2165,8 +2166,9 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		}
 
 		info = g_new0 (RuntimeInvokeInfo, 1);
+		info->needs_rgctx = mono_llvm_only && mono_method_needs_static_rgctx_invoke (method, TRUE);
 
-		invoke = mono_marshal_get_runtime_invoke (method, FALSE);
+		invoke = mono_marshal_get_runtime_invoke (method, FALSE, info->needs_rgctx);
 		info->vtable = mono_class_vtable_full (domain, method->klass, TRUE);
 		g_assert (info->vtable);
 
@@ -2184,7 +2186,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 				MonoMethod *wrapper;
 
 				wrapper = mono_marshal_get_array_accessor_wrapper (method);
-				invoke = mono_marshal_get_runtime_invoke (wrapper, FALSE);
+				invoke = mono_marshal_get_runtime_invoke (wrapper, FALSE, FALSE);
 				callee = wrapper;
 			} else {
 				callee = NULL;
@@ -2226,6 +2228,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 
 			if (method->string_ctor)
 				sig = mono_marshal_get_string_ctor_signature (method);
+			g_assert (!info->needs_rgctx);
 
 			for (i = 0; i < sig->param_count; ++i) {
 				MonoType *t = sig->params [i];
@@ -2323,6 +2326,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		int i, pindex;
 		guint8 buf [256];
 		guint8 retval [256];
+		gpointer rgctx;
 
 		if (!dyn_runtime_invoke) {
 			invoke = mono_marshal_get_runtime_invoke_dynamic ();
@@ -2330,10 +2334,14 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		}
 
 		/* Convert the arguments to the format expected by start_dyn_call () */
-		args = g_alloca ((sig->param_count + sig->hasthis) * sizeof (gpointer));
+		args = g_alloca ((sig->param_count + sig->hasthis + info->needs_rgctx) * sizeof (gpointer));
 		pindex = 0;
 		if (sig->hasthis)
 			args [pindex ++] = &obj;
+		if (info->needs_rgctx) {
+			rgctx = mini_method_get_rgctx (method);
+			args [pindex ++] = &rgctx;
+		}
 		for (i = 0; i < sig->param_count; ++i) {
 			MonoType *t = sig->params [i];
 
@@ -2361,7 +2369,22 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	}
 #endif
 
-	return runtime_invoke (obj, params, exc, info->compiled_method);
+	if (info->needs_rgctx) {
+		MonoMethodSignature *sig = mono_method_signature (method);
+		gpointer rgctx;
+		gpointer *args;
+		int i, pindex;
+
+		args = g_alloca ((sig->param_count + sig->hasthis + info->needs_rgctx) * sizeof (gpointer));
+		pindex = 0;
+		rgctx = mini_method_get_rgctx (method);
+		args [pindex ++] = &rgctx;
+		for (i = 0; i < sig->param_count; ++i)
+			args [pindex ++] = params [i];
+		return runtime_invoke (obj, args, exc, info->compiled_method);
+	} else {
+		return runtime_invoke (obj, params, exc, info->compiled_method);
+	}
 }
 
 MONO_SIG_HANDLER_FUNC (, mono_sigfpe_signal_handler)
@@ -3634,7 +3657,7 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 		}
 		mono_compile_method (method);
 		if (strcmp (method->name, "Finalize") == 0) {
-			invoke = mono_marshal_get_runtime_invoke (method, FALSE);
+			invoke = mono_marshal_get_runtime_invoke (method, FALSE, FALSE);
 			mono_compile_method (invoke);
 		}
 #ifndef DISABLE_REMOTING

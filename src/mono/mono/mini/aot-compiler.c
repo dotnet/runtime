@@ -2908,6 +2908,7 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 
 			g_assert (info);
 			encode_value (info->subtype, p, &p);
+			encode_value (info->d.runtime_invoke.pass_rgctx, p, &p);
 			if (info->subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_DIRECT || info->subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL)
 				encode_method_ref (acfg, info->d.runtime_invoke.method, p, &p);
 			else if (info->subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_NORMAL)
@@ -3316,7 +3317,13 @@ get_runtime_invoke_sig (MonoMethodSignature *sig)
 
 	mb = mono_mb_new (mono_defaults.object_class, "FOO", MONO_WRAPPER_NONE);
 	m = mono_mb_create_method (mb, sig, 16);
-	return mono_marshal_get_runtime_invoke (m, FALSE);
+	return mono_marshal_get_runtime_invoke (m, FALSE, FALSE);
+}
+
+static MonoMethod*
+get_runtime_invoke (MonoAotCompile *acfg, MonoMethod *method, gboolean virtual)
+{
+	return mono_marshal_get_runtime_invoke (method, virtual, acfg->aot_opts.llvm_only && mono_method_needs_static_rgctx_invoke (method, TRUE));
 }
 
 static gboolean
@@ -3506,7 +3513,7 @@ add_wrappers (MonoAotCompile *acfg)
 
 		if (!skip) {
 			//printf ("%s\n", mono_method_full_name (method, TRUE));
-			add_method (acfg, mono_marshal_get_runtime_invoke (method, FALSE));
+			add_method (acfg, get_runtime_invoke (acfg, method, FALSE));
 		}
  	}
 
@@ -3565,12 +3572,12 @@ add_wrappers (MonoAotCompile *acfg)
 		add_method (acfg, get_runtime_invoke_sig (csig));
 
 		/* runtime-invoke used by finalizers */
-		add_method (acfg, mono_marshal_get_runtime_invoke (mono_class_get_method_from_name_flags (mono_defaults.object_class, "Finalize", 0, 0), TRUE));
+		add_method (acfg, get_runtime_invoke (acfg, mono_class_get_method_from_name_flags (mono_defaults.object_class, "Finalize", 0, 0), TRUE));
 
 		/* This is used by mono_runtime_capture_context () */
 		method = mono_get_context_capture_method ();
 		if (method)
-			add_method (acfg, mono_marshal_get_runtime_invoke (method, FALSE));
+			add_method (acfg, get_runtime_invoke (acfg, method, FALSE));
 
 #ifdef MONO_ARCH_DYN_CALL_SUPPORTED
 		if (!acfg->aot_opts.llvm_only)
@@ -3770,13 +3777,13 @@ add_wrappers (MonoAotCompile *acfg)
 			g_assert (m);
 			wrapper = mono_marshal_get_array_accessor_wrapper (m);
 			add_extra_method (acfg, wrapper);
-			add_extra_method (acfg, mono_marshal_get_runtime_invoke (wrapper, FALSE));
+			add_extra_method (acfg, get_runtime_invoke (acfg, wrapper, FALSE));
 
 			m = mono_class_get_method_from_name (klass, "Set", -1);
 			g_assert (m);
 			wrapper = mono_marshal_get_array_accessor_wrapper (m);
 			add_extra_method (acfg, wrapper);
-			add_extra_method (acfg, mono_marshal_get_runtime_invoke (wrapper, FALSE));
+			add_extra_method (acfg, get_runtime_invoke (acfg, wrapper, FALSE));
 		}
 	}
 

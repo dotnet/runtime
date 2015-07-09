@@ -3787,6 +3787,22 @@ emit_runtime_invoke_body (MonoMethodBuilder *mb, MonoClass *target_klass, MonoMe
 }
 #endif
 
+static MonoMethodSignature*
+sig_to_rgctx_sig (MonoMethodSignature *sig)
+{
+	// FIXME: memory allocation
+	MonoMethodSignature *res;
+	int i;
+
+	res = g_malloc (MONO_SIZEOF_METHOD_SIGNATURE + (sig->param_count + 1) * sizeof (MonoType*));
+	memcpy (res, sig, MONO_SIZEOF_METHOD_SIGNATURE);
+	res->param_count = sig->param_count + 1;
+	res->params [0] = &mono_defaults.int_class->byval_arg;
+	for (i = 0; i < sig->param_count; ++i)
+		res->params [i + 1] = sig->params [i];
+	return res;
+}
+
 /*
  * generates IL code for the runtime invoke function 
  * MonoObject *runtime_invoke (MonoObject *this, void **params, MonoObject **exc, void* method)
@@ -3796,9 +3812,11 @@ emit_runtime_invoke_body (MonoMethodBuilder *mb, MonoClass *target_klass, MonoMe
  * it means that the compiled code for METHOD does not have to be looked up 
  * before calling the runtime invoke wrapper. In this case, the wrapper ignores
  * its METHOD argument.
+ * If PASS_RGCTX is TRUE, the signature of the called method is changed to include a 'gpointer rgctx' as the
+ * first argument (after 'this').
  */
 MonoMethod *
-mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
+mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual, gboolean pass_rgctx)
 {
 	MonoMethodSignature *sig, *csig, *callsig;
 	MonoMethodBuilder *mb;
@@ -3862,6 +3880,13 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 			callsig = mono_method_signature (method);
 	}
 
+	sig = mono_method_signature (method);
+
+	if (pass_rgctx) {
+		sig = sig_to_rgctx_sig (sig);
+		callsig = sig_to_rgctx_sig (callsig);
+	}
+
 	target_klass = get_wrapper_target_class (method->klass->image);
 
 	/* Try to share wrappers for non-corlib methods with simple signatures */
@@ -3905,8 +3930,6 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 		g_free (tmp_sig);
 	}
 	
-	sig = mono_method_signature (method);
-
 	csig = mono_metadata_signature_alloc (target_klass->image, 4);
 
 	csig->ret = &mono_defaults.object_class->byval_arg;
@@ -3923,7 +3946,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 	csig->call_convention = MONO_CALL_C;
 #endif
 
-	name = mono_signature_to_name (callsig, virtual ? "runtime_invoke_virtual" : "runtime_invoke");
+	name = mono_signature_to_name (callsig, pass_rgctx ? (virtual ? "runtime_invoke_virtual_rgctx" : "runtime_invoke_rgctx") : (virtual ? "runtime_invoke_virtual" : "runtime_invoke"));
 	mb = mono_mb_new (target_klass, name,  MONO_WRAPPER_RUNTIME_INVOKE);
 	g_free (name);
 
@@ -3952,6 +3975,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 
 		info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_RUNTIME_INVOKE_NORMAL);
 		info->d.runtime_invoke.sig = callsig;
+		info->d.runtime_invoke.pass_rgctx = pass_rgctx;
 
 		/* Somebody may have created it before us */
 		if (!res) {
