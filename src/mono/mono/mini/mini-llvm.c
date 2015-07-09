@@ -2697,9 +2697,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 	if (bb->flags & BB_EXCEPTION_HANDLER) {
 		if (!bblocks [bb->block_num].invoke_target) {
 			/*
-			 * LLVM asserts if llvm.eh.selector is called from a bblock which
-			 * doesn't have an invoke pointing at it.
-			 * Update: LLVM no longer asserts, but some tests in exceptions.exe now fail.
+			 * Some tests in exceptions.exe fail.
 			 */
 			LLVM_FAILURE (ctx, "handler without invokes");
 		}
@@ -5441,10 +5439,11 @@ exception_cb (void *data)
 	/* Count nested clauses */
 	nested_len = 0;
 	for (i = 0; i < ei_len; ++i) {
-		for (j = 0; j < ei_len; ++j) {
-			gint32 cindex1 = *(gint32*)type_info [i];
-			MonoExceptionClause *clause1 = &cfg->header->clauses [cindex1];
-			gint32 cindex2 = *(gint32*)type_info [j];
+		gint32 cindex1 = *(gint32*)type_info [i];
+		MonoExceptionClause *clause1 = &cfg->header->clauses [cindex1];
+
+		for (j = 0; j < cfg->header->num_clauses; ++j) {
+			int cindex2 = j;
 			MonoExceptionClause *clause2 = &cfg->header->clauses [cindex2];
 
 			if (cindex1 != cindex2 && clause1->try_offset >= clause2->try_offset && clause1->handler_offset <= clause2->handler_offset) {
@@ -5474,19 +5473,25 @@ exception_cb (void *data)
 	 */
 	nindex = ei_len;
 	for (i = 0; i < ei_len; ++i) {
-		for (j = 0; j < ei_len; ++j) {
-			gint32 cindex1 = *(gint32*)type_info [i];
-			MonoExceptionClause *clause1 = &cfg->header->clauses [cindex1];
-			gint32 cindex2 = *(gint32*)type_info [j];
+		gint32 cindex1 = *(gint32*)type_info [i];
+		MonoExceptionClause *clause1 = &cfg->header->clauses [cindex1];
+
+		for (j = 0; j < cfg->header->num_clauses; ++j) {
+			int cindex2 = j;
 			MonoExceptionClause *clause2 = &cfg->header->clauses [cindex2];
+			MonoJitExceptionInfo *nesting_ei, *nested_ei;
 
 			if (cindex1 != cindex2 && clause1->try_offset >= clause2->try_offset && clause1->handler_offset <= clause2->handler_offset) {
-				memcpy (&cfg->llvm_ex_info [nindex], &cfg->llvm_ex_info [j], sizeof (MonoJitExceptionInfo));
-				cfg->llvm_ex_info [nindex].try_start = cfg->llvm_ex_info [i].try_start;
-				cfg->llvm_ex_info [nindex].try_end = cfg->llvm_ex_info [i].try_end;
-				cfg->llvm_ex_info [nindex].handler_start = cfg->llvm_ex_info [i].handler_start;
-				cfg->llvm_ex_info [nindex].exvar_offset = cfg->llvm_ex_info [i].exvar_offset;
+				/* clause1 is the nested clause */
+				nested_ei = &cfg->llvm_ex_info [i];
+				nesting_ei = &cfg->llvm_ex_info [nindex];
 				nindex ++;
+
+				memcpy (nesting_ei, nested_ei, sizeof (MonoJitExceptionInfo));
+
+				nesting_ei->flags = clause2->flags;
+				nesting_ei->data.catch_class = clause2->data.catch_class;
+				nesting_ei->clause_index = cindex2;
 			}
 		}
 	}

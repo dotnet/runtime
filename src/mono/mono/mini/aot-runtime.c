@@ -2469,7 +2469,7 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 	guint8 *fde, *cie, *code_start, *code_end;
 	int version, fde_count;
 	gint32 *table;
-	int i, j, pos, left, right, code_len;
+	int i, pos, left, right, code_len;
 	MonoJitExceptionInfo *ei;
 	guint32 fde_len, ei_len, nested_len, nindex;
 	gpointer *type_info;
@@ -2555,16 +2555,8 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 		gint32 cindex1 = read32 (type_info [i]);
 		GSList *l;
 
-		for (l = nesting [cindex1]; l; l = l->next) {
-			gint32 nesting_cindex = GPOINTER_TO_INT (l->data);
-
-			for (j = 0; j < ei_len; ++j) {
-				gint32 cindex2 = read32 (type_info [j]);
-
-				if (cindex2 == nesting_cindex)
-					nested_len ++;
-			}
-		}
+		for (l = nesting [cindex1]; l; l = l->next)
+			nested_len ++;
 	}
 
 	/*
@@ -2615,19 +2607,16 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 
 		for (l = nesting [cindex1]; l; l = l->next) {
 			gint32 nesting_cindex = GPOINTER_TO_INT (l->data);
+			MonoJitExceptionInfo *nesting_ei;
+			MonoJitExceptionInfo *nesting_clause = &clauses [nesting_cindex];
 
-			for (j = 0; j < ei_len; ++j) {
-				gint32 cindex2 = read32 (type_info [j]);
+			nesting_ei = &jinfo->clauses [nindex];
+			nindex ++;
 
-				if (cindex2 == nesting_cindex) {
-					memcpy (&jinfo->clauses [nindex], &jinfo->clauses [j], sizeof (MonoJitExceptionInfo));
-					jinfo->clauses [nindex].try_start = jinfo->clauses [i].try_start;
-					jinfo->clauses [nindex].try_end = jinfo->clauses [i].try_end;
-					jinfo->clauses [nindex].handler_start = jinfo->clauses [i].handler_start;
-					jinfo->clauses [nindex].exvar_offset = jinfo->clauses [i].exvar_offset;
-					nindex ++;
-				}
-			}
+			memcpy (nesting_ei, &jinfo->clauses [i], sizeof (MonoJitExceptionInfo));
+			nesting_ei->flags = nesting_clause->flags;
+			nesting_ei->data.catch_class = nesting_clause->data.catch_class;
+			nesting_ei->clause_index = nesting_cindex;
 		}
 	}
 	g_assert (nindex == ei_len + nested_len);
