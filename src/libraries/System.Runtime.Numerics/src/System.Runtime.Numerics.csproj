@@ -19,7 +19,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Numerics\BigIntegerCalculator.AddSub.cs" />
+    <Compile Include="System\Numerics\BigIntegerCalculator.BitsBuffer.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.DivRem.cs" />
+    <Compile Include="System\Numerics\BigIntegerCalculator.FastReducer.cs" />
+    <Compile Include="System\Numerics\BigIntegerCalculator.PowMod.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.SquMul.cs" />
     <Compile Include="System\Numerics\BigInteger.cs" />
     <Compile Include="System\Numerics\BigIntegerBuilder.cs" />

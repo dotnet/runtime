@@ -197,6 +197,7 @@ namespace System.Numerics
                 bits[i] = (uint)digit;
                 carry = digit >> 32;
             }
+
             Debug.Assert(carry == 0);
         }
 
