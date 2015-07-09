@@ -9,6 +9,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
 using System.Xml.Linq;
@@ -96,11 +97,16 @@ public class XmlSerializerTests
     [Fact]
     public static void Xml_GuidAsRoot()
     {
-        foreach (Guid value in new Guid[] { Guid.NewGuid(), Guid.Empty })
-        {
-            Assert.StrictEqual(SerializeAndDeserialize<Guid>(value, string.Format("<?xml version=\"1.0\"?>" + Environment.NewLine + "<guid>{0}</guid>", value.ToString())), value);
-        }
+        Xml_GuidAsRoot(new XmlSerializer(typeof(Guid)));
     }
+
+     private static void Xml_GuidAsRoot(XmlSerializer serializer)
+     {
+         foreach (Guid value in new Guid[] { Guid.NewGuid(), Guid.Empty })
+         {
+             Assert.StrictEqual(SerializeAndDeserialize<Guid>(value, string.Format("<?xml version=\"1.0\"?>" + Environment.NewLine + "<guid>{0}</guid>", value.ToString()), () => serializer), value);
+         }
+     }
 
     [Fact]
     public static void Xml_IntAsRoot()
@@ -281,6 +287,11 @@ public class XmlSerializerTests
     [Fact]
     public static void Xml_ListGenericRoot()
     {
+        Xml_ListGenericRoot(new XmlSerializer(typeof(List<string>)));
+    }
+
+    private static void Xml_ListGenericRoot(XmlSerializer serializer)
+    {
         List<string> x = new List<string>();
         x.Add("zero");
         x.Add("one");
@@ -290,7 +301,7 @@ public class XmlSerializerTests
             "<ArrayOfString xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">" + Environment.NewLine +
             "  <string>zero</string>" + Environment.NewLine +
             "  <string>one</string>" + Environment.NewLine +
-            "</ArrayOfString>");
+            "</ArrayOfString>", () => serializer);
 
         Assert.NotNull(y);
         Assert.True(y.Count == 2);
@@ -705,6 +716,11 @@ public class XmlSerializerTests
         SerializeAndDeserialize<string>("Teststring", "<?xml version=\"1.0\"?>" + Environment.NewLine + "<string xmlns=\"MycustomDefaultNamespace\">Teststring</string>",
         () => { return new XmlSerializer(typeof(string), "MycustomDefaultNamespace"); }),
         "Teststring");
+
+        Assert.Throws<ArgumentNullException>(() =>
+        {
+            new XmlSerializer(null, "defaultNamespace");
+        });
     }
 
     [Fact]
@@ -838,6 +854,31 @@ public class XmlSerializerTests
         Assert.StrictEqual(actual.XmlIncludeProperty, value.XmlIncludeProperty);
         Assert.StrictEqual(actual.XmlNamespaceDeclarationsProperty, value.XmlNamespaceDeclarationsProperty);
         Assert.StrictEqual(actual.XmlTextProperty, value.XmlTextProperty);
+    }
+
+    [Fact]
+    public static void Xml_XmlAnyAttributeTest()
+    {
+        var serializer = new XmlSerializer(typeof (TypeWithAnyAttribute));
+        const string format = @"<?xml version=""1.0"" encoding=""utf-8""?><TypeWithAnyAttribute xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" GroupType = '{0}' IntProperty = '{1}' GroupBase = '{2}'><Name>{3}</Name></TypeWithAnyAttribute>";
+        const int intProperty = 42;
+        const string attribute1 = "Technical";
+        const string attribute2 = "Red";
+        const string name = "MyGroup";
+        using (var stream = new MemoryStream())
+        {
+            var writer = new StreamWriter(stream);
+            writer.Write(format, attribute1, intProperty, attribute2, name);
+            writer.Flush();
+            stream.Position = 0;
+            var obj = (TypeWithAnyAttribute)serializer.Deserialize(stream);
+            Assert.NotNull(obj);
+            Assert.StrictEqual(intProperty, obj.IntProperty);
+            Assert.StrictEqual(name, obj.Name);
+            Assert.StrictEqual(2, obj.Attributes.Length);
+            Assert.StrictEqual(attribute1, obj.Attributes[0].Value);
+            Assert.StrictEqual(attribute2, obj.Attributes[1].Value);
+        }
     }
 
     [Fact]
@@ -1130,6 +1171,160 @@ public class XmlSerializerTests
         Assert.Throws<InvalidOperationException>(() => { SerializeAndDeserialize(obj, string.Empty); });
     }
 
+    [Fact]
+    public static void Xml_TypeWithBinaryProperty()
+    {
+        var obj = new TypeWithBinaryProperty();
+        var str = "The quick brown fox jumps over the lazy dog.";
+        obj.Base64Content = Encoding.Unicode.GetBytes(str);
+        obj.BinaryHexContent = Encoding.Unicode.GetBytes(str);
+        var actual = SerializeAndDeserialize(obj, @"<?xml version=""1.0"" encoding=""utf-8""?><TypeWithBinaryProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><BinaryHexContent>540068006500200071007500690063006B002000620072006F0077006E00200066006F00780020006A0075006D007000730020006F00760065007200200074006800650020006C0061007A007900200064006F0067002E00</BinaryHexContent><Base64Content>VABoAGUAIABxAHUAaQBjAGsAIABiAHIAbwB3AG4AIABmAG8AeAAgAGoAdQBtAHAAcwAgAG8AdgBlAHIAIAB0AGgAZQAgAGwAYQB6AHkAIABkAG8AZwAuAA==</Base64Content></TypeWithBinaryProperty>");
+        Assert.StrictEqual(str, Encoding.Unicode.GetString(actual.Base64Content));
+        Assert.StrictEqual(str, Encoding.Unicode.GetString(actual.BinaryHexContent));
+    }
+
+    [Fact]
+    public static void Xml_FromTypes()
+    {
+        var serializers = XmlSerializer.FromTypes(new Type[] { typeof(Guid), typeof(List<string>) });
+        Xml_GuidAsRoot(serializers[0]);
+        Xml_ListGenericRoot(serializers[1]);
+
+        serializers = XmlSerializer.FromTypes(null);
+        Assert.Equal(0, serializers.Length);
+    }
+
+    [Fact]
+    public static void Xml_FromMappings()
+    {
+        var types = new[] {typeof (Guid), typeof (List<string>)};
+        XmlReflectionImporter importer = new XmlReflectionImporter();
+        XmlTypeMapping[] mappings = new XmlTypeMapping[types.Length];
+        for (int i = 0; i < types.Length; i++)
+        {
+            mappings[i] = importer.ImportTypeMapping(types[i]);
+        }
+        var serializers = XmlSerializer.FromMappings(mappings, typeof(object));
+        Xml_GuidAsRoot(serializers[0]);
+        Xml_ListGenericRoot(serializers[1]);
+    }
+
+    [Fact]
+    public static void Xml_ConstructorWithXmlRootAttr()
+    {
+        var serializer = new XmlSerializer(typeof (List<string>), new XmlRootAttribute()
+        {
+            ElementName = "Places",
+            Namespace = "http://www.microsoft.com",
+        });
+        var expected = new List<string>() { "Madison", "Rochester", null, "Arlington" };
+        var actual = SerializeAndDeserialize(expected,
+            @"<?xml version=""1.0"" encoding=""utf-8""?><Places xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns=""http://www.microsoft.com""><string>Madison</string><string>Rochester</string><string xsi:nil=""true"" /><string>Arlington</string></Places>",
+            () => serializer);
+        Assert.True(expected.SequenceEqual(actual));
+    }
+
+    [Fact]
+    public static void Xml_ConstructorWithXmlAttributeOverrides()
+    {
+        var expected = new Music.Orchestra()
+        {
+            Instruments = new Music.Instrument[]
+            {
+                new Music.Brass() { Name = "Trumpet", IsValved = true }, 
+                new Music.Brass() { Name = "Cornet", IsValved = true }
+            }
+        };
+        var overrides = new XmlAttributeOverrides();
+        overrides.Add(typeof (Music.Orchestra), "Instruments", new XmlAttributes()
+        {
+            XmlElements = {new XmlElementAttribute("Brass", typeof (Music.Brass))}
+        });
+
+        // XmlSerializer(Type, XmlAttributeOverrides)
+        var serializer = new XmlSerializer(typeof (Music.Orchestra), overrides);
+        var actual = SerializeAndDeserialize(expected,
+            @"<?xml version=""1.0"" encoding=""utf-8""?><Orchestra xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Brass><Name>Trumpet</Name><IsValved>true</IsValved></Brass><Brass><Name>Cornet</Name><IsValved>true</IsValved></Brass></Orchestra>",
+            () => serializer);
+        Assert.StrictEqual(expected.Instruments[0].Name, actual.Instruments[0].Name);
+
+        // XmlSerializer(Type, XmlAttributeOverrides, Type[], XmlRootAttribute, String)
+        var root = new XmlRootAttribute("Collection");
+        serializer = new XmlSerializer(typeof(Music.Orchestra), overrides, Array.Empty<Type>(), root, "defaultNamespace");
+        actual = SerializeAndDeserialize(expected,
+            @"<?xml version=""1.0"" encoding=""utf-8""?><Collection xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""  xmlns=""defaultNamespace""><Brass><Name>Trumpet</Name><IsValved>true</IsValved></Brass><Brass><Name>Cornet</Name><IsValved>true</IsValved></Brass></Collection>",
+            () => serializer);
+        Assert.StrictEqual(expected.Instruments[0].Name, actual.Instruments[0].Name);
+
+        Assert.Throws<ArgumentNullException>(() =>
+        {
+            new XmlSerializer(null, overrides);
+        });
+    }
+
+    [Fact]
+    public static void Xml_ConstructorWithTypeMapping()
+    {
+        XmlTypeMapping mapping = null;
+        XmlSerializer serializer = null;
+        Assert.Throws<ArgumentNullException>(() => { new XmlSerializer(mapping); });
+        
+        mapping = new XmlReflectionImporter(null, null).ImportTypeMapping(typeof(List<string>));
+        serializer = new XmlSerializer(mapping);
+        Xml_ListGenericRoot(serializer);
+    }
+
+    [Fact]
+    public static void Xml_DifferentSerializeDeserializeOverloads()
+    {
+        var expected = new SimpleType() { P1 = "p1 value", P2 = 123 };
+        var serializer = new XmlSerializer(typeof (SimpleType));
+        var writerTypes = new Type[] { typeof(TextWriter), typeof(XmlWriter) };
+        Assert.Throws<InvalidOperationException>(() =>
+        {
+            XmlWriter writer = null;
+            serializer.Serialize(writer, expected);
+        });
+        Assert.Throws<InvalidOperationException>(() =>
+        {
+            XmlReader reader = null;
+            serializer.Deserialize(reader);
+        });
+        foreach (var writerType in writerTypes)
+        {
+            var stream = new MemoryStream();
+
+            if (writerType == typeof(TextWriter))
+            {
+                var writer = new StreamWriter(stream);
+                serializer.Serialize(writer, expected);
+            }
+            else
+            {
+                var writer = XmlWriter.Create(stream);
+                serializer.Serialize(writer, expected);
+            }
+            stream.Position = 0;
+            var actualOutput = new StreamReader(stream).ReadToEnd();
+            const string baseline =
+                @"<?xml version=""1.0"" encoding=""utf-8""?><SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><P1>p1 value</P1><P2>123</P2></SimpleType>";
+            var result = Utils.Compare(baseline, actualOutput);
+            Assert.True(result.Equal, string.Format("{1}{0}Test failed for input: {2}{0}Expected: {3}{0}Actual: {4}", Environment.NewLine, result.ErrorMessage, expected, baseline, actualOutput));
+            stream.Position = 0;
+
+            // XmlSerializer.CanSerialize(XmlReader)
+            XmlReader reader = XmlReader.Create(stream);
+            Assert.True(serializer.CanDeserialize(reader));
+
+            // XmlSerializer.Deserialize(XmlReader)
+            var actual = (SimpleType) serializer.Deserialize(reader);
+            Assert.StrictEqual(expected.P1, actual.P1);
+            Assert.StrictEqual(expected.P2, actual.P2);
+
+            stream.Dispose();
+        }
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, Func<XmlSerializer> serializerFactory = null)
     {
         XmlSerializer serializer = new XmlSerializer(typeof(T));
@@ -1155,3 +1350,25 @@ public class XmlSerializerTests
         }
     }
 }
+
+#region Type for Xml_ConstructorWithXmlAttributeOverrides
+
+namespace Music
+{
+    public class Orchestra
+    {
+        public Instrument[] Instruments;
+    }
+
+    public class Instrument
+    {
+        public string Name;
+    }
+
+    public class Brass : Instrument
+    {
+        public bool IsValved;
+    }
+}
+
+#endregion
