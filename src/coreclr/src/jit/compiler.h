@@ -4367,8 +4367,6 @@ private:
 
     bool                compCanEncodePtrArgCntMax();
 
-    BasicBlock *        fgRngChkTarget      (BasicBlock *   block,
-                                             unsigned       stkDepth);
     void                fgSetRngChkTarget   (GenTreePtr     tree,
                                              bool           delay = true);
 
@@ -4518,39 +4516,34 @@ private:
     //  range checking or explicit calls to enable GC, and so on.
     //
 public:
-    enum        addCodeKind
-    {
-        ACK_NONE,
-        ACK_RNGCHK_FAIL,                // target when range check fails
-        ACK_PAUSE_EXEC,                 // target to stop (e.g. to allow GC)
-        ACK_DIV_BY_ZERO,                // target for divide by zero (Not used on X86/X64)
-        ACK_ARITH_EXCPN,                // target on arithmetic exception
-        ACK_OVERFLOW = ACK_ARITH_EXCPN, // target on overflow
-        ACK_COUNT
-    };
+
 
     struct      AddCodeDsc
     {
-        AddCodeDsc  *   acdNext;
-        BasicBlock  *   acdDstBlk;      // block  to  which we jump
-        unsigned        acdData;
-        addCodeKind     acdKind;        // what kind of a label is this?
-        unsigned short  acdStkLvl;
+        AddCodeDsc  *       acdNext;
+        BasicBlock  *       acdDstBlk;      // block  to  which we jump
+        unsigned            acdData;
+        SpecialCodeKind     acdKind;        // what kind of a special block is this?
+        unsigned short      acdStkLvl;
     };
 private:
-    static unsigned     acdHelper       (addCodeKind    codeKind);
+    static unsigned     acdHelper       (SpecialCodeKind    codeKind);
 
     AddCodeDsc  *       fgAddCodeList;
     bool                fgAddCodeModf;
     bool                fgRngChkThrowAdded;
-    AddCodeDsc  *       fgExcptnTargetCache[ACK_COUNT];
+    AddCodeDsc  *       fgExcptnTargetCache[SCK_COUNT];
 
-    BasicBlock *        fgAddCodeRef    (BasicBlock *   srcBlk,
-                                         unsigned       refData,
-                                         addCodeKind    kind,
-                                         unsigned       stkDepth = 0);
+    BasicBlock *        fgRngChkTarget      (BasicBlock *    block,
+                                             unsigned           stkDepth,
+                                             SpecialCodeKind    kind);
+
+    BasicBlock *        fgAddCodeRef    (BasicBlock *       srcBlk,
+                                         unsigned           refData,
+                                         SpecialCodeKind    kind,
+                                         unsigned           stkDepth = 0);
 public:
-    AddCodeDsc  *       fgFindExcptnTarget(addCodeKind  kind,
+    AddCodeDsc  *       fgFindExcptnTarget(SpecialCodeKind  kind,
                                          unsigned       refData);
 private:
     bool                fgIsCodeAdded   ();
