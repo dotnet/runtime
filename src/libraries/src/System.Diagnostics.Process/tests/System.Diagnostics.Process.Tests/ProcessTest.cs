@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipes;
@@ -13,7 +14,7 @@ namespace System.Diagnostics.ProcessTests
 {
     public partial class ProcessTest : IDisposable
     {
-        private const int WaitInMS = 100 * 1000; 
+        private const int WaitInMS = 100 * 1000;
         private const string CoreRunName = "corerun";
         private const string TestExeName = "System.Diagnostics.Process.TestConsoleApp.exe";
         private const int SuccessExitCode = 100;
@@ -51,8 +52,8 @@ namespace System.Diagnostics.ProcessTests
             _processes.Add(p);
 
             p.StartInfo.FileName = CoreRunName;
-            p.StartInfo.Arguments = string.IsNullOrWhiteSpace(optionalArgument) ? 
-                TestExeName : 
+            p.StartInfo.Arguments = string.IsNullOrWhiteSpace(optionalArgument) ?
+                TestExeName :
                 TestExeName + " " + optionalArgument;
 
             // Profilers / code coverage tools doing coverage of the test process set environment
@@ -79,25 +80,45 @@ namespace System.Diagnostics.ProcessTests
             Assert.Equal(priority, _process.BasePriority);
         }
 
-        [Fact]
-        public void Process_BasePriority()
+        [Fact, PlatformSpecific(PlatformID.Windows)]
+        public void Process_BasePriorityWindows()
         {
             ProcessPriorityClass originalPriority = _process.PriorityClass;
             Assert.Equal(ProcessPriorityClass.Normal, originalPriority);
 
-            if (global::Interop.IsWindows)
+            try
             {
-                try
-                {
-                    //SetAndCheckBasePriority(ProcessPriorityClass.RealTime, 24);
-                    SetAndCheckBasePriority(ProcessPriorityClass.High, 13);
-                    SetAndCheckBasePriority(ProcessPriorityClass.Idle, 4);
-                    SetAndCheckBasePriority(ProcessPriorityClass.Normal, 8);
-                }
-                finally
-                {
-                    _process.PriorityClass = originalPriority;
-                }
+                // We are not checking for RealTime case here, as RealTime priority process can 
+                // preempt the threads of all other processes, including operating system processes
+                // performing important tasks, which may cause the machine to be unresponsive.
+
+                //SetAndCheckBasePriority(ProcessPriorityClass.RealTime, 24);
+
+                SetAndCheckBasePriority(ProcessPriorityClass.High, 13);
+                SetAndCheckBasePriority(ProcessPriorityClass.Idle, 4);
+                SetAndCheckBasePriority(ProcessPriorityClass.Normal, 8);
+            }
+            finally
+            {
+                _process.PriorityClass = originalPriority;
+            }
+        }
+
+        [Fact, PlatformSpecific(PlatformID.AnyUnix), OuterLoop] // This test requires admin elevation on Unix
+        public void Process_BasePriorityUnix()
+        {
+            ProcessPriorityClass originalPriority = _process.PriorityClass;
+            Assert.Equal(ProcessPriorityClass.Normal, originalPriority);
+
+            try
+            {
+                SetAndCheckBasePriority(ProcessPriorityClass.High, -11);
+                SetAndCheckBasePriority(ProcessPriorityClass.Idle, 19);
+                SetAndCheckBasePriority(ProcessPriorityClass.Normal, 0);
+            }
+            finally
+            {
+                _process.PriorityClass = originalPriority;
             }
         }
 
@@ -184,10 +205,17 @@ namespace System.Diagnostics.ProcessTests
 
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
-        public void Process_GetHandle()
+        public void Process_Id()
         {
-            Assert.Equal(_process.Id, Interop.GetProcessId(_process.SafeHandle));
+            if (global::Interop.IsWindows)
+            {
+                Assert.Equal(_process.Id, Interop.GetProcessId(_process.SafeHandle));
+            }
+            else
+            {
+                IEnumerable<int> testProcessIds = Process.GetProcessesByName(CoreRunName).Select(p => p.Id);
+                Assert.Contains(_process.Id, testProcessIds);
+            }
         }
 
         [Fact]
@@ -225,7 +253,6 @@ namespace System.Diagnostics.ProcessTests
         }
 
         [Fact]
-        [ActiveIssue(1896, PlatformID.Windows)]
         public void Process_MainModule()
         {
             // Get MainModule property from a Process object
@@ -246,7 +273,7 @@ namespace System.Diagnostics.ProcessTests
                 {
                     foreach (ProcessModule pModule in _process.Modules)
                     {
-                        if (String.Equals(Path.GetFileNameWithoutExtension(mainModule.ModuleName), CoreRunName, StringComparison.OrdinalIgnoreCase))
+                        if (String.Equals(Path.GetFileNameWithoutExtension(pModule.ModuleName), CoreRunName, StringComparison.OrdinalIgnoreCase))
                         {
                             foundMainModule = true;
                             break;
@@ -443,7 +470,26 @@ namespace System.Diagnostics.ProcessTests
             }
         }
 
-        public void Process_PriorityClass()
+        [Fact, PlatformSpecific(PlatformID.AnyUnix), OuterLoop] // This test requires admin elevation on Unix
+        public void Process_PriorityClassUnix()
+        {
+            ProcessPriorityClass priorityClass = _process.PriorityClass;
+            try
+            {
+                _process.PriorityClass = ProcessPriorityClass.High;
+                Assert.Equal(_process.PriorityClass, ProcessPriorityClass.High);
+
+                _process.PriorityClass = ProcessPriorityClass.Normal;
+                Assert.Equal(_process.PriorityClass, ProcessPriorityClass.Normal);
+            }
+            finally
+            {
+                _process.PriorityClass = priorityClass;
+            }
+        }
+
+        [Fact, PlatformSpecific(PlatformID.Windows)]
+        public void Process_PriorityClassWindows()
         {
             ProcessPriorityClass priorityClass = _process.PriorityClass;
             try
@@ -473,12 +519,39 @@ namespace System.Diagnostics.ProcessTests
             Assert.Equal(_process.ProcessName, CoreRunName, StringComparer.OrdinalIgnoreCase);
         }
 
+        [Fact]
+        public void Process_SafeHandle()
+        {
+            Assert.False(_process.SafeHandle.IsInvalid);
+        }
+
+        [Fact]
+        public void Process_SessionId()
+        {
+            uint sessionId;
+            if (global::Interop.IsWindows)
+            {
+                ProcessIdToSessionId((uint)_process.Id, out sessionId);
+            }
+            else
+            {
+                sessionId = (uint)getsid(_process.Id);
+            }
+
+            Assert.Equal(sessionId, (uint)_process.SessionId);
+        }
 
         [DllImport("api-ms-win-core-processthreads-l1-1-0.dll")]
         internal static extern int GetCurrentProcessId();
 
         [DllImport("libc")]
         internal static extern int getpid();
+
+        [DllImport("libc")]
+        internal static extern int getsid(int pid);
+
+        [DllImport("api-ms-win-core-processthreads-l1-1-2.dll")]
+        internal static extern bool ProcessIdToSessionId(uint dwProcessId, out uint pSessionId);
 
         [Fact]
         public void Process_GetCurrentProcess()
@@ -501,14 +574,14 @@ namespace System.Diagnostics.ProcessTests
             Process currentProcess = Process.GetCurrentProcess();
 
             var foundCurrentProcess = (from p in Process.GetProcesses()
-                            where (p.Id == currentProcess.Id) && (p.ProcessName.Equals(currentProcess.ProcessName))
-                            select p).Any();
+                                       where (p.Id == currentProcess.Id) && (p.ProcessName.Equals(currentProcess.ProcessName))
+                                       select p).Any();
 
             Assert.True(foundCurrentProcess, "Process_GetProcesses001 failed");
 
             foundCurrentProcess = (from p in Process.GetProcesses(currentProcess.MachineName)
-                                  where (p.Id == currentProcess.Id) && (p.ProcessName.Equals(currentProcess.ProcessName))
-                                  select p).Any();
+                                   where (p.Id == currentProcess.Id) && (p.ProcessName.Equals(currentProcess.ProcessName))
+                                   select p).Any();
             Assert.True(foundCurrentProcess, "Process_GetProcesses002 failed");
         }
 
@@ -765,7 +838,7 @@ namespace System.Diagnostics.ProcessTests
                 p.Start();
                 outbound.DisposeLocalCopyOfClientHandle();
                 inbound.DisposeLocalCopyOfClientHandle();
-                
+
                 for (byte i = 0; i < 10; i++)
                 {
                     outbound.WriteByte(i);
