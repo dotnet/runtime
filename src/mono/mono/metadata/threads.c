@@ -980,7 +980,7 @@ mono_thread_attach_full (MonoDomain *domain, gboolean force_attach)
 	if (!handle_store (current_thread, force_attach)) {
 		/* Mono is shutting down, so just wait for the end */
 		for (;;)
-			Sleep (10000);
+			mono_thread_info_sleep (10000, NULL);
 	}
 
 	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Setting current_object_key to %p", __func__, mono_native_thread_id_get (), thread));
@@ -1173,17 +1173,19 @@ ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
 	THREAD_DEBUG (g_message ("%s: Sleeping for %d ms", __func__, ms));
 
 	mono_thread_current_check_pending_interrupt ();
-	
+
 	while (TRUE) {
+		gboolean alerted = FALSE;
+
 		mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
-	
-		MONO_PREPARE_BLOCKING;
-		res = SleepEx(ms,TRUE);
-		MONO_FINISH_BLOCKING;
-	
+
+		MONO_PREPARE_BLOCKING
+		res = mono_thread_info_sleep (ms, &alerted);
+		MONO_FINISH_BLOCKING
+
 		mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 
-		if (res == WAIT_IO_COMPLETION) { /* we might have been interrupted */
+		if (alerted) {
 			MonoException* exc = mono_thread_execute_interruption ();
 			if (exc) {
 				mono_raise_exception (exc);
@@ -3131,7 +3133,7 @@ void mono_thread_suspend_all_other_threads (void)
 				starting = FALSE;
 			mono_threads_unlock ();
 			if (starting)
-				Sleep (100);
+				mono_thread_info_sleep (100, NULL);
 			else
 				finished = TRUE;
 		}

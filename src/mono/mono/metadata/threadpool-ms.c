@@ -861,12 +861,13 @@ monitor_thread (void)
 
 		do {
 			guint32 ts;
+			gboolean alerted = FALSE;
 
 			if (mono_runtime_is_shutting_down ())
 				break;
 
 			ts = mono_msec_ticks ();
-			if (SleepEx (interval_left, TRUE) == 0)
+			if (mono_thread_info_sleep (interval_left, &alerted) == 0)
 				break;
 			interval_left -= mono_msec_ticks () - ts;
 

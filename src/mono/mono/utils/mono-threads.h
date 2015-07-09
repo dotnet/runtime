@@ -428,6 +428,9 @@ mono_thread_info_get_stack_bounds (guint8 **staddr, size_t *stsize);
 gboolean
 mono_thread_info_yield (void);
 
+gint
+mono_thread_info_sleep (guint32 ms, gboolean *alerted);
+
 gpointer
 mono_thread_info_tls_get (THREAD_INFO_TYPE *info, MonoTlsKey key);
 

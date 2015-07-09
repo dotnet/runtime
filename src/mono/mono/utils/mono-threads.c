@@ -24,6 +24,7 @@
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-time.h>
+#include <mono/utils/mono-lazy-init.h>
 
 
 #include <errno.h>
@@ -1104,6 +1105,129 @@ gboolean
 mono_thread_info_yield (void)
 {
 	return mono_threads_core_yield ();
+}
+static mono_lazy_init_t sleep_init = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
+static mono_mutex_t sleep_mutex;
+static mono_cond_t sleep_cond;
+
+static void
+sleep_initialize (void)
+{
+	mono_mutex_init (&sleep_mutex);
+	mono_cond_init (&sleep_cond, NULL);
+}
+
+static void
+sleep_interrupt (gpointer data)
+{
+	mono_mutex_lock (&sleep_mutex);
+	mono_cond_broadcast (&sleep_cond);
+	mono_mutex_unlock (&sleep_mutex);
+}
+
+static inline guint32
+sleep_interruptable (guint32 ms, gboolean *alerted)
+{
+	guint32 start, now, end;
+
+	g_assert (INFINITE == G_MAXUINT32);
+
+	g_assert (alerted);
+	*alerted = FALSE;
+
+	start = mono_msec_ticks ();
+
+	if (start < G_MAXUINT32 - ms) {
+		end = start + ms;
+	} else {
+		/* start + ms would overflow guint32 */
+		end = G_MAXUINT32;
+	}
+
+	mono_lazy_initialize (&sleep_init, sleep_initialize);
+
+	mono_mutex_lock (&sleep_mutex);
+
+	for (now = mono_msec_ticks (); ms == INFINITE || now - start < ms; now = mono_msec_ticks ()) {
+		mono_thread_info_install_interrupt (sleep_interrupt, NULL, alerted);
+		if (*alerted) {
+			mono_mutex_unlock (&sleep_mutex);
+			return WAIT_IO_COMPLETION;
+		}
+
+		if (ms < INFINITE)
+			mono_cond_timedwait_ms (&sleep_cond, &sleep_mutex, end - now);
+		else
+			mono_cond_wait (&sleep_cond, &sleep_mutex);
+
+		mono_thread_info_uninstall_interrupt (alerted);
+		if (*alerted) {
+			mono_mutex_unlock (&sleep_mutex);
+			return WAIT_IO_COMPLETION;
+		}
+	}
+
+	mono_mutex_unlock (&sleep_mutex);
+
+	return 0;
+}
+
+gint
+mono_thread_info_sleep (guint32 ms, gboolean *alerted)
+{
+	if (ms == 0) {
+		MonoThreadInfo *info;
+
+		mono_thread_info_yield ();
+
+		info = mono_thread_info_current ();
+		if (info && mono_thread_info_is_interrupt_state (info))
+			return WAIT_IO_COMPLETION;
+
+		return 0;
+	}
+
+	if (alerted)
+		return sleep_interruptable (ms, alerted);
+
+	if (ms == INFINITE) {
+		do {
+			sleep (G_MAXUINT32);
+		} while (1);
+	} else {
+		int ret;
+#if defined (__linux__) && !defined(PLATFORM_ANDROID)
+		struct timespec start, target;
+
+		/* Use clock_nanosleep () to prevent time drifting problems when nanosleep () is interrupted by signals */
+		ret = clock_gettime (CLOCK_MONOTONIC, &start);
+		g_assert (ret == 0);
+
+		target = start;
+		target.tv_sec += ms / 1000;
+		target.tv_nsec += (ms % 1000) * 1000000;
+		if (target.tv_nsec > 999999999) {
+			target.tv_nsec -= 999999999;
+			target.tv_sec ++;
+		}
+
+		do {
+			ret = clock_nanosleep (CLOCK_MONOTONIC, TIMER_ABSTIME, &target, NULL);
+		} while (ret != 0);
+#else
+		struct timespec req, rem;
+
+		req.tv_sec = ms / 1000;
+		req.tv_nsec = (ms % 1000) * 1000000;
+
+		do {
+			memset (&rem, 0, sizeof (rem));
+			ret = nanosleep (&req, &rem);
+		} while (ret != 0);
+#endif /* __linux__ */
+	}
+
+	return 0;
 }
 
 gpointer
