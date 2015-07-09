@@ -194,6 +194,26 @@ namespace System.Linq.Tests
             Assert.Equal(-10, minusTen.Max());
             Assert.Equal(1000, thousand.Max());
         }
+
+        private class ExtremeComparer : IComparer<int>
+        {
+            public int Compare(int x, int y)
+            {
+                if (x == y)
+                    return 0;
+                if (x < y)
+                    return int.MinValue;
+                return int.MaxValue;
+            }
+        }
+
+        [Fact]
+        public void OrderByExtremeComparer()
+        {
+            var outOfOrder = new[] { 7, 1, 0, 9, 3, 5, 4, 2, 8, 6 };
+            Assert.Equal(Enumerable.Range(0, 10), outOfOrder.OrderBy(i => i, new ExtremeComparer()));
+            Assert.Equal(Enumerable.Range(0, 10).Reverse(), outOfOrder.OrderByDescending(i => i, new ExtremeComparer()));
+        }
     }
 }
 
