@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "System.Diagnostics.Tools": "4.1.0-beta-*",
+    "System.Numerics.Vectors": "4.1.0-beta-*",
+    "System.Runtime.WindowsRuntime": "4.0.0-beta-*",
+  },
+  "frameworks": {
+    "dnxcore50": {}
+  }
+}
