@@ -43,6 +43,7 @@
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/checked-build.h>
+#include <mono/utils/mono-threads.h>
 #include "cominterop.h"
 
 static void
@@ -104,7 +105,7 @@ Note it doesn't say anything about domains - only threads.
 
 typedef struct
 {
-	guint32 initializing_tid;
+	MonoNativeThreadId initializing_tid;
 	guint32 waiting_count;
 	gboolean done;
 	mono_mutex_t initialization_section;
@@ -286,7 +287,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 	gchar *full_name;
 	MonoDomain *domain = vtable->domain;
 	TypeInitializationLock *lock;
-	guint32 tid;
+	MonoNativeThreadId tid;
 	int do_initialization = 0;
 	MonoDomain *last_domain = NULL;
 
@@ -325,7 +326,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 		return NULL;
 	}
 
-	tid = GetCurrentThreadId ();
+	tid = mono_native_thread_id_get ();
 
 	mono_type_initialization_lock ();
 	/* double check... */
@@ -369,14 +370,14 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 		gpointer blocked;
 		TypeInitializationLock *pending_lock;
 
-		if (lock->initializing_tid == tid || lock->done) {
+		if (mono_native_thread_id_equals (lock->initializing_tid, tid) || lock->done) {
 			mono_type_initialization_unlock ();
 			return NULL;
 		}
 		/* see if the thread doing the initialization is already blocked on this thread */
-		blocked = GUINT_TO_POINTER (lock->initializing_tid);
+		blocked = GUINT_TO_POINTER (MONO_NATIVE_THREAD_ID_TO_UINT (lock->initializing_tid));
 		while ((pending_lock = (TypeInitializationLock*) g_hash_table_lookup (blocked_thread_hash, blocked))) {
-			if (pending_lock->initializing_tid == tid) {
+			if (mono_native_thread_id_equals (pending_lock->initializing_tid, tid)) {
 				if (!pending_lock->done) {
 					mono_type_initialization_unlock ();
 					return NULL;
@@ -387,7 +388,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 					break;
 				}
 			}
-			blocked = GUINT_TO_POINTER (pending_lock->initializing_tid);
+			blocked = GUINT_TO_POINTER (MONO_NATIVE_THREAD_ID_TO_UINT (pending_lock->initializing_tid));
 		}
 		++lock->waiting_count;
 		/* record the fact that we are waiting on the initializing thread */
@@ -435,7 +436,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 	}
 
 	mono_type_initialization_lock ();
-	if (lock->initializing_tid != tid)
+	if (!mono_native_thread_id_equals (lock->initializing_tid, tid))
 		g_hash_table_remove (blocked_thread_hash, GUINT_TO_POINTER (tid));
 	--lock->waiting_count;
 	if (lock->waiting_count == 0) {
@@ -465,7 +466,7 @@ gboolean release_type_locks (gpointer key, gpointer value, gpointer user)
 	MonoVTable *vtable = (MonoVTable*)key;
 
 	TypeInitializationLock *lock = (TypeInitializationLock*) value;
-	if (lock->initializing_tid == GPOINTER_TO_UINT (user) && !lock->done) {
+	if (mono_native_thread_id_equals (lock->initializing_tid, MONO_UINT_TO_NATIVE_THREAD_ID (GPOINTER_TO_UINT (user))) && !lock->done) {
 		lock->done = TRUE;
 		/* 
 		 * Have to set this since it cannot be set by the normal code in 
@@ -490,7 +491,7 @@ mono_release_type_locks (MonoInternalThread *thread)
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	mono_type_initialization_lock ();
-	g_hash_table_foreach_remove (type_initialization_hash, release_type_locks, (gpointer)(gsize)(thread->tid));
+	g_hash_table_foreach_remove (type_initialization_hash, release_type_locks, GUINT_TO_POINTER (thread->tid));
 	mono_type_initialization_unlock ();
 }
 

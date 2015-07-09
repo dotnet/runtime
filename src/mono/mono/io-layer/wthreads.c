@@ -199,26 +199,6 @@ wapi_get_current_thread_handle (void)
 	return get_current_thread_handle ();
 }
 
-/**
- * GetCurrentThreadId:
- *
- * Looks up the thread ID of the current thread.  This ID can be
- * passed to OpenThread() to create a new handle on this thread.
- *
- * Return value: the thread ID.  NB this is defined as DWORD (ie 32
- * bit) in the MS API, but we need to cope with 64 bit IDs for s390x
- * and amd64.  This doesn't really break the API, it just embraces and
- * extends it on 64bit platforms :)
- */
-gsize
-GetCurrentThreadId (void)
-{
-	MonoNativeThreadId id;
-
-	id = mono_native_thread_id_get ();
-	return MONO_NATIVE_THREAD_ID_TO_UINT (id);
-}
-
 static mono_lazy_init_t sleepex_init = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
 static mono_mutex_t sleepex_mutex;
 static mono_cond_t sleepex_cond;

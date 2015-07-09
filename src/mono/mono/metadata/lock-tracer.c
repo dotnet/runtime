@@ -122,7 +122,7 @@ add_record (RecordType record_kind, RuntimeLocks kind, gpointer lock)
 		frames [i] = (gpointer)((size_t)frames[i] - base_address);
 
 	/*We only dump 5 frames, which should be more than enough to most analysis.*/
-	msg = g_strdup_printf ("%x,%d,%d,%p,%p,%p,%p,%p,%p\n", (guint32)GetCurrentThreadId (), record_kind, kind, lock, frames [1], frames [2], frames [3], frames [4], frames [5]);
+	msg = g_strdup_printf ("%x,%d,%d,%p,%p,%p,%p,%p,%p\n", (guint32)mono_native_thread_id_get (), record_kind, kind, lock, frames [1], frames [2], frames [3], frames [4], frames [5]);
 	fwrite (msg, strlen (msg), 1, trace_file);
 	fflush (trace_file);
 	g_free (msg);

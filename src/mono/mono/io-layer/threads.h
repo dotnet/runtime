@@ -26,7 +26,6 @@ G_BEGIN_DECLS
 
 typedef guint32 (*WapiThreadStart)(gpointer);
 
-extern gsize GetCurrentThreadId(void); /* NB return is 32bit in MS API */
 extern void Sleep(guint32 ms);
 extern guint32 SleepEx(guint32 ms, gboolean alertable);
 

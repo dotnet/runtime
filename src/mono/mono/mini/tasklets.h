@@ -6,7 +6,7 @@
 typedef struct {
 	MonoLMF *lmf;
 	gpointer top_sp;
-	gsize thread_id;
+	MonoNativeThreadId thread_id;
 	MonoDomain *domain;
 
 	/* the instruction pointer and stack to return to on Restore */

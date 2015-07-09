@@ -328,8 +328,17 @@ Snapshot iteration.
 #define FOREACH_THREAD_SAFE(thread) MONO_LLS_FOREACH_FILTERED_SAFE (mono_thread_info_list_head (), thread, mono_threads_filter_tools_threads, THREAD_INFO_TYPE*)
 #define END_FOREACH_THREAD_SAFE MONO_LLS_END_FOREACH_SAFE
 
-#define mono_thread_info_get_tid(info) ((MonoNativeThreadId)((MonoThreadInfo*)info)->node.key)
-#define mono_thread_info_set_tid(info, val) do { ((MonoThreadInfo*)(info))->node.key = (uintptr_t)(val); } while (0)
+static inline MonoNativeThreadId
+mono_thread_info_get_tid (THREAD_INFO_TYPE *info)
+{
+	return MONO_UINT_TO_NATIVE_THREAD_ID (((MonoThreadInfo*) info)->node.key);
+}
+
+static inline void
+mono_thread_info_set_tid (THREAD_INFO_TYPE *info, MonoNativeThreadId tid)
+{
+	((MonoThreadInfo*) info)->node.key = (uintptr_t) MONO_NATIVE_THREAD_ID_TO_UINT (tid);
+}
 
 /*
  * @thread_info_size is sizeof (GcThreadInfo), a struct the GC defines to make it possible to have
@@ -546,9 +555,11 @@ void mono_threads_core_set_name (MonoNativeThreadId tid, const char *name);
 void mono_threads_core_begin_global_suspend (void);
 void mono_threads_core_end_global_suspend (void);
 
-MonoNativeThreadId mono_native_thread_id_get (void);
+MonoNativeThreadId
+mono_native_thread_id_get (void);
 
-gboolean mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2);
+gboolean
+mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2);
 
 gboolean
 mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg);
