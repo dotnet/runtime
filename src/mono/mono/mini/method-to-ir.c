@@ -2759,7 +2759,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 	if (!sig)
 		sig = mono_method_signature (method);
 
-	if ((cfg->flags & JIT_FLAG_LLVM_ONLY) && (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+	if (cfg->llvm_only && (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
 		MonoInst *icall_args [16];
 		MonoInst *ins;
 
@@ -2811,7 +2811,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 	}
 #endif
 
-	if ((cfg->flags & JIT_FLAG_LLVM_ONLY) && !call_target && virtual && (method->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
+	if (cfg->llvm_only && !call_target && virtual && (method->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
 		// FIXME: Vcall optimizations below
 		MonoInst *icall_args [16];
 		MonoInst *ins;
@@ -2851,7 +2851,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 
 		this_reg = this_ins->dreg;
 
-		if (!(cfg->flags & JIT_FLAG_LLVM_ONLY) && (method->klass->parent == mono_defaults.multicastdelegate_class) && !strcmp (method->name, "Invoke")) {
+		if (!cfg->llvm_only && (method->klass->parent == mono_defaults.multicastdelegate_class) && !strcmp (method->name, "Invoke")) {
 			MonoInst *dummy_use;
 
 			MONO_EMIT_NULL_CHECK (cfg, this_reg);
@@ -3608,7 +3608,7 @@ emit_rgctx_fetch_inline (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEnt
 static inline MonoInst*
 emit_rgctx_fetch (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEntry *entry)
 {
-	if (cfg->flags & JIT_FLAG_LLVM_ONLY)
+	if (cfg->llvm_only)
 		return emit_rgctx_fetch_inline (cfg, rgctx, entry);
 	else
 		return mono_emit_abs_call (cfg, MONO_PATCH_INFO_RGCTX_FETCH, entry, helper_sig_rgctx_lazy_fetch_trampoline, &rgctx);
@@ -4979,7 +4979,7 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	MonoDomain *domain;
 	guint8 **code_slot;
 
-	if (cfg->flags & JIT_FLAG_LLVM_ONLY)
+	if (cfg->llvm_only)
 		/* FIXME: Optimize this */
 		return NULL;
 

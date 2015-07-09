@@ -3272,6 +3272,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	cfg->orig_method = method;
 	cfg->gen_seq_points = debug_options.gen_seq_points_compact_data || debug_options.gen_sdb_seq_points;
 	cfg->gen_sdb_seq_points = debug_options.gen_sdb_seq_points;
+	cfg->llvm_only = (flags & JIT_FLAG_LLVM_ONLY) != 0;
 
 #ifdef PLATFORM_ANDROID
 	if (cfg->method->wrapper_type != MONO_WRAPPER_NONE) {
