@@ -261,6 +261,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.ForkAndExecProcess.cs">
       <Link>Common\Interop\Unix\Interop.ForkAndExecProcess.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getsid.cs">
+      <Link>Common\Interop\Unix\Interop.getsid.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.ResourceLimits.cs">
       <Link>Common\Interop\Unix\Interop.ResourceLimits.cs</Link>
     </Compile>
