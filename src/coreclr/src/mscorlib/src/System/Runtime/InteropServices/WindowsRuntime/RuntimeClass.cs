@@ -31,6 +31,10 @@ namespace System.Runtime.InteropServices.WindowsRuntime {
     {
         internal static string ToString(object obj)
         {
+            IGetProxyTarget proxy = obj as IGetProxyTarget;
+            if (proxy != null) 
+                obj = proxy.GetTarget();
+
             // Check whether the type implements IStringable.
             IStringable stringableType = obj as IStringable;
             if (stringableType != null)

@@ -11,7 +11,7 @@ using System.Security;
 
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
-    internal sealed class CLRIReferenceImpl<T> : CLRIPropertyValueImpl, IReference<T>, ICustomPropertyProvider
+    internal sealed class CLRIReferenceImpl<T> : CLRIPropertyValueImpl, IReference<T>, IGetProxyTarget 
     {
         private T _value;
 
@@ -38,37 +38,11 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
         }
 
-        [Pure]
-        ICustomProperty ICustomPropertyProvider.GetCustomProperty(string name)
+        object IGetProxyTarget.GetTarget()
         {
-            // _value should not be null
-            return ICustomPropertyProviderImpl.CreateProperty((object)_value, name);
+            return (object)_value;
         }
 
-        [Pure]
-        ICustomProperty ICustomPropertyProvider.GetIndexedProperty(string name, Type indexParameterType)
-        {
-            // _value should not be null
-            return ICustomPropertyProviderImpl.CreateIndexedProperty((object)_value, name, indexParameterType);
-        }
-
-        [Pure]
-        string ICustomPropertyProvider.GetStringRepresentation()
-        {
-            // _value should not be null
-            return ((object)_value).ToString();
-        }
-
-        Type ICustomPropertyProvider.Type 
-        { 
-            [Pure]        
-            get
-            {
-                // _value should not be null
-                return ((object)_value).GetType();
-            }
-        }
-        
         // We have T in an IReference<T>.  Need to QI for IReference<T> with the appropriate GUID, call
         // the get_Value property, allocate an appropriately-sized managed object, marshal the native object
         // to the managed object, and free the native method.  Also we want the return value boxed (aka normal value type boxing).
@@ -86,9 +60,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     }
 
     // T can be any WinRT-compatible type
-    internal sealed class CLRIReferenceArrayImpl<T> : CLRIPropertyValueImpl, 
+    internal sealed class CLRIReferenceArrayImpl<T> : CLRIPropertyValueImpl,
+                                                      IGetProxyTarget, 
                                                       IReferenceArray<T>, 
-                                                      ICustomPropertyProvider,
                                                       IList                     // Jupiter data binding needs IList/IEnumerable
     {
         private T[] _value;
@@ -117,37 +91,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             else
             {
                 return base.ToString();
-            }
-        }
-
-        [Pure]
-        ICustomProperty ICustomPropertyProvider.GetCustomProperty(string name)
-        {
-            // _value should not be null
-            return ICustomPropertyProviderImpl.CreateProperty((object)_value, name);
-        }
-
-        [Pure]
-        ICustomProperty ICustomPropertyProvider.GetIndexedProperty(string name, Type indexParameterType)
-        {
-            // _value should not be null
-            return ICustomPropertyProviderImpl.CreateIndexedProperty((object)_value, name, indexParameterType);
-        }
-
-        [Pure]
-        string ICustomPropertyProvider.GetStringRepresentation()
-        {
-            // _value should not be null
-            return ((object)_value).ToString();
-        }
-
-        Type ICustomPropertyProvider.Type 
-        { 
-            [Pure]        
-            get
-            {
-                // _value should not be null
-                return ((object)_value).GetType();
             }
         }
 
@@ -254,6 +197,11 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             {
                 return _list.IsSynchronized;
             }
+        }
+
+        object IGetProxyTarget.GetTarget()
+        {
+            return (object)_value;
         }
         
         // We have T in an IReferenceArray<T>.  Need to QI for IReferenceArray<T> with the appropriate GUID, call
