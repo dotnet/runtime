@@ -4628,7 +4628,13 @@ mono_aot_get_trampoline_full (const char *name, MonoTrampInfo **out_tinfo)
 gpointer
 mono_aot_get_trampoline (const char *name)
 {
-	return mono_aot_get_trampoline_full (name, NULL);
+	MonoTrampInfo *out_tinfo;
+	gpointer code;
+
+	code =  mono_aot_get_trampoline_full (name, &out_tinfo);
+	mono_tramp_info_register (out_tinfo);
+
+	return code;
 }
 
 #ifdef MONOTOUCH

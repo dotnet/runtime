@@ -6194,7 +6194,7 @@ emit_trampoline_full (MonoAotCompile *acfg, int got_offset, MonoTrampInfo *info,
 static G_GNUC_UNUSED void
 emit_trampoline (MonoAotCompile *acfg, int got_offset, MonoTrampInfo *info)
 {
-	emit_trampoline_full (acfg, got_offset, info, FALSE);
+	emit_trampoline_full (acfg, got_offset, info, TRUE);
 }
 
 static void
