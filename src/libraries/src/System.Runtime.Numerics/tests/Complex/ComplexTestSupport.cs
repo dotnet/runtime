@@ -159,10 +159,21 @@ namespace ComplexTestSupport
 
         public static bool IsDiffTolerable(double d1, double d2)
         {
-            double diffRatio = (d1 - d2) / d1;
-            diffRatio *= Math.Pow(10, 6);
-            diffRatio = Math.Abs(diffRatio);
-            return (diffRatio < 1);
+            if (double.IsInfinity(d1))
+            {
+                return d1 == (d2 * 10);
+            }
+            else if (double.IsInfinity(d2))
+            {
+                return d2 == (d1 * 10);
+            }
+            else
+            {
+                double diffRatio = (d1 - d2) / d1;
+                diffRatio *= Math.Pow(10, 6);
+                diffRatio = Math.Abs(diffRatio);
+                return (diffRatio < 1);
+            }
         }
 
         public static void VerifyRealImaginaryProperties(Complex complex, double real, double imaginary, string message)
