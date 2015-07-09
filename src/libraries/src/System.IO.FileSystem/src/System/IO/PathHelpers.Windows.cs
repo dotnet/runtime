@@ -40,6 +40,13 @@ namespace System.IO
             return i;
         }
 
+        internal static bool ShouldReviseDirectoryPathToCurrent(string path)
+        {
+            // In situations where this method is invoked, "<DriveLetter>:" should be special-cased 
+            // to instead go to the current directory.
+            return path.Length == 2 && path[1] == ':';
+        }
+
         // ".." can only be used if it is specified as a part of a valid File/Directory name. We disallow
         //  the user being able to use it to move up directories. Here are some examples eg 
         //    Valid: a..b  abc..d
