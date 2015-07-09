@@ -511,7 +511,14 @@ VOID GCToEEInterface::ScanStackRoots(Thread * pThread, promote_func* fn, ScanCon
         // Since we report every thing as pinned, we don't need to run following code for relocation phase.
         if (sc->promotion)
         {
-            Object ** topStack = (Object **)pThread->GetFrame();
+            Frame* pTopFrame = pThread->GetFrame();
+            Object ** topStack = (Object **)pTopFrame;
+            if ((pTopFrame != ((Frame*)-1)) 
+                && (pTopFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr())) {
+                // It is an InlinedCallFrame. Get SP from it.
+                InlinedCallFrame* pInlinedFrame = (InlinedCallFrame*)pTopFrame;
+                topStack = (Object **)pInlinedFrame->GetCallSiteSP();
+            } 
             Object ** bottomStack = (Object **) pThread->GetCachedStackBase();
             Object ** walk;
             for (walk = topStack; walk < bottomStack; walk ++)
