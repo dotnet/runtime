@@ -1705,7 +1705,7 @@ CodeGen::genRangeCheck(GenTreePtr  oper)
     genConsumeIfReg(src2);
 
     getEmitter()->emitInsBinary(INS_cmp, emitAttr(TYP_INT), src1, src2);
-    genJumpToThrowHlpBlk(jmpKind, Compiler::ACK_RNGCHK_FAIL, bndsChk->gtIndRngFailBB);
+    genJumpToThrowHlpBlk(jmpKind, SCK_RNGCHK_FAIL, bndsChk->gtIndRngFailBB);
 
 }
 

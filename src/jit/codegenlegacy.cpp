@@ -2000,7 +2000,7 @@ void                CodeGen::genRangeCheck(GenTreePtr  oper)
         /* Generate "jae <fail_label>" */
 
         noway_assert(oper->gtOper == GT_ARR_BOUNDS_CHECK);
-        genJumpToThrowHlpBlk(EJ_jae, Compiler::ACK_RNGCHK_FAIL, bndsChk->gtIndRngFailBB);
+        genJumpToThrowHlpBlk(EJ_jae, SCK_RNGCHK_FAIL, bndsChk->gtIndRngFailBB);
     }
     else
     {
@@ -2027,7 +2027,7 @@ void                CodeGen::genRangeCheck(GenTreePtr  oper)
             /* Generate "cmp [arrRef+LenOffs], ixv" */
             inst_AT_IV(INS_cmp, EA_4BYTE, arrRef, ixv, lenOffset);
             // Generate "jbe <fail_label>"
-            genJumpToThrowHlpBlk(EJ_jbe, Compiler::ACK_RNGCHK_FAIL, bndsChk->gtIndRngFailBB);
+            genJumpToThrowHlpBlk(EJ_jbe, SCK_RNGCHK_FAIL, bndsChk->gtIndRngFailBB);
         }
         else if (arrLen->IsCnsIntOrI())
         {
@@ -2035,19 +2035,19 @@ void                CodeGen::genRangeCheck(GenTreePtr  oper)
             // Both are constants; decide at compile time.
             if (!(0 <= ixvFull && ixvFull < lenv))
             {
-                genJumpToThrowHlpBlk(EJ_jmp, Compiler::ACK_RNGCHK_FAIL, bndsChk->gtIndRngFailBB);
+                genJumpToThrowHlpBlk(EJ_jmp, SCK_RNGCHK_FAIL, bndsChk->gtIndRngFailBB);
             }
         }
         else if (!indIsInt)
         {
-            genJumpToThrowHlpBlk(EJ_jmp, Compiler::ACK_RNGCHK_FAIL, bndsChk->gtIndRngFailBB);
+            genJumpToThrowHlpBlk(EJ_jmp, SCK_RNGCHK_FAIL, bndsChk->gtIndRngFailBB);
         }
         else
         {
              /* Generate "cmp arrLen, ixv" */
             inst_RV_IV(INS_cmp, arrLen->gtRegNum, ixv, EA_4BYTE);
             // Generate "jbe <fail_label>"
-            genJumpToThrowHlpBlk(EJ_jbe, Compiler::ACK_RNGCHK_FAIL, bndsChk->gtIndRngFailBB);
+            genJumpToThrowHlpBlk(EJ_jbe, SCK_RNGCHK_FAIL, bndsChk->gtIndRngFailBB);
         }
     }
 
@@ -2266,7 +2266,7 @@ regMaskTP           CodeGen::genMakeAddrArrElem(GenTreePtr      arrElem,
                         compiler->eeGetArrayDataOffset(elemType) + sizeof(int) * dim);
 #endif
 
-        genJumpToThrowHlpBlk(EJ_jae, Compiler::ACK_RNGCHK_FAIL);
+        genJumpToThrowHlpBlk(EJ_jae, SCK_RNGCHK_FAIL);
 
         if (dim == 0)
         {
@@ -6462,7 +6462,7 @@ void                CodeGen::genCodeForMult64(GenTreePtr tree,
         getEmitter()->emitIns_R_I(INS_cmp, EA_4BYTE, regTmpHi, 0);
 
         // Jump to the block which will throw the expection
-        genJumpToThrowHlpBlk(EJ_jne, Compiler::ACK_OVERFLOW);
+        genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
 
         // Unlock regLo [and regHi] after generating code for the gtOverflow() case
         //
@@ -10724,7 +10724,7 @@ REG_OK:
                 instGen_Compare_Reg_To_Zero(EA_4BYTE, reg);
                 if (tree->gtFlags & GTF_UNSIGNED)       // conv.ovf.u8.i4       (i4 > 0 and upper bits 0)
                 {
-                    genJumpToThrowHlpBlk(EJ_jl, Compiler::ACK_OVERFLOW);
+                    genJumpToThrowHlpBlk(EJ_jl, SCK_OVERFLOW);
                     goto UPPER_BITS_ZERO;
                 }
 
@@ -10767,7 +10767,7 @@ REG_OK:
                     inst_TT_IV(INS_cmp, op1, 0x00000000, 4);
                 }
 
-                genJumpToThrowHlpBlk(EJ_jne, Compiler::ACK_OVERFLOW);
+                genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
                 inst_JMP(EJ_jmp, done);
 
                 // If loDWord is negative, hiDWord should be -1 (sign extended loDWord)
@@ -10782,7 +10782,7 @@ REG_OK:
                 {
                     inst_TT_IV(INS_cmp, op1, 0xFFFFFFFFL, 4);
                 }
-                genJumpToThrowHlpBlk(EJ_jne, Compiler::ACK_OVERFLOW);
+                genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
 
                 // Done
 
@@ -10803,7 +10803,7 @@ UPPER_BITS_ZERO:
                     inst_TT_IV(INS_cmp, op1, 0, 4);
                 }
 
-                genJumpToThrowHlpBlk(EJ_jne, Compiler::ACK_OVERFLOW);
+                genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
                 break;
 
             default:
@@ -11034,7 +11034,7 @@ UPPER_BITS_ZERO:
         if (unsv)
         {
             inst_RV_IV(INS_TEST, reg, typeMask, emitActualTypeSize(baseType));
-            genJumpToThrowHlpBlk(EJ_jne, Compiler::ACK_OVERFLOW);
+            genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
         }
         else
         {
@@ -11046,12 +11046,12 @@ UPPER_BITS_ZERO:
             noway_assert(typeMin != DUMMY_INIT(~0) && typeMax != DUMMY_INIT(0));
 
             inst_RV_IV(INS_cmp, reg, typeMax, emitActualTypeSize(baseType));
-            genJumpToThrowHlpBlk(EJ_jg, Compiler::ACK_OVERFLOW);
+            genJumpToThrowHlpBlk(EJ_jg, SCK_OVERFLOW);
 
             // Compare with the MIN
 
             inst_RV_IV(INS_cmp, reg, typeMin, emitActualTypeSize(baseType));
-            genJumpToThrowHlpBlk(EJ_jl, Compiler::ACK_OVERFLOW);
+            genJumpToThrowHlpBlk(EJ_jl, SCK_OVERFLOW);
         }
 
         genCodeForTree_DONE(tree, reg);
@@ -13759,7 +13759,7 @@ REG_VAR_LONG:
                     {
                         noway_assert((op2->gtFlags & GTF_UNSIGNED) == 0); // conv.ovf.u8.un should be bashed to conv.u8.un
                         instGen_Compare_Reg_To_Zero(EA_4BYTE, regHi);     // set flags
-                        genJumpToThrowHlpBlk(EJ_jl, Compiler::ACK_OVERFLOW);
+                        genJumpToThrowHlpBlk(EJ_jl, SCK_OVERFLOW);
                     }
 
                     /* Move the value into the target */
@@ -15169,7 +15169,7 @@ USE_SAR_FOR_CAST:
                     {
                         regNumber hiReg = genRegPairHi(regPair);
                         instGen_Compare_Reg_To_Zero(EA_4BYTE, hiReg); // set flags
-                        genJumpToThrowHlpBlk(EJ_jl, Compiler::ACK_OVERFLOW);
+                        genJumpToThrowHlpBlk(EJ_jl, SCK_OVERFLOW);
                     }
                 }
                 goto DONE;
@@ -15240,7 +15240,7 @@ USE_SAR_FOR_CAST:
                     inst_TT_IV(INS_cmp, op1, 0, sizeof(int));
                 }
 
-                genJumpToThrowHlpBlk(EJ_jl, Compiler::ACK_OVERFLOW);
+                genJumpToThrowHlpBlk(EJ_jl, SCK_OVERFLOW);
                 goto DONE;
 
             default:
