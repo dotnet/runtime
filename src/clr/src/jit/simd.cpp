@@ -2110,26 +2110,23 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                   opcode,
             // op1 - byref to vector struct
 
             unsigned int vectorLength = getSIMDVectorLength(size, baseType);
-            // We will need to generate an array bounds check for the last array element will access.
             // (This constructor takes only the zero-based arrays.)
-            // We'll either check against (vectorLength - 1) or (index + vectorLength - 1).
+            // We will add one or two bounds checks:
+            // 1. If we have an index, we must do a check on that first.
+            // 2. We need to generate a check for the last array element we will access.
+            //    We'll either check against (vectorLength - 1) or (index + vectorLength - 1).
+
             GenTree* checkIndexExpr = new (this, GT_CNS_INT) GenTreeIntCon(TYP_INT, vectorLength - 1);
 
             // Get the index into the array.  If it has been provided, it will be on the
             // top of the stack.  Otherwise, it is null.
             if (argCount == 3)
             {
-                GenTree* index = impSIMDPopStack();
-                assert(simdIntrinsicID == SIMDIntrinsicInitArrayX || simdIntrinsicID == SIMDIntrinsicCopyToArrayX);
-                if ((index->gtFlags & GTF_SIDE_EFFECT) != 0)
+                op3 = impSIMDPopStack();
+                if (op3->IsZero())
                 {
-                    op3 = fgInsertCommaFormTemp(&index);
+                    op3 = nullptr;
                 }
-                else
-                {
-                    op3 = gtCloneExpr(index);
-                }
-                checkIndexExpr = gtNewOperNode(GT_ADD, TYP_INT, index, checkIndexExpr);
             }
             else
             {
@@ -2139,28 +2136,59 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                   opcode,
                 op3 = nullptr;
             }
 
-            // Clone the array for use in the bounds check.
+            // Clone the array for use in the check(s).
             op2 = impSIMDPopStack();
             assert(op2->TypeGet() == TYP_REF);
-            GenTree* arrayRef = op2;
+            GenTree* arrayRefForArgChk = op2;
+            GenTree* argRngChk = nullptr;
             GenTree* asg = nullptr;
-            if ((arrayRef->gtFlags & GTF_SIDE_EFFECT) != 0)
+            if ((arrayRefForArgChk->gtFlags & GTF_SIDE_EFFECT) != 0)
             {
-                op2 = fgInsertCommaFormTemp(&arrayRef);
+                op2 = fgInsertCommaFormTemp(&arrayRefForArgChk);
             }
             else
             {
-                op2 = gtCloneExpr(arrayRef);
+                op2 = gtCloneExpr(arrayRefForArgChk);
             }
             assert(op2 != nullptr);
 
+            if (op3 != nullptr)
+            {
+                // We need to use the original expression on this, which is the first check.
+                GenTree* arrayRefForArgRngChk = arrayRefForArgChk;
+                // Then we clone the clone we just made for the next check.
+                arrayRefForArgChk = gtCloneExpr(op2);
+                // We know we MUST have had a cloneable expression.
+                assert(arrayRefForArgChk != nullptr);
+                GenTree* index = op3;
+                if ((index->gtFlags & GTF_SIDE_EFFECT) != 0)
+                {
+                    op3 = fgInsertCommaFormTemp(&index);
+                }
+                else
+                {
+                    op3 = gtCloneExpr(index);
+                }
+
+                GenTreeArrLen* arrLen = new (this, GT_ARR_LENGTH) GenTreeArrLen(TYP_INT, arrayRefForArgRngChk, (int)offsetof(CORINFO_Array, length));
+                argRngChk = new (this, GT_ARR_BOUNDS_CHECK) GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, arrLen, index);
+                // Now, clone op3 to create another node for the argChk
+                GenTree* index2 = gtCloneExpr(op3);
+                assert(index != nullptr);
+                checkIndexExpr = gtNewOperNode(GT_ADD, TYP_INT, index2, checkIndexExpr);
+            }
+
             // Insert a bounds check for index + offset - 1.
             // This must be a "normal" array.
-            GenTreeArrLen*       arrLen     = new (this, GT_ARR_LENGTH) GenTreeArrLen(TYP_INT, arrayRef, (int)offsetof(CORINFO_Array, length));
-            GenTreeBoundsChk*    arrBndsChk = new (this, GT_ARR_BOUNDS_CHECK) GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, arrLen, checkIndexExpr);
+            GenTreeArrLen*       arrLen     = new (this, GT_ARR_LENGTH) GenTreeArrLen(TYP_INT, arrayRefForArgChk, (int)offsetof(CORINFO_Array, length));
+            GenTreeBoundsChk*    argChk = new (this, GT_ARR_BOUNDS_CHECK) GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, arrLen, checkIndexExpr);
 
-            // Create a GT_COMMA tree for the bounds check.
-            op2 = gtNewOperNode(GT_COMMA, op2->TypeGet(), arrBndsChk, op2);
+            // Create a GT_COMMA tree for the bounds check(s).
+            op2 = gtNewOperNode(GT_COMMA, op2->TypeGet(), argChk, op2);
+            if (argRngChk != nullptr)
+            {
+                op2 = gtNewOperNode(GT_COMMA, op2->TypeGet(), argRngChk, op2);
+            }
 
             if (simdIntrinsicID == SIMDIntrinsicInitArray || simdIntrinsicID == SIMDIntrinsicInitArrayX)
             {
