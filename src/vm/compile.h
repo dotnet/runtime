@@ -183,7 +183,10 @@ typedef  SHash<ZapperLoaderModuleTableTraits> ZapperLoaderModuleTable;
 class CEECompileInfo : public ICorCompileInfo
 {
   public:
-    virtual ~CEECompileInfo() {}
+    virtual ~CEECompileInfo()
+    {
+        WRAPPER_NO_CONTRACT;
+    }
     
     HRESULT Startup(     BOOL                     fForceDebug, 
                          BOOL                     fForceProfiling,
