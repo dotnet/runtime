@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "Microsoft.DotNet.CoreCLR": "1.0.0-prerelease"
+  },
+  "frameworks": {
+    "dnxcore50": {}
+  }
+}
