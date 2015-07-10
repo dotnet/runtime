@@ -128,6 +128,10 @@ mono_mach_init (pthread_key_t key)
 	tls_vector_offset = TLS_VECTOR_OFFSET_10_9;
 	if (mono_mach_arch_get_tls_value_from_thread (pthread_self (), key) == canary)
 		goto ok;
+    
+    tls_vector_offset = TLS_VECTOR_OFFSET_10_11;
+    if (mono_mach_arch_get_tls_value_from_thread (pthread_self (), key) == canary)
+        goto ok;
 
 	tls_vector_offset = TLS_VECTOR_OFFSET_10_11;
 	if (mono_mach_arch_get_tls_value_from_thread (pthread_self (), key) == canary)
