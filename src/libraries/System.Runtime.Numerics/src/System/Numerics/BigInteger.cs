@@ -945,10 +945,10 @@ namespace System.Numerics
 
             if (trivialDivisor)
             {
-                uint[] rest;
+                uint rest;
                 uint[] bits = BigIntegerCalculator.Divide(dividend._bits, NumericsHelpers.Abs(divisor._sign), out rest);
 
-                remainder = new BigInteger(rest, dividend._sign < 0);
+                remainder = dividend._sign < 0 ? -1 * (long)rest : rest;
                 return new BigInteger(bits, (dividend._sign < 0) ^ (divisor._sign < 0));
             }
 
@@ -1065,12 +1065,12 @@ namespace System.Numerics
 
             if (trivialModulus)
             {
-                long bits = trivialValue && trivialExponent ? BigIntegerCalculator.Pow(NumericsHelpers.Abs(value._sign), NumericsHelpers.Abs(exponent._sign), NumericsHelpers.Abs(modulus._sign)) :
+                uint bits = trivialValue && trivialExponent ? BigIntegerCalculator.Pow(NumericsHelpers.Abs(value._sign), NumericsHelpers.Abs(exponent._sign), NumericsHelpers.Abs(modulus._sign)) :
                             trivialValue ? BigIntegerCalculator.Pow(NumericsHelpers.Abs(value._sign), exponent._bits, NumericsHelpers.Abs(modulus._sign)) :
                             trivialExponent ? BigIntegerCalculator.Pow(value._bits, NumericsHelpers.Abs(exponent._sign), NumericsHelpers.Abs(modulus._sign)) :
                             BigIntegerCalculator.Pow(value._bits, exponent._bits, NumericsHelpers.Abs(modulus._sign));
 
-                return value._sign < 0 && !exponent.IsEven ? -1 * bits : bits;
+                return value._sign < 0 && !exponent.IsEven ? -1 * (long)bits : bits;
             }
             else
             {
@@ -1718,8 +1718,8 @@ namespace System.Numerics
 
             if (trivialDivisor)
             {
-                long bits = BigIntegerCalculator.Remainder(dividend._bits, NumericsHelpers.Abs(divisor._sign));
-                return dividend._sign < 0 ? -1 * bits : bits;
+                uint bits = BigIntegerCalculator.Remainder(dividend._bits, NumericsHelpers.Abs(divisor._sign));
+                return dividend._sign < 0 ? -1 * (long)bits : bits;
             }
 
             if (dividend._bits.Length < divisor._bits.Length)
