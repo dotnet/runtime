@@ -1,0 +1,560 @@
+{
+  "locked": false,
+  "version": -9996,
+  "targets": {
+    "DNXCore,Version=v5.0": {
+      "System.Collections/4.0.0-beta-22809": {
+        "dependencies": {
+          "System.Runtime": "4.0.0-beta-22809"
+        },
+        "compile": {
+          "ref/any/System.Collections.dll": {}
+        }
+      },
+      "System.Diagnostics.Debug/4.0.10-beta-22703": {
+        "dependencies": {
+          "System.Runtime": "4.0.0-beta-22703"
+        },
+        "compile": {
+          "lib/contract/System.Diagnostics.Debug.dll": {}
+        },
+        "runtime": {
+          "lib/aspnetcore50/System.Diagnostics.Debug.dll": {}
+        }
+      },
+      "System.IO/4.0.10-beta-22703": {
+        "dependencies": {
+          "System.Runtime": "4.0.20-beta-22703",
+          "System.Text.Encoding": "4.0.0-beta-22703",
+          "System.Threading.Tasks": "4.0.0-beta-22703"
+        },
+        "compile": {
+          "lib/contract/System.IO.dll": {}
+        },
+        "runtime": {
+          "lib/aspnetcore50/System.IO.dll": {}
+        }
+      },
+      "System.Linq/4.0.0-beta-22703": {
+        "dependencies": {
+          "System.Collections": "4.0.0-beta-22703",
+          "System.Runtime": "4.0.0-beta-22703"
+        },
+        "compile": {
+          "lib/contract/System.Linq.dll": {}
+        },
+        "runtime": {
+          "lib/aspnetcore50/System.Linq.dll": {}
+        }
+      },
+      "System.Reflection/4.0.10-beta-22703": {
+        "dependencies": {
+          "System.IO": "4.0.0-beta-22703",
+          "System.Reflection.Primitives": "4.0.0-beta-22703",
+          "System.Runtime": "4.0.20-beta-22703"
+        },
+        "compile": {
+          "lib/contract/System.Reflection.dll": {}
+        },
+        "runtime": {
+          "lib/aspnetcore50/System.Reflection.dll": {}
+        }
+      },
+      "System.Reflection.Primitives/4.0.0-beta-22703": {
+        "dependencies": {
+          "System.Runtime": "4.0.0-beta-22703"
+        },
+        "compile": {
+          "lib/contract/System.Reflection.Primitives.dll": {}
+        },
+        "runtime": {
+          "lib/aspnetcore50/System.Reflection.Primitives.dll": {}
+        }
+      },
+      "System.Runtime/4.0.20-beta-22703": {
+        "compile": {
+          "lib/contract/System.Runtime.dll": {}
+        },
+        "runtime": {
+          "lib/aspnetcore50/System.Runtime.dll": {}
+        }
+      },
+      "System.Runtime.Extensions/4.0.10-beta-22703": {
+        "dependencies": {
+          "System.Runtime": "4.0.0-beta-22703"
+        },
+        "compile": {
+          "lib/contract/System.Runtime.Extensions.dll": {}
+        },
+        "runtime": {
+          "lib/aspnetcore50/System.Runtime.Extensions.dll": {}
+        }
+      },
+      "System.Runtime.Handles/4.0.0-beta-23024": {
+        "dependencies": {
+          "System.Runtime": "4.0.0-beta-23024"
+        },
+        "compile": {
+          "ref/dotnet/System.Runtime.Handles.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.Runtime.Handles.dll": {}
+        }
+      },
+      "System.Runtime.InteropServices/4.0.20-beta-22703": {
+        "dependencies": {
+          "System.Reflection": "4.0.0-beta-22703",
+          "System.Reflection.Primitives": "4.0.0-beta-22703",
+          "System.Runtime": "4.0.0-beta-22703",
+          "System.Runtime.Handles": "4.0.0-beta-22703"
+        },
+        "compile": {
+          "lib/contract/System.Runtime.InteropServices.dll": {}
+        },
+        "runtime": {
+          "lib/aspnetcore50/System.Runtime.InteropServices.dll": {}
+        }
+      },
+      "System.Text.Encoding/4.0.10-beta-22703": {
+        "dependencies": {
+          "System.Runtime": "4.0.0-beta-22703"
+        },
+        "compile": {
+          "lib/contract/System.Text.Encoding.dll": {}
+        },
+        "runtime": {
+          "lib/aspnetcore50/System.Text.Encoding.dll": {}
+        }
+      },
+      "System.Threading/4.0.10-beta-22703": {
+        "dependencies": {
+          "System.Runtime": "4.0.0-beta-22703",
+          "System.Threading.Tasks": "4.0.0-beta-22703"
+        },
+        "compile": {
+          "lib/contract/System.Threading.dll": {}
+        },
+        "runtime": {
+          "lib/aspnetcore50/System.Threading.dll": {}
+        }
+      },
+      "System.Threading.Overlapped/4.0.0-beta-23024": {
+        "dependencies": {
+          "System.Runtime": "4.0.0-beta-23024",
+          "System.Runtime.Handles": "4.0.0-beta-23024"
+        },
+        "compile": {
+          "ref/dotnet/System.Threading.Overlapped.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.Threading.Overlapped.dll": {}
+        }
+      },
+      "System.Threading.Tasks/4.0.10-beta-22703": {
+        "dependencies": {
+          "System.Runtime": "4.0.0-beta-22703"
+        },
+        "compile": {
+          "lib/contract/System.Threading.Tasks.dll": {}
+        },
+        "runtime": {
+          "lib/aspnetcore50/System.Threading.Tasks.dll": {}
+        }
+      },
+      "xunit/2.0.0-beta5-build2785": {
+        "dependencies": {
+          "xunit.core": "[2.0.0-beta5-build2785]",
+          "xunit.assert": "[2.0.0-beta5-build2785]"
+        }
+      },
+      "xunit.abstractions/2.0.0-beta5-build2785": {
+        "compile": {
+          "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.abstractions.dll": {}
+        },
+        "runtime": {
+          "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.abstractions.dll": {}
+        }
+      },
+      "xunit.abstractions.netcore/1.0.0-prerelease": {
+        "compile": {
+          "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.abstractions.dll": {}
+        },
+        "runtime": {
+          "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.abstractions.dll": {}
+        }
+      },
+      "xunit.assert/2.0.0-beta5-build2785": {
+        "compile": {
+          "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monoandroid+monotouch10/xunit.assert.dll": {}
+        },
+        "runtime": {
+          "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monoandroid+monotouch10/xunit.assert.dll": {}
+        }
+      },
+      "xunit.core/2.0.0-beta5-build2785": {
+        "dependencies": {
+          "xunit.abstractions": "[2.0.0-beta5-build2785]"
+        },
+        "compile": {
+          "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.core.dll": {}
+        },
+        "runtime": {
+          "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.core.dll": {}
+        }
+      },
+      "xunit.core.netcore/1.0.1-prerelease": {
+        "dependencies": {
+          "xunit.abstractions": "[2.0.0-beta5-build2785]"
+        },
+        "compile": {
+          "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.core.dll": {}
+        },
+        "runtime": {
+          "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.core.dll": {}
+        }
+      },
+      "xunit.netcore.extensions/1.0.0-prerelease-00056": {
+        "dependencies": {
+          "System.Diagnostics.Debug": "4.0.10-beta-22703",
+          "System.IO": "4.0.10-beta-22703",
+          "System.Linq": "4.0.0-beta-22703",
+          "System.Reflection": "4.0.10-beta-22703",
+          "System.Reflection.Primitives": "4.0.0-beta-22703",
+          "System.Runtime": "4.0.20-beta-22703",
+          "System.Runtime.Extensions": "4.0.10-beta-22703",
+          "System.Runtime.Handles": "4.0.0-beta-22703",
+          "System.Runtime.InteropServices": "4.0.20-beta-22703",
+          "System.Text.Encoding": "4.0.10-beta-22703",
+          "System.Threading": "4.0.10-beta-22703",
+          "System.Threading.Tasks": "4.0.10-beta-22703",
+          "xunit.abstractions.netcore": "1.0.0-prerelease",
+          "xunit.core.netcore": "1.0.0-prerelease"
+        },
+        "compile": {
+          "lib/portable-wpa80+win80+net45+aspnetcore50/Xunit.NetCore.Extensions.dll": {}
+        },
+        "runtime": {
+          "lib/portable-wpa80+win80+net45+aspnetcore50/Xunit.NetCore.Extensions.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "System.Collections/4.0.0-beta-22809": {
+      "sha512": "FOvPTORCkZwf1+9jRiwscJamCT8xlCLSDtnchCVhynMQK/gMM6JpDdKWAoVDyJ4hwGIwxYm5Q1MXpBbxSLX5ZQ==",
+      "files": [
+        "License.rtf",
+        "System.Collections.4.0.0-beta-22809.nupkg",
+        "System.Collections.4.0.0-beta-22809.nupkg.sha512",
+        "System.Collections.nuspec",
+        "lib/net45/_._",
+        "lib/win8/_._",
+        "ref/any/System.Collections.dll",
+        "ref/net45/_._",
+        "ref/win8/_._"
+      ]
+    },
+    "System.Diagnostics.Debug/4.0.10-beta-22703": {
+      "sha512": "7AzDwVW8YPh2mPbQuKZTbTnV4wSApdFLWpQKICf6+y8ofQqjNvA9kJuJFO54GVF+vV4BGz/FQDkESwR2inouMw==",
+      "files": [
+        "License.rtf",
+        "System.Diagnostics.Debug.4.0.10-beta-22703.nupkg",
+        "System.Diagnostics.Debug.4.0.10-beta-22703.nupkg.sha512",
+        "System.Diagnostics.Debug.nuspec",
+        "lib/aspnetcore50/System.Diagnostics.Debug.dll",
+        "lib/contract/System.Diagnostics.Debug.dll",
+        "lib/net45/System.Diagnostics.Debug.dll",
+        "lib/portable-wpa81+wp80+win80+net45+aspnetcore50/System.Diagnostics.Debug.dll"
+      ]
+    },
+    "System.IO/4.0.10-beta-22703": {
+      "sha512": "qwCHofa9u6r/mkKJ3IMgmXPaChGklXYyGAHHaIFBJb8HuXe3QFWm7Va9Rlw0ybpNznLX8u9NqGKByfzYK89mhg==",
+      "files": [
+        "License.rtf",
+        "System.IO.4.0.10-beta-22703.nupkg",
+        "System.IO.4.0.10-beta-22703.nupkg.sha512",
+        "System.IO.nuspec",
+        "lib/aspnetcore50/System.IO.dll",
+        "lib/contract/System.IO.dll",
+        "lib/net45/System.IO.dll",
+        "lib/portable-wpa81+wp80+win80+net45+aspnetcore50/System.IO.dll"
+      ]
+    },
+    "System.Linq/4.0.0-beta-22703": {
+      "sha512": "jXOZ7iAcJjA6GOQGHbvcc6+/sK+E7dFxD77mmpY3KTul8zFYfIZ2ITaP7934tJqWLe2tBJ5FbmchUCVW4k2jRw==",
+      "files": [
+        "License.rtf",
+        "System.Linq.4.0.0-beta-22703.nupkg",
+        "System.Linq.4.0.0-beta-22703.nupkg.sha512",
+        "System.Linq.nuspec",
+        "lib/aspnetcore50/System.Linq.dll",
+        "lib/contract/System.Linq.dll",
+        "lib/net45/System.Linq.dll",
+        "lib/portable-wpa81+wp80+win80+net45+aspnetcore50/System.Linq.dll"
+      ]
+    },
+    "System.Reflection/4.0.10-beta-22703": {
+      "sha512": "0xk7MngBpDFiKTh5pTrBCtC5BRvDOgbxTjNpISkb7lMnZTbjNFK57b5Gk5Lpnw45T6vPjBgG6/9yrd/bu3gTGg==",
+      "files": [
+        "License.rtf",
+        "System.Reflection.4.0.10-beta-22703.nupkg",
+        "System.Reflection.4.0.10-beta-22703.nupkg.sha512",
+        "System.Reflection.nuspec",
+        "lib/aspnetcore50/System.Reflection.dll",
+        "lib/contract/System.Reflection.dll",
+        "lib/net45/System.Reflection.dll",
+        "lib/portable-wpa81+wp80+win80+net45+aspnetcore50/System.Reflection.dll"
+      ]
+    },
+    "System.Reflection.Primitives/4.0.0-beta-22703": {
+      "sha512": "uhmylWZW0ZuE32D5gzeQC+NMyMpx8IkHlFPURLCvOZtBmBDqI1hpWV+iCTtZce2+2BQUOELi983QLsdjpBOR0Q==",
+      "files": [
+        "License.rtf",
+        "System.Reflection.Primitives.4.0.0-beta-22703.nupkg",
+        "System.Reflection.Primitives.4.0.0-beta-22703.nupkg.sha512",
+        "System.Reflection.Primitives.nuspec",
+        "lib/aspnetcore50/System.Reflection.Primitives.dll",
+        "lib/contract/System.Reflection.Primitives.dll",
+        "lib/net45/System.Reflection.Primitives.dll",
+        "lib/portable-wpa81+wp80+win80+net45+aspnetcore50/System.Reflection.Primitives.dll"
+      ]
+    },
+    "System.Runtime/4.0.20-beta-22703": {
+      "sha512": "v7avx43bh5qdAXLHGHXcy41gO4w+hQCuHU7e4uqD2dygC/V6wGkPFUrQtpDd3L2BNsTgMfP4xpY4njdqZXqMig==",
+      "files": [
+        "License.rtf",
+        "System.Runtime.4.0.20-beta-22703.nupkg",
+        "System.Runtime.4.0.20-beta-22703.nupkg.sha512",
+        "System.Runtime.nuspec",
+        "lib/aspnetcore50/System.Runtime.dll",
+        "lib/contract/System.Runtime.dll",
+        "lib/net45/System.Runtime.dll",
+        "lib/portable-wpa81+wp80+win80+net45+aspnetcore50/System.Runtime.dll"
+      ]
+    },
+    "System.Runtime.Extensions/4.0.10-beta-22703": {
+      "sha512": "F8/4HOxElp61XuY8Zdhfv7NepRp2ZcnZ1JuqVz2rSHu6ZAAsPWtLxdEPQdTVPcDIHPXmpexFuy32qbRg+Ya7Qg==",
+      "files": [
+        "License.rtf",
+        "System.Runtime.Extensions.4.0.10-beta-22703.nupkg",
+        "System.Runtime.Extensions.4.0.10-beta-22703.nupkg.sha512",
+        "System.Runtime.Extensions.nuspec",
+        "lib/aspnetcore50/System.Runtime.Extensions.dll",
+        "lib/contract/System.Runtime.Extensions.dll",
+        "lib/net45/System.Runtime.Extensions.dll",
+        "lib/portable-wpa81+wp80+win80+net45+aspnetcore50/System.Runtime.Extensions.dll"
+      ]
+    },
+    "System.Runtime.Handles/4.0.0-beta-23024": {
+      "serviceable": true,
+      "sha512": "O82TxLtp/afDkQixdjJutB7jdVlRx7vrQ+RPgL7iVLSREYE+HpuXpaKsW/3HqKm2G5D/FLmvYxZLiZitHfZ4Vw==",
+      "files": [
+        "System.Runtime.Handles.4.0.0-beta-23024.nupkg",
+        "System.Runtime.Handles.4.0.0-beta-23024.nupkg.sha512",
+        "System.Runtime.Handles.nuspec",
+        "lib/DNXCore50/System.Runtime.Handles.dll",
+        "lib/net46/_._",
+        "lib/netcore50/System.Runtime.Handles.dll",
+        "ref/dotnet/System.Runtime.Handles.dll",
+        "ref/dotnet/System.Runtime.Handles.xml",
+        "ref/dotnet/de/System.Runtime.Handles.xml",
+        "ref/dotnet/es/System.Runtime.Handles.xml",
+        "ref/dotnet/fr/System.Runtime.Handles.xml",
+        "ref/dotnet/it/System.Runtime.Handles.xml",
+        "ref/dotnet/ja/System.Runtime.Handles.xml",
+        "ref/dotnet/ko/System.Runtime.Handles.xml",
+        "ref/dotnet/ru/System.Runtime.Handles.xml",
+        "ref/dotnet/zh-hans/System.Runtime.Handles.xml",
+        "ref/dotnet/zh-hant/System.Runtime.Handles.xml",
+        "ref/net46/_._",
+        "runtimes/win8-aot/lib/netcore50/System.Runtime.Handles.dll"
+      ]
+    },
+    "System.Runtime.InteropServices/4.0.20-beta-22703": {
+      "sha512": "Aro5d2ih5pVS5FTWSUjejI8XmwH35qhqss9UiZa8YKaek/KaurpLUwhc0lap2ZhQKAUToHO94BFyH+jyCGOirA==",
+      "files": [
+        "License.rtf",
+        "System.Runtime.InteropServices.4.0.20-beta-22703.nupkg",
+        "System.Runtime.InteropServices.4.0.20-beta-22703.nupkg.sha512",
+        "System.Runtime.InteropServices.nuspec",
+        "lib/aspnetcore50/System.Runtime.InteropServices.dll",
+        "lib/contract/System.Runtime.InteropServices.dll",
+        "lib/net45/System.Runtime.InteropServices.dll",
+        "lib/portable-wpa81+wp80+win80+net45+aspnetcore50/System.Runtime.InteropServices.dll"
+      ]
+    },
+    "System.Text.Encoding/4.0.10-beta-22703": {
+      "sha512": "3KvdnKmHbTWYqBikELWgwn847bY9jc0CtH5kfrVEjHuwrFSuMB0tw9MC9hndbQCrC4XGu5Ma5SObO+uhdSlI0Q==",
+      "files": [
+        "License.rtf",
+        "System.Text.Encoding.4.0.10-beta-22703.nupkg",
+        "System.Text.Encoding.4.0.10-beta-22703.nupkg.sha512",
+        "System.Text.Encoding.nuspec",
+        "lib/aspnetcore50/System.Text.Encoding.dll",
+        "lib/contract/System.Text.Encoding.dll",
+        "lib/net45/System.Text.Encoding.dll",
+        "lib/portable-wpa81+wp80+win80+net45+aspnetcore50/System.Text.Encoding.dll"
+      ]
+    },
+    "System.Threading/4.0.10-beta-22703": {
+      "sha512": "6sdJrtRoZY/6YkDUjG7BspRSzb0zcpNsIPGn9Xv4pJuiEyBE5L40x1J0G4LIYaMEH/ocwnUQwYTPuVhdgR2xCA==",
+      "files": [
+        "License.rtf",
+        "System.Threading.4.0.10-beta-22703.nupkg",
+        "System.Threading.4.0.10-beta-22703.nupkg.sha512",
+        "System.Threading.nuspec",
+        "lib/aspnetcore50/System.Threading.dll",
+        "lib/contract/System.Threading.dll",
+        "lib/net45/System.Threading.dll",
+        "lib/portable-wpa81+wp80+win80+net45+aspnetcore50/System.Threading.dll"
+      ]
+    },
+    "System.Threading.Overlapped/4.0.0-beta-23024": {
+      "serviceable": true,
+      "sha512": "i5FkjE3Y++zufCyS68xiq8t/lwPyS2+urpv0MZUOID0pggCpqJiUGV5bnJRBo9Da79rpnVeFBleDOVFCnr2lrw==",
+      "files": [
+        "System.Threading.Overlapped.4.0.0-beta-23024.nupkg",
+        "System.Threading.Overlapped.4.0.0-beta-23024.nupkg.sha512",
+        "System.Threading.Overlapped.nuspec",
+        "lib/DNXCore50/System.Threading.Overlapped.dll",
+        "lib/net46/System.Threading.Overlapped.dll",
+        "lib/netcore50/System.Threading.Overlapped.dll",
+        "ref/dotnet/System.Threading.Overlapped.dll",
+        "ref/dotnet/System.Threading.Overlapped.xml",
+        "ref/dotnet/de/System.Threading.Overlapped.xml",
+        "ref/dotnet/es/System.Threading.Overlapped.xml",
+        "ref/dotnet/fr/System.Threading.Overlapped.xml",
+        "ref/dotnet/it/System.Threading.Overlapped.xml",
+        "ref/dotnet/ja/System.Threading.Overlapped.xml",
+        "ref/dotnet/ko/System.Threading.Overlapped.xml",
+        "ref/dotnet/ru/System.Threading.Overlapped.xml",
+        "ref/dotnet/zh-hans/System.Threading.Overlapped.xml",
+        "ref/dotnet/zh-hant/System.Threading.Overlapped.xml",
+        "ref/net46/System.Threading.Overlapped.dll"
+      ]
+    },
+    "System.Threading.Tasks/4.0.10-beta-22703": {
+      "sha512": "8JNmhCGBK4BUONvicG1jswaPgeoAEiYqdfKFtVitpZ+V8yEdKcHsQpyXOQUJzZ3rZTIUYGhL1jiffYLr2Tax4g==",
+      "files": [
+        "License.rtf",
+        "System.Threading.Tasks.4.0.10-beta-22703.nupkg",
+        "System.Threading.Tasks.4.0.10-beta-22703.nupkg.sha512",
+        "System.Threading.Tasks.nuspec",
+        "lib/aspnetcore50/System.Threading.Tasks.dll",
+        "lib/contract/System.Threading.Tasks.dll",
+        "lib/net45/System.Threading.Tasks.dll",
+        "lib/portable-wpa81+wp80+win80+net45+aspnetcore50/System.Threading.Tasks.dll"
+      ]
+    },
+    "xunit/2.0.0-beta5-build2785": {
+      "sha512": "bNycxZe/83M7o7j0IbGp3/daiPLi17hZgYZB6xttgCVDnxgAuw/TP1zetiUTW1yVUPASnAjlkBeJayv/G2Crsw==",
+      "files": [
+        "xunit.2.0.0-beta5-build2785.nupkg",
+        "xunit.2.0.0-beta5-build2785.nupkg.sha512",
+        "xunit.nuspec"
+      ]
+    },
+    "xunit.abstractions/2.0.0-beta5-build2785": {
+      "sha512": "b2RCnV2/wilCH1dsh7bAF82Ou+Vs+WfYLEItzRUUbD3YHNODx0ncpQwLz1JYjL/voBFc5mQh77hxIbgCGmyxKA==",
+      "files": [
+        "xunit.abstractions.2.0.0-beta5-build2785.nupkg",
+        "xunit.abstractions.2.0.0-beta5-build2785.nupkg.sha512",
+        "xunit.abstractions.nuspec",
+        "lib/net35/xunit.abstractions.dll",
+        "lib/net35/xunit.abstractions.xml",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.abstractions.dll",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.abstractions.xml"
+      ]
+    },
+    "xunit.abstractions.netcore/1.0.0-prerelease": {
+      "sha512": "fajSAvVztuUVSb/o1GxYM5I33Ikvx6CNNscpOnDAl6AnDAKqhOeu3iPTL0VzDhzXiXyOKbRi4iewv4hAWTgeuw==",
+      "files": [
+        "xunit.abstractions.netcore.1.0.0-prerelease.nupkg",
+        "xunit.abstractions.netcore.1.0.0-prerelease.nupkg.sha512",
+        "xunit.abstractions.netcore.nuspec",
+        "lib/net35/xunit.abstractions.dll",
+        "lib/net35/xunit.abstractions.xml",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.abstractions.dll",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.abstractions.xml"
+      ]
+    },
+    "xunit.assert/2.0.0-beta5-build2785": {
+      "sha512": "1PTLrP+jLzSIhqO3JzzgPcMPmSyBlFadpFH6v3d2Vm08x/bIYHnF78h20qt6wk/t3wMu7smOsyoNcUFeP2ZnGg==",
+      "files": [
+        "xunit.assert.2.0.0-beta5-build2785.nupkg",
+        "xunit.assert.2.0.0-beta5-build2785.nupkg.sha512",
+        "xunit.assert.nuspec",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monoandroid+monotouch10/xunit.assert.dll",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monoandroid+monotouch10/xunit.assert.pdb",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monoandroid+monotouch10/xunit.assert.xml"
+      ]
+    },
+    "xunit.core/2.0.0-beta5-build2785": {
+      "sha512": "3rDhbyvCS1iA20A7uXxYvw3LLa4MtyXUX9Y6i3QjY/dRhIHEZcSxBjBfGP3MjPm900WnsBx2H0ryQo2RWABhhg==",
+      "files": [
+        "xunit.core.2.0.0-beta5-build2785.nupkg",
+        "xunit.core.2.0.0-beta5-build2785.nupkg.sha512",
+        "xunit.core.nuspec",
+        "build/monoandroid/xunit.core.props",
+        "build/monoandroid/xunit.execution.dll",
+        "build/monotouch/xunit.core.props",
+        "build/monotouch/xunit.execution.dll",
+        "build/portable-net45+win+wpa81+wp80+monotouch+monoandroid/xunit.core.props",
+        "build/portable-net45+win+wpa81+wp80+monotouch+monoandroid/xunit.execution.dll",
+        "build/win8/xunit.core.props",
+        "build/win8/xunit.core.targets",
+        "build/win8/xunit.execution.dll",
+        "build/win8/device/xunit.execution.dll",
+        "build/wp8/xunit.core.props",
+        "build/wp8/xunit.core.targets",
+        "build/wp8/xunit.execution.dll",
+        "build/wp8/device/xunit.execution.dll",
+        "build/wpa81/xunit.core.props",
+        "build/wpa81/xunit.core.targets",
+        "build/wpa81/xunit.execution.dll",
+        "build/wpa81/device/xunit.execution.dll",
+        "build/wpa81/device/xunit.execution.pri",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.core.dll",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.core.dll.tdnet",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.core.pdb",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.core.xml",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.runner.tdnet.dll",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.runner.utility.dll"
+      ]
+    },
+    "xunit.core.netcore/1.0.1-prerelease": {
+      "sha512": "iy2u6WUx6CxSn7ahvJrBOrrpsLphtu1kjDGmyJKOiCmoCPczZEHjPOVL1OCt4V3EWCwS0zypWV8uVSqn1/UM8g==",
+      "files": [
+        "xunit.core.netcore.1.0.1-prerelease.nupkg",
+        "xunit.core.netcore.1.0.1-prerelease.nupkg.sha512",
+        "xunit.core.netcore.nuspec",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.core.dll",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.core.pdb",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.core.xml",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.runner.utility.dll",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.runner.utility.pdb",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.runner.utility.xml"
+      ]
+    },
+    "xunit.netcore.extensions/1.0.0-prerelease-00056": {
+      "sha512": "UPxtAjxht7LkVoI6njl23cSXiNtPjM0zT9ouhtS0Ju3bXDSUfWjT3i4vRx8f7xrV24AOdbLfxVETP8DapKHClw==",
+      "files": [
+        "xunit.netcore.extensions.1.0.0-prerelease-00056.nupkg",
+        "xunit.netcore.extensions.1.0.0-prerelease-00056.nupkg.sha512",
+        "xunit.netcore.extensions.nuspec",
+        "lib/portable-wpa80+win80+net45+aspnetcore50/Xunit.NetCore.Extensions.dll"
+      ]
+    }
+  },
+  "projectFileDependencyGroups": {
+    "": [
+      "System.Threading.Overlapped >= 4.0.0-beta-*",
+      "xunit >= 2.0.0-beta5-build2785",
+      "xunit.abstractions.netcore >= 1.0.0-prerelease",
+      "xunit.assert >= 2.0.0-beta5-build2785",
+      "xunit.core.netcore >= 1.0.1-prerelease",
+      "xunit.netcore.extensions >= 1.0.0-prerelease-*"
+    ],
+    "DNXCore,Version=v5.0": []
+  }
+}
