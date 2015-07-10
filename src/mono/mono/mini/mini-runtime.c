@@ -1030,6 +1030,7 @@ int
 mini_get_tls_offset (MonoTlsKey key)
 {
 	int offset;
+	g_assert (MONO_ARCH_HAVE_TLS_GET);
 
 	switch (key) {
 	case TLS_KEY_THREAD:
