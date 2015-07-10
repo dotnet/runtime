@@ -144,7 +144,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData("Ranges", (object)(new int[] { 1024, 1024 * 16 }), MemberType = typeof(UnorderedSources))]
         public static void GroupBy_Unordered_CustomComparator_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            GroupBy_Unordered(labeled, count);
+            GroupBy_Unordered_CustomComparator(labeled, count);
         }
 
         [Theory]
@@ -174,7 +174,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData("Ranges", (object)(new int[] { 1024, 1024 * 16 }), MemberType = typeof(Sources))]
         public static void GroupBy_CustomComparator_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            GroupBy(labeled, count);
+            GroupBy_CustomComparator(labeled, count);
         }
 
         [Theory]
