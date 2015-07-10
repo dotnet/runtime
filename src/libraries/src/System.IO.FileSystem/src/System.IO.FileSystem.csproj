@@ -55,7 +55,6 @@
   </ItemGroup>
   <!-- Windows -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="Common\Helpers.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
     <Compile Include="System\IO\FileStream.Win32.cs" />
@@ -179,10 +178,18 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.MaxLengths.cs">
       <Link>Common\Interop\Windows\Interop.MaxLengths.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SafeCreateFile.cs">
+      <Link>Common\Interop\Windows\Interop.SafeCreateFile.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- Windows : Win32 only -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' != 'true'">
-    <Compile Include="Common\Helpers.Win7.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.UnsafeCreateFile.cs">
+      <Link>Common\Interop\Windows\Interop.UnsafeCreateFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CopyFile.cs">
+      <Link>Common\Interop\Windows\Interop.CopyFile.cs</Link>
+    </Compile>
     <Compile Include="System\IO\FileSystem.Current.Win32.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CreateFile.cs">
       <Link>Common\Interop\Windows\Interop.CreateFile.cs</Link>
@@ -199,7 +206,18 @@
   </ItemGroup>
   <!-- Windows : Win32 + WinRT -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' == 'true'">
-    <Compile Include="Common\Helpers.Win8.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\WinRT\Interop.UnsafeCreateFile.cs">
+      <Link>Common\Interop\Windows\WinRT\Interop.UnsafeCreateFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\WinRT\Interop.CopyFile.cs">
+      <Link>Common\Interop\Windows\WinRT\Interop.CopyFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\WinRT\Interop.DeleteVolumeMountPoint.cs">
+      <Link>Common\Interop\Windows\WinRT\Interop.DeleteVolumeMountPoint.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\WinRT\Interop.SetErrorMode.cs">
+      <Link>Common\Interop\Windows\WinRT\Interop.SetErrorMode.cs</Link>
+    </Compile>
     <Compile Include="System\IO\FileSystem.Current.MuxWin32WinRT.cs" />
     <Compile Include="System\IO\MultiplexingWin32WinRTFileSystem.cs" />
     <Compile Include="System\IO\WinRTIOExtensions.cs" />
@@ -207,10 +225,10 @@
     <Compile Include="System\IO\WinRTFileSystem.cs" />
     <Compile Include="System\IO\WinRTFileSystemObject.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CopyFile2.cs">
-      <Link>Common\Interop\Windows\Interop.CopyFile2.cs</Link>
+      <Link>Common\Interop\Windows\WinRT\Interop.CopyFile2.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CreateFile2.cs">
-      <Link>Common\Interop\Windows\Interop.CreateFile2.cs</Link>
+      <Link>Common\Interop\Windows\WinRT\Interop.CreateFile2.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Unix -->
