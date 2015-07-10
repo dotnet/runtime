@@ -26,6 +26,7 @@ namespace System.Numerics
 
         // Mutable for unit testing...
         private static int SquareThreshold = 32;
+        private static int AllocationThreshold = 4096;
 
         [SecuritySafeCritical]
         private unsafe static void Square(uint* value, int valueLength,
@@ -111,9 +112,12 @@ namespace System.Numerics
 
                 int foldLength = valueHighLength + 1;
                 int coreLength = foldLength + foldLength;
-                fixed (uint* fold = new uint[foldLength],
-                             core = new uint[coreLength])
+
+                if (coreLength < AllocationThreshold)
                 {
+                    uint* fold = stackalloc uint[foldLength];
+                    uint* core = stackalloc uint[coreLength];
+
                     // ... compute z_a = a_1 + a_0 (call it fold...)
                     Add(valueHigh, valueHighLength,
                         valueLow, valueLowLength,
@@ -128,6 +132,27 @@ namespace System.Numerics
 
                     // ... and finally merge the result! :-)
                     AddSelf(bits + n, bitsLength - n, core, coreLength);
+                }
+                else
+                {
+                    fixed (uint* fold = new uint[foldLength],
+                                 core = new uint[coreLength])
+                    {
+                        // ... compute z_a = a_1 + a_0 (call it fold...)
+                        Add(valueHigh, valueHighLength,
+                            valueLow, valueLowLength,
+                            fold, foldLength);
+
+                        // ... compute z_1 = z_a * z_a - z_0 - z_2
+                        Square(fold, foldLength,
+                               core, coreLength);
+                        SubtractCore(bitsHigh, bitsHighLength,
+                                     bitsLow, bitsLowLength,
+                                     core, coreLength);
+
+                        // ... and finally merge the result! :-)
+                        AddSelf(bits + n, bitsLength - n, core, coreLength);
+                    }
                 }
             }
         }
@@ -270,10 +295,13 @@ namespace System.Numerics
                 int leftFoldLength = leftHighLength + 1;
                 int rightFoldLength = rightHighLength + 1;
                 int coreLength = leftFoldLength + rightFoldLength;
-                fixed (uint* leftFold = new uint[leftFoldLength],
-                             rightFold = new uint[rightFoldLength],
-                             core = new uint[coreLength])
+
+                if (coreLength < AllocationThreshold)
                 {
+                    uint* leftFold = stackalloc uint[leftFoldLength];
+                    uint* rightFold = stackalloc uint[rightFoldLength];
+                    uint* core = stackalloc uint[coreLength];
+
                     // ... compute z_a = a_1 + a_0 (call it fold...)
                     Add(leftHigh, leftHighLength,
                         leftLow, leftLowLength,
@@ -294,6 +322,34 @@ namespace System.Numerics
 
                     // ... and finally merge the result! :-)
                     AddSelf(bits + n, bitsLength - n, core, coreLength);
+                }
+                else
+                {
+                    fixed (uint* leftFold = new uint[leftFoldLength],
+                                 rightFold = new uint[rightFoldLength],
+                                 core = new uint[coreLength])
+                    {
+                        // ... compute z_a = a_1 + a_0 (call it fold...)
+                        Add(leftHigh, leftHighLength,
+                            leftLow, leftLowLength,
+                            leftFold, leftFoldLength);
+
+                        // ... compute z_b = b_1 + b_0 (call it fold...)
+                        Add(rightHigh, rightHighLength,
+                            rightLow, rightLowLength,
+                            rightFold, rightFoldLength);
+
+                        // ... compute z_1 = z_a * z_b - z_0 - z_2
+                        Multiply(leftFold, leftFoldLength,
+                                 rightFold, rightFoldLength,
+                                 core, coreLength);
+                        SubtractCore(bitsHigh, bitsHighLength,
+                                     bitsLow, bitsLowLength,
+                                     core, coreLength);
+
+                        // ... and finally merge the result! :-)
+                        AddSelf(bits + n, bitsLength - n, core, coreLength);
+                    }
                 }
             }
         }
