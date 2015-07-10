@@ -21,6 +21,7 @@
 /* All OSX versions up to 10.8 */
 #define TLS_VECTOR_OFFSET_CATS 0x48
 #define TLS_VECTOR_OFFSET_10_9 0xb0
+#define TLS_VECTOR_OFFSET_10_11 0x100
 
 static int tls_vector_offset;
 
@@ -127,6 +128,10 @@ mono_mach_init (pthread_key_t key)
 	tls_vector_offset = TLS_VECTOR_OFFSET_10_9;
 	if (mono_mach_arch_get_tls_value_from_thread (pthread_self (), key) == canary)
 		goto ok;
+    
+    tls_vector_offset = TLS_VECTOR_OFFSET_10_11;
+    if (mono_mach_arch_get_tls_value_from_thread (pthread_self (), key) == canary)
+        goto ok;
 
 	g_error ("could not discover the mach TLS offset");
 ok:
