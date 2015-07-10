@@ -7,81 +7,34 @@ using System.IO;
 using System.IO.Pipes;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Diagnostics.ProcessTests
 {
-    public partial class ProcessTest : IDisposable
+    public class ProcessTests : ProcessTestBase
     {
-        private const int WaitInMS = 100 * 1000;
-        private const string CoreRunName = "corerun";
-        private const string TestExeName = "System.Diagnostics.Process.TestConsoleApp.exe";
-        private const int SuccessExitCode = 100;
-
-        private Process _process;
-        private List<Process> _processes = new List<Process>();
-
-        public ProcessTest()
-        {
-            _process = CreateProcessInfinite();
-            _process.Start();
-        }
-
-        public void Dispose()
-        {
-            // Ensure that there are no open processes with the same name as ProcessName
-            foreach (Process p in _processes)
-            {
-                if (!p.HasExited)
-                {
-                    try
-                    {
-                        p.Kill();
-                    }
-                    catch (InvalidOperationException) { } // in case it was never started
-
-                    Assert.True(p.WaitForExit(WaitInMS));
-                }
-            }
-        }
-
-        Process CreateProcess(string optionalArgument = ""/*String.Empty is not a constant*/)
-        {
-            Process p = new Process();
-            _processes.Add(p);
-
-            p.StartInfo.FileName = CoreRunName;
-            p.StartInfo.Arguments = string.IsNullOrWhiteSpace(optionalArgument) ?
-                TestExeName :
-                TestExeName + " " + optionalArgument;
-
-            // Profilers / code coverage tools doing coverage of the test process set environment
-            // variables to tell the targeted process what profiler to load.  We don't want the child process 
-            // to be profiled / have code coverage, so we remove these environment variables for that process 
-            // before it's started.
-            p.StartInfo.Environment.Remove("Cor_Profiler");
-            p.StartInfo.Environment.Remove("Cor_Enable_Profiling");
-            p.StartInfo.Environment.Remove("CoreClr_Profiler");
-            p.StartInfo.Environment.Remove("CoreClr_Enable_Profiling");
-
-            return p;
-        }
-
-        Process CreateProcessInfinite()
-        {
-            return CreateProcess("infinite");
-        }
-
-        public void SetAndCheckBasePriority(ProcessPriorityClass exPriorityClass, int priority)
+        private void SetAndCheckBasePriority(ProcessPriorityClass exPriorityClass, int priority)
         {
             _process.PriorityClass = exPriorityClass;
             _process.Refresh();
             Assert.Equal(priority, _process.BasePriority);
         }
 
+        private void AssertNonZeroWindowsZeroUnix(long value)
+        {
+            switch (global::Interop.PlatformDetection.OperatingSystem)
+            {
+                case global::Interop.OperatingSystem.Windows:
+                    Assert.NotEqual(0, value);
+                    break;
+                default:
+                    Assert.Equal(0, value);
+                    break;
+            }
+        }
+
         [Fact, PlatformSpecific(PlatformID.Windows)]
-        public void Process_BasePriorityWindows()
+        public void TestBasePriorityOnWindows()
         {
             ProcessPriorityClass originalPriority = _process.PriorityClass;
             Assert.Equal(ProcessPriorityClass.Normal, originalPriority);
@@ -105,7 +58,7 @@ namespace System.Diagnostics.ProcessTests
         }
 
         [Fact, PlatformSpecific(PlatformID.AnyUnix), OuterLoop] // This test requires admin elevation on Unix
-        public void Process_BasePriorityUnix()
+        public void TestBasePriorityOnUnix()
         {
             ProcessPriorityClass originalPriority = _process.PriorityClass;
             Assert.Equal(ProcessPriorityClass.Normal, originalPriority);
@@ -122,26 +75,8 @@ namespace System.Diagnostics.ProcessTests
             }
         }
 
-        public void Sleep(double delayInMs)
-        {
-            Task.Delay(TimeSpan.FromMilliseconds(delayInMs)).Wait();
-        }
-
-        public void Sleep()
-        {
-            Sleep(50D);
-        }
-
-        public void StartAndKillProcessWithDelay(Process p)
-        {
-            p.Start();
-            Sleep();
-            p.Kill();
-            Assert.True(p.WaitForExit(WaitInMS));
-        }
-
         [Fact]
-        public void Process_EnableRaiseEvents()
+        public void TestEnableRaiseEvents()
         {
             {
                 bool isExitedInvoked = false;
@@ -152,7 +87,7 @@ namespace System.Diagnostics.ProcessTests
                 p.EnableRaisingEvents = true;
                 p.Exited += delegate { isExitedInvoked = true; };
                 StartAndKillProcessWithDelay(p);
-                Assert.True(isExitedInvoked, String.Format("Process_CanRaiseEvents0001: {0}", "isExited Event not called when EnableRaisingEvent is set to true."));
+                Assert.True(isExitedInvoked, String.Format("TestCanRaiseEvents0001: {0}", "isExited Event not called when EnableRaisingEvent is set to true."));
             }
 
             {
@@ -162,7 +97,7 @@ namespace System.Diagnostics.ProcessTests
                 Process p = CreateProcessInfinite();
                 p.Exited += delegate { isExitedInvoked = true; };
                 StartAndKillProcessWithDelay(p);
-                Assert.False(isExitedInvoked, String.Format("Process_CanRaiseEvents0002: {0}", "isExited Event called with the default settings for EnableRaiseEvents"));
+                Assert.False(isExitedInvoked, String.Format("TestCanRaiseEvents0002: {0}", "isExited Event called with the default settings for EnableRaiseEvents"));
             }
 
             {
@@ -173,12 +108,12 @@ namespace System.Diagnostics.ProcessTests
                 p.EnableRaisingEvents = false;
                 p.Exited += delegate { isExitedInvoked = true; }; ;
                 StartAndKillProcessWithDelay(p);
-                Assert.False(isExitedInvoked, String.Format("Process_CanRaiseEvents0003: {0}", "isExited Event called with the EnableRaiseEvents = false"));
+                Assert.False(isExitedInvoked, String.Format("TestCanRaiseEvents0003: {0}", "isExited Event called with the EnableRaiseEvents = false"));
             }
         }
 
         [Fact]
-        public void Process_ExitCode()
+        public void TestExitCode()
         {
             {
                 Process p = CreateProcess();
@@ -195,17 +130,17 @@ namespace System.Diagnostics.ProcessTests
         }
 
         [Fact]
-        public void Process_ExitTime()
+        public void TestExitTime()
         {
             DateTime timeBeforeProcessStart = DateTime.UtcNow;
             Process p = CreateProcessInfinite();
             StartAndKillProcessWithDelay(p);
-            Assert.True(p.ExitTime.ToUniversalTime() > timeBeforeProcessStart, "Process_ExitTime is incorrect.");
+            Assert.True(p.ExitTime.ToUniversalTime() > timeBeforeProcessStart, "TestExitTime is incorrect.");
         }
 
 
         [Fact]
-        public void Process_Id()
+        public void TestId()
         {
             if (global::Interop.IsWindows)
             {
@@ -219,13 +154,13 @@ namespace System.Diagnostics.ProcessTests
         }
 
         [Fact]
-        public void Process_HasExited()
+        public void TestHasExited()
         {
             {
                 Process p = CreateProcess();
                 p.Start();
                 Assert.True(p.WaitForExit(WaitInMS));
-                Assert.True(p.HasExited, "Process_HasExited001 failed");
+                Assert.True(p.HasExited, "TestHasExited001 failed");
             }
 
             {
@@ -233,7 +168,7 @@ namespace System.Diagnostics.ProcessTests
                 p.Start();
                 try
                 {
-                    Assert.False(p.HasExited, "Process_HasExited002 failed");
+                    Assert.False(p.HasExited, "TestHasExited002 failed");
                 }
                 finally
                 {
@@ -241,19 +176,19 @@ namespace System.Diagnostics.ProcessTests
                     Assert.True(p.WaitForExit(WaitInMS));
                 }
 
-                Assert.True(p.HasExited, "Process_HasExited003 failed");
+                Assert.True(p.HasExited, "TestHasExited003 failed");
             }
         }
 
         [Fact]
-        public void Process_MachineName()
+        public void TestMachineName()
         {
             // Checking that the MachineName returns some value.
             Assert.NotNull(_process.MachineName);
         }
 
         [Fact]
-        public void Process_MainModule()
+        public void TestMainModule()
         {
             // Get MainModule property from a Process object
             ProcessModule mainModule = _process.MainModule;
@@ -286,7 +221,7 @@ namespace System.Diagnostics.ProcessTests
         }
 
         [Fact]
-        public void Process_MaxWorkingSet()
+        public void TestMaxWorkingSet()
         {
             using (Process p = Process.GetCurrentProcess())
             {
@@ -321,7 +256,7 @@ namespace System.Diagnostics.ProcessTests
         }
 
         [Fact]
-        public void Process_MinWorkingSet()
+        public void TestMinWorkingSet()
         {
             using (Process p = Process.GetCurrentProcess())
             {
@@ -356,7 +291,7 @@ namespace System.Diagnostics.ProcessTests
         }
 
         [Fact]
-        public void Process_Modules()
+        public void TestModules()
         {
             foreach (ProcessModule pModule in _process.Modules)
             {
@@ -372,63 +307,62 @@ namespace System.Diagnostics.ProcessTests
             }
         }
 
-        private void AssertNonZeroWindowsZeroUnix(long value)
-        {
-            switch (global::Interop.PlatformDetection.OperatingSystem)
-            {
-                case global::Interop.OperatingSystem.Windows:
-                    Assert.NotEqual(0, value);
-                    break;
-                default:
-                    Assert.Equal(0, value);
-                    break;
-            }
-        }
-
         [Fact]
-        public void Process_NonpagedSystemMemorySize64()
+        public void TestNonpagedSystemMemorySize64()
         {
             AssertNonZeroWindowsZeroUnix(_process.NonpagedSystemMemorySize64);
         }
 
         [Fact]
-        public void Process_PagedMemorySize64()
+        public void TestPagedMemorySize64()
         {
             AssertNonZeroWindowsZeroUnix(_process.PagedMemorySize64);
         }
 
         [Fact]
-        public void Process_PagedSystemMemorySize64()
+        public void TestPagedSystemMemorySize64()
         {
             AssertNonZeroWindowsZeroUnix(_process.PagedSystemMemorySize64);
         }
 
         [Fact]
-        public void Process_PeakPagedMemorySize64()
+        public void TestPeakPagedMemorySize64()
         {
             AssertNonZeroWindowsZeroUnix(_process.PeakPagedMemorySize64);
         }
 
         [Fact]
-        public void Process_PeakVirtualMemorySize64()
+        public void TestPeakVirtualMemorySize64()
         {
             AssertNonZeroWindowsZeroUnix(_process.PeakVirtualMemorySize64);
         }
 
         [Fact]
-        public void Process_PeakWorkingSet64()
+        public void TestPeakWorkingSet64()
         {
             AssertNonZeroWindowsZeroUnix(_process.PeakWorkingSet64);
         }
 
         [Fact]
-        public void Process_PrivateMemorySize64()
+        public void TestPrivateMemorySize64()
         {
             AssertNonZeroWindowsZeroUnix(_process.PrivateMemorySize64);
         }
 
         [Fact]
-        public void Process_ProcessorTime()
+        public void TestVirtualMemorySize64()
+        {
+            Assert.True(_process.VirtualMemorySize64 > 0);
+        }
+
+        [Fact]
+        public void TestWorkingSet64()
+        {
+            Assert.True(_process.WorkingSet64 > 0);
+        }
+
+        [Fact]
+        public void TestProcessorTime()
         {
             Assert.True(_process.UserProcessorTime.TotalSeconds >= 0);
             Assert.True(_process.PrivilegedProcessorTime.TotalSeconds >= 0);
@@ -436,8 +370,26 @@ namespace System.Diagnostics.ProcessTests
         }
 
         [Fact]
+        public void TestProcessStartTime()
+        {
+            DateTime timeBeforeCreatingProcess = DateTime.UtcNow;
+            Process p = CreateProcessInfinite();
+            try
+            {
+                p.Start();
+                Assert.True(timeBeforeCreatingProcess <= p.StartTime.ToUniversalTime(), "Process StartTime is lesser than previous time.");
+            }
+            finally
+            {
+                if (!p.HasExited)
+                    p.Kill();
+                Assert.True(p.WaitForExit(WaitInMS));
+            }
+        }
+
+        [Fact]
         [PlatformSpecific(~PlatformID.OSX)] // getting/setting affinity not supported on OSX
-        public void Process_ProcessorAffinity()
+        public void TestProcessorAffinity()
         {
             IntPtr curProcessorAffinity = _process.ProcessorAffinity;
             try
@@ -453,16 +405,16 @@ namespace System.Diagnostics.ProcessTests
         }
 
         [Fact]
-        public void Process_PriorityBoostEnabled()
+        public void TestPriorityBoostEnabled()
         {
             bool isPriorityBoostEnabled = _process.PriorityBoostEnabled;
             try
             {
                 _process.PriorityBoostEnabled = true;
-                Assert.True(_process.PriorityBoostEnabled, "Process_PriorityBoostEnabled001 failed");
+                Assert.True(_process.PriorityBoostEnabled, "TestPriorityBoostEnabled001 failed");
 
                 _process.PriorityBoostEnabled = false;
-                Assert.False(_process.PriorityBoostEnabled, "Process_PriorityBoostEnabled002 failed");
+                Assert.False(_process.PriorityBoostEnabled, "TestPriorityBoostEnabled002 failed");
             }
             finally
             {
@@ -471,7 +423,7 @@ namespace System.Diagnostics.ProcessTests
         }
 
         [Fact, PlatformSpecific(PlatformID.AnyUnix), OuterLoop] // This test requires admin elevation on Unix
-        public void Process_PriorityClassUnix()
+        public void TestPriorityClassUnix()
         {
             ProcessPriorityClass priorityClass = _process.PriorityClass;
             try
@@ -489,7 +441,7 @@ namespace System.Diagnostics.ProcessTests
         }
 
         [Fact, PlatformSpecific(PlatformID.Windows)]
-        public void Process_PriorityClassWindows()
+        public void TestPriorityClassWindows()
         {
             ProcessPriorityClass priorityClass = _process.PriorityClass;
             try
@@ -507,287 +459,92 @@ namespace System.Diagnostics.ProcessTests
         }
 
         [Fact]
-        public void Process_InvalidPriorityClass()
+        public void TestInvalidPriorityClass()
         {
             Process p = new Process();
             Assert.Throws<ArgumentException>(() => { p.PriorityClass = ProcessPriorityClass.Normal | ProcessPriorityClass.Idle; });
         }
 
         [Fact]
-        public void ProcessProcessName()
+        public void TestProcessName()
         {
             Assert.Equal(_process.ProcessName, CoreRunName, StringComparer.OrdinalIgnoreCase);
         }
 
         [Fact]
-        public void Process_SafeHandle()
+        public void TestSafeHandle()
         {
             Assert.False(_process.SafeHandle.IsInvalid);
         }
 
         [Fact]
-        public void Process_SessionId()
+        public void TestSessionId()
         {
             uint sessionId;
             if (global::Interop.IsWindows)
             {
-                ProcessIdToSessionId((uint)_process.Id, out sessionId);
+                Interop.ProcessIdToSessionId((uint)_process.Id, out sessionId);
             }
             else
             {
-                sessionId = (uint)getsid(_process.Id);
+                sessionId = (uint)Interop.getsid(_process.Id);
             }
 
             Assert.Equal(sessionId, (uint)_process.SessionId);
         }
 
-        [DllImport("api-ms-win-core-processthreads-l1-1-0.dll")]
-        internal static extern int GetCurrentProcessId();
-
-        [DllImport("libc")]
-        internal static extern int getpid();
-
-        [DllImport("libc")]
-        internal static extern int getsid(int pid);
-
-        [DllImport("api-ms-win-core-processthreads-l1-1-2.dll")]
-        internal static extern bool ProcessIdToSessionId(uint dwProcessId, out uint pSessionId);
-
         [Fact]
-        public void Process_GetCurrentProcess()
+        public void TestGetCurrentProcess()
         {
             Process current = Process.GetCurrentProcess();
             Assert.NotNull(current);
 
             int currentProcessId = global::Interop.IsWindows ?
-                GetCurrentProcessId() :
-                getpid();
+                Interop.GetCurrentProcessId() :
+                Interop.getpid();
 
             Assert.Equal(currentProcessId, current.Id);
-            Assert.Equal(Process.GetProcessById(currentProcessId).ProcessName, Process.GetCurrentProcess().ProcessName);
         }
 
         [Fact]
-        public void Process_GetProcesses()
+        public void TestGetProcessById()
         {
-            // Get all the processes running on the machine.
+            Process p = Process.GetProcessById(_process.Id);
+            Assert.Equal(_process.Id, p.Id);
+            Assert.Equal(_process.ProcessName, p.ProcessName);
+        }
+
+        [Fact]
+        public void TestGetProcesses()
+        {
             Process currentProcess = Process.GetCurrentProcess();
 
+            // Get all the processes running on the machine, and check if the current process is one of them.
             var foundCurrentProcess = (from p in Process.GetProcesses()
                                        where (p.Id == currentProcess.Id) && (p.ProcessName.Equals(currentProcess.ProcessName))
                                        select p).Any();
 
-            Assert.True(foundCurrentProcess, "Process_GetProcesses001 failed");
+            Assert.True(foundCurrentProcess, "TestGetProcesses001 failed");
 
             foundCurrentProcess = (from p in Process.GetProcesses(currentProcess.MachineName)
                                    where (p.Id == currentProcess.Id) && (p.ProcessName.Equals(currentProcess.ProcessName))
                                    select p).Any();
-            Assert.True(foundCurrentProcess, "Process_GetProcesses002 failed");
+
+            Assert.True(foundCurrentProcess, "TestGetProcesses002 failed");
         }
 
         [Fact]
-        public void Process_GetProcessesByName()
+        public void TestGetProcessesByName()
         {
             // Get the current process using its name
             Process currentProcess = Process.GetCurrentProcess();
 
-            Assert.True(Process.GetProcessesByName(currentProcess.ProcessName).Count() > 0, "Process_GetProcessesByName001 failed");
-            Assert.True(Process.GetProcessesByName(currentProcess.ProcessName, currentProcess.MachineName).Count() > 0, "Process_GetProcessesByName001 failed");
+            Assert.True(Process.GetProcessesByName(currentProcess.ProcessName).Count() > 0, "TestGetProcessesByName001 failed");
+            Assert.True(Process.GetProcessesByName(currentProcess.ProcessName, currentProcess.MachineName).Count() > 0, "TestGetProcessesByName001 failed");
         }
 
         [Fact]
-        public void Process_Environment()
-        {
-            Assert.NotEqual(0, new Process().StartInfo.Environment.Count);
-
-            ProcessStartInfo psi = new ProcessStartInfo();
-
-            // Creating a detached ProcessStartInfo will pre-populate the environment
-            // with current environmental variables.
-
-            var Environment2 = psi.Environment;
-
-            Assert.NotEqual(Environment2.Count, 0);
-
-            int CountItems = Environment2.Count;
-
-            Environment2.Add("NewKey", "NewValue");
-            Environment2.Add("NewKey2", "NewValue2");
-
-            Assert.Equal(CountItems + 2, Environment2.Count);
-            Environment2.Remove("NewKey");
-            Assert.Equal(CountItems + 1, Environment2.Count);
-
-            //Exception not thrown with invalid key
-            Assert.Throws<ArgumentException>(() => { Environment2.Add("NewKey2", "NewValue2"); });
-
-            //Clear
-            Environment2.Clear();
-            Assert.Equal(0, Environment2.Count);
-
-            //ContainsKey 
-            Environment2.Add("NewKey", "NewValue");
-            Environment2.Add("NewKey2", "NewValue2");
-            Assert.True(Environment2.ContainsKey("NewKey"));
-            if (global::Interop.IsWindows)
-            {
-                Assert.True(Environment2.ContainsKey("newkey"));
-            }
-            Assert.False(Environment2.ContainsKey("NewKey99"));
-
-            //Iterating
-            string result = null;
-            int index = 0;
-            foreach (string e1 in Environment2.Values)
-            {
-                index++;
-                result += e1;
-            }
-            Assert.Equal(2, index);
-            Assert.Equal("NewValueNewValue2", result);
-
-            result = null;
-            index = 0;
-            foreach (string e1 in Environment2.Keys)
-            {
-                index++;
-                result += e1;
-            }
-            Assert.Equal("NewKeyNewKey2", result);
-            Assert.Equal(2, index);
-
-            result = null;
-            index = 0;
-            foreach (System.Collections.Generic.KeyValuePair<string, string> e1 in Environment2)
-            {
-                index++;
-                result += e1.Key;
-            }
-            Assert.Equal("NewKeyNewKey2", result);
-            Assert.Equal(2, index);
-
-            //Contains
-            Assert.True(Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>("NewKey", "NewValue")));
-            if (global::Interop.IsWindows)
-            {
-                Assert.True(Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>("nEwKeY", "NewValue")));
-            }
-            Assert.False(Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>("NewKey99", "NewValue99")));
-
-            //Exception not thrown with invalid key
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>(null, "NewValue99"));
-            }
-            );
-
-            Environment2.Add(new System.Collections.Generic.KeyValuePair<string, string>("NewKey98", "NewValue98"));
-
-            //Indexed
-            string newIndexItem = Environment2["NewKey98"];
-            Assert.Equal("NewValue98", newIndexItem);
-
-            //TryGetValue
-            string stringout = null;
-            bool retval = false;
-            retval = Environment2.TryGetValue("NewKey", out stringout);
-            Assert.True(retval);
-            Assert.Equal("NewValue", stringout);
-            if (global::Interop.IsWindows)
-            {
-                retval = Environment2.TryGetValue("NeWkEy", out stringout);
-                Assert.True(retval);
-                Assert.Equal("NewValue", stringout);
-            }
-
-            stringout = null;
-            retval = false;
-            retval = Environment2.TryGetValue("NewKey99", out stringout);
-            Assert.Equal(null, stringout);
-            Assert.False(retval);
-
-            //Exception not thrown with invalid key
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                string stringout1 = null;
-                bool retval1 = false;
-                retval1 = Environment2.TryGetValue(null, out stringout1);
-            }
-            );
-
-            //Exception not thrown with invalid key
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                Environment2.Add(null, "NewValue2");
-            }
-            );
-
-            //Invalid Key to add
-            Assert.Throws<ArgumentException>(() =>
-            {
-                Environment2.Add("NewKey2", "NewValue2");
-            }
-            );
-            //Remove Item
-            Environment2.Remove("NewKey98");
-            Environment2.Remove("NewKey98");   //2nd occurrence should not assert
-
-            //Exception not thrown with null key
-            Assert.Throws<ArgumentNullException>(() => { Environment2.Remove(null); });
-
-            //"Exception not thrown with null key"
-            Assert.Throws<System.Collections.Generic.KeyNotFoundException>(() => { string a1 = Environment2["1bB"]; });
-
-            Assert.True(Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>("NewKey2", "NewValue2")));
-            if (global::Interop.IsWindows)
-            {
-                Assert.True(Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>("NEWKeY2", "NewValue2")));
-            }
-            Assert.False(Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>("NewKey2", "newvalue2")));
-            Assert.False(Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>("newkey2", "newvalue2")));
-
-            //Use KeyValuePair Enumerator
-            var x = Environment2.GetEnumerator();
-            x.MoveNext();
-            var y1 = x.Current;
-            Assert.Equal("NewKey NewValue", y1.Key + " " + y1.Value);
-            x.MoveNext();
-            y1 = x.Current;
-            Assert.Equal("NewKey2 NewValue2", y1.Key + " " + y1.Value);
-
-            //IsReadonly
-            Assert.False(Environment2.IsReadOnly);
-
-            Environment2.Add(new System.Collections.Generic.KeyValuePair<string, string>("NewKey3", "NewValue3"));
-            Environment2.Add(new System.Collections.Generic.KeyValuePair<string, string>("NewKey4", "NewValue4"));
-
-
-            //CopyTo
-            System.Collections.Generic.KeyValuePair<String, String>[] kvpa = new System.Collections.Generic.KeyValuePair<string, string>[10];
-            Environment2.CopyTo(kvpa, 0);
-            Assert.Equal("NewKey", kvpa[0].Key);
-            Assert.Equal("NewKey3", kvpa[2].Key);
-
-            Environment2.CopyTo(kvpa, 6);
-            Assert.Equal("NewKey", kvpa[6].Key);
-
-            //Exception not thrown with null key
-            Assert.Throws<System.ArgumentOutOfRangeException>(() => { Environment2.CopyTo(kvpa, -1); });
-
-            //Exception not thrown with null key
-            Assert.Throws<System.ArgumentException>(() => { Environment2.CopyTo(kvpa, 9); });
-
-            //Exception not thrown with null key
-            Assert.Throws<System.ArgumentNullException>(() =>
-            {
-                System.Collections.Generic.KeyValuePair<String, String>[] kvpanull = null;
-                Environment2.CopyTo(kvpanull, 0);
-            }
-            );
-        }
-
-        [Fact]
-        public void Process_StartInfo()
+        public void TestStartInfo()
         {
             {
                 Process process = CreateProcessInfinite();
@@ -827,7 +584,7 @@ namespace System.Diagnostics.ProcessTests
         }
 
         [Fact]
-        public void Process_IPC()
+        public void TestIPCProcess()
         {
             Process p = CreateProcess("ipc");
 
@@ -852,7 +609,7 @@ namespace System.Diagnostics.ProcessTests
         }
 
         [Fact]
-        public void ThreadCount()
+        public void TestThreadCount()
         {
             Assert.True(_process.Threads.Count > 0);
             using (Process p = Process.GetCurrentProcess())
@@ -862,7 +619,7 @@ namespace System.Diagnostics.ProcessTests
         }
 
         // [Fact] // uncomment for diagnostic purposes to list processes to console
-        public void ConsoleWriteLineProcesses()
+        public void TestDiagnosticsWithConsoleWriteLine()
         {
             foreach (var p in Process.GetProcesses().OrderBy(p => p.Id))
             {
@@ -870,6 +627,5 @@ namespace System.Diagnostics.ProcessTests
                 p.Dispose();
             }
         }
-
     }
 }
