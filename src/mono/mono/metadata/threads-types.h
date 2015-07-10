@@ -224,7 +224,6 @@ void mono_threads_install_notify_pending_exc (MonoThreadNotifyPendingExcFunc fun
 void mono_runtime_set_has_tls_get (gboolean val);
 gboolean mono_runtime_has_tls_get (void);
 
-void mono_thread_abort_all_other_threads (void);
 void mono_thread_suspend_all_other_threads (void);
 gboolean mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout);
 
