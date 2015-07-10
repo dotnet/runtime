@@ -118,33 +118,32 @@ get_events_from_sockares (MonoSocketAsyncResult *ares)
 static MonoSocketAsyncResult*
 get_sockares_for_event (MonoMList **list, gint event)
 {
-	MonoSocketAsyncResult *state = NULL;
 	MonoMList *current;
 
 	g_assert (list);
 
 	for (current = *list; current; current = mono_mlist_next (current)) {
-		state = (MonoSocketAsyncResult*) mono_mlist_get_data (current);
-		if (get_events_from_sockares ((MonoSocketAsyncResult*) state) == event)
-			break;
-		state = NULL;
+		MonoSocketAsyncResult *ares = (MonoSocketAsyncResult*) mono_mlist_get_data (current);
+		if (get_events_from_sockares (ares) == event) {
+			*list = mono_mlist_remove_item (*list, current);
+			return ares;
+		}
 	}
 
-	if (current)
-		*list = mono_mlist_remove_item (*list, current);
-
-	return state;
+	return NULL;
 }
 
 static gint
 get_events (MonoMList *list)
 {
-	MonoSocketAsyncResult *ares;
+	MonoMList *current;
 	gint events = 0;
 
-	for (; list; list = mono_mlist_next (list))
-		if ((ares = (MonoSocketAsyncResult*) mono_mlist_get_data (list)))
+	for (current = list; current; current = mono_mlist_next (current)) {
+		MonoSocketAsyncResult *ares = (MonoSocketAsyncResult*) mono_mlist_get_data (current);
+		if (ares)
 			events |= get_events_from_sockares (ares);
+	}
 
 	return events;
 }
