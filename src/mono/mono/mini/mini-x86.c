@@ -2297,6 +2297,7 @@ mono_x86_have_tls_get (void)
 	if (inited)
 		return have_tls_get;
 
+#ifdef MONO_HAVE_FAST_TLS
 	ins = (guint32*)pthread_getspecific;
 	/*
 	 * We're looking for these two instructions:
@@ -2306,6 +2307,7 @@ mono_x86_have_tls_get (void)
 	 */
 	have_tls_get = ins [0] == 0x0424448b && ins [1] == 0x85048b65;
 	tls_gs_offset = ins [2];
+#endif
 
 	inited = TRUE;
 

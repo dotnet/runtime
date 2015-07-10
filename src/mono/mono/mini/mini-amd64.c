@@ -3480,6 +3480,7 @@ mono_amd64_have_tls_get (void)
 	if (inited)
 		return have_tls_get;
 
+#if MONO_HAVE_FAST_TLS
 	ins = (guint8*)pthread_getspecific;
 
 	/*
@@ -3498,9 +3499,10 @@ mono_amd64_have_tls_get (void)
 		       ins [8] == 0x00 &&
 		       ins [9] == 0xc3;
 
-	inited = TRUE;
-
 	tls_gs_offset = ins[5];
+#endif
+
+	inited = TRUE;
 
 	return have_tls_get;
 #elif defined(TARGET_ANDROID)
