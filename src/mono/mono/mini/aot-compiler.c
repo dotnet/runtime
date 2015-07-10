@@ -298,6 +298,9 @@ get_patch_name (int info)
 
 #endif
 
+static guint32
+get_unwind_info_offset (MonoAotCompile *acfg, guint8 *encoded, guint32 encoded_len);
+
 static char*
 get_plt_entry_debug_sym (MonoAotCompile *acfg, MonoJumpInfo *ji, GHashTable *cache);
 
@@ -1196,6 +1199,22 @@ arch_emit_llvm_plt_entry (MonoAotCompile *acfg, const char *got_symbol, int offs
 #endif
 }
 
+/* Save unwind_info in the module and emit the offset to the information at symbol */
+static void save_unwind_info (MonoAotCompile *acfg, char *symbol, GSList *unwind_ops)
+{
+	guint32 uw_offset, encoded_len;
+	guint8 *encoded;
+
+	emit_section_change (acfg, RODATA_SECT, 0);
+	emit_global (acfg, symbol, FALSE);
+	emit_label (acfg, symbol);
+
+	encoded = mono_unwind_ops_encode (unwind_ops, &encoded_len);
+	uw_offset = get_unwind_info_offset (acfg, encoded, encoded_len);
+	g_free (encoded);
+	emit_int32 (acfg, uw_offset);
+}
+
 /*
  * arch_emit_specific_trampoline_pages:
  *
@@ -1219,6 +1238,7 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 	guint8 *loop_start, *loop_branch_back, *loop_end_check, *imt_found_check;
 	int i;
 	int pagesize = MONO_AOT_TRAMP_PAGE_SIZE;
+	GSList *unwind_ops = NULL;
 #define COMMON_TRAMP_SIZE 16
 	int count = (pagesize - COMMON_TRAMP_SIZE) / 8;
 	int imm8, rot_amount;
@@ -1311,7 +1331,6 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 	/* now the imt trampolines: each specific trampolines puts in the ip register
 	 * the instruction pointer address, so the generic trampoline at the start of the page
 	 * subtracts 4096 to get to the data page and loads the values
-	 * We again fit the generic trampiline in 16 bytes.
 	 */
 #define IMT_TRAMP_SIZE 72
 	sprintf (symbol, "%simt_trampolines_page", acfg->user_symbol_prefix);
@@ -1377,6 +1396,53 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 	acfg->tramp_page_code_offsets [MONO_AOT_TRAMP_STATIC_RGCTX] = 16;
 	acfg->tramp_page_code_offsets [MONO_AOT_TRAMP_IMT_THUNK] = 72;
 	acfg->tramp_page_code_offsets [MONO_AOT_TRAMP_GSHAREDVT_ARG] = 16;
+
+	/* Unwind info for specifc trampolines */
+	sprintf (symbol, "%sspecific_trampolines_page_gen_p", acfg->user_symbol_prefix);
+	/* We unwind to the original caller, from the stack, since lr is clobbered */
+	mono_add_unwind_op_def_cfa (unwind_ops, 0, 0, ARMREG_SP, 14 * sizeof (mgreg_t));
+	mono_add_unwind_op_offset (unwind_ops, 0, 0, ARMREG_LR, -4);
+	save_unwind_info (acfg, symbol, unwind_ops);
+	mono_free_unwind_info (unwind_ops);
+
+	sprintf (symbol, "%sspecific_trampolines_page_sp_p", acfg->user_symbol_prefix);
+	mono_add_unwind_op_def_cfa (unwind_ops, 0, 0, ARMREG_SP, 0);
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, 4, 0, 14 * sizeof (mgreg_t));
+	save_unwind_info (acfg, symbol, unwind_ops);
+	mono_free_unwind_info (unwind_ops);
+
+	/* Unwind info for rgctx trampolines */
+	sprintf (symbol, "%srgctx_trampolines_page_gen_p", acfg->user_symbol_prefix);
+	mono_add_unwind_op_def_cfa (unwind_ops, 0, 0, ARMREG_SP, 0);
+	save_unwind_info (acfg, symbol, unwind_ops);
+
+	sprintf (symbol, "%srgctx_trampolines_page_sp_p", acfg->user_symbol_prefix);
+	save_unwind_info (acfg, symbol, unwind_ops);
+	mono_free_unwind_info (unwind_ops);
+
+	/* Unwind info for gsharedvt trampolines */
+	sprintf (symbol, "%sgsharedvt_trampolines_page_gen_p", acfg->user_symbol_prefix);
+	mono_add_unwind_op_def_cfa (unwind_ops, 0, 0, ARMREG_SP, 0);
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, 4, 0, 4 * sizeof (mgreg_t));
+	save_unwind_info (acfg, symbol, unwind_ops);
+	mono_free_unwind_info (unwind_ops);
+
+	sprintf (symbol, "%sgsharedvt_trampolines_page_sp_p", acfg->user_symbol_prefix);
+	mono_add_unwind_op_def_cfa (unwind_ops, 0, 0, ARMREG_SP, 0);
+	save_unwind_info (acfg, symbol, unwind_ops);
+	mono_free_unwind_info (unwind_ops);
+
+	/* Unwind info for imt trampolines */
+	sprintf (symbol, "%simt_trampolines_page_gen_p", acfg->user_symbol_prefix);
+	mono_add_unwind_op_def_cfa (unwind_ops, 0, 0, ARMREG_SP, 0);
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, 4, 0, 3 * sizeof (mgreg_t));
+	save_unwind_info (acfg, symbol, unwind_ops);
+	mono_free_unwind_info (unwind_ops);
+
+	sprintf (symbol, "%simt_trampolines_page_sp_p", acfg->user_symbol_prefix);
+	mono_add_unwind_op_def_cfa (unwind_ops, 0, 0, ARMREG_SP, 0);
+	save_unwind_info (acfg, symbol, unwind_ops);
+	mono_free_unwind_info (unwind_ops);
 #elif defined(TARGET_ARM64)
 	arm64_emit_specific_trampoline_pages (acfg);
 #endif

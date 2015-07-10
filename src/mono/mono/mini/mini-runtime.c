@@ -464,14 +464,10 @@ mono_tramp_info_create (const char *name, guint8 *code, guint32 code_size, MonoJ
 void
 mono_tramp_info_free (MonoTrampInfo *info)
 {
-	GSList *l;
-
 	g_free (info->name);
 
 	// FIXME: ji
-	for (l = info->unwind_ops; l; l = l->next)
-		g_free (l->data);
-	g_slist_free (info->unwind_ops);
+	mono_free_unwind_info (info->unwind_ops);
 	g_free (info);
 }
 
