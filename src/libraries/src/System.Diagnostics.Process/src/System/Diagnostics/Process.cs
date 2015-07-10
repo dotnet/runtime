@@ -201,21 +201,6 @@ namespace System.Diagnostics
 
         /// <devdoc>
         ///    <para>
-        ///       Gets the number of handles that are associated
-        ///       with the process.
-        ///    </para>
-        /// </devdoc>
-        public int HandleCount
-        {
-            get
-            {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo.HandleCount;
-            }
-        }
-
-        /// <devdoc>
-        ///    <para>
         ///       Gets
         ///       the unique identifier for the associated process.
         ///    </para>

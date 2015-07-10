@@ -18,7 +18,6 @@ namespace System.Diagnostics
         internal int BasePriority { get; set; }
         internal string ProcessName { get; set; }
         internal int ProcessId { get; set; }
-        internal int HandleCount { get; set; }
         internal long PoolPagedBytes { get; set; }
         internal long PoolNonPagedBytes { get; set; }
         internal long VirtualBytes { get; set; }
@@ -35,7 +34,6 @@ namespace System.Diagnostics
             BasePriority = 0;
             ProcessName = "";
             ProcessId = 0;
-            HandleCount = 0;
             PoolPagedBytes = 0;
             PoolNonPagedBytes = 0;
             VirtualBytes = 0;
