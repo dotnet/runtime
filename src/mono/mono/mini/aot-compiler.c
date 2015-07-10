@@ -8351,6 +8351,15 @@ emit_got (MonoAotCompile *acfg)
 
 	/* Don't make GOT global so accesses to it don't need relocations */
 	sprintf (symbol, "%s", acfg->got_symbol);
+
+#ifdef TARGET_MACH
+	emit_unset_mode (acfg);
+	fprintf (acfg->fp, ".section __DATA, __bss\n");
+	emit_alignment (acfg, 8);
+	if (acfg->llvm)
+		emit_info_symbol (acfg, "jit_got");
+	fprintf (acfg->fp, ".lcomm %s, %d\n", acfg->got_symbol, (int)(acfg->got_offset * sizeof (gpointer)));
+#else
 	emit_section_change (acfg, ".bss", 0);
 	emit_alignment (acfg, 8);
 	emit_local_symbol (acfg, symbol, "got_end", FALSE);
@@ -8359,6 +8368,7 @@ emit_got (MonoAotCompile *acfg)
 		emit_info_symbol (acfg, "jit_got");
 	if (acfg->got_offset > 0)
 		emit_zero_bytes (acfg, (int)(acfg->got_offset * sizeof (gpointer)));
+#endif
 
 	sprintf (symbol, "got_end");
 	emit_label (acfg, symbol);
