@@ -2508,6 +2508,13 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 	MonoJitInfo *jinfo;
 	MonoLLVMFDEInfo info;
 
+	// FIXME:
+	if (!amodule->mono_eh_frame) {
+		jinfo = mono_domain_alloc0_lock_free (domain, mono_jit_info_size (flags, 0, 0));
+		mono_jit_info_init (jinfo, method, code, 1, flags, 0, 0);
+		return jinfo;
+	}
+
 	g_assert (amodule->mono_eh_frame);
 
 	p = amodule->mono_eh_frame;

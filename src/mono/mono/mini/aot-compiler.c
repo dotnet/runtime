@@ -7401,9 +7401,25 @@ emit_llvm_file (MonoAotCompile *acfg)
 {
 	char *command, *opts, *tempbc, *output_fname;
 
+	/* Emit the LLVM code into a .bc file */
 	tempbc = g_strdup_printf ("%s.bc", acfg->tmpbasename);
 	mono_llvm_emit_aot_module (tempbc, g_path_get_basename (acfg->image->name));
 	g_free (tempbc);
+
+#ifdef TARGET_MACH
+	if (acfg->aot_opts.llvm_only) {
+		/* Use the stock clang from xcode */
+		// FIXME: arch
+		// FIXME: -O2
+		// FIXME: llc/opt flags
+		command = g_strdup_printf ("clang -march=x86-64 -fpic -O0 -c -o \"%s\" \"%s.bc\"", acfg->llvm_ofile, acfg->tmpbasename);
+
+		aot_printf (acfg, "Executing clang: %s\n", command);
+		if (execute_system (command) != 0)
+			return FALSE;
+		return TRUE;
+	}
+#endif
 
 	/*
 	 * FIXME: Experiment with adding optimizations, the -std-compile-opts set takes

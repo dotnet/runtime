@@ -1650,7 +1650,7 @@ emit_load_general (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder
 	LLVMValueRef args [16], res;
 	LLVMTypeRef addr_type;
 
-	if (is_faulting && bb->region != -1) {
+	if (FALSE && is_faulting && bb->region != -1) {
 		LLVMAtomicOrdering ordering;
 
 		switch (barrier) {
@@ -1739,7 +1739,7 @@ emit_store_general (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builde
 	const char *intrins_name;
 	LLVMValueRef args [16];
 
-	if (is_faulting && bb->region != -1) {
+	if (FALSE && is_faulting && bb->region != -1) {
 		LLVMAtomicOrdering ordering;
 
 		switch (barrier) {
@@ -6592,7 +6592,10 @@ emit_aot_file_info (MonoLLVMModule *lmodule)
 	fields [tindex ++] = AddJitGlobal (lmodule, eltype, "jit_got");
 	fields [tindex ++] = lmodule->got_var;
 	/* llc defines this directly */
-	fields [tindex ++] = LLVMAddGlobal (lmodule->module, eltype, lmodule->eh_frame_symbol);
+	if (!lmodule->llvm_only)
+		fields [tindex ++] = LLVMAddGlobal (lmodule->module, eltype, lmodule->eh_frame_symbol);
+	else
+		fields [tindex ++] = LLVMConstNull (eltype);
 	fields [tindex ++] = lmodule->get_method;
 	fields [tindex ++] = lmodule->get_unbox_tramp;
 	if (lmodule->has_jitted_code) {
