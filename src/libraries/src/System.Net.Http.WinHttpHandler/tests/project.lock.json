@@ -173,10 +173,10 @@
           "lib/dotnet/System.IO.FileSystem.Primitives.dll": {}
         }
       },
-      "System.Linq/4.0.0-beta-22816": {
+      "System.Linq/4.0.0-beta-22703": {
         "dependencies": {
-          "System.Collections": "4.0.10-beta-22816",
-          "System.Runtime": "4.0.20-beta-22816"
+          "System.Collections": "4.0.0-beta-22703",
+          "System.Runtime": "4.0.0-beta-22703"
         },
         "compile": {
           "lib/contract/System.Linq.dll": {}
@@ -258,11 +258,11 @@
           "lib/DNXCore50/System.Private.Uri.dll": {}
         }
       },
-      "System.Reflection/4.0.10-beta-22816": {
+      "System.Reflection/4.0.10-beta-22703": {
         "dependencies": {
-          "System.IO": "4.0.10-beta-22816",
-          "System.Reflection.Primitives": "4.0.0-beta-22816",
-          "System.Runtime": "4.0.20-beta-22816"
+          "System.IO": "4.0.0-beta-22703",
+          "System.Reflection.Primitives": "4.0.0-beta-22703",
+          "System.Runtime": "4.0.20-beta-22703"
         },
         "compile": {
           "lib/contract/System.Reflection.dll": {}
@@ -1036,12 +1036,12 @@
         "ref/net46/System.IO.FileSystem.Primitives.dll"
       ]
     },
-    "System.Linq/4.0.0-beta-22816": {
-      "sha512": "QlwRD8FTiYAZ7BxEjB5u9vjKaAHZ6KvuZYm+4tjYduTIWpFI3o34UjowJXCaPlLwc8USRshAXLgnsQ3iaOjv8Q==",
+    "System.Linq/4.0.0-beta-22703": {
+      "sha512": "jXOZ7iAcJjA6GOQGHbvcc6+/sK+E7dFxD77mmpY3KTul8zFYfIZ2ITaP7934tJqWLe2tBJ5FbmchUCVW4k2jRw==",
       "files": [
         "License.rtf",
-        "System.Linq.4.0.0-beta-22816.nupkg",
-        "System.Linq.4.0.0-beta-22816.nupkg.sha512",
+        "System.Linq.4.0.0-beta-22703.nupkg",
+        "System.Linq.4.0.0-beta-22703.nupkg.sha512",
         "System.Linq.nuspec",
         "lib/aspnetcore50/System.Linq.dll",
         "lib/contract/System.Linq.dll",
@@ -1128,12 +1128,12 @@
         "runtimes/win8-aot/lib/netcore50/System.Private.Uri.dll"
       ]
     },
-    "System.Reflection/4.0.10-beta-22816": {
-      "sha512": "YzEbWoLTsPOUL4mPRbeRkhfJ12VgIJVy7fwoKnp0RgxXwuQQ2CPFt2E3qjl2TWzMpnhyRBtM2L/qkt4Dlg8Okw==",
+    "System.Reflection/4.0.10-beta-22703": {
+      "sha512": "0xk7MngBpDFiKTh5pTrBCtC5BRvDOgbxTjNpISkb7lMnZTbjNFK57b5Gk5Lpnw45T6vPjBgG6/9yrd/bu3gTGg==",
       "files": [
         "License.rtf",
-        "System.Reflection.4.0.10-beta-22816.nupkg",
-        "System.Reflection.4.0.10-beta-22816.nupkg.sha512",
+        "System.Reflection.4.0.10-beta-22703.nupkg",
+        "System.Reflection.4.0.10-beta-22703.nupkg.sha512",
         "System.Reflection.nuspec",
         "lib/aspnetcore50/System.Reflection.dll",
         "lib/contract/System.Reflection.dll",
@@ -1873,21 +1873,21 @@
   },
   "projectFileDependencyGroups": {
     "": [
-      "Microsoft.Win32.Primitives >= 4.0.0-*",
-      "System.Globalization >= 4.0.10-*",
-      "System.IO >= 4.0.10-*",
-      "System.Net.Http >= 4.0.0-*",
-      "System.Net.Primitives >= 4.0.10-*",
-      "System.Resources.ResourceManager >= 4.0.0-*",
-      "System.Runtime.Extensions >= 4.0.10-*",
-      "System.Runtime.Handles >= 4.0.0-*",
-      "System.Runtime.InteropServices >= 4.0.20-*",
-      "System.Security.Cryptography.X509Certificates >= 4.0.0-*",
-      "System.Security.Principal >= 4.0.0-*",
-      "System.Text.Encoding >= 4.0.10-*",
-      "System.Threading >= 4.0.0-*",
-      "System.Threading.Tasks >= 4.0.0-*",
-      "System.Threading.Thread >= 4.0.0-*",
+      "Microsoft.Win32.Primitives >= 4.0.0-beta-*",
+      "System.Globalization >= 4.0.10-beta-*",
+      "System.IO >= 4.0.10-beta-*",
+      "System.Net.Http >= 4.0.0-beta-*",
+      "System.Net.Primitives >= 4.0.10-beta-*",
+      "System.Resources.ResourceManager >= 4.0.0-beta-*",
+      "System.Runtime.Extensions >= 4.0.10-beta-*",
+      "System.Runtime.Handles >= 4.0.0-beta-*",
+      "System.Runtime.InteropServices >= 4.0.20-beta-*",
+      "System.Security.Cryptography.X509Certificates >= 4.0.0-beta-*",
+      "System.Security.Principal >= 4.0.0-beta-*",
+      "System.Text.Encoding >= 4.0.10-beta-*",
+      "System.Threading >= 4.0.0-beta-*",
+      "System.Threading.Tasks >= 4.0.0-beta-*",
+      "System.Threading.Thread >= 4.0.0-beta-*",
       "xunit >= 2.0.0-beta5-build2785",
       "xunit.abstractions.netcore >= 1.0.0-prerelease",
       "xunit.assert >= 2.0.0-beta5-build2785",
