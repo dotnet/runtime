@@ -13,6 +13,17 @@
 static gint epoll_fd;
 static struct epoll_event *epoll_events;
 
+static inline void
+EPOLL_INIT_EVENT (struct epoll_event *event, gint fd, gint events)
+{
+	event->data.fd = fd;
+	event->events = EPOLLONESHOT;
+	if ((events & MONO_POLLIN) != 0)
+		event->events |= EPOLLIN;
+	if ((events & MONO_POLLOUT) != 0)
+		event->events |= EPOLLOUT;
+}
+
 static gboolean
 epoll_init (gint wakeup_pipe_fd)
 {
@@ -27,9 +38,9 @@ epoll_init (gint wakeup_pipe_fd)
 
 	if (epoll_fd == -1) {
 #ifdef EPOOL_CLOEXEC
-		g_warning ("epoll_init: epoll (EPOLL_CLOEXEC) failed, error (%d) %s\n", errno, g_strerror (errno));
+		g_error ("epoll_init: epoll (EPOLL_CLOEXEC) failed, error (%d) %s\n", errno, g_strerror (errno));
 #else
-		g_warning ("epoll_init: epoll (256) failed, error (%d) %s\n", errno, g_strerror (errno));
+		g_error ("epoll_init: epoll (256) failed, error (%d) %s\n", errno, g_strerror (errno));
 #endif
 		return FALSE;
 	}
@@ -37,7 +48,7 @@ epoll_init (gint wakeup_pipe_fd)
 	event.events = EPOLLIN;
 	event.data.fd = wakeup_pipe_fd;
 	if (epoll_ctl (epoll_fd, EPOLL_CTL_ADD, event.data.fd, &event) == -1) {
-		g_warning ("epoll_init: epoll_ctl () failed, error (%d) %s", errno, g_strerror (errno));
+		g_error ("epoll_init: epoll_ctl () failed, error (%d) %s", errno, g_strerror (errno));
 		close (epoll_fd);
 		return FALSE;
 	}
@@ -58,21 +69,18 @@ static void
 epoll_update_add (gint fd, gint events, gboolean is_new)
 {
 	struct epoll_event event;
-
-	event.data.fd = fd;
-	if ((events & MONO_POLLIN) != 0)
-		event.events |= EPOLLIN;
-	if ((events & MONO_POLLOUT) != 0)
-		event.events |= EPOLLOUT;
+	EPOLL_INIT_EVENT (&event, fd, events);
 
 	if (epoll_ctl (epoll_fd, is_new ? EPOLL_CTL_ADD : EPOLL_CTL_MOD, event.data.fd, &event) == -1)
-		g_warning ("epoll_update_add: epoll_ctl(%s) failed, error (%d) %s", is_new ? "EPOLL_CTL_ADD" : "EPOLL_CTL_MOD", errno, g_strerror (errno));
+		g_error ("epoll_update_add: epoll_ctl(%s) failed, error (%d) %s", is_new ? "EPOLL_CTL_ADD" : "EPOLL_CTL_MOD", errno, g_strerror (errno));
 }
 
 static gint
 epoll_event_wait (void)
 {
 	gint ready;
+
+	memset (epoll_events, 0, sizeof (struct epoll_event) * EPOLL_NEVENTS);
 
 	ready = epoll_wait (epoll_fd, epoll_events, EPOLL_NEVENTS, -1);
 	if (ready == -1) {
@@ -82,7 +90,7 @@ epoll_event_wait (void)
 			ready = 0;
 			break;
 		default:
-			g_warning ("epoll_event_wait: epoll_wait () failed, error (%d) %s", errno, g_strerror (errno));
+			g_error ("epoll_event_wait: epoll_wait () failed, error (%d) %s", errno, g_strerror (errno));
 			break;
 		}
 	}
@@ -111,14 +119,14 @@ static void
 epoll_event_reset_fd_at (gint i, gint events)
 {
 	if (events == 0) {
-		if (epoll_ctl (epoll_fd, EPOLL_CTL_DEL, epoll_events [i].data.fd, &epoll_events [i]) == -1)
-			g_warning ("epoll_event_reset_fd_at: epoll_ctl (EPOLL_CTL_DEL) failed, error (%d) %s", errno, g_strerror (errno));
+		if (epoll_ctl (epoll_fd, EPOLL_CTL_DEL, epoll_events [i].data.fd, NULL) == -1)
+			g_error ("epoll_event_reset_fd_at: epoll_ctl (EPOLL_CTL_DEL) failed, error (%d) %s", errno, g_strerror (errno));
 	} else {
-		epoll_events [i].events = ((events & MONO_POLLOUT) ? EPOLLOUT : 0)
-		                            | ((events & MONO_POLLIN) ? EPOLLIN : 0);
+		struct epoll_event event;
+		EPOLL_INIT_EVENT (&event, epoll_events [i].data.fd, events);
 
-		if (epoll_ctl (epoll_fd, EPOLL_CTL_MOD, epoll_events [i].data.fd, &epoll_events [i]) == -1)
-			g_warning ("epoll_event_get_ioares_at: epoll_ctl (EPOLL_CTL_MOD) failed, error (%d) %s", errno, g_strerror (errno));
+		if (epoll_ctl (epoll_fd, EPOLL_CTL_MOD, event.data.fd, &event) == -1)
+			g_error ("epoll_event_reset_fd_at: epoll_ctl (EPOLL_CTL_MOD) failed, error (%d) %s", errno, g_strerror (errno));
 	}
 }
 

@@ -214,26 +214,28 @@ selector_thread (gpointer data)
 		return;
 	}
 
+	mono_mutex_lock (&threadpool_io->lock);
+
 	for (;;) {
 		guint i;
 		guint max;
 		gint ready = 0;
 
-		mono_mutex_lock (&threadpool_io->lock);
-
 		for (i = 0; i < threadpool_io->updates_size; ++i) {
 			ThreadPoolIOUpdate *update;
-			MonoMList *list;
+			MonoMList *list = NULL;
+			gboolean is_new;
+			gpointer k;
 
 			update = &threadpool_io->updates [i];
 
 			g_assert (update->sockares);
 
-			list = mono_g_hash_table_lookup (threadpool_io->states, update->sockares->handle);
+			is_new = !mono_g_hash_table_lookup_extended (threadpool_io->states, update->sockares->handle, &k, (gpointer*) &list);
 			list = mono_mlist_append (list, (MonoObject*) update->sockares);
 			mono_g_hash_table_replace (threadpool_io->states, update->sockares->handle, list);
 
-			threadpool_io->backend.update_add (GPOINTER_TO_INT (update->sockares->handle), get_events (list), mono_mlist_next (list) == NULL);
+			threadpool_io->backend.update_add (GPOINTER_TO_INT (update->sockares->handle), get_events (list), is_new);
 		}
 		if (threadpool_io->updates_size > 0) {
 			ThreadPoolIOUpdate *updates_old;
@@ -257,10 +259,10 @@ selector_thread (gpointer data)
 
 		mono_gc_set_skip_thread (FALSE);
 
+		mono_mutex_lock (&threadpool_io->lock);
+
 		if (ready == -1 || mono_runtime_is_shutting_down ())
 			break;
-
-		mono_mutex_lock (&threadpool_io->lock);
 
 		max = threadpool_io->backend.event_get_fd_max ();
 
@@ -274,32 +276,35 @@ selector_thread (gpointer data)
 			if (fd == threadpool_io->wakeup_pipes [0]) {
 				selector_thread_wakeup_drain_pipes ();
 			} else {
-				MonoMList *list = mono_g_hash_table_lookup (threadpool_io->states, GINT_TO_POINTER (fd));
+				MonoMList *list = NULL;
+				gpointer k;
 
-				if (list && (events & MONO_POLLIN) != 0) {
-					MonoSocketAsyncResult *sockares = get_sockares_for_event (&list, MONO_POLLIN);
-					if (sockares)
-						mono_threadpool_ms_enqueue_work_item (((MonoObject*) sockares)->vtable->domain, (MonoObject*) sockares);
+				if (mono_g_hash_table_lookup_extended (threadpool_io->states, GINT_TO_POINTER (fd), &k, (gpointer*) &list)) {
+					if (list && (events & MONO_POLLIN) != 0) {
+						MonoSocketAsyncResult *sockares = get_sockares_for_event (&list, MONO_POLLIN);
+						if (sockares)
+							mono_threadpool_ms_enqueue_work_item (((MonoObject*) sockares)->vtable->domain, (MonoObject*) sockares);
+					}
+					if (list && (events & MONO_POLLOUT) != 0) {
+						MonoSocketAsyncResult *sockares = get_sockares_for_event (&list, MONO_POLLOUT);
+						if (sockares)
+							mono_threadpool_ms_enqueue_work_item (((MonoObject*) sockares)->vtable->domain, (MonoObject*) sockares);
+					}
+
+					if (!list)
+						mono_g_hash_table_remove (threadpool_io->states, GINT_TO_POINTER (fd));
+					else
+						mono_g_hash_table_replace (threadpool_io->states, GINT_TO_POINTER (fd), list);
+
+					threadpool_io->backend.event_reset_fd_at (i, get_events (list));
 				}
-				if (list && (events & MONO_POLLOUT) != 0) {
-					MonoSocketAsyncResult *sockares = get_sockares_for_event (&list, MONO_POLLOUT);
-					if (sockares)
-						mono_threadpool_ms_enqueue_work_item (((MonoObject*) sockares)->vtable->domain, (MonoObject*) sockares);
-				}
-
-				if (!list)
-					mono_g_hash_table_remove (threadpool_io->states, GINT_TO_POINTER (fd));
-				else
-					mono_g_hash_table_replace (threadpool_io->states, GINT_TO_POINTER (fd), list);
-
-				threadpool_io->backend.event_reset_fd_at (i, get_events (list));
 			}
 
 			ready -= 1;
 		}
-
-		mono_mutex_unlock (&threadpool_io->lock);
 	}
+
+	mono_mutex_unlock (&threadpool_io->lock);
 
 	io_selector_running = FALSE;
 }
@@ -531,7 +536,8 @@ mono_threadpool_ms_io_add (MonoAsyncResult *ares, MonoSocketAsyncResult *sockare
 void
 mono_threadpool_ms_io_remove_socket (int fd)
 {
-	MonoMList *list;
+	MonoMList *list = NULL;
+	gpointer k;
 	gint i;
 
 	if (!mono_lazy_is_initialized (&io_status))
@@ -541,8 +547,7 @@ mono_threadpool_ms_io_remove_socket (int fd)
 
 	g_assert (threadpool_io->states);
 
-	list = mono_g_hash_table_lookup (threadpool_io->states, GINT_TO_POINTER (fd));
-	if (list)
+	if (mono_g_hash_table_lookup_extended (threadpool_io->states, GINT_TO_POINTER (fd), &k, (gpointer*) &list))
 		mono_g_hash_table_remove (threadpool_io->states, GINT_TO_POINTER (fd));
 
 	for (i = 0; i < threadpool_io->updates_size; ++i) {
