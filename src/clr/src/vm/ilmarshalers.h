@@ -235,7 +235,10 @@ public:
     {
     }
 
-    virtual ~ILMarshaler() {}
+    virtual ~ILMarshaler()
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
 
     void SetNDirectStubLinker(NDirectStubLinker* pslNDirect)
     {
@@ -1946,6 +1949,7 @@ public:
 
     ILWSTRMarshaler()
     {
+        LIMITED_METHOD_CONTRACT;
         m_fCoMemoryAllocated = false;
     }
 #endif // _DEBUG
@@ -2444,6 +2448,7 @@ public:
         m_dwCCHLocal(-1)
        ,m_dwLocalBuffer(-1)
     {
+        LIMITED_METHOD_CONTRACT;
     }
 
     virtual bool SupportsArgumentMarshal(DWORD dwMarshalFlags, UINT* pErrorResID);
@@ -2475,6 +2480,7 @@ public:
     ILVBByValStrMarshaler() :
         m_dwCCHLocal(-1)
     {
+        LIMITED_METHOD_CONTRACT;
     }
 
     virtual bool SupportsArgumentMarshal(DWORD dwMarshalFlags, UINT* pErrorResID);
@@ -2716,6 +2722,7 @@ public:
         m_dwOffsetLocalNum(-1),
         m_dwPinnedLocalNum(-1)
     {
+        LIMITED_METHOD_CONTRACT;
     }
 
 protected:
@@ -2745,6 +2752,7 @@ public:
     ILAsAnyMarshalerBase() :
         m_dwMarshalerLocalNum(-1)
     {
+        LIMITED_METHOD_CONTRACT;
     }
 
 protected:
@@ -2818,6 +2826,7 @@ public:
         m_idClearNativeContents(clearNatContents),
         m_idClearManaged(clearMan)
     {
+        LIMITED_METHOD_CONTRACT;
     }
     
 protected:    
