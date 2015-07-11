@@ -18,12 +18,10 @@ internal static partial class Interop
         
         // Constants from proc_info.h
         private const int MAXTHREADNAMESIZE = 64;
-        private const int PROC_PIDLISTFDS = 1;
         private const int PROC_PIDTASKALLINFO = 2;
         private const int PROC_PIDTHREADINFO = 5;
         private const int PROC_PIDLISTTHREADS = 6;
         private const int PROC_PIDPATHINFO_MAXSIZE = 4 * MAXPATHLEN;
-        private static int PROC_PIDLISTFD_SIZE = Marshal.SizeOf<proc_fdinfo>();
         private static int PROC_PIDLISTTHREADS_SIZE = (Marshal.SizeOf<uint>() * 2);
 
         // Constants from sys\resource.h
@@ -405,70 +403,6 @@ internal static partial class Interop
             }
 
             return threads;
-        }
-
-        /// <summary>
-        /// Retrieves the number of open file descriptors for the specified pid
-        /// </summary>
-        /// <returns>A count of file descriptors for this process.</returns>
-        /// <remarks>
-        /// This function doesn't use the helper since it seems to allow passing NULL
-        /// values in to the buffer and length parameters to get back an estimation 
-        /// of how much data we will need to allocate; the other flavors don't seem
-        /// to support doing that.
-        /// </remarks>
-        internal static unsafe int GetFileDescriptorCountForPid(int pid)
-        {
-            // Negative PIDs are invalid
-            if (pid < 0)
-            {
-                throw new ArgumentOutOfRangeException("pid");
-            }
-
-            // Query for an estimation about the size of the buffer we will need. This seems
-            // to add some padding from the real number, so we don't need to do that
-            int result = proc_pidinfo(pid, PROC_PIDLISTFDS, 0, (proc_fdinfo*)null, 0);
-            if (result <= 0)
-            {
-                // If we were unable to access the information, just return the empty list.  
-                // This is likely to happen for privileged processes, if the process went away
-                // by the time we tried to query it, etc.
-                return 0;
-            }
-
-            proc_fdinfo[] fds;
-            int size = (int)(result / Marshal.SizeOf<proc_fdinfo>()) + 1;
-
-            // Just in case the app opened a ton of handles between when we asked and now,
-            // make sure we retry if our buffer is filled
-            do
-            {
-                fds = new proc_fdinfo[size];
-                fixed (proc_fdinfo* pFds = fds)
-                {
-                    result = proc_pidinfo(pid, PROC_PIDLISTFDS, 0, pFds, Marshal.SizeOf<proc_fdinfo>() * fds.Length);
-                }
-
-                if (result <= 0)
-                {
-                    // If we were unable to access the information, just return the empty list.  
-                    // This is likely to happen for privileged processes, if the process went away
-                    // by the time we tried to query it, etc.
-                    return 0;
-                }
-                else
-                {
-                    checked
-                    {
-                        size *= 2;
-                    }
-                }
-            }
-            while (result == (fds.Length * Marshal.SizeOf<proc_fdinfo>()));
-
-            Debug.Assert((result % Marshal.SizeOf<proc_fdinfo>()) == 0);
-
-            return (int)(result / Marshal.SizeOf<proc_fdinfo>());
         }
 
         /// <summary>

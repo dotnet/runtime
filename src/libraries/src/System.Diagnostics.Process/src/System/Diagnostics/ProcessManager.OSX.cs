@@ -40,7 +40,6 @@ namespace System.Diagnostics
                 Interop.libproc.proc_taskallinfo temp = info.Value;
                 unsafe { procInfo.ProcessName = Marshal.PtrToStringAnsi(new IntPtr(temp.pbsd.pbi_comm)); }
                 procInfo.BasePriority = temp.pbsd.pbi_nice;
-                procInfo.HandleCount = Interop.libproc.GetFileDescriptorCountForPid(pid);
                 procInfo.VirtualBytes = (long)temp.ptinfo.pti_virtual_size;
                 procInfo.WorkingSet = (long)temp.ptinfo.pti_resident_size;
             }
