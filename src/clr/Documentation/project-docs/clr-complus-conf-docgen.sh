@@ -33,7 +33,7 @@ EOF
 INFO="This Document is machine-generated from commit $COMMIT on ${DATE}. It might be out of date."
 
 read -r -d '' HEADER << "EOF"
-When using these configurations from environment variables, the variable need to have `ComPlus_` prefix in its name. e.g. To set DumpJittedMethods to 1, add `ComPlus_DumpJittedMethods=1` to envvars.
+When using these configurations from environment variables, the variable need to have `COMPlus_` prefix in its name. e.g. To set DumpJittedMethods to 1, add `COMPlus_DumpJittedMethods=1` to envvars.
 
 See also [CLR Configurations](clr-configurations.md) for instructions.
 
