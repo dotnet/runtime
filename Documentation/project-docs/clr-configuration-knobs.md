@@ -1,11 +1,11 @@
 
 #CLR Configuration Knobs
 
-This Document is machine-generated from commit e320fc3 on 05/06/15. It might be out of date.
+This Document is machine-generated from commit 65f7881 on 08/15/15. It might be out of date.
 
 When using these configurations from environment variables, the variable need to have `ComPlus_` prefix in its name. e.g. To set DumpJittedMethods to 1, add `ComPlus_DumpJittedMethods=1` to envvars.
 
-See also [CLR Configurations](clr-configurations.md) for instructions.
+See also [Dumps and Other Tools](../botr/ryujit-overview.md#dumps-and-other-tools) for more information.
 
 Name | Description | Type | Class | Default Value | Flags 
 -----|-------------|------|-------|---------------|-------
@@ -345,7 +345,6 @@ Name | Description | Type | Class | Default Value | Flags
 `JitComponentUnitTests` | Run JIT component unit tests | DWORD | INTERNAL | 0 | REGUTIL_default
 `JitMemStats` | Display JIT memory usage statistics | DWORD | INTERNAL | 0 | REGUTIL_default
 `JitLoopHoistStats` | Display JIT loop hoisting statistics | DWORD | INTERNAL | 0 | REGUTIL_default
-`JitOldLoopHoist` | Use old form of loop hoisting. | DWORD | INTERNAL | 0 | 
 `JitDebugLogLoopCloning` | In debug builds log places where loop cloning optimizations are performed on the fast path. | DWORD | INTERNAL | 0 | REGUTIL_default
 `JitVNMapSelLimit` | If non-zero, assert if # of VNF_MapSelect applications considered reaches this | DWORD | patsubst(INTERNAL_JitVNMapSelLimit, _.*, ) | 0 | patsubst(patsubst(CLRConfig::REGUTIL_default, CLRConfig::, ), |, /)
 `JitVNMapSelBudget` | Max # of MapSelect's considered for a particular top-level invocation. | DWORD | patsubst(INTERNAL_JitVNMapSelBudget, _.*, ) | 100 | 
@@ -353,6 +352,7 @@ Name | Description | Type | Class | Default Value | Flags
 `EnableAVX` | Enable AVX instruction set for wide operations as default | DWORD | EXTERNAL | EXTERNAL_JitEnableAVX_Default | REGUTIL_default
 `MultiCoreJitProfile` | If set, use the file to store/control multi-core JIT. | STRING | INTERNAL | | 
 `MultiCoreJitProfileWriteDelay` | Set the delay after which the multi-core JIT profile will be written to disk. | DWORD | INTERNAL | 12 | 
+`JitFunctionTrace` | If non-zero, print JIT start/end logging | DWORD | INTERNAL | 0 | 
 `HashTableSize` | Size of Hashtable | DWORD | INTERNAL | 500 | REGUTIL_default
 `LargeSymCount` | Large Sym Count Size | DWORD | INTERNAL | 100000 | REGUTIL_default
 `Interpret` | Selectively uses the interpreter to execute the specified methods | STRING | INTERNAL | | REGUTIL_default
@@ -783,4 +783,3 @@ Name | Description | Type | Class | Default Value | Flags
 `VerifyAllOnLoad` |  | DWORD | EXTERNAL | | 
 `Version` | Version of CLR to load. | STRING | INTERNAL | | 
 `ShimHookLibrary` | Path to a DLL that should be notified when shim loads the runtime DLL. | STRING | INTERNAL | | 
-`SOCExtraSpew` | If true, print some extra logging information that some devs find useful | DWORD | EXTERNAL | 0 | 
