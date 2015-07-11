@@ -3,35 +3,34 @@
 
 using System.Text;
 using System.IO;
-using System.Threading;
 using Xunit;
 
 namespace System.Diagnostics.ProcessTests
 {
-    public partial class ProcessTest
+    public class ProcessStreamReadTests : ProcessTestBase
     {
-        Process CreateProcessError()
+        private Process CreateProcessError()
         {
             return CreateProcess("error");
         }
 
-        Process CreateProcessInput()
+        private Process CreateProcessInput()
         {
             return CreateProcess("input");
         }
 
-        Process CreateProcessStream()
+        private Process CreateProcessStream()
         {
             return CreateProcess("stream");
         }
 
-        Process CreateProcessByteAtATime()
+        private Process CreateProcessByteAtATime()
         {
             return CreateProcess("byteAtATime");
         }
 
         [Fact]
-        public void Process_SyncErrorStream()
+        public void TestSyncErrorStream()
         {
             Process p = CreateProcessError();
             p.StartInfo.RedirectStandardError = true;
@@ -43,7 +42,7 @@ namespace System.Diagnostics.ProcessTests
         }
 
         [Fact]
-        public void Process_AsyncErrorStream()
+        public void TestAsyncErrorStream()
         {
             for (int i = 0; i < 2; ++i)
             {
@@ -70,7 +69,7 @@ namespace System.Diagnostics.ProcessTests
         }
 
         [Fact]
-        public void Process_SyncOutputStream()
+        public void TestSyncOutputStream()
         {
             Process p = CreateProcessStream();
             p.StartInfo.RedirectStandardOutput = true;
@@ -81,7 +80,7 @@ namespace System.Diagnostics.ProcessTests
         }
 
         [Fact]
-        public void Process_AsyncOutputStream()
+        public void TestAsyncOutputStream()
         {
             for (int i = 0; i < 2; ++i)
             {
@@ -107,7 +106,7 @@ namespace System.Diagnostics.ProcessTests
         }
 
         [Fact]
-        public void Process_SyncStreams()
+        public void TestSyncStreams()
         {
             const string expected = "This string should come as output";
             Process p = CreateProcessInput();
@@ -123,7 +122,7 @@ namespace System.Diagnostics.ProcessTests
         }
 
         [Fact]
-        public void Process_AsyncHalfCharacterAtATime()
+        public void TestAsyncHalfCharacterAtATime()
         {
             var receivedOutput = false;
             Process p = CreateProcessByteAtATime();
@@ -144,7 +143,7 @@ namespace System.Diagnostics.ProcessTests
         }
 
         [Fact]
-        public void Process_StreamNegativeTests()
+        public void TestStreamNegativeTests()
         {
             {
                 Process p = new Process();

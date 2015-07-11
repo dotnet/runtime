@@ -16,12 +16,13 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="ProcessStartInfoTests.cs" />
     <Compile Include="Interop.cs" />
-    <Compile Include="ProcessTest.cs" />
-    <Compile Include="Process_EncodingTest.cs" />
-    <Compile Include="Process_StreamTests.cs" />
-    <Compile Include="Process_UseShellExecute.cs" />
+    <Compile Include="ProcessTests.cs" />
+    <Compile Include="ProcessStandardConsoleTests.cs" />
+    <Compile Include="ProcessStreamReadTests.cs" />
     <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs" />
+    <Compile Include="ProcessTestBase.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

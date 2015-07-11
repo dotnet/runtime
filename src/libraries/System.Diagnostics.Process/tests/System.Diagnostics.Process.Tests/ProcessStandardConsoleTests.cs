@@ -6,24 +6,12 @@ using Xunit;
 
 namespace System.Diagnostics.ProcessTests
 {
-    public partial class ProcessTest
+    public class ProcessStandardConsoleTests : ProcessTestBase
     {
-        [System.Runtime.InteropServices.DllImport("api-ms-win-core-console-l1-1-0.dll")]
-        private extern static int GetConsoleCP();
-
-        [System.Runtime.InteropServices.DllImport("api-ms-win-core-console-l1-1-0.dll")]
-        private extern static int GetConsoleOutputCP();
-
-        [System.Runtime.InteropServices.DllImport("api-ms-win-core-console-l1-1-0.dll")]
-        private extern static int SetConsoleCP(int codePage);
-
-        [System.Runtime.InteropServices.DllImport("api-ms-win-core-console-l1-1-0.dll")]
-        private extern static int SetConsoleOutputCP(int codePage);
-
         private const int s_ConsoleEncoding = 437;
 
         [Fact]
-        public void Process_EncodingBeforeProvider()
+        public void TestChangesInConsoleEncoding()
         {
             Action<int> run = expectedCodePage =>
             {
@@ -47,21 +35,21 @@ namespace System.Diagnostics.ProcessTests
                 return;
             }
 
-            int inputEncoding = GetConsoleCP();
-            int outputEncoding = GetConsoleOutputCP();
+            int inputEncoding = Interop.GetConsoleCP();
+            int outputEncoding = Interop.GetConsoleOutputCP();
 
             try
             {
                 {
-                    SetConsoleCP(s_ConsoleEncoding);
-                    SetConsoleOutputCP(s_ConsoleEncoding);
+                    Interop.SetConsoleCP(s_ConsoleEncoding);
+                    Interop.SetConsoleOutputCP(s_ConsoleEncoding);
 
                     run(Encoding.UTF8.CodePage);
                 }
 
                 {
-                    SetConsoleCP(s_ConsoleEncoding);
-                    SetConsoleOutputCP(s_ConsoleEncoding);
+                    Interop.SetConsoleCP(s_ConsoleEncoding);
+                    Interop.SetConsoleOutputCP(s_ConsoleEncoding);
 
                     // Register the codeprovider which will ensure 437 is enabled.
                     Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
@@ -71,10 +59,9 @@ namespace System.Diagnostics.ProcessTests
             }
             finally
             {
-                SetConsoleCP(inputEncoding);
-                SetConsoleOutputCP(outputEncoding);
+                Interop.SetConsoleCP(inputEncoding);
+                Interop.SetConsoleOutputCP(outputEncoding);
             }
         }
-
     }
 }
