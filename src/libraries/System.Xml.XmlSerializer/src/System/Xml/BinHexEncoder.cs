@@ -11,37 +11,6 @@ namespace System.Xml
         private const string s_hexDigits = "0123456789ABCDEF";
         private const int CharsChunkSize = 128;
 
-        internal static void Encode(byte[] buffer, int index, int count, XmlWriter writer)
-        {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException("buffer");
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException("index");
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException("count");
-            }
-            if (count > buffer.Length - index)
-            {
-                throw new ArgumentOutOfRangeException("count");
-            }
-
-            char[] chars = new char[(count * 2) < CharsChunkSize ? (count * 2) : CharsChunkSize];
-            int endIndex = index + count;
-            while (index < endIndex)
-            {
-                int cnt = (count < CharsChunkSize / 2) ? count : CharsChunkSize / 2;
-                int charCount = Encode(buffer, index, cnt, chars);
-                writer.WriteRaw(chars, 0, charCount);
-                index += cnt;
-                count -= cnt;
-            }
-        }
-
         internal static string Encode(byte[] inArray, int offsetIn, int count)
         {
             if (null == inArray)
