@@ -455,6 +455,7 @@ struct _MonoProfiler {
 	mono_mutex_t method_table_mutex;
 	BinaryObject *binary_objects;
 	GPtrArray *coverage_filters;
+	GPtrArray *sorted_sample_events;
 };
 
 typedef struct _WriterQueueEntry WriterQueueEntry;
@@ -1842,10 +1843,20 @@ dump_unmanaged_coderefs (MonoProfiler *prof)
 	}
 }
 
+static gint
+compare_sample_events (gconstpointer a, gconstpointer b)
+{
+	uintptr_t tid1 = (*(uintptr_t **) a) [1];
+	uintptr_t tid2 = (*(uintptr_t **) b) [1];
+
+	return tid1 > tid2 ? 1 :
+	       tid1 < tid2 ? -1 :
+	       0;
+}
+
 static void
 dump_sample_hits (MonoProfiler *prof, StatBuffer *sbuf)
 {
-	uintptr_t *sample;
 	LogBuffer *logbuffer;
 	if (!sbuf)
 		return;
@@ -1854,17 +1865,31 @@ dump_sample_hits (MonoProfiler *prof, StatBuffer *sbuf)
 		free_buffer (sbuf->next, sbuf->next->size);
 		sbuf->next = NULL;
 	}
-	for (sample = sbuf->buf; sample < sbuf->data;) {
-		int i;
+
+	g_ptr_array_set_size (prof->sorted_sample_events, 0);
+
+	for (uintptr_t *sample = sbuf->buf; sample < sbuf->data;) {
+		int count = sample [0] & 0xff;
+		int mbt_count = (sample [0] & 0xff00) >> 8;
+
+		if (sample + SAMPLE_EVENT_SIZE_IN_SLOTS (mbt_count) > sbuf->data)
+			break;
+
+		g_ptr_array_add (prof->sorted_sample_events, sample);
+
+		sample += count + 3 + 4 * mbt_count;
+	}
+
+	g_ptr_array_sort (prof->sorted_sample_events, compare_sample_events);
+
+	for (guint sidx = 0; sidx < prof->sorted_sample_events->len; sidx++) {
+		uintptr_t *sample = g_ptr_array_index (prof->sorted_sample_events, sidx);
 		int count = sample [0] & 0xff;
 		int mbt_count = (sample [0] & 0xff00) >> 8;
 		int type = sample [0] >> 16;
 		uintptr_t *managed_sample_base = sample + count + 3;
 
-		if (sample + SAMPLE_EVENT_SIZE_IN_SLOTS (mbt_count) > sbuf->data)
-			break;
-
-		for (i = 0; i < mbt_count; ++i) {
+		for (int i = 0; i < mbt_count; ++i) {
 			MonoMethod *method = (MonoMethod*)managed_sample_base [i * 4 + 0];
 			MonoDomain *domain = (MonoDomain*)managed_sample_base [i * 4 + 1];
 			void *address = (void*)managed_sample_base [i * 4 + 2];
@@ -1876,12 +1901,13 @@ dump_sample_hits (MonoProfiler *prof, StatBuffer *sbuf)
 					managed_sample_base [i * 4 + 0] = (uintptr_t)mono_jit_info_get_method (ji);
 			}
 		}
+
 		logbuffer = ensure_logbuf (20 + count * 8);
 		emit_byte (logbuffer, TYPE_SAMPLE | TYPE_SAMPLE_HIT);
 		emit_value (logbuffer, type);
 		emit_uvalue (logbuffer, prof->startup_time + (uint64_t)sample [2] * (uint64_t)10000);
 		emit_value (logbuffer, count);
-		for (i = 0; i < count; ++i) {
+		for (int i = 0; i < count; ++i) {
 			emit_ptr (logbuffer, (void*)sample [i + 3]);
 			add_code_pointer (sample [i + 3]);
 		}
@@ -1889,7 +1915,7 @@ dump_sample_hits (MonoProfiler *prof, StatBuffer *sbuf)
 		sample += count + 3;
 		/* new in data version 6 */
 		emit_uvalue (logbuffer, mbt_count);
-		for (i = 0; i < mbt_count; ++i) {
+		for (int i = 0; i < mbt_count; ++i) {
 			MonoMethod *method = (MonoMethod *) sample [i * 4 + 0];
 			uintptr_t native_offset = sample [i * 4 + 3];
 
@@ -1897,8 +1923,8 @@ dump_sample_hits (MonoProfiler *prof, StatBuffer *sbuf)
 			emit_svalue (logbuffer, 0); /* il offset will always be 0 from now on */
 			emit_svalue (logbuffer, native_offset);
 		}
-		sample += 4 * mbt_count;
 	}
+
 	dump_unmanaged_coderefs (prof);
 }
 
@@ -3197,7 +3223,9 @@ log_shutdown (MonoProfiler *prof)
 			read_perf_mmap (prof, i);
 	}
 #endif
+
 	dump_sample_hits (prof, prof->stat_buffers);
+	g_ptr_array_free (prof->sorted_sample_events, TRUE);
 
 	if (TLS_GET (LogBuffer, tlsbuffer))
 		send_buffer (prof, TLS_GET (GPtrArray, tlsmethodlist), TLS_GET (LogBuffer, tlsbuffer));
@@ -3652,6 +3680,8 @@ create_profiler (const char *filename, GPtrArray *filters)
 	if (do_counters && !need_helper_thread) {
 		need_helper_thread = 1;
 	}
+
+	prof->sorted_sample_events = g_ptr_array_sized_new (BUFFER_SIZE / SAMPLE_EVENT_SIZE_IN_SLOTS (0));
 
 #ifdef DISABLE_HELPER_THREAD
 	if (hs_mode_ondemand)
