@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -22,8 +21,7 @@ namespace Test
             var cs = new CancellationTokenSource();
             cs.Cancel();
 
-            int[] srcEnumerable = Enumerable.Range(0, 1000).ToArray();
-            ThrowOnFirstEnumerable<int> throwOnFirstEnumerable = new ThrowOnFirstEnumerable<int>(srcEnumerable);
+            IEnumerable<int> throwOnFirstEnumerable = Enumerables<int>.ThrowOnEnumeration();
 
             try
             {
@@ -48,8 +46,7 @@ namespace Test
             var cs = new CancellationTokenSource();
             cs.Cancel();
 
-            int[] srcEnumerable = Enumerable.Range(0, 1000).ToArray();
-            ThrowOnFirstEnumerable<int> throwOnFirstEnumerable = new ThrowOnFirstEnumerable<int>(srcEnumerable);
+            IEnumerable<int> throwOnFirstEnumerable = Enumerables<int>.ThrowOnEnumeration();
 
             try
             {
@@ -685,65 +682,6 @@ namespace Test
         {
             ManualResetEvent mre = new ManualResetEvent(false);
             mre.WaitOne(milliseconds);
-        }
-    }
-
-    // ---------------------------
-    // Helper classes
-    // ---------------------------
-
-    internal class ThrowOnFirstEnumerable<T> : IEnumerable<T>
-    {
-        private readonly IEnumerable<T> _innerEnumerable;
-
-        public ThrowOnFirstEnumerable(IEnumerable<T> innerEnumerable)
-        {
-            _innerEnumerable = innerEnumerable;
-        }
-
-        public IEnumerator<T> GetEnumerator()
-        {
-            return new ThrowOnFirstEnumerator<T>(_innerEnumerable.GetEnumerator());
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-    }
-
-    internal class ThrowOnFirstEnumerator<T> : IEnumerator<T>
-    {
-        private IEnumerator<T> _innerEnumerator;
-
-        public ThrowOnFirstEnumerator(IEnumerator<T> sourceEnumerator)
-        {
-            _innerEnumerator = sourceEnumerator;
-        }
-
-        public void Dispose()
-        {
-            _innerEnumerator.Dispose();
-        }
-
-        public bool MoveNext()
-        {
-            throw new InvalidOperationException("ThrowOnFirstEnumerator throws on the first MoveNext");
-        }
-
-        public T Current
-        {
-            get { return _innerEnumerator.Current; }
-        }
-
-        object IEnumerator.Current
-        {
-            get { return Current; }
-        }
-
-        public void Reset()
-        {
-            _innerEnumerator.Reset();
         }
     }
 }

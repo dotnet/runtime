@@ -206,8 +206,8 @@ namespace Test
             yield return Label("Join-Right:" + label, (start, count, source) => source(0, count).Join(other(start, count), x => x, y => y - start, (x, y) => x + start, new ModularCongruenceComparer(count)));
             yield return Label("Join-Left:" + label, (start, count, source) => other(0, count).Join(source(start, count), x => x, y => y - start, (x, y) => x + start, new ModularCongruenceComparer(count)));
 
-            yield return Label("Union-Right:" + label, (start, count, source) => source(start, count * 3 / 4).Union(other(start + count / 2, count / 2 + count % 2)));
-            yield return Label("Union-Left:" + label, (start, count, source) => other(start, count * 3 / 4).Union(source(start + count / 2, count / 2 + count % 2)));
+            yield return Label("Union-Right:" + label, (start, count, source) => source(start, count * 3 / 4).Union(other(start + count / 2, count / 2 + count % 2), new ModularCongruenceComparer(count)));
+            yield return Label("Union-Left:" + label, (start, count, source) => other(start, count * 3 / 4).Union(source(start + count / 2, count / 2 + count % 2), new ModularCongruenceComparer(count)));
 
             // When both sources are unordered any element can be matched to any other, so a different check is required.
             yield return Label("Zip-Unordered-Right:" + label, (start, count, source) => source(0, count).Zip(other(start * 2, count), (x, y) => x + start));

@@ -15,6 +15,7 @@ namespace Test
         private const int KeyFactor = 4;
         private const int GroupFactor = 8;
 
+        // Get ranges from 0 to each count.  The data is random, seeded from the size of the range.
         public static IEnumerable<object[]> OrderByRandomData(object[] counts)
         {
             foreach (int count in counts.Cast<int>())
@@ -35,6 +36,27 @@ namespace Test
                 data[i] = source.Next(count);
             }
             return data;
+        }
+
+        // Get a set of ranges, from 0 to each count, and an additional parameter denoting degree of parallelism.
+        public static IEnumerable<object[]> OrderByThreadedData(object[] counts, object[] degrees)
+        {
+            foreach (object[] results in UnorderedSources.Ranges(counts.Cast<int>(), x => degrees.Cast<int>()))
+            {
+                yield return results;
+            }
+            foreach (object[] results in Sources.Ranges(counts.Cast<int>(), x => degrees.Cast<int>()))
+            {
+                yield return results;
+            }
+
+            foreach (object[] results in OrderByRandomData(counts))
+            {
+                foreach (int degree in degrees)
+                {
+                    yield return new object[] { results[0], results[1], degree };
+                }
+            }
         }
 
         //
@@ -320,6 +342,34 @@ namespace Test
             Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Range(0, 1).OrderByDescending((Func<int, int>)null));
             Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<int>)null).OrderByDescending(x => x, Comparer<int>.Default));
             Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Range(0, 1).OrderByDescending((Func<int, int>)null, Comparer<int>.Default));
+        }
+
+        // Heavily exercises OrderBy in the face of user-delegate exceptions.
+        // On CTP-M1, this would deadlock for DOP=7,9,11,... on 4-core, but works for DOP=1..6 and 8,10,12, ...
+        //
+        // In this test, every call to the key-selector delegate throws.
+        [Theory]
+        [MemberData("OrderByThreadedData", new[] { 1, 2, 16, 128, 1024 }, new[] { 1, 2, 4, 7, 8, 31, 32 })]
+        public static void OrderBy_ThreadedDeadlock(Labeled<ParallelQuery<int>> labeled, int count, int degree)
+        {
+            ParallelQuery<int> query = labeled.Item.WithDegreeOfParallelism(degree).OrderBy<int, int>(x => { throw new DeliberateTestException(); });
+
+            AggregateException ae = Assert.Throws<AggregateException>(() => { foreach (int i in query) { } });
+            Assert.All(ae.InnerExceptions, e => Assert.IsType<DeliberateTestException>(e));
+        }
+
+        // Heavily exercises OrderBy, but only throws one user delegate exception to simulate an occasional failure.
+        [Theory]
+        [MemberData("OrderByThreadedData", new[] { 1, 2, 16, 128, 1024 }, new[] { 1, 2, 4, 7, 8, 31, 32 })]
+        public static void OrderBy_ThreadedDeadlock_SingleException(Labeled<ParallelQuery<int>> labeled, int count, int degree)
+        {
+            int countdown = Math.Min(count / 2, degree) + 1;
+
+            ParallelQuery<int> query = labeled.Item.WithDegreeOfParallelism(degree).OrderBy(x => { if (Interlocked.Decrement(ref countdown) == 0) throw new DeliberateTestException(); return x; });
+
+            AggregateException ae = Assert.Throws<AggregateException>(() => { foreach (int i in query) { } });
+            Assert.Single(ae.InnerExceptions);
+            Assert.All(ae.InnerExceptions, e => Assert.IsType<DeliberateTestException>(e));
         }
 
         //

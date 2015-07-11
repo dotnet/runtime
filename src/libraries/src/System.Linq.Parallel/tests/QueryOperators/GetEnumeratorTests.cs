@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
@@ -65,6 +66,22 @@ namespace Test
         public static void GetEnumerator_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             GetEnumerator(labeled, count);
+        }
+
+        [Theory]
+        [MemberData("Ranges", (object)(new int[] { 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        public static void GetEnumerator_MoveNextAfterQueryOpeningFailsIsIllegal(Labeled<ParallelQuery<int>> labeled, int count)
+        {
+            ParallelQuery<int> query = labeled.Item.Select<int, int>(x => { throw new DeliberateTestException(); }).OrderBy(x => x);
+
+            IEnumerator<int> enumerator = query.GetEnumerator();
+
+            //moveNext will cause queryOpening to fail (no element generated)
+            AggregateException ae = Assert.Throws<AggregateException>(() => enumerator.MoveNext());
+            Assert.All(ae.InnerExceptions, e => Assert.IsType<DeliberateTestException>(e));
+
+            //moveNext after queryOpening failed
+            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
         }
     }
 }
