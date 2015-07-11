@@ -12,6 +12,7 @@ namespace Test
     {
         private const int DuplicateFactor = 8;
 
+        // Get two ranges, with the right starting where the left ends
         public static IEnumerable<object[]> UnionUnorderedData(object[] leftCounts, object[] rightCounts)
         {
             foreach (object[] parms in UnorderedSources.BinaryRanges(leftCounts.Cast<int>(), (l, r) => l, rightCounts.Cast<int>()))
@@ -21,6 +22,7 @@ namespace Test
         }
 
         // Union returns only the ordered portion ordered.  See Issue #1331
+        // Get two ranges, both ordered.
         public static IEnumerable<object[]> UnionData(object[] leftCounts, object[] rightCounts)
         {
             foreach (object[] parms in UnionUnorderedData(leftCounts, rightCounts))
@@ -29,6 +31,7 @@ namespace Test
             }
         }
 
+        // Get two ranges, with only the left being ordered.
         public static IEnumerable<object[]> UnionFirstOrderedData(object[] leftCounts, object[] rightCounts)
         {
             foreach (object[] parms in UnionUnorderedData(leftCounts, rightCounts))
@@ -37,6 +40,7 @@ namespace Test
             }
         }
 
+        // Get two ranges, with only the right being ordered.
         public static IEnumerable<object[]> UnionSecondOrderedData(object[] leftCounts, object[] rightCounts)
         {
             foreach (object[] parms in UnionUnorderedData(leftCounts, rightCounts))
@@ -45,6 +49,8 @@ namespace Test
             }
         }
 
+        // Get two ranges, both sourced from arrays, with duplicate items in each array.
+        // Used in distinctness tests, in contrast to relying on a Select predicate to generate duplicate items.
         public static IEnumerable<object[]> UnionSourceMultipleData(object[] counts)
         {
             foreach (int leftCount in counts.Cast<int>())
@@ -262,12 +268,12 @@ namespace Test
         {
             ParallelQuery<int> leftQuery = left.Item;
             ParallelQuery<int> rightQuery = right.Item;
-            int offset = leftCount;
             leftCount = Math.Min(DuplicateFactor, leftCount);
             rightCount = Math.Min(DuplicateFactor, rightCount);
+            int offset = leftCount - Math.Min(leftCount, rightCount) / 2;
             int expectedCount = Math.Max(leftCount, rightCount) + (Math.Min(leftCount, rightCount) + 1) / 2;
             IntegerRangeSet seen = new IntegerRangeSet(0, expectedCount);
-            foreach (int i in leftQuery.Select(x => x % DuplicateFactor).Union(rightQuery.Select(x => (x - offset) % DuplicateFactor + leftCount - Math.Min(leftCount, rightCount) / 2)))
+            foreach (int i in leftQuery.Select(x => x % DuplicateFactor).Union(rightQuery.Select(x => (x - leftCount) % DuplicateFactor + offset), new ModularCongruenceComparer(DuplicateFactor + DuplicateFactor / 2)))
             {
                 seen.Add(i);
             }
@@ -288,12 +294,12 @@ namespace Test
         {
             ParallelQuery<int> leftQuery = left.Item;
             ParallelQuery<int> rightQuery = right.Item;
-            int offset = leftCount;
             leftCount = Math.Min(DuplicateFactor, leftCount);
             rightCount = Math.Min(DuplicateFactor, rightCount);
+            int offset = leftCount - Math.Min(leftCount, rightCount) / 2;
             int expectedCount = Math.Max(leftCount, rightCount) + (Math.Min(leftCount, rightCount) + 1) / 2;
             int seen = 0;
-            foreach (int i in leftQuery.Select(x => x % DuplicateFactor).Union(rightQuery.Select(x => (x - offset) % DuplicateFactor + leftCount - Math.Min(leftCount, rightCount) / 2)))
+            foreach (int i in leftQuery.Select(x => x % DuplicateFactor).Union(rightQuery.Select(x => (x - leftCount) % DuplicateFactor + offset), new ModularCongruenceComparer(DuplicateFactor + DuplicateFactor / 2)))
             {
                 Assert.Equal(seen++, i);
             }
@@ -314,14 +320,14 @@ namespace Test
         {
             ParallelQuery<int> leftQuery = left.Item;
             ParallelQuery<int> rightQuery = right.Item;
-            int offset = leftCount;
             leftCount = Math.Min(DuplicateFactor, leftCount);
             rightCount = Math.Min(DuplicateFactor, rightCount);
+            int offset = leftCount - Math.Min(leftCount, rightCount) / 2;
             int expectedCount = Math.Max(leftCount, rightCount) + (Math.Min(leftCount, rightCount) + 1) / 2;
 
             IntegerRangeSet seenUnordered = new IntegerRangeSet(leftCount, expectedCount - leftCount);
             int seen = 0;
-            foreach (int i in leftQuery.Select(x => x % DuplicateFactor).Union(rightQuery.Select(x => (x - offset) % DuplicateFactor + leftCount - Math.Min(leftCount, rightCount) / 2)))
+            foreach (int i in leftQuery.Select(x => x % DuplicateFactor).Union(rightQuery.Select(x => (x - leftCount) % DuplicateFactor + offset), new ModularCongruenceComparer(DuplicateFactor + DuplicateFactor / 2)))
             {
                 if (i < leftCount)
                 {
@@ -329,10 +335,10 @@ namespace Test
                 }
                 else
                 {
+                    Assert.Equal(leftCount, seen);
                     seenUnordered.Add(i);
                 }
             }
-            Assert.Equal(leftCount, seen);
             seenUnordered.AssertComplete();
         }
 
@@ -350,17 +356,18 @@ namespace Test
         {
             ParallelQuery<int> leftQuery = left.Item;
             ParallelQuery<int> rightQuery = right.Item;
-            int offset = leftCount;
             leftCount = Math.Min(DuplicateFactor, leftCount);
             rightCount = Math.Min(DuplicateFactor, rightCount);
+            int offset = leftCount - Math.Min(leftCount, rightCount) / 2;
             int expectedCount = Math.Max(leftCount, rightCount) + (Math.Min(leftCount, rightCount) + 1) / 2;
 
             IntegerRangeSet seenUnordered = new IntegerRangeSet(0, leftCount);
             int seen = leftCount;
-            foreach (int i in leftQuery.Select(x => x % DuplicateFactor).Union(rightQuery.Select(x => (x - offset) % DuplicateFactor + leftCount - Math.Min(leftCount, rightCount) / 2)))
+            foreach (int i in leftQuery.Select(x => x % DuplicateFactor).Union(rightQuery.Select(x => (x - leftCount) % DuplicateFactor + offset), new ModularCongruenceComparer(DuplicateFactor + DuplicateFactor / 2)))
             {
                 if (i >= leftCount)
                 {
+                    seenUnordered.AssertComplete();
                     Assert.Equal(seen++, i);
                 }
                 else
@@ -369,7 +376,6 @@ namespace Test
                 }
             }
             Assert.Equal(expectedCount, seen);
-            seenUnordered.AssertComplete();
         }
 
         [Theory]
@@ -386,12 +392,12 @@ namespace Test
         {
             ParallelQuery<int> leftQuery = left.Item;
             ParallelQuery<int> rightQuery = right.Item;
-            int offset = leftCount;
             leftCount = Math.Min(DuplicateFactor, leftCount);
             rightCount = Math.Min(DuplicateFactor, rightCount);
+            int offset = leftCount - Math.Min(leftCount, rightCount) / 2;
             int expectedCount = Math.Max(leftCount, rightCount) + (Math.Min(leftCount, rightCount) + 1) / 2;
             IntegerRangeSet seen = new IntegerRangeSet(0, expectedCount);
-            Assert.All(leftQuery.Select(x => x % DuplicateFactor).Union(rightQuery.Select(x => (x - offset) % DuplicateFactor + leftCount - Math.Min(leftCount, rightCount) / 2)).ToList(),
+            Assert.All(leftQuery.Select(x => x % DuplicateFactor).Union(rightQuery.Select(x => (x - leftCount) % DuplicateFactor + offset), new ModularCongruenceComparer(DuplicateFactor + DuplicateFactor / 2)).ToList(),
                 x => seen.Add(x));
             seen.AssertComplete();
         }
@@ -410,13 +416,14 @@ namespace Test
         {
             ParallelQuery<int> leftQuery = left.Item;
             ParallelQuery<int> rightQuery = right.Item;
-            int offset = leftCount;
             leftCount = Math.Min(DuplicateFactor, leftCount);
             rightCount = Math.Min(DuplicateFactor, rightCount);
+            int offset = leftCount - Math.Min(leftCount, rightCount) / 2;
             int expectedCount = Math.Max(leftCount, rightCount) + (Math.Min(leftCount, rightCount) + 1) / 2;
             int seen = 0;
-            Assert.All(leftQuery.Select(x => x % DuplicateFactor).Union(rightQuery.Select(x => (x - offset) % DuplicateFactor + leftCount - Math.Min(leftCount, rightCount) / 2)).ToList(),
-                x => Assert.Equal(seen++, x));
+
+            Assert.All(leftQuery.Select(x => x % DuplicateFactor).Union(rightQuery.Select(x => (x - leftCount) % DuplicateFactor + offset), new ModularCongruenceComparer(DuplicateFactor + DuplicateFactor / 2)).ToList(),
+              x => Assert.Equal(seen++, x));
             Assert.Equal(expectedCount, seen);
         }
 
@@ -522,52 +529,6 @@ namespace Test
         public static void Union_SecondOrdered_SourceMultiple_Longrunning(ParallelQuery<int> leftQuery, int leftCount, ParallelQuery<int> rightQuery, int rightCount, int count)
         {
             Union_SecondOrdered_SourceMultiple(leftQuery, leftCount, rightQuery, rightCount, count);
-        }
-
-        [Theory]
-        [MemberData("UnionUnorderedData", new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 8 })]
-        public static void Union_Unordered_CustomComparator(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
-        {
-            ParallelQuery<int> leftQuery = left.Item;
-            ParallelQuery<int> rightQuery = right.Item;
-            IntegerRangeSet seen = new IntegerRangeSet(0, Math.Min(DuplicateFactor, leftCount + rightCount));
-            foreach (int i in leftQuery.Union(rightQuery, new ModularCongruenceComparer(DuplicateFactor)))
-            {
-                Assert.InRange(i, 0, leftCount + rightCount - 1);
-                seen.Add(i % DuplicateFactor);
-            }
-            seen.AssertComplete();
-        }
-
-        [Theory]
-        [OuterLoop]
-        [MemberData("UnionUnorderedData", new int[] { 512, 1024 * 8 }, new int[] { 0, 1, 1024, 1024 * 16 })]
-        public static void Union_Unordered_CustomComparator_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
-        {
-            Union_Unordered_CustomComparator(left, leftCount, right, rightCount);
-        }
-
-        [Theory]
-        [MemberData("UnionData", new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 8 })]
-        public static void Union_CustomComparator(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
-        {
-            ParallelQuery<int> leftQuery = left.Item;
-            ParallelQuery<int> rightQuery = right.Item;
-
-            int seen = 0;
-            foreach (int i in leftQuery.Union(rightQuery, new ModularCongruenceComparer(DuplicateFactor)))
-            {
-                Assert.Equal(seen++, i);
-            }
-            Assert.Equal(Math.Min(DuplicateFactor, leftCount + rightCount), seen);
-        }
-
-        [Theory]
-        [OuterLoop]
-        [MemberData("UnionData", new int[] { 512, 1024 * 8 }, new int[] { 0, 1, 1024, 1024 * 16 })]
-        public static void Union_CustomComparator_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
-        {
-            Union_CustomComparator(left, leftCount, right, rightCount);
         }
 
         [Fact]

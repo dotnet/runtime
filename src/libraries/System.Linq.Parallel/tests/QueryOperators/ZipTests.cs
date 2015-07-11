@@ -13,11 +13,18 @@ namespace Test
         //
         // Zip
         //
+
+        // Get two ranges, where the right starts at the end of the left range.
         public static IEnumerable<object[]> ZipUnorderedData(object[] counts)
         {
-            foreach (object[] parms in UnorderedSources.BinaryRanges(counts.Cast<int>(), (left, right) => left, counts.Cast<int>())) yield return parms.Take(4).ToArray();
+            foreach (object[] parms in UnorderedSources.BinaryRanges(counts.Cast<int>(), (left, right) => left, counts.Cast<int>()))
+            {
+                yield return parms.Take(4).ToArray();
+            }
         }
 
+        // Get two ranges, where the right starts and the end of the left range.
+        // Either or both range will be ordered.
         public static IEnumerable<object[]> ZipData(object[] counts)
         {
             foreach (object[] parms in ZipUnorderedData(counts))
@@ -25,6 +32,18 @@ namespace Test
                 yield return new object[] { ((Labeled<ParallelQuery<int>>)parms[0]).Order(), parms[1], ((Labeled<ParallelQuery<int>>)parms[2]).Order(), parms[3] };
                 yield return new object[] { ((Labeled<ParallelQuery<int>>)parms[0]).Order(), parms[1], parms[2], parms[3] };
                 yield return new object[] { parms[0], parms[1], ((Labeled<ParallelQuery<int>>)parms[2]).Order(), parms[3] };
+            }
+        }
+
+        // Get two ranges, both from 0 to each count, and having an extra parameter denoting the degree or parallelism to use.
+        public static IEnumerable<object[]> ZipThreadedData(object[] counts, object[] degrees)
+        {
+            foreach (object[] left in Sources.Ranges(counts))
+            {
+                foreach (object[] right in Sources.Ranges(counts.Cast<int>(), x => degrees.Cast<int>()))
+                {
+                    yield return new object[] { left[0], left[1], right[0], right[1], right[2] };
+                }
             }
         }
 
@@ -124,6 +143,19 @@ namespace Test
         public static void Zip_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             Zip_NotPipelined(left, leftCount, right, rightCount);
+        }
+
+        // Zip with ordering on showed issues, but it was due to the ordering component.
+        // This is included as a regression test for that particular repro.
+        [Theory]
+        [OuterLoop]
+        [MemberData("ZipThreadedData", new[] { 1, 2, 16, 128, 1024 }, new[] { 1, 2, 4, 7, 8, 31, 32 })]
+        public static void Zip_AsOrdered_ThreadedDeadlock(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int degree)
+        {
+            ParallelQuery<int> query = left.Item.WithDegreeOfParallelism(degree).Zip<int, int, int>(right.Item, (a, b) => { throw new DeliberateTestException(); });
+
+            AggregateException ae = Assert.Throws<AggregateException>(() => query.ToArray());
+            Assert.All(ae.InnerExceptions, e => Assert.IsType<DeliberateTestException>(e));
         }
 
         [Fact]

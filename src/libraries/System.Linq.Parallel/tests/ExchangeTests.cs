@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
@@ -10,183 +11,198 @@ namespace Test
 {
     public class ExchangeTests
     {
-        [Fact]
-        public static void SimplePartitionMergeWhereScanTest()
-        {
-            for (int i = 1; i <= 128; i *= 2)
-            {
-                SimplePartitionMergeWhereScanTest1(1024 * 8, i, true);
-                SimplePartitionMergeWhereScanTest1(1024 * 8, i, false);
-            }
-        }
-
-        [Fact]
-        [OuterLoop]
-        public static void SimplePartitionMergeWhereScanTest_LongRunning()
-        {
-            for (int i = 1; i <= 128; i *= 2)
-            {
-                SimplePartitionMergeWhereScanTest1(1024 * 1024 * 2, i, true);
-                SimplePartitionMergeWhereScanTest1(1024 * 1024 * 2, i, false);
-            }
-        }
-
-        private static void SimplePartitionMergeWhereScanTest1(int dataSize, int partitions, bool pipeline)
-        {
-            int[] data = new int[dataSize];
-            for (int i = 0; i < dataSize; i++)
-                data[i] = i;
-
-            var whereOp = data.AsParallel()
-                .Where(delegate (int x) { return (x % 2) == 0; }); // select only even elements
-
-            IEnumerator<int> stream = whereOp.GetEnumerator();
-
-            int count = 0;
-            while (stream.MoveNext())
-            {
-                // @TODO: verify all the elements we expected are present.
-                count++;
-            }
-
-            if (count != (dataSize / 2))
-            {
-                Assert.True(false, string.Format("SimplePartitionMergeWhereScanTest1: {0}, {1}, {2}:  > FAILED:  count does not equal (dataSize/2)?", dataSize, partitions, pipeline));
-            }
-        }
-
-        [Fact]
-        public static void CheckWhereSelectComposition()
-        {
-            CheckWhereSelectCompositionCore(1024 * 8);
-        }
-
-        private static void CheckWhereSelectCompositionCore(int dataSize)
-        {
-            int[] data = new int[dataSize];
-            for (int i = 0; i < dataSize; i++)
-                data[i] = i;
-
-            var whereOp = data.AsParallel().Where(
-                delegate (int x) { return (x % 2) == 0; }); // select only even elements
-            var selectOp = whereOp.Select(
-                delegate (int x) { return x * 2; }); // just double the elements
-
-            // Now verify the output is what we expect.
-
-            int expectSum = 0;
-            for (int i = 0; i < dataSize; i++)
-                if ((i % 2) == 0)
-                    expectSum += (i * 2);
-
-            int realSum = 0;
-            IEnumerator<int> e = selectOp.GetEnumerator();
-            while (e.MoveNext())
-            {
-                realSum += e.Current;
-            }
-
-            if (realSum != expectSum)
-            {
-                Assert.True(false, string.Format("CheckWhereSelectComposition datasize({0}):  actual sum does not equal expected sum.", dataSize));
-            }
-        }
-
-        [Fact]
-        public static void PartitioningTest()
-        {
-            PartitioningTestCore(true, 1, 0, 10);
-            PartitioningTestCore(false, 1, 0, 10);
-
-            PartitioningTestCore(true, 1, 0, 500);
-            PartitioningTestCore(false, 1, 0, 520);
-
-            PartitioningTestCore(true, 4, 0, 500);
-            PartitioningTestCore(false, 4, 0, 520);
-        }
-
-        [Fact]
-        [OuterLoop]
-        public static void PartitioningTest_LongRunning()
-        {
-            PartitioningTestCore(true, 2, 0, 900);
-            PartitioningTestCore(false, 2, 0, 900);
-        }
-
-        private static void PartitioningTestCore(bool stripedPartitioning, int partitions, int minLen, int maxLen)
-        {
-            for (int len = minLen; len < maxLen; len++)
-            {
-                int[] arr = Enumerable.Range(0, len).ToArray();
-                IEnumerable<int> query;
-
-                if (stripedPartitioning)
-                {
-                    query = arr.AsParallel().AsOrdered().WithDegreeOfParallelism(partitions).Take(len).Select(i => i);
-                }
-                else
-                {
-                    query = arr.AsParallel().AsOrdered().WithDegreeOfParallelism(partitions).Select(i => i);
-                }
-
-                if (!arr.SequenceEqual(query))
-                {
-                    Console.WriteLine("PartitioningTest: {0}, {1}, {2}, {3}", stripedPartitioning, partitions, minLen, maxLen);
-                    Assert.True(false, string.Format("  ** FAILED: incorrect output for array of length {0}", len));
-                }
-            }
-        }
-
-        [Fact]
-        public static void OrderedPipeliningTest()
-        {
-            OrderedPipeliningTest1(4, true);
-            OrderedPipeliningTest1(4, false);
-            OrderedPipeliningTest1(10007, true);
-            OrderedPipeliningTest1(10007, false);
-
-            OrderedPipeliningTest2(true);
-            OrderedPipeliningTest2(false);
-        }
+        private static readonly ParallelMergeOptions[] Options = new[] {
+            ParallelMergeOptions.AutoBuffered,
+            ParallelMergeOptions.Default,
+            ParallelMergeOptions.FullyBuffered,
+            ParallelMergeOptions.NotBuffered
+        };
 
         /// <summary>
-        /// Checks whether an ordered pipelining merge produces the correct output.
+        /// Get a set of ranges, running for each count in `counts`, with 1, 2, and 4 counts for partitions.
         /// </summary>
-        private static void OrderedPipeliningTest1(int dataSize, bool buffered)
+        /// <param name="counts">The sizes of ranges to return.</param>
+        /// <returns>Entries for test data.
+        /// The first element is the Labeled{ParallelQuery{int}} range,
+        /// the second element is the count, and the third is the number of partitions or degrees of parallelism to use.</returns>
+        public static IEnumerable<object[]> PartitioningData(object[] counts)
         {
-            ParallelMergeOptions merge = buffered ? ParallelMergeOptions.FullyBuffered : ParallelMergeOptions.NotBuffered;
-
-            IEnumerable<int> src = Enumerable.Range(0, dataSize);
-            if (!Enumerable.SequenceEqual(src.AsParallel().AsOrdered().WithMergeOptions(merge).Select(x => x), src))
+            foreach (object[] results in Sources.Ranges(counts.Cast<int>(), x => new[] { 1, 2, 4 }))
             {
-                Assert.True(false, string.Format("OrderedPipeliningTest1: dataSize={0}, buffered={1}:  > FAILED: Incorrect output.", dataSize, buffered));
+                yield return results;
+            }
+        }
+
+        // For each source, run with each buffering option.
+        /// <summary>
+        /// Get a set of ranges, and running for each count in `counts`, with each possible ParallelMergeOption
+        /// </summary>
+        /// <param name="counts">The sizes of ranges to return.</param>
+        /// <returns>Entries for test data.
+        /// The first element is the Labeled{ParallelQuery{int}} range,
+        /// the second element is the count, and the third is the ParallelMergeOption to use.</returns>
+        public static IEnumerable<object[]> MergeData(object[] counts)
+        {
+            foreach (object[] results in Sources.Ranges(counts.Cast<int>(), x => Options))
+            {
+                yield return results;
             }
         }
 
         /// <summary>
-        /// Checks whether an ordered pipelining merge pipelines the results
-        /// instead of running in a stop-and-go fashion.
+        ///For each count, return an Enumerable source that fails (throws an exception) on that count, with each buffering option.
         /// </summary>
-        private static void OrderedPipeliningTest2(bool buffered)
+        /// <param name="counts">The sizes of ranges to return.</param>
+        /// <returns>Entries for test data.
+        /// The first element is the Labeled{ParallelQuery{int}} range,
+        /// the second element is the count, and the third is the ParallelMergeOption to use.</returns>
+        public static IEnumerable<object[]> ThrowOnCount_AllMergeOptions_MemberData(object[] counts)
         {
-            ParallelMergeOptions merge = buffered ? ParallelMergeOptions.AutoBuffered : ParallelMergeOptions.NotBuffered;
-
-            IEnumerable<int> src = Enumerable.Range(0, int.MaxValue)
-                .Select(x => { if (x == 100000000) throw new Exception(); return x; });
-
-            try
+            foreach (int count in counts.Cast<int>())
             {
-                int expect = 0;
-                int got = Enumerable.First(src.AsParallel().AsOrdered().WithMergeOptions(merge).Select(x => x));
-                if (got != expect)
+                var labeled = Labeled.Label("ThrowOnEnumeration " + count, Enumerables<int>.ThrowOnEnumeration(count).AsParallel().AsOrdered());
+                foreach (ParallelMergeOptions option in Options)
                 {
-                    Assert.True(false, string.Format("OrderedPipeliningTest2: buffered={0}  > FAILED: Expected {1}, got {2}.", buffered, expect, got));
+                    yield return new object[] { labeled, count, option };
                 }
             }
-            catch (Exception e)
+        }
+
+        // The following tests attempt to test internal behavior,
+        // but there doesn't appear to be a way to reliably (or automatically) observe it.
+        // The basic tests are covered elsewhere, although without WithDegreeOfParallelism
+        // or WithMergeOptions
+
+        [Theory]
+        [MemberData("PartitioningData", (object)(new int[] { 0, 1, 2, 16, 1024 }))]
+        public static void Partitioning_Default(Labeled<ParallelQuery<int>> labeled, int count, int partitions)
+        {
+            int seen = 0;
+            foreach (int i in labeled.Item.WithDegreeOfParallelism(partitions).Select(i => i))
             {
-                Assert.True(false, string.Format("OrderedPipeliningTest2: buffered={0}:  > FAILED.  Caught an exception - {1}", buffered, e));
+                Assert.Equal(seen++, i);
             }
+        }
+
+        [Theory]
+        [OuterLoop]
+        [MemberData("PartitioningData", (object)(new int[] { 1024 * 4, 1024 * 1024 }))]
+        public static void Partitioning_Default_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int partitions)
+        {
+            Partitioning_Default(labeled, count, partitions);
+        }
+
+        [Theory]
+        [MemberData("PartitioningData", (object)(new int[] { 0, 1, 2, 16, 1024 }))]
+        public static void Partitioning_Striped(Labeled<ParallelQuery<int>> labeled, int count, int partitions)
+        {
+            int seen = 0;
+            foreach (int i in labeled.Item.WithDegreeOfParallelism(partitions).Take(count).Select(i => i))
+            {
+                Assert.Equal(seen++, i);
+            }
+        }
+
+        [Theory]
+        [OuterLoop]
+        [MemberData("PartitioningData", (object)(new int[] { 1024 * 4, 1024 * 1024 }))]
+        public static void Partitioning_Striped_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int partitions)
+        {
+            Partitioning_Striped(labeled, count, partitions);
+        }
+
+        [Theory]
+        [MemberData("MergeData", (object)(new int[] { 0, 1, 2, 16, 1024 }))]
+        public static void Merge_Ordered(Labeled<ParallelQuery<int>> labeled, int count, ParallelMergeOptions options)
+        {
+            int seen = 0;
+            foreach (int i in labeled.Item.WithMergeOptions(options).Select(i => i))
+            {
+                Assert.Equal(seen++, i);
+            }
+        }
+
+        [Theory]
+        [OuterLoop]
+        [MemberData("MergeData", (object)(new int[] { 1024 * 4, 1024 * 1024 }))]
+        public static void Merge_Ordered_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, ParallelMergeOptions options)
+        {
+            Merge_Ordered(labeled, count, options);
+        }
+
+        [Theory]
+        [MemberData("MergeData", (object)(new int[] { 16, 1024 }))]
+        [MemberData("ThrowOnCount_AllMergeOptions_MemberData", (object)(new int[] { 16, 1024 }))]
+        // FailingMergeData has enumerables that throw errors when attempting to perform the nth enumeration.
+        // This test checks whether the query runs in a pipelined or buffered fashion.
+        public static void Merge_Ordered_Pipelining(Labeled<ParallelQuery<int>> labeled, int count, ParallelMergeOptions options)
+        {
+            Assert.Equal(0, labeled.Item.WithMergeOptions(options).Select(x => x).First());
+        }
+
+        [Theory]
+        [OuterLoop]
+        [MemberData("MergeData", (object)(new int[] { 1024 * 4, 1024 * 1024 }))]
+        [MemberData("ThrowOnCount_AllMergeOptions_MemberData", (object)(new int[] { 1024 * 4, 1024 * 1024 }))]
+        public static void Merge_Ordered_Pipelining_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, ParallelMergeOptions options)
+        {
+            Merge_Ordered_Pipelining(labeled, count, options);
+        }
+
+        [Theory]
+        [MemberData("Ranges", (object)(new int[] { 2 }), MemberType = typeof(UnorderedSources))]
+        public static void Merge_ArgumentException(Labeled<ParallelQuery<int>> labeled, int count)
+        {
+            ParallelQuery<int> query = labeled.Item;
+
+            Assert.Throws<ArgumentException>(() => query.WithMergeOptions((ParallelMergeOptions)4));
+        }
+
+        [Fact]
+        public static void Merge_ArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<int>)null).WithMergeOptions(ParallelMergeOptions.AutoBuffered));
+        }
+
+        // The plinq chunk partitioner takes an IEnumerator over the source, and disposes the
+        // enumerator when it is finished. If an exception occurs, the calling enumerator disposes
+        // the source enumerator... but then other worker threads may generate ODEs.
+        // This test verifies any such ODEs are not reflected in the output exception.
+        [Theory]
+        [MemberData("BinaryRanges", new int[] { 16 }, new int[] { 16 }, MemberType = typeof(UnorderedSources))]
+        public static void PlinqChunkPartitioner_DontEnumerateAfterException(Labeled<ParallelQuery<int>> left, int leftCount,
+            Labeled<ParallelQuery<int>> right, int rightCount)
+        {
+            ParallelQuery<int> query =
+                left.Item.WithExecutionMode(ParallelExecutionMode.ForceParallelism)
+                    .Select(x => { if (x == 4) throw new DeliberateTestException(); return x; })
+                    .Zip(right.Item, (a, b) => a + b)
+                .AsParallel().WithExecutionMode(ParallelExecutionMode.ForceParallelism);
+
+            AggregateException ae = Assert.Throws<AggregateException>(() => query.ToArray());
+            Assert.Single(ae.InnerExceptions);
+            Assert.All(ae.InnerExceptions, e => Assert.IsType<DeliberateTestException>(e));
+        }
+
+        // The stand-alone chunk partitioner takes an IEnumerator over the source, and
+        // disposes the enumerator when it is finished.  If an exception occurs, the calling
+        // enumerator disposes the source enumerator... but then other worker threads may generate ODEs.
+        // This test verifies any such ODEs are not reflected in the output exception.
+        [Theory]
+        [MemberData("BinaryRanges", new int[] { 16 }, new int[] { 16 }, MemberType = typeof(UnorderedSources))]
+        public static void ManualChunkPartitioner_DontEnumerateAfterException(
+            Labeled<ParallelQuery<int>> left, int leftCount,
+            Labeled<ParallelQuery<int>> right, int rightCount)
+        {
+            ParallelQuery<int> query =
+                Partitioner.Create(left.Item.WithExecutionMode(ParallelExecutionMode.ForceParallelism)
+                    .Select(x => { if (x == 4) throw new DeliberateTestException(); return x; })
+                    .Zip(right.Item, (a, b) => a + b))
+                .AsParallel();
+
+            AggregateException ae = Assert.Throws<AggregateException>(() => query.ToArray());
+            Assert.Single(ae.InnerExceptions);
+            Assert.All(ae.InnerExceptions, e => Assert.IsType<DeliberateTestException>(e));
         }
     }
 }
