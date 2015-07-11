@@ -3506,7 +3506,6 @@ log_shutdown (MonoProfiler *prof)
 	}
 #endif
 
-	dump_sample_hits (prof, prof->stat_buffers);
 	g_ptr_array_free (prof->sorted_sample_events, TRUE);
 
 	if (TLS_GET (LogBuffer, tlsbuffer))
@@ -3680,6 +3679,7 @@ helper_thread (void* arg)
 				continue;
 			}
 			/* time to shut down */
+			dump_sample_hits (prof, prof->stat_buffers);
 			if (thread)
 				mono_thread_detach (thread);
 			if (do_debug)
