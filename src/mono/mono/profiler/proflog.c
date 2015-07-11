@@ -296,6 +296,8 @@ typedef struct _LogBuffer LogBuffer;
  * if exinfo == TYPE_SAMPLE_HIT
  * 	[sample_type: uleb128] type of sample (SAMPLE_*)
  * 	[timestamp: uleb128] nanoseconds since startup (note: different from other timestamps!)
+ * 	if (format_version > 10)
+ * 		[thread: sleb128] thread id as difference from ptr_base
  * 	[count: uleb128] number of following instruction addresses
  * 	[ip: sleb128]* instruction pointer as difference from ptr_base
  *	if (format_version > 5)
@@ -1888,6 +1890,7 @@ dump_sample_hits (MonoProfiler *prof, StatBuffer *sbuf)
 		int mbt_count = (sample [0] & 0xff00) >> 8;
 		int type = sample [0] >> 16;
 		uintptr_t *managed_sample_base = sample + count + 3;
+		uintptr_t thread_id = sample [1];
 
 		for (int i = 0; i < mbt_count; ++i) {
 			MonoMethod *method = (MonoMethod*)managed_sample_base [i * 4 + 0];
@@ -1906,6 +1909,7 @@ dump_sample_hits (MonoProfiler *prof, StatBuffer *sbuf)
 		emit_byte (logbuffer, TYPE_SAMPLE | TYPE_SAMPLE_HIT);
 		emit_value (logbuffer, type);
 		emit_uvalue (logbuffer, prof->startup_time + (uint64_t)sample [2] * (uint64_t)10000);
+		emit_ptr (logbuffer, (void *) thread_id);
 		emit_value (logbuffer, count);
 		for (int i = 0; i < count; ++i) {
 			emit_ptr (logbuffer, (void*)sample [i + 3]);
@@ -2058,6 +2062,12 @@ dump_perf_hits (MonoProfiler *prof, void *buf, int size)
 		emit_byte (logbuffer, TYPE_SAMPLE | TYPE_SAMPLE_HIT);
 		emit_value (logbuffer, sample_type);
 		emit_uvalue (logbuffer, s->timestamp - prof->startup_time);
+		/*
+		 * No useful thread ID to write here, since throughout the
+		 * profiler we use pthread_self () but the ID we get from
+		 * perf is the kernel's thread ID.
+		 */
+		emit_ptr (logbuffer, 0);
 		emit_value (logbuffer, 1); /* count */
 		emit_ptr (logbuffer, (void*)(uintptr_t)s->ip);
 		/* no support here yet for the managed backtrace */

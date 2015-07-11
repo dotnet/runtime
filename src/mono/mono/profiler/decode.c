@@ -2574,13 +2574,16 @@ decode_buffer (ProfContext *ctx)
 				int i;
 				int sample_type = decode_uleb128 (p + 1, &p);
 				uint64_t tstamp = decode_uleb128 (p, &p);
+				void *tid = (void *) thread_id;
+				if (ctx->data_version > 10)
+					tid = (void *) (ptr_base + decode_sleb128 (p, &p));
 				int count = decode_uleb128 (p, &p);
 				for (i = 0; i < count; ++i) {
 					uintptr_t ip = ptr_base + decode_sleb128 (p, &p);
 					if ((tstamp >= time_from && tstamp < time_to))
 						add_stat_sample (sample_type, ip);
 					if (debug)
-						fprintf (outfile, "sample hit, type: %d at %p\n", sample_type, (void*)ip);
+						fprintf (outfile, "sample hit, type: %d at %p for thread %p\n", sample_type, (void*)ip, tid);
 				}
 				if (ctx->data_version > 5) {
 					count = decode_uleb128 (p, &p);
