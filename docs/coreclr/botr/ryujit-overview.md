@@ -490,22 +490,22 @@ Exception handling information is captured in an `EHblkDsc` for each exception h
 
 # Dumps and Other Tools
 
-The behavior of the JIT can be controlled via a number of configuration variables. These are declared in [inc/clrconfigvalues.h](https://github.com/dotnet/coreclr/blob/master/src/inc/clrconfigvalues.h). When used as an environment variable, the string name generally has “COMPLUS_” prepended. When used as a registry value name, the configuration name is used directly.
+The behavior of the JIT can be controlled via a number of configuration variables. These are declared in [inc/clrconfigvalues.h](https://github.com/dotnet/coreclr/blob/master/src/inc/clrconfigvalues.h). When used as an environment variable, the string name generally has “COMPlus_” prepended. When used as a registry value name, the configuration name is used directly.
 
 ## Setting configuration variables
 
 These can be set in one of three ways:
 
-* Setting the environment variable `COMPLUS_<flagname>`. For example, the following will set the `JitDump` flag so that the compilation of all methods named ‘Main’ will be dumped:
+* Setting the environment variable `COMPlus_<flagname>`. For example, the following will set the `JitDump` flag so that the compilation of all methods named ‘Main’ will be dumped:
 
-    set COMPLUS_JitDump=Main
+    set COMPlus_JitDump=Main
 
 * Setting the registry key `HKCU\Software\Microsoft\.NETFramework`, Value `<flagName>`, type `REG_SZ` or `REG_DWORD` (depending on the flag).
 * Setting the registry key `HKLM\Software\Microsoft\.NETFramework`, Value `<flagName>`, type `REG_SZ` or `REG_DWORD` (depending on the flag).
 
 ## Specifying method names
 
-The complete syntax for specifying a single method name (for a flag that takes a method name, such as `COMPLUS_JitDump`) is:
+The complete syntax for specifying a single method name (for a flag that takes a method name, such as `COMPlus_JitDump`) is:
 
 		[[<Namespace>.]<ClassName>::]<MethodName>[([<types>)]
 
@@ -527,14 +527,14 @@ The wildcard character ‘*’ can be used for <ClassName> and <MethodName>. In 
 
 Below are some of the most useful `COMPLUS` variables. Where {method-list} is specified in the list below, you can supply a space-separated list of either fully-qualified or simple method names (the former is useful when running something that has many methods of the same name), or you can specific ‘*’ to mean all methods.
 
-* `COMPLUS_JitDump`={method-list} – dump lots of useful information about what the JIT is doing (see below).
-* `COMPLUS_JitDisasm`={method-list} – dump a disassembly listing of each method.
-* `COMPLUS_JitDiffableDasm` – set to 1 to tell the JIT to avoid printing things like pointer values that can change from one invocation to the next, so that the disassembly can be more easily compared.
-* `COMPLUS_JitGCDump`={method-list} – dump the GC information.
-* `COMPLUS_JitUnwindDump`={method-list} – dump the unwind tables.
-* `COMPLUS_JitEHDump`={method-list} – dump the exception handling tables.
-* `COMPLUS_JitTimeLogFile`={file name} – this specifies a log file to which timing information is written.
-* `COMPLUS_JitTimeLogCsv`={file name} – this specifies a log file to which summary timing information can be written, in CSV form.
+* `COMPlus_JitDump`={method-list} – dump lots of useful information about what the JIT is doing (see below).
+* `COMPlus_JitDisasm`={method-list} – dump a disassembly listing of each method.
+* `COMPlus_JitDiffableDasm` – set to 1 to tell the JIT to avoid printing things like pointer values that can change from one invocation to the next, so that the disassembly can be more easily compared.
+* `COMPlus_JitGCDump`={method-list} – dump the GC information.
+* `COMPlus_JitUnwindDump`={method-list} – dump the unwind tables.
+* `COMPlus_JitEHDump`={method-list} – dump the exception handling tables.
+* `COMPlus_JitTimeLogFile`={file name} – this specifies a log file to which timing information is written.
+* `COMPlus_JitTimeLogCsv`={file name} – this specifies a log file to which summary timing information can be written, in CSV form.
 
 See also: [CLR Configuration Knobs](../project-docs/clr-configuration-knobs.md)
 
@@ -573,7 +573,7 @@ The tree nodes are indented to represent the parent-child relationship. Binary o
 
 Tree nodes are identified by their `gtTreeID`. This field only exists in DEBUG builds, but is quite useful for debugging, since all tree nodes are created from the routine `gtNewNode` (in [src/jit/gentree.cpp](https://github.com/dotnet/coreclr/blob/master/src/jit/gentree.cpp)). If you find a bad tree and wish to understand how it got corrupted, you can place a conditional breakpoint at the end of `gtNewNode` to see when it is created, and then a data breakpoint on the field that you believe is corrupted.
 
-The trees are connected by line characters (either in ASCII, by default, or in slightly more readable Unicode when `COMPLUS_JitDumpAscii=0` is specified), to make it a bit easier to read.
+The trees are connected by line characters (either in ASCII, by default, or in slightly more readable Unicode when `COMPlus_JitDumpAscii=0` is specified), to make it a bit easier to read.
 
     N037 (  0,  0) [000391] ----------L- arg0 SETUP  │  ┌──▌  argPlace  ref    REG NA $1c1
     N041 (  2,  8) [000389] ------------             │  │     ┌──▌  const(h) long 0xB410A098 REG rcx $240
