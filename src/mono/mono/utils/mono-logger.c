@@ -337,5 +337,5 @@ mono_trace_set_printerr_handler (MonoPrintCallback callback)
 {
 	g_assert (callback);
 	printerr_callback = callback;
-	g_set_print_handler (printerr_handler);
+	g_set_printerr_handler (printerr_handler);
 }
