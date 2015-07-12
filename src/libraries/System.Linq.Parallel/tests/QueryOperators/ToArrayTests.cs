@@ -48,6 +48,7 @@ namespace Test
 
         [Theory]
         [MemberData("Ranges", (object)(new int[] { 1 }), MemberType = typeof(Sources))]
+        [MemberData("ThrowOnFirstEnumeration", MemberType = typeof(UnorderedSources))]
         public static void ToArray_OperationCanceledException_PreCanceled(Labeled<ParallelQuery<int>> labeled, int count)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
