@@ -39,9 +39,11 @@ mono_ppdb_load_file (MonoImage *image)
 	const char *filename;
 	char *s, *ppdb_filename;
 	MonoImageOpenStatus status;
+#if 0
 	MonoTableInfo *tables;
 	guint32 cols [MONO_MODULE_SIZE];
 	const char *guid, *ppdb_guid;
+#endif
 	MonoPPDBFile *ppdb;
 
 	/* ppdb files drop the .exe/.dll extension */
@@ -59,7 +61,9 @@ mono_ppdb_load_file (MonoImage *image)
 	if (!ppdb_image)
 		return NULL;
 
+#if 0
 	/* Check that the images match */
+	// FIXME: ppdb files no longer have a MODULE table */
 	tables = image->tables;
 	g_assert (tables [MONO_TABLE_MODULE].rows);
 	mono_metadata_decode_row (&tables [MONO_TABLE_MODULE], 0, cols, MONO_MODULE_SIZE);
@@ -76,6 +80,7 @@ mono_ppdb_load_file (MonoImage *image)
 		mono_image_close (ppdb_image);
 		return NULL;
 	}
+#endif
 
 	ppdb = g_new0 (MonoPPDBFile, 1);
 	ppdb->image = ppdb_image;
@@ -273,7 +278,6 @@ mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrAr
 	MonoDebugSourceInfo *docinfo;
 	int i, method_idx, size, docidx, iloffset, delta_il, delta_lines, delta_cols, start_line, start_col, adv_line, adv_col;
 	gboolean first = TRUE, first_non_hidden = TRUE;
-	char *docname;
 	GArray *sps;
 	MonoSymSeqPoint sp;
 	GPtrArray *sfiles = NULL;
@@ -315,7 +319,9 @@ mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrAr
 	/* LocalSignature */
 	mono_metadata_decode_value (ptr, &ptr);
 	docidx = mono_metadata_decode_value (ptr, &ptr);
-	docname = get_docname (ppdb, image, docidx);
+	docinfo = get_docinfo (ppdb, image, docidx);
+	if (sfiles)
+		g_ptr_array_add (sfiles, docinfo);
 
 	iloffset = 0;
 	start_line = 0;

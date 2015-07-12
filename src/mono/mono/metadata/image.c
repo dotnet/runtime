@@ -930,9 +930,12 @@ mono_image_load_names (MonoImage *image)
 					0, MONO_ASSEMBLY_NAME));
 	}
 
-	image->module_name = mono_metadata_string_heap (image, 
+	/* Portable pdb images don't have a MODULE row */
+	if (image->tables [MONO_TABLE_MODULE].rows) {
+		image->module_name = mono_metadata_string_heap (image,
 			mono_metadata_decode_row_col (&image->tables [MONO_TABLE_MODULE],
 					0, MONO_MODULE_NAME));
+	}
 }
 
 static MonoImage *
