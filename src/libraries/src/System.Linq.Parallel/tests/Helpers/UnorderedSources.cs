@@ -190,6 +190,13 @@ namespace Test
             }
         }
 
+        // Return an enumerable which throws on first MoveNext.
+        // Useful for testing promptness of cancellation.
+        public static IEnumerable<object[]> ThrowOnFirstEnumeration()
+        {
+            yield return new object[] { Labeled.Label("ThrowOnFirstEnumeration", Enumerables<int>.ThrowOnEnumeration().AsParallel()), 8 };
+        }
+
         private static IEnumerable<Labeled<ParallelQuery<int>>> LabeledRanges(int start, int count)
         {
             yield return Labeled.Label("ParallelEnumerable.Range", ParallelEnumerable.Range(start, count));
