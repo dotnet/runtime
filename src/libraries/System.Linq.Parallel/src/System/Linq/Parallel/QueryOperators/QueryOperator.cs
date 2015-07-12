@@ -209,6 +209,18 @@ namespace System.Linq.Parallel
 
                 QueryResults<TOutput> results = GetQueryResults(querySettings);
 
+                // Top-level preemptive cancellation test.
+                // This handles situations where cancellation has occured before execution commences
+                // The handling for in-execution occurs in QueryTaskGroupState.QueryEnd()
+
+                if (querySettings.CancellationState.MergedCancellationToken.IsCancellationRequested)
+                {
+                    if (querySettings.CancellationState.ExternalCancellationToken.IsCancellationRequested)
+                        throw new OperationCanceledException(querySettings.CancellationState.ExternalCancellationToken);
+                    else
+                        throw new OperationCanceledException();
+                }
+
                 if (results.IsIndexible && OutputOrdered)
                 {
                     // The special array-based merge performs better if the output is ordered, because
