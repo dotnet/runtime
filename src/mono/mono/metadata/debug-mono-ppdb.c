@@ -195,6 +195,7 @@ mono_ppdb_lookup_location (MonoDebugMethodInfo *minfo, uint32_t offset)
 	const char *end;
 	char *docname;
 	int idx, size, docidx, iloffset, delta_il, delta_lines, delta_cols, start_line, start_col, adv_line, adv_col;
+	gboolean first = TRUE, first_non_hidden = TRUE;
 	MonoDebugSourceLocation *location;
 
 	g_assert (method->token);
@@ -210,26 +211,26 @@ mono_ppdb_lookup_location (MonoDebugMethodInfo *minfo, uint32_t offset)
 	size = mono_metadata_decode_blob_size (ptr, &ptr);
 	end = ptr + size;
 
-	/* First record */
+	/* Header */
+	/* LocalSignature */
+	mono_metadata_decode_value (ptr, &ptr);
 	docidx = mono_metadata_decode_value (ptr, &ptr);
 	docname = get_docname (ppdb, image, docidx);
-	iloffset = mono_metadata_decode_value (ptr, &ptr);
-	delta_lines = mono_metadata_decode_value (ptr, &ptr);
-	if (delta_lines == 0)
-		delta_cols = mono_metadata_decode_value (ptr, &ptr);
-	else
-		delta_cols = mono_metadata_decode_signed_value (ptr, &ptr);
-	start_line = mono_metadata_decode_value (ptr, &ptr);
-	start_col = mono_metadata_decode_value (ptr, &ptr);
 
+	iloffset = 0;
+	start_line = 0;
+	start_col = 0;
 	while (ptr < end) {
-		if (iloffset > offset)
-			break;
-
 		delta_il = mono_metadata_decode_value (ptr, &ptr);
-		if (delta_il == 0)
+		if (!first && delta_il == 0) {
+			/* Document record */
 			// FIXME:
 			g_assert_not_reached ();
+		}
+		if (!first && iloffset + delta_il > offset)
+			break;
+		iloffset += delta_il;
+		first = FALSE;
 
 		delta_lines = mono_metadata_decode_value (ptr, &ptr);
 		if (delta_lines == 0)
@@ -239,15 +240,16 @@ mono_ppdb_lookup_location (MonoDebugMethodInfo *minfo, uint32_t offset)
 		if (delta_lines == 0 && delta_cols == 0)
 			// FIXME:
 			g_assert_not_reached ();
-		adv_line = mono_metadata_decode_signed_value (ptr, &ptr);
-		adv_col = mono_metadata_decode_signed_value (ptr, &ptr);
-
-		if (iloffset + delta_il > offset)
-			break;
-
-		iloffset += delta_il;
-		start_line += adv_line;
-		start_col += adv_col;
+		if (first_non_hidden) {
+			start_line = mono_metadata_decode_value (ptr, &ptr);
+			start_col = mono_metadata_decode_value (ptr, &ptr);
+		} else {
+			adv_line = mono_metadata_decode_signed_value (ptr, &ptr);
+			adv_col = mono_metadata_decode_signed_value (ptr, &ptr);
+			start_line += adv_line;
+			start_col += adv_col;
+		}
+		first_non_hidden = TRUE;
 	}
 
 	location = g_new0 (MonoDebugSourceLocation, 1);
@@ -270,6 +272,8 @@ mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrAr
 	const char *end;
 	MonoDebugSourceInfo *docinfo;
 	int i, method_idx, size, docidx, iloffset, delta_il, delta_lines, delta_cols, start_line, start_col, adv_line, adv_col;
+	gboolean first = TRUE, first_non_hidden = TRUE;
+	char *docname;
 	GArray *sps;
 	MonoSymSeqPoint sp;
 	GPtrArray *sfiles = NULL;
@@ -307,35 +311,18 @@ mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrAr
 
 	sps = g_array_new (FALSE, TRUE, sizeof (MonoSymSeqPoint));
 
-	/* First record */
+	/* Header */
+	/* LocalSignature */
+	mono_metadata_decode_value (ptr, &ptr);
 	docidx = mono_metadata_decode_value (ptr, &ptr);
-	docinfo = get_docinfo (ppdb, image, docidx);
-	iloffset = mono_metadata_decode_value (ptr, &ptr);
-	delta_lines = mono_metadata_decode_value (ptr, &ptr);
-	if (delta_lines == 0)
-		delta_cols = mono_metadata_decode_value (ptr, &ptr);
-	else
-		delta_cols = mono_metadata_decode_signed_value (ptr, &ptr);
-	start_line = mono_metadata_decode_value (ptr, &ptr);
-	start_col = mono_metadata_decode_value (ptr, &ptr);
+	docname = get_docname (ppdb, image, docidx);
 
-	if (sfiles)
-		g_ptr_array_add (sfiles, docinfo);
-	if (source_files)
-		g_ptr_array_add (sindexes, GUINT_TO_POINTER (sfiles->len - 1));
-
-	memset (&sp, 0, sizeof (sp));
-	sp.il_offset = iloffset;
-	sp.line = start_line;
-	sp.column = start_col;
-	sp.end_line = start_line + delta_lines;
-	sp.end_column = start_col + delta_cols;
-
-	g_array_append_val (sps, sp);
-
+	iloffset = 0;
+	start_line = 0;
+	start_col = 0;
 	while (ptr < end) {
 		delta_il = mono_metadata_decode_value (ptr, &ptr);
-		if (delta_il == 0) {
+		if (!first && delta_il == 0) {
 			/* subsequent-document-record */
 			docidx = mono_metadata_decode_value (ptr, &ptr);
 			docinfo = get_docinfo (ppdb, image, docidx);
@@ -343,6 +330,9 @@ mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrAr
 				g_ptr_array_add (sfiles, docinfo);
 			continue;
 		}
+		iloffset += delta_il;
+		first = FALSE;
+
 		delta_lines = mono_metadata_decode_value (ptr, &ptr);
 		if (delta_lines == 0)
 			delta_cols = mono_metadata_decode_value (ptr, &ptr);
@@ -351,16 +341,19 @@ mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrAr
 
 		if (delta_lines == 0 && delta_cols == 0) {
 			/* Hidden sequence point */
-			// FIXME: This seems to be followed by garbage
 			continue;
 		}
 
-		adv_line = mono_metadata_decode_signed_value (ptr, &ptr);
-		adv_col = mono_metadata_decode_signed_value (ptr, &ptr);
-
-		iloffset += delta_il;
-		start_line += adv_line;
-		start_col += adv_col;
+		if (first_non_hidden) {
+			start_line = mono_metadata_decode_value (ptr, &ptr);
+			start_col = mono_metadata_decode_value (ptr, &ptr);
+		} else {
+			adv_line = mono_metadata_decode_signed_value (ptr, &ptr);
+			adv_col = mono_metadata_decode_signed_value (ptr, &ptr);
+			start_line += adv_line;
+			start_col += adv_col;
+		}
+		first_non_hidden = TRUE;
 
 		memset (&sp, 0, sizeof (sp));
 		sp.il_offset = iloffset;
