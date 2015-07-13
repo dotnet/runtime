@@ -1,30 +1,28 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Linq;
 using Xunit;
 
 namespace System.IO.FileSystem.Tests
 {
-    public class Directory_GetFiles_str_str_so : Directory_GetFileSystemEntries_str_str_so
+    public class DirectoryInfo_GetFileSystemInfos_str_so : Directory_GetFileSystemEntries_str_str_so
     {
         #region Utilities
 
-        protected override bool TestFiles { get { return true; } }
-        protected override bool TestDirectories { get { return false; } }
-
         public override string[] GetEntries(string path)
         {
-            return Directory.GetFiles(path, "*", SearchOption.TopDirectoryOnly);
+            return ((new DirectoryInfo(path).GetFileSystemInfos("*", SearchOption.TopDirectoryOnly).Select(x => x.FullName)).ToArray());
         }
 
         public override string[] GetEntries(string path, string searchPattern)
         {
-            return Directory.GetFiles(path, searchPattern, SearchOption.TopDirectoryOnly);
+            return ((new DirectoryInfo(path).GetFileSystemInfos(searchPattern, SearchOption.TopDirectoryOnly).Select(x => x.FullName)).ToArray());
         }
 
         public override string[] GetEntries(string path, string searchPattern, SearchOption option)
         {
-            return Directory.GetFiles(path, searchPattern, option);
+            return ((new DirectoryInfo(path).GetFileSystemInfos(searchPattern, option).Select(x => x.FullName)).ToArray());
         }
 
         #endregion

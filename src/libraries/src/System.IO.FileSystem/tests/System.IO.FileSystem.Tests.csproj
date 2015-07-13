@@ -37,6 +37,7 @@
     <Compile Include="DirectoryInfo\Delete.cs" />
     <Compile Include="DirectoryInfo\Delete_bool.cs" />
     <Compile Include="DirectoryInfo\Exists.cs" />
+    <Compile Include="DirectoryInfo\GetFileSystemInfos_str_so.cs" />
     <Compile Include="Directory\EnumerableAPIs.cs" />
     <Compile Include="Directory\GetFileSystemEntries_str_str_so.cs" />
     <Compile Include="FileStream\Flush.Sharing.cs" />
@@ -74,6 +75,8 @@
     <Compile Include="FileStream\ctor_str_fm_fa_fs.cs" />
     <Compile Include="FileStream\ctor_str_fm_fa.cs" />
     <Compile Include="FileStream\ctor_str_fm.cs" />
+    <Compile Include="File\Create_str.cs" />
+    <Compile Include="File\Create_str_i_fo.cs" />
     <Compile Include="UnseekableFileStream.cs" />
     <Compile Include="FSAssert.cs" />
     <Compile Include="FileSystemTest.cs" />
@@ -152,7 +155,7 @@
     <Compile Include="File\SetCreationTime_str_dt.cs" />
     <Compile Include="File\SetLastAccessTime_str_dt.cs" />
     <Compile Include="File\SetLastWriteTime_str_dt.cs" />
-    <Compile Include="File\WriteAll_all.cs" />
+    <Compile Include="File\WriteAllText.cs" />
     <Compile Include="File\WriteAllBytes_StrBtA.cs" />
     <Compile Include="File\AppendAll_all.cs" />
     <Compile Include="File\AppendText_str.cs" />
@@ -173,7 +176,6 @@
     <Compile Include="File\Open_str_fm.cs" />
     <Compile Include="File\Open_str_fm_fa.cs" />
     <Compile Include="FileInfo\Create.cs" />
-    <Compile Include="FileInfo\Create_str.cs" />
     <Compile Include="FileInfo\CreateText.cs" />
     <Compile Include="FileInfo\ctor_str.cs" />
     <Compile Include="FileInfo\Delete.cs" />
@@ -206,6 +208,5 @@
     <!-- Helpers -->
     <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
