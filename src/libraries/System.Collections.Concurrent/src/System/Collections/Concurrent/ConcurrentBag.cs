@@ -543,7 +543,7 @@ namespace System.Collections.Concurrent
         {
             // Short path if the bag is empty
             if (_headList == null)
-                return new List<T>().GetEnumerator(); // empty list
+                return ((IEnumerable<T>)Array.Empty<T>()).GetEnumerator();
 
             bool lockTaken = false;
             try
