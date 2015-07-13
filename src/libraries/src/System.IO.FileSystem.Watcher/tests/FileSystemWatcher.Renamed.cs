@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.IO;
 using System.Threading;
 using Xunit;
@@ -78,5 +77,28 @@ public partial class FileSystemWatcher_4000_Tests
 
             Utility.ExpectNoEvent(eventOccured, "created");
         }
+    }
+
+    [Fact]
+    public static void FileSystemWatcher_Renamed_NestedDirectory()
+    {
+        Utility.TestNestedDirectoriesHelper(WatcherChangeTypes.Renamed, (AutoResetEvent are, TemporaryTestDirectory ttd) =>
+        {
+            ttd.Move(ttd.Path + "_2");
+            Utility.ExpectEvent(are, "renamed");
+        });
+    }
+
+    [Fact]
+    public static void FileSystemWatcher_Renamed_FileInNestedDirectory()
+    {
+        Utility.TestNestedDirectoriesHelper(WatcherChangeTypes.Renamed, (AutoResetEvent are, TemporaryTestDirectory ttd) =>
+        {
+            using (var nestedFile = new TemporaryTestFile(Path.Combine(ttd.Path, "nestedFile")))
+            {
+                nestedFile.Move(nestedFile.Path + "_2");
+                Utility.ExpectEvent(are, "renamed");
+            }
+        });
     }
 }
