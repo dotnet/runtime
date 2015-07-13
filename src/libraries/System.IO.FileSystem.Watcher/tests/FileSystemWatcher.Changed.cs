@@ -77,7 +77,7 @@ public partial class FileSystemWatcher_4000_Tests
     }
 
     [Fact, ActiveIssue(2279)]
-    public static void FileSystemWatcher_ChangeWatchedFolder()
+    public static void FileSystemWatcher_Changed_WatchedFolder()
     {
         using (var dir = Utility.CreateTestDirectory())
         using (var watcher = new FileSystemWatcher())
@@ -92,5 +92,30 @@ public partial class FileSystemWatcher_4000_Tests
 
             Utility.ExpectEvent(eventOccured, "changed");
         }
+    }
+
+    [Fact]
+    public static void FileSystemWatcher_Changed_NestedDirectories()
+    {
+        Utility.TestNestedDirectoriesHelper(WatcherChangeTypes.Changed, (AutoResetEvent are, TemporaryTestDirectory ttd) =>
+        {
+            Directory.SetLastAccessTime(ttd.Path, DateTime.Now);
+            Utility.ExpectEvent(are, "changed");
+        },
+        NotifyFilters.DirectoryName | NotifyFilters.LastAccess);
+    }
+
+    [Fact]
+    public static void FileSystemWatcher_Changed_FileInNestedDirectory()
+    {
+        Utility.TestNestedDirectoriesHelper(WatcherChangeTypes.Changed, (AutoResetEvent are, TemporaryTestDirectory ttd) =>
+        {
+            using (var nestedFile = new TemporaryTestFile(Path.Combine(ttd.Path, "nestedFile")))
+            {
+                Directory.SetLastAccessTime(nestedFile.Path, DateTime.Now);
+                Utility.ExpectEvent(are, "changed");
+            }
+        },
+        NotifyFilters.DirectoryName | NotifyFilters.LastAccess | NotifyFilters.FileName);
     }
 }

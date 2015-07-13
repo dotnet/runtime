@@ -14,8 +14,30 @@ internal static partial class Interop
         [DllImport(Libraries.Libc, SetLastError = true)]
         internal static extern int inotify_add_watch(int fd, string pathname, uint mask);
 
-        [DllImport(Libraries.Libc, SetLastError = true)]
-        internal static extern int inotify_rm_watch(int fd, int wd);
+        [DllImport(Libraries.Libc, SetLastError = true, EntryPoint = "inotify_rm_watch")]
+        private static extern int inotify_rm_watch_extern(int fd, int wd);
+
+        internal static int inotify_rm_watch(int fd, int wd)
+        {
+            int result = Interop.libc.inotify_rm_watch_extern(fd, wd);
+            if (result < 0)
+            {
+                int hr = System.Runtime.InteropServices.Marshal.GetLastWin32Error();
+                if (hr == Interop.Errors.EINVAL)
+                {
+                    // This specific case means that there was a deleted event in the queue that was not processed
+                    // so this call is expected to fail since the WatchDescriptor is no longer valid and was cleaned
+                    // up automatically by the OS.
+                    result = 0;
+                }
+                else
+                {
+                    System.Diagnostics.Debug.Fail("inotify_rm_watch failed with " + hr);
+                }
+            }
+
+            return result;
+        }
 
         [Flags]
         internal enum NotifyEvents
