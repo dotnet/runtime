@@ -43,7 +43,7 @@ namespace System.Linq.Parallel
         //
 
         internal ZipQueryOperator(
-            ParallelQuery<TLeftInput> leftChildSource, IEnumerable<TRightInput> rightChildSource,
+            ParallelQuery<TLeftInput> leftChildSource, ParallelQuery<TRightInput> rightChildSource,
             Func<TLeftInput, TRightInput, TOutput> resultSelector)
             : this(
                 QueryOperator<TLeftInput>.AsQueryOperator(leftChildSource),
