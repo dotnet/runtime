@@ -73,6 +73,7 @@ namespace System.Globalization.Tests
 
         // PosTest6: uppercase character for Turkish Culture
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)] 
         public void TestTrTRUppercaseCharacter()
         {
             char ch = '\u0130';

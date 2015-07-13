@@ -10,6 +10,7 @@ namespace System.Globalization.Tests
     public class CultureInfoTwoLetterISOLanguageName
     {
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)] 
         public void PosTest1()
         {
             CultureInfo myCultureInfo = new CultureInfo("de-DE");
@@ -18,6 +19,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)] 
         public void PosTest2()
         {
             CultureInfo myCultureInfo = new CultureInfo("en");
