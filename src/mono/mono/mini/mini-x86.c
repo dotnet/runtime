@@ -5465,7 +5465,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		gboolean supported = FALSE;
 
 		if (cfg->compile_aot) {
-#if MONO_HAVE_FAST_TLS
+#if defined(MONO_HAVE_FAST_TLS)
 			supported = TRUE;
 #endif
 		} else if (mono_get_jit_tls_offset () != -1) {
