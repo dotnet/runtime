@@ -1,9 +1,11 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
+using Internal.NativeCrypto;
 
 namespace System.Security.Cryptography
 {
@@ -142,8 +144,24 @@ namespace System.Security.Cryptography
 
         protected override bool ReleaseHandle()
         {
+            // Make sure not to delete a key that we want to keep in the key container or an ephemeral key
+            if (!_fPersistKeyInCsp && 0 == (_flags & (uint)CapiHelper.CryptAcquireContextFlags.CRYPT_VERIFYCONTEXT))
+            {
+                // Delete the key container. 
+
+                uint flags = (_flags & (uint)CapiHelper.CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET) | (uint)CapiHelper.CryptAcquireContextFlags.CRYPT_DELETEKEYSET;
+                SafeProvHandle hIgnoredProv;
+                bool ignoredSuccess = CapiHelper.CryptAcquireContext(out hIgnoredProv, _containerName, _providerName, _type, flags);
+
+                // Ignoring success result code as CryptAcquireContext is being called to delete a key container rather than acquire a context.
+                // If it fails, we can't do anything about it anyway as we're in a dispose method.
+            }
+
+            bool successfullyFreed = CapiHelper.CryptReleaseContext(handle, 0);
+            Debug.Assert(successfullyFreed);
+
             SetHandle(IntPtr.Zero);
-            return true;
+            return successfullyFreed;
         }
     }
 
@@ -216,8 +234,9 @@ namespace System.Security.Cryptography
         [SecurityCritical]
         protected override bool ReleaseHandle()
         {
-            //FreeKey(handle);
-            return true;
+            bool successfullyFreed = CapiHelper.CryptDestroyKey(handle);
+            Debug.Assert(successfullyFreed);
+            return successfullyFreed;
         }
     }
 
@@ -247,8 +266,9 @@ namespace System.Security.Cryptography
         [SecurityCritical]
         protected override bool ReleaseHandle()
         {
-            //FreeHash(handle);
-            return true;
+            bool successfullyFreed = CapiHelper.CryptDestroyHash(handle);
+            Debug.Assert(successfullyFreed);
+            return successfullyFreed;
         }
     }
 }
