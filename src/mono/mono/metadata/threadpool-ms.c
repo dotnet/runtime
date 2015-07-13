@@ -35,6 +35,8 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-complex.h>
+#include <mono/utils/mono-logger.h>
+#include <mono/utils/mono-logger-internal.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-time.h>
@@ -514,6 +516,8 @@ worker_park (void)
 	mono_cond_t cond;
 	MonoInternalThread *thread = mono_thread_internal_current ();
 
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] current worker parking", GetCurrentThreadId ());
+
 	mono_cond_init (&cond, NULL);
 
 	mono_gc_set_skip_thread (TRUE);
@@ -535,6 +539,8 @@ worker_park (void)
 	mono_gc_set_skip_thread (FALSE);
 
 	mono_cond_destroy (&cond);
+
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] current worker unparking", GetCurrentThreadId ());
 }
 
 static gboolean
@@ -542,6 +548,8 @@ worker_try_unpark (void)
 {
 	gboolean res = FALSE;
 	guint len;
+
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] try unpark worker", GetCurrentThreadId ());
 
 	mono_mutex_lock (&threadpool->active_threads_lock);
 	len = threadpool->parked_threads->len;
@@ -551,6 +559,9 @@ worker_try_unpark (void)
 		res = TRUE;
 	}
 	mono_mutex_unlock (&threadpool->active_threads_lock);
+
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] try unpark worker, success? %s", GetCurrentThreadId (), res ? "yes" : "no");
+
 	return res;
 }
 
@@ -576,6 +587,8 @@ worker_thread (gpointer data)
 	ThreadPoolDomain *tpdomain, *previous_tpdomain;
 	ThreadPoolCounter counter;
 	gboolean retire = FALSE;
+
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_THREADPOOL, "[%p] worker starting", GetCurrentThreadId ());
 
 	g_assert (status >= STATUS_INITIALIZED);
 	g_assert (threadpool);
@@ -625,6 +638,9 @@ worker_thread (gpointer data)
 
 		tpdomain->outstanding_request --;
 		g_assert (tpdomain->outstanding_request >= 0);
+
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] worker running in domain %p",
+			GetCurrentThreadId (), tpdomain->domain, tpdomain->outstanding_request);
 
 		g_assert (tpdomain->domain);
 		g_assert (tpdomain->domain->threadpool_jobs >= 0);
@@ -676,12 +692,17 @@ worker_thread (gpointer data)
 		counter._.working--;
 		counter._.active --;
 	});
+
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_THREADPOOL, "[%p] worker finishing", GetCurrentThreadId ());
 }
 
 static gboolean
 worker_try_create (void)
 {
 	ThreadPoolCounter counter;
+	MonoInternalThread *thread;
+
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] try create worker", GetCurrentThreadId ());
 
 	COUNTER_ATOMIC (counter, {
 		if (counter._.working >= counter._.max_working)
@@ -690,8 +711,13 @@ worker_try_create (void)
 		counter._.active ++;
 	});
 
-	if (mono_thread_create_internal (mono_get_root_domain (), worker_thread, NULL, TRUE, 0) != NULL)
+	if ((thread = mono_thread_create_internal (mono_get_root_domain (), worker_thread, NULL, TRUE, 0)) != NULL) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] try create worker, created %p",
+			GetCurrentThreadId (), thread->tid);
 		return TRUE;
+	}
+
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] try create worker, failed", GetCurrentThreadId ());
 
 	COUNTER_ATOMIC (counter, {
 		counter._.working --;
@@ -726,6 +752,9 @@ worker_request (MonoDomain *domain)
 	g_assert (tpdomain);
 	tpdomain->outstanding_request ++;
 
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] request worker, domain = %p, outstanding_request = %d",
+		GetCurrentThreadId (), tpdomain->domain, tpdomain->outstanding_request);
+
 	mono_mutex_unlock (&threadpool->domains_lock);
 
 	if (threadpool->suspended)
@@ -733,12 +762,17 @@ worker_request (MonoDomain *domain)
 
 	monitor_ensure_running ();
 
-	if (worker_try_unpark ())
+	if (worker_try_unpark ()) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] request worker, unparked", GetCurrentThreadId ());
 		return TRUE;
+	}
 
-	if (worker_try_create ())
+	if (worker_try_create ()) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] request worker, created", GetCurrentThreadId ());
 		return TRUE;
+	}
 
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] request worker, failed", GetCurrentThreadId ());
 	return FALSE;
 }
 
@@ -786,6 +820,8 @@ monitor_thread (void)
 	guint i;
 
 	mono_cpu_usage (threadpool->cpu_usage_state);
+
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] monitor thread, started", GetCurrentThreadId ());
 
 	do {
 		MonoInternalThread *thread;
@@ -845,14 +881,20 @@ monitor_thread (void)
 				if (mono_runtime_is_shutting_down ())
 					break;
 
-				if (worker_try_unpark ())
+				if (worker_try_unpark ()) {
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] monitor thread, unparked", GetCurrentThreadId ());
 					break;
+				}
 
-				if (worker_try_create ())
+				if (worker_try_create ()) {
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] monitor thread, created", GetCurrentThreadId ());
 					break;
+				}
 			}
 		}
 	} while (monitor_should_keep_running ());
+
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] monitor thread, finished", GetCurrentThreadId ());
 }
 
 static void
@@ -887,6 +929,8 @@ hill_climbing_change_thread_count (gint16 new_thread_count, ThreadPoolHeuristicS
 	g_assert (threadpool);
 
 	hc = &threadpool->heuristic_hill_climbing;
+
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_THREADPOOL, "[%p] hill climbing, change max number of threads %d", GetCurrentThreadId (), new_thread_count);
 
 	hc->last_thread_count = new_thread_count;
 	hc->current_sample_interval = rand_next (&hc->random_interval_generator, hc->sample_interval_low, hc->sample_interval_high);
