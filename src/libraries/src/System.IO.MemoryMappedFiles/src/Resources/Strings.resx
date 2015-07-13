@@ -132,17 +132,11 @@
   <data name="IO_FileExists_Name" xml:space="preserve">
     <value>The file '{0}' already exists.</value>
   </data>
-  <data name="IO_NoPermissionToDirectoryName" xml:space="preserve">
-    <value>&lt;Path discovery permission to the specified directory was denied.&gt;</value>
-  </data>
   <data name="IO_SharingViolation_File" xml:space="preserve">
     <value>The process cannot access the file '{0}' because it is being used by another process.</value>
   </data>
   <data name="IO_SharingViolation_NoFileName" xml:space="preserve">
     <value>The process cannot access the file because it is being used by another process.</value>
-  </data>
-  <data name="IO_DriveNotFound_Drive" xml:space="preserve">
-    <value>Could not find the drive '{0}'. The drive might not be ready or might not be mapped.</value>
   </data>
   <data name="IO_PathNotFound_Path" xml:space="preserve">
     <value>Could not find a part of the path '{0}'.</value>
@@ -204,9 +198,6 @@
   <data name="InvalidOperation_CantCreateFileMapping" xml:space="preserve">
     <value>Cannot create file mapping.</value>
   </data>
-  <data name="InvalidOperation_ViewIsNull" xml:space="preserve">
-    <value>The underlying MemoryMappedView object is null.</value>
-  </data>
   <data name="NotSupported_MMViewStreamsFixedLength" xml:space="preserve">
     <value>MemoryMappedViewStreams are fixed length.</value>
   </data>
@@ -221,9 +212,6 @@
   </data>
   <data name="ObjectDisposed_StreamIsClosed" xml:space="preserve">
     <value>Cannot access a closed Stream.</value>
-  </data>
-  <data name="UnknownError_Num" xml:space="preserve">
-    <value>Unknown error '{0}'.</value>
   </data>
   <data name="PlatformNotSupported_NamedMaps" xml:space="preserve">
     <value>Named maps are not supported.</value>
