@@ -184,6 +184,15 @@ namespace Internal.NativeCrypto
             return ret;
         }
 
+
+        /// <summary>
+        /// Acquire a handle to a crypto service provider and optionally a key container
+        /// </summary>
+        public static bool CryptAcquireContext(out SafeProvHandle psafeProvHandle, string pszContainer, string pszProvider, int dwProvType, uint dwFlags)
+        {
+            return Interop.CryptAcquireContext(out psafeProvHandle, pszContainer, pszProvider, dwProvType, dwFlags);
+        }
+
         /// <summary>
         /// This method opens the CSP using CRYPT_VERIFYCONTEXT
         /// KeyContainer cannot be null for the flag CRYPT_VERIFYCONTEXT
@@ -1344,6 +1353,30 @@ namespace Internal.NativeCrypto
                 }
             }
         }
+
+        /// <summary>
+        /// Destroy a crypto provider.
+        /// </summary>
+        public static bool CryptReleaseContext(IntPtr safeProvHandle, int dwFlags)
+        {
+            return Interop.CryptReleaseContext(safeProvHandle, dwFlags);
+        }
+
+        /// <summary>
+        /// Destroy a crypto key.
+        /// </summary>
+        public static bool CryptDestroyKey(IntPtr hKey)
+        {
+            return Interop.CryptDestroyKey(hKey);
+        }
+
+        /// <summary>
+        /// Destroy a crypto hash.
+        /// </summary>
+        public static bool CryptDestroyHash(IntPtr hHash)
+        {
+            return Interop.CryptDestroyHash(hHash);
+        }
     }//End of class CapiHelper : Wrappers
 
 
@@ -1388,7 +1421,7 @@ namespace Internal.NativeCrypto
             public static extern bool CryptGenKey(SafeProvHandle safeProvHandle, int Algid, int dwFlags, ref SafeKeyHandle safeKeyHandle);
 
             [DllImport(AdvapiDll, SetLastError = true)]
-            public static extern bool CryptReleaseContext(SafeProvHandle safeProvHandle, int dwFlags);
+            public static extern bool CryptReleaseContext(IntPtr safeProvHandle, int dwFlags);
 
             [DllImport(AdvapiDll, SetLastError = true)]
             public static extern bool CryptDecrypt(SafeKeyHandle safeKeyHandle, SafeHashHandle safeHashHandle, bool Final,
@@ -1428,6 +1461,14 @@ namespace Internal.NativeCrypto
             [DllImport(AdvapiDll, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CryptVerifySignatureW")]
             [return: MarshalAs(UnmanagedType.Bool)]
             public static extern bool CryptVerifySignature(SafeHashHandle hHash, byte[] pbSignature, int dwSigLen, SafeKeyHandle hPubKey, String sDescription, CryptSignAndVerifyHashFlags dwFlags);
+
+            [DllImport(AdvapiDll, CharSet = CharSet.Unicode, SetLastError = true)]
+            [return: MarshalAs(UnmanagedType.Bool)]
+            public static extern bool CryptDestroyKey(IntPtr hKey);
+
+            [DllImport(AdvapiDll, CharSet = CharSet.Unicode, SetLastError = true)]
+            [return: MarshalAs(UnmanagedType.Bool)]
+            public static extern bool CryptDestroyHash(IntPtr hHash);
         }
     } //End CapiHelper : Pinvokes
 
