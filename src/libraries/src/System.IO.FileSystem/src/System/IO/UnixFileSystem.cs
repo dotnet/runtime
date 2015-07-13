@@ -38,7 +38,7 @@ namespace System.IO
             const int bufferSize = FileStream.DefaultBufferSize;
             const bool useAsync = false;
             using (Stream src = new FileStream(sourceFullPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, useAsync))
-            using (Stream dst = new FileStream(destFullPath, overwrite ? FileMode.CreateNew : FileMode.Create, FileAccess.ReadWrite, FileShare.None, bufferSize, useAsync))
+            using (Stream dst = new FileStream(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, bufferSize, useAsync))
             {
                 src.CopyTo(dst);
             }

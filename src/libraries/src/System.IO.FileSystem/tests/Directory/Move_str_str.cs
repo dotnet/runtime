@@ -1,430 +1,269 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.IO;
-using System.Collections;
-using System.Globalization;
-using System.Text;
-using System.Threading;
-using System.Runtime.CompilerServices;
 using Xunit;
 
-public class Directory_Move_str_str
+namespace System.IO.FileSystem.Tests
 {
-    public static String s_strDtTmVer = "2000/07/12 10:42";
-    public static String s_strClassMethod = "Directory.Move(String,String)";
-    public static String s_strTFName = "Move_str_str.cs";
-    public static String s_strTFPath = Directory.GetCurrentDirectory();
-
-    [Fact]
-    public static void runTest()
+    public class Directory_Move_str_str : FileSystemTest
     {
-        int iCountErrors = 0;
-        int iCountTestcases = 0;
-        String strLoc = "Loc_000oo";
-        String strValue = String.Empty;
+        #region Utilities
 
-
-        try
+        public virtual void Move(string sourceDir, string destDir)
         {
-            /////////////////////////  START TESTS ////////////////////////////
-            ///////////////////////////////////////////////////////////////////
-
-            String tempDirName = Path.Combine(TestInfo.CurrentDirectory, "TempDirectory");
-            String dirName = Path.Combine(TestInfo.CurrentDirectory, "Move_str_str_test_Dir");
-            DirectoryInfo dir2 = null;
-
-            if (Directory.Exists(tempDirName))
-                Directory.Delete(tempDirName, true);
-            if (Directory.Exists(dirName))
-                Directory.Delete(dirName, true);
-
-
-            // [] Argumentnull exception for null arguments
-            //-----------------------------------------------------------------
-            strLoc = "Loc_00001";
-
-            iCountTestcases++;
-            try
-            {
-                Directory.Move(null, dirName);
-                iCountErrors++;
-                printerr("Error_00002! Expected exception not thrown");
-            }
-            catch (ArgumentNullException)
-            {
-            }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Error_00004! Incorrect exception thrown, exc==" + exc.ToString());
-            }
-
-            iCountTestcases++;
-            try
-            {
-                Directory.Move(dirName, null);
-                iCountErrors++;
-                printerr("Error_00005! Expected exception not thrown");
-            }
-            catch (ArgumentNullException)
-            {
-            }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Error_00007! Incorrect exception thrown, exc==" + exc.ToString());
-            }
-            //-----------------------------------------------------------------
-
-            // [] ArgumentException for zero length arguments
-            //-----------------------------------------------------------------
-            strLoc = "Loc_00008";
-
-            iCountTestcases++;
-            try
-            {
-                Directory.Move(String.Empty, dirName);
-                iCountErrors++;
-                printerr("Error_00008! Expected exception not thrown");
-            }
-            catch (ArgumentException)
-            {
-            }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Error_00010! Incorrect exception thrown, exc==" + exc.ToString());
-            }
-
-
-            iCountTestcases++;
-            try
-            {
-                Directory.Move(dirName, String.Empty);
-                iCountErrors++;
-                printerr("Error_00011! Expected exception not thrown");
-            }
-            catch (ArgumentException)
-            {
-            }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Error_00013! Incorrect exception thrown, exc==" + exc.ToString());
-            }
-            //-----------------------------------------------------------------
-
-            // [] Try to move a directory that does not exist
-            //-----------------------------------------------------------------
-            strLoc = "Loc_00014";
-
-            iCountTestcases++;
-            try
-            {
-                Directory.Move(Path.Combine(TestInfo.CurrentDirectory, "NonExistentDirectory"), dirName);
-                iCountErrors++;
-                printerr("Error_00015! Expected exception not thrown");
-            }
-            catch (DirectoryNotFoundException)
-            {
-            }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Error_00017! Incorrect exception thrown, exc==" + exc.ToString());
-            }
-            //-----------------------------------------------------------------
-
-
-            // [] AccessException when moving onto existing directory
-            //-----------------------------------------------------------------
-            strLoc = "Loc_00018";
-
-            iCountTestcases++;
-            try
-            {
-                Directory.Move(TestInfo.CurrentDirectory, TestInfo.CurrentDirectory);
-                iCountErrors++;
-                printerr("Error_00019! Expected exception not thrown");
-            }
-            catch (IOException)
-            {
-            }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Error_00021! Incorrect exception thrown, exc==" + exc.ToString());
-            }
-            //-----------------------------------------------------------------
-
-            // [] Move a directory and check that it is moved
-            //-----------------------------------------------------------------
-            strLoc = "Loc_00022";
-
-            Directory.CreateDirectory(dirName);
-            Directory.Move(dirName, tempDirName);
-            iCountTestcases++;
-            if (Directory.Exists(dirName))
-            {
-                iCountErrors++;
-                printerr("Error_00023! Source directory still there");
-            }
-            if (!Directory.Exists(tempDirName))
-            {
-                iCountErrors++;
-                printerr("Error_00024! destination directory missing");
-            }
-            Directory.Delete(tempDirName);
-
-            //[]Move directories that end with directory separator
-            //-----------------------------------------------------------------
-
-            Directory.CreateDirectory(dirName);
-            Directory.Move(dirName + Path.DirectorySeparatorChar, tempDirName + Path.DirectorySeparatorChar);
-            iCountTestcases++;
-            if (Directory.Exists(dirName))
-            {
-                iCountErrors++;
-                printerr("Error_00023! Source directory still there");
-            }
-            if (!Directory.Exists(tempDirName))
-            {
-                iCountErrors++;
-                printerr("Error_00024! destination directory missing");
-            }
-            Directory.Delete(tempDirName);
-
-#if !TEST_WINRT
-            if (Interop.IsWindows) // moving between drive labels
-            {
-                // [] Move to different drive will throw AccessException
-                //-----------------------------------------------------------------
-                strLoc = "Loc_00025";
-                string fullDirName = Path.GetFullPath(dirName);
-                Directory.CreateDirectory(dirName);
-                iCountTestcases++;
-                try
-                {
-                    if (fullDirName.Substring(0, 3) == @"d:\" || fullDirName.Substring(0, 3) == @"D:\")
-                        Directory.Move(fullDirName, "C:\\TempDirectory");
-                    else
-                        Directory.Move(fullDirName, "D:\\TempDirectory");
-                    Console.WriteLine("Root directory..." + fullDirName.Substring(0, 3));
-                    iCountErrors++;
-                    printerr("Error_00026! Expected exception not thrown");
-                }
-                catch (IOException)
-                {
-                }
-                catch (Exception exc)
-                {
-                    iCountErrors++;
-                    printerr("Error_00000! Incorrect exception thrown, exc==" + exc.ToString());
-                }
-                if (Directory.Exists(fullDirName))
-                    Directory.Delete(fullDirName, true);
-                //-----------------------------------------------------------------
-            }
-#endif
-
-            // [] Moving Directory with subdirectories
-            //-----------------------------------------------------------------
-            strLoc = "Loc_00028";
-
-            dir2 = Directory.CreateDirectory(dirName);
-            dir2.CreateSubdirectory(Path.Combine("SubDir", "SubSubDir"));
-            FailSafeDirectoryOperations.MoveDirectory(dirName, tempDirName);
-            //			Directory.Move(dirName, tempDirName);
-            iCountTestcases++;
-            if (Directory.Exists(dirName))
-            {
-                iCountErrors++;
-                printerr("Error_00029! Source directory still there");
-            }
-            dir2 = new DirectoryInfo(tempDirName);
-            iCountTestcases++;
-            if (!Directory.Exists(dir2.FullName))
-            {
-                iCountErrors++;
-                printerr("Error_00030! Destination directory missing");
-            }
-            iCountTestcases++;
-            if (!Directory.Exists(Path.Combine(dir2.FullName, "SubDir", "SubSubDir")))
-            {
-                iCountErrors++;
-                printerr("Error_00031! Subdirectories not moved");
-            }
-            dir2.Delete(true);
-
-            //-----------------------------------------------------------------
-
-            if (Interop.IsWindows)
-            {
-                // [] wildchars in src directory
-                //-----------------------------------------------------------------
-                strLoc = "Loc_00032";
-
-                iCountTestcases++;
-                try
-                {
-                    Directory.Move("*", tempDirName);
-                    iCountErrors++;
-                    printerr("Error_00033! Expected exception not thrown");
-                }
-                catch (ArgumentException)
-                {
-                }
-                catch (Exception exc)
-                {
-                    iCountErrors++;
-                    printerr("Error_00035! Incorrect exception thrown, exc==" + exc.ToString());
-                }
-            }
-            //-----------------------------------------------------------------
-
-            if (Interop.IsWindows)
-            {
-                // [] wildchars in dest directory
-                //-----------------------------------------------------------------
-                strLoc = "Loc_00036";
-
-                iCountTestcases++;
-                try
-                {
-                    Directory.Move(TestInfo.CurrentDirectory, "Temp*");
-                    iCountErrors++;
-                    printerr("Error_00037! Expected exception not thrown");
-                }
-                catch (ArgumentException)
-                {
-                }
-                catch (Exception exc)
-                {
-                    iCountErrors++;
-                    printerr("Error_00039! Incorrect exception thrown, exc==" + exc.ToString());
-                }
-            }
-            //-----------------------------------------------------------------
-
-            // [] InvalidPathChars
-            //-----------------------------------------------------------------
-            strLoc = "Loc_00040";
-
-            iCountTestcases++;
-            try
-            {
-                Directory.Move(TestInfo.CurrentDirectory, "<MyDirectory\0");
-                iCountErrors++;
-                printerr("Error_00041! Expected exception not thrown");
-            }
-            catch (ArgumentException)
-            {
-            }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Error_00043 Incorret exception thrown, exc==" + exc.ToString());
-            }
-            //-----------------------------------------------------------------
-
-            // [] PathTooLongException if destination name is too long
-            //-----------------------------------------------------------------
-            strLoc = "Loc_00044";
-
-            String str = new string('a', IOInputs.MaxPath);
-            iCountTestcases++;
-            try
-            {
-                Directory.Move(TestInfo.CurrentDirectory, str);
-                iCountErrors++;
-                printerr("Error_00045! Expected exception not thrown");
-            }
-            catch (PathTooLongException)
-            {
-            }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Error_00047! Incorrect exception thrown, exc==" + exc.ToString());
-            }
-
-            //-----------------------------------------------------------------
-
-            // [] Non-existent drive specified for destination
-            //-----------------------------------------------------------------
-            strLoc = "Loc_00048";
-
-            if (Interop.IsWindows) // drive labels
-            {
-                iCountTestcases++;
-                Directory.CreateDirectory(dirName);
-                try
-                {
-                    Directory.Move(dirName, "X:\\Temp");
-                    iCountErrors++;
-                    printerr("Error_00049! Expected exception not thrown");
-                }
-                catch (IOException)
-                {
-                }
-                catch (Exception exc)
-                {
-                    iCountErrors++;
-                    printerr("Error_00051! Incorrect exception thrown, exc==" + exc.ToString());
-                }
-                Directory.Delete(dirName);
-            }
-            //-----------------------------------------------------------------
-
-            // [] Use directory names with spaces
-            //-----------------------------------------------------------------
-            strLoc = "Loc_00052";
-            string destDirName = Path.Combine(TestInfo.CurrentDirectory, "This is my directory");
-
-            Directory.CreateDirectory(dirName);
-            Directory.Move(dirName, destDirName);
-            iCountTestcases++;
-            if (!Directory.Exists(destDirName))
-            {
-                iCountErrors++;
-                printerr("Error_00053! Destination directory missing");
-            }
-            Directory.Delete(destDirName);
-            //-----------------------------------------------------------------
-
-
-            // ][ Directory names in different cultures
-            //-----------------------------------------------------------------
-            //-----------------------------------------------------------------
-
-            if (Directory.Exists(tempDirName))
-                Directory.Delete(tempDirName, true);
-
-            if (Directory.Exists(dirName))
-                Directory.Delete(dirName, true);
-
-            ///////////////////////////////////////////////////////////////////
-            /////////////////////////// END TESTS /////////////////////////////
-        }
-        catch (Exception exc_general)
-        {
-            ++iCountErrors;
-            printerr("Error Err_8888yyy!  strLoc==" + strLoc + ", exc_general==" + exc_general.ToString());
-        }
-        ////  Finish Diagnostics
-
-        if (iCountErrors != 0)
-        {
-            Console.WriteLine("FAiL! " + s_strTFName + " ,iCountErrors==" + iCountErrors.ToString());
+            Directory.Move(sourceDir, destDir);
         }
 
-        Assert.Equal(0, iCountErrors);
-    }
+        #endregion
 
-    public static void printerr(String err, [CallerMemberName] string memberName = "", [CallerFilePath] string filePath = "", [CallerLineNumber] int lineNumber = 0)
-    {
-        Console.WriteLine("ERROR: ({0}, {1}, {2}) {3}", memberName, filePath, lineNumber, err);
+        #region UniversalTests
+
+        [Fact]
+        public void NullPath()
+        {
+            Assert.Throws<ArgumentNullException>(() => Move(null, "."));
+            Assert.Throws<ArgumentNullException>(() => Move(".", null));
+        }
+
+        [Fact]
+        public void EmptyPath()
+        {
+            Assert.Throws<ArgumentException>(() => Move(string.Empty, "."));
+            Assert.Throws<ArgumentException>(() => Move(".", string.Empty));
+        }
+
+        [Fact]
+        public void NonExistentDirectory()
+        {
+            DirectoryInfo valid = Directory.CreateDirectory(GetTestFilePath());
+            Assert.Throws<DirectoryNotFoundException>(() => Move(GetTestFilePath(), valid.FullName));
+            Assert.Throws<DirectoryNotFoundException>(() => Move(valid.FullName, Path.Combine(TestDirectory, GetTestFileName(), GetTestFileName())));
+        }
+
+        [Fact]
+        public void MoveOntoExistingDirectory()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            Assert.Throws<IOException>(() => Move(testDir.FullName, testDir.FullName));
+        }
+
+        [Fact]
+        public void MoveIntoCurrentDirectory()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            Assert.Throws<IOException>(() => Move(testDir.FullName, Path.Combine(testDir.FullName, ".")));
+        }
+
+        [Fact]
+        public void MoveOntoParentDirectory()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            Assert.Throws<IOException>(() => Move(testDir.FullName, Path.Combine(testDir.FullName, "..")));
+        }
+
+        [Fact]
+        public void BasicMove()
+        {
+            string testDirSource = Path.Combine(TestDirectory, GetTestFileName());
+            string testDirDest = Path.Combine(TestDirectory, GetTestFileName());
+
+            Directory.CreateDirectory(testDirSource);
+            Move(testDirSource, testDirDest);
+            Assert.True(Directory.Exists(testDirDest));
+        }
+
+        [Fact]
+        public void MultipleMoves()
+        {
+            string testDir = GetTestFilePath();
+            string testDirSource = Path.Combine(testDir, GetTestFileName());
+            string testDirDest1 = Path.Combine(testDir, GetTestFileName());
+            string testDirDest2 = Path.Combine(testDir, GetTestFileName());
+
+            Directory.CreateDirectory(testDirSource);
+            Move(testDirSource, testDirDest1);
+            Move(testDirDest1, testDirDest2);
+            Assert.True(Directory.Exists(testDirDest2));
+            Assert.False(Directory.Exists(testDirDest1));
+            Assert.False(Directory.Exists(testDirSource));
+        }
+
+        [Fact]
+        public void DirectoryNameWithSpaces()
+        {
+            string testDirSource = Path.Combine(TestDirectory, GetTestFileName());
+            string testDirDest = Path.Combine(TestDirectory, "    e n   d");
+
+            Directory.CreateDirectory(testDirSource);
+            Move(testDirSource, testDirDest);
+            Assert.True(Directory.Exists(testDirDest));
+        }
+
+        [Fact]
+        public void TrailingDirectorySeparators()
+        {
+            string testDirSource = Path.Combine(TestDirectory, GetTestFileName());
+            string testDirDest = Path.Combine(TestDirectory, GetTestFileName());
+
+            Directory.CreateDirectory(testDirSource);
+            Move(testDirSource + Path.DirectorySeparatorChar, testDirDest + Path.DirectorySeparatorChar);
+            Assert.True(Directory.Exists(testDirDest));
+        }
+
+        [Fact]
+        public void IncludeSubdirectories()
+        {
+            string testDirSource = Path.Combine(TestDirectory, GetTestFileName());
+            string testDirSubDirectory = GetTestFileName();
+            string testDirDest = Path.Combine(TestDirectory, GetTestFileName());
+
+            Directory.CreateDirectory(testDirSource);
+            Directory.CreateDirectory(Path.Combine(testDirSource, testDirSubDirectory));
+            Move(testDirSource, testDirDest);
+
+            Assert.True(Directory.Exists(testDirDest));
+            Assert.False(Directory.Exists(testDirSource));
+            Assert.True(Directory.Exists(Path.Combine(testDirDest, testDirSubDirectory)));
+        }
+
+        [Fact]
+        public void LongPath()
+        {
+            //Create a destination path longer than the traditional Windows limit of 256 characters
+            string testDirSource = Path.Combine(TestDirectory, GetTestFileName());
+            string testDirDest = Path.Combine(TestDirectory, new string('a', 300));
+            Directory.CreateDirectory(testDirSource);
+
+            // TODO #645: Requires long path support
+            //Move(testDirSource, testDirDest);
+            //Assert.True(Directory.Exists(testDirDest));
+            //Assert.False(Directory.Exists(testDirSource));
+
+            Assert.Throws<PathTooLongException>(() => Move(testDirSource, testDirDest));
+            Assert.Throws<PathTooLongException>(() => Move(Path.Combine(TestDirectory, new string('a', 300)), TestDirectory));
+        }
+
+        #endregion
+
+        #region PlatformSpecific
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void WindowsWildCharacterPath()
+        {
+            Assert.Throws<ArgumentException>(() => Move("*", GetTestFilePath()));
+            Assert.Throws<ArgumentException>(() => Move(TestDirectory, "*"));
+            Assert.Throws<ArgumentException>(() => Move(TestDirectory, "Test*t"));
+            Assert.Throws<ArgumentException>(() => Move(TestDirectory, "*Test"));
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void UnixWildCharacterPath()
+        {
+            // Wildcards are allowed in paths for Unix move commands as literals as well as functional wildcards,
+            // but to implement the latter in .NET would be confusing (e.g. having a DirectoryInfo represent multiple directories), 
+            // so the implementation assumes the former.
+            // Thus, any "*" characters will act the same as any other character when used in a file/directory name.
+            string testDir = GetTestFilePath();
+            string testDirSource = Path.Combine(testDir, "*");
+            string testDirShouldntMove = Path.Combine(testDir, "*t");
+            string testDirDest = Path.Combine(testDir, "*" + GetTestFileName());
+
+            Directory.CreateDirectory(testDirSource);
+            Directory.CreateDirectory(testDirShouldntMove);
+            Move(testDirSource, testDirDest);
+            Assert.True(Directory.Exists(testDirDest));
+            Assert.False(Directory.Exists(testDirSource));
+            Assert.True(Directory.Exists(testDirShouldntMove));
+
+            Move(testDirDest, testDirSource);
+            Assert.False(Directory.Exists(testDirDest));
+            Assert.True(Directory.Exists(testDirSource));
+            Assert.True(Directory.Exists(testDirShouldntMove));
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void WindowsWhitespacePath()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            Assert.Throws<ArgumentException>(() => Move(testDir.FullName, "         "));
+            Assert.Throws<ArgumentException>(() => Move(testDir.FullName, "\n"));
+            Assert.Throws<ArgumentException>(() => Move(testDir.FullName, ""));
+            Assert.Throws<ArgumentException>(() => Move(testDir.FullName, ">"));
+            Assert.Throws<ArgumentException>(() => Move(testDir.FullName, "<"));
+            Assert.Throws<ArgumentException>(() => Move(testDir.FullName, "\0"));
+            Assert.Throws<ArgumentException>(() => Move(testDir.FullName, "\t"));
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void UnixWhitespacePath()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string testDirToMove = Path.Combine(testDir.FullName, GetTestFileName());
+            Directory.CreateDirectory(testDirToMove);
+            Move(testDirToMove, Path.Combine(testDir.FullName, "         "));
+            Move(Path.Combine(testDir.FullName, "         "), Path.Combine(testDir.FullName, "\n"));
+            Move(Path.Combine(testDir.FullName, "\n"), Path.Combine(testDir.FullName, "\t"));
+            Move(Path.Combine(testDir.FullName, "\t"), Path.Combine(testDir.FullName, ">"));
+            Move(Path.Combine(testDir.FullName, ">"), Path.Combine(testDir.FullName, "< "));
+            Assert.True(Directory.Exists(Path.Combine(testDir.FullName, "< ")));
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void WindowsExistingDirectory()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string testDirSource = Path.Combine(testDir.FullName, GetTestFileName());
+            string testDirDest = Path.Combine(testDir.FullName, GetTestFileName());
+
+            Directory.CreateDirectory(testDirSource);
+            Directory.CreateDirectory(testDirDest);
+            Assert.Throws<IOException>(() => Move(testDirSource, testDirDest));
+            Assert.True(Directory.Exists(testDirDest));
+            Assert.True(Directory.Exists(testDirSource));
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void BetweenDriveLabels()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string path = Path.GetFullPath(testDir.FullName);
+            if (path.Substring(0, 3) == @"d:\" || path.Substring(0, 3) == @"D:\")
+                Assert.Throws<IOException>(() => Move(path, "C:\\DoesntExist"));
+            else
+                Assert.Throws<IOException>(() => Move(path, "D:\\DoesntExist"));
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void UnixExistingDirectory()
+        {
+            // Moving to an-empty directory is supported on Unix, but moving to a non-empty directory is not
+            string testDirSource = GetTestFilePath();
+            string testDirDestEmpty = GetTestFilePath();
+            string testDirDestNonEmpty = GetTestFilePath();
+
+            Directory.CreateDirectory(testDirSource);
+            Directory.CreateDirectory(testDirDestEmpty);
+            Directory.CreateDirectory(testDirDestNonEmpty);
+
+            using (File.Create(Path.Combine(testDirDestNonEmpty, GetTestFileName())))
+            {
+                Assert.Throws<IOException>(() => Move(testDirSource, testDirDestNonEmpty));
+                Assert.True(Directory.Exists(testDirDestNonEmpty));
+                Assert.True(Directory.Exists(testDirSource));
+            }
+
+            Move(testDirSource, testDirDestEmpty);
+            Assert.True(Directory.Exists(testDirDestEmpty));
+            Assert.False(Directory.Exists(testDirSource));
+        }
+
+        #endregion
     }
 }
