@@ -792,6 +792,14 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 		}
 	}
 
+#ifndef TARGET_WIN32
+	if (size == 0) {
+		ainfo->storage = ArgValuetypeInReg;
+		ainfo->pair_storage [0] = ainfo->pair_storage [1] = ArgNone;
+		return;
+	}
+#endif
+
 	if (pass_on_stack) {
 		/* Allways pass in memory */
 		ainfo->offset = *stack_size;
@@ -832,7 +840,12 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 		 * the CLR.
 		 */
 		g_assert (info);
-		g_assert (fields);
+
+		if (!fields) {
+			ainfo->storage = ArgValuetypeInReg;
+			ainfo->pair_storage [0] = ainfo->pair_storage [1] = ArgNone;
+			return;
+		}
 
 #ifndef TARGET_WIN32
 		if (info->native_size > 16) {

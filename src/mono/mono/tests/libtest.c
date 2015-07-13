@@ -1290,6 +1290,16 @@ mono_test_empty_struct (int a, EmptyStruct es, int b)
 #endif
 }
 
+LIBTEST_API EmptyStruct STDCALL
+mono_test_return_empty_struct (int a)
+{
+	EmptyStruct s;
+
+	g_assert (a == 42);
+
+	return s;
+}
+
 typedef struct {
        char a[100];
 } ByValStrStruct;

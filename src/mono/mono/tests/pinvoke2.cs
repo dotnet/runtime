@@ -61,6 +61,10 @@ public class Tests {
 	public struct EmptyStruct {
 	}
 
+	[StructLayout (LayoutKind.Sequential, Size=1)]
+	public struct EmptyStructCpp {
+	}
+
 	[StructLayout (LayoutKind.Sequential)]
 	public struct DelegateStruct {
 		public int a;
@@ -262,6 +266,12 @@ public class Tests {
 
 	[DllImport ("libtest", EntryPoint="mono_test_empty_struct")]
 	public static extern int mono_test_empty_struct (int a, EmptyStruct es, int b);
+
+	[DllImport ("libtest", EntryPoint="mono_test_return_empty_struct")]
+	public static extern EmptyStruct mono_test_return_empty_struct (int a);
+
+	[DllImport ("libtest", EntryPoint="mono_test_return_empty_struct")]
+	public static extern EmptyStructCpp mono_test_return_empty_struct_cpp (int a);
 
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_lpstruct")]
 	public static extern int mono_test_marshal_lpstruct ([In, MarshalAs(UnmanagedType.LPStruct)] SimpleStruct ss);
@@ -483,6 +493,16 @@ public class Tests {
 
 		if (mono_test_empty_struct (1, es, 2) != 0)
 			return 1;
+
+		mono_test_return_empty_struct (42);
+
+		return 0;
+	}
+
+	public static int test_0_marshal_empty_struct_cpp () {
+		EmptyStructCpp es = new EmptyStructCpp ();
+
+		mono_test_return_empty_struct_cpp (42);
 		
 		return 0;
 	}
