@@ -51,7 +51,7 @@ For work that involves adding new APIs we'd like the issue to contain what we ca
 
 The .NET design guidelines are captured in the famous book [Framework Design Guidelines](http://amazon.com/dp/0321545613) by Krzysztof Cwalina and Brad Abrams.
 
-A digest with the most important guidelines are available in our [developer wiki](Framework-Design-Guidelines-Digest). Long term, we'd like to publish the individual guidelines in standalone repo on which we can also accept PRs and -- more importantly for API reviews -- link to.
+A digest with the most important guidelines are available in our [documentation](../coding-guidelines/framework-design-guidelines-digest.md). Long term, we'd like to publish the individual guidelines in standalone repo on which we can also accept PRs and -- more importantly for API reviews -- link to.
 
 ## API Review Notes
 
