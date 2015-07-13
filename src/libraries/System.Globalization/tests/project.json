@@ -1,7 +1,9 @@
 {
   "dependencies": {
+    "System.AppContext": "4.0.0-beta-*",
     "System.Console": "4.0.0-beta-*",
     "System.Globalization": "4.0.10-beta-*",
+    "System.Globalization.Calendars": "4.0.0-beta-*",
     "System.Reflection": "4.0.10-beta-*",
     "System.Runtime": "4.0.20-beta-*",
     "System.Runtime.Extensions": "4.0.10-beta-*",
