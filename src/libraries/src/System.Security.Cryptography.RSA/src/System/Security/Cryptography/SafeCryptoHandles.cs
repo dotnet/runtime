@@ -161,7 +161,7 @@ namespace System.Security.Cryptography
             Debug.Assert(successfullyFreed);
 
             SetHandle(IntPtr.Zero);
-            return true;
+            return successfullyFreed;
         }
     }
 
@@ -236,7 +236,7 @@ namespace System.Security.Cryptography
         {
             bool successfullyFreed = CapiHelper.CryptDestroyKey(handle);
             Debug.Assert(successfullyFreed);
-            return true;
+            return successfullyFreed;
         }
     }
 
@@ -268,7 +268,7 @@ namespace System.Security.Cryptography
         {
             bool successfullyFreed = CapiHelper.CryptDestroyHash(handle);
             Debug.Assert(successfullyFreed);
-            return true;
+            return successfullyFreed;
         }
     }
 }
