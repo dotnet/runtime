@@ -82,6 +82,8 @@ gint64 ves_icall_System_Diagnostics_Process_GetProcessData (int pid, gint32 data
 HANDLE ves_icall_System_Diagnostics_Process_ProcessHandle_duplicate (HANDLE process);
 void ves_icall_System_Diagnostics_Process_ProcessHandle_close (HANDLE process);
 
+void ves_icall_System_Diagnostics_Process_ProcessAsyncReader_RemoveFromIOThreadPool (HANDLE handle);
+
 G_END_DECLS
 
 #endif /* _MONO_METADATA_PROCESS_H_ */

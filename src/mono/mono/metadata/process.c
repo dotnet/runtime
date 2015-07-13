@@ -20,6 +20,7 @@
 #include <mono/metadata/image.h>
 #include <mono/metadata/cil-coff.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/threadpool-ms-io.h>
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/io-layer/io-layer.h>
@@ -1074,5 +1075,11 @@ ves_icall_System_Diagnostics_Process_GetProcessData (int pid, gint32 data_type, 
 	if (error)
 		*error = perror;
 	return res;
+}
+
+void
+ves_icall_System_Diagnostics_Process_ProcessAsyncReader_RemoveFromIOThreadPool (HANDLE handle)
+{
+	mono_threadpool_ms_io_remove_socket (GPOINTER_TO_INT (handle));
 }
 
