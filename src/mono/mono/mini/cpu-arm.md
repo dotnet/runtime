@@ -204,6 +204,7 @@ float_cle: dest:y src1:f src2:f len:20
 float_conv_to_u: dest:i src1:f len:36
 
 # R4 opcodes
+rmove: dest:f src1:f len:4
 r4_conv_to_i1: dest:i src1:f len:88
 r4_conv_to_i2: dest:i src1:f len:88
 r4_conv_to_i4: dest:i src1:f len:88

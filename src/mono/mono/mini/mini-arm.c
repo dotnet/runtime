@@ -4291,11 +4291,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ARM_LDR_REG_REG (code, ins->dreg, ins->inst_basereg, ARMREG_LR);
 				break;
 			case OP_ATOMIC_LOAD_R4:
-				code = mono_arm_emit_vfp_scratch_save (cfg, code, vfp_scratch1);
-				ARM_ADD_REG_REG (code, ARMREG_LR, ins->inst_basereg, ARMREG_LR);
-				ARM_FLDS (code, vfp_scratch1, ARMREG_LR, 0);
-				ARM_CVTS (code, ins->dreg, vfp_scratch1);
-				code = mono_arm_emit_vfp_scratch_restore (cfg, code, vfp_scratch1);
+				if (cfg->r4fp) {
+					ARM_ADD_REG_REG (code, ARMREG_LR, ins->inst_basereg, ARMREG_LR);
+					ARM_FLDS (code, ins->dreg, ARMREG_LR, 0);
+				} else {
+					code = mono_arm_emit_vfp_scratch_save (cfg, code, vfp_scratch1);
+					ARM_ADD_REG_REG (code, ARMREG_LR, ins->inst_basereg, ARMREG_LR);
+					ARM_FLDS (code, vfp_scratch1, ARMREG_LR, 0);
+					ARM_CVTS (code, ins->dreg, vfp_scratch1);
+					code = mono_arm_emit_vfp_scratch_restore (cfg, code, vfp_scratch1);
+				}
 				break;
 			case OP_ATOMIC_LOAD_R8:
 				ARM_ADD_REG_REG (code, ARMREG_LR, ins->inst_basereg, ARMREG_LR);
@@ -4332,11 +4337,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ARM_STR_REG_REG (code, ins->sreg1, ins->inst_destbasereg, ARMREG_LR);
 				break;
 			case OP_ATOMIC_STORE_R4:
-				code = mono_arm_emit_vfp_scratch_save (cfg, code, vfp_scratch1);
-				ARM_ADD_REG_REG (code, ARMREG_LR, ins->inst_destbasereg, ARMREG_LR);
-				ARM_CVTD (code, vfp_scratch1, ins->sreg1);
-				ARM_FSTS (code, vfp_scratch1, ARMREG_LR, 0);
-				code = mono_arm_emit_vfp_scratch_restore (cfg, code, vfp_scratch1);
+				if (cfg->r4fp) {
+					ARM_ADD_REG_REG (code, ARMREG_LR, ins->inst_destbasereg, ARMREG_LR);
+					ARM_FSTS (code, ins->sreg1, ARMREG_LR, 0);
+				} else {
+					code = mono_arm_emit_vfp_scratch_save (cfg, code, vfp_scratch1);
+					ARM_ADD_REG_REG (code, ARMREG_LR, ins->inst_destbasereg, ARMREG_LR);
+					ARM_CVTD (code, vfp_scratch1, ins->sreg1);
+					ARM_FSTS (code, vfp_scratch1, ARMREG_LR, 0);
+					code = mono_arm_emit_vfp_scratch_restore (cfg, code, vfp_scratch1);
+				}
 				break;
 			case OP_ATOMIC_STORE_R8:
 				ARM_ADD_REG_REG (code, ARMREG_LR, ins->inst_destbasereg, ARMREG_LR);
@@ -4880,15 +4890,27 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (IS_VFP && ins->dreg != ins->sreg1)
 				ARM_CPYD (code, ins->dreg, ins->sreg1);
 			break;
+		case OP_RMOVE:
+			if (IS_VFP && ins->dreg != ins->sreg1)
+				ARM_CPYS (code, ins->dreg, ins->sreg1);
+			break;
 		case OP_MOVE_F_TO_I4:
-			code = mono_arm_emit_vfp_scratch_save (cfg, code, vfp_scratch1);
-			ARM_CVTD (code, vfp_scratch1, ins->sreg1);
-			ARM_FMRS (code, ins->dreg, vfp_scratch1);
-			code = mono_arm_emit_vfp_scratch_restore (cfg, code, vfp_scratch1);
+			if (cfg->r4fp) {
+				ARM_FMRS (code, ins->dreg, ins->sreg1);
+			} else {
+				code = mono_arm_emit_vfp_scratch_save (cfg, code, vfp_scratch1);
+				ARM_CVTD (code, vfp_scratch1, ins->sreg1);
+				ARM_FMRS (code, ins->dreg, vfp_scratch1);
+				code = mono_arm_emit_vfp_scratch_restore (cfg, code, vfp_scratch1);
+			}
 			break;
 		case OP_MOVE_I4_TO_F:
-			ARM_FMSR (code, ins->dreg, ins->sreg1);
-			ARM_CVTS (code, ins->dreg, ins->dreg);
+			if (cfg->r4fp) {
+				ARM_FMSR (code, ins->dreg, ins->sreg1);
+			} else {
+				ARM_FMSR (code, ins->dreg, ins->sreg1);
+				ARM_CVTS (code, ins->dreg, ins->dreg);
+			}
 			break;
 		case OP_FCONV_TO_R4:
 			if (IS_VFP) {
