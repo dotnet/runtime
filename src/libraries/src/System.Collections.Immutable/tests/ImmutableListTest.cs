@@ -374,6 +374,25 @@ namespace System.Collections.Immutable.Test
             Assert.Same(list, list.Remove(3));
         }
 
+        /// <summary>
+        /// Verifies that RemoveRange does not enumerate its argument if the list is empty
+        /// and therefore could not possibly have any elements to remove anyway.
+        /// </summary>
+        /// <remarks>
+        /// While this would seem an implementation detail and simply an optimization,
+        /// it turns out that changing this behavior now *could* represent a breaking change
+        /// because if the enumerable were to throw an exception, that exception would not be
+        /// observed previously, but would start to be thrown if this behavior changed.
+        /// So this is a test to lock the behavior in place.
+        /// </remarks>
+        /// <seealso cref="ImmutableSetTest.ExceptDoesEnumerateSequenceIfThisIsEmpty"/>
+        [Fact]
+        public void RemoveRangeDoesNotEnumerateSequenceIfThisIsEmpty()
+        {
+            var list = ImmutableList<int>.Empty;
+            list.RemoveRange(Enumerable.Range(1, 1).Select(n => { Assert.False(true, "Sequence should not have been enumerated."); return n; }));
+        }
+
         [Fact]
         public void RemoveAtTest()
         {
