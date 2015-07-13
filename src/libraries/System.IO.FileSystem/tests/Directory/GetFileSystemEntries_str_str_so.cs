@@ -1,71 +1,92 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.IO;
 using Xunit;
 
-public class Directory_GetFileSystemEntries_str_str_so : Directory_GetFileSystemEntries_str_str
+namespace System.IO.FileSystem.Tests
 {
-    #region Utilities
-
-    public override String[] GetEntries(String dirName)
+    public class Directory_GetFileSystemEntries_str_str_so : Directory_GetFileSystemEntries_str_str
     {
-        return Directory.GetFileSystemEntries(dirName, "*", SearchOption.TopDirectoryOnly);
-    }
+        #region Utilities
 
-    public override String[] GetEntries(String dirName, String searchPattern)
-    {
-        return Directory.GetFileSystemEntries(dirName, searchPattern, SearchOption.TopDirectoryOnly);
-    }
-
-    public virtual String[] GetEntries(String dirName, String searchPattern, SearchOption option)
-    {
-        return Directory.GetFileSystemEntries(dirName, searchPattern, option);
-    }
-
-    #endregion
-
-    #region UniversalTests
-
-    [Fact]
-    public void IncludeSubDirectoryFiles()
-    {
-        String testDir = GetTestFileName();
-        String testFile1 = Path.Combine(TestDirectory, GetTestFileName());
-        String testFile2 = Path.Combine(TestDirectory, testDir, GetTestFileName());
-        Directory.CreateDirectory(Path.Combine(TestDirectory, testDir));
-        using (File.Create(testFile1))
-        using (File.Create(testFile2))
+        public override string[] GetEntries(string dirName)
         {
-            String[] results = GetEntries(TestDirectory, "*", SearchOption.AllDirectories);
-            Assert.Contains(testFile1, results);
-            Assert.Contains(testFile2, results);
+            return Directory.GetFileSystemEntries(dirName, "*", SearchOption.TopDirectoryOnly);
         }
-    }
 
-    [Fact]
-    public void SearchPatternIncludeSubDirectories()
-    {
-        String testDir = GetTestFileName();
-        String testFile1 = Path.Combine(TestDirectory, GetTestFileName());
-        String testFile2 = Path.Combine(TestDirectory, testDir, GetTestFileName());
-        Directory.CreateDirectory(Path.Combine(TestDirectory, testDir));
-        using (File.Create(testFile1))
-        using (File.Create(testFile2))
+        public override string[] GetEntries(string dirName, string searchPattern)
         {
-            String[] results = GetEntries(Directory.GetCurrentDirectory(), Path.Combine(new DirectoryInfo(TestDirectory).Name, "*"), SearchOption.AllDirectories);
-            Assert.Contains(testFile1, results);
-            Assert.Contains(testFile2, results);
+            return Directory.GetFileSystemEntries(dirName, searchPattern, SearchOption.TopDirectoryOnly);
         }
-    }
 
-    [Fact]
-    public void InvalidSearchOption()
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(() => GetEntries(".", "*", (SearchOption)100));
-        Assert.Throws<ArgumentOutOfRangeException>(() => GetEntries(".", "*", (SearchOption)(-1)));
-    }
+        public virtual string[] GetEntries(string dirName, string searchPattern, SearchOption option)
+        {
+            return Directory.GetFileSystemEntries(dirName, searchPattern, option);
+        }
 
-    #endregion
+        #endregion
+
+        #region UniversalTests
+
+        [Fact]
+        public void IncludeSubDirectoryFiles()
+        {
+            string testDir = GetTestFileName();
+            string testFile1 = Path.Combine(TestDirectory, GetTestFileName());
+            string testFile2 = Path.Combine(TestDirectory, testDir, GetTestFileName());
+            string testSubDir = Path.Combine(TestDirectory, testDir, GetTestFileName());
+            Directory.CreateDirectory(Path.Combine(TestDirectory, testDir));
+            Directory.CreateDirectory(testSubDir);
+            using (File.Create(testFile1))
+            using (File.Create(testFile2))
+            {
+                string[] results = GetEntries(TestDirectory, "*", SearchOption.AllDirectories);
+                if (TestFiles)
+                {
+                    Assert.Contains(testFile1, results);
+                    Assert.Contains(testFile2, results);
+                }
+                if (TestDirectories)
+                {
+                    Assert.Contains(testSubDir, results);
+                    Assert.Contains(Path.Combine(TestDirectory, testDir), results);
+                }
+            }
+        }
+
+        [Fact]
+        public void SearchPatternIncludeSubDirectories()
+        {
+            string testDir = GetTestFileName();
+            string testFile1 = Path.Combine(TestDirectory, GetTestFileName());
+            string testFile2 = Path.Combine(TestDirectory, testDir, GetTestFileName());
+            string testSubDir = Path.Combine(TestDirectory, testDir, GetTestFileName());
+            Directory.CreateDirectory(Path.Combine(TestDirectory, testDir));
+            Directory.CreateDirectory(testSubDir);
+            using (File.Create(testFile1))
+            using (File.Create(testFile2))
+            {
+                string[] results = GetEntries(Directory.GetCurrentDirectory(), Path.Combine(new DirectoryInfo(TestDirectory).Name, "*"), SearchOption.AllDirectories);
+                if (TestFiles)
+                {
+                    Assert.Contains(testFile1, results);
+                    Assert.Contains(testFile2, results);
+                }
+                if (TestDirectories)
+                {
+                    Assert.Contains(testSubDir, results);
+                    Assert.Contains(Path.Combine(TestDirectory, testDir), results);
+                }
+            }
+        }
+
+        [Fact]
+        public void InvalidSearchOption()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => GetEntries(".", "*", (SearchOption)100));
+            Assert.Throws<ArgumentOutOfRangeException>(() => GetEntries(".", "*", (SearchOption)(-1)));
+        }
+
+        #endregion
+    }
 }
