@@ -25,6 +25,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)] 
         public void TestInvalidCulture()
         {
             Assert.Throws<CultureNotFoundException>(() => { CultureInfo myCulture = new CultureInfo("NotAValidCulture"); });

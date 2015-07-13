@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class Prog
+    public class CultureNotFoundExceptionTests
     {
         [Fact]
         public void TestMessage()
@@ -26,6 +26,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void TestParamName()
         {
             CultureNotFoundException cnf = new CultureNotFoundException("aNameOfAParam", "this is a test string");
@@ -33,6 +34,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void TestInvalidCultureName1()
         {
             CultureNotFoundException cnf = new CultureNotFoundException("this is a test string", "abcd", new Exception("inner exception string"));
@@ -42,6 +44,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void TestInvalidCultureName2()
         {
             CultureNotFoundException cnf = new CultureNotFoundException("aNameOfAParam", "abcd", "this is a test string");

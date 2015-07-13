@@ -85,6 +85,7 @@ namespace System.Globalization.Tests
 
         // PosTest7: lowercase character for Turkish Culture
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void TestTrTRLowercaseCharacter()
         {
             char ch = 'i';

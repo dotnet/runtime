@@ -34,6 +34,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void TestEqualNameAndCultureIdentifier()
         {
             CultureInfo myCultureInfo = new CultureInfo("en");
@@ -64,6 +65,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void TestUnequal()
         {
             CultureInfo myCultureInfo = new CultureInfo("en-US");

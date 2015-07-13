@@ -17,6 +17,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void PosTest2()
         {
             CultureInfo myCultureInfo = new CultureInfo("fr");

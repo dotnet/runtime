@@ -11,6 +11,7 @@ namespace System.Globalization.Tests
     {
         // PosTest1: Verify the en-US TextInfo
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)] 
         public void VerifyEnUSTextInfo()
         {
             TextInfo textInfoUS = new CultureInfo("en-US").TextInfo;
@@ -20,6 +21,7 @@ namespace System.Globalization.Tests
 
         // PosTest2: Verify the fr-FR CultureInfo's TextInfo
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)] 
         public void VerifyFrFRTextInfo()
         {
             TextInfo textInfoFrance = new CultureInfo("fr-FR").TextInfo;

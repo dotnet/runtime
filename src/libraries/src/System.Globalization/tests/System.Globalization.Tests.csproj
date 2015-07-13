@@ -4,7 +4,6 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <UnsupportedPlatforms>Linux;OSX</UnsupportedPlatforms>
     <ProjectGuid>{7F5F5134-00FE-4DE8-B20C-3DA8BA2EBA68}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>System.Globalization.Tests</RootNamespace>

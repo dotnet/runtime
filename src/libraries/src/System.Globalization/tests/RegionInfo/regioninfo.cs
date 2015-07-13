@@ -10,6 +10,7 @@ namespace System.Globalization.Tests
     public class RegionInfoTest
     {
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test1()
         {
             RegionInfo riUS = new RegionInfo("en-US");
@@ -18,6 +19,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test2()
         {
             RegionInfo riUS = new RegionInfo("en-US");
@@ -26,6 +28,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test3()
         {
             RegionInfo riUS = new RegionInfo("en-US");
@@ -33,6 +36,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test4()
         {
             RegionInfo riUS = new RegionInfo("en-US");

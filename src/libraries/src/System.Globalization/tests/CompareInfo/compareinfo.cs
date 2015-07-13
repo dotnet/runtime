@@ -10,6 +10,7 @@ namespace System.Globalization.Tests
     public class CompareInfoTest
     {
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void TestCompareInfo()
         {
             CompareInfo ciENG = CompareInfo.GetCompareInfo("en-US");
@@ -21,6 +22,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void CompareInfoIndexTest1()
         {
             // Creates CompareInfo for the InvariantCulture.
@@ -72,6 +74,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void CompareInfoIndexTest2()
         {
             // Creates CompareInfo for the InvariantCulture.

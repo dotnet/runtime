@@ -10,6 +10,7 @@ namespace System.Globalization.Tests
     public class CultureInfoToString
     {
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)] 
         public void PosTest1()
         {
             string expectName = "en-US";
@@ -18,6 +19,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)] 
         public void PosTest2()
         {
             string expectName = "en";

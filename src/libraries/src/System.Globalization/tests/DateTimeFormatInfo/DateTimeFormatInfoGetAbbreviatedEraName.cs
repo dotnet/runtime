@@ -32,6 +32,7 @@ namespace System.Globalization.Tests
 
         // PosTest3: Call GetAbbreviatedEraName to get Era's abbreviated name on ja-JP culture
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)] 
         public void PosTest3()
         {
             DateTimeFormatInfo info = new CultureInfo("ja-JP").DateTimeFormat;

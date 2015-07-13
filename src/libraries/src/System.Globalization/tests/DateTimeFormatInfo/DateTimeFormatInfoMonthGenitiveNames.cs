@@ -58,6 +58,7 @@ namespace System.Globalization.Tests
 
         // PosTest3: Call MonthGenitiveNames getter method should return correct value for ru-ru culture
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)] 
         public void TestRuCulture()
         {
             DateTimeFormatInfo info = new CultureInfo("ru-RU").DateTimeFormat;
