@@ -1,8 +1,9 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <PackagesConfigFile>$(JitPackagesConfigFileDirectory)threading+thread.packages.config</PackagesConfigFile>
+    <ProjectJson>$(JitPackagesConfigFileDirectory)threading+thread\project.json</ProjectJson>
+    <ProjectLockJson>$(JitPackagesConfigFileDirectory)threading+thread\project.lock.json</ProjectLockJson>
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <!-- Default configurations to help VS understand the configurations -->
@@ -10,6 +11,9 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
   <Target Name="Build">
     <ItemGroup>
       <AllSourceFiles Include="$(MSBuildProjectDirectory)\*.cs" />
@@ -17,6 +21,6 @@
     <PropertyGroup>
       <GenerateRunScript>false</GenerateRunScript>
     </PropertyGroup>
-    <MSBuild Projects="cs_template.proj" Properties="AssemblyName1=%(AllSourceFiles.FileName);AllowUnsafeBlocks=True;IntermediateOutputPath=$(IntermediateOutputPath)\%(AllSourceFiles.FileName)\" />
+    <MSBuild Projects="cs_template.csproj" Properties="AssemblyName1=%(AllSourceFiles.FileName);AllowUnsafeBlocks=True;IntermediateOutputPath=$(IntermediateOutputPath)\%(AllSourceFiles.FileName)\;DefaultBuildAllTarget=Build " />
   </Target>
 </Project>
