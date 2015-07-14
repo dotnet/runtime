@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "System.Console": "4.0.0-beta-*",
+    "System.Runtime": "4.0.20-beta-*",
+    "System.Runtime.Extensions": "4.0.10-beta-*",
+    "System.Collections": "4.0.10-beta-*",
+    "System.Collections.NonGeneric": "4.0.0-beta-*",
+    "System.Threading": "4.0.0-beta-*",
+    "System.Threading.Thread": "4.0.0-beta-*",
+    "System.Runtime.InteropServices": "4.0.20-beta-*",
+    "System.IO": "4.0.10-beta-*",
+    "System.Globalization": "4.0.10-beta-*"
+  },
+  "frameworks": {
+    "dnxcore50": {}
+  }
+}

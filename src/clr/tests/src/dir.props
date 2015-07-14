@@ -7,6 +7,9 @@
     <NoExplicitReferenceToStdLib>true</NoExplicitReferenceToStdLib>
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <!-- Disable some C# warnings for the tests. -->
+    <NoWarn>78,162,164,168,169,219,251,252,414,429,642,649,652,675,1691,1717,1718,3001,3002,3003,3005,3008</NoWarn>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
 
   <!-- Enable alternative JIT for testing if specified -->

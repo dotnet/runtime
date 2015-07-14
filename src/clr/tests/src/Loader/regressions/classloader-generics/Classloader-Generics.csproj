@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <ProjectGuid>{D6633F9C-C79B-422B-BCC0-1AF80A673A24}</ProjectGuid>
@@ -10,6 +10,9 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
   <Target Name="Build">
     <ItemGroup>
       <AllSourceFiles Include="$(MSBuildProjectDirectory)\*.cs" />
@@ -18,6 +21,6 @@
     <PropertyGroup>
       <GenerateRunScript>false</GenerateRunScript>
     </PropertyGroup>
-    <MSBuild Projects="cs_template.proj" Properties="AssemblyName1=%(AllSourceFiles.FileName);IntermediateOutputPath=$(IntermediateOutputPath)\%(AllSourceFiles.FileName)\" Condition="'@(AllSourceFiles)' != ''" />
+    <MSBuild Projects="cs_template.csproj" Properties="AssemblyName1=%(AllSourceFiles.FileName);IntermediateOutputPath=$(IntermediateOutputPath)\%(AllSourceFiles.FileName)\" Condition="'@(AllSourceFiles)' != ''" />
   </Target>
 </Project>

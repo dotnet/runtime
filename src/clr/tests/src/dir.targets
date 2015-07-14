@@ -1,59 +1,29 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-  <PropertyGroup Condition="'$(TargetFrameworkVersion)' != '' and '$(TargetFrameworkProfile)' != ''">
-    <TargetingPortable>true</TargetingPortable>
+  <PropertyGroup>
+    <ErrorIfBuildToolsRestoredFromIndividualProject Condition="!Exists('$(ToolsDir)')">true</ErrorIfBuildToolsRestoredFromIndividualProject>
   </PropertyGroup>
+  
+  <Import Project="..\dir.targets" />
+  
+  <Import Project="$(ToolsDir)Build.Common.targets" Condition="Exists('$(ToolsDir)Build.Common.targets')" />
+  <Import Project="..\override.targets" Condition="Exists('..\override.targets')"/>
 
-  <!-- Setup the default target for projects not already explicitly targeting portable -->
-  <PropertyGroup Condition="'$(TargetingPortable)' != 'true'">
-    <!-- Setting a default portable profile, although nothing should resolve from there as we BuildProjectDir to use the pacakge refs -->
-    <TargetPlatformIdentifier>Portable</TargetPlatformIdentifier>
-    <TargetFrameworkIdentifier>.NETPortable</TargetFrameworkIdentifier>
-    <TargetFrameworkVersion Condition="'$(TargetFrameworkVersion)' == ''">v4.5</TargetFrameworkVersion>
-    <TargetFrameworkProfile Condition="'$(TargetFrameworkProfile)' == ''">Profile7</TargetFrameworkProfile>
-    <TargetFrameworkMonikerDisplayName>.NET Portable Subset</TargetFrameworkMonikerDisplayName>
-    <ImplicitlyExpandTargetFramework Condition="'$(ImplicitlyExpandTargetFramework)' == ''">false</ImplicitlyExpandTargetFramework>
-
-    <AssemblySearchPaths>
-      {HintPathFromItem};
-      $(OutDir);
-      {RawFileName};
-    </AssemblySearchPaths>
-    <!-- For our projects we don't BuildProjectDir to resolve from the usual paths for now only hint paths and output directory 
-      {CandidateAssemblyFiles};
-      $(ReferencePath);
-      {TargetFrameworkDirectory};
-      {Registry:$(FrameworkRegistryBase),$(TargetFrameworkVersion),$(AssemblyFoldersSuffix)$(AssemblyFoldersExConditions)};
-    -->
+  <!-- We enable auto-unification of assembly references after importing the common targets.  Binding redirects are not needed
+       for coreclr since it auto-unifies, so the warnings we get without this setting are just noise -->
+  <PropertyGroup>
+    <AutoUnifyAssemblyReferences>true</AutoUnifyAssemblyReferences>
   </PropertyGroup>
-
-  <!-- Need to add references to the mscorlib design-time facade for some old-style portable dependencies like xunit -->
-  <Target Name="AddDesignTimeFacadeReferences"
-      Condition="'$(TargetingPortable)' != 'true'"
-      BeforeTargets="ResolveReferences"
-      DependsOnTargets="GetReferenceAssemblyPaths"
-  >
-    <ItemGroup>
-      <PossibleTargetFrameworks Include="$(_TargetFrameworkDirectories)" />
-      <ReferencePath Condition="'$(LinkLocalMscorlib)' != 'true'" Include="%(PossibleTargetFrameworks.Identity)mscorlib.dll" />
-      <ReferencePath Condition="'$(LinkLocalMscorlib)' == 'true'" Include="$(ProjectDir)\..\bin\Product\$(BuildOS).$(BuildArch).$(BuildType)\mscorlib.dll" />
-    </ItemGroup>
-  </Target>
 
   <!-- Project language -->
+  <!-- TODO: This might just be the Language property -->
   <PropertyGroup Condition="'$(ProjectLanguage)' == ''">
     <ProjectLanguage Condition="'$(MSBuildProjectExtension)' == '.ilproj' OR '$(Language)' == 'IL'">IL</ProjectLanguage>
     <ProjectLanguage Condition="'$(MSBuildProjectExtension)' == '.csproj' OR '$(Language)' == 'C#' OR '$(ProjectLanguage)'==''">CSharp</ProjectLanguage>
   </PropertyGroup>
-
-  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" Condition="'$(ProjectLanguage)' == 'CSharp'" />
-
+  
   <!-- TODO (#1122): import this from the ToolsDir once it becomes available -->
   <Import Project="$(ProjectDir)src\IL.targets" Condition="'$(ProjectLanguage)' == 'IL'" />
-
-  <Import Project="$(ToolsDir)packageresolve.targets" Condition="Exists('$(ToolsDir)packageresolve.targets')" />
-
-  <Import Project="$(ToolsDir)sign.targets" Condition="Exists('$(ToolsDir)sign.targets')" />
 
   <PropertyGroup>
     <GenerateRunScript Condition="'$(OutputType.ToUpper())' != 'EXE' And '$(GenerateRunScript)' == ''">false</GenerateRunScript>
