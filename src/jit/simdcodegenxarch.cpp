@@ -702,29 +702,40 @@ CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
         inst_RV_RV(ins, vectorReg, vectorReg, targetType, emitActualTypeSize(targetType));
     }
 
-    unsigned int offset = 0;
     unsigned int baseTypeSize = genTypeSize(baseType);
     instruction insLeftShift = getOpForSIMDIntrinsic(SIMDIntrinsicShiftLeftInternal, baseType);
+
+    // We will first consume the list items in execution (left to right) order,
+    // and record the registers.
+    regNumber operandRegs[SIMD_INTRINSIC_MAX_PARAM_COUNT];
+    unsigned initCount = 0;
     for (GenTree* list = simdNode->gtGetOp1(); list != nullptr; list = list->gtGetOp2())
     {
         assert(list->OperGet() == GT_LIST);
         GenTree* listItem = list->gtGetOp1();
         assert(listItem->TypeGet() == baseType);
         assert(!listItem->isContained());
-        
-        // The list will have init values in the reverse order. This allows us
-        // to efficiently stitch together a vector as follows:
+        regNumber operandReg = genConsumeReg(listItem);
+        operandRegs[initCount] = operandReg;
+        initCount++;
+    }
+
+    unsigned int offset = 0;
+    for (unsigned i = 0; i < initCount; i++)
+    {
+        // We will now construct the vector from the list items in reverse order.
+        // This allows us to efficiently stitch together a vector as follows:
         // vectorReg = (vectorReg << offset)
         // VectorReg[0] = listItemReg
-        //
         // Use genSIMDScalarMove with zeroInit of false in order to ensure that the upper
         // bits of vectorReg are not modified.
-        regNumber listItemReg = genConsumeReg(listItem);
+
+        regNumber operandReg = operandRegs[initCount - i - 1];
         if (offset != 0)
         {                         
             getEmitter()->emitIns_R_I(insLeftShift, EA_16BYTE, vectorReg, baseTypeSize);
         }
-        genSIMDScalarMove(baseType, vectorReg, listItem->gtRegNum, false /* do not zeroInit */);
+        genSIMDScalarMove(baseType, vectorReg, operandReg, false /* do not zeroInit */);
 
         offset += baseTypeSize;
     }
