@@ -20,7 +20,7 @@ namespace CoreclrTestLib
             System.IO.TextWriter err_file = new System.IO.StreamWriter(new FileStream(errorfile, FileMode.Create));
 
             int exitCode = -100;
-            int timeout = 1000 * 60*3;
+            int timeout = 1000 * 60*10;
             using (Process process = new Process())
             {
                 process.StartInfo.FileName = cmdLine;

@@ -1,32 +1,73 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-  <!-- Build Tools Version -->
+  <!--
+    $(OS) is set to Unix/Windows_NT. This comes from an environment variable on Windows and MSBuild on Unix.
+  -->
   <PropertyGroup>
-    <BuildToolsVersion>1.0.21-prerelease</BuildToolsVersion>
+    <OsEnvironment Condition="'$(OsEnvironment)'==''">$(OS)</OsEnvironment>
+  </PropertyGroup>
+  
+  <!-- Build Tools Versions -->
+  <PropertyGroup>
+    <BuildToolsVersion>1.0.25-prerelease-00056</BuildToolsVersion>
+    <BuildToolsCoreCLRVersion>1.0.2-prerelease</BuildToolsCoreCLRVersion>
+    <DnxVersion Condition="'$(OsEnvironment)'!='Unix'">1.0.0-beta5-12101</DnxVersion>
+    <DnxVersion Condition="'$(OsEnvironment)'=='Unix'">1.0.0-beta5-12101</DnxVersion>
+    <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'!='Unix'">dnx-coreclr-win-x86.$(DnxVersion)</DnxPackageName>
+    <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'=='Unix'">dnx-mono.$(DnxVersion)</DnxPackageName>
+    <RoslynVersion>1.0.0-rc3-20150510-01</RoslynVersion>
+    <RoslynPackageName>Microsoft.Net.ToolsetCompilers</RoslynPackageName>
+    <BuildToolsCoreCLRPackageName>Microsoft.DotNet.BuildTools.CoreCLR</BuildToolsCoreCLRPackageName>
+    <BuildToolsCoreCLRLocation>$(ToolsDir)$(BuildToolsCoreCLRPackageName).$(BuildToolsCoreCLRVersion)</BuildToolsCoreCLRLocation>
   </PropertyGroup>
 
   <!-- Common repo directories -->
   <PropertyGroup>
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
     <SourceDir>$(ProjectDir)src\</SourceDir>
-    <PackagesDir>$(SourceDir)packages\</PackagesDir>
+    <PackagesDir>$(ProjectDir)packages\</PackagesDir>
     <ToolsDir>$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)\lib\</ToolsDir>
   </PropertyGroup>
 
-
   <!-- Common nuget properties -->
   <PropertyGroup>
-    <NuGetToolPath>$(ToolsDir)NuGet.exe</NuGetToolPath>
-    <NuGetConfigFile>$(SourceDir)NuGet.Config</NuGetConfigFile>
-    <NuGetConfigCommandLine
-      Condition="Exists('$(NuGetConfigFile)')">-ConfigFile &quot;$(NuGetConfigFile)&quot;</NuGetConfigCommandLine>
-  </PropertyGroup>
+    <NuGetToolPath Condition="'$(NuGetToolPath)'==''">$(PackagesDir)NuGet.exe</NuGetToolPath>
+    <NuGetConfigFile Condition="'$(NuGetConfigFile)'==''">$(SourceDir)NuGet.Config</NuGetConfigFile>
+    <NuGetConfigCommandLine>-ConfigFile "$(NuGetConfigFile)"</NuGetConfigCommandLine>
 
-  <!-- Common build tool properties -->
+    <NugetRestoreCommand>"$(NuGetToolPath)"</NugetRestoreCommand>
+    <NugetRestoreCommand>$(NugetRestoreCommand) install</NugetRestoreCommand>
+    <!-- Trim off the last slash so that nuget doesn't get confused and say there are illegal characters on
+         the path. -->
+    <NugetRestoreCommand>$(NugetRestoreCommand) -OutputDirectory "$(PackagesDir.TrimEnd('\\'))"</NugetRestoreCommand>
+    <NugetRestoreCommand>$(NugetRestoreCommand) $(NuGetConfigCommandLine)</NugetRestoreCommand>
+    <NugetRestoreCommand>$(NugetRestoreCommand) -Verbosity detailed</NugetRestoreCommand>
+    <NugetRestoreCommand Condition="'$(OsEnvironment)'=='Unix'">mono $(NuGetRestoreCommand)</NugetRestoreCommand>
+  </PropertyGroup>
+  
+  <!-- list of directories to perform batch restore -->
+  <ItemGroup>
+    <DnuRestoreDir Include="&quot;$(MSBuildProjectDirectory)\src&quot;" />
+  </ItemGroup>
+  
+  <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">
+    <!-- When we do a traversal build we get all packages up front, don't restore them again -->
+    <RestorePackages>false</RestorePackages>
+  </PropertyGroup>
+  
   <PropertyGroup>
-    <BuildToolsInstallSemaphore>$(ToolsDir)BuildTools.$(BuildToolsVersion).installed.semaphore</BuildToolsInstallSemaphore>
+    <DnxPackageDir Condition="'$(DnxPackageDir)'==''">$(PackagesDir)/$(DnxPackageName)/</DnxPackageDir>
+    <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(OsEnvironment)'!='Unix'">$(DnxPackageDir)\bin\dnu.cmd</DnuToolPath>
+    <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(OsEnvironment)'=='Unix'">$(DnxPackageDir)/bin/dnu</DnuToolPath>
 
-    <BuildToolsTargetInputs>$(MSBuildThisFileFullPath);$(MSBuildThisFileDirectory)build.proj</BuildToolsTargetInputs>
-    <BuildToolsTargetOutputs>$(BuildToolsInstallSemaphore)</BuildToolsTargetOutputs>
+    <DnuRestoreSource>@(DnuSourceList -> '--source %(Identity)', ' ')</DnuRestoreSource>
+    <DnuRestoreDirs>@(DnuRestoreDir -> '%(Identity)', ' ')</DnuRestoreDirs>
+    
+    <DnuRestoreCommand>"$(DnuToolPath)"</DnuRestoreCommand>
+    <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
+    <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('\\'))"</DnuRestoreCommand>
+    <DnuRestoreCommand Condition="'$(LockDependencies)' == 'true'">$(DnuRestoreCommand) --lock</DnuRestoreCommand>
+    
   </PropertyGroup>
+  
 </Project>
