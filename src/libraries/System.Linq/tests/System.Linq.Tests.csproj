@@ -24,6 +24,7 @@
     <Compile Include="Helpers\TestCollection.cs" />
     <Compile Include="Helpers\TestEnumerable.cs" />
     <Compile Include="Helpers\TestReadOnlyCollection.cs" />
+    <Compile Include="MinMaxTests.cs" />
     <Compile Include="Performance\CastPerf.cs" />
     <Compile Include="Performance\LinqPerformanceCore.cs" />
     <Compile Include="Performance\OrderByThenByPerf.cs" />
@@ -34,6 +35,9 @@
     <Compile Include="Performance\ToArrayToListToDictionaryPerf.cs" />
     <Compile Include="RangeTests.cs" />
     <Compile Include="RepeatTests.cs" />
+    <Compile Include="ShortCircuitingTests.cs" />
+    <Compile Include="SingleTests.cs" />
+    <Compile Include="SkipTests.cs" />
     <Compile Include="SumTests.cs" />
     <Compile Include="ReverseTests.cs" />
     <Compile Include="WhereTests.cs" />
