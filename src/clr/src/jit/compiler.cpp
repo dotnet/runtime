@@ -2985,7 +2985,7 @@ bool  Compiler::compRsvdRegCheck(FrameLayoutState curState)
 // code:CILJit::compileMethod function.  
 // 
 // For an overview of the structure of the JIT, see:
-//   https://github.com/dotnet/coreclr/blob/master/Documentation/ryujit-overview.md
+//   https://github.com/dotnet/coreclr/blob/master/Documentation/botr/ryujit-overview.md
 //  
 void                 Compiler::compCompile(void * * methodCodePtr,
                                            ULONG  * methodCodeSize,
