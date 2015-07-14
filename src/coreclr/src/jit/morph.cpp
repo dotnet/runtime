@@ -14949,8 +14949,8 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, GenTreePtr 
         GenTreePtr curLHS = exp->gtGetOp1();
         GenTreePtr curRHS = exp->gtGetOp2();
 
-        if (!areArgumentsLocatedContiguously(prevLHS, curLHS) ||
-            !areArgumentsLocatedContiguously(prevRHS, curRHS))
+        if (!areArgumentsContiguous(prevLHS, curLHS) ||
+            !areArgumentsContiguous(prevRHS, curRHS))
         {
             break;
         }

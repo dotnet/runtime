@@ -6837,8 +6837,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
     void                    setLclRelatedToSIMDIntrinsic(GenTreePtr tree);
     bool                    areFieldsContiguous(GenTreePtr op1, GenTreePtr op2);
-    bool                    areArrayElementsLocatedContiguously(GenTreePtr op1, GenTreePtr op2);
-    bool                    areArgumentsLocatedContiguously(GenTreePtr op1, GenTreePtr op2);
+    bool                    areArrayElementsContiguous(GenTreePtr op1, GenTreePtr op2);
+    bool                    areArgumentsContiguous(GenTreePtr op1, GenTreePtr op2);
     GenTreePtr              createAddressNodeForSIMDInit(GenTreePtr tree, unsigned simdSize);
 
     // check methodHnd to see if it is a SIMD method that is expanded as an intrinsic in the JIT.
