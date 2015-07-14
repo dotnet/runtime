@@ -726,6 +726,7 @@ typedef enum {
 	 * consists of floats/doubles.
 	 */
 	LLVMArgFpStruct,
+	LLVMArgVtypeByRef,
 } LLVMArgStorage;
 
 typedef struct {
