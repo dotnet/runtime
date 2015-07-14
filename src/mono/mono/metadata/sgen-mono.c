@@ -1010,7 +1010,7 @@ static gboolean use_managed_allocator = TRUE;
 
 #else
 
-#if defined(__APPLE__) || defined (HOST_WIN32)
+#if defined(TARGET_OSX) || defined(TARGET_WIN32) || defined(TARGET_ANDROID) || defined(TARGET_IOS)
 #define EMIT_TLS_ACCESS_NEXT_ADDR(mb)	do {	\
 	mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX);	\
 	mono_mb_emit_byte ((mb), CEE_MONO_TLS);		\
@@ -1381,7 +1381,9 @@ create_allocator (int atype, gboolean slowpath)
 
 	res = mono_mb_create_method (mb, csig, 8);
 	mono_mb_free (mb);
+#ifndef DISABLE_JIT
 	mono_method_get_header (res)->init_locals = FALSE;
+#endif
 
 	info = mono_image_alloc0 (mono_defaults.corlib, sizeof (AllocatorWrapperInfo));
 	info->gc_name = "sgen";
@@ -2750,7 +2752,7 @@ sgen_client_init (void)
 
 #ifndef HAVE_KW_THREAD
 	mono_native_tls_alloc (&thread_info_key, NULL);
-#if defined(__APPLE__) || defined (HOST_WIN32)
+#if defined(TARGET_OSX) || defined(TARGET_WIN32) || defined(TARGET_ANDROID) || defined(TARGET_IOS)
 	/* 
 	 * CEE_MONO_TLS requires the tls offset, not the key, so the code below only works on darwin,
 	 * where the two are the same.

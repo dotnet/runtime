@@ -2675,6 +2675,8 @@ mini_parse_debug_options (void)
 			debug_options.soft_breakpoints = TRUE;
 		else if (!strcmp (arg, "check-pinvoke-callconv"))
 			debug_options.check_pinvoke_callconv = TRUE;
+		else if (!strcmp (arg, "arm-use-fallback-tls"))
+			debug_options.arm_use_fallback_tls = TRUE;
 		else if (!strcmp (arg, "debug-domain-unload"))
 			mono_enable_debug_domain_unload (TRUE);
 		else if (!strcmp (arg, "partial-sharing"))
@@ -2683,7 +2685,7 @@ mini_parse_debug_options (void)
 			mono_align_small_structs = TRUE;
 		else {
 			fprintf (stderr, "Invalid option for the MONO_DEBUG env variable: %s\n", arg);
-			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'reverse-pinvoke-exceptions', 'collect-pagefault-stats', 'break-on-unverified', 'no-gdb-backtrace', 'dont-free-domains', 'suspend-on-sigsegv', 'suspend-on-exception', 'suspend-on-unhandled', 'dyn-runtime-invoke', 'gdb', 'explicit-null-checks', 'init-stacks', 'check-pinvoke-callconv', 'debug-domain-unload', 'partial-sharing', 'align-small-structs'\n");
+			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'reverse-pinvoke-exceptions', 'collect-pagefault-stats', 'break-on-unverified', 'no-gdb-backtrace', 'dont-free-domains', 'suspend-on-sigsegv', 'suspend-on-exception', 'suspend-on-unhandled', 'dyn-runtime-invoke', 'gdb', 'explicit-null-checks', 'init-stacks', 'check-pinvoke-callconv', 'arm-use-fallback-tls', 'debug-domain-unload', 'partial-sharing', 'align-small-structs'\n");
 			exit (1);
 		}
 	}

@@ -21,12 +21,19 @@
 #include <mono/utils/mono-memory-model.h>
 
 #include "mini-arm.h"
+#include "mini-arm-tls.h"
 #include "cpu-arm.h"
 #include "trace.h"
 #include "ir-emit.h"
 #include "debugger-agent.h"
 #include "mini-gc.h"
 #include "mono/arch/arm/arm-vfp-codegen.h"
+
+#if defined(HAVE_KW_THREAD) && defined(__linux__) \
+	|| defined(TARGET_ANDROID) \
+	|| defined(TARGET_IOS)
+#define HAVE_FAST_TLS
+#endif
 
 /* Sanity check: This makes no sense */
 #if defined(ARM_FPU_NONE) && (defined(ARM_FPU_VFP) || defined(ARM_FPU_VFP_HARD))
@@ -54,10 +61,6 @@
 #define IS_SOFT_FLOAT (FALSE)
 #define IS_HARD_FLOAT (FALSE)
 #define IS_VFP (TRUE)
-#endif
-
-#if defined(__ARM_EABI__) && defined(__linux__) && !defined(PLATFORM_ANDROID) && !defined(__native_client__)
-#define HAVE_AEABI_READ_TP 1
 #endif
 
 #define THUNK_SIZE (3 * 4)
@@ -385,6 +388,86 @@ mono_arm_load_jumptable_entry (guint8 *code, gpointer* jte, ARMReg reg)
 }
 #endif
 
+static guint8*
+mono_arm_emit_tls_get (MonoCompile *cfg, guint8* code, int dreg, int tls_offset)
+{
+#ifdef HAVE_FAST_TLS
+	code = mono_arm_emit_load_imm (code, ARMREG_R0, tls_offset);
+	mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD,
+			"mono_get_tls_key");
+	code = emit_call_seq (cfg, code);
+	if (dreg != ARMREG_R0)
+		ARM_MOV_REG_REG (code, dreg, ARMREG_R0);
+#else
+	g_assert_not_reached ();
+#endif
+	return code;
+}
+
+static guint8*
+mono_arm_emit_tls_get_reg (MonoCompile *cfg, guint8* code, int dreg, int tls_offset_reg)
+{
+#ifdef HAVE_FAST_TLS
+	if (tls_offset_reg != ARMREG_R0)
+		ARM_MOV_REG_REG (code, ARMREG_R0, tls_offset_reg);
+	mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD,
+			"mono_get_tls_key");
+	code = emit_call_seq (cfg, code);
+	if (dreg != ARMREG_R0)
+		ARM_MOV_REG_REG (code, dreg, ARMREG_R0);
+#else
+	g_assert_not_reached ();
+#endif
+	return code;
+}
+
+static guint8*
+mono_arm_emit_tls_set (MonoCompile *cfg, guint8* code, int sreg, int tls_offset)
+{
+#ifdef HAVE_FAST_TLS
+	if (sreg != ARMREG_R1)
+		ARM_MOV_REG_REG (code, ARMREG_R1, sreg);
+	code = mono_arm_emit_load_imm (code, ARMREG_R0, tls_offset);
+	mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD,
+			"mono_set_tls_key");
+	code = emit_call_seq (cfg, code);
+#else
+	g_assert_not_reached ();
+#endif
+	return code;
+}
+
+static guint8*
+mono_arm_emit_tls_set_reg (MonoCompile *cfg, guint8* code, int sreg, int tls_offset_reg)
+{
+#ifdef HAVE_FAST_TLS
+	/* Get sreg in R1 and tls_offset_reg in R0 */
+	if (tls_offset_reg == ARMREG_R1) {
+		if (sreg == ARMREG_R0) {
+			/* swap sreg and tls_offset_reg */
+			ARM_EOR_REG_REG (code, sreg, sreg, tls_offset_reg);
+			ARM_EOR_REG_REG (code, tls_offset_reg, sreg, tls_offset_reg);
+			ARM_EOR_REG_REG (code, sreg, sreg, tls_offset_reg);
+		} else {
+			ARM_MOV_REG_REG (code, ARMREG_R0, tls_offset_reg);
+			if (sreg != ARMREG_R1)
+				ARM_MOV_REG_REG (code, ARMREG_R1, sreg);
+		}
+	} else {
+		if (sreg != ARMREG_R1)
+			ARM_MOV_REG_REG (code, ARMREG_R1, sreg);
+		if (tls_offset_reg != ARMREG_R0)
+			ARM_MOV_REG_REG (code, ARMREG_R0, tls_offset_reg);
+	}
+	mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD,
+			"mono_set_tls_key");
+	code = emit_call_seq (cfg, code);
+#else
+	g_assert_not_reached ();
+#endif
+	return code;
+}
+
 /*
  * emit_save_lmf:
  *
@@ -397,48 +480,24 @@ emit_save_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 	gboolean get_lmf_fast = FALSE;
 	int i;
 
-#ifdef HAVE_AEABI_READ_TP
-	gint32 lmf_addr_tls_offset = mono_get_lmf_addr_tls_offset ();
-
-	if (lmf_addr_tls_offset != -1) {
+	if (mono_arm_have_tls_get ()) {
 		get_lmf_fast = TRUE;
-
-		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD,
-							 (gpointer)"__aeabi_read_tp");
-		code = emit_call_seq (cfg, code);
-
-		ARM_LDR_IMM (code, ARMREG_R0, ARMREG_R0, lmf_addr_tls_offset);
-		get_lmf_fast = TRUE;
+		if (cfg->compile_aot) {
+			/* OP_AOTCONST */
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_TLS_OFFSET, (gpointer)TLS_KEY_LMF_ADDR);
+			ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 0);
+			ARM_B (code, 0);
+			*(gpointer*)code = NULL;
+			code += 4;
+			/* Load the value from the GOT */
+			ARM_LDR_REG_REG (code, ARMREG_R1, ARMREG_PC, ARMREG_R1);
+			code = mono_arm_emit_tls_get_reg (cfg, code, ARMREG_R0, ARMREG_R1);
+		} else {
+			gint32 lmf_addr_tls_offset = mono_get_lmf_addr_tls_offset ();
+			g_assert (lmf_addr_tls_offset != -1);
+			code = mono_arm_emit_tls_get (cfg, code, ARMREG_R0, lmf_addr_tls_offset);
+		}
 	}
-#endif
-
-#ifdef TARGET_IOS
-	if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
-		int lmf_offset;
-
-		/* Inline mono_get_lmf_addr () */
-		/* jit_tls = pthread_getspecific (mono_jit_tls_id); lmf_addr = &jit_tls->lmf; */
-
-		/* Load mono_jit_tls_id */
-		/* OP_AOTCONST */
-		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_JIT_TLS_ID, NULL);
-		ARM_LDR_IMM (code, ARMREG_R0, ARMREG_PC, 0);
-		ARM_B (code, 0);
-		*(gpointer*)code = NULL;
-		code += 4;
-		ARM_LDR_REG_REG (code, ARMREG_R0, ARMREG_PC, ARMREG_R0);
-		/* call pthread_getspecific () */
-		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
-							 (gpointer)"pthread_getspecific");
-		code = emit_call_seq (cfg, code);
-		/* lmf_addr = &jit_tls->lmf */
-		lmf_offset = MONO_STRUCT_OFFSET (MonoJitTlsData, lmf);
-		g_assert (arm_is_imm8 (lmf_offset));
-		ARM_ADD_REG_IMM (code, ARMREG_R0, ARMREG_R0, lmf_offset, 0);
-
-		get_lmf_fast = TRUE;
-	}
-#endif
 
 	if (!get_lmf_fast) {
 		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
@@ -586,6 +645,46 @@ emit_restore_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 }
 
 #endif /* #ifndef DISABLE_JIT */
+
+#ifndef MONO_CROSS_COMPILE
+static gboolean
+mono_arm_have_fast_tls (void)
+{
+	if (mini_get_debug_options ()->arm_use_fallback_tls)
+		return FALSE;
+#if (defined(HAVE_KW_THREAD) && defined(__linux__)) \
+	|| defined(TARGET_ANDROID)
+	guint32* kuser_get_tls = (void*)0xffff0fe0;
+	guint32 expected [] = {0xee1d0f70, 0xe12fff1e};
+
+	/* Expecting mrc + bx lr in the kuser_get_tls kernel helper */
+	return memcmp (kuser_get_tls, expected, 8) == 0;
+#elif defined(TARGET_IOS)
+	guint32 expected [] = {0x1f70ee1d, 0x0103f021, 0x0020f851, 0xbf004770};
+	/* Discard thumb bit */
+	guint32* pthread_getspecific_addr = (guint32*) ((guint32)pthread_getspecific & 0xfffffffe);
+	return memcmp ((void*)pthread_getspecific_addr, expected, 16) == 0;
+#else
+	return FALSE;
+#endif
+}
+#endif
+
+/*
+ * mono_arm_have_tls_get:
+ *
+ * Returns whether we have tls access implemented on the current
+ * platform
+ */
+gboolean
+mono_arm_have_tls_get (void)
+{
+#ifdef HAVE_FAST_TLS
+	return TRUE;
+#else
+	return FALSE;
+#endif
+}
 
 /*
  * mono_arch_get_argument_info:
@@ -4184,15 +4283,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_TLS_GET:
-#ifdef HAVE_AEABI_READ_TP
-			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
-								 (gpointer)"__aeabi_read_tp");
-			code = emit_call_seq (cfg, code);
-
-			ARM_LDR_IMM (code, ins->dreg, ARMREG_R0, ins->inst_offset);
-#else
-			g_assert_not_reached ();
-#endif
+			code = mono_arm_emit_tls_get (cfg, code, ins->dreg, ins->inst_offset);
+			break;
+		case OP_TLS_GET_REG:
+			code = mono_arm_emit_tls_get_reg (cfg, code, ins->dreg, ins->sreg1);
+			break;
+		case OP_TLS_SET:
+			code = mono_arm_emit_tls_set (cfg, code, ins->sreg1, ins->inst_offset);
+			break;
+		case OP_TLS_SET_REG:
+			code = mono_arm_emit_tls_set_reg (cfg, code, ins->sreg1, ins->sreg2);
 			break;
 		case OP_ATOMIC_EXCHANGE_I4:
 		case OP_ATOMIC_CAS_I4:
@@ -5876,10 +5976,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 #endif /* DISABLE_JIT */
 
-#ifdef HAVE_AEABI_READ_TP
-void __aeabi_read_tp (void);
-#endif
-
 void
 mono_arch_register_lowlevel_calls (void)
 {
@@ -5888,9 +5984,16 @@ mono_arch_register_lowlevel_calls (void)
 	mono_register_jit_icall (mono_arm_throw_exception_by_token, "mono_arm_throw_exception_by_token", mono_create_icall_signature ("void"), TRUE);
 
 #ifndef MONO_CROSS_COMPILE
-#ifdef HAVE_AEABI_READ_TP
-	mono_register_jit_icall (__aeabi_read_tp, "__aeabi_read_tp", mono_create_icall_signature ("void"), TRUE);
-#endif
+	if (mono_arm_have_tls_get ()) {
+		if (mono_arm_have_fast_tls ()) {
+			mono_register_jit_icall (mono_fast_get_tls_key, "mono_get_tls_key", mono_create_icall_signature ("ptr ptr"), TRUE);
+			mono_register_jit_icall (mono_fast_set_tls_key, "mono_set_tls_key", mono_create_icall_signature ("void ptr ptr"), TRUE);
+		} else {
+			g_warning ("No fast tls on device. Using fallbacks.");
+			mono_register_jit_icall (mono_fallback_get_tls_key, "mono_get_tls_key", mono_create_icall_signature ("ptr ptr"), TRUE);
+			mono_register_jit_icall (mono_fallback_set_tls_key, "mono_set_tls_key", mono_create_icall_signature ("void ptr ptr"), TRUE);
+		}
+	}
 #endif
 }
 

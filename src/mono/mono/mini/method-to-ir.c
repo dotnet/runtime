@@ -4142,9 +4142,7 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box, int context_
 			return NULL;
 		}
 
-#ifndef MONO_CROSS_COMPILE
 		managed_alloc = mono_gc_get_managed_allocator (klass, for_box, TRUE);
-#endif
 
 		if (managed_alloc) {
 			int size = mono_class_instance_size (klass);

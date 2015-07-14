@@ -140,6 +140,7 @@ BASE_TEST_CS_SRC=		\
 	many-locals.cs		\
 	string-compare.cs	\
 	test-prime.cs		\
+	test-tls.cs		\
 	params.cs		\
 	reflection.cs		\
 	interface.cs		\
