@@ -6059,13 +6059,22 @@ CodeGen::genIntToFloatCast(GenTreePtr treeNode)
     // Also we don't expect to see uint32 -> float/double and uint64 -> float conversions
     // here since they should have been lowered apropriately.
     noway_assert(srcType != TYP_UINT);
-    noway_assert((srcType != TYP_ULONG) || (dstType != TYP_FLOAT));
+    noway_assert((srcType != TYP_ULONG) || (dstType != TYP_FLOAT));    
 
-    
+    // To convert int to a float/double, cvtsi2ss/sd SSE2 instruction is used
+    // which does a partial write to lower 4/8 bytes of xmm register keeping the other
+    // upper bytes unmodified.  If "cvtsi2ss/sd xmmReg, r32/r64" occurs inside a loop, 
+    // the partial write could introduce a false dependency and could cause a stall 
+    // if there are further uses of xmmReg. We have such a case occuring with a
+    // customer reported version of SpectralNorm benchmark, resulting in 2x perf
+    // regression.  To avoid false dependency, we emit "xorps xmmReg, xmmReg" before
+    // cvtsi2ss/sd instruction.
+
+    genConsumeOperands(treeNode->AsOp());
+    getEmitter()->emitIns_R_R(INS_xorps, EA_4BYTE, treeNode->gtRegNum, treeNode->gtRegNum);
 
     // Note that here we need to specify srcType that will determine
     // the size of source reg/mem operand and rex.w prefix.
-    genConsumeOperands(treeNode->AsOp());
     instruction ins = ins_FloatConv(dstType, TYP_INT);
     getEmitter()->emitInsBinary(ins, emitTypeSize(srcType), treeNode, op1);
 
