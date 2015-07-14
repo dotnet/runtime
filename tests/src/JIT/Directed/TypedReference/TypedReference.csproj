@@ -13,10 +13,10 @@
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <ReferencePath>$(ProgramFiles)\Common Files\microsoft shared\VSTT\11.0\UITestExtensionPackages</ReferencePath>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
-    <RestorePackages>true</RestorePackages>
+
     <NuGetPackageImportStamp>7a9bfb7d</NuGetPackageImportStamp>
     <DefineConstants>$(DefineConstants);STATIC</DefineConstants>
-    <LinkLocalMscorlib>true</LinkLocalMscorlib>
+    <ReferenceLocalMscorlib>true</ReferenceLocalMscorlib>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
@@ -32,14 +32,15 @@
     <Compile Include="TypedReference.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="$(JitPackagesConfigFileDirectory)empty.packages.config" />
+    <None Include="$(JitPackagesConfigFileDirectory)empty.project.json" />
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <PropertyGroup>
-    <PackagesConfigFile>$(JitPackagesConfigFileDirectory)empty.packages.config</PackagesConfigFile>
+    <ProjectJson>$(JitPackagesConfigFileDirectory)empty\project.json</ProjectJson>
+    <ProjectLockJson>$(JitPackagesConfigFileDirectory)empty\project.lock.json</ProjectLockJson>
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

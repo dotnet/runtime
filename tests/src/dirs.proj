@@ -1,4 +1,4 @@
-<Project ToolsVersion="12.0" DefaultTargets="Build" InitialTargets="RestoreAllPackages;VerifyBuildTools" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="12.0" DefaultTargets="Build" InitialTargets="VerifyBuildTools" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="dir.props" />
 
   <Target Name="VerifyBuildTools" 
@@ -12,17 +12,12 @@
     <Warning Text="Looks like there may be an update to the build tools. Please run buildtest.cmd from the root of the repo to refresh the build tools." /> 
   </Target>
 
-  <Import Project="$(ToolsDir)depending.targets" Condition="Exists('$(ToolsDir)depending.targets')" />
-  <Target Name="RestoreAllPackages">
-    <Message Importance="High" Text="Restoring all package dependencies..." />
-    <CallTarget Targets="EnsureDependencies" />
-  </Target>
-
-
-  <Target Name="ResolveDisabledProjects" BeforeTargets="BuildAllProjects" DependsOnTargets="RestoreAllPackages" >
+  <Target Name="ResolveDisabledProjects" BeforeTargets="BuildAllProjects" >
     <ItemGroup>
       <DisabledProjects Include="TestWrappers*\*\*.csproj" />
+      <DisabledProjects Include="*\**\cs_template.csproj" />
     </ItemGroup>
+    
     <ItemGroup>
       <Project Include="*\**\*.csproj" Exclude="@(DisabledProjects)"/>
       <Project Include="*\**\*.ilproj" Exclude="@(DisabledProjects)"/>
