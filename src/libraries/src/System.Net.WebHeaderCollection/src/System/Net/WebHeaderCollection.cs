@@ -237,7 +237,7 @@ namespace System.Net
             {
                 // NAME check
                 // First, check for absence of separators and spaces
-                if (name.IndexOfAny(s_invalidParamChars) != -1)
+                if (HttpValidationHelpers.IsInvalidMethodOrHeaderString(name))
                 {
                     throw new ArgumentException(SR.Format(SR.net_WebHeaderInvalidHeaderChars, "name"));
                 }
@@ -281,11 +281,6 @@ namespace System.Net
                     throw new ArgumentException(SR.Format(SR.net_headerrestrict, headerName), "name");
                 }
             }
-        }
-
-        internal static bool IsBlankString(string stringValue)
-        {
-            return stringValue == null || stringValue.Length == 0;
         }
 
         // Our public METHOD set, most are inherited from NameValueCollection,
@@ -351,7 +346,7 @@ namespace System.Net
         /// </devdoc>
         public override void Set(string name, string value)
         {
-            if (IsBlankString(name))
+            if (string.IsNullOrEmpty(name))
             {
                 throw new ArgumentNullException("name");
             }
@@ -384,7 +379,7 @@ namespace System.Net
         /// </devdoc>
         public override void Remove(string name)
         {
-            if (IsBlankString(name))
+            if (string.IsNullOrEmpty(name))
             {
                 throw new ArgumentNullException("name");
             }
@@ -520,7 +515,7 @@ namespace System.Net
             {
                 string key = cc.GetKey(i) as string;
                 string val = cc.Get(i) as string;
-                if (IsBlankString(key))
+                if (string.IsNullOrEmpty(key))
                 {
                     continue;
                 }
