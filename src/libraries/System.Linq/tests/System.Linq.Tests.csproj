@@ -35,6 +35,7 @@
     <Compile Include="Performance\ToArrayToListToDictionaryPerf.cs" />
     <Compile Include="RangeTests.cs" />
     <Compile Include="RepeatTests.cs" />
+    <Compile Include="ShortCircuitingTests.cs" />
     <Compile Include="SingleTests.cs" />
     <Compile Include="SkipTests.cs" />
     <Compile Include="SumTests.cs" />
