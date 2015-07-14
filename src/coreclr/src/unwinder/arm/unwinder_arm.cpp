@@ -20,8 +20,29 @@
 #define STATUS_UNWIND_UNSUPPORTED_VERSION   STATUS_UNSUCCESSFUL
 
 
-#define UPDATE_CONTEXT_POINTERS(Params, RegisterNumber, Address)
-#define UPDATE_FP_CONTEXT_POINTERS(Params, RegisterNumber, Address)
+#define UPDATE_CONTEXT_POINTERS(Params, RegisterNumber, Address)                \
+do {                                                                            \
+    PKNONVOLATILE_CONTEXT_POINTERS ContextPointers = (Params)->ContextPointers; \
+    if (ARGUMENT_PRESENT(ContextPointers)) {                                    \
+        if (RegisterNumber >=  4 && RegisterNumber <= 11) {                     \
+            (&ContextPointers->R4)[RegisterNumber - 4] = (PULONG)Address;       \
+        } else if (RegisterNumber == 14) {                                      \
+            ContextPointers->Lr = (PULONG)Address;                              \
+        }                                                                       \
+    }                                                                           \
+} while (0)
+
+#define UPDATE_FP_CONTEXT_POINTERS(Params, RegisterNumber, Address)             \
+do {                                                                            \
+    PKNONVOLATILE_CONTEXT_POINTERS ContextPointers = (Params)->ContextPointers; \
+    if (ARGUMENT_PRESENT(ContextPointers) &&                                    \
+        (RegisterNumber >=  8) &&                                               \
+        (RegisterNumber <= 15)) {                                               \
+                                                                                \
+        (&ContextPointers->D8)[RegisterNumber - 8] = (PULONGLONG)Address;       \
+    }                                                                           \
+} while (0)
+
 #define VALIDATE_STACK_ADDRESS(Params, Context, DataSize, Alignment, OutStatus)
 #define UNWIND_PARAMS_SET_TRAP_FRAME(Params, Address)
 
@@ -32,6 +53,10 @@
 
 #define CONTEXT_REGISTER(ctx, idx)    ((&(ctx)->R0)[idx])
 
+typedef struct _ARM_UNWIND_PARAMS
+{
+    PKNONVOLATILE_CONTEXT_POINTERS ContextPointers;
+} ARM_UNWIND_PARAMS, *PARM_UNWIND_PARAMS;
 
 //
 // The ConditionTable is used to look up the state of a condition
@@ -230,7 +255,7 @@ NTSTATUS
 RtlpUnwindCustom(
     __inout PT_CONTEXT ContextRecord,
     __in BYTE Opcode,
-    __in PVOID UnwindParams
+    __in PARM_UNWIND_PARAMS UnwindParams
     )
 
 /*++
@@ -358,7 +383,7 @@ RtlpPopVfpRegisterRange(
     __inout PT_CONTEXT ContextRecord,
     __in ULONG RegStart,
     __in ULONG RegStop,
-    __in PVOID UnwindParams
+    __in PARM_UNWIND_PARAMS UnwindParams
     )
 
 /*++
@@ -457,7 +482,7 @@ NTSTATUS
 RtlpPopRegisterMask(
     __inout PT_CONTEXT ContextRecord,
     __in WORD RegMask,
-    __in PVOID UnwindParams
+    __in PARM_UNWIND_PARAMS UnwindParams
     )
 /*++
 
@@ -624,7 +649,7 @@ RtlpUnwindFunctionCompact(
     __out PULONG EstablisherFrame,
     __deref_opt_out_opt PEXCEPTION_ROUTINE *HandlerRoutine,
     __out PVOID *HandlerData,
-    __in PVOID UnwindParams
+    __in PARM_UNWIND_PARAMS UnwindParams
     )
 {
     ULONG CBit;
@@ -894,7 +919,7 @@ RtlpUnwindFunctionFull(
     __out PULONG EstablisherFrame,
     __deref_opt_out_opt PEXCEPTION_ROUTINE *HandlerRoutine,
     __out PVOID *HandlerData,
-    __in PVOID UnwindParams
+    __in PARM_UNWIND_PARAMS UnwindParams
     )
 
 /*++
@@ -1480,8 +1505,41 @@ PEXCEPTION_ROUTINE RtlVirtualUnwind(
     __inout_opt PKNONVOLATILE_CONTEXT_POINTERS ContextPointers
     )
 {
-    PORTABILITY_ASSERT("Implement for PAL");
+    PEXCEPTION_ROUTINE handlerRoutine;
+    HRESULT res;
     
-    return NULL;
+    IMAGE_ARM_RUNTIME_FUNCTION_ENTRY rfe;
+    rfe.BeginAddress = FunctionEntry->BeginAddress;
+    rfe.UnwindData = FunctionEntry->UnwindData;
+    
+    ARM_UNWIND_PARAMS unwindParams;
+    unwindParams.ContextPointers = ContextPointers;
+    
+    if ((FunctionEntry->UnwindData & 3) != 0) 
+    {
+        res = RtlpUnwindFunctionCompact(ControlPc - ImageBase,
+                                        &rfe,
+                                        ContextRecord,
+                                        EstablisherFrame,
+                                        &handlerRoutine,
+                                        HandlerData,
+                                        &unwindParams);
+
+    }
+    else
+    {
+        res = RtlpUnwindFunctionFull(ControlPc - ImageBase,
+                                    ImageBase,
+                                    &rfe,
+                                    ContextRecord,
+                                    EstablisherFrame,
+                                    &handlerRoutine,
+                                    HandlerData,
+                                    &unwindParams);
+    }
+
+    _ASSERTE(SUCCEEDED(res));
+    
+    return handlerRoutine;
 }
 #endif
