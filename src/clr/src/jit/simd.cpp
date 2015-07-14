@@ -1570,13 +1570,13 @@ bool Compiler::areFieldsContiguous(GenTreePtr first, GenTreePtr second)
 //      op1 - GenTreePtr.
 //      op2 - GenTreePtr.
 // Return Value:
-//      if the array element op1 is located before array element op2, and they are located contiguously,
+//      if the array element op1 is located before array element op2, and they are contiguous,
 //      then return true. Otherwise, return false.
 // TODO-CQ: 
 //      Right this can only check array element with const number as index. In future, 
 //      we should consider to allow this function to check the index using expression.
 
-bool Compiler::areArrayElementsLocatedContiguously(GenTreePtr op1, GenTreePtr op2)
+bool Compiler::areArrayElementsContiguous(GenTreePtr op1, GenTreePtr op2)
 {
     noway_assert(op1->gtOper == GT_INDEX);
     noway_assert(op2->gtOper == GT_INDEX);
@@ -1610,7 +1610,7 @@ bool Compiler::areArrayElementsLocatedContiguously(GenTreePtr op1, GenTreePtr op
 }
 
 //-------------------------------------------------------------------------------
-// Check whether two argument nodes are located contiguously or not.
+// Check whether two argument nodes are contiguous or not.
 // Arguments:
 //      op1 - GenTreePtr. 
 //      op2 - GenTreePtr. 
@@ -1621,11 +1621,11 @@ bool Compiler::areArrayElementsLocatedContiguously(GenTreePtr op1, GenTreePtr op
 //      Right now this can only check field and array. In future we should add more cases.
 //      
 
-bool Compiler::areArgumentsLocatedContiguously(GenTreePtr op1, GenTreePtr op2)
+bool Compiler::areArgumentsContiguous(GenTreePtr op1, GenTreePtr op2)
 {
     if(op1->OperGet() == GT_INDEX && op2->OperGet() == GT_INDEX)
     {
-        return areArrayElementsLocatedContiguously(op1, op2);
+        return areArrayElementsContiguous(op1, op2);
     }
     else if(op1->OperGet() == GT_FIELD && op2->OperGet() == GT_FIELD)
     {
@@ -1753,8 +1753,8 @@ void Compiler::impMarkContiguousSIMDFieldAssignments(GenTreePtr stmt)
             GenTreePtr prevAsgExpr = fgPreviousCandidateSIMDFieldAsgStmt->gtStmt.gtStmtExpr;
             GenTreePtr prevDst = prevAsgExpr->gtOp.gtOp1;
             GenTreePtr prevSrc = prevAsgExpr->gtOp.gtOp2;
-            if (!areArgumentsLocatedContiguously(prevDst, curDst) ||
-                !areArgumentsLocatedContiguously(prevSrc, curSrc))
+            if (!areArgumentsContiguous(prevDst, curDst) ||
+                !areArgumentsContiguous(prevSrc, curSrc))
             {
                 fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
             }
@@ -1945,44 +1945,35 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                   opcode,
                 GenTree* nextArg = op2;
             
                 // Build a GT_LIST with the N values.
-                // For efficient codegen that requires minimal internal regs, we build the list
-                // with the args in reverse order. 
+                // We must maintain left-to-right order of the args, but we will pop
+                // them off in reverse order (the Nth arg was pushed onto the stack last).
                 
-                ArrayStack<GenTree*> listArgs(this);
-                for (unsigned i = 0; i < initCount; i++)
-                {                    
-                    GenTree* nextArg = impSIMDPopStack();
-                    assert(nextArg->TypeGet() == baseType);
-                    listArgs.Push(nextArg);                    
-                }
-
                 GenTree* list = nullptr;
                 GenTreePtr firstArg = nullptr;
-                GenTreePtr preArg = nullptr;
+                GenTreePtr prevArg = nullptr;
                 int offset = 0;
-                bool areArgsLocatedContiguously = true;
+                bool areArgsContiguous = true;
                 for (unsigned i = 0; i < initCount; i++)
                 {   
-                    GenTree* nextArg = listArgs.Pop();
-                    if (areArgsLocatedContiguously)
+                    GenTree* nextArg = impSIMDPopStack();
+                    assert(nextArg->TypeGet() == baseType);
+                    if (areArgsContiguous)
                     {                      
                         GenTreePtr curArg = nextArg;
-                        if(firstArg == nullptr)
-                        {
-                            firstArg = curArg;    
-                        } 
+                        firstArg = curArg;    
                         
-                        if(preArg != nullptr)
+                        if(prevArg != nullptr)
                         {
-                            areArgsLocatedContiguously = areArgumentsLocatedContiguously(preArg, curArg);
+                            // Recall that we are popping the args off the stack in reverse order.
+                            areArgsContiguous = areArgumentsContiguous(curArg, prevArg);
                         }
-                        preArg = curArg;   
+                        prevArg = curArg;   
                     }
                
                     list  = new (this, GT_LIST) GenTreeOp(GT_LIST, baseType, nextArg, list);
                 }
 
-                if (areArgsLocatedContiguously && baseType == TYP_FLOAT)
+                if (areArgsContiguous && baseType == TYP_FLOAT)
                 {
                     // Since Vector2, Vector3 and Vector4's arguments type are only float, 
                     // we intialize the vector from first argument address, only when 
