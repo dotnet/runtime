@@ -3,6 +3,17 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
+.macro NESTED_ENTRY Name, Section, Handler
+        LEAF_ENTRY \Name, \Section
+        .ifnc \Handler, NoHandler
+        .personality C_FUNC(\Handler)
+        .endif
+.endm
+
+.macro NESTED_END Name, Section
+        LEAF_END \Name, \Section
+.endm
+
 .macro PATCH_LABEL Name
         .thumb_func
         .global C_FUNC(\Name)
@@ -14,7 +25,7 @@ C_FUNC(\Name):
         .global C_FUNC(\Name)
         .type \Name, %function
 C_FUNC(\Name):
-        .cfi_startproc
+        .fnstart
 .endm
 
 .macro LEAF_END_MARKED Name, Section
@@ -22,7 +33,7 @@ C_FUNC(\Name):
         .global C_FUNC(\Name\()_End)
 C_FUNC(\Name\()_End):
         .size \Name, .-\Name
-        .cfi_endproc
+        .fnend
 .endm
 
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg
@@ -30,64 +41,43 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro push_nonvol_reg Register
-        push {\Register}
-        .cfi_adjust_cfa_offset 4
-        .cfi_rel_offset \Register, 0
+        push \Register
+        .save \Register
 .endm
 
 .macro pop_nonvol_reg Register
-        pop {\Register}
-        .cfi_adjust_cfa_offset -4
-        .cfi_restore \Register
+        pop \Register
+.endm
+
+.macro vpush_nonvol_reg Register
+        vpush \Register
+        .vsave \Register
+.endm
+
+.macro vpop_nonvol_reg Register
+        vpop \Register
 .endm
 
 .macro alloc_stack Size
         sub sp, sp, \Size
-        .cfi_adjust_cfa_offset \Size
+        .pad #\Size
 .endm
 
 .macro free_stack Size
         add sp, sp, \Size
-        .cfi_adjust_cfa_offset -\Size
-.endm
-
-.macro set_cfa_register Reg, Offset
-        .cfi_def_cfa_register \Reg
-        .cfi_def_cfa_offset \Offset
-.endm
-
-.macro save_reg_postsp Reg, Offset
-        str \Reg, [sp, #\Offset]
-        .cfi_rel_offset \Reg, __Offset
-.endm
-
-.macro restore_reg Reg, Offset
-        ldr \Reg, [sp, #\Offset]
-        .cfi_restore \Reg
+        .pad #-\Size
 .endm
 
 .macro POP_CALLEE_SAVED_REGISTERS
-        pop {r4-r11, lr}
-        .cfi_adjust_cfa_offset -(4*9)
-        .cfi_restore r4
-        .cfi_restore r5
-        .cfi_restore r6
-        .cfi_restore r7
-        .cfi_restore r8
-        .cfi_restore r9
-        .cfi_restore r10
-        .cfi_restore r11
-        .cfi_restore lr
+        pop_nonvol_reg "{r4-r11, lr}"
 .endm
 
 .macro PUSH_CALLEE_SAVED_REGISTERS
-        push {r4-r11, lr}
-        .cfi_adjust_cfa_offset (4*9)
+        push_nonvol_reg "{r4-r11, lr}"
 .endm
 
 .macro push_register Reg
-        push            {\Reg}
-        .cfi_adjust_cfa_offset 4
+        push \Reg
 .endm
 
 .macro push_argument_register Reg
@@ -96,12 +86,10 @@ C_FUNC(\Name\()_End):
 
 .macro PUSH_ARGUMENT_REGISTERS
         push {r0-r3}
-        .cfi_adjust_cfa_offset (4*4)
 .endm
 
 .macro pop_register Reg
-        pop            {\Reg}
-        .cfi_adjust_cfa_offset -4
+        pop \Reg
 .endm
 
 .macro pop_argument_register Reg
@@ -110,7 +98,6 @@ C_FUNC(\Name\()_End):
 
 .macro POP_ARGUMENT_REGISTERS
         pop {r0-r3}
-        .cfi_adjust_cfa_offset -(4*4)
 .endm
 
 // Stack layout:
@@ -203,6 +190,31 @@ C_FUNC(\Name\()_End):
 
 .macro EMIT_BREAKPOINT
         .inst.w 0xde01
+.endm
+
+.macro PROLOG_PUSH RegList
+        push_nonvol_reg "\RegList"
+.endm
+
+.macro PROLOG_VPUSH RegList
+        vpush_nonvol_reg "\RegList"
+.endm
+
+.macro PROLOG_STACK_SAVE Register
+        .setfp \Register, sp
+        mov \Register, sp
+.endm
+
+.macro EPILOG_STACK_RESTORE Register
+        mov sp, \Register
+.endm
+
+.macro EPILOG_POP RegList
+        pop_nonvol_reg "\RegList"
+.endm
+
+.macro EPILOG_VPOP RegList
+        vpop_nonvol_reg "\RegList"
 .endm
 
 //-----------------------------------------------------------------------------
