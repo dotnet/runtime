@@ -86,7 +86,8 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test the exceptional behavior when attempting to create a map so large it's not supported.
         /// </summary>
-        [Fact, PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(PlatformID.Windows)]
+        [Fact]
         public void TooLargeCapacity_Windows()
         {
             if (IntPtr.Size == 4)
@@ -102,7 +103,8 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test the exceptional behavior when attempting to create a map so large it's not supported.
         /// </summary>
-        [Fact, PlatformSpecific(PlatformID.Linux)] // Because of the file-based backing, OS X pops up a warning dialog about being out-of-space (even though we clean up immediately)
+        [PlatformSpecific(PlatformID.AnyUnix & ~PlatformID.OSX)] // Because of the file-based backing, OS X pops up a warning dialog about being out-of-space (even though we clean up immediately)
+        [Fact]
         public void TooLargeCapacity_Unix()
         {
             // On Windows we fail with too large a capacity as part of the CreateNew call.
@@ -122,7 +124,8 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test to verify that map names are left unsupported on Unix.
         /// </summary>
-        [Theory, PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        [Theory]
         [MemberData("CreateValidMapNames")]
         public void MapNamesNotSupported_Unix(string mapName)
         {
@@ -134,7 +137,8 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test to verify a variety of map names work correctly on Windows.
         /// </summary>
-        [Theory, PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(PlatformID.Windows)]
+        [Theory]
         [MemberData("CreateValidMapNames")]
         [InlineData(null)]
         public void ValidMapNames_Windows(string name)
@@ -157,7 +161,8 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Test to verify map names are handled appropriately, causing a conflict when they're active but
         /// reusable in a sequential manner.
         /// </summary>
-        [Theory, PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(PlatformID.Windows)]
+        [Theory]
         [MemberData("CreateValidMapNames")]
         public void ReusingNames_Windows(string name)
         {
@@ -250,7 +255,8 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test to verify that two unrelated maps don't share data.
         /// </summary>
-        [Theory, PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(PlatformID.Windows)]
+        [Theory]
         [MemberData("CreateValidMapNames")]
         [InlineData(null)]
         public void DataNotPersistedBetweenMaps_Windows(string name)
@@ -302,20 +308,36 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test to verify expected capacity with regards to page size and automatically rounding up to the nearest.
         /// </summary>
+        [PlatformSpecific(PlatformID.Windows)]
         [Fact]
-        public void RoundedUpCapacity()
+        public void RoundedUpCapacity_Windows()
         {
             // On both Windows and Unix, capacity is rounded up to the nearest page size.   However, 
             // the amount of capacity actually usable by the developer is supposed to be limited
             // to that specified.  That's not currently the case with the MMF APIs on Windows;
             // it is the case on Unix.
-            int specifiedCapacity = 1;
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, specifiedCapacity))
+            const int CapacityLessThanPageSize = 1;
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, CapacityLessThanPageSize))
             using (MemoryMappedViewAccessor acc = mmf.CreateViewAccessor())
             {
-                Assert.Equal(
-                    Interop.IsWindows ? s_pageSize.Value : specifiedCapacity,
-                    acc.Capacity);
+                Assert.Equal(s_pageSize.Value, acc.Capacity);
+            }
+        }
+
+        /// <summary>
+        /// Test to verify expected capacity with regards to page size and automatically rounding up to the nearest.
+        /// </summary>
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        [Fact]
+        public void RoundedUpCapacity_Unix()
+        {
+            // The capacity of the view should match the capacity specified when creating the map,
+            // even though under the covers the map's capacity is rounded up to the nearest page size.
+            const int CapacityLessThanPageSize = 1;
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, CapacityLessThanPageSize))
+            using (MemoryMappedViewAccessor acc = mmf.CreateViewAccessor())
+            {
+                Assert.Equal(CapacityLessThanPageSize, acc.Capacity);
             }
         }
 

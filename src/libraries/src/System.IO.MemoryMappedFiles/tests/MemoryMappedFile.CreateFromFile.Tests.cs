@@ -117,7 +117,8 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Tests various values of FileAccess used to construct a FileStream and MemoryMappedFileAccess used
         /// to construct a map over that stream on Windows.  The combinations should all be invalid, resulting in exception.
         /// </summary>
-        [Theory, PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(PlatformID.Windows)]
+        [Theory]
         [InlineData(FileAccess.Read, MemoryMappedFileAccess.ReadWrite)]
         [InlineData(FileAccess.Read, MemoryMappedFileAccess.ReadExecute)]
         [InlineData(FileAccess.Read, MemoryMappedFileAccess.ReadWriteExecute)]
@@ -143,7 +144,8 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Tests various values of FileAccess used to construct a FileStream and MemoryMappedFileAccess used
         /// to construct a map over that stream on Unix.  The combinations should all be invalid, resulting in exception.
         /// </summary>
-        [Theory, PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        [Theory]
         [InlineData(FileAccess.Read, MemoryMappedFileAccess.ReadWrite)]
         [InlineData(FileAccess.Read, MemoryMappedFileAccess.ReadExecute)]
         [InlineData(FileAccess.Read, MemoryMappedFileAccess.ReadWriteExecute)]
@@ -188,7 +190,8 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test to verify that map names are left unsupported on Unix.
         /// </summary>
-        [Theory, PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        [Theory]
         [MemberData("CreateValidMapNames")]
         public void MapNamesNotSupported_Unix(string mapName)
         {
@@ -593,7 +596,8 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test the exceptional behavior of *Execute access levels.
         /// </summary>
-        [Theory, PlatformSpecific(PlatformID.Windows)] // Unix model for executable differs from Windows
+        [PlatformSpecific(PlatformID.Windows)] // Unix model for executable differs from Windows
+        [Theory]
         [InlineData(MemoryMappedFileAccess.ReadExecute)]
         [InlineData(MemoryMappedFileAccess.ReadWriteExecute)]
         public void FileNotOpenedForExecute(MemoryMappedFileAccess access)
@@ -756,7 +760,7 @@ namespace System.IO.MemoryMappedFiles.Tests
                 MemoryMappedFile.CreateFromFile(file.Path, FileMode.Open, null, InitialCapacity * 2).Dispose();
                 using (FileStream fs = File.OpenRead(file.Path))
                 {
-                    Assert.Equal(512, fs.Length);
+                    Assert.Equal(InitialCapacity * 2, fs.Length);
                 }
 
                 // Do the same thing again but with a FileStream.
@@ -771,7 +775,8 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test the exceptional behavior when attempting to create a map so large it's not supported.
         /// </summary>
-        [Fact, PlatformSpecific(PlatformID.Windows | PlatformID.Linux)] // Because of the file-based backing, OS X pops up a warning dialog about being out-of-space (even though we clean up immediately)
+        [PlatformSpecific(~PlatformID.OSX)] // Because of the file-based backing, OS X pops up a warning dialog about being out-of-space (even though we clean up immediately)
+        [Fact]
         public void TooLargeCapacity()
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.CreateNew))
@@ -784,7 +789,8 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Test to verify map names are handled appropriately, causing a conflict when they're active but
         /// reusable in a sequential manner.
         /// </summary>
-        [Theory, PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(PlatformID.Windows)]
+        [Theory]
         [MemberData("CreateValidMapNames")]
         public void ReusingNames_Windows(string name)
         {
