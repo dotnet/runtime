@@ -213,10 +213,11 @@ namespace System.IO.MemoryMappedFiles.Tests
         [InlineData(MemoryMappedFileAccess.CopyOnWrite)]
         public void FlushSupportedOnBothReadAndWriteAccessors(MemoryMappedFileAccess access)
         {
-            foreach (MemoryMappedFile mmf in CreateSampleMaps(256))
+            const int Capacity = 256;
+            foreach (MemoryMappedFile mmf in CreateSampleMaps(Capacity))
             {
                 using (mmf)
-                using (MemoryMappedViewStream s = mmf.CreateViewStream(0, 256, access))
+                using (MemoryMappedViewStream s = mmf.CreateViewStream(0, Capacity, access))
                 {
                     s.Flush();
                 }
@@ -381,7 +382,20 @@ namespace System.IO.MemoryMappedFiles.Tests
             // Explicitly do not dispose, to allow finalization to happen, just to try to verify
             // that nothing fails when it does.
             MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, 4096);
-            mmf.CreateViewAccessor();
+            MemoryMappedViewStream s = mmf.CreateViewStream();
+
+            var mmfWeak = new WeakReference<MemoryMappedFile>(mmf);
+            var sWeak = new WeakReference<MemoryMappedViewStream>(s);
+
+            mmf = null;
+            s = null;
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.False(mmfWeak.TryGetTarget(out mmf));
+            Assert.False(sWeak.TryGetTarget(out s));
         }
 
     }

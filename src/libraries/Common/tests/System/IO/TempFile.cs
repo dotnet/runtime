@@ -35,7 +35,8 @@ namespace System.IO
 
         private void DeleteFile()
         {
-            File.Delete(Path);
+            try { File.Delete(Path); }
+            catch { /* Ignore exceptions on disposal paths */ }
         }
     }
 }

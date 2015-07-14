@@ -24,7 +24,8 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test to verify that map names are left unsupported on Unix.
         /// </summary>
-        [Theory, PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        [Theory]
         [MemberData("CreateValidMapNames")]
         public void MapNamesNotSupported_Unix(string mapName)
         {
@@ -36,7 +37,8 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test to verify that non-existent map names result in exceptions.
         /// </summary>
-        [Fact, PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(PlatformID.Windows)]
+        [Fact]
         public void InvalidArguments_Name_NonExistent()
         {
             Assert.Throws<FileNotFoundException>(() => MemoryMappedFile.OpenExisting(CreateUniqueMapName()));
@@ -70,7 +72,8 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test various combinations of arguments to Open, opening maps created by CreateNew.
         /// </summary>
-        [Theory, PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(PlatformID.Windows)]
+        [Theory]
         [MemberData("MemberData_OpenCreated")]
         public void OpenCreatedNew(string mapName, MemoryMappedFileRights desiredAccessRights, HandleInheritability inheritability)
         {
@@ -102,7 +105,8 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test various combinations of arguments to Open, opening maps created by CreateFromFile.
         /// </summary>
-        [Theory, PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(PlatformID.Windows)]
+        [Theory]
         [MemberData("MemberData_OpenCreated")]
         public void OpenCreatedFromFile(string name, MemoryMappedFileRights rights, HandleInheritability inheritability)
         {
