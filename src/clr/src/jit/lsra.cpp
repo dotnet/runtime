@@ -2974,6 +2974,12 @@ LinearScan::buildRefPositionsForNode(GenTree *tree,
                         srcInterval->assignRelatedInterval(varDefInterval);
                     }
                 }
+                else if (!srcInterval->isLocalVar)
+                {
+                    // Preference the source to dest, if src is not a local var.
+                    srcInterval->assignRelatedInterval(varDefInterval);
+                }
+
                 // We can have a case where the source of the store has a different register type,
                 // e.g. when the store is of a return value temp, and op1 is a Vector2
                 // (8-byte SIMD, which is TYP_DOUBLE at this point).  We will need to set the
@@ -4285,26 +4291,31 @@ LinearScan::tryAllocateFreeReg(Interval *currentInterval, RefPosition *refPositi
     bool mustAssignARegister = true;
     assert(candidates != RBM_NONE);
 
+    // If the related interval has no further references, it is possible that it is a source of the
+    // node that produces this interval.  However, we don't want to use the relatedInterval for preferencing
+    // if its next reference is not a new definition (as it either is or will become live).
     Interval * relatedInterval = currentInterval->relatedInterval;
-    // Don't use the relatedInterval for preferencing if it has no further references,
-    // OR if its next reference is not a new definition.
     if (relatedInterval != nullptr)
     {
         RefPosition* nextRelatedRefPosition = relatedInterval->getNextRefPosition();
-        if (nextRelatedRefPosition == nullptr || !RefTypeIsDef(nextRelatedRefPosition->refType))
+        if (nextRelatedRefPosition != nullptr)
         {
-            relatedInterval = nullptr;
-        }
-        // Is the relatedInterval simply a copy to another relatedInterval?
-        else if ((relatedInterval->relatedInterval != nullptr) &&
-                 (nextRelatedRefPosition->nextRefPosition != nullptr) &&
-                 (nextRelatedRefPosition->nextRefPosition->nextRefPosition == nullptr) &&
-                 (nextRelatedRefPosition->nextRefPosition->nodeLocation < relatedInterval->relatedInterval->getNextRefLocation()))
-        {
-            // The current relatedInterval has only two remaining RefPositions, both of which
-            // occur prior to the next RefPosition for its relatedInterval.
-            // It is likely a copy.
-            relatedInterval = relatedInterval->relatedInterval;
+            // Don't use the relatedInterval for preferencing if its next reference is not a new definition.
+            if (!RefTypeIsDef(nextRelatedRefPosition->refType))
+            {
+                relatedInterval = nullptr;
+            }
+            // Is the relatedInterval simply a copy to another relatedInterval?
+            else if ((relatedInterval->relatedInterval != nullptr) &&
+                     (nextRelatedRefPosition->nextRefPosition != nullptr) &&
+                     (nextRelatedRefPosition->nextRefPosition->nextRefPosition == nullptr) &&
+                     (nextRelatedRefPosition->nextRefPosition->nodeLocation < relatedInterval->relatedInterval->getNextRefLocation()))
+            {
+                // The current relatedInterval has only two remaining RefPositions, both of which
+                // occur prior to the next RefPosition for its relatedInterval.
+                // It is likely a copy.
+                relatedInterval = relatedInterval->relatedInterval;
+            }
         }
     }
 
