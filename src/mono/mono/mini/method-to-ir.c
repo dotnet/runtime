@@ -2030,7 +2030,10 @@ emit_push_lmf (MonoCompile *cfg)
 			/* jit_tls = pthread_getspecific (mono_jit_tls_id); lmf_addr = &jit_tls->lmf; */
 
 			/* Load mono_jit_tls_id */
-			EMIT_NEW_AOTCONST (cfg, args [0], MONO_PATCH_INFO_JIT_TLS_ID, NULL);
+			if (cfg->compile_aot)
+				EMIT_NEW_AOTCONST (cfg, args [0], MONO_PATCH_INFO_JIT_TLS_ID, NULL);
+			else
+				EMIT_NEW_ICONST (cfg, args [0], mono_jit_tls_id);
 			/* call pthread_getspecific () */
 			jit_tls_ins = mono_emit_jit_icall (cfg, pthread_getspecific, args);
 			/* lmf_addr = &jit_tls->lmf */
