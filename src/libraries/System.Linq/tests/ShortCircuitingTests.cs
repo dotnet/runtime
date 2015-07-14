@@ -25,6 +25,7 @@ namespace System.Linq.Tests
                 return GetEnumerator();
             }
         }
+
         private class CountedFunction<T, TResult>
         {
             private readonly Func<T, TResult> _baseFunc;
@@ -45,6 +46,7 @@ namespace System.Linq.Tests
                 }
             }
         }
+
         [Fact]
         public void ListLastChecksAll()
         {
@@ -53,6 +55,7 @@ namespace System.Linq.Tests
             Assert.Equal(6, source.Last(pred.Func));
             Assert.Equal(10, pred.Calls);
         }
+
         [Fact]
         public void MinDoubleChecksAll()
         {
@@ -61,6 +64,7 @@ namespace System.Linq.Tests
             Assert.True(double.IsNaN(source.Min()));
             Assert.Equal(10, tracker.Moves);
         }
+
         [Fact]
         void MinNullableDoubleChecksAll()
         {
@@ -69,6 +73,7 @@ namespace System.Linq.Tests
             Assert.True(double.IsNaN(source.Min().GetValueOrDefault()));
             Assert.Equal(10, tracker.Moves);
         }
+
         [Fact]
         public void MinSingleChecksAll()
         {
@@ -77,6 +82,7 @@ namespace System.Linq.Tests
             Assert.True(float.IsNaN(source.Min()));
             Assert.Equal(10, tracker.Moves);
         }
+
         [Fact]
         void MinNullableSingleChecksAll()
         {
@@ -85,6 +91,7 @@ namespace System.Linq.Tests
             Assert.True(float.IsNaN(source.Min().GetValueOrDefault()));
             Assert.Equal(10, tracker.Moves);
         }
+
         [Fact]
         void SingleWithPredicateChecksAll()
         {
@@ -94,6 +101,7 @@ namespace System.Linq.Tests
             Assert.Equal(10, tracker.Moves);
             Assert.Equal(10, pred.Calls);
         }
+
         [Fact]
         void SingleOrDefaultWithPredicateChecksAll()
         {
@@ -103,6 +111,7 @@ namespace System.Linq.Tests
             Assert.Equal(10, tracker.Moves);
             Assert.Equal(10, pred.Calls);
         }
+
         [Fact]
         void SingleWithPredicateDifferentToWhereFollowedBySingle()
         {
@@ -115,6 +124,7 @@ namespace System.Linq.Tests
             Assert.NotEqual(tracker0.Moves, tracker1.Moves);
             Assert.NotEqual(pred0.Calls, pred1.Calls);
         }
+
         [Fact]
         void SingleOrDefaultWithPredicateDifferentToWhereFollowedBySingleOrDefault()
         {
@@ -127,6 +137,7 @@ namespace System.Linq.Tests
             Assert.NotEqual(tracker0.Moves, tracker1.Moves);
             Assert.NotEqual(pred0.Calls, pred1.Calls);
         }
+
         [Fact]
         [ActiveIssue(2349)]
         public void ListLastDoesntCheckAll()
@@ -136,6 +147,7 @@ namespace System.Linq.Tests
             Assert.Equal(6, source.Last(pred.Func));
             Assert.Equal(4, pred.Calls);
         }
+
         [Fact]
         [ActiveIssue(2349)]
         public void MinDoubleDoesntCheckAll()
@@ -145,6 +157,7 @@ namespace System.Linq.Tests
             Assert.True(double.IsNaN(source.Min()));
             Assert.Equal(5, tracker.Moves);
         }
+
         [Fact]
         [ActiveIssue(2349)]
         void MinNullableDoubleDoesntCheckAll()
@@ -154,6 +167,7 @@ namespace System.Linq.Tests
             Assert.True(double.IsNaN(source.Min().GetValueOrDefault()));
             Assert.Equal(5, tracker.Moves);
         }
+
         [Fact]
         [ActiveIssue(2349)]
         public void MinSingleDoesntCheckAll()
@@ -163,6 +177,7 @@ namespace System.Linq.Tests
             Assert.True(float.IsNaN(source.Min()));
             Assert.Equal(5, tracker.Moves);
         }
+
         [Fact]
         [ActiveIssue(2349)]
         void MinNullableSingleDoesntCheckAll()
@@ -172,6 +187,7 @@ namespace System.Linq.Tests
             Assert.True(float.IsNaN(source.Min().GetValueOrDefault()));
             Assert.Equal(5, tracker.Moves);
         }
+
         [Fact]
         [ActiveIssue(2349)]
         void SingleWithPredicateDoesntCheckAll()
@@ -182,6 +198,7 @@ namespace System.Linq.Tests
             Assert.Equal(4, tracker.Moves);
             Assert.Equal(4, pred.Calls);
         }
+
         [Fact]
         [ActiveIssue(2349)]
         void SingleOrDefaultWithPredicateDoesntCheckAll()
@@ -192,6 +209,7 @@ namespace System.Linq.Tests
             Assert.Equal(4, tracker.Moves);
             Assert.Equal(4, pred.Calls);
         }
+
         [Fact]
         [ActiveIssue(2349)]
         void SingleWithPredicateWorksLikeWhereFollowedBySingle()
@@ -205,6 +223,7 @@ namespace System.Linq.Tests
             Assert.Equal(tracker0.Moves, tracker1.Moves);
             Assert.Equal(pred0.Calls, pred1.Calls);
         }
+
         [Fact]
         [ActiveIssue(2349)]
         void SingleOrDefaultWithPredicateWorksLikeWhereFollowedBySingleOrDefault()
