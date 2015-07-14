@@ -10,7 +10,8 @@ using System.Diagnostics.Contracts;
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
     // Provides access to a System.Collections.Generic.KeyValuePair<K, V> via the IKeyValuePair<K, V> WinRT interface.
-    internal sealed class CLRIKeyValuePairImpl<K, V> : IKeyValuePair<K, V>
+    internal sealed class CLRIKeyValuePairImpl<K, V> : IKeyValuePair<K, V>,
+                                                       IGetProxyTarget
     {
         private readonly KeyValuePair<K, V> _pair;
 
@@ -54,5 +55,11 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             return _pair.ToString();
         }
+
+        object IGetProxyTarget.GetTarget()
+        {
+            return _pair;
+        }
+
     }
 }
