@@ -47,6 +47,7 @@ DECLARE_GLOBAL_SYMBOL mono_fast_get_tls_key
 	ldr	r0, [r1, r0, lsl #2]
 	bx	lr
 #endif
+DECLARE_GLOBAL_SYMBOL mono_fast_get_tls_key_end
 
 	/*
 	 * The following thunks fetch the value corresponding to the key/offset
@@ -96,6 +97,7 @@ DECLARE_GLOBAL_SYMBOL mono_fast_set_tls_key
 	str	r1, [r2, r0, lsl #2]
 	bx	lr
 #endif
+DECLARE_GLOBAL_SYMBOL mono_fast_set_tls_key_end
 
 	/*
 	 * The following thunks set the value corresponding to the key/offset

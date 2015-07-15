@@ -6011,6 +6011,27 @@ mono_arch_register_lowlevel_calls (void)
 		if (mono_arm_have_fast_tls ()) {
 			mono_register_jit_icall (mono_fast_get_tls_key, "mono_get_tls_key", mono_create_icall_signature ("ptr ptr"), TRUE);
 			mono_register_jit_icall (mono_fast_set_tls_key, "mono_set_tls_key", mono_create_icall_signature ("void ptr ptr"), TRUE);
+
+			mono_tramp_info_register (
+				mono_tramp_info_create (
+					"mono_get_tls_key",
+					(guint8*)mono_fast_get_tls_key,
+					(guint8*)mono_fast_get_tls_key_end - (guint8*)mono_fast_get_tls_key,
+					NULL,
+					mono_arch_get_cie_program ()
+					),
+				NULL
+				);
+			mono_tramp_info_register (
+				mono_tramp_info_create (
+					"mono_set_tls_key",
+					(guint8*)mono_fast_set_tls_key,
+					(guint8*)mono_fast_set_tls_key_end - (guint8*)mono_fast_set_tls_key,
+					NULL,
+					mono_arch_get_cie_program ()
+					),
+				NULL
+				);
 		} else {
 			g_warning ("No fast tls on device. Using fallbacks.");
 			mono_register_jit_icall (mono_fallback_get_tls_key, "mono_get_tls_key", mono_create_icall_signature ("ptr ptr"), TRUE);
