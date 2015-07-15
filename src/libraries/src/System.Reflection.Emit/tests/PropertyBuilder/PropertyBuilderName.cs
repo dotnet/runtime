@@ -19,6 +19,7 @@ namespace System.Reflection.Emit.Tests
         private const string DynamicFieldName = "TestDynamicFieldA";
         private const string DynamicPropertyName = "TestDynamicProperty";
         private const string DynamicMethodName = "DynamicMethodA";
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         private TypeBuilder GetTypeBuilder(string typeName, TypeAttributes typeAtt)
         {
@@ -38,8 +39,8 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void TestNameOfRandomString()
         {
-            string expectedName = new string((char)(TestLibrary.Generator.GetInt32() % ushort.MaxValue + 1), 1) +
-                TestLibrary.Generator.GetString(false, 1, 260);
+            string expectedName = new string((char)(_generator.GetInt32() % ushort.MaxValue + 1), 1) +
+                _generator.GetString(false, 1, 260);
 
             ExecutePosTest(expectedName);
         }

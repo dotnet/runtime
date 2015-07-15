@@ -15,6 +15,7 @@ namespace System.Reflection.Emit.Tests
         private const string DefaultTypeName = "DynamicType";
         private const AssemblyBuilderAccess DefaultAssemblyBuilderAccess = AssemblyBuilderAccess.Run;
         private const CallingConventions DefaultCallingConvention = CallingConventions.Standard;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         private ModuleBuilder TestModuleBuilder
         {
@@ -37,7 +38,7 @@ namespace System.Reflection.Emit.Tests
         {
             int i = 0;
             int randValue = 0;
-            randValue = TestLibrary.Generator.GetInt16();
+            randValue = _generator.GetInt16();
             MethodAttributes[] attributes = new MethodAttributes[] {
                 MethodAttributes.Assembly,
                 MethodAttributes.CheckAccessOnOverride,
@@ -74,7 +75,7 @@ namespace System.Reflection.Emit.Tests
         public void TestThrowsExceptionWithNoMethodyBody()
         {
             int randValue = 0;
-            randValue = TestLibrary.Generator.GetInt16();
+            randValue = _generator.GetInt16();
             Assert.Throws<InvalidOperationException>(() =>
             {
                 ILGenerator generator = CreateConstructorBuilder("NegTest1_Type1", MethodAttributes.PinvokeImpl).GetILGenerator(randValue);
@@ -85,7 +86,7 @@ namespace System.Reflection.Emit.Tests
         public void TestThrowsExceptionOnDefaultConstructor()
         {
             int randValue = 0;
-            randValue = TestLibrary.Generator.GetInt16();
+            randValue = _generator.GetInt16();
             TypeBuilder type = TestModuleBuilder.DefineType("NegTest2_Type1");
 
             Assert.Throws<InvalidOperationException>(() =>

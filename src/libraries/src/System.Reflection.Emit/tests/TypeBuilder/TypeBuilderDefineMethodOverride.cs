@@ -81,7 +81,6 @@ namespace System.Reflection.Emit.Tests
 
             //         
             ConstructorInfo tpCtor = tp.GetConstructor(new Type[] { });
-            Console.WriteLine(tpCtor.ToString());
             object instOfTp = tpCtor.Invoke(new object[] { });
             int ret = (int)mdInvoke.Invoke(instOfTp, null);
             int retParent = (int)mdInvoke.Invoke(Activator.CreateInstance(typeof(TBA1)), null);

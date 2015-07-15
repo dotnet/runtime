@@ -87,6 +87,7 @@ namespace System.Reflection.Emit.Tests
         private const int MinStringLength = 1;
         private const int MaxStringLength = 128;
         private const int ByteArraySize = 128;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         private TypeBuilder GetTestTypeBuilder()
         {
@@ -103,11 +104,11 @@ namespace System.Reflection.Emit.Tests
         {
             string methodName = null;
 
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             Type[] ctorParams = new Type[] { };
             byte[] binaryAttribute = new byte[ByteArraySize];
 
-            TestLibrary.Generator.GetBytes(binaryAttribute);
+            _generator.GetBytes(binaryAttribute);
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
@@ -120,10 +121,10 @@ namespace System.Reflection.Emit.Tests
         public void TestThrowsExceptionOnNullConstructorInfo()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             byte[] binaryAttribute = new byte[ByteArraySize];
 
-            TestLibrary.Generator.GetBytes(binaryAttribute);
+            _generator.GetBytes(binaryAttribute);
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
@@ -136,7 +137,7 @@ namespace System.Reflection.Emit.Tests
         public void TestThrowsExceptionOnNullByteArray()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             Type[] ctorParams = new Type[] { };
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();

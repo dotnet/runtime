@@ -22,6 +22,7 @@ namespace System.Reflection.Emit.Tests
         private const string NegTestDynamicMethodName = "NegDynamicMethod";
         private const AssemblyBuilderAccess TestAssemblyBuilderAccess = AssemblyBuilderAccess.Run;
         private const MethodAttributes TestMethodAttributes = MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         private TypeBuilder GetTestTypeBuilder()
         {
@@ -38,7 +39,7 @@ namespace System.Reflection.Emit.Tests
         {
             string strParamName = null;
 
-            strParamName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            strParamName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
 
             Type[] paramTypes = new Type[] { typeof(int) };
             TypeBuilder typeBuilder = GetTestTypeBuilder();
@@ -86,7 +87,7 @@ namespace System.Reflection.Emit.Tests
 
             for (int i = 1; i < attributes.Length; ++i)
             {
-                strParamName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+                strParamName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
 
                 ParameterBuilder paramBuilder = builder.DefineParameter(i, attributes[i], strParamName);
 
@@ -100,7 +101,7 @@ namespace System.Reflection.Emit.Tests
         {
             string strParamName = null;
 
-            strParamName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            strParamName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
 
             Type[] paramTypes = new Type[] { typeof(int) };
             TypeBuilder typeBuilder = GetTestTypeBuilder();
@@ -131,7 +132,7 @@ namespace System.Reflection.Emit.Tests
         public void TestForNegativeFlag()
         {
             string strParamName = null;
-            strParamName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            strParamName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
 
             Type[] paramTypes = new Type[] { typeof(int) };
             TypeBuilder typeBuilder = GetTestTypeBuilder();
@@ -152,7 +153,7 @@ namespace System.Reflection.Emit.Tests
         public void TestThrowsExceptionWithNoParameter()
         {
             string strParamName = null;
-            strParamName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            strParamName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(
@@ -170,8 +171,8 @@ namespace System.Reflection.Emit.Tests
             string strParamName = null;
             int paramPos = 0;
 
-            strParamName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            paramPos = TestLibrary.Generator.GetInt32();
+            strParamName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            paramPos = _generator.GetInt32();
             if (paramPos > 0)
             {
                 paramPos = 0 - paramPos;
@@ -193,13 +194,13 @@ namespace System.Reflection.Emit.Tests
             string strParamName = null;
             int paramPos = 0;
 
-            strParamName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            strParamName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             Type[] paramTypes = new Type[] {
                 typeof(int)
             };
             while (paramPos < paramTypes.Length)
             {
-                paramPos = TestLibrary.Generator.GetInt32();
+                paramPos = _generator.GetInt32();
             }
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
@@ -220,7 +221,7 @@ namespace System.Reflection.Emit.Tests
         {
             string strParamName = null;
 
-            strParamName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            strParamName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             Type[] paramTypes = new Type[] {
                 typeof(int)
             };

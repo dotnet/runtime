@@ -15,6 +15,7 @@ namespace System.Reflection.Emit.Tests
     public class EventBuilderSetCustomAttribute1
     {
         public delegate void TestEventHandler(object sender, object arg);
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         private TypeBuilder TypeBuilder
         {
@@ -43,7 +44,7 @@ namespace System.Reflection.Emit.Tests
             Type type = typeof(EvBMyAttribute1);
             ConstructorInfo con = type.GetConstructor(new Type[] { });
             byte[] bytes = new byte[ArraySize];
-            TestLibrary.Generator.GetBytes(bytes);
+            _generator.GetBytes(bytes);
 
             ev.SetCustomAttribute(con, bytes);
         }
@@ -72,7 +73,7 @@ namespace System.Reflection.Emit.Tests
             Type type = typeof(EvBMyAttribute1);
             ConstructorInfo con = type.GetConstructor(new Type[] { });
             byte[] bytes = new byte[ArraySize];
-            TestLibrary.Generator.GetBytes(bytes);
+            _generator.GetBytes(bytes);
             TypeBuilder.CreateTypeInfo().AsType();
 
             Assert.Throws<InvalidOperationException>(() => { ev.SetCustomAttribute(con, bytes); });

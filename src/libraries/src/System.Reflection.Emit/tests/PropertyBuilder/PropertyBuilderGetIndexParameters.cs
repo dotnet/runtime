@@ -17,6 +17,7 @@ namespace System.Reflection.Emit.Tests
         private const string DynamicFieldName = "TestDynamicFieldA";
         private const string DynamicPropertyName = "TestDynamicProperty";
         private const string DynamicMethodName = "DynamicMethodA";
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         private TypeBuilder GetTypeBuilder(TypeAttributes typeAtt)
         {
@@ -37,7 +38,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder myTypeBuilder;
             PropertyBuilder myPropertyBuilder;
             MethodBuilder myMethodBuilder;
-            bool nonPublic = 0 == (TestLibrary.Generator.GetInt32() & 1);
+            bool nonPublic = 0 == (_generator.GetInt32() & 1);
 
             myTypeBuilder = GetTypeBuilder(TypeAttributes.Class | TypeAttributes.Public);
             myPropertyBuilder = myTypeBuilder.DefineProperty(DynamicPropertyName,

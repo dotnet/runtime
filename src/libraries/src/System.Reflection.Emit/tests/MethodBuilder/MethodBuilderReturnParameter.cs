@@ -20,6 +20,7 @@ namespace System.Reflection.Emit.Tests
         private const TypeAttributes TestTypeAttributes = TypeAttributes.Abstract;
         private const int MinStringLength = 1;
         private const int MaxStringLength = 128;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
         private readonly byte[] _defaultILArray = new byte[]  {
             0x00,
             0x72,
@@ -66,7 +67,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithVoidReturnType()
         {
             string strParamName = null;
-            strParamName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            strParamName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
 
             Type[] paramTypes = new Type[] { typeof(int) };
             Type expectedReturnType = typeof(void);
@@ -93,7 +94,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithValueTypeReturnType()
         {
             string strParamName = null;
-            strParamName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            strParamName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
 
             Type[] paramTypes = new Type[] { typeof(int) };
             Type expectedReturnType = typeof(int);
@@ -121,7 +122,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithReferenceTypeReturnType()
         {
             string strParamName = null;
-            strParamName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            strParamName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
 
             Type[] paramTypes = new Type[] { typeof(int) };
             Type expectedReturnType = typeof(string);

@@ -10,6 +10,8 @@ namespace System.Reflection.Emit.Tests
 {
     public class FieldBuilderName
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         [Fact]
         public void TestNameProperty()
         {
@@ -18,7 +20,7 @@ namespace System.Reflection.Emit.Tests
             ModuleBuilder module = TestLibrary.Utilities.GetModuleBuilder(assembly, "FieldBuilderName_Module");
             TypeBuilder type = module.DefineType("FieldBuilderName_Type", TypeAttributes.Abstract);
 
-            string expected = TestLibrary.Generator.GetString(false, 1, 30);
+            string expected = _generator.GetString(false, 1, 30);
             FieldBuilder field = type.DefineField(expected, typeof(object), FieldAttributes.Public);
             string actual = field.Name;
 

@@ -19,6 +19,7 @@ namespace System.Reflection.Emit.Tests
         private const TypeAttributes TestTypeAttributes = TypeAttributes.Abstract;
         private const int MinStringLength = 1;
         private const int MaxStringLength = 128;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         private TypeBuilder GetTestTypeBuilder()
         {
@@ -35,7 +36,7 @@ namespace System.Reflection.Emit.Tests
         {
             string methodName = null;
 
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Public);
@@ -48,7 +49,7 @@ namespace System.Reflection.Emit.Tests
         {
             string methodName = null;
 
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Assembly);
@@ -60,7 +61,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithCheckAccessOnOverride()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.CheckAccessOnOverride);
@@ -72,7 +73,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithFamAndAssem()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.FamANDAssem);
@@ -84,7 +85,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithFamily()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Family);
@@ -96,7 +97,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithFamOrAssem()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.FamORAssem);
@@ -108,7 +109,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithFinal()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Final);
@@ -120,7 +121,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithHasSecurity()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.HasSecurity);
@@ -132,7 +133,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithHideBySig()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.HideBySig);
@@ -144,7 +145,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithMemberAccessMask()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.MemberAccessMask);
@@ -157,7 +158,7 @@ namespace System.Reflection.Emit.Tests
         {
             string methodName = null;
 
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.NewSlot);
@@ -170,7 +171,7 @@ namespace System.Reflection.Emit.Tests
         {
             string methodName = null;
 
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Private);
@@ -182,7 +183,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithPrivateScope()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.PrivateScope);
@@ -195,7 +196,7 @@ namespace System.Reflection.Emit.Tests
         {
             string methodName = null;
 
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.RequireSecObject);
@@ -207,7 +208,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithReuseSlot()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.ReuseSlot);
@@ -219,7 +220,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithRTSpecialName()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.RTSpecialName);
@@ -232,7 +233,7 @@ namespace System.Reflection.Emit.Tests
         {
             string methodName = null;
 
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.SpecialName);
@@ -245,7 +246,7 @@ namespace System.Reflection.Emit.Tests
         {
             string methodName = null;
 
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Static);
@@ -257,7 +258,7 @@ namespace System.Reflection.Emit.Tests
         {
             string methodName = null;
 
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.UnmanagedExport);
@@ -270,7 +271,7 @@ namespace System.Reflection.Emit.Tests
         {
             string methodName = null;
 
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Virtual);
@@ -283,7 +284,7 @@ namespace System.Reflection.Emit.Tests
         {
             string methodName = null;
 
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.VtableLayoutMask);
@@ -295,7 +296,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithCombinations()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Assembly |
@@ -322,7 +323,7 @@ namespace System.Reflection.Emit.Tests
         {
             string methodName = null;
 
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.PinvokeImpl);
@@ -335,7 +336,7 @@ namespace System.Reflection.Emit.Tests
         {
             string methodName = null;
 
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Abstract |
