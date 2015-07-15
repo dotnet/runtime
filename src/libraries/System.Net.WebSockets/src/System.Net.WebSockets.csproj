@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}</ProjectGuid>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+
+  <!-- Help VS understand available configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
+
+  <ItemGroup>
+    <Compile Include="System\Net\WebSockets\WebSocket.cs" />
+    <Compile Include="System\Net\WebSockets\WebSocketCloseStatus.cs" />
+    <Compile Include="System\Net\WebSockets\WebSocketError.cs" />
+    <Compile Include="System\Net\WebSockets\WebSocketException.cs" />
+    <Compile Include="System\Net\WebSockets\WebSocketMessageType.cs" />
+    <Compile Include="System\Net\WebSockets\WebSocketReceiveResult.cs" />
+    <Compile Include="System\Net\WebSockets\WebSocketState.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
