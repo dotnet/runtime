@@ -9,7 +9,6 @@
 **
 =============================================================================*/
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -17,7 +16,6 @@ using System.Diagnostics;
 namespace System.Collections
 {
     [DebuggerDisplay("Count = {Count}")]
-    [System.Runtime.InteropServices.ComVisible(true)]
     internal class ArrayList : List<object>
     {
         public ArrayList() { }

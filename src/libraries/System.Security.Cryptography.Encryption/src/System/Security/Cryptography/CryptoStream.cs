@@ -3,12 +3,9 @@
 
 using System.Diagnostics.Contracts;
 using System.IO;
-using System.Runtime.InteropServices;
-
 
 namespace System.Security.Cryptography
 {
-    [ComVisible(true)]
     public class CryptoStream : Stream, IDisposable
     {
         // Member veriables

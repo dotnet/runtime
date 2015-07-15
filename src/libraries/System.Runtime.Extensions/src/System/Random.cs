@@ -19,7 +19,6 @@ using System.Diagnostics.Contracts;
 
 namespace System
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class Random
     {
         //

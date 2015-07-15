@@ -1,18 +1,13 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.IO;
-using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
-using System.Security;
-using System.Security.Permissions;
-using System.Runtime.Versioning;
-using System.Runtime.ConstrainedExecution;
+using System.IO;
 using System.Runtime.InteropServices;
+using System.Security;
 
 namespace System.Threading
 {
-    [ComVisibleAttribute(false)]
     public sealed partial class Semaphore : WaitHandle
     {
         private const int MAX_PATH = 260;
