@@ -11,19 +11,20 @@ namespace System.Globalization.Tests
     {
         private const int c_MINI_STRING_LENGTH = 8;
         private const int c_MAX_STRING_LENGTH = 256;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         // PosTest1: The first text element is a letter
         [Fact]
         public void TestLetter()
         {
-            char ch = TestLibrary.Generator.GetCharLetter(-55);
-            string str = TestLibrary.Generator.GetString(-55, false, c_MINI_STRING_LENGTH, c_MAX_STRING_LENGTH);
+            char ch = _generator.GetCharLetter(-55);
+            string str = _generator.GetString(-55, false, c_MINI_STRING_LENGTH, c_MAX_STRING_LENGTH);
             // If the random string's first letter is a NonSpacingMark the returned result will be ch + string's first letter (expected)
             // That scenario is hit in PosTest3. In order to avoid random failures, if the first character happens to be a NonSpacingMark
             // then append a random char letter on to the string
             if (CharUnicodeInfo.GetUnicodeCategory(str.ToCharArray()[0]) == UnicodeCategory.NonSpacingMark)
             {
-                str = TestLibrary.Generator.GetCharLetter(-55).ToString() + str;
+                str = _generator.GetCharLetter(-55).ToString() + str;
             }
             string result = StringInfo.GetNextTextElement(ch.ToString() + str);
             Assert.Equal(ch.ToString(), result);

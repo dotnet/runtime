@@ -7,6 +7,8 @@ namespace System.Text.EncodingTests
     //System.Text.UnicodeEncoding.GetEncoder() [v-zuolan]
     public class UnicodeEncodingGetEncoder
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         #region Positive Tests
         // PosTest1:Invoke the method
         [Fact]
@@ -46,7 +48,7 @@ namespace System.Text.EncodingTests
             int i = 0;
             while (i < length)
             {
-                Char temp = TestLibrary.Generator.GetChar(-55);
+                Char temp = _generator.GetChar(-55);
                 if (!Char.IsSurrogate(temp))
                 {
                     charArray[i] = temp;

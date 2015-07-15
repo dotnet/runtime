@@ -17,6 +17,7 @@ namespace System.Reflection.Emit.Tests
         private const int MinStringLength = 8;
         private const int MaxStringLength = 256;
         private const int ReservedMaskFieldAttribute = 0x9500; // This constant maps to FieldAttributes.ReservedMask that is not available in the contract.
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         private ModuleBuilder GetModuleBuilder()
         {
@@ -30,7 +31,7 @@ namespace System.Reflection.Emit.Tests
         {
             ModuleBuilder builder = GetModuleBuilder();
             string fieldName = "PosTest1_";
-            int size = TestLibrary.Generator.GetByte();
+            int size = _generator.GetByte();
             if (size == 0)
                 size++;
 
@@ -133,7 +134,7 @@ namespace System.Reflection.Emit.Tests
                 FieldAttributes.SpecialName,
                 FieldAttributes.Static
             };
-            int size = TestLibrary.Generator.GetByte();
+            int size = _generator.GetByte();
 
             for (int i = 0; i < attributes.Length; ++i)
             {
@@ -208,7 +209,7 @@ namespace System.Reflection.Emit.Tests
                 FieldAttributes.SpecialName,
                 FieldAttributes.Static
             };
-            int size = TestLibrary.Generator.GetByte();
+            int size = _generator.GetByte();
 
             for (int i = 0; i < attributes.Length; ++i)
             {
@@ -239,7 +240,7 @@ namespace System.Reflection.Emit.Tests
                 FieldAttributes.SpecialName,
                 FieldAttributes.Static
             };
-            int size = TestLibrary.Generator.GetByte();
+            int size = _generator.GetByte();
             ModuleBuilder testModuleBuilder = GetModuleBuilder();
 
             testModuleBuilder.CreateGlobalFunctions();

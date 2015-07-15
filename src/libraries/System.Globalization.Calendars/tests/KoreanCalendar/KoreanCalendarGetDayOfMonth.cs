@@ -10,6 +10,8 @@ namespace System.Globalization.CalendarsTests
     //System.Globalization.KoreanCalendar.GetDayOfMonth(System.DateTime)
     public class KoreanCalendarGetDayOfMonth
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         #region Test Logic
         // PosTest1:Test the method with min time
         [Fact]
@@ -51,7 +53,7 @@ namespace System.Globalization.CalendarsTests
         [Fact]
         public void PosTest4()
         {
-            Int64 ticks = TestLibrary.Generator.GetInt64(-55) % (DateTime.MaxValue.Ticks + 1);
+            Int64 ticks = _generator.GetInt64(-55) % (DateTime.MaxValue.Ticks + 1);
             DateTime dateTime = new DateTime(ticks);
             dateTime = new GregorianCalendar().ToDateTime(dateTime.Year, dateTime.Month, dateTime.Day, 0, 0, 0, 0);
             System.Globalization.Calendar kC = new KoreanCalendar();

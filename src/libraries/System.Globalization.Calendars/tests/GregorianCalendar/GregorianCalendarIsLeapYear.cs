@@ -12,6 +12,7 @@ namespace System.Globalization.CalendarTests
     {
         private const int c_DAYS_IN_LEAP_YEAR = 366;
         private const int c_DAYS_IN_COMMON_YEAR = 365;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         #region Positive tests
         // PosTest1: leap year
@@ -120,7 +121,7 @@ namespace System.Globalization.CalendarTests
             int year;
             int era;
             year = this.GetAYear(myCalendar);
-            era = 2 + TestLibrary.Generator.GetInt32(-55) % (int.MaxValue - 1);
+            era = 2 + _generator.GetInt32(-55) % (int.MaxValue - 1);
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
                 myCalendar.IsLeapYear(year, era);
@@ -147,7 +148,7 @@ namespace System.Globalization.CalendarTests
             int maxYear, minYear;
             maxYear = calendar.MaxSupportedDateTime.Year;
             minYear = calendar.MinSupportedDateTime.Year;
-            retVal = minYear + TestLibrary.Generator.GetInt32(-55) % (maxYear + 1 - minYear);
+            retVal = minYear + _generator.GetInt32(-55) % (maxYear + 1 - minYear);
             return retVal;
         }
 

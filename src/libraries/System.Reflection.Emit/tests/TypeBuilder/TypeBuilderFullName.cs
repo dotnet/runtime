@@ -13,6 +13,7 @@ namespace System.Reflection.Emit.Tests
     {
         public const string ModuleName = "ModuleName";
         public const string TypeName = "TypeName";
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         private TypeBuilder GetTypeBuilder(string typename)
         {
@@ -65,7 +66,7 @@ namespace System.Reflection.Emit.Tests
             }
             if (minValue < maxValue)
             {
-                return minValue + TestLibrary.Generator.GetInt32() % (maxValue - minValue);
+                return minValue + _generator.GetInt32() % (maxValue - minValue);
             }
 
             return minValue;

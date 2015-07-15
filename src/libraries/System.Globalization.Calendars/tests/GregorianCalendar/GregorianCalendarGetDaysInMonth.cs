@@ -10,6 +10,8 @@ namespace System.Globalization.CalendarTests
     // GregorianCalendar.GetDaysInMonth(Int32, Int32)
     public class GregorianCalendarGetDaysInMonth
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         private static readonly int[] s_daysInMonth365 =
         {
             0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
@@ -32,7 +34,7 @@ namespace System.Globalization.CalendarTests
             //Get a random value beween 1 and 12 not including 2.
             do
             {
-                month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
+                month = _generator.GetInt32(-55) % 12 + 1;
             } while (2 == month);
             expectedDays = s_daysInMonth366[month];
 
@@ -79,7 +81,7 @@ namespace System.Globalization.CalendarTests
             //Get a random value beween 1 and 12 not including 2.
             do
             {
-                month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
+                month = _generator.GetInt32(-55) % 12 + 1;
             } while (2 == month);
             expectedDays = s_daysInMonth365[month];
             actualDays = myCalendar.GetDaysInMonth(year, month);
@@ -95,7 +97,7 @@ namespace System.Globalization.CalendarTests
             int expectedDays, actualDays;
             year = myCalendar.MaxSupportedDateTime.Year;
             //Get a random month whose value is beween 1 and 12
-            month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
+            month = _generator.GetInt32(-55) % 12 + 1;
             expectedDays = (IsLeapYear(year)) ? s_daysInMonth366[month] : s_daysInMonth365[month];
             actualDays = myCalendar.GetDaysInMonth(year, month);
             Assert.Equal(expectedDays, actualDays);
@@ -110,7 +112,7 @@ namespace System.Globalization.CalendarTests
             int expectedDays, actualDays;
             year = myCalendar.MaxSupportedDateTime.Year;
             //Get a random month whose value is beween 1 and 12
-            month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
+            month = _generator.GetInt32(-55) % 12 + 1;
             expectedDays = (IsLeapYear(year)) ? s_daysInMonth366[month] : s_daysInMonth365[month];
             actualDays = myCalendar.GetDaysInMonth(year, month);
             Assert.Equal(expectedDays, actualDays);
@@ -125,7 +127,7 @@ namespace System.Globalization.CalendarTests
             int expectedDays, actualDays;
             year = GetAYear(myCalendar);
             //Get a random month whose value is beween 1 and 12
-            month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
+            month = _generator.GetInt32(-55) % 12 + 1;
             expectedDays = (IsLeapYear(year)) ? s_daysInMonth366[month] : s_daysInMonth365[month];
             actualDays = myCalendar.GetDaysInMonth(year, month);
             Assert.Equal(expectedDays, actualDays);
@@ -168,7 +170,7 @@ namespace System.Globalization.CalendarTests
             System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
             int year, month;
             year = myCalendar.MaxSupportedDateTime.Year + 100;
-            month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
+            month = _generator.GetInt32(-55) % 12 + 1;
             Assert.Throws<ArgumentOutOfRangeException>(() =>
            {
                myCalendar.GetDaysInMonth(year, month);
@@ -182,7 +184,7 @@ namespace System.Globalization.CalendarTests
             System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
             int year, month;
             year = myCalendar.MinSupportedDateTime.Year - 100;
-            month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
+            month = _generator.GetInt32(-55) % 12 + 1;
             Assert.Throws<ArgumentOutOfRangeException>(() =>
            {
                myCalendar.GetDaysInMonth(year, month);
@@ -196,7 +198,7 @@ namespace System.Globalization.CalendarTests
             System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
             int year, month;
             year = GetAYear(myCalendar);
-            month = 13 + TestLibrary.Generator.GetInt32(-55) % (int.MaxValue - 12);
+            month = 13 + _generator.GetInt32(-55) % (int.MaxValue - 12);
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
                 myCalendar.GetDaysInMonth(year, month);
@@ -210,7 +212,7 @@ namespace System.Globalization.CalendarTests
             System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
             int year, month;
             year = myCalendar.MinSupportedDateTime.Year - 100;
-            month = -1 * TestLibrary.Generator.GetInt32(-55);
+            month = -1 * _generator.GetInt32(-55);
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
                 myCalendar.GetDaysInMonth(year, month);
@@ -238,7 +240,7 @@ namespace System.Globalization.CalendarTests
             int maxYear, minYear;
             maxYear = calendar.MaxSupportedDateTime.Year;
             minYear = calendar.MinSupportedDateTime.Year;
-            retVal = minYear + TestLibrary.Generator.GetInt32(-55) % (maxYear + 1 - minYear);
+            retVal = minYear + _generator.GetInt32(-55) % (maxYear + 1 - minYear);
             return retVal;
         }
 

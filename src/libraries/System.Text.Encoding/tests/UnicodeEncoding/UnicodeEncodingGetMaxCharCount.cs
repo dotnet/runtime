@@ -7,6 +7,8 @@ namespace System.Text.EncodingTests
     //System.Text.UnicodeEncoding.GetMaxCharCount(int)
     public class UnicodeEncodingGetMaxCharCount
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         #region Positive Tests
         // PosTest1:Invoke the method and set byteCount as 0
         [Fact]
@@ -36,7 +38,7 @@ namespace System.Text.EncodingTests
         [Fact]
         public void PosTest3()
         {
-            int byteCount = TestLibrary.Generator.GetInt32(-55);
+            int byteCount = _generator.GetInt32(-55);
             int expectedValue = (byteCount + 1) / 2 + 1;
             int actualValue;
             UnicodeEncoding uE = new UnicodeEncoding();

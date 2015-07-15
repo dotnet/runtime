@@ -10,6 +10,8 @@ namespace System.Globalization.CalendarsTests
     //System.Globalization.KoreanCalendar.GetMonthsInYear(System.Int32,System.Int32)
     public class KoreanCalendarGetMonthsInYear
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         #region Positive Test Logic
         // PosTest1:Invoke the method with min datetime
         [Fact]
@@ -83,7 +85,7 @@ namespace System.Globalization.CalendarsTests
         public void NegTest3()
         {
             System.Globalization.Calendar kC = new KoreanCalendar();
-            int year = TestLibrary.Generator.GetInt16(-55) % 2334;
+            int year = _generator.GetInt16(-55) % 2334;
             int era = kC.GetEra(new DateTime());
             int actualValue;
             Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -123,7 +125,7 @@ namespace System.Globalization.CalendarsTests
         public void NegTest6()
         {
             System.Globalization.Calendar kC = new KoreanCalendar();
-            int year = TestLibrary.Generator.GetInt16(-55) % int.MaxValue + 12333;
+            int year = _generator.GetInt16(-55) % int.MaxValue + 12333;
             int era = kC.GetEra(new DateTime());
             int actualValue;
             Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -137,7 +139,7 @@ namespace System.Globalization.CalendarsTests
         public void NegTest7()
         {
             System.Globalization.Calendar kC = new KoreanCalendar();
-            int year = TestLibrary.Generator.GetInt16(-55) % 9999 + 2334;
+            int year = _generator.GetInt16(-55) % 9999 + 2334;
             int era = -1;
             int actualValue;
             Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -151,7 +153,7 @@ namespace System.Globalization.CalendarsTests
         public void NegTest8()
         {
             System.Globalization.Calendar kC = new KoreanCalendar();
-            int year = TestLibrary.Generator.GetInt16(-55) % 9999 + 2334;
+            int year = _generator.GetInt16(-55) % 9999 + 2334;
             int era = kC.GetEra(new DateTime());
             int actualValue;
             Assert.Throws<ArgumentOutOfRangeException>(() =>

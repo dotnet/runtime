@@ -159,7 +159,7 @@
     <Compile Include="TextInfo\TextInfoToUpper1.cs" />
     <Compile Include="TextInfo\TextInfoToUpper2.cs" />
     <Compile Include="UnicodeCategory\UnicodeCategoryTests.cs" />
-    <Compile Include="Generator.cs" />
+    <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

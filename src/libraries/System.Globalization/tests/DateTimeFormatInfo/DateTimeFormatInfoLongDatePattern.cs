@@ -9,6 +9,8 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoLongDatePattern
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         // PosTest1: Call LongDatePattern getter method should return correct value for InvariantInfo
         [Fact]
         public void PosTest1()
@@ -24,7 +26,7 @@ namespace System.Globalization.Tests
             VerificationHelper(new DateTimeFormatInfo(), "dddd", true);
             VerificationHelper(new DateTimeFormatInfo(), "D", true);
             VerificationHelper(new DateTimeFormatInfo(), "HH:mm:ss dddd, dd MMMM yyyy", true);
-            VerificationHelper(new DateTimeFormatInfo(), TestLibrary.Generator.GetString(-55, false, 1, 256), true);
+            VerificationHelper(new DateTimeFormatInfo(), _generator.GetString(-55, false, 1, 256), true);
             VerificationHelper(new DateTimeFormatInfo(), "dddd, dd MMMM yyyy", true);
         }
 

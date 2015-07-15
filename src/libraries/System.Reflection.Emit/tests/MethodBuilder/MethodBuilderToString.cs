@@ -20,6 +20,7 @@ namespace System.Reflection.Emit.Tests
         private const MethodAttributes TestMethodAttributes = MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual;
         private const int MinStringLength = 1;
         private const int MaxStringLength = 128;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
         private readonly byte[] _defaultILArray = new byte[]  {
             0x00,
             0x72,
@@ -49,7 +50,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithAllFieldsSet()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Public);
@@ -73,7 +74,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithNameAndAttributeSet()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName, MethodAttributes.Public);
 
@@ -88,7 +89,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithNameAttributeAndSignatureSet()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 MethodAttributes.Public);

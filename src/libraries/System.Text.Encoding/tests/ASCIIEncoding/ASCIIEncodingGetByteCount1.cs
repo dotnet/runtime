@@ -12,6 +12,7 @@ namespace System.Text.EncodingTests
     {
         private const int c_MIN_STRING_LENGTH = 2;
         private const int c_MAX_STRING_LENGTH = 260;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         // PosTest1: The specified string is string.Empty.
         [Fact]
@@ -27,7 +28,7 @@ namespace System.Text.EncodingTests
             string source;
             int expectedValue;
 
-            source = TestLibrary.Generator.GetString(-55, false, c_MIN_STRING_LENGTH, c_MAX_STRING_LENGTH);
+            source = _generator.GetString(-55, false, c_MIN_STRING_LENGTH, c_MAX_STRING_LENGTH);
 
             expectedValue = source.Length;
             DoPosTest(source, expectedValue);

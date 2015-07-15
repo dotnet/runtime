@@ -10,6 +10,8 @@ namespace System.Globalization.CalendarsTests
     //System.Globalization.KoreanCalendar.GetYear(System.DateTime)
     public class KoreanCalendarGetYear
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         #region Test Logic
         // PosTest1:Invoke the method with min datetime
         [Fact]
@@ -56,7 +58,7 @@ namespace System.Globalization.CalendarsTests
         {
             System.Globalization.Calendar kC = new KoreanCalendar();
             System.Globalization.Calendar gC = new GregorianCalendar();
-            Int64 ticks = TestLibrary.Generator.GetInt64(-55) % (DateTime.MaxValue.Ticks + 1);
+            Int64 ticks = _generator.GetInt64(-55) % (DateTime.MaxValue.Ticks + 1);
             DateTime dateTime = new DateTime(ticks);
             dateTime = gC.ToDateTime(dateTime.Year, dateTime.Month, dateTime.Day, 0, 0, 0, 0);
             int expectedValue = gC.GetYear(dateTime) + 2333;

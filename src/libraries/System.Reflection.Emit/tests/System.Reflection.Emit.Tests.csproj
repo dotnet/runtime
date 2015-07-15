@@ -68,7 +68,6 @@
     <Compile Include="FieldBuilder\FieldBuilderSetCustomAttribute1.cs" />
     <Compile Include="FieldBuilder\FieldBuilderSetCustomAttribute2.cs" />
     <Compile Include="FieldBuilder\FieldBuilderSetOffset.cs" />
-    <Compile Include="Generator.cs" />
     <Compile Include="GenericTypeParameterBuilder\GenericTyepParameterBuilderSetBaseTypeConstraint.cs" />
     <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderAssembly.cs" />
     <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderAssemblyQualifiedName.cs" />
@@ -196,6 +195,7 @@
     <Compile Include="TypeBuilder\TypeBuilderSize.cs" />
     <Compile Include="TypeBuilder\TypeBuilderToString.cs" />
     <Compile Include="Utilities.cs" />
+    <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -19,6 +19,7 @@ namespace System.Reflection.Emit.Tests
         private const TypeAttributes TestTypeAttributes = TypeAttributes.Abstract;
         private const int MinStringLength = 1;
         private const int MaxStringLength = 128;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         private TypeBuilder GetTestTypeBuilder()
         {
@@ -75,7 +76,7 @@ namespace System.Reflection.Emit.Tests
             string methodName = null;
             CallingConventions actualCallingConventions = (CallingConventions)0;
             CallingConventions desiredCallingConventions = (CallingConventions)(-1);
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
@@ -95,7 +96,7 @@ namespace System.Reflection.Emit.Tests
             CallingConventions actualCallingConventions = (CallingConventions)0;
             CallingConventions desiredCallingConventions = (CallingConventions)(-1);
 
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
@@ -111,7 +112,7 @@ namespace System.Reflection.Emit.Tests
             string methodName = null;
             CallingConventions actualCallingConventions = (CallingConventions)(-1);
 
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
@@ -127,7 +128,7 @@ namespace System.Reflection.Emit.Tests
             string methodName = null;
             CallingConventions actualCallingConventions = (CallingConventions)(-1);
 
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
