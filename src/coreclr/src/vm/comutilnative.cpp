@@ -3067,7 +3067,7 @@ void COMNlsHashProvider::InitializeDefaultSeed()
     CONTRACTL_END;
 
     PCBYTE pEntropy = GetEntropy();
-    AllocMemHolder<SYMCRYPT_MARVIN32_EXPANDED_SEED> pSeed = GetAppDomain()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(SYMCRYPT_MARVIN32_EXPANDED_SEED)));
+    AllocMemHolder<SYMCRYPT_MARVIN32_EXPANDED_SEED> pSeed(GetAppDomain()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(SYMCRYPT_MARVIN32_EXPANDED_SEED))));
     SymCryptMarvin32ExpandSeed(pSeed, pEntropy, SYMCRYPT_MARVIN32_SEED_SIZE);
 
     if(InterlockedCompareExchangeT(&pDefaultSeed, (PCSYMCRYPT_MARVIN32_EXPANDED_SEED) pSeed, NULL) == NULL)
@@ -3104,12 +3104,16 @@ PCBYTE COMNlsHashProvider::GetEntropy()
 
     if(pEntropy == NULL)
     {
+        AllocMemHolder<BYTE> pNewEntropy(GetAppDomain()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(SYMCRYPT_MARVIN32_SEED_SIZE))));
+
+#ifdef FEATURE_PAL
+        PAL_Random(TRUE, pNewEntropy, SYMCRYPT_MARVIN32_SEED_SIZE);
+#else
         HCRYPTPROV hCryptProv;
-        AllocMemHolder<BYTE> pNewEntropy = GetAppDomain()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(SYMCRYPT_MARVIN32_SEED_SIZE)));
-        
         WszCryptAcquireContext(&hCryptProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT);
         CryptGenRandom(hCryptProv, SYMCRYPT_MARVIN32_SEED_SIZE, pNewEntropy);
         CryptReleaseContext(hCryptProv, 0);
+#endif
 
         if(InterlockedCompareExchangeT(&pEntropy, (PBYTE) pNewEntropy, NULL) == NULL)
         {
@@ -3138,3 +3142,20 @@ void COMNlsHashProvider::CreateMarvin32Seed(INT64 additionalEntropy, PSYMCRYPT_M
     SymCryptMarvin32ExpandSeed(pExpandedMarvinSeed, (PCBYTE) &entropy, SYMCRYPT_MARVIN32_SEED_SIZE);
 }
 #endif // FEATURE_RANDOMIZED_STRING_HASHING
+
+#ifdef FEATURE_COREFX_GLOBALIZATION
+INT32 QCALLTYPE CoreFxGlobalization::HashSortKey(PCBYTE pSortKey, INT32 cbSortKey, BOOL forceRandomizedHashing, INT64 additionalEntropy)
+{
+    QCALL_CONTRACT;
+
+    INT32 retVal = 0;
+
+    BEGIN_QCALL;
+
+    retVal = COMNlsHashProvider::s_NlsHashProvider.HashSortKey(pSortKey, cbSortKey, forceRandomizedHashing, additionalEntropy);
+
+    END_QCALL;
+
+    return retVal;
+}
+#endif //FEATURE_COREFX_GLOBALIZATION
