@@ -16,11 +16,5 @@ namespace Microsoft.Win32.SafeHandles
             : base(true) 
         {
         }
-
-        internal SafeMemoryMappedViewHandle(IntPtr handle, bool ownsHandle) 
-            : base(ownsHandle)
-        {
-            base.SetHandle(handle);
-        }
     }
 }

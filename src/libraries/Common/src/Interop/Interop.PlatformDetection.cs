@@ -13,7 +13,8 @@ internal static partial class Interop
     {
         Windows,
         Linux,
-        OSX
+        OSX,
+        FreeBSD
     }
 
     internal static bool IsWindows
@@ -29,6 +30,11 @@ internal static partial class Interop
     internal static bool IsOSX
     {
         get { return OperatingSystem.OSX == PlatformDetection.OperatingSystem; }
+    }
+
+    internal static bool IsFreeBSD
+    {
+        get { return OperatingSystem.FreeBSD == PlatformDetection.OperatingSystem; }
     }
 
     internal static class PlatformDetection
@@ -48,6 +54,8 @@ internal static partial class Interop
                         {
                             case "Darwin":
                                 return OperatingSystem.OSX;
+                            case "FreeBSD":
+                                return OperatingSystem.FreeBSD;
                             default:
                                 return OperatingSystem.Linux;
                         }

@@ -43,7 +43,7 @@ namespace System.IO.MemoryMappedFiles
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode);
                 }
             }
-            else if (handle.IsInvalid)
+            else // handle.IsInvalid
             {
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode);
             }
@@ -190,8 +190,9 @@ namespace System.IO.MemoryMappedFiles
                 case MemoryMappedFileAccess.ReadWrite: return Interop.mincore.FileMapOptions.FILE_MAP_READ | Interop.mincore.FileMapOptions.FILE_MAP_WRITE;
                 case MemoryMappedFileAccess.CopyOnWrite: return Interop.mincore.FileMapOptions.FILE_MAP_COPY;
                 case MemoryMappedFileAccess.ReadExecute: return Interop.mincore.FileMapOptions.FILE_MAP_EXECUTE | Interop.mincore.FileMapOptions.FILE_MAP_READ;
-                case MemoryMappedFileAccess.ReadWriteExecute: return Interop.mincore.FileMapOptions.FILE_MAP_EXECUTE | Interop.mincore.FileMapOptions.FILE_MAP_READ | Interop.mincore.FileMapOptions.FILE_MAP_WRITE;
-                default: throw new ArgumentOutOfRangeException("access");
+                default:
+                    Debug.Assert(access == MemoryMappedFileAccess.ReadWriteExecute);
+                    return Interop.mincore.FileMapOptions.FILE_MAP_EXECUTE | Interop.mincore.FileMapOptions.FILE_MAP_READ | Interop.mincore.FileMapOptions.FILE_MAP_WRITE;
             }
         }
 
@@ -208,8 +209,9 @@ namespace System.IO.MemoryMappedFiles
                 case MemoryMappedFileAccess.ReadWrite: return Interop.mincore.PageOptions.PAGE_READWRITE;
                 case MemoryMappedFileAccess.CopyOnWrite: return Interop.mincore.PageOptions.PAGE_WRITECOPY;
                 case MemoryMappedFileAccess.ReadExecute: return Interop.mincore.PageOptions.PAGE_EXECUTE_READ;
-                case MemoryMappedFileAccess.ReadWriteExecute: return Interop.mincore.PageOptions.PAGE_EXECUTE_READWRITE;
-                default: throw new ArgumentOutOfRangeException("access");
+                default:
+                    Debug.Assert(access == MemoryMappedFileAccess.ReadWriteExecute);
+                    return Interop.mincore.PageOptions.PAGE_EXECUTE_READWRITE;
             }
         }
 

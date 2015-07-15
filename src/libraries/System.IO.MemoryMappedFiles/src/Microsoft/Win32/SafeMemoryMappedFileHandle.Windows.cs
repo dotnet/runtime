@@ -14,12 +14,6 @@ namespace Microsoft.Win32.SafeHandles
         {
         }
 
-        internal SafeMemoryMappedFileHandle(IntPtr handle, bool ownsHandle)
-            : base(IntPtr.Zero, ownsHandle)
-        {
-            SetHandle(handle);
-        }
-
         protected override bool ReleaseHandle()
         {
             return Interop.mincore.CloseHandle(handle);

@@ -18,7 +18,9 @@ namespace System.IO.MemoryMappedFiles
         [SecurityCritical]
         private MemoryMappedFile(SafeMemoryMappedFileHandle handle)
         {
-            Debug.Assert(handle != null && !handle.IsClosed && !handle.IsInvalid, "handle is null, closed, or invalid");
+            Debug.Assert(handle != null);
+            Debug.Assert(!handle.IsClosed);
+            Debug.Assert(!handle.IsInvalid);
 
             _handle = handle;
             _leaveOpen = true; // No FileStream to dispose of in this case.
@@ -27,8 +29,10 @@ namespace System.IO.MemoryMappedFiles
         [SecurityCritical]
         private MemoryMappedFile(SafeMemoryMappedFileHandle handle, FileStream fileStream, bool leaveOpen)
         {
-            Debug.Assert(handle != null && !handle.IsClosed && !handle.IsInvalid, "handle is null, closed, or invalid");
-            Debug.Assert(fileStream != null, "fileStream is null");
+            Debug.Assert(handle != null);
+            Debug.Assert(!handle.IsClosed);
+            Debug.Assert(!handle.IsInvalid);
+            Debug.Assert(fileStream != null);
 
             _handle = handle;
             _fileStream = fileStream;
@@ -180,7 +184,8 @@ namespace System.IO.MemoryMappedFiles
                 throw;
             }
 
-            Debug.Assert(handle != null && !handle.IsInvalid);
+            Debug.Assert(handle != null);
+            Debug.Assert(!handle.IsInvalid);
             return new MemoryMappedFile(handle, fileStream, false);
         }
 
@@ -466,7 +471,7 @@ namespace System.IO.MemoryMappedFiles
         {
             try
             {
-                if (_handle != null && !_handle.IsClosed)
+                if (!_handle.IsClosed)
                 {
                     _handle.Dispose();
                 }
@@ -496,17 +501,15 @@ namespace System.IO.MemoryMappedFiles
                 case MemoryMappedFileAccess.Read:
                 case MemoryMappedFileAccess.ReadExecute:
                     return FileAccess.Read;
-
-                case MemoryMappedFileAccess.Write:
-                    return FileAccess.Write;
                 
                 case MemoryMappedFileAccess.ReadWrite:
                 case MemoryMappedFileAccess.CopyOnWrite:
                 case MemoryMappedFileAccess.ReadWriteExecute:
                     return FileAccess.ReadWrite;
-                
+
                 default:
-                    throw new ArgumentOutOfRangeException("access");
+                    Debug.Assert(access == MemoryMappedFileAccess.Write);
+                    return FileAccess.Write;
             }
         }
 
