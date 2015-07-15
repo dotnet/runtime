@@ -18,19 +18,23 @@ JITTEST_PROG_RUN = MONO_CFG_DIR=$(mono_build_root)/runtime/etc $(LIBTOOL) --mode
 
 RUNTIME_ARGS=--config tests-config --optimize=all --debug
 
-with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/net_4_5
+-include $(mcs_topdir)/build/config.make
+
+CLASS=$(mcs_topdir)/class/lib/$(DEFAULT_PROFILE)
+
+with_mono_path = MONO_PATH=$(CLASS)
 
 RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper
 
 MKBUNDLE = \
 	PKG_CONFIG_PATH=$(top_builddir):$(PKG_CONFIG_PATH) \
-	$(RUNTIME) $(mcs_topdir)/class/lib/net_4_5/mkbundle.exe
+	$(RUNTIME) $(CLASS)/mkbundle.exe
 
 MCS = $(RUNTIME) $(mcs_topdir)/class/lib/build/mcs.exe -unsafe -debug \
 	-nowarn:0162 -nowarn:0168 -nowarn:0219 -nowarn:0414 -nowarn:0618 \
 	-nowarn:0169 -nowarn:1690 -nowarn:0649 -nowarn:0612 -nowarn:3021 \
 	-nowarn:0197
-ILASM = $(RUNTIME) $(mcs_topdir)/class/lib/net_4_5/ilasm.exe
+ILASM = $(RUNTIME) $(CLASS)/ilasm.exe
 
 BENCHSRC=fib.cs random.cs nested-loops.cs ackermann.cs tight-loop.cs sieve.cs
 
@@ -1092,7 +1096,7 @@ test-aot:
 	@failed=0; \
 	passed=0; \
 	failed_tests="";\
-	profile=net_4_5;	\
+	profile=$(DEFAULT_PROFILE);	\
 	tmpfile=`mktemp -t mono_aot_output` || exit 1;	\
 	rm -f test-aot-$${name}.stdout test-aot-$${name}.stderr; \
 	for assembly in $(mcs_topdir)/class/lib/$$profile/*.dll	; do	\
