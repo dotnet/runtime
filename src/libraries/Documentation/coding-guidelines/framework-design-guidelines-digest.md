@@ -305,7 +305,7 @@ public class Foo
 FxCop is a code analysis tool that checks managed code assemblies for
 conformance to the [Framework Design Guidelines][FDG].
 
-<http://code.msdn.microsoft.com/codeanalysis>
+<https://msdn.microsoft.com/en-us/library/bb429476.aspx>
 
 ## Presentations
 
