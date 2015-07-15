@@ -10,6 +10,8 @@ namespace System.Text.EncodingTests
     // GetByteCount(System.Char[],System.Int32,System.Int32,System.Boolean)
     public class EncoderGetByteCount2
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         #region Private Fields
         private const int c_SIZE_OF_ARRAY = 256;
         private const char HIGH_SURROGATE_START = '\ud800';
@@ -26,7 +28,7 @@ namespace System.Text.EncodingTests
 
             for (int i = 0; i < chars.Length; ++i)
             {
-                chars[i] = TestLibrary.Generator.GetChar(-55);
+                chars[i] = _generator.GetChar(-55);
             }
 
             int ret1 = encoder.GetByteCount(chars, 0, chars.Length, true);
@@ -54,7 +56,7 @@ namespace System.Text.EncodingTests
 
             for (int i = 0; i < chars.Length; ++i)
             {
-                chars[i] = TestLibrary.Generator.GetChar(-55);
+                chars[i] = _generator.GetChar(-55);
             }
 
             int ret1 = encoder.GetByteCount(chars, 0, chars.Length, true);

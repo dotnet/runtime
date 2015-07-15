@@ -12,6 +12,7 @@ namespace System.Text.EncodingTests
     public class ASCIIEncodingGetByteCount2
     {
         private const int c_MAX_ARRAY_LENGTH = 260;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         // PosTest1: The specified character array is zero-length array.
         [Fact]
@@ -29,8 +30,8 @@ namespace System.Text.EncodingTests
             int expectedValue;
 
             InitializeCharacterArray(out chars);
-            startIndex = TestLibrary.Generator.GetInt32(-55) % chars.Length;
-            count = TestLibrary.Generator.GetInt32(-55) % (chars.Length - startIndex) + 1;
+            startIndex = _generator.GetInt32(-55) % chars.Length;
+            count = _generator.GetInt32(-55) % (chars.Length - startIndex) + 1;
             expectedValue = count;
             DoPosTest(chars, startIndex, count,
                             expectedValue);
@@ -94,8 +95,8 @@ namespace System.Text.EncodingTests
             int startIndex, count;
 
             InitializeCharacterArray(out chars);
-            startIndex = -1 * TestLibrary.Generator.GetInt32(-55) - 1;
-            count = TestLibrary.Generator.GetInt32(-55) % chars.Length + 1;
+            startIndex = -1 * _generator.GetInt32(-55) - 1;
+            count = _generator.GetInt32(-55) % chars.Length + 1;
 
             DoNegAOORTest(chars, startIndex, count);
         }
@@ -108,8 +109,8 @@ namespace System.Text.EncodingTests
             int startIndex, count;
 
             InitializeCharacterArray(out chars);
-            startIndex = TestLibrary.Generator.GetInt32(-55) % chars.Length;
-            count = -1 * TestLibrary.Generator.GetInt32(-55) - 1;
+            startIndex = _generator.GetInt32(-55) % chars.Length;
+            count = -1 * _generator.GetInt32(-55) - 1;
 
             DoNegAOORTest(chars, startIndex, count);
         }
@@ -122,8 +123,8 @@ namespace System.Text.EncodingTests
             int startIndex, count;
 
             InitializeCharacterArray(out chars);
-            startIndex = chars.Length + TestLibrary.Generator.GetInt32(-55) % (Int32.MaxValue - chars.Length);
-            count = TestLibrary.Generator.GetInt32(-55) % chars.Length + 1;
+            startIndex = chars.Length + _generator.GetInt32(-55) % (Int32.MaxValue - chars.Length);
+            count = _generator.GetInt32(-55) % chars.Length + 1;
 
             DoNegAOORTest(chars, startIndex, count);
         }
@@ -136,8 +137,8 @@ namespace System.Text.EncodingTests
             int startIndex, count;
 
             InitializeCharacterArray(out chars);
-            startIndex = TestLibrary.Generator.GetInt32(-55) % chars.Length;
-            count = chars.Length + 1 + TestLibrary.Generator.GetInt32(-55) % (Int32.MaxValue - chars.Length);
+            startIndex = _generator.GetInt32(-55) % chars.Length;
+            count = chars.Length + 1 + _generator.GetInt32(-55) % (Int32.MaxValue - chars.Length);
 
             DoNegAOORTest(chars, startIndex, count);
         }
@@ -155,11 +156,11 @@ namespace System.Text.EncodingTests
         private void InitializeCharacterArray(out char[] chars)
         {
             //Get a character array whose length is beween 1 and c_MAX_ARRAY_LENGTH
-            int length = TestLibrary.Generator.GetInt32(-55) % c_MAX_ARRAY_LENGTH + 1;
+            int length = _generator.GetInt32(-55) % c_MAX_ARRAY_LENGTH + 1;
             chars = new char[length];
             for (int i = 0; i < chars.Length; ++i)
             {
-                chars[i] = TestLibrary.Generator.GetChar(-55);
+                chars[i] = _generator.GetChar(-55);
             }
         }
     }

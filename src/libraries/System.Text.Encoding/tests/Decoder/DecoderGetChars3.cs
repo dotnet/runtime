@@ -12,6 +12,7 @@ namespace System.Text.EncodingTests
     {
         #region Private Fields
         private const int c_SIZE_OF_ARRAY = 127;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
         #endregion
 
         #region Positive Test Cases
@@ -135,7 +136,7 @@ namespace System.Text.EncodingTests
             char[] chars = new char[bytes.Length];
             Decoder decoder = Encoding.UTF8.GetDecoder();
 
-            TestLibrary.Generator.GetBytes(-55, bytes);
+            _generator.GetBytes(-55, bytes);
 
             decoder.GetChars(bytes, 0, bytes.Length, chars, 0);
         }
@@ -148,7 +149,7 @@ namespace System.Text.EncodingTests
             char[] chars = new char[bytes.Length];
             Decoder decoder = Encoding.Unicode.GetDecoder();
 
-            TestLibrary.Generator.GetBytes(-55, bytes);
+            _generator.GetBytes(-55, bytes);
 
             decoder.GetChars(bytes, 0, bytes.Length, chars, 0);
         }
@@ -160,7 +161,7 @@ namespace System.Text.EncodingTests
             byte[] bytes = new byte[c_SIZE_OF_ARRAY];
             char[] chars = new char[bytes.Length];
             Decoder decoder = Encoding.UTF8.GetDecoder();
-            TestLibrary.Generator.GetBytes(-55, bytes);
+            _generator.GetBytes(-55, bytes);
 
             VerificationHelper(decoder, bytes, 0, 0, chars, 0, 0, "008.1");
 
@@ -202,7 +203,7 @@ namespace System.Text.EncodingTests
             Decoder decoder = Encoding.UTF8.GetDecoder();
             byte[] bytes = new byte[c_SIZE_OF_ARRAY];
             char[] chars = new char[1];
-            TestLibrary.Generator.GetBytes(-55, bytes);
+            _generator.GetBytes(-55, bytes);
 
             VerificationHelper<ArgumentException>(decoder, bytes, 0, bytes.Length, chars, 0, typeof(ArgumentException), "103.1");
         }

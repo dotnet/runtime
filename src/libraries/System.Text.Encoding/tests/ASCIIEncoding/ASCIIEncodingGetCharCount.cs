@@ -14,6 +14,7 @@ namespace System.Text.EncodingTests
     {
         private const int c_MIN_STRING_LENGTH = 2;
         private const int c_MAX_STRING_LENGTH = 260;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         // PosTest1: zero-length byte array.
         [Fact]
@@ -32,10 +33,10 @@ namespace System.Text.EncodingTests
             string source;
 
             ascii = new ASCIIEncoding();
-            source = TestLibrary.Generator.GetString(-55, true, c_MIN_STRING_LENGTH, c_MAX_STRING_LENGTH);
+            source = _generator.GetString(-55, true, c_MIN_STRING_LENGTH, c_MAX_STRING_LENGTH);
             bytes = ascii.GetBytes(source);
-            index = TestLibrary.Generator.GetInt32(-55) % bytes.Length;
-            count = TestLibrary.Generator.GetInt32(-55) % (bytes.Length - index) + 1;
+            index = _generator.GetInt32(-55) % bytes.Length;
+            count = _generator.GetInt32(-55) % (bytes.Length - index) + 1;
 
             // ensure that count <= bytes.Length
             if (count > bytes.Length)
@@ -69,8 +70,8 @@ namespace System.Text.EncodingTests
              32,  69, 120,  97, 109, 112, 108
             };
 
-            count = -1 * TestLibrary.Generator.GetInt32(-55) - 1;
-            index = TestLibrary.Generator.GetInt32(-55) % bytes.Length;
+            count = -1 * _generator.GetInt32(-55) - 1;
+            index = _generator.GetInt32(-55) % bytes.Length;
 
             DoNegAOORTest(ascii, bytes, index, count);
         }
@@ -90,8 +91,8 @@ namespace System.Text.EncodingTests
             110,  99, 111, 100, 105, 110, 103,
              32,  69, 120,  97, 109, 112, 108
             };
-            count = TestLibrary.Generator.GetInt32(-55) % bytes.Length + 1;
-            index = -1 * TestLibrary.Generator.GetInt32(-55) - 1;
+            count = _generator.GetInt32(-55) % bytes.Length + 1;
+            index = -1 * _generator.GetInt32(-55) - 1;
 
             DoNegAOORTest(ascii, bytes, index, count);
         }
@@ -111,9 +112,9 @@ namespace System.Text.EncodingTests
             110,  99, 111, 100, 105, 110, 103,
              32,  69, 120,  97, 109, 112, 108
             };
-            index = TestLibrary.Generator.GetInt32(-55) % bytes.Length;
+            index = _generator.GetInt32(-55) % bytes.Length;
             count = bytes.Length - index + 1 +
-                TestLibrary.Generator.GetInt32(-55) % (int.MaxValue - bytes.Length + index);
+                _generator.GetInt32(-55) % (int.MaxValue - bytes.Length + index);
 
             DoNegAOORTest(ascii, bytes, index, count);
         }
@@ -133,9 +134,9 @@ namespace System.Text.EncodingTests
             110,  99, 111, 100, 105, 110, 103,
              32,  69, 120,  97, 109, 112, 108
             };
-            count = TestLibrary.Generator.GetInt32(-55) % bytes.Length + 1;
+            count = _generator.GetInt32(-55) % bytes.Length + 1;
             index = bytes.Length - count + 1 +
-                TestLibrary.Generator.GetInt32(-55) % (int.MaxValue - bytes.Length + count);
+                _generator.GetInt32(-55) % (int.MaxValue - bytes.Length + count);
 
             DoNegAOORTest(ascii, bytes, index, count);
         }
