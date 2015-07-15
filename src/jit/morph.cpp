@@ -5986,6 +5986,37 @@ NO_TAIL_CALL:
     // Optimize get_ManagedThreadId(get_CurrentThread)
     noway_assert(call->gtOper == GT_CALL);
 
+    // Morph stelem.ref helper call to store a null value, into a store into an array without the helper.
+    // This needs to be done after the arguments are morphed to ensure constant propagation has already taken place.
+    if ((call->gtCallType == CT_HELPER) && (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ARRADDR_ST)))
+    {       
+        GenTreePtr value = gtArgEntryByArgNum(call, 2)->node;
+
+        if (value->OperGet() == GT_CNS_INT && value->AsIntConCommon()->IconValue() == 0)
+        {
+            GenTreePtr arr = gtArgEntryByArgNum(call, 0)->node;
+            GenTreePtr index = gtArgEntryByArgNum(call, 1)->node;
+
+            arr = gtClone(arr, true);
+            if (arr != nullptr)
+            {
+                index = gtClone(index, true);
+                if (index != nullptr)
+                {
+                    value = gtClone(value);
+                    noway_assert(value != nullptr);
+
+                    GenTreePtr nullCheckedArr = impCheckForNullPointer(arr);
+                    GenTreePtr arrIndexNode = gtNewIndexRef(TYP_REF, nullCheckedArr, index);
+                    GenTreePtr arrStore = gtNewAssignNode(arrIndexNode, value);
+                    arrStore->gtFlags |= GTF_ASG;
+
+                    return fgMorphTree(arrStore);
+                }                
+            }
+        }
+    }
+
     if ((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) &&
            info.compCompHnd->getIntrinsicID(call->gtCallMethHnd) == CORINFO_INTRINSIC_GetManagedThreadId)
     {
