@@ -10,6 +10,8 @@ namespace System.Globalization.CalendarsTests
     //System.Globalization.KoreanCalendar.GetWeekOfYear(System.DateTime,System.Globalization.CalendarWeekRule,System.DayOfWeek)
     public class KoreanCalendarGetWeekOfYear
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         #region Positive Test Logic
         // PosTest1:invoke the method with min dateTime
         [Fact]
@@ -56,7 +58,7 @@ namespace System.Globalization.CalendarsTests
         {
             System.Globalization.Calendar kC = new KoreanCalendar();
             System.Globalization.Calendar gC = new GregorianCalendar();
-            Int64 ticks = TestLibrary.Generator.GetInt64(-55) % DateTime.MaxValue.Ticks + 1;
+            Int64 ticks = _generator.GetInt64(-55) % DateTime.MaxValue.Ticks + 1;
             DateTime dateTime = new DateTime(ticks);
             dateTime = gC.ToDateTime(dateTime.Year, dateTime.Month, dateTime.Day, 0, 0, 0, 0);
             int expectedValue = gC.GetWeekOfYear(dateTime, new CultureInfo("en-US").DateTimeFormat.CalendarWeekRule, new CultureInfo("en-US").DateTimeFormat.FirstDayOfWeek);
@@ -72,7 +74,7 @@ namespace System.Globalization.CalendarsTests
         public void NegTest1()
         {
             System.Globalization.Calendar kC = new KoreanCalendar();
-            Int64 ticks = TestLibrary.Generator.GetInt64(-55) % DateTime.MaxValue.Ticks + 1;
+            Int64 ticks = _generator.GetInt64(-55) % DateTime.MaxValue.Ticks + 1;
             DateTime dateTime = new DateTime(ticks);
             dateTime = kC.ToDateTime(dateTime.Year + 2333, dateTime.Month, dateTime.Day, 0, 0, 0, 0);
             int actualValue;
@@ -87,7 +89,7 @@ namespace System.Globalization.CalendarsTests
         public void NegTest2()
         {
             System.Globalization.Calendar kC = new KoreanCalendar();
-            Int64 ticks = TestLibrary.Generator.GetInt64(-55) % DateTime.MaxValue.Ticks + 1;
+            Int64 ticks = _generator.GetInt64(-55) % DateTime.MaxValue.Ticks + 1;
             DateTime dateTime = new DateTime(ticks);
             dateTime = kC.ToDateTime(dateTime.Year + 2333, dateTime.Month, dateTime.Day, 0, 0, 0, 0);
             int actualValue;
@@ -102,7 +104,7 @@ namespace System.Globalization.CalendarsTests
         public void NegTest3()
         {
             System.Globalization.Calendar kC = new KoreanCalendar();
-            Int64 ticks = TestLibrary.Generator.GetInt64(-55) % DateTime.MaxValue.Ticks + 1;
+            Int64 ticks = _generator.GetInt64(-55) % DateTime.MaxValue.Ticks + 1;
             DateTime dateTime = new DateTime(ticks);
             dateTime = kC.ToDateTime(dateTime.Year + 2333, dateTime.Month, dateTime.Day, 0, 0, 0, 0);
             int actualValue;
@@ -117,7 +119,7 @@ namespace System.Globalization.CalendarsTests
         public void NegTest4()
         {
             System.Globalization.Calendar kC = new KoreanCalendar();
-            Int64 ticks = TestLibrary.Generator.GetInt64(-55) % DateTime.MaxValue.Ticks + 1;
+            Int64 ticks = _generator.GetInt64(-55) % DateTime.MaxValue.Ticks + 1;
             DateTime dateTime = new DateTime(ticks);
             dateTime = kC.ToDateTime(dateTime.Year + 2333, dateTime.Month, dateTime.Day, 0, 0, 0, 0);
             int actualValue;

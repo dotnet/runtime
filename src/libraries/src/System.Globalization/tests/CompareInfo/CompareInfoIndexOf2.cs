@@ -10,6 +10,7 @@ namespace System.Globalization.Tests
 {
     public class CompareInfoIndexOf2
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
         public static string[] InterestingStrings = new string[] { "", "a", "1", "-", "A", "!", "abc", "aBc", "a\u0400Bc", "I", "i", "\u0130", "\u0131", "A", "\uFF21", "\uFE57" };
 
         // PosTest1: Compare interesting strings ordinally
@@ -31,8 +32,8 @@ namespace System.Globalization.Tests
         {
             for (int i = 0; i < 1000; i++)
             {
-                string str1 = TestLibrary.Generator.GetString(-55, false, 5, 20);
-                string str2 = TestLibrary.Generator.GetString(-55, false, 5, 20);
+                string str1 = _generator.GetString(-55, false, 5, 20);
+                string str2 = _generator.GetString(-55, false, 5, 20);
                 Assert.Equal(0, CultureInfo.CurrentCulture.CompareInfo.IndexOf(str1, str1, CompareOptions.Ordinal));
                 Assert.Equal(0, CultureInfo.CurrentCulture.CompareInfo.IndexOf(str2, str2, CompareOptions.Ordinal));
                 TestStrings(str1, str2);

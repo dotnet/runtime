@@ -15,6 +15,7 @@ namespace System.Refleciton.Emit.ILGeneration.Tests
         private const string TestModuleName = "TestModuleName";
         private const string TestTypeName = "TestTypeName";
         private const string TestMethodName = "TestMethodName";
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         private AssemblyBuilder CreateDynamicAssembly(string name, AssemblyBuilderAccess access)
         {
@@ -48,7 +49,7 @@ namespace System.Refleciton.Emit.ILGeneration.Tests
         [Fact]
         public void PosTest3()
         {
-            object ob = TestLibrary.Generator.GetInt32();
+            object ob = _generator.GetInt32();
             Label label = new Label();
             Assert.False(label.Equals(ob));
         }

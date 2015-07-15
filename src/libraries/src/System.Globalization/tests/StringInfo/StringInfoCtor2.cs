@@ -11,12 +11,13 @@ namespace System.Globalization.Tests
     {
         private const int c_MINI_STRING_LENGTH = 8;
         private const int c_MAX_STRING_LENGTH = 256;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         // PosTest1: Call constructor to create an instance with a random string argument
         [Fact]
         public void TestCtorWithRandomString()
         {
-            string str = TestLibrary.Generator.GetString(-55, false, c_MINI_STRING_LENGTH, c_MAX_STRING_LENGTH);
+            string str = _generator.GetString(-55, false, c_MINI_STRING_LENGTH, c_MAX_STRING_LENGTH);
             StringInfo stringInfo = new StringInfo(str);
             Assert.Equal(str, stringInfo.String);
         }

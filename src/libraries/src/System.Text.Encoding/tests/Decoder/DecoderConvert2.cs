@@ -36,6 +36,7 @@ namespace System.Text.EncodingTests
     public class DecoderConvert2
     {
         private const int c_SIZE_OF_ARRAY = 127;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         // PosTest1: Call Convert to convert a arbitrary byte array to character array by using ASCII decoder
         [Fact]
@@ -46,7 +47,7 @@ namespace System.Text.EncodingTests
             byte[] bytes = new byte[c_SIZE_OF_ARRAY];
             for (int i = 0; i < bytes.Length; ++i)
             {
-                bytes[i] = TestLibrary.Generator.GetByte(-55);
+                bytes[i] = _generator.GetByte(-55);
             }
 
             int bytesUsed;
@@ -68,7 +69,7 @@ namespace System.Text.EncodingTests
             byte[] bytes = new byte[c_SIZE_OF_ARRAY * 2];
             for (int i = 0; i < bytes.Length; ++i)
             {
-                bytes[i] = TestLibrary.Generator.GetByte(-55);
+                bytes[i] = _generator.GetByte(-55);
             }
 
             int bytesUsed;
@@ -314,7 +315,7 @@ namespace System.Text.EncodingTests
             byte[] bytes = new byte[c_SIZE_OF_ARRAY];
             for (int i = 0; i < bytes.Length; ++i)
             {
-                bytes[i] = TestLibrary.Generator.GetByte(-55);
+                bytes[i] = _generator.GetByte(-55);
             }
             char[] chars = new char[0];
 

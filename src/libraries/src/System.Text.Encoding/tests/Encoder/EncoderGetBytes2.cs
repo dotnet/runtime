@@ -14,6 +14,7 @@ namespace System.Text.EncodingTests
         private const int c_SIZE_OF_ARRAY = 256;
         private const char HIGH_SURROGATE_START = '\ud800';
         private const char HIGH_SURROGATE_END = '\udbff';
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
         #endregion
 
         #region Positive Test Cases
@@ -25,7 +26,7 @@ namespace System.Text.EncodingTests
             byte[] bytes = new byte[c_SIZE_OF_ARRAY * 4];
             for (int i = 0; i < chars.Length; ++i)
             {
-                chars[i] = TestLibrary.Generator.GetChar(-55);
+                chars[i] = _generator.GetChar(-55);
             }
             Encoder encoder = Encoding.UTF8.GetEncoder();
 
@@ -57,7 +58,7 @@ namespace System.Text.EncodingTests
             byte[] bytes = new byte[chars.Length * 4];
             for (int i = 0; i < chars.Length; ++i)
             {
-                chars[i] = TestLibrary.Generator.GetChar(-55);
+                chars[i] = _generator.GetChar(-55);
             }
             Encoder encoder = Encoding.Unicode.GetEncoder();
 
@@ -160,7 +161,7 @@ namespace System.Text.EncodingTests
             char[] chars = new char[c_SIZE_OF_ARRAY];
             for (int i = 0; i < chars.Length; ++i)
             {
-                chars[i] = TestLibrary.Generator.GetChar(-55);
+                chars[i] = _generator.GetChar(-55);
             }
             byte[] bytes1 = new byte[1];
 

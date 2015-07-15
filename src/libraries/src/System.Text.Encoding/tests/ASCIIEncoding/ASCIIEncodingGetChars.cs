@@ -17,6 +17,8 @@ namespace System.Text.EncodingTests
         private const char c_MIN_ASCII_CHAR = (char)0x0;
         private const char c_MAX_ASCII_CHAR = (char)0x7f;
 
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         // PosTest1: zero-length byte array.
         [Fact]
         public void PosTest1()
@@ -36,13 +38,13 @@ namespace System.Text.EncodingTests
             string source;
 
             ascii = new ASCIIEncoding();
-            source = TestLibrary.Generator.GetString(-55, false, c_MIN_STRING_LENGTH, c_MAX_STRING_LENGTH);
+            source = _generator.GetString(-55, false, c_MIN_STRING_LENGTH, c_MAX_STRING_LENGTH);
             bytes = new byte[ascii.GetByteCount(source)];
             ascii.GetBytes(source, 0, source.Length, bytes, 0);
-            byteIndex = TestLibrary.Generator.GetInt32(-55) % bytes.Length;
-            byteCount = TestLibrary.Generator.GetInt32(-55) % (bytes.Length - byteIndex) + 1;
-            chars = new char[byteCount + TestLibrary.Generator.GetInt32(-55) % c_MAX_STRING_LENGTH];
-            charIndex = TestLibrary.Generator.GetInt32(-55) % (chars.Length - byteCount + 1);
+            byteIndex = _generator.GetInt32(-55) % bytes.Length;
+            byteCount = _generator.GetInt32(-55) % (bytes.Length - byteIndex) + 1;
+            chars = new char[byteCount + _generator.GetInt32(-55) % c_MAX_STRING_LENGTH];
+            charIndex = _generator.GetInt32(-55) % (chars.Length - byteCount + 1);
 
             DoPosTest(ascii, bytes, byteIndex, byteCount, chars, charIndex);
         }
@@ -86,11 +88,11 @@ namespace System.Text.EncodingTests
              32,  69, 120,  97, 109, 112, 108
             };
 
-            byteCount = -1 * TestLibrary.Generator.GetInt32(-55) - 1;
-            byteIndex = TestLibrary.Generator.GetInt32(-55) % bytes.Length;
+            byteCount = -1 * _generator.GetInt32(-55) - 1;
+            byteIndex = _generator.GetInt32(-55) % bytes.Length;
             int actualByteCount = bytes.Length - byteIndex;
-            chars = new char[actualByteCount + TestLibrary.Generator.GetInt32(-55) % c_MAX_STRING_LENGTH];
-            charIndex = TestLibrary.Generator.GetInt32(-55) % (chars.Length - actualByteCount + 1);
+            chars = new char[actualByteCount + _generator.GetInt32(-55) % c_MAX_STRING_LENGTH];
+            charIndex = _generator.GetInt32(-55) % (chars.Length - actualByteCount + 1);
 
             DoNegAOORTest(ascii, bytes, byteIndex, byteCount, chars, charIndex);
         }
@@ -112,10 +114,10 @@ namespace System.Text.EncodingTests
             110,  99, 111, 100, 105, 110, 103,
              32,  69, 120,  97, 109, 112, 108
             };
-            byteCount = TestLibrary.Generator.GetInt32(-55) % bytes.Length + 1;
-            byteIndex = -1 * TestLibrary.Generator.GetInt32(-55) - 1;
-            chars = new char[byteCount + TestLibrary.Generator.GetInt32(-55) % c_MAX_STRING_LENGTH];
-            charIndex = TestLibrary.Generator.GetInt32(-55) % (chars.Length - byteCount + 1);
+            byteCount = _generator.GetInt32(-55) % bytes.Length + 1;
+            byteIndex = -1 * _generator.GetInt32(-55) - 1;
+            chars = new char[byteCount + _generator.GetInt32(-55) % c_MAX_STRING_LENGTH];
+            charIndex = _generator.GetInt32(-55) % (chars.Length - byteCount + 1);
 
             DoNegAOORTest(ascii, bytes, byteIndex, byteCount, chars, charIndex);
         }
@@ -137,12 +139,12 @@ namespace System.Text.EncodingTests
             110,  99, 111, 100, 105, 110, 103,
              32,  69, 120,  97, 109, 112, 108
             };
-            byteIndex = TestLibrary.Generator.GetInt32(-55) % bytes.Length;
+            byteIndex = _generator.GetInt32(-55) % bytes.Length;
             byteCount = bytes.Length - byteIndex + 1 +
-                        TestLibrary.Generator.GetInt32(-55) % (int.MaxValue - bytes.Length + byteIndex);
+                        _generator.GetInt32(-55) % (int.MaxValue - bytes.Length + byteIndex);
             int actualByteCount = bytes.Length - byteIndex;
-            chars = new char[actualByteCount + TestLibrary.Generator.GetInt32(-55) % c_MAX_STRING_LENGTH];
-            charIndex = TestLibrary.Generator.GetInt32(-55) % (chars.Length - actualByteCount + 1);
+            chars = new char[actualByteCount + _generator.GetInt32(-55) % c_MAX_STRING_LENGTH];
+            charIndex = _generator.GetInt32(-55) % (chars.Length - actualByteCount + 1);
 
             DoNegAOORTest(ascii, bytes, byteIndex, byteCount, chars, charIndex);
         }
@@ -164,11 +166,11 @@ namespace System.Text.EncodingTests
             110,  99, 111, 100, 105, 110, 103,
              32,  69, 120,  97, 109, 112, 108
             };
-            byteCount = TestLibrary.Generator.GetInt32(-55) % bytes.Length + 1;
+            byteCount = _generator.GetInt32(-55) % bytes.Length + 1;
             byteIndex = bytes.Length - byteCount + 1 +
-                        TestLibrary.Generator.GetInt32(-55) % (int.MaxValue - bytes.Length + byteCount);
-            chars = new char[byteCount + TestLibrary.Generator.GetInt32(-55) % c_MAX_STRING_LENGTH];
-            charIndex = TestLibrary.Generator.GetInt32(-55) % (chars.Length - byteCount + 1);
+                        _generator.GetInt32(-55) % (int.MaxValue - bytes.Length + byteCount);
+            chars = new char[byteCount + _generator.GetInt32(-55) % c_MAX_STRING_LENGTH];
+            charIndex = _generator.GetInt32(-55) % (chars.Length - byteCount + 1);
 
             DoNegAOORTest(ascii, bytes, byteIndex, byteCount, chars, charIndex);
         }
@@ -221,10 +223,10 @@ namespace System.Text.EncodingTests
             110,  99, 111, 100, 105, 110, 103,
              32,  69, 120,  97, 109, 112, 108
             };
-            byteIndex = TestLibrary.Generator.GetInt32(-55) % bytes.Length;
-            byteCount = TestLibrary.Generator.GetInt32(-55) % (bytes.Length - byteIndex) + 1;
-            chars = new char[byteCount + TestLibrary.Generator.GetInt32(-55) % c_MAX_STRING_LENGTH];
-            charIndex = -1 * TestLibrary.Generator.GetInt32(-55) - 1;
+            byteIndex = _generator.GetInt32(-55) % bytes.Length;
+            byteCount = _generator.GetInt32(-55) % (bytes.Length - byteIndex) + 1;
+            chars = new char[byteCount + _generator.GetInt32(-55) % c_MAX_STRING_LENGTH];
+            charIndex = -1 * _generator.GetInt32(-55) - 1;
 
             DoNegAOORTest(ascii, bytes, byteIndex, byteCount, chars, charIndex);
         }
@@ -246,11 +248,11 @@ namespace System.Text.EncodingTests
             110,  99, 111, 100, 105, 110, 103,
              32,  69, 120,  97, 109, 112, 108
             };
-            byteIndex = TestLibrary.Generator.GetInt32(-55) % bytes.Length;
-            byteCount = TestLibrary.Generator.GetInt32(-55) % (bytes.Length - byteIndex) + 1;
-            chars = new char[byteCount + TestLibrary.Generator.GetInt32(-55) % c_MAX_STRING_LENGTH];
+            byteIndex = _generator.GetInt32(-55) % bytes.Length;
+            byteCount = _generator.GetInt32(-55) % (bytes.Length - byteIndex) + 1;
+            chars = new char[byteCount + _generator.GetInt32(-55) % c_MAX_STRING_LENGTH];
             charIndex = chars.Length - byteCount + 1 +
-                TestLibrary.Generator.GetInt32(-55) % (int.MaxValue - chars.Length + byteCount);
+                _generator.GetInt32(-55) % (int.MaxValue - chars.Length + byteCount);
 
             DoNegAOORTest(ascii, bytes, byteIndex, byteCount, chars, charIndex);
         }

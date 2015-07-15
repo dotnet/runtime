@@ -12,6 +12,8 @@ namespace System.Globalization.CalendarTests
     {
         private const int c_DAYS_IN_LEAP_YEAR = 366;
         private const int c_DAYS_IN_COMMON_YEAR = 365;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         private static readonly int[] s_daysInMonth365 =
         {
             0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
@@ -28,14 +30,14 @@ namespace System.Globalization.CalendarTests
         {
             System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
             int year = this.GetAYear(myCalendar);
-            int month = TestLibrary.Generator.GetInt32(-55) % 12 + 1; //value of month between 1 - 12
+            int month = _generator.GetInt32(-55) % 12 + 1; //value of month between 1 - 12
                                                                       //value of day between 1 - last day of month
-            int day = (this.IsLeapYear(year)) ? TestLibrary.Generator.GetInt32(-55) % s_daysInMonth366[month] + 1 : TestLibrary.Generator.GetInt32(-55) % s_daysInMonth365[month] + 1;
-            int hour = TestLibrary.Generator.GetInt32(-55) % 24; //value of hour between 0 - 23
-            int minute = TestLibrary.Generator.GetInt32(-55) % 60; //value of minute between 0 - 59
-            int second = TestLibrary.Generator.GetInt32(-55) % 60; //value of second between 0 - 59
-            int millisecond = TestLibrary.Generator.GetInt32(-55) % 1000; //value of millisecond between 0 - 999
-            int era = TestLibrary.Generator.GetInt32(-55) & 1;
+            int day = (this.IsLeapYear(year)) ? _generator.GetInt32(-55) % s_daysInMonth366[month] + 1 : _generator.GetInt32(-55) % s_daysInMonth365[month] + 1;
+            int hour = _generator.GetInt32(-55) % 24; //value of hour between 0 - 23
+            int minute = _generator.GetInt32(-55) % 60; //value of minute between 0 - 59
+            int second = _generator.GetInt32(-55) % 60; //value of second between 0 - 59
+            int millisecond = _generator.GetInt32(-55) % 1000; //value of millisecond between 0 - 999
+            int era = _generator.GetInt32(-55) & 1;
             ExecutePosTest(myCalendar, year, month, day, hour, minute, second, millisecond, era);
         }
 
@@ -51,7 +53,7 @@ namespace System.Globalization.CalendarTests
             int minute = 0;
             int second = 0;
             int millisecond = 0;
-            int era = TestLibrary.Generator.GetInt32(-55) & 1;
+            int era = _generator.GetInt32(-55) & 1;
             ExecutePosTest(myCalendar, year, month, day, hour, minute, second, millisecond, era);
         }
 
@@ -67,7 +69,7 @@ namespace System.Globalization.CalendarTests
             int minute = 59;
             int second = 59;
             int millisecond = 999;
-            int era = TestLibrary.Generator.GetInt32(-55) & 1;
+            int era = _generator.GetInt32(-55) & 1;
             ExecutePosTest(myCalendar, year, month, day, hour, minute, second, millisecond, era);
         }
 
@@ -90,14 +92,14 @@ namespace System.Globalization.CalendarTests
         public void NegTest1()
         {
             System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            int year = myCalendar.MaxSupportedDateTime.Year + 1 + TestLibrary.Generator.GetInt32(-55) % (int.MaxValue - myCalendar.MaxSupportedDateTime.Year);
-            int month = TestLibrary.Generator.GetInt32(-55) % 12 + 1; //value of month between 1 - 12
+            int year = myCalendar.MaxSupportedDateTime.Year + 1 + _generator.GetInt32(-55) % (int.MaxValue - myCalendar.MaxSupportedDateTime.Year);
+            int month = _generator.GetInt32(-55) % 12 + 1; //value of month between 1 - 12
             int day = 1;
-            int hour = TestLibrary.Generator.GetInt32(-55) % 24; //value of hour between 0 - 23
-            int minute = TestLibrary.Generator.GetInt32(-55) % 60; //value of minute between 0 - 59
-            int second = TestLibrary.Generator.GetInt32(-55) % 60; //value of second between 0 - 59
-            int millisecond = TestLibrary.Generator.GetInt32(-55) % 1000; //value of millisecond between 0 - 999
-            int era = TestLibrary.Generator.GetInt32(-55) & 1;
+            int hour = _generator.GetInt32(-55) % 24; //value of hour between 0 - 23
+            int minute = _generator.GetInt32(-55) % 60; //value of minute between 0 - 59
+            int second = _generator.GetInt32(-55) % 60; //value of second between 0 - 59
+            int millisecond = _generator.GetInt32(-55) % 1000; //value of millisecond between 0 - 999
+            int era = _generator.GetInt32(-55) & 1;
             ExecuteAOORETest(myCalendar, year, month, day, hour, minute, second, millisecond, era);
         }
 
@@ -106,14 +108,14 @@ namespace System.Globalization.CalendarTests
         public void NegTest2()
         {
             System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            int year = -1 * TestLibrary.Generator.GetInt32(-55);
-            int month = TestLibrary.Generator.GetInt32(-55) % 12 + 1; //value of month between 1 - 12
+            int year = -1 * _generator.GetInt32(-55);
+            int month = _generator.GetInt32(-55) % 12 + 1; //value of month between 1 - 12
             int day = 1;
-            int hour = TestLibrary.Generator.GetInt32(-55) % 24; //value of hour between 0 - 23
-            int minute = TestLibrary.Generator.GetInt32(-55) % 60; //value of minute between 0 - 59
-            int second = TestLibrary.Generator.GetInt32(-55) % 60; //value of second between 0 - 59
-            int millisecond = TestLibrary.Generator.GetInt32(-55) % 1000; //value of millisecond between 0 - 999
-            int era = TestLibrary.Generator.GetInt32(-55) & 1;
+            int hour = _generator.GetInt32(-55) % 24; //value of hour between 0 - 23
+            int minute = _generator.GetInt32(-55) % 60; //value of minute between 0 - 59
+            int second = _generator.GetInt32(-55) % 60; //value of second between 0 - 59
+            int millisecond = _generator.GetInt32(-55) % 1000; //value of millisecond between 0 - 999
+            int era = _generator.GetInt32(-55) & 1;
             ExecuteAOORETest(myCalendar, year, month, day, hour, minute, second, millisecond, era);
         }
 
@@ -123,13 +125,13 @@ namespace System.Globalization.CalendarTests
         {
             System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
             int year = GetAYear(myCalendar);
-            int month = 13 + TestLibrary.Generator.GetInt32(-55) % (int.MaxValue - 12);
+            int month = 13 + _generator.GetInt32(-55) % (int.MaxValue - 12);
             int day = 1;
-            int hour = TestLibrary.Generator.GetInt32(-55) % 24; //value of hour between 0 - 23
-            int minute = TestLibrary.Generator.GetInt32(-55) % 60; //value of minute between 0 - 59
-            int second = TestLibrary.Generator.GetInt32(-55) % 60; //value of second between 0 - 59
-            int millisecond = TestLibrary.Generator.GetInt32(-55) % 1000; //value of millisecond between 0 - 999
-            int era = TestLibrary.Generator.GetInt32(-55) & 1;
+            int hour = _generator.GetInt32(-55) % 24; //value of hour between 0 - 23
+            int minute = _generator.GetInt32(-55) % 60; //value of minute between 0 - 59
+            int second = _generator.GetInt32(-55) % 60; //value of second between 0 - 59
+            int millisecond = _generator.GetInt32(-55) % 1000; //value of millisecond between 0 - 999
+            int era = _generator.GetInt32(-55) & 1;
             ExecuteAOORETest(myCalendar, year, month, day, hour, minute, second, millisecond, era);
         }
 
@@ -139,13 +141,13 @@ namespace System.Globalization.CalendarTests
         {
             System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
             int year = GetAYear(myCalendar);
-            int month = -1 * TestLibrary.Generator.GetInt32(-55);
+            int month = -1 * _generator.GetInt32(-55);
             int day = 1;
-            int hour = TestLibrary.Generator.GetInt32(-55) % 24; //value of hour between 0 - 23
-            int minute = TestLibrary.Generator.GetInt32(-55) % 60; //value of minute between 0 - 59
-            int second = TestLibrary.Generator.GetInt32(-55) % 60; //value of second between 0 - 59
-            int millisecond = TestLibrary.Generator.GetInt32(-55) % 1000; //value of millisecond between 0 - 999
-            int era = TestLibrary.Generator.GetInt32(-55) & 1;
+            int hour = _generator.GetInt32(-55) % 24; //value of hour between 0 - 23
+            int minute = _generator.GetInt32(-55) % 60; //value of minute between 0 - 59
+            int second = _generator.GetInt32(-55) % 60; //value of second between 0 - 59
+            int millisecond = _generator.GetInt32(-55) % 1000; //value of millisecond between 0 - 999
+            int era = _generator.GetInt32(-55) & 1;
             ExecuteAOORETest(myCalendar, year, month, day, hour, minute, second, millisecond, era);
         }
 
@@ -155,13 +157,13 @@ namespace System.Globalization.CalendarTests
         {
             System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
             int year = GetAYear(myCalendar);
-            int month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
-            int day = (this.IsLeapYear(year)) ? s_daysInMonth366[month] + 1 + TestLibrary.Generator.GetInt32(-55) % (int.MaxValue - s_daysInMonth366[month]) : s_daysInMonth365[month] + 1 + TestLibrary.Generator.GetInt32(-55) % (int.MaxValue - s_daysInMonth365[month]);
-            int hour = TestLibrary.Generator.GetInt32(-55) % 24; //value of hour between 0 - 23
-            int minute = TestLibrary.Generator.GetInt32(-55) % 60; //value of minute between 0 - 59
-            int second = TestLibrary.Generator.GetInt32(-55) % 60; //value of second between 0 - 59
-            int millisecond = TestLibrary.Generator.GetInt32(-55) % 1000; //value of millisecond between 0 - 999
-            int era = TestLibrary.Generator.GetInt32(-55) & 1;
+            int month = _generator.GetInt32(-55) % 12 + 1;
+            int day = (this.IsLeapYear(year)) ? s_daysInMonth366[month] + 1 + _generator.GetInt32(-55) % (int.MaxValue - s_daysInMonth366[month]) : s_daysInMonth365[month] + 1 + _generator.GetInt32(-55) % (int.MaxValue - s_daysInMonth365[month]);
+            int hour = _generator.GetInt32(-55) % 24; //value of hour between 0 - 23
+            int minute = _generator.GetInt32(-55) % 60; //value of minute between 0 - 59
+            int second = _generator.GetInt32(-55) % 60; //value of second between 0 - 59
+            int millisecond = _generator.GetInt32(-55) % 1000; //value of millisecond between 0 - 999
+            int era = _generator.GetInt32(-55) & 1;
             ExecuteAOORETest(myCalendar, year, month, day, hour, minute, second, millisecond, era);
         }
 
@@ -171,13 +173,13 @@ namespace System.Globalization.CalendarTests
         {
             System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
             int year = GetAYear(myCalendar);
-            int month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
-            int day = -1 * TestLibrary.Generator.GetInt32(-55);
-            int hour = TestLibrary.Generator.GetInt32(-55) % 24; //value of hour between 0 - 23
-            int minute = TestLibrary.Generator.GetInt32(-55) % 60; //value of minute between 0 - 59
-            int second = TestLibrary.Generator.GetInt32(-55) % 60; //value of second between 0 - 59
-            int millisecond = TestLibrary.Generator.GetInt32(-55) % 1000; //value of millisecond between 0 - 999
-            int era = TestLibrary.Generator.GetInt32(-55) & 1;
+            int month = _generator.GetInt32(-55) % 12 + 1;
+            int day = -1 * _generator.GetInt32(-55);
+            int hour = _generator.GetInt32(-55) % 24; //value of hour between 0 - 23
+            int minute = _generator.GetInt32(-55) % 60; //value of minute between 0 - 59
+            int second = _generator.GetInt32(-55) % 60; //value of second between 0 - 59
+            int millisecond = _generator.GetInt32(-55) % 1000; //value of millisecond between 0 - 999
+            int era = _generator.GetInt32(-55) & 1;
             ExecuteAOORETest(myCalendar, year, month, day, hour, minute, second, millisecond, era);
         }
 
@@ -187,13 +189,13 @@ namespace System.Globalization.CalendarTests
         {
             System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
             int year = GetAYear(myCalendar);
-            int month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
+            int month = _generator.GetInt32(-55) % 12 + 1;
             int day = 1;
-            int hour = 24 + TestLibrary.Generator.GetInt32(-55) % (int.MaxValue - 23);
-            int minute = TestLibrary.Generator.GetInt32(-55) % 60; //value of minute between 0 - 59
-            int second = TestLibrary.Generator.GetInt32(-55) % 60; //value of second between 0 - 59
-            int millisecond = TestLibrary.Generator.GetInt32(-55) % 1000; //value of millisecond between 0 - 999
-            int era = TestLibrary.Generator.GetInt32(-55) & 1;
+            int hour = 24 + _generator.GetInt32(-55) % (int.MaxValue - 23);
+            int minute = _generator.GetInt32(-55) % 60; //value of minute between 0 - 59
+            int second = _generator.GetInt32(-55) % 60; //value of second between 0 - 59
+            int millisecond = _generator.GetInt32(-55) % 1000; //value of millisecond between 0 - 999
+            int era = _generator.GetInt32(-55) & 1;
             ExecuteAOORETest(myCalendar, year, month, day, hour, minute, second, millisecond, era);
         }
 
@@ -203,13 +205,13 @@ namespace System.Globalization.CalendarTests
         {
             System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
             int year = GetAYear(myCalendar);
-            int month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
+            int month = _generator.GetInt32(-55) % 12 + 1;
             int day = 1;
-            int hour = -1 * TestLibrary.Generator.GetInt32(-55) - 1;
-            int minute = TestLibrary.Generator.GetInt32(-55) % 60; //value of minute between 0 - 59
-            int second = TestLibrary.Generator.GetInt32(-55) % 60; //value of second between 0 - 59
-            int millisecond = TestLibrary.Generator.GetInt32(-55) % 1000; //value of millisecond between 0 - 999
-            int era = TestLibrary.Generator.GetInt32(-55) & 1;
+            int hour = -1 * _generator.GetInt32(-55) - 1;
+            int minute = _generator.GetInt32(-55) % 60; //value of minute between 0 - 59
+            int second = _generator.GetInt32(-55) % 60; //value of second between 0 - 59
+            int millisecond = _generator.GetInt32(-55) % 1000; //value of millisecond between 0 - 999
+            int era = _generator.GetInt32(-55) & 1;
             ExecuteAOORETest(myCalendar, year, month, day, hour, minute, second, millisecond, era);
         }
 
@@ -219,13 +221,13 @@ namespace System.Globalization.CalendarTests
         {
             System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
             int year = GetAYear(myCalendar);
-            int month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
+            int month = _generator.GetInt32(-55) % 12 + 1;
             int day = 1;
-            int hour = TestLibrary.Generator.GetInt32(-55) % 24;
-            int minute = 60 + TestLibrary.Generator.GetInt32(-55) % (int.MaxValue - 59);
-            int second = TestLibrary.Generator.GetInt32(-55) % 60; //value of second between 0 - 59
-            int millisecond = TestLibrary.Generator.GetInt32(-55) % 1000; //value of millisecond between 0 - 999
-            int era = TestLibrary.Generator.GetInt32(-55) & 1;
+            int hour = _generator.GetInt32(-55) % 24;
+            int minute = 60 + _generator.GetInt32(-55) % (int.MaxValue - 59);
+            int second = _generator.GetInt32(-55) % 60; //value of second between 0 - 59
+            int millisecond = _generator.GetInt32(-55) % 1000; //value of millisecond between 0 - 999
+            int era = _generator.GetInt32(-55) & 1;
             ExecuteAOORETest(myCalendar, year, month, day, hour, minute, second, millisecond, era);
         }
 
@@ -235,13 +237,13 @@ namespace System.Globalization.CalendarTests
         {
             System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
             int year = GetAYear(myCalendar);
-            int month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
+            int month = _generator.GetInt32(-55) % 12 + 1;
             int day = 1;
-            int hour = TestLibrary.Generator.GetInt32(-55) % 24;
-            int minute = -1 * TestLibrary.Generator.GetInt32(-55) - 1;
-            int second = TestLibrary.Generator.GetInt32(-55) % 60; //value of second between 0 - 59
-            int millisecond = TestLibrary.Generator.GetInt32(-55) % 1000; //value of millisecond between 0 - 999
-            int era = TestLibrary.Generator.GetInt32(-55) & 1;
+            int hour = _generator.GetInt32(-55) % 24;
+            int minute = -1 * _generator.GetInt32(-55) - 1;
+            int second = _generator.GetInt32(-55) % 60; //value of second between 0 - 59
+            int millisecond = _generator.GetInt32(-55) % 1000; //value of millisecond between 0 - 999
+            int era = _generator.GetInt32(-55) & 1;
             ExecuteAOORETest(myCalendar, year, month, day, hour, minute, second, millisecond, era);
         }
 
@@ -251,13 +253,13 @@ namespace System.Globalization.CalendarTests
         {
             System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
             int year = GetAYear(myCalendar);
-            int month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
+            int month = _generator.GetInt32(-55) % 12 + 1;
             int day = 1;
-            int hour = TestLibrary.Generator.GetInt32(-55) % 24;
-            int minute = TestLibrary.Generator.GetInt32(-55) % 60;
-            int second = 60 + TestLibrary.Generator.GetInt32(-55) % (int.MaxValue - 59);
-            int millisecond = TestLibrary.Generator.GetInt32(-55) % 1000; //value of millisecond between 0 - 999
-            int era = TestLibrary.Generator.GetInt32(-55) & 1;
+            int hour = _generator.GetInt32(-55) % 24;
+            int minute = _generator.GetInt32(-55) % 60;
+            int second = 60 + _generator.GetInt32(-55) % (int.MaxValue - 59);
+            int millisecond = _generator.GetInt32(-55) % 1000; //value of millisecond between 0 - 999
+            int era = _generator.GetInt32(-55) & 1;
             ExecuteAOORETest(myCalendar, year, month, day, hour, minute, second, millisecond, era);
         }
 
@@ -267,13 +269,13 @@ namespace System.Globalization.CalendarTests
         {
             System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
             int year = GetAYear(myCalendar);
-            int month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
+            int month = _generator.GetInt32(-55) % 12 + 1;
             int day = 1;
-            int hour = TestLibrary.Generator.GetInt32(-55) % 24;
-            int minute = TestLibrary.Generator.GetInt32(-55) % 60;
-            int second = -1 * TestLibrary.Generator.GetInt32(-55) - 1;
-            int millisecond = TestLibrary.Generator.GetInt32(-55) % 1000; //value of millisecond between 0 - 999
-            int era = TestLibrary.Generator.GetInt32(-55) & 1;
+            int hour = _generator.GetInt32(-55) % 24;
+            int minute = _generator.GetInt32(-55) % 60;
+            int second = -1 * _generator.GetInt32(-55) - 1;
+            int millisecond = _generator.GetInt32(-55) % 1000; //value of millisecond between 0 - 999
+            int era = _generator.GetInt32(-55) & 1;
             ExecuteAOORETest(myCalendar, year, month, day, hour, minute, second, millisecond, era);
         }
 
@@ -283,13 +285,13 @@ namespace System.Globalization.CalendarTests
         {
             System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
             int year = GetAYear(myCalendar);
-            int month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
+            int month = _generator.GetInt32(-55) % 12 + 1;
             int day = 1;
-            int hour = TestLibrary.Generator.GetInt32(-55) % 24;
-            int minute = TestLibrary.Generator.GetInt32(-55) % 60;
-            int second = TestLibrary.Generator.GetInt32(-55) % 60;
-            int millisecond = 1000 + TestLibrary.Generator.GetInt32(-55) % (int.MaxValue - 999);
-            int era = TestLibrary.Generator.GetInt32(-55) & 1;
+            int hour = _generator.GetInt32(-55) % 24;
+            int minute = _generator.GetInt32(-55) % 60;
+            int second = _generator.GetInt32(-55) % 60;
+            int millisecond = 1000 + _generator.GetInt32(-55) % (int.MaxValue - 999);
+            int era = _generator.GetInt32(-55) & 1;
             ExecuteAOORETest(myCalendar, year, month, day, hour, minute, second, millisecond, era);
         }
 
@@ -299,13 +301,13 @@ namespace System.Globalization.CalendarTests
         {
             System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
             int year = GetAYear(myCalendar);
-            int month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
+            int month = _generator.GetInt32(-55) % 12 + 1;
             int day = 1;
-            int hour = TestLibrary.Generator.GetInt32(-55) % 24;
-            int minute = TestLibrary.Generator.GetInt32(-55) % 60;
-            int second = TestLibrary.Generator.GetInt32(-55) % 60;
-            int millisecond = -1 * TestLibrary.Generator.GetInt32(-55) - 1;
-            int era = TestLibrary.Generator.GetInt32(-55) & 1;
+            int hour = _generator.GetInt32(-55) % 24;
+            int minute = _generator.GetInt32(-55) % 60;
+            int second = _generator.GetInt32(-55) % 60;
+            int millisecond = -1 * _generator.GetInt32(-55) - 1;
+            int era = _generator.GetInt32(-55) & 1;
             ExecuteAOORETest(myCalendar, year, month, day, hour, minute, second, millisecond, era);
         }
 
@@ -315,13 +317,13 @@ namespace System.Globalization.CalendarTests
         {
             System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
             int year = GetAYear(myCalendar);
-            int month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
+            int month = _generator.GetInt32(-55) % 12 + 1;
             int day = 1;
-            int hour = TestLibrary.Generator.GetInt32(-55) % 24;
-            int minute = TestLibrary.Generator.GetInt32(-55) % 60;
-            int second = TestLibrary.Generator.GetInt32(-55) % 60;
-            int millisecond = TestLibrary.Generator.GetInt32(-55) % 1000;
-            int era = 2 + TestLibrary.Generator.GetInt32(-55) % (int.MaxValue - 1);
+            int hour = _generator.GetInt32(-55) % 24;
+            int minute = _generator.GetInt32(-55) % 60;
+            int second = _generator.GetInt32(-55) % 60;
+            int millisecond = _generator.GetInt32(-55) % 1000;
+            int era = 2 + _generator.GetInt32(-55) % (int.MaxValue - 1);
             ExecuteAOORETest(myCalendar, year, month, day, hour, minute, second, millisecond, era);
         }
 
@@ -331,13 +333,13 @@ namespace System.Globalization.CalendarTests
         {
             System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
             int year = GetAYear(myCalendar);
-            int month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
+            int month = _generator.GetInt32(-55) % 12 + 1;
             int day = 1;
-            int hour = TestLibrary.Generator.GetInt32(-55) % 24;
-            int minute = TestLibrary.Generator.GetInt32(-55) % 60;
-            int second = TestLibrary.Generator.GetInt32(-55) % 60;
-            int millisecond = TestLibrary.Generator.GetInt32(-55) % 1000;
-            int era = -1 * TestLibrary.Generator.GetInt32(-55) - 1;
+            int hour = _generator.GetInt32(-55) % 24;
+            int minute = _generator.GetInt32(-55) % 60;
+            int second = _generator.GetInt32(-55) % 60;
+            int millisecond = _generator.GetInt32(-55) % 1000;
+            int era = -1 * _generator.GetInt32(-55) - 1;
             ExecuteAOORETest(myCalendar, year, month, day, hour, minute, second, millisecond, era);
         }
 
@@ -373,7 +375,7 @@ namespace System.Globalization.CalendarTests
             int maxYear, minYear;
             maxYear = calendar.MaxSupportedDateTime.Year;
             minYear = calendar.MinSupportedDateTime.Year;
-            retVal = minYear + TestLibrary.Generator.GetInt32(-55) % (maxYear + 1 - minYear);
+            retVal = minYear + _generator.GetInt32(-55) % (maxYear + 1 - minYear);
             return retVal;
         }
 

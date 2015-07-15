@@ -11,12 +11,13 @@ namespace System.Globalization.Tests
     {
         private const int c_MINI_STRING_LENGTH = 8;
         private const int c_MAX_STRING_LENGTH = 256;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         // PosTest1: Compare two equal StringInfo
         [Fact]
         public void TestEqualStringInfoWithArg()
         {
-            string str = TestLibrary.Generator.GetString(-55, false, c_MINI_STRING_LENGTH, c_MAX_STRING_LENGTH);
+            string str = _generator.GetString(-55, false, c_MINI_STRING_LENGTH, c_MAX_STRING_LENGTH);
             StringInfo stringInfo1 = new StringInfo(str);
             StringInfo stringInfo2 = new StringInfo(str);
             Assert.True(stringInfo1.Equals(stringInfo2));
@@ -26,7 +27,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void TestSameReference()
         {
-            string str = TestLibrary.Generator.GetString(-55, false, c_MINI_STRING_LENGTH, c_MAX_STRING_LENGTH);
+            string str = _generator.GetString(-55, false, c_MINI_STRING_LENGTH, c_MAX_STRING_LENGTH);
             StringInfo stringInfo1 = new StringInfo(str);
             StringInfo stringInfo2 = stringInfo1;
             Assert.True(stringInfo1.Equals(stringInfo2));

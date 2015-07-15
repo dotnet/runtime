@@ -115,7 +115,7 @@
     <Compile Include="UTF8Encoding\UTF8EncodingGetMaxCharCount.cs" />
     <Compile Include="UTF8Encoding\UTF8EncodingGetPreamble.cs" />
     <Compile Include="UTF8Encoding\UTF8EncodingGetString.cs" />
-    <Compile Include="Generator.cs" />
+    <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

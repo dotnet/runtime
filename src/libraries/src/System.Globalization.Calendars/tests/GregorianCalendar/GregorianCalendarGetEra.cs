@@ -10,6 +10,8 @@ namespace System.Globalization.CalendarTests
     // GregorianCalendar.GetEra(DateTime)
     public class GregorianCalendarGetEra
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         private const int c_DAYS_IN_LEAP_YEAR = 366;
         private const int c_DAYS_IN_COMMON_YEAR = 365;
         private const int c_AD_ERA = 1;
@@ -44,7 +46,7 @@ namespace System.Globalization.CalendarTests
             //Get a random value beween 1 and 12 not including 2.
             do
             {
-                month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
+                month = _generator.GetInt32(-55) % 12 + 1;
             } while (2 == month);
             time = myCalendar.ToDateTime(year, month, 28, 10, 30, 20, 0);
             expectedEra = c_AD_ERA;
@@ -80,7 +82,7 @@ namespace System.Globalization.CalendarTests
             //Get a random value beween 1 and 12 not including 2.
             do
             {
-                month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
+                month = _generator.GetInt32(-55) % 12 + 1;
             } while (2 == month);
             time = myCalendar.ToDateTime(year, month, 28, 10, 30, 20, 0);
             expectedEra = c_AD_ERA;
@@ -97,7 +99,7 @@ namespace System.Globalization.CalendarTests
             DateTime time;
             int expectedEra, actualEra;
             year = myCalendar.MinSupportedDateTime.Year;
-            month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
+            month = _generator.GetInt32(-55) % 12 + 1;
             time = myCalendar.ToDateTime(year, month, 20, 8, 20, 30, 0);
             expectedEra = c_AD_ERA;
             actualEra = myCalendar.GetEra(time);
@@ -113,7 +115,7 @@ namespace System.Globalization.CalendarTests
             DateTime time;
             int expectedEra, actualEra;
             year = myCalendar.MaxSupportedDateTime.Year;
-            month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
+            month = _generator.GetInt32(-55) % 12 + 1;
             time = myCalendar.ToDateTime(year, month, 20, 8, 20, 30, 0);
             expectedEra = c_AD_ERA;
             actualEra = myCalendar.GetEra(time);
@@ -161,7 +163,7 @@ namespace System.Globalization.CalendarTests
             DateTime time;
             int expectedEra, actualEra;
             year = GetAYear(myCalendar);
-            month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
+            month = _generator.GetInt32(-55) % 12 + 1;
             time = myCalendar.ToDateTime(year, month, 20, 8, 20, 30, 0);
             expectedEra = c_AD_ERA;
             actualEra = myCalendar.GetEra(time);
@@ -188,7 +190,7 @@ namespace System.Globalization.CalendarTests
             int maxYear, minYear;
             maxYear = calendar.MaxSupportedDateTime.Year;
             minYear = calendar.MinSupportedDateTime.Year;
-            retVal = minYear + TestLibrary.Generator.GetInt32(-55) % (maxYear + 1 - minYear);
+            retVal = minYear + _generator.GetInt32(-55) % (maxYear + 1 - minYear);
             return retVal;
         }
 

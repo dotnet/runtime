@@ -20,6 +20,7 @@ namespace System.Reflection.Emit.Tests
         private const MethodAttributes TestMethodAttributes = MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual;
         private const int MinStringLength = 1;
         private const int MaxStringLength = 128;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         private TypeBuilder GetTestTypeBuilder()
         {
@@ -35,7 +36,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithSingleGenericParameter()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
@@ -56,7 +57,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void TestWithMultipleGenericParameters()
         {
-            var methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            var methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
@@ -79,7 +80,7 @@ namespace System.Reflection.Emit.Tests
         {
             string methodName = null;
 
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
@@ -101,7 +102,7 @@ namespace System.Reflection.Emit.Tests
         public void TestNotSetReturnTypeOnNonGenericMethod()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             Type[] parameterTypes = new Type[] { typeof(int) };
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
@@ -123,7 +124,7 @@ namespace System.Reflection.Emit.Tests
         public void TestOverwriteGenericReturnTypeWithNonGenericType()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
@@ -146,7 +147,7 @@ namespace System.Reflection.Emit.Tests
         public void TestOverwriteGenericReturnTypeWithGenericType()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
@@ -169,7 +170,7 @@ namespace System.Reflection.Emit.Tests
         public void TestOverwriteNonGenericReturnTypeWithGenericType()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             Type[] parameterTypes = new Type[] { typeof(int) };
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
@@ -194,7 +195,7 @@ namespace System.Reflection.Emit.Tests
         public void TestAfterTypeCreated()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             Type[] parameterTypes = new Type[] { typeof(int) };
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
@@ -217,7 +218,7 @@ namespace System.Reflection.Emit.Tests
         public void TestNotThrowsOnNull()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             TypeBuilder typeBuilder = GetTestTypeBuilder();
             MethodBuilder builder = typeBuilder.DefineMethod(methodName,
                 TestMethodAttributes);

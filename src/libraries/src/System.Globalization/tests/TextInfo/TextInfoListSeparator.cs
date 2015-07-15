@@ -11,6 +11,7 @@ namespace System.Globalization.Tests
     {
         private int _MINI_STRING_LENGTH = 1;
         private int _MAX_STRING_LENGTH = 20;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         // PosTest1: Verify ListSeparator of en-US CultureInfo's TextInfo is  not empty
         [Fact]
@@ -27,7 +28,7 @@ namespace System.Globalization.Tests
         {
             CultureInfo ci = new CultureInfo("en-US");
             TextInfo textInfoUS = ci.TextInfo;
-            string strListSeparator = TestLibrary.Generator.GetString(-55, false, _MINI_STRING_LENGTH, _MAX_STRING_LENGTH);
+            string strListSeparator = _generator.GetString(-55, false, _MINI_STRING_LENGTH, _MAX_STRING_LENGTH);
             textInfoUS.ListSeparator = strListSeparator;
             Assert.Equal(strListSeparator, textInfoUS.ListSeparator);
         }

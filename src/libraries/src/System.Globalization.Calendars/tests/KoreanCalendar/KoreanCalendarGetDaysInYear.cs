@@ -10,6 +10,8 @@ namespace System.Globalization.CalendarsTests
     //System.Globalization.KoreanCalendar.GetDaysInYear(System.Int32,System.Int32)
     public class KoreanCalendarGetDaysInYear
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         #region Positive Test Logic
         // PosTest1:Invoke the mthod with Min DateTime
         [Fact]
@@ -56,9 +58,9 @@ namespace System.Globalization.CalendarsTests
         {
             System.Globalization.Calendar kC = new KoreanCalendar();
             System.Globalization.Calendar gC = new GregorianCalendar();
-            DateTime dateTime = new DateTime(TestLibrary.Generator.GetInt64(-55) % (DateTime.MaxValue.Ticks + 1));
+            DateTime dateTime = new DateTime(_generator.GetInt64(-55) % (DateTime.MaxValue.Ticks + 1));
             dateTime = new GregorianCalendar().ToDateTime(dateTime.Year, dateTime.Month, dateTime.Day, 0, 0, 0, 0);
-            int month = TestLibrary.Generator.GetInt16(-55) % 12 + 1;
+            int month = _generator.GetInt16(-55) % 12 + 1;
             int expectedValue = gC.GetDaysInYear(dateTime.Year, gC.GetEra(dateTime));
             int actualValue;
             actualValue = kC.GetDaysInYear(dateTime.Year + 2333, kC.GetEra(dateTime));
@@ -72,7 +74,7 @@ namespace System.Globalization.CalendarsTests
         public void NegTest1()
         {
             System.Globalization.Calendar kC = new KoreanCalendar();
-            int year = TestLibrary.Generator.GetInt16(-55) % 2334;
+            int year = _generator.GetInt16(-55) % 2334;
             int era = kC.GetEra(new DateTime());
             int actualValue;
             Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -86,7 +88,7 @@ namespace System.Globalization.CalendarsTests
         public void NegTest2()
         {
             System.Globalization.Calendar kC = new KoreanCalendar();
-            int year = TestLibrary.Generator.GetInt16(-55) % 2334;
+            int year = _generator.GetInt16(-55) % 2334;
             int era = kC.GetEra(new DateTime());
             int actualValue;
             Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -100,7 +102,7 @@ namespace System.Globalization.CalendarsTests
         public void NegTest3()
         {
             System.Globalization.Calendar kC = new KoreanCalendar();
-            int year = TestLibrary.Generator.GetInt16(-55) % 2334;
+            int year = _generator.GetInt16(-55) % 2334;
             int era = kC.GetEra(new DateTime());
             int actualValue;
             Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -114,7 +116,7 @@ namespace System.Globalization.CalendarsTests
         public void NegTest4()
         {
             System.Globalization.Calendar kC = new KoreanCalendar();
-            int year = TestLibrary.Generator.GetInt16(-55) % 2334;
+            int year = _generator.GetInt16(-55) % 2334;
             int era = kC.GetEra(new DateTime());
             int actualValue;
             Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -128,7 +130,7 @@ namespace System.Globalization.CalendarsTests
         public void NegTest5()
         {
             System.Globalization.Calendar kC = new KoreanCalendar();
-            int year = TestLibrary.Generator.GetInt16(-55) % 10000 + 12333;
+            int year = _generator.GetInt16(-55) % 10000 + 12333;
             int era = kC.GetEra(new DateTime());
             int actualValue;
             Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -142,7 +144,7 @@ namespace System.Globalization.CalendarsTests
         public void NegTest6()
         {
             System.Globalization.Calendar kC = new KoreanCalendar();
-            int year = TestLibrary.Generator.GetInt16(-55) % 10000 + 12333;
+            int year = _generator.GetInt16(-55) % 10000 + 12333;
             int era = kC.GetEra(new DateTime());
             int actualValue;
             Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -156,7 +158,7 @@ namespace System.Globalization.CalendarsTests
         public void NegTest7()
         {
             System.Globalization.Calendar kC = new KoreanCalendar();
-            int year = TestLibrary.Generator.GetInt16(-55) % 10000 + 2333;
+            int year = _generator.GetInt16(-55) % 10000 + 2333;
             int era = -1;
             int actualValue;
             Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -170,7 +172,7 @@ namespace System.Globalization.CalendarsTests
         public void NegTest8()
         {
             System.Globalization.Calendar kC = new KoreanCalendar();
-            int year = TestLibrary.Generator.GetInt16(-55) % 10000 + 2333;
+            int year = _generator.GetInt16(-55) % 10000 + 2333;
             // In order for an ArgumentOutOfRangeException to get thrown due to an era being outside the supported range, the era must
             // be greater than 1 since 0 and 1 are supported eras
             int era = 2;

@@ -9,6 +9,8 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoFullDateTimePattern
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         // PosTest1: Call FullDateTimePattern getter method should return correct value for InvariantInfo
         [Fact]
         public void TestGetter()
@@ -24,7 +26,7 @@ namespace System.Globalization.Tests
             VerificationHelper(new DateTimeFormatInfo(), "dddd", true);
             VerificationHelper(new DateTimeFormatInfo(), "F", true);
             VerificationHelper(new DateTimeFormatInfo(), "HH:mm:ss dddd, dd MMMM yyyy", true);
-            VerificationHelper(new DateTimeFormatInfo(), TestLibrary.Generator.GetString(-55, false, 1, 256), true);
+            VerificationHelper(new DateTimeFormatInfo(), _generator.GetString(-55, false, 1, 256), true);
         }
 
         // NegTest1: ArgumentNullException should be thrown when The property is being set to a null reference

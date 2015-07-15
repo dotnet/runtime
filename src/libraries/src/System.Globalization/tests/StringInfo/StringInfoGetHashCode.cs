@@ -11,12 +11,13 @@ namespace System.Globalization.Tests
     {
         private const int c_MINI_STRING_LENGTH = 8;
         private const int c_MAX_STRING_LENGTH = 256;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         // PosTest1: The two instances created by the same argument return the same hashcode
         [Fact]
         public void TestInstancesWithSameArg()
         {
-            string str = TestLibrary.Generator.GetString(-55, false, c_MINI_STRING_LENGTH, c_MAX_STRING_LENGTH);
+            string str = _generator.GetString(-55, false, c_MINI_STRING_LENGTH, c_MAX_STRING_LENGTH);
             StringInfo stringInfo1 = new StringInfo(str);
             StringInfo stringInfo2 = new StringInfo(str);
             Assert.Equal(stringInfo2.GetHashCode(), stringInfo1.GetHashCode());
@@ -26,7 +27,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void TestDiffInstances()
         {
-            string str = TestLibrary.Generator.GetString(-55, false, c_MINI_STRING_LENGTH, c_MAX_STRING_LENGTH);
+            string str = _generator.GetString(-55, false, c_MINI_STRING_LENGTH, c_MAX_STRING_LENGTH);
             StringInfo stringInfo1 = new StringInfo(str);
             StringInfo stringInfo2 = new StringInfo("");
             Assert.NotEqual(stringInfo2.GetHashCode(), stringInfo1.GetHashCode());

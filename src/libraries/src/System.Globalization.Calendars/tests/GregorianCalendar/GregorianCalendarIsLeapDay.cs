@@ -12,6 +12,8 @@ namespace System.Globalization.CalendarTests
     {
         private const int c_DAYS_IN_LEAP_YEAR = 366;
         private const int c_DAYS_IN_COMMON_YEAR = 365;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         private static readonly int[] s_daysInMonth365 =
         {
             0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
@@ -63,8 +65,8 @@ namespace System.Globalization.CalendarTests
             bool expectedValue;
             bool actualValue;
             year = GetAYear(myCalendar);
-            month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
-            day = (this.IsLeapYear(year)) ? TestLibrary.Generator.GetInt32(-55) % s_daysInMonth366[month] + 1 : TestLibrary.Generator.GetInt32(-55) % s_daysInMonth365[month] + 1;
+            month = _generator.GetInt32(-55) % 12 + 1;
+            day = (this.IsLeapYear(year)) ? _generator.GetInt32(-55) % s_daysInMonth366[month] + 1 : _generator.GetInt32(-55) % s_daysInMonth365[month] + 1;
             expectedValue = this.IsLeapYear(year) && 2 == month && 29 == day;
             actualValue = myCalendar.IsLeapDay(year, month, day, 1);
             Assert.Equal(expectedValue, actualValue);
@@ -79,8 +81,8 @@ namespace System.Globalization.CalendarTests
             bool expectedValue;
             bool actualValue;
             year = myCalendar.MaxSupportedDateTime.Year;
-            month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
-            day = (this.IsLeapYear(year)) ? TestLibrary.Generator.GetInt32(-55) % s_daysInMonth366[month] + 1 : TestLibrary.Generator.GetInt32(-55) % s_daysInMonth365[month] + 1;
+            month = _generator.GetInt32(-55) % 12 + 1;
+            day = (this.IsLeapYear(year)) ? _generator.GetInt32(-55) % s_daysInMonth366[month] + 1 : _generator.GetInt32(-55) % s_daysInMonth365[month] + 1;
             expectedValue = this.IsLeapYear(year) && 2 == month && 29 == day;
             actualValue = myCalendar.IsLeapDay(year, month, day, 1);
             Assert.Equal(expectedValue, actualValue);
@@ -95,8 +97,8 @@ namespace System.Globalization.CalendarTests
             bool expectedValue;
             bool actualValue;
             year = myCalendar.MinSupportedDateTime.Year;
-            month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
-            day = (this.IsLeapYear(year)) ? TestLibrary.Generator.GetInt32(-55) % s_daysInMonth366[month] + 1 : TestLibrary.Generator.GetInt32(-55) % s_daysInMonth365[month] + 1;
+            month = _generator.GetInt32(-55) % 12 + 1;
+            day = (this.IsLeapYear(year)) ? _generator.GetInt32(-55) % s_daysInMonth366[month] + 1 : _generator.GetInt32(-55) % s_daysInMonth365[month] + 1;
             expectedValue = this.IsLeapYear(year) && 2 == month && 29 == day;
             actualValue = myCalendar.IsLeapDay(year, month, day, 1);
             Assert.Equal(expectedValue, actualValue);
@@ -111,8 +113,8 @@ namespace System.Globalization.CalendarTests
             System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
             int year, month, day;
             year = myCalendar.MaxSupportedDateTime.Year + 100;
-            month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
-            day = (this.IsLeapYear(year)) ? TestLibrary.Generator.GetInt32(-55) % s_daysInMonth366[month] + 1 : TestLibrary.Generator.GetInt32(-55) % s_daysInMonth365[month] + 1;
+            month = _generator.GetInt32(-55) % 12 + 1;
+            day = (this.IsLeapYear(year)) ? _generator.GetInt32(-55) % s_daysInMonth366[month] + 1 : _generator.GetInt32(-55) % s_daysInMonth365[month] + 1;
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
                 myCalendar.IsLeapDay(year, month, day, 1);
@@ -126,8 +128,8 @@ namespace System.Globalization.CalendarTests
             System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
             int year, month, day;
             year = myCalendar.MinSupportedDateTime.Year - 100;
-            month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
-            day = (this.IsLeapYear(year)) ? TestLibrary.Generator.GetInt32(-55) % s_daysInMonth366[month] + 1 : TestLibrary.Generator.GetInt32(-55) % s_daysInMonth365[month] + 1;
+            month = _generator.GetInt32(-55) % 12 + 1;
+            day = (this.IsLeapYear(year)) ? _generator.GetInt32(-55) % s_daysInMonth366[month] + 1 : _generator.GetInt32(-55) % s_daysInMonth365[month] + 1;
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
                 myCalendar.IsLeapDay(year, month, day, 1);
@@ -142,9 +144,9 @@ namespace System.Globalization.CalendarTests
             int year, month, day;
             int era;
             year = this.GetAYear(myCalendar);
-            month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
-            day = (this.IsLeapYear(year)) ? TestLibrary.Generator.GetInt32(-55) % s_daysInMonth366[month] + 1 : TestLibrary.Generator.GetInt32(-55) % s_daysInMonth365[month] + 1;
-            era = 2 + TestLibrary.Generator.GetInt32(-55) % (int.MaxValue - 1);
+            month = _generator.GetInt32(-55) % 12 + 1;
+            day = (this.IsLeapYear(year)) ? _generator.GetInt32(-55) % s_daysInMonth366[month] + 1 : _generator.GetInt32(-55) % s_daysInMonth365[month] + 1;
+            era = 2 + _generator.GetInt32(-55) % (int.MaxValue - 1);
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
                 myCalendar.IsLeapDay(year, month, day, era);
@@ -159,9 +161,9 @@ namespace System.Globalization.CalendarTests
             int year, month, day;
             int era;
             year = this.GetAYear(myCalendar);
-            month = -1 * TestLibrary.Generator.GetInt32(-55);
+            month = -1 * _generator.GetInt32(-55);
             day = 1;
-            era = TestLibrary.Generator.GetInt32(-55) & 1;
+            era = _generator.GetInt32(-55) & 1;
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
                 myCalendar.IsLeapDay(year, month, day, era);
@@ -176,9 +178,9 @@ namespace System.Globalization.CalendarTests
             int year, month, day;
             int era;
             year = this.GetAYear(myCalendar);
-            month = 13 + TestLibrary.Generator.GetInt32(-55) % (int.MaxValue - 12);
+            month = 13 + _generator.GetInt32(-55) % (int.MaxValue - 12);
             day = 1;
-            era = TestLibrary.Generator.GetInt32(-55) & 1;
+            era = _generator.GetInt32(-55) & 1;
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
                 myCalendar.IsLeapDay(year, month, day, era);
@@ -193,9 +195,9 @@ namespace System.Globalization.CalendarTests
             int year, month, day;
             int era;
             year = this.GetAYear(myCalendar);
-            month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
-            day = -1 * TestLibrary.Generator.GetInt32(-55);
-            era = TestLibrary.Generator.GetInt32(-55) & 1;
+            month = _generator.GetInt32(-55) % 12 + 1;
+            day = -1 * _generator.GetInt32(-55);
+            era = _generator.GetInt32(-55) & 1;
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
                 myCalendar.IsLeapDay(year, month, day, era);
@@ -222,7 +224,7 @@ namespace System.Globalization.CalendarTests
             int maxYear, minYear;
             maxYear = calendar.MaxSupportedDateTime.Year;
             minYear = calendar.MinSupportedDateTime.Year;
-            retVal = minYear + TestLibrary.Generator.GetInt32(-55) % (maxYear + 1 - minYear);
+            retVal = minYear + _generator.GetInt32(-55) % (maxYear + 1 - minYear);
             return retVal;
         }
 

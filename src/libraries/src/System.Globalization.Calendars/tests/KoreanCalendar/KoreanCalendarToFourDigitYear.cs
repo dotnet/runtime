@@ -8,8 +8,10 @@ using Xunit;
 namespace System.Globalization.CalendarsTests
 {
     //System.Globalization.KoreanCalendar.ToFourDigitYear(System.Int32)
-    public class koreanCalendarToFourDigitYear
+    public class KoreanCalendarToFourDigitYear
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         #region Positive Test Logic
         // PosTest1:Invoke the method with min two digit year
         [Fact]
@@ -65,7 +67,7 @@ namespace System.Globalization.CalendarsTests
             int twoDigitMax = kC.TwoDigitYearMax;
             int lBound = twoDigitMax - 99;
             int rBound = twoDigitMax;
-            int twoDigitYear = TestLibrary.Generator.GetInt16(-55) % 100;
+            int twoDigitYear = _generator.GetInt16(-55) % 100;
             int expectedValue;
             if (twoDigitYear < (lBound % 100))
             {

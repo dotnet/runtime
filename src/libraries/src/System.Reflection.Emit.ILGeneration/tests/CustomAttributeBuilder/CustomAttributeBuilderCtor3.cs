@@ -18,6 +18,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
         private const string PropertyGetOnlyStringName = "GetOnlyString";
         private const string PropertyGetOnlyIntName = "GetOnlyInt32";
         private const string DefaultNotExistPropertyName = "DOESNOTEXIST";
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         [Fact]
         public void PosTest1()
@@ -29,8 +30,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
 
             testString1 = "PosTest1_TestString1";
             testString2 = "PosTest1_TestString2";
-            testInt1 = TestLibrary.Generator.GetInt32();
-            testInt2 = TestLibrary.Generator.GetInt32();
+            testInt1 = _generator.GetInt32();
+            testInt2 = _generator.GetInt32();
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -88,8 +89,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             int testInt2 = 0;
 
             testString1 = "PosTest2_TestString1";
-            testInt1 = TestLibrary.Generator.GetInt32();
-            testInt2 = TestLibrary.Generator.GetInt32();
+            testInt1 = _generator.GetInt32();
+            testInt2 = _generator.GetInt32();
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -144,7 +145,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             int testInt1 = 0;
 
             testString1 = "PosTest3_TestString1";
-            testInt1 = TestLibrary.Generator.GetInt32();
+            testInt1 = _generator.GetInt32();
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -238,7 +239,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
         {
             int testInt1 = 0;
 
-            testInt1 = TestLibrary.Generator.GetInt32();
+            testInt1 = _generator.GetInt32();
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -289,7 +290,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             int testInt1 = 0;
 
             testString1 = "PosTest6_TestString1";
-            testInt1 = TestLibrary.Generator.GetInt32();
+            testInt1 = _generator.GetInt32();
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -345,8 +346,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
 
             testString1 = "PosTest7_TestString1";
             testString2 = "PosTest7_TestString2";
-            testInt1 = TestLibrary.Generator.GetInt32();
-            testInt2 = TestLibrary.Generator.GetInt32();
+            testInt1 = _generator.GetInt32();
+            testInt2 = _generator.GetInt32();
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -433,7 +434,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
         public void NegTest2()
         {
             int testInt1 = 0;
-            testInt1 = TestLibrary.Generator.GetInt32();
+            testInt1 = _generator.GetInt32();
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -510,8 +511,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             string testString1 = null;
             int testInt1 = 0;
             testString1 =
-                TestLibrary.Generator.GetString(false, MinStringLength, MaxStringLength);
-            testInt1 = TestLibrary.Generator.GetInt32();
+                _generator.GetString(false, MinStringLength, MaxStringLength);
+            testInt1 = _generator.GetInt32();
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -550,8 +551,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             string testString1 = null;
             int testInt1 = 0;
             testString1 =
-                TestLibrary.Generator.GetString(false, MinStringLength, MaxStringLength);
-            testInt1 = TestLibrary.Generator.GetInt32();
+                _generator.GetString(false, MinStringLength, MaxStringLength);
+            testInt1 = _generator.GetInt32();
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -589,8 +590,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             int testInt1 = 0;
 
             testString1 =
-                TestLibrary.Generator.GetString(false, MinStringLength, MaxStringLength);
-            testInt1 = TestLibrary.Generator.GetInt32();
+                _generator.GetString(false, MinStringLength, MaxStringLength);
+            testInt1 = _generator.GetInt32();
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -627,7 +628,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             string testString1 = null;
 
             testString1 =
-                TestLibrary.Generator.GetString(false, MinStringLength, MaxStringLength);
+                _generator.GetString(false, MinStringLength, MaxStringLength);
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -661,7 +662,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
         {
             string testString1 = null;
             testString1 =
-                TestLibrary.Generator.GetString(false, MinStringLength, MaxStringLength);
+                _generator.GetString(false, MinStringLength, MaxStringLength);
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -695,7 +696,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
         {
             string testString1 = null;
             testString1 =
-                TestLibrary.Generator.GetString(false, MinStringLength, MaxStringLength);
+                _generator.GetString(false, MinStringLength, MaxStringLength);
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -726,7 +727,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
         {
             string testString1 = null;
             testString1 =
-                TestLibrary.Generator.GetString(false, MinStringLength, MaxStringLength);
+                _generator.GetString(false, MinStringLength, MaxStringLength);
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -757,7 +758,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
         {
             string testString1 = null;
             testString1 =
-                TestLibrary.Generator.GetString(false, MinStringLength, MaxStringLength);
+                _generator.GetString(false, MinStringLength, MaxStringLength);
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -788,8 +789,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             int testInt = 0;
 
             testString =
-                TestLibrary.Generator.GetString(false, MinStringLength, MaxStringLength);
-            testInt = TestLibrary.Generator.GetInt32();
+                _generator.GetString(false, MinStringLength, MaxStringLength);
+            testInt = _generator.GetInt32();
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -830,8 +831,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             string testString = null;
             int testInt = 0;
             testString =
-                TestLibrary.Generator.GetString(false, MinStringLength, MaxStringLength);
-            testInt = TestLibrary.Generator.GetInt32();
+                _generator.GetString(false, MinStringLength, MaxStringLength);
+            testInt = _generator.GetInt32();
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -872,8 +873,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             string testString = null;
             int testInt = 0;
             testString =
-                TestLibrary.Generator.GetString(false, MinStringLength, MaxStringLength);
-            testInt = TestLibrary.Generator.GetInt32();
+                _generator.GetString(false, MinStringLength, MaxStringLength);
+            testInt = _generator.GetInt32();
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -915,8 +916,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             string testString = null;
 
             testString =
-                TestLibrary.Generator.GetString(false, MinStringLength, MaxStringLength);
-            testInt = TestLibrary.Generator.GetInt32();
+                _generator.GetString(false, MinStringLength, MaxStringLength);
+            testInt = _generator.GetInt32();
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -956,7 +957,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             string testString1 = null;
 
             testString1 =
-                TestLibrary.Generator.GetString(false, MinStringLength, MaxStringLength);
+                _generator.GetString(false, MinStringLength, MaxStringLength);
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 

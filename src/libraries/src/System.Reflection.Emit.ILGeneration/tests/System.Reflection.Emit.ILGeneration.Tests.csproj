@@ -22,7 +22,6 @@
     <Compile Include="CustomAttributeBuilder\CustomAttributeBuilderCtor2.cs" />
     <Compile Include="CustomAttributeBuilder\CustomAttributeBuilderCtor3.cs" />
     <Compile Include="CustomAttributeBuilder\CustomAttributeBuilderCtor4.cs" />
-    <Compile Include="Generator.cs" />
     <Compile Include="ILGenerator\ILGeneratorDeclareLocal.cs" />
     <Compile Include="ILGenerator\ILGeneratorDeclareLocal1.cs" />
     <Compile Include="ILGenerator\ILGeneratorDefineLabel.cs" />
@@ -53,6 +52,7 @@
     <Compile Include="SignatureHelper\SignatureHelperGetSignature.cs" />
     <Compile Include="SignatureHelper\SignatureHelperToString.cs" />
     <Compile Include="Utilities.cs" />
+    <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
