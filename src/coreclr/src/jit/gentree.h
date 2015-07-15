@@ -41,6 +41,29 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif // !DEBUG
 #endif // !DEBUGGABLE_GENTREE
 
+// The SpecialCodeKind enum is used to indicate the type of special (unique)
+// target block that will be targeted by an instruction.
+// These are used by:
+//   GenTreeBoundsChk nodes (SCK_RNGCHK_FAIL, SCK_ARG_EXCPN, SCK_ARG_RNG_EXCPN)
+//     - these nodes have a field (gtThrowKind) to indicate which kind
+//   GenTreeOps nodes, for which codegen will generate the branch
+//     - it will use the appropriate kind based on the opcode, though it's not
+//       clear why SCK_OVERFLOW == SCK_ARITH_EXCPN
+// SCK_PAUSE_EXEC is not currently used.
+//   
+enum        SpecialCodeKind
+{
+    SCK_NONE,
+    SCK_RNGCHK_FAIL,                // target when range check fails
+    SCK_PAUSE_EXEC,                 // target to stop (e.g. to allow GC)
+    SCK_DIV_BY_ZERO,                // target for divide by zero (Not used on X86/X64)
+    SCK_ARITH_EXCPN,                // target on arithmetic exception
+    SCK_OVERFLOW = SCK_ARITH_EXCPN, // target on overflow
+    SCK_ARG_EXCPN,                  // target on ArgumentException (currently used only for SIMD intrinsics)
+    SCK_ARG_RNG_EXCPN,              // target on ArgumentOutOfRangeException (currently used only for SIMD intrinsics)
+    SCK_COUNT
+};
+
 /*****************************************************************************/
 
 DECLARE_TYPED_ENUM(genTreeOps,BYTE)
@@ -2595,25 +2618,31 @@ public:
 #endif
 };
 
-// This takes an array length,an index value, and the label to jump to if the index is out of range.
+// This takes:
+// - a comparison value (generally an array length),
+// - an index value, and
+// - the label to jump to if the index is out of range.
+// - the "kind" of the throw block to branch to on failure
 // It generates no result.
 
 struct GenTreeBoundsChk: public GenTree
 {
-    GenTreePtr      gtArrLen;       // An expression for the length of the array being indexed.
-    GenTreePtr      gtIndex;        // The index expression.
+    GenTreePtr              gtArrLen;       // An expression for the length of the array being indexed.
+    GenTreePtr              gtIndex;        // The index expression.
 
-    GenTreePtr      gtIndRngFailBB; // Label to jump to for array-index-out-of-range
+    GenTreePtr              gtIndRngFailBB; // Label to jump to for array-index-out-of-range
+    SpecialCodeKind         gtThrowKind;    // Kind of throw block to branch to on failure
 
     /* Only out-of-ranges at same stack depth can jump to the same label (finding return address is easier)
        For delayed calling of fgSetRngChkTarget() so that the
        optimizer has a chance of eliminating some of the rng checks */
     unsigned        gtStkDepth;
 
-    GenTreeBoundsChk(genTreeOps oper, var_types type, GenTreePtr arrLen, GenTreePtr index) : 
+    GenTreeBoundsChk(genTreeOps oper, var_types type, GenTreePtr arrLen, GenTreePtr index, SpecialCodeKind kind) : 
         GenTree(oper, type), 
         gtArrLen(arrLen), gtIndex(index), 
         gtIndRngFailBB(NULL), 
+        gtThrowKind(kind),
         gtStkDepth(0)
         {
             // Effects flags propagate upwards.

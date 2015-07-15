@@ -2424,7 +2424,7 @@ void                CodeGen::genExitCode(BasicBlock * block)
  */
 
 void            CodeGen::genJumpToThrowHlpBlk(emitJumpKind          jumpKind,
-                                              Compiler::addCodeKind codeKind,
+                                              SpecialCodeKind       codeKind,
                                               GenTreePtr            failBlk)
 {
     if (!compiler->opts.compDbgCode)
@@ -2521,7 +2521,7 @@ void            CodeGen::genCheckOverflow(GenTreePtr tree)
 
     // Jump to the block which will throw the expection
 
-    genJumpToThrowHlpBlk(jumpKind, Compiler::ACK_OVERFLOW);
+    genJumpToThrowHlpBlk(jumpKind, SCK_OVERFLOW);
 }
 
 #if FEATURE_EH_FUNCLETS

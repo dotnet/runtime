@@ -3880,7 +3880,7 @@ CodeGen::genRangeCheck(GenTreePtr  oper)
 #endif //DEBUG
 
     getEmitter()->emitInsBinary(INS_cmp, emitTypeSize(src2->TypeGet()), src1, src2);
-    genJumpToThrowHlpBlk(jmpKind, Compiler::ACK_RNGCHK_FAIL, bndsChk->gtIndRngFailBB);
+    genJumpToThrowHlpBlk(jmpKind, bndsChk->gtThrowKind, bndsChk->gtIndRngFailBB);
 
 }
 
@@ -3965,7 +3965,7 @@ CodeGen::genCodeForArrIndex(GenTreeArrIndex* arrIndex)
                                 tgtReg,
                                 arrReg,
                                 genOffsetOfMDArrayDimensionSize(elemType, rank, dim));
-    genJumpToThrowHlpBlk(EJ_jae, Compiler::ACK_RNGCHK_FAIL);
+    genJumpToThrowHlpBlk(EJ_jae, SCK_RNGCHK_FAIL);
 
     genProduceReg(arrIndex);
 }
@@ -5795,7 +5795,7 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
         {
             // We only need to check for a negative value in sourceReg
             inst_RV_IV(INS_cmp, sourceReg, 0, size);
-            genJumpToThrowHlpBlk(EJ_jl, Compiler::ACK_OVERFLOW);
+            genJumpToThrowHlpBlk(EJ_jl, SCK_OVERFLOW);
             if (dstType == TYP_ULONG)
             {
                 // cast from TYP_INT to TYP_ULONG
@@ -5825,13 +5825,13 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
                 {
                     inst_RV_RV(INS_mov, tmpReg, sourceReg, TYP_LONG);        // Move the 64-bit value to a writeable temp reg
                     inst_RV_SH(INS_SHIFT_RIGHT_LOGICAL, size, tmpReg, 32);   // Shift right by 32 bits
-                    genJumpToThrowHlpBlk(EJ_jne, Compiler::ACK_OVERFLOW);    // Thow if result shift is non-zero
+                    genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);    // Thow if result shift is non-zero
                 }
                 else
                 {
                     noway_assert(typeMask != 0);
                     inst_RV_IV(INS_TEST, sourceReg, typeMask, size);
-                    genJumpToThrowHlpBlk(EJ_jne, Compiler::ACK_OVERFLOW);
+                    genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
                 }
             }
             else
@@ -5845,12 +5845,12 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
                 noway_assert((typeMin != 0) && (typeMax != 0));
 
                 inst_RV_IV(INS_cmp, sourceReg, typeMax, size);
-                genJumpToThrowHlpBlk(EJ_jg, Compiler::ACK_OVERFLOW);
+                genJumpToThrowHlpBlk(EJ_jg, SCK_OVERFLOW);
 
                 // Compare with the MIN
 
                 inst_RV_IV(INS_cmp, sourceReg, typeMin, size);
-                genJumpToThrowHlpBlk(EJ_jl, Compiler::ACK_OVERFLOW);
+                genJumpToThrowHlpBlk(EJ_jl, SCK_OVERFLOW);
             }
         }
 
@@ -6216,7 +6216,7 @@ CodeGen::genCkfinite(GenTreePtr treeNode)
     inst_RV_IV(INS_cmp, tmpReg, expMask, EA_4BYTE);
 
     // If exponent is all 1's, throw ArithmeticException
-    genJumpToThrowHlpBlk(EJ_je, Compiler::ACK_ARITH_EXCPN);
+    genJumpToThrowHlpBlk(EJ_je, SCK_ARITH_EXCPN);
 
     // if it is a finite value copy it to targetReg
     if (treeNode->gtRegNum != op1->gtRegNum)
