@@ -276,9 +276,9 @@ protected:
 
     //-------------------------------------------------------------------------
 
-    void                genJumpToThrowHlpBlk(emitJumpKind   jumpKind,
-                                             Compiler::addCodeKind    codeKind,
-                                             GenTreePtr     failBlk = NULL);
+    void                genJumpToThrowHlpBlk(emitJumpKind       jumpKind,
+                                             SpecialCodeKind    codeKind,
+                                             GenTreePtr         failBlk = NULL);
 
     void                genCheckOverflow    (GenTreePtr     tree);
 
