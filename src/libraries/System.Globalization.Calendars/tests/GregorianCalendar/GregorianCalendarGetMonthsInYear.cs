@@ -13,6 +13,7 @@ namespace System.Globalization.CalendarTests
         private const int c_MONTHS_IN_YEAR = 12;
         private const int c_AD_ERA = 1;
         private const int c_CURRENT_ERA = 0;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         #region Positive tests
         // PosTest2: leap year, era is anno Domini
@@ -236,7 +237,7 @@ namespace System.Globalization.CalendarTests
             int maxYear, minYear;
             maxYear = calendar.MaxSupportedDateTime.Year;
             minYear = calendar.MinSupportedDateTime.Year;
-            retVal = minYear + TestLibrary.Generator.GetInt32(-55) % (maxYear + 1 - minYear);
+            retVal = minYear + _generator.GetInt32(-55) % (maxYear + 1 - minYear);
             return retVal;
         }
 

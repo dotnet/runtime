@@ -12,6 +12,7 @@ namespace System.Globalization.CalendarTests
     {
         private const int c_MAX_TWO_DIGIT_YEAR = 99;
         private const int c_MIN_TWO_DIGIT_YEAR = 0;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         #region Positive tests
         // PosTest1: random two-digit year between 0 and 99
@@ -55,7 +56,7 @@ namespace System.Globalization.CalendarTests
             System.Globalization.Calendar myCalendar = new GregorianCalendar(calendarType);
             int twoDigitYear;
             int expectedFourDigitYear, actualFourDigitYear;
-            twoDigitYear = TestLibrary.Generator.GetInt32(-55) % (c_MAX_TWO_DIGIT_YEAR + 1);
+            twoDigitYear = _generator.GetInt32(-55) % (c_MAX_TWO_DIGIT_YEAR + 1);
             expectedFourDigitYear = GetExpectedFourDigitYear(myCalendar, twoDigitYear);
             actualFourDigitYear = myCalendar.ToFourDigitYear(twoDigitYear);
             Assert.Equal(expectedFourDigitYear, actualFourDigitYear);
@@ -127,7 +128,7 @@ namespace System.Globalization.CalendarTests
         {
             System.Globalization.Calendar myCalendar = new GregorianCalendar(calendarType);
             int twoDigitYear;
-            twoDigitYear = -1 * TestLibrary.Generator.GetInt32(-55);
+            twoDigitYear = -1 * _generator.GetInt32(-55);
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
                 myCalendar.ToFourDigitYear(twoDigitYear);
@@ -138,7 +139,7 @@ namespace System.Globalization.CalendarTests
         {
             System.Globalization.Calendar myCalendar = new GregorianCalendar(calendarType);
             int twoDigitYear;
-            twoDigitYear = c_MAX_TWO_DIGIT_YEAR + TestLibrary.Generator.GetInt32(-55) % (int.MaxValue - c_MAX_TWO_DIGIT_YEAR);
+            twoDigitYear = c_MAX_TWO_DIGIT_YEAR + _generator.GetInt32(-55) % (int.MaxValue - c_MAX_TWO_DIGIT_YEAR);
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
                 myCalendar.ToFourDigitYear(twoDigitYear);

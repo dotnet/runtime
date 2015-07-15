@@ -12,6 +12,7 @@ namespace System.Globalization.CalendarsTests
     {
         private const int c_MIN_MONTHS_NUMBER = -120000;
         private const int c_MAX_MONTHS_NUMBER = 120000;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         #region Positive tests
         // PosTest1: Add zero month to the specified date time
@@ -37,7 +38,7 @@ namespace System.Globalization.CalendarsTests
             int months;
             DateTime resultingTime;
             System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            months = TestLibrary.Generator.GetInt32(-55) % c_MAX_MONTHS_NUMBER + 1;
+            months = _generator.GetInt32(-55) % c_MAX_MONTHS_NUMBER + 1;
             initialTime = myCalendar.MinSupportedDateTime;
             resultingTime = myCalendar.AddMonths(initialTime, months);
 
@@ -52,7 +53,7 @@ namespace System.Globalization.CalendarsTests
             int months;
             DateTime resultingTime;
             System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            months = -1 * TestLibrary.Generator.GetInt32(-55) % c_MAX_MONTHS_NUMBER - 1;
+            months = -1 * _generator.GetInt32(-55) % c_MAX_MONTHS_NUMBER - 1;
             initialTime = myCalendar.MaxSupportedDateTime;
             resultingTime = myCalendar.AddMonths(initialTime, months);
             VerifyAddMonthsResult(myCalendar, initialTime, resultingTime, months);
@@ -69,7 +70,7 @@ namespace System.Globalization.CalendarsTests
             months = -1;
             long maxTimeInTicks = myCalendar.MaxSupportedDateTime.Ticks;
             long minTimeInTikcs = myCalendar.MinSupportedDateTime.Ticks;
-            initialTime = new DateTime(TestLibrary.Generator.GetInt64(-55) % (maxTimeInTicks + 1));
+            initialTime = new DateTime(_generator.GetInt64(-55) % (maxTimeInTicks + 1));
             resultingTime = myCalendar.AddMonths(initialTime, months);
             VerifyAddMonthsResult(myCalendar, initialTime, resultingTime, months);
         }
@@ -157,7 +158,7 @@ namespace System.Globalization.CalendarsTests
             int months;
             System.Globalization.Calendar myCalendar;
             time = DateTime.Now;
-            months = -1 * (c_MAX_MONTHS_NUMBER + 1 + TestLibrary.Generator.GetInt32(-55) % (int.MaxValue - c_MAX_MONTHS_NUMBER));
+            months = -1 * (c_MAX_MONTHS_NUMBER + 1 + _generator.GetInt32(-55) % (int.MaxValue - c_MAX_MONTHS_NUMBER));
             myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
@@ -173,7 +174,7 @@ namespace System.Globalization.CalendarsTests
             int months;
             System.Globalization.Calendar myCalendar;
             time = DateTime.Now;
-            months = c_MAX_MONTHS_NUMBER + 1 + TestLibrary.Generator.GetInt32(-55) % (int.MaxValue - c_MAX_MONTHS_NUMBER);
+            months = c_MAX_MONTHS_NUMBER + 1 + _generator.GetInt32(-55) % (int.MaxValue - c_MAX_MONTHS_NUMBER);
             myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
             Assert.Throws<ArgumentOutOfRangeException>(() =>
            {

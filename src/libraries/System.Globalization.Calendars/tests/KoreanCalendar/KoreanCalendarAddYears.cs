@@ -10,13 +10,15 @@ namespace System.Globalization.CalendarsTests
     //System.Globalization.KoreanCalendar.AddYears(System.DateTime,System.Int32)
     public class KoreanCalendarAddYears
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         #region Positive Test Logic
         // PosTest1:Invoke the method with min datetime
         [Fact]
         public void PosTest1()
         {
             DateTime dateTime = DateTime.MinValue;
-            int yearAdd = TestLibrary.Generator.GetInt16(-55) % 9999;
+            int yearAdd = _generator.GetInt16(-55) % 9999;
             DateTime expectedValue = new GregorianCalendar().ToDateTime(dateTime.Year + yearAdd, dateTime.Month, dateTime.Day, 0, 0, 0, 0);
             DateTime actualValue;
             System.Globalization.Calendar kC = new KoreanCalendar();
@@ -28,7 +30,7 @@ namespace System.Globalization.CalendarsTests
         [Fact]
         public void PosTest2()
         {
-            int yearAdd = TestLibrary.Generator.GetInt16(-55) % 9999 * (-1);
+            int yearAdd = _generator.GetInt16(-55) % 9999 * (-1);
             DateTime dateTime = DateTime.MaxValue;
             DateTime expectedValue = new GregorianCalendar().ToDateTime(dateTime.Year + yearAdd, dateTime.Month, dateTime.Day, 0, 0, 0, 0);
             DateTime actualValue;
@@ -41,7 +43,7 @@ namespace System.Globalization.CalendarsTests
         [Fact]
         public void PosTest3()
         {
-            int yearAdd = TestLibrary.Generator.GetInt16(-55) % 7999;
+            int yearAdd = _generator.GetInt16(-55) % 7999;
             DateTime dateTime = new DateTime(2000, 1, 1);
             DateTime expectedValue = new GregorianCalendar().ToDateTime(dateTime.Year + yearAdd, dateTime.Month, dateTime.Day, 0, 0, 0, 0);
             DateTime actualValue;
@@ -54,7 +56,7 @@ namespace System.Globalization.CalendarsTests
         [Fact]
         public void PosTest4()
         {
-            int yearAdd = TestLibrary.Generator.GetInt16(-55) % 2000 * (-1);
+            int yearAdd = _generator.GetInt16(-55) % 2000 * (-1);
             DateTime dateTime = new DateTime(2000, 1, 1);
             DateTime expectedValue = new GregorianCalendar().ToDateTime(dateTime.Year + yearAdd, dateTime.Month, dateTime.Day, 0, 0, 0, 0);
             DateTime actualValue;
@@ -83,9 +85,9 @@ namespace System.Globalization.CalendarsTests
         [Fact]
         public void NegTest1()
         {
-            int year = TestLibrary.Generator.GetInt16(-55) % 9999 + 1;
-            int month = TestLibrary.Generator.GetInt16(-55) % 12 + 1;
-            int day = TestLibrary.Generator.GetInt16(-55) % 28 + 1;
+            int year = _generator.GetInt16(-55) % 9999 + 1;
+            int month = _generator.GetInt16(-55) % 12 + 1;
+            int day = _generator.GetInt16(-55) % 28 + 1;
             DateTime dateTime = new GregorianCalendar().ToDateTime(year, month, day, 0, 0, 0, 0);
             int yearAdd = 9999 - year + 2;
             System.Globalization.Calendar kC = new KoreanCalendar();
@@ -100,9 +102,9 @@ namespace System.Globalization.CalendarsTests
         [Fact]
         public void NegTest2()
         {
-            int year = TestLibrary.Generator.GetInt16(-55) % 9999 + 1;
-            int month = TestLibrary.Generator.GetInt16(-55) % 12 + 1;
-            int day = TestLibrary.Generator.GetInt16(-55) % 28 + 1;
+            int year = _generator.GetInt16(-55) % 9999 + 1;
+            int month = _generator.GetInt16(-55) % 12 + 1;
+            int day = _generator.GetInt16(-55) % 28 + 1;
             DateTime dateTime = new GregorianCalendar().ToDateTime(year, month, day, 0, 0, 0, 0);
             int yearAdd = year * (-1);
             System.Globalization.Calendar kC = new KoreanCalendar();

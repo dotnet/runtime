@@ -110,7 +110,7 @@
     <Compile Include="ThaiBuddhistCalendar\ThaiBuddhistCalendarToDateTime2.cs" />
     <Compile Include="ThaiBuddhistCalendar\ThaiBuddhistCalendarToFourDigitYear.cs" />
     <Compile Include="ThaiBuddhistCalendar\ThaiBuddhistCalendarTwoDigitYearMax.cs" />
-    <Compile Include="Generator.cs" />
+    <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
