@@ -40,7 +40,16 @@ namespace System.IO.MemoryMappedFiles
                 // at least as big as the requested capacity of the map.
                 if (fileStream.Length < capacity)
                 {
-                    fileStream.SetLength(capacity);
+                    try
+                    {
+                        fileStream.SetLength(capacity);
+                    }
+                    catch (ArgumentException exc)
+                    {
+                        // If the capacity is too large, we'll get an ArgumentException from SetLength, 
+                        // but on Windows this same condition is represented by an IOException.
+                        throw new IOException(exc.Message, exc);
+                    }
                 }
             }
             else

@@ -10,12 +10,9 @@ namespace Microsoft.Win32.SafeHandles
     {
         protected override bool ReleaseHandle()
         {
-            if (Interop.mincore.UnmapViewOfFile(handle) != 0)
-            {
-                handle = IntPtr.Zero;
-                return true;
-            }
-            return false;
+            IntPtr h = handle;
+            handle = IntPtr.Zero;
+            return Interop.mincore.UnmapViewOfFile(h) != 0;
         }
     }
 }

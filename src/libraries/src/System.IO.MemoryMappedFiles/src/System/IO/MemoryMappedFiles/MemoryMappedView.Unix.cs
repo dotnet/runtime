@@ -44,6 +44,7 @@ namespace System.IO.MemoryMappedFiles
             // the right size and not extending the size to be page-aligned.)
             ulong nativeSize, extraMemNeeded, nativeOffset;
             int pageSize = Interop.libc.sysconf(Interop.libc.SysConfNames._SC_PAGESIZE);
+            Debug.Assert(pageSize > 0);
             ValidateSizeAndOffset(
                 requestedSize, requestedOffset, pageSize, 
                 out nativeSize, out extraMemNeeded, out nativeOffset);
@@ -115,6 +116,8 @@ namespace System.IO.MemoryMappedFiles
                         flags | Interop.libc.MemoryMappedFlags.MAP_ANONYMOUS,
                         -1,        // ignore the actual fd even if there was one
                         0);
+                    requestedSize = 0;
+                    extraMemNeeded = 0;
                 }
                 if ((long)addr < 0)
                 {

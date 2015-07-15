@@ -107,57 +107,54 @@ namespace System.IO.MemoryMappedFiles
         [SecurityCritical]
         public void Flush(UIntPtr capacity)
         {
-            if (_viewHandle != null)
+            unsafe
             {
-                unsafe
+                byte* firstPagePtr = null;
+                try
                 {
-                    byte* firstPagePtr = null;
-                    try
+                    _viewHandle.AcquirePointer(ref firstPagePtr);
+
+                    bool success = Interop.mincore.FlushViewOfFile((IntPtr)firstPagePtr, capacity) != 0;
+                    if (success)
+                        return; // This will visit the finally block.
+
+                    // It is a known issue within the NTFS transaction log system that
+                    // causes FlushViewOfFile to intermittently fail with ERROR_LOCK_VIOLATION
+                    // As a workaround, we catch this particular error and retry the flush operation 
+                    // a few milliseconds later. If it does not work, we give it a few more tries with
+                    // increasing intervals. Eventually, however, we need to give up. In ad-hoc tests
+                    // this strategy successfully flushed the view after no more than 3 retries.
+
+                    int error = Marshal.GetLastWin32Error();
+                    bool canRetry = (!success && error == Interop.mincore.Errors.ERROR_LOCK_VIOLATION);
+
+                    SpinWait spinWait = new SpinWait();
+                    for (int w = 0; canRetry && w < MaxFlushWaits; w++)
                     {
-                        _viewHandle.AcquirePointer(ref firstPagePtr);
+                        int pause = (1 << w);  // MaxFlushRetries should never be over 30
+                        MemoryMappedFile.ThreadSleep(pause);
 
-                        bool success = Interop.mincore.FlushViewOfFile((IntPtr)firstPagePtr, capacity) != 0;
-                        if (success)
-                            return; // This will visit the finally block.
-
-                        // It is a known issue within the NTFS transaction log system that
-                        // causes FlushViewOfFile to intermittently fail with ERROR_LOCK_VIOLATION
-                        // As a workaround, we catch this particular error and retry the flush operation 
-                        // a few milliseconds later. If it does not work, we give it a few more tries with
-                        // increasing intervals. Eventually, however, we need to give up. In ad-hoc tests
-                        // this strategy successfully flushed the view after no more than 3 retries.
-
-                        int error = Marshal.GetLastWin32Error();
-                        bool canRetry = (!success && error == Interop.mincore.Errors.ERROR_LOCK_VIOLATION);
-
-                        SpinWait spinWait = new SpinWait();
-                        for (int w = 0; canRetry && w < MaxFlushWaits; w++)
+                        for (int r = 0; canRetry && r < MaxFlushRetriesPerWait; r++)
                         {
-                            int pause = (1 << w);  // MaxFlushRetries should never be over 30
-                            MemoryMappedFile.ThreadSleep(pause);
+                            success = Interop.mincore.FlushViewOfFile((IntPtr)firstPagePtr, capacity) != 0;
+                            if (success)
+                                return; // This will visit the finally block.
 
-                            for (int r = 0; canRetry && r < MaxFlushRetriesPerWait; r++)
-                            {
-                                success = Interop.mincore.FlushViewOfFile((IntPtr)firstPagePtr, capacity) != 0;
-                                if (success)
-                                    return; // This will visit the finally block.
+                            spinWait.SpinOnce();
 
-                                spinWait.SpinOnce();
-
-                                error = Marshal.GetLastWin32Error();
-                                canRetry = (error == Interop.mincore.Errors.ERROR_LOCK_VIOLATION);
-                            }
+                            error = Marshal.GetLastWin32Error();
+                            canRetry = (error == Interop.mincore.Errors.ERROR_LOCK_VIOLATION);
                         }
-
-                        // We got to here, so there was no success:
-                        throw Win32Marshal.GetExceptionForWin32Error(error);
                     }
-                    finally
+
+                    // We got to here, so there was no success:
+                    throw Win32Marshal.GetExceptionForWin32Error(error);
+                }
+                finally
+                {
+                    if (firstPagePtr != null)
                     {
-                        if (firstPagePtr != null)
-                        {
-                            _viewHandle.ReleasePointer();
-                        }
+                        _viewHandle.ReleasePointer();
                     }
                 }
             }

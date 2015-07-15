@@ -20,8 +20,16 @@ namespace System.IO.MemoryMappedFiles
             // Then enlarge it to the requested capacity.
             const int DefaultBufferSize = 0x1000;
             var fs = new FileStream(path, FileMode.CreateNew, TranslateProtectionsToFileAccess(protections), FileShare.ReadWrite, DefaultBufferSize);
-            Interop.CheckIo(Interop.libc.unlink(path));
-            fs.SetLength(capacity);
+            try
+            {
+                Interop.CheckIo(Interop.libc.unlink(path));
+                fs.SetLength(capacity);
+            }
+            catch
+            {
+                fs.Dispose();
+                throw;
+            }
             return fs;
         }
 
