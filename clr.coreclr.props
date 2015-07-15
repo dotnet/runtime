@@ -101,9 +101,6 @@
 
     <ProfilingSupportedBuild>false</ProfilingSupportedBuild>
 
-    <!-- UNIXTODO Enable randomized string hashing -->
-    <FeatureRandomizedStringHashing>false</FeatureRandomizedStringHashing>
-
     <!-- Windows specific features -->
     <FeatureWin32Registry>false</FeatureWin32Registry>
     <FeatureAppX>false</FeatureAppX>
