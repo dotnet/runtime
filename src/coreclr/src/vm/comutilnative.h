@@ -309,4 +309,11 @@ private:
 #endif // FEATURE_RANDOMIZED_STRING_HASHING
 };
 
+#ifdef FEATURE_COREFX_GLOBALIZATION
+class CoreFxGlobalization {
+public:
+  static INT32 QCALLTYPE HashSortKey(PCBYTE pSortKey, INT32 cbSortKey, BOOL forceRandomizedHashing, INT64 additionalEntropy);
+};
+#endif // FEATURE_COREFX_GLOBALIZATION
+
 #endif // _COMUTILNATIVE_H_

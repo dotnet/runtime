@@ -239,8 +239,7 @@ namespace System {
             }
 
 #if FEATURE_COREFX_GLOBALIZATION
-            // TODO: Implement this fully.
-            throw new NotImplementedException();
+            return _compareInfo.GetHashCodeOfStringCore(obj, options, true, _entropy);
 #else
             return _compareInfo.GetHashCodeOfString(obj, options, true, _entropy);
 #endif
@@ -394,8 +393,7 @@ namespace System {
 
             if( _ignoreCase) {
 #if FEATURE_COREFX_GLOBALIZATION
-                // TODO: Implement this fully.
-                throw new NotImplementedException();
+                return CultureInfo.InvariantCulture.CompareInfo.GetHashCodeOfStringCore(obj, CompareOptions.IgnoreCase, true, _entropy);
 #else
                 return TextInfo.GetHashCodeOrdinalIgnoreCase(obj, true, _entropy);
 #endif
