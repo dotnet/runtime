@@ -19,11 +19,10 @@ namespace System.Globalization
         //////////////////////////////////////////////////////////////////////////
         internal unsafe TextInfo(CultureData cultureData)
         {
-            // TODO: Implement this fully.
             m_cultureData = cultureData;
             m_cultureName = m_cultureData.CultureName;
             m_textInfoName = m_cultureData.STEXTINFO;
-            m_needsTurkishCasing = NeedsTurkishCasing(this.m_textInfoName);
+            m_needsTurkishCasing = NeedsTurkishCasing(m_textInfoName);
         }
 
         [System.Security.SecuritySafeCritical]
@@ -61,9 +60,7 @@ namespace System.Globalization
         private bool NeedsTurkishCasing(string localeName)
         {
             Contract.Assert(localeName != null);
-
-            string lcName = CultureData.AnsiToLower(localeName);
-            return lcName.Length >= 2 && ((lcName[0] == 't' && lcName[1] == 'r') || (lcName[0] == 'a' && lcName[1] == 'z'));
+            return CultureInfo.GetCultureInfo(localeName).CompareInfo.Compare("i", "I", CompareOptions.IgnoreCase) != 0;
         }
     }
 }
