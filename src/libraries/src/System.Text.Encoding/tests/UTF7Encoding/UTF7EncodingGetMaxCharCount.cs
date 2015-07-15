@@ -9,11 +9,13 @@ namespace System.Text.EncodingTests
 {
     public class UTF7EncodingGetMaxCharCount
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         // PosTest1: Verify method GetMaxCharCount using random integer
         [Fact]
         public void PosTest1()
         {
-            int byteCount = TestLibrary.Generator.GetInt32(-55);
+            int byteCount = _generator.GetInt32(-55);
             UTF7Encoding utf7 = new UTF7Encoding();
             int maxCharCount = utf7.GetMaxCharCount(byteCount);
         }

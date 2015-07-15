@@ -10,6 +10,8 @@ namespace System.Text.EncodingTests
     // Encoding.GetChars(byte[],Int32,Int32,char[],Int32)
     public class EncodingGetChars3
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         #region PositiveTest
         [Fact]
         public void PosTest1()
@@ -18,7 +20,7 @@ namespace System.Text.EncodingTests
             Encoding myEncode = Encoding.GetEncoding("utf-16");
             int byteIndex = 0;
             int bytecount = 0;
-            char[] chars = new char[] { TestLibrary.Generator.GetChar(-55) };
+            char[] chars = new char[] { _generator.GetChar(-55) };
             int intVal = myEncode.GetChars(bytes, byteIndex, bytecount, chars, 0);
             Assert.Equal(0, intVal);
             Assert.Equal(1, chars.Length);
@@ -32,7 +34,7 @@ namespace System.Text.EncodingTests
             byte[] bytes = myEncode.GetBytes(myStr);
             int byteIndex = 0;
             int bytecount = 0;
-            char[] chars = new char[] { TestLibrary.Generator.GetChar(-55) };
+            char[] chars = new char[] { _generator.GetChar(-55) };
             int intVal = myEncode.GetChars(bytes, byteIndex, bytecount, chars, 0);
             Assert.Equal(0, intVal);
             Assert.Equal(1, chars.Length);

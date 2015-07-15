@@ -7,6 +7,8 @@ namespace System.Text.EncodingTests
     //System.Test.UnicodeEncoding.GetCharCount(System.Byte[],System.Int32,System.Int32) [v-zuolan]
     public class UnicodeEncodingGetCharCount
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         #region Positive Tests
         // PosTest1:Invoke the method.
         [Fact]
@@ -157,7 +159,7 @@ namespace System.Text.EncodingTests
             int i = 0;
             while (i < length)
             {
-                Char temp = TestLibrary.Generator.GetChar(-55);
+                Char temp = _generator.GetChar(-55);
                 if (!Char.IsSurrogate(temp))
                 {
                     charArray[i] = temp;

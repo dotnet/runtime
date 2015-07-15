@@ -11,6 +11,8 @@ namespace System.Text.EncodingTests
     // ASCIIEncoding.GetMaxByteCount(int)
     public class ASCIIEncodingGetMaxByteCount
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         // PosTest1: The specified number of characters is zero.
         [Fact]
         public void PosTest1()
@@ -29,8 +31,8 @@ namespace System.Text.EncodingTests
             ascii = new ASCIIEncoding();
             int replacementLength = 1;
             charCount = (replacementLength > 1) ?
-                TestLibrary.Generator.GetInt32(-55) % (int.MaxValue / replacementLength) :
-                TestLibrary.Generator.GetInt32(-55);
+                _generator.GetInt32(-55) % (int.MaxValue / replacementLength) :
+                _generator.GetInt32(-55);
             expectedValue = replacementLength * charCount + 1;
             DoPosTest(ascii, charCount, expectedValue);
         }
@@ -52,7 +54,7 @@ namespace System.Text.EncodingTests
             int charCount;
 
             ascii = new ASCIIEncoding();
-            charCount = -1 * TestLibrary.Generator.GetInt32(-55) - 1;
+            charCount = -1 * _generator.GetInt32(-55) - 1;
 
             DoNegAOORTest(ascii, charCount);
         }

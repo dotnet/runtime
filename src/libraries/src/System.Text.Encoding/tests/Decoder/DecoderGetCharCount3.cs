@@ -12,6 +12,7 @@ namespace System.Text.EncodingTests
     {
         #region Private Fields
         private const int c_SIZE_OF_ARRAY = 127;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
         #endregion
 
         #region Positive Test Cases
@@ -75,7 +76,7 @@ namespace System.Text.EncodingTests
         {
             Decoder decoder = Encoding.Unicode.GetDecoder();
             byte[] bytes = new byte[c_SIZE_OF_ARRAY];
-            TestLibrary.Generator.GetBytes(-55, bytes);
+            _generator.GetBytes(-55, bytes);
 
             decoder.GetCharCount(bytes, 0, bytes.Length);
         }
@@ -86,7 +87,7 @@ namespace System.Text.EncodingTests
         {
             Decoder decoder = Encoding.UTF8.GetDecoder();
             byte[] bytes = new byte[c_SIZE_OF_ARRAY];
-            TestLibrary.Generator.GetBytes(-55, bytes);
+            _generator.GetBytes(-55, bytes);
 
             decoder.GetCharCount(bytes, 0, bytes.Length);
         }
