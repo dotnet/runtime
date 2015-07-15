@@ -7873,7 +7873,7 @@ get_delegate_virtual_invoke_impl (gboolean load_imt_reg, int offset, guint32 *co
 	guint8 *code, *start;
 	int size = 20;
 
-	if (offset / sizeof (gpointer) > MAX_VIRTUAL_DELEGATE_OFFSET)
+	if (offset / (int)sizeof (gpointer) > MAX_VIRTUAL_DELEGATE_OFFSET)
 		return NULL;
 
 	start = code = mono_global_codeman_reserve (size);
