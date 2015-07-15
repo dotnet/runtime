@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 
@@ -12,7 +11,6 @@ namespace System.IO
     // Provides methods for processing file system strings in a cross-platform manner.
     // Most of the methods don't do a complete parsing (such as examining a UNC hostname), 
     // but they will handle most string operations.  
-    [ComVisible(true)]
     public static partial class Path
     {
         // Platform specific alternate directory separator character.  
