@@ -5158,6 +5158,42 @@ HCIMPL0(void, JIT_RngChkFail)
 HCIMPLEND
 
 /*********************************************************************/
+HCIMPL0(void, JIT_ThrowArgumentException)
+{
+    FCALL_CONTRACT;
+
+    /* Make no assumptions about the current machine state */
+    ResetCurrentContext();
+
+    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
+
+    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
+
+    COMPlusThrow(kArgumentException);
+
+    HELPER_METHOD_FRAME_END();
+}
+HCIMPLEND
+
+/*********************************************************************/
+HCIMPL0(void, JIT_ThrowArgumentOutOfRangeException)
+{
+    FCALL_CONTRACT;
+
+    /* Make no assumptions about the current machine state */
+    ResetCurrentContext();
+
+    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
+
+    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
+
+    COMPlusThrow(kArgumentOutOfRangeException);
+
+    HELPER_METHOD_FRAME_END();
+}
+HCIMPLEND
+
+/*********************************************************************/
 HCIMPL0(void, JIT_Overflow)
 {
     FCALL_CONTRACT;

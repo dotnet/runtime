@@ -2826,9 +2826,9 @@ bool                Compiler::fgIsThrowHlpBlk(BasicBlock * block)
     {
         if  (block == add->acdDstBlk)
         {
-            return add->acdKind == ACK_RNGCHK_FAIL ||
-                   add->acdKind == ACK_DIV_BY_ZERO ||
-                   add->acdKind == ACK_OVERFLOW;
+            return add->acdKind == SCK_RNGCHK_FAIL ||
+                   add->acdKind == SCK_DIV_BY_ZERO ||
+                   add->acdKind == SCK_OVERFLOW;
         }
     }
 
@@ -2849,9 +2849,9 @@ unsigned            Compiler::fgThrowHlpBlkStkLevel(BasicBlock *block)
     {
         if  (block == add->acdDstBlk)
         {
-            assert(add->acdKind == ACK_RNGCHK_FAIL ||
-                   add->acdKind == ACK_DIV_BY_ZERO ||
-                   add->acdKind == ACK_OVERFLOW);
+            assert(add->acdKind == SCK_RNGCHK_FAIL ||
+                   add->acdKind == SCK_DIV_BY_ZERO ||
+                   add->acdKind == SCK_OVERFLOW);
             // TODO: bbTgtStkDepth is DEBUG-only.
             // Should we use it regularly and avoid this search.
             assert(block->bbTgtStkDepth == add->acdStkLvl);
