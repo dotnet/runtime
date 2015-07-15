@@ -45,6 +45,14 @@ namespace System.Diagnostics.ProcessTests
                         Sleep(100);
                     }
                 }
+                else if (args[0].Equals("manyOutputLines"))
+                {
+                    for (int i = 0; i < 144; i++)
+                    {
+                        Console.WriteLine("This is line #" + i + ".");
+                    }
+                    // no sleep here
+                }
                 else if (args[0].Equals("ipc"))
                 {
                     using (var inbound = new AnonymousPipeClientStream(PipeDirection.In, args[1]))
