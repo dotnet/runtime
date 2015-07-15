@@ -25,8 +25,12 @@
     <MergeDcjs>$(DefineConstants.Contains('MERGE_DCJS'))</MergeDcjs>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\__HResults.cs" />
-    <Compile Include="$(CommonPath)\System\NotImplemented.cs" />
+    <Compile Include="$(CommonPath)\System\__HResults.cs">
+      <Link>Common\System\__HResults.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
+      <Link>Common\System\NotImplemented.cs</Link>
+    </Compile>
     <Compile Include="$(RuntimeSerializationSources)\Attributes.cs" />
     <Compile Include="$(RuntimeSerializationSources)\CodeGenerator.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ClassDataContract.cs" />
