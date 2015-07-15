@@ -22,7 +22,7 @@ namespace System.Dynamic
         /// Represents an empty array of type <see cref="DynamicMetaObject"/>. This field is read only.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
-        public static readonly DynamicMetaObject[] EmptyMetaObjects = new DynamicMetaObject[0];
+        public static readonly DynamicMetaObject[] EmptyMetaObjects = Array.Empty<DynamicMetaObject>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DynamicMetaObject"/> class.

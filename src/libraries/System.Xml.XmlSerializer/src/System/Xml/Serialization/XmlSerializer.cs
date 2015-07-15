@@ -530,13 +530,13 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public static XmlSerializer[] FromMappings(XmlMapping[] mappings, Type type)
         {
-            if (mappings == null || mappings.Length == 0) return new XmlSerializer[0];
+            if (mappings == null || mappings.Length == 0) return Array.Empty<XmlSerializer>();
             XmlSerializerImplementation contract = null;
             TempAssembly tempAssembly = null;
             {
                 if (XmlMapping.IsShallow(mappings))
                 {
-                    return new XmlSerializer[0];
+                    return Array.Empty<XmlSerializer>();
                 }
                 else
                 {
@@ -627,7 +627,7 @@ namespace System.Xml.Serialization
         public static XmlSerializer[] FromTypes(Type[] types)
         {
             if (types == null)
-                return new XmlSerializer[0];
+                return Array.Empty<XmlSerializer>();
             XmlReflectionImporter importer = new XmlReflectionImporter();
             XmlTypeMapping[] mappings = new XmlTypeMapping[types.Length];
             for (int i = 0; i < types.Length; i++)
