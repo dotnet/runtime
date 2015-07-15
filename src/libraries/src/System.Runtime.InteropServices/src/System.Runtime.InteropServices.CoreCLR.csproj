@@ -3,6 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
+    <ProjectGuid>{EC6AA4D9-B3E8-4CCA-8AB1-8BBFD89266AE}</ProjectGuid>
     <AssemblyName>System.Runtime.InteropServices</AssemblyName>
     <AssemblyVersion>4.0.20.0</AssemblyVersion>
     <OutputType>Library</OutputType>
