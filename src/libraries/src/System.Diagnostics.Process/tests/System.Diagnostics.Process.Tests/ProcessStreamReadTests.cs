@@ -29,6 +29,11 @@ namespace System.Diagnostics.ProcessTests
             return CreateProcess("byteAtATime");
         }
 
+        private Process CreateProcessManyOutputLines()
+        {
+            return CreateProcess("manyOutputLines");
+        }
+
         [Fact]
         public void TestSyncErrorStream()
         {
@@ -60,8 +65,8 @@ namespace System.Diagnostics.ProcessTests
                 p.Start();
                 p.BeginErrorReadLine();
 
-                if (p.WaitForExit(WaitInMS))
-                    p.WaitForExit(); // This ensures async event handlers are finished processing.
+                Assert.True(p.WaitForExit(WaitInMS));
+                p.WaitForExit(); // This ensures async event handlers are finished processing.
 
                 string expected = TestExeName + " started error stream" + (i == 1 ? "" : TestExeName + " closed error stream");
                 Assert.Equal(expected, sb.ToString());
@@ -97,8 +102,8 @@ namespace System.Diagnostics.ProcessTests
                 };
                 p.Start();
                 p.BeginOutputReadLine();
-                if (p.WaitForExit(WaitInMS))
-                    p.WaitForExit(); // This ensures async event handlers are finished processing.
+                Assert.True(p.WaitForExit(WaitInMS));
+                p.WaitForExit(); // This ensures async event handlers are finished processing.
 
                 string expected = TestExeName + " started" + (i == 1 ? "" : TestExeName + " closed");
                 Assert.Equal(expected, sb.ToString());
@@ -130,16 +135,45 @@ namespace System.Diagnostics.ProcessTests
             p.StartInfo.StandardOutputEncoding = Encoding.Unicode;
             p.OutputDataReceived += (s, e) =>
             {
-                Assert.Equal(e.Data, "a");
+                if (!receivedOutput)
+                {
+                    Assert.Equal(e.Data, "a");
+                }
                 receivedOutput = true;
             };
             p.Start();
             p.BeginOutputReadLine();
 
-            if (p.WaitForExit(WaitInMS))
-                p.WaitForExit(); // This ensures async event handlers are finished processing.
+            Assert.True(p.WaitForExit(WaitInMS));
+            p.WaitForExit(); // This ensures async event handlers are finished processing.
 
             Assert.True(receivedOutput);
+        }
+
+        [Fact]
+        public void TestManyOutputLines()
+        {
+            int nonWhitespaceLinesReceived = 0;
+            int totalLinesReceived = 0;
+
+            Process p = CreateProcessManyOutputLines();
+            p.StartInfo.RedirectStandardOutput = true;
+            p.OutputDataReceived += (s, e) =>
+            {
+                if (!string.IsNullOrWhiteSpace(e.Data))
+                {
+                    nonWhitespaceLinesReceived++;
+                }
+                totalLinesReceived++;
+            };
+            p.Start();
+            p.BeginOutputReadLine();
+
+            Assert.True(p.WaitForExit(WaitInMS));
+            p.WaitForExit(); // This ensures async event handlers are finished processing.
+
+            Assert.Equal(144, nonWhitespaceLinesReceived);
+            Assert.Equal(145, totalLinesReceived);
         }
 
         [Fact]

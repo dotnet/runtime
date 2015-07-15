@@ -205,66 +205,43 @@ namespace System.Diagnostics
             }
         }
 
+        // If everything runs without exception, returns false.
+        // If an exception occurs and rethrowInNewThread is true, returns true.
+        // If an exception occurs and rethrowInNewThread is false, the exception propagates.
         private bool FlushMessageQueue(bool rethrowInNewThread)
-        {
-            while (true)
-            {
-                // When we call BeginReadLine, we also need to flush the queue
-                // So there could be a race between the ReadBuffer and BeginReadLine
-                // We need to take lock before DeQueue.
-                if (_messageQueue.Count > 0)
-                {
-                    string line = null;
-                    // We need this flag to ensure that line was taken from the queue.
-                    // We couldn't just check line on null because ReadBuffer enqueue null in case of EOF.
-                    bool isDequeue = false;
-                    lock (_messageQueue)
-                    {
-                        if (_messageQueue.Count > 0)
-                        {
-                            line = _messageQueue.Dequeue();
-                            isDequeue = true;
-                        }
-                    }
-
-                    // skip if the read is cancelled
-                    // this might happen inside UserCallBack
-                    // However, continue to drain the queue
-                    if (!_cts.Token.IsCancellationRequested && isDequeue)
-                    {
-                        return CallUserCallback(line, rethrowInNewThread);
-                    }
-                }
-                else
-                {
-                    break;
-                }
-            }
-
-            return false;
-        }
-
-        // If user's callback throw we re-throw.
-        private bool CallUserCallback(string argument, bool rethrowInNewThread)
         {
             try
             {
-                _userCallBack(argument);
+                // Keep going until we're either canceled or we run out of data to process.
+                while (!_cts.Token.IsCancellationRequested)
+                {
+                    // Get the next line (if there isn't one, we're done) and 
+                    // invoke the user's callback with it.
+                    string line;
+                    lock (_messageQueue)
+                    {
+                        if (_messageQueue.Count == 0)
+                        {
+                            break;
+                        }
+                        line = _messageQueue.Dequeue();
+                    }
+                    _userCallBack(line); // invoked outside of the lock
+                }
+                return false;
             }
             catch (Exception e)
             {
+                // If rethrowInNewThread is true, we can't let the exception propagate synchronously on this thread,
+                // so propagate it in a thread pool thread and return true to indicate to the caller that this failed.
+                // Otherwise, let the exception propagate.
                 if (rethrowInNewThread)
                 {
                     ThreadPool.QueueUserWorkItem(edi => ((ExceptionDispatchInfo)edi).Throw(), ExceptionDispatchInfo.Capture(e));
                     return true;
                 }
-                else
-                {
-                    throw;
-                }
+                throw;
             }
-
-            return false;
         }
 
         // Wait until we hit EOF. This is called from Process.WaitForExit
