@@ -12,6 +12,7 @@ namespace System.Globalization.CalendarTests
     {
         private const int c_DAYS_IN_LEAP_YEAR = 366;
         private const int c_DAYS_IN_COMMON_YEAR = 365;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         #region Positive tests
         // PosTest1: the speicified time is in leap year, February
@@ -42,7 +43,7 @@ namespace System.Globalization.CalendarTests
             //Get a random value beween 1 and 12 not including 2.
             do
             {
-                month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
+                month = _generator.GetInt32(-55) % 12 + 1;
             } while (2 == month);
             time = myCalendar.ToDateTime(year, month, 28, 10, 30, 20, 0);
             expectedMonth = month;
@@ -78,7 +79,7 @@ namespace System.Globalization.CalendarTests
             //Get a random value beween 1 and 12 not including 2.
             do
             {
-                month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
+                month = _generator.GetInt32(-55) % 12 + 1;
             } while (2 == month);
             time = myCalendar.ToDateTime(year, month, 28, 10, 30, 20, 0);
             expectedMonth = month;
@@ -95,7 +96,7 @@ namespace System.Globalization.CalendarTests
             DateTime time;
             int expectedMonth, actualMonth;
             year = myCalendar.MinSupportedDateTime.Year;
-            month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
+            month = _generator.GetInt32(-55) % 12 + 1;
             time = myCalendar.ToDateTime(year, month, 20, 8, 20, 30, 0);
             expectedMonth = month;
             actualMonth = myCalendar.GetMonth(time);
@@ -111,7 +112,7 @@ namespace System.Globalization.CalendarTests
             DateTime time;
             int expectedMonth, actualMonth;
             year = myCalendar.MaxSupportedDateTime.Year;
-            month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
+            month = _generator.GetInt32(-55) % 12 + 1;
             time = myCalendar.ToDateTime(year, month, 20, 8, 20, 30, 0);
             expectedMonth = month;
             actualMonth = myCalendar.GetMonth(time);
@@ -159,7 +160,7 @@ namespace System.Globalization.CalendarTests
             DateTime time;
             int expectedMonth, actualMonth;
             year = GetAYear(myCalendar);
-            month = TestLibrary.Generator.GetInt32(-55) % 12 + 1;
+            month = _generator.GetInt32(-55) % 12 + 1;
             time = myCalendar.ToDateTime(year, month, 20, 8, 20, 30, 0);
             expectedMonth = month;
             actualMonth = myCalendar.GetMonth(time);
@@ -186,7 +187,7 @@ namespace System.Globalization.CalendarTests
             int maxYear, minYear;
             maxYear = calendar.MaxSupportedDateTime.Year;
             minYear = calendar.MinSupportedDateTime.Year;
-            retVal = minYear + TestLibrary.Generator.GetInt32(-55) % (maxYear + 1 - minYear);
+            retVal = minYear + _generator.GetInt32(-55) % (maxYear + 1 - minYear);
             return retVal;
         }
 

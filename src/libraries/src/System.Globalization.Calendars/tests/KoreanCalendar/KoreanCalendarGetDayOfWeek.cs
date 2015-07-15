@@ -10,6 +10,8 @@ namespace System.Globalization.CalendarsTests
     //System.Globalization.KoreanCalendar.GetDayOfWeek(System.DateTime)
     public class KoreanCalendarGetDayOfWeek
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         #region Test Logic
         // PosTest1:Test is with min DateTime
         [Fact]
@@ -59,7 +61,7 @@ namespace System.Globalization.CalendarsTests
         {
             System.Globalization.Calendar kC = new KoreanCalendar();
             System.Globalization.Calendar gC = new GregorianCalendar();
-            DateTime dateTime = new DateTime(TestLibrary.Generator.GetInt64(-55) % (DateTime.MaxValue.Ticks + 1));
+            DateTime dateTime = new DateTime(_generator.GetInt64(-55) % (DateTime.MaxValue.Ticks + 1));
             dateTime = new GregorianCalendar().ToDateTime(dateTime.Year, dateTime.Month, dateTime.Day, 0, 0, 0, 0);
             DayOfWeek expectedValue;
             DayOfWeek actualValue;

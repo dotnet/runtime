@@ -10,6 +10,8 @@ namespace System.Globalization.CalendarsTests
     // GregorianCalendar.AddYears(DateTime, int)
     public class GregorianCalendarAddYears
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         #region Positive tests
         // PosTest1: Add zero year to the specified date time
         [Fact]
@@ -64,7 +66,7 @@ namespace System.Globalization.CalendarsTests
             years = 1;
             long maxTimeInTicks = myCalendar.MaxSupportedDateTime.Ticks;
             long minTimeInTikcs = myCalendar.MinSupportedDateTime.Ticks;
-            initialTime = new DateTime(TestLibrary.Generator.GetInt64(-55) % maxTimeInTicks);
+            initialTime = new DateTime(_generator.GetInt64(-55) % maxTimeInTicks);
             resultingTime = myCalendar.AddYears(initialTime, years);
             VerifyAddyearsResult(myCalendar, initialTime, resultingTime, years);
         }

@@ -10,6 +10,8 @@ namespace System.Globalization.CalendarsTests
     // System.Globalization.TaiwanCalendar.AddMonths(DateTime,System.Int32)
     public class TaiwanCalendarAddMonths
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         private readonly int[] _DAYS_PER_MONTHS_IN_LEAP_YEAR = new int[13]
         {
             0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
@@ -112,7 +114,7 @@ namespace System.Globalization.CalendarsTests
         {
             System.Globalization.Calendar tc = new TaiwanCalendar();
             DateTime dt = tc.MaxSupportedDateTime;
-            int addValue = TestLibrary.Generator.GetInt32(-55);
+            int addValue = _generator.GetInt32(-55);
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
                 tc.AddMonths(dt, addValue);
@@ -125,7 +127,7 @@ namespace System.Globalization.CalendarsTests
         {
             System.Globalization.Calendar tc = new TaiwanCalendar();
             DateTime dt = tc.MinSupportedDateTime;
-            int addValue = TestLibrary.Generator.GetInt32(-55);
+            int addValue = _generator.GetInt32(-55);
             addValue = -addValue;
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {

@@ -13,6 +13,7 @@ namespace System.Globalization.CalendarTests
         private const int c_DEFAULT_TWO_DIGIT_YEAR_MAX = 2029;
         private const int c_MAX_YEAR = 9999;
         private const int c_MIN_TWO_DIGIT_YEAR = 99;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         #region Positive tests
         // PosTest1: get the TwoDigitYearMax of Gregorian calendar
@@ -52,7 +53,7 @@ namespace System.Globalization.CalendarTests
         {
             System.Globalization.Calendar myCalendar = new GregorianCalendar(calendarType);
             int expectedTwoDigitYearMax, actualTwoDigitYearMax;
-            expectedTwoDigitYearMax = c_MIN_TWO_DIGIT_YEAR + TestLibrary.Generator.GetInt32(-55) % (c_MAX_YEAR - c_MIN_TWO_DIGIT_YEAR + 1);
+            expectedTwoDigitYearMax = c_MIN_TWO_DIGIT_YEAR + _generator.GetInt32(-55) % (c_MAX_YEAR - c_MIN_TWO_DIGIT_YEAR + 1);
             myCalendar.TwoDigitYearMax = expectedTwoDigitYearMax;
             actualTwoDigitYearMax = myCalendar.TwoDigitYearMax;
             Assert.Equal(expectedTwoDigitYearMax, actualTwoDigitYearMax);
