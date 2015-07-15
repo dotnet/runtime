@@ -14,10 +14,18 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\Collections\IEnumerableTest.cs" />
-    <Compile Include="$(CommonTestPath)\Collections\ICollectionTest.cs" />
-    <Compile Include="$(CommonTestPath)\Collections\IListTest.cs" />
-    <Compile Include="$(CommonTestPath)\Collections\Utils.cs" />
+    <Compile Include="$(CommonTestPath)\Collections\IEnumerableTest.cs">
+      <Link>Common\Collections\IEnumerableTest.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\Collections\ICollectionTest.cs">
+      <Link>Common\Collections\ICollectionTest.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\Collections\IListTest.cs">
+      <Link>Common\Collections\IListTest.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\Collections\Utils.cs">
+      <Link>Common\Collections\Utils.cs</Link>
+    </Compile>
     <Compile Include="ComponentModel\INotifyPropertyChangingTests.cs" />
     <Compile Include="ComponentModel\PropertyChangingEventArgsTests.cs" />
     <Compile Include="KeyedCollection\TestMethods.cs" />

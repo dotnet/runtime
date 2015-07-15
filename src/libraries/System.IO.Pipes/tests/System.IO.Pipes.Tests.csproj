@@ -22,7 +22,9 @@
     <Compile Include="AnonymousPipesThrowsTests.cs" />
     <Compile Include="NamedPipesSimpleTest.cs" />
     <Compile Include="NamedPipesThrowsTests.cs" />
-    <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs" />
+    <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs">
+      <Link>Common\Interop\Interop.PlatformDetection.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- Automatically added by VS -->
   <ItemGroup>
