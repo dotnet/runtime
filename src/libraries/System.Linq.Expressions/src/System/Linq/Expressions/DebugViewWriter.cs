@@ -430,7 +430,7 @@ namespace System.Linq.Expressions
             return node;
         }
 
-        protected internal override Expression VisitLambda(LambdaExpression node)
+        protected internal override Expression VisitLambda<T>(Expression<T> node)
         {
             Out(
                 String.Format(CultureInfo.CurrentCulture,

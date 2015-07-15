@@ -326,7 +326,7 @@ namespace System.Linq.Expressions
             return node;
         }
 
-        protected internal override Expression VisitLambda(LambdaExpression node)
+        protected internal override Expression VisitLambda<T>(Expression<T> node)
         {
             if (node.Parameters.Count == 1)
             {
