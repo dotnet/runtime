@@ -234,9 +234,9 @@ namespace System.IO
             Contract.EndContractBlock();
 
             // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Read() or BeginRead() which a subclass might have overridden.  
+            // since it does not call through to Read() or ReadAsync() which a subclass might have overridden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
-            // and delegate to our base class (which will call into Read/BeginRead) when we are not sure.
+            // and delegate to our base class (which will call into Read/ReadAsync) when we are not sure.
             if (this.GetType() != typeof(FileStream))
                 return base.ReadAsync(buffer, offset, count, cancellationToken);
 
@@ -276,9 +276,9 @@ namespace System.IO
             Contract.EndContractBlock();
 
             // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Write() or BeginWrite() which a subclass might have overridden.  
+            // since it does not call through to Write() or WriteAsync() which a subclass might have overridden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
-            // and delegate to our base class (which will call into Write/BeginWrite) when we are not sure.
+            // and delegate to our base class (which will call into Write/WriteAsync) when we are not sure.
             if (this.GetType() != typeof(FileStream))
                 return base.WriteAsync(buffer, offset, count, cancellationToken);
 

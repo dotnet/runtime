@@ -11,7 +11,7 @@ using Microsoft.Win32.SafeHandles;
 /*
  * Win32FileStream supports different modes of accessing the disk - async mode
  * and sync mode.  They are two completely different codepaths in the
- * sync & async methods (ie, Read/Write vs. BeginRead/BeginWrite).  File
+ * sync & async methods (ie, Read/Write vs. ReadAsync/WriteAsync).  File
  * handles in NT can be opened in only sync or overlapped (async) mode,
  * and we have to deal with this pain.  Stream has implementations of
  * the sync methods in terms of the async ones, so we'll
@@ -650,9 +650,8 @@ namespace System.IO
             SetLengthCore(value);
         }
 
-        // We absolutely need this method broken out so that BeginWriteCore can call
-        // a method without having to go through buffering code that might call
-        // FlushWrite.
+        // We absolutely need this method broken out so that WriteInternalCoreAsync can call
+        // a method without having to go through buffering code that might call FlushWrite.
         [System.Security.SecuritySafeCritical]  // auto-generated
         private void SetLengthCore(long value)
         {
@@ -1109,7 +1108,7 @@ namespace System.IO
                 // OS appears to use a 4K buffer internally.  If you write to a
                 // pipe that is full, you will block until someone read from 
                 // that pipe.  If you try reading from an empty pipe and 
-                // Win32FileStream's BeginRead blocks waiting for data to fill it's 
+                // Win32FileStream's ReadAsync blocks waiting for data to fill it's 
                 // internal buffer, you will be blocked.  In a case where a child
                 // process writes to stdout & stderr while a parent process tries
                 // reading from both, you can easily get into a deadlock here.
@@ -1194,9 +1193,6 @@ namespace System.IO
                     _readLen = 0;
                     return ReadInternalCoreAsync(array, offset + n, numBytes - n, n, cancellationToken);
                 }
-                // WARNING: all state on asyncResult objects must be set before
-                // we call ReadFile in BeginReadCore, since the OS can run our
-                // callback & the user's callback before ReadFile returns.
             }
         }
 
@@ -1207,7 +1203,7 @@ namespace System.IO
             Debug.Assert(_parent.CanRead, "_parent.CanRead");
             Debug.Assert(bytes != null, "bytes != null");
             Debug.Assert(_writePos == 0, "_writePos == 0");
-            Debug.Assert(_isAsync, "BeginReadCore doesn't work on synchronous file streams!");
+            Debug.Assert(_isAsync, "ReadInternalCoreAsync doesn't work on synchronous file streams!");
             Debug.Assert(offset >= 0, "offset is negative");
             Debug.Assert(numBytes >= 0, "numBytes is negative");
 
@@ -1359,7 +1355,7 @@ namespace System.IO
                 // OS appears to use a 4K buffer internally.  If you write to a
                 // pipe that is full, you will block until someone read from 
                 // that pipe.  If you try reading from an empty pipe and 
-                // Win32FileStream's BeginRead blocks waiting for data to fill it's 
+                // Win32FileStream's ReadAsync blocks waiting for data to fill it's 
                 // internal buffer, you will be blocked.  In a case where a child
                 // process writes to stdout & stderr while a parent process tries
                 // reading from both, you can easily get into a deadlock here.
@@ -1404,7 +1400,7 @@ namespace System.IO
             Debug.Assert(_parent.CanWrite, "_parent.CanWrite");
             Debug.Assert(bytes != null, "bytes != null");
             Debug.Assert(_readPos == _readLen, "_readPos == _readLen");
-            Debug.Assert(_isAsync, "BeginWriteCore doesn't work on synchronous file streams!");
+            Debug.Assert(_isAsync, "WriteInternalCoreAsync doesn't work on synchronous file streams!");
             Debug.Assert(offset >= 0, "offset is negative");
             Debug.Assert(numBytes >= 0, "numBytes is negative");
 
@@ -1416,7 +1412,7 @@ namespace System.IO
             {
                 // Make sure we set the length of the file appropriately.
                 long len = _parent.Length;
-                //Console.WriteLine("BeginWrite - Calculating end pos.  pos: "+pos+"  len: "+len+"  numBytes: "+numBytes);
+                //Console.WriteLine("WriteInternalCoreAsync - Calculating end pos.  pos: "+pos+"  len: "+len+"  numBytes: "+numBytes);
 
                 // Make sure we are writing to the position that we think we are
                 if (_exposedHandle)
@@ -1424,7 +1420,7 @@ namespace System.IO
 
                 if (_pos + numBytes > len)
                 {
-                    //Console.WriteLine("BeginWrite - Setting length to: "+(pos + numBytes));
+                    //Console.WriteLine("WriteInternalCoreAsync - Setting length to: "+(pos + numBytes));
                     SetLengthCore(_pos + numBytes);
                 }
 
@@ -1439,7 +1435,7 @@ namespace System.IO
                 SeekCore(numBytes, SeekOrigin.Current);
             }
 
-            //Console.WriteLine("BeginWrite finishing.  pos: "+pos+"  numBytes: "+numBytes+"  _pos: "+_pos+"  Position: "+Position);
+            //Console.WriteLine("WriteInternalCoreAsync finishing.  pos: "+pos+"  numBytes: "+numBytes+"  _pos: "+_pos+"  Position: "+Position);
 
             int errorCode = 0;
             // queue an async WriteFile operation and pass in a packed overlapped
@@ -1591,15 +1587,12 @@ namespace System.IO
             if (r == 0)
             {
                 errorCode = Marshal.GetLastWin32Error();
-                // We should never ignore an error here without some extra work.
-                // We must make sure that BeginReadCore won't return an 
-                // IAsyncResult that will cause EndRead to block, since the OS 
-                // won't call AsyncFSCallback for us.  
+
                 if (errorCode == ERROR_BROKEN_PIPE || errorCode == Interop.mincore.Errors.ERROR_PIPE_NOT_CONNECTED)
                 {
                     // This handle was a pipe, and it's done. Not an error, but EOF.
                     // However, the OS will not call AsyncFSCallback!
-                    // Let the caller handle this, since BeginReadCore & ReadCore 
+                    // Let the caller handle this, since ReadInternalCoreAsync & ReadCore 
                     // need to do different things.
                     return -1;
                 }
@@ -1662,16 +1655,12 @@ namespace System.IO
             if (r == 0)
             {
                 errorCode = Marshal.GetLastWin32Error();
-                // We should never ignore an error here without some extra work.
-                //  We must make sure that BeginWriteCore won't return an 
-                // IAsyncResult that will cause EndWrite to block, since the OS 
-                // won't call AsyncFSCallback for us.  
 
                 if (errorCode == ERROR_NO_DATA)
                 {
                     // This handle was a pipe, and the pipe is being closed on the 
-                    // other side.  Let the caller handle this, since BeginWriteCore 
-                    // & WriteCore need to do different things.
+                    // other side.  Let the caller handle this, since Write
+                    // and WriteAsync need to do different things.
                     return -1;
                 }
 
