@@ -16,25 +16,63 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\Xml\Base64Decoder.cs" />
-    <Compile Include="$(CommonPath)\System\Xml\Base64Encoder.cs" />
-    <Compile Include="$(CommonPath)\System\Xml\XmlRawWriterBase64Encoder.cs" />
-    <Compile Include="$(CommonPath)\System\Xml\BinHexDecoder.cs" />
-    <Compile Include="$(CommonPath)\System\Xml\Bits.cs" />
-    <Compile Include="$(CommonPath)\System\Xml\ValidateNames.cs" />
-    <Compile Include="$(CommonPath)\System\Xml\XmlCharType.cs" />
-    <Compile Include="$(CommonPath)\System\Xml\XmlConvertEx.cs" />
-    <Compile Include="$(CommonPath)\System\Xml\ExceptionType.cs" />
-    <Compile Include="$(CommonPath)\System\Xml\XmlReaderExtensions.cs" />
-    <Compile Include="$(CommonPath)\System\Xml\XmlWriterExtensions.cs" />
-    <Compile Include="$(CommonPath)\System\Xml\IncrementalReadDecoders.cs" />
-    <Compile Include="$(CommonPath)\System\Xml\ReadContentAsBinaryHelper.cs" />
-    <Compile Include="$(CommonPath)\System\Xml\XmlRawWriter.cs" />
-    <Compile Include="$(CommonPath)\System\Xml\XmlStandalone.cs" />
-    <Compile Include="$(CommonPath)\System\Xml\XmlConst.cs" />
-    <Compile Include="$(CommonPath)\System\Xml\Schema\XmlUntypedConverter.cs" />
-    <Compile Include="$(CommonPath)\System\Xml\Schema\XsdDateTime.cs" />
-    <Compile Include="$(CommonPath)\System\Xml\XPathNavigatorEx.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\Base64Decoder.cs">
+      <Link>Common\System\Xml\Base64Decoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Xml\Base64Encoder.cs">
+      <Link>Common\System\Xml\Base64Encoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Xml\XmlRawWriterBase64Encoder.cs">
+      <Link>Common\System\Xml\XmlRawWriterBase64Encoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Xml\BinHexDecoder.cs">
+      <Link>Common\System\Xml\BinHexDecoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Xml\Bits.cs">
+      <Link>Common\System\Xml\Bits.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Xml\ValidateNames.cs">
+      <Link>Common\System\Xml\ValidateNames.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Xml\XmlCharType.cs">
+      <Link>Common\System\Xml\XmlCharType.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Xml\XmlConvertEx.cs">
+      <Link>Common\System\Xml\XmlConvertEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Xml\ExceptionType.cs">
+      <Link>Common\System\Xml\ExceptionType.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Xml\XmlReaderExtensions.cs">
+      <Link>Common\System\Xml\XmlReaderExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Xml\XmlWriterExtensions.cs">
+      <Link>Common\System\Xml\XmlWriterExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Xml\IncrementalReadDecoders.cs">
+      <Link>Common\System\Xml\IncrementalReadDecoders.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Xml\ReadContentAsBinaryHelper.cs">
+      <Link>Common\System\Xml\ReadContentAsBinaryHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Xml\XmlRawWriter.cs">
+      <Link>Common\System\Xml\XmlRawWriter.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Xml\XmlStandalone.cs">
+      <Link>Common\System\Xml\XmlStandalone.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Xml\XmlConst.cs">
+      <Link>Common\System\Xml\XmlConst.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Xml\Schema\XmlUntypedConverter.cs">
+      <Link>Common\System\Xml\Schema\XmlUntypedConverter.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Xml\Schema\XsdDateTime.cs">
+      <Link>Common\System\Xml\Schema\Ref.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Xml\XPathNavigatorEx.cs">
+      <Link>Common\System\Xml\XPathNavigatorEx.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Xml\Cache\XPathDocumentBuilder.cs" />
@@ -124,7 +162,9 @@
     <Compile Include="System\Xml\Xsl\XsltContext.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\NotImplemented.cs" />
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
+      <Link>Common\System\NotImplemented.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
