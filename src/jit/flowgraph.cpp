@@ -112,7 +112,7 @@ void                Compiler::fgInit()
     fgAddCodeList    = 0;
     fgAddCodeModf    = false;
 
-    for (int i = 0; i < ACK_COUNT; i++)
+    for (int i = 0; i < SCK_COUNT; i++)
     {
         fgExcptnTargetCache[i] = NULL;
     }
@@ -17495,13 +17495,13 @@ BasicBlock*         Compiler::fgNewBBinRegionWorker(BBjumpKinds  jumpKind,
  */
 
 /* static */
-unsigned            Compiler::acdHelper(addCodeKind codeKind)
+unsigned            Compiler::acdHelper(SpecialCodeKind codeKind)
 {
     switch (codeKind)
     {
-    case ACK_RNGCHK_FAIL: return CORINFO_HELP_RNGCHKFAIL;
-    case ACK_DIV_BY_ZERO: return CORINFO_HELP_THROWDIVZERO;
-    case ACK_ARITH_EXCPN: return CORINFO_HELP_OVERFLOW;
+    case SCK_RNGCHK_FAIL: return CORINFO_HELP_RNGCHKFAIL;
+    case SCK_DIV_BY_ZERO: return CORINFO_HELP_THROWDIVZERO;
+    case SCK_ARITH_EXCPN: return CORINFO_HELP_OVERFLOW;
     default: assert(!"Bad codeKind"); return 0;
     }
 }
@@ -17512,10 +17512,10 @@ unsigned            Compiler::acdHelper(addCodeKind codeKind)
  *  the given kind.
  */
 
-BasicBlock*         Compiler::fgAddCodeRef(BasicBlock*  srcBlk,
-                                           unsigned     refData,
-                                           addCodeKind  kind,
-                                           unsigned     stkDepth)
+BasicBlock*         Compiler::fgAddCodeRef(BasicBlock*      srcBlk,
+                                           unsigned         refData,
+                                           SpecialCodeKind  kind,
+                                           unsigned         stkDepth)
 {
     /* For debuggable code, genJumpToThrowHlpBlk() will generate the 'throw'
        code inline. It has to be kept consistent with fgAddCodeRef() */
@@ -17525,14 +17525,16 @@ BasicBlock*         Compiler::fgAddCodeRef(BasicBlock*  srcBlk,
     const static
     BBjumpKinds jumpKinds[] =
     {
-        BBJ_NONE,               // ACK_NONE
-        BBJ_THROW,              // ACK_RNGCHK_FAIL
-        BBJ_ALWAYS,             // ACK_PAUSE_EXEC
-        BBJ_THROW,              // ACK_DIV_BY_ZERO
-        BBJ_THROW,              // ACK_ARITH_EXCP, ACK_OVERFLOW
+        BBJ_NONE,               // SCK_NONE
+        BBJ_THROW,              // SCK_RNGCHK_FAIL
+        BBJ_ALWAYS,             // SCK_PAUSE_EXEC
+        BBJ_THROW,              // SCK_DIV_BY_ZERO
+        BBJ_THROW,              // SCK_ARITH_EXCP, SCK_OVERFLOW
+        BBJ_THROW,              // SCK_ARG_EXCPN
+        BBJ_THROW,              // SCK_ARG_RNG_EXCPN
     };
 
-    noway_assert(sizeof(jumpKinds) == ACK_COUNT); // sanity check
+    noway_assert(sizeof(jumpKinds) == SCK_COUNT); // sanity check
 
     /* First look for an existing entry that matches what we're looking for */
 
@@ -17557,7 +17559,7 @@ BasicBlock*         Compiler::fgAddCodeRef(BasicBlock*  srcBlk,
         }
 #endif // _TARGET_X86_
 
-        goto DONE;
+        return  add->acdDstBlk;
     }
 
     /* We have to allocate a new entry and prepend it to the list */
@@ -17604,22 +17606,16 @@ BasicBlock*         Compiler::fgAddCodeRef(BasicBlock*  srcBlk,
             msgWhere = "handler";
         }
 
-        const char* msg = "";
-        if  (kind == ACK_RNGCHK_FAIL)
+        const char* msg;
+        switch (kind)
         {
-            msg = " for RNGCHK_FAIL";
-        }
-        else if  (kind == ACK_PAUSE_EXEC)
-        {
-            msg = " for PAUSE_EXEC";
-        }
-        else if  (kind == ACK_DIV_BY_ZERO)
-        {
-            msg = " for DIV_BY_ZERO";
-        }
-        else if  (kind == ACK_OVERFLOW)
-        {
-            msg = " for OVERFLOW";
+        case SCK_RNGCHK_FAIL:   msg = " for RNGCHK_FAIL";   break;
+        case SCK_PAUSE_EXEC:    msg = " for PAUSE_EXEC";    break;
+        case SCK_DIV_BY_ZERO:   msg = " for DIV_BY_ZERO";   break;
+        case SCK_OVERFLOW:      msg = " for OVERFLOW";      break;
+        case SCK_ARG_EXCPN:     msg = " for ARG_EXCPN";     break;
+        case SCK_ARG_RNG_EXCPN: msg = " for ARG_RNG_EXCPN"; break;
+        default:                msg = " for ??";            break;
         }
 
         printf("\nfgAddCodeRef -"
@@ -17647,45 +17643,49 @@ BasicBlock*         Compiler::fgAddCodeRef(BasicBlock*  srcBlk,
     /* Now figure out what code to insert */
 
     GenTreeCall* tree;
-    int          helper;
+    int          helper = CORINFO_HELP_UNDEF;
 
     switch (kind)
     {
-    case ACK_RNGCHK_FAIL:   helper = CORINFO_HELP_RNGCHKFAIL;
-                            goto ADD_HELPER_CALL;
+    case SCK_RNGCHK_FAIL:   helper = CORINFO_HELP_RNGCHKFAIL;
+                            break;
 
-    case ACK_DIV_BY_ZERO:   helper = CORINFO_HELP_THROWDIVZERO; 
-                            goto ADD_HELPER_CALL;
+    case SCK_DIV_BY_ZERO:   helper = CORINFO_HELP_THROWDIVZERO; 
+                            break;
 
-    case ACK_ARITH_EXCPN:   helper = CORINFO_HELP_OVERFLOW;
-                            noway_assert(ACK_OVERFLOW == ACK_ARITH_EXCPN);
-                            goto ADD_HELPER_CALL;
+    case SCK_ARITH_EXCPN:   helper = CORINFO_HELP_OVERFLOW;
+                            noway_assert(SCK_OVERFLOW == SCK_ARITH_EXCPN);
+                            break;
 
-ADD_HELPER_CALL:;
+#ifndef RYUJIT_CTPBUILD
+    case SCK_ARG_EXCPN:     helper = CORINFO_HELP_THROW_ARGUMENTEXCEPTION;
+                            break;
 
-        /* Add the appropriate helper call */
+    case SCK_ARG_RNG_EXCPN: helper = CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION;
+                            break;
+#endif // !RYUJIT_CTPBUILD
 
-        tree = gtNewHelperCallNode(helper, TYP_VOID, GTF_EXCEPT);
-        // There are no args here but fgMorphArgs has side effects 
-        // such as setting the outgoing arg area (which is necessary 
-        // on AMD if there are any calls).
-        tree = fgMorphArgs(tree);
-        break;
-
-//  case ACK_PAUSE_EXEC:
+//  case SCK_PAUSE_EXEC:
 //      noway_assert(!"add code to pause exec");
 
     default:
         noway_assert(!"unexpected code addition kind");
-        return NULL;
+        return nullptr;
     }
 
-    /* Store the tree in the new basic block */
+    noway_assert(helper != CORINFO_HELP_UNDEF);
 
+    // Add the appropriate helper call.
+    tree = gtNewHelperCallNode(helper, TYP_VOID, GTF_EXCEPT);
+
+    // There are no args here but fgMorphArgs has side effects 
+    // such as setting the outgoing arg area (which is necessary 
+    // on AMD if there are any calls).
+    tree = fgMorphArgs(tree);
+
+    // Store the tree in the new basic block.
 
     fgInsertStmtAtEnd(newBlk, fgNewStmtFromTree(tree));
-
-DONE:;
 
     return  add->acdDstBlk;
 }
@@ -17697,7 +17697,7 @@ DONE:;
  * a given type of exception
  */
 
-Compiler::AddCodeDsc*       Compiler::fgFindExcptnTarget(addCodeKind  kind,
+Compiler::AddCodeDsc*       Compiler::fgFindExcptnTarget(SpecialCodeKind  kind,
                                                          unsigned     refData)
 {
     if (!(fgExcptnTargetCache[kind] &&  // Try the cached value first
@@ -17725,7 +17725,7 @@ Compiler::AddCodeDsc*       Compiler::fgFindExcptnTarget(addCodeKind  kind,
  *  range check is to jump to upon failure.
  */
 
-BasicBlock*         Compiler::fgRngChkTarget(BasicBlock* block, unsigned stkDepth)
+BasicBlock*         Compiler::fgRngChkTarget(BasicBlock* block, unsigned stkDepth, SpecialCodeKind kind)
 {
 #ifdef DEBUG
     if (verbose)
@@ -17737,7 +17737,7 @@ BasicBlock*         Compiler::fgRngChkTarget(BasicBlock* block, unsigned stkDept
 
     /* We attach the target label to the containing try block (if any) */
     noway_assert(!compIsForInlining());
-    return  fgAddCodeRef(block, bbThrowIndex(block), ACK_RNGCHK_FAIL, stkDepth);
+    return  fgAddCodeRef(block, bbThrowIndex(block), kind, stkDepth);
 }
 
 // Sequences the tree.
