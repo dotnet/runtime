@@ -2642,8 +2642,8 @@ struct GenTreeBoundsChk: public GenTree
         GenTree(oper, type), 
         gtArrLen(arrLen), gtIndex(index), 
         gtIndRngFailBB(NULL), 
-        gtStkDepth(0),
-        gtThrowKind(kind)
+        gtThrowKind(kind),
+        gtStkDepth(0)
         {
             // Effects flags propagate upwards.
             gtFlags |= (arrLen->gtFlags & GTF_ALL_EFFECT);
