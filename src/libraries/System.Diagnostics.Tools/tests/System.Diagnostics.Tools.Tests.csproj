@@ -4,6 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{41BF89E4-8C67-45A6-8044-13009E363220}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>System</RootNamespace>
     <AssemblyName>System.Diagnostics.Tools.Tests</AssemblyName>

@@ -3,6 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
+    <ProjectGuid>{604027F5-1DFC-42F4-B4FE-61F8789BA647}</ProjectGuid>
     <AssemblyName>System.Threading</AssemblyName>
     <AssemblyVersion>4.0.10.0</AssemblyVersion>
     <OutputType>Library</OutputType>
