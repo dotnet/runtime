@@ -10,11 +10,7 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Threading;
 using System.Security;
 
 namespace System.Threading
@@ -78,7 +74,6 @@ namespace System.Threading
     /// completed.
     /// </para>
     /// </remarks>
-    [ComVisible(false)]
     [DebuggerDisplay("Participant Count={ParticipantCount},Participants Remaining={ParticipantsRemaining}")]
     public class Barrier : IDisposable
     {

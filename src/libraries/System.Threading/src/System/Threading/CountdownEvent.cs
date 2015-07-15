@@ -7,10 +7,7 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace System.Threading
 {
@@ -24,7 +21,6 @@ namespace System.Threading
     /// completed, and Reset, which should only be used when no other threads are
     /// accessing the event.
     /// </remarks>
-    [ComVisible(false)]
     [DebuggerDisplay("Initial Count={InitialCount}, Current Count={CurrentCount}")]
     public class CountdownEvent : IDisposable
     {
