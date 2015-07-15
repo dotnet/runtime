@@ -13,7 +13,7 @@ If your machine has Command Line Tools for XCode 6.3 installed, you'll need to u
 Git Setup
 ---------
 
-Clone the CoreCLR repository (either upstream or a fork).
+Clone the CoreCLR and CoreFX repositories (either upstream or a fork).
 
     dotnet-mbp:git richlander$ git clone https://github.com/dotnet/coreclr
     Cloning into 'coreclr'...
@@ -24,7 +24,16 @@ Clone the CoreCLR repository (either upstream or a fork).
     Resolving deltas: 100% (7679/7679), done.
     Checking connectivity... done.
 
-This guide assumes that you've cloned the coreclr repository into ~/git/coreclr on your OS X machine and the corefx and coreclr repositories into C:\git\corefx and C:\git\coreclr on Windows. If your setup is different, you'll need to pay careful attention to the commands you run. In this guide, I'll always show you the current directory on both the OS X and Windows machine.
+    dotnet-mbp:git richlander$ git clone https://github.com/dotnet/corefx
+    Cloning into 'corefx'...
+    remote: Counting objects: 41610, done.
+    remote: Compressing objects: 100% (14/14), done.
+    remote: Total 41610 (delta 5), reused 0 (delta 0), pack-reused 41596
+    Receiving objects: 100% (41610/41610), 23.97 MiB | 311.00 KiB/s, done.
+    Resolving deltas: 100% (25680/25680), done.
+    Checking connectivity... done
+
+This guide assumes that you've cloned the coreclr and corefx repositories into `~/git/coreclr` and `~/git/corefx` on your OS X machine and the coreclr repository into `C:\git\coreclr` on Windows. If your setup is different, you'll need to pay careful attention to the commands you run. In this guide, I'll always show you the current directory on both the OS X and Windows machine.
 
 CMake
 -----
@@ -38,7 +47,7 @@ Alternatively, you can install CMake from [Homebrew](http://brew.sh/).
 Mono
 ----
 
-[Mono](http://www.mono-project.com/) is needed in order to run NuGet.exe. NuGet will add .NET Core support at some point soon. You can download it from the [Mono downloads](http://www.mono-project.com/docs/getting-started/install/mac/) page.
+[Mono](http://www.mono-project.com/) is needed in order to run NuGet.exe and to build CoreFX. NuGet will add .NET Core support at some point soon. You can download it from the [Mono downloads](http://www.mono-project.com/docs/getting-started/install/mac/) page.
 
 Demo directory
 --------------
@@ -88,41 +97,45 @@ Copy the runtime and corerun into the demo directory.
 Build the Framework
 ===================
 
-There isn't yet support for compiling managed code on OS X. The following instructions assume you are on a Windows machine with clones of both the CoreCLR and CoreFX repos and that has a correctly configured [environment](https://github.com/dotnet/coreclr/wiki/Windows-instructions#environment).
+While CoreFX can be built on OS X, building mscorlib still requires Windows.
+
+Build mscorlb
+-------------
+
+The following instructions assume you are on a Windows machine with a clone of the CoreCLR repo and that has a correctly configured [environment](https://github.com/dotnet/coreclr/wiki/Windows-instructions#environment).
 
 You will need to copy binaries built on Windows to your Mac. Use whatever copying method works for you, such as a thumbdrive, a sync program or a cloud drive. To make this easy, copy files to a demo directory on Windows, so that you can copy all of the files to your Mac together.
 
     C:\git\coreclr>mkdir \coreclr-demo
 
-Build mscorlb
--------------
-
 Build mscorlib.dll out of the coreclr repository:
 
     C:\git\coreclr>build.cmd osxmscorlib
 
-The output is placed in `bin\obj\Unix.x64.Debug`. Copy to the demo folder. 
+The output is placed in `bin\obj\OSX.x64.Debug`. Copy to the demo folder.
 
-    C:\git\coreclr>copy bin\obj\Unix.x64.Debug\mscorlib.dll \coreclr-demo
+    C:\git\coreclr>copy bin\obj\OSX.x64.Debug\mscorlib.dll \coreclr-demo
+
+Copy mscorlib
+-------------
+
+Copy the newly built mscorlib.dll from `C:\coreclr-demo` to your Mac, in the `~/coreclr-demo/runtime/` directory.
 
 Build CoreFX
 ------------
 
-Build the rest of the Framework out of the corefx directory. You need to pass some special parameters to build.cmd.
+Build the rest of the Framework out of the corefx directory on your Mac.
 
-    C:\git\corefx>build.cmd /p:OSGroup=OSX /p:SkipTests=true
+    dotnet-mbp:corefx richlander$ ./build.sh
 
-It's also possible to add `/t:rebuild` to build.cmd to force it to delete the previously built assemblies.
+It's also possible to add `-t:rebuild` to build.sh to force it to delete the previously built assemblies.
 
 For the purposes of this demo, you need to copy a few required assemblies to the demo folder.
 
-    C:\git\corefx>copy bin\OSX.AnyCPU.Debug\System.Console\System.Console.dll \coreclr-demo
-    C:\git\corefx>copy bin\OSX.AnyCPU.Debug\System.Diagnostics.Debug\System.Diagnostics.Debug.dll \coreclr-demo
+    dotnet-mbp:corefx richlander$ cp bin/OSX.AnyCPU.Debug/System.Console/System.Console.dll ~/coreclr-demo/runtime
+    dotnet-mbp:corefx richlander$ cp bin/OSX.AnyCPU.Debug/System.Diagnostics.Debug/System.Diagnostics.Debug.dll ~/coreclr-demo/runtime
 
-Copy Assemblies
----------------
-
-Copy all of the newly built assemblies from `C:\coreclr-demo` to your Mac, in the `~/coreclr-demo/runtime/` directory. The runtime directory should now look like the following:
+The runtime directory should now look like the following:
 
     dotnet-mbp:~ richlander$ ls ~/coreclr-demo/runtime/
     System.Console.dll              libcoreclr.dylib
