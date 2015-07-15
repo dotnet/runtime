@@ -13,6 +13,7 @@ namespace System.Reflection.Emit.Tests
     public class EnumBuilderMakeArrayType2
     {
         private AssemblyBuilder _myAssemblyBuilder;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         private ModuleBuilder CreateCallee()
         {
@@ -67,7 +68,7 @@ namespace System.Reflection.Emit.Tests
                 }
                 if (minValue < maxValue)
                 {
-                    return minValue + TestLibrary.Generator.GetInt32() % (maxValue - minValue);
+                    return minValue + _generator.GetInt32() % (maxValue - minValue);
                 }
             }
             catch

@@ -21,6 +21,7 @@ namespace System.Reflection.Emit.Tests
         private const int MinStringLength = 1;
         private const int MaxStringLength = 128;
         private const int ByteArraySize = 128;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         private TypeBuilder GetTestTypeBuilder()
         {
@@ -36,7 +37,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithCodeTypeMask()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             MethodImplAttributes desiredFlags = MethodImplAttributes.CodeTypeMask;
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
@@ -53,7 +54,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithForwardRef()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             MethodImplAttributes desiredFlags = MethodImplAttributes.ForwardRef;
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
@@ -70,7 +71,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithIL()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             MethodImplAttributes desiredFlags = MethodImplAttributes.IL;
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
@@ -87,7 +88,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithInternalCall()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             MethodImplAttributes desiredFlags = MethodImplAttributes.InternalCall;
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
@@ -104,7 +105,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithManaged()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             MethodImplAttributes desiredFlags = MethodImplAttributes.Managed;
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
@@ -121,7 +122,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithManagedMask()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             MethodImplAttributes desiredFlags = MethodImplAttributes.ManagedMask;
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
@@ -139,7 +140,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithNative()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             MethodImplAttributes desiredFlags = MethodImplAttributes.Native;
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
@@ -157,7 +158,7 @@ namespace System.Reflection.Emit.Tests
         {
             string methodName = null;
 
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             MethodImplAttributes desiredFlags = MethodImplAttributes.NoInlining;
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
@@ -174,7 +175,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithOPTIL()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             MethodImplAttributes desiredFlags = MethodImplAttributes.OPTIL;
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
@@ -191,7 +192,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithPreserveSig()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             MethodImplAttributes desiredFlags = MethodImplAttributes.PreserveSig;
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
@@ -209,7 +210,7 @@ namespace System.Reflection.Emit.Tests
         {
             string methodName = null;
 
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             MethodImplAttributes desiredFlags = MethodImplAttributes.Runtime;
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
@@ -226,7 +227,7 @@ namespace System.Reflection.Emit.Tests
         public void TestWithSynchronized()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             MethodImplAttributes desiredFlags = MethodImplAttributes.Synchronized;
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
@@ -244,7 +245,7 @@ namespace System.Reflection.Emit.Tests
         {
             string methodName = null;
 
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             MethodImplAttributes desiredFlags = MethodImplAttributes.Unmanaged;
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();
@@ -261,7 +262,7 @@ namespace System.Reflection.Emit.Tests
         public void TestThrowsExceptionOnTypeCreated()
         {
             string methodName = null;
-            methodName = TestLibrary.Generator.GetString(false, false, true, MinStringLength, MaxStringLength);
+            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             MethodImplAttributes desiredFlags = MethodImplAttributes.Unmanaged;
 
             TypeBuilder typeBuilder = GetTestTypeBuilder();

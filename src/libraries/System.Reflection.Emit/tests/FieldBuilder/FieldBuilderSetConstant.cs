@@ -22,6 +22,8 @@ namespace System.Reflection.Emit.Tests
 
     public class FieldBuilderSetConstant
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         private TypeBuilder TypeBuilder
         {
             get
@@ -205,7 +207,7 @@ namespace System.Reflection.Emit.Tests
             field.SetConstant(null);
 
             // change default value
-            field.SetConstant(TestLibrary.Generator.GetString(false, 1, 30));
+            field.SetConstant(_generator.GetString(false, 1, 30));
         }
 
         [Fact]

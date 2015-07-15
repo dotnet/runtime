@@ -11,6 +11,8 @@ namespace System.Reflection.Emit.Tests
 {
     public class TypeBuilderMakeArrayType2
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         [Fact]
         public void TestWithInstanceType()
         {
@@ -84,7 +86,7 @@ namespace System.Reflection.Emit.Tests
             }
             if (minValue < maxValue)
             {
-                return minValue + TestLibrary.Generator.GetInt32() % (maxValue - minValue);
+                return minValue + _generator.GetInt32() % (maxValue - minValue);
             }
             return minValue;
         }

@@ -17,6 +17,7 @@ namespace System.Reflection.Emit.Tests
         private const int MinTypName = 1;
         private const int MaxTypName = 1024;
         private const int NumLoops = 5;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
         private TypeAttributes[] _typesPos = new TypeAttributes[18] {
                                                        TypeAttributes.Abstract,
                                                        TypeAttributes.AnsiClass,
@@ -62,10 +63,10 @@ namespace System.Reflection.Emit.Tests
             for (int i = 0; i < NumLoops; i++)
             {
                 modBuilder = CreateModule(
-                              TestLibrary.Generator.GetString(true, MinAsmName, MaxAsmName),
-                              TestLibrary.Generator.GetString(false, MinModName, MaxModName));
+                              _generator.GetString(true, MinAsmName, MaxAsmName),
+                              _generator.GetString(false, MinModName, MaxModName));
 
-                typeName = TestLibrary.Generator.GetString(true, MinTypName, MaxTypName);  // name can not contain embedded nulls
+                typeName = _generator.GetString(true, MinTypName, MaxTypName);  // name can not contain embedded nulls
 
                 typeBuilder = modBuilder.DefineType(typeName);
 
@@ -88,10 +89,10 @@ namespace System.Reflection.Emit.Tests
             for (i = 0; i < _typesPos.Length; i++)
             {
                 modBuilder = CreateModule(
-                              TestLibrary.Generator.GetString(true, MinAsmName, MaxAsmName),
-                              TestLibrary.Generator.GetString(false, MinModName, MaxModName));
+                              _generator.GetString(true, MinAsmName, MaxAsmName),
+                              _generator.GetString(false, MinModName, MaxModName));
 
-                typeName = TestLibrary.Generator.GetString(true, MinTypName, MaxTypName);  // name can not contain embedded nulls
+                typeName = _generator.GetString(true, MinTypName, MaxTypName);  // name can not contain embedded nulls
                 typeAttrib = _typesPos[i];
 
                 typeBuilder = modBuilder.DefineType(typeName, typeAttrib);
@@ -114,11 +115,11 @@ namespace System.Reflection.Emit.Tests
             for (int i = 0; i < NumLoops; i++)
             {
                 modBuilder = CreateModule(
-                                 TestLibrary.Generator.GetString(true, MinAsmName, MaxAsmName),
-                                 TestLibrary.Generator.GetString(false, MinModName, MaxModName));
+                                 _generator.GetString(true, MinAsmName, MaxAsmName),
+                                 _generator.GetString(false, MinModName, MaxModName));
 
-                typeName = TestLibrary.Generator.GetString(true, MinTypName, MaxTypName);  // name can not contain embedded nulls
-                nestedTypeName = TestLibrary.Generator.GetString(true, MinTypName, MaxTypName);  // name can not contain embedded nulls
+                typeName = _generator.GetString(true, MinTypName, MaxTypName);  // name can not contain embedded nulls
+                nestedTypeName = _generator.GetString(true, MinTypName, MaxTypName);  // name can not contain embedded nulls
 
                 typeBuilder = modBuilder.DefineType(typeName);
 
@@ -144,16 +145,16 @@ namespace System.Reflection.Emit.Tests
             for (int i = 0; i < NumLoops; i++)
             {
                 modBuilder = CreateModule(
-                                 TestLibrary.Generator.GetString(true, MinAsmName, MaxAsmName),
-                                 TestLibrary.Generator.GetString(false, MinModName, MaxModName));
+                                 _generator.GetString(true, MinAsmName, MaxAsmName),
+                                 _generator.GetString(false, MinModName, MaxModName));
 
-                typeName = TestLibrary.Generator.GetString(true, MinTypName, MaxTypName);  // name can not contain embedded nulls
-                nestedTypeName = TestLibrary.Generator.GetString(true, MinTypName, MaxTypName);  // name can not contain embedded nulls
+                typeName = _generator.GetString(true, MinTypName, MaxTypName);  // name can not contain embedded nulls
+                nestedTypeName = _generator.GetString(true, MinTypName, MaxTypName);  // name can not contain embedded nulls
 
                 typeBuilder = modBuilder.DefineType(typeName);
 
                 // create generic parameters
-                gTypeBuilders = typeBuilder.DefineGenericParameters(TestLibrary.Generator.GetStrings(true, MinTypName, MaxTypName));
+                gTypeBuilders = typeBuilder.DefineGenericParameters(_generator.GetStrings(true, MinTypName, MaxTypName));
 
                 newType = typeBuilder.CreateTypeInfo().AsType();
 
@@ -176,10 +177,10 @@ namespace System.Reflection.Emit.Tests
                 try
                 {
                     modBuilder = CreateModule(
-                                  TestLibrary.Generator.GetString(true, MinAsmName, MaxAsmName),
-                                  TestLibrary.Generator.GetString(false, MinModName, MaxModName));
+                                  _generator.GetString(true, MinAsmName, MaxAsmName),
+                                  _generator.GetString(false, MinModName, MaxModName));
 
-                    typeName = TestLibrary.Generator.GetString(true, MinTypName, MaxTypName);  // name can not contain embedded nulls
+                    typeName = _generator.GetString(true, MinTypName, MaxTypName);  // name can not contain embedded nulls
                     typeAttrib = _typesNeg[i];
 
                     typeBuilder = modBuilder.DefineType(typeName, typeAttrib);

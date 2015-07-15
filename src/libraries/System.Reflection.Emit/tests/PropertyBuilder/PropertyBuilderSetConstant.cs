@@ -17,6 +17,7 @@ namespace System.Reflection.Emit.Tests
         private const string DynamicFieldName = "TestDynamicFieldA";
         private const string DynamicPropertyName = "TestDynamicProperty";
         private const string DynamicMethodName = "DynamicMethodA";
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         private enum Colors
         {
@@ -46,7 +47,7 @@ namespace System.Reflection.Emit.Tests
                                              MethodAttributes.HideBySig;
             Type returnType = typeof(int);
             Type[] paramTypes = new Type[0];
-            int defaultValue = TestLibrary.Generator.GetInt32();
+            int defaultValue = _generator.GetInt32();
             object actualValue;
 
             actualValue = ExecutePosTest(
@@ -70,7 +71,7 @@ namespace System.Reflection.Emit.Tests
                                              MethodAttributes.HideBySig;
             Type returnType = typeof(bool);
             Type[] paramTypes = new Type[0];
-            bool defaultValue = 0 == (TestLibrary.Generator.GetInt32() & 1);
+            bool defaultValue = 0 == (_generator.GetInt32() & 1);
             object actualValue;
 
             actualValue = ExecutePosTest(
@@ -94,7 +95,7 @@ namespace System.Reflection.Emit.Tests
                                              MethodAttributes.HideBySig;
             Type returnType = typeof(SByte);
             Type[] paramTypes = new Type[0];
-            SByte defaultValue = (SByte)(TestLibrary.Generator.GetInt32() % (SByte.MaxValue + 1));
+            SByte defaultValue = (SByte)(_generator.GetInt32() % (SByte.MaxValue + 1));
             object actualValue;
 
             actualValue = ExecutePosTest(
@@ -118,7 +119,7 @@ namespace System.Reflection.Emit.Tests
                                              MethodAttributes.HideBySig;
             Type returnType = typeof(short);
             Type[] paramTypes = new Type[0];
-            Int16 defaultValue = TestLibrary.Generator.GetInt16();
+            Int16 defaultValue = _generator.GetInt16();
             object actualValue;
 
             actualValue = ExecutePosTest(
@@ -142,7 +143,7 @@ namespace System.Reflection.Emit.Tests
                                              MethodAttributes.HideBySig;
             Type returnType = typeof(long);
             Type[] paramTypes = new Type[0];
-            long defaultValue = TestLibrary.Generator.GetInt64();
+            long defaultValue = _generator.GetInt64();
             object actualValue;
 
             actualValue = ExecutePosTest(
@@ -166,7 +167,7 @@ namespace System.Reflection.Emit.Tests
                                              MethodAttributes.HideBySig;
             Type returnType = typeof(byte);
             Type[] paramTypes = new Type[0];
-            byte defaultValue = TestLibrary.Generator.GetByte();
+            byte defaultValue = _generator.GetByte();
             object actualValue;
 
             actualValue = ExecutePosTest(
@@ -190,7 +191,7 @@ namespace System.Reflection.Emit.Tests
                                              MethodAttributes.HideBySig;
             Type returnType = typeof(ushort);
             Type[] paramTypes = new Type[0];
-            ushort defaultValue = (ushort)(TestLibrary.Generator.GetInt32() % (ushort.MaxValue + 1));
+            ushort defaultValue = (ushort)(_generator.GetInt32() % (ushort.MaxValue + 1));
             object actualValue;
 
             actualValue = ExecutePosTest(
@@ -214,7 +215,7 @@ namespace System.Reflection.Emit.Tests
                                              MethodAttributes.HideBySig;
             Type returnType = typeof(uint);
             Type[] paramTypes = new Type[0];
-            uint defaultValue = (ushort)(TestLibrary.Generator.GetInt64() % ((long)uint.MaxValue + 1));
+            uint defaultValue = (ushort)(_generator.GetInt64() % ((long)uint.MaxValue + 1));
             object actualValue;
 
             actualValue = ExecutePosTest(
@@ -238,7 +239,7 @@ namespace System.Reflection.Emit.Tests
                                              MethodAttributes.HideBySig;
             Type returnType = typeof(ulong);
             Type[] paramTypes = new Type[0];
-            ulong defaultValue = (ulong)long.MaxValue + (ulong)TestLibrary.Generator.GetInt64();
+            ulong defaultValue = (ulong)long.MaxValue + (ulong)_generator.GetInt64();
             object actualValue;
 
             actualValue = ExecutePosTest(
@@ -262,7 +263,7 @@ namespace System.Reflection.Emit.Tests
                                              MethodAttributes.HideBySig;
             Type returnType = typeof(float);
             Type[] paramTypes = new Type[0];
-            float defaultValue = TestLibrary.Generator.GetSingle();
+            float defaultValue = _generator.GetSingle();
             object actualValue;
 
             actualValue = ExecutePosTest(
@@ -286,7 +287,7 @@ namespace System.Reflection.Emit.Tests
                                              MethodAttributes.HideBySig;
             Type returnType = typeof(double);
             Type[] paramTypes = new Type[0];
-            double defaultValue = TestLibrary.Generator.GetDouble();
+            double defaultValue = _generator.GetDouble();
             object actualValue;
 
             actualValue = ExecutePosTest(
@@ -334,7 +335,7 @@ namespace System.Reflection.Emit.Tests
                                              MethodAttributes.HideBySig;
             Type returnType = typeof(char);
             Type[] paramTypes = new Type[0];
-            char defaultValue = TestLibrary.Generator.GetChar();
+            char defaultValue = _generator.GetChar();
             object actualValue;
 
             actualValue = ExecutePosTest(
@@ -358,7 +359,7 @@ namespace System.Reflection.Emit.Tests
                                              MethodAttributes.HideBySig;
             Type returnType = typeof(string);
             Type[] paramTypes = new Type[0];
-            string defaultValue = TestLibrary.Generator.GetString(true, 0, 260);
+            string defaultValue = _generator.GetString(true, 0, 260);
             object actualValue;
 
             actualValue = ExecutePosTest(
@@ -383,7 +384,7 @@ namespace System.Reflection.Emit.Tests
 
             Type returnType = typeof(Colors);
             Type[] paramTypes = new Type[0];
-            Colors defaultValue = (Colors)(TestLibrary.Generator.GetInt32() % 3);
+            Colors defaultValue = (Colors)(_generator.GetInt32() % 3);
             object actualValue;
 
             actualValue = ExecutePosTest(
@@ -510,7 +511,7 @@ namespace System.Reflection.Emit.Tests
 
             Type returnType = typeof(decimal);
             Type[] paramTypes = new Type[0];
-            decimal defaultValue = (decimal)TestLibrary.Generator.GetSingle();
+            decimal defaultValue = (decimal)_generator.GetSingle();
             object actualValue;
 
             Assert.Throws<ArgumentException>(() =>

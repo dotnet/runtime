@@ -33,6 +33,7 @@ namespace System.Reflection.Emit.Tests
 
         private TypeBuilder _typeBuilder;
         private const int ArraySize = 256;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         [Fact]
         public void TestSetCustomAttribute()
@@ -41,7 +42,7 @@ namespace System.Reflection.Emit.Tests
             Type type = typeof(FBTestAttribute1);
             ConstructorInfo con = type.GetConstructor(new Type[] { });
             byte[] bytes = new byte[ArraySize];
-            TestLibrary.Generator.GetBytes(bytes);
+            _generator.GetBytes(bytes);
 
             field.SetCustomAttribute(con, bytes);
         }
@@ -70,7 +71,7 @@ namespace System.Reflection.Emit.Tests
             Type type = typeof(FBTestAttribute1);
             ConstructorInfo con = type.GetConstructor(new Type[] { });
             byte[] bytes = new byte[ArraySize];
-            TestLibrary.Generator.GetBytes(bytes);
+            _generator.GetBytes(bytes);
             TypeBuilder.CreateTypeInfo().AsType();
 
             Assert.Throws<InvalidOperationException>(() => { field.SetCustomAttribute(con, bytes); });

@@ -20,6 +20,7 @@ namespace System.Reflection.Emit.Tests
         private const AssemblyBuilderAccess TestAssemblyBuilderAccess = AssemblyBuilderAccess.Run;
         private const int MinStringLength = 1;
         private const int MaxStringLength = 128;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         private TypeBuilder GetTestTypeBuilder()
         {
@@ -121,13 +122,13 @@ namespace System.Reflection.Emit.Tests
             string methodName1 = null;
             string methodName2 = null;
 
-            methodName1 = TestLibrary.Generator.GetString(false, MinStringLength, MaxStringLength);
-            methodName2 = TestLibrary.Generator.GetString(false, MinStringLength, MaxStringLength);
+            methodName1 = _generator.GetString(false, MinStringLength, MaxStringLength);
+            methodName2 = _generator.GetString(false, MinStringLength, MaxStringLength);
 
             // Avoid generate same method name
             if (methodName1.Length == methodName2.Length)
             {
-                methodName1 += TestLibrary.Generator.GetChar();
+                methodName1 += _generator.GetChar();
             }
 
             MethodAttributes attributes = MethodAttributes.Public;
