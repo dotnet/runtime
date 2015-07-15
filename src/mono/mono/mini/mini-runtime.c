@@ -2613,8 +2613,10 @@ mono_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod *met
 	/* FIXME Support more cases */
 	if (mono_aot_only) {
 		char tramp_name [256];
+		const char *imt = load_imt_reg ? "_imt" : "";
+		int ind = (load_imt_reg ? (-offset) : offset) / SIZEOF_VOID_P;
 
-		sprintf (tramp_name, "delegate_virtual_invoke%s_%d", load_imt_reg ? "_imt" : "", offset / SIZEOF_VOID_P);
+		sprintf (tramp_name, "delegate_virtual_invoke%s_%d", imt, ind);
 		cache [idx] = mono_aot_get_trampoline (tramp_name);
 		g_assert (cache [idx]);
 	} else {

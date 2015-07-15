@@ -6213,7 +6213,7 @@ mono_arch_get_delegate_invoke_impls (void)
 	}
 
 	for (i = 0; i <= MAX_VIRTUAL_DELEGATE_OFFSET; ++i) {
-		code = get_delegate_virtual_invoke_impl (TRUE, i * SIZEOF_VOID_P, &code_len);
+		code = get_delegate_virtual_invoke_impl (TRUE, - i * SIZEOF_VOID_P, &code_len);
 		tramp_name = g_strdup_printf ("delegate_virtual_invoke_imt_%d", i);
 		res = g_slist_prepend (res, mono_tramp_info_create (tramp_name, code, code_len, NULL, NULL));
 		g_free (tramp_name);
