@@ -753,7 +753,6 @@ void                Compiler::impInsertTreeBefore(GenTreePtr tree, IL_OFFSETX of
  *  curLevel is the stack level for which the spill to the temp is being done.
  */
 
-inline
 void                Compiler::impAssignTempGen(unsigned     tmp,
                                                GenTreePtr   val,
                                                unsigned     curLevel,
