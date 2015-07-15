@@ -19,7 +19,9 @@
     <Compile Include="MyResolver.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\Console.cs" />
+    <Compile Include="$(CommonTestPath)\System\Console.cs">
+      <Link>Common\System\Console.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj">

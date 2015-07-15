@@ -32,12 +32,24 @@
     <Compile Include="ZipArchive\zip_UpdateTests.cs" />
     <Compile Include="Utilities\StripHeaderAndFooter.cs" />
     <Compile Include="Utilities\WrappedStream.cs" />
-    <Compile Include="$(CommonTestPath)\Compression\Utilities\CRC.cs" />
-    <Compile Include="$(CommonTestPath)\Compression\Utilities\FileData.cs" />
-    <Compile Include="$(CommonTestPath)\Compression\Utilities\LocalMemoryStream.cs" />
-    <Compile Include="$(CommonTestPath)\Compression\Utilities\StreamHelpers.cs" />
-    <Compile Include="$(CommonTestPath)\Compression\Utilities\ZipTestHelper.cs" />
-    <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs" />
+    <Compile Include="$(CommonTestPath)\Compression\Utilities\CRC.cs">
+      <Link>Common\Compression\Utilities\CRC.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\Compression\Utilities\FileData.cs">
+      <Link>Common\Compression\Utilities\FileData.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\Compression\Utilities\LocalMemoryStream.cs">
+      <Link>Common\Compression\Utilities\LocalMemoryStream.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\Compression\Utilities\StreamHelpers.cs">
+      <Link>Common\Compression\Utilities\StreamHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\Compression\Utilities\ZipTestHelper.cs">
+      <Link>Common\Compression\Utilities\ZipTestHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs">
+      <Link>Common\Interop\Interop.PlatformDetection.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <!-- Temporary until we have new work in build tools to

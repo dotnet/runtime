@@ -87,7 +87,9 @@
   </ItemGroup>
   <!-- Common or Common-branched source files -->
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\Console.cs" />
+    <Compile Include="$(CommonTestPath)\System\Console.cs">
+      <Link>Common\System\Console.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Linq.Parallel.csproj">

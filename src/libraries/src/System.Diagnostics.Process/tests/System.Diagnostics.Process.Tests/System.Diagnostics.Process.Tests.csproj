@@ -21,7 +21,9 @@
     <Compile Include="ProcessTests.cs" />
     <Compile Include="ProcessStandardConsoleTests.cs" />
     <Compile Include="ProcessStreamReadTests.cs" />
-    <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs" />
+    <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs">
+      <Link>Common\Interop\Interop.PlatformDetection.cs</Link>
+    </Compile>
     <Compile Include="ProcessTestBase.cs" />
   </ItemGroup>
   <ItemGroup>
