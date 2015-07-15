@@ -1,7 +1,30 @@
+; Unix hosting API
+coreclr_create_delegate
+coreclr_execute_assembly
+coreclr_initialize
+coreclr_shutdown
+
+; Obsolete Unix hosting API, to be removed
+ExecuteAssembly
+
+; PAL initialization and module registration
+PAL_InitializeCoreCLR 
+PAL_RegisterModule
+PAL_UnregisterModule
+
+; Functions exported by the coreclr
+CoreDllMain
+DllMain
+GetCLRRuntimeHost
+
+; Functions used by CoreFX
+EnsureOpenSslInitialized
+ForkAndExecProcess
+
+; Win32 API and other PAL functions used by the mscorlib
 CloseHandle
 CoCreateGuid
 CopyFileW
-CoreDllMain
 CoTaskMemAlloc
 CoTaskMemFree
 CreateDirectoryW
@@ -10,19 +33,14 @@ CreateFileW
 CreateMutexW
 CreateSemaphoreW
 DeleteFileW
-DllMain
 DuplicateHandle
-EnsureOpenSslInitialized
-ExecuteAssembly
 FindClose
 FindFirstFileW
 FindNextFileW
 FlushFileBuffers
-ForkAndExecProcess
 FormatMessageW
 FreeEnvironmentStringsW
 GetACP
-GetCLRRuntimeHost
 GetConsoleCP
 GetConsoleOutputCP
 GetCurrentDirectoryW
@@ -53,10 +71,7 @@ MultiByteToWideChar
 OpenEventW
 OpenMutexW
 OpenSemaphoreW
-PAL_InitializeCoreCLR 
 PAL_Random
-PAL_RegisterModule
-PAL_UnregisterModule
 QueryPerformanceCounter  
 QueryPerformanceFrequency
 RaiseException
