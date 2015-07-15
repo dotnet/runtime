@@ -9,6 +9,8 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoMonthDayPattern
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         // PosTest1: Call MonthDayPattern getter method should return correct value for InvariantInfo
         [Fact]
         public void PosTest1()
@@ -24,7 +26,7 @@ namespace System.Globalization.Tests
             VerificationHelper(new DateTimeFormatInfo(), "MMM dd", true);
             VerificationHelper(new DateTimeFormatInfo(), "M", true);
             VerificationHelper(new DateTimeFormatInfo(), "dd MMMM", true);
-            VerificationHelper(new DateTimeFormatInfo(), TestLibrary.Generator.GetString(-55, false, 1, 256), true);
+            VerificationHelper(new DateTimeFormatInfo(), _generator.GetString(-55, false, 1, 256), true);
             VerificationHelper(new DateTimeFormatInfo(), "MMMM dd", true);
             VerificationHelper(new DateTimeFormatInfo(), "m", true);
         }

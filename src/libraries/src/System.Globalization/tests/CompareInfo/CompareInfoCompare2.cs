@@ -10,6 +10,7 @@ namespace System.Globalization.Tests
 {
     public class CompareInfoCompare2
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
         public static string[] InterestingStrings = new string[] { null, "", "a", "1", "-", "A", "!", "abc", "aBc", "a\u0400Bc", "I", "i", "\u0130", "\u0131", "A", "\uFF21", "\uFE57" };
 
         // PosTest1: Compare interesting strings ordinally
@@ -31,7 +32,7 @@ namespace System.Globalization.Tests
         {
             for (int i = 0; i < 40; i++)
             {
-                char c = TestLibrary.Generator.GetChar(-55);
+                char c = _generator.GetChar(-55);
                 Assert.Equal(0, CultureInfo.CurrentCulture.CompareInfo.Compare(new string(new char[] { c }), new string(new char[] { c }), CompareOptions.Ordinal));
                 for (int j = 0; j < (int)c; j++)
                 {
@@ -48,8 +49,8 @@ namespace System.Globalization.Tests
         {
             for (int i = 0; i < 1000; i++)
             {
-                string str1 = TestLibrary.Generator.GetString(-55, false, 5, 20);
-                string str2 = TestLibrary.Generator.GetString(-55, false, 5, 20);
+                string str1 = _generator.GetString(-55, false, 5, 20);
+                string str2 = _generator.GetString(-55, false, 5, 20);
                 Assert.Equal(0, CultureInfo.CurrentCulture.CompareInfo.Compare(str1, str1, CompareOptions.Ordinal));
                 Assert.Equal(0, CultureInfo.CurrentCulture.CompareInfo.Compare(str2, str2, CompareOptions.Ordinal));
                 TestStrings(str1, str2);

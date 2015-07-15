@@ -11,12 +11,13 @@ namespace System.Globalization.Tests
     {
         private const int c_MINI_STRING_LENGTH = 8;
         private const int c_MAX_STRING_LENGTH = 256;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         // PosTest1: The argument is a random string,and start at a random index
         [Fact]
         public void TestRandomIndex()
         {
-            string str = TestLibrary.Generator.GetString(-55, true, c_MINI_STRING_LENGTH, c_MAX_STRING_LENGTH);
+            string str = _generator.GetString(-55, true, c_MINI_STRING_LENGTH, c_MAX_STRING_LENGTH);
             int len = str.Length;
             int index = this.GetInt32(8, len);
             TextElementEnumerator TextElementEnumerator = StringInfo.GetTextElementEnumerator(str, index);
@@ -96,7 +97,7 @@ namespace System.Globalization.Tests
                 }
                 if (minValue < maxValue)
                 {
-                    return minValue + TestLibrary.Generator.GetInt32(-55) % (maxValue - minValue);
+                    return minValue + _generator.GetInt32(-55) % (maxValue - minValue);
                 }
             }
             catch

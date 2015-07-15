@@ -11,12 +11,13 @@ namespace System.Globalization.Tests
     {
         private const int c_MINI_STRING_LENGTH = 8;
         private const int c_MAX_STRING_LENGTH = 256;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         // PosTest1: The string property in stringinfo object is a random string argument
         [Fact]
         public void TestRandomStringValue()
         {
-            string str = TestLibrary.Generator.GetString(-55, false, c_MINI_STRING_LENGTH, c_MAX_STRING_LENGTH);
+            string str = _generator.GetString(-55, false, c_MINI_STRING_LENGTH, c_MAX_STRING_LENGTH);
             StringInfo stringInfo = new StringInfo(str);
             Assert.Equal(str, stringInfo.String);
         }
@@ -43,7 +44,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void TestSetProperty()
         {
-            string str = TestLibrary.Generator.GetString(-55, false, c_MINI_STRING_LENGTH, c_MAX_STRING_LENGTH);
+            string str = _generator.GetString(-55, false, c_MINI_STRING_LENGTH, c_MAX_STRING_LENGTH);
             StringInfo stringInfo = new StringInfo();
             stringInfo.String = str;
             Assert.Equal(str, stringInfo.String);
