@@ -25,7 +25,7 @@ namespace Internal.Cryptography.Pal
         private static X509ChainStatus[] GetChainStatusInformation(CertTrustErrorStatus dwStatus)
         {
             if (dwStatus == CertTrustErrorStatus.CERT_TRUST_NO_ERROR)
-                return new X509ChainStatus[0];
+                return Array.Empty<X509ChainStatus>();
 
             int count = 0;
             for (uint bits = (uint)dwStatus; bits != 0; bits = bits >> 1)

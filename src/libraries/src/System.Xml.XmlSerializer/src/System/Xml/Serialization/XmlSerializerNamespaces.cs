@@ -83,7 +83,7 @@ namespace System.Xml.Serialization
         public XmlQualifiedName[] ToArray()
         {
             if (NamespaceList == null)
-                return new XmlQualifiedName[0];
+                return Array.Empty<XmlQualifiedName>();
             return (XmlQualifiedName[])NamespaceList.ToArray(typeof(XmlQualifiedName));
         }
 
