@@ -9,6 +9,8 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoYearMonthPattern
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         // PosTest1: Call YearMonthPattern getter method should return correct value for InvariantInfo
         [Fact]
         [ActiveIssue(846, PlatformID.AnyUnix)] 
@@ -25,7 +27,7 @@ namespace System.Globalization.Tests
             VerificationHelper(new DateTimeFormatInfo(), "yyyy MMMM", true);
             VerificationHelper(new DateTimeFormatInfo(), "y", true);
             VerificationHelper(new DateTimeFormatInfo(), "Y", true);
-            VerificationHelper(new DateTimeFormatInfo(), TestLibrary.Generator.GetString(-55, false, 1, 256), true);
+            VerificationHelper(new DateTimeFormatInfo(), _generator.GetString(-55, false, 1, 256), true);
         }
 
         // NegTest1: ArgumentNullException should be thrown when The property is being set to a null reference

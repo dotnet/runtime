@@ -9,6 +9,8 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoShortTimePattern
     {
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+
         // PosTest1: Call ShortTimePattern getter method should return correct value for InvariantInfo
         [Fact]
         public void TestGetter()
@@ -22,7 +24,7 @@ namespace System.Globalization.Tests
         {
             VerificationHelper(new DateTimeFormatInfo(), "HH:mm", true);
             VerificationHelper(new DateTimeFormatInfo(), "t", true);
-            VerificationHelper(new DateTimeFormatInfo(), TestLibrary.Generator.GetString(-55, false, 1, 256), true);
+            VerificationHelper(new DateTimeFormatInfo(), _generator.GetString(-55, false, 1, 256), true);
         }
 
         // NegTest1: ArgumentNullException should be thrown when The property is being set to a null reference

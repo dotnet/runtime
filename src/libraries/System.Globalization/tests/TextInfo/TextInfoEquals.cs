@@ -11,6 +11,7 @@ namespace System.Globalization.Tests
     {
         private int _MINI_STRING_LENGTH = 8;
         private int _MAX_STRING_LENGTH = 256;
+        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         // PosTest1: Verify same culture TextInfo equals original TextInfo
         [Fact]
@@ -56,7 +57,7 @@ namespace System.Globalization.Tests
         public void TestIntObject()
         {
             TextInfo textInfoUS = new CultureInfo("en-US").TextInfo;
-            int i = TestLibrary.Generator.GetInt32(-55);
+            int i = _generator.GetInt32(-55);
             object intObject = i as object;
             Assert.False(textInfoUS.Equals(intObject));
         }
@@ -66,7 +67,7 @@ namespace System.Globalization.Tests
         public void TestStringObject()
         {
             TextInfo textInfoUS = new CultureInfo("en-US").TextInfo;
-            String str = TestLibrary.Generator.GetString(-55, false, _MINI_STRING_LENGTH, _MAX_STRING_LENGTH);
+            String str = _generator.GetString(-55, false, _MINI_STRING_LENGTH, _MAX_STRING_LENGTH);
             object strObject = str as object;
 
             Assert.False(textInfoUS.Equals(strObject));
