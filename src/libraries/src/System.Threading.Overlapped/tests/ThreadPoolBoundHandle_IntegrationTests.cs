@@ -26,14 +26,16 @@ public partial class ThreadPoolBoundHandleTests
 
         fixed (byte* p = data)
         {
-            int bytesWritten = DllImport.WriteFile(boundHandle.Handle, p, DATA_SIZE, IntPtr.Zero, overlapped);
+            int retval = DllImport.WriteFile(boundHandle.Handle, p, DATA_SIZE, IntPtr.Zero, overlapped);
 
-            Assert.Equal(bytesWritten, 0);
-            Assert.Equal(DllImport.ERROR_IO_PENDING, Marshal.GetLastWin32Error());
+            if (retval == 0)
+            {
+                Assert.Equal(DllImport.ERROR_IO_PENDING, Marshal.GetLastWin32Error());                
+            }
+
+            // Wait for overlapped operation to complete
+            result.Event.WaitOne();
         }
-
-        // Wait for overlapped operation to complete
-        result.Event.WaitOne();
 
         boundHandle.FreeNativeOverlapped(overlapped);
         boundHandle.Dispose();
@@ -68,22 +70,26 @@ public partial class ThreadPoolBoundHandleTests
 
         fixed (byte* p1 = data1, p2 = data2)
         {
-            int bytesWritten = DllImport.WriteFile(boundHandle.Handle, p1, DATA_SIZE, IntPtr.Zero, overlapped1);
+            int retval = DllImport.WriteFile(boundHandle.Handle, p1, DATA_SIZE, IntPtr.Zero, overlapped1);
 
-            Assert.Equal(bytesWritten, 0);
-            Assert.Equal(DllImport.ERROR_IO_PENDING, Marshal.GetLastWin32Error());
+            if (retval == 0)
+            {
+                Assert.Equal(DllImport.ERROR_IO_PENDING, Marshal.GetLastWin32Error());
+            }
 
 
             // Start the offset after the above write, so that it doesn't overwrite the previous write
             overlapped2->OffsetLow = DATA_SIZE;
-            bytesWritten = DllImport.WriteFile(boundHandle.Handle, p2, DATA_SIZE, IntPtr.Zero, overlapped2);
+            retval = DllImport.WriteFile(boundHandle.Handle, p2, DATA_SIZE, IntPtr.Zero, overlapped2);
 
-            Assert.Equal(bytesWritten, 0);
-            Assert.Equal(DllImport.ERROR_IO_PENDING, Marshal.GetLastWin32Error());
+            if (retval == 0)
+            {
+                Assert.Equal(DllImport.ERROR_IO_PENDING, Marshal.GetLastWin32Error());
+            }
+
+            // Wait for overlapped operations to complete
+            WaitHandle.WaitAll(new WaitHandle[] { result1.Event, result2.Event });
         }
-
-        // Wait for overlapped operations to complete
-        WaitHandle.WaitAll(new WaitHandle[] { result1.Event, result2.Event });
 
         boundHandle.FreeNativeOverlapped(overlapped1);
         boundHandle.FreeNativeOverlapped(overlapped2);
@@ -128,20 +134,24 @@ public partial class ThreadPoolBoundHandleTests
 
             fixed (byte* p1 = data1, p2 = data2)
             {
-                int bytesWritten = DllImport.WriteFile(boundHandle1.Handle, p1, DATA_SIZE, IntPtr.Zero, overlapped1);
+                int retval = DllImport.WriteFile(boundHandle1.Handle, p1, DATA_SIZE, IntPtr.Zero, overlapped1);
 
-                Assert.Equal(bytesWritten, 0);
-                Assert.Equal(DllImport.ERROR_IO_PENDING, Marshal.GetLastWin32Error());
+                if (retval == 0)
+                {
+                    Assert.Equal(DllImport.ERROR_IO_PENDING, Marshal.GetLastWin32Error());
+                }
 
 
-                bytesWritten = DllImport.WriteFile(boundHandle2.Handle, p2, DATA_SIZE, IntPtr.Zero, overlapped2);
+                retval = DllImport.WriteFile(boundHandle2.Handle, p2, DATA_SIZE, IntPtr.Zero, overlapped2);
 
-                Assert.Equal(bytesWritten, 0);
-                Assert.Equal(DllImport.ERROR_IO_PENDING, Marshal.GetLastWin32Error());
+                if (retval == 0)
+                {
+                    Assert.Equal(DllImport.ERROR_IO_PENDING, Marshal.GetLastWin32Error());
+                }
+
+                // Wait for overlapped operations to complete
+                WaitHandle.WaitAll(new WaitHandle[] { result1.Event, result2.Event });
             }
-
-            // Wait for overlapped operations to complete
-            WaitHandle.WaitAll(new WaitHandle[] { result1.Event, result2.Event });
 
             boundHandle1.FreeNativeOverlapped(overlapped1);
             boundHandle2.FreeNativeOverlapped(overlapped2);
@@ -190,14 +200,16 @@ public partial class ThreadPoolBoundHandleTests
 
         fixed (byte* p = data)
         {
-            int bytesWritten = DllImport.WriteFile(boundHandle.Handle, p, DATA_SIZE, IntPtr.Zero, overlapped);
+            int retval = DllImport.WriteFile(boundHandle.Handle, p, DATA_SIZE, IntPtr.Zero, overlapped);
 
-            Assert.Equal(bytesWritten, 0);
-            Assert.Equal(DllImport.ERROR_IO_PENDING, Marshal.GetLastWin32Error());
+            if (retval == 0)
+            {
+                Assert.Equal(DllImport.ERROR_IO_PENDING, Marshal.GetLastWin32Error());
+            }
+
+            // Wait for overlapped operation to complete
+            context.Event.WaitOne();
         }
-
-        // Wait for overlapped operation to complete
-        context.Event.WaitOne();
 
         boundHandle.FreeNativeOverlapped(overlapped);
         boundHandle.Dispose();

@@ -10,21 +10,24 @@ public partial class ThreadPoolBoundHandleTests
     [Fact]
     public void Handle_ReturnsHandle()
     {
-        SafeHandle handle = HandleFactory.CreateAsyncFileHandleForWrite();
-
-        ThreadPoolBoundHandle boundHandle = CreateThreadPoolBoundHandle(handle);
-
-        Assert.Same(boundHandle.Handle, handle);
+        using(SafeHandle handle = HandleFactory.CreateAsyncFileHandleForWrite())
+        {
+            using(ThreadPoolBoundHandle boundHandle = CreateThreadPoolBoundHandle(handle))
+            {
+                Assert.Same(boundHandle.Handle, handle);
+            }
+        }
     }
 
     [Fact]
     public void Handle_AfterDisposed_DoesNotThrow()
     {
-        SafeHandle handle = HandleFactory.CreateAsyncFileHandleForWrite();
+        using(SafeHandle handle = HandleFactory.CreateAsyncFileHandleForWrite())
+        {
+            ThreadPoolBoundHandle boundHandle = CreateThreadPoolBoundHandle(handle);
+            boundHandle.Dispose();
 
-        ThreadPoolBoundHandle boundHandle = CreateThreadPoolBoundHandle(handle);
-        boundHandle.Dispose();
-
-        Assert.Same(boundHandle.Handle, handle);
+            Assert.Same(boundHandle.Handle, handle);
+        }
     }
 }

@@ -24,19 +24,19 @@ public partial class ThreadPoolBoundHandleTests
     [Fact]
     public unsafe void PreAllocatedOverlapped_NullAsContext_DoesNotThrow()
     {
-        new PreAllocatedOverlapped((_, __, ___) => { }, (object)null, new byte[256]);
+        using(new PreAllocatedOverlapped((_, __, ___) => { }, (object)null, new byte[256])) {}
     }
 
     [Fact]
     public unsafe void PreAllocatedOverlapped_NullAsPinData_DoesNotThrow()
     {
-        new PreAllocatedOverlapped((_, __, ___) => { }, new object(), (byte[])null);
+        using(new PreAllocatedOverlapped((_, __, ___) => { }, new object(), (byte[])null)) {}
     }
 
     [Fact]
     public unsafe void PreAllocatedOverlapped_EmptyArrayAsPinData_DoesNotThrow()
     {
-        new PreAllocatedOverlapped((_, __, ___) => { }, new object(), new byte[0]);
+        using(new PreAllocatedOverlapped((_, __, ___) => { }, new object(), new byte[0])) {}
     }
 
     [Fact]
@@ -52,7 +52,7 @@ public partial class ThreadPoolBoundHandleTests
     [Fact]
     public unsafe void PreAllocatedOverlapped_BlittableTypeAsPinData_DoesNotThrow()
     {
-        new PreAllocatedOverlapped((_, __, ___) => { }, new object(), new BlittableType() { i = 42 });
+        using(new PreAllocatedOverlapped((_, __, ___) => { }, new object(), new BlittableType() { i = 42 })) {}
     }
 
     [Fact]
@@ -63,7 +63,7 @@ public partial class ThreadPoolBoundHandleTests
             new BlittableType() { i = 1 },
             new byte[5],
         };
-        new PreAllocatedOverlapped((_, __, ___) => { }, new object(), array);
+        using(new PreAllocatedOverlapped((_, __, ___) => { }, new object(), array)) {}
     }
 
     [Fact]
@@ -84,12 +84,12 @@ public partial class ThreadPoolBoundHandleTests
     [Fact]
     public unsafe void PreAllocatedOverlapped_ReturnedNativeOverlapped_InternalLowAndInternalHighSetToZero()
     {
-        new PreAllocatedOverlapped((_, __, ___) => { }, new object(), new byte[256]);
+        using(new PreAllocatedOverlapped((_, __, ___) => { }, new object(), new byte[256])) {}
     }
 
     [Fact]
     public unsafe void PreAllocatedOverlapped_ReturnedNativeOverlapped_OffsetLowAndOffsetHighSetToZero()
     {
-        new PreAllocatedOverlapped((_, __, ___) => { }, new object(), new byte[256]);
+        using(new PreAllocatedOverlapped((_, __, ___) => { }, new object(), new byte[256])) {}
     }
 }

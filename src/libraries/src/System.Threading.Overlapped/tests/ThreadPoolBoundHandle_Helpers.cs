@@ -29,12 +29,4 @@ public partial class ThreadPoolBoundHandleTests
 
         return ThreadPoolBoundHandle.BindHandle(handle);
     }
-
-    private unsafe static NativeOverlapped* AllocateNativeOverlapped(IOCompletionCallback callback, object context, byte[] pinData)
-    {
-        SafeHandle handle = HandleFactory.CreateAsyncFileHandleForWrite();
-        ThreadPoolBoundHandle boundHandle = ThreadPoolBoundHandle.BindHandle(handle);
-        
-        return boundHandle.AllocateNativeOverlapped(callback, context, pinData);
-    }
 }

@@ -10,12 +10,13 @@ public partial class ThreadPoolBoundHandleTests
     [Fact]
     public unsafe void FreeNativeOverlapped_NullAsNativeOverlapped_ThrowsArgumentNullException()
     {
-        ThreadPoolBoundHandle handle = CreateThreadPoolBoundHandle();
-
-        Assert.Throws<ArgumentNullException>("overlapped", () =>
+        using(ThreadPoolBoundHandle handle = CreateThreadPoolBoundHandle())
         {
-            handle.FreeNativeOverlapped((NativeOverlapped*)null);
-        });
+            Assert.Throws<ArgumentNullException>("overlapped", () =>
+            {
+                handle.FreeNativeOverlapped((NativeOverlapped*)null);
+            });
+        }
     }
 
     [Fact]
@@ -25,5 +26,24 @@ public partial class ThreadPoolBoundHandleTests
         NativeOverlapped* overlapped = boundHandle.AllocateNativeOverlapped((_, __, ___) => { }, new object(), new byte[256]);
         boundHandle.Dispose();
         boundHandle.FreeNativeOverlapped(overlapped);
+    }
+
+    [Fact]
+    public unsafe void FreeNativeOverlapped_WithWrongHandle_ThrowsArgumentException()
+    {
+        using(ThreadPoolBoundHandle handle = CreateThreadPoolBoundHandle())
+        {
+            NativeOverlapped* overlapped = handle.AllocateNativeOverlapped((_, __, ___) => { }, (object)null, (byte[])null);
+
+            using (ThreadPoolBoundHandle handle2 = CreateThreadPoolBoundHandle())
+            {
+                Assert.Throws<ArgumentException>(() =>
+                {
+                    handle2.FreeNativeOverlapped(overlapped);
+                });
+            }
+
+            handle.FreeNativeOverlapped(overlapped);
+        }
     }
 }
