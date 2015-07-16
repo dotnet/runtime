@@ -583,7 +583,7 @@ namespace System.Xml.Serialization
             mapping.TypeDesc = typeDesc;
             mapping.TypeName = Soap.UrType;
             mapping.Namespace = XmlSchema.Namespace;
-            mapping.Members = new MemberMapping[0];
+            mapping.Members = Array.Empty<MemberMapping>();
             mapping.IncludeInSchema = false;
             return mapping;
         }

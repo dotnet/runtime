@@ -309,8 +309,8 @@ namespace System.Collections.Generic
         {
             T[] arr = new T[_size];
             if (_size == 0)
-                return arr;
-
+                return arr; // consider replacing with Array.Empty<T>() to be consistent with non-generic Queue
+            
             if (_head < _tail)
             {
                 Array.Copy(_array, _head, arr, 0, _size);

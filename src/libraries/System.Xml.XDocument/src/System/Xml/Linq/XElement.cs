@@ -30,8 +30,6 @@ namespace System.Xml.Linq
     [XmlSchemaProvider(null, IsAny = true)]
     public class XElement : XContainer, IXmlSerializable
     {
-        private static IEnumerable<XElement> s_emptySequence;
-
         /// <summary>
         /// Gets an empty collection of elements.
         /// </summary>
@@ -39,8 +37,7 @@ namespace System.Xml.Linq
         {
             get
             {
-                if (s_emptySequence == null) s_emptySequence = new XElement[0];
-                return s_emptySequence;
+				return Array.Empty<XElement>();
             }
         }
 
