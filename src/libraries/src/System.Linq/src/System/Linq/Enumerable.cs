@@ -3159,7 +3159,7 @@ namespace System.Linq
 
         internal TElement[] ToArray()
         {
-            if (count == 0) return new TElement[0];
+            if (count == 0) return new TElement[0]; // consider replacing with Array.Empty<TElement>()
             if (items.Length == count) return items;
 
             var arr = new TElement[count];

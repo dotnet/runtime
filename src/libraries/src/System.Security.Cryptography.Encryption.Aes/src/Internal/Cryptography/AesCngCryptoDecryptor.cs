@@ -126,7 +126,7 @@ namespace Internal.Cryptography
             }
             else
             {
-                outputData = new byte[0];
+                outputData = Array.Empty<byte>();
             }
             return outputData;
         }

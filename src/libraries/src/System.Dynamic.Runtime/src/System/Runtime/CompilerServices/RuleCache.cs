@@ -15,7 +15,7 @@ namespace System.Runtime.CompilerServices
     [EditorBrowsable(EditorBrowsableState.Never), DebuggerStepThrough]
     public class RuleCache<T> where T : class
     {
-        private T[] _rules = new T[0];
+        private T[] _rules = Array.Empty<T>();
         private readonly Object _cacheLock = new Object();
 
         private const int MaxRules = 128;
