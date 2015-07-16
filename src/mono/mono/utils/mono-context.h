@@ -17,6 +17,10 @@
 #include <signal.h>
 #endif
 
+#ifdef HOST_WATCHOS
+#include <ucontext.h>
+#endif
+
 /*
  * General notes about mono-context.
  * Each arch defines a MonoContext struct with all GPR regs + IP/PC.
@@ -248,6 +252,24 @@ typedef struct {
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->regs [ARMREG_FP]))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->regs [ARMREG_SP]))
 
+#if defined(HOST_WATCHOS)
+
+#define MONO_CONTEXT_GET_CURRENT(ctx) do {							\
+	ucontext_t uctx;												\
+	struct __darwin_mcontext32 *mctx;								\
+	getcontext(&uctx);												\
+	mctx = uctx.uc_mcontext;										\
+	memcpy(ctx.regs, mctx->__ss.__r, 13 * sizeof(__uint32_t));		\
+	ctx.regs[ARMREG_SP] = mctx->__ss.__sp;							\
+	ctx.regs[ARMREG_LR] = mctx->__ss.__lr;							\
+	ctx.regs[ARMREG_PC] = mctx->__ss.__pc;							\
+	ctx.pc = mctx->__ss.__pc;										\
+	memcpy(ctx.fregs, mctx->__fs.__r, 16 * sizeof(__uint32_t));		\
+	ctx.cpsr = mctx->__ss.__cpsr;									\
+} while (0);
+
+#else
+
 #define MONO_CONTEXT_GET_CURRENT(ctx)	do { 	\
 	__asm__ __volatile__(			\
 		"push {r0}\n"				\
@@ -270,6 +292,8 @@ typedef struct {
 	);								\
 	ctx.pc = ctx.regs [15];			\
 } while (0)
+
+#endif
 
 #define MONO_ARCH_HAS_MONO_CONTEXT 1
 
