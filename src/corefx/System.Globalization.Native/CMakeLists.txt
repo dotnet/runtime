@@ -15,6 +15,7 @@ endif()
 add_compile_options(-fPIC)
 
 set(NATIVEGLOBALIZATION_SOURCES
+    idna.cpp
     normalization.cpp
 )
 
