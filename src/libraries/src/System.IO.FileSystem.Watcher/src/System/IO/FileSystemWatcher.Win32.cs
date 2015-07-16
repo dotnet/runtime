@@ -364,15 +364,10 @@ namespace System.IO
 
         // Additional state information to pass to callback.  Note that we
         // never return this object to users, but we do pass state in it.
-        private sealed class FSWAsyncResult : IAsyncResult
+        private sealed class FSWAsyncResult
         {
             internal int session;
             internal byte[] buffer;
-
-            public bool IsCompleted { get { throw NotImplemented.ByDesign; } }
-            public WaitHandle AsyncWaitHandle { get { throw NotImplemented.ByDesign; } }
-            public Object AsyncState { get { throw NotImplemented.ByDesign; } }
-            public bool CompletedSynchronously { get { throw NotImplemented.ByDesign; } }
         }
 
         /// <devdoc>
