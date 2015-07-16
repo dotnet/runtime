@@ -1193,6 +1193,11 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 		case LLVMArgVtypeByVal:
 			/* Vtype returned normally by val */
 			break;
+		case LLVMArgVtypeAsScalar:
+			/* LLVM models this by returning an int */
+			g_assert (cinfo->ret.nslots == 1 || cinfo->ret.nslots == 2);
+			ret_type = LLVMIntType (cinfo->ret.nslots * sizeof (mgreg_t));
+			break;
 		case LLVMArgFpStruct: {
 			/* Vtype returned as a fp struct */
 			LLVMTypeRef members [16];
@@ -1326,6 +1331,9 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 			pindex += ainfo->nslots;
 			break;
 		}
+		case LLVMArgVtypeAsScalar:
+			g_assert_not_reached ();
+			break;
 		default:
 			param_types [pindex ++] = type_to_llvm_arg_type (ctx, sig->params [i]);
 			break;
@@ -2143,6 +2151,9 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			LLVMBuildStore (ctx->builder, arg, convert (ctx, ctx->addresses [reg], LLVMPointerType (LLVMTypeOf (arg), 0)));
 			break;
 		}
+		case LLVMArgVtypeAsScalar:
+			g_assert_not_reached ();
+			break;
 		default:
 			ctx->values [reg] = convert_full (ctx, ctx->values [reg], llvm_type_to_stack_type (cfg, type_to_llvm_type (ctx, sig->params [i])), type_is_unsigned (ctx, sig->params [i]));
 			break;
@@ -2476,6 +2487,9 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 			g_assert (addresses [reg]);
 			args [pindex] = LLVMBuildLoad (ctx->builder, convert (ctx, addresses [reg], LLVMPointerType (LLVMArrayType (IntPtrType (), ainfo->nslots), 0)), "");
 			break;
+		case LLVMArgVtypeAsScalar:
+			g_assert_not_reached ();
+			break;
 		default:
 			g_assert (args [pindex]);
 			if (i == 0 && sig->hasthis)
@@ -2547,6 +2561,11 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 			LLVMBuildStore (builder, lcall, addresses [call->inst.dreg]);
 			break;
 		case LLVMArgFpStruct:
+			if (!addresses [call->inst.dreg])
+				addresses [call->inst.dreg] = build_alloca (ctx, sig->ret);
+			LLVMBuildStore (builder, lcall, convert_full (ctx, addresses [call->inst.dreg], LLVMPointerType (LLVMTypeOf (lcall), 0), FALSE));
+			break;
+		case LLVMArgVtypeAsScalar:
 			if (!addresses [call->inst.dreg])
 				addresses [call->inst.dreg] = build_alloca (ctx, sig->ret);
 			LLVMBuildStore (builder, lcall, convert_full (ctx, addresses [call->inst.dreg], LLVMPointerType (LLVMTypeOf (lcall), 0), FALSE));
@@ -2889,6 +2908,19 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 
 				retval = LLVMBuildInsertValue (builder, LLVMGetUndef (ret_type), part1, 0, "");
 
+				LLVMBuildRet (builder, retval);
+				break;
+			}
+			case LLVMArgVtypeAsScalar: {
+				LLVMTypeRef ret_type = LLVMGetReturnType (LLVMGetElementType (LLVMTypeOf (method)));
+				LLVMValueRef retval;
+				int size;
+
+				size = get_vtype_size (sig->ret);
+
+				g_assert (addresses [ins->sreg1]);
+
+				retval = LLVMBuildLoad (builder, LLVMBuildBitCast (builder, addresses [ins->sreg1], LLVMPointerType (ret_type, 0), ""), "");
 				LLVMBuildRet (builder, retval);
 				break;
 			}
@@ -3503,6 +3535,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_LCONV_TO_R8:
 			values [ins->dreg] = LLVMBuildSIToFP (builder, lhs, LLVMDoubleType (), dname);
 			break;
+		case OP_ICONV_TO_R_UN:
 		case OP_LCONV_TO_R_UN:
 			values [ins->dreg] = LLVMBuildUIToFP (builder, lhs, LLVMDoubleType (), dname);
 			break;
@@ -5427,7 +5460,9 @@ mono_llvm_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			break;
 		}
 		case LLVMArgVtypeByVal:
+		case LLVMArgVtypeByRef:
 		case LLVMArgVtypeInReg:
+		case LLVMArgVtypeAsScalar:
 		case LLVMArgAsIArgs:
 		case LLVMArgAsFpArgs:
 			MONO_INST_NEW (cfg, ins, OP_LLVM_OUTARG_VT);
