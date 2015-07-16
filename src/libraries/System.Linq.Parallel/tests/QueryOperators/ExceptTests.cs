@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Threading;
 using Xunit;
 
 namespace System.Linq.Parallel.Tests
@@ -268,6 +269,17 @@ namespace System.Linq.Parallel.Tests
             Assert.Throws<NotSupportedException>(() => ParallelEnumerable.Range(0, 1).Except(Enumerable.Range(0, 1)));
             Assert.Throws<NotSupportedException>(() => ParallelEnumerable.Range(0, 1).Except(Enumerable.Range(0, 1), null));
 #pragma warning restore 618
+        }
+
+        [Fact]
+        // Should not get the same setting from both operands.
+        public static void Except_NoDuplicateSettings()
+        {
+            CancellationToken t = new CancellationTokenSource().Token;
+            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Range(0, 1).WithCancellation(t).Except(ParallelEnumerable.Range(0, 1).WithCancellation(t)));
+            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Range(0, 1).WithDegreeOfParallelism(1).Except(ParallelEnumerable.Range(0, 1).WithDegreeOfParallelism(1)));
+            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Range(0, 1).WithExecutionMode(ParallelExecutionMode.Default).Except(ParallelEnumerable.Range(0, 1).WithExecutionMode(ParallelExecutionMode.Default)));
+            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Range(0, 1).WithMergeOptions(ParallelMergeOptions.Default).Except(ParallelEnumerable.Range(0, 1).WithMergeOptions(ParallelMergeOptions.Default)));
         }
 
         [Fact]

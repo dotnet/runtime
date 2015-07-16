@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Threading;
 using Xunit;
 
 namespace System.Linq.Parallel.Tests
@@ -114,6 +115,17 @@ namespace System.Linq.Parallel.Tests
 #pragma warning disable 618
             Assert.Throws<NotSupportedException>(() => ParallelEnumerable.Range(0, 1).Concat(Enumerable.Range(0, 1)));
 #pragma warning restore 618
+        }
+
+        [Fact]
+        // Should not get the same setting from both operands.
+        public static void Concat_NoDuplicateSettings()
+        {
+            CancellationToken t = new CancellationTokenSource().Token;
+            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Range(0, 1).WithCancellation(t).Concat(ParallelEnumerable.Range(0, 1).WithCancellation(t)));
+            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Range(0, 1).WithDegreeOfParallelism(1).Concat(ParallelEnumerable.Range(0, 1).WithDegreeOfParallelism(1)));
+            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Range(0, 1).WithExecutionMode(ParallelExecutionMode.Default).Concat(ParallelEnumerable.Range(0, 1).WithExecutionMode(ParallelExecutionMode.Default)));
+            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Range(0, 1).WithMergeOptions(ParallelMergeOptions.Default).Concat(ParallelEnumerable.Range(0, 1).WithMergeOptions(ParallelMergeOptions.Default)));
         }
 
         [Fact]

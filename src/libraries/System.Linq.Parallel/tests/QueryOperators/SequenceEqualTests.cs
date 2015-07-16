@@ -163,6 +163,17 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Fact]
+        // Should not get the same setting from both operands.
+        public static void SequenceEqual_NoDuplicateSettings()
+        {
+            CancellationToken t = new CancellationTokenSource().Token;
+            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Range(0, 1).WithCancellation(t).SequenceEqual(ParallelEnumerable.Range(0, 1).WithCancellation(t)));
+            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Range(0, 1).WithDegreeOfParallelism(1).SequenceEqual(ParallelEnumerable.Range(0, 1).WithDegreeOfParallelism(1)));
+            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Range(0, 1).WithExecutionMode(ParallelExecutionMode.Default).SequenceEqual(ParallelEnumerable.Range(0, 1).WithExecutionMode(ParallelExecutionMode.Default)));
+            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Range(0, 1).WithMergeOptions(ParallelMergeOptions.Default).SequenceEqual(ParallelEnumerable.Range(0, 1).WithMergeOptions(ParallelMergeOptions.Default)));
+        }
+
+        [Fact]
         public static void SequenceEqual_ArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<int>)null).SequenceEqual(ParallelEnumerable.Range(0, 1)));

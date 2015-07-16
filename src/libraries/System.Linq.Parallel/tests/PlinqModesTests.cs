@@ -116,6 +116,24 @@ namespace System.Linq.Parallel.Tests
             }
         }
 
+        /// <summary>
+        /// Return execution mode combinations, for testing multiple calls to WithExecutionMode
+        /// </summary>
+        /// <returns>Entries for test data.
+        /// Both entries are a ParallelExecutionMode in a Cartesian join.</returns>
+        public static IEnumerable<object[]> AllExecutionModes_Multiple()
+        {
+            ParallelExecutionMode[] modes = new[] { ParallelExecutionMode.Default, ParallelExecutionMode.ForceParallelism };
+
+            foreach (ParallelMergeOptions first in modes)
+            {
+                foreach (ParallelMergeOptions second in modes)
+                {
+                    yield return new object[] { first, second };
+                }
+            }
+        }
+
         // Check that some queries run in parallel by default, and some require forcing.
         [Theory]
         [MemberData("WithExecutionModeQueryData", new int[] { 1, 4 })] // DOP of 1 to verify sequential and 4 to verify parallel
@@ -136,6 +154,13 @@ namespace System.Linq.Parallel.Tests
         {
             ParallelQuery<int> query = labeled.Item;
             Assert.Throws<ArgumentException>(() => query.WithExecutionMode((ParallelExecutionMode)2));
+        }
+
+        [Theory]
+        [MemberData("AllExecutionModes_Multiple")]
+        public static void WithExecutionMode_Multiple(ParallelExecutionMode first, ParallelExecutionMode second)
+        {
+            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Range(0, 1).WithExecutionMode(first).WithExecutionMode(second));
         }
 
         [Fact]
