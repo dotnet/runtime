@@ -20,6 +20,7 @@ set "__PackagesDir=%__ProjectDir%\packages"
 set "__RootBinDir=%__ProjectDir%\bin"
 set "__LogsDir=%__RootBinDir%\Logs"
 set __MSBCleanBuildArgs=
+set __SkipTestBuild=
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -38,6 +39,7 @@ if /i "%1" == "windowsmscorlib" (set __MscorlibOnly=1&set __BuildOS=Windows_NT&s
 
 if /i "%1" == "vs2013" (set __VSVersion=%1&set __VSProductVersion=120&shift&goto Arg_Loop)
 if /i "%1" == "vs2015" (set __VSVersion=%1&set __VSProductVersion=140&shift&goto Arg_Loop)
+if /i "%1" == "skiptestbuild" (set __SkipTestBuild=1&shift&goto Arg_Loop)
 
 echo Invalid commandline argument: %1
 goto Usage
@@ -204,6 +206,10 @@ echo CrossGen mscorlib failed. Refer !__CrossGenMScorlibLog! for details.
 exit /b 1
 
 :PerformTestBuild
+if defined __SkipTestBuild (
+    echo Skipping test build
+    goto SuccessfulBuild
+)
 echo.
 echo Commencing build of tests for %__BuildOS%.%__BuildArch%.%__BuildType%
 echo.
@@ -217,7 +223,9 @@ exit /b 1
 echo Repo successfully built.
 echo.
 echo Product binaries are available at !__BinDir!
-echo Test binaries are available at !__TestBinDir!
+if not defined __SkipTestBuild (
+    echo Test binaries are available at !__TestBinDir!
+)
 exit /b 0
 
 :Usage
@@ -232,4 +240,5 @@ echo VSVersion - optional argument to use VS2013 or VS2015 (default VS2013)
 echo windowsmscorlib - Build mscorlib for Windows
 echo linuxmscorlib - Build mscorlib for Linux
 echo osxmscorlib - Build mscorlib for OS X
+echo skiptestbuild - Skip building tests
 exit /b 1
