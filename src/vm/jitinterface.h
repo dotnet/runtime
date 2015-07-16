@@ -497,6 +497,11 @@ public:
     unsigned getClassGClayout (CORINFO_CLASS_HANDLE cls, BYTE* gcPtrs); /* really GCType* gcPtrs */
     unsigned getClassNumInstanceFields(CORINFO_CLASS_HANDLE cls);
 
+    // returns the enregister info for a struct based on type of fields, alignment, etc.
+    bool getSystemVAmd64PassStructInRegisterDescriptor(
+        /*IN*/  CORINFO_CLASS_HANDLE _structHnd,
+        /*OUT*/ SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr);
+
     // Check Visibility rules.
     // For Protected (family access) members, type of the instance is also
     // considered when checking visibility rules.
