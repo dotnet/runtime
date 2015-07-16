@@ -8,7 +8,7 @@ using System.Net.Http;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace HttpTests
+namespace System.Net.Http.Tests
 {
     public class HttpClientHandlerTest
     {
