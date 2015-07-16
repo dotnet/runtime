@@ -1314,7 +1314,7 @@ static HMODULE LOADLoadLibrary(LPCSTR shortAsciiName, BOOL fDynamic)
 {
     CHAR fullLibraryName[MAX_PATH];
     MODSTRUCT *module = NULL;
-    void *dl_handle;
+    void *dl_handle = NULL;
     DWORD dwError;
     DWORD retval;
 
@@ -1339,29 +1339,33 @@ static HMODULE LOADLoadLibrary(LPCSTR shortAsciiName, BOOL fDynamic)
     // See if file can be dlopen()ed; this should work even if it's already loaded
     {
         // See GetProcAddress for an explanation why we leave the PAL.
-        PAL_LeaveHolder holder;
-        dl_handle = dlopen(shortAsciiName, RTLD_LAZY | RTLD_NOLOAD); 
-        if (!dl_handle)
+        PAL_LeaveHolder holder; 
+        
+        // P/Invokes are often declared with variations on the actual library name.
+        // For example, it's common to leave off the extension/suffix of the library
+        // even if it has one, or to leave off a prefix like "lib" even if it has one
+        // (both of these are done typically to smooth over cross-platform differences). 
+        // We try to dlopen with such variations on the original.
+        const char* const formatStrings[4] = // used with args: PAL_SHLIB_PREFIX, shortAsciiName, PAL_SHLIB_SUFFIX
         {
-            dl_handle = dlopen(shortAsciiName, RTLD_LAZY);
-        }
-
-        // P/Invoke calls are often defined without an extension in the name of the 
-        // target library. So if we failed to load the specified library, try adding
-        // a proper extension and load the library again.
-        if (!dl_handle)
+            "%s%s%s",     // prefix+name+suffix
+            "%.0s%s%.0s", // name
+            "%.0s%s%s",   // name+suffix
+            "%s%s%.0s",   // prefix+name
+        };
+        const int skipPrefixing = strchr(shortAsciiName, '/') != NULL; // skip prefixing if the name is actually a path
+        for (int i = 0; i < 4; i++)
         {
-            if (snprintf(fullLibraryName, MAX_PATH, "%s%s", shortAsciiName, PAL_SHLIB_SUFFIX) < MAX_PATH)
+           if (skipPrefixing && (i == 0 || i == 3)) // 0th and 3rd strings include prefixes
+               continue;
+           
+            if (!dl_handle &&
+                snprintf(fullLibraryName, MAX_PATH, formatStrings[i], PAL_SHLIB_PREFIX, shortAsciiName, PAL_SHLIB_SUFFIX) < MAX_PATH &&
+                ((dl_handle = dlopen(fullLibraryName, RTLD_LAZY | RTLD_NOLOAD)) || 
+                 (dl_handle = dlopen(fullLibraryName, RTLD_LAZY))))
             {
-                dl_handle = dlopen(fullLibraryName, RTLD_LAZY | RTLD_NOLOAD); 
-                if (!dl_handle)
-                {
-                    dl_handle = dlopen(fullLibraryName, RTLD_LAZY);
-                }
-                if (dl_handle)
-                {
-                    shortAsciiName = fullLibraryName;
-                }
+                shortAsciiName = fullLibraryName;
+                break;
             }
         }
     }
