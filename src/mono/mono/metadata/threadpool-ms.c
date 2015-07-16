@@ -747,10 +747,31 @@ worker_request (MonoDomain *domain)
 static gboolean
 monitor_should_keep_running (void)
 {
+	static gint64 last_should_keep_running = -1;
+
 	g_assert (monitor_status == MONITOR_STATUS_WAITING_FOR_REQUEST || monitor_status == MONITOR_STATUS_REQUESTED);
 
 	if (InterlockedExchange (&monitor_status, MONITOR_STATUS_WAITING_FOR_REQUEST) == MONITOR_STATUS_WAITING_FOR_REQUEST) {
-		if (mono_runtime_is_shutting_down () || !domain_any_has_request ()) {
+		gboolean should_keep_running = TRUE, force_should_keep_running = FALSE;
+
+		if (mono_runtime_is_shutting_down ()) {
+			should_keep_running = FALSE;
+		} else {
+			if (!domain_any_has_request ())
+				should_keep_running = FALSE;
+
+			if (!should_keep_running) {
+				if (last_should_keep_running == -1 || mono_100ns_ticks () - last_should_keep_running < 1 * 1000 * 1000 * 10) {
+					should_keep_running = force_should_keep_running = TRUE;
+				}
+			}
+		}
+
+		if (should_keep_running) {
+			if (last_should_keep_running == -1 || !force_should_keep_running)
+				last_should_keep_running = mono_100ns_ticks ();
+		} else {
+			last_should_keep_running = -1;
 			if (InterlockedCompareExchange (&monitor_status, MONITOR_STATUS_NOT_RUNNING, MONITOR_STATUS_WAITING_FOR_REQUEST) == MONITOR_STATUS_WAITING_FOR_REQUEST)
 				return FALSE;
 		}
