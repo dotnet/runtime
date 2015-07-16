@@ -150,4 +150,7 @@
   <data name="UnknownError_Num" xml:space="preserve">
     <value>Unknown error '{0}'.</value>
   </data>
+  <data name="Argument_InvalidNormalizationForm" xml:space="preserve">
+    <value>Invalid normalization form.</value>
+  </data>
 </root>
