@@ -189,6 +189,55 @@ TODO: Talk about initializing strutures before use
 #include <corhdr.h>
 #include <specstrings.h>
 
+#define SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS   2
+#define SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS       16
+
+// System V struct passing
+// The Classification types are described in the ABI spec at http://www.x86-64.org/documentation/abi.pdf
+enum SystemVClassificationType : unsigned __int8
+{
+    SystemVClassificationTypeUnknown            = 0,
+    SystemVClassificationTypeStruct             = 1,
+    SystemVClassificationTypeNoClass            = 2,
+    SystemVClassificationTypeMemory             = 3,
+    SystemVClassificationTypeInteger            = 4,
+    SystemVClassificationTypeIntegerReference   = 5,
+    SystemVClassificationTypeSSE                = 6,
+    // SystemVClassificationTypeSSEUp           = Unused, // Not supported by the CLR.
+    // SystemVClassificationTypeX87             = Unused, // Not supported by the CLR.
+    // SystemVClassificationTypeX87Up           = Unused, // Not supported by the CLR.
+    // SystemVClassificationTypeComplexX87      = Unused, // Not supported by the CLR.
+    SystemVClassificationTypeMAX = 7,
+};
+
+
+struct SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR
+{
+    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR()
+    {
+        Initialize();
+    }
+
+    bool                        canPassInRegisters;
+    unsigned int                numberEightBytes;
+    SystemVClassificationType   eightByteClassifications[SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
+    unsigned int                eightByteSizes[SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
+    unsigned int                eightByteOffsets[SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
+
+    // Members
+    void Initialize()
+    {
+        canPassInRegisters = false;
+        numberEightBytes = false;
+
+        for (int i = 0; i < SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS; i++)
+        {
+            eightByteClassifications[i] = SystemVClassificationTypeUnknown;
+            eightByteSizes[i] = 0;
+            eightByteOffsets[i] = 0;
+        }
+    }
+};
 
 // CorInfoHelpFunc defines the set of helpers (accessed via the ICorDynamicInfo::getHelperFtn())
 // These helpers can be called by native code which executes in the runtime.
@@ -3330,6 +3379,12 @@ public:
             size_t FQNameCapacity  /* IN */
             ) = 0;
 
+    // returns whether the struct is enregisterable. Only valid on a System V VM. Returns true on success, false on failure.
+    virtual bool getSystemVAmd64PassStructInRegisterDescriptor(
+        /* IN */    CORINFO_CLASS_HANDLE        structHnd,
+        /* OUT */   SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr
+        ) = 0;
+
 #if !defined(RYUJIT_CTPBUILD)
     /*************************************************************************/
     //
@@ -3357,7 +3412,7 @@ public:
     virtual void freeStringConfigValue(
         wchar_t *value
         ) = 0;
-#endif // RYUJIT_CTPBUILD
+#endif // !RYUJIT_CTPBUILD
 };
 
 /*****************************************************************************
