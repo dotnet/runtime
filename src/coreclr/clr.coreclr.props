@@ -79,7 +79,7 @@
     <!-- The rejit feature is available only on supported architectures (x86 & x64) -->
     <FeatureReJIT Condition="('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'amd64')">true</FeatureReJIT>
     <FeatureWindowsPhone>true</FeatureWindowsPhone>
-    <FeatureManagedEtw Condition="'$(OS)' == 'Windows_NT'">true</FeatureManagedEtw>
+    <FeatureManagedEtw>true</FeatureManagedEtw>
     <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
     <FeatureHostedBinder>true</FeatureHostedBinder>
     <BinderDebugLog Condition="'$(_BuildType)'=='dbg'">true</BinderDebugLog>
@@ -112,6 +112,7 @@
     <FeatureCominterop>false</FeatureCominterop>
     <FeatureCominteropUnmanagedActivation>false</FeatureCominteropUnmanagedActivation>
     <FeatureCominteropWinRTManagedActivation>false</FeatureCominteropWinRTManagedActivation>
+    <FeatureManagedEtw>false</FeatureManagedEtw>
 
     <!-- Features implemented by fxcore -->
     <FeatureLegacySurface>false</FeatureLegacySurface>
