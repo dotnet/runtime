@@ -47,6 +47,7 @@
 #define CPU_USAGE_HIGH 95
 
 #define MONITOR_INTERVAL 100 // ms
+#define MONITOR_MINIMAL_LIFETIME 60 * 1000 // ms
 
 /* The exponent to apply to the gain. 1.0 means to use linear gain,
  * higher values will enhance large moves and damp small ones.
@@ -761,7 +762,7 @@ monitor_should_keep_running (void)
 				should_keep_running = FALSE;
 
 			if (!should_keep_running) {
-				if (last_should_keep_running == -1 || mono_100ns_ticks () - last_should_keep_running < 1 * 1000 * 1000 * 10) {
+				if (last_should_keep_running == -1 || mono_100ns_ticks () - last_should_keep_running < MONITOR_MINIMAL_LIFETIME * 1000 * 10) {
 					should_keep_running = force_should_keep_running = TRUE;
 				}
 			}
