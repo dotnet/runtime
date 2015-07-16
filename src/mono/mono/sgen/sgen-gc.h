@@ -384,7 +384,7 @@ void sgen_deregister_root (char* addr);
 
 typedef void (*IterateObjectCallbackFunc) (GCObject*, size_t, void*);
 
-void sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data, gboolean allow_flags);
+void sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data, gboolean allow_flags, gboolean fail_on_canaries);
 
 /* eventually share with MonoThread? */
 /*
@@ -1056,13 +1056,16 @@ gboolean nursery_canaries_enabled (void);
 
 #define CANARY_VALID(addr) (strncmp ((char*) (addr), CANARY_STRING, CANARY_SIZE) == 0)
 
-#define CHECK_CANARY_FOR_OBJECT(addr) if (nursery_canaries_enabled ()) {	\
+#define CHECK_CANARY_FOR_OBJECT(addr,fail) if (nursery_canaries_enabled ()) {	\
 				char* canary_ptr = (char*) (addr) + sgen_safe_object_get_size_unaligned ((GCObject *) (addr));	\
 				if (!CANARY_VALID(canary_ptr)) {	\
 					char canary_copy[CANARY_SIZE +1];	\
 					strncpy (canary_copy, canary_ptr, CANARY_SIZE);	\
 					canary_copy[CANARY_SIZE] = 0;	\
-					g_error ("CORRUPT CANARY:\naddr->%p\ntype->%s\nexcepted->'%s'\nfound->'%s'\n", (char*) addr, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE ((addr))), CANARY_STRING, canary_copy);	\
+					if ((fail))			\
+						g_error ("CORRUPT CANARY:\naddr->%p\ntype->%s\nexcepted->'%s'\nfound->'%s'\n", (char*) addr, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE ((addr))), CANARY_STRING, canary_copy); \
+					else				\
+						g_warning ("CORRUPT CANARY:\naddr->%p\ntype->%s\nexcepted->'%s'\nfound->'%s'\n", (char*) addr, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE ((addr))), CANARY_STRING, canary_copy); \
 				} }
 
 #endif /* HAVE_SGEN_GC */

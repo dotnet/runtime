@@ -465,7 +465,7 @@ gray_queue_enable_redirect (SgenGrayQueue *queue)
 }
 
 void
-sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data, gboolean allow_flags)
+sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data, gboolean allow_flags, gboolean fail_on_canaries)
 {
 	while (start < end) {
 		size_t size;
@@ -484,7 +484,7 @@ sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc 
 		}
 
 		if (!sgen_client_object_is_array_fill ((GCObject*)obj)) {
-			CHECK_CANARY_FOR_OBJECT ((GCObject*)obj);
+			CHECK_CANARY_FOR_OBJECT ((GCObject*)obj, fail_on_canaries);
 			size = ALIGN_UP (safe_object_get_size ((GCObject*)obj));
 			callback ((GCObject*)obj, size, data);
 			CANARIFY_SIZE (size);
@@ -664,7 +664,7 @@ pin_objects_from_nursery_pin_queue (gboolean do_scan_objects, ScanCopyContext ct
 			 * either.
 			 */
 			if (!sgen_client_object_is_array_fill ((GCObject*)search_start)) {
-				CHECK_CANARY_FOR_OBJECT (search_start);
+				CHECK_CANARY_FOR_OBJECT (search_start, TRUE);
 				CANARIFY_SIZE (canarified_obj_size);
 
 				if (addr >= search_start && (char*)addr < (char*)search_start + obj_size) {
@@ -1685,7 +1685,7 @@ static void
 scan_nursery_objects (ScanCopyContext ctx)
 {
 	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
-			(IterateObjectCallbackFunc)scan_nursery_objects_callback, (void*)&ctx, FALSE);
+			(IterateObjectCallbackFunc)scan_nursery_objects_callback, (void*)&ctx, FALSE, TRUE);
 }
 
 typedef enum {

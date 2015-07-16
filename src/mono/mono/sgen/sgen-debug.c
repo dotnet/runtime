@@ -336,7 +336,7 @@ setup_valid_nursery_objects (void)
 	if (!valid_nursery_objects)
 		valid_nursery_objects = sgen_alloc_os_memory (DEFAULT_NURSERY_SIZE, SGEN_ALLOC_INTERNAL | SGEN_ALLOC_ACTIVATE, "debugging data");
 	valid_nursery_object_count = 0;
-	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, setup_mono_sgen_scan_area_with_callback, NULL, FALSE);
+	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, setup_mono_sgen_scan_area_with_callback, NULL, FALSE, FALSE);
 }
 
 static gboolean
@@ -469,7 +469,7 @@ sgen_check_whole_heap (gboolean allow_missing_pinned)
 	setup_valid_nursery_objects ();
 
 	broken_heap = FALSE;
-	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, verify_object_pointers_callback, (void*) (size_t) allow_missing_pinned, FALSE);
+	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, verify_object_pointers_callback, (void*) (size_t) allow_missing_pinned, FALSE, TRUE);
 	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, verify_object_pointers_callback, (void*) (size_t) allow_missing_pinned);
 	sgen_los_iterate_objects (verify_object_pointers_callback, (void*) (size_t) allow_missing_pinned);
 
@@ -623,7 +623,7 @@ sgen_check_nursery_objects_pinned (gboolean pinned)
 {
 	sgen_clear_nursery_fragments ();
 	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
-			(IterateObjectCallbackFunc)check_nursery_objects_pinned_callback, (void*) (size_t) pinned /* (void*)&ctx */, FALSE);
+			(IterateObjectCallbackFunc)check_nursery_objects_pinned_callback, (void*) (size_t) pinned /* (void*)&ctx */, FALSE, TRUE);
 }
 
 static void
@@ -679,7 +679,7 @@ sgen_debug_verify_nursery (gboolean do_dump_nursery_content)
 					is_array_fill);
 		}
 		if (nursery_canaries_enabled () && !is_array_fill) {
-			CHECK_CANARY_FOR_OBJECT ((GCObject*)cur);
+			CHECK_CANARY_FOR_OBJECT ((GCObject*)cur, TRUE);
 			CANARIFY_SIZE (size);
 		}
 		cur += size;
@@ -844,7 +844,7 @@ mono_gc_scan_for_specific_ref (GCObject *key, gboolean precise)
 	scan_object_for_specific_ref_precise = precise;
 
 	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
-			(IterateObjectCallbackFunc)scan_object_for_specific_ref_callback, key, TRUE);
+			(IterateObjectCallbackFunc)scan_object_for_specific_ref_callback, key, TRUE, FALSE);
 
 	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, (IterateObjectCallbackFunc)scan_object_for_specific_ref_callback, key);
 
@@ -1041,7 +1041,7 @@ sgen_check_for_xdomain_refs (void)
 	LOSObject *bigobj;
 
 	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
-			(IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL, FALSE);
+			(IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL, FALSE, TRUE);
 
 	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, (IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL);
 
@@ -1216,7 +1216,7 @@ sgen_find_object_for_ptr (char *ptr)
 	if (ptr >= nursery_section->data && ptr < nursery_section->end_data) {
 		found_obj = NULL;
 		sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
-				find_object_for_ptr_callback, ptr, TRUE);
+				find_object_for_ptr_callback, ptr, TRUE, FALSE);
 		if (found_obj)
 			return found_obj;
 	}

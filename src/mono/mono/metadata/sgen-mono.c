@@ -870,7 +870,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 		sgen_remove_finalizers_if (object_in_domain_predicate, domain, i);
 
 	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
-			(IterateObjectCallbackFunc)clear_domain_process_minor_object_callback, domain, FALSE);
+			(IterateObjectCallbackFunc)clear_domain_process_minor_object_callback, domain, FALSE, TRUE);
 
 	/* We need two passes over major and large objects because
 	   freeing such objects might give their memory back to the OS
@@ -1845,7 +1845,7 @@ mono_gc_set_string_length (MonoString *str, gint32 new_length)
 	 * the space to be reclaimed by SGen. */
 
 	if (nursery_canaries_enabled () && sgen_ptr_in_nursery (str)) {
-		CHECK_CANARY_FOR_OBJECT ((GCObject*)str);
+		CHECK_CANARY_FOR_OBJECT ((GCObject*)str, TRUE);
 		memset (new_end, 0, (str->length - new_length + 1) * sizeof (mono_unichar2) + CANARY_SIZE);
 		memcpy (new_end + 1 , CANARY_STRING, CANARY_SIZE);
 	} else {
@@ -2144,7 +2144,7 @@ mono_gc_walk_heap (int flags, MonoGCReferences callback, void *data)
 	hwi.data = data;
 
 	sgen_clear_nursery_fragments ();
-	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, walk_references, &hwi, FALSE);
+	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, walk_references, &hwi, FALSE, TRUE);
 
 	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, walk_references, &hwi);
 	sgen_los_iterate_objects (walk_references, &hwi);
