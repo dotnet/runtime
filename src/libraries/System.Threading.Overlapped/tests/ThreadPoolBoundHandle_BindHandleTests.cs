@@ -20,59 +20,66 @@ public partial class ThreadPoolBoundHandleTests
     [Fact]
     public void BindHandle_ZeroAsHandle_ThrowsArgumentException()
     {
-        SafeHandle handle = HandleFactory.CreateHandle(IntPtr.Zero);
-
-        Assert.Throws<ArgumentException>("handle", () =>
+        using(SafeHandle handle = HandleFactory.CreateHandle(IntPtr.Zero))
         {
-            ThreadPoolBoundHandle.BindHandle(handle);
-        });
+            Assert.Throws<ArgumentException>("handle", () =>
+            {
+                ThreadPoolBoundHandle.BindHandle(handle);
+            });
+        }
     }
 
     [Fact]
     public void BindHandle_MinusOneAsHandle_ThrowsArgumentException()
     {
-        SafeHandle handle = HandleFactory.CreateHandle(new IntPtr(-1));
-
-        Assert.Throws<ArgumentException>("handle", () =>
+        using(SafeHandle handle = HandleFactory.CreateHandle(new IntPtr(-1)))
         {
-            ThreadPoolBoundHandle.BindHandle(handle);
-        });
+            Assert.Throws<ArgumentException>("handle", () =>
+            {
+                ThreadPoolBoundHandle.BindHandle(handle);
+            });
+        }
     }
 
     [Fact]
     public void BindHandle_SyncHandleAsHandle_ThrowsArgumentException()
     {   // Can't bind a handle that was not opened for overlapped I/O
 
-        SafeHandle handle = HandleFactory.CreateSyncFileHandleFoWrite();
-
-        Assert.Throws<ArgumentException>("handle", () =>
+        using(SafeHandle handle = HandleFactory.CreateSyncFileHandleFoWrite())
         {
-            ThreadPoolBoundHandle.BindHandle(handle);
-        });
+            Assert.Throws<ArgumentException>("handle", () =>
+            {
+                ThreadPoolBoundHandle.BindHandle(handle);
+            });
+        }
     }
 
     [Fact]
     public void BindHandle_ClosedSyncHandleAsHandle_ThrowsArgumentException()
     {
-        Win32Handle handle = HandleFactory.CreateSyncFileHandleFoWrite();
-        handle.CloseWithoutDisposing();
-
-        Assert.Throws<ArgumentException>("handle", () =>
+        using(Win32Handle handle = HandleFactory.CreateSyncFileHandleFoWrite())
         {
-            ThreadPoolBoundHandle.BindHandle(handle);
-        });
+            handle.CloseWithoutDisposing();
+
+            Assert.Throws<ArgumentException>("handle", () =>
+            {
+                ThreadPoolBoundHandle.BindHandle(handle);
+            });
+        }
     }
 
     [Fact]
     public void BindHandle_ClosedAsyncHandleAsHandle_ThrowsArgumentException()
     {
-        Win32Handle handle = HandleFactory.CreateAsyncFileHandleForWrite();
-        handle.CloseWithoutDisposing();
-
-        Assert.Throws<ArgumentException>("handle", () =>
+        using(Win32Handle handle = HandleFactory.CreateAsyncFileHandleForWrite())
         {
-            ThreadPoolBoundHandle.BindHandle(handle);
-        });
+            handle.CloseWithoutDisposing();
+
+            Assert.Throws<ArgumentException>("handle", () =>
+            {
+                ThreadPoolBoundHandle.BindHandle(handle);
+            });
+        }
     }
 
     [Fact]
@@ -103,15 +110,16 @@ public partial class ThreadPoolBoundHandleTests
     [Fact]
     public void BindHandle_AlreadyBoundHandleAsHandle_ThrowsArgumentException()
     {
-        SafeHandle handle = HandleFactory.CreateAsyncFileHandleForWrite();
-
-        // Once
-        ThreadPoolBoundHandle.BindHandle(handle);
-
-        Assert.Throws<ArgumentException>("handle", () =>
+        using(SafeHandle handle = HandleFactory.CreateAsyncFileHandleForWrite())
         {
-            // Twice
+            // Once
             ThreadPoolBoundHandle.BindHandle(handle);
-        });
+
+            Assert.Throws<ArgumentException>("handle", () =>
+            {
+                // Twice
+                ThreadPoolBoundHandle.BindHandle(handle);
+            });
+        }
     }
 }

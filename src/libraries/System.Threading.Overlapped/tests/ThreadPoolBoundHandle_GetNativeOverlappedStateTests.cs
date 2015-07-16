@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
 
@@ -19,11 +20,19 @@ public partial class ThreadPoolBoundHandleTests
     [Fact]
     public unsafe void GetNativeOverlappedState_WhenUnderlyingStateIsNull_ReturnsNull()
     {
-        NativeOverlapped* overlapped = AllocateNativeOverlapped((_, __, ___) => { }, (object)null, new byte[0]);
+        using(SafeHandle handle = HandleFactory.CreateAsyncFileHandleForWrite())
+        {
+            using(ThreadPoolBoundHandle boundHandle = ThreadPoolBoundHandle.BindHandle(handle))
+            {
+                NativeOverlapped* overlapped = boundHandle.AllocateNativeOverlapped((_, __, ___) => { }, (object)null, new byte[0]);
 
-        object result = ThreadPoolBoundHandle.GetNativeOverlappedState(overlapped);
+                object result = ThreadPoolBoundHandle.GetNativeOverlappedState(overlapped);
 
-        Assert.Null(result);
+                Assert.Null(result);
+
+                boundHandle.FreeNativeOverlapped(overlapped);
+            }
+        }
     }
 
     [Fact]
@@ -31,11 +40,19 @@ public partial class ThreadPoolBoundHandleTests
     {
         object context = new object();
 
-        NativeOverlapped* overlapped = AllocateNativeOverlapped((_, __, ___) => { }, context, new byte[0]);
+        using(SafeHandle handle = HandleFactory.CreateAsyncFileHandleForWrite())
+        {
+            using(ThreadPoolBoundHandle boundHandle = ThreadPoolBoundHandle.BindHandle(handle))
+            {
+                NativeOverlapped* overlapped = boundHandle.AllocateNativeOverlapped((_, __, ___) => { }, context, new byte[0]);
 
-        object result = ThreadPoolBoundHandle.GetNativeOverlappedState(overlapped);
+                object result = ThreadPoolBoundHandle.GetNativeOverlappedState(overlapped);
 
-        Assert.Same(context, result);
+                Assert.Same(context, result);
+
+                boundHandle.FreeNativeOverlapped(overlapped);
+            }
+        }
     }
 
     [Fact]
@@ -45,10 +62,18 @@ public partial class ThreadPoolBoundHandleTests
 
         AsyncResult context = new AsyncResult();
 
-        NativeOverlapped* overlapped = AllocateNativeOverlapped((_, __, ___) => { }, context, new byte[0]);
+        using(SafeHandle handle = HandleFactory.CreateAsyncFileHandleForWrite())
+        {
+            using(ThreadPoolBoundHandle boundHandle = ThreadPoolBoundHandle.BindHandle(handle))
+            {
+                NativeOverlapped* overlapped = boundHandle.AllocateNativeOverlapped((_, __, ___) => { }, context, new byte[0]);
 
-        object result = ThreadPoolBoundHandle.GetNativeOverlappedState(overlapped);
+                object result = ThreadPoolBoundHandle.GetNativeOverlappedState(overlapped);
 
-        Assert.Same(context, result);
+                Assert.Same(context, result);
+
+                boundHandle.FreeNativeOverlapped(overlapped);
+            }
+        }
     }
 }
