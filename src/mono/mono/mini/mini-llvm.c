@@ -2413,7 +2413,6 @@ emit_unbox_tramp (EmitContext *ctx, const char *method_name, LLVMTypeRef method_
 
 	tramp_name = g_strdup_printf ("ut_%s", method_name);
 	tramp = LLVMAddFunction (ctx->lmodule->module, tramp_name, method_type);
-	LLVMSetFunctionCallConv (tramp, LLVMMono1CallConv);
 	LLVMSetLinkage (tramp, LLVMInternalLinkage);
 	LLVMAddFunctionAttr (tramp, LLVMNoUnwindAttribute);
 	if (!ctx->lmodule->llvm_only && ctx->rgctx_arg_pindex != -1)
@@ -2436,7 +2435,6 @@ emit_unbox_tramp (EmitContext *ctx, const char *method_name, LLVMTypeRef method_
 		}
 	}
 	call = LLVMBuildCall (builder, method, args, nargs, "");
-	LLVMSetInstructionCallConv (call, LLVMMono1CallConv);
 	if (!ctx->lmodule->llvm_only && ctx->rgctx_arg_pindex != -1)
 		LLVMAddInstrAttribute (call, 1 + ctx->rgctx_arg_pindex, LLVMInRegAttribute);
 	mono_llvm_set_must_tail (call);
@@ -2904,7 +2902,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 #endif
 	/* The two can't be used together, so use only one LLVM calling conv to pass them */
 	g_assert (!(call->rgctx_arg_reg && call->imt_arg_reg));
-	if (!sig->pinvoke)
+	if (!sig->pinvoke && !cfg->llvm_only)
 		LLVMSetInstructionCallConv (lcall, LLVMMono1CallConv);
 
 	if (cinfo && cinfo->ret.storage == LLVMArgVtypeByRef)
@@ -5490,7 +5488,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	method = LLVMAddFunction (module, method_name, method_type);
 	ctx->lmethod = method;
 
-	LLVMSetFunctionCallConv (method, LLVMMono1CallConv);
+	if (!cfg->llvm_only)
+		LLVMSetFunctionCallConv (method, LLVMMono1CallConv);
 	LLVMSetLinkage (method, LLVMPrivateLinkage);
 
 	LLVMAddFunctionAttr (method, LLVMUWTable);
@@ -6737,6 +6736,7 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 		inited_type = LLVMArrayType (LLVMInt8Type (), module->max_inited_idx + 1);
 		real_inited = LLVMAddGlobal (aot_module.module, inited_type, "mono_inited");
 		LLVMSetInitializer (real_inited, LLVMConstNull (inited_type));
+		LLVMSetLinkage (real_inited, LLVMInternalLinkage);
 		mono_llvm_replace_uses_of (aot_module.inited_var, real_inited);
 		LLVMDeleteGlobal (aot_module.inited_var);
 	}

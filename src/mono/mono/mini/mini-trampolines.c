@@ -297,9 +297,6 @@ mini_add_method_trampoline (MonoMethod *m, gpointer compiled_method, gboolean ad
 	MonoMethod *jmethod = NULL;
 	MonoJitInfo *ji;
 
-	if (mono_llvm_only)
-		add_static_rgctx_tramp = FALSE;
-
 	// FIXME: This loads information from AOT (perf problem)
 	ji = mini_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (compiled_method), NULL);
 	callee_gsharedvt = mini_jit_info_is_gsharedvt (ji);
@@ -368,6 +365,9 @@ mini_add_method_trampoline (MonoMethod *m, gpointer compiled_method, gboolean ad
 				add_static_rgctx_tramp = TRUE;
 		}
 	}
+
+	if (mono_llvm_only)
+		add_static_rgctx_tramp = FALSE;
 
 	if (add_static_rgctx_tramp)
 		addr = mono_create_static_rgctx_trampoline (m, addr);
