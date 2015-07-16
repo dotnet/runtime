@@ -1320,7 +1320,7 @@ mono_fill_method_rgctx (MonoMethodRuntimeGenericContext *mrgctx, int index)
  *   Return the executable code for the iface method IMT_METHOD called on THIS.
  */
 gpointer
-mono_resolve_iface_call (MonoObject *this, int imt_slot, MonoMethod *imt_method)
+mono_resolve_iface_call (MonoObject *this, int imt_slot, MonoMethod *imt_method, gpointer *out_rgctx_arg)
 {
 	MonoVTable *vt;
 	gpointer *imt, *vtable_slot;
@@ -1367,6 +1367,14 @@ mono_resolve_iface_call (MonoObject *this, int imt_slot, MonoMethod *imt_method)
 	}
 
 	*vtable_slot = addr;
+
+	if (need_rgctx_tramp && out_rgctx_arg) {
+		MonoMethod *m = impl_method;
+
+		if (m->wrapper_type == MONO_WRAPPER_MANAGED_TO_MANAGED && m->klass->rank && strstr (m->name, "System.Collections.Generic"))
+			m = mono_aot_get_array_helper_from_wrapper (m);
+		*out_rgctx_arg = mini_method_get_rgctx (m);
+	}
 
 	return addr;
 }

@@ -2775,6 +2775,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 			EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_METHODCONST, method);
 			icall_args [2] = ins;
 		}
+		EMIT_NEW_PCONST (cfg, icall_args [3], NULL);
 
 		call_target = mono_emit_jit_icall (cfg, mono_resolve_iface_call, icall_args);
 	}
@@ -7702,6 +7703,22 @@ handle_ctor_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fs
 	return;
 }
 
+static MonoMethodSignature*
+sig_to_rgctx_sig (MonoMethodSignature *sig)
+{
+	// FIXME: memory allocation
+	MonoMethodSignature *res;
+	int i;
+
+	res = g_malloc (MONO_SIZEOF_METHOD_SIGNATURE + (sig->param_count + 1) * sizeof (MonoType*));
+	memcpy (res, sig, MONO_SIZEOF_METHOD_SIGNATURE);
+	res->param_count = sig->param_count + 1;
+	res->params [0] = &mono_defaults.int_class->byval_arg;
+	for (i = 0; i < sig->param_count; ++i)
+		res->params [i + 1] = sig->params [i];
+	return res;
+}
+
 /*
  * mono_method_to_ir:
  *
@@ -9510,6 +9527,69 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoMethod *orig = mono_marshal_method_from_wrapper (cfg->method);
 				if (cmethod == orig || (cmethod->is_inflated && mono_method_get_declaring_generic_method (cmethod) == orig))
 					cmethod = mono_marshal_get_synchronized_inner_wrapper (cmethod);
+			}
+
+			/*
+			 * Interface calls in llvm-only mode are complicated becase the callee might need an rgctx arg,
+			 * (i.e. its a vtype method), and there is no way to for the caller to know this at compile time.
+			 * So we make resolve_iface_call return the rgctx, and do two calls with different signatures
+			 * based on whenever there is an rgctx or not.
+			 */
+			if (cfg->llvm_only && virtual && cmethod && (cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+				MonoInst *args [16], *icall_args [16];
+				MonoBasicBlock *rgctx_bb, *end_bb;
+				MonoInst *call1, *call2, *call_target;
+				MonoMethodSignature *rgctx_sig;
+				int rgctx_reg, tmp_reg;
+
+				NEW_BBLOCK (cfg, rgctx_bb);
+				NEW_BBLOCK (cfg, end_bb);
+
+				// FIXME: Optimize this
+
+				guint32 imt_slot = mono_method_get_imt_slot (cmethod);
+
+				icall_args [0] = sp [0];
+				EMIT_NEW_ICONST (cfg, icall_args [1], imt_slot);
+				if (imt_arg) {
+					icall_args [2] = imt_arg;
+				} else {
+					EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_METHODCONST, cmethod);
+					icall_args [2] = ins;
+				}
+
+				rgctx_reg = alloc_preg (cfg);
+				MONO_EMIT_NEW_PCONST (cfg, rgctx_reg, NULL);
+				EMIT_NEW_VARLOADA_VREG (cfg, icall_args [3], rgctx_reg, &mono_defaults.int_class->byval_arg);
+				//EMIT_NEW_PCONST (cfg, icall_args [3], NULL);
+
+				call_target = mono_emit_jit_icall (cfg, mono_resolve_iface_call, icall_args);
+
+				// FIXME: Only do this if needed (generic calls)
+
+				// Check whenever to pass an rgctx
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, rgctx_reg, 0);
+				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBNE_UN, rgctx_bb);
+				/* Non rgctx case */
+				call1 = mono_emit_calli (cfg, fsig, sp, call_target, NULL, vtable_arg);
+				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
+				/* Rgctx case */
+				MONO_START_BB (cfg, rgctx_bb);
+				/* Make a call with an rgctx */
+				g_assert (fsig->param_count + 2 < 16);
+				args [0] = sp [0];
+				tmp_reg = alloc_preg (cfg);
+				EMIT_NEW_UNALU (cfg, args [1], OP_MOVE, tmp_reg, rgctx_reg);
+				for (i = 0; i < fsig->param_count; ++i)
+					args [i + 2] = sp [i + 1];
+				rgctx_sig = sig_to_rgctx_sig (fsig);
+				call2 = mono_emit_calli (cfg, rgctx_sig, args, call_target, NULL, vtable_arg);
+				call2->dreg = call1->dreg;
+				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
+				/* End */
+				MONO_START_BB (cfg, end_bb);
+				ins = call1;
+				goto call_end;
 			}
 
 			/* Common call */
