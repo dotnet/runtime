@@ -67,6 +67,21 @@ namespace System.Linq.Parallel.Tests
             }
         }
 
+        /// <summary>
+        /// Return merge option combinations, for testing multiple calls to WithMergeOptions
+        /// </summary>
+        /// <returns>Entries for test data.</returns>
+        public static IEnumerable<object[]> AllMergeOptions_Multiple()
+        {
+            foreach (ParallelMergeOptions first in Options)
+            {
+                foreach (ParallelMergeOptions second in Options)
+                {
+                    yield return new object[] { first, second };
+                }
+            }
+        }
+
         // The following tests attempt to test internal behavior,
         // but there doesn't appear to be a way to reliably (or automatically) observe it.
         // The basic tests are covered elsewhere, although without WithDegreeOfParallelism
@@ -159,6 +174,13 @@ namespace System.Linq.Parallel.Tests
             ParallelQuery<int> query = labeled.Item;
 
             Assert.Throws<ArgumentException>(() => query.WithMergeOptions((ParallelMergeOptions)4));
+        }
+
+        [Theory]
+        [MemberData("AllMergeOptions_Multiple")]
+        public static void WithMergeOptions_Multiple(ParallelMergeOptions first, ParallelMergeOptions second)
+        {
+            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Range(0, 1).WithMergeOptions(first).WithMergeOptions(second));
         }
 
         [Fact]
