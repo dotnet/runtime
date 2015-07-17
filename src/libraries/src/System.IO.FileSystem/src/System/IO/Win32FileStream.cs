@@ -114,7 +114,7 @@ namespace System.IO
             uint oldMode = Interop.mincore.SetErrorMode(Interop.mincore.SEM_FAILCRITICALERRORS);
             try
             {
-                _handle = Helpers.SafeCreateFile(path, fAccess, share, ref secAttrs, mode, flagsAndAttributes, IntPtr.Zero);
+                _handle = Interop.mincore.SafeCreateFile(path, fAccess, share, ref secAttrs, mode, flagsAndAttributes, IntPtr.Zero);
 #if USE_OVERLAPPED
                 _handle.IsAsync = _isAsync;
 #endif
