@@ -1650,7 +1650,7 @@ emit_load_general (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder
 	LLVMValueRef args [16], res;
 	LLVMTypeRef addr_type;
 
-	if (FALSE && is_faulting && bb->region != -1) {
+	if (is_faulting && bb->region != -1) {
 		LLVMAtomicOrdering ordering;
 
 		switch (barrier) {
@@ -1739,7 +1739,7 @@ emit_store_general (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builde
 	const char *intrins_name;
 	LLVMValueRef args [16];
 
-	if (FALSE && is_faulting && bb->region != -1) {
+	if (is_faulting && bb->region != -1) {
 		LLVMAtomicOrdering ordering;
 
 		switch (barrier) {

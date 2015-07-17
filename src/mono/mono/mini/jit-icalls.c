@@ -1329,7 +1329,7 @@ mono_resolve_iface_call (MonoObject *this, int imt_slot, MonoMethod *imt_method,
 	MonoVTable *vt;
 	gpointer *imt, *vtable_slot;
 	MonoMethod *impl_method, *generic_virtual = NULL, *variant_iface = NULL;
-	gpointer addr, aot_addr;
+	gpointer addr, compiled_method, aot_addr;
 	gboolean need_rgctx_tramp = FALSE, need_unbox_tramp = FALSE;
 
 	// FIXME: Optimize this
@@ -1344,7 +1344,7 @@ mono_resolve_iface_call (MonoObject *this, int imt_slot, MonoMethod *imt_method,
 	vtable_slot = mini_resolve_imt_method (vt, imt + imt_slot, imt_method, &impl_method, &aot_addr, &need_rgctx_tramp, &variant_iface);
 
 	// FIXME: This can throw exceptions
-	addr = mono_compile_method (impl_method);
+	addr = compiled_method = mono_compile_method (impl_method);
 	g_assert (addr);
 
 	if (imt_method->is_inflated && ((MonoMethodInflated*)imt_method)->context.method_inst) {
@@ -1374,10 +1374,17 @@ mono_resolve_iface_call (MonoObject *this, int imt_slot, MonoMethod *imt_method,
 
 	if (need_rgctx_tramp && out_rgctx_arg) {
 		MonoMethod *m = impl_method;
+		MonoJitInfo *ji;
 
-		if (m->wrapper_type == MONO_WRAPPER_MANAGED_TO_MANAGED && m->klass->rank && strstr (m->name, "System.Collections.Generic"))
-			m = mono_aot_get_array_helper_from_wrapper (m);
-		*out_rgctx_arg = mini_method_get_rgctx (m);
+		/*
+		 * The exact compiled method might not be shared so it doesn't have an rgctx arg.
+		 */
+		ji = mini_jit_info_table_find (mono_domain_get (), compiled_method, NULL);
+		if (!ji || (ji && ji->has_generic_jit_info)) {
+			if (m->wrapper_type == MONO_WRAPPER_MANAGED_TO_MANAGED && m->klass->rank && strstr (m->name, "System.Collections.Generic"))
+				m = mono_aot_get_array_helper_from_wrapper (m);
+			*out_rgctx_arg = mini_method_get_rgctx (m);
+		}
 	}
 
 	return addr;
