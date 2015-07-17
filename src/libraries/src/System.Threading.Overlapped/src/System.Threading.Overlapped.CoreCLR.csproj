@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Windows_Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <AssemblyName>System.Threading.Overlapped</AssemblyName>
+    <OutputType>Library</OutputType>
+    <ProjectGuid>{6A07CCB8-3E59-47e7-B3DD-DB1F6FC501D5}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <NuGetTargetFrameworkMoniker>DNXCore,Version=v5.0</NuGetTargetFrameworkMoniker>    
+  </PropertyGroup>
+  <!-- Help VS understand available configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
+      <Project>{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}</Project>
+      <Name>System.Diagnostics.Debug</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="System\Threading\ClrThreadPoolBoundHandle.cs" />
+    <Compile Include="System\Threading\ClrThreadPoolBoundHandleOverlapped.cs" />
+    <Compile Include="System\Threading\ClrThreadPoolPreAllocatedOverlapped.cs" />
+    <Compile Include="System\Threading\DeferredDisposableLifetime.cs" />
+    <Compile Include="$(CommonPath)\System\__HResults.cs">
+      <Link>Common\System\__HResults.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
