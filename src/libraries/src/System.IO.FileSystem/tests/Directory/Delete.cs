@@ -92,9 +92,30 @@ namespace System.IO.FileSystem.Tests
 
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
+        public void WindowsExtendedDirectoryWithSubdirectories()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(@"\\?\" + GetTestFilePath());
+            testDir.CreateSubdirectory(GetTestFileName());
+            Assert.Throws<IOException>(() => Delete(testDir.FullName));
+            Assert.True(testDir.Exists);
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
         public void WindowsDeleteReadOnlyDirectory()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            testDir.Attributes = FileAttributes.ReadOnly;
+            Assert.Throws<IOException>(() => Delete(testDir.FullName));
+            Assert.True(testDir.Exists);
+            testDir.Attributes = FileAttributes.Normal;
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void WindowsDeleteExtendedReadOnlyDirectory()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(@"\\?\" + GetTestFilePath());
             testDir.Attributes = FileAttributes.ReadOnly;
             Assert.Throws<IOException>(() => Delete(testDir.FullName));
             Assert.True(testDir.Exists);
@@ -116,6 +137,16 @@ namespace System.IO.FileSystem.Tests
         public void WindowsShouldBeAbleToDeleteHiddenDirectory()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            testDir.Attributes = FileAttributes.Hidden;
+            Delete(testDir.FullName);
+            Assert.False(testDir.Exists);
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void WindowsShouldBeAbleToDeleteExtendedHiddenDirectory()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(@"\\?\" + GetTestFilePath());
             testDir.Attributes = FileAttributes.Hidden;
             Delete(testDir.FullName);
             Assert.False(testDir.Exists);
