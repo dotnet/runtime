@@ -6,9 +6,9 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{A2ECDEDB-12B7-402C-9230-152B7601179F}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <AssemblyName>System.Net.Http.WinHttpHandler.Tests</AssemblyName>
+    <AssemblyName>System.Net.Http.WinHttpHandler.Unit.Tests</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <StringResourcesPath>..\src\Resources\Strings.resx</StringResourcesPath>
+    <StringResourcesPath>..\..\src\Resources\Strings.resx</StringResourcesPath>
   </PropertyGroup>
   
   <!-- Help VS understand available configurations -->
@@ -34,28 +34,28 @@
     <Compile Include="$(CommonPath)\Interop\Windows\winhttp\Interop.winhttp_types.cs">
       <Link>Common\Interop\Windows\winhttp\Interop.winhttp_types.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\Net\Http\CertificateHelper.cs">
+    <Compile Include="..\..\src\System\Net\Http\CertificateHelper.cs">
       <Link>ProductionCode\CertificateHelper.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\Net\Http\WinHttpChannelBinding.cs">
+    <Compile Include="..\..\src\System\Net\Http\WinHttpChannelBinding.cs">
       <Link>ProductionCode\WinHttpChannelBinding.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\Net\Http\WinHttpException.cs">
+    <Compile Include="..\..\src\System\Net\Http\WinHttpException.cs">
       <Link>ProductionCode\WinHttpException.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\Net\Http\WinHttpHandler.cs">
+    <Compile Include="..\..\src\System\Net\Http\WinHttpHandler.cs">
       <Link>ProductionCode\WinHttpHandler.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\Net\Http\WinHttpRequestStream.cs">
+    <Compile Include="..\..\src\System\Net\Http\WinHttpRequestStream.cs">
       <Link>ProductionCode\WinHttpRequestStream.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\Net\Http\WinHttpResponseStream.cs">
+    <Compile Include="..\..\src\System\Net\Http\WinHttpResponseStream.cs">
       <Link>ProductionCode\WinHttpResponseStream.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\Net\Http\WinHttpTransportContext.cs">
+    <Compile Include="..\..\src\System\Net\Http\WinHttpTransportContext.cs">
       <Link>ProductionCode\WinHttpTransportContext.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\Net\Http\WinInetProxyHelper.cs">
+    <Compile Include="..\..\src\System\Net\Http\WinInetProxyHelper.cs">
       <Link>ProductionCode\WinInetProxyHelper.cs</Link>
     </Compile>
   </ItemGroup>

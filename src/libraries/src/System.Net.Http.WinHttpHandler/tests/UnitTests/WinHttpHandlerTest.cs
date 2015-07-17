@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 using Xunit;
 
-namespace WinHttpHandlerTests
+namespace System.Net.Http.WinHttpHandlerUnitTests
 {
     public class WinHttpHandlerTests : IDisposable
     {
