@@ -12,6 +12,7 @@ public static class Utility
     // events are reported asynchronously by the OS, so allow an amount of time for
     // them to arrive before testing an assertion.
     public const int Timeout = 500;
+    public const int WaitForCreationTimeoutInMs = 1000 * 30;
 
     public static TemporaryTestFile CreateTestFile([CallerMemberName] string path = null)
     {
@@ -91,12 +92,42 @@ public static class Utility
     public static void ExpectEvent(WaitHandle eventOccured, string eventName, int timeout = Utility.Timeout)
     {
         string message = String.Format("Didn't observe a {0} event within {1}ms", eventName, timeout);
-        Assert.True(eventOccured.WaitOne(Utility.Timeout), message);
+        Assert.True(eventOccured.WaitOne(timeout), message);
     }
 
     public static void ExpectNoEvent(WaitHandle eventOccured, string eventName, int timeout = Utility.Timeout)
     {
         string message = String.Format("Should not observe a {0} event", eventName);
-        Assert.False(eventOccured.WaitOne(Utility.Timeout), message);
+        Assert.False(eventOccured.WaitOne(timeout), message);
+    }
+
+    public static void TestNestedDirectoriesHelper(
+    WatcherChangeTypes change,
+    Action<AutoResetEvent, TemporaryTestDirectory> action,
+    NotifyFilters changeFilers = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.DirectoryName)
+    {
+        using (var dir = Utility.CreateTestDirectory())
+        using (var watcher = new FileSystemWatcher())
+        using (AutoResetEvent createdOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created))
+        using (AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, change))
+        {
+            watcher.Path = Path.GetFullPath(dir.Path);
+            watcher.Filter = "*";
+            watcher.NotifyFilter = changeFilers;
+            watcher.IncludeSubdirectories = true;
+            watcher.EnableRaisingEvents = true;
+
+            using (var firstDir = new TemporaryTestDirectory(Path.Combine(dir.Path, "dir1")))
+            {
+                Utility.ExpectEvent(createdOccured, "dir1 created", WaitForCreationTimeoutInMs);
+
+                using (var nestedDir = new TemporaryTestDirectory(Path.Combine(firstDir.Path, "nested")))
+                {
+                    Utility.ExpectEvent(createdOccured, "nested created", WaitForCreationTimeoutInMs);
+
+                    action(eventOccured, nestedDir);
+                }
+            }
+        }
     }
 }
