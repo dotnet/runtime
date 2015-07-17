@@ -29,6 +29,10 @@ mono_ldftn (MonoMethod *method)
 		addr = mono_compile_method (method);
 		g_assert (addr);
 
+		if (mono_method_needs_static_rgctx_invoke (method, FALSE))
+			/* The caller doesn't pass it */
+			g_assert_not_reached ();
+
 		addr = mini_add_method_trampoline (method, addr, mono_method_needs_static_rgctx_invoke (method, FALSE), FALSE);
 		return addr;
 	}
@@ -1476,4 +1480,20 @@ mono_resolve_vcall (MonoObject *this, int slot, MonoMethod *imt_method)
 	*vtable_slot = addr;
 
 	return addr;
+}
+
+/*
+ * mono_init_delegate:
+ *
+ *   Initialize a MonoDelegate object.
+ * Similar to mono_delegate_ctor ().
+ */
+void
+mono_init_delegate (MonoDelegate *del, MonoObject *target, MonoMethod *method)
+{
+	MONO_OBJECT_SETREF (del, target, target);
+	del->method = method;
+	del->method_ptr = mono_compile_method (method);
+	if (mono_method_needs_static_rgctx_invoke (method, FALSE))
+		del->rgctx = mini_method_get_rgctx (method);
 }

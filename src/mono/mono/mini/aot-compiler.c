@@ -7407,7 +7407,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 	g_free (tempbc);
 
 #ifdef TARGET_MACH
-	if (acfg->aot_opts.llvm_only) {
+	if (FALSE && acfg->aot_opts.llvm_only) {
 		/* Use the stock clang from xcode */
 		// FIXME: arch
 		// FIXME: -O2

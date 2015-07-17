@@ -6591,7 +6591,7 @@ emit_aot_file_info (MonoLLVMModule *lmodule)
 	fields [tindex ++] = AddJitGlobal (lmodule, eltype, "jit_got");
 	fields [tindex ++] = lmodule->got_var;
 	/* llc defines this directly */
-	if (!lmodule->llvm_only)
+	if (TRUE) //(!lmodule->llvm_only)
 		fields [tindex ++] = LLVMAddGlobal (lmodule->module, eltype, lmodule->eh_frame_symbol);
 	else
 		fields [tindex ++] = LLVMConstNull (eltype);

@@ -199,5 +199,7 @@ gpointer mono_resolve_iface_call (MonoObject *this, int imt_slot, MonoMethod *im
 
 gpointer mono_resolve_vcall (MonoObject *this, int slot, MonoMethod *imt_method);
 
+void mono_init_delegate (MonoDelegate *del, MonoObject *target, MonoMethod *method);
+
 #endif /* __MONO_JIT_ICALLS_H__ */
 
