@@ -6,7 +6,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Http", "src\Syst
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Http.Unit.Tests", "tests\UnitTests\System.Net.Http.Unit.Tests.csproj", "{5F9C3C9F-652E-461E-B2D6-85D264F5A733}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Http.Tests", "tests\UnitTests\System.Net.Http.Tests.csproj", "{C85CF035-7804-41FF-9557-48B7C948B58D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Http.Tests", "tests\FunctionalTests\System.Net.Http.Tests.csproj", "{C85CF035-7804-41FF-9557-48B7C948B58D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
