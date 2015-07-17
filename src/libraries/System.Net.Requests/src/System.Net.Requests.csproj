@@ -1,11 +1,15 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Windows_Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{5EE76DCC-9FD5-47FD-AB45-BD0F0857740F}</ProjectGuid>
     <OutputType>Library</OutputType>
+    <RootNamespace>System.Net.Requests</RootNamespace>
+    <AssemblyName>System.Net.Requests</AssemblyName>
+    <AssemblyVersion>4.0.10.0</AssemblyVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <!-- Help VS understand available configurations -->
@@ -19,16 +23,34 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
 
   <ItemGroup>
-    <Compile Include="System\Net\WebHeaderCollection.cs" />
-    <Compile Include="System\Net\HttpResponseHeader.cs" />
     <Compile Include="System\Net\HttpRequestHeader.cs" />
-    <Compile Include="System\Net\HeaderInfo.cs" />
-    <Compile Include="System\Net\HeaderInfoTable.cs" />
+    <Compile Include="System\Net\HttpWebRequest.cs" />
+    <Compile Include="System\Net\HttpWebResponse.cs" />
+    <Compile Include="System\Net\IWebRequestCreate.cs" />
+    <Compile Include="System\Net\ProtocolViolationException.cs" />
+    <Compile Include="System\Net\RequestStream.cs" />
+    <Compile Include="System\Net\SystemWebProxy.cs" />
+    <Compile Include="System\Net\TaskExtensions.cs" />
+    <Compile Include="System\Net\WebException.cs" />
+    <Compile Include="System\Net\WebExceptionStatus.cs" />
+    <Compile Include="System\Net\WebHeaderCollection.cs" />
+    <Compile Include="System\Net\WebRequest.cs" />
+    <Compile Include="System\Net\WebResponse.cs" />
+
+    <Compile Include="$(CommonPath)\Interop\Windows\wininet\Interop.wininet_errors.cs">
+      <Link>Common\Interop\Windows\wininet\Interop.wininet_errors.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
       <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpValidationHelpers.cs">
       <Link>Common\System\Net\HttpValidationHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging.cs">
+      <Link>Common\System\Net\Logging.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
+      <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
   </ItemGroup>
 

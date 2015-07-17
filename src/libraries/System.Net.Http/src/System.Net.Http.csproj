@@ -93,9 +93,7 @@
     <!-- TODO: Must be moved to the Common/System/Net folder -->
     <Compile Include="Internal\ICloneable.cs" />
     <Compile Include="Internal\HttpVersion.cs" />
-    <Compile Include="Internal\HttpKnownHeaderNames.cs" />
     <Compile Include="Internal\HttpStatusDescription.cs" />
-    <Compile Include="Internal\Logging.cs" />
     <Compile Include="Internal\MailAddress.cs" />
     <Compile Include="Internal\Mail\DomainLiteralReader.cs" />
     <Compile Include="Internal\Mail\DotAtomReader.cs" />
@@ -104,6 +102,13 @@
     <Compile Include="Internal\Mail\QuotedPairReader.cs" />
     <Compile Include="Internal\Mail\QuotedStringFormatReader.cs" />
     <Compile Include="Internal\Mail\WhitespaceReader.cs" />
+
+    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
+      <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging.cs">
+      <Link>Common\System\Net\Logging.cs</Link>
+    </Compile>
   </ItemGroup>
   
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
