@@ -10,6 +10,9 @@ using System.Threading.Tasks;
 
 namespace System.IO
 {
+    // Note: This class has an OS Limitation where the inotify API can miss events if a directory is created and immediately has
+    //       changes underneath. This is due to the inotify* APIs not being recursive and needing to call inotify_add_watch on
+    //       each subdirectory, causing a race between adding the watch and file system events happening.
     public partial class FileSystemWatcher
     {
         /// <summary>Starts a new watch operation if one is not currently running.</summary>
@@ -166,7 +169,7 @@ namespace System.IO
         }
 
         /// <summary>
-        /// State and processing associatd with an active watch operation.  This state is kept separate from FileSystemWatcher to avoid 
+        /// State and processing associated with an active watch operation.  This state is kept separate from FileSystemWatcher to avoid 
         /// race conditions when a user starts/stops/starts/stops/etc. in quick succession, resulting in the potential for multiple 
         /// active operations. It also helps with avoiding rooted cycles and enabling proper finalization.
         /// </summary>
@@ -470,7 +473,6 @@ namespace System.IO
                         }
 
                         uint mask = nextEvent.mask;
-                        bool addWatch = false;
                         string expandedName = null;
                         WatchedDirectory associatedDirectoryEntry = null;
 
@@ -531,6 +533,15 @@ namespace System.IO
                             previousEventCookie = 0;
                         }
 
+                        // If the event signaled that there's a new subdirectory and if we're monitoring subdirectories,
+                        // add a watch for it.
+                        const Interop.libc.NotifyEvents AddMaskFilters = Interop.libc.NotifyEvents.IN_CREATE | Interop.libc.NotifyEvents.IN_MOVED_TO;
+                        bool addWatch = ((mask & (uint)AddMaskFilters) != 0);
+                        if (addWatch && isDir && _includeSubdirectories)
+                        {
+                            AddDirectoryWatch(associatedDirectoryEntry, nextEvent.name);
+                        }
+
                         const Interop.libc.NotifyEvents switchMask =
                             Interop.libc.NotifyEvents.IN_Q_OVERFLOW | Interop.libc.NotifyEvents.IN_IGNORED |
                             Interop.libc.NotifyEvents.IN_CREATE | Interop.libc.NotifyEvents.IN_DELETE |
@@ -543,7 +554,6 @@ namespace System.IO
                                 break;
                             case Interop.libc.NotifyEvents.IN_CREATE:
                                 watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Created, expandedName);
-                                addWatch = true;
                                 break;
                             case Interop.libc.NotifyEvents.IN_IGNORED:
                                 // We're getting an IN_IGNORED because a directory watch was removed.
@@ -582,15 +592,7 @@ namespace System.IO
                                 previousEventName = null;
                                 previousEventParent = null;
                                 previousEventCookie = 0;
-                                addWatch = true; // for either rename or creation, we need to update our state
                                 break;
-                        }
-
-                        // If the event signaled that there's a new subdirectory and if we're monitoring subdirectories,
-                        // add a watch for it.
-                        if (addWatch && isDir && _includeSubdirectories)
-                        {
-                            AddDirectoryWatch(associatedDirectoryEntry, nextEvent.name);
                         }
 
                         // Drop our strong reference to the watcher now that we're potentially going to block again for another read

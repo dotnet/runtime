@@ -80,4 +80,78 @@ public partial class FileSystemWatcher_4000_Tests
             }
         }
     }
+
+    [Fact]
+    public static void FileSystemWatcher_Deleted_NestedDirectories()
+    {
+        using (var dir = Utility.CreateTestDirectory())
+        using (var watcher = new FileSystemWatcher())
+        using (AutoResetEvent createOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created))
+        using (AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Deleted))
+        {
+            watcher.Path = Path.GetFullPath(dir.Path);
+            watcher.Filter = "*";
+            watcher.IncludeSubdirectories = true;
+            watcher.EnableRaisingEvents = true;
+
+            using (var firstDir = new TemporaryTestDirectory(Path.Combine(dir.Path, "dir1")))
+            {
+                // Wait for the created event
+                Utility.ExpectEvent(createOccured, "create", 1000 * 30);
+
+                using (var secondDir = new TemporaryTestDirectory(Path.Combine(firstDir.Path, "dir2")))
+                {
+                    // Wait for the created event
+                    Utility.ExpectEvent(createOccured, "create", 1000 * 30);
+
+                    using (var nestedDir = new TemporaryTestDirectory(Path.Combine(secondDir.Path, "nested")))
+                    {
+                        // Wait for the created event
+                        Utility.ExpectEvent(createOccured, "create", 1000 * 30);
+                    }
+
+                    Utility.ExpectEvent(eventOccured, "deleted");
+                }
+
+                Utility.ExpectEvent(eventOccured, "deleted");
+            }
+
+            Utility.ExpectEvent(eventOccured, "deleted");
+        }
+    }
+
+    [Fact]
+    public static void FileSystemWatcher_Deleted_FileDeletedInNestedDirectory()
+    {
+        using (var dir = Utility.CreateTestDirectory())
+        using (var watcher = new FileSystemWatcher())
+        using (AutoResetEvent createOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created))
+        using (AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Deleted))
+        {
+            watcher.Path = Path.GetFullPath(dir.Path);
+            watcher.Filter = "*";
+            watcher.IncludeSubdirectories = true;
+            watcher.EnableRaisingEvents = true;
+
+            using (var firstDir = new TemporaryTestDirectory(Path.Combine(dir.Path, "dir1")))
+            {
+                // Wait for the created event
+                Utility.ExpectEvent(createOccured, "create", 1000 * 30);
+
+                using (var secondDir = new TemporaryTestDirectory(Path.Combine(dir.Path, "dir2")))
+                {
+                    // Wait for the created event
+                    Utility.ExpectEvent(createOccured, "create", 1000 * 30);
+
+                    using (var nestedDir = new TemporaryTestFile(Path.Combine(secondDir.Path, "nestedFile"))) { }
+
+                    Utility.ExpectEvent(eventOccured, "deleted");
+                }
+
+                Utility.ExpectEvent(eventOccured, "deleted");
+            }
+
+            Utility.ExpectEvent(eventOccured, "deleted");
+        }
+    }
 }
