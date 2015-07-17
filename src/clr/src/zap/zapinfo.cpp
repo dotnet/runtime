@@ -4192,6 +4192,14 @@ unsigned ZapInfo::getClassGClayout(CORINFO_CLASS_HANDLE cls, BYTE *gcPtrs)
     return m_pEEJitInfo->getClassGClayout(cls, gcPtrs);
 }
 
+// returns the enregister info for a struct based on type of fields, alignment, etc..
+bool ZapInfo::getSystemVAmd64PassStructInRegisterDescriptor(
+    /*IN*/  CORINFO_CLASS_HANDLE _structHnd,
+    /*OUT*/ SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr)
+{
+    return m_pEEJitInfo->getSystemVAmd64PassStructInRegisterDescriptor(_structHnd, structPassInRegDescPtr);
+}
+
 unsigned ZapInfo::getClassNumInstanceFields(CORINFO_CLASS_HANDLE cls)
 {
     return m_pEEJitInfo->getClassNumInstanceFields(cls);
