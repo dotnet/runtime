@@ -28,7 +28,7 @@ else()
             COMMAND ${CMAKE_CXX_COMPILER} -E -P ${PREPROCESS_DEFINITIONS} ${INCLUDE_DIRECTORIES} -o ${PREPROCESSED_SOURCE} -x c ${SOURCE}
             # Convert the preprocessed .rc file to a C++ file which will be used to make a static lib.
             COMMAND ${AWK} -f ${RC_TO_CPP} -f ${PROCESS_RC} ${PREPROCESSED_SOURCE} >${RESOURCE_ENTRY_ARRAY_CPP}
-            DEPENDS ${SOURCE}
+            DEPENDS ${SOURCE} ${RC_TO_CPP} ${PROCESS_RC}
         )
 
         include_directories(${RESOURCE_STRING_HEADER_DIR})
