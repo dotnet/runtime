@@ -31,14 +31,11 @@ namespace System.Globalization
         {
             Contract.Assert(s != null);
 
-            char[] dstBuf = new char[s.Length];
+            StringBuilder sb = StringBuilderCache.Acquire(s.Length);
 
-            fixed (char* pSrc = s, pDst = dstBuf)
-            {
-                ChangeCaseCore(pSrc, s.Length, pDst, dstBuf.Length, toUpper);
-            }
+            Interop.GlobalizationInterop.ChangeCase(s, s.Length, sb, sb.Capacity, toUpper, m_needsTurkishCasing);
 
-            return new string(dstBuf);
+            return StringBuilderCache.GetStringAndRelease(sb);
         }
 
         [System.Security.SecuritySafeCritical]
@@ -49,7 +46,7 @@ namespace System.Globalization
 
             pSrc[0] = c;
 
-            ChangeCaseCore(pSrc, 1, pDst, 1, toUpper);
+            Interop.GlobalizationInterop.ChangeCase(pSrc, 1, pDst, 1, toUpper, m_needsTurkishCasing);
 
             return pDst[0];
         }
@@ -57,32 +54,6 @@ namespace System.Globalization
         // -----------------------------
         // ---- PAL layer ends here ----
         // -----------------------------
-
-        private unsafe void ChangeCaseCore(char* pSrc, int cchSrc, char* pDst, int cchDst, bool toUpper)
-        {
-            if (toUpper)
-            {
-                if (!m_needsTurkishCasing)
-                {
-                    Interop.GlobalizationInterop.ToUpperSimple(pSrc, cchSrc, pDst, cchDst);
-                }
-                else
-                {
-                    Interop.GlobalizationInterop.ToUpperSimpleTurkishAzeri(pSrc, cchSrc, pDst, cchDst);
-                }
-            }
-            else
-            {
-                if (!m_needsTurkishCasing)
-                {
-                    Interop.GlobalizationInterop.ToLowerSimple(pSrc, cchSrc, pDst, cchDst);
-                }
-                else
-                {
-                    Interop.GlobalizationInterop.ToLowerSimpleTurkishAzeri(pSrc, cchSrc, pDst, cchDst);
-                }
-            }
-        }
 
         private bool NeedsTurkishCasing(string localeName)
         {
