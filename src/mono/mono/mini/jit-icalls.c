@@ -1497,3 +1497,17 @@ mono_init_delegate (MonoDelegate *del, MonoObject *target, MonoMethod *method)
 	if (mono_method_needs_static_rgctx_invoke (method, FALSE))
 		del->rgctx = mini_method_get_rgctx (method);
 }
+
+void
+mono_init_delegate_virtual (MonoDelegate *del, MonoObject *target, MonoMethod *method)
+{
+	g_assert (target);
+
+	method = mono_object_get_virtual_method (target, method);
+
+	MONO_OBJECT_SETREF (del, target, target);
+	del->method = method;
+	del->method_ptr = mono_compile_method (method);
+	if (mono_method_needs_static_rgctx_invoke (method, FALSE))
+		del->rgctx = mini_method_get_rgctx (method);
+}

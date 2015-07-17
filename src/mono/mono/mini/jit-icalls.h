@@ -201,5 +201,7 @@ gpointer mono_resolve_vcall (MonoObject *this, int slot, MonoMethod *imt_method)
 
 void mono_init_delegate (MonoDelegate *del, MonoObject *target, MonoMethod *method);
 
+void mono_init_delegate_virtual (MonoDelegate *del, MonoObject *target, MonoMethod *method);
+
 #endif /* __MONO_JIT_ICALLS_H__ */
 
