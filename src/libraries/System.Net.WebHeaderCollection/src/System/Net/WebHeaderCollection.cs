@@ -593,7 +593,7 @@ namespace System.Net
             }
         }
 
-        IEnumerator IEnumerable.GetEnumerator()
+        public override IEnumerator GetEnumerator()
         {
             return InnerCollection.Keys.GetEnumerator();
         }
