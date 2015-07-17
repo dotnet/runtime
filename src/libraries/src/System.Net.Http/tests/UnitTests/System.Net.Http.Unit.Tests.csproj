@@ -25,9 +25,6 @@
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>ProductionCode\Common\System\NotImplemented.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\Internal\HttpKnownHeaderNames.cs">
-      <Link>ProductionCode\Internal\HttpKnownHeaderNames.cs</Link>
-    </Compile>
     <Compile Include="..\..\src\Internal\HttpStatusDescription.cs">
       <Link>ProductionCode\Internal\HttpStatusDescription.cs</Link>
     </Compile>
@@ -60,9 +57,6 @@
     </Compile>
     <Compile Include="..\..\src\Internal\Mail\WhitespaceReader.cs">
       <Link>ProductionCode\Internal\WhitespaceReader.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\Internal\Logging.cs">
-      <Link>ProductionCode\Internal\Logging.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Internal\UriHelper.cs">
       <Link>ProductionCode\Internal\UriHelper.cs</Link>
@@ -318,6 +312,13 @@
     <Compile Include="HttpContentTest.cs" />
     <Compile Include="HttpRuleParserTest.cs" />
     <Compile Include="MockContent.cs" />
+
+    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
+      <Link>ProductionCode\HttpKnownHeaderNames.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging.cs">
+      <Link>ProductionCode\Logging.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
