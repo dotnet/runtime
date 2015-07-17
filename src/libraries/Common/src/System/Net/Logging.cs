@@ -7,6 +7,9 @@ using System.Text;
 
 namespace System.Net
 {
+    // Issue 2500: Event logging for System.Net.*
+    //
+    // Event logging is currently stubbed out; we need to design and implement a solution.
     internal static class Logging
     {
         public static object Http { get { return null; } }
@@ -14,6 +17,8 @@ namespace System.Net
         public static bool On { get { return false; } }
 
         public static object Web { get { return null; } }
+
+        public static object WebSockets { get { return null; } }
 
         public static void Associate(object traceSource, object objA, object objB)
         {

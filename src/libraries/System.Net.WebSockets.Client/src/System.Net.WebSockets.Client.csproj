@@ -1,0 +1,79 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Windows_Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{B8AD98AE-84C3-4313-B3F1-EE8BD5BFF69B}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <!-- Help VS understand available configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
+
+  <ItemGroup>
+    <Compile Include="System\Net\Http\WinHttpException.cs" />
+    <Compile Include="System\Net\WebSockets\ClientWebSocket.cs" />
+    <Compile Include="System\Net\WebSockets\ClientWebSocketOptions.cs" />
+    <Compile Include="System\Net\WebSockets\WebSocketMessageTypeAdapter.cs" />
+    <Compile Include="System\Net\WebSockets\WinHttpWebSocket.cs" />
+    <Compile Include="System\Net\WebSockets\WinHttpWebSocketCallback.cs" />
+    <Compile Include="System\Net\WebSockets\WinHttpWebSocketState.cs" />
+
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetModuleHandle.cs">
+      <Link>Interop\Windows\mincore\Interop.GetModuleHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.HRESULT_FROM_WIN32.cs">
+      <Link>Interop\Windows\mincore\Interop.HRESULT_FROM_WIN32.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
+      <Link>Interop\Windows\mincore\Interop.FormatMessage.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FreeLibrary.cs">
+      <Link>Interop\Windows\mincore\Interop.FreeLibrary.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetProcAddress.cs">
+      <Link>Interop\Windows\mincore\Interop.GetProcAddress.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.LoadLibraryEx.cs">
+      <Link>Interop\Windows\mincore\Interop.LoadLibraryEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\winhttp\Interop.SafeWinHttpHandle.cs">
+      <Link>Interop\Windows\winhttp\Interop.SafeWinHttpHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\winhttp\Interop.winhttp.cs">
+      <Link>Interop\Windows\winhttp\Interop.winhttp.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\winhttp\Interop.winhttp_types.cs">
+      <Link>Interop\Windows\winhttp\Interop.winhttp_types.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
+      <Link>Common\System\NotImplemented.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging.cs">
+      <Link>Common\System\Net\Logging.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\UriScheme.cs">
+      <Link>Common\System\Net\UriScheme.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\WebSockets\WebSocketValidate.cs">
+      <Link>Common\System\Net\WebSockets\WebSocketValidate.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
