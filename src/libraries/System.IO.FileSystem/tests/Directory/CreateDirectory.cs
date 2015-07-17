@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Linq;
 using Xunit;
 
 namespace System.IO.FileSystem.Tests
@@ -107,6 +108,23 @@ namespace System.IO.FileSystem.Tests
             Assert.All(components, (component) =>
             {
                 string path = IOServices.AddTrailingSlashIfNeeded(Path.Combine(testDir.FullName, component));
+                DirectoryInfo result = Create(path);
+
+                Assert.Equal(path, result.FullName);
+                Assert.True(result.Exists);
+            });
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void ValidExtendedPathWithTrailingSlash()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+
+            var components = IOInputs.GetValidPathComponentNames();
+            Assert.All(components, (component) =>
+            {
+                string path = @"\\?\" + IOServices.AddTrailingSlashIfNeeded(Path.Combine(testDir.FullName, component));
                 DirectoryInfo result = Create(path);
 
                 Assert.Equal(path, result.FullName);
@@ -237,7 +255,7 @@ namespace System.IO.FileSystem.Tests
         [PlatformSpecific(PlatformID.Windows)]
         public void WindowsWhiteSpaceAsPath_ThrowsArgumentException()
         {
-            var paths = IOInputs.GetNonSignificantTrailingWhiteSpace();
+            var paths = IOInputs.GetWhiteSpace();
             Assert.All(paths, (path) =>
             {
                 Assert.Throws<ArgumentException>(() => Create(path));
@@ -248,7 +266,7 @@ namespace System.IO.FileSystem.Tests
         [PlatformSpecific(PlatformID.AnyUnix)]
         public void UnixWhiteSpaceAsPath_Allowed()
         {
-            var paths = IOInputs.GetNonSignificantTrailingWhiteSpace();
+            var paths = IOInputs.GetWhiteSpace();
             Assert.All(paths, (path) =>
             {
                 Create(Path.Combine(TestDirectory, path));
@@ -257,12 +275,12 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] 
-        public void WindowsNonSignificantTrailingWhiteSpace()
+        [PlatformSpecific(PlatformID.Windows)]
+        public void WindowsTrailingWhiteSpace()
         {
             // Windows will remove all nonsignificant whitespace in a path
             DirectoryInfo testDir = Create(GetTestFilePath());
-            var components = IOInputs.GetNonSignificantTrailingWhiteSpace();
+            var components = IOInputs.GetWhiteSpace();
 
             Assert.All(components, (component) =>
             {
@@ -275,12 +293,28 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void WindowsExtendedSyntaxWhiteSpace()
+        {
+            var paths = IOInputs.GetSimpleWhiteSpace();
+            using (TemporaryDirectory directory = new TemporaryDirectory())
+            {
+                foreach (var path in paths)
+                {
+                    string extendedPath = Path.Combine(@"\\?\" + directory.Path, path);
+                    Directory.CreateDirectory(extendedPath);
+                    Assert.True(Directory.Exists(extendedPath));
+                }
+            }
+        }
+
+        [Fact]
         [PlatformSpecific(PlatformID.AnyUnix)]
         public void UnixNonSignificantTrailingWhiteSpace()
         {
             // Unix treats trailing/prename whitespace as significant and a part of the name.
             DirectoryInfo testDir = Create(GetTestFilePath());
-            var components = IOInputs.GetNonSignificantTrailingWhiteSpace();
+            var components = IOInputs.GetWhiteSpace();
 
             Assert.All(components, (component) =>
             {
@@ -435,3 +469,4 @@ namespace System.IO.FileSystem.Tests
         #endregion
     }
 }
+

@@ -486,7 +486,7 @@ namespace System.IO
             Contract.EndContractBlock();
 
             String fullPath = PathHelpers.GetFullPathInternal(path);
-            String root = fullPath.Substring(0, PathHelpers.GetRootLength(fullPath));
+            String root = fullPath.Substring(0, PathInternal.GetRootLength(fullPath));
 
             return root;
         }
@@ -494,7 +494,7 @@ namespace System.IO
         internal static String InternalGetDirectoryRoot(String path)
         {
             if (path == null) return null;
-            return path.Substring(0, PathHelpers.GetRootLength(path));
+            return path.Substring(0, PathInternal.GetRootLength(path));
         }
 
         /*===============================CurrentDirectory===============================

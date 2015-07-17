@@ -50,6 +50,21 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void ValidCreation_ExtendedSyntax()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(@"\\?\" + GetTestFilePath());
+            Assert.StartsWith(@"\\?\", testDir.FullName);
+            string testFile = Path.Combine(testDir.FullName, GetTestFileName());
+            using (FileStream stream = Create(testFile))
+            {
+                Assert.True(File.Exists(testFile));
+                Assert.Equal(0, stream.Length);
+                Assert.Equal(0, stream.Position);
+            }
+        }
+
+        [Fact]
         public void CreateInParentDirectory()
         {
             string testFile = GetTestFileName();

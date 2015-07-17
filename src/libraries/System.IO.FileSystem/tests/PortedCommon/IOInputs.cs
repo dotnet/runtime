@@ -43,13 +43,8 @@ internal static class IOInputs
         yield return "V1.0.0.0000";
     }
 
-    public static IEnumerable<string> GetNonSignificantTrailingWhiteSpace()
+    public static IEnumerable<string> GetControlWhiteSpace()
     {
-        yield return " ";
-        yield return "  ";
-        yield return "   ";
-        yield return "    ";
-        yield return "     ";
         yield return "\t";
         yield return "\t\t";
         yield return "\t\t\t";
@@ -60,6 +55,20 @@ internal static class IOInputs
         yield return "\t\n\t\n";
         yield return "\n\t\n";
         yield return "\n\t\n\t";
+    }
+
+    public static IEnumerable<string> GetSimpleWhiteSpace()
+    {
+        yield return " ";
+        yield return "  ";
+        yield return "   ";
+        yield return "    ";
+        yield return "     ";
+    }
+
+    public static IEnumerable<string> GetWhiteSpace()
+    {
+        return GetControlWhiteSpace().Concat(GetSimpleWhiteSpace());
     }
 
     public static IEnumerable<string> GetUncPathsWithoutShareName()
@@ -153,8 +162,6 @@ internal static class IOInputs
             yield return @"\\?\";
             yield return @"\\?\UNC\";
             yield return @"\\?\UNC\Server";
-            yield return @"\\?\UNC\Server\Share";
-            yield return @"\\?\UNC\Server\Share\FileName.txt";
 
             /* Bug 1011730.  CoreCLR checks : before invalid characters and throws NotSupportedException for these.
             yield return @"\\?\C:";

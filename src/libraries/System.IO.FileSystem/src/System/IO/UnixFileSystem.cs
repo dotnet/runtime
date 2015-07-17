@@ -107,7 +107,7 @@ namespace System.IO
             }
 
             // For paths that are only // or /// 
-            if (length == 2 && PathHelpers.IsDirectorySeparator(fullPath[1]))
+            if (length == 2 && PathInternal.IsDirectorySeparator(fullPath[1]))
             {
                 throw new IOException(SR.Format(SR.IO_CannotCreateDirectory, fullPath));
             }
@@ -121,7 +121,7 @@ namespace System.IO
             // Attempt to figure out which directories don't exist, and only create the ones we need.
             bool somepathexists = false;
             Stack<string> stackDir = new Stack<string>();
-            int lengthRoot = PathHelpers.GetRootLength(fullPath);
+            int lengthRoot = PathInternal.GetRootLength(fullPath);
             if (length > lengthRoot)
             {
                 int i = length - 1;
@@ -137,7 +137,7 @@ namespace System.IO
                         somepathexists = true;
                     }
 
-                    while (i > lengthRoot && !PathHelpers.IsDirectorySeparator(fullPath[i]))
+                    while (i > lengthRoot && !PathInternal.IsDirectorySeparator(fullPath[i]))
                     {
                         i--;
                     }

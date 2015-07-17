@@ -222,7 +222,7 @@ namespace System.IO
 
             if (searchCriteria != null)
             {
-                PathHelpers.CheckInvalidPathChars(fullPath, true);
+                PathInternal.CheckInvalidPathChars(fullPath, true);
 
                 _searchData = new SearchData(normalizedSearchPath, userPath, searchOption);
                 CommonInit();
@@ -479,7 +479,7 @@ namespace System.IO
 
             String searchCriteria = null;
             char lastChar = fullPathMod[fullPathMod.Length - 1];
-            if (PathHelpers.IsDirectorySeparator(lastChar))
+            if (PathInternal.IsDirectorySeparator(lastChar))
             {
                 // Can happen if the path is C:\temp, in which case GetDirectoryName would return C:\
                 searchCriteria = fullSearchString.Substring(fullPathMod.Length);
@@ -502,7 +502,7 @@ namespace System.IO
 
             // If path ends in a trailing slash (\), append a * or we'll get a "Cannot find the file specified" exception
             char lastChar = tempStr[tempStr.Length - 1];
-            if (PathHelpers.IsDirectorySeparator(lastChar) || lastChar == Path.VolumeSeparatorChar)
+            if (PathInternal.IsDirectorySeparator(lastChar) || lastChar == Path.VolumeSeparatorChar)
             {
                 tempStr = tempStr + "*";
             }
