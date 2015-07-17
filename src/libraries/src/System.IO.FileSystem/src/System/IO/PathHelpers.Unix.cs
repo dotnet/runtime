@@ -5,12 +5,6 @@ namespace System.IO
 {
     internal static partial class PathHelpers
     {
-        internal static int GetRootLength(string path)
-        {
-            CheckInvalidPathChars(path);
-            return path.Length > 0 && IsDirectorySeparator(path[0]) ? 1 : 0;
-        }
-
         internal static bool ShouldReviseDirectoryPathToCurrent(string path)
         {
             // Unlike on Windows, there are no special cases on Unix where we'd want to ignore
@@ -25,17 +19,12 @@ namespace System.IO
             // So, throw if we find a ".." that's its own component in the path.
             for (int index = 0; (index = searchPattern.IndexOf("..", index, StringComparison.Ordinal)) >= 0; index += 2)
             {
-                if ((index == 0 || IsDirectorySeparator(searchPattern[index - 1])) && // previous character is directory separator
-                    (index + 2 == searchPattern.Length || IsDirectorySeparator(searchPattern[index + 2]))) // next character is directory separator
+                if ((index == 0 || PathInternal.IsDirectorySeparator(searchPattern[index - 1])) && // previous character is directory separator
+                    (index + 2 == searchPattern.Length || PathInternal.IsDirectorySeparator(searchPattern[index + 2]))) // next character is directory separator
                 {
                     throw new ArgumentException(SR.Arg_InvalidSearchPattern, "searchPattern");
                 }
             }
-        }
-
-        internal static bool IsDirectorySeparator(char c)
-        {
-            return c == Path.DirectorySeparatorChar;
         }
 
         internal static string GetFullPathInternal(string path)

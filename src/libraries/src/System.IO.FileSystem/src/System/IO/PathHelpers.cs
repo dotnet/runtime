@@ -14,15 +14,6 @@ namespace System.IO
         // string so as to avoid the boxing of the character when calling String.Concat(..., object).
         internal static readonly string DirectorySeparatorCharAsString = Path.DirectorySeparatorChar.ToString();
 
-        internal static void CheckInvalidPathChars(String path, bool checkAdditional = false)
-        {
-            if (path == null)
-                throw new ArgumentNullException("path");
-
-            if (PathInternal.HasIllegalCharacters(path, checkAdditional))
-                throw new ArgumentException(SR.Argument_InvalidPathChars, "path");
-        }
-
         // System.IO.Path has both public Combine and internal InternalCombine
         // members.  InternalCombine performs these extra validations on the second 
         // argument.  This provides a convenient helper to maintain this extra
@@ -39,12 +30,12 @@ namespace System.IO
 
         internal static bool IsRoot(string path)
         {
-            return path.Length == GetRootLength(path);
+            return path.Length == PathInternal.GetRootLength(path);
         }
 
         internal static bool EndsInDirectorySeparator(String path)
         {
-            return path.Length > 0 && IsDirectorySeparator(path[path.Length - 1]);
+            return path.Length > 0 && PathInternal.IsDirectorySeparator(path[path.Length - 1]);
         }
 
         internal static string TrimEndingDirectorySeparator(string path)

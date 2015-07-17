@@ -10,36 +10,6 @@ namespace System.IO
         internal static readonly char[] TrimEndChars = { (char)0x9, (char)0xA, (char)0xB, (char)0xC, (char)0xD, (char)0x20, (char)0x85, (char)0xA0 };
         internal static readonly char[] TrimStartChars = { ' ' };
 
-        // Gets the length of the root DirectoryInfo or whatever DirectoryInfo markers
-        // are specified for the first part of the DirectoryInfo name.
-        // 
-        internal static int GetRootLength(String path)
-        {
-            CheckInvalidPathChars(path);
-
-            int i = 0;
-            int length = path.Length;
-
-            if (length >= 1 && (IsDirectorySeparator(path[0])))
-            {
-                // handles UNC names and directories off current drive's root.
-                i = 1;
-                if (length >= 2 && (IsDirectorySeparator(path[1])))
-                {
-                    i = 2;
-                    int n = 2;
-                    while (i < length && (!IsDirectorySeparator(path[i]) || --n > 0)) i++;
-                }
-            }
-            else if (length >= 2 && path[1] == Path.VolumeSeparatorChar)
-            {
-                // handles A:\foo.
-                i = 2;
-                if (length >= 3 && (IsDirectorySeparator(path[2]))) i++;
-            }
-            return i;
-        }
-
         internal static bool ShouldReviseDirectoryPathToCurrent(string path)
         {
             // In situations where this method is invoked, "<DriveLetter>:" should be special-cased 
@@ -58,16 +28,11 @@ namespace System.IO
             {
                 // Terminal ".." or "..\". File and directory names cannot end in "..".
                 if (index + 2 == searchPattern.Length || 
-                    IsDirectorySeparator(searchPattern[index + 2]))
+                    PathInternal.IsDirectorySeparator(searchPattern[index + 2]))
                 {
                     throw new ArgumentException(SR.Arg_InvalidSearchPattern, "searchPattern");
                 }
             }
-        }
-
-        internal static bool IsDirectorySeparator(char c)
-        {
-            return (c == Path.DirectorySeparatorChar || c == Path.AltDirectorySeparatorChar);
         }
 
         internal static string GetFullPathInternal(string path)
@@ -99,7 +64,7 @@ namespace System.IO
             if (path != null)
             {
                 int length = path.Length;
-                int rootLength = GetRootLength(path);
+                int rootLength = PathInternal.GetRootLength(path);
 
                 // ignore a trailing slash
                 if (length > rootLength && EndsInDirectorySeparator(path))
@@ -108,7 +73,7 @@ namespace System.IO
                 // find the pivot index between end of string and root
                 for (int pivot = length - 1; pivot >= rootLength; pivot--)
                 {
-                    if (IsDirectorySeparator(path[pivot]))
+                    if (PathInternal.IsDirectorySeparator(path[pivot]))
                     {
                         directory = path.Substring(0, pivot);
                         file = path.Substring(pivot + 1, length - pivot - 1);

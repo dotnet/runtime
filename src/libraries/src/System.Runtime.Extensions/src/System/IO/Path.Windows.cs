@@ -16,24 +16,6 @@ namespace System.IO
 
         private const string DirectorySeparatorCharAsString = "\\";
 
-        private static readonly char[] InvalidPathChars = 
-        { 
-            '\"', '<', '>', '|', '\0', 
-            (char)1, (char)2, (char)3, (char)4, (char)5, (char)6, (char)7, (char)8, (char)9, (char)10, 
-            (char)11, (char)12, (char)13, (char)14, (char)15, (char)16, (char)17, (char)18, (char)19, (char)20, 
-            (char)21, (char)22, (char)23, (char)24, (char)25, (char)26, (char)27, (char)28, (char)29, (char)30, 
-            (char)31 
-        };
-
-        private static readonly char[] InvalidPathCharsWithAdditionalChecks = // This is used by HasIllegalCharacters
-        { 
-            '\"', '<', '>', '|', '\0', 
-            (char)1, (char)2, (char)3, (char)4, (char)5, (char)6, (char)7, (char)8, (char)9, (char)10, 
-            (char)11, (char)12, (char)13, (char)14, (char)15, (char)16, (char)17, (char)18, (char)19, (char)20, 
-            (char)21, (char)22, (char)23, (char)24, (char)25, (char)26, (char)27, (char)28, (char)29, (char)30, 
-            (char)31, '*', '?' 
-        };
-
         private static readonly char[] InvalidFileNameChars = 
         { 
             '\"', '<', '>', '|', '\0', 
@@ -44,7 +26,7 @@ namespace System.IO
         };
 
         // Trim trailing white spaces, tabs etc but don't be aggressive in removing everything that has UnicodeCategory of trailing space.
-        // string.WhitespaceChars will trim more aggressively than what the underlying FS does (for ex, NTFS, FAT).    
+        // string.WhitespaceChars will trim more aggressively than what the underlying FS does (for ex, NTFS, FAT).
         private static readonly char[] TrimEndChars = { (char)0x9, (char)0xA, (char)0xB, (char)0xC, (char)0xD, (char)0x20, (char)0x85, (char)0xA0 };
 
         // The max total path is 260, and the max individual component length is 255. 
@@ -53,49 +35,9 @@ namespace System.IO
         private static readonly int MaxComponentLength = 255;
         private const int MaxLongPath = 32000;
 
-        private const string LongPathPrefix = @"\\?\";
-        private const string UNCPathPrefix = @"\\";
-        private const string UNCLongPathPrefixToInsert = @"?\UNC\";
-        private const string UNCLongPathPrefix = @"\\?\UNC\";
-
-        private static bool IsDirectorySeparator(char c)
-        {
-            return c == DirectorySeparatorChar || c == AltDirectorySeparatorChar;
-        }
-
         private static bool IsDirectoryOrVolumeSeparator(char c)
         {
-            return IsDirectorySeparator(c) || VolumeSeparatorChar == c;
-        }
-
-        // Gets the length of the root DirectoryInfo or whatever DirectoryInfo markers
-        // are specified for the first part of the DirectoryInfo name.
-        // 
-        private static int GetRootLength(string path)
-        {
-            CheckInvalidPathChars(path);
-
-            int i = 0;
-            int length = path.Length;
-
-            if (length >= 1 && IsDirectorySeparator(path[0]))
-            {
-                // handles UNC names and directories off current drive's root.
-                i = 1;
-                if (length >= 2 && (IsDirectorySeparator(path[1])))
-                {
-                    i = 2;
-                    int n = 2;
-                    while (i < length && (!IsDirectorySeparator(path[i]) || --n > 0)) i++;
-                }
-            }
-            else if (length >= 2 && path[1] == VolumeSeparatorChar)
-            {
-                // handles A:\foo.
-                i = 2;
-                if (length >= 3 && (IsDirectorySeparator(path[2]))) i++;
-            }
-            return i;
+            return PathInternal.IsDirectorySeparator(c) || VolumeSeparatorChar == c;
         }
 
         // Expands the given path to a fully qualified path. 
@@ -106,8 +48,10 @@ namespace System.IO
             string fullPath = GetFullPathInternal(path);
 
             // Emulate FileIOPermissions checks, retained for compatibility
-            CheckInvalidPathChars(fullPath, true);
-            if (fullPath.Length > 2 && fullPath.IndexOf(':', 2) != -1)
+            PathInternal.CheckInvalidPathChars(fullPath, true);
+
+            int startIndex = fullPath.StartsWith(PathInternal.LongPathPrefix, StringComparison.Ordinal) ? PathInternal.LongPathPrefix.Length + 2 : 2;
+            if (fullPath.Length > startIndex && fullPath.IndexOf(':', startIndex) != -1)
             {
                 throw new NotSupportedException(SR.Argument_PathFormatNotSupported);
             }
@@ -115,21 +59,109 @@ namespace System.IO
             return fullPath;
         }
 
+        /// <summary>
+        /// Checks for known bad extended paths (paths that start with \\?\)
+        /// </summary>
+        /// <param name="fullCheck">Check for invalid characters if true.</param>
+        /// <returns>'true' if the path passes validity checks.</returns>
+        private static bool ValidateExtendedPath(string path, bool fullCheck)
+        {
+            if (path.Length == PathInternal.LongPathPrefix.Length)
+            {
+                // Effectively empty and therefore invalid
+                return false;
+            }
+
+            if (path.StartsWith(PathInternal.UNCLongPathPrefix, StringComparison.Ordinal))
+            {
+                // UNC specific checks
+                if (path.Length == PathInternal.UNCLongPathPrefix.Length || path[PathInternal.UNCLongPathPrefix.Length] == DirectorySeparatorChar)
+                {
+                    // Effectively empty and therefore invalid (\\?\UNC\ or \\?\UNC\\)
+                    return false;
+                }
+
+                int serverShareSeparator = path.IndexOf(DirectorySeparatorChar, PathInternal.UNCLongPathPrefix.Length);
+                if (serverShareSeparator == -1 || serverShareSeparator == path.Length - 1)
+                {
+                    // Need at least a Server\Share
+                    return false;
+                }
+            }
+
+            // Segments can't be empty "\\" or contain *just* "." or ".."
+            char twoBack = '?';
+            char oneBack = DirectorySeparatorChar;
+            char currentCharacter;
+            bool periodSegment = false;
+            for (int i = PathInternal.LongPathPrefix.Length; i < path.Length; i++)
+            {
+                currentCharacter = path[i];
+                switch (currentCharacter)
+                {
+                    case '\\':
+                        if (oneBack == DirectorySeparatorChar || periodSegment)
+                            throw new ArgumentException(SR.Arg_PathIllegal);
+                        periodSegment = false;
+                        break;
+                    case '.':
+                        periodSegment = (oneBack == DirectorySeparatorChar || (twoBack == DirectorySeparatorChar && oneBack == '.'));
+                        break;
+                    default:
+                        periodSegment = false;
+                        break;
+                }
+
+                twoBack = oneBack;
+                oneBack = currentCharacter;
+            }
+
+            if (periodSegment)
+            {
+                return false;
+            }
+
+            if (fullCheck)
+            {
+                // Look for illegal path characters.
+                PathInternal.CheckInvalidPathChars(path);
+            }
+
+            return true;
+        }
+
         [System.Security.SecurityCritical]  // auto-generated
         private unsafe static string NormalizePath(string path, bool fullCheck, int maxPathLength, bool expandShortPaths)
         {
             Contract.Requires(path != null, "path can't be null");
+
+            // If the path is in extended syntax, we don't need to normalize, but we still do some basic validity checks
+            if (path.StartsWith(PathInternal.LongPathPrefix, StringComparison.Ordinal))
+            {
+                if (!ValidateExtendedPath(path, fullCheck))
+                {
+                    throw new ArgumentException(SR.Arg_PathIllegal);
+                }
+
+                // \\?\GLOBALROOT gives access to devices out of the scope of the current user, we
+                // don't want to allow this for security reasons.
+                // https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247.aspx#nt_namespaces
+                if (path.StartsWith(@"\\?\globalroot", StringComparison.OrdinalIgnoreCase))
+                    throw new ArgumentException(SR.Arg_PathGlobalRoot);
+
+                return path;
+            }
 
             // If we're doing a full path check, trim whitespace and look for
             // illegal path characters.
             if (fullCheck)
             {
                 // Trim whitespace off the end of the string.
-                // Win32 normalization trims only U+0020. 
+                // Win32 normalization trims only U+0020.
                 path = path.TrimEnd(TrimEndChars);
 
                 // Look for illegal path characters.
-                CheckInvalidPathChars(path);
+                PathInternal.CheckInvalidPathChars(path);
             }
 
             int index = 0;
@@ -173,7 +205,7 @@ namespace System.IO
             // LEGACY: This code is here for backwards compatibility reasons. It 
             // ensures that \\foo.cs\bar.cs stays \\foo.cs\bar.cs instead of being
             // turned into \foo.cs\bar.cs.
-            if (path.Length > 0 && IsDirectorySeparator(path[0]))
+            if (path.Length > 0 && PathInternal.IsDirectorySeparator(path[0]))
             {
                 newBuffer.Append('\\');
                 index++;
@@ -193,7 +225,7 @@ namespace System.IO
                 // addition we consume all spaces after the last other char
                 // in a directory name up until the directory separator.
 
-                if (IsDirectorySeparator(currentChar))
+                if (PathInternal.IsDirectorySeparator(currentChar))
                 {
                     // If we have a path like "123.../foo", remove the trailing dots.
                     // However, if we found "c:\temp\..\bar" or "c:\temp\...\bar", don't.
@@ -258,7 +290,7 @@ namespace System.IO
                         if (numSpaces > 0 && firstSegment)
                         {
                             // Handle strings like " \\server\share".
-                            if (index + 1 < path.Length && IsDirectorySeparator(path[index + 1]))
+                            if (index + 1 < path.Length && PathInternal.IsDirectorySeparator(path[index + 1]))
                             {
                                 newBuffer.Append(DirectorySeparatorChar);
                             }
@@ -528,8 +560,7 @@ namespace System.IO
             {
                 /* Throw an ArgumentException for paths like \\, \\server, \\server\
                    This check can only be properly done after normalizing, so
-                   \\foo\.. will be properly rejected.  Also, reject \\?\GLOBALROOT\
-                   (an internal kernel path) because it provides aliases for drives. */
+                   \\foo\.. will be properly rejected. */
                 if (newBuffer.Length > 1 && newBuffer[0] == '\\' && newBuffer[1] == '\\')
                 {
                     int startIndex = 2;
@@ -547,14 +578,6 @@ namespace System.IO
                     }
                     if (startIndex == result)
                         throw new ArgumentException(SR.Arg_PathIllegalUNC);
-
-                    // Check for \\?\Globalroot, an internal mechanism to the kernel
-                    // that provides aliases for drives and other undocumented stuff.
-                    // The kernel team won't even describe the full set of what
-                    // is available here - we don't want managed apps mucking 
-                    // with this for security reasons.
-                    if (newBuffer.OrdinalStartsWith("\\\\?\\globalroot", true))
-                        throw new ArgumentException(SR.Arg_PathGlobalRoot);
                 }
             }
 
@@ -580,21 +603,21 @@ namespace System.IO
 
         internal static string AddLongPathPrefix(string path)
         {
-            if (path.StartsWith(LongPathPrefix, StringComparison.Ordinal))
+            if (path.StartsWith(PathInternal.LongPathPrefix, StringComparison.Ordinal))
                 return path;
 
-            if (path.StartsWith(UNCPathPrefix, StringComparison.Ordinal))
-                return path.Insert(2, UNCLongPathPrefixToInsert); // Given \\server\share in longpath becomes \\?\UNC\server\share  => UNCLongPathPrefix + path.SubString(2); => The actual command simply reduces the operation cost.
+            if (path.StartsWith(PathInternal.UNCPathPrefix, StringComparison.Ordinal))
+                return path.Insert(2, PathInternal.UNCLongPathPrefixToInsert); // Given \\server\share in longpath becomes \\?\UNC\server\share  => UNCLongPathPrefix + path.SubString(2); => The actual command simply reduces the operation cost.
 
-            return LongPathPrefix + path;
+            return PathInternal.LongPathPrefix + path;
         }
 
         internal static string RemoveLongPathPrefix(string path)
         {
-            if (!path.StartsWith(LongPathPrefix, StringComparison.Ordinal))
+            if (!path.StartsWith(PathInternal.LongPathPrefix, StringComparison.Ordinal))
                 return path;
 
-            if (path.StartsWith(UNCLongPathPrefix, StringComparison.OrdinalIgnoreCase))
+            if (path.StartsWith(PathInternal.UNCLongPathPrefix, StringComparison.OrdinalIgnoreCase))
                 return path.Remove(2, 6); // Given \\?\UNC\server\share we return \\server\share => @'\\' + path.SubString(UNCLongPathPrefix.Length) => The actual command simply reduces the operation cost.
 
             return path.Substring(4);
@@ -604,10 +627,10 @@ namespace System.IO
         {
             string path = pathSB.ToString();
             
-            if (!path.StartsWith(LongPathPrefix, StringComparison.Ordinal))
+            if (!path.StartsWith(PathInternal.LongPathPrefix, StringComparison.Ordinal))
                 return pathSB;
 
-            if (path.StartsWith(UNCLongPathPrefix, StringComparison.OrdinalIgnoreCase))
+            if (path.StartsWith(PathInternal.UNCLongPathPrefix, StringComparison.OrdinalIgnoreCase))
                 return pathSB.Remove(2, 6); // Given \\?\UNC\server\share we return \\server\share => @'\\' + path.SubString(UNCLongPathPrefix.Length) => The actual command simply reduces the operation cost.
 
             return pathSB.Remove(0, 4);
@@ -644,15 +667,14 @@ namespace System.IO
         {
             if (path != null)
             {
-                CheckInvalidPathChars(path);
+                PathInternal.CheckInvalidPathChars(path);
 
                 int length = path.Length;
-                if ((length >= 1 && IsDirectorySeparator(path[0])) || 
+                if ((length >= 1 && PathInternal.IsDirectorySeparator(path[0])) || 
                     (length >= 2 && path[1] == VolumeSeparatorChar))
                     return true;
             }
             return false;
         }
-
     }
 }

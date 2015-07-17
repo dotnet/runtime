@@ -50,7 +50,7 @@ namespace System.IO
                     char ch = FullPath[i];
                     if (ch == '.')
                         return FullPath.Substring(i, length - i);
-                    if (PathHelpers.IsDirectorySeparator(ch) || ch == Path.VolumeSeparatorChar)
+                    if (PathInternal.IsDirectorySeparator(ch) || ch == Path.VolumeSeparatorChar)
                         break;
                 }
                 return String.Empty;

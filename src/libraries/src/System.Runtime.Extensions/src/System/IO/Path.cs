@@ -33,7 +33,7 @@ namespace System.IO
         {
             if (path != null)
             {
-                CheckInvalidPathChars(path);
+                PathInternal.CheckInvalidPathChars(path);
 
                 string s = path;
                 for (int i = path.Length - 1; i >= 0; i--)
@@ -69,7 +69,7 @@ namespace System.IO
         {
             if (path != null)
             {
-                CheckInvalidPathChars(path);
+                PathInternal.CheckInvalidPathChars(path);
 
                 string normalizedPath = NormalizePath(path, fullCheck: false);
 
@@ -112,13 +112,13 @@ namespace System.IO
 
                 path = normalizedPath;
 
-                int root = GetRootLength(path);
+                int root = PathInternal.GetRootLength(path);
                 int i = path.Length;
                 if (i > root)
                 {
                     i = path.Length;
                     if (i == root) return null;
-                    while (i > root && !IsDirectorySeparator(path[--i])) ;
+                    while (i > root && !PathInternal.IsDirectorySeparator(path[--i])) ;
                     return path.Substring(0, i);
                 }
             }
@@ -127,7 +127,7 @@ namespace System.IO
 
         public static char[] GetInvalidPathChars()
         {
-            return (char[])InvalidPathChars.Clone();
+            return (char[])PathInternal.InvalidPathChars.Clone();
         }
 
         public static char[] GetInvalidFileNameChars()
@@ -145,7 +145,7 @@ namespace System.IO
             if (path == null)
                 return null;
 
-            CheckInvalidPathChars(path);
+            PathInternal.CheckInvalidPathChars(path);
             int length = path.Length;
             for (int i = length - 1; i >= 0; i--)
             {
@@ -198,7 +198,7 @@ namespace System.IO
         {
             if (path != null)
             {
-                CheckInvalidPathChars(path);
+                PathInternal.CheckInvalidPathChars(path);
 
                 int length = path.Length;
                 for (int i = length - 1; i >= 0; i--)
@@ -237,7 +237,7 @@ namespace System.IO
         {
             if (path == null) return null;
             path = NormalizePath(path, fullCheck: false);
-            return path.Substring(0, GetRootLength(path));
+            return path.Substring(0, PathInternal.GetRootLength(path));
         }
 
         // Returns a cryptographically strong random 8.3 string that can be 
@@ -272,7 +272,7 @@ namespace System.IO
         {
             if (path != null)
             {
-                CheckInvalidPathChars(path);
+                PathInternal.CheckInvalidPathChars(path);
 
                 for (int i = path.Length - 1; i >= 0; i--)
                 {
@@ -293,8 +293,8 @@ namespace System.IO
                 throw new ArgumentNullException((path1 == null) ? "path1" : "path2");
             Contract.EndContractBlock();
 
-            CheckInvalidPathChars(path1);
-            CheckInvalidPathChars(path2);
+            PathInternal.CheckInvalidPathChars(path1);
+            PathInternal.CheckInvalidPathChars(path2);
 
             return CombineNoChecks(path1, path2);
         }
@@ -305,9 +305,9 @@ namespace System.IO
                 throw new ArgumentNullException((path1 == null) ? "path1" : (path2 == null) ? "path2" : "path3");
             Contract.EndContractBlock();
 
-            CheckInvalidPathChars(path1);
-            CheckInvalidPathChars(path2);
-            CheckInvalidPathChars(path3);
+            PathInternal.CheckInvalidPathChars(path1);
+            PathInternal.CheckInvalidPathChars(path2);
+            PathInternal.CheckInvalidPathChars(path3);
 
             return CombineNoChecks(path1, path2, path3);
         }
@@ -338,7 +338,7 @@ namespace System.IO
                     continue;
                 }
 
-                CheckInvalidPathChars(paths[i]);
+                PathInternal.CheckInvalidPathChars(paths[i]);
 
                 if (IsPathRooted(paths[i]))
                 {
@@ -501,20 +501,6 @@ namespace System.IO
             } while (i < len);
 
             return StringBuilderCache.GetStringAndRelease(sb);
-        }
-
-        private static bool HasIllegalCharacters(string path, bool checkAdditional)
-        {
-            Contract.Requires(path != null);
-            return path.IndexOfAny(checkAdditional ? InvalidPathCharsWithAdditionalChecks : InvalidPathChars) >= 0;
-        }
-
-        private static void CheckInvalidPathChars(string path, bool checkAdditional = false)
-        {
-            Debug.Assert(path != null);
-
-            if (HasIllegalCharacters(path, checkAdditional))
-                throw new ArgumentException(SR.Argument_InvalidPathChars, "path");
         }
     }
 }
