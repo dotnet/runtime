@@ -3488,13 +3488,12 @@ mono_amd64_have_tls_get (void)
 #ifdef TARGET_MACH
 	static gboolean have_tls_get = FALSE;
 	static gboolean inited = FALSE;
-	guint8 *ins;
 
 	if (inited)
 		return have_tls_get;
 
 #if MONO_HAVE_FAST_TLS
-	ins = (guint8*)pthread_getspecific;
+	guint8 *ins = (guint8*)pthread_getspecific;
 
 	/*
 	 * We're looking for these two instructions:
