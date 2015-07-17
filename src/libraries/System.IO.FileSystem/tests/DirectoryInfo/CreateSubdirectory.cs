@@ -190,6 +190,16 @@ namespace System.IO.FileSystem.Tests
             });
         }
 
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void ExtendedPathSubdirectory()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(@"\\?\" + GetTestFilePath());
+            Assert.True(testDir.Exists);
+            DirectoryInfo subDir = testDir.CreateSubdirectory("Foo");
+            Assert.True(subDir.Exists);
+            Assert.StartsWith(@"\\?\", subDir.FullName);
+        }
         #endregion
     }
 }

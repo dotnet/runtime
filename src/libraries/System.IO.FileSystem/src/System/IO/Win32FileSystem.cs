@@ -486,11 +486,13 @@ namespace System.IO
             if (((FileAttributes)data.fileAttributes & FileAttributes.ReparsePoint) != 0)
                 recursive = false;
 
-            RemoveDirectoryHelper(fullPath, recursive, true);
+            // We want extended syntax so we can delete "extended" subdirectories and files
+            // (most notably ones with trailing whitespace or periods)
+            RemoveDirectoryHelper(PathInternal.AddExtendedPathPrefix(fullPath), recursive, true);
         }
 
         [System.Security.SecurityCritical]  // auto-generated
-        private static void RemoveDirectoryHelper(String fullPath, bool recursive, bool throwOnTopLevelDirectoryNotFound)
+        private static void RemoveDirectoryHelper(string fullPath, bool recursive, bool throwOnTopLevelDirectoryNotFound)
         {
             bool r;
             int errorCode;
@@ -531,7 +533,7 @@ namespace System.IO
                             bool shouldRecurse = (0 == (data.dwFileAttributes & (int)FileAttributes.ReparsePoint));
                             if (shouldRecurse)
                             {
-                                String newFullPath = Path.Combine(fullPath, data.cFileName);
+                                string newFullPath = Path.Combine(fullPath, data.cFileName);
                                 try
                                 {
                                     RemoveDirectoryHelper(newFullPath, recursive, false);
