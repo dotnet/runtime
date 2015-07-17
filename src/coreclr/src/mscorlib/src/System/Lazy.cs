@@ -322,7 +322,7 @@ namespace System
                     }
 
                     LazyInternalExceptionHolder exc = m_boxed as LazyInternalExceptionHolder;
-                    Contract.Assert(m_boxed != null);
+                    Contract.Assert(exc != null);
                     exc.m_edi.Throw();
                 }
 
