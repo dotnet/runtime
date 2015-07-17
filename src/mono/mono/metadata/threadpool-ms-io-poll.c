@@ -68,7 +68,7 @@ poll_mark_bad_fds (mono_pollfd *poll_fds, gint poll_fds_size)
 }
 
 static void
-poll_update_add (gint fd, gint events, gboolean is_new)
+poll_register_fd (gint fd, gint events, gboolean is_new)
 {
 	gboolean found = FALSE;
 	gint j, k;
@@ -79,6 +79,12 @@ poll_update_add (gint fd, gint events, gboolean is_new)
 			found = TRUE;
 			break;
 		}
+	}
+
+	if (events == 0) {
+		if (found)
+			POLL_INIT_FD (poll_fds + j, -1, 0);
+		return;
 	}
 
 	if (!found) {
@@ -175,21 +181,11 @@ poll_event_get_fd_max (void)
 	return poll_fds_size;
 }
 
-static void
-poll_event_reset_fd_at (gint i, gint events)
-{
-	g_assert (poll_fds [i].fd != -1);
-	g_assert (poll_fds [i].revents != 0);
-
-	POLL_INIT_FD (&poll_fds [i], events == 0 ? -1 : poll_fds [i].fd, events);
-}
-
 static ThreadPoolIOBackend backend_poll = {
 	.init = poll_init,
 	.cleanup = poll_cleanup,
-	.update_add = poll_update_add,
+	.register_fd = poll_register_fd,
 	.event_wait = poll_event_wait,
 	.event_get_fd_max = poll_event_get_fd_max,
 	.event_get_fd_at = poll_event_get_fd_at,
-	.event_reset_fd_at = poll_event_reset_fd_at,
 };

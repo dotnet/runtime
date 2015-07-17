@@ -13,17 +13,6 @@
 static gint epoll_fd;
 static struct epoll_event *epoll_events;
 
-static inline void
-EPOLL_INIT_EVENT (struct epoll_event *event, gint fd, gint events)
-{
-	event->data.fd = fd;
-	event->events = EPOLLONESHOT;
-	if ((events & MONO_POLLIN) != 0)
-		event->events |= EPOLLIN;
-	if ((events & MONO_POLLOUT) != 0)
-		event->events |= EPOLLOUT;
-}
-
 static gboolean
 epoll_init (gint wakeup_pipe_fd)
 {
@@ -66,13 +55,24 @@ epoll_cleanup (void)
 }
 
 static void
-epoll_update_add (gint fd, gint events, gboolean is_new)
+epoll_register_fd (gint fd, gint events, gboolean is_new)
 {
-	struct epoll_event event;
-	EPOLL_INIT_EVENT (&event, fd, events);
+	if (events == 0) {
+		if (!is_new && epoll_ctl (epoll_fd, EPOLL_CTL_DEL, fd, NULL) == -1)
+			g_error ("epoll_register_fd: epoll_ctl (EPOLL_CTL_DEL) failed, error (%d) %s", errno, g_strerror (errno));
+	} else {
+		struct epoll_event event;
 
-	if (epoll_ctl (epoll_fd, is_new ? EPOLL_CTL_ADD : EPOLL_CTL_MOD, event.data.fd, &event) == -1)
-		g_error ("epoll_update_add: epoll_ctl(%s) failed, error (%d) %s", is_new ? "EPOLL_CTL_ADD" : "EPOLL_CTL_MOD", errno, g_strerror (errno));
+		event.data.fd = fd;
+		event.events = EPOLLONESHOT;
+		if ((events & MONO_POLLIN) != 0)
+			event.events |= EPOLLIN;
+		if ((events & MONO_POLLOUT) != 0)
+			event.events |= EPOLLOUT;
+
+		if (epoll_ctl (epoll_fd, is_new ? EPOLL_CTL_ADD : EPOLL_CTL_MOD, event.data.fd, &event) == -1)
+			g_error ("epoll_register_fd: epoll_ctl(%s) failed, error (%d) %s", is_new ? "EPOLL_CTL_ADD" : "EPOLL_CTL_MOD", errno, g_strerror (errno));
+	}
 }
 
 static gint
@@ -115,29 +115,13 @@ epoll_event_get_fd_at (gint i, gint *events)
 	return epoll_events [i].data.fd;
 }
 
-static void
-epoll_event_reset_fd_at (gint i, gint events)
-{
-	if (events == 0) {
-		if (epoll_ctl (epoll_fd, EPOLL_CTL_DEL, epoll_events [i].data.fd, NULL) == -1)
-			g_error ("epoll_event_reset_fd_at: epoll_ctl (EPOLL_CTL_DEL) failed, error (%d) %s", errno, g_strerror (errno));
-	} else {
-		struct epoll_event event;
-		EPOLL_INIT_EVENT (&event, epoll_events [i].data.fd, events);
-
-		if (epoll_ctl (epoll_fd, EPOLL_CTL_MOD, event.data.fd, &event) == -1)
-			g_error ("epoll_event_reset_fd_at: epoll_ctl (EPOLL_CTL_MOD) failed, error (%d) %s", errno, g_strerror (errno));
-	}
-}
-
 static ThreadPoolIOBackend backend_epoll = {
 	.init = epoll_init,
 	.cleanup = epoll_cleanup,
-	.update_add = epoll_update_add,
+	.register_fd = epoll_register_fd,
 	.event_wait = epoll_event_wait,
 	.event_get_fd_max = epoll_event_get_fd_max,
 	.event_get_fd_at = epoll_event_get_fd_at,
-	.event_reset_fd_at = epoll_event_reset_fd_at,
 };
 
 #endif
