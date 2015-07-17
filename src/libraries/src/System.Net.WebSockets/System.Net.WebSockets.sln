@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.22823.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebSockets", "src\System.Net.WebSockets.csproj", "{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebSockets.Tests", "tests\System.Net.WebSockets.Tests.csproj", "{7C395A91-D955-444C-98BF-D3F809A56CE1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7C395A91-D955-444C-98BF-D3F809A56CE1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7C395A91-D955-444C-98BF-D3F809A56CE1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7C395A91-D955-444C-98BF-D3F809A56CE1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7C395A91-D955-444C-98BF-D3F809A56CE1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
