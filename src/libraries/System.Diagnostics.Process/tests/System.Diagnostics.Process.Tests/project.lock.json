@@ -413,7 +413,7 @@
           "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.core.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00056": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00058": {
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10-beta-22703",
           "System.IO": "4.0.10-beta-22703",
@@ -1207,11 +1207,11 @@
         "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.runner.utility.xml"
       ]
     },
-    "xunit.netcore.extensions/1.0.0-prerelease-00056": {
-      "sha512": "UPxtAjxht7LkVoI6njl23cSXiNtPjM0zT9ouhtS0Ju3bXDSUfWjT3i4vRx8f7xrV24AOdbLfxVETP8DapKHClw==",
+    "xunit.netcore.extensions/1.0.0-prerelease-00058": {
+      "sha512": "RBvpUtoMBeqXYDI+QXt4TIFMBFV3he+KPsTfyAuAiHtqwsrkJoxsA3gF7doOOpKKJ4QKtt7d1YBD3mLusLyveQ==",
       "files": [
-        "xunit.netcore.extensions.1.0.0-prerelease-00056.nupkg",
-        "xunit.netcore.extensions.1.0.0-prerelease-00056.nupkg.sha512",
+        "xunit.netcore.extensions.1.0.0-prerelease-00058.nupkg",
+        "xunit.netcore.extensions.1.0.0-prerelease-00058.nupkg.sha512",
         "xunit.netcore.extensions.nuspec",
         "lib/portable-wpa80+win80+net45+aspnetcore50/Xunit.NetCore.Extensions.dll"
       ]
@@ -1249,6 +1249,7 @@
       "System.Security.SecureString >= 4.0.0-beta-*",
       "System.Text.Encoding >= 4.0.10-beta-*",
       "System.Text.Encoding.CodePages >= 4.0.0-beta-*",
+      "System.Threading >= 4.0.10-beta-*",
       "System.Threading.Tasks >= 4.0.10-beta-*",
       "System.Threading.Thread >= 4.0.0-beta-*",
       "System.Threading.ThreadPool >= 4.0.10-beta-*",

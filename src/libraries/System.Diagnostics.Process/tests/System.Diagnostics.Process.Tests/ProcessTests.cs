@@ -7,6 +7,7 @@ using System.IO;
 using System.IO.Pipes;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Xunit;
 
 namespace System.Diagnostics.ProcessTests
@@ -190,34 +191,25 @@ namespace System.Diagnostics.ProcessTests
         [Fact]
         public void TestMainModule()
         {
+            // Module support is not enabled on OSX
+            if (global::Interop.IsOSX)
+            {
+                Assert.Null(_process.MainModule);
+                Assert.Equal(0, _process.Modules.Count);
+                return;
+            }
+
+            // Ensure the process has loaded the modules.
+            Assert.True(SpinWait.SpinUntil(() => _process.Modules.Count > 0, WaitInMS));
+
             // Get MainModule property from a Process object
             ProcessModule mainModule = _process.MainModule;
+            Assert.NotNull(mainModule);
+            Assert.Equal(CoreRunName, Path.GetFileNameWithoutExtension(mainModule.ModuleName));
 
-            if (!global::Interop.IsOSX) // OS X doesn't currently implement modules support
-            {
-                Assert.NotNull(mainModule);
-            }
-
-            if (mainModule != null)
-            {
-                Assert.Equal(CoreRunName, Path.GetFileNameWithoutExtension(mainModule.ModuleName));
-
-                // Check that the mainModule is present in the modules list.
-                bool foundMainModule = false;
-                if (_process.Modules != null)
-                {
-                    foreach (ProcessModule pModule in _process.Modules)
-                    {
-                        if (String.Equals(Path.GetFileNameWithoutExtension(pModule.ModuleName), CoreRunName, StringComparison.OrdinalIgnoreCase))
-                        {
-                            foundMainModule = true;
-                            break;
-                        }
-                    }
-
-                    Assert.True(foundMainModule, "Could not found Module " + mainModule.ModuleName);
-                }
-            }
+            // Check that the mainModule is present in the modules list.
+            IEnumerable<string> processModuleNames = _process.Modules.Cast<ProcessModule>().Select(p => Path.GetFileNameWithoutExtension(p.ModuleName));
+            Assert.Contains(CoreRunName, processModuleNames);
         }
 
         [Fact]
@@ -372,17 +364,17 @@ namespace System.Diagnostics.ProcessTests
         [Fact]
         public void TestProcessStartTime()
         {
-            DateTime timeBeforeCreatingProcess = DateTime.UtcNow;
             Process p = CreateProcessInfinite();
             try
             {
                 p.Start();
-                Assert.True(timeBeforeCreatingProcess <= p.StartTime.ToUniversalTime(), "Process StartTime is lesser than previous time.");
+                Assert.True(p.StartTime.ToUniversalTime() <= DateTime.UtcNow, string.Format("Process StartTime is larger than later time."));
             }
             finally
             {
                 if (!p.HasExited)
                     p.Kill();
+
                 Assert.True(p.WaitForExit(WaitInMS));
             }
         }

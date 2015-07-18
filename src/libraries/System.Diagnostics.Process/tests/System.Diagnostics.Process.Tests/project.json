@@ -14,6 +14,7 @@
     "System.Security.SecureString": "4.0.0-beta-*",
     "System.Text.Encoding": "4.0.10-beta-*",
     "System.Text.Encoding.CodePages": "4.0.0-beta-*",
+    "System.Threading": "4.0.10-beta-*",
     "System.Threading.Tasks": "4.0.10-beta-*",
     "System.Threading.Thread": "4.0.0-beta-*",
     "System.Threading.ThreadPool": "4.0.10-beta-*",
