@@ -8,7 +8,7 @@ using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace WinHttpHandlerTests
+namespace System.Net.Http.WinHttpHandlerUnitTests
 {
     public static class TestServer
     {
@@ -71,7 +71,7 @@ namespace WinHttpHandlerTests
                     return;
                 }
 
-                Marshal.WriteByte(IntPtr.Add(buffer, i), (byte)data);
+                System.Runtime.InteropServices.Marshal.WriteByte(IntPtr.Add(buffer, i), (byte)data);
                 bytesRead++;
             }
         }

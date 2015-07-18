@@ -4,10 +4,10 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Windows_Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{C85CF035-7804-41FF-9557-48B7C948B58D}</ProjectGuid>
+    <ProjectGuid>{17D5CC82-F72C-4DD2-B6DB-DE7FB2F19C34}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>System.Net.Http.Tests</RootNamespace>
-    <AssemblyName>System.Net.Http.Tests</AssemblyName>
+    <RootNamespace>System.Net.Http.WinHttpHandler.Tests</RootNamespace>
+    <AssemblyName>System.Net.Http.WinHttpHandler.Tests</AssemblyName>
     <UnsupportedPlatforms>Linux;OSX;FreeBSD</UnsupportedPlatforms>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU' " />
@@ -17,15 +17,20 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />  
-  <ItemGroup>
-    <Compile Include="HttpClientHandlerTest.cs" />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
+  
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+    <Compile Include="$(CommonTestPath)\System\Net\HttpTestServers.cs">
+      <Link>Common\System\Net\HttpTestServers.cs</Link>
+    </Compile>
+    
+    <Compile Include="WinHttpHandlerTest.cs" />
     <Compile Include="XunitTestAssemblyAtrributes.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Net.Http.csproj">
-      <Project>{1D422B1D-D7C4-41B9-862D-EB3D98DF37DE}</Project>
-      <Name>System.Net.Http</Name>
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+    <ProjectReference Include="..\..\src\System.Net.Http.WinHttpHandler.csproj">
+      <Project>{F75E3008-0562-42DF-BE72-C1384F12157E}</Project>
+      <Name>System.Net.Http.WinHttpHandler</Name>
     </ProjectReference>
   </ItemGroup>  <ItemGroup>
     <None Include="project.json" />
