@@ -250,5 +250,38 @@ namespace System.Net.WebHeaderCollectionTests
                 "Accept: text/plain\r\nContent-Length: 123\r\n\r\n",
                 w.ToString());
         }
+
+        [Fact]
+        public void IterateCollection_Success()
+        {
+            WebHeaderCollection w = new WebHeaderCollection();
+            w["Accept"] = "text/plain";
+            w["Content-Length"] = "123";
+
+            string result = "";
+            foreach (var item in w)
+            {
+                result += item;
+            }
+
+            Assert.Equal("AcceptContent-Length", result);
+        }
+
+        [Fact]
+        public void IterateIEnumerable_Success()
+        {
+            WebHeaderCollection w = new WebHeaderCollection();
+            w["Accept"] = "text/plain";
+            w["Content-Length"] = "123";
+
+            string result = "";
+            foreach (var item in (System.Collections.IEnumerable)w)
+            {
+                result += item;
+            }
+
+            Assert.Equal("AcceptContent-Length", result);
+        }
+
     }
 }
