@@ -4980,7 +4980,7 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	MonoDomain *domain;
 	guint8 **code_slot;
 
-	if (virtual) {
+	if (virtual && !cfg->llvm_only) {
 		MonoMethod *invoke = mono_get_delegate_invoke (klass);
 		g_assert (invoke);
 
@@ -4988,7 +4988,7 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 			return NULL;
 	}
 
-	obj = handle_alloc (cfg, klass, FALSE, 0);
+	obj = handle_alloc (cfg, klass, FALSE, mono_class_check_context_used (klass));
 	if (!obj)
 		return NULL;
 
@@ -12663,7 +12663,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 							ensure_method_is_allowed_to_call_method (cfg, method, ctor_method);
 
 						/* FIXME: SGEN support */
-						if (invoke_context_used == 0) {
+						if (invoke_context_used == 0 || cfg->llvm_only) {
 							ip += 6;
 							if (cfg->verbose_level > 3)
 								g_print ("converting (in B%d: stack: %d) %s", cfg->cbb->block_num, (int)(sp - stack_start), mono_disasm_code_one (NULL, method, ip, NULL));
