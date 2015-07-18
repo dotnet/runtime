@@ -125,13 +125,7 @@ namespace System.IO.Pipes
         [SecuritySafeCritical]
         private Task<int> ReadAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            Debug.Assert(_handle != null, "_handle is null");
-            Debug.Assert(!_handle.IsClosed, "_handle is closed");
-            Debug.Assert(CanRead, "can't read");
-            Debug.Assert(buffer != null, "buffer is null");
-            Debug.Assert(offset >= 0, "offset is negative");
-            Debug.Assert(count >= 0, "count is negative");
-
+            // Delegate to the base Stream's ReadAsync, which will just invoke Read asynchronously.
             return base.ReadAsync(buffer, offset, count, cancellationToken);
         }
 
@@ -164,13 +158,7 @@ namespace System.IO.Pipes
         [SecuritySafeCritical]
         private Task WriteAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            Debug.Assert(_handle != null, "_handle is null");
-            Debug.Assert(!_handle.IsClosed, "_handle is closed");
-            Debug.Assert(CanWrite, "can't write");
-            Debug.Assert(buffer != null, "buffer is null");
-            Debug.Assert(offset >= 0, "offset is negative");
-            Debug.Assert(count >= 0, "count is negative");
-
+            // Delegate to the base Stream's WriteAsync, which will just invoke Write asynchronously.
             return base.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
