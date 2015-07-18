@@ -590,6 +590,11 @@ namespace System.Net
 
         IEnumerator IEnumerable.GetEnumerator()
         {
+            return GetEnumerator();
+        }
+
+        public override IEnumerator GetEnumerator()
+        {
             return InnerCollection.Keys.GetEnumerator();
         }
 
