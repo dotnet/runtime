@@ -4,7 +4,7 @@
 using System;
 using System.Net.Http;
 
-namespace WinHttpHandlerTests
+namespace System.Net.Http.WinHttpHandlerUnitTests
 {
     internal class FakeSafeWinHttpHandle : Interop.WinHttp.SafeWinHttpHandle
     {

@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace WinHttpHandlerTests
+namespace System.Net.Http.WinHttpHandlerUnitTests
 {
     public static class APICallHistory
     {

@@ -11,7 +11,7 @@ using Xunit;
 
 using SafeWinHttpHandle = Interop.WinHttp.SafeWinHttpHandle;
 
-namespace WinHttpHandlerTests
+namespace System.Net.Http.WinHttpHandlerUnitTests
 {
     public class WinHttpRequestStreamTests
     {

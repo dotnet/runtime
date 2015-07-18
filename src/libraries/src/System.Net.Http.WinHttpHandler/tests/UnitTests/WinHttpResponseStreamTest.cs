@@ -8,7 +8,7 @@ using System.Text;
 
 using Xunit;
 
-namespace WinHttpHandlerTests
+namespace System.Net.Http.WinHttpHandlerUnitTests
 {
     public class WinHttpResponseStreamTests
     {

@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 using Microsoft.Win32.SafeHandles;
 
-using WinHttpHandlerTests;
+using System.Net.Http.WinHttpHandlerUnitTests;
 
 using SafeWinHttpHandle = Interop.WinHttp.SafeWinHttpHandle;
 
