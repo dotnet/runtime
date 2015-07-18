@@ -67,11 +67,6 @@ namespace System.Diagnostics
             }
 
             // Return the set of modules found
-            if (modules.Count == 0)
-            {
-                // Match Windows behavior when failing to enumerate modules
-                throw new Win32Exception(SR.EnumProcessModuleFailed);
-            }
             return modules.ToArray();
         }
 
