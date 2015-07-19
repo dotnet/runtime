@@ -200,7 +200,13 @@ namespace System.Diagnostics.ProcessTests
             }
 
             // Ensure the process has loaded the modules.
-            Assert.True(SpinWait.SpinUntil(() => _process.Modules.Count > 0, WaitInMS));
+            Assert.True(SpinWait.SpinUntil(() =>
+            {
+                if (_process.Modules.Count > 0)
+                    return true;
+                _process.Refresh();
+                return false;
+            }, WaitInMS));
 
             // Get MainModule property from a Process object
             ProcessModule mainModule = _process.MainModule;
