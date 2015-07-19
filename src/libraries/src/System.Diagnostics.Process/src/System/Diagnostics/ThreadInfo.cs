@@ -12,7 +12,7 @@ namespace System.Diagnostics
     /// <internalonly/>
     internal sealed class ThreadInfo
     {
-        internal int _threadId;
+        internal ulong _threadId;
         internal int _processId;
         internal int _basePriority;
         internal int _currentPriority;

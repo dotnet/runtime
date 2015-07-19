@@ -1,11 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
 
@@ -373,6 +371,9 @@ namespace System.Diagnostics.ProcessTests
             try
             {
                 p.Start();
+
+                // Ensure process has been started, should not throw.
+                Process accessProcessFromMachine = Process.GetProcessById(p.Id);
                 Assert.True(p.StartTime.ToUniversalTime() <= DateTime.UtcNow, string.Format("Process StartTime is larger than later time."));
             }
             finally

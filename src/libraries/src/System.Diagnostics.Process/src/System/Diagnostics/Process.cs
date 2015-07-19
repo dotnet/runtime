@@ -511,6 +511,7 @@ namespace System.Diagnostics
                     {
                         newThreadsArray[i] = new ProcessThread(_isRemoteMachine, _processId, (ThreadInfo)_processInfo._threadInfoList[i]);
                     }
+
                     ProcessThreadCollection newThreads = new ProcessThreadCollection(newThreadsArray);
                     _threads = newThreads;
                 }
