@@ -4,7 +4,6 @@
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Pipes;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -578,31 +577,6 @@ namespace System.Diagnostics.ProcessTests
             {
                 Process process = Process.GetCurrentProcess();
                 Assert.Throws<System.InvalidOperationException>(() => process.StartInfo);
-            }
-        }
-
-        [Fact]
-        public void TestIPCProcess()
-        {
-            Process p = CreateProcess("ipc");
-
-            using (var outbound = new AnonymousPipeServerStream(PipeDirection.Out, HandleInheritability.Inheritable))
-            using (var inbound = new AnonymousPipeServerStream(PipeDirection.In, HandleInheritability.Inheritable))
-            {
-                p.StartInfo.Arguments += " " + outbound.GetClientHandleAsString() + " " + inbound.GetClientHandleAsString();
-                p.Start();
-                outbound.DisposeLocalCopyOfClientHandle();
-                inbound.DisposeLocalCopyOfClientHandle();
-
-                for (byte i = 0; i < 10; i++)
-                {
-                    outbound.WriteByte(i);
-                    int received = inbound.ReadByte();
-                    Assert.Equal(i, received);
-                }
-
-                Assert.True(p.WaitForExit(WaitInMS));
-                Assert.Equal(SuccessExitCode, p.ExitCode);
             }
         }
 
