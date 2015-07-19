@@ -7024,7 +7024,7 @@ PRINT_CONSTANT:
         break;
 
     case IF_RRW_SHF:
-        printf("%s", emitRegName(id->idReg1()));
+        printf("%s", emitRegName(id->idReg1(), attr));
         emitDispShift(ins, (BYTE)emitGetInsSC(id));
         break;
 
