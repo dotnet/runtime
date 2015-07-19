@@ -53,7 +53,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public int Id
         {
-            get { return _threadInfo._threadId; }
+            get { return (int)_threadInfo._threadId; }
         }
 
         /// <devdoc>

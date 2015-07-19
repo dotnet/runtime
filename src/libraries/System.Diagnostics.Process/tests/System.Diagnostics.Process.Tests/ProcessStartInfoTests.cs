@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Security;
+using System.IO;
 using Xunit;
 
 namespace System.Diagnostics.ProcessTests
@@ -185,6 +187,60 @@ namespace System.Diagnostics.ProcessTests
 
             // Calling the getter
             Assert.False(psi.UseShellExecute, "UseShellExecute=true is not supported on onecore.");
+        }
+
+        [Fact]
+        public void TestArgumentsProperty()
+        {
+            ProcessStartInfo psi = new ProcessStartInfo();
+            Assert.Equal(string.Empty, psi.Arguments);
+
+            psi = new ProcessStartInfo("filename", "-arg1 -arg2");
+            Assert.Equal("-arg1 -arg2", psi.Arguments);
+        }
+
+        [Fact]
+        public void TestCreateNoWindowProperty()
+        {
+            Process testProcess = CreateProcessInfinite();
+            try
+            {
+                testProcess.StartInfo.CreateNoWindow = true;
+                testProcess.Start();
+
+                Assert.True(testProcess.StartInfo.CreateNoWindow);
+            }
+            finally
+            {
+                if (!testProcess.HasExited)
+                    testProcess.Kill();
+
+                Assert.True(testProcess.WaitForExit(WaitInMS));
+            }
+        }
+
+        [Fact, PlatformSpecific(PlatformID.Windows)]
+        public void TestUserCredentialsPropertiesOnWindows()
+        {
+            // test the defaults here.
+            Assert.Equal(string.Empty, _process.StartInfo.Domain);
+            Assert.Equal(string.Empty, _process.StartInfo.UserName);
+            Assert.Equal(default(SecureString), _process.StartInfo.Password);
+            Assert.False(_process.StartInfo.LoadUserProfile);
+        }
+
+        [Fact, PlatformSpecific(PlatformID.AnyUnix)]
+        public void TestUserCredentialsPropertiesOnUnix()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => _process.StartInfo.Domain);
+            Assert.Throws<PlatformNotSupportedException>(() => _process.StartInfo.UserName);
+            Assert.Throws<PlatformNotSupportedException>(() => _process.StartInfo.Password);
+            Assert.Throws<PlatformNotSupportedException>(() => _process.StartInfo.LoadUserProfile);
+        }
+
+        public void TestWorkingDirectoryProperty()
+        {
+            Assert.Equal(Directory.GetCurrentDirectory(), _process.StartInfo.WorkingDirectory);
         }
     }
 }

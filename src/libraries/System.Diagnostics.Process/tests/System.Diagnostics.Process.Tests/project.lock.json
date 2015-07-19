@@ -80,6 +80,29 @@
           "lib/DNXCore50/System.IO.dll": {}
         }
       },
+      "System.IO.FileSystem/4.0.0-beta-23024": {
+        "dependencies": {
+          "System.Runtime": "4.0.20-beta-23024",
+          "System.Runtime.InteropServices": "4.0.20-beta-23024",
+          "System.Resources.ResourceManager": "4.0.0-beta-23024",
+          "System.IO.FileSystem.Primitives": "4.0.0-beta-23024",
+          "System.Runtime.Handles": "4.0.0-beta-23024",
+          "System.Threading.Overlapped": "4.0.0-beta-23024",
+          "System.Text.Encoding": "4.0.10-beta-23024",
+          "System.IO": "4.0.10-beta-23024",
+          "System.Collections": "4.0.10-beta-23024",
+          "System.Threading.Tasks": "4.0.10-beta-23024",
+          "System.Runtime.Extensions": "4.0.10-beta-23024",
+          "System.Text.Encoding.Extensions": "4.0.10-beta-23024",
+          "System.Threading": "4.0.10-beta-23024"
+        },
+        "compile": {
+          "ref/dotnet/System.IO.FileSystem.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.IO.FileSystem.dll": {}
+        }
+      },
       "System.IO.FileSystem.Primitives/4.0.0-beta-23024": {
         "dependencies": {
           "System.Runtime": "4.0.20-beta-23024"
@@ -584,6 +607,30 @@
         "ref/dotnet/zh-hant/System.IO.xml",
         "ref/net46/_._",
         "runtimes/win8-aot/lib/netcore50/System.IO.dll"
+      ]
+    },
+    "System.IO.FileSystem/4.0.0-beta-23024": {
+      "serviceable": true,
+      "sha512": "CUlwZ5kM4QRQgsVj9/QQIr86hLr7U/E6evFXg6643qd63BppdfORu46tyQMxS/gsdrT4PiIRu7rrrguXiBR5ww==",
+      "files": [
+        "System.IO.FileSystem.4.0.0-beta-23024.nupkg",
+        "System.IO.FileSystem.4.0.0-beta-23024.nupkg.sha512",
+        "System.IO.FileSystem.nuspec",
+        "lib/DNXCore50/System.IO.FileSystem.dll",
+        "lib/net46/System.IO.FileSystem.dll",
+        "lib/netcore50/System.IO.FileSystem.dll",
+        "ref/dotnet/System.IO.FileSystem.dll",
+        "ref/dotnet/System.IO.FileSystem.xml",
+        "ref/dotnet/de/System.IO.FileSystem.xml",
+        "ref/dotnet/es/System.IO.FileSystem.xml",
+        "ref/dotnet/fr/System.IO.FileSystem.xml",
+        "ref/dotnet/it/System.IO.FileSystem.xml",
+        "ref/dotnet/ja/System.IO.FileSystem.xml",
+        "ref/dotnet/ko/System.IO.FileSystem.xml",
+        "ref/dotnet/ru/System.IO.FileSystem.xml",
+        "ref/dotnet/zh-hans/System.IO.FileSystem.xml",
+        "ref/dotnet/zh-hant/System.IO.FileSystem.xml",
+        "ref/net46/System.IO.FileSystem.dll"
       ]
     },
     "System.IO.FileSystem.Primitives/4.0.0-beta-23024": {
@@ -1239,6 +1286,7 @@
       "System.Collections >= 4.0.10-beta-*",
       "System.Console >= 4.0.0-beta-*",
       "System.IO >= 4.0.10-beta-*",
+      "System.IO.FileSystem >= 4.0.0-beta-*",
       "System.IO.Pipes >= 4.0.0-beta-*",
       "System.Linq >= 4.0.0-beta-*",
       "System.Runtime >= 4.0.20-beta-*",
