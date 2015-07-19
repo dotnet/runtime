@@ -137,8 +137,8 @@ NESTED_END NDirectImportThunk, _TEXT
 // MOVDQA is not an atomic operation.  You need to call this function in a crst.
 // </NOTE>
 LEAF_ENTRY moveOWord, _TEXT
-        movdqu          xmm0, [rdi]
-        movdqu          [rsi], xmm0
+        movdqu          xmm0, xmmword ptr [rdi]
+        movdqu          xmmword ptr [rsi], xmm0
 
         ret
 LEAF_END moveOWord, _TEXT
@@ -157,14 +157,14 @@ NESTED_ENTRY JIT_RareDisableHelper, _TEXT, NoHandler
     alloc_stack         0x28
     END_PROLOGUE
     // First float return register
-    movdqa              [rsp], xmm0
+    movdqa              xmmword ptr [rsp], xmm0
     // Second float return register
-    movdqa              [rsp+0x10], xmm1
+    movdqa              xmmword ptr [rsp+0x10], xmm1
 
     call                C_FUNC(JIT_RareDisableHelperWorker)
 
-    movdqa              xmm0, [rsp]
-    movdqa              xmm1, [rsp+0x10]
+    movdqa              xmm0, xmmword ptr [rsp]
+    movdqa              xmm1, xmmword ptr [rsp+0x10]
     free_stack          0x28
     pop_register        rdx
     pop_register        rax
