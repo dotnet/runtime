@@ -263,8 +263,8 @@ HRESULT FakeCoCreateInstanceEx(REFCLSID       rclsid,
     HRESULT hr = S_OK;
 
     // Call the function to get a class factory for the rclsid passed in.
-    ReleaseHolder<IClassFactory> classFactory;
     HModuleHolder hDll;
+    ReleaseHolder<IClassFactory> classFactory;
     IfFailRet(FakeCoCallDllGetClassObject(rclsid, wszDllPath, _IID_IClassFactory, (void**)&classFactory, &hDll));
 
     // Ask the class factory to create an instance of the
