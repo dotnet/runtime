@@ -367,7 +367,7 @@ namespace System.Diagnostics
             Debug.Assert(!Monitor.IsEntered(_gate));
 
             // Track the time the we start waiting.
-            long startTime = GetTimestamp();
+            long startTime = Stopwatch.GetTimestamp();
 
             // Polling loop
             while (true)
@@ -379,7 +379,7 @@ namespace System.Diagnostics
                 // We're in a polling loop... determine how much time remains
                 int remainingTimeout = millisecondsTimeout == Timeout.Infinite ?
                     Timeout.Infinite :
-                    (int)Math.Max(millisecondsTimeout - (GetTimestamp() - startTime), 0);
+                    (int)Math.Max(millisecondsTimeout - ((Stopwatch.GetTimestamp() - startTime) / (double)Stopwatch.Frequency * 1000), 0);
 
                 lock (_gate)
                 {
@@ -509,12 +509,6 @@ namespace System.Diagnostics
                     }
                 }
             });
-        }
-
-        /// <summary>Gets a current time stamp.</summary>
-        private static long GetTimestamp()
-        {
-            return Stopwatch.GetTimestamp();
         }
 
     }
