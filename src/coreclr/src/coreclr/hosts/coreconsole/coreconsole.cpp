@@ -595,15 +595,27 @@ void showHelp() {
 
 int __cdecl wmain(const int argc, const wchar_t* argv[])
 {
-	auto programPath = _wcsdup(argv[0]);
-	auto extension = wcsrchr(programPath, '.') + 1;
-	if (wcscmp(extension, L"exe") != 0) {
-		::wprintf(W("This executable needs to have 'exe' extension"));
-		return -1;
-	}
-	extension[0] = 'd';
-	extension[1] = 'l';
-	extension[2] = 'l';
+    auto programPath = _wcsdup(argv[0]);
+    auto extension = wcsrchr(programPath, '.');
+    if (extension == NULL) {
+        // We were called without the extension so need a bigger buffer
+        size_t pathLen = wcslen(programPath);
+        size_t bufLen = pathLen + 5;
+        wchar_t *newPath = new wchar_t[bufLen];
+        wcscpy_s(newPath, bufLen, programPath);
+        wcscat_s(newPath, bufLen, W(".dll"));
+        programPath = newPath;
+    }
+    else {
+        extension += 1;
+        if (wcscmp(extension, L"exe") != 0) {
+            ::wprintf(W("This executable needs to have 'exe' extension"));
+            return -1;
+        }
+        extension[0] = 'd';
+        extension[1] = 'l';
+        extension[2] = 'l';
+    }
 
     // Parse the options from the command line
     bool verbose = false;
