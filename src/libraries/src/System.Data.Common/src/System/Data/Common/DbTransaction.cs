@@ -12,7 +12,7 @@ namespace System.Data.Common
 {
     public abstract class DbTransaction :
         IDisposable
-    { // V1.2.3300
+    {
         protected DbTransaction() : base()
         {
         }

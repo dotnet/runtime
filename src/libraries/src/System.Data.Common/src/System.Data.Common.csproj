@@ -16,10 +16,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <!-- A reference to the entire .NET Framework is automatically included -->
-  </ItemGroup>
-  <ItemGroup>
-	<Compile Include="System\DBNull.cs" />
+    <Compile Include="System\DBNull.cs" />
     <Compile Include="System\Data\CommandBehavior.cs" />
     <Compile Include="System\Data\CommandType.cs" />
     <Compile Include="System\Data\ConnectionState.cs" />

@@ -2,37 +2,19 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Threading.Tasks;
-using Res = System.SR;
 
-namespace System
-{
-    internal static partial class SR
-    {
-        internal static string GetString(string value)
-        {
-            return value;
-        }
-
-        internal static string GetString(string format, params object[] args)
-        {
-            return SR.Format(format, args);
-        }
-    }
-}
 
 
 namespace System.Data.Common
 {
     internal static class ADP
     {
-        // The class ADP defines the exceptions that are specific to the Adapters.f
+        // The class ADP defines the exceptions that are specific to the Adapters.
         // The class contains functions that take the proper informational variables and then construct
-        // the appropriate exception with an error string obtained from the resource Framework.txt.
+        // the appropriate exception with an error string obtained from the resource framework.
         // The exception is then returned to the caller, so that the caller may then throw from its
         // location so that the catcher of the exception will have the appropriate call stack.
         // This class is used so that there will be compile time checking of error messages.
-        // The resource Framework.txt will ensure proper string text based on the appropriate
-        // locale.
 
         static internal Task<T> CreatedTaskWithException<T>(Exception ex)
         {
@@ -48,8 +30,9 @@ namespace System.Data.Common
             return completion.Task;
         }
 
+
         // NOTE: Initializing a Task in SQL CLR requires the "UNSAFE" permission set (http://msdn.microsoft.com/en-us/library/ms172338.aspx)
-        // Therefore we are lazily initializing these Tasks to avoid forcing customers to use the "UNSAFE" set when they are actually using no Async features (See Dev11 
+        // Therefore we are lazily initializing these Tasks to avoid forcing customers to use the "UNSAFE" set when they are actually using no Async features
         static private Task<bool> s_trueTask = null;
         static internal Task<bool> TrueTask
         {
@@ -76,43 +59,34 @@ namespace System.Data.Common
             }
         }
 
-        static internal void TraceExceptionAsReturnValue(Exception e)
-        {
-        }
         static internal ArgumentException Argument(string error)
         {
             ArgumentException e = new ArgumentException(error);
-            TraceExceptionAsReturnValue(e);
             return e;
         }
         static internal ArgumentException Argument(string error, Exception inner)
         {
             ArgumentException e = new ArgumentException(error, inner);
-            TraceExceptionAsReturnValue(e);
             return e;
         }
         static internal ArgumentException Argument(string error, string parameter)
         {
             ArgumentException e = new ArgumentException(error, parameter);
-            TraceExceptionAsReturnValue(e);
             return e;
         }
         static internal ArgumentNullException ArgumentNull(string parameter)
         {
             ArgumentNullException e = new ArgumentNullException(parameter);
-            TraceExceptionAsReturnValue(e);
             return e;
         }
         static internal InvalidOperationException InvalidOperation(string error)
         {
             InvalidOperationException e = new InvalidOperationException(error);
-            TraceExceptionAsReturnValue(e);
             return e;
         }
         static internal NotSupportedException NotSupported()
         {
             NotSupportedException e = new NotSupportedException();
-            TraceExceptionAsReturnValue(e);
             return e;
         }
         static internal void CheckArgumentLength(string value, string parameterName)
@@ -120,7 +94,7 @@ namespace System.Data.Common
             CheckArgumentNull(value, parameterName);
             if (0 == value.Length)
             {
-                throw Argument(Res.GetString(Res.ADP_EmptyString, parameterName)); // MDAC 94859
+                throw Argument(SR.Format(SR.ADP_EmptyString, parameterName));
             }
         }
         static internal void CheckArgumentNull(object value, string parameterName)
@@ -135,23 +109,23 @@ namespace System.Data.Common
         //
         static internal ArgumentException ConnectionStringSyntax(int index)
         {
-            return Argument(Res.GetString(Res.ADP_ConnectionStringSyntax, index));
+            return Argument(SR.Format(SR.ADP_ConnectionStringSyntax, index));
         }
         static internal ArgumentException KeywordNotSupported(string keyword)
         {
-            return Argument(Res.GetString(Res.ADP_KeywordNotSupported, keyword));
+            return Argument(SR.Format(SR.ADP_KeywordNotSupported, keyword));
         }
         static internal ArgumentException InvalidKeyname(string parameterName)
         {
-            return Argument(Res.GetString(Res.ADP_InvalidKey), parameterName);
+            return Argument(SR.Format(SR.ADP_InvalidKey), parameterName);
         }
         static internal ArgumentException InvalidValue(string parameterName)
         {
-            return Argument(Res.GetString(Res.ADP_InvalidValue), parameterName);
+            return Argument(SR.Format(SR.ADP_InvalidValue), parameterName);
         }
         static internal ArgumentException ConvertFailed(Type fromType, Type toType, Exception innerException)
         {
-            return ADP.Argument(Res.GetString(Res.SqlConvert_ConvertFailed, fromType.FullName, toType.FullName), innerException);
+            return ADP.Argument(SR.Format(SR.SqlConvert_ConvertFailed, fromType.FullName, toType.FullName), innerException);
         }
         internal enum InternalErrorCode
         {
@@ -194,13 +168,13 @@ namespace System.Data.Common
         }
         static internal Exception InternalError(InternalErrorCode internalError)
         {
-            return InvalidOperation(Res.GetString(Res.ADP_InternalProviderError, (int)internalError));
+            return InvalidOperation(SR.Format(SR.ADP_InternalProviderError, (int)internalError));
         }
         internal const int DefaultConnectionTimeout = DbConnectionStringDefaults.ConnectTimeout;
 
         static internal bool IsEmpty(string str)
         {
-            return ((null == str) || (0 == str.Length));
+            return string.IsNullOrEmpty(str);
         }
     }
 }

@@ -11,7 +11,7 @@ using System.Data;
 namespace System.Data.Common
 {
     public abstract class DbParameter
-    { // V1.2.3300
+    {
         protected DbParameter() : base()
         {
         }

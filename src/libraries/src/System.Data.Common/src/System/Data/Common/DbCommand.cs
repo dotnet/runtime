@@ -14,7 +14,7 @@ namespace System.Data.Common
 {
     public abstract class DbCommand :
         IDisposable
-    { // V1.2.3300
+    {
         protected DbCommand() : base()
         {
         }
@@ -51,18 +51,18 @@ namespace System.Data.Common
 
 
         abstract protected DbConnection DbConnection
-        { // V1.2.3300
+        {
             get;
             set;
         }
 
         abstract protected DbParameterCollection DbParameterCollection
-        { // V1.2.3300
+        {
             get;
         }
 
         abstract protected DbTransaction DbTransaction
-        { // V1.2.3300
+        {
             get;
             set;
         }
@@ -103,10 +103,9 @@ namespace System.Data.Common
         {
             // This method is used to route CancellationTokens to the Cancel method.
             // Cancellation is a suggestion, and exceptions should be ignored
-            // rather than allowed to be unhandled, as there is no way to route
-            // them to the caller.  It would be expected that the error will be
-            // observed anyway from the regular method.  An example is cancelling
-            // an operation on a closed connection.
+            // rather than allowed to be unhandled, as the exceptions cannot be 
+            // routed to the caller. These errors will be observed in the regular 
+            // method instead.
             try
             {
                 Cancel();
@@ -119,7 +118,7 @@ namespace System.Data.Common
         abstract public void Cancel();
 
         public DbParameter CreateParameter()
-        { // V1.2.3300
+        {
             return CreateDbParameter();
         }
 

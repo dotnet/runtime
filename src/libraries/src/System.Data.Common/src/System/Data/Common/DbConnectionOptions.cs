@@ -19,23 +19,10 @@ namespace System.Data.Common
     internal class DbConnectionOptions
     {
         // instances of this class are intended to be immutable, i.e readonly
-        // used by pooling classes so it is much easier to verify correctness
-        // when not worried about the class being modified during execution
+        // used by pooling classes so it is easier to verify correctness
+        // without the risk of the objects of the class being modified during execution.
 
 #if DEBUG
-        /*private const string ConnectionStringPatternV1 =
-             "[\\s;]*"
-            +"(?<key>([^=\\s]|\\s+[^=\\s]|\\s+==|==)+)"
-            +   "\\s*=(?!=)\\s*"
-            +"(?<value>("
-            +   "(" + "\"" + "([^\"]|\"\")*" + "\"" + ")"
-            +   "|"
-            +   "(" + "'" + "([^']|'')*" + "'" + ")"
-            +   "|"
-            +   "(" + "(?![\"'])" + "([^\\s;]|\\s+[^\\s;])*" + "(?<![\"'])" + ")"
-            + "))"
-            + "[\\s;]*"
-        ;*/
         private const string ConnectionStringPattern =                  // may not contain embedded null except trailing last value
             "([\\s;]*"                                                  // leading whitespace and extra semicolons
             + "(?![\\s;])"                                              // key does not start with space or semicolon
@@ -54,32 +41,11 @@ namespace System.Data.Common
             + "[\\s;]*[\u0000\\s]*"                                     // traling whitespace/semicolons (DataSourceLocator), embedded nulls are allowed only in the end
         ;
 
-        private const string ConnectionStringPatternOdbc =              // may not contain embedded null except trailing last value
-            "([\\s;]*"                                                  // leading whitespace and extra semicolons
-            + "(?![\\s;])"                                              // key does not start with space or semicolon
-            + "(?<key>([^=\\s\\p{Cc}]|\\s+[^=\\s\\p{Cc}])+)"            // allow any visible character for keyname except '='
-            + "\\s*=\\s*"                                               // the equal sign divides the key and value parts
-            + "(?<value>"
-            + "(\\{([^\\}\u0000]|\\}\\})*\\})"                         // quoted string, starts with { and ends with }
-            + "|"
-            + "((?![\\{\\s])"                                          // unquoted value must not start with { or space, would also like = but too late to change
-            + "([^;\\s\\p{Cc}]|\\s+[^;\\s\\p{Cc}])*"                  // control characters must be quoted
-
-            + ")" // VSTFDEVDIV 94761: although the spec does not allow {}
-                  // embedded within a value, the retail code does.
-                  // +  "(?<![\\}]))"                                            // unquoted value must not stop with }
-
-            + ")(\\s*)(;|[\u0000\\s]*$)"                               // whitespace after value up to semicolon or end-of-line
-            + ")*"                                                      // repeat the key-value pair
-            + "[\\s;]*[\u0000\\s]*"                                     // traling whitespace/semicolons (DataSourceLocator), embedded nulls are allowed only in the end
-        ;
-
         private static readonly Regex s_connectionStringRegex = new Regex(ConnectionStringPattern, RegexOptions.ExplicitCapture);
 #endif
         private const string ConnectionStringValidKeyPattern = "^(?![;\\s])[^\\p{Cc}]+(?<!\\s)$"; // key not allowed to start with semi-colon or space or contain non-visible characters or end with space
         private const string ConnectionStringValidValuePattern = "^[^\u0000]*$";                    // value not allowed to contain embedded null
         private const string ConnectionStringQuoteValuePattern = "^[^\"'=;\\s\\p{Cc}]*$";           // generally do not quote the value if it matches the pattern
-        private const string ConnectionStringQuoteOdbcValuePattern = "^\\{([^\\}\u0000]|\\}\\})*\\}$"; // do not quote odbc value if it matches this pattern
         internal const string DataDirectory = "|datadirectory|";
 
         private static readonly Regex s_connectionStringValidKeyRegex = new Regex(ConnectionStringValidKeyPattern);
@@ -261,11 +227,11 @@ namespace System.Data.Common
                         {
                             continue;
                         }
-                        if ('\0' == currentChar) { parserState = ParserState.NullTermination; continue; } // MDAC 83540
+                        if ('\0' == currentChar) { parserState = ParserState.NullTermination; continue; }
                         if (Char.IsControl(currentChar)) { throw ADP.ConnectionStringSyntax(startposition); }
                         startposition = currentPosition;
                         if ('=' != currentChar)
-                        { // MDAC 86902
+                        {
                             parserState = ParserState.Key;
                             break;
                         }
@@ -347,12 +313,12 @@ namespace System.Data.Common
                     case ParserState.QuotedValueEnd:
                         if (Char.IsWhiteSpace(currentChar)) { continue; }
                         if (';' == currentChar) { goto ParserExit; }
-                        if ('\0' == currentChar) { parserState = ParserState.NullTermination; continue; } // MDAC 83540
+                        if ('\0' == currentChar) { parserState = ParserState.NullTermination; continue; }
                         throw ADP.ConnectionStringSyntax(startposition);  // unbalanced single quote
 
                     case ParserState.NullTermination: // [\\s;\u0000]*
                         if ('\0' == currentChar) { continue; }
-                        if (Char.IsWhiteSpace(currentChar)) { continue; } // MDAC 83540
+                        if (Char.IsWhiteSpace(currentChar)) { continue; }
                         throw ADP.ConnectionStringSyntax(currentPosition);
 
                     default:
@@ -523,7 +489,7 @@ namespace System.Data.Common
                     bool isEquivalent = (msg1 == msg2);
                     if (!isEquivalent)
                     {
-                        // VSTFDEVDIV 479587: we also accept cases were Regex parser (debug only) reports "wrong format" and 
+                        // We also accept cases were Regex parser (debug only) reports "wrong format" and 
                         // retail parsing code reports format exception in different location or "keyword not supported"
                         if (msg2.StartsWith(WrongFormatMessagePrefix, StringComparison.Ordinal))
                         {
@@ -567,7 +533,6 @@ namespace System.Data.Common
                     nextStartPosition = GetKeyValuePair(connectionString, startPosition, buffer, firstKey, out keyname, out keyvalue);
                     if (ADP.IsEmpty(keyname))
                     {
-                        // if (nextStartPosition != endPosition) { throw; }
                         break;
                     }
 #if DEBUG

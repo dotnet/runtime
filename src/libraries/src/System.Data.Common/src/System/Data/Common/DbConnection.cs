@@ -15,7 +15,7 @@ namespace System.Data.Common
 {
     public abstract class DbConnection :
         IDisposable
-    { // V1.2.3300
+    {
         private StateChangeEventHandler _stateChangeEventHandler;
 
         protected DbConnection() : base()
@@ -43,9 +43,8 @@ namespace System.Data.Common
 
         abstract public string DataSource
         {
-            // NOTE: if you plan on allowing the data source to be changed, you
-            //       should implement a ChangeDataSource method, in keeping with
-            //       the ChangeDatabase method paradigm.
+            // Implementation Note: A ChangeDataSource method should be implemented, 
+            // if a plan is to allow the data source to be changed.
             get;
         }
 
