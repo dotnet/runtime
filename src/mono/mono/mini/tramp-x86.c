@@ -91,7 +91,7 @@ mono_arch_get_llvm_imt_trampoline (MonoDomain *domain, MonoMethod *m, int vt_off
 
 	start = code = mono_domain_code_reserve (domain, buf_len);
 
-	this_offset = mono_x86_get_this_arg_offset (NULL, mono_method_signature (m));
+	this_offset = mono_x86_get_this_arg_offset (mono_method_signature (m));
 
 	/* Set imt arg */
 	x86_mov_reg_imm (code, MONO_ARCH_IMT_REG, m);

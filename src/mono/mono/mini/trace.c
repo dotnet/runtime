@@ -440,7 +440,7 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 		}
 	}
 
-	mono_arch_get_argument_info (gsctx, sig, sig->param_count, arg_info);
+	mono_arch_get_argument_info (sig, sig->param_count, arg_info);
 
 	if (MONO_TYPE_ISSTRUCT (mono_method_signature (method)->ret)) {
 		g_assert (!mono_method_signature (method)->ret->byref);

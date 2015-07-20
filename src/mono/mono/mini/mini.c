@@ -2683,7 +2683,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 		 * mono_arch_get_argument_info () is not signal safe.
 		 */
 		arg_info = g_newa (MonoJitArgumentInfo, sig->param_count + 1);
-		stack_size = mono_arch_get_argument_info (cfg->generic_sharing_context, sig, sig->param_count, arg_info);
+		stack_size = mono_arch_get_argument_info (sig, sig->param_count, arg_info);
 
 		if (stack_size)
 			flags |= JIT_INFO_HAS_ARCH_EH_INFO;

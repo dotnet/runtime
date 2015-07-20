@@ -4150,7 +4150,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				break;
 			}
 
-			if (mini_is_gsharedvt_klass (cfg, klass)) {
+			if (mini_is_gsharedvt_klass (klass)) {
 				// FIXME:
 				LLVM_FAILURE (ctx, "gsharedvt");
 				break;

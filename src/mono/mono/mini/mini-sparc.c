@@ -480,7 +480,6 @@ get_call_info (MonoCompile *cfg, MonoMethodSignature *sig, gboolean is_pinvoke)
 	guint32 stack_size = 0;
 	CallInfo *cinfo;
 	MonoType *ret_type;
-	MonoGenericSharingContext *gsctx = cfg ? cfg->generic_sharing_context : NULL;
 
 	cinfo = g_malloc0 (sizeof (CallInfo) + (sizeof (ArgInfo) * n));
 
@@ -2012,7 +2011,7 @@ emit_save_sp_to_lmf (MonoCompile *cfg, guint32 *code)
 }
 
 static guint32*
-emit_vret_token (MonoGenericSharingContext *gsctx, MonoInst *ins, guint32 *code)
+emit_vret_token (MonoInst *ins, guint32 *code)
 {
 	MonoCallInst *call = (MonoCallInst*)ins;
 	guint32 size;
@@ -2890,7 +2889,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else
 			    code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, call->fptr);
 
-			code = emit_vret_token (cfg->generic_sharing_context, ins, code);
+			code = emit_vret_token (ins, code);
 			code = emit_move_return_value (ins, code);
 			break;
 		case OP_FCALL_REG:
@@ -2912,7 +2911,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else
 				sparc_nop (code);
 
-			code = emit_vret_token (cfg->generic_sharing_context, ins, code);
+			code = emit_vret_token (ins, code);
 			code = emit_move_return_value (ins, code);
 			break;
 		case OP_FCALL_MEMBASE:
@@ -2935,7 +2934,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else
 				sparc_nop (code);
 
-			code = emit_vret_token (cfg->generic_sharing_context, ins, code);
+			code = emit_vret_token (ins, code);
 			code = emit_move_return_value (ins, code);
 			break;
 		case OP_SETFRET:
@@ -4380,7 +4379,7 @@ mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMetho
  * Returns the size of the activation frame.
  */
 int
-mono_arch_get_argument_info (MonoGenericSharingContext *gsctx, MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
+mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
 {
 	int k, align;
 	CallInfo *cinfo;

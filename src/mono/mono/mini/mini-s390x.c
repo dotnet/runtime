@@ -484,7 +484,7 @@ mono_arch_fregname (int reg) {
 /*------------------------------------------------------------------*/
 
 int
-mono_arch_get_argument_info (MonoGenericSharingContext *gsctx, MonoMethodSignature *csig, 
+mono_arch_get_argument_info (MonoMethodSignature *csig, 
 			     int param_count, 
 			     MonoJitArgumentInfo *arg_info)
 {
@@ -1557,7 +1557,6 @@ get_call_info (MonoCompile *cfg, MonoMemPool *mp, MonoMethodSignature *sig)
 	gboolean is_pinvoke = sig->pinvoke;
 	CallInfo *cinfo;
 	size_data *sz;
-	MonoGenericSharingContext *gsctx = cfg ? cfg->generic_sharing_context : NULL;
 
 	if (mp)
 		cinfo = mono_mempool_alloc0 (mp, sizeof (CallInfo) + sizeof (ArgInfo) * nParm);

@@ -300,7 +300,7 @@ add_float (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo, gboolean is_double)
 
 
 static void
-add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
+add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	       gboolean is_return,
 	       guint32 *gr, const guint32 *param_regs, guint32 *fr, guint32 *stack_size)
 {
@@ -374,7 +374,7 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
  * For x86 win32, see ???.
  */
 static CallInfo*
-get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoMethodSignature *sig)
+get_call_info_internal (CallInfo *cinfo, MonoMethodSignature *sig)
 {
 	guint32 i, gr, fr, pstart;
 	const guint32 *param_regs;
@@ -439,7 +439,7 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 		case MONO_TYPE_TYPEDBYREF: {
 			guint32 tmp_gr = 0, tmp_fr = 0, tmp_stacksize = 0;
 
-			add_valuetype (gsctx, sig, &cinfo->ret, ret_type, TRUE, &tmp_gr, NULL, &tmp_fr, &tmp_stacksize);
+			add_valuetype (sig, &cinfo->ret, ret_type, TRUE, &tmp_gr, NULL, &tmp_fr, &tmp_stacksize);
 			if (cinfo->ret.storage == ArgOnStack) {
 				cinfo->vtype_retaddr = TRUE;
 				/* The caller passes the address where the value is stored */
@@ -554,7 +554,7 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 			/* Fall through */
 		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_TYPEDBYREF:
-			add_valuetype (gsctx, sig, ainfo, ptype, FALSE, &gr, param_regs, &fr, &stack_size);
+			add_valuetype (sig, ainfo, ptype, FALSE, &gr, param_regs, &fr, &stack_size);
 			break;
 		case MONO_TYPE_U8:
 		case MONO_TYPE_I8:
@@ -608,7 +608,7 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 }
 
 static CallInfo*
-get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSignature *sig)
+get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 {
 	int n = sig->hasthis + sig->param_count;
 	CallInfo *cinfo;
@@ -618,7 +618,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 	else
 		cinfo = g_malloc0 (sizeof (CallInfo) + (sizeof (ArgInfo) * n));
 
-	return get_call_info_internal (gsctx, cinfo, sig);
+	return get_call_info_internal (cinfo, sig);
 }
 
 /*
@@ -636,7 +636,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
  * FIXME: The metadata calls might not be signal safe.
  */
 int
-mono_arch_get_argument_info (MonoGenericSharingContext *gsctx, MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
+mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
 {
 	int len, k, args_size = 0;
 	int size, pad;
@@ -649,7 +649,7 @@ mono_arch_get_argument_info (MonoGenericSharingContext *gsctx, MonoMethodSignatu
 	cinfo = (CallInfo*)g_newa (guint8*, len);
 	memset (cinfo, 0, len);
 
-	cinfo = get_call_info_internal (gsctx, cinfo, csig);
+	cinfo = get_call_info_internal (cinfo, csig);
 
 	arg_info [0].offset = offset;
 
@@ -714,8 +714,8 @@ mono_arch_tail_call_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig
 		/* OP_TAILCALL doesn't work with AOT */
 		return FALSE;
 
-	c1 = get_call_info (NULL, NULL, caller_sig);
-	c2 = get_call_info (NULL, NULL, callee_sig);
+	c1 = get_call_info (NULL, caller_sig);
+	c2 = get_call_info (NULL, callee_sig);
 	/*
 	 * Tail calls with more callee stack usage than the caller cannot be supported, since
 	 * the extra stack space would be left on the stack after the tail call.
@@ -1061,7 +1061,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	header = cfg->header;
 	sig = mono_method_signature (cfg->method);
 
-	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig);
+	cinfo = get_call_info (cfg->mempool, sig);
 
 	cfg->frame_reg = X86_EBP;
 	offset = 0;
@@ -1208,7 +1208,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 
 	sig = mono_method_signature (cfg->method);
 
-	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig);
+	cinfo = get_call_info (cfg->mempool, sig);
 	sig_ret = mini_get_underlying_type (sig->ret);
 
 	if (cinfo->ret.storage == ArgValuetypeInReg)
@@ -1293,7 +1293,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 
 	n = sig->param_count + sig->hasthis;
 
-	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig);
+	cinfo = get_call_info (cfg->mempool, sig);
 	sig_ret = sig->ret;
 
 	linfo = mono_mempool_alloc0 (cfg->mempool, sizeof (LLVMCallInfo) + (sizeof (LLVMArgInfo) * n));
@@ -1426,7 +1426,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	n = sig->param_count + sig->hasthis;
 	sig_ret = mini_get_underlying_type (sig->ret);
 
-	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig);
+	cinfo = get_call_info (cfg->mempool, sig);
 	call->call_info = cinfo;
 
 	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG))
@@ -2292,12 +2292,13 @@ mono_x86_have_tls_get (void)
 #ifdef TARGET_MACH
 	static gboolean have_tls_get = FALSE;
 	static gboolean inited = FALSE;
-	guint32 *ins;
 
 	if (inited)
 		return have_tls_get;
 
 #ifdef MONO_HAVE_FAST_TLS
+	guint32 *ins;
+
 	ins = (guint32*)pthread_getspecific;
 	/*
 	 * We're looking for these two instructions:
@@ -5531,7 +5532,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 
 	/* Load returned vtypes into registers if needed */
-	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig);
+	cinfo = get_call_info (cfg->mempool, sig);
 	if (cinfo->ret.storage == ArgValuetypeInReg) {
 		for (quad = 0; quad < 2; quad ++) {
 			switch (cinfo->ret.pair_storage [quad]) {
@@ -5558,7 +5559,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	if (CALLCONV_IS_STDCALL (sig)) {
 		MonoJitArgumentInfo *arg_info = alloca (sizeof (MonoJitArgumentInfo) * (sig->param_count + 1));
 
-		stack_to_pop = mono_arch_get_argument_info (NULL, sig, sig->param_count, arg_info);
+		stack_to_pop = mono_arch_get_argument_info (sig, sig->param_count, arg_info);
 	} else if (cinfo->callee_stack_pop)
 		stack_to_pop = cinfo->callee_stack_pop;
 	else
@@ -6048,7 +6049,7 @@ mono_breakpoint_clean_code (guint8 *method_start, guint8 *code, int offset, guin
  * call.
  */
 guint32
-mono_x86_get_this_arg_offset (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig)
+mono_x86_get_this_arg_offset (MonoMethodSignature *sig)
 {
 	return 0;
 }

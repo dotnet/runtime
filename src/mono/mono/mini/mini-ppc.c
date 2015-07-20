@@ -275,7 +275,7 @@ emit_memcpy (guint8 *code, int size, int dreg, int doffset, int sreg, int soffse
  * Returns the size of the activation frame.
  */
 int
-mono_arch_get_argument_info (MonoGenericSharingContext *gsctx, MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
+mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
 {
 #ifdef __mono_ppc64__
 	NOT_IMPLEMENTED;
@@ -957,7 +957,7 @@ has_only_a_r48_field (MonoClass *klass)
 #endif
 
 static CallInfo*
-get_call_info (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig)
+get_call_info (MonoMethodSignature *sig)
 {
 	guint i, fr, gr, pstart;
 	int n = sig->hasthis + sig->param_count;
@@ -1267,8 +1267,8 @@ mono_arch_tail_call_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig
 	gboolean res;
 	int i;
 
-	c1 = get_call_info (NULL, caller_sig);
-	c2 = get_call_info (NULL, callee_sig);
+	c1 = get_call_info (caller_sig);
+	c2 = get_call_info (callee_sig);
 	res = c1->stack_usage >= c2->stack_usage;
 	if (callee_sig->ret && MONO_TYPE_ISSTRUCT (callee_sig->ret))
 		/* An address on the callee's stack is passed as the first argument */
@@ -1486,7 +1486,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	m->stack_offset = offset;
 
 	if (sig->call_convention == MONO_CALL_VARARG) {
-		CallInfo *cinfo = get_call_info (m->generic_sharing_context, m->method->signature);
+		CallInfo *cinfo = get_call_info (m->method->signature);
 
 		m->sig_cookie = cinfo->sig_cookie.offset;
 
@@ -1532,7 +1532,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
 	
-	cinfo = get_call_info (cfg->generic_sharing_context, sig);
+	cinfo = get_call_info (sig);
 
 	for (i = 0; i < n; ++i) {
 		ArgInfo *ainfo = cinfo->args + i;
@@ -1728,7 +1728,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 			size = mono_type_native_stack_size (&src->klass->byval_arg, NULL);
 			vtcopy->backend.is_pinvoke = 1;
 		} else {
-			size = mini_type_stack_size (cfg->generic_sharing_context, &src->klass->byval_arg, NULL);
+			size = mini_type_stack_size (&src->klass->byval_arg, NULL);
 		}
 		if (size > 0)
 			g_assert (ovf_size > 0);
@@ -4800,7 +4800,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	/* load arguments allocated to register from the stack */
 	pos = 0;
 
-	cinfo = get_call_info (cfg->generic_sharing_context, sig);
+	cinfo = get_call_info (sig);
 
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
 		ArgInfo *ainfo = &cinfo->ret;

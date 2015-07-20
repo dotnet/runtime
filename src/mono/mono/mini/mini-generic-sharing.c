@@ -1081,7 +1081,7 @@ mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSign
 	if (res)
 		return res;
 
-	info = mono_arch_get_gsharedvt_call_info (addr, normal_sig, gsharedvt_sig, gsctx, gsharedvt_in, vcall_offset, calli);
+	info = mono_arch_get_gsharedvt_call_info (addr, normal_sig, gsharedvt_sig, gsharedvt_in, vcall_offset, calli);
 
 	if (gsharedvt_in) {
 		static gpointer tramp_addr;
@@ -2531,7 +2531,6 @@ mini_class_get_context (MonoClass *class)
 
 /*
  * mini_get_basic_type_from_generic:
- * @gsctx: a generic sharing context
  * @type: a type
  *
  * Returns a closed type corresponding to the possibly open type
@@ -2587,7 +2586,6 @@ mini_type_get_underlying_type (MonoType *type)
 
 /*
  * mini_type_stack_size:
- * @gsctx: a generic sharing context
  * @t: a type
  * @align: Pointer to an int for returning the alignment
  *
