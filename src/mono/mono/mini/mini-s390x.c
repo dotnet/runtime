@@ -1586,7 +1586,6 @@ get_call_info (MonoCompile *cfg, MonoMemPool *mp, MonoMethodSignature *sig)
 	/*----------------------------------------------------------*/
 
 	ret_type = mini_type_get_underlying_type (gsctx, sig->ret);
-	ret_type = mini_get_basic_type_from_generic (gsctx, ret_type);
 	simpleType = ret_type->type;
 enum_retvalue:
 	switch (simpleType) {

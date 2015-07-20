@@ -526,8 +526,7 @@ get_call_info (MonoCompile *cfg, MonoMethodSignature *sig, gboolean is_pinvoke)
 			add_general (&gr, &stack_size, ainfo, FALSE);
 			continue;
 		}
-		ptype = mono_type_get_underlying_type (sig->params [i]);
-		ptype = mini_get_basic_type_from_generic (gsctx, ptype);
+		ptype = mini_type_get_underlying_type (gsctx, sig->params [i]);
 		switch (ptype->type) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
@@ -615,8 +614,7 @@ get_call_info (MonoCompile *cfg, MonoMethodSignature *sig, gboolean is_pinvoke)
 	}
 
 	/* return value */
-	ret_type = mono_type_get_underlying_type (sig->ret);
-	ret_type = mini_get_basic_type_from_generic (gsctx, ret_type);
+	ret_type = mini_type_get_underlying_type (gsctx, sig->ret);
 	switch (ret_type->type) {
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_I1:

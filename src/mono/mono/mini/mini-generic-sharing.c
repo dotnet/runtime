@@ -2537,7 +2537,7 @@ mini_class_get_context (MonoClass *class)
  * Returns a closed type corresponding to the possibly open type
  * passed to it.
  */
-MonoType*
+static MonoType*
 mini_get_basic_type_from_generic (MonoGenericSharingContext *gsctx, MonoType *type)
 {
 	/* FIXME: Some callers don't pass in a gsctx, like mono_dyn_call_prepare () */

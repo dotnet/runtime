@@ -2853,7 +2853,6 @@ MonoGenericContext* mini_class_get_context (MonoClass *class);
 
 MonoType* mini_replace_type (MonoType *type) MONO_LLVM_INTERNAL;
 MonoType* mini_get_underlying_type (MonoCompile *cfg, MonoType *type) MONO_LLVM_INTERNAL;
-MonoType* mini_get_basic_type_from_generic (MonoGenericSharingContext *gsctx, MonoType *type);
 MonoType* mini_type_get_underlying_type (MonoGenericSharingContext *gsctx, MonoType *type);
 MonoMethod* mini_get_shared_method (MonoMethod *method);
 MonoMethod* mini_get_shared_method_to_register (MonoMethod *method);
