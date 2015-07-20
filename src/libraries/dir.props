@@ -198,6 +198,11 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
+  <!-- Temporary until build/CI system is upgraded to C# 6: disable C# 6 features -->
+  <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.csproj' OR '$(Language)' == 'C#'">
+    <LangVersion>5</LangVersion>
+  </PropertyGroup>
+
   <!-- Set up some common paths -->
   <PropertyGroup>
     <CommonPath>$(SourceDir)Common\src</CommonPath>
