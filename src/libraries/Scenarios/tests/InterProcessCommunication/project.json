@@ -1,0 +1,33 @@
+{
+  "dependencies": {
+    "Microsoft.Win32.Primitives": "4.0.0-beta-*",
+    "System.Collections": "4.0.10-beta-*",
+    "System.Console": "4.0.0-beta-*",
+    "System.IO": "4.0.10-beta-*",
+    "System.IO.FileSystem": "4.0.0-beta-*",
+    "System.IO.FileSystem.Primitives": "4.0.0-beta-*",
+    "System.Linq": "4.0.0-beta-*",
+    "System.Runtime": "4.0.20-beta-*",
+    "System.Runtime.Extensions": "4.0.10-beta-*",
+    "System.Runtime.InteropServices": "4.0.20-beta-*",
+    "System.Runtime.Handles": "4.0.0-beta-*",
+    "System.Resources.ResourceManager": "4.0.0-beta-*",
+    "System.Security.Principal": "4.0.0-beta-*",
+    "System.Security.SecureString": "4.0.0-beta-*",
+    "System.Text.Encoding": "4.0.10-beta-*",
+    "System.Text.Encoding.CodePages": "4.0.0-beta-*",
+    "System.Threading": "4.0.10-beta-*",
+    "System.Threading.Tasks": "4.0.10-beta-*",
+    "System.Threading.Thread": "4.0.0-beta-*",
+    "System.Threading.ThreadPool": "4.0.10-beta-*",
+    "xunit": "2.0.0-beta5-build2785",
+    "xunit.abstractions.netcore": "1.0.0-prerelease",
+    "xunit.assert": "2.0.0-beta5-build2785",
+    "xunit.core.netcore": "1.0.1-prerelease",
+    "xunit.runner.visualstudio": "0.99.9-build1021",
+    "xunit.netcore.extensions": "1.0.0-prerelease-*"
+  },
+  "frameworks": {
+    "dnxcore50": {}
+  }
+}
