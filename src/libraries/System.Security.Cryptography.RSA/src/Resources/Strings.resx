@@ -214,7 +214,7 @@
     <value>Stream does not support writing.</value>
   </data>
   <data name="OpenCSP_Failed" xml:space="preserve">
-    <value>OpenCSP failed with Error code </value>
+    <value>OpenCSP failed with error code {0}.</value>
   </data>
   <data name="Cryptography_UnknownHashAlgorithm" xml:space="preserve">
     <value>'{0}' is not a known hash algorithm.</value>
