@@ -39,11 +39,11 @@ CLASS=$(mcs_topdir)/class/lib/$(DEFAULT_PROFILE)
 
 RUNTIME_EXECUTABLE = $(if $(BOEHM),$(top_builddir)/mono/mini/mono-boehm,$(top_builddir)/runtime/mono-wrapper)
 
-RUNTIME = MONO_PATH=$(CLASS) $(RUNTIME_EXECUTABLE)
+MINI_RUNTIME = MONO_PATH=$(CLASS) $(RUNTIME_EXECUTABLE)
 RUNTIME_AOTCHECK = MONO_PATH=$(CLASS):. $(RUNTIME_EXECUTABLE)
 
-MCS = $(RUNTIME) $(mcs_topdir)/class/lib/build/mcs.exe -unsafe -nowarn:0162
-ILASM = $(RUNTIME) $(CLASS)/ilasm.exe
+MCS = $(MINI_RUNTIME) $(mcs_topdir)/class/lib/build/mcs.exe -unsafe -nowarn:0162
+ILASM = $(MINI_RUNTIME) $(CLASS)/ilasm.exe
 
 AM_CFLAGS = \
 	-I$(top_srcdir) 	\
@@ -641,22 +641,22 @@ cpu-mips.h: cpu-mips.md genmdesc$(EXEEXT)
 	$(GENMDESC_PRG) cpu-mips.h mips_desc $(srcdir)/cpu-mips.md
 
 testi: mono test.exe
-	$(RUNTIME) -v -v --ncompile 1 --compile Test:$(mtest) test.exe
+	$(MINI_RUNTIME) -v -v --ncompile 1 --compile Test:$(mtest) test.exe
 
 # ensure the tests are actually correct
 checktests: $(regtests)
-	for i in $(regtests); do $(RUNTIME) $$i; done
+	for i in $(regtests); do $(MINI_RUNTIME) $$i; done
 
 rcheck: mono $(regtests)
 if NACL_CODEGEN
-	for i in $(regtests); do echo "running test $$i"; $(RUNTIME) $$i --exclude 'NaClDisable' || exit 1; done
+	for i in $(regtests); do echo "running test $$i"; $(MINI_RUNTIME) $$i --exclude 'NaClDisable' || exit 1; done
 else
-	-($(RUNTIME) --regression $(regtests); echo $$? > regressionexitcode.out) | $(srcdir)/emitnunit.pl
+	-($(MINI_RUNTIME) --regression $(regtests); echo $$? > regressionexitcode.out) | $(srcdir)/emitnunit.pl
 	exit $$(cat regressionexitcode.out)
 endif
 
 rcheck2: mono $(regtests)
-	$(RUNTIME) --regression $(regtests)
+	$(MINI_RUNTIME) --regression $(regtests)
 
 check-seq-points: mono $(regtests)
 	rm -f TestResults_op_il_seq_point.xml
@@ -665,14 +665,14 @@ check-seq-points: mono $(regtests)
 	$(srcdir)/test_op_il_seq_point_headerfooter.sh
 
 gctest: mono gc-test.exe
-	MONO_DEBUG_OPTIONS=clear-nursery-at-gc $(RUNTIME) --regression gc-test.exe
+	MONO_DEBUG_OPTIONS=clear-nursery-at-gc $(MINI_RUNTIME) --regression gc-test.exe
 
 LLVM_AOT_RUNTIME_OPTS=$(if $(LLVM),--llvm,)
 GSHAREDVT_RUNTIME_OPTS=$(if $(GSHAREDVT),-O=gsharedvt,)
 
 aotcheck: mono $(regtests)
 	rm -rf *.exe.so *.exe.dylib *.exe.dylib.dSYM
-	$(RUNTIME) $(LLVM_AOT_RUNTIME_OPTS) --aot $(regtests) || exit 1
+	$(MINI_RUNTIME) $(LLVM_AOT_RUNTIME_OPTS) --aot $(regtests) || exit 1
 	for i in $(regtests); do $(RUNTIME_AOTCHECK) --regression $$i || exit 1; done
 	rm -rf *.exe.so *.exe.dylib *.exe.dylib.dSYM
 
@@ -701,21 +701,21 @@ gccheck: gc-test.exe
 	MONO_GC_PARAMS=stack-mark=precise MONO_GC_DEBUG=clear-at-gc ./mono-sgen gc-test.exe	
 
 bench: mono test.exe
-	time env $(RUNTIME) --ncompile $(count) --compile Test:$(mtest) test.exe
+	time env $(MINI_RUNTIME) --ncompile $(count) --compile Test:$(mtest) test.exe
 
 mbench: test.exe
 	time $(monodir)/mono/jit/mono --ncompile $(count) --compile Test:$(mtest) test.exe
 
 stat1: mono bench.exe
-	$(RUNTIME) --verbose --statfile stats.pl --regression bench.exe
+	$(MINI_RUNTIME) --verbose --statfile stats.pl --regression bench.exe
 	perl viewstat.pl stats.pl
 
 stat2: mono basic.exe
-	$(RUNTIME) --verbose --statfile stats.pl --regression basic.exe
+	$(MINI_RUNTIME) --verbose --statfile stats.pl --regression basic.exe
 	perl viewstat.pl -e stats.pl
 
 stat3: mono bench.exe
-	$(RUNTIME) --statfile stats.pl --ncompile 1000 --compile Tests:test_0_many_nested_loops bench.exe 
+	$(MINI_RUNTIME) --statfile stats.pl --ncompile 1000 --compile Tests:test_0_many_nested_loops bench.exe 
 	perl viewstat.pl stats.pl
 
 docu: mini.sgm
