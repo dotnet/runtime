@@ -190,14 +190,20 @@ MonoSeqPointInfo*
 mono_get_seq_points (MonoDomain *domain, MonoMethod *method)
 {
 	MonoSeqPointInfo *seq_points;
+	MonoMethod *declaring_generic_method = NULL, *shared_method = NULL;
+
+	if (method->is_inflated) {
+		declaring_generic_method = mono_method_get_declaring_generic_method (method);
+		shared_method = mini_get_shared_method (method);
+	}
 
 	mono_domain_lock (domain);
 	seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, method);
 	if (!seq_points && method->is_inflated) {
 		/* generic sharing + aot */
-		seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, mono_method_get_declaring_generic_method (method));
+		seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, declaring_generic_method);
 		if (!seq_points)
-			seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, mini_get_shared_method (method));
+			seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, shared_method);
 	}
 	mono_domain_unlock (domain);
 
