@@ -118,8 +118,11 @@ namespace System.Linq.Parallel
 
                     if (current.HasValue)
                     {
-                        sum += current.GetValueOrDefault();
-                        count++;
+                        checked
+                        {
+                            sum += current.GetValueOrDefault();
+                            count++;
+                        }
                     }
                 }
 

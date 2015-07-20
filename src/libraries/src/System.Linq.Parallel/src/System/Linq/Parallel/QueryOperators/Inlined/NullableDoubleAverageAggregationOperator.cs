@@ -118,8 +118,11 @@ namespace System.Linq.Parallel
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
                             CancellationState.ThrowIfCanceled(_cancellationToken);
 
-                        sum += current.GetValueOrDefault();
-                        count++;
+                        checked
+                        {
+                            sum += current.GetValueOrDefault();
+                            count++;
+                        }
                     }
                 }
 
