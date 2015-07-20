@@ -7462,7 +7462,10 @@ mono_image_init_name_cache (MonoImage *image)
 	const char *name;
 	const char *nspace;
 	guint32 i, visib, nspace_index;
-	GHashTable *name_cache2, *nspace_table;
+	GHashTable *name_cache2, *nspace_table, *the_name_cache;
+
+	if (image->name_cache)
+		return;
 
 	mono_image_lock (image);
 
@@ -7471,9 +7474,10 @@ mono_image_init_name_cache (MonoImage *image)
 		return;
 	}
 
-	image->name_cache = g_hash_table_new (g_str_hash, g_str_equal);
+	the_name_cache = g_hash_table_new (g_str_hash, g_str_equal);
 
 	if (image_is_dynamic (image)) {
+		mono_atomic_store_release (&image->name_cache, the_name_cache);
 		mono_image_unlock (image);
 		return;
 	}
@@ -7497,7 +7501,7 @@ mono_image_init_name_cache (MonoImage *image)
 		nspace_table = g_hash_table_lookup (name_cache2, GUINT_TO_POINTER (nspace_index));
 		if (!nspace_table) {
 			nspace_table = g_hash_table_new (g_str_hash, g_str_equal);
-			g_hash_table_insert (image->name_cache, (char*)nspace, nspace_table);
+			g_hash_table_insert (the_name_cache, (char*)nspace, nspace_table);
 			g_hash_table_insert (name_cache2, GUINT_TO_POINTER (nspace_index),
 								 nspace_table);
 		}
@@ -7519,7 +7523,7 @@ mono_image_init_name_cache (MonoImage *image)
 			nspace_table = g_hash_table_lookup (name_cache2, GUINT_TO_POINTER (nspace_index));
 			if (!nspace_table) {
 				nspace_table = g_hash_table_new (g_str_hash, g_str_equal);
-				g_hash_table_insert (image->name_cache, (char*)nspace, nspace_table);
+				g_hash_table_insert (the_name_cache, (char*)nspace, nspace_table);
 				g_hash_table_insert (name_cache2, GUINT_TO_POINTER (nspace_index),
 									 nspace_table);
 			}
@@ -7528,6 +7532,7 @@ mono_image_init_name_cache (MonoImage *image)
 	}
 
 	g_hash_table_destroy (name_cache2);
+	mono_atomic_store_release (&image->name_cache, the_name_cache);
 	mono_image_unlock (image);
 }
 
@@ -7540,10 +7545,8 @@ mono_image_add_to_name_cache (MonoImage *image, const char *nspace,
 	GHashTable *name_cache;
 	guint32 old_index;
 
+	mono_image_init_name_cache (image);
 	mono_image_lock (image);
-
-	if (!image->name_cache)
-		mono_image_init_name_cache (image);
 
 	name_cache = image->name_cache;
 	if (!(nspace_table = g_hash_table_lookup (name_cache, nspace))) {
@@ -7609,10 +7612,8 @@ mono_class_from_name_case_checked (MonoImage *image, const char* name_space, con
 		guint32 token = 0;
 		FindUserData user_data;
 
+		mono_image_init_name_cache (image);
 		mono_image_lock (image);
-
-		if (!image->name_cache)
-			mono_image_init_name_cache (image);
 
 		user_data.key = name_space;
 		user_data.value = NULL;
@@ -7753,10 +7754,8 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 		}
 	}
 
+	mono_image_init_name_cache (image);
 	mono_image_lock (image);
-
-	if (!image->name_cache)
-		mono_image_init_name_cache (image);
 
 	nspace_table = g_hash_table_lookup (image->name_cache, name_space);
 
