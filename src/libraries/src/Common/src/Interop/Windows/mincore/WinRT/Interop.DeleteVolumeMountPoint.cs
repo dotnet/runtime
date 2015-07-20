@@ -7,7 +7,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        internal static int DeleteVolumeMountPoint(string mountPoint) 
+        internal static bool DeleteVolumeMountPoint(string mountPoint) 
         { 
             // DeleteVolumeMountPointW is not available to store apps. 
             // The expectation is that no store app would even have permission 
