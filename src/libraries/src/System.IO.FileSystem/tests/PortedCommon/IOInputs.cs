@@ -16,9 +16,9 @@ internal static class IOInputs
         new char[] { '\0' };
 
     // Unix values vary system to system; just using really long values here likely to be more than on the average system
-    public static readonly int MaxDirectory = Interop.IsWindows ? 247 : 10000; // Does not include trailing \0. This the maximum length that can be passed to APIs taking directory names, such as Directory.CreateDirectory, Directory.Move
+    public static readonly int MaxDirectory = 247; // Does not include trailing \0. This the maximum length that can be passed to APIs taking directory names, such as Directory.CreateDirectory, Directory.Move
     public static readonly int MaxPath = Interop.IsWindows ? 259 : 10000;      // Does not include trailing \0.
-    public static readonly int MaxComponent = Interop.IsWindows ? 255 : 10000;
+    public static readonly int MaxComponent = 255;
 
     public static IEnumerable<string> GetValidPathComponentNames()
     {
@@ -158,6 +158,12 @@ internal static class IOInputs
             yield return @"\\?\C:\Windows";
             yield return @"\\?\C:\Windows\FileName.txt";
             */
+        }
+        else
+        {
+            yield return "\0";
+            yield return "middle\0path";
+            yield return "trailing\0";
         }
 
         foreach (char c in s_invalidFileNameChars)
