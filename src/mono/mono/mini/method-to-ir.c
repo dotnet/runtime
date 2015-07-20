@@ -8928,7 +8928,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						need_box = FALSE;
 					}
 
-					if (need_box) {
+					if (!(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) && (cmethod->klass == mono_defaults.object_class || cmethod->klass == mono_defaults.enum_class->parent || cmethod->klass == mono_defaults.enum_class)) {
+						/* The called method is not virtual, i.e. Object:GetType (), the receiver is a vtype, has to box */
+						EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &constrained_class->byval_arg, sp [0]->dreg, 0);
+						ins->klass = constrained_class;
+						sp [0] = handle_box (cfg, ins, constrained_class, mono_class_check_context_used (constrained_class));
+						CHECK_CFG_EXCEPTION;
+					} else if (need_box) {
 						MonoInst *box_type;
 						MonoBasicBlock *is_ref_bb, *end_bb;
 						MonoInst *nonbox_call;
@@ -8966,12 +8972,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						cfg->cbb = end_bb;
 
 						nonbox_call->dreg = ins->dreg;
+						goto call_end;
 					} else {
 						g_assert (cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE);
 						addr = emit_get_rgctx_virt_method (cfg, mono_class_check_context_used (constrained_class), constrained_class, cmethod, MONO_RGCTX_INFO_VIRT_METHOD_CODE);
 						ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr, NULL, NULL);
+						goto call_end;
 					}
-					goto call_end;
 				} else if (constrained_class->valuetype && (cmethod->klass == mono_defaults.object_class || cmethod->klass == mono_defaults.enum_class->parent || cmethod->klass == mono_defaults.enum_class)) {
 					/*
 					 * The type parameter is instantiated as a valuetype,

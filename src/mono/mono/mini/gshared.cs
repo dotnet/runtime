@@ -1048,6 +1048,11 @@ public class Tests
 		public Type gettype<T, T2>(T t, T2 t2) {
 			return t.GetType ();
 		}
+
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public Type gettype2<T>(T t) {
+			return t.GetType ();
+		}
 	}
 
 	public static int test_0_constrained_gettype () {
@@ -1056,6 +1061,10 @@ public class Tests
 			return 1;
 		if (c.gettype<string, int> ("A", 1) != typeof (string))
 			return 2;
+		/* Partial sharing */
+		var c2 = new CGetType ();
+		if (c2.gettype2<long> (1) != typeof (long))
+			return 3;
 		return 0;
 	}
 
