@@ -1,131 +1,75 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.IO;
-using System.Linq;
-using System.Text;
 using Xunit;
 
 namespace System.IO.FileSystem.Tests
 {
-    public partial class DirectoryInfo_Create : FileSystemTest
+    public class DirectoryInfo_Create : Directory_CreateDirectory
     {
-        [Fact]
-        public void CreateCurrentDirectory()
+        #region Utilities
+
+        public override DirectoryInfo Create(string path)
         {
-            DirectoryInfo dir = new DirectoryInfo(Path.Combine(TestDirectory, "."));
-            dir.Create();
-            Assert.Equal(dir.FullName, TestDirectory);
+            DirectoryInfo result = new DirectoryInfo(path);
+            result.Create();
+            return result;
         }
 
+        #endregion
+
         [Fact]
-        public void CreateCurrentDirectoryWithRelativeTraversal()
+        [PlatformSpecific(PlatformID.Windows)] // UNC shares for constructor
+        public void NetworkShare()
         {
-            DirectoryInfo dir = new DirectoryInfo(Path.Combine(TestDirectory, "abc", "xyz", "..", ".."));
-            dir.Create();
-            Assert.Equal(dir.FullName, TestDirectory);
+            string dirName = new string(Path.DirectorySeparatorChar, 2) + Path.Combine("contoso", "amusement", "device");
+            Assert.Equal(new DirectoryInfo(dirName).FullName, dirName);
         }
 
-        [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // tabs are valid in file names on Unix
-        public void MultipleTabCharacters()
+        [Theory]
+        [InlineData("")]
+        [InlineData(".ext")]
+        [InlineData(".longlonglonglonglonglonglonglonglonglonglonglonglong")]
+        [InlineData(".$#@$_)+_)!@@!!@##&_$)#_")]
+        public void ValidExtensionsArePreserved(string extension)
         {
-            Assert.Throws<ArgumentException>(() => new DirectoryInfo("\t\t\t\t"));
+            string testDir = GetTestFilePath();
+            DirectoryInfo testInfo = new DirectoryInfo(testDir + extension);
+            Assert.Equal(extension, testInfo.Extension);
         }
 
-        [Fact]
-        public void ValidDirectoryName()
+        [Theory]
+        [InlineData(".")]
+        [InlineData("............")]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void WindowsInvalidExtensionsAreRemoved(string extension)
         {
-            string dirName = Path.Combine(TestDirectory, Path.GetRandomFileName());
-            DirectoryInfo dir = new DirectoryInfo(dirName);
-            dir.Create();
-            Assert.Equal(dir.Name, Path.GetFileName(dirName));
+            string testDir = GetTestFilePath();
+            DirectoryInfo testInfo = new DirectoryInfo(testDir + extension);
+            Assert.Equal(string.Empty, testInfo.Extension);
         }
 
-        [Fact]
-        public void DirectoryAlreadyExists()
+        [Theory]
+        [InlineData(".s", ".")]
+        [InlineData(".s", ".s....")]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void WindowsCurtailTrailingDots(string extension, string trailing)
         {
-            DirectoryInfo dir = new DirectoryInfo(TestDirectory);
-            dir.Create();
-            Assert.Equal(dir.FullName, TestDirectory);
-        }
-
-        [Fact]
-        public void PathTooLong()
-        {
-            StringBuilder sb = new StringBuilder(TestDirectory);
-            while (sb.Length < IOInputs.MaxPath)
-            {
-                sb.Append("a");
-            }
-
-            Assert.Throws<PathTooLongException>(() => new DirectoryInfo(sb.ToString()).Create());
-        }
-
-        [Fact]
-        public void PathJustTooLong()
-        {
-            StringBuilder sb = new StringBuilder(TestDirectory + Path.DirectorySeparatorChar);
-            while (sb.Length < IOInputs.MaxDirectory + 1)
-            {
-                sb.Append("a");
-            }
-
-            Assert.Throws<PathTooLongException>(() => new DirectoryInfo(sb.ToString()).Create());
-        }
-
-        [Fact]
-        public void PathJustShortEnough()
-        {
-            StringBuilder sb = new StringBuilder(TestDirectory + Path.DirectorySeparatorChar);
-            while (sb.Length < 247)
-            {
-                sb.Append("a");
-            }
-
-            DirectoryInfo dir = new DirectoryInfo(sb.ToString());
-            dir.Create();
-
-            Assert.Equal(dir.FullName, sb.ToString());
-        }
-
-        [Fact]
-        public void AllowedSymbols()
-        {
-            string dirName = Path.Combine(TestDirectory, Path.GetRandomFileName() + "!@#$%^&");
-            DirectoryInfo dir = new DirectoryInfo(dirName);
-            dir.Create();
-
-            Assert.Equal(dir.FullName, dirName);
-        }
-
-        [Fact]
-        public void CreateMultipleSubdirectories()
-        {
-            string dirName = Path.Combine(TestDirectory, "Test", "Test", "Test");
-            DirectoryInfo dir = new DirectoryInfo(dirName);
-            dir.Create();
-
-            Assert.Equal(dir.FullName, dirName);
-        }
-
-        [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // colon valid filename char on Unix
-        public void CreateColon()
-        {
-            Assert.Throws<ArgumentException>(() => new DirectoryInfo(":"));
-        }
-
-        [Fact]
-        public void WithRelativeDirectoryInMiddle()
-        {
-            string dirName = Path.Combine(TestDirectory, Path.GetRandomFileName(), "..", "TestDir");
-            DirectoryInfo dir = new DirectoryInfo(dirName);
-            dir.Create();
-            dir.Delete(true);
+            string testDir = GetTestFilePath();
+            DirectoryInfo testInfo = new DirectoryInfo(testDir + extension + trailing);
+            Assert.Equal(extension, testInfo.Extension);
         }
 
 
+        [Theory]
+        [InlineData(".s", ".")]
+        [InlineData(".s.s....", ".ls")]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void UnixLastDotIsExtension(string extension, string trailing)
+        {
+            string testDir = GetTestFilePath();
+            DirectoryInfo testInfo = new DirectoryInfo(testDir + extension + trailing);
+            Assert.Equal(trailing, testInfo.Extension);
+        }
     }
 }
