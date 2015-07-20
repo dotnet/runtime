@@ -269,7 +269,7 @@ create_test_overlay
 TestsFailed=0
 numberOfProcesses=0
 maxProcesses=$(($(getconf _NPROCESSORS_ONLN)+1))
-for file in src/**/tests/*.Tests.csproj
+for file in src/**/tests/**/*.Tests.csproj
 do
   runtest $file &
   pids="$pids $!"
