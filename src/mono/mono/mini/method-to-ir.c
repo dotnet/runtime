@@ -8855,8 +8855,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			} else if ((cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && icall_is_direct_callable (cfg, cmethod)) {
 				direct_icall = TRUE;
 			} else if (fsig->pinvoke) {
-				MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod,
-																	   check_for_pending_exc, cfg->compile_aot);
+				MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod, TRUE, cfg->compile_aot);
 				fsig = mono_method_signature (wrapper);
 			} else if (constrained_class) {
 			} else {
@@ -9225,7 +9224,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					(cmethod->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
 					/* Prevent inlining of methods that call wrappers */
 					INLINE_FAILURE ("wrapper call");
-					cmethod = mono_marshal_get_native_wrapper (cmethod, check_for_pending_exc, FALSE);
+					cmethod = mono_marshal_get_native_wrapper (cmethod, TRUE, FALSE);
 					always = TRUE;
 				}
 

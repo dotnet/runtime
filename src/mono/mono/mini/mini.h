@@ -498,7 +498,6 @@ extern MonoMethodDesc *mono_inject_async_exc_method;
 extern int mono_inject_async_exc_pos;
 extern MonoMethodDesc *mono_break_at_bb_method;
 extern int mono_break_at_bb_bb_num;
-extern gboolean check_for_pending_exc;
 extern gboolean mono_verify_all;
 extern gboolean mono_do_x86_stack_align;
 extern const char *mono_build_date;
@@ -512,7 +511,6 @@ extern GSList *mono_single_method_list;
 extern GHashTable *mono_single_method_hash;
 extern gboolean	mono_using_xdebug;
 extern int mini_verbose;
-extern gboolean check_for_pending_exc;
 extern int valgrind_register;
 
 #define INS_INFO(opcode) (&ins_info [((opcode) - OP_START - 1) * 4])

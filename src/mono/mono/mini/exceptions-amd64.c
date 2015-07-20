@@ -843,169 +843,11 @@ mono_amd64_get_original_ip (void)
 	return lmf->rip;
 }
 
-gpointer
-mono_arch_get_throw_pending_exception (MonoTrampInfo **info, gboolean aot)
-{
-	guint8 *code, *start;
-	guint8 *br[1];
-	gpointer throw_trampoline;
-	MonoJumpInfo *ji = NULL;
-	GSList *unwind_ops = NULL;
-	const guint kMaxCodeSize = NACL_SIZE (128, 256);
-
-	start = code = mono_global_codeman_reserve (kMaxCodeSize);
-
-	/* We are in the frame of a managed method after a call */
-	/* 
-	 * We would like to throw the pending exception in such a way that it looks to
-	 * be thrown from the managed method.
-	 */
-
-	/* Save registers which might contain the return value of the call */
-	amd64_push_reg (code, AMD64_RAX);
-	amd64_push_reg (code, AMD64_RDX);
-
-	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 8);
-	amd64_movsd_membase_reg (code, AMD64_RSP, 0, AMD64_XMM0);
-
-	/* Align stack */
-	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 8);
-
-	/* Obtain the pending exception */
-	if (aot) {
-		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_thread_get_and_clear_pending_exception");
-		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
-	} else {
-		amd64_mov_reg_imm (code, AMD64_R11, mono_thread_get_and_clear_pending_exception);
-	}
-	amd64_call_reg (code, AMD64_R11);
-
-	/* Check if it is NULL, and branch */
-	amd64_alu_reg_imm (code, X86_CMP, AMD64_RAX, 0);
-	br[0] = code; x86_branch8 (code, X86_CC_EQ, 0, FALSE);
-
-	/* exc != NULL branch */
-
-	/* Save the exc on the stack */
-	amd64_push_reg (code, AMD64_RAX);
-	/* Align stack */
-	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 8);
-
-	/* Obtain the original ip and clear the flag in previous_lmf */
-	if (aot) {
-		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_amd64_get_original_ip");
-		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
-	} else {
-		amd64_mov_reg_imm (code, AMD64_R11, mono_amd64_get_original_ip);
-	}
-	amd64_call_reg (code, AMD64_R11);	
-
-	/* Load exc */
-	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RSP, 8, 8);
-
-	/* Pop saved stuff from the stack */
-	amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 6 * 8);
-
-	/* Setup arguments for the throw trampoline */
-	/* Exception */
-	amd64_mov_reg_reg (code, AMD64_ARG_REG1, AMD64_R11, 8);
-	/* The trampoline expects the caller ip to be pushed on the stack */
-	amd64_push_reg (code, AMD64_RAX);
-
-	/* Call the throw trampoline */
-	if (aot) {
-		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_throw_exception");
-		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
-	} else {
-		throw_trampoline = mono_get_throw_exception ();
-		amd64_mov_reg_imm (code, AMD64_R11, throw_trampoline);
-	}
-	/* We use a jump instead of a call so we can push the original ip on the stack */
-	amd64_jump_reg (code, AMD64_R11);
-
-	/* ex == NULL branch */
-	mono_amd64_patch (br [0], code);
-
-	/* Obtain the original ip and clear the flag in previous_lmf */
-	if (aot) {
-		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_amd64_get_original_ip");
-		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
-	} else {
-		amd64_mov_reg_imm (code, AMD64_R11, mono_amd64_get_original_ip);
-	}
-	amd64_call_reg (code, AMD64_R11);	
-	amd64_mov_reg_reg (code, AMD64_R11, AMD64_RAX, 8);
-
-	/* Restore registers */
-	amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 8);
-	amd64_movsd_reg_membase (code, AMD64_XMM0, AMD64_RSP, 0);
-	amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 8);
-	amd64_pop_reg (code, AMD64_RDX);
-	amd64_pop_reg (code, AMD64_RAX);
-
-	/* Return to original code */
-	amd64_jump_reg (code, AMD64_R11);
-
-	g_assert ((code - start) < kMaxCodeSize);
-
-	nacl_global_codeman_validate(&start, kMaxCodeSize, &code);
-	mono_arch_flush_icache (start, code - start);
-	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL);
-
-	if (info)
-		*info = mono_tramp_info_create ("throw_pending_exception", start, code - start, ji, unwind_ops);
-
-	return start;
-}
-
-static gpointer throw_pending_exception;
-
-/*
- * Called when a thread receives an async exception while executing unmanaged code.
- * Instead of checking for this exception in the managed-to-native wrapper, we hijack 
- * the return address on the stack to point to a helper routine which throws the
- * exception.
- */
-void
-mono_arch_notify_pending_exc (MonoThreadInfo *info)
-{
-	MonoLMF *lmf = mono_get_lmf ();
-
-	if (!info) {
-		lmf = mono_get_lmf ();
-	} else {
-		g_assert (mono_thread_info_get_suspend_state (info)->valid);
-		lmf = mono_thread_info_get_suspend_state (info)->unwind_data [MONO_UNWIND_DATA_LMF];
-	}
-
-	if (!lmf)
-		/* Not yet started */
-		return;
-
-	if (lmf->rsp == 0)
-		/* Initial LMF */
-		return;
-
-	if ((guint64)lmf->previous_lmf & 5)
-		/* Already hijacked or trampoline LMF entry */
-		return;
-
-	/* lmf->rsp is set just before making the call which transitions to unmanaged code */
-	lmf->rip = *(guint64*)(lmf->rsp - 8);
-	/* Signal that lmf->rip is set */
-	lmf->previous_lmf = (gpointer)((guint64)lmf->previous_lmf | 1);
-
-	*(gpointer*)(lmf->rsp - 8) = throw_pending_exception;
-}
-
 GSList*
 mono_amd64_get_exception_trampolines (gboolean aot)
 {
 	MonoTrampInfo *info;
 	GSList *tramps = NULL;
-
-	mono_arch_get_throw_pending_exception (&info, aot);
-	tramps = g_slist_prepend (tramps, info);
 
 	/* LLVM needs different throw trampolines */
 	get_throw_trampoline (&info, FALSE, TRUE, FALSE, FALSE, "llvm_throw_corlib_exception_trampoline", aot);
@@ -1027,7 +869,6 @@ mono_arch_exceptions_init (void)
 	gpointer tramp;
 
 	if (mono_aot_only) {
-		throw_pending_exception = mono_aot_get_trampoline ("throw_pending_exception");
 		tramp = mono_aot_get_trampoline ("llvm_throw_corlib_exception_trampoline");
 		mono_register_jit_icall (tramp, "llvm_throw_corlib_exception_trampoline", NULL, TRUE);
 		tramp = mono_aot_get_trampoline ("llvm_throw_corlib_exception_abs_trampoline");
@@ -1036,8 +877,6 @@ mono_arch_exceptions_init (void)
 		mono_register_jit_icall (tramp, "llvm_resume_unwind_trampoline", NULL, TRUE);
 	} else {
 		/* Call this to avoid initialization races */
-		throw_pending_exception = mono_arch_get_throw_pending_exception (NULL, FALSE);
-
 		tramps = mono_amd64_get_exception_trampolines (FALSE);
 		for (l = tramps; l; l = l->next) {
 			MonoTrampInfo *info = l->data;

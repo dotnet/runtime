@@ -588,7 +588,7 @@ mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
 	MonoMethod *wrapper;
 	gconstpointer trampoline;
 	MonoDomain *domain = mono_get_root_domain ();
-	gboolean check_exc = check_for_pending_exc;
+	gboolean check_exc = TRUE;
 
 	if (callinfo->wrapper) {
 		return callinfo->wrapper;
@@ -3033,11 +3033,6 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_runtime_install_handlers ();
 #endif
 	mono_threads_install_cleanup (mini_thread_cleanup);
-
-#ifdef MONO_ARCH_HAVE_NOTIFY_PENDING_EXC
-	check_for_pending_exc = FALSE;
-	mono_threads_install_notify_pending_exc ((MonoThreadNotifyPendingExcFunc)mono_arch_notify_pending_exc);
-#endif
 
 #define JIT_TRAMPOLINES_WORK
 #ifdef JIT_TRAMPOLINES_WORK

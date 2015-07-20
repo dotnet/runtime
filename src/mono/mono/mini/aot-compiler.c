@@ -3363,7 +3363,7 @@ add_jit_icall_wrapper (gpointer key, gpointer value, gpointer user_data)
 		return;
 
 	name = g_strdup_printf ("__icall_wrapper_%s", callinfo->name);
-	wrapper = mono_marshal_get_icall_wrapper (callinfo->sig, name, callinfo->func, check_for_pending_exc);
+	wrapper = mono_marshal_get_icall_wrapper (callinfo->sig, name, callinfo->func, TRUE);
 	g_free (name);
 
 	add_method (acfg, wrapper);
@@ -8846,7 +8846,7 @@ collect_methods (MonoAotCompile *acfg)
 		if (mono_aot_mode_is_full (&acfg->aot_opts) && method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 			/* Compile the wrapper instead */
 			/* We do this here instead of add_wrappers () because it is easy to do it here */
-			MonoMethod *wrapper = mono_marshal_get_native_wrapper (method, check_for_pending_exc, TRUE);
+			MonoMethod *wrapper = mono_marshal_get_native_wrapper (method, TRUE, TRUE);
 			method = wrapper;
 		}
 

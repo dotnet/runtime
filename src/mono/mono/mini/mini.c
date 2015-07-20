@@ -85,9 +85,6 @@ gboolean mono_using_xdebug;
 #define mono_jit_unlock() mono_mutex_unlock (&jit_mutex)
 static mono_mutex_t jit_mutex;
 
-/* Whenever to check for pending exceptions in managed-to-native wrappers */
-gboolean check_for_pending_exc = TRUE;
-
 gpointer
 mono_realloc_native_code (MonoCompile *cfg)
 {
@@ -3988,7 +3985,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 			else
 				mono_lookup_pinvoke_call (method, NULL, NULL);
 		}
-		nm = mono_marshal_get_native_wrapper (method, check_for_pending_exc, mono_aot_only);
+		nm = mono_marshal_get_native_wrapper (method, TRUE, mono_aot_only);
 		code = mono_get_addr_from_ftnptr (mono_compile_method (nm));
 		jinfo = mono_jit_info_table_find (target_domain, code);
 		if (!jinfo)
