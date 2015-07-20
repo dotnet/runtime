@@ -30,6 +30,13 @@ namespace System.IO.FileSystem.DriveInfoTests
             Assert.True(drives.Length > 0, "Expected at least one drive");
             Assert.All(drives, d => Assert.NotNull(d));
             Assert.Contains(drives, d => d.Name == "/");
+            Assert.All(drives, d =>
+            {
+                // None of these should throw
+                DriveType dt = d.DriveType;
+                bool isReady = d.IsReady;
+                DirectoryInfo di = d.RootDirectory;
+            });
         }
 
         [Fact]
@@ -38,9 +45,9 @@ namespace System.IO.FileSystem.DriveInfoTests
         {
             var invalidDrive = new DriveInfo("NonExistentDriveName");
             Assert.Throws<DriveNotFoundException>(() => { var df = invalidDrive.DriveFormat; });
-            Assert.Throws<DriveNotFoundException>(() => { var size = invalidDrive.DriveType; });
             Assert.Throws<DriveNotFoundException>(() => { var size = invalidDrive.TotalFreeSpace; });
             Assert.Throws<DriveNotFoundException>(() => { var size = invalidDrive.TotalSize; });
+            Assert.Equal(DriveType.NoRootDirectory, invalidDrive.DriveType);
         }
 
         [Fact]
