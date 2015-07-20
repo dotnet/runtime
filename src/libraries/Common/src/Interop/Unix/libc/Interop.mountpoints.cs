@@ -4,8 +4,6 @@
 using System;
 using System.Runtime.InteropServices;
 
-using uid_t = System.UInt32;
-
 internal static partial class Interop
 {
     internal static partial class libc
@@ -33,26 +31,40 @@ internal static partial class Interop
         private static unsafe extern int get_statfs(string path, out statfs buffer);
 
         /// <summary>
+        /// Attempts to get a statfs struct for a given mount point.
+        /// </summary>
+        /// <param name="name">The drive name to retrieve the statfs data for.</param>
+        /// <param name="data">The data retrieved from the mount point.</param>
+        /// <returns>Returns true if data was filled with the results; otherwise, false.</returns>
+        internal static bool TryGetStatFsForDriveName(string name, out statfs data, out int errno)
+        {
+            data = default(statfs);
+            errno = 0;
+            if (get_statfs(name, out data) < 0)
+            {
+                errno = Marshal.GetLastWin32Error();
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
         /// Gets a statfs struct for a given mount point
         /// </summary>
-        /// <param name="name">The drive name to retrieve the statfs data for</param>
-        /// <returns>Returns </returns>
-        internal static unsafe statfs GetStatFsForDriveName(string name)
+        /// <param name="name">The drive name to retrieve the statfs data for.</param>
+        /// <returns>Returns the statfs.</returns>
+        internal static statfs GetStatFsForDriveName(string name)
         {
-            statfs data = default(statfs);
-            int result = get_statfs(name,  out data);
-            if (result < 0)
+            statfs data;
+            int errno;
+            if (!TryGetStatFsForDriveName(name, out data, out errno))
             {
-                int errno = Marshal.GetLastWin32Error();
-                if (errno == Interop.Errors.ENOENT)
-                    throw new System.IO.DriveNotFoundException(SR.Format(SR.IO_DriveNotFound_Drive, name)); // match Win32 exception
-                else
-                    throw Interop.GetExceptionForIoErrno(errno, isDirectory: true);
+                throw errno == Errors.ENOENT ?
+                    new System.IO.DriveNotFoundException(SR.Format(SR.IO_DriveNotFound_Drive, name)) : // match Win32 exception
+                    GetExceptionForIoErrno(errno, isDirectory: true);
             }
-            else
-            {
-                return data;
-            }
+            return data;
         }
+
     }
 }

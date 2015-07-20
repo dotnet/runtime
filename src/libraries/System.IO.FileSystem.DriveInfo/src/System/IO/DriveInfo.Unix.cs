@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Runtime.InteropServices;
 using System.Security;
 
 namespace System.IO
@@ -26,8 +25,25 @@ namespace System.IO
             [SecuritySafeCritical]
             get
             {
-                Interop.libc.statfs data = Interop.libc.GetStatFsForDriveName(Name);
-                return GetDriveType(Interop.libc.GetMountPointFsType(data));
+                Interop.libc.statfs data;
+                int errno;
+                if (Interop.libc.TryGetStatFsForDriveName(Name, out data, out errno))
+                {
+                    return GetDriveType(Interop.libc.GetMountPointFsType(data));
+                }
+
+                // This is one of the few properties that doesn't throw on failure,
+                // instead returning a value from the enum.
+                switch (errno)
+                {
+                    case Interop.Errors.ELOOP:
+                    case Interop.Errors.ENAMETOOLONG:
+                    case Interop.Errors.ENOENT:
+                    case Interop.Errors.ENOTDIR:
+                        return DriveType.NoRootDirectory;
+                    default:
+                        return DriveType.Unknown;
+                }
             }
         }
 
