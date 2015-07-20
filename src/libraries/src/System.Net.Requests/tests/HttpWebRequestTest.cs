@@ -258,17 +258,6 @@ namespace System.Net.Requests.Test
         }
 
         [Theory, MemberData("PostServers")]
-        public void BeginGetRequestStream_CreatePostRequestThenAbort_RequestStreamCallbackCalled(Uri remoteServer)
-        {
-            _savedHttpWebRequest = HttpWebRequest.CreateHttp(remoteServer);
-            _savedHttpWebRequest.Method = "POST";
-
-            IAsyncResult asyncResult = _savedHttpWebRequest.BeginGetRequestStream(new AsyncCallback(RequestStreamCallback), null);
-            _savedHttpWebRequest.Abort();
-            Assert.Equal(1, _requestStreamCallbackCallCount);
-        }
-
-        [Theory, MemberData("PostServers")]
         public void BeginGetRequestStream_CreatePostRequestThenCallTwice_ThrowsInvalidOperationException(Uri remoteServer)
         {
             _savedHttpWebRequest = HttpWebRequest.CreateHttp(remoteServer);
@@ -533,19 +522,6 @@ namespace System.Net.Requests.Test
             }
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        }
-
-        [Theory, MemberData("PostServers")]
-        public void Abort_BeginGetRequestStreamThenAbort_RequestStreamCallbackCalledBeforeAbortReturns(Uri remoteServer)
-        {
-            _savedHttpWebRequest = HttpWebRequest.CreateHttp(remoteServer);
-            _savedHttpWebRequest.Method = "POST";
-
-            _savedHttpWebRequest.BeginGetRequestStream(new AsyncCallback(RequestStreamCallback), null);
-
-            _savedHttpWebRequest.Abort();
-            _savedHttpWebRequest = null;
-            Assert.Equal(1, _requestStreamCallbackCallCount);
         }
 
         [Theory, MemberData("PostServers")]
