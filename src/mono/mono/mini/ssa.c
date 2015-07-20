@@ -1363,22 +1363,10 @@ mono_ssa_loop_invariant_code_motion (MonoCompile *cfg)
 		if (bb != h)
 			continue;
 		MONO_BB_FOR_EACH_INS_SAFE (bb, n, ins) {
-			gboolean is_class_init = FALSE;
-
 			/*
 			 * Try to move instructions out of loop headers into the preceeding bblock.
 			 */
-			if (ins->opcode == OP_VOIDCALL) {
-				MonoCallInst *call = (MonoCallInst*)ins;
-
-				if (call->fptr_is_patch) {
-					MonoJumpInfo *ji = (MonoJumpInfo*)call->fptr;
-
-					if (ji->type == MONO_PATCH_INFO_CLASS_INIT)
-						is_class_init = TRUE;
-				}
-			}
-			if (ins->opcode == OP_LDLEN || ins->opcode == OP_STRLEN || ins->opcode == OP_CHECK_THIS || ins->opcode == OP_AOTCONST || is_class_init) {
+			if (ins->opcode == OP_LDLEN || ins->opcode == OP_STRLEN || ins->opcode == OP_CHECK_THIS || ins->opcode == OP_AOTCONST || ins->opcode == OP_GENERIC_CLASS_INIT) {
 				gboolean skip;
 				int sreg;
 

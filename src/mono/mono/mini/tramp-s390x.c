@@ -162,54 +162,6 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *a
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- mono_arch_nullify_class_init_trampoline           */
-/*                                                                  */
-/* Function	- Nullify a call which calls a class init trampoline*/
-/*                                                                  */
-/*------------------------------------------------------------------*/
-
-void
-mono_arch_nullify_class_init_trampoline (guint8 *code, mgreg_t *regs)
-{
-	char patch[2] = {0x07, 0x00};
-
-	code = code - 2;
-
-	memcpy(code, patch, sizeof(patch));
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- mono_arch_get_nullified_class_init		    */
-/*                                                                  */
-/* Function	- Nullify a PLT entry call.			    */
-/*                                                                  */
-/*------------------------------------------------------------------*/
-
-gpointer
-mono_arch_get_nullified_class_init_trampoline (MonoTrampInfo **info)
-{
-	guint8 *buf, *code;
-
-	code = buf = mono_global_codeman_reserve (16);
-
-	s390_br (code, s390_r14);
-
-	mono_arch_flush_icache (buf, code - buf);
-	mono_profiler_code_buffer_new (buf, code - buf, MONO_PROFILER_CODE_BUFFER_HELPER, NULL);
-
-	*info = mono_tramp_info_create ("nullified_class_init_trampoline", 
-									buf, code - buf, NULL, NULL);
-
-	return (buf);
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
 /* Name		- mono_arch_create_trampoline_code                  */
 /*                                                                  */
 /* Function	- Create the designated type of trampoline according*/
@@ -342,11 +294,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	}
 
 	/* Arg 3: Trampoline argument */
-	if (tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT)
-		s390_lg (buf, s390_r4, 0, LMFReg,
-			 G_STRUCT_OFFSET(MonoLMF, gregs[MONO_ARCH_VTABLE_REG]));
-	else
-		s390_lg (buf, s390_r4, 0, LMFReg, G_STRUCT_OFFSET(MonoLMF, gregs[1]));
+	s390_lg (buf, s390_r4, 0, LMFReg, G_STRUCT_OFFSET(MonoLMF, gregs[1]));
 
 	/* Arg 4: trampoline address. */
 	S390_SET (buf, s390_r5, buf);
@@ -461,12 +409,6 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	case MONO_TRAMPOLINE_MONITOR_ENTER:
 	case MONO_TRAMPOLINE_MONITOR_ENTER_V4:
 	case MONO_TRAMPOLINE_MONITOR_EXIT:
-		s390_lgr (buf, s390_r1, s390_r2);
-		break;
-	/*
-	 * Generic class trampoline arg is in r2
-	 */
-	case MONO_TRAMPOLINE_GENERIC_CLASS_INIT:
 		s390_lgr (buf, s390_r1, s390_r2);
 		break;
 	default :

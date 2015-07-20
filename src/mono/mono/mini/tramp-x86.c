@@ -239,66 +239,6 @@ get_vcall_slot_addr (guint8* code, mgreg_t *regs)
 	return (gpointer*)((char*)vt + displacement);
 }
 
-void
-mono_arch_nullify_class_init_trampoline (guint8 *code, mgreg_t *regs)
-{
-	guint8 buf [16];
-	gboolean can_write = mono_breakpoint_clean_code (NULL, code, 6, buf, sizeof (buf));
-	gpointer tramp = mini_get_nullified_class_init_trampoline ();
-
-	if (!can_write)
-		return;
-
-	code -= 5;
-	if (code [0] == 0xe8) {
-#if defined(__default_codegen__)
-		if (!mono_running_on_valgrind ()) {
-			guint32 ops;
-			/*
-			 * Thread safe code patching using the algorithm from the paper
-			 * 'Practicing JUDO: Java Under Dynamic Optimizations'
-			 */
-			/* 
-			 * First atomically change the the first 2 bytes of the call to a
-			 * spinning jump.
-			 */
-			ops = 0xfeeb;
-			InterlockedExchange ((gint32*)code, ops);
-
-			/* Then change the other bytes to a nop */
-			code [2] = 0x90;
-			code [3] = 0x90;
-			code [4] = 0x90;
-
-			/* Then atomically change the first 4 bytes to a nop as well */
-			ops = 0x90909090;
-			InterlockedExchange ((gint32*)code, ops);
-			/* FIXME: the calltree skin trips on the self modifying code above */
-
-			/* Tell valgrind to recompile the patched code */
-			//VALGRIND_DISCARD_TRANSLATIONS (code, 8);
-		}
-#elif defined(__native_client_codegen__)
-		mono_arch_patch_callsite (code, code + 5, tramp);
-#endif
-	} else if (code [0] == 0x90 || code [0] == 0xeb) {
-		/* Already changed by another thread */
-		;
-	} else if ((code [-1] == 0xff) && (x86_modrm_reg (code [0]) == 0x2)) {
-		/* call *<OFFSET>(<REG>) -> Call made from AOT code */
-		gpointer *vtable_slot;
-
-		vtable_slot = get_vcall_slot_addr (code + 5, regs);
-		g_assert (vtable_slot);
-
-		*vtable_slot = tramp;
-	} else {
-			printf ("Invalid trampoline sequence: %x %x %x %x %x %x %x\n", code [0], code [1], code [2], code [3],
-				code [4], code [5], code [6]);
-			g_assert_not_reached ();
-		}
-}
-
 guchar*
 mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInfo **info, gboolean aot)
 {
@@ -498,25 +438,6 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	tramp_name = mono_get_generic_trampoline_name (tramp_type);
 	*info = mono_tramp_info_create (tramp_name, buf, code - buf, ji, unwind_ops);
 	g_free (tramp_name);
-
-	return buf;
-}
-
-gpointer
-mono_arch_get_nullified_class_init_trampoline (MonoTrampInfo **info)
-{
-	guint8 *code, *buf;
-	int tramp_size = NACL_SIZE (16, kNaClAlignment);		
-
-	code = buf = mono_global_codeman_reserve (tramp_size);
-	x86_ret (code);
-
-	nacl_global_codeman_validate (&buf, tramp_size, &code);
-
-	mono_arch_flush_icache (buf, code - buf);
-	mono_profiler_code_buffer_new (buf, code - buf, MONO_PROFILER_CODE_BUFFER_HELPER, NULL);
-
-	*info = mono_tramp_info_create ("nullified_class_init_trampoline", buf, code - buf, NULL, NULL);
 
 	return buf;
 }

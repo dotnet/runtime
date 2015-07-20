@@ -3680,17 +3680,6 @@ mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, 
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_NONE:
 			continue;
-		case MONO_PATCH_INFO_CLASS_INIT: {
-			guint32 *ip2 = (guint32*)ip;
-			/* Might already been changed to a nop */
-#ifdef SPARCV9
-			sparc_set_template (ip2, sparc_o7);
-			sparc_jmpl (ip2, sparc_o7, sparc_g0, sparc_o7);
-#else
-			sparc_call_simple (ip2, 0);
-#endif
-			break;
-		}
 		case MONO_PATCH_INFO_METHOD_JUMP: {
 			guint32 *ip2 = (guint32*)ip;
 			/* Might already been patched */

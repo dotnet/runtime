@@ -113,7 +113,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 119
+#define MONO_AOT_FILE_VERSION 120
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -1320,8 +1320,6 @@ struct MonoJumpInfoGSharedVtCall {
 typedef enum {
 	MONO_TRAMPOLINE_JIT,
 	MONO_TRAMPOLINE_JUMP,
-	MONO_TRAMPOLINE_CLASS_INIT,
-	MONO_TRAMPOLINE_GENERIC_CLASS_INIT,
 	MONO_TRAMPOLINE_RGCTX_LAZY_FETCH,
 	MONO_TRAMPOLINE_AOT,
 	MONO_TRAMPOLINE_AOT_PLT,
@@ -1338,9 +1336,7 @@ typedef enum {
 
 /* These trampolines return normally to their caller */
 #define MONO_TRAMPOLINE_TYPE_MUST_RETURN(t)		\
-	((t) == MONO_TRAMPOLINE_CLASS_INIT ||		\
-	 (t) == MONO_TRAMPOLINE_GENERIC_CLASS_INIT ||	\
-	 (t) == MONO_TRAMPOLINE_RESTORE_STACK_PROT ||	\
+	((t) == MONO_TRAMPOLINE_RESTORE_STACK_PROT ||	\
 	 (t) == MONO_TRAMPOLINE_RGCTX_LAZY_FETCH ||	\
 	 (t) == MONO_TRAMPOLINE_MONITOR_ENTER ||	\
 	 (t) == MONO_TRAMPOLINE_MONITOR_ENTER_V4 ||	\
@@ -1348,8 +1344,7 @@ typedef enum {
 
 /* These trampolines receive an argument directly in a register */
 #define MONO_TRAMPOLINE_TYPE_HAS_ARG(t)		\
-	((t) == MONO_TRAMPOLINE_GENERIC_CLASS_INIT ||	\
-	 (t) == MONO_TRAMPOLINE_MONITOR_ENTER ||		\
+	((t) == MONO_TRAMPOLINE_MONITOR_ENTER ||		\
 	 (t) == MONO_TRAMPOLINE_MONITOR_ENTER_V4 ||		\
 	 (t) == MONO_TRAMPOLINE_MONITOR_EXIT ||			\
 	 (t) == MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD)

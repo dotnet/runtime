@@ -4156,8 +4156,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_tm (code, ins->sreg1, byte_offset, bitmask);
 			s390_jo (code, 0); CODEPTR(code, jump);
 
-			mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_JIT_ICALL_ADDR,
-						"specific_trampoline_generic_class_init");
+			mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD,
+						"mono_generic_class_init");
 			S390_CALL_TEMPLATE(code, s390_r14);
 
 			PTRSLOT (code, jump);
@@ -4770,7 +4770,6 @@ mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain,
 			case MONO_PATCH_INFO_METHOD:
 			case MONO_PATCH_INFO_INTERNAL_METHOD:
 			case MONO_PATCH_INFO_JIT_ICALL_ADDR:
-			case MONO_PATCH_INFO_CLASS_INIT:
 			case MONO_PATCH_INFO_RGCTX_FETCH:
 			case MONO_PATCH_INFO_MONITOR_ENTER:
 			case MONO_PATCH_INFO_MONITOR_ENTER_V4:

@@ -5098,13 +5098,6 @@ mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, Mo
 	case MONO_PATCH_INFO_IP:
 		*((gconstpointer *)(ip)) = target;
 		break;
-	case MONO_PATCH_INFO_CLASS_INIT: {
-		guint8 *code = ip;
-		/* Might already been changed to a nop */
-		x86_call_code (code, 0);
-		x86_patch (ip, (unsigned char*)target);
-		break;
-	}
 	case MONO_PATCH_INFO_ABS:
 	case MONO_PATCH_INFO_METHOD:
 	case MONO_PATCH_INFO_METHOD_JUMP:

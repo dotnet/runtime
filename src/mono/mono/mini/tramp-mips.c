@@ -112,42 +112,6 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *a
 
 #define STACK (int)(ALIGN_TO(4*IREG_SIZE + 8 + sizeof(MonoLMF) + 32, 8))
 
-void
-mono_arch_nullify_class_init_trampoline (guint8 *code, mgreg_t *regs)
-{
-	guint32 *code32 = (guint32*)code;
-
-	/* back up to the jal/jalr instruction */
-	code32 -= 2;
-
-	/* Check for jal/jalr -- and NOP it out */
-	if ((((*code32)&0xfc000000) == 0x0c000000)
-	    || (((*code32)&0xfc1f003f) == 0x00000009)) {
-		mips_nop (code32);
-		mono_arch_flush_icache ((gpointer)(code32 - 1), 4);
-		return;
-	}
-	g_assert_not_reached ();
-}
-
-gpointer
-mono_arch_get_nullified_class_init_trampoline (MonoTrampInfo **info)
-{
-	guint8 *buf, *code;
-
-	code = buf = mono_global_codeman_reserve (16);
-
-	mips_jr (code, mips_ra);
-	mips_nop (code);
-
-	mono_arch_flush_icache (buf, code - buf);
-
-	if (info)
-		*info = mono_tramp_info_create ("nullified_class_init_trampoline", buf, code - buf, NULL, NULL);
-
-	return buf;
-}
-
 /*
  * Stack frame description when the generic trampoline is called.
  * caller frame
@@ -247,10 +211,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	}
 
 	/* Arg 3: MonoMethod *method. */
-	if (tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT)
-		mips_lw (code, mips_a2, mips_sp, lmf + G_STRUCT_OFFSET (MonoLMF, iregs [mips_a0]));
-	else
-		mips_lw (code, mips_a2, mips_sp, lmf + G_STRUCT_OFFSET (MonoLMF, method));
+	mips_lw (code, mips_a2, mips_sp, lmf + G_STRUCT_OFFSET (MonoLMF, method));
 
 	/* Arg 4: Trampoline */
 	mips_move (code, mips_a3, mips_zero);

@@ -46,7 +46,6 @@ void bzero (void *to, size_t count) { memset (to, 0, count); }
 typedef struct {
 	LLVMModuleRef module;
 	LLVMValueRef throw, rethrow, throw_corlib_exception;
-	LLVMValueRef generic_class_init_tramp;
 	GHashTable *llvm_types;
 	LLVMValueRef got_var;
 	const char *got_symbol;

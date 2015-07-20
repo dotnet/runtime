@@ -5174,7 +5174,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (ins->sreg1 == ARMREG_R0);
 
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD,
-								 (gpointer)"specific_trampoline_generic_class_init");
+								 (gpointer)"mono_generic_class_init");
 			code = emit_call_seq (cfg, code);
 
 			/* Initialized case */

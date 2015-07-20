@@ -4635,7 +4635,6 @@ mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, 
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
 		case MONO_PATCH_INFO_INTERNAL_METHOD:
 		case MONO_PATCH_INFO_ABS:
-		case MONO_PATCH_INFO_CLASS_INIT:
 		case MONO_PATCH_INFO_RGCTX_FETCH:
 		case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 			is_fd = TRUE;
