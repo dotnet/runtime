@@ -8,7 +8,7 @@
 namespace System.Data
 {
     public enum IsolationLevel
-    { // MDAC 74269
+    {
         Unspecified = unchecked((int)0xffffffff),
         Chaos = 0x10,
         ReadUncommitted = 0x100,

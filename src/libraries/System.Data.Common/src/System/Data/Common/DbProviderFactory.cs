@@ -16,7 +16,7 @@ using System.Security;
 namespace System.Data.Common
 {
     public abstract class DbProviderFactory
-    { // V1.2.3300
+    {
         protected DbProviderFactory()
         {
         }

@@ -17,7 +17,7 @@ namespace System.Data.Common
     public abstract class DbDataReader :
         IDisposable,
         IEnumerable
-    { // V1.2.3300    
+    {
         protected DbDataReader() : base()
         {
         }
@@ -49,8 +49,6 @@ namespace System.Data.Common
 
         virtual public int VisibleFieldCount
         {
-            // NOTE: This is virtual because not all providers may choose to support
-            //       this property, since it was added in Whidbey
             get
             {
                 return FieldCount;
@@ -108,9 +106,6 @@ namespace System.Data.Common
 
         virtual protected DbDataReader GetDbDataReader(int ordinal)
         {
-            // NOTE: This method is virtual because we're required to implement
-            //       it however most providers won't support it. Only the OLE DB 
-            //       provider supports it right now, and they can override it.
             throw ADP.NotSupported();
         }
 
@@ -132,22 +127,16 @@ namespace System.Data.Common
 
         virtual public Type GetProviderSpecificFieldType(int ordinal)
         {
-            // NOTE: This is virtual because not all providers may choose to support
-            //       this method, since it was added in Whidbey.
             return GetFieldType(ordinal);
         }
 
         virtual public Object GetProviderSpecificValue(int ordinal)
         {
-            // NOTE: This is virtual because not all providers may choose to support
-            //       this method, since it was added in Whidbey
             return GetValue(ordinal);
         }
 
         virtual public int GetProviderSpecificValues(object[] values)
         {
-            // NOTE: This is virtual because not all providers may choose to support
-            //       this method, since it was added in Whidbey
             return GetValues(values);
         }
 

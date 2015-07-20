@@ -77,20 +77,12 @@ namespace System.Data.Common
             set
             {
                 ADP.CheckArgumentNull(keyword, "keyword");
-                bool flag = false;
                 if (null != value)
                 {
                     string keyvalue = DbConnectionStringBuilderUtil.ConvertToString(value);
                     DbConnectionOptions.ValidateKeyValuePair(keyword, keyvalue);
-
-                    flag = CurrentValues.ContainsKey(keyword);
-
                     // store keyword/value pair
                     CurrentValues[keyword] = keyvalue;
-                }
-                else
-                {
-                    flag = Remove(keyword);
                 }
                 _connectionString = null;
             }
@@ -264,7 +256,7 @@ namespace System.Data.Common
             return Dictionary.GetEnumerator();
         }
 
-        [SuppressMessage("Microsoft.Usage", "CA2208:InstantiateArgumentExceptionsCorrectly", Justification = "See Dev11 bug 875012")]
+
         private string ObjectToString(object keyword)
         {
             try
@@ -273,10 +265,6 @@ namespace System.Data.Common
             }
             catch (InvalidCastException)
             {
-                // 
-
-
-
                 throw new ArgumentException("keyword", "not a string");
             }
         }
