@@ -511,7 +511,7 @@ mono_arch_get_argument_info (MonoGenericSharingContext *gsctx, MonoMethodSignatu
 		if (csig->pinvoke)
 			size = mono_type_native_stack_size (csig->params [k], (guint32 *) &align);
 		else
-			size = mini_type_stack_size (NULL, csig->params [k], &align);
+			size = mini_type_stack_size (csig->params [k], &align);
 
 		frame_size += pad = (align - (frame_size & (align - 1))) & (align - 1);	
 		arg_info [k].pad = pad;
@@ -742,7 +742,7 @@ decodeParm(MonoType *type, void *curParm, int size)
 	if (type->byref) {
 		printf("[BYREF:%p], ", *((char **) curParm));
 	} else {
-		simpleType = mono_type_get_underlying_type(type)->type;
+		simpleType = mini_get_underlying_type(type)->type;
 enum_parmtype:
 		switch (simpleType) {
 			case MONO_TYPE_I :
@@ -1585,7 +1585,7 @@ get_call_info (MonoCompile *cfg, MonoMemPool *mp, MonoMethodSignature *sig)
 	/* area that the callee will use.			    */
 	/*----------------------------------------------------------*/
 
-	ret_type = mini_type_get_underlying_type (gsctx, sig->ret);
+	ret_type = mini_get_underlying_type (sig->ret);
 	simpleType = ret_type->type;
 enum_retvalue:
 	switch (simpleType) {
@@ -1632,7 +1632,7 @@ enum_retvalue:
 				simpleType = mono_class_enum_basetype (klass)->type;
 				goto enum_retvalue;
 			}
-			size = mini_type_stack_size_full (gsctx, &klass->byval_arg, NULL, sig->pinvoke);
+			size = mini_type_stack_size_full (&klass->byval_arg, NULL, sig->pinvoke);
 	
 			cinfo->struct_ret = 1;
 			cinfo->ret.size   = size;
@@ -1663,7 +1663,7 @@ enum_retvalue:
 	if (cinfo->struct_ret && !is_pinvoke && 
 	    (sig->hasthis || 
              (sig->param_count > 0 && 
-	      MONO_TYPE_IS_REFERENCE (mini_type_get_underlying_type (gsctx, sig->params [0]))))) {
+	      MONO_TYPE_IS_REFERENCE (mini_get_underlying_type (sig->params [0]))))) {
 		if (sig->hasthis) {
 			cinfo->args[nParm].size = sizeof (gpointer);
 			add_general (&gr, sz, cinfo->args + nParm);
@@ -1725,7 +1725,7 @@ enum_retvalue:
 			continue;
 		}
 
-		ptype = mini_type_get_underlying_type (gsctx, sig->params [i]);
+		ptype = mini_get_underlying_type (sig->params [i]);
 		simpleType = ptype->type;
 		cinfo->args[nParm].type = simpleType;
 		switch (simpleType) {
@@ -1973,7 +1973,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	cinfo   = get_call_info (cfg, cfg->mempool, sig);
 
 	if (!cinfo->struct_ret) {
-		switch (mini_type_get_underlying_type (cfg->generic_sharing_context, sig->ret)->type) {
+		switch (mini_get_underlying_type (sig->ret)->type) {
 		case MONO_TYPE_VOID:
 			break;
 		default:
@@ -2346,7 +2346,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			t = sig->params [i - sig->hasthis];
 		else
 			t = &mono_defaults.int_class->byval_arg;
-		t = mini_type_get_underlying_type (cfg->generic_sharing_context, t);
+		t = mini_get_underlying_type (t);
 
 		in = call->args [i];
 
@@ -2562,8 +2562,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 void
 mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 {
-	MonoType *ret = mini_type_get_underlying_type (cfg->generic_sharing_context,
-				mono_method_signature (method)->ret);
+	MonoType *ret = mini_get_underlying_type (mono_method_signature (method)->ret);
 
 	if (!ret->byref) {
 		if (ret->type == MONO_TYPE_R4) {
@@ -2662,8 +2661,7 @@ mono_arch_instrument_epilog_full (MonoCompile *cfg, void *func, void *p, gboolea
 		   saveOffset,
 		   offset;
 	MonoMethod *method = cfg->method;
-	int rtype = mini_type_get_underlying_type (cfg->generic_sharing_context,
-			mono_method_signature (method)->ret)->type;
+	int rtype = mini_get_underlying_type (mono_method_signature (method)->ret)->type;
 
 	offset = code - cfg->native_code;
 	/*-----------------------------------------*/

@@ -2845,30 +2845,30 @@ MonoClass* mini_class_get_container_class (MonoClass *class);
 MonoGenericContext* mini_class_get_context (MonoClass *class);
 
 MonoType* mini_replace_type (MonoType *type) MONO_LLVM_INTERNAL;
-MonoType* mini_get_underlying_type (MonoCompile *cfg, MonoType *type) MONO_LLVM_INTERNAL;
-MonoType* mini_type_get_underlying_type (MonoGenericSharingContext *gsctx, MonoType *type);
+MonoType* mini_get_underlying_type (MonoType *type) MONO_LLVM_INTERNAL;
+MonoType* mini_type_get_underlying_type (MonoType *type);
 MonoMethod* mini_get_shared_method (MonoMethod *method);
 MonoMethod* mini_get_shared_method_to_register (MonoMethod *method);
 MonoMethod* mini_get_shared_method_full (MonoMethod *method, gboolean all_vt, gboolean is_gsharedvt);
 int mini_get_rgctx_entry_slot (MonoJumpInfoRgctxEntry *entry);
 
-int mini_type_stack_size (MonoGenericSharingContext *gsctx, MonoType *t, int *align);
-int mini_type_stack_size_full (MonoGenericSharingContext *gsctx, MonoType *t, guint32 *align, gboolean pinvoke);
+int mini_type_stack_size (MonoType *t, int *align);
+int mini_type_stack_size_full (MonoType *t, guint32 *align, gboolean pinvoke);
 void type_to_eval_stack_type (MonoCompile *cfg, MonoType *type, MonoInst *inst);
 guint mono_type_to_regmove (MonoCompile *cfg, MonoType *type) MONO_LLVM_INTERNAL;
 
 void mono_cfg_add_try_hole (MonoCompile *cfg, MonoExceptionClause *clause, guint8 *start, MonoBasicBlock *bb);
 
 void mono_cfg_set_exception (MonoCompile *cfg, int type);
-gboolean mini_type_is_reference (MonoCompile *cfg, MonoType *type);
-gboolean mini_type_is_vtype (MonoCompile *cfg, MonoType *t) MONO_LLVM_INTERNAL;
-gboolean mini_type_var_is_vt (MonoCompile *cfg, MonoType *type) MONO_LLVM_INTERNAL;
-gboolean mini_is_gsharedvt_klass (MonoCompile *cfg, MonoClass *klass) MONO_LLVM_INTERNAL;
-gboolean mini_is_gsharedvt_type (MonoCompile *cfg, MonoType *t);
-gboolean mini_is_gsharedvt_signature (MonoCompile *cfg, MonoMethodSignature *sig);
-gboolean mini_is_gsharedvt_type_gsctx (MonoGenericSharingContext *gsctx, MonoType *t);
-gboolean mini_is_gsharedvt_variable_type (MonoCompile *cfg, MonoType *t) MONO_LLVM_INTERNAL;
-gboolean mini_is_gsharedvt_variable_klass (MonoCompile *cfg, MonoClass *klass) MONO_LLVM_INTERNAL;
+
+gboolean mini_type_is_reference (MonoType *type);
+gboolean mini_type_is_vtype (MonoType *t) MONO_LLVM_INTERNAL;
+gboolean mini_type_var_is_vt (MonoType *type) MONO_LLVM_INTERNAL;
+gboolean mini_is_gsharedvt_type (MonoType *t);
+gboolean mini_is_gsharedvt_klass (MonoClass *klass) MONO_LLVM_INTERNAL;
+gboolean mini_is_gsharedvt_signature (MonoMethodSignature *sig);
+gboolean mini_is_gsharedvt_variable_type (MonoType *t) MONO_LLVM_INTERNAL;
+gboolean mini_is_gsharedvt_variable_klass (MonoClass *klass) MONO_LLVM_INTERNAL;
 gboolean mini_is_gsharedvt_sharable_method (MonoMethod *method);
 gboolean mini_is_gsharedvt_variable_signature (MonoMethodSignature *sig);
 gboolean mini_is_gsharedvt_sharable_inst (MonoGenericInst *inst);

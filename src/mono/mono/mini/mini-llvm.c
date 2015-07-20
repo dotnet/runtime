@@ -393,7 +393,7 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 	if (t->byref)
 		return LLVMPointerType (LLVMInt8Type (), 0);
 
-	t = mini_get_underlying_type (ctx->cfg, t);
+	t = mini_get_underlying_type (t);
 	switch (t->type) {
 	case MONO_TYPE_VOID:
 		return LLVMVoidType ();
@@ -1172,7 +1172,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 	if (sinfo)
 		memset (sinfo, 0, sizeof (LLVMSigInfo));
 
-	rtype = mini_get_underlying_type (ctx->cfg, sig->ret);
+	rtype = mini_get_underlying_type (sig->ret);
 	ret_type = type_to_llvm_type (ctx, rtype);
 	CHECK_FAILURE (ctx);
 
@@ -1212,7 +1212,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 			ret_type = LLVMVoidType ();
 			break;
 		default:
-			if (mini_type_is_vtype (ctx->cfg, rtype)) {
+			if (mini_type_is_vtype (rtype)) {
 				g_assert (cinfo->ret.storage == LLVMArgVtypeRetAddr);
 				vretaddr = TRUE;
 				ret_type = LLVMVoidType ();
@@ -2085,7 +2085,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		MonoInst *var = cfg->varinfo [i];
 		LLVMTypeRef vtype;
 
-		if (var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT) || mini_type_is_vtype (cfg, var->inst_vtype)) {
+		if (var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT) || mini_type_is_vtype (var->inst_vtype)) {
 			vtype = type_to_llvm_type (ctx, var->inst_vtype);
 			CHECK_FAILURE (ctx);
 			/* Could be already created by an OP_VPHI */
@@ -2164,7 +2164,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 	if (sig->hasthis)
 		emit_volatile_store (ctx, cfg->args [0]->dreg);
 	for (i = 0; i < sig->param_count; ++i)
-		if (!mini_type_is_vtype (cfg, sig->params [i]))
+		if (!mini_type_is_vtype (sig->params [i]))
 			emit_volatile_store (ctx, cfg->args [i + sig->hasthis]->dreg);
 
 	if (sig->hasthis && !cfg->rgctx_var && cfg->generic_sharing_context) {

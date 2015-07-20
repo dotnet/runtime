@@ -2538,14 +2538,9 @@ mini_class_get_context (MonoClass *class)
  * passed to it.
  */
 static MonoType*
-mini_get_basic_type_from_generic (MonoGenericSharingContext *gsctx, MonoType *type)
+mini_get_basic_type_from_generic (MonoType *type)
 {
-	/* FIXME: Some callers don't pass in a gsctx, like mono_dyn_call_prepare () */
-	/*
-	if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR))
-		g_assert (gsctx);
-	*/
-	if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && mini_is_gsharedvt_type_gsctx (gsctx, type))
+	if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && mini_is_gsharedvt_type (type))
 		return type;
 	else if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
 		MonoType *constraint = type->data.generic_param->gshared_constraint;
@@ -2571,15 +2566,15 @@ mini_get_basic_type_from_generic (MonoGenericSharingContext *gsctx, MonoType *ty
  * sharing.
  */
 MonoType*
-mini_type_get_underlying_type (MonoGenericSharingContext *gsctx, MonoType *type)
+mini_type_get_underlying_type (MonoType *type)
 {
 	type = mini_native_type_replace_type (type);
 
 	if (type->byref)
 		return &mono_defaults.int_class->byval_arg;
-	if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && mini_is_gsharedvt_type_gsctx (gsctx, type))
+	if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && mini_is_gsharedvt_type (type))
 		return type;
-	type = mini_get_basic_type_from_generic (gsctx, mono_type_get_underlying_type (type));
+	type = mini_get_basic_type_from_generic (mono_type_get_underlying_type (type));
 	switch (type->type) {
 	case MONO_TYPE_BOOLEAN:
 		return &mono_defaults.byte_class->byval_arg;
@@ -2596,35 +2591,25 @@ mini_type_get_underlying_type (MonoGenericSharingContext *gsctx, MonoType *type)
  * @t: a type
  * @align: Pointer to an int for returning the alignment
  *
- * Returns the type's stack size and the alignment in *align.  The
- * type is allowed to be open.
+ * Returns the type's stack size and the alignment in *align.
  */
 int
-mini_type_stack_size (MonoGenericSharingContext *gsctx, MonoType *t, int *align)
+mini_type_stack_size (MonoType *t, int *align)
 {
-	gboolean allow_open = TRUE;
-
-	// FIXME: Some callers might not pass in a gsctx
-	//allow_open = gsctx != NULL;
-	return mono_type_stack_size_internal (t, align, allow_open);
+	return mono_type_stack_size_internal (t, align, TRUE);
 }
 
 /*
  * mini_type_stack_size_full:
  *
- *   Same as mini_type_stack_size, but handle gsharedvt and pinvoke data types as well.
+ *   Same as mini_type_stack_size, but handle pinvoke data types as well.
  */
 int
-mini_type_stack_size_full (MonoGenericSharingContext *gsctx, MonoType *t, guint32 *align, gboolean pinvoke)
+mini_type_stack_size_full (MonoType *t, guint32 *align, gboolean pinvoke)
 {
 	int size;
 
-	/*
-	if (t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR)
-		g_assert (gsctx);
-	*/
-
-	//g_assert (!mini_is_gsharedvt_type_gsctx (gsctx, t));
+	//g_assert (!mini_is_gsharedvt_type (t));
 
 	if (pinvoke) {
 		size = mono_type_native_stack_size (t, align);
@@ -2632,10 +2617,10 @@ mini_type_stack_size_full (MonoGenericSharingContext *gsctx, MonoType *t, guint3
 		int ialign;
 
 		if (align) {
-			size = mini_type_stack_size (gsctx, t, &ialign);
+			size = mini_type_stack_size (t, &ialign);
 			*align = ialign;
 		} else {
-			size = mini_type_stack_size (gsctx, t, NULL);
+			size = mini_type_stack_size (t, NULL);
 		}
 	}
 	
@@ -2668,7 +2653,7 @@ mono_generic_sharing_cleanup (void)
  *   Return whenever T is a type variable instantiated with a vtype.
  */
 gboolean
-mini_type_var_is_vt (MonoCompile *cfg, MonoType *type)
+mini_type_var_is_vt (MonoType *type)
 {
 	if (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) {
 		return type->data.generic_param->gshared_constraint && type->data.generic_param->gshared_constraint->type == MONO_TYPE_VALUETYPE;
@@ -2679,10 +2664,9 @@ mini_type_var_is_vt (MonoCompile *cfg, MonoType *type)
 }
 
 gboolean
-mini_type_is_reference (MonoCompile *cfg, MonoType *type)
+mini_type_is_reference (MonoType *type)
 {
-	if (cfg->generic_sharing_context)
-		type = mini_get_underlying_type (cfg, type);
+	type = mini_type_get_underlying_type (type);
 	return mono_type_is_reference (type);
 }
 
@@ -2707,11 +2691,11 @@ mini_method_get_rgctx (MonoMethod *m)
  * Should be used in place of MONO_TYPE_ISSTRUCT () which can't handle gsharedvt.
  */
 gboolean
-mini_type_is_vtype (MonoCompile *cfg, MonoType *t)
+mini_type_is_vtype (MonoType *t)
 {
-	t = mini_get_underlying_type (cfg, t);
+	t = mini_type_get_underlying_type (t);
 
-	return MONO_TYPE_ISSTRUCT (t) || mini_is_gsharedvt_variable_type (cfg, t);
+	return MONO_TYPE_ISSTRUCT (t) || mini_is_gsharedvt_variable_type (t);
 }
 
 gboolean
@@ -2724,9 +2708,9 @@ mini_class_is_generic_sharable (MonoClass *klass)
 }
 
 gboolean
-mini_is_gsharedvt_variable_klass (MonoCompile *cfg, MonoClass *klass)
+mini_is_gsharedvt_variable_klass (MonoClass *klass)
 {
-	return mini_is_gsharedvt_variable_type (cfg, &klass->byval_arg);
+	return mini_is_gsharedvt_variable_type (&klass->byval_arg);
 }
 
 gboolean
@@ -3081,31 +3065,25 @@ mini_get_rgctx_entry_slot (MonoJumpInfoRgctxEntry *entry)
 #else
 
 gboolean
-mini_is_gsharedvt_type_gsctx (MonoGenericSharingContext *gsctx, MonoType *t)
+mini_is_gsharedvt_type (MonoType *t)
 {
 	return FALSE;
 }
 
 gboolean
-mini_is_gsharedvt_type (MonoCompile *cfg, MonoType *t)
+mini_is_gsharedvt_klass (MonoClass *klass)
 {
 	return FALSE;
 }
 
 gboolean
-mini_is_gsharedvt_klass (MonoCompile *cfg, MonoClass *klass)
+mini_is_gsharedvt_signature (MonoMethodSignature *sig)
 {
 	return FALSE;
 }
 
 gboolean
-mini_is_gsharedvt_signature (MonoCompile *cfg, MonoMethodSignature *sig)
-{
-	return FALSE;
-}
-
-gboolean
-mini_is_gsharedvt_variable_type (MonoCompile *cfg, MonoType *t)
+mini_is_gsharedvt_variable_type (MonoType *t)
 {
 	return FALSE;
 }

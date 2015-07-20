@@ -2505,7 +2505,7 @@ mono_opcode_to_type (int opcode, int cmp_opcode)
 gboolean
 mono_is_regsize_var (MonoType *t)
 {
-	t = mini_type_get_underlying_type (NULL, t);
+	t = mini_get_underlying_type (t);
 	switch (t->type) {
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
