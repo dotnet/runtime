@@ -55,12 +55,12 @@ namespace System.Threading
         //Specifying if locked can be reacquired recursively.
         private bool _fIsReentrant;
 
-        // Lock specifiation for myLock:  This lock protects exactly the local fields associted
-        // instance of ReaderWriterLockSlim.  It does NOT protect the memory associted with the
+        // Lock specification for myLock:  This lock protects exactly the local fields associated with this
+        // instance of ReaderWriterLockSlim.  It does NOT protect the memory associated with 
         // the events that hang off this lock (eg writeEvent, readEvent upgradeEvent).
         private int _myLock;
 
-        //The variables controlling spinning behaviior of Mylock(which is a spin-lock)
+        //The variables controlling spinning behavior of Mylock(which is a spin-lock)
 
         private const int LockSpinCycles = 20;
         private const int LockSpinCount = 10;
@@ -105,11 +105,11 @@ namespace System.Threading
         //Note:
         //The Uint is divided as follows:
         //
-        //Writer-Owned  Waiting-Writers   Waiting Upgraders     Num-REaders
+        //Writer-Owned  Waiting-Writers   Waiting Upgraders     Num-Readers
         //    31          30                 29                 28.......0
         //
         //Dividing the uint, allows to vastly simplify logic for checking if a 
-        //reader should go in etc. Setting the writer bit, will automatically
+        //reader should go in etc. Setting the writer bit will automatically
         //make the value of the uint much larger than the max num of readers 
         //allowed, thus causing the check for max_readers to fail. 
 
@@ -117,7 +117,7 @@ namespace System.Threading
         private const uint WAITING_WRITERS = 0x40000000;
         private const uint WAITING_UPGRADER = 0x20000000;
 
-        //The max readers is actually one less then it's theoretical max.
+        //The max readers is actually one less then its theoretical max.
         //This is done in order to prevent reader count overflows. If the reader
         //count reaches max, other readers will wait.
         private const uint MAX_READER = 0x10000000 - 2;
@@ -301,7 +301,7 @@ namespace System.Threading
                 //Check if the reader lock is already acquired. Note, we could
                 //check the presence of a reader by not allocating rwc (But that 
                 //would lead to two lookups in the common case. It's better to keep
-                //a count in the struucture).
+                //a count in the structure).
                 if (lrwc.readercount > 0)
                 {
                     ExitMyLock();
@@ -919,7 +919,7 @@ namespace System.Threading
                 if (_numWriteUpgradeWaiters == 0)
                     ClearUpgraderWaiting();
 
-                if (!waitSuccessful)        // We may also be aboutto throw for some reason.  Exit myLock. 
+                if (!waitSuccessful)        // We may also be about to throw for some reason.  Exit myLock. 
                     ExitMyLock();
             }
             return waitSuccessful;
