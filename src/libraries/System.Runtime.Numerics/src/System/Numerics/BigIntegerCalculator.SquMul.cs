@@ -26,7 +26,7 @@ namespace System.Numerics
 
         // Mutable for unit testing...
         private static int SquareThreshold = 32;
-        private static int AllocationThreshold = 4096;
+        private static int AllocationThreshold = 256;
 
         [SecuritySafeCritical]
         private unsafe static void Square(uint* value, int valueLength,
