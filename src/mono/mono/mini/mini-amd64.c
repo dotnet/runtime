@@ -7957,7 +7957,7 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 		return NULL;
 
 	/* FIXME: Support more cases */
-	if (MONO_TYPE_ISSTRUCT (mini_replace_type (sig->ret)))
+	if (MONO_TYPE_ISSTRUCT (mini_get_underlying_type (sig->ret)))
 		return NULL;
 
 	if (has_target) {

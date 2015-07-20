@@ -4461,18 +4461,6 @@ mono_jumptable_get_entry (guint8 *code_ptr)
 #endif
 
 /*
- * mini_replace_type:
- *
- * Replace the type used in the metadata stream with what the JIT will actually use during compilation.
-*/
-MonoType*
-mini_replace_type (MonoType *type)
-{
-	type = mono_type_get_underlying_type (type);
-	return mini_native_type_replace_type (type);
-}
-
-/*
  * mini_get_underlying_type:
  *
  *   Return the type the JIT will use during compilation.

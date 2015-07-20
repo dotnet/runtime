@@ -1244,7 +1244,7 @@ collect_fp_stack_space (MonoMethodSignature *sig, int start_arg, int *fp_arg_set
 	MonoType *t;
 
 	for (; start_arg < sig->param_count; ++start_arg) {
-		t = mini_replace_type (sig->params [start_arg]);
+		t = mini_get_underlying_type (sig->params [start_arg]);
 		if (!t->byref && t->type == MONO_TYPE_R8) {
 			fp_space += sizeof (double);
 			*fp_arg_setup = start_arg;

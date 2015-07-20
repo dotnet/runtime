@@ -2815,7 +2815,7 @@ dyn_call_supported (CallInfo *cinfo, MonoMethodSignature *sig)
 		if (t->byref)
 			continue;
 
-		t = mini_replace_type (t);
+		t = mini_get_underlying_type (t);
 
 		switch (t->type) {
 		case MONO_TYPE_R4:

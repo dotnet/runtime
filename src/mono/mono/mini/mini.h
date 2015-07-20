@@ -2844,7 +2844,6 @@ void mono_generic_sharing_cleanup (void);
 MonoClass* mini_class_get_container_class (MonoClass *class);
 MonoGenericContext* mini_class_get_context (MonoClass *class);
 
-MonoType* mini_replace_type (MonoType *type) MONO_LLVM_INTERNAL;
 MonoType* mini_get_underlying_type (MonoType *type) MONO_LLVM_INTERNAL;
 MonoType* mini_type_get_underlying_type (MonoType *type);
 MonoMethod* mini_get_shared_method (MonoMethod *method);
