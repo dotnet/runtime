@@ -74,6 +74,8 @@ To build CoreCLR, run `build.cmd` from the root of the coreclr repository. This 
 
 **Note:** for building using Visual Studio 2015 the parameter `vs2015` should be added to the `build` command.
 
+**Note:** To avoid building the tests, pass the 'skiptestbuild' option to build.
+
 **build /?** will list supported parameters.
 
 Check the build output.
