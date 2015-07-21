@@ -14,7 +14,7 @@ namespace System.IO.FileSystem.Tests
 
         public IEnumerable<Tuple<SetTime, GetTime, DateTimeKind>> TimeFunctions()
         {
-            if (Interop.IsWindows | Interop.IsOSX)
+            if (IOInputs.SupportsCreationTime)
             {
                 yield return Tuple.Create<SetTime, GetTime, DateTimeKind>(
                     ((path, time) => File.SetCreationTime(path, time)),
@@ -81,18 +81,16 @@ namespace System.IO.FileSystem.Tests
         public void CreationSetsAllTimes()
         {
             string path = GetTestFilePath();
-            long beforeTime = DateTime.Now.AddSeconds(-3).Ticks;
-            long utcBeforeTime = DateTime.UtcNow.AddSeconds(-3).Ticks;
+            long beforeTime = DateTime.UtcNow.AddSeconds(-3).Ticks;
 
             FileInfo testFile = new FileInfo(GetTestFilePath());
             testFile.Create().Dispose();
 
-            long afterTime = DateTime.Now.AddSeconds(3).Ticks;
-            long utcAfterTime = DateTime.UtcNow.AddSeconds(3).Ticks;
+            long afterTime = DateTime.UtcNow.AddSeconds(3).Ticks;
 
             Assert.All(TimeFunctions(), (tuple) =>
             {
-                Assert.InRange(tuple.Item2(testFile.FullName).Ticks, tuple.Item3 == DateTimeKind.Local ? beforeTime : utcBeforeTime, tuple.Item3 == DateTimeKind.Local ? afterTime : utcAfterTime);
+                Assert.InRange(tuple.Item2(testFile.FullName).ToUniversalTime().Ticks, beforeTime, afterTime);
             });
         }
 
@@ -108,7 +106,7 @@ namespace System.IO.FileSystem.Tests
             Assert.Equal(DateTime.FromFileTime(0).Ticks, new FileInfo(path).LastAccessTime.Ticks);
             Assert.Equal(DateTime.FromFileTime(0).Ticks, File.GetLastWriteTime(path).Ticks);
             Assert.Equal(DateTime.FromFileTime(0).Ticks, new FileInfo(path).LastWriteTime.Ticks);
-            if (Interop.IsWindows | Interop.IsOSX)
+            if (IOInputs.SupportsCreationTime)
             {
                 Assert.Equal(DateTime.FromFileTime(0).Ticks, File.GetCreationTime(path).Ticks);
                 Assert.Equal(DateTime.FromFileTime(0).Ticks, new FileInfo(path).CreationTime.Ticks);
@@ -119,10 +117,40 @@ namespace System.IO.FileSystem.Tests
             Assert.Equal(DateTime.FromFileTimeUtc(0).Ticks, new FileInfo(path).LastAccessTimeUtc.Ticks);
             Assert.Equal(DateTime.FromFileTimeUtc(0).Ticks, File.GetLastWriteTimeUtc(path).Ticks);
             Assert.Equal(DateTime.FromFileTimeUtc(0).Ticks, new FileInfo(path).LastWriteTimeUtc.Ticks);
-            if (Interop.IsWindows | Interop.IsOSX)
+            if (IOInputs.SupportsCreationTime)
             {
                 Assert.Equal(DateTime.FromFileTimeUtc(0).Ticks, File.GetCreationTimeUtc(path).Ticks);
                 Assert.Equal(DateTime.FromFileTimeUtc(0).Ticks, new FileInfo(path).CreationTimeUtc.Ticks);
+            }
+        }
+
+        [OuterLoop]
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void UnixFileDoesntExist_Throws()
+        {
+            string path = GetTestFilePath();
+
+            //non-utc
+            Assert.Throws<FileNotFoundException>(() => File.GetLastAccessTime(path));
+            Assert.Throws<FileNotFoundException>(() => new FileInfo(path).LastAccessTime);
+            Assert.Throws<FileNotFoundException>(() => File.GetLastWriteTime(path));
+            Assert.Throws<FileNotFoundException>(() => new FileInfo(path).LastWriteTime);
+            if (IOInputs.SupportsCreationTime)
+            {
+                Assert.Throws<FileNotFoundException>(() => File.GetCreationTime(path));
+                Assert.Throws<FileNotFoundException>(() => new FileInfo(path).CreationTime);
+            }
+
+            //utc
+            Assert.Throws<FileNotFoundException>(() => File.GetLastAccessTimeUtc(path));
+            Assert.Throws<FileNotFoundException>(() => new FileInfo(path).LastAccessTimeUtc);
+            Assert.Throws<FileNotFoundException>(() => File.GetLastWriteTimeUtc(path));
+            Assert.Throws<FileNotFoundException>(() => new FileInfo(path).LastWriteTimeUtc);
+            if (IOInputs.SupportsCreationTime)
+            {
+                Assert.Throws<FileNotFoundException>(() => File.GetCreationTimeUtc(path));
+                Assert.Throws<FileNotFoundException>(() => new FileInfo(path).CreationTimeUtc);
             }
         }
     }

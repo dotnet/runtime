@@ -14,7 +14,7 @@ namespace System.IO.FileSystem.Tests
 
         public IEnumerable<Tuple<SetTime, GetTime, DateTimeKind>> TimeFunctions()
         {
-            if (Interop.IsWindows | Interop.IsOSX)
+            if (IOInputs.SupportsCreationTime)
             {
                 yield return Tuple.Create<SetTime, GetTime, DateTimeKind>(
                     ((testDir, time) => {testDir.CreationTime = time; }), 
@@ -60,18 +60,16 @@ namespace System.IO.FileSystem.Tests
         public void CreationSetsAllTimes()
         {
             string path = GetTestFilePath();
-            long beforeTime = DateTime.Now.AddSeconds(-3).Ticks;
-            long utcBeforeTime = DateTime.UtcNow.AddSeconds(-3).Ticks;
+            long beforeTime = DateTime.UtcNow.AddSeconds(-3).Ticks;
 
             DirectoryInfo testDirectory = new DirectoryInfo(GetTestFilePath());
             testDirectory.Create();
 
-            long afterTime = DateTime.Now.AddSeconds(3).Ticks;
-            long utcAfterTime = DateTime.UtcNow.AddSeconds(3).Ticks;
+            long afterTime = DateTime.UtcNow.AddSeconds(3).Ticks;
 
             Assert.All(TimeFunctions(), (tuple) =>
             {
-                Assert.InRange(tuple.Item2(testDirectory).Ticks, tuple.Item3 == DateTimeKind.Local ? beforeTime : utcBeforeTime, tuple.Item3 == DateTimeKind.Local ? afterTime : utcAfterTime);
+                Assert.InRange(tuple.Item2(testDirectory).ToUniversalTime().Ticks, beforeTime, afterTime);
             });
         }
     }
