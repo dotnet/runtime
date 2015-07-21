@@ -29,10 +29,10 @@ clean()
     echo Cleaning previous output for the selected configuration
     rm -rf "$__BinDir"
     rm -rf "$__IntermediatesDir"
-	
+    
     rm -rf "$__TestWorkingDir"
     rm -rf "$__TestIntermediatesDir"
-	
+    
     rm -rf "$__LogsDir/*_$__BuildOS__$__BuildArch__$__BuildType.*"
 }
 
@@ -47,7 +47,6 @@ check_prereqs()
     
     # Check for clang
     hash clang-$__ClangMajorVersion.$__ClangMinorVersion 2>/dev/null ||  hash clang$__ClangMajorVersion$__ClangMinorVersion 2>/dev/null ||  hash clang 2>/dev/null || { echo >&2 "Please install clang before running this script"; exit 1; }
-   
 }
 
 build_coreclr()
@@ -72,9 +71,9 @@ build_coreclr()
     # Other techniques such as `nproc` only get the number of
     # processors available to a single process.
     if [ `uname` = "FreeBSD" ]; then
-	NumProc=`sysctl hw.ncpu | awk '{ print $2+1 }'`
+        NumProc=`sysctl hw.ncpu | awk '{ print $2+1 }'`
     else
-	NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
+        NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
     fi
     
     # Build CoreCLR
@@ -150,40 +149,40 @@ for i in "$@"
         lowerI="$(echo $i | awk '{print tolower($0)}')"
         case $lowerI in
         -?|-h|--help)
-        usage
-        exit 1
-        ;;
+            usage
+            exit 1
+            ;;
         x64)
-        __BuildArch=x64
-        __MSBuildBuildArch=x64
-        ;;
+            __BuildArch=x64
+            __MSBuildBuildArch=x64
+            ;;
         debug)
-        __BuildType=Debug
-        ;;
+            __BuildType=Debug
+            ;;
         release)
-        __BuildType=Release
-        __CMakeArgs=RELEASE
-        ;;
+            __BuildType=Release
+            __CMakeArgs=RELEASE
+            ;;
         clean)
-        __CleanBuild=1
-        ;;
+            __CleanBuild=1
+            ;;
         verbose)
-        __VerboseBuild=1
-        ;;
+            __VerboseBuild=1
+            ;;
         clang3.5)
-        __ClangMajorVersion=3
-        __ClangMinorVersion=5
-        ;;
+            __ClangMajorVersion=3
+            __ClangMinorVersion=5
+            ;;
         clang3.6)
-        __ClangMajorVersion=3
-        __ClangMinorVersion=6
-        ;;
+            __ClangMajorVersion=3
+            __ClangMinorVersion=6
+            ;;
         clang3.7)
-        __ClangMajorVersion=3
-        __ClangMinorVersion=7
-        ;;
+            __ClangMajorVersion=3
+            __ClangMinorVersion=7
+            ;;
         *)
-        __UnprocessedBuildArgs="$__UnprocessedBuildArgs $i"
+          __UnprocessedBuildArgs="$__UnprocessedBuildArgs $i"
     esac
 done
 
@@ -206,7 +205,7 @@ fi
 
 # Configure environment if we are doing a verbose build
 if [ $__VerboseBuild == 1 ]; then
-	export VERBOSE=1
+    export VERBOSE=1
 fi
 
 # Make the directories necessary for build if they don't exist
