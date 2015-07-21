@@ -7,7 +7,7 @@ if [ $# -lt 3 -o $# -gt 4 ]
 then
   echo "Usage..."
   echo "gen-buildsys-clang.sh <path to top level CMakeLists.txt> <ClangMajorVersion> <ClangMinorVersion> [build flavor]"
-  echo "Specify the path to the top level CMake file - <ProjectK>/src/NDP"
+  echo "Specify the path to the top level CMake file - <corefx>/src/Native"
   echo "Specify the clang version to use, split into major and minor version"
   echo "Optionally specify the build configuration (flavor.) Defaults to DEBUG." 
   exit 1
@@ -104,7 +104,6 @@ if [[ -n "$LLDB_INCLUDE_DIR" ]]; then
 fi
 
 cmake \
-  "-DCMAKE_USER_MAKE_RULES_OVERRIDE=$1/src/pal/tools/clang-compiler-override.txt" \
   "-DCMAKE_AR=$llvm_ar" \
   "-DCMAKE_LINKER=$llvm_link" \
   "-DCMAKE_NM=$llvm_nm" \
