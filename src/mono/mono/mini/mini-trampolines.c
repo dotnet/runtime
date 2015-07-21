@@ -343,18 +343,15 @@ mini_add_method_trampoline (MonoMethod *m, gpointer compiled_method, gboolean ad
 	if (ji)
 		jmethod = jinfo_get_method (ji);
 	if (callee_gsharedvt && mini_is_gsharedvt_variable_signature (mono_method_signature (jmethod))) {
-		MonoGenericSharingContext *gsctx;
 		MonoMethodSignature *sig, *gsig;
 
 		/* Here m is a generic instance, while ji->method is the gsharedvt method implementing it */
 
 		/* Call from normal/gshared code to gsharedvt code with variable signature */
-		gsctx = mono_jit_info_get_generic_sharing_context (ji);
-
 		sig = mono_method_signature (m);
 		gsig = mono_method_signature (jmethod);
 
-		addr = mini_get_gsharedvt_wrapper (TRUE, addr, sig, gsig, gsctx, -1, FALSE);
+		addr = mini_get_gsharedvt_wrapper (TRUE, addr, sig, gsig, -1, FALSE);
 
 		//printf ("IN: %s\n", mono_method_full_name (m, TRUE));
 	}

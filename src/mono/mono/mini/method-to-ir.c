@@ -323,7 +323,7 @@ handle_enum:
 		goto handle_enum;
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		g_assert (cfg->generic_sharing_context);
+		g_assert (cfg->gshared);
 		if (mini_type_var_is_vt (type))
 			return OP_VMOVE;
 		else
@@ -795,7 +795,7 @@ handle_enum:
 		goto handle_enum;
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		g_assert (cfg->generic_sharing_context);
+		g_assert (cfg->gshared);
 		if (mini_is_gsharedvt_type (type)) {
 			g_assert (cfg->gsharedvt);
 			inst->type = STACK_VTYPE;
@@ -1248,7 +1248,7 @@ mono_get_got_var (MonoCompile *cfg)
 static MonoInst *
 mono_get_vtable_var (MonoCompile *cfg)
 {
-	g_assert (cfg->generic_sharing_context);
+	g_assert (cfg->gshared);
 
 	if (!cfg->rgctx_var) {
 		cfg->rgctx_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
@@ -2114,7 +2114,7 @@ emit_instrumentation_call (MonoCompile *cfg, void *func)
 }
 
 static int
-ret_type_to_call_opcode (MonoCompile *cfg, MonoType *type, int calli, int virt, MonoGenericSharingContext *gsctx)
+ret_type_to_call_opcode (MonoCompile *cfg, MonoType *type, int calli, int virt)
 {
 handle_enum:
 	type = mini_get_underlying_type (type);
@@ -2277,7 +2277,7 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 		}
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		g_assert (cfg->generic_sharing_context);
+		g_assert (cfg->gshared);
 		if (mini_type_var_is_vt (simple_type)) {
 			if (arg->type != STACK_VTYPE)
 				return 1;
@@ -2473,7 +2473,7 @@ mono_patch_info_new (MonoMemPool *mp, int ip, MonoJumpInfoType type, gconstpoint
 static int
 mini_class_check_context_used (MonoCompile *cfg, MonoClass *klass)
 {
-	if (cfg->generic_sharing_context)
+	if (cfg->gshared)
 		return mono_class_check_context_used (klass);
 	else
 		return 0;
@@ -2482,7 +2482,7 @@ mini_class_check_context_used (MonoCompile *cfg, MonoClass *klass)
 static int
 mini_method_check_context_used (MonoCompile *cfg, MonoMethod *method)
 {
-	if (cfg->generic_sharing_context)
+	if (cfg->gshared)
 		return mono_method_check_context_used (method);
 	else
 		return 0;
@@ -2550,7 +2550,7 @@ mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 
 		MONO_INST_NEW_CALL (cfg, call, OP_TAILCALL);
 	} else
-		MONO_INST_NEW_CALL (cfg, call, ret_type_to_call_opcode (cfg, sig->ret, calli, virtual, cfg->generic_sharing_context));
+		MONO_INST_NEW_CALL (cfg, call, ret_type_to_call_opcode (cfg, sig->ret, calli, virtual));
 
 	call->args = args;
 	call->signature = sig;
@@ -2765,7 +2765,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 	if (might_be_remote && context_used) {
 		MonoInst *addr;
 
-		g_assert (cfg->generic_sharing_context);
+		g_assert (cfg->gshared);
 
 		addr = emit_get_rgctx_method (cfg, context_used, method, MONO_RGCTX_INFO_REMOTING_INVOKE_WITH_CHECK);
 
@@ -3233,7 +3233,7 @@ mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *kla
 	MonoInst *memcpy_ins = NULL;
 
 	g_assert (klass);
-	if (cfg->generic_sharing_context)
+	if (cfg->gshared)
 		klass = mono_class_from_mono_type (mini_get_underlying_type (&klass->byval_arg));
 
 	/*
@@ -3367,7 +3367,7 @@ emit_get_rgctx (MonoCompile *cfg, MonoMethod *method, int context_used)
 {
 	MonoInst *this = NULL;
 
-	g_assert (cfg->generic_sharing_context);
+	g_assert (cfg->gshared);
 
 	if (!(method->flags & METHOD_ATTRIBUTE_STATIC) &&
 			!(context_used & MONO_GENERIC_CONTEXT_USED_METHOD) &&
@@ -5143,7 +5143,7 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 
 	if (cfg->disable_inline)
 		return FALSE;
-	if (cfg->generic_sharing_context)
+	if (cfg->gshared)
 		return FALSE;
 
 	if (cfg->inline_depth > 10)
@@ -5328,7 +5328,7 @@ mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 		MonoInst *rgctx_ins;
 
 		/* gsharedvt */
-		g_assert (cfg->generic_sharing_context);
+		g_assert (cfg->gshared);
 		context_used = mini_class_check_context_used (cfg, klass);
 		g_assert (context_used);
 		rgctx_ins = emit_get_gsharedvt_info_klass (cfg, klass, MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE);
@@ -7213,7 +7213,7 @@ mini_get_method (MonoCompile *cfg, MonoMethod *m, guint32 token, MonoClass *klas
 {
 	MonoMethod *method = mini_get_method_allow_open (m, token, klass, context);
 
-	if (method && cfg && !cfg->generic_sharing_context && mono_class_is_open_constructed_type (&method->klass->byval_arg))
+	if (method && cfg && !cfg->gshared && mono_class_is_open_constructed_type (&method->klass->byval_arg))
 		return NULL;
 
 	return method;
@@ -7832,7 +7832,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		generic_context = &generic_container->context;
 	cfg->generic_context = generic_context;
 
-	if (!cfg->generic_sharing_context)
+	if (!cfg->gshared)
 		g_assert (!sig->has_type_parameters);
 
 	if (sig->generic_param_count && method->wrapper_type == MONO_WRAPPER_NONE) {
@@ -7976,7 +7976,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if (clause->flags != MONO_EXCEPTION_CLAUSE_FILTER &&
 					clause->data.catch_class &&
-					cfg->generic_sharing_context &&
+					cfg->gshared &&
 					mono_class_check_context_used (clause->data.catch_class)) {
 				/*
 				 * In shared generic code with catch
@@ -8117,7 +8117,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	/* We force the vtable variable here for all shared methods
 	   for the possibility that they might show up in a stack
 	   trace where their exact instantiation is needed. */
-	if (cfg->generic_sharing_context && method == cfg->method) {
+	if (cfg->gshared && method == cfg->method) {
 		if ((method->flags & METHOD_ATTRIBUTE_STATIC) ||
 				mini_method_get_context (method)->method_inst ||
 				method->klass->valuetype) {
@@ -8577,7 +8577,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (!cmethod || mono_loader_get_last_error ())
 				LOAD_ERROR;
  
-			if (cfg->generic_sharing_context && mono_method_check_context_used (cmethod))
+			if (cfg->gshared && mono_method_check_context_used (cmethod))
 				GENERIC_SHARING_FAILURE (CEE_JMP);
 
 			emit_instrumentation_call (cfg, mono_profiler_method_leave);
@@ -8757,7 +8757,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			cil_method = cmethod;
 				
 			if (constrained_class) {
-				if ((constrained_class->byval_arg.type == MONO_TYPE_VAR || constrained_class->byval_arg.type == MONO_TYPE_MVAR) && cfg->generic_sharing_context) {
+				if ((constrained_class->byval_arg.type == MONO_TYPE_VAR || constrained_class->byval_arg.type == MONO_TYPE_MVAR) && cfg->gshared) {
 					if (!mini_is_gsharedvt_klass (constrained_class)) {
 						g_assert (!cmethod->klass->valuetype);
 						if (!mini_type_is_reference (&constrained_class->byval_arg))
@@ -8770,7 +8770,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						printf ("DM Constrained call to %s\n", mono_type_get_full_name (constrained_class));
 					if (!((constrained_class->byval_arg.type == MONO_TYPE_VAR ||
 						   constrained_class->byval_arg.type == MONO_TYPE_MVAR) &&
-						  cfg->generic_sharing_context)) {
+						  cfg->gshared)) {
 						cmethod = mono_get_method_constrained_with_method (image, cil_method, constrained_class, generic_context, &cfg->error);
 						CHECK_CFG_ERROR;
 					}
@@ -8778,7 +8778,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					if (cfg->verbose_level > 2)
 						printf ("Constrained call to %s\n", mono_type_get_full_name (constrained_class));
 
-					if ((constrained_class->byval_arg.type == MONO_TYPE_VAR || constrained_class->byval_arg.type == MONO_TYPE_MVAR) && cfg->generic_sharing_context) {
+					if ((constrained_class->byval_arg.type == MONO_TYPE_VAR || constrained_class->byval_arg.type == MONO_TYPE_MVAR) && cfg->gshared) {
 						/* 
 						 * This is needed since get_method_constrained can't find 
 						 * the method in klass representing a type var.
@@ -8865,10 +8865,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			n = fsig->param_count + fsig->hasthis;
 
-			if (!cfg->generic_sharing_context && cmethod->klass->generic_container)
+			if (!cfg->gshared && cmethod->klass->generic_container)
 				UNVERIFIED;
 
-			if (!cfg->generic_sharing_context)
+			if (!cfg->gshared)
 				g_assert (!mono_method_check_context_used (cmethod));
 
 			CHECK_STACK (n);
@@ -9033,14 +9033,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			 * If the callee is a shared method, then its static cctor
 			 * might not get called after the call was patched.
 			 */
-			if (cfg->generic_sharing_context && cmethod->klass != method->klass && cmethod->klass->generic_class && mono_method_is_generic_sharable (cmethod, TRUE) && mono_class_needs_cctor_run (cmethod->klass, method)) {
+			if (cfg->gshared && cmethod->klass != method->klass && cmethod->klass->generic_class && mono_method_is_generic_sharable (cmethod, TRUE) && mono_class_needs_cctor_run (cmethod->klass, method)) {
 				emit_class_init (cfg, cmethod->klass);
 				CHECK_TYPELOAD (cmethod->klass);
 			}
 
 			check_method_sharing (cfg, cmethod, &pass_vtable, &pass_mrgctx);
 
-			if (cfg->generic_sharing_context) {
+			if (cfg->gshared) {
 				MonoGenericContext *cmethod_context = mono_method_get_context (cmethod);
 
 				context_used = mini_method_check_context_used (cfg, cmethod);
@@ -9327,7 +9327,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 !(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL))) {
 				INLINE_FAILURE ("gshared");
 
-				g_assert (cfg->generic_sharing_context && cmethod);
+				g_assert (cfg->gshared && cmethod);
 				g_assert (!addr);
 
 				/*
@@ -9420,7 +9420,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* FIXME: runtime generic context pointer for jumps? */
 			/* FIXME: handle this for generic sharing eventually */
 			if ((ins_flag & MONO_INST_TAILCALL) &&
-				!vtable_arg && !cfg->generic_sharing_context && is_supported_tail_call (cfg, method, cmethod, fsig, call_opcode))
+				!vtable_arg && !cfg->gshared && is_supported_tail_call (cfg, method, cmethod, fsig, call_opcode))
 				supported_tail_call = TRUE;
 
 			if (supported_tail_call) {
@@ -10337,7 +10337,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (mono_security_core_clr_enabled ())
 				ensure_method_is_allowed_to_call_method (cfg, method, cmethod);
 
-			if (cfg->generic_sharing_context && cmethod && cmethod->klass != method->klass && cmethod->klass->generic_class && mono_method_is_generic_sharable (cmethod, TRUE) && mono_class_needs_cctor_run (cmethod->klass, method)) {
+			if (cfg->gshared && cmethod && cmethod->klass != method->klass && cmethod->klass->generic_class && mono_method_is_generic_sharable (cmethod, TRUE) && mono_class_needs_cctor_run (cmethod->klass, method)) {
 				emit_class_init (cfg, cmethod->klass);
 				CHECK_TYPELOAD (cmethod->klass);
 			}
@@ -11711,7 +11711,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (!handle)
 				LOAD_ERROR;
 			mono_class_init (handle_class);
-			if (cfg->generic_sharing_context) {
+			if (cfg->gshared) {
 				if (mono_metadata_token_table (n) == MONO_TABLE_TYPEDEF ||
 						mono_metadata_token_table (n) == MONO_TABLE_TYPEREF) {
 					/* This case handles ldtoken

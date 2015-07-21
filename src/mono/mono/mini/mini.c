@@ -523,7 +523,7 @@ mono_type_to_load_membase (MonoCompile *cfg, MonoType *type)
 		break;
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		g_assert (cfg->generic_sharing_context);
+		g_assert (cfg->gshared);
 		g_assert (mini_type_var_is_vt (type));
 		return OP_LOADV_MEMBASE;
 	default:
@@ -536,7 +536,7 @@ static guint
 mini_type_to_ldind (MonoCompile* cfg, MonoType *type)
 {
 	type = mini_get_underlying_type (type);
-	if (cfg->generic_sharing_context && !type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
+	if (cfg->gshared && !type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
 		g_assert (mini_type_var_is_vt (type));
 		return CEE_LDOBJ;
 	}
@@ -549,7 +549,7 @@ guint
 mini_type_to_stind (MonoCompile* cfg, MonoType *type)
 {
 	type = mini_get_underlying_type (type);
-	if (cfg->generic_sharing_context && !type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
+	if (cfg->gshared && !type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
 		g_assert (mini_type_var_is_vt (type));
 		return CEE_STOBJ;
 	}
@@ -2529,7 +2529,7 @@ mono_codegen (MonoCompile *cfg)
 			is_generic = TRUE;
 		}
 
-		if (cfg->generic_sharing_context)
+		if (cfg->gshared)
 			g_assert (is_generic);
 	}
 
@@ -2671,7 +2671,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 	g_assert (method_to_compile == cfg->method);
 	header = cfg->header;
 
-	if (cfg->generic_sharing_context)
+	if (cfg->gshared)
 		flags |= JIT_INFO_HAS_GENERIC_JIT_INFO;
 
 	if (cfg->arch_eh_jit_info) {
@@ -2728,7 +2728,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 	if (COMPILE_LLVM (cfg))
 		jinfo->from_llvm = TRUE;
 
-	if (cfg->generic_sharing_context) {
+	if (cfg->gshared) {
 		MonoInst *inst;
 		MonoGenericJitInfo *gi;
 		GSList *loclist = NULL;
@@ -3248,7 +3248,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	cfg->check_pinvoke_callconv = debug_options.check_pinvoke_callconv;
 	cfg->disable_direct_icalls = disable_direct_icalls;
 	if (try_generic_shared)
-		cfg->generic_sharing_context = (MonoGenericSharingContext*)&cfg->gsctx;
+		cfg->gshared = TRUE;
 	cfg->compile_llvm = try_llvm;
 	cfg->token_info_hash = g_hash_table_new (NULL, NULL);
 	if (cfg->compile_aot)
@@ -3268,7 +3268,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		return cfg;
 	}
 
-	if (cfg->generic_sharing_context && (gsharedvt_method || mini_is_gsharedvt_sharable_method (method))) {
+	if (cfg->gshared && (gsharedvt_method || mini_is_gsharedvt_sharable_method (method))) {
 		MonoMethodInflated *inflated;
 		MonoGenericContext *context;
 
@@ -3293,9 +3293,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		cfg->disable_llvm = TRUE;
 	}
 
-	if (cfg->generic_sharing_context) {
+	if (cfg->gshared) {
 		method_to_register = method_to_compile;
-		cfg->gshared = TRUE;
 	} else {
 		g_assert (method == method_to_compile);
 		method_to_register = method;
@@ -3436,13 +3435,13 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		char *method_name;
 
 		method_name = mono_method_full_name (method, TRUE);
-		g_print ("converting %s%s%smethod %s\n", COMPILE_LLVM (cfg) ? "llvm " : "", cfg->gsharedvt ? "gsharedvt " : "", (cfg->generic_sharing_context && !cfg->gsharedvt) ? "gshared " : "", method_name);
+		g_print ("converting %s%s%smethod %s\n", COMPILE_LLVM (cfg) ? "llvm " : "", cfg->gsharedvt ? "gsharedvt " : "", (cfg->gshared && !cfg->gsharedvt) ? "gshared " : "", method_name);
 		/*
 		if (COMPILE_LLVM (cfg))
 			g_print ("converting llvm method %s\n", method_name = mono_method_full_name (method, TRUE));
 		else if (cfg->gsharedvt)
 			g_print ("converting gsharedvt method %s\n", method_name = mono_method_full_name (method_to_compile, TRUE));
-		else if (cfg->generic_sharing_context)
+		else if (cfg->gshared)
 			g_print ("converting shared method %s\n", method_name = mono_method_full_name (method_to_compile, TRUE));
 		else
 			g_print ("converting method %s\n", method_name = mono_method_full_name (method, TRUE));
@@ -4184,7 +4183,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 
 		code = cfg->native_code;
 
-		if (cfg->generic_sharing_context && mono_method_is_generic_sharable (method, FALSE))
+		if (cfg->gshared && mono_method_is_generic_sharable (method, FALSE))
 			mono_stats.generics_shared_methods++;
 		if (cfg->gsharedvt)
 			mono_stats.gsharedvt_methods++;

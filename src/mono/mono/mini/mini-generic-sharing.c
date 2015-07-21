@@ -956,7 +956,6 @@ class_type_info (MonoDomain *domain, MonoClass *class, MonoRgctxInfoType info_ty
 		MonoMethod *method;
 		gpointer addr;
 		MonoJitInfo *ji;
-		MonoGenericContext *ctx;
 
 		if (!mono_class_is_nullable (class))
 			/* This can happen since all the entries in MonoGSharedVtMethodInfo are inflated, even those which are not used */
@@ -974,7 +973,6 @@ class_type_info (MonoDomain *domain, MonoClass *class, MonoRgctxInfoType info_ty
 		if (mini_jit_info_is_gsharedvt (ji))
 			return mono_create_static_rgctx_trampoline (method, addr);
 		else {
-			MonoGenericSharingContext gsctx;
 			MonoMethodSignature *sig, *gsig;
 			MonoMethod *gmethod;
 
@@ -984,10 +982,8 @@ class_type_info (MonoDomain *domain, MonoClass *class, MonoRgctxInfoType info_ty
 			gmethod = mini_get_shared_method_full (method, FALSE, TRUE);
 			sig = mono_method_signature (method);
 			gsig = mono_method_signature (gmethod);
-			ctx = mono_method_get_context (gmethod);
-			mini_init_gsctx (NULL, NULL, ctx, &gsctx);
 
-			addr = mini_get_gsharedvt_wrapper (FALSE, addr, sig, gsig, &gsctx, -1, FALSE);
+			addr = mini_get_gsharedvt_wrapper (FALSE, addr, sig, gsig, -1, FALSE);
 			addr = mono_create_static_rgctx_trampoline (method, addr);
 			return addr;
 		}
@@ -1044,8 +1040,7 @@ tramp_info_equal (gconstpointer a, gconstpointer b)
  *   Return a gsharedvt in/out wrapper for calling ADDR.
  */
 gpointer
-mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig, MonoGenericSharingContext *gsctx,
-							gint32 vcall_offset, gboolean calli)
+mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig, gint32 vcall_offset, gboolean calli)
 {
 	static gboolean inited = FALSE;
 	static int num_trampolines;
@@ -1284,7 +1279,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		/*
 		 * This is an indirect call to the address passed by the caller in the rgctx reg.
 		 */
-		addr = mini_get_gsharedvt_wrapper (FALSE, NULL, sig, gsig, NULL, -1, TRUE);
+		addr = mini_get_gsharedvt_wrapper (FALSE, NULL, sig, gsig, -1, TRUE);
 		return addr;
 	}
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE:
@@ -1350,7 +1345,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 			sig = mono_method_signature (method);
 			gsig = call_sig;
 
-			addr = mini_get_gsharedvt_wrapper (FALSE, addr, sig, gsig, NULL, vcall_offset, FALSE);
+			addr = mini_get_gsharedvt_wrapper (FALSE, addr, sig, gsig, vcall_offset, FALSE);
 #if 0
 			if (virtual)
 				printf ("OUT-VCALL: %s\n", mono_method_full_name (method, TRUE));
@@ -1382,12 +1377,12 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 				sig = mono_method_signature (method);
 				gsig = mono_method_signature (jinfo_get_method (callee_ji)); 
 
-				addr = mini_get_gsharedvt_wrapper (TRUE, callee_ji->code_start, sig, gsig, NULL, -1, FALSE);
+				addr = mini_get_gsharedvt_wrapper (TRUE, callee_ji->code_start, sig, gsig, -1, FALSE);
 
 				sig = mono_method_signature (method);
 				gsig = call_sig;
 
-				addr = mini_get_gsharedvt_wrapper (FALSE, addr, sig, gsig, NULL, -1, FALSE);
+				addr = mini_get_gsharedvt_wrapper (FALSE, addr, sig, gsig, -1, FALSE);
 
 				//printf ("OUT-IN-RGCTX: %s\n", mono_method_full_name (method, TRUE));
 			}
@@ -2408,22 +2403,6 @@ mono_class_generic_sharing_enabled (MonoClass *class)
 		return TRUE;
 	else
 		return FALSE;
-}
-
-/*
- * mono_get_generic_context_from_code:
- *
- *   Return the runtime generic context belonging to the method whose native code
- * contains CODE.
- */
-MonoGenericSharingContext*
-mono_get_generic_context_from_code (guint8 *code)
-{
-	MonoJitInfo *jit_info = mini_jit_info_table_find (mono_domain_get (), (char*)code, NULL);
-
-	g_assert (jit_info);
-
-	return mono_jit_info_get_generic_sharing_context (jit_info);
 }
 
 MonoGenericContext*

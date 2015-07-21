@@ -2167,7 +2167,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		if (!mini_type_is_vtype (sig->params [i]))
 			emit_volatile_store (ctx, cfg->args [i + sig->hasthis]->dreg);
 
-	if (sig->hasthis && !cfg->rgctx_var && cfg->generic_sharing_context) {
+	if (sig->hasthis && !cfg->rgctx_var && cfg->gshared) {
 		LLVMValueRef this_alloc;
 
 		/*

@@ -1465,8 +1465,6 @@ typedef struct {
 	/* The current virtual register number */
 	guint32 next_vreg;
 
-	MonoGenericSharingContext *generic_sharing_context;
-
 	MonoGenericSharingContext gsctx;
 	MonoGenericContext *gsctx_context;
 
@@ -2826,8 +2824,6 @@ mono_is_partially_sharable_inst (MonoGenericInst *inst);
 gboolean
 mini_is_gsharedvt_gparam (MonoType *t);
 
-MonoGenericSharingContext* mono_get_generic_context_from_code (guint8 *code);
-
 MonoGenericContext* mini_method_get_context (MonoMethod *method);
 
 int mono_method_check_context_used (MonoMethod *method);
@@ -2874,7 +2870,7 @@ gboolean mini_is_gsharedvt_sharable_inst (MonoGenericInst *inst);
 gpointer mini_method_get_rgctx (MonoMethod *m);
 void mini_init_gsctx (MonoDomain *domain, MonoMemPool *mp, MonoGenericContext *context, MonoGenericSharingContext *gsctx);
 
-gpointer mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig, MonoGenericSharingContext *gsctx,
+gpointer mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig,
 									 gint32 vcall_offset, gboolean calli);
 
 /* SIMD support */
