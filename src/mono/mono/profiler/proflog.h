@@ -5,7 +5,7 @@
 #define LOG_HEADER_ID 0x4D505A01
 #define LOG_VERSION_MAJOR 0
 #define LOG_VERSION_MINOR 4
-#define LOG_DATA_VERSION 12
+#define LOG_DATA_VERSION 11
 /*
  * Changes in data versions:
  * version 2: added offsets in heap walk
@@ -17,7 +17,13 @@
  * version 9: added MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING
  * version 10: added TYPE_COVERAGE
  * version 11: added thread ID to TYPE_SAMPLE_HIT
- * version 12: added more load/unload events
+               added more load/unload events
+                   unload for class
+                   unload for image
+                   load/unload for appdomain
+                   load/unload for contexts
+                   load/unload/name for assemblies
+               removed TYPE_LOAD_ERR flag (profiler never generated it, now removed from the format itself)
  */
 
 enum {
