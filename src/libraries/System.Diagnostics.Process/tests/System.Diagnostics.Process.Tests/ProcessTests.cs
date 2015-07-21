@@ -361,20 +361,36 @@ namespace System.Diagnostics.ProcessTests
         {
             Assert.True(_process.UserProcessorTime.TotalSeconds >= 0);
             Assert.True(_process.PrivilegedProcessorTime.TotalSeconds >= 0);
-            Assert.True(_process.TotalProcessorTime.TotalSeconds >= 0);
+
+            double processorTimeBeforeSpin = Process.GetCurrentProcess().TotalProcessorTime.TotalSeconds;
+            double processorTimeAtHalfSpin = 0;
+            // Perform loop to occupy cpu, takes less than a second.
+            int i = int.MaxValue / 16;
+            while (i > 0)
+            {
+                i--;
+                if (i == int.MaxValue / 32)
+                    processorTimeAtHalfSpin = Process.GetCurrentProcess().TotalProcessorTime.TotalSeconds;
+            }
+
+            Assert.InRange(processorTimeAtHalfSpin, processorTimeBeforeSpin, Process.GetCurrentProcess().TotalProcessorTime.TotalSeconds);
         }
 
         [Fact]
         public void TestProcessStartTime()
         {
+            DateTime timeBeforeCreatingProcess = DateTime.UtcNow;
             Process p = CreateProcessInfinite();
             try
             {
                 p.Start();
 
-                // Ensure process has been started, should not throw.
-                Process accessProcessFromMachine = Process.GetProcessById(p.Id);
-                Assert.True(p.StartTime.ToUniversalTime() <= DateTime.UtcNow, string.Format("Process StartTime is larger than later time."));
+                // Time in unix, is measured in jiffies, which is incremented by one for every timer interrupt since the boot time.
+                // Thus, because there are HZ timer interrupts in a second, there are HZ jiffies in a second. Hence 1\HZ, will
+                // be the resolution of system timer. The lowest value of HZ on unix is 100, hence the timer resolution is 10 ms.
+                // Allowing for error in 10 ms.
+                long beforeTicks = timeBeforeCreatingProcess.Ticks - new TimeSpan(0, 0, 0, 0, 10).Ticks;
+                Assert.InRange(p.StartTime.ToUniversalTime().Ticks, beforeTicks, DateTime.UtcNow.Ticks);
             }
             finally
             {
@@ -581,15 +597,6 @@ namespace System.Diagnostics.ProcessTests
             }
         }
 
-        [Fact]
-        public void TestThreadCount()
-        {
-            Assert.True(_process.Threads.Count > 0);
-            using (Process p = Process.GetCurrentProcess())
-            {
-                Assert.True(p.Threads.Count > 0);
-            }
-        }
 
         // [Fact] // uncomment for diagnostic purposes to list processes to console
         public void TestDiagnosticsWithConsoleWriteLine()
