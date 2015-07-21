@@ -100,33 +100,6 @@ namespace System.IO.FileSystem.Tests
             Assert.True(Exists(Path.Combine(TestDirectory, GetTestFileName(), "..")));
         }
 
-#if !TEST_WINRT // WinRT cannot access root
-        /*
-        [Fact]
-        [ActiveIssue(1220)] // SetCurrentDirectory
-        public void DotDotAsPath_WhenCurrentDirectoryIsRoot_ReturnsTrue()
-        {
-            string root = Path.GetPathRoot(Directory.GetCurrentDirectory());
-
-            using (CurrentDirectoryContext context = new CurrentDirectoryContext(root))
-            {
-                bool result = Exists("..");
-
-                Assert.True(result);
-            }
-        }
-        */
-#endif
-
-        [Fact]
-        public void DirectoryLongerThanMaxDirectoryAsPath_DoesntThrow()
-        {
-            Assert.All((IOInputs.GetPathsLongerThanMaxDirectory()), (path) =>
-            {
-                Assert.False(Exists(path));
-            });
-        }
-
         [Fact]
         public void DirectoryLongerThanMaxPathAsPath_DoesntThrow()
         {
@@ -139,6 +112,16 @@ namespace System.IO.FileSystem.Tests
         #endregion
 
         #region PlatformSpecific
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void DirectoryLongerThanMaxDirectoryAsPath_DoesntThrow()
+        {
+            Assert.All((IOInputs.GetPathsLongerThanMaxDirectory()), (path) =>
+            {
+                Assert.False(Exists(path));
+            });
+        }
 
         [Fact]
         [PlatformSpecific(PlatformID.Windows)] // Unix equivalent tested already in CreateDirectory
@@ -184,7 +167,7 @@ namespace System.IO.FileSystem.Tests
 
         [Fact]
         [PlatformSpecific(PlatformID.Windows)] // alternate data stream
-        public void PathWithAlternativeDataStreams_ReturnsFalse()
+        public void PathWithAlternateDataStreams_ReturnsFalse()
         {
             Assert.All((IOInputs.GetPathsWithAlternativeDataStreams()), (component) =>
             {

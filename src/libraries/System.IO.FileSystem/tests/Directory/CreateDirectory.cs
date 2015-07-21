@@ -63,7 +63,7 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
-        public void RootOath()
+        public void RootPath()
         {
             string dirName = Path.GetPathRoot(Directory.GetCurrentDirectory());
             DirectoryInfo dir = Create(dirName);
@@ -219,13 +219,9 @@ namespace System.IO.FileSystem.Tests
         {
             DirectoryInfo testDir = Create(GetTestFilePath());
             PathInfo path = IOServices.GetPath(testDir.FullName, 257, IOInputs.MaxComponent);
-            Assert.All(path.SubPaths, (subpath) =>
-            {
-                DirectoryInfo result = Create(subpath);
-
-                Assert.Equal(subpath, result.FullName);
-                Assert.True(Directory.Exists(result.FullName));
-            });
+            DirectoryInfo result = Create(path.FullPath);
+            Assert.Equal(path.FullPath, result.FullName);
+            Assert.True(Directory.Exists(result.FullName));
         }
 
         [Fact]
@@ -234,10 +230,7 @@ namespace System.IO.FileSystem.Tests
         {
             DirectoryInfo testDir = Create(GetTestFilePath());
             PathInfo path = IOServices.GetPath(testDir.FullName, 257, IOInputs.MaxComponent);
-            Assert.All(path.SubPaths, (subpath) =>
-            {
-                Assert.Throws<PathTooLongException>(() => Create(subpath));
-            });
+            Assert.Throws<PathTooLongException>(() => Create(path.FullPath));
         }
 
         [Fact]
@@ -301,7 +294,7 @@ namespace System.IO.FileSystem.Tests
 
         [Fact]
         [PlatformSpecific(PlatformID.Windows)] // alternate data streams
-        public void PathWithAlternativeDataStreams_ThrowsNotSupportedException()
+        public void PathWithAlternateDataStreams_ThrowsNotSupportedException()
         {
             var paths = IOInputs.GetPathsWithAlternativeDataStreams();
             Assert.All(paths, (path) =>
@@ -311,7 +304,6 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
-        [OuterLoop]
         [PlatformSpecific(PlatformID.Windows)] // device name prefixes
         public void PathWithReservedDeviceNameAsPath_ThrowsDirectoryNotFoundException()
         {   // Throws DirectoryNotFoundException, when the behavior really should be an invalid path

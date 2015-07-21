@@ -19,12 +19,15 @@ namespace System.IO.FileSystem.Tests
         #region UniversalTests
 
         [Fact]
-        public void ShouldBeAbleToDeleteHiddenDirectory()
+        public void NullParameters()
         {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            testDir.Attributes = FileAttributes.Hidden;
-            Delete(testDir.FullName);
-            Assert.False(testDir.Exists);
+            Assert.Throws<ArgumentNullException>(() => Delete(null));
+        }
+
+        [Fact]
+        public void InvalidParameters()
+        {
+            Assert.Throws<ArgumentException>(() => Delete(string.Empty));
         }
 
         [Fact]
@@ -108,8 +111,28 @@ namespace System.IO.FileSystem.Tests
             Assert.False(testDir.Exists);
         }
 
-        #endregion
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void WindowsShouldBeAbleToDeleteHiddenDirectory()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            testDir.Attributes = FileAttributes.Hidden;
+            Delete(testDir.FullName);
+            Assert.False(testDir.Exists);
+        }
 
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void UnixShouldBeAbleToDeleteHiddenDirectory()
+        {
+            string testDir = "." + GetTestFileName();
+            Directory.CreateDirectory(Path.Combine(TestDirectory, testDir));
+            Assert.True(0 != (new DirectoryInfo(Path.Combine(TestDirectory, testDir)).Attributes & FileAttributes.Hidden));
+            Delete(Path.Combine(TestDirectory, testDir));
+            Assert.False(Directory.Exists(testDir));
+        }
+
+        #endregion
     }
 
     public class Directory_Delete_str_bool : Directory_Delete_str
