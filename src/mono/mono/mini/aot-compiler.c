@@ -6533,14 +6533,87 @@ clean_path (gchar * path)
 	return clean;
 }
 
+static GPtrArray *
+mono_aot_split_options (const char *aot_options)
+{
+	enum MonoAotOptionState {
+		MONO_AOT_OPTION_STATE_DEFAULT,
+		MONO_AOT_OPTION_STATE_STRING,
+		MONO_AOT_OPTION_STATE_ESCAPE,
+	};
+
+	GPtrArray *args = g_ptr_array_new ();
+	enum MonoAotOptionState state = MONO_AOT_OPTION_STATE_DEFAULT;
+	gchar const *opt_start = aot_options;
+	gboolean end_of_string = FALSE;
+	gchar cur;
+
+	g_return_val_if_fail (aot_options != NULL, NULL);
+
+	while ((cur = *aot_options) != '\0') {
+		if (state == MONO_AOT_OPTION_STATE_ESCAPE)
+			goto next;
+
+		switch (cur) {
+		case '"':
+			// If we find a quote, then if we're in the default case then
+			// it means we've found the start of a string, if not then it
+			// means we've found the end of the string and should switch
+			// back to the default case.		
+			switch (state) {
+			case MONO_AOT_OPTION_STATE_DEFAULT:
+				state = MONO_AOT_OPTION_STATE_STRING;
+				break;
+			case MONO_AOT_OPTION_STATE_STRING:
+				state = MONO_AOT_OPTION_STATE_DEFAULT;
+				break;
+			case MONO_AOT_OPTION_STATE_ESCAPE:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		case '\\':
+			// If we've found an escaping operator, then this means we
+			// should not process the next character if inside a string.		
+			if (state == MONO_AOT_OPTION_STATE_STRING) 
+				state = MONO_AOT_OPTION_STATE_ESCAPE;
+			break;
+		case ',':
+			// If we're in the default state then this means we've found
+			// an option, store it for later processing.
+			if (state == MONO_AOT_OPTION_STATE_DEFAULT)
+				goto new_opt;
+			break;
+		}
+
+	next:
+		aot_options++;
+		// If the next character is end of string, then process the last option.
+		if (*(aot_options) == '\0') {
+			end_of_string = TRUE;
+			goto new_opt;
+		}
+		continue;
+
+	new_opt:
+		g_ptr_array_add (args, g_strndup (opt_start, aot_options - opt_start));
+		opt_start = ++aot_options;
+		if (end_of_string)
+			break;
+		goto next;
+	}
+
+	return args;
+}
+
 static void
 mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 {
-	gchar **args, **ptr;
+	GPtrArray* args;
 
-	args = g_strsplit (aot_options ? aot_options : "", ",", -1);
-	for (ptr = args; ptr && *ptr; ptr ++) {
-		const char *arg = *ptr;
+	args = mono_aot_split_options (aot_options ? aot_options : "");
+	for (int i = 0; i < args->len; ++i) {
+		const char *arg = g_ptr_array_index (args, i);
 
 		if (str_begins_with (arg, "outfile=")) {
 			opts->outfile = g_strdup (arg + strlen ("outfile="));
@@ -6672,6 +6745,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			fprintf (stderr, "AOT : Unknown argument '%s'.\n", arg);
 			exit (1);
 		}
+
+		g_free ((gpointer) arg);
 	}
 
 	if (opts->use_trampolines_page) {
@@ -6680,7 +6755,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 		opts->nimt_trampolines = 0;
 		opts->ngsharedvt_arg_trampolines = 0;
 	}
-	g_strfreev (args);
+
+	g_ptr_array_free (args, /*free_seg=*/TRUE);
 }
 
 static void
