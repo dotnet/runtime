@@ -2710,10 +2710,13 @@ typedef struct _CONTEXT {
 #define CONTEXT_EXCEPTION_REQUEST 0x40000000
 #define CONTEXT_EXCEPTION_REPORTING 0x80000000
 
-typedef struct DECLSPEC_ALIGN(16) _M128A {
+typedef struct _M128U {
     ULONGLONG Low;
     LONGLONG High;
-} M128A, *PM128A;
+} M128U, *PM128U;
+
+// Same as _M128U but aligned to a 16-byte boundary
+typedef DECLSPEC_ALIGN(16) M128U M128A, *PM128A;
 
 typedef struct _XMM_SAVE_AREA32 {
     WORD   ControlWord;
