@@ -3702,17 +3702,16 @@ thread_adjust_static_data (MonoInternalThread *thread)
 	mono_threads_unlock ();
 }
 
+/*
+ * LOCKING: requires that threads_mutex is held
+ */
 static void
 context_adjust_static_data (MonoAppContext *ctx)
 {
-	mono_threads_lock ();
-
 	if (context_static_info.offset || context_static_info.idx > 0) {
 		guint32 offset = MAKE_SPECIAL_STATIC_OFFSET (context_static_info.idx, context_static_info.offset, 0);
 		mono_alloc_static_data (&ctx->static_data, offset, FALSE);
 	}
-
-	mono_threads_unlock ();
 }
 
 /*
