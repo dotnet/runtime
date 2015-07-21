@@ -205,7 +205,7 @@ is_address_protected (MonoJitInfo *ji, MonoJitExceptionInfo *ei, gpointer ip)
 /*
  * find_jit_info:
  *
- * Translate between the mono_arch_find_jit_info function and the old API.
+ * Translate between the mono_arch_unwind_frame function and the old API.
  */
 static MonoJitInfo *
 find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev_ji, MonoContext *ctx, 
@@ -225,7 +225,7 @@ find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, Mo
 	if (managed)
 		*managed = FALSE;
 
-	err = mono_arch_find_jit_info (domain, jit_tls, ji, ctx, new_ctx, lmf, NULL, &frame);
+	err = mono_arch_unwind_frame (domain, jit_tls, ji, ctx, new_ctx, lmf, NULL, &frame);
 	if (!err)
 		return (gpointer)-1;
 
@@ -385,7 +385,7 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	if (save_locations)
 		memset (save_locations, 0, MONO_MAX_IREGS * sizeof (mgreg_t*));
 
-	err = mono_arch_find_jit_info (target_domain, jit_tls, ji, ctx, new_ctx, lmf, save_locations, frame);
+	err = mono_arch_unwind_frame (target_domain, jit_tls, ji, ctx, new_ctx, lmf, save_locations, frame);
 	if (!err)
 		return FALSE;
 

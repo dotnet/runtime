@@ -326,7 +326,7 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 	return start;
 }
 
-/* mono_arch_find_jit_info:
+/* mono_arch_unwind_frame:
  *
  * This function is used to gather information from @ctx. It return the 
  * MonoJitInfo of the corresponding function, unwinds one stack frame and
@@ -336,7 +336,7 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
  * start of the function or -1 if that info is not available.
  */
 gboolean
-mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, 
+mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, 
 							 MonoJitInfo *ji, MonoContext *ctx, 
 							 MonoContext *new_ctx, MonoLMF **lmf,
 							 mgreg_t **save_locations,

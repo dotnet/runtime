@@ -337,7 +337,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	x86_mov_membase_reg (code, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), X86_EAX, sizeof (mgreg_t));
 	/* lmf->previous_lmf = *(lmf_addr) */
 	x86_mov_reg_membase (code, X86_ECX, X86_EAX, 0, sizeof (mgreg_t));
-	/* Signal to mono_arch_find_jit_info () that this is a trampoline frame */
+	/* Signal to mono_arch_unwind_frame () that this is a trampoline frame */
 	x86_alu_reg_imm (code, X86_ADD, X86_ECX, 1);
 	x86_mov_membase_reg (code, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), X86_ECX, sizeof (mgreg_t));
 	/* *lmf_addr = lmf */

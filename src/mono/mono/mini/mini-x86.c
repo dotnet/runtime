@@ -632,7 +632,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
  *
  * Returns the size of the argument area on the stack.
  * This should be signal safe, since it is called from
- * mono_arch_find_jit_info ().
+ * mono_arch_unwind_frame ().
  * FIXME: The metadata calls might not be signal safe.
  */
 int

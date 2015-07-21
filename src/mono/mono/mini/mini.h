@@ -2570,11 +2570,11 @@ mono_jumptable_get_entry (guint8 *code);
 #endif
 
 gboolean
-mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, 
-						 MonoJitInfo *ji, MonoContext *ctx, 
-						 MonoContext *new_ctx, MonoLMF **lmf,
-						 mgreg_t **save_locations,
-						 StackFrameInfo *frame_info);
+mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, 
+						MonoJitInfo *ji, MonoContext *ctx, 
+						MonoContext *new_ctx, MonoLMF **lmf,
+						mgreg_t **save_locations,
+						StackFrameInfo *frame_info);
 gpointer  mono_arch_get_throw_exception_by_name (void);
 gpointer mono_arch_get_call_filter              (MonoTrampInfo **info, gboolean aot);
 gpointer mono_arch_get_restore_context          (MonoTrampInfo **info, gboolean aot);

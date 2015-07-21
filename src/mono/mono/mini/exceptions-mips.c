@@ -383,7 +383,7 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 }
 
 /*
- * mono_arch_find_jit_info:
+ * mono_arch_unwind_frame:
  *
  * This function is used to gather information from @ctx, and store it in @frame_info.
  * It unwinds one stack frame, and stores the resulting context into @new_ctx. @lmf
@@ -391,7 +391,7 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
  * Returns TRUE on success, FALSE otherwise.
  */
 gboolean
-mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, 
+mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, 
 							 MonoJitInfo *ji, MonoContext *ctx, 
 							 MonoContext *new_ctx, MonoLMF **lmf, 
 							 mgreg_t **save_locations,
@@ -455,7 +455,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 		if (!(*lmf)->method) {
 #ifdef DEBUG_EXCEPTIONS
-			g_print ("mono_arch_find_jit_info: bad lmf @ %p\n", (void *) *lmf);
+			g_print ("mono_arch_unwind_frame: bad lmf @ %p\n", (void *) *lmf);
 #endif
 			return FALSE;
 		}
