@@ -470,6 +470,10 @@ namespace System.Threading.Tasks.Tests
                 yield return new object[] { Task.CompletedTask };
                 yield return new object[] { Task.FromCanceled(CreateCanceledToken()) };
                 yield return new object[] { Task.FromException(new FormatException()) };
+
+                var tcs = new TaskCompletionSource<int>();
+                tcs.SetCanceled(); // cancel task without a token
+                yield return new object[] { tcs.Task };
             }
         }
 
@@ -481,6 +485,10 @@ namespace System.Threading.Tasks.Tests
                 yield return new object[] { Task.FromResult("Tasks") };
                 yield return new object[] { Task.FromCanceled<string>(CreateCanceledToken()) };
                 yield return new object[] { Task.FromException<string>(new FormatException()) };
+
+                var tcs = new TaskCompletionSource<string>();
+                tcs.SetCanceled(); // cancel task without a token
+                yield return new object[] { tcs.Task };
             }
         }
 

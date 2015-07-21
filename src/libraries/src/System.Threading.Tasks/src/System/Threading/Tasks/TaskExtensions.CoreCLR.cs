@@ -215,14 +215,16 @@ namespace System.Threading.Tasks
             try
             {
                 task.GetAwaiter().GetResult();
+                Debug.Fail("Waiting on the canceled task should always result in an OCE, even if it's manufactured at the time of the wait.");
+                return new CancellationToken(true);
             }
             catch (OperationCanceledException oce)
             {
-                CancellationToken ct = oce.CancellationToken;
-                if (ct.IsCancellationRequested)
-                    return ct;
+                // This token may not have cancellation requested; that's ok.
+                // That can happen if, for example, the Task is canceled with
+                // TaskCompletionSource<T>.SetCanceled(), without a token.
+                return oce.CancellationToken;
             }
-            return new CancellationToken(true);
         }
 
         /// <summary>Dummy type to use as a void TResult.</summary>
