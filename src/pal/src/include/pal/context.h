@@ -67,9 +67,9 @@ typedef ucontext_t native_context_t;
 #define MCREG_R14(mc)       ((mc).gregs[REG_R14])
 #define MCREG_R15(mc)       ((mc).gregs[REG_R15])
 
-#define FPREG_Xmm(uc, index) *(M128A*)&((uc)->__fpregs_mem._xmm[index])
+#define FPREG_Xmm(uc, index) *(M128U*)&((uc)->__fpregs_mem._xmm[index])
 
-#define FPREG_St(uc, index) *(M128A*)&((uc)->__fpregs_mem._st[index])
+#define FPREG_St(uc, index) *(M128U*)&((uc)->__fpregs_mem._st[index])
 
 #define FPREG_ControlWord(uc) ((uc)->__fpregs_mem.cwd)
 #define FPREG_StatusWord(uc) ((uc)->__fpregs_mem.swd)
