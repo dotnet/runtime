@@ -3254,6 +3254,18 @@ mono_assembly_get_image (MonoAssembly *assembly)
 	return assembly->image;
 }
 
+/**
+ * mono_assembly_get_name:
+ * @assembly: The assembly to retrieve the name from
+ *
+ * Returns: the MonoAssemblyName associated with this assembly.
+ */
+MonoAssemblyName *
+mono_assembly_get_name (MonoAssembly *assembly)
+{
+	return &assembly->aname;
+}
+
 void
 mono_register_bundled_assemblies (const MonoBundledAssembly **assemblies)
 {

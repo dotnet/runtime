@@ -54,6 +54,7 @@
 #include <mono/metadata/console-io.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/tokentype.h>
+#include <mono/metadata/profiler-private.h>
 #include <mono/utils/mono-uri.h>
 #include <mono/utils/mono-logger-internal.h>
 #include <mono/utils/mono-path.h>
@@ -480,6 +481,8 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetup *
 	ad->data = data;
 	data->domain = ad;
 	data->friendly_name = g_strdup (friendly_name);
+
+	mono_profiler_appdomain_name (data, data->friendly_name);
 
 	if (!setup->application_base) {
 		/* Inherit from the root domain since MS.NET does this */

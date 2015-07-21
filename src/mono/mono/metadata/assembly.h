@@ -40,6 +40,7 @@ MONO_API void	      mono_assembly_foreach    (MonoFunc func, void* user_data);
 MONO_API void          mono_assembly_set_main   (MonoAssembly *assembly);
 MONO_API MonoAssembly *mono_assembly_get_main   (void);
 MONO_API MonoImage    *mono_assembly_get_image  (MonoAssembly *assembly);
+MONO_API MonoAssemblyName *mono_assembly_get_name (MonoAssembly *assembly);
 MONO_API mono_bool      mono_assembly_fill_assembly_name (MonoImage *image, MonoAssemblyName *aname);
 MONO_API mono_bool      mono_assembly_names_equal (MonoAssemblyName *l, MonoAssemblyName *r);
 MONO_API char*         mono_stringify_assembly_name (MonoAssemblyName *aname);

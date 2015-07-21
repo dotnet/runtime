@@ -30,7 +30,8 @@ typedef enum {
 	MONO_PROFILE_MONITOR_EVENTS   = 1 << 17,
 	MONO_PROFILE_IOMAP_EVENTS     = 1 << 18, /* this should likely be removed, too */
 	MONO_PROFILE_GC_MOVES         = 1 << 19,
-	MONO_PROFILE_GC_ROOTS         = 1 << 20
+	MONO_PROFILE_GC_ROOTS         = 1 << 20,
+	MONO_PROFILE_CONTEXT_EVENTS   = 1 << 21
 } MonoProfileFlags;
 
 typedef enum {
@@ -118,6 +119,7 @@ typedef enum {
 typedef void (*MonoProfileFunc) (MonoProfiler *prof);
 
 typedef void (*MonoProfileAppDomainFunc) (MonoProfiler *prof, MonoDomain   *domain);
+typedef void (*MonoProfileContextFunc)   (MonoProfiler *prof, MonoAppContext *context);
 typedef void (*MonoProfileMethodFunc)   (MonoProfiler *prof, MonoMethod   *method);
 typedef void (*MonoProfileClassFunc)    (MonoProfiler *prof, MonoClass    *klass);
 typedef void (*MonoProfileModuleFunc)   (MonoProfiler *prof, MonoImage    *module);
@@ -128,6 +130,7 @@ typedef void (*MonoProfileExceptionFunc) (MonoProfiler *prof, MonoObject *object
 typedef void (*MonoProfileExceptionClauseFunc) (MonoProfiler *prof, MonoMethod *method, int clause_type, int clause_num);
 
 typedef void (*MonoProfileAppDomainResult)(MonoProfiler *prof, MonoDomain   *domain,   int result);
+typedef void (*MonoProfileAppDomainFriendlyNameFunc) (MonoProfiler *prof, MonoDomain *domain, const char *name);
 typedef void (*MonoProfileMethodResult)   (MonoProfiler *prof, MonoMethod   *method,   int result);
 typedef void (*MonoProfileJitResult)      (MonoProfiler *prof, MonoMethod   *method,   MonoJitInfo* jinfo,   int result);
 typedef void (*MonoProfileClassResult)    (MonoProfiler *prof, MonoClass    *klass,    int result);
@@ -167,6 +170,8 @@ MONO_API MonoProfileFlags mono_profiler_get_events (void);
 
 MONO_API void mono_profiler_install_appdomain   (MonoProfileAppDomainFunc start_load, MonoProfileAppDomainResult end_load,
                                         MonoProfileAppDomainFunc start_unload, MonoProfileAppDomainFunc end_unload);
+MONO_API void mono_profiler_install_appdomain_name (MonoProfileAppDomainFriendlyNameFunc domain_name_cb);
+MONO_API void mono_profiler_install_context     (MonoProfileContextFunc load, MonoProfileContextFunc unload);
 MONO_API void mono_profiler_install_assembly    (MonoProfileAssemblyFunc start_load, MonoProfileAssemblyResult end_load,
                                         MonoProfileAssemblyFunc start_unload, MonoProfileAssemblyFunc end_unload);
 MONO_API void mono_profiler_install_module      (MonoProfileModuleFunc start_load, MonoProfileModuleResult end_load,

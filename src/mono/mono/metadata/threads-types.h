@@ -185,6 +185,7 @@ void ves_icall_System_Threading_Thread_Interrupt_internal (MonoThread *this);
 void ves_icall_System_Threading_Thread_SpinWait_nop (void);
 
 void ves_icall_System_Runtime_Remoting_Contexts_Context_RegisterContext (MonoAppContext *ctx);
+void ves_icall_System_Runtime_Remoting_Contexts_Context_ReleaseContext (MonoAppContext *ctx);
 
 MonoInternalThread *mono_thread_internal_current (void);
 
