@@ -3649,6 +3649,22 @@ else
 fi
 AC_SUBST(mono_cfg_dir)
 
+default_profile=net_4_x
+if test -z "$INSTALL_MONODROID_TRUE"; then :
+   default_profile=monodroid
+fi
+if test -z "$INSTALL_MONOTOUCH_TRUE"; then :
+   default_profile=monotouch
+fi
+if test -z "$INSTALL_XAMMAC_TRUE"; then :
+   default_profile=xammac
+fi
+if test -z "$INSTALL_4_x_TRUE"; then :
+   default_profile=net_4_x
+fi
+DEFAULT_PROFILE=$default_profile
+AC_SUBST(DEFAULT_PROFILE)
+
 AC_CONFIG_FILES([po/mcs/Makefile.in])
 
 AC_CONFIG_FILES([runtime/mono-wrapper],[chmod +x runtime/mono-wrapper])
@@ -3964,20 +3980,6 @@ fi
 
     if test x$has_extension_module != xno; then
         echo "EXTENSION_MODULE = 1" >> $srcdir/$mcsdir/build/config.make
-    fi
-
-	default_profile=net_4_x
-    if test -z "$INSTALL_MONODROID_TRUE"; then :
-  		default_profile=monodroid
-    fi
-    if test -z "$INSTALL_MONOTOUCH_TRUE"; then :
-  		default_profile=monotouch
-    fi
-	if test -z "$INSTALL_XAMMAC_TRUE"; then :
-  		default_profile=xammac
-	fi
-    if test -z "$INSTALL_4_x_TRUE"; then :
-  		default_profile=net_4_x
     fi
     
     echo "DEFAULT_PROFILE = $default_profile" >> $srcdir/$mcsdir/build/config.make

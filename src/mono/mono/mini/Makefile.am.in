@@ -34,7 +34,6 @@ sgenstatic_libs = \
 	$(monodir)/mono/utils/libmonoutils.la \
 	$(GLIB_LIBS) $(LIBICONV)
 
--include $(mcs_topdir)/build/config.make
 CLASS=$(mcs_topdir)/class/lib/$(DEFAULT_PROFILE)
 
 RUNTIME_EXECUTABLE = $(if $(BOEHM),$(top_builddir)/mono/mini/mono-boehm,$(top_builddir)/runtime/mono-wrapper)
