@@ -63,6 +63,11 @@ epoll_register_fd (gint fd, gint events, gboolean is_new)
 	} else {
 		struct epoll_event event;
 
+#ifndef EPOLLONESHOT
+/* it was only defined on android in May 2013 */
+#define EPOLLONESHOT 0x40000000
+#endif
+
 		event.data.fd = fd;
 		event.events = EPOLLONESHOT;
 		if ((events & MONO_POLLIN) != 0)
