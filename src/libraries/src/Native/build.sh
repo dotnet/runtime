@@ -16,9 +16,7 @@ setup_dirs()
 {
     echo Setting up directories for build
     
-    mkdir -p "$__RootBinDir"
     mkdir -p "$__BinDir"
-    mkdir -p "$__LogsDir"
     mkdir -p "$__IntermediatesDir"
 }
 
@@ -29,11 +27,6 @@ clean()
     echo Cleaning previous output for the selected configuration
     rm -rf "$__BinDir"
     rm -rf "$__IntermediatesDir"
-    
-    rm -rf "$__TestWorkingDir"
-    rm -rf "$__TestIntermediatesDir"
-    
-    rm -rf "$__LogsDir/*_$__BuildOS__$__BuildArch__$__BuildType.*"
 }
 
 # Check the system to ensure the right pre-reqs are in place
@@ -49,16 +42,16 @@ check_prereqs()
     hash clang-$__ClangMajorVersion.$__ClangMinorVersion 2>/dev/null ||  hash clang$__ClangMajorVersion$__ClangMinorVersion 2>/dev/null ||  hash clang 2>/dev/null || { echo >&2 "Please install clang before running this script"; exit 1; }
 }
 
-build_coreclr()
+build_corefx_native()
 {
     # All set to commence the build
     
-    echo "Commencing build of native components for $__BuildOS.$__BuildArch.$__BuildType"
+    echo "Commencing build of corefx native components for $__BuildOS.$__BuildArch.$__BuildType"
     cd "$__IntermediatesDir"
     
     # Regenerate the CMake solution
-    echo "Invoking cmake with arguments: \"$__ProjectRoot\" $__CMakeArgs"
-    "$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion $__ClangMinorVersion $__CMakeArgs
+    echo "Invoking cmake with arguments: \"$__ScriptDir\" $__CMakeArgs"
+    "$__ScriptDir/gen-buildsys-clang.sh" "$__ScriptDir" $__ClangMajorVersion $__ClangMinorVersion $__CMakeArgs
     
     # Check that the makefiles were created.
     
@@ -75,19 +68,19 @@ build_coreclr()
     else
         NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
     fi
-    
-    # Build CoreCLR
+
+    # Build
     
     echo "Executing make install -j $NumProc $__UnprocessedBuildArgs"
 
     make install -j $NumProc $__UnprocessedBuildArgs
     if [ $? != 0 ]; then
-        echo "Failed to build coreclr components."
+        echo "Failed to build corefx native components."
         exit 1
     fi
 }
 
-echo "Commencing CoreCLR Repo build"
+echo "Commencing CoreFX Native build"
 
 # Argument types supported by this script:
 #
@@ -97,7 +90,10 @@ echo "Commencing CoreCLR Repo build"
 # Set the default arguments for build
 
 # Obtain the location of the bash script to figure out whether the root of the repo is.
-__ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+__ScriptDir="$( dirname "${BASH_SOURCE[0]}" )"
+__ScriptDir="$( cd $__ScriptDir && pwd )"
+__ProjectRoot="$( cd $__ScriptDir && cd ../.. && pwd )"
 __BuildArch=x64
 # Use uname to determine what the OS is.
 OSName=$(uname -s)
@@ -127,18 +123,14 @@ case $OSName in
         __BuildOS=Linux
         ;;
 esac
-__MSBuildBuildArch=x64
 __BuildType=Debug
 __CMakeArgs=DEBUG
 
 # Set the various build properties here so that CMake and MSBuild can pick them up
 __ProjectDir="$__ProjectRoot"
-__SourceDir="$__ProjectDir/src"
-__PackagesDir="$__ProjectDir/packages"
+__SourceDir="$__ScriptDir"
 __RootBinDir="$__ProjectDir/bin"
-__LogsDir="$__RootBinDir/Logs"
 __UnprocessedBuildArgs=
-__MSBCleanBuildArgs=
 __CleanBuild=false
 __VerboseBuild=false
 __ClangMajorVersion=3
@@ -187,12 +179,8 @@ for i in "$@"
 done
 
 # Set the remaining variables based upon the determined build configuration
-__BinDir="$__RootBinDir/Product/$__BuildOS.$__BuildArch.$__BuildType"
-__PackagesBinDir="$__BinDir/.nuget"
-__ToolsDir="$__RootBinDir/tools"
-__TestWorkingDir="$__RootBinDir/tests/$__BuildOS.$__BuildArch.$__BuildType"
-__IntermediatesDir="$__RootBinDir/obj/$__BuildOS.$__BuildArch.$__BuildType"
-__TestIntermediatesDir="$__RootBinDir/tests/obj/$__BuildOS.$__BuildArch.$__BuildType"
+__IntermediatesDir="$__RootBinDir/obj/$__BuildOS.$__BuildArch.$__BuildType/Native"
+__BinDir="$__RootBinDir/$__BuildOS.$__BuildArch.$__BuildType/Native"
 
 # Specify path to be set for CMAKE_INSTALL_PREFIX.
 # This is where all built CoreClr libraries will copied to.
@@ -216,12 +204,12 @@ setup_dirs
 
 check_prereqs
 
-# Build the coreclr (native) components.
+# Build the corefx native components.
 
-build_coreclr
+build_corefx_native
 
 # Build complete
 
-echo "Repo successfully built."
+echo "CoreFX native components successfully built."
 echo "Product binaries are available at $__BinDir"
 exit 0
