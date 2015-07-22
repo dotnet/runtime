@@ -801,11 +801,10 @@ VOID DbgAssertDialog(const char *szFile, int iLine, const char *szExpr)
         EX_TRY
         {
             FAULT_NOT_FATAL();
+            szExprToDisplay = &g_szExprWithStack2[0];
             strcpy(szExprToDisplay, szExpr);
-            _ASSERTE(szExprToDisplay == g_szExprWithStack2);
             strcat_s(szExprToDisplay, _countof(g_szExprWithStack2), "\n\n");
             GetStringFromStackLevels(1, 10, szExprToDisplay + strlen(szExprToDisplay));
-            szExprToDisplay = &g_szExprWithStack2[0];
             fGotStackTrace = TRUE;               
         }
         EX_CATCH
