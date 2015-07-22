@@ -157,7 +157,7 @@ namespace System.Data.Common
                 CancellationTokenRegistration registration = new CancellationTokenRegistration();
                 if (cancellationToken.CanBeCanceled)
                 {
-                    registration = cancellationToken.Register(CancelIgnoreFailure);
+                    registration = cancellationToken.Register(s => ((DbCommand)s).CancelIgnoreFailure(), this);
                 }
 
                 try
@@ -166,8 +166,11 @@ namespace System.Data.Common
                 }
                 catch (Exception e)
                 {
-                    registration.Dispose();
                     return Task.FromException<int>(e);
+                }
+                finally
+                {
+                    registration.Dispose();
                 }
             }
         }
@@ -203,7 +206,7 @@ namespace System.Data.Common
                 CancellationTokenRegistration registration = new CancellationTokenRegistration();
                 if (cancellationToken.CanBeCanceled)
                 {
-                    registration = cancellationToken.Register(CancelIgnoreFailure);
+                    registration = cancellationToken.Register(s => ((DbCommand)s).CancelIgnoreFailure(), this);
                 }
 
                 try
@@ -212,8 +215,11 @@ namespace System.Data.Common
                 }
                 catch (Exception e)
                 {
-                    registration.Dispose();
                     return Task.FromException<DbDataReader>(e);
+                }
+                finally
+                {
+                    registration.Dispose();
                 }
             }
         }
@@ -234,7 +240,7 @@ namespace System.Data.Common
                 CancellationTokenRegistration registration = new CancellationTokenRegistration();
                 if (cancellationToken.CanBeCanceled)
                 {
-                    registration = cancellationToken.Register(CancelIgnoreFailure);
+                    registration = cancellationToken.Register(s => ((DbCommand)s).CancelIgnoreFailure(), this);
                 }
 
                 try
@@ -243,8 +249,11 @@ namespace System.Data.Common
                 }
                 catch (Exception e)
                 {
-                    registration.Dispose();
                     return Task.FromException<object>(e);
+                }
+                finally
+                {
+                    registration.Dispose();
                 }
             }
         }
