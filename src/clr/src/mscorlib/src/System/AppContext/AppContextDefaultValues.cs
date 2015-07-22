@@ -23,7 +23,6 @@ namespace System
         /// We have this separate method for getting the parsed elements out of the TargetFrameworkName so we can
         /// more easily support this on other platforms.
         /// </summary>
-        [System.Security.SecuritySafeCritical]
         private static void ParseTargetFrameworkName(out string identifier, out string profile, out int version)
         {
 #if FEATURE_CORECLR
