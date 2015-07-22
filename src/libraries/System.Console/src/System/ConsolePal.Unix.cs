@@ -380,7 +380,7 @@ namespace System
                     _handle.DangerousAddRef(ref gotFd);
                     Interop.NativeIO.FileStats buf;
                     _handleType =
-                        Interop.NativeIO.GetFileStatsFromDescriptor((int)_handle.DangerousGetHandle(), out buf) == 0 ?
+                        Interop.NativeIO.FStat((int)_handle.DangerousGetHandle(), out buf) == 0 ?
                             (buf.Mode & Interop.NativeIO.FileTypes.S_IFMT) :
                             Interop.NativeIO.FileTypes.S_IFREG; // if something goes wrong, don't fail, just say it's a regular file
                 }

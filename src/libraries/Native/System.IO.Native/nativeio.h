@@ -33,13 +33,13 @@ extern "C"
      *
      * Returns 0 for success, -1 for failure. Sets errno on failure.
      */
-    int32_t GetFileStatsFromDescriptor(int32_t fileDescriptor, FileStats* output);
+    int32_t FStat(int32_t fileDescriptor, FileStats* output);
 
     /**
      * Get file stats from a full path. Implemented as shim to stat(2).
      *
      * Returns 0 for success, -1 for failure. Sets errno on failure.
      */
-    int32_t GetFileStatsFromPath(const char* path, FileStats* output);
+    int32_t Stat(const char* path, FileStats* output);
 }
 
