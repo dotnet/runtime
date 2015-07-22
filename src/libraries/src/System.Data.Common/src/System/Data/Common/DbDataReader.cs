@@ -188,7 +188,7 @@ namespace System.Data.Common
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return ADP.CreatedTaskWithCancellation<T>();
+                return Task.FromCanceled<T>(cancellationToken);
             }
             else
             {
@@ -198,7 +198,7 @@ namespace System.Data.Common
                 }
                 catch (Exception e)
                 {
-                    return ADP.CreatedTaskWithException<T>(e);
+                    return Task.FromException<T>(e);
                 }
             }
         }
@@ -216,7 +216,7 @@ namespace System.Data.Common
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return ADP.CreatedTaskWithCancellation<bool>();
+                return Task.FromCanceled<bool>(cancellationToken);
             }
             else
             {
@@ -226,7 +226,7 @@ namespace System.Data.Common
                 }
                 catch (Exception e)
                 {
-                    return ADP.CreatedTaskWithException<bool>(e);
+                    return Task.FromException<bool>(e);
                 }
             }
         }
@@ -244,7 +244,7 @@ namespace System.Data.Common
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return ADP.CreatedTaskWithCancellation<bool>();
+                return Task.FromCanceled<bool>(cancellationToken);
             }
             else
             {
@@ -254,7 +254,7 @@ namespace System.Data.Common
                 }
                 catch (Exception e)
                 {
-                    return ADP.CreatedTaskWithException<bool>(e);
+                    return Task.FromException<bool>(e);
                 }
             }
         }
@@ -268,7 +268,7 @@ namespace System.Data.Common
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return ADP.CreatedTaskWithCancellation<bool>();
+                return Task.FromCanceled<bool>(cancellationToken);
             }
             else
             {
@@ -278,7 +278,7 @@ namespace System.Data.Common
                 }
                 catch (Exception e)
                 {
-                    return ADP.CreatedTaskWithException<bool>(e);
+                    return Task.FromException<bool>(e);
                 }
             }
         }

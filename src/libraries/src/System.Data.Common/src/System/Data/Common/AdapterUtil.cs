@@ -16,21 +16,6 @@ namespace System.Data.Common
         // location so that the catcher of the exception will have the appropriate call stack.
         // This class is used so that there will be compile time checking of error messages.
 
-        static internal Task<T> CreatedTaskWithException<T>(Exception ex)
-        {
-            TaskCompletionSource<T> completion = new TaskCompletionSource<T>();
-            completion.SetException(ex);
-            return completion.Task;
-        }
-
-        static internal Task<T> CreatedTaskWithCancellation<T>()
-        {
-            TaskCompletionSource<T> completion = new TaskCompletionSource<T>();
-            completion.SetCanceled();
-            return completion.Task;
-        }
-
-
         // NOTE: Initializing a Task in SQL CLR requires the "UNSAFE" permission set (http://msdn.microsoft.com/en-us/library/ms172338.aspx)
         // Therefore we are lazily initializing these Tasks to avoid forcing customers to use the "UNSAFE" set when they are actually using no Async features
         static private Task<bool> s_trueTask = null;
