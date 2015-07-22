@@ -1,462 +1,437 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Text;
-using System.Linq;
-using System.IO;
-using System.Collections;
-using System.Globalization;
-using System.Runtime.CompilerServices;
 using Xunit;
 
-public class Directory_CreateDirectory
+namespace System.IO.FileSystem.Tests
 {
-    [Fact]
-    public static void CreateDirectory_NullAsPath_ThrowsArgumentNullException()
+    public class Directory_CreateDirectory : FileSystemTest
     {
-        Assert.Throws<ArgumentNullException>(() =>
-        {
-            Directory.CreateDirectory((string)null);
-        });
-    }
+        #region Utilities
 
-    [Fact]
-    public static void CreateDirectory_EmptyAsPath_ThrowsArgumentException()
-    {
-        Assert.Throws<ArgumentException>(() =>              // BUG 995784: Not setting the parameter name
+        public virtual DirectoryInfo Create(string path)
         {
-            Directory.CreateDirectory(string.Empty);
-        });
-    }
+            return Directory.CreateDirectory(path);
+        }
 
-    [Fact]
-    [PlatformSpecific(PlatformID.Windows)] // whitespace-only names are valid on Unix
-    public static void CreateDirectory_NonSignificantWhiteSpaceAsPath_ThrowsArgumentException()
-    {
-        var paths = IOInputs.GetNonSignificantTrailingWhiteSpace();
-        foreach (var path in paths)
+        #endregion
+
+        #region UniversalTests
+
+        [Fact]
+        public void NullAsPath_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentException>(() =>          // BUG 995784: Not setting the parameter name
+            Assert.Throws<ArgumentNullException>(() => Create(null));
+        }
+
+        [Fact]
+        public void EmptyAsPath_ThrowsArgumentException()
+        {
+            Assert.Throws<ArgumentException>(() => Create(string.Empty));
+        }
+
+        [Fact]
+        public void PathWithInvalidCharactersAsPath_ThrowsArgumentException()
+        {
+            var paths = IOInputs.GetPathsWithInvalidCharacters();
+            Assert.All(paths, (path) =>
             {
-                Directory.CreateDirectory(path);
+                Assert.Throws<ArgumentException>(() => Create(path));
             });
         }
-    }
 
-    [Fact]
-    public static void CreateDirectory_PathWithInvalidCharactersAsPath_ThrowsArgumentException()
-    {
-        var paths = IOInputs.GetPathsWithInvalidCharacters();
-        foreach (var path in paths)
+        [Fact]
+        public void PathAlreadyExistsAsFile()
         {
-            Assert.Throws<ArgumentException>(() =>          // BUG 995784: Not setting the parameter name
+            string path = GetTestFilePath();
+            File.Create(path).Dispose();
+
+            Assert.Throws<IOException>(() => Create(path));
+            Assert.Throws<IOException>(() => Create(IOServices.AddTrailingSlashIfNeeded(path)));
+            Assert.Throws<IOException>(() => Create(IOServices.RemoveTrailingSlash(path)));
+        }
+
+        [Theory]
+        [InlineData(FileAttributes.Hidden)]
+        [InlineData(FileAttributes.ReadOnly)]
+        [InlineData(FileAttributes.Normal)]
+        public void PathAlreadyExistsAsDirectory(FileAttributes attributes)
+        {
+            DirectoryInfo testDir = Create(GetTestFilePath());
+            testDir.Attributes = attributes;
+            Assert.Equal(testDir.FullName, Create(testDir.FullName).FullName);
+        }
+
+        [Fact]
+        public void RootPath()
+        {
+            string dirName = Path.GetPathRoot(Directory.GetCurrentDirectory());
+            DirectoryInfo dir = Create(dirName);
+            Assert.Equal(dir.FullName, dirName);
+        }
+
+        [Fact]
+        public void DotIsCurrentDirectory()
+        {
+            string path = GetTestFilePath();
+            DirectoryInfo result = Create(Path.Combine(path, "."));
+            Assert.Equal(IOServices.RemoveTrailingSlash(path), result.FullName);
+
+            result = Create(Path.Combine(path, ".") + Path.DirectorySeparatorChar);
+            Assert.Equal(IOServices.AddTrailingSlashIfNeeded(path), result.FullName);
+        }
+
+        [Fact]
+        public void CreateCurrentDirectory()
+        {
+            DirectoryInfo result = Create(Directory.GetCurrentDirectory());
+            Assert.Equal(Directory.GetCurrentDirectory(), result.FullName);
+        }
+
+        [Fact]
+        public void DotDotIsParentDirectory()
+        {
+            DirectoryInfo result = Create(Path.Combine(GetTestFilePath(), ".."));
+            Assert.Equal(IOServices.RemoveTrailingSlash(TestDirectory), result.FullName);
+
+            result = Create(Path.Combine(GetTestFilePath(), "..") + Path.DirectorySeparatorChar);
+            Assert.Equal(IOServices.AddTrailingSlashIfNeeded(TestDirectory), result.FullName);
+        }
+
+        [Fact]
+        public void ValidPathWithTrailingSlash()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+
+            var components = IOInputs.GetValidPathComponentNames();
+            Assert.All(components, (component) =>
             {
-                Directory.CreateDirectory(path);
+                string path = IOServices.AddTrailingSlashIfNeeded(Path.Combine(testDir.FullName, component));
+                DirectoryInfo result = Create(path);
+
+                Assert.Equal(path, result.FullName);
+                Assert.True(result.Exists);
             });
         }
-    }
 
-    [Fact]
-    [PlatformSpecific(PlatformID.Windows)] // alternate data streams
-    public static void CreateDirectory_PathWithAlternativeDataStreams_ThrowsNotSupportedException()
-    {
-        var paths = IOInputs.GetPathsWithAlternativeDataStreams();
-        foreach (var path in paths)
+        [Fact]
+        public void ValidPathWithoutTrailingSlash()
         {
-            Assert.Throws<NotSupportedException>(() =>
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+
+            var components = IOInputs.GetValidPathComponentNames();
+            Assert.All(components, (component) =>
             {
-                Directory.CreateDirectory(path);
-            });
-        }
-    }
+                string path = testDir.FullName + Path.DirectorySeparatorChar + component;
+                DirectoryInfo result = Create(path);
 
-    [Fact]
-    [OuterLoop]
-    [PlatformSpecific(PlatformID.Windows)] // device name prefixes
-    public static void CreateDirectory_PathWithReservedDeviceNameAsPath_ThrowsDirectoryNotFoundException()
-    {   // Throws DirectoryNotFoundException, when the behavior really should be an invalid path
-        var paths = IOInputs.GetPathsWithReservedDeviceNames();
-        foreach (var path in paths)
-        {
-            Assert.Throws<DirectoryNotFoundException>(() =>
-            {
-                Directory.CreateDirectory(path);
-            });
-        }
-    }
-
-    [Fact]
-    [PlatformSpecific(PlatformID.Windows)] // UNC shares
-    public static void CreateDirectory_UncPathWithoutShareNameAsPath_ThrowsArgumentException()
-    {
-        var paths = IOInputs.GetUncPathsWithoutShareName();
-        foreach (var path in paths)
-        {
-            Assert.Throws<ArgumentException>(() =>      // BUG 995784: Not setting the parameter name
-            {
-                Directory.CreateDirectory(path);
-            });
-        }
-    }
-
-    [Fact]
-    [PlatformSpecific(PlatformID.Windows)] // max component size not fixed on Unix
-    public static void CreateDirectory_DirectoryWithComponentLongerThanMaxComponentAsPath_ThrowsPathTooLongException()
-    {
-        // While paths themselves can be up to 260 characters including trailing null, file systems
-        // limit each components of the path to a total of 255 characters.
-
-        var paths = IOInputs.GetPathsWithComponentLongerThanMaxComponent();
-
-        foreach (string path in paths)
-        {
-            Assert.Throws<PathTooLongException>(() =>
-            {
-                Directory.CreateDirectory(path);
-            });
-        }
-    }
-
-    [Fact]
-    [PlatformSpecific(PlatformID.Windows)] // max directory size not fixed on Unix
-    public static void CreateDirectory_DirectoryLongerThanMaxDirectoryAsPath_ThrowsPathTooLongException()
-    {
-        var paths = IOInputs.GetPathsLongerThanMaxDirectory();
-        foreach (var path in paths)
-        {
-            Assert.Throws<PathTooLongException>(() =>
-            {
-                Directory.CreateDirectory(path);
-            });
-        }
-    }
-
-    [Fact]
-    public static void CreateDirectory_DirectoryLongerThanMaxPathAsPath_ThrowsPathTooLongException()
-    {
-        var paths = IOInputs.GetPathsLongerThanMaxPath();
-        foreach (var path in paths)
-        {
-            Assert.Throws<PathTooLongException>(() =>
-            {
-                Directory.CreateDirectory(path);
-            });
-        }
-    }
-
-    [Fact]
-    [PlatformSpecific(PlatformID.Windows)] // testing drive labels
-    public static void CreateDirectory_NotReadyDriveAsPath_ThrowsDirectoryNotFoundException()
-    {   // Behavior is suspect, should really have thrown IOException similar to the SubDirectory case
-        var drive = IOServices.GetNotReadyDrive();
-        if (drive == null)
-        {
-            Console.WriteLine("Skipping test. Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
-            return;
-        }
-
-        Assert.Throws<DirectoryNotFoundException>(() =>
-        {
-            Directory.CreateDirectory(drive);
-        });
-    }
-
-    [Fact]
-    [PlatformSpecific(PlatformID.Windows)] // testing drive labels
-    public static void CreateDirectory_SubdirectoryOnNotReadyDriveAsPath_ThrowsIOException()
-    {
-        var drive = IOServices.GetNotReadyDrive();
-        if (drive == null)
-        {
-            Console.WriteLine("Skipping test. Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
-            return;
-        }
-
-        // 'Device is not ready'
-        Assert.Throws<IOException>(() =>
-        {
-            Directory.CreateDirectory(Path.Combine(drive, "Subdirectory"));
-        });
-    }
-
-    [Fact]
-    [PlatformSpecific(PlatformID.Windows)] // testing drive labels
-    public static void CreateDirectory_NonExistentDriveAsPath_ThrowsDirectoryNotFoundException()
-    {
-        var drive = IOServices.GetNonExistentDrive();
-        if (drive == null)
-        {
-            Console.WriteLine("Skipping test. Unable to find a non-existent drive.");
-            return;
-        }
-
-
-        Assert.Throws<DirectoryNotFoundException>(() =>
-        {
-            Directory.CreateDirectory(drive);
-        });
-    }
-
-    [Fact]
-    [PlatformSpecific(PlatformID.Windows)] // testing drive labels
-    public static void CreateDirectory_SubdirectoryOnNonExistentDriveAsPath_ThrowsDirectoryNotFoundException()
-    {
-        var drive = IOServices.GetNonExistentDrive();
-        if (drive == null)
-        {
-            Console.WriteLine("Skipping test. Unable to find a non-existent drive.");
-            return;
-        }
-
-        Assert.Throws<DirectoryNotFoundException>(() =>
-        {
-            Directory.CreateDirectory(Path.Combine(drive, "Subdirectory"));
-        });
-    }
-
-    [Fact]
-    public static void CreateDirectory_FileWithoutTrailingSlashAsPath_ThrowsIOException()
-    {   // VSWhidbey #104049
-        using (TemporaryFile file = new TemporaryFile())
-        {
-            string path = IOServices.RemoveTrailingSlash(file.Path);
-
-            Assert.Throws<IOException>(() =>
-            {
-                Directory.CreateDirectory(path);
-            });
-        }
-    }
-
-
-    [Fact]
-    public static void CreateDirectory_FileWithTrailingSlashAsPath_ThrowsIOException()
-    {
-        using (TemporaryFile file = new TemporaryFile())
-        {
-            string path = IOServices.AddTrailingSlashIfNeeded(file.Path);
-
-            Assert.Throws<IOException>(() =>
-            {
-                Directory.CreateDirectory(path);
-            });
-        }
-    }
-
-    [Fact]
-    public static void CreateDirectory_ExistingDirectoryWithoutTrailingSlashAsPath_DoesNotThrow()
-    {
-        using (TemporaryDirectory directory = new TemporaryDirectory())
-        {
-            string path = IOServices.RemoveTrailingSlash(directory.Path);
-
-            DirectoryInfo result = Directory.CreateDirectory(path);
-
-            Assert.Equal(path, result.FullName);
-            Assert.True(Directory.Exists(result.FullName));
-        }
-    }
-
-    [Fact]
-    public static void CreateDirectory_ExistingDirectoryWithTrailingSlashAsPath_DoesNotThrow()
-    {
-        using (TemporaryDirectory directory = new TemporaryDirectory())
-        {
-            string path = IOServices.AddTrailingSlashIfNeeded(directory.Path);
-
-            DirectoryInfo result = Directory.CreateDirectory(path);
-
-            Assert.Equal(path, result.FullName);
-            Assert.True(Directory.Exists(result.FullName));
-        }
-    }
-
-    [Fact]
-    public static void CreateDirectory_DotWithoutTrailingSlashAsPath_DoesNotThrow()
-    {
-        DirectoryInfo result = Directory.CreateDirectory(Path.Combine(TestInfo.CurrentDirectory, ".")); // "Current" directory
-
-        Assert.True(Directory.Exists(result.FullName));
-    }
-
-    [Fact]
-    public static void CreateDirectory_DotWithTrailingSlashAsPath_DoesNotThrow()
-    {
-        DirectoryInfo result = Directory.CreateDirectory(Path.Combine(TestInfo.CurrentDirectory, ".") + Path.DirectorySeparatorChar); // "Current" directory
-
-        Assert.True(Directory.Exists(result.FullName));
-    }
-
-    [Fact]
-    public static void CreateDirectory_DotDotWithoutTrailingSlashAsPath_DoesNotThrow()
-    {
-        DirectoryInfo result = Directory.CreateDirectory(Path.Combine(TestInfo.CurrentDirectory, ".."));    // "Parent" of current directory
-
-        Assert.True(Directory.Exists(result.FullName));
-    }
-
-    [Fact]
-    public static void CreateDirectory_DotDotWithTrailingSlashAsPath_DoesNotThrow()
-    {
-        DirectoryInfo result = Directory.CreateDirectory(Path.Combine(TestInfo.CurrentDirectory, "..") + Path.DirectorySeparatorChar);    // "Parent" of current directory
-
-        Assert.True(Directory.Exists(result.FullName));
-    }
-
-#if !TEST_WINRT // Cannot set current directory to root from appcontainer with it's default ACL
-    /*
-    [Fact]
-    [ActiveIssue(1220)] // SetCurrentDirectory
-    public static void CreateDirectory_DotDotAsPath_WhenCurrentDirectoryIsRoot_DoesNotThrow()
-    {
-        string root = Path.GetPathRoot(Directory.GetCurrentDirectory());
-
-        using (CurrentDirectoryContext context = new CurrentDirectoryContext(root))
-        {
-            DirectoryInfo result = Directory.CreateDirectory("..");
-
-            Assert.True(Directory.Exists(result.FullName));
-            Assert.Equal(root, result.FullName);
-        }
-    }
-    */
-#endif
-
-    [Fact]
-    [PlatformSpecific(PlatformID.Windows)] // whitespace in names is significant on Unix
-    public static void CreateDirectory_NonSignificantTrailingWhiteSpace_TreatsAsNonSignificant()
-    {
-        using (TemporaryDirectory directory = new TemporaryDirectory())
-        {
-            var components = IOInputs.GetNonSignificantTrailingWhiteSpace();
-
-            foreach (string component in components)
-            {
-                string path = directory.Path + component;
-
-                DirectoryInfo result = Directory.CreateDirectory(path);
-
+                Assert.Equal(path, result.FullName);
                 Assert.True(Directory.Exists(result.FullName));
-                Assert.Equal(directory.Path, result.FullName);
-            }
-        }
-    }
-
-    [Fact]
-    public static void CreateDirectory_ReadOnlyFileAsPath_ThrowsIOException()
-    {
-        using (TemporaryFile file = new TemporaryFile())
-        {
-            file.IsReadOnly = true;
-
-            Assert.Throws<IOException>(() =>
-            {
-                Directory.CreateDirectory(file.Path);
             });
         }
-    }
 
-#if !TEST_WINRT // TODO: Enable once we implement WinRT file attributes
-    [Fact]
-    public static void CreateDirectory_ReadOnlyExistingDirectoryAsPath_DoesNotThrow()
-    {   // DevDivBugs #33833 
-        using (TemporaryDirectory directory = new TemporaryDirectory())
+        [Fact]
+        public void ValidPathWithMultipleSubdirectories()
         {
-            directory.IsReadOnly = true;
+            string dirName = Path.Combine(GetTestFilePath(), "Test", "Test", "Test");
+            DirectoryInfo dir = Create(dirName);
 
-            DirectoryInfo result = Directory.CreateDirectory(directory.Path);
-
-            Assert.Equal(directory.Path, result.FullName);
-            Assert.True(Directory.Exists(result.FullName));
+            Assert.Equal(dir.FullName, dirName);
         }
-    }
 
-
-    [Fact]
-    public static void CreateDirectory_HiddenExistingDirectoryAsPath_DoesNotThrow()
-    {
-        using (TemporaryDirectory directory = new TemporaryDirectory())
+        [Fact]
+        public void AllowedSymbols()
         {
-            directory.IsHidden = true;
+            string dirName = Path.Combine(TestDirectory, Path.GetRandomFileName() + "!@#$%^&");
+            DirectoryInfo dir = Create(dirName);
 
-            DirectoryInfo result = Directory.CreateDirectory(directory.Path);
-
-            Assert.Equal(directory.Path, result.FullName);
-            Assert.True(Directory.Exists(result.FullName));
+            Assert.Equal(dir.FullName, dirName);
         }
-    }
-#endif
 
-    [Fact]
-    [PlatformSpecific(PlatformID.Windows)] // max directory length not fixed on Unix
-    public static void CreateDirectory_DirectoryEqualToMaxDirectory_CanBeCreated()
-    {   // Recursively creates directories right up to the maximum directory length ("247 chars not including null")
-        using (TemporaryDirectory directory = new TemporaryDirectory())
+        [Fact]
+        public void DirectoryEqualToMaxDirectory_CanBeCreated()
         {
-            PathInfo path = IOServices.GetPath(directory.Path, IOInputs.MaxDirectory, IOInputs.MaxComponent);
-
-            // First create 'C:\AAA...AA', followed by 'C:\AAA...AAA\AAA...AAA', etc
-            foreach (string subpath in path.SubPaths)
+            DirectoryInfo testDir = Create(GetTestFilePath());
+            PathInfo path = IOServices.GetPath(testDir.FullName, IOInputs.MaxDirectory, IOInputs.MaxComponent);
+            Assert.All(path.SubPaths, (subpath) =>
             {
-                DirectoryInfo result = Directory.CreateDirectory(subpath);
+                DirectoryInfo result = Create(subpath);
 
                 Assert.Equal(subpath, result.FullName);
                 Assert.True(Directory.Exists(result.FullName));
-            }
+            });
         }
-    }
 
-    [Fact]
-    [PlatformSpecific(PlatformID.Windows)] // max directory length not fixed on Unix
-    public static void CreateDirectory_DirectoryEqualToMaxDirectory_CanBeCreatedAllAtOnce()
-    {   // Creates directories up to the maximum directory length all at once
-        using (TemporaryDirectory directory = new TemporaryDirectory())
+        [Fact]
+        public void DirectoryEqualToMaxDirectory_CanBeCreatedAllAtOnce()
         {
-            PathInfo path = IOServices.GetPath(directory.Path, IOInputs.MaxDirectory, maxComponent: 10);
-
-            DirectoryInfo result = Directory.CreateDirectory(path.FullPath);
+            DirectoryInfo testDir = Create(GetTestFilePath());
+            PathInfo path = IOServices.GetPath(testDir.FullName, IOInputs.MaxDirectory, maxComponent: 10);
+            DirectoryInfo result = Create(path.FullPath);
 
             Assert.Equal(path.FullPath, result.FullName);
             Assert.True(Directory.Exists(result.FullName));
         }
-    }
 
-    [Fact]
-    public static void CreateDirectory_ValidPathWithTrailingSlash_CanBeCreated()
-    {
-        using (TemporaryDirectory directory = new TemporaryDirectory())
+        [Fact]
+        public void DirectoryWithComponentLongerThanMaxComponentAsPath_ThrowsPathTooLongException()
         {
-            var components = IOInputs.GetValidPathComponentNames();
+            // While paths themselves can be up to 260 characters including trailing null, file systems
+            // limit each components of the path to a total of 255 characters.
+            var paths = IOInputs.GetPathsWithComponentLongerThanMaxComponent();
 
-            foreach (var component in components)
+            Assert.All(paths, (path) =>
             {
-                string path = IOServices.AddTrailingSlashIfNeeded(Path.Combine(directory.Path, component));
+                Assert.Throws<PathTooLongException>(() => Create(path));
+            });
+        }
 
-                DirectoryInfo result = Directory.CreateDirectory(path);
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void DirectoryLongerThanMaxPathAsPath_ThrowsPathTooLongException()
+        {
+            var paths = IOInputs.GetPathsLongerThanMaxPath();
+            Assert.All(paths, (path) =>
+            {
+                Assert.Throws<PathTooLongException>(() => Create(path));
+            });
+        }
 
-                Assert.Equal(path, result.FullName);
+        #endregion
+
+        #region PlatformSpecific
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void DirectoryLongerThanMaxDirectoryAsPath_ThrowsPathTooLongException()
+        {
+            var paths = IOInputs.GetPathsLongerThanMaxDirectory();
+            Assert.All(paths, (path) =>
+            {
+                Assert.Throws<PathTooLongException>(() => Create(path));
+            });
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        [ActiveIssue(645)]
+        public void UnixPathLongerThan256_Allowed()
+        {
+            DirectoryInfo testDir = Create(GetTestFilePath());
+            PathInfo path = IOServices.GetPath(testDir.FullName, 257, IOInputs.MaxComponent);
+            DirectoryInfo result = Create(path.FullPath);
+            Assert.Equal(path.FullPath, result.FullName);
+            Assert.True(Directory.Exists(result.FullName));
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void UnixPathLongerThan256_Throws()
+        {
+            DirectoryInfo testDir = Create(GetTestFilePath());
+            PathInfo path = IOServices.GetPath(testDir.FullName, 257, IOInputs.MaxComponent);
+            Assert.Throws<PathTooLongException>(() => Create(path.FullPath));
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void WindowsWhiteSpaceAsPath_ThrowsArgumentException()
+        {
+            var paths = IOInputs.GetNonSignificantTrailingWhiteSpace();
+            Assert.All(paths, (path) =>
+            {
+                Assert.Throws<ArgumentException>(() => Create(path));
+            });
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void UnixWhiteSpaceAsPath_Allowed()
+        {
+            var paths = IOInputs.GetNonSignificantTrailingWhiteSpace();
+            Assert.All(paths, (path) =>
+            {
+                Create(Path.Combine(TestDirectory, path));
+                Assert.True(Directory.Exists(Path.Combine(TestDirectory, path)));
+            });
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)] 
+        public void WindowsNonSignificantTrailingWhiteSpace()
+        {
+            // Windows will remove all nonsignificant whitespace in a path
+            DirectoryInfo testDir = Create(GetTestFilePath());
+            var components = IOInputs.GetNonSignificantTrailingWhiteSpace();
+
+            Assert.All(components, (component) =>
+            {
+                string path = IOServices.RemoveTrailingSlash(testDir.FullName) + component;
+                DirectoryInfo result = Create(path);
+
                 Assert.True(Directory.Exists(result.FullName));
+                Assert.Equal(testDir.FullName, IOServices.RemoveTrailingSlash(result.FullName));
+            });
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void UnixNonSignificantTrailingWhiteSpace()
+        {
+            // Unix treats trailing/prename whitespace as significant and a part of the name.
+            DirectoryInfo testDir = Create(GetTestFilePath());
+            var components = IOInputs.GetNonSignificantTrailingWhiteSpace();
+
+            Assert.All(components, (component) =>
+            {
+                string path = IOServices.RemoveTrailingSlash(testDir.FullName) + component;
+                DirectoryInfo result = Create(path);
+
+                Assert.True(Directory.Exists(result.FullName));
+                Assert.NotEqual(testDir.FullName, IOServices.RemoveTrailingSlash(result.FullName));
+            });
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)] // alternate data streams
+        public void PathWithAlternateDataStreams_ThrowsNotSupportedException()
+        {
+            var paths = IOInputs.GetPathsWithAlternativeDataStreams();
+            Assert.All(paths, (path) =>
+            {
+                Assert.Throws<NotSupportedException>(() => Create(path));
+            });
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)] // device name prefixes
+        public void PathWithReservedDeviceNameAsPath_ThrowsDirectoryNotFoundException()
+        {   // Throws DirectoryNotFoundException, when the behavior really should be an invalid path
+            var paths = IOInputs.GetPathsWithReservedDeviceNames();
+            Assert.All(paths, (path) =>
+            {
+                Assert.Throws<DirectoryNotFoundException>(() => Create(path));
+            });
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)] // UNC shares
+        public void UncPathWithoutShareNameAsPath_ThrowsArgumentException()
+        {
+            var paths = IOInputs.GetUncPathsWithoutShareName();
+            foreach (var path in paths)
+            {
+                Assert.Throws<ArgumentException>(() => Create(path));
             }
         }
-    }
 
-    [Fact]
-    public static void CreateDirectory_ValidPathWithoutTrailingSlashAsPath_CanBeCreated()
-    {
-        using (TemporaryDirectory directory = new TemporaryDirectory())
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)] // drive labels
+        public void CDriveCase()
         {
-            var components = IOInputs.GetValidPathComponentNames();
+            DirectoryInfo dir = Create("c:\\");
+            DirectoryInfo dir2 = Create("C:\\");
+            Assert.NotEqual(dir.FullName, dir2.FullName);
+        }
 
-            foreach (var component in components)
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void DriveLetter_Windows()
+        {
+            // On Windows, DirectoryInfo will replace "<DriveLetter>:" with "."
+            var driveLetter = Create(Directory.GetCurrentDirectory()[0] + ":");
+            var current = Create(".");
+            Assert.Equal(current.Name, driveLetter.Name);
+            Assert.Equal(current.FullName, driveLetter.FullName);
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void DriveLetter_Unix()
+        {
+            // On Unix, there's no special casing for drive letters, which are valid file names
+            var driveLetter = Create("C:");
+            var current = Create(".");
+            Assert.Equal("C:", driveLetter.Name);
+            Assert.Equal(Path.Combine(current.FullName, "C:"), driveLetter.FullName);
+            Directory.Delete("C:");
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)] // testing drive labels
+        public void NonExistentDriveAsPath_ThrowsDirectoryNotFoundException()
+        {
+            Assert.Throws<DirectoryNotFoundException>(() =>
             {
-                string path = directory.Path + Path.DirectorySeparatorChar + component;
+                Create(IOServices.GetNonExistentDrive());
+            });
+        }
 
-                DirectoryInfo result = Directory.CreateDirectory(path);
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)] // testing drive labels
+        public void SubdirectoryOnNonExistentDriveAsPath_ThrowsDirectoryNotFoundException()
+        {
+            Assert.Throws<DirectoryNotFoundException>(() =>
+            {
+                Create(Path.Combine(IOServices.GetNonExistentDrive(), "Subdirectory"));
+            });
+        }
 
-                Assert.Equal(path, result.FullName);
+        [Fact]
+        [ActiveIssue(1221)]
+        [PlatformSpecific(PlatformID.Windows)] // testing drive labels
+        public void NotReadyDriveAsPath_ThrowsDirectoryNotFoundException()
+        {   // Behavior is suspect, should really have thrown IOException similar to the SubDirectory case
+            var drive = IOServices.GetNotReadyDrive();
+            if (drive == null)
+            {
+                Console.WriteLine("Skipping test. Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
+                return;
+            }
+
+            Assert.Throws<DirectoryNotFoundException>(() =>
+            {
+                Create(drive);
+            });
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)] // testing drive labels
+        [ActiveIssue(1221)]
+        public void SubdirectoryOnNotReadyDriveAsPath_ThrowsIOException()
+        {
+            var drive = IOServices.GetNotReadyDrive();
+            if (drive == null)
+            {
+                Console.WriteLine("Skipping test. Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
+                return;
+            }
+
+            // 'Device is not ready'
+            Assert.Throws<IOException>(() =>
+            {
+                Create(Path.Combine(drive, "Subdirectory"));
+            });
+        }
+
+#if !TEST_WINRT // Cannot set current directory to root from appcontainer with it's default ACL
+        /*
+        [Fact]
+        [ActiveIssue(1220)] // SetCurrentDirectory
+        public void DotDotAsPath_WhenCurrentDirectoryIsRoot_DoesNotThrow()
+        {
+            string root = Path.GetPathRoot(Directory.GetCurrentDirectory());
+
+            using (CurrentDirectoryContext context = new CurrentDirectoryContext(root))
+            {
+                DirectoryInfo result = Create("..");
+
                 Assert.True(Directory.Exists(result.FullName));
+                Assert.Equal(root, result.FullName);
             }
         }
+        */
+#endif
+        #endregion
     }
 }

@@ -1,118 +1,156 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed under the MIT license. See LICENSE Directory in the project root for full license information.
 
-using System;
-using System.Runtime.CompilerServices;
-using System.IO;
-using System.Collections;
-using System.Globalization;
-using System.Text;
-using System.Threading;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Xunit;
 
-public class Directory_GetSetTimes
+namespace System.IO.FileSystem.Tests
 {
-    private enum TimeProperty
+    public class Directory_GetSetTimes : FileSystemTest
     {
-        CreationTime,
-        LastAccessTime,
-        LastWriteTime
-    }
+        public delegate void SetTime(string path, DateTime time);
+        public delegate DateTime GetTime(string path);
 
-    [Fact]
-    public static void ConsistencyTest()
-    {
-        String dirName = Path.Combine(TestInfo.CurrentDirectory, "Directory_GetSetTimes");
-
-        Directory.CreateDirectory(dirName);
-
-        foreach (TimeProperty timeProperty in Enum.GetValues(typeof(TimeProperty)))
+        public IEnumerable<Tuple<SetTime, GetTime, DateTimeKind>> TimeFunctions()
         {
-            if (!Interop.IsWindows && timeProperty == TimeProperty.CreationTime) // roundtripping birthtime not supported on Unix
+            if (IOInputs.SupportsCreationTime)
             {
-                continue;
+                yield return Tuple.Create<SetTime, GetTime, DateTimeKind>(
+                    ((path, time) => Directory.SetCreationTime(path, time)),
+                    ((path) => Directory.GetCreationTime(path)),
+                    DateTimeKind.Local);
+                yield return Tuple.Create<SetTime, GetTime, DateTimeKind>(
+                    ((path, time) => Directory.SetCreationTimeUtc(path, time)),
+                    ((path) => Directory.GetCreationTimeUtc(path)),
+                    DateTimeKind.Utc);
+            }
+            yield return Tuple.Create<SetTime, GetTime, DateTimeKind>(
+                ((path, time) => Directory.SetLastAccessTime(path, time)),
+                ((path) => Directory.GetLastAccessTime(path)),
+                DateTimeKind.Local);
+            yield return Tuple.Create<SetTime, GetTime, DateTimeKind>(
+                ((path, time) => Directory.SetLastAccessTimeUtc(path, time)),
+                ((path) => Directory.GetLastAccessTimeUtc(path)),
+                DateTimeKind.Utc);
+            yield return Tuple.Create<SetTime, GetTime, DateTimeKind>(
+                ((path, time) => Directory.SetLastWriteTime(path, time)),
+                ((path) => Directory.GetLastWriteTime(path)),
+                DateTimeKind.Local);
+            yield return Tuple.Create<SetTime, GetTime, DateTimeKind>(
+                ((path, time) => Directory.SetLastWriteTimeUtc(path, time)),
+                ((path) => Directory.GetLastWriteTimeUtc(path)),
+                DateTimeKind.Utc);
+        }
+
+        [Fact]
+        public void NullPath_ThrowsArgumentNullException()
+        {
+            Assert.All(TimeFunctions(), (tuple) =>
+            {
+                Assert.Throws<ArgumentNullException>(() => tuple.Item1(null, DateTime.Today));
+                Assert.Throws<ArgumentNullException>(() => tuple.Item2(null));
+            });
+        }
+
+        [Fact]
+        public void EmptyPath_ThrowsArgumentException()
+        {
+            Assert.All(TimeFunctions(), (tuple) =>
+            {
+                Assert.Throws<ArgumentException>(() => tuple.Item1(string.Empty, DateTime.Today));
+                Assert.Throws<ArgumentException>(() => tuple.Item2(string.Empty));
+            });
+        }
+
+        [Fact]
+        public void SettingUpdatesProperties()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+
+            Assert.All(TimeFunctions(), (tuple) =>
+            {
+                DateTime dt = new DateTime(2014, 12, 1, 12, 0, 0, tuple.Item3);
+                tuple.Item1(testDir.FullName, dt);
+                Assert.Equal(dt, tuple.Item2(testDir.FullName));
+            });
+        }
+
+        [Fact]
+        public void CreationSetsAllTimes()
+        {
+            string path = GetTestFilePath();
+            long beforeTime = DateTime.UtcNow.AddSeconds(-3).Ticks;
+
+            DirectoryInfo testDirectory = new DirectoryInfo(GetTestFilePath());
+            testDirectory.Create();
+
+            long afterTime = DateTime.UtcNow.AddSeconds(3).Ticks;
+
+            Assert.All(TimeFunctions(), (tuple) =>
+            {
+                Assert.InRange(tuple.Item2(testDirectory.FullName).ToUniversalTime().Ticks, beforeTime, afterTime);
+            });
+        }
+
+        [OuterLoop]
+        [Fact]
+        [ActiveIssue(2369, PlatformID.AnyUnix)]
+        public void DirectoryDoesntExist_ReturnDefaultValues()
+        {
+            string path = GetTestFilePath();
+
+            //non-utc
+            Assert.Equal(DateTime.FromFileTime(0).Ticks, Directory.GetLastAccessTime(path).Ticks);
+            Assert.Equal(DateTime.FromFileTime(0).Ticks, new DirectoryInfo(path).LastAccessTime.Ticks);
+            Assert.Equal(DateTime.FromFileTime(0).Ticks, Directory.GetLastWriteTime(path).Ticks);
+            Assert.Equal(DateTime.FromFileTime(0).Ticks, new DirectoryInfo(path).LastWriteTime.Ticks);
+            if (IOInputs.SupportsCreationTime)
+            {
+                Assert.Equal(DateTime.FromFileTime(0).Ticks, Directory.GetCreationTime(path).Ticks);
+                Assert.Equal(DateTime.FromFileTime(0).Ticks, new DirectoryInfo(path).CreationTime.Ticks);
             }
 
-            foreach (DateTimeKind kind in Enum.GetValues(typeof(DateTimeKind)))
+            //utc
+            Assert.Equal(DateTime.FromFileTimeUtc(0).Ticks, Directory.GetLastAccessTimeUtc(path).Ticks);
+            Assert.Equal(DateTime.FromFileTimeUtc(0).Ticks, new DirectoryInfo(path).LastAccessTimeUtc.Ticks);
+            Assert.Equal(DateTime.FromFileTimeUtc(0).Ticks, Directory.GetLastWriteTimeUtc(path).Ticks);
+            Assert.Equal(DateTime.FromFileTimeUtc(0).Ticks, new DirectoryInfo(path).LastWriteTimeUtc.Ticks);
+            if (IOInputs.SupportsCreationTime)
             {
-                DateTime dt = new DateTime(2014, 12, 1, 12, 0, 0, kind);
-                foreach (bool setUtc in new[] { false, true })
-                {
-                    if (setUtc)
-                    {
-                        switch (timeProperty)
-                        {
-                            case TimeProperty.CreationTime:
-                                Directory.SetCreationTimeUtc(dirName, dt);
-                                break;
-                            case TimeProperty.LastAccessTime:
-                                Directory.SetLastAccessTimeUtc(dirName, dt);
-                                break;
-                            case TimeProperty.LastWriteTime:
-                                Directory.SetLastWriteTimeUtc(dirName, dt);
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        switch (timeProperty)
-                        {
-                            case TimeProperty.CreationTime:
-                                Directory.SetCreationTime(dirName, dt);
-                                break;
-                            case TimeProperty.LastAccessTime:
-                                Directory.SetLastAccessTime(dirName, dt);
-                                break;
-                            case TimeProperty.LastWriteTime:
-                                Directory.SetLastWriteTime(dirName, dt);
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-
-                    DateTime actual, actualUtc;
-                    switch (timeProperty)
-                    {
-                        case TimeProperty.CreationTime:
-                            actual = Directory.GetCreationTime(dirName);
-                            actualUtc = Directory.GetCreationTimeUtc(dirName);
-                            break;
-                        case TimeProperty.LastAccessTime:
-                            actual = Directory.GetLastAccessTime(dirName);
-                            actualUtc = Directory.GetLastAccessTimeUtc(dirName);
-                            break;
-                        case TimeProperty.LastWriteTime:
-                            actual = Directory.GetLastWriteTime(dirName);
-                            actualUtc = Directory.GetLastWriteTimeUtc(dirName);
-                            break;
-                        default:
-                            throw new ArgumentException("Invalid time property type");
-                    }
-
-                    DateTime expected = dt.ToLocalTime();
-                    DateTime expectedUtc = dt.ToUniversalTime();
-
-                    if (dt.Kind == DateTimeKind.Unspecified)
-                    {
-                        if (setUtc)
-                        {
-                            expectedUtc = dt;
-                        }
-                        else
-                        {
-                            expected = dt;
-                        }
-                    }
-
-                    Assert.Equal(expected, actual); //, "Local {0} should be correct for DateTimeKind.{1} when set with Set{0}{2}", timeProperty, kind, setUtc ? "Utc" : "");
-                    Assert.Equal(expectedUtc, actualUtc); //, "Universal {0} should be correct for DateTimeKind.{1} when set with Set{0}{2}", timeProperty, kind, setUtc ? "Utc" : "");
-                }
+                Assert.Equal(DateTime.FromFileTimeUtc(0).Ticks, Directory.GetCreationTimeUtc(path).Ticks);
+                Assert.Equal(DateTime.FromFileTimeUtc(0).Ticks, new DirectoryInfo(path).CreationTimeUtc.Ticks);
             }
         }
 
-        Directory.Delete(dirName);
+        [OuterLoop]
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void UnixDirectoryDoesntExist_Throws()
+        {
+            string path = GetTestFilePath();
+
+            //non-utc
+            Assert.Throws<FileNotFoundException>(() => Directory.GetLastAccessTime(path));
+            Assert.Throws<DirectoryNotFoundException>(() => new DirectoryInfo(path).LastAccessTime);
+            Assert.Throws<FileNotFoundException>(() => Directory.GetLastWriteTime(path));
+            Assert.Throws<DirectoryNotFoundException>(() => new DirectoryInfo(path).LastWriteTime);
+            if (IOInputs.SupportsCreationTime)
+            {
+                Assert.Throws<FileNotFoundException>(() => Directory.GetCreationTime(path));
+                Assert.Throws<DirectoryNotFoundException>(() => new DirectoryInfo(path).CreationTime);
+            }
+
+            //utc
+            Assert.Throws<FileNotFoundException>(() => Directory.GetLastAccessTimeUtc(path));
+            Assert.Throws<DirectoryNotFoundException>(() => new DirectoryInfo(path).LastAccessTimeUtc);
+            Assert.Throws<FileNotFoundException>(() => Directory.GetLastWriteTimeUtc(path));
+            Assert.Throws<DirectoryNotFoundException>(() => new DirectoryInfo(path).LastWriteTimeUtc);
+            if (IOInputs.SupportsCreationTime)
+            {
+                Assert.Throws<FileNotFoundException>(() => Directory.GetCreationTimeUtc(path));
+                Assert.Throws<DirectoryNotFoundException>(() => new DirectoryInfo(path).CreationTimeUtc);
+            }
+        }
     }
 }
