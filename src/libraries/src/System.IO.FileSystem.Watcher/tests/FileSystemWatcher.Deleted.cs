@@ -86,9 +86,10 @@ public partial class FileSystemWatcher_4000_Tests
     {
         using (var dir = Utility.CreateTestDirectory())
         using (var watcher = new FileSystemWatcher())
-        using (AutoResetEvent createOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created))
-        using (AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Deleted))
         {
+            AutoResetEvent createOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created); // not "using" to avoid race conditions with FSW callbacks
+            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Deleted);
+
             watcher.Path = Path.GetFullPath(dir.Path);
             watcher.Filter = "*";
             watcher.IncludeSubdirectories = true;
@@ -125,9 +126,10 @@ public partial class FileSystemWatcher_4000_Tests
     {
         using (var dir = Utility.CreateTestDirectory())
         using (var watcher = new FileSystemWatcher())
-        using (AutoResetEvent createOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created))
-        using (AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Deleted))
         {
+            AutoResetEvent createOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created); // not "using" to avoid race conditions with FSW callbacks
+            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Deleted);
+
             watcher.Path = Path.GetFullPath(dir.Path);
             watcher.Filter = "*";
             watcher.IncludeSubdirectories = true;
