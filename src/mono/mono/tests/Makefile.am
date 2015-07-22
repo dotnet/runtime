@@ -18,8 +18,6 @@ JITTEST_PROG_RUN = MONO_CFG_DIR=$(mono_build_root)/runtime/etc $(LIBTOOL) --mode
 
 RUNTIME_ARGS=--config tests-config --optimize=all --debug
 
--include $(mcs_topdir)/build/config.make
-
 CLASS=$(mcs_topdir)/class/lib/$(DEFAULT_PROFILE)
 
 with_mono_path = MONO_PATH=$(CLASS)

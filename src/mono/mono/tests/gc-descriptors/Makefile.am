@@ -1,5 +1,3 @@
--include $(mcs_topdir)/build/config.make
-
 CLASS=$(mcs_topdir)/class/lib/$(DEFAULT_PROFILE)
 
 with_mono_path = MONO_PATH=$(CLASS)
