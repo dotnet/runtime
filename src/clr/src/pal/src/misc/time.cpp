@@ -28,6 +28,11 @@ Abstract:
 #include <errno.h>
 #include <string.h>
 
+#if HAVE_MACH_CLOCK_MONOTONIC
+#include <mach/mach.h>
+#include <mach/clock.h>
+#endif
+
 SET_DEFAULT_DEBUG_CHANNEL(MISC);
 
 /*++
@@ -269,6 +274,21 @@ GetTickCount64()
             goto EXIT;
         }
         retval = (ts.tv_sec * tccSecondsToMillieSeconds)+(ts.tv_nsec / tccMillieSecondsToNanoSeconds);
+    }
+#elif HAVE_MACH_CLOCK_MONOTONIC
+    {
+        kern_return_t machRet;
+        clock_serv_t clock;
+        mach_timespec_t mts;
+
+        host_get_clock_service(mach_host_self(), SYSTEM_CLOCK, &clock);
+        if((machRet = clock_get_time(clock, &mts)) != KERN_SUCCESS)
+        {
+            ASSERT("clock_get_time() failed: %d\n", machRet);
+            goto EXIT;
+        }
+        mach_port_deallocate(mach_task_self(), clock);
+        retval = (mts.tv_sec * tccSecondsToMillieSeconds)+(mts.tv_nsec / tccMillieSecondsToNanoSeconds);
     }
 #elif HAVE_GETHRTIME
     {
