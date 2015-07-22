@@ -286,6 +286,7 @@ GlobalMemoryStatusEx(
                 lpBuffer->dwMemoryLoad = (DWORD)((used_memory * 100) / lpBuffer->ullTotalPhys);
             }
         }
+        mach_port_deallocate(mach_task_self(), mach_port);
 #endif // __APPLE__
     }
 
