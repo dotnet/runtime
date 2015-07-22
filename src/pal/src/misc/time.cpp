@@ -280,14 +280,22 @@ GetTickCount64()
         kern_return_t machRet;
         clock_serv_t clock;
         mach_timespec_t mts;
+        host_t host = mach_host_self();
 
-        host_get_clock_service(mach_host_self(), SYSTEM_CLOCK, &clock);
-        if((machRet = clock_get_time(clock, &mts)) != KERN_SUCCESS)
+        if((machRet = host_get_clock_service(host, SYSTEM_CLOCK, &clock)) != KERN_SUCCESS)
         {
-            ASSERT("clock_get_time() failed: %d\n", machRet);
+            ASSERT("host_get_clock_service() failed: %s\n", mach_error_string(machRet));
             goto EXIT;
         }
+        machRet = clock_get_time(clock, &mts);
+        mach_port_deallocate(mach_task_self(), host);
         mach_port_deallocate(mach_task_self(), clock);
+
+        if(machRet != KERN_SUCCESS)
+        {
+            ASSERT("clock_get_time() failed: %s\n", mach_error_string(machRet));
+            goto EXIT;
+        }
         retval = (mts.tv_sec * tccSecondsToMillieSeconds)+(mts.tv_nsec / tccMillieSecondsToNanoSeconds);
     }
 #elif HAVE_GETHRTIME
