@@ -254,8 +254,10 @@ rather than the underlying integral type.
 
 Often, various UNIX flavors offer the same API from the point-of-view of compatibility
 with C/C++ source code, but they do not have the same ABI. e.g. Fields can be laid out
-differently, constants can have different numeric values, etc. Even the exports can
-be named differently.
+differently, constants cn have different numeric values, exports can
+be named differently, etc. There are not only differences between operating systems
+(Mac OS X vs. Ubuntu vs. FreeBSD), but also differences related to the underlying
+processor architecture (x64 vs. x86 vs. ARM).
 
 This leaves us with a situation where we can't write portable P/Invoke declarations
 that will work on all flavors, and writing separate declarations per flavor is quite
@@ -267,10 +269,6 @@ a P/Invoke to a C++ lib written specifically for corefx. These libs -- System.*.
 Generally, they are not there to add any significant abstraction, but to create a 
 stable ABI such that the same IL assembly can work across UNIX flavors.
 
-At this time, these shims are compiled in the dotnet/coreclr repository under the corefx
-folder. This is temporary (issue #2301) until we add necessary infrastructure to build them 
-in this repository. 
-
 Guidelines for shim C++ API:
 
 - Keep them as "thin"/1:1 as possible. 
@@ -279,12 +277,14 @@ Guidelines for shim C++ API:
 easy to assume something is safe/guaranteed when it isn't.
 - Don't cheat and take advantage of coincidental agreement between
 one flavor's ABI and the shim's ABI. 
-- Use PascalCase and spell things out in a style closer to Win32 than libc. 
-  - At first, it seemed that we'd want to use 1:1 names for the shims, but it 
-    turns out there are many cases where being strictly 1:1 isn't practical. As such, 
-    the libraries will end up looking more self-consistent if we give them their
-    own style with which to express themselves.
-- Stick to data types which are guaranteed not to vary in size across flavors. (Pointers
-and size_t variance across bitness is OK.) 
-  - e.g. use int32_t, int64_t from stdint.h and not int, long. 
+- Use PascalCase in a style closer to Win32 than libc.
+  - If an export point has a 1:1 correspondence to the platform API, then name
+    it after the platform API in PascalCase (e.g. stat -> Stat, fstat -> FStat).
+  - If an export is not 1:1, then spell things out as we typically would in
+    CoreFX code (i.e. don't use abbreviations unless they come from the underlying
+    API.
+  - At first, it seemed that we'd want to use 1:1 names throughout, but it
+    turns out there are many cases where being strictly 1:1 isn't practical.
+- Stick to data types which are guaranteed not to vary in size across flavors.
+  - e.g. use int32_t, int64_t from stdint.h and not int, long.
 

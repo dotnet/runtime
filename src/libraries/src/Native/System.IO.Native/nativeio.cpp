@@ -33,7 +33,7 @@ static void ConvertFileStats(const struct stat_& src, FileStats* dst)
 
 extern "C"
 {
-    int32_t GetFileStatsFromPath(const char* path, struct FileStats* output)
+    int32_t Stat(const char* path, struct FileStats* output)
     {
         struct stat_ result;
         int ret = stat_(path, &result);
@@ -43,10 +43,10 @@ extern "C"
             ConvertFileStats(result, output);
         }
 
-        return ret;
+        return ret; // TODO: errno conversion
     }
 
-    int32_t GetFileStatsFromDescriptor(int32_t fileDescriptor, FileStats* output)
+    int32_t FStat(int32_t fileDescriptor, FileStats* output)
     {
         struct stat_ result;
         int ret = fstat_(fileDescriptor, &result);
@@ -56,6 +56,6 @@ extern "C"
             ConvertFileStats(result, output);
         }
 
-        return ret;
+        return ret; // TODO: errno conversion
     }
 }

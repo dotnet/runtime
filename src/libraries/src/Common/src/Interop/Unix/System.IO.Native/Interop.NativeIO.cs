@@ -39,9 +39,9 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.IOInterop, SetLastError = true)]
-        internal static extern int GetFileStatsFromDescriptor(int fileDescriptor, out FileStats output);
+        internal static extern int FStat(int fileDescriptor, out FileStats output);
 
         [DllImport(Libraries.IOInterop, SetLastError = true)]
-        internal static extern int GetFileStatsFromPath(string path, out FileStats output);
+        internal static extern int Stat(string path, out FileStats output);
     }
 }

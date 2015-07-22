@@ -129,11 +129,11 @@ create_test_overlay()
   fi
   find $CoreFxBins -name '*.dll' -exec cp '{}' "$OverlayDir" ";"
 
-  # Then the native linux CoreFX binaries
+  # Then the native CoreFX binaries
   #
   # TODO: Currently, CI does not build the native CoreFX components so build them here
   #       in the test phase for now.
-  ( $ProjectRoot/src/Native/build.sh && cp $ProjectRoot/bin/$OS.x64.$Configuration/Native/*.so $OverlayDir ) || exit 1
+  ( $ProjectRoot/src/Native/build.sh && cp $ProjectRoot/bin/$OS.x64.$Configuration/Native/* $OverlayDir ) || exit 1
 }
 
 copy_test_overlay()
