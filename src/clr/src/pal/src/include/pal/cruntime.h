@@ -115,6 +115,22 @@ Parameters:
 *******************************************************************************/
 BOOL Internal_AddPaddingA(LPSTR *Out, INT Count, LPSTR In, INT Padding, INT Flags);
 
+/*******************************************************************************
+Function:
+  PAL_printf_arg_remover
+
+Parameters:
+  ap
+    - pointer to the va_list from which to remove arguments
+  Precision
+    - the precision of the current format option
+  Type
+    - the type of the argument for the current format option
+  Prefix
+    - the prefix for the current format option
+*******************************************************************************/
+void PAL_printf_arg_remover(va_list *ap, INT Precision, INT Type, INT Prefix);
+
 /*++
 Function:
   Silent_PAL_vsnprintf
