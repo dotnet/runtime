@@ -102,15 +102,16 @@ public static class Utility
     }
 
     public static void TestNestedDirectoriesHelper(
-    WatcherChangeTypes change,
-    Action<AutoResetEvent, TemporaryTestDirectory> action,
-    NotifyFilters changeFilers = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.DirectoryName)
+        WatcherChangeTypes change,
+        Action<AutoResetEvent, TemporaryTestDirectory> action,
+        NotifyFilters changeFilers = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.DirectoryName)
     {
         using (var dir = Utility.CreateTestDirectory())
         using (var watcher = new FileSystemWatcher())
-        using (AutoResetEvent createdOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created))
-        using (AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, change))
         {
+            AutoResetEvent createdOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created); // not "using" to avoid race conditions with FSW callbacks
+            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, change);
+
             watcher.Path = Path.GetFullPath(dir.Path);
             watcher.Filter = "*";
             watcher.NotifyFilter = changeFilers;
