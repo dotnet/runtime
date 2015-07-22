@@ -115,26 +115,22 @@ namespace System.Data.Common
 
         public virtual Task OpenAsync(CancellationToken cancellationToken)
         {
-            TaskCompletionSource<object> taskCompletionSource = new TaskCompletionSource<object>();
-
             if (cancellationToken.IsCancellationRequested)
             {
-                taskCompletionSource.SetCanceled();
+                return Task.FromCanceled(cancellationToken);
             }
             else
             {
                 try
                 {
                     Open();
-                    taskCompletionSource.SetResult(null);
+                    return Task.CompletedTask;
                 }
                 catch (Exception e)
                 {
-                    taskCompletionSource.SetException(e);
+                    return Task.FromException(e);
                 }
             }
-
-            return taskCompletionSource.Task;
         }
 
         public void Dispose()

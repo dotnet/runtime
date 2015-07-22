@@ -150,7 +150,7 @@ namespace System.Data.Common
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return ADP.CreatedTaskWithCancellation<int>();
+                return Task.FromCanceled<int>(cancellationToken);
             }
             else
             {
@@ -167,7 +167,7 @@ namespace System.Data.Common
                 catch (Exception e)
                 {
                     registration.Dispose();
-                    return ADP.CreatedTaskWithException<int>(e);
+                    return Task.FromException<int>(e);
                 }
             }
         }
@@ -196,7 +196,7 @@ namespace System.Data.Common
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return ADP.CreatedTaskWithCancellation<DbDataReader>();
+                return Task.FromCanceled<DbDataReader>(cancellationToken);
             }
             else
             {
@@ -213,7 +213,7 @@ namespace System.Data.Common
                 catch (Exception e)
                 {
                     registration.Dispose();
-                    return ADP.CreatedTaskWithException<DbDataReader>(e);
+                    return Task.FromException<DbDataReader>(e);
                 }
             }
         }
@@ -227,7 +227,7 @@ namespace System.Data.Common
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return ADP.CreatedTaskWithCancellation<object>();
+                return Task.FromCanceled<object>(cancellationToken);
             }
             else
             {
@@ -244,7 +244,7 @@ namespace System.Data.Common
                 catch (Exception e)
                 {
                     registration.Dispose();
-                    return ADP.CreatedTaskWithException<object>(e);
+                    return Task.FromException<object>(e);
                 }
             }
         }
