@@ -18,6 +18,10 @@ We have the following goals related to interop code being used in CoreFX:
   - This is both for good hygiene and to help keep platform-specific code
     separated from platform-neutral code, which is important for maximizing
     reusable code above PAL layers.
+- Ensure maximal managed code reuse across different OS flavors which have
+  the same API but not the same ABI.
+   - This is the case for UNIX and addressing it is a work-in-progress (see issue
+     #2137 and section on "shims" below.)
 
 ## Approach
 
@@ -244,3 +248,43 @@ rather than the underlying integral type.
     should be named with the most discoverable name possible; if that name
     is a concept (e.g. Errors), it can be named using managed naming
     guidelines.
+
+
+## UNIX shims
+
+Often, various UNIX flavors offer the same API from the point-of-view of compatibility
+with C/C++ source code, but they do not have the same ABI. e.g. Fields can be laid out
+differently, constants can have different numeric values, etc. Even the exports can
+be named differently.
+
+This leaves us with a situation where we can't write portable P/Invoke declarations
+that will work on all flavors, and writing separate declarations per flavor is quite
+fragile and won't scale.
+
+To address this, we're moving to a model where all UNIX interop from corefx starts with 
+a P/Invoke to a C++ lib written specifically for corefx. These libs -- System.*.Native.so 
+(aka "shims") -- are intended to be very thin layers over underlying platform libraries. 
+Generally, they are not there to add any significant abstraction, but to create a 
+stable ABI such that the same IL assembly can work across UNIX flavors.
+
+At this time, these shims are compiled in the dotnet/coreclr repository under the corefx
+folder. This is temporary (issue #2301) until we add necessary infrastructure to build them 
+in this repository. 
+
+Guidelines for shim C++ API:
+
+- Keep them as "thin"/1:1 as possible. 
+  - We want to write the majority of code in C#. 
+- Never skip the shim and P/Invoke directly to the underlying platform API. It's
+easy to assume something is safe/guaranteed when it isn't.
+- Don't cheat and take advantage of coincidental agreement between
+one flavor's ABI and the shim's ABI. 
+- Use PascalCase and spell things out in a style closer to Win32 than libc. 
+  - At first, it seemed that we'd want to use 1:1 names for the shims, but it 
+    turns out there are many cases where being strictly 1:1 isn't practical. As such, 
+    the libraries will end up looking more self-consistent if we give them their
+    own style with which to express themselves.
+- Stick to data types which are guaranteed not to vary in size across flavors. (Pointers
+and size_t variance across bitness is OK.) 
+  - e.g. use int32_t, int64_t from stdint.h and not int, long. 
+
