@@ -1,118 +1,157 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Runtime.CompilerServices;
-using System.IO;
-using System.Collections;
-using System.Globalization;
-using System.Text;
-using System.Threading;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Xunit;
 
-public class File_GetSetTimes
+namespace System.IO.FileSystem.Tests
 {
-    enum TimeProperty
+    public class File_GetSetTimes : FileSystemTest
     {
-        CreationTime,
-        LastAccessTime,
-        LastWriteTime
-    }
-    
-    [Fact]
-    public static void ConsistencyTest()
-    {
-        String fileName = Path.Combine(TestInfo.CurrentDirectory, "File_GetSetTimes");
+        public delegate void SetTime(string path, DateTime time);
+        public delegate DateTime GetTime(string path);
 
-        File.Create(fileName).Dispose();
-        
-        foreach(TimeProperty timeProperty in Enum.GetValues(typeof(TimeProperty)))
+        public IEnumerable<Tuple<SetTime, GetTime, DateTimeKind>> TimeFunctions()
         {
-            if (!Interop.IsWindows && timeProperty == TimeProperty.CreationTime) // roundtripping birthtime not supported on Unix
+            if (IOInputs.SupportsCreationTime)
             {
-                continue;
+                yield return Tuple.Create<SetTime, GetTime, DateTimeKind>(
+                    ((path, time) => File.SetCreationTime(path, time)),
+                    ((path) => File.GetCreationTime(path)),
+                    DateTimeKind.Local);
+                yield return Tuple.Create<SetTime, GetTime, DateTimeKind>(
+                    ((path, time) => File.SetCreationTimeUtc(path, time)),
+                    ((path) => File.GetCreationTimeUtc(path)),
+                    DateTimeKind.Utc);
+            }
+            yield return Tuple.Create<SetTime, GetTime, DateTimeKind>(
+                ((path, time) => File.SetLastAccessTime(path, time)),
+                ((path) => File.GetLastAccessTime(path)),
+                DateTimeKind.Local);
+            yield return Tuple.Create<SetTime, GetTime, DateTimeKind>(
+                ((path, time) => File.SetLastAccessTimeUtc(path, time)),
+                ((path) => File.GetLastAccessTimeUtc(path)),
+                DateTimeKind.Utc);
+            yield return Tuple.Create<SetTime, GetTime, DateTimeKind>(
+                ((path, time) => File.SetLastWriteTime(path, time)),
+                ((path) => File.GetLastWriteTime(path)),
+                DateTimeKind.Local);
+            yield return Tuple.Create<SetTime, GetTime, DateTimeKind>(
+                ((path, time) => File.SetLastWriteTimeUtc(path, time)),
+                ((path) => File.GetLastWriteTimeUtc(path)),
+                DateTimeKind.Utc);
+        }
+
+        [Fact]
+        public void NullPath_ThrowsArgumentNullException()
+        {
+            Assert.All(TimeFunctions(), (tuple) =>
+            {
+                Assert.Throws<ArgumentNullException>(() => tuple.Item1(null, DateTime.Today));
+                Assert.Throws<ArgumentNullException>(() => tuple.Item2(null));
+            });
+        }
+
+        [Fact]
+        public void EmptyPath_ThrowsArgumentException()
+        {
+            Assert.All(TimeFunctions(), (tuple) =>
+            {
+                Assert.Throws<ArgumentException>(() => tuple.Item1(string.Empty, DateTime.Today));
+                Assert.Throws<ArgumentException>(() => tuple.Item2(string.Empty));
+            });
+        }
+
+        [Fact]
+        public void SettingUpdatesProperties()
+        {
+            FileInfo testFile = new FileInfo(GetTestFilePath());
+            testFile.Create().Dispose();
+
+            Assert.All(TimeFunctions(), (tuple) =>
+            {
+                DateTime dt = new DateTime(2014, 12, 1, 12, 0, 0, tuple.Item3);
+                tuple.Item1(testFile.FullName, dt);
+                Assert.Equal(dt, tuple.Item2(testFile.FullName));
+            });
+        }
+
+        [Fact]
+        public void CreationSetsAllTimes()
+        {
+            string path = GetTestFilePath();
+            long beforeTime = DateTime.UtcNow.AddSeconds(-3).Ticks;
+
+            FileInfo testFile = new FileInfo(GetTestFilePath());
+            testFile.Create().Dispose();
+
+            long afterTime = DateTime.UtcNow.AddSeconds(3).Ticks;
+
+            Assert.All(TimeFunctions(), (tuple) =>
+            {
+                Assert.InRange(tuple.Item2(testFile.FullName).ToUniversalTime().Ticks, beforeTime, afterTime);
+            });
+        }
+
+        [OuterLoop]
+        [Fact]
+        [ActiveIssue(1728, PlatformID.AnyUnix)]
+        public void FileDoesntExist_ReturnDefaultValues()
+        {
+            string path = GetTestFilePath();
+
+            //non-utc
+            Assert.Equal(DateTime.FromFileTime(0).Ticks, File.GetLastAccessTime(path).Ticks);
+            Assert.Equal(DateTime.FromFileTime(0).Ticks, new FileInfo(path).LastAccessTime.Ticks);
+            Assert.Equal(DateTime.FromFileTime(0).Ticks, File.GetLastWriteTime(path).Ticks);
+            Assert.Equal(DateTime.FromFileTime(0).Ticks, new FileInfo(path).LastWriteTime.Ticks);
+            if (IOInputs.SupportsCreationTime)
+            {
+                Assert.Equal(DateTime.FromFileTime(0).Ticks, File.GetCreationTime(path).Ticks);
+                Assert.Equal(DateTime.FromFileTime(0).Ticks, new FileInfo(path).CreationTime.Ticks);
             }
 
-            foreach (DateTimeKind kind in  Enum.GetValues(typeof(DateTimeKind)))
+            //utc
+            Assert.Equal(DateTime.FromFileTimeUtc(0).Ticks, File.GetLastAccessTimeUtc(path).Ticks);
+            Assert.Equal(DateTime.FromFileTimeUtc(0).Ticks, new FileInfo(path).LastAccessTimeUtc.Ticks);
+            Assert.Equal(DateTime.FromFileTimeUtc(0).Ticks, File.GetLastWriteTimeUtc(path).Ticks);
+            Assert.Equal(DateTime.FromFileTimeUtc(0).Ticks, new FileInfo(path).LastWriteTimeUtc.Ticks);
+            if (IOInputs.SupportsCreationTime)
             {
-                DateTime dt = new DateTime(2014, 12, 1, 12, 0, 0, kind);
-                foreach (bool setUtc in new [] { false, true } )
-                {
-                    if (setUtc)
-                    {
-                        switch (timeProperty)
-                        {
-                            case TimeProperty.CreationTime:
-                                File.SetCreationTimeUtc(fileName, dt);
-                                break;
-                            case TimeProperty.LastAccessTime:
-                                File.SetLastAccessTimeUtc(fileName, dt);
-                                break;
-                            case TimeProperty.LastWriteTime:
-                                File.SetLastWriteTimeUtc(fileName, dt);
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        switch (timeProperty)
-                        {
-                            case TimeProperty.CreationTime:
-                                File.SetCreationTime(fileName, dt);
-                                break;
-                            case TimeProperty.LastAccessTime:
-                                File.SetLastAccessTime(fileName, dt);
-                                break;
-                            case TimeProperty.LastWriteTime:
-                                File.SetLastWriteTime(fileName, dt);
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-
-                    DateTime actual, actualUtc;
-                    switch (timeProperty)
-                    {
-                        case TimeProperty.CreationTime:
-                            actual = File.GetCreationTime(fileName);
-                            actualUtc = File.GetCreationTimeUtc(fileName);
-                            break;
-                        case TimeProperty.LastAccessTime:
-                            actual = File.GetLastAccessTime(fileName);
-                            actualUtc = File.GetLastAccessTimeUtc(fileName);
-                            break;
-                        case TimeProperty.LastWriteTime:
-                            actual = File.GetLastWriteTime(fileName);
-                            actualUtc = File.GetLastWriteTimeUtc(fileName);
-                            break;
-                        default:
-                            throw new ArgumentException("Invalid time property type");
-                    }
-
-                    DateTime expected = dt.ToLocalTime();
-                    DateTime expectedUtc = dt.ToUniversalTime();
-
-                    if (dt.Kind == DateTimeKind.Unspecified)
-                    {
-                        if (setUtc)
-                        {
-                            expectedUtc = dt;
-                        }
-                        else
-                        {
-                            expected = dt;
-                        }
-                    }
-
-                    Assert.Equal(expected, actual); //, "Local {0} should be correct for DateTimeKind.{1} when set with Set{0}{2}", timeProperty, kind, setUtc ? "Utc" : "");
-                    Assert.Equal(expectedUtc, actualUtc); //, "Universal {0} should be correct for DateTimeKind.{1} when set with Set{0}{2}", timeProperty, kind, setUtc ? "Utc" : "");
-                }
+                Assert.Equal(DateTime.FromFileTimeUtc(0).Ticks, File.GetCreationTimeUtc(path).Ticks);
+                Assert.Equal(DateTime.FromFileTimeUtc(0).Ticks, new FileInfo(path).CreationTimeUtc.Ticks);
             }
         }
 
-        File.Delete(fileName);
+        [OuterLoop]
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void UnixFileDoesntExist_Throws()
+        {
+            string path = GetTestFilePath();
+
+            //non-utc
+            Assert.Throws<FileNotFoundException>(() => File.GetLastAccessTime(path));
+            Assert.Throws<FileNotFoundException>(() => new FileInfo(path).LastAccessTime);
+            Assert.Throws<FileNotFoundException>(() => File.GetLastWriteTime(path));
+            Assert.Throws<FileNotFoundException>(() => new FileInfo(path).LastWriteTime);
+            if (IOInputs.SupportsCreationTime)
+            {
+                Assert.Throws<FileNotFoundException>(() => File.GetCreationTime(path));
+                Assert.Throws<FileNotFoundException>(() => new FileInfo(path).CreationTime);
+            }
+
+            //utc
+            Assert.Throws<FileNotFoundException>(() => File.GetLastAccessTimeUtc(path));
+            Assert.Throws<FileNotFoundException>(() => new FileInfo(path).LastAccessTimeUtc);
+            Assert.Throws<FileNotFoundException>(() => File.GetLastWriteTimeUtc(path));
+            Assert.Throws<FileNotFoundException>(() => new FileInfo(path).LastWriteTimeUtc);
+            if (IOInputs.SupportsCreationTime)
+            {
+                Assert.Throws<FileNotFoundException>(() => File.GetCreationTimeUtc(path));
+                Assert.Throws<FileNotFoundException>(() => new FileInfo(path).CreationTimeUtc);
+            }
+        }
     }
 }
