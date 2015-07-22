@@ -18,6 +18,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Diagnostics\Stopwatch.cs" />
+    <Compile Include="System\Environment.NewLine.cs" />
+    <Compile Include="System\Environment.ProcessorCount.cs" />
+    <Compile Include="System\Environment.StackTrace.cs" />
     <Compile Include="System\Runtime\Versioning\FrameworkName.cs" />
     <Compile Include="System\IO\Path.cs" />
     <Compile Include="System\IO\Path.Combine.cs" />
@@ -56,6 +59,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
+    <Compile Include="System\Environment.TickCount.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Runtime.Extensions.CoreCLR.csproj">
