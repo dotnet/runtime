@@ -56,19 +56,6 @@ namespace System.Diagnostics.ProcessTests
                     }
                     // no sleep here
                 }
-                else if (args[0].Equals("ipc"))
-                {
-                    using (var inbound = new AnonymousPipeClientStream(PipeDirection.In, args[1]))
-                    using (var outbound = new AnonymousPipeClientStream(PipeDirection.Out, args[2]))
-                    {
-                        // Echo 10 bytes from inbound to outbound
-                        for (int i = 0; i < 10; i++)
-                        {
-                            int b = inbound.ReadByte();
-                            outbound.WriteByte((byte)b);
-                        }
-                    }
-                }
                 else
                 {
                     Console.WriteLine(string.Join(" ", args));
