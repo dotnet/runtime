@@ -328,6 +328,20 @@ int main()
 }" HAVE_CLOCK_MONOTONIC)
 check_cxx_source_runs("
 #include <stdlib.h>
+#include <mach/mach.h>
+#include <mach/clock.h>
+
+int main()
+{
+  int ret;
+  clock_serv_t clock;
+  mach_timespec_t mts;
+  host_get_clock_service(mach_host_self(), SYSTEM_CLOCK, &clock);
+  ret = clock_get_time(clock, &mts);
+  exit(ret);
+}" HAVE_MACH_CLOCK_MONOTONIC)
+check_cxx_source_runs("
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <fcntl.h>
