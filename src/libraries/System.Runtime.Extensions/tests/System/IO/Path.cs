@@ -149,13 +149,21 @@ public static class PathTests
     }
 
     [PlatformSpecific(PlatformID.Windows)]
-    [Fact]
-    public static void GetPathRoot_Windows()
+    [Theory]
+    [InlineData(@"\\test\unc\path\to\something", @"\\test\unc")]
+    [InlineData(@"\\a\b\c\d\e", @"\\a\b")]
+    [InlineData(@"\\a\b\", @"\\a\b")]
+    [InlineData(@"\\a\b", @"\\a\b")]
+    [InlineData(@"\\test\unc", @"\\test\unc")]
+    [InlineData(@"\\?\UNC\test\unc\path\to\something", @"\\?\UNC\test\unc")]
+    [InlineData(@"\\?\UNC\test\unc", @"\\?\UNC\test\unc")]
+    [InlineData(@"\\?\UNC\a\b", @"\\?\UNC\a\b")]
+    [InlineData(@"\\?\UNC\a\b\", @"\\?\UNC\a\b")]
+    [InlineData(@"\\?\C:\foo\bar.txt", @"\\?\C:\")]
+    public static void GetPathRoot_Windows_UncAndExtended(string value, string expected)
     {
-        // UNC paths
-        string uncPath = @"\\test\unc\path\to\something";
-        Assert.True(Path.IsPathRooted(uncPath));
-        Assert.Equal(@"\\test\unc", Path.GetPathRoot(uncPath));
+        Assert.True(Path.IsPathRooted(value));
+        Assert.Equal(expected, Path.GetPathRoot(value));
     }
 
     [PlatformSpecific(PlatformID.AnyUnix)]
@@ -429,6 +437,17 @@ public static class PathTests
     [InlineData(@"C  :")]
     [InlineData(@"C  :\somedir")]
     [InlineData(@"bad::$DATA")]
+    [InlineData(@"\\?\GLOBALROOT\")]
+    [InlineData(@"\\?\")]
+    [InlineData(@"\\?\.")]
+    [InlineData(@"\\?\..")]
+    [InlineData(@"\\?\\")]
+    [InlineData(@"\\?\C:\\")]
+    [InlineData(@"\\?\C:\|")]
+    [InlineData(@"\\?\C:\.")]
+    [InlineData(@"\\?\C:\..")]
+    [InlineData(@"\\?\C:\Foo\.")]
+    [InlineData(@"\\?\C:\Foo\..")]
     public static void GetFullPath_Windows_ArgumentExceptionPaths(string path)
     {
         Assert.Throws<ArgumentException>(() => Path.GetFullPath(path));
@@ -459,6 +478,18 @@ public static class PathTests
 
     [PlatformSpecific(PlatformID.Windows)]
     [Theory]
+    [InlineData(@"\\?\C:\ ")]
+    [InlineData(@"\\?\C:\ \ ")]
+    [InlineData(@"\\?\C:\ .")]
+    [InlineData(@"\\?\C:\ ..")]
+    [InlineData(@"\\?\C:\...")]
+    public static void GetFullPath_Windows_ValidExtendedPaths(string path)
+    {
+        Assert.Equal(path, Path.GetFullPath(path));
+    }
+
+    [PlatformSpecific(PlatformID.Windows)]
+    [Theory]
     [InlineData(@"\\server\share", @"\\server\share")]
     [InlineData(@"\\server\share", @" \\server\share")]
     [InlineData(@"\\server\share\dir", @"\\server\share\dir")]
@@ -466,6 +497,12 @@ public static class PathTests
     [InlineData(@"\\server\share", @"\\server\share\..")]
     [InlineData(@"\\server\share\", @"\\server\share\    ")]
     [InlineData(@"\\server\  share\", @"\\server\  share\")]
+    [InlineData(@"\\?\UNC\server\share", @"\\?\UNC\server\share")]
+    [InlineData(@"\\?\UNC\server\share\dir", @"\\?\UNC\server\share\dir")]
+    [InlineData(@"\\?\UNC\server\share\. ", @"\\?\UNC\server\share\. ")]
+    [InlineData(@"\\?\UNC\server\share\.. ", @"\\?\UNC\server\share\.. ")]
+    [InlineData(@"\\?\UNC\server\share\    ", @"\\?\UNC\server\share\    ")]
+    [InlineData(@"\\?\UNC\server\  share\", @"\\?\UNC\server\  share\")]
     public static void GetFullPath_Windows_UNC_Valid(string expected, string input)
     {
         Assert.Equal(expected, Path.GetFullPath(input));
@@ -476,8 +513,16 @@ public static class PathTests
     [InlineData(@"\\")]
     [InlineData(@"\\server")]
     [InlineData(@"\\server\")]
+    [InlineData(@"\\server\\")]
     [InlineData(@"\\server\..")]
-    [InlineData(@"\\?\GLOBALROOT\")]
+    [InlineData(@"\\?\UNC\")]
+    [InlineData(@"\\?\UNC\server")]
+    [InlineData(@"\\?\UNC\server\")]
+    [InlineData(@"\\?\UNC\server\\")]
+    [InlineData(@"\\?\UNC\server\..")]
+    [InlineData(@"\\?\UNC\server\share\.")]
+    [InlineData(@"\\?\UNC\server\share\..")]
+    [InlineData(@"\\?\UNC\a\b\\")]
     public static void GetFullPath_Windows_UNC_Invalid(string invalidPath)
     {
         Assert.Throws<ArgumentException>(() => Path.GetFullPath(invalidPath));

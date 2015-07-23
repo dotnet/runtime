@@ -8,6 +8,8 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.IO.FileSystem.Tests</AssemblyName>
     <TestCategories>InnerLoop;OuterLoop</TestCategories>
+    <!-- Setting temporarily until we can publish a new package drop of Runtime.Extensions -->
+    <TestWithLocalLibraries>true</TestWithLocalLibraries>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>

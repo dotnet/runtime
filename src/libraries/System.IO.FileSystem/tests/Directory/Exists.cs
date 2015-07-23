@@ -15,7 +15,7 @@ namespace System.IO.FileSystem.Tests
         }
 
         #endregion
-        
+
         #region UniversalTests
 
         [Fact]
@@ -128,7 +128,7 @@ namespace System.IO.FileSystem.Tests
         public void WindowsNonSignificantWhiteSpaceAsPath_ReturnsFalse()
         {
             // Checks that errors aren't thrown when calling Exists() on impossible paths
-            Assert.All((IOInputs.GetNonSignificantTrailingWhiteSpace()), (component) =>
+            Assert.All(IOInputs.GetWhiteSpace(), (component) =>
             {
                 Assert.False(Exists(component));
             });
@@ -145,7 +145,7 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Linux | PlatformID.FreeBSD)] 
+        [PlatformSpecific(PlatformID.Linux | PlatformID.FreeBSD)]
         public void DoesCaseSensitiveComparions()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
@@ -159,7 +159,7 @@ namespace System.IO.FileSystem.Tests
         public void TrimTrailingWhitespacePath()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            Assert.All((IOInputs.GetNonSignificantTrailingWhiteSpace()), (component) =>
+            Assert.All(IOInputs.GetWhiteSpace(), (component) =>
             {
                 Assert.True(Exists(testDir.FullName + component)); // string concat in case Path.Combine() trims whitespace before Exists gets to it
             });
@@ -169,9 +169,9 @@ namespace System.IO.FileSystem.Tests
         [PlatformSpecific(PlatformID.Windows)] // alternate data stream
         public void PathWithAlternateDataStreams_ReturnsFalse()
         {
-            Assert.All((IOInputs.GetPathsWithAlternativeDataStreams()), (component) =>
+            Assert.All(IOInputs.GetWhiteSpace(), (component) =>
             {
-                Assert.False(Exists(component)); 
+                Assert.False(Exists(component));
             });
         }
 
