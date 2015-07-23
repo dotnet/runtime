@@ -3,7 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
+using System.Threading;
 using Xunit;
 
 namespace System.Runtime.Extensions.Tests
@@ -13,18 +13,8 @@ namespace System.Runtime.Extensions.Tests
         [Fact]
         public void TickCountTest()
         {
-            //arrange
-            const int milliSeconds = 1000;
             int start = Environment.TickCount;
-
-            //act
-            Task.Delay(milliSeconds).Wait();
-            int end = Environment.TickCount;
-
-            //assert
-            Console.WriteLine("Start - " + start);
-            Console.WriteLine("End - " + end);
-            Assert.True(end - start >= milliSeconds);
+            Assert.True(SpinWait.SpinUntil(() => Environment.TickCount > start, TimeSpan.FromSeconds(1)));
         }
     }
 }

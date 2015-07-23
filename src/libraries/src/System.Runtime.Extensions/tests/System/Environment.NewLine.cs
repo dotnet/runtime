@@ -9,21 +9,18 @@ namespace System.Runtime.Extensions.Tests
 {
     public class EnvironmentNewLine
     {
+        [PlatformSpecific(PlatformID.Windows)]
         [Fact]
-        public void NewLineTest()
+        public void Windows_NewLineTest()
         {
-            //arrange
-            string expectedNewLine = Interop.IsWindows ? "\r\n" : "\n";
+            Assert.Equal("\r\n", Environment.NewLine);
+        }
 
-            //act
-            string actualNewLine = Environment.NewLine;
-
-            //assert
-            Assert.Equal(expectedNewLine, actualNewLine);
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        [Fact]
+        public void Unix_NewLineTest()
+        {
+            Assert.Equal("\n", Environment.NewLine);
         }
     }
-
-
-
-
 }
