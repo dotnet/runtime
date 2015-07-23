@@ -1,0 +1,4 @@
+#pragma once
+
+#cmakedefine01 HAVE_STAT64
+#cmakedefine01 HAVE_STAT_BIRTHTIME
