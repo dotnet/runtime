@@ -6,7 +6,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{E6DAD59F-7CB7-4E70-B4C5-FCCBC3376EDE}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <AssemblyName>System.Xml.RW.XmlWriterApiTests</AssemblyName>
+    <AssemblyName>System.Xml.RW.XmlWriterApi.Tests</AssemblyName>
     <RootNamespace>XmlWriterAPI.Test</RootNamespace>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->

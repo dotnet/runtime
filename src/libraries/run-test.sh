@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Enable globstar for the purposes of directory evaluation
+shopt -s globstar
+
 wait_on_pids()
 {
   # Wait on the last processes

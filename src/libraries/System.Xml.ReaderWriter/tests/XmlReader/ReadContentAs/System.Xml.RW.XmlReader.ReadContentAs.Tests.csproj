@@ -6,7 +6,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{DA6A9B7F-F311-49A4-8BBE-42EF3152C37B}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <AssemblyName>System.Xml.RW.XmlReaderReadContentAs.Tests</AssemblyName>
+    <AssemblyName>System.Xml.RW.XmlReader.ReadContentAs.Tests</AssemblyName>
     <RootNamespace>XMLTests.ReaderWriter.ReadContentTests</RootNamespace>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
