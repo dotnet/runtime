@@ -11623,19 +11623,25 @@ void CEEJitInfo::allocMem (
 
     S_SIZE_T totalSize = S_SIZE_T(codeSize);
 
+    size_t roDataAlignment = sizeof(void*);
+    if ((flag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN)!= 0)
+    {
+        roDataAlignment = 16;
+    }
+    else if (roDataSize >= 8)
+    {
+        roDataAlignment = 8;
+    }
     if (roDataSize > 0)
     {
-        totalSize.AlignUp(sizeof(void *));
-        totalSize += roDataSize;
-
-#ifndef _WIN64
-        if (roDataSize >= 8)
-        {
-            // allocates an extra 4 bytes so that we can
-            // double align the roData section.
-            totalSize += 4;
+        size_t codeAlignment = ((flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN)!= 0)
+                               ? 16 : sizeof(void*);
+        totalSize.AlignUp(codeAlignment);
+        if (roDataAlignment > codeAlignment) {
+            // Add padding to align read-only data.
+            totalSize += (roDataAlignment - codeAlignment);
         }
-#endif
+        totalSize += roDataSize;
     }
 
 #ifdef WIN64EXCEPTIONS
@@ -11670,8 +11676,7 @@ void CEEJitInfo::allocMem (
 
     if (roDataSize > 0)
     {
-        current = (BYTE *)ALIGN_UP(current, (roDataSize >= 8) ? 8 : sizeof(void *));
-
+        current = (BYTE *)ALIGN_UP(current, roDataAlignment);
         *roDataBlock = current;
         current += roDataSize;
     }
