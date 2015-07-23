@@ -277,22 +277,19 @@ dllmap_start (gpointer user_data,
 		for (i = 0; attribute_names [i]; ++i) {
 			if (strcmp (attribute_names [i], "dll") == 0)
 				info->dll = g_strdup (attribute_values [i]);
-			else if (strcmp (attribute_names [i], "target") == 0) {
-				char *match = strstr (attribute_values [i], "$mono_libdir");
-				if (match != NULL) {
-					/* substitude $mono_libdir */
+			else if (strcmp (attribute_names [i], "target") == 0){
+				char *p = strstr (attribute_names [i], "$mono_libdir");
+				if (p != NULL){
 					const char *libdir = mono_assembly_getrootdir ();
-					const int libdir_len = strlen (libdir);
-					const int varname_len = strlen ("$mono_libdir");
-					const int pre_len = match - attribute_values [i];
-					const int post_len = strlen (match) - varname_len + 3;
-
-					char *result = g_malloc (pre_len + libdir_len + post_len + 1);
-					g_strlcpy (result, attribute_values [i], pre_len);
-					strncat (result, libdir, libdir_len);
-					strncat (result, match + varname_len, post_len);
+					int libdir_len = strlen (libdir);
+					char *result;
+					
+					result = g_malloc (libdir_len-strlen("$mono_libdir")+strlen(attribute_names[i])+1);
+					strncpy (result, attribute_names[i], p-attribute_names[i]);
+					strcat (result, libdir);
+					strcat (result, p+strlen("$mono_libdir"));
 					info->target = result;
-				} else
+				} else 
 					info->target = g_strdup (attribute_values [i]);
 			} else if (strcmp (attribute_names [i], "os") == 0 && !arch_matches (CONFIG_OS, attribute_values [i]))
 				info->ignore = TRUE;
