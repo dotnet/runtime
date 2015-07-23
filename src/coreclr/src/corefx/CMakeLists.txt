@@ -1,10 +1,8 @@
 
-# This portion of the tree is for portions of CoreFX libraries which are best
-# suited to having been implemented in native code.
-#
-# This code should, ideally, be located in the corefx repository so it can be part of a
-# single commit/pull-request with the managed code which consumes it, but corefx does not
-# currently have support for building native libraries.
+# This portion of the tree is for portions of CoreFX libraries which are (1) best
+# suited to having been implemented in native code and (2) need to be invoked from
+# mscorlib.dll. If mscorlib.dll does not use the library, the code should go in
+# the src/Native directory of dotnet/corefx.
 #
 # The libraries should disable the "lib" prefix, and use an assembly-style naming format,
 # such as System.Security.Cryptography.Native (shared across multiple System.Security.Cryptography.*
@@ -12,5 +10,4 @@
 # System.Diagnostics.Process.dll).
 
 if(CLR_CMAKE_PLATFORM_UNIX)
-  add_subdirectory(System.Security.Cryptography.Native)
 endif(CLR_CMAKE_PLATFORM_UNIX)
