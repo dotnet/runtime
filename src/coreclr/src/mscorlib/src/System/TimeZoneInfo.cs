@@ -95,6 +95,10 @@ namespace System {
         private static readonly TransitionTime c_transition7_15  = TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1), 07, 15);
         private static readonly TransitionTime c_transition10_15 = TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1), 10, 15);
         private static readonly TransitionTime c_transition12_15 = TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1), 12, 15);
+
+        private const string c_defaultTimeZoneDirectory = "/usr/share/zoneinfo/";
+        private const string c_timeZoneEnvironmentVariable = "TZ";
+        private const string c_timeZoneDirectoryEnvironmentVariable = "TZDIR";
 #endif // PLATFORM_UNIX
 
         // constants for TimeZoneInfo.Local and TimeZoneInfo.Utc
@@ -1077,7 +1081,7 @@ namespace System {
                 Contract.Ensures(Contract.Result<TimeZoneInfo>() != null);
                 return s_cachedData.Utc;
             }
-        }     
+        }
 
 
         // -------- SECTION: constructors -----------------*
@@ -1086,6 +1090,7 @@ namespace System {
         //
         // private ctor
         //
+#if FEATURE_WIN32_REGISTRY 
         [System.Security.SecurityCritical]  // auto-generated
         private TimeZoneInfo(Win32Native.TimeZoneInformation zone, Boolean dstDisabled) {
             
@@ -1112,9 +1117,11 @@ namespace System {
             m_standardDisplayName = zone.StandardName;
             m_daylightDisplayName = zone.DaylightName;
         }
+#endif // FEATURE_WIN32_REGISTRY
 
 #if PLATFORM_UNIX
-        private TimeZoneInfo(Byte[] data, Boolean dstDisabled) {
+        private TimeZoneInfo(byte[] data, string id, Boolean dstDisabled)
+        {
             TZifHead t;
             DateTime[] dts;
             Byte[] typeOfLocalTime;
@@ -1126,7 +1133,7 @@ namespace System {
             // parse the raw TZif bytes; this method can throw ArgumentException when the data is malformed.
             TZif_ParseRaw(data, out t, out dts, out typeOfLocalTime, out transitionType, out zoneAbbreviations, out StandardTime, out GmtTime);
 
-            m_id = c_localId;
+            m_id = id;
             m_displayName = c_localId;
             m_baseUtcOffset = TimeSpan.Zero;
          
@@ -1156,7 +1163,6 @@ namespace System {
                     }
                 }
             }
-            m_id = m_standardDisplayName;
             m_displayName = m_standardDisplayName;
 
             // TZif supports seconds-level granularity with offsets but TimeZoneInfo only supports minutes since it aligns
@@ -1420,7 +1426,7 @@ namespace System {
             return localConverted;           
         }
 
-
+#if FEATURE_WIN32_REGISTRY
         //
         // CreateAdjustmentRuleFromTimeZoneInformation-
         //
@@ -1476,8 +1482,6 @@ namespace System {
             return rule;
         }
 
-
-#if FEATURE_WIN32_REGISTRY
         //
         // FindIdFromTimeZoneInformation -
         //
@@ -1927,16 +1931,63 @@ namespace System {
             return GetLocalTimeZoneFromWin32Data(timeZoneInformation, dstDisabled);
             
 #else // FEATURE_WIN32_REGISTRY
-            // Without Registry support, just create a dummy TZ for now
+            // Without Registry support, create the TimeZoneInfo from a TZ file
             return GetLocalTimeZoneFromTzFile();
 #endif // FEATURE_WIN32_REGISTRY
         }
 
 
 #if PLATFORM_UNIX
-        static public TimeZoneInfo FindSystemTimeZoneById(string id) {
-            // UNIXTODO
-            throw new NotImplementedException();
+        static public TimeZoneInfo FindSystemTimeZoneById(string id)
+        {
+            if (id == null)
+            {
+                throw new ArgumentNullException("id");
+            }
+            else if (id.Length == 0 || id.Contains("\0"))
+            {
+                throw new TimeZoneNotFoundException(Environment.GetResourceString("TimeZoneNotFound_MissingData", id));
+            }
+
+            // Special case for Utc since there is code that expects only 1 instance of the UTC time zone info to be created.
+            // see CachedData.GetCorrespondingKind()
+            if (string.Equals(id, c_utcId, StringComparison.OrdinalIgnoreCase))
+            {
+                return TimeZoneInfo.Utc;
+            }
+
+            // UNIXTODO: use CachedData
+
+            string timeZoneDirectory = GetTimeZoneDirectory();
+            string timeZoneFilePath = Path.Combine(timeZoneDirectory, id);
+            byte[] rawData;
+            try
+            {
+                rawData = File.ReadAllBytes(timeZoneFilePath);
+            }
+            catch (UnauthorizedAccessException e)
+            {
+                throw new SecurityException(Environment.GetResourceString("Security_CannotReadFileData", id), e);
+            }
+            catch (FileNotFoundException e)
+            {
+                throw new TimeZoneNotFoundException(Environment.GetResourceString("TimeZoneNotFound_MissingData", id), e);
+            }
+            catch (DirectoryNotFoundException e)
+            {
+                throw new TimeZoneNotFoundException(Environment.GetResourceString("TimeZoneNotFound_MissingData", id), e);
+            }
+            catch (IOException e)
+            {
+                throw new InvalidTimeZoneException(Environment.GetResourceString("InvalidTimeZone_InvalidFileData", id, timeZoneFilePath), e);
+            }
+
+            TimeZoneInfo result = GetTimeZoneFromTzData(rawData, id);
+            if (result == null)
+            {
+                throw new InvalidTimeZoneException(Environment.GetResourceString("InvalidTimeZone_InvalidFileData", id, timeZoneFilePath));
+            }
+            return result;
         }
 
         static public ReadOnlyCollection<TimeZoneInfo> GetSystemTimeZones() {
@@ -1944,10 +1995,166 @@ namespace System {
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Gets the tzfile raw data for the current 'local' time zone using the following rules.
+        /// 1. Read the TZ environment variable.  If it is set, use it.
+        /// 2. Look for the data in /etc/localtime.
+        /// 3. Look for the data in GetTimeZoneDirectory()/localtime.
+        /// 4. Use UTC if all else fails.
+        /// </summary>
         [SecurityCritical]
-        internal static Byte[] GetLocalTzFile() {
-            // UNIXTODO
-            return null;
+        private static bool TryGetLocalTzFile(out byte[] rawData, out string id)
+        {
+            rawData = null;
+            id = null;
+            string tzVariable = GetTzEnvironmentVariable();
+
+            // If the env var is null, use the localtime file
+            if (tzVariable == null)
+            {
+                return
+                    TryLoadTzFile("/etc/localtime", ref rawData, ref id) ||
+                    TryLoadTzFile(Path.Combine(GetTimeZoneDirectory(), "localtime"), ref rawData, ref id);
+            }
+
+            // If it's empty, use UTC (TryGetLocalTzFile() should return false).
+            if (tzVariable.Length == 0)
+            {
+                return false;
+            }
+
+            // Otherwise, use the path from the env var.  If it's not absolute, make it relative 
+            // to the system timezone directory
+            string tzFilePath;
+            if (tzVariable[0] != '/')
+            {
+                id = tzVariable;
+                tzFilePath = Path.Combine(GetTimeZoneDirectory(), tzVariable);
+            }
+            else
+            {
+                tzFilePath = tzVariable;
+            }
+            return TryLoadTzFile(tzFilePath, ref rawData, ref id);
+        }
+
+        private static string GetTzEnvironmentVariable()
+        {
+            string result = Environment.GetEnvironmentVariable(c_timeZoneEnvironmentVariable);
+            if (!string.IsNullOrEmpty(result))
+            {
+                if (result[0] == ':')
+                {
+                    // strip off the ':' prefix
+                    result = result.Substring(1);
+                }
+            }
+
+            return result;
+        }
+
+        private static bool TryLoadTzFile(string tzFilePath, ref byte[] rawData, ref string id)
+        {
+            if (File.Exists(tzFilePath))
+            {
+                try
+                {
+                    rawData = File.ReadAllBytes(tzFilePath);
+                    if (string.IsNullOrEmpty(id))
+                    {
+                        // UNIXTODO: optimzation - see if tzFilePath is a symlink, and use 'readlink' to get the id 
+                        id = FindTimeZoneId(rawData);
+                    }
+                    return true;
+                }
+                catch (IOException) { }
+                catch (SecurityException) { }
+                catch (UnauthorizedAccessException) { }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Find the time zone id by searching all the tzfiles for the one that matches rawData
+        /// and return its file name.
+        /// </summary>
+        private static string FindTimeZoneId(byte[] rawData)
+        {
+            // default to "Local" if we can't find the right tzfile
+            string id = c_localId;
+            string timeZoneDirectory = GetTimeZoneDirectory();
+            string localtimeFilePath = Path.Combine(timeZoneDirectory, "localtime");
+            string posixrulesFilePath = Path.Combine(timeZoneDirectory, "posixrules");
+            byte[] buffer = new byte[rawData.Length];
+
+            try
+            {
+                foreach (string filePath in Directory.EnumerateFiles(timeZoneDirectory, "*", SearchOption.AllDirectories))
+                {
+                    // skip the localtime and posixrules file, since they won't give us the correct id
+                    if (!string.Equals(filePath, localtimeFilePath, StringComparison.OrdinalIgnoreCase)
+                        && !string.Equals(filePath, posixrulesFilePath, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (CompareTimeZoneFile(filePath, buffer, rawData))
+                        {
+                            // if all bytes are the same, this must be the right tz file
+                            id = filePath;
+
+                            // strip off the root time zone directory
+                            if (id.StartsWith(timeZoneDirectory))
+                            {
+                                id = id.Substring(timeZoneDirectory.Length);
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            catch (IOException) { }
+            catch (SecurityException) { }
+            catch (UnauthorizedAccessException) { }
+
+            return id;
+        }
+
+        private static bool CompareTimeZoneFile(string filePath, byte[] buffer, byte[] rawData)
+        {
+            try
+            {
+                using (FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                {
+                    if (stream.Length == rawData.Length)
+                    {
+                        int index = 0;
+                        int count = rawData.Length;
+
+                        while (count > 0)
+                        {
+                            int n = stream.Read(buffer, index, count);
+                            if (n == 0)
+                                __Error.EndOfFile();
+
+                            int end = index + n;
+                            for (; index < end; index++)
+                            {
+                                if (buffer[index] != rawData[index])
+                                {
+                                    return false;
+                                }
+                            }
+
+                            count -= n;
+                        }
+
+                        return true;
+                    }
+                }
+            }
+            catch (IOException) { }
+            catch (SecurityException) { }
+            catch (UnauthorizedAccessException) { }
+
+            return false;
         }
 
         //
@@ -1956,29 +2163,63 @@ namespace System {
         // Helper function used by 'GetLocalTimeZone()' - this function wraps the call
         // for loading time zone data from computers without Registry support.
         //
-        // The GetLocalTzFile() call returns a Byte[] containing the compiled tzfile.
+        // The TryGetLocalTzFile() call returns a Byte[] containing the compiled tzfile.
         // 
         [System.Security.SecurityCritical]
-        static private TimeZoneInfo GetLocalTimeZoneFromTzFile() {
-            Byte[] rawData = GetLocalTzFile();
+        static private TimeZoneInfo GetLocalTimeZoneFromTzFile()
+        {
+            byte[] rawData;
+            string id;
+            if (TryGetLocalTzFile(out rawData, out id))
+            {
+                TimeZoneInfo result = GetTimeZoneFromTzData(rawData, id);
+                if (result != null)
+                {
+                    return result;
+                }
+            }
 
-            if (rawData != null) {
-                try {
-                    return new TimeZoneInfo(rawData, false); // create a TimeZoneInfo instance from the TZif data w/ DST support
-                }
-                catch (ArgumentException) {}
-                catch (InvalidTimeZoneException) {}
-                try {
-                    return new TimeZoneInfo(rawData, true); // create a TimeZoneInfo instance from the TZif data w/o DST support
-                }
-                catch (ArgumentException) {}
-                catch (InvalidTimeZoneException) {}
-             }
-            // the data returned from the PAL is completely bogus; return a dummy entry
-            return CreateCustomTimeZone(c_localId, TimeSpan.Zero, c_localId, c_localId);
+            // if we can't find a local time zone, return UTC
+            return Utc;
         }
-#endif // PLATFORM_UNIX
 
+        private static TimeZoneInfo GetTimeZoneFromTzData(byte[] rawData, string id)
+        {
+            if (rawData != null)
+            {
+                try
+                {
+                    return new TimeZoneInfo(rawData, id, false); // create a TimeZoneInfo instance from the TZif data w/ DST support
+                }
+                catch (ArgumentException) { }
+                catch (InvalidTimeZoneException) { }
+                try
+                {
+                    return new TimeZoneInfo(rawData, id, true); // create a TimeZoneInfo instance from the TZif data w/o DST support
+                }
+                catch (ArgumentException) { }
+                catch (InvalidTimeZoneException) { }
+            }
+
+            return null;
+        }
+
+        private static string GetTimeZoneDirectory()
+        {
+            string tzDirectory = Environment.GetEnvironmentVariable(c_timeZoneDirectoryEnvironmentVariable);
+
+            if (tzDirectory == null)
+            {
+                tzDirectory = c_defaultTimeZoneDirectory;
+            }
+            else if (!tzDirectory.EndsWith(Path.DirectorySeparatorChar))
+            { 
+                tzDirectory += Path.DirectorySeparatorChar;
+            }
+
+            return tzDirectory;
+        }
+#else // PLATFORM_UNIX
 
         //
         // GetLocalTimeZoneFromWin32Data -
@@ -2008,7 +2249,7 @@ namespace System {
             // the data returned from Windows is completely bogus; return a dummy entry
             return CreateCustomTimeZone(c_localId, TimeSpan.Zero, c_localId, c_localId);
         }
-
+#endif // PLATFORM_UNIX
 
 #if FEATURE_WIN32_REGISTRY
         //
@@ -2034,7 +2275,7 @@ namespace System {
                 throw new ArgumentNullException("id");
             }
             else if (id.Length == 0 || id.Length > c_maxKeyLength || id.Contains("\0")) {
-                throw new TimeZoneNotFoundException(Environment.GetResourceString("TimeZoneNotFound_MissingRegistryData", id));
+                throw new TimeZoneNotFoundException(Environment.GetResourceString("TimeZoneNotFound_MissingData", id));
             }
 
             TimeZoneInfo value;
@@ -2058,7 +2299,7 @@ namespace System {
                 throw new SecurityException(Environment.GetResourceString("Security_CannotReadRegistryData", id), e);
             }
             else {
-                throw new TimeZoneNotFoundException(Environment.GetResourceString("TimeZoneNotFound_MissingRegistryData", id), e);
+                throw new TimeZoneNotFoundException(Environment.GetResourceString("TimeZoneNotFound_MissingData", id), e);
             }
         }
 #endif // FEATURE_WIN32_REGISTRY
@@ -2166,7 +2407,7 @@ namespace System {
             return baseOffset;
         }
 
-
+#if FEATURE_WIN32_REGISTRY
         //
         // TransitionTimeFromTimeZoneInformation -
         //
@@ -2279,6 +2520,7 @@ namespace System {
 
             return true;
         }      
+#endif // FEATURE_WIN32_REGISTRY
 
         //
         // TransitionTimeToDateTime -
@@ -2753,9 +2995,9 @@ namespace System {
         //
         // This method expects that its caller has already Asserted RegistryPermission.Read
         //
-        #if FEATURE_CORECLR
+#if FEATURE_CORECLR
         [System.Security.SecurityCritical] // auto-generated
-        #endif
+#endif
         static private Boolean TryGetLocalizedNamesByRegistryKey(RegistryKey key, out String displayName, out String standardName, out String daylightName) {
             displayName  = String.Empty;
             standardName = String.Empty;
