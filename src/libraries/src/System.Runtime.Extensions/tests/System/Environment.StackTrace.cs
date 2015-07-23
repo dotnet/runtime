@@ -60,6 +60,7 @@ namespace System.Runtime.Extensions.Tests
 
         class TestClass
         {
+            [MethodImpl(MethodImplOptions.NoInlining)]
             public TestClass()
             {
                 EnvironmentStackTrace.StaticFrame(null);
