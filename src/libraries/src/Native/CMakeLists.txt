@@ -24,6 +24,7 @@ else ()
     message(FATAL_ERROR "Unknown build type. Set CMAKE_BUILD_TYPE to DEBUG or RELEASE.")
 endif ()
 
+include(configure.cmake)
+
 add_subdirectory(System.IO.Native)
 add_subdirectory(System.Security.Cryptography.Native)
-
