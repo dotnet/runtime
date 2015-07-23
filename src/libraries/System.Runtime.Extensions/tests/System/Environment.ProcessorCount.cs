@@ -9,23 +9,30 @@ namespace System.Runtime.Extensions.Tests
 {
     public class EnvironmentProcessorCount
     {
+        [PlatformSpecific(PlatformID.Windows)]
         [Fact]
-        public void ProcessorCountTest()
+        public void Windows_ProcessorCountTest()
         {
             //arrange
-            int expected;
+            SYSTEM_INFO sysInfo = new SYSTEM_INFO();
+            GetSystemInfo(ref sysInfo);
+            int expected = sysInfo.dwNumberOfProcessors;
 
-            if(Interop.IsWindows)
-            {
-                SYSTEM_INFO sysInfo = new SYSTEM_INFO();
-                SYSTEM_INFO.GetSystemInfo(ref sysInfo);
-                expected = sysInfo.dwNumberOfProcessors;
-            }
-            else
-            {
-                int _SC_NPROCESSORS_ONLN = Interop.IsOSX ? 58 : 84;
-                expected = (int)sysconf(_SC_NPROCESSORS_ONLN);                
-            }
+            //act
+            int actual = Environment.ProcessorCount;
+
+            //assert
+            Assert.True(actual > 0);
+            Assert.Equal(expected, actual);
+        }
+
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        [Fact]
+        public void Unix_ProcessorCountTest()
+        {
+            //arrange
+            int _SC_NPROCESSORS_ONLN = Interop.IsOSX || Interop.IsFreeBSD ? 58 : 84;
+            int expected = (int)sysconf(_SC_NPROCESSORS_ONLN);
 
             //act
             int actual = Environment.ProcessorCount;
@@ -37,6 +44,9 @@ namespace System.Runtime.Extensions.Tests
 
         [DllImport("libc")]
         private static extern long sysconf(int name);
+
+        [DllImport("api-ms-win-core-sysinfo-l1-1-0.dll", SetLastError = true)]
+        internal static extern void GetSystemInfo(ref SYSTEM_INFO lpSystemInfo);
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct SYSTEM_INFO
@@ -51,14 +61,6 @@ namespace System.Runtime.Extensions.Tests
             internal int dwAllocationGranularity;
             internal short wProcessorLevel;
             internal short wProcessorRevision;
-            [DllImport("api-ms-win-core-sysinfo-l1-1-0.dll", SetLastError = true)]
-            internal static extern void GetSystemInfo(ref SYSTEM_INFO lpSystemInfo);
         }
-
-
     }
-
-    
-
-    
 }
