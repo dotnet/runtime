@@ -25,3 +25,5 @@ else ()
 endif ()
 
 add_subdirectory(System.IO.Native)
+add_subdirectory(System.Security.Cryptography.Native)
+
