@@ -126,6 +126,9 @@
   <data name="Arg_InvalidDriveChars" xml:space="preserve">
     <value>Illegal characters in drive name '{0}'.</value>
   </data>
+  <data name="Argument_InvalidPathChars" xml:space="preserve">
+    <value>Illegal characters in path.</value>
+  </data>
   <data name="ArgumentOutOfRange_FileLengthTooBig" xml:space="preserve">
     <value>Specified file length was too large for the file system.</value>
   </data>

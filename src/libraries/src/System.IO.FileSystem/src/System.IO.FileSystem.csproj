@@ -52,6 +52,9 @@
     <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
       <Link>Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.cs">
+      <Link>Common\System\IO\PathInternal.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- Windows -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">

@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.Text;
 
 namespace System.IO
@@ -14,27 +15,17 @@ namespace System.IO
 
         private const string DirectorySeparatorCharAsString = "/";
 
-        private static readonly char[] InvalidPathChars = { '\0' };
         private static readonly char[] InvalidFileNameChars = { '\0', '/' };
-        private static readonly char[] InvalidPathCharsWithAdditionalChecks = InvalidPathChars; // no additional checks on Unix
 
         private static readonly int MaxPath = Interop.libc.MaxPath;
         private static readonly int MaxComponentLength = Interop.libc.MaxName;
-
-        private static bool IsDirectorySeparator(char c)
-        {
-            // The alternatie directory separator char is the same as the directory separator,
-            // so we only need to check one.
-            Debug.Assert(DirectorySeparatorChar == AltDirectorySeparatorChar);
-            return c == DirectorySeparatorChar;
-        }
 
         private static bool IsDirectoryOrVolumeSeparator(char c)
         {
             // The directory separator is the same as the volume separator,
             // so we only need to check one.
             Debug.Assert(DirectorySeparatorChar == VolumeSeparatorChar);
-            return IsDirectorySeparator(c);
+            return PathInternal.IsDirectorySeparator(c);
         }
 
         // Expands the given path to a fully qualified path. 
@@ -54,7 +45,7 @@ namespace System.IO
 
             if (fullCheck)
             {
-                CheckInvalidPathChars(path);
+                PathInternal.CheckInvalidPathChars(path);
 
                 // Expand with current directory if necessary
                 if (!IsPathRooted(path))
@@ -75,20 +66,20 @@ namespace System.IO
             {
                 char c = path[i];
 
-                if (IsDirectorySeparator(c) && i + 1 < path.Length)
+                if (PathInternal.IsDirectorySeparator(c) && i + 1 < path.Length)
                 {
                     componentCharCount = 0;
 
                     // Skip this character if it's a directory separator and if the next character is, too,
                     // e.g. "parent//child" => "parent/child"
-                    if (IsDirectorySeparator(path[i + 1]))
+                    if (PathInternal.IsDirectorySeparator(path[i + 1]))
                     {
                         continue;
                     }
 
                     // Skip this character and the next if it's referring to the current directory,
                     // e.g. "parent/./child" =? "parent/child"
-                    if ((i + 2 == path.Length || IsDirectorySeparator(path[i + 2])) &&
+                    if ((i + 2 == path.Length || PathInternal.IsDirectorySeparator(path[i + 2])) &&
                         path[i + 1] == '.')
                     {
                         i++;
@@ -98,14 +89,14 @@ namespace System.IO
                     // Skip this character and the next two if it's referring to the parent directory,
                     // e.g. "parent/child/../grandchild" => "parent/grandchild"
                     if (i + 2 < path.Length &&
-                        (i + 3 == path.Length || IsDirectorySeparator(path[i + 3])) &&
+                        (i + 3 == path.Length || PathInternal.IsDirectorySeparator(path[i + 3])) &&
                         path[i + 1] == '.' && path[i + 2] == '.')
                     {
                         // Unwind back to the last slash (and if there isn't one, clear out everything).
                         int s;
                         for (s = sb.Length - 1; s >= 0; s--)
                         {
-                            if (IsDirectorySeparator(sb[s]))
+                            if (PathInternal.IsDirectorySeparator(sb[s]))
                             {
                                 sb.Length = s;
                                 break;
@@ -158,7 +149,7 @@ namespace System.IO
             string path = Environment.GetEnvironmentVariable(TempEnvVar);
             return
                 string.IsNullOrEmpty(path) ? DefaultTempPath :
-                IsDirectorySeparator(path[path.Length - 1]) ? path :
+                PathInternal.IsDirectorySeparator(path[path.Length - 1]) ? path :
                 path + DirectorySeparatorChar;
         }
 
@@ -187,14 +178,8 @@ namespace System.IO
             if (path == null)
                 return false;
 
-            CheckInvalidPathChars(path);
+            PathInternal.CheckInvalidPathChars(path);
             return path.Length > 0 && path[0] == DirectorySeparatorChar;
-        }
-
-        private static int GetRootLength(string path)
-        {
-            CheckInvalidPathChars(path);
-            return path.Length > 0 && IsDirectorySeparator(path[0]) ? 1 : 0;
         }
 
         private static unsafe byte[] CreateCryptoRandomByteArray(int byteLength)
