@@ -1208,10 +1208,15 @@ mono_arch_flush_icache (guint8 *code, gint size)
 
 typedef enum {
 	RegTypeNone,
+	/* Passed/returned in an ireg */
 	RegTypeGeneral,
+	/* Passed/returned in a pair of iregs */
 	RegTypeIRegPair,
+	/* Passed on the stack */
 	RegTypeBase,
+	/* First word in r3, second word on the stack */
 	RegTypeBaseGen,
+	/* FP value passed in either an ireg or a vfp reg */
 	RegTypeFP,
 	RegTypeStructByVal,
 	RegTypeStructByAddr,
@@ -2294,12 +2299,19 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 	 * - we only pass/receive them in registers in some cases, and only 
 	 *   in 1 or 2 integer registers.
 	 */
-	if (cinfo->ret.storage == RegTypeStructByAddr) {
+	switch (cinfo->ret.storage) {
+	case RegTypeGeneral:
+	case RegTypeNone:
+	case RegTypeFP:
+	case RegTypeIRegPair:
+		break;
+	case RegTypeStructByAddr:
 		/* Vtype returned using a hidden argument */
 		linfo->ret.storage = LLVMArgVtypeRetAddr;
 		linfo->vret_arg_index = cinfo->vret_arg_index;
-	} else if (cinfo->ret.storage != RegTypeGeneral && cinfo->ret.storage != RegTypeNone && cinfo->ret.storage != RegTypeFP && cinfo->ret.storage != RegTypeIRegPair) {
-		cfg->exception_message = g_strdup ("unknown ret conv");
+		break;
+	default:
+		cfg->exception_message = g_strdup_printf ("unknown ret conv (%d)", cinfo->ret.storage);
 		cfg->disable_llvm = TRUE;
 		return linfo;
 	}
@@ -2313,6 +2325,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 		case RegTypeGeneral:
 		case RegTypeIRegPair:
 		case RegTypeBase:
+		case RegTypeBaseGen:
 			linfo->args [i].storage = LLVMArgInIReg;
 			break;
 		case RegTypeStructByVal:
