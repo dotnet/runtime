@@ -65,7 +65,6 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/locales.h>
 #include <mono/metadata/filewatcher.h>
-#include <mono/metadata/char-conversions.h>
 #include <mono/metadata/security.h>
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/cil-coff.h>
@@ -6822,20 +6821,6 @@ ves_icall_System_NumberFormatter_GetFormatterTables (guint64 const **mantissas,
 	*digitUpperTable = Formatter_DigitUpperTable;
 	*tenPowersList = Formatter_TenPowersList;
 	*decHexDigits = Formatter_DecHexDigits;
-}
-
-/* These parameters are "readonly" in corlib/System/Globalization/TextInfo.cs */
-ICALL_EXPORT void
-ves_icall_System_Globalization_TextInfo_GetDataTablePointersLite (
-					    guint16 const **to_lower_data_low,
-					    guint16 const **to_lower_data_high,
-					    guint16 const **to_upper_data_low,
-					    guint16 const **to_upper_data_high)
-{
-	*to_lower_data_low = ToLowerDataLow;
-	*to_lower_data_high = ToLowerDataHigh;
-	*to_upper_data_low = ToUpperDataLow;
-	*to_upper_data_high = ToUpperDataHigh;
 }
 
 /*

@@ -103,7 +103,6 @@ common_sources = \
 	assembly.c		\
 	attach.h		\
 	attach.c		\
-	char-conversions.h	\
 	cil-coff.h		\
 	class.c			\
 	class-internals.h	\
