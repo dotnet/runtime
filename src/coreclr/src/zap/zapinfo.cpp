@@ -1768,8 +1768,19 @@ void ZapInfo::allocMem(
 
     if (roDataSize > 0)
     {
-        m_pROData = ZapBlobWithRelocs::NewAlignedBlob(m_pImage, NULL, roDataSize,
-            optForSize || (roDataSize < 8) ? sizeof(TADDR) : 8);
+        if (flag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN)
+        {
+            align = 16;
+        }
+        else if (optForSize || (roDataSize < 8))
+        {
+            align = sizeof(TADDR);
+        }
+        else
+        {
+            align = 8;
+        }
+        m_pROData = ZapBlobWithRelocs::NewAlignedBlob(m_pImage, NULL, roDataSize, align);
         *roDataBlock = m_pROData->GetData();
     }
 
