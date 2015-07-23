@@ -7980,7 +7980,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 											 info, NULL);
 	} else {
 #ifndef DISABLE_JIT
-		mb->dynamic = 1;
+		mb->dynamic = TRUE;
 #endif
 		res = mono_mb_create (mb, csig, sig->param_count + 16, NULL);
 	}
@@ -8040,7 +8040,7 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 		mono_marshal_emit_managed_wrapper (mb, sig, mspecs, &m, method, 0);
 
 #ifndef DISABLE_JIT
-		mb->dynamic = 1;
+		mb->dynamic = TRUE;
 #endif
 		method = mono_mb_create (mb, csig, sig->param_count + 16, NULL);
 		mono_mb_free (mb);
@@ -8067,7 +8067,7 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 		mono_mb_emit_op (mb, CEE_CALL, method);
 	mono_mb_emit_byte (mb, CEE_RET);
 
-	mb->dynamic = 1;
+	mb->dynamic = TRUE;
 #endif
 
 	method = mono_mb_create (mb, sig, param_count, NULL);
