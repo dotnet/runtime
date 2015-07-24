@@ -365,6 +365,9 @@
 /* Using the simple generational GC. */
 /* #undef HAVE_SGEN_GC */
 
+ /* Have signal */
+#define HAVE_SIGNAL 1
+
 /* Have signbit */
 /* #undef HAVE_SIGNBIT */
 

@@ -1100,6 +1100,7 @@ dnl *** Checks for signals
 dnl ***********************************
 AC_CHECK_HEADERS(signal.h)
 AC_CHECK_FUNCS(sigaction)
+AC_CHECK_FUNCS(signal)
 
 if test x$host_win32 = xno; then
 
