@@ -66,7 +66,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal("ABA.ECOM Root CA", cert2.GetNameInfo(X509NameType.DnsName, true));
 
                 PublicKey pubKey = cert2.PublicKey;
-                Assert.True(pubKey.Key is RSACryptoServiceProvider);
                 Assert.Equal("RSA", pubKey.Oid.FriendlyName);
 
                 Assert.Equal(notAfter, cert2.NotAfter);

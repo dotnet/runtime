@@ -14,6 +14,10 @@
       <Project>{AA81E343-5E54-40B0-9381-C459419BE780}</Project>
       <Name>System.Security.Cryptography.Encoding</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\System.Security.Cryptography.Primitives\src\System.Security.Cryptography.Primitives.csproj">
+      <Project>{D04A73AE-E418-4ACD-A132-7688435BE8B5}</Project>
+      <Name>System.Security.Cryptography.Primitives</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AsnEncodedData.cs" />

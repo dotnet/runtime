@@ -33,7 +33,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Throws<CryptographicException>(() => c.FriendlyName = "Hi");
                 Assert.Throws<CryptographicException>(() => ignored = c.SubjectName);
                 Assert.Throws<CryptographicException>(() => ignored = c.IssuerName);
-                Assert.Throws<CryptographicException>(() => ignored = c.PrivateKey);
             }
         }
 
