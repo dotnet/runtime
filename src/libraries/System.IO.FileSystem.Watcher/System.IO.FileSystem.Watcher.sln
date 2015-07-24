@@ -6,10 +6,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.FileSystem.Watche
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.FileSystem.Watcher.Tests", "tests\System.IO.FileSystem.Watcher.Tests.csproj", "{20411A66-C7A4-4941-8FA2-66308365FD22}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{4B06330D-B839-4D9B-AC32-D510B7AB9FB9}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{613515D7-B799-4EB8-B262-C54A2279C77B}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Linux_Debug|Any CPU = Linux_Debug|Any CPU
@@ -43,10 +39,5 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{20411A66-C7A4-4941-8FA2-66308365FD22} = {4B06330D-B839-4D9B-AC32-D510B7AB9FB9}
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A} = {613515D7-B799-4EB8-B262-C54A2279C77B}
-		{613515D7-B799-4EB8-B262-C54A2279C77B} = {4B06330D-B839-4D9B-AC32-D510B7AB9FB9}
 	EndGlobalSection
 EndGlobal
