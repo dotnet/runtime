@@ -66,53 +66,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 bool hasPrivateKey = c.HasPrivateKey;
                 Assert.True(hasPrivateKey);
 
-                RSACryptoServiceProvider rsa = (RSACryptoServiceProvider)(c.PrivateKey);
-
-                byte[] hash = new byte[20];
-                byte[] sig = rsa.SignHash(hash, "SHA1");
-                Assert.Equal(s_expectedSig, sig);
-            }
-        }
-
-        [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
-        public static void TestSetPrivateKey()
-        {
-            X509Certificate2 current;
-
-            using (var c1 = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
-            {
-                current = c1;
-                RSACryptoServiceProvider rsa = (RSACryptoServiceProvider)(current.PrivateKey);
-
-                byte[] hash = new byte[20];
-
-                byte[] sig = rsa.SignHash(hash, "SHA1");
-                Assert.Equal(s_expectedSig, sig);
-
-                current.PrivateKey = null;
-                // Retrieving the private key after setting it retrieves a cached copy of the AsymmetricAlgorithm object which tells us nothing
-                // about whether the actual private key was set in the underlying CAPI object. To make this a real test, extract the underlying CAPI object
-                // and wrap it in a new X509Certificate2 object before proceeding.
-
-                using (X509Certificate2 c2 = current.Rewrap())
+                using (RSA rsa = c.GetRSAPrivateKey())
                 {
-                    current = c2;
-                    Assert.False(current.HasPrivateKey);
-                    Assert.Null(current.PrivateKey);
-
-                    current.PrivateKey = rsa;
-
-                    using (X509Certificate2 c3 = current.Rewrap())
-                    {
-                        current = c3;
-                        rsa = (RSACryptoServiceProvider)(current.PrivateKey);
-
-                        hash = new byte[20];
-
-                        sig = rsa.SignHash(hash, "SHA1");
-                        Assert.Equal(s_expectedSig, sig);
-                    }
+                    byte[] hash = new byte[20];
+                    byte[] sig = rsa.SignHash(hash, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
+                    Assert.Equal(s_expectedSig, sig);
                 }
             }
         }

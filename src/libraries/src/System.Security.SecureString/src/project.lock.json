@@ -22,17 +22,14 @@
           "ref/dotnet/System.Globalization.dll": {}
         }
       },
-      "System.IO/4.0.10-beta-23024": {
+      "System.IO/4.0.0-beta-23024": {
         "dependencies": {
-          "System.Runtime": "4.0.20-beta-23024",
+          "System.Runtime": "4.0.0-beta-23024",
           "System.Text.Encoding": "4.0.0-beta-23024",
           "System.Threading.Tasks": "4.0.0-beta-23024"
         },
         "compile": {
           "ref/dotnet/System.IO.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.IO.dll": {}
         }
       },
       "System.Private.Uri/4.0.0-beta-23024": {
@@ -108,21 +105,6 @@
         },
         "runtime": {
           "lib/DNXCore50/System.Runtime.InteropServices.dll": {}
-        }
-      },
-      "System.Security.Cryptography.Encryption/4.0.0-beta-23024": {
-        "dependencies": {
-          "System.Runtime": "4.0.20-beta-23024",
-          "System.Resources.ResourceManager": "4.0.0-beta-23024",
-          "System.Threading.Tasks": "4.0.0-beta-23024",
-          "System.Globalization": "4.0.0-beta-23024",
-          "System.IO": "4.0.10-beta-23024"
-        },
-        "compile": {
-          "ref/dotnet/System.Security.Cryptography.Encryption.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Security.Cryptography.Encryption.dll": {}
         }
       },
       "System.Text.Encoding/4.0.0-beta-23024": {
@@ -216,16 +198,15 @@
         "ref/win8/_._"
       ]
     },
-    "System.IO/4.0.10-beta-23024": {
-      "serviceable": true,
-      "sha512": "WSXeleSR+UFJqZQUhzkgcq/O4iyR+YTOIh0IXFXW6ABw+JfH56jb6AuQJwltzZXXtNbdz7Ha2A5OIeYIT6QRFw==",
+    "System.IO/4.0.0-beta-23024": {
+      "sha512": "UmkJEalaEoXO15ttEsfpeKSXMHGNJsQizBUx03/WrmXfO9PCsfsVdbbdonX3fYamPrNK0LUHOGq+M+ta8tjqiQ==",
       "files": [
-        "System.IO.4.0.10-beta-23024.nupkg",
-        "System.IO.4.0.10-beta-23024.nupkg.sha512",
+        "License.rtf",
+        "System.IO.4.0.0-beta-23024.nupkg",
+        "System.IO.4.0.0-beta-23024.nupkg.sha512",
         "System.IO.nuspec",
-        "lib/DNXCore50/System.IO.dll",
-        "lib/net46/_._",
-        "lib/netcore50/System.IO.dll",
+        "lib/net45/_._",
+        "lib/win8/_._",
         "ref/dotnet/System.IO.dll",
         "ref/dotnet/System.IO.xml",
         "ref/dotnet/de/System.IO.xml",
@@ -237,8 +218,19 @@
         "ref/dotnet/ru/System.IO.xml",
         "ref/dotnet/zh-hans/System.IO.xml",
         "ref/dotnet/zh-hant/System.IO.xml",
-        "ref/net46/_._",
-        "runtimes/win8-aot/lib/netcore50/System.IO.dll"
+        "ref/net45/_._",
+        "ref/netcore50/System.IO.dll",
+        "ref/netcore50/System.IO.xml",
+        "ref/netcore50/de/System.IO.xml",
+        "ref/netcore50/es/System.IO.xml",
+        "ref/netcore50/fr/System.IO.xml",
+        "ref/netcore50/it/System.IO.xml",
+        "ref/netcore50/ja/System.IO.xml",
+        "ref/netcore50/ko/System.IO.xml",
+        "ref/netcore50/ru/System.IO.xml",
+        "ref/netcore50/zh-hans/System.IO.xml",
+        "ref/netcore50/zh-hant/System.IO.xml",
+        "ref/win8/_._"
       ]
     },
     "System.Private.Uri/4.0.0-beta-23024": {
@@ -423,29 +415,6 @@
         "runtimes/win8-aot/lib/netcore50/System.Runtime.InteropServices.dll"
       ]
     },
-    "System.Security.Cryptography.Encryption/4.0.0-beta-23024": {
-      "serviceable": true,
-      "sha512": "LGHXdvs2WCJjLSKuvn+0SDZhevPyaHNwHx3BiojKsCYPfP3RmTqVMWAAn/tGpn18zV6E1TWGhuJt8xWtbjJk0Q==",
-      "files": [
-        "System.Security.Cryptography.Encryption.4.0.0-beta-23024.nupkg",
-        "System.Security.Cryptography.Encryption.4.0.0-beta-23024.nupkg.sha512",
-        "System.Security.Cryptography.Encryption.nuspec",
-        "lib/DNXCore50/System.Security.Cryptography.Encryption.dll",
-        "lib/net46/System.Security.Cryptography.Encryption.dll",
-        "ref/dotnet/System.Security.Cryptography.Encryption.dll",
-        "ref/dotnet/System.Security.Cryptography.Encryption.xml",
-        "ref/dotnet/de/System.Security.Cryptography.Encryption.xml",
-        "ref/dotnet/es/System.Security.Cryptography.Encryption.xml",
-        "ref/dotnet/fr/System.Security.Cryptography.Encryption.xml",
-        "ref/dotnet/it/System.Security.Cryptography.Encryption.xml",
-        "ref/dotnet/ja/System.Security.Cryptography.Encryption.xml",
-        "ref/dotnet/ko/System.Security.Cryptography.Encryption.xml",
-        "ref/dotnet/ru/System.Security.Cryptography.Encryption.xml",
-        "ref/dotnet/zh-hans/System.Security.Cryptography.Encryption.xml",
-        "ref/dotnet/zh-hant/System.Security.Cryptography.Encryption.xml",
-        "ref/net46/System.Security.Cryptography.Encryption.dll"
-      ]
-    },
     "System.Text.Encoding/4.0.0-beta-23024": {
       "sha512": "vk8nyuyHfyseINaZc0CHm4L4mHU5fnZV2kdA3Cgf1MD4/dMGZFjwKCKrpMr6m08j8xOzC3yE+gIadUZjWNU6oQ==",
       "files": [
@@ -549,7 +518,6 @@
       "System.Runtime >= 4.0.20-beta-*",
       "System.Runtime.Handles >= 4.0.0-beta-*",
       "System.Runtime.InteropServices >= 4.0.20-beta-*",
-      "System.Security.Cryptography.Encryption >= 4.0.0-beta-*",
       "System.Threading >= 4.0.10-beta-*"
     ],
     "DNXCore,Version=v5.0": []

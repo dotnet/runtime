@@ -1,0 +1,130 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Windows_Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{81A05E2E-E3AE-4246-B4E6-DD5F31FB71F9}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Security.Cryptography.Algorithms</AssemblyName>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLSCompliant>false</CLSCompliant>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Security.Cryptography.Primitives\src\System.Security.Cryptography.Primitives.csproj">
+      <Project>{D04A73AE-E418-4ACD-A132-7688435BE8B5}</Project>
+      <Name>System.Security.Cryptography.Primitives</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="System\Security\Cryptography\Aes.cs" />
+    <Compile Include="System\Security\Cryptography\DeriveBytes.cs" />
+    <Compile Include="System\Security\Cryptography\MD5.cs" />
+    <Compile Include="System\Security\Cryptography\SHA1.cs" />
+    <Compile Include="System\Security\Cryptography\SHA256.cs" />
+    <Compile Include="System\Security\Cryptography\SHA384.cs" />
+    <Compile Include="System\Security\Cryptography\SHA512.cs" />
+    <Compile Include="System\Security\Cryptography\HMACSHA1.cs" />
+    <Compile Include="System\Security\Cryptography\HMACSHA256.cs" />
+    <Compile Include="System\Security\Cryptography\HMACSHA384.cs" />
+    <Compile Include="System\Security\Cryptography\HMACSHA512.cs" />
+    <Compile Include="System\Security\Cryptography\RandomNumberGenerator.cs" />
+    <Compile Include="System\Security\Cryptography\Rfc2898DeriveBytes.cs" />
+    <Compile Include="System\Security\Cryptography\RSA.cs" />
+    <Compile Include="System\Security\Cryptography\RSAEncryptionPadding.cs" />
+    <Compile Include="System\Security\Cryptography\RSAEncryptionPaddingMode.cs" />
+    <Compile Include="System\Security\Cryptography\RSAParameters.cs" />
+    <Compile Include="System\Security\Cryptography\RSASignaturePadding.cs" />
+    <Compile Include="System\Security\Cryptography\RSASignaturePaddingMode.cs" />
+    <Compile Include="Internal\Cryptography\AesImplementation.cs" />
+    <Compile Include="Internal\Cryptography\AesNativeCryptoTransform.cs" />
+    <Compile Include="Internal\Cryptography\Helpers.cs" />
+    <Compile Include="Internal\Cryptography\HMACCommon.cs" />
+    <Compile Include="Internal\Cryptography\HashAlgorithmNames.cs" />
+    <Compile Include="Internal\Cryptography\HashProvider.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+    <Compile Include="System\Security\Cryptography\RNGCryptoServiceProvider.Windows.cs" />
+    <Compile Include="Internal\Cryptography\AesCngCryptoDecryptor.cs" />
+    <Compile Include="Internal\Cryptography\AesCngCryptoEncryptor.cs" />
+    <Compile Include="Internal\Cryptography\AesCngCryptoTransform.cs" />
+    <Compile Include="Internal\Cryptography\AesImplementation.Windows.cs" />
+    <Compile Include="Internal\Cryptography\HashProviderDispenser.Windows.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Cng.cs">
+      <Link>Common\Interop\Windows\BCrypt\Cng.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
+      <Link>Common\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
+      <Link>Common\Interop\Windows\BCrypt\Interop.NTSTATUS.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.CreateCryptographicException.cs">
+      <Link>Common\Interop\Windows\BCrypt\Interop.CreateCryptographicException.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <Compile Include="System\Security\Cryptography\RNGCryptoServiceProvider.Unix.cs" />
+    <Compile Include="Internal\Cryptography\AesImplementation.Unix.cs" />
+    <Compile Include="Internal\Cryptography\AesOpenSslCryptoTransform.cs" />
+    <Compile Include="Internal\Cryptography\HashProviderDispenser.Unix.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.EnsureOpenSslInitialized.cs">
+      <Link>Common\Interop\Unix\libcoreclr\Interop.EnsureOpenSslInitialized.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.ERR.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.ERR.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.EVP.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.EVP.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.EVP.Cipher.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.EVP.Cipher.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.Initialization.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.Initialization.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.RAND.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.RAND.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeEvpCipherCtxHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeEvpCipherCtxHandle.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeEvpMdCtxHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeEvpMdCtxHandle.Unix.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsFreeBSD)' == 'true' ">
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.HMAC.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.HMAC.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.HMAC.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.HMAC.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
+    <Compile Include="$(CommonPath)\Interop\OSX\libcrypto\Interop.HMAC.cs">
+      <Link>Common\Interop\OSX\libcrypto\Interop.HMAC.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
