@@ -201,17 +201,20 @@ internal static class Assert
         catch (Exception e) { throw WrapException(e, path, line); }
     }
 
-    public static void False(bool condition,
+    public static void False(bool condition, string userMessage = null,
         [CallerFilePath] string path = null, [CallerLineNumber] int line = 0)
     {
-        try { Xunit.Assert.False(condition); }
-        catch (Exception e) { throw WrapException(e, path, line); }
-    }
-
-    public static void False(bool condition, string userMessage,
-        [CallerFilePath] string path = null, [CallerLineNumber] int line = 0)
-    {
-        try { Xunit.Assert.False(condition, userMessage); }
+        try
+        {
+            if (userMessage == null)
+            {
+                Xunit.Assert.False(condition);
+            }
+            else
+            {
+                Xunit.Assert.False(condition, userMessage);
+            }
+        }
         catch (Exception e) { throw WrapException(e, path, line); }
     }
 
@@ -604,7 +607,7 @@ internal static class Assert
     // so to use it we derive a custom exception type
     internal sealed class WrapperXunitException : XunitException
     {
-        internal WrapperXunitException(string message, Exception innerException) : 
+        internal WrapperXunitException(string message, Exception innerException) :
             base(message, innerException)
         {
         }

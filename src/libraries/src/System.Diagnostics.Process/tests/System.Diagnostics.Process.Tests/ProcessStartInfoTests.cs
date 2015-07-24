@@ -2,7 +2,13 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Security;
+using System.Security.Principal;
+using Microsoft.Win32;
+using System.IO;
 using Xunit;
+using Microsoft.Win32.SafeHandles;
+using System.Linq;
 
 namespace System.Diagnostics.ProcessTests
 {
@@ -185,6 +191,149 @@ namespace System.Diagnostics.ProcessTests
 
             // Calling the getter
             Assert.False(psi.UseShellExecute, "UseShellExecute=true is not supported on onecore.");
+        }
+
+        [Fact]
+        public void TestArgumentsProperty()
+        {
+            ProcessStartInfo psi = new ProcessStartInfo();
+            Assert.Equal(string.Empty, psi.Arguments);
+
+            psi = new ProcessStartInfo("filename", "-arg1 -arg2");
+            Assert.Equal("-arg1 -arg2", psi.Arguments);
+
+            psi.Arguments = "-arg3 -arg4";
+            Assert.Equal("-arg3 -arg4", psi.Arguments);
+        }
+
+        [Theory, InlineData(true), InlineData(false)]
+        public void TestCreateNoWindowProperty(bool value)
+        {
+            Process testProcess = CreateProcessInfinite();
+            try
+            {
+                testProcess.StartInfo.CreateNoWindow = value;
+                testProcess.Start();
+
+                Assert.Equal(value, testProcess.StartInfo.CreateNoWindow);
+            }
+            finally
+            {
+                if (!testProcess.HasExited)
+                    testProcess.Kill();
+
+                Assert.True(testProcess.WaitForExit(WaitInMS));
+            }
+        }
+
+        [Fact, PlatformSpecific(PlatformID.Windows), OuterLoop] // Requires admin privileges
+        public void TestUserCredentialsPropertiesOnWindows()
+        {
+            string username = "test", password = "PassWord123!!";
+            
+            if (Interop.NetUserAdd(username, password))
+            {
+                Process p = CreateProcessInfinite();
+
+                p.StartInfo.LoadUserProfile = true;
+                p.StartInfo.UserName = username;
+                p.StartInfo.Password = GetSecureString(password);
+
+                SafeProcessHandle handle = null;
+                try
+                {
+                    p.Start();
+                    if (Interop.OpenProcessToken(p.SafeHandle, 0x8u, out handle))
+                    {
+                        SecurityIdentifier sid;
+                        if (Interop.ProcessTokenToSid(handle, out sid))
+                        {
+                            string actualUserName = sid.Translate(typeof(NTAccount)).ToString();
+                            int indexOfDomain = actualUserName.IndexOf('\\');
+                            if (indexOfDomain != -1)
+                                actualUserName = actualUserName.Substring(indexOfDomain + 1);
+
+                            bool isProfileLoaded = GetNamesOfUserProfiles().Any(profile => profile.Equals(username));
+
+                            Assert.Equal(username, actualUserName);
+                            Assert.True(isProfileLoaded);
+                        }
+                    }
+                }
+                finally
+                {
+                    if (handle != null)
+                        handle.Dispose();
+
+                    if (!p.HasExited)
+                        p.Kill();
+
+                    Interop.NetUserDel(null, username);
+                    Assert.True(p.WaitForExit(WaitInMS));
+                }
+            }
+        }
+
+        [Fact, PlatformSpecific(PlatformID.AnyUnix)]
+        public void TestUserCredentialsPropertiesOnUnix()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => _process.StartInfo.Domain);
+            Assert.Throws<PlatformNotSupportedException>(() => _process.StartInfo.UserName);
+            Assert.Throws<PlatformNotSupportedException>(() => _process.StartInfo.Password);
+            Assert.Throws<PlatformNotSupportedException>(() => _process.StartInfo.LoadUserProfile);
+        }
+
+        [Fact]
+        public void TestWorkingDirectoryProperty()
+        {
+            // check defaults
+            Assert.Equal(string.Empty, _process.StartInfo.WorkingDirectory);
+
+            Process p = CreateProcessInfinite();
+            p.StartInfo.WorkingDirectory = Directory.GetCurrentDirectory();
+
+            try
+            {
+                p.Start();
+                Assert.Equal(Directory.GetCurrentDirectory(), p.StartInfo.WorkingDirectory);
+            }
+            finally
+            {
+                if (!p.HasExited)
+                    p.Kill();
+
+                Assert.True(p.WaitForExit(WaitInMS));
+            }
+        }
+
+        private unsafe SecureString GetSecureString(string password)
+        {
+            fixed (char* p = password)
+                return new SecureString(p, password.Length);
+        }
+
+        private static List<string> GetNamesOfUserProfiles()
+        {
+            List<string> userNames = new List<string>();
+
+            string[] names = Registry.Users.GetSubKeyNames();
+            for (int i = 1; i < names.Length; i++)
+            {
+                try
+                {
+                    SecurityIdentifier sid = new SecurityIdentifier(names[i]);
+                    string userName = sid.Translate(typeof(NTAccount)).ToString();
+                    int indexofDomain = userName.IndexOf('\\');
+                    if (indexofDomain != -1)
+                    {
+                        userName = userName.Substring(indexofDomain + 1);
+                        userNames.Add(userName);
+                    }
+                }
+                catch (Exception) { }
+            }
+
+            return userNames;
         }
     }
 }

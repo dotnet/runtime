@@ -677,7 +677,7 @@ namespace System.Diagnostics
                         threadInfo._processId = (int)value;
                         break;
                     case ValueId.ThreadId:
-                        threadInfo._threadId = (int)value;
+                        threadInfo._threadId = (ulong)value;
                         break;
                     case ValueId.BasePriority:
                         threadInfo._basePriority = (int)value;
@@ -992,7 +992,7 @@ namespace System.Diagnostics
                     ThreadInfo threadInfo = new ThreadInfo();
 
                     threadInfo._processId = (int)ti.UniqueProcess;
-                    threadInfo._threadId = (int)ti.UniqueThread;
+                    threadInfo._threadId = (ulong)ti.UniqueThread;
                     threadInfo._basePriority = ti.BasePriority;
                     threadInfo._currentPriority = ti.Priority;
                     threadInfo._startAddress = ti.StartAddress;
