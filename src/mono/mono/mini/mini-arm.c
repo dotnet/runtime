@@ -5093,6 +5093,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ARM_LDR_REG_REG (code, ARMREG_PC, ARMREG_PC, ARMREG_IP);
 			} else {
 				code = mono_arm_patchable_b (code, ARMCOND_AL);
+				cfg->thunk_area += THUNK_SIZE;
 			}
 			break;
 		}
