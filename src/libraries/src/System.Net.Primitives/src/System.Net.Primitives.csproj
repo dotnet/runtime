@@ -1,0 +1,144 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <AssemblyName>System.Net.Primitives</AssemblyName>
+    <AssemblyVersion>4.0.10.0</AssemblyVersion>
+    <OutputType>Library</OutputType>
+    <ProjectGuid>{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);FEATURE_CORECLR</DefineConstants>
+  </PropertyGroup>
+  <!-- Help VS understand available configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
+
+  <ItemGroup>
+    <Compile Include="System\Net\AuthenticationSchemes.cs" />
+    <Compile Include="System\Net\Cookie.cs" />
+    <Compile Include="System\Net\CookieContainer.cs" />
+    <Compile Include="System\Net\CookieCollection.cs" />
+    <Compile Include="System\Net\CookieException.cs" />
+    <Compile Include="System\Net\CredentialCache.cs" />
+    <Compile Include="System\Net\DecompressionMethods.cs" />
+    <Compile Include="System\Net\DnsEndPoint.cs" />
+    <Compile Include="System\Net\EndPoint.cs" />
+    <Compile Include="System\Net\HttpStatusCode.cs" />
+    <Compile Include="System\Net\ICredentials.cs" />
+    <Compile Include="System\Net\ICredentialsByHost.cs" />
+    <Compile Include="System\Net\IPAddress.cs" />
+    <Compile Include="System\Net\IPAddressParser.cs" />
+    <Compile Include="System\Net\IPEndPoint.cs" />
+    <Compile Include="System\Net\IWebProxy.cs" />
+    <Compile Include="System\Net\NetworkCredential.cs" />
+    <Compile Include="System\Net\Sockets\SocketAddress.cs" />
+    <Compile Include="System\Net\TransportContext.cs" />
+    <Compile Include="System\Net\SocketException.cs" />
+    <Compile Include="System\Net\NetworkInformation\IPAddressCollection.cs" />
+    <Compile Include="System\Net\NetworkInformation\HostInformation.CoreCLR.cs" />
+    <Compile Include="System\Net\NetworkInformation\NetworkInformationException.cs" />
+    <Compile Include="System\Net\SecureProtocols\NegotiateEnumTypes.cs" />
+    <Compile Include="System\Net\SecureProtocols\SslEnumTypes.cs" />
+    <Compile Include="System\Net\Security\SslPolicyErrors.cs" />
+    <Compile Include="System\Net\Sockets\AddressFamily.cs" />
+    <Compile Include="System\Net\Sockets\SocketError.cs" />
+    <Compile Include="System\Security\Authentication\ExtendedProtection\ChannelBinding.cs" />
+    <Compile Include="System\Security\Authentication\ExtendedProtection\ChannelBindingKind.cs" />
+
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs" >
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs" >
+      <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\TcpValidationHelpers.cs" >
+      <Link>Common\System\Net\TcpValidationHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\UriScheme.cs" >
+      <Link>Common\System\Net\UriScheme.cs</Link>
+    </Compile>
+
+    <!-- Logging -->
+    <Compile Include="$(CommonPath)\System\Net\Shims\TraceSource.cs" >
+      <Link>Common\System\Net\Shims\TraceSource.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\Logging.cs" >
+      <Link>Common\System\Net\Logging\Logging.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\GlobalLog.cs" >
+      <Link>Common\System\Net\Logging\GlobalLog.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\EventSourceLogging.cs" >
+      <Link>Common\System\Net\Logging\EventSourceLogging.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\InternalException.cs" >
+      <Link>Common\System\Net\InternalException.cs</Link>
+    </Compile>
+
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs" >
+      <Link>Common\System\NotImplemented.cs</Link>
+    </Compile>
+
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.Alg.cs" >
+      <Link>Common\Interop\Windows\Crypt32\Interop.Alg.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs" >
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\IpHlpApi\Interop.ErrorCodes.cs" >
+      <Link>Common\Interop\Windows\IpHlpApi\Interop.ErrorCodes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\IpHlpApi\Interop.FIXED_INFO.cs" >
+      <Link>Common\Interop\Windows\IpHlpApi\Interop.FIXED_INFO.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\IpHlpApi\Interop.GetNetworkParams.cs" >
+      <Link>Common\Interop\Windows\IpHlpApi\Interop.GetNetworkParams.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\IpHlpApi\Interop.IP_ADDR_STRING.cs" >
+      <Link>Common\Interop\Windows\IpHlpApi\Interop.IP_ADDR_STRING.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore_obsolete\Interop.LocalAlloc.cs" >
+      <Link>Common\Interop\Windows\mincore_obsolete\Interop.LocalAlloc.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore_obsolete\Interop.LocalFree.cs" >
+      <Link>Common\Interop\Windows\mincore_obsolete\Interop.LocalFree.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.NtStatus.cs" >
+      <Link>Common\Interop\Windows\NtDll\Interop.NtStatus.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlIpv4AddressToStringEx.cs" >
+      <Link>Common\Interop\Windows\NtDll\Interop.RtlIpv4AddressToStringEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlIpv4StringToAddressEx.cs" >
+      <Link>Common\Interop\Windows\NtDll\Interop.RtlIpv4StringToAddressEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlIpv6AddressToStringEx.cs" >
+      <Link>Common\Interop\Windows\NtDll\Interop.RtlIpv6AddressToStringEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlIpv6StringToAddressEx.cs" >
+      <Link>Common\Interop\Windows\NtDll\Interop.RtlIpv6StringToAddressEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\SChannel\Interop.SchProtocols.cs" >
+      <Link>Common\Interop\Windows\SChannel\Interop.SchProtocols.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.ErrorCodes.cs" >
+      <Link>Common\Interop\Windows\Winsock\Interop.ErrorCodes.cs</Link>
+    </Compile>
+
+  </ItemGroup>
+  
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+    <!-- TODO -->
+  </ItemGroup>
+  
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />  
+</Project>

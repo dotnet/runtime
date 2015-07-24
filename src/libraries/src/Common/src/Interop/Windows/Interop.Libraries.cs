@@ -17,6 +17,7 @@ internal static partial class Interop
         internal const string Handle = "api-ms-win-core-handle-l1-1-0.dll";
         internal const string Heap = "api-ms-win-core-heap-obsolete-l1-1-0.dll";
         internal const string IO = "api-ms-win-core-io-l1-1-0.dll";
+        internal const string IpHlpApi = "iphlpapi.dll";
         internal const string Kernel32 = "kernel32.dll";
         internal const string Kernel32_L1 = "api-ms-win-core-kernel32-legacy-l1-1-1.dll";
         internal const string Kernel32_L2 = "api-ms-win-core-kernel32-legacy-l1-1-0.dll";
@@ -53,6 +54,7 @@ internal static partial class Interop
         internal const string User32 = "user32.dll";
         internal const string Version = "api-ms-win-core-version-l1-1-0.dll";
         internal const string WinHttp = "winhttp.dll";
+        internal const string Winsock = "Ws2_32.dll";
         internal const string Wow64 = "api-ms-win-core-wow64-l1-1-0.dll";
         internal const string Zlib = "clrcompression.dll";
     }

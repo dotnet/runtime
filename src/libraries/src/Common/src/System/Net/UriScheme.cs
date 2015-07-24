@@ -9,5 +9,7 @@ namespace System.Net
         public const string Https = "https";
         public const string Ws = "ws";
         public const string Wss = "wss";
+
+        public const string SchemeDelimiter = "://";
     }
 }

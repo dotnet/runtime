@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Windows_Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <OutputType>Library</OutputType>
+    <ProjectGuid>{7860A11A-1841-4416-8A30-28EEEB42C6BB}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <StringResourcesPath>..\..\src\Resources\Strings.resx</StringResourcesPath>
+    <UnsupportedPlatforms>Linux;OSX;FreeBSD</UnsupportedPlatforms>
+  </PropertyGroup>
+  
+  <!-- Help VS understand available configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
+  
+  <ItemGroup>
+    <Compile Include="CookieContainerTest.cs" />
+    <Compile Include="CookieInternalTest.cs" />
+
+    <Compile Include="Fakes\GlobalLog.cs" />
+    <Compile Include="Fakes\HostInformation.cs" />
+
+    <Compile Include="..\..\src\System\Net\Cookie.cs" >
+      <Link>ProductionCode\System\Net\Cookie.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\CookieContainer.cs" >
+      <Link>ProductionCode\System\Net\CookieContainer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\cookiecollection.cs" >
+      <Link>ProductionCode\System\Net\cookiecollection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\CookieException.cs" >
+      <Link>ProductionCode\System\Net\CookieException.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\EndPoint.cs" >
+      <Link>ProductionCode\System\Net\EndPoint.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\IPAddress.cs" >
+      <Link>ProductionCode\System\Net\IPAddress.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\IPAddressParser.cs" >
+      <Link>ProductionCode\System\Net\IPAddressParser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\IPEndPoint.cs" >
+      <Link>ProductionCode\System\Net\IPEndPoint.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Sockets\SocketAddress.cs" >
+      <Link>ProductionCode\System\Net\Sockets\SocketAddress.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\SocketException.cs" >
+      <Link>ProductionCode\System\Net\SocketException.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Sockets\AddressFamily.cs" >
+      <Link>ProductionCode\System\Net\Sockets\AddressFamily.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Sockets\SocketError.cs" >
+      <Link>ProductionCode\System\Net\Sockets\SocketError.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs" >
+      <Link>ProductionCode\Common\System\Net\HttpKnownHeaderNames.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\TcpValidationHelpers.cs" >
+      <Link>ProductionCode\Common\System\Net\TcpValidationHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\UriScheme.cs" >
+      <Link>ProductionCode\Common\System\Net\UriScheme.cs</Link>
+    </Compile>
+
+    <!-- Logging -->
+    <Compile Include="$(CommonPath)\System\Net\Shims\TraceSource.cs" >
+      <Link>ProductionCode\Common\System\Net\Shims\TraceSource.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\Logging.cs" >
+      <Link>ProductionCode\Common\System\Net\Logging\Logging.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\EventSourceLogging.cs" >
+      <Link>ProductionCode\Common\System\Net\Logging\EventSourceLogging.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\InternalException.cs" >
+      <Link>ProductionCode\Common\System\Net\InternalException.cs</Link>
+    </Compile>
+
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs" >
+      <Link>ProductionCode\Common\System\NotImplemented.cs</Link>
+    </Compile>
+
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs" >
+      <Link>ProductionCode\Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.NtStatus.cs" >
+      <Link>ProductionCode\Common\Interop\Windows\NtDll\Interop.NtStatus.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlIpv4AddressToStringEx.cs" >
+      <Link>ProductionCode\Common\Interop\Windows\NtDll\Interop.RtlIpv4AddressToStringEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlIpv4StringToAddressEx.cs" >
+      <Link>ProductionCode\Common\Interop\Windows\NtDll\Interop.RtlIpv4StringToAddressEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlIpv6AddressToStringEx.cs" >
+      <Link>ProductionCode\Common\Interop\Windows\NtDll\Interop.RtlIpv6AddressToStringEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlIpv6StringToAddressEx.cs" >
+      <Link>ProductionCode\Common\Interop\Windows\NtDll\Interop.RtlIpv6StringToAddressEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.ErrorCodes.cs" >
+      <Link>ProductionCode\Common\Interop\Windows\Winsock\Interop.ErrorCodes.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
