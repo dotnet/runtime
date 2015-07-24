@@ -91,6 +91,12 @@ static int read_perf_mmap (MonoProfiler* prof, int cpu);
 #endif
 
 #define BUFFER_SIZE (4096 * 16)
+
+/* Worst-case size in bytes of a 64-bit value encoded with LEB128. */
+#define LEB128_SIZE 10
+/* Size in bytes of the event ID prefix. */
+#define EVENT_SIZE 1
+
 static int nocalls = 0;
 static int notraces = 0;
 static int use_zip = 0;
@@ -896,7 +902,17 @@ gc_reference (MonoObject *obj, MonoClass *klass, uintptr_t size, uintptr_t num, 
 	int i;
 	uintptr_t last_offset = 0;
 	//const char *name = mono_class_get_name (klass);
-	LogBuffer *logbuffer = ensure_logbuf (1 + 10 + 10 + 10 + 10 + num * (10 + 10));
+	LogBuffer *logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* obj */ +
+		LEB128_SIZE /* klass */ +
+		LEB128_SIZE /* size */ +
+		LEB128_SIZE /* num */ +
+		num * (
+			LEB128_SIZE /* offset */ +
+			LEB128_SIZE /* ref */
+		)
+	);
 	emit_byte (logbuffer, TYPE_HEAP_OBJECT | TYPE_HEAP);
 	emit_obj (logbuffer, obj);
 	emit_ptr (logbuffer, klass);
@@ -929,7 +945,10 @@ heap_walk (MonoProfiler *profiler)
 	LogBuffer *logbuffer;
 	if (!do_heap_shot)
 		return;
-	logbuffer = ensure_logbuf (1 + 10);
+	logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */
+	);
 	now = current_time ();
 	if (hs_mode_ms && (now - last_hs_time)/1000000 >= hs_mode_ms)
 		do_walk = 1;
@@ -946,7 +965,10 @@ heap_walk (MonoProfiler *profiler)
 	emit_byte (logbuffer, TYPE_HEAP_START | TYPE_HEAP);
 	emit_time (logbuffer, now);
 	mono_gc_walk_heap (0, gc_reference, NULL);
-	logbuffer = ensure_logbuf (1 + 10);
+	logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */
+	);
 	now = current_time ();
 	emit_byte (logbuffer, TYPE_HEAP_END | TYPE_HEAP);
 	emit_time (logbuffer, now);
@@ -956,7 +978,12 @@ heap_walk (MonoProfiler *profiler)
 static void
 gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation) {
 	uint64_t now;
-	LogBuffer *logbuffer = ensure_logbuf (1 + 10 + 10 + 10);
+	LogBuffer *logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */ +
+		LEB128_SIZE /* gc event */ +
+		LEB128_SIZE /* generation */
+	);
 	now = current_time ();
 	ENTER_LOG (logbuffer, "gcevent");
 	emit_byte (logbuffer, TYPE_GC_EVENT | TYPE_GC);
@@ -980,7 +1007,11 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation) {
 static void
 gc_resize (MonoProfiler *profiler, int64_t new_size) {
 	uint64_t now;
-	LogBuffer *logbuffer = ensure_logbuf (1 + 10 + 10);
+	LogBuffer *logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */ +
+		LEB128_SIZE /* new size */
+	);
 	now = current_time ();
 	ENTER_LOG (logbuffer, "gcresize");
 	emit_byte (logbuffer, TYPE_GC_RESIZE | TYPE_GC);
@@ -1055,7 +1086,20 @@ gc_alloc (MonoProfiler *prof, MonoObject *obj, MonoClass *klass)
 	len &= ~7;
 	if (do_bt)
 		collect_bt (&data);
-	logbuffer = ensure_logbuf (1 + 10 + 10 + 10 + 10 + MAX_FRAMES * (10 + 10 + 10));
+	logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */ +
+		LEB128_SIZE /* klass */ +
+		LEB128_SIZE /* obj */ +
+		LEB128_SIZE /* size */ +
+		(do_bt ? (
+			LEB128_SIZE /* flags */ +
+			LEB128_SIZE /* count */ +
+			data.count * (
+				LEB128_SIZE /* method */
+			)
+		) : 0)
+	);
 	now = current_time ();
 	ENTER_LOG (logbuffer, "gcalloc");
 	emit_byte (logbuffer, do_bt | TYPE_ALLOC);
@@ -1077,7 +1121,14 @@ gc_moves (MonoProfiler *prof, void **objects, int num)
 {
 	int i;
 	uint64_t now;
-	LogBuffer *logbuffer = ensure_logbuf (1 + 10 + 10 + num * 10);
+	LogBuffer *logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */ +
+		LEB128_SIZE /* num */ +
+		num * (
+			LEB128_SIZE /* object */
+		)
+	);
 	now = current_time ();
 	ENTER_LOG (logbuffer, "gcmove");
 	emit_byte (logbuffer, TYPE_GC_MOVE | TYPE_GC);
@@ -1093,7 +1144,16 @@ static void
 gc_roots (MonoProfiler *prof, int num, void **objects, int *root_types, uintptr_t *extra_info)
 {
 	int i;
-	LogBuffer *logbuffer = ensure_logbuf (1 + 10 + 10 + num * (10 + 10 + 10));
+	LogBuffer *logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* num */ +
+		LEB128_SIZE /* collections */ +
+		num * (
+			LEB128_SIZE /* object */ +
+			LEB128_SIZE /* root type */ +
+			LEB128_SIZE /* extra info */
+		)
+	);
 	ENTER_LOG (logbuffer, "gcroots");
 	emit_byte (logbuffer, TYPE_HEAP_ROOT | TYPE_HEAP);
 	emit_value (logbuffer, num);
@@ -1110,7 +1170,15 @@ static void
 gc_handle (MonoProfiler *prof, int op, int type, uintptr_t handle, MonoObject *obj)
 {
 	uint64_t now;
-	LogBuffer *logbuffer = ensure_logbuf (1 + 10 + 10 + 10 + 10);
+	LogBuffer *logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */ +
+		LEB128_SIZE /* type */ +
+		LEB128_SIZE /* handle */ +
+		(op == MONO_PROFILER_GC_HANDLE_CREATED ? (
+			LEB128_SIZE /* obj */
+		) : 0)
+	);
 	now = current_time ();
 	ENTER_LOG (logbuffer, "gchandle");
 	if (op == MONO_PROFILER_GC_HANDLE_CREATED)
@@ -1175,7 +1243,14 @@ image_loaded (MonoProfiler *prof, MonoImage *image, int result)
 		return;
 	name = mono_image_get_filename (image);
 	nlen = strlen (name) + 1;
-	logbuffer = ensure_logbuf (1 + 10 + 1 + 10 + 10 + nlen);
+	logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */ +
+		EVENT_SIZE /* type */ +
+		LEB128_SIZE /* image */ +
+		LEB128_SIZE /* flags */ +
+		nlen /* name */
+	);
 	now = current_time ();
 	ENTER_LOG (logbuffer, "image");
 	emit_byte (logbuffer, TYPE_END_LOAD | TYPE_METADATA);
@@ -1197,7 +1272,14 @@ image_unloaded (MonoProfiler *prof, MonoImage *image)
 {
 	const char *name = mono_image_get_filename (image);
 	int nlen = strlen (name) + 1;
-	LogBuffer *logbuffer = ensure_logbuf (1 + 10 + 1 + 10 + 10 + nlen);
+	LogBuffer *logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */ +
+		EVENT_SIZE /* type */ +
+		LEB128_SIZE /* image */ +
+		LEB128_SIZE /* flags */ +
+		nlen /* name */
+	);
 	uint64_t now = current_time ();
 
 	ENTER_LOG (logbuffer, "image-unload");
@@ -1224,7 +1306,14 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly, int result)
 
 	char *name = mono_stringify_assembly_name (mono_assembly_get_name (assembly));
 	int nlen = strlen (name) + 1;
-	LogBuffer *logbuffer = ensure_logbuf (1 + 10 + 1 + 10 + 10 + nlen);
+	LogBuffer *logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */ +
+		EVENT_SIZE /* type */ +
+		LEB128_SIZE /* assembly */ +
+		LEB128_SIZE /* flags */ +
+		nlen /* name */
+	);
 	uint64_t now = current_time ();
 
 	ENTER_LOG (logbuffer, "assembly-load");
@@ -1250,7 +1339,14 @@ assembly_unloaded (MonoProfiler *prof, MonoAssembly *assembly)
 {
 	char *name = mono_stringify_assembly_name (mono_assembly_get_name (assembly));
 	int nlen = strlen (name) + 1;
-	LogBuffer *logbuffer = ensure_logbuf (1 + 10 + 1 + 10 + 10 + nlen);
+	LogBuffer *logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */ +
+		EVENT_SIZE /* type */ +
+		LEB128_SIZE /* assembly */ +
+		LEB128_SIZE /* flags */ +
+		nlen /* name */
+	);
 	uint64_t now = current_time ();
 
 	ENTER_LOG (logbuffer, "assembly-unload");
@@ -1287,7 +1383,15 @@ class_loaded (MonoProfiler *prof, MonoClass *klass, int result)
 		name = type_name (klass);
 	nlen = strlen (name) + 1;
 	image = mono_class_get_image (klass);
-	logbuffer = ensure_logbuf (1 + 10 + 1 + 10 + 10 + 10 + nlen);
+	logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */ +
+		EVENT_SIZE /* type */ +
+		LEB128_SIZE /* klass */ +
+		LEB128_SIZE /* image */ +
+		LEB128_SIZE /* flags */ +
+		nlen /* name */
+	);
 	now = current_time ();
 	ENTER_LOG (logbuffer, "class");
 	emit_byte (logbuffer, TYPE_END_LOAD | TYPE_METADATA);
@@ -1321,7 +1425,15 @@ class_unloaded (MonoProfiler *prof, MonoClass *klass)
 
 	int nlen = strlen (name) + 1;
 	MonoImage *image = mono_class_get_image (klass);
-	LogBuffer *logbuffer = ensure_logbuf (1 + 10 + 1 + 10 + 10 + 10 + nlen);
+	LogBuffer *logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */ +
+		EVENT_SIZE /* type */ +
+		LEB128_SIZE /* klass */ +
+		LEB128_SIZE /* image */ +
+		LEB128_SIZE /* flags */ +
+		nlen /* name */
+	);
 	uint64_t now = current_time ();
 
 	ENTER_LOG (logbuffer, "class-unload");
@@ -1359,7 +1471,11 @@ method_enter (MonoProfiler *prof, MonoMethod *method)
 	process_method_enter_coverage (prof, method);
 #endif /* DISABLE_HELPER_THREAD */
 
-	LogBuffer *logbuffer = ensure_logbuf (1 + 10 + 10);
+	LogBuffer *logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */ +
+		LEB128_SIZE /* method */
+	);
 	if (logbuffer->call_depth++ > max_call_depth)
 		return;
 	ENTER_LOG (logbuffer, "enter");
@@ -1375,7 +1491,11 @@ static void
 method_leave (MonoProfiler *prof, MonoMethod *method)
 {
 	uint64_t now;
-	LogBuffer *logbuffer = ensure_logbuf (1 + 10 + 10);
+	LogBuffer *logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */ +
+		LEB128_SIZE /* method */
+	);
 	if (--logbuffer->call_depth > max_call_depth)
 		return;
 	now = current_time ();
@@ -1396,7 +1516,11 @@ method_exc_leave (MonoProfiler *prof, MonoMethod *method)
 	LogBuffer *logbuffer;
 	if (nocalls)
 		return;
-	logbuffer = ensure_logbuf (1 + 10 + 10);
+	logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */ +
+		LEB128_SIZE /* method */
+	);
 	if (--logbuffer->call_depth > max_call_depth)
 		return;
 	now = current_time ();
@@ -1433,7 +1557,16 @@ code_buffer_new (MonoProfiler *prof, void *buffer, int size, MonoProfilerCodeBuf
 		name = NULL;
 		nlen = 0;
 	}
-	logbuffer = ensure_logbuf (1 + 10 + 10 + 10 + 10 + nlen);
+	logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */ +
+		LEB128_SIZE /* type */ +
+		LEB128_SIZE /* buffer */ +
+		LEB128_SIZE /* size */ +
+		(name ? (
+			nlen /* name */
+		) : 0)
+	);
 	now = current_time ();
 	ENTER_LOG (logbuffer, "code buffer");
 	emit_byte (logbuffer, TYPE_JITHELPER | TYPE_RUNTIME);
@@ -1458,7 +1591,18 @@ throw_exc (MonoProfiler *prof, MonoObject *object)
 	LogBuffer *logbuffer;
 	if (do_bt)
 		collect_bt (&data);
-	logbuffer = ensure_logbuf (1 + 10 + 10 + MAX_FRAMES * (10 + 10 + 10));
+	logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */ +
+		LEB128_SIZE /* object */ +
+		(do_bt ? (
+			LEB128_SIZE /* flags */ +
+			LEB128_SIZE /* count */ +
+			data.count * (
+				LEB128_SIZE /* method */
+			)
+		) : 0)
+	);
 	now = current_time ();
 	ENTER_LOG (logbuffer, "throw");
 	emit_byte (logbuffer, do_bt | TYPE_EXCEPTION);
@@ -1474,7 +1618,13 @@ static void
 clause_exc (MonoProfiler *prof, MonoMethod *method, int clause_type, int clause_num)
 {
 	uint64_t now;
-	LogBuffer *logbuffer = ensure_logbuf (1 + 10 + 10 + 10 + 10);
+	LogBuffer *logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */ +
+		LEB128_SIZE /* clause type */ +
+		LEB128_SIZE /* clause num */ +
+		LEB128_SIZE /* method */
+	);
 	now = current_time ();
 	ENTER_LOG (logbuffer, "clause");
 	emit_byte (logbuffer, TYPE_EXCEPTION | TYPE_CLAUSE);
@@ -1496,7 +1646,18 @@ monitor_event (MonoProfiler *profiler, MonoObject *object, MonoProfilerMonitorEv
 	LogBuffer *logbuffer;
 	if (do_bt)
 		collect_bt (&data);
-	logbuffer = ensure_logbuf (1 + 10 + 10 + MAX_FRAMES * (10 + 10 + 10));
+	logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */ +
+		LEB128_SIZE /* object */ +
+		(do_bt ? (
+			LEB128_SIZE /* flags */ +
+			LEB128_SIZE /* count */ +
+			data.count * (
+				LEB128_SIZE /* method */
+			)
+		) : 0)
+	);
 	now = current_time ();
 	ENTER_LOG (logbuffer, "monitor");
 	emit_byte (logbuffer, (event << 4) | do_bt | TYPE_MONITOR);
@@ -1514,7 +1675,13 @@ thread_start (MonoProfiler *prof, uintptr_t tid)
 	//printf ("thread start %p\n", (void*)tid);
 	init_thread ();
 
-	LogBuffer *logbuffer = ensure_logbuf (1 + 10 + 1 + 10 + 10);
+	LogBuffer *logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */ +
+		EVENT_SIZE /* type */ +
+		LEB128_SIZE /* tid */ +
+		LEB128_SIZE /* flags */
+	);
 	uint64_t now = current_time ();
 
 	ENTER_LOG (logbuffer, "thread-start");
@@ -1535,7 +1702,13 @@ static void
 thread_end (MonoProfiler *prof, uintptr_t tid)
 {
 	if (TLS_GET (LogBuffer, tlsbuffer)) {
-		LogBuffer *logbuffer = ensure_logbuf (1 + 10 + 1 + 10 + 10);
+		LogBuffer *logbuffer = ensure_logbuf (
+			EVENT_SIZE /* event */ +
+			LEB128_SIZE /* time */ +
+			EVENT_SIZE /* type */ +
+			LEB128_SIZE /* tid */ +
+			LEB128_SIZE /* flags */
+		);
 		uint64_t now = current_time ();
 
 		ENTER_LOG (logbuffer, "thread-end");
@@ -1561,7 +1734,13 @@ domain_loaded (MonoProfiler *prof, MonoDomain *domain, int result)
 	if (result != MONO_PROFILE_OK)
 		return;
 
-	LogBuffer *logbuffer = ensure_logbuf (1 + 10 + 1 + 10 + 10);
+	LogBuffer *logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */ +
+		EVENT_SIZE /* type */ +
+		LEB128_SIZE /* domain id */ +
+		LEB128_SIZE /* flags */
+	);
 	uint64_t now = current_time ();
 
 	ENTER_LOG (logbuffer, "domain-start");
@@ -1581,7 +1760,13 @@ domain_loaded (MonoProfiler *prof, MonoDomain *domain, int result)
 static void
 domain_unloaded (MonoProfiler *prof, MonoDomain *domain)
 {
-	LogBuffer *logbuffer = ensure_logbuf (1 + 10 + 1 + 10 + 10);
+	LogBuffer *logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */ +
+		EVENT_SIZE /* type */ +
+		LEB128_SIZE /* domain id */ +
+		LEB128_SIZE /* flags */
+	);
 	uint64_t now = current_time ();
 
 	ENTER_LOG (logbuffer, "domain-end");
@@ -1602,7 +1787,14 @@ static void
 domain_name (MonoProfiler *prof, MonoDomain *domain, const char *name)
 {
 	int nlen = strlen (name) + 1;
-	LogBuffer *logbuffer = ensure_logbuf (1 + 10 + 1 + 10 + 10 + nlen);
+	LogBuffer *logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */ +
+		EVENT_SIZE /* type */ +
+		LEB128_SIZE /* domain id */ +
+		LEB128_SIZE /* flags */ +
+		nlen /* name */
+	);
 	uint64_t now = current_time ();
 
 	ENTER_LOG (logbuffer, "domain-name");
@@ -1624,7 +1816,14 @@ domain_name (MonoProfiler *prof, MonoDomain *domain, const char *name)
 static void
 context_loaded (MonoProfiler *prof, MonoAppContext *context)
 {
-	LogBuffer *logbuffer = ensure_logbuf (1 + 10 + 1 + 10 + 10 + 10);
+	LogBuffer *logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */ +
+		EVENT_SIZE /* type */ +
+		LEB128_SIZE /* context id */ +
+		LEB128_SIZE /* flags */ +
+		LEB128_SIZE /* domain id */
+	);
 	uint64_t now = current_time ();
 
 	ENTER_LOG (logbuffer, "context-start");
@@ -1645,7 +1844,14 @@ context_loaded (MonoProfiler *prof, MonoAppContext *context)
 static void
 context_unloaded (MonoProfiler *prof, MonoAppContext *context)
 {
-	LogBuffer *logbuffer = ensure_logbuf (1 + 10 + 1 + 10 + 10 + 10);
+	LogBuffer *logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */ +
+		EVENT_SIZE /* type */ +
+		LEB128_SIZE /* context id */ +
+		LEB128_SIZE /* flags */ +
+		LEB128_SIZE /* domain id */
+	);
 	uint64_t now = current_time ();
 
 	ENTER_LOG (logbuffer, "context-end");
@@ -1669,7 +1875,14 @@ thread_name (MonoProfiler *prof, uintptr_t tid, const char *name)
 	int len = strlen (name) + 1;
 	uint64_t now;
 	LogBuffer *logbuffer;
-	logbuffer = ensure_logbuf (1 + 10 + 1 + 10 + 10 + len);
+	logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */ +
+		EVENT_SIZE /* type */ +
+		LEB128_SIZE /* tid */ +
+		LEB128_SIZE /* flags */ +
+		len /* name */
+	);
 	now = current_time ();
 	ENTER_LOG (logbuffer, "tname");
 	emit_byte (logbuffer, TYPE_METADATA);
@@ -1855,7 +2068,14 @@ dump_ubin (const char *filename, uintptr_t load_addr, uint64_t offset, uintptr_t
 	int len;
 	len = strlen (filename) + 1;
 	now = current_time ();
-	logbuffer = ensure_logbuf (1 + 10 + 10 + 10 + 10 + len);
+	logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */ +
+		LEB128_SIZE /* load address */ +
+		LEB128_SIZE /* offset */ +
+		LEB128_SIZE /* size */ +
+		nlen /* file name */
+	);
 	emit_byte (logbuffer, TYPE_SAMPLE | TYPE_SAMPLE_UBIN);
 	emit_time (logbuffer, now);
 	emit_svalue (logbuffer, load_addr);
@@ -1872,7 +2092,12 @@ dump_usym (const char *name, uintptr_t value, uintptr_t size)
 	LogBuffer *logbuffer;
 	int len;
 	len = strlen (name) + 1;
-	logbuffer = ensure_logbuf (1 + 10 + 10 + len);
+	logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* value */ +
+		LEB128_SIZE /* size */ +
+		len /* name */
+	);
 	emit_byte (logbuffer, TYPE_SAMPLE | TYPE_SAMPLE_USYM);
 	emit_ptr (logbuffer, (void*)value);
 	emit_value (logbuffer, size);
@@ -2176,7 +2401,22 @@ dump_sample_hits (MonoProfiler *prof, StatBuffer *sbuf)
 			}
 		}
 
-		logbuffer = ensure_logbuf (1 + 10 + 10 + 10 + 10 + 10 + 10 + mbt_count * (10 + 10 + 10));
+		logbuffer = ensure_logbuf (
+			EVENT_SIZE /* event */ +
+			LEB128_SIZE /* type */ +
+			LEB128_SIZE /* time */ +
+			LEB128_SIZE /* tid */ +
+			LEB128_SIZE /* count */ +
+			count * (
+				LEB128_SIZE /* ip */
+			) +
+			LEB128_SIZE /* managed count */ +
+			mbt_count * (
+				LEB128_SIZE /* method */ +
+				LEB128_SIZE /* il offset */ +
+				LEB128_SIZE /* native offset */
+			)
+		);
 		emit_byte (logbuffer, TYPE_SAMPLE | TYPE_SAMPLE_HIT);
 		emit_value (logbuffer, type);
 		emit_uvalue (logbuffer, prof->startup_time + (uint64_t)sample [2] * (uint64_t)10000);
@@ -2312,6 +2552,8 @@ static void
 dump_perf_hits (MonoProfiler *prof, void *buf, int size)
 {
 	LogBuffer *logbuffer;
+	int count = 1;
+	int mbt_count = 0;
 	void *end = (char*)buf + size;
 	int samples = 0;
 	int pid = getpid ();
@@ -2329,7 +2571,22 @@ dump_perf_hits (MonoProfiler *prof, void *buf, int size)
 		/*ip = (void*)s->ip;
 		printf ("sample: %d, size: %d, ip: %p (%s), timestamp: %llu, nframes: %llu\n",
 			s->h.type, s->h.size, ip, symbol_for (ip), s->timestamp, s->nframes);*/
-		logbuffer = ensure_logbuf (1 + 10 + 10 + 10 + 10 + 10);
+		logbuffer = ensure_logbuf (
+			EVENT_SIZE /* event */ +
+			LEB128_SIZE /* type */ +
+			LEB128_SIZE /* time */ +
+			LEB128_SIZE /* tid */ +
+			LEB128_SIZE /* count */ +
+			count * (
+				LEB128_SIZE /* ip */
+			) +
+			LEB128_SIZE /* managed count */ +
+			mbt_count * (
+				LEB128_SIZE /* method */ +
+				LEB128_SIZE /* il offset */ +
+				LEB128_SIZE /* native offset */
+			)
+		);
 		emit_byte (logbuffer, TYPE_SAMPLE | TYPE_SAMPLE_HIT);
 		emit_value (logbuffer, sample_type);
 		emit_uvalue (logbuffer, s->timestamp - prof->startup_time);
@@ -2339,11 +2596,11 @@ dump_perf_hits (MonoProfiler *prof, void *buf, int size)
 		 * perf is the kernel's thread ID.
 		 */
 		emit_ptr (logbuffer, 0);
-		emit_value (logbuffer, 1); /* count */
+		emit_value (logbuffer, count);
 		emit_ptr (logbuffer, (void*)(uintptr_t)s->ip);
-		/* no support here yet for the managed backtrace */
-		emit_uvalue (logbuffer, 0);
 		add_code_pointer (s->ip);
+		/* no support here yet for the managed backtrace */
+		emit_uvalue (logbuffer, mbt_count);
 		buf = (char*)buf + s->h.size;
 		samples++;
 	}
@@ -2539,7 +2796,11 @@ counters_emit (MonoProfiler *profiler)
 {
 	MonoCounterAgent *agent;
 	LogBuffer *logbuffer;
-	int size = 1 + 10, len = 0;
+	int len = 0;
+	int size =
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* len */
+	;
 
 	if (!counters_initialized)
 		return;
@@ -2550,7 +2811,15 @@ counters_emit (MonoProfiler *profiler)
 		if (agent->emitted)
 			continue;
 
-		size += 10 + strlen (mono_counter_get_name (agent->counter)) + 1 + 10 + 10 + 10 + 10;
+		size +=
+			LEB128_SIZE /* section */ +
+			strlen (mono_counter_get_name (agent->counter)) + 1 /* name */ +
+			LEB128_SIZE /* type */ +
+			LEB128_SIZE /* unit */ +
+			LEB128_SIZE /* variance */ +
+			LEB128_SIZE /* index */
+		;
+
 		len += 1;
 	}
 
@@ -2608,10 +2877,22 @@ counters_sample (MonoProfiler *profiler, uint64_t timestamp)
 
 	mono_mutex_lock (&counters_mutex);
 
-	size = 1 + 10;
-	for (agent = counters; agent; agent = agent->next)
-		size += 10 + 10 + mono_counter_get_size (agent->counter);
-	size += 10;
+	size =
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */
+	;
+
+	for (agent = counters; agent; agent = agent->next) {
+		size +=
+			LEB128_SIZE /* index */ +
+			LEB128_SIZE /* type */ +
+			mono_counter_get_size (agent->counter) /* value */
+		;
+	}
+
+	size +=
+		LEB128_SIZE /* stop marker */
+	;
 
 	logbuffer = ensure_logbuf (size);
 
@@ -2726,13 +3007,26 @@ perfcounters_emit (MonoProfiler *profiler)
 {
 	PerfCounterAgent *pcagent;
 	LogBuffer *logbuffer;
-	int size = 1 + 10, len = 0;
+	int len = 0;
+	int size =
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* len */
+	;
 
 	for (pcagent = perfcounters; pcagent; pcagent = pcagent->next) {
 		if (pcagent->emitted)
 			continue;
 
-		size += 10 + strlen (pcagent->category_name) + 1 + strlen (pcagent->name) + 1 + 10 + 10 + 10 + 10;
+		size +=
+			LEB128_SIZE /* section */ +
+			strlen (pcagent->category_name) + 1 /* category name */ +
+			strlen (pcagent->name) + 1 /* name */ +
+			LEB128_SIZE /* type */ +
+			LEB128_SIZE /* unit */ +
+			LEB128_SIZE /* variance */ +
+			LEB128_SIZE /* index */
+		;
+
 		len += 1;
 	}
 
@@ -2816,14 +3110,25 @@ perfcounters_sample (MonoProfiler *profiler, uint64_t timestamp)
 
 	perfcounters_emit (profiler);
 
+	size =
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */
+	;
 
-	size = 1 + 10;
 	for (pcagent = perfcounters; pcagent; pcagent = pcagent->next) {
 		if (pcagent->deleted || !pcagent->updated)
 			continue;
-		size += 10 + 10 + 10;
+
+		size +=
+			LEB128_SIZE /* index */ +
+			LEB128_SIZE /* type */ +
+			LEB128_SIZE /* value */
+		;
 	}
-	size += 10;
+
+	size +=
+		LEB128_SIZE /* stop marker */
+	;
 
 	logbuffer = ensure_logbuf (size);
 
@@ -2980,7 +3285,6 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 	char *class_name;
 	const char *image_name, *method_name, *sig, *first_filename;
 	LogBuffer *logbuffer;
-	int size;
 	guint i;
 
 	previous_offset = 0;
@@ -3006,17 +3310,17 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 	sig = sig ? sig : "";
 	method_name = method_name ? method_name : "";
 
-	size = 1;
-
-	size += strlen (image_name) + 1;
-	size += strlen (class_name) + 1;
-	size += strlen (method_name) + 1;
-	size += strlen (sig) + 1;
-	size += strlen (first_filename) + 1;
-
-	size += 10 + 10 + 10; /* token + method_id + n_entries*/
-
-	logbuffer = ensure_logbuf (size);
+	logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		strlen (image_name) + 1 /* image name */ +
+		strlen (class_name) + 1 /* class name */ +
+		strlen (method_name) + 1 /* method name */ +
+		strlen (sig) + 1 /* signature */ +
+		strlen (first_filename) + 1 /* first file name */ +
+		LEB128_SIZE /* token */ +
+		LEB128_SIZE /* method id */ +
+		LEB128_SIZE /* entries */
+	);
 	ENTER_LOG (logbuffer, "coverage-methods");
 
 	emit_byte (logbuffer, TYPE_COVERAGE_METHOD | TYPE_COVERAGE);
@@ -3036,7 +3340,14 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 	for (i = 0; i < coverage_data->len; i++) {
 		CoverageEntry *entry = coverage_data->pdata[i];
 
-		logbuffer = ensure_logbuf (1 + 10 + 10 + 10 + 10 + 10);
+		logbuffer = ensure_logbuf (
+			EVENT_SIZE /* event */ +
+			LEB128_SIZE /* method id */ +
+			LEB128_SIZE /* offset */ +
+			LEB128_SIZE /* counter */ +
+			LEB128_SIZE /* line */ +
+			LEB128_SIZE /* column */
+		);
 		ENTER_LOG (logbuffer, "coverage-statement");
 
 		emit_byte (logbuffer, TYPE_COVERAGE_STATEMENT | TYPE_COVERAGE);
@@ -3086,7 +3397,6 @@ build_class_buffer (gpointer key, gpointer value, gpointer userdata)
 	int number_of_methods, partially_covered;
 	guint fully_covered;
 	LogBuffer *logbuffer;
-	int size;
 
 	image = mono_class_get_image (klass);
 	assembly_name = mono_image_get_name (image);
@@ -3098,13 +3408,14 @@ build_class_buffer (gpointer key, gpointer value, gpointer userdata)
 	/* We don't handle partial covered yet */
 	partially_covered = 0;
 
-	size = 1;
-
-	size += strlen (assembly_name) + 1;
-	size += strlen (class_name) + 1;
-	size += 10 + 10 + 10; /* number_of_methods, fully_covered, partially_covered */
-
-	logbuffer = ensure_logbuf (size);
+	logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		strlen (assembly_name) + 1 /* assembly name */ +
+		strlen (class_name) + 1 /* class name */ +
+		LEB128_SIZE /* no. methods */ +
+		LEB128_SIZE /* fully covered */ +
+		LEB128_SIZE /* partially covered */
+	);
 
 	ENTER_LOG (logbuffer, "coverage-class");
 	emit_byte (logbuffer, TYPE_COVERAGE_CLASS | TYPE_COVERAGE);
@@ -3143,7 +3454,6 @@ build_assembly_buffer (gpointer key, gpointer value, gpointer userdata)
 	MonoImage *image = mono_assembly_get_image (assembly);
 	LogBuffer *logbuffer;
 	const char *name, *guid, *filename;
-	int size;
 	int number_of_methods = 0, partially_covered = 0;
 	guint fully_covered = 0;
 
@@ -3157,13 +3467,15 @@ build_assembly_buffer (gpointer key, gpointer value, gpointer userdata)
 
 	get_coverage_for_image (image, &number_of_methods, &fully_covered, &partially_covered);
 
-	size = 1;
-
-	size += strlen (name) + 1;
-	size += strlen (guid) + 1;
-	size += strlen (filename) + 1;
-	size += 10 + 10 + 10; /* number_of_methods, fully_covered, partially_covered */
-	logbuffer = ensure_logbuf (size);
+	logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		strlen (name) + 1 /* name */ +
+		strlen (guid) + 1 /* guid */ +
+		strlen (filename) + 1 /* file name */ +
+		LEB128_SIZE /* no. methods */ +
+		LEB128_SIZE /* fully covered */ +
+		LEB128_SIZE /* partially covered */
+	);
 
 	ENTER_LOG (logbuffer, "coverage-assemblies");
 	emit_byte (logbuffer, TYPE_COVERAGE_ASSEMBLY | TYPE_COVERAGE);
@@ -3843,7 +4155,14 @@ writer_thread (void *arg)
 				int nlen = strlen (name) + 1;
 				uint64_t now = current_time ();
 
-				method_buffer = ensure_logbuf_inner (method_buffer, 1 + 10 + 10 + 10 + 10 + nlen);
+				method_buffer = ensure_logbuf_inner (method_buffer,
+					EVENT_SIZE /* event */ +
+					LEB128_SIZE /* time */ +
+					LEB128_SIZE /* method */ +
+					LEB128_SIZE /* start */ +
+					LEB128_SIZE /* size */ +
+					nlen /* name */
+				);
 
 				emit_byte (method_buffer, TYPE_JIT | TYPE_METHOD);
 				emit_time (method_buffer, now);
