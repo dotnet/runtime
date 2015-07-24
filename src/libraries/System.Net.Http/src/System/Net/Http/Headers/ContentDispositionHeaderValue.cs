@@ -21,8 +21,8 @@ namespace System.Net.Http.Headers
         private const string readDate = "read-date";
         private const string size = "size";
 
-        // Use ICollection<T> since we may have multiple parameters with the same name.
-        private ICollection<NameValueHeaderValue> _parameters;
+        // Use ObjectCollection<T> since we may have multiple parameters with the same name.
+        private ObjectCollection<NameValueHeaderValue> _parameters;
         private string _dispositionType;
 
         #endregion Fields
@@ -249,7 +249,7 @@ namespace System.Net.Http.Headers
             {
                 current++; // Skip delimiter.
                 int parameterLength = NameValueHeaderValue.GetNameValueListLength(input, current, ';',
-                    contentDispositionHeader.Parameters);
+                    (ObjectCollection<NameValueHeaderValue>)contentDispositionHeader.Parameters);
 
                 if (parameterLength == 0)
                 {

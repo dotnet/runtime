@@ -27,7 +27,7 @@ namespace System.Net.Http.Headers
         private static readonly Action<string> s_checkIsValidToken = CheckIsValidToken;
 
         private bool _noCache;
-        private ICollection<string> _noCacheHeaders;
+        private ObjectCollection<string> _noCacheHeaders;
         private bool _noStore;
         private TimeSpan? _maxAge;
         private TimeSpan? _sharedMaxAge;
@@ -38,10 +38,10 @@ namespace System.Net.Http.Headers
         private bool _onlyIfCached;
         private bool _publicField;
         private bool _privateField;
-        private ICollection<string> _privateHeaders;
+        private ObjectCollection<string> _privateHeaders;
         private bool _mustRevalidate;
         private bool _proxyRevalidate;
-        private ICollection<NameValueHeaderValue> _extensions;
+        private ObjectCollection<NameValueHeaderValue> _extensions;
 
         public bool NoCache
         {
@@ -520,7 +520,7 @@ namespace System.Net.Http.Headers
         }
 
         private static bool TrySetOptionalTokenList(NameValueHeaderValue nameValue, ref bool boolField,
-            ref ICollection<string> destination)
+            ref ObjectCollection<string> destination)
         {
             Contract.Requires(nameValue != null);
 
@@ -619,7 +619,7 @@ namespace System.Net.Http.Headers
             sb.Append(value);
         }
 
-        private static void AppendValues(StringBuilder sb, IEnumerable<string> values)
+        private static void AppendValues(StringBuilder sb, ObjectCollection<string> values)
         {
             bool first = true;
             foreach (string value in values)

@@ -1,17 +1,18 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 namespace System.Net.Http.Headers
 {
     // We need to prevent 'null' values in the collection. Since List<T> allows them, we will create
     // a custom collection class. It is less efficient than List<T> but only used for small collections.
-    internal class ObjectCollection<T> : Collection<T> where T : class
+    internal sealed class ObjectCollection<T> : Collection<T> where T : class
     {
         private static readonly Action<T> s_defaultValidator = CheckNotNull;
 
-        private Action<T> _validator;
+        private readonly Action<T> _validator;
 
         public ObjectCollection()
             : this(s_defaultValidator)
@@ -19,8 +20,16 @@ namespace System.Net.Http.Headers
         }
 
         public ObjectCollection(Action<T> validator)
+            : base(new List<T>())
         {
             _validator = validator;
+        }
+
+        // This is only used internally to enumerate the collection
+        // without the enumerator allocation.
+        new public List<T>.Enumerator GetEnumerator()
+        {
+            return ((List<T>)Items).GetEnumerator();
         }
 
         protected override void InsertItem(int index, T item)
