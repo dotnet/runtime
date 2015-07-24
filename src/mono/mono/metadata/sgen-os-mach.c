@@ -40,6 +40,8 @@
 #endif
 
 #if defined(__MACH__) && MONO_MACH_ARCH_SUPPORTED
+
+#if !defined(USE_COOP_GC)
 gboolean
 sgen_resume_thread (SgenThreadInfo *info)
 {
@@ -135,6 +137,7 @@ sgen_thread_handshake (BOOL suspend)
 	} END_FOREACH_THREAD_SAFE
 	return count;
 }
+#endif
 
 void
 sgen_os_init (void)
