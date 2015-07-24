@@ -195,7 +195,6 @@ GetSystemInfo(
     PERF_EXIT(GetSystemInfo);
 }
 
-#if defined(_AMD64_)
 /*++
 Function:
   GlobalMemoryStatusEx
@@ -325,4 +324,20 @@ PAL_GetLogicalCpuCountFromOS()
     return numLogicalCores;
 }
 
-#endif // defined(_AMD64_)
+size_t
+PALAPI
+PAL_GetLogicalProcessorCacheSizeFromOS()
+{
+    size_t cacheSize = 0;
+
+#if HAVE_SYSCONF && defined(__LINUX__)
+    cacheSize = max(cacheSize, sysconf(_SC_LEVEL1_DCACHE_SIZE));
+    cacheSize = max(cacheSize, sysconf(_SC_LEVEL1_ICACHE_SIZE));
+    cacheSize = max(cacheSize, sysconf(_SC_LEVEL2_CACHE_SIZE));
+    cacheSize = max(cacheSize, sysconf(_SC_LEVEL3_CACHE_SIZE));
+    cacheSize = max(cacheSize, sysconf(_SC_LEVEL4_CACHE_SIZE));
+#endif
+
+    return cacheSize;
+}
+

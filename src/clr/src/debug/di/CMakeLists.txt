@@ -1,4 +1,17 @@
-add_definitions(-DDBG_TARGET_AMD64=1 -DDBG_TARGET_WIN64=1 -DDBG_TARGET_64BIT=1 -D_TARGET_AMD64_=1)
+if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
+  add_definitions(-D_TARGET_WIN64_=1)
+  add_definitions(-DDBG_TARGET_64BIT)
+  add_definitions(-DDBG_TARGET_WIN64=1)
+  add_definitions(-DDBG_TARGET_AMD64=1)
+elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
+  add_definitions(-D_TARGET_WIN32_=1)
+  add_definitions(-DDBG_TARGET_32BIT)
+  add_definitions(-DDBG_TARGET_WIN32=1)
+  add_definitions(-DDBG_TARGET_ARM=1)
+else()
+  message(FATAL_ERROR "Only ARM and AMD64 is supported")
+endif()
+
 add_definitions(-DFEATURE_METADATA_CUSTOM_DATA_SOURCE -DFEATURE_METADATA_DEBUGGEE_DATA_SOURCE -DFEATURE_NO_HOST -DFEATURE_METADATA_LOAD_TRUSTED_IMAGES)
 
 set(CORDBDI_SOURCES
@@ -42,10 +55,12 @@ if(WIN32)
 elseif(CLR_CMAKE_PLATFORM_UNIX)
     add_compile_options(-fPIC)
 
-    set(CORDBDI_SOURCES
-      ${CORDBDI_SOURCES}
-      amd64/floatconversion.S
-    )
+    if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
+      set(CORDBDI_SOURCES
+        ${CORDBDI_SOURCES}
+        amd64/floatconversion.S
+      )
+    endif()
 
 endif(WIN32)
 

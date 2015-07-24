@@ -5114,7 +5114,7 @@ BOOL NativeImageJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
         }
 
         //Get the function entry that corresponds to the real method desc.
-        _ASSERTE(RelativePc >= RUNTIME_FUNCTION__BeginAddress(FunctionEntry));
+        _ASSERTE((RelativePc >= RUNTIME_FUNCTION__BeginAddress(FunctionEntry)));
     
         if (pCodeInfo)
         {

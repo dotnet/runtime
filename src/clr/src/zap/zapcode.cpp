@@ -1067,7 +1067,7 @@ public:
         ZapCodeBlob * pZapCodeBlob = new (pMemory) ZapCodeBlobConst<alignment>(cbSize);
 
         if (pData != NULL)
-            memcpy(pZapCodeBlob + 1, pData, cbSize);
+            memcpy((void*)(pZapCodeBlob + 1), pData, cbSize);
 
         return pZapCodeBlob;
     }

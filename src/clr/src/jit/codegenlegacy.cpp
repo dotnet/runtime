@@ -15,7 +15,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #ifdef _MSC_VER
 #pragma hdrstop
 #endif
-#include "CodeGen.h"
+#include "codegen.h"
 
 #ifdef LEGACY_BACKEND // This file is NOT used for the '!LEGACY_BACKEND' that uses the linear scan register allocator
 
@@ -655,6 +655,9 @@ void                CodeGen::genComputeReg(GenTreePtr       tree,
                                            bool             freeOnly)
 {
     noway_assert(tree->gtType != TYP_VOID);
+    
+    regNumber       reg;
+    regNumber       rg2;
 
 #if FEATURE_STACK_FP_X87
     noway_assert(genActualType(tree->gtType) == TYP_INT    ||
@@ -692,8 +695,7 @@ void                CodeGen::genComputeReg(GenTreePtr       tree,
     if ((tree->OperGet() == GT_MUL) && (tree->gtFlags & GTF_MUL_64RSLT))
         goto REG_OK;
 
-    regNumber       reg = tree->gtRegNum;
-    regNumber       rg2;
+    reg = tree->gtRegNum;
 
     /* Did the value end up in an acceptable register? */
 
@@ -1396,6 +1398,12 @@ bool                CodeGen::genMakeIndAddrMode(GenTreePtr   addr,
 
     GenTreePtr      tmp;
     int            ixv = INT_MAX; // unset value
+    
+    GenTreePtr      scaledIndexVal;
+
+    regMaskTP       newLiveMask;
+    regMaskTP       rv1Mask;
+    regMaskTP       rv2Mask;
 
     /* Deferred address mode forming NYI for x86 */
 
@@ -1476,7 +1484,7 @@ bool                CodeGen::genMakeIndAddrMode(GenTreePtr   addr,
        the scaled value */
 
     scaledIndex = NULL;
-    GenTreePtr scaledIndexVal = NULL;
+    scaledIndexVal = NULL;
 
     if  (operIsArrIndex && rv2 != NULL 
          && (rv2->gtOper == GT_MUL || rv2->gtOper == GT_LSH) 
@@ -1692,9 +1700,9 @@ bool                CodeGen::genMakeIndAddrMode(GenTreePtr   addr,
         /* Generate the second operand first */
 
         // Determine what registers go live between rv2 and rv1
-        regMaskTP newLiveMask = genNewLiveRegMask(rv2, rv1);
+        newLiveMask = genNewLiveRegMask(rv2, rv1);
 
-        regMaskTP rv2Mask  = regMask & ~newLiveMask; 
+        rv2Mask = regMask & ~newLiveMask; 
         rv2Mask &= ~rv1->gtRsvdRegs;
 
         if (rv2Mask == RBM_NONE)
@@ -1731,9 +1739,9 @@ bool                CodeGen::genMakeIndAddrMode(GenTreePtr   addr,
         /* Get the first operand into a register */
 
         // Determine what registers go live between rv1 and rv2
-        regMaskTP newLiveMask = genNewLiveRegMask(rv1, rv2);
+        newLiveMask = genNewLiveRegMask(rv1, rv2);
 
-        regMaskTP rv1Mask  = regMask & ~newLiveMask; 
+        rv1Mask  = regMask & ~newLiveMask; 
         rv1Mask &= ~rv2->gtRsvdRegs;
  
         if (rv1Mask == RBM_NONE)
@@ -3094,7 +3102,7 @@ AGAIN:
             // do not need an additional null-check
             /* Do this only if the GTF_EXCEPT or GTF_IND_VOLATILE flag is set on the indir */
             else if ((tree->gtFlags & GTF_IND_ARR_INDEX) == 0 &&
-                     (tree->gtFlags & GTF_EXCEPT | GTF_IND_VOLATILE))
+                     ((tree->gtFlags & GTF_EXCEPT) | GTF_IND_VOLATILE))
             {
                 /* Compare against any register to do null-check */
  #if defined(_TARGET_XARCH_)
@@ -3966,6 +3974,12 @@ emitJumpKind            CodeGen::genCondSetFlags(GenTreePtr cond)
     regMaskTP     addrReg2 = RBM_NONE;
     emitJumpKind  jumpKind = EJ_jmp; // We borrow EJ_jmp for the cases where we don't know yet 
                                      // which conditional instruction to use. 
+    
+    bool  byteCmp;
+    bool  shortCmp;
+                  
+    regMaskTP newLiveMask;
+    regNumber op1Reg;
 
     /* Are we comparing against a constant? */
 
@@ -4337,8 +4351,8 @@ emitJumpKind            CodeGen::genCondSetFlags(GenTreePtr cond)
     // We reach here if op2 was not a GT_CNS_INT
     //
 
-    bool  byteCmp;     byteCmp  = false;
-    bool  shortCmp;    shortCmp = false;
+    byteCmp  = false;
+    shortCmp = false;
 
     if (op1Type == op2->gtType)
     {
@@ -4445,7 +4459,7 @@ NO_SMALL_CMP:
     assert(addrReg1 == 0);  
 
     // Determine what registers go live between op1 and op2
-    regMaskTP newLiveMask = genNewLiveRegMask(op1, op2);
+    newLiveMask = genNewLiveRegMask(op1, op2);
 
     // Setup regNeed with the set of register that we suggest for op1 to be in
     //
@@ -4468,7 +4482,7 @@ NO_SMALL_CMP:
     genComputeReg(op1, regNeed, RegSet::ANY_REG, RegSet::FREE_REG);
     noway_assert(op1->gtFlags & GTF_REG_VAL);
 
-    regNumber op1Reg; op1Reg = op1->gtRegNum;
+    op1Reg = op1->gtRegNum;
 
     // Setup regNeed with the set of register that we require for op1 to be in
     //
@@ -5374,7 +5388,7 @@ void                CodeGen::genCodeForTreeLeaf_GT_JMP(GenTreePtr tree)
             }
         }
         else
-#endif _TARGET_ARM_
+#endif //_TARGET_ARM_
         {
             var_types  loadType  = varDsc->TypeGet();
             regNumber  argReg    = varDsc->lvArgReg;    // incoming arg register
@@ -6601,6 +6615,8 @@ void                CodeGen::genCodeForTreeSmpBinArithLogOp(GenTreePtr tree,
                  bEnoughRegs  &&
                  genMakeIndAddrMode(tree, NULL, true, needReg, RegSet::FREE_REG, &regs, false))
             {
+                emitAttr size;
+                
                 /* Is the value now computed in some register? */
     
                 if  (tree->gtFlags & GTF_REG_VAL)
@@ -6671,7 +6687,7 @@ void                CodeGen::genCodeForTreeSmpBinArithLogOp(GenTreePtr tree,
                 // caused when op1 or op2 are enregistered variables.
     
                 reg = regSet.rsPickReg(needReg, bestReg);
-                emitAttr size = emitActualTypeSize(treeType);
+                size = emitActualTypeSize(treeType);
     
                 /* Generate "lea reg, [addr-mode]" */
     
@@ -10648,7 +10664,7 @@ void                CodeGen::genCodeForNumericCast(GenTreePtr tree,
                 reg = op1->gtRegNum;
 #else // _TARGET_64BIT_
                 reg = genRegPairLo(op1->gtRegPair);
-#endif _TARGET_64BIT_
+#endif //_TARGET_64BIT_
 
                 genCodeForTree_DONE(tree, reg);
                 return;
@@ -12854,7 +12870,7 @@ void                CodeGen::genCodeForBBlist()
         genStackLevel = 0;
 #if FEATURE_STACK_FP_X87
         genResetFPstkLevel();
-#endif FEATURE_STACK_FP_X87
+#endif //FEATURE_STACK_FP_X87
 
 #if !FEATURE_FIXED_OUT_ARGS
         /* Check for inserted throw blocks and adjust genStackLevel */
@@ -15952,7 +15968,7 @@ void        CodeGen::genEmitHelperCall(unsigned    helper,
     void * addr = NULL, **pAddr = NULL;
 
     // Don't ask VM if it hasn't requested ELT hooks 
-#if defined(_TARGET_ARM_) && defined(DEBUG)
+#if defined(_TARGET_ARM_) && defined(DEBUG) && defined(PROFILING_SUPPORTED)
     if (!compiler->compProfilerHookNeeded && 
         compiler->opts.compJitELTHookEnabled &&
         (helper == CORINFO_HELP_PROF_FCN_ENTER ||

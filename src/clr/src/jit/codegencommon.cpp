@@ -10824,6 +10824,9 @@ CORINFO_CLASS_HANDLE Compiler::GetHfaClassHandle(GenTreePtr tree)
         case GT_ASG:
             assert(tree->gtOp.gtOp1->gtOper == GT_LCL_VAR || tree->gtOp.gtOp1->gtOper == GT_LCL_FLD);
             return GetHfaClassHandle(tree->gtOp.gtOp1);
+            
+        default:
+            unreached();
         }
     }
     return NO_CLASS_HANDLE;

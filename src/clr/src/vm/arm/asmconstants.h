@@ -12,7 +12,7 @@
 // #error this file should only be used on an ARM platform
 // #endif // _ARM_
 
-#include "..\..\inc\switches.h"
+#include "../../inc/switches.h"
 
 //-----------------------------------------------------------------------------
 
