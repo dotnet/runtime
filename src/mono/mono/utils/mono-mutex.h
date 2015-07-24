@@ -114,7 +114,7 @@ typedef pthread_cond_t mono_cond_t;
 #define mono_cond_timedwait(cond,mutex,timeout) pthread_cond_timedwait (cond, mutex, timeout)
 #define mono_cond_signal(cond) pthread_cond_signal (cond)
 #define mono_cond_broadcast(cond) pthread_cond_broadcast (cond)
-#define mono_cond_destroy(cond)
+#define mono_cond_destroy(cond) pthread_cond_destroy (cond)
 
 /*
  * This should be used instead of mono_cond_timedwait, since that function is not implemented on windows.
