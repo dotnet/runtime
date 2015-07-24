@@ -6,6 +6,7 @@ using System.Security;
 using System.IO;
 using Xunit;
 using System.Threading;
+using System.ComponentModel;
 
 namespace System.Diagnostics.ProcessTests
 {
@@ -14,30 +15,17 @@ namespace System.Diagnostics.ProcessTests
         [Fact, PlatformSpecific(~PlatformID.OSX)]
         public void TestModulePropertiesExceptOnOSX()
         {
-            string fileName = CoreRunName;
-            if (global::Interop.IsWindows)
-                fileName = string.Format("{0}.exe", CoreRunName);
-
-            // Ensure the process has loaded the modules.
-            Assert.True(SpinWait.SpinUntil(() =>
-            {
-                if (_process.Modules.Count > 0)
-                    return true;
-                _process.Refresh();
-                return false;
-            }, WaitInMS));
-
-            ProcessModuleCollection moduleCollection = _process.Modules;
+            ProcessModuleCollection moduleCollection = Process.GetCurrentProcess().Modules;
             Assert.True(moduleCollection.Count > 0);
 
-            ProcessModule coreRunModule = _process.MainModule;
-            Assert.True(coreRunModule.BaseAddress.ToInt64() > 0);
-            Assert.True(coreRunModule.EntryPointAddress.ToInt64() >= 0);
-            Assert.Equal(fileName, coreRunModule.ModuleName);
-            Assert.True(coreRunModule.ModuleMemorySize > 0);
-            Assert.EndsWith(fileName, coreRunModule.FileName);
-
-            Assert.Equal(string.Format("System.Diagnostics.ProcessModule ({0})", fileName), coreRunModule.ToString());
+            for (int i = 0; i < moduleCollection.Count; i++)
+            {
+                Assert.True(moduleCollection[i].BaseAddress.ToInt64() > 0);
+                // From MSDN: Due to changes in the way that Windows loads assemblies, 
+                // EntryPointAddress will always return 0 on Windows 8 or Windows 8.1 and should not be relied on for those platforms.
+                Assert.True(moduleCollection[i].EntryPointAddress.ToInt64() >= 0);
+                Assert.True(moduleCollection[i].ModuleMemorySize > 0);
+            }
         }
 
         [Fact, PlatformSpecific(PlatformID.OSX)]
