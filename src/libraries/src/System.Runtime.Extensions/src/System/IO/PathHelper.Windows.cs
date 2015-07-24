@@ -297,7 +297,7 @@ namespace System.IO
                 bool addedPrefix = false;
                 if (tempName.Length > Path.MaxPath)
                 {
-                    tempName = Path.AddLongPathPrefix(tempName);
+                    tempName = PathInternal.AddExtendedPathPrefix(tempName);
                     addedPrefix = true;
                 }
                 sb.Capacity = m_capacity;
@@ -332,7 +332,7 @@ namespace System.IO
                 if (r >= m_maxPath)
                     throw new PathTooLongException(SR.IO_PathTooLong);
 
-                sb = Path.RemoveLongPathPrefix(sb);
+                sb = PathInternal.RemoveExtendedPathPrefix(sb);
                 Length = sb.Length;
                 return true;
             }

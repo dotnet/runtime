@@ -19,7 +19,7 @@
   <ItemGroup>
     <Compile Include="System\Diagnostics\Stopwatch.cs" />
     <Compile Include="System\Runtime\Versioning\FrameworkName.cs" />
-    <Compile Include="System\IO\Path.cs" />
+    <Compile Include="System\IO\PathTests.cs" />
     <Compile Include="System\IO\Path.Combine.cs" />
     <Compile Include="System\Net\WebUtility.cs" />
     <Compile Include="System\BitConverter.cs" />

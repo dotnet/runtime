@@ -115,6 +115,42 @@ namespace System.IO.FileSystem.Tests
 
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
+        public void ValidExtendedPathExists_ReturnsTrue()
+        {
+            Assert.All((IOInputs.GetValidPathComponentNames()), (component) =>
+            {
+                string path = @"\\?\" + Path.Combine(TestDirectory, "extended", component);
+                DirectoryInfo testDir = Directory.CreateDirectory(path);
+                Assert.True(Exists(path));
+            });
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void ExtendedPathAlreadyExistsAsFile()
+        {
+            string path = @"\\?\" + GetTestFilePath();
+            File.Create(path).Dispose();
+
+            Assert.False(Exists(IOServices.RemoveTrailingSlash(path)));
+            Assert.False(Exists(IOServices.RemoveTrailingSlash(IOServices.RemoveTrailingSlash(path))));
+            Assert.False(Exists(IOServices.RemoveTrailingSlash(IOServices.AddTrailingSlashIfNeeded(path))));
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void ExtendedPathAlreadyExistsAsDirectory()
+        {
+            string path = @"\\?\" + GetTestFilePath();
+            DirectoryInfo testDir = Directory.CreateDirectory(path);
+
+            Assert.True(Exists(IOServices.RemoveTrailingSlash(path)));
+            Assert.True(Exists(IOServices.RemoveTrailingSlash(IOServices.RemoveTrailingSlash(path))));
+            Assert.True(Exists(IOServices.RemoveTrailingSlash(IOServices.AddTrailingSlashIfNeeded(path))));
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
         public void DirectoryLongerThanMaxDirectoryAsPath_DoesntThrow()
         {
             Assert.All((IOInputs.GetPathsLongerThanMaxDirectory()), (path) =>
@@ -125,7 +161,7 @@ namespace System.IO.FileSystem.Tests
 
         [Fact]
         [PlatformSpecific(PlatformID.Windows)] // Unix equivalent tested already in CreateDirectory
-        public void WindowsNonSignificantWhiteSpaceAsPath_ReturnsFalse()
+        public void WindowsWhiteSpaceAsPath_ReturnsFalse()
         {
             // Checks that errors aren't thrown when calling Exists() on impossible paths
             Assert.All(IOInputs.GetWhiteSpace(), (component) =>
@@ -136,7 +172,7 @@ namespace System.IO.FileSystem.Tests
 
         [Fact]
         [PlatformSpecific(PlatformID.Windows | PlatformID.OSX)]
-        public void DoesCaseInsensitiveInvariantComparions()
+        public void DoesCaseInsensitiveInvariantComparisons()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             Assert.True(Exists(testDir.FullName));
@@ -146,7 +182,7 @@ namespace System.IO.FileSystem.Tests
 
         [Fact]
         [PlatformSpecific(PlatformID.Linux | PlatformID.FreeBSD)]
-        public void DoesCaseSensitiveComparions()
+        public void DoesCaseSensitiveComparisons()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             Assert.True(Exists(testDir.FullName));
@@ -155,13 +191,23 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // In Windows, trailing whitespace in a path is trimmed
-        public void TrimTrailingWhitespacePath()
+        [PlatformSpecific(PlatformID.Windows)] // In Windows, trailing whitespace in a path is trimmed appropriately
+        public void TrailingWhitespaceExistence()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             Assert.All(IOInputs.GetWhiteSpace(), (component) =>
             {
-                Assert.True(Exists(testDir.FullName + component)); // string concat in case Path.Combine() trims whitespace before Exists gets to it
+                string path = testDir.FullName + component;
+                Assert.True(Exists(path), path); // string concat in case Path.Combine() trims whitespace before Exists gets to it
+                Assert.False(Exists(@"\\?\" + path), path);
+            });
+
+            Assert.All(IOInputs.GetSimpleWhiteSpace(), (component) =>
+            {
+                string path = GetTestFilePath("Extended") + component;
+                testDir = Directory.CreateDirectory(@"\\?\" + path);
+                Assert.False(Exists(path), path);
+                Assert.True(Exists(testDir.FullName));
             });
         }
 

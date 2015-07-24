@@ -220,7 +220,7 @@ internal static class IOInputs
         return IOServices.GetPath(characterCount).FullPath;
     }
 
-    private static IEnumerable<string> GetReservedDeviceNames()
+    public static IEnumerable<string> GetReservedDeviceNames()
     {   // See: http://msdn.microsoft.com/en-us/library/aa365247.aspx
         yield return "CON";
         yield return "AUX";

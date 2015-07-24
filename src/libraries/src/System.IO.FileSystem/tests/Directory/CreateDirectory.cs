@@ -303,7 +303,7 @@ namespace System.IO.FileSystem.Tests
                 {
                     string extendedPath = Path.Combine(@"\\?\" + directory.Path, path);
                     Directory.CreateDirectory(extendedPath);
-                    Assert.True(Directory.Exists(extendedPath));
+                    Assert.True(Directory.Exists(extendedPath), extendedPath);
                 }
             }
         }
@@ -346,6 +346,20 @@ namespace System.IO.FileSystem.Tests
             {
                 Assert.Throws<DirectoryNotFoundException>(() => Create(path));
             });
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)] // device name prefixes
+        public void PathWithReservedDeviceNameAsExtendedPath()
+        {
+            var paths = IOInputs.GetReservedDeviceNames();
+            using (TemporaryDirectory directory = new TemporaryDirectory())
+            {
+                Assert.All(paths, (path) =>
+                {
+                    Assert.True(Create(@"\\?\" + Path.Combine(directory.Path, path)).Exists, path);
+                });
+            }
         }
 
         [Fact]
