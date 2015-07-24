@@ -4,6 +4,8 @@
 using System;
 using System.Reflection;
 
+[assembly: System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+
 namespace InterProcessCommunication.Tests
 {
     /// <summary>
