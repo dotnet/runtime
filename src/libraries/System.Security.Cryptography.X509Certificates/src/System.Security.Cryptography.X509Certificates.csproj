@@ -18,6 +18,32 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
   <ItemGroup>
+    <ProjectReference Include="..\..\System.Security.Cryptography.Primitives\src\System.Security.Cryptography.Primitives.csproj">
+      <Project>{D04A73AE-E418-4ACD-A132-7688435BE8B5}</Project>
+      <Name>System.Security.Cryptography.Primitives</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Security.Cryptography.Encoding\src\System.Security.Cryptography.Encoding.csproj">
+      <Project>{AA81E343-5E54-40B0-9381-C459419BE780}</Project>
+      <Name>System.Security.Cryptography.Encoding</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Security.Cryptography.Algorithms\src\System.Security.Cryptography.Algorithms.csproj">
+      <Project>{81A05E2E-E3AE-4246-B4E6-DD5F31FB71F9}</Project>
+      <Name>System.Security.Cryptography.Algorithms</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+    <ProjectReference Include="..\..\System.Security.Cryptography.Csp\src\System.Security.Cryptography.Csp.csproj">
+      <Project>{3B7F91D7-0677-40CA-B4E7-D4E09D89A74E}</Project>
+      <Name>System.Security.Cryptography.Csp</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <ProjectReference Include="..\..\System.Security.Cryptography.OpenSsl\src\System.Security.Cryptography.OpenSsl.csproj">
+      <Project>{78452F3E-BA91-47E7-BB0F-02E8A5C116C4}</Project>
+      <Name>System.Security.Cryptography.OpenSsl</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="Internal\Cryptography\ICertificatePal.cs" />
     <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelList.cs">
       <Link>Common\System\Collections\Generic\LowLevelList.cs</Link>
@@ -34,9 +60,9 @@
     <Compile Include="Internal\Cryptography\Pal.Unix\CertificatePolicy.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\DerSequenceReader.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeX509ChainHandle.cs" />
-    <Compile Include="System\Security\Cryptography\DSACryptoServiceProviderStub.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenFlags.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\PublicKey.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\RSACertificateExtensions.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StoreLocation.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StoreName.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500DistinguishedName.cs" />
@@ -73,6 +99,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X509VerificationFlags.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+    <Compile Include="System\Security\Cryptography\DSACryptoServiceProviderStub.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\CertificatePal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\CertificatePal.Import.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\CertificatePal.PrivateKey.cs" />

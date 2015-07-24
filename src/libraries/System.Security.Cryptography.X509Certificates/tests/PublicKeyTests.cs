@@ -100,6 +100,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal(expectedParameters, pk.EncodedParameters.RawData);
         }
 
+        /*
+         * TODO: Move the spirit of this method to a GetRSAPublicKey test
         [Fact]
         public static void TestKey_RSA()
         {
@@ -122,5 +124,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal(expectedModulus, rsaParameters.Modulus);
             Assert.Equal(expectedExponent, rsaParameters.Exponent);
         }
+        */
     }
 }

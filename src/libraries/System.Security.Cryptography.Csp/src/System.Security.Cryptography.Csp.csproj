@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Windows_Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{3B7F91D7-0677-40CA-B4E7-D4E09D89A74E}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Security.Cryptography.Csp</AssemblyName>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLSCompliant>false</CLSCompliant>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Security.Cryptography.Primitives\src\System.Security.Cryptography.Primitives.csproj">
+      <Project>{D04A73AE-E418-4ACD-A132-7688435BE8B5}</Project>
+      <Name>System.Security.Cryptography.Primitives</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Security.Cryptography.Encoding\src\System.Security.Cryptography.Encoding.csproj">
+      <Project>{AA81E343-5E54-40B0-9381-C459419BE780}</Project>
+      <Name>System.Security.Cryptography.Encoding</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Security.Cryptography.Algorithms\src\System.Security.Cryptography.Algorithms.csproj">
+      <Project>{81A05E2E-E3AE-4246-B4E6-DD5F31FB71F9}</Project>
+      <Name>System.Security.Cryptography.Algorithms</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="System\Security\Cryptography\CspProviderFlags.cs" />
+    <Compile Include="System\Security\Cryptography\ICspAsymmetricAlgorithm.cs" />
+    <Compile Include="System\Security\Cryptography\KeyNumber.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\OidInfo.cs">
+      <Link>Common\Interop\Windows\Crypt32\OidInfo.cs</Link>
+    </Compile>
+    <Compile Include="System\Security\Cryptography\CapiHelper.cs" />
+    <Compile Include="System\Security\Cryptography\CspKeyContainerInfo.cs" />
+    <Compile Include="System\Security\Cryptography\CspParameters.cs" />
+    <Compile Include="System\Security\Cryptography\RSACryptoServiceProvider.cs" />
+    <Compile Include="System\Security\Cryptography\SafeCryptoHandles.cs" />
+    <Compile Include="System\Security\Cryptography\Utils.cs" />
+    <Compile Include="Internal\Cryptography\Helpers.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

@@ -5,7 +5,6 @@
     "System.Runtime": "4.0.20-beta-*",
     "System.Runtime.Handles": "4.0.0-beta-*",
     "System.Runtime.InteropServices": "4.0.20-beta-*",
-    "System.Security.Cryptography.Encryption": "4.0.0-beta-*",
     "System.Threading": "4.0.10-beta-*"
   },
   "frameworks": {

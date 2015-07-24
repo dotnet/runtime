@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.23107.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Cryptography.OpenSsl", "src\System.Security.Cryptography.OpenSsl.csproj", "{78452F3E-BA91-47E7-BB0F-02E8A5C116C4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		FreeBSD_Debug|Any CPU = FreeBSD_Debug|Any CPU
+		FreeBSD_Release|Any CPU = FreeBSD_Release|Any CPU
+		Linux_Debug|Any CPU = Linux_Debug|Any CPU
+		Linux_Release|Any CPU = Linux_Release|Any CPU
+		OSX_Debug|Any CPU = OSX_Debug|Any CPU
+		OSX_Release|Any CPU = OSX_Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{78452F3E-BA91-47E7-BB0F-02E8A5C116C4}.FreeBSD_Debug|Any CPU.ActiveCfg = FreeBSD_Debug|Any CPU
+		{78452F3E-BA91-47E7-BB0F-02E8A5C116C4}.FreeBSD_Debug|Any CPU.Build.0 = FreeBSD_Debug|Any CPU
+		{78452F3E-BA91-47E7-BB0F-02E8A5C116C4}.FreeBSD_Release|Any CPU.ActiveCfg = FreeBSD_Release|Any CPU
+		{78452F3E-BA91-47E7-BB0F-02E8A5C116C4}.FreeBSD_Release|Any CPU.Build.0 = FreeBSD_Release|Any CPU
+		{78452F3E-BA91-47E7-BB0F-02E8A5C116C4}.Linux_Debug|Any CPU.ActiveCfg = Linux_Debug|Any CPU
+		{78452F3E-BA91-47E7-BB0F-02E8A5C116C4}.Linux_Debug|Any CPU.Build.0 = Linux_Debug|Any CPU
+		{78452F3E-BA91-47E7-BB0F-02E8A5C116C4}.Linux_Release|Any CPU.ActiveCfg = Linux_Release|Any CPU
+		{78452F3E-BA91-47E7-BB0F-02E8A5C116C4}.Linux_Release|Any CPU.Build.0 = Linux_Release|Any CPU
+		{78452F3E-BA91-47E7-BB0F-02E8A5C116C4}.OSX_Debug|Any CPU.ActiveCfg = OSX_Debug|Any CPU
+		{78452F3E-BA91-47E7-BB0F-02E8A5C116C4}.OSX_Debug|Any CPU.Build.0 = OSX_Debug|Any CPU
+		{78452F3E-BA91-47E7-BB0F-02E8A5C116C4}.OSX_Release|Any CPU.ActiveCfg = OSX_Release|Any CPU
+		{78452F3E-BA91-47E7-BB0F-02E8A5C116C4}.OSX_Release|Any CPU.Build.0 = OSX_Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
