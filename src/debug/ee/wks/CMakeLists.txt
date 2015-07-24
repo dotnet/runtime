@@ -26,6 +26,13 @@ add_library(cordbee_wks ${CORDBEE_SOURCES_WKS} ${CMAKE_CURRENT_BINARY_DIR}/dbghe
 else ()
 
 add_compile_options(-fPIC)
-add_library(cordbee_wks ${CORDBEE_SOURCES_WKS} ../amd64/dbghelpers.S)
+
+if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
+  add_library(cordbee_wks ${CORDBEE_SOURCES_WKS} ../amd64/dbghelpers.S)
+elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
+  add_library(cordbee_wks ${CORDBEE_SOURCES_WKS} ../arm/dbghelpers.S)
+else()
+  message(FATAL_ERROR "Only ARM and AMD64 is supported")
+endif()
 
 endif (WIN32)

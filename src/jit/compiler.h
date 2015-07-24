@@ -1411,8 +1411,8 @@ public:
     var_types                       GetHfaType(GenTreePtr tree);
     unsigned                        GetHfaSlots(GenTreePtr tree);
 
-    inline var_types                GetHfaType(CORINFO_CLASS_HANDLE hClass);
-    inline unsigned                 GetHfaSlots(CORINFO_CLASS_HANDLE hClass);
+    var_types                       GetHfaType(CORINFO_CLASS_HANDLE hClass);
+    unsigned                        GetHfaSlots(CORINFO_CLASS_HANDLE hClass);
 
 #endif // _TARGET_ARM_
 
@@ -6618,7 +6618,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #else
         assert(!"getFPInstructionSet() is not implemented for target arch");
         unreached();
-        InstructionSet_NONE;
+        return InstructionSet_NONE;
 #endif
     }
 

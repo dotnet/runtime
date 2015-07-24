@@ -208,6 +208,7 @@ inline void *__cdecl operator new(size_t, void *_P)
 #define NTAPI       __stdcall
 #define WINAPI      __stdcall
 #define CALLBACK    __stdcall
+#define NTSYSAPI
 
 #define _WINNT_
 
@@ -1616,7 +1617,27 @@ EXCEPTION_DISPOSITION
     PCONTEXT ContextRecord,
     PVOID DispatcherContext
     );
-    
+
+#if defined(_ARM_)
+
+typedef struct _DISPATCHER_CONTEXT {
+    DWORD ControlPc;
+    DWORD ImageBase;
+    PRUNTIME_FUNCTION FunctionEntry;
+    DWORD EstablisherFrame;
+    DWORD TargetPc;
+    PCONTEXT ContextRecord;
+    PEXCEPTION_ROUTINE LanguageHandler;
+    PVOID HandlerData;
+    PUNWIND_HISTORY_TABLE HistoryTable;
+    DWORD ScopeIndex;
+    BOOLEAN ControlPcIsUnwound;
+    PBYTE  NonVolatileRegisters;
+    DWORD Reserved;
+} DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
+
+#else
+
 typedef struct _DISPATCHER_CONTEXT {
     ULONG64 ControlPc;
     ULONG64 ImageBase;
@@ -1628,6 +1649,8 @@ typedef struct _DISPATCHER_CONTEXT {
     PVOID HandlerData;
     PUNWIND_HISTORY_TABLE HistoryTable;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
+
+#endif
 
 // #endif // !defined(_TARGET_MAC64)
 

@@ -44,7 +44,7 @@ Function:
   PAL_vsnprintf (silent version)
   for more details, see PAL_vsnprintf in printf.c
 *******************************************************************************/
-INT Silent_PAL_vsnprintf(LPSTR Buffer, INT Count, LPCSTR Format, va_list ap)
+INT Silent_PAL_vsnprintf(LPSTR Buffer, INT Count, LPCSTR Format, va_list aparg)
 {
     BOOL BufferRanOut = FALSE;
     CHAR TempBuff[1024]; /* used to hold a single %<foo> format string */
@@ -61,6 +61,9 @@ INT Silent_PAL_vsnprintf(LPSTR Buffer, INT Count, LPCSTR Format, va_list ap)
     INT Length;
     INT TempInt;
     int wctombResult;
+    va_list ap;
+    
+    va_copy(ap, aparg);
 
     while (*Fmt)
     {
@@ -89,6 +92,7 @@ INT Silent_PAL_vsnprintf(LPSTR Buffer, INT Count, LPCSTR Format, va_list ap)
                 Length = Silent_WideCharToMultiByte(TempWStr, -1, 0, 0);
                 if (!Length)
                 {
+                    va_end(ap);
                     return -1;
                 }
 
@@ -110,6 +114,7 @@ INT Silent_PAL_vsnprintf(LPSTR Buffer, INT Count, LPCSTR Format, va_list ap)
                                                         TempStr, Length);
                     if (!Length)
                     {
+                        va_end(ap);
                         return -1;
                     }
                     TempStr[Length] = 0;
@@ -123,6 +128,7 @@ INT Silent_PAL_vsnprintf(LPSTR Buffer, INT Count, LPCSTR Format, va_list ap)
                     if (!wctombResult)
                     {
                         PAL_free(TempStr);
+                        va_end(ap);
                         return -1;
                     }
                     --Length; /* exclude null char */
@@ -149,6 +155,7 @@ INT Silent_PAL_vsnprintf(LPSTR Buffer, INT Count, LPCSTR Format, va_list ap)
                 Length = Silent_WideCharToMultiByte(&TempWChar, 1, TempBuffer, 4);
                 if (!Length)
                 {
+                    va_end(ap);
                     return -1;
                 }
                 TempBuffer[Length] = 0;
@@ -204,11 +211,15 @@ INT Silent_PAL_vsnprintf(LPSTR Buffer, INT Count, LPCSTR Format, va_list ap)
                     {
                         if (strcpy_s(TempBuff, sizeof(TempBuff), "%.300s") != SAFECRT_SUCCESS)
                         {
+                            va_end(ap);
                             return -1;
                         }
                     }                                     
-
-                     TempInt = PAL__vsnprintf(BufferPtr, TempCount, TempBuff, ap);
+                    va_list apcopy;
+                    va_copy(apcopy, ap);
+                    TempInt = PAL__vsnprintf(BufferPtr, TempCount, TempBuff, apcopy);
+                    va_end(apcopy);
+                    PAL_printf_arg_remover(&ap, Precision, Type, Prefix);
                 }
 
                 if (TempInt < 0 || static_cast<size_t>(TempInt) >= TempCount) /* buffer not long enough */
@@ -233,6 +244,8 @@ INT Silent_PAL_vsnprintf(LPSTR Buffer, INT Count, LPCSTR Format, va_list ap)
         *BufferPtr = 0; /* end the string */
     }
 
+    va_end(ap);
+
     if (BufferRanOut)
     {
         return -1;
@@ -250,7 +263,7 @@ Function:
 
   for more details, see PAL_vfprintf in printf.c
 --*/
-int Silent_PAL_vfprintf(PAL_FILE *stream, const char *format, va_list ap)
+int Silent_PAL_vfprintf(PAL_FILE *stream, const char *format, va_list aparg)
 {
     CHAR TempBuff[1024]; /* used to hold a single %<foo> format string */
     LPCSTR Fmt = format;
@@ -267,6 +280,9 @@ int Silent_PAL_vfprintf(PAL_FILE *stream, const char *format, va_list ap)
     int wctombResult;
     int written = 0;
     int paddingReturnValue;
+    va_list ap;
+    
+    va_copy(ap, aparg);
 
     while (*Fmt)
     {
@@ -289,11 +305,13 @@ int Silent_PAL_vfprintf(PAL_FILE *stream, const char *format, va_list ap)
                 Length = Silent_WideCharToMultiByte(TempWStr, -1, 0, 0);
                 if (!Length)
                 {
+                    va_end(ap);
                     return -1;
                 }
                 TempStr = (LPSTR) PAL_malloc(Length);
                 if (!TempStr)
                 {
+                    va_end(ap);
                     return -1;
                 }
                 if (PRECISION_DOT == Precision)
@@ -309,6 +327,7 @@ int Silent_PAL_vfprintf(PAL_FILE *stream, const char *format, va_list ap)
                     if (!Length)
                     {
                         PAL_free(TempStr);
+                        va_end(ap);
                         return -1;
                     }
                     TempStr[Length] = 0;
@@ -322,6 +341,7 @@ int Silent_PAL_vfprintf(PAL_FILE *stream, const char *format, va_list ap)
                     if (!wctombResult)
                     {
                         PAL_free(TempStr);
+                        va_end(ap);
                         return -1;
                     }
                     --Length; /* exclude null char */
@@ -333,6 +353,7 @@ int Silent_PAL_vfprintf(PAL_FILE *stream, const char *format, va_list ap)
                 if (-1 == paddingReturnValue)
                 {
                     PAL_free(TempStr);
+                    va_end(ap);
                     return -1;
                 }
                 written += paddingReturnValue;
@@ -353,6 +374,7 @@ int Silent_PAL_vfprintf(PAL_FILE *stream, const char *format, va_list ap)
                 Length = Silent_WideCharToMultiByte(&TempWChar, 1, TempBuffer, 4);
                 if (!Length)
                 {
+                    va_end(ap);
                     return -1;
                 }
                 TempBuffer[Length] = 0;
@@ -363,6 +385,7 @@ int Silent_PAL_vfprintf(PAL_FILE *stream, const char *format, va_list ap)
                                               Width - Length, Flags);
                 if (-1 == paddingReturnValue)
                 {
+                    va_end(ap);
                     return -1;
                 }
                 written += paddingReturnValue;
@@ -405,7 +428,11 @@ int Silent_PAL_vfprintf(PAL_FILE *stream, const char *format, va_list ap)
                 }
                 else
                 {
-                    TempInt = PAL_vfprintf(stream, TempBuff, ap);
+                    va_list apcopy;
+                    va_copy(apcopy, ap);
+                    TempInt = PAL_vfprintf(stream, TempBuff, apcopy);
+                    va_end(apcopy);
+                    PAL_printf_arg_remover(&ap, Precision, Type, Prefix);
                 }
 
                 if (-1 != TempInt)
@@ -423,12 +450,14 @@ int Silent_PAL_vfprintf(PAL_FILE *stream, const char *format, va_list ap)
             PAL_fwrite(Fmt++, 1, 1, stream); /* copy regular chars into buffer */
             if (stream->PALferrorCode == PAL_FILE_ERROR)
             {
+                va_end(ap);
                 return -1;
             }
             ++written;
         }
     }
 
+    va_end(ap);
     return written;
 }
 
