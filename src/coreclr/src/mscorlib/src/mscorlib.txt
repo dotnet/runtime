@@ -2327,11 +2327,13 @@ ArgumentOutOfRange_Week = The Week parameter must be in the range 1 through 5.
 ; begin System.TimeZoneInfo InvalidTimeZoneException's
 ;
 InvalidTimeZone_InvalidRegistryData = The time zone ID '{0}' was found on the local computer, but the registry information was corrupt.
+InvalidTimeZone_InvalidFileData = The time zone ID '{0}' was found on the local computer, but the file at '{1}' was corrupt.
 InvalidTimeZone_InvalidWin32APIData = The Local time zone was found on the local computer, but the data was corrupt.
 ;
 ; begin System.TimeZoneInfo SecurityException's
 ;
 Security_CannotReadRegistryData = The time zone ID '{0}' was found on the local computer, but the application does not have permission to read the registry information.
+Security_CannotReadFileData = The time zone ID '{0}' was found on the local computer, but the application does not have permission to read the file.
 ;
 ; begin System.TimeZoneInfo SerializationException's
 ;
@@ -2340,7 +2342,7 @@ Serialization_InvalidEscapeSequence = The serialized data contained an invalid e
 ;
 ; begin System.TimeZoneInfo TimeZoneNotFoundException's
 ;
-TimeZoneNotFound_MissingRegistryData = The time zone ID '{0}' was not found on the local computer.
+TimeZoneNotFound_MissingData = The time zone ID '{0}' was not found on the local computer.
 ;
 ; end System.TimeZoneInfo
 ;
