@@ -8,6 +8,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.Csp.Tests</AssemblyName>
     <RootNamespace>System.Security.Cryptography.Csp.Tests</RootNamespace>
+    <UnsupportedPlatforms>Linux;OSX</UnsupportedPlatforms>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Security.Cryptography.Csp.csproj">
