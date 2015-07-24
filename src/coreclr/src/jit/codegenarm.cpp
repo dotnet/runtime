@@ -778,7 +778,7 @@ void                CodeGen::genCodeForBBlist()
                 }
             }
         }
-#endif _TARGET_AMD64_
+#endif //_TARGET_AMD64_
 
         /* Do we need to generate a jump or return? */
 
@@ -1010,7 +1010,7 @@ void                CodeGen::instGen_Set_Reg_To_Imm(emitAttr    size,
             getEmitter()->emitIns_R_AI(INS_lea, EA_PTR_DSP_RELOC, reg, imm);
         }
         else
-#endif _TARGET_AMD64_
+#endif // _TARGET_AMD64_
         {
             getEmitter()->emitIns_R_I(INS_mov, size, reg, imm);
         }

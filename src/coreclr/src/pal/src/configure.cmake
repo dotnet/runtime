@@ -12,6 +12,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
 elseif(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
   set(CMAKE_REQUIRED_DEFINITIONS "-D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=200809L")
 endif()
+
+list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_FILE_OFFSET_BITS=64)
+
 check_include_files(ieeefp.h HAVE_IEEEFP_H)
 check_include_files(alloca.h HAVE_ALLOCA_H)
 check_include_files(sys/vmparam.h HAVE_SYS_VMPARAM_H)
@@ -848,6 +851,19 @@ set(CMAKE_REQUIRED_DEFINITIONS)
 set(SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING 1)
 set(ERROR_FUNC_FOR_GLOB_HAS_FIXED_PARAMS 1)
 
+check_cxx_source_compiles("
+#include <libunwind.h>
+#include <ucontext.h>
+
+int main(int argc, char **argv)
+{
+        unw_context_t libUnwindContext;
+        ucontext_t uContext;
+
+        libUnwindContext = uContext;
+        return 0;
+}" UNWIND_CONTEXT_IS_UCONTEXT_T)
+
 if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   set(HAVE_COREFOUNDATION 1)
   set(HAVE__NSGETENVIRON 1)
@@ -862,7 +878,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   set(KO_KR_LOCALE_NAME ko_KR.eucKR)
   set(ZH_TW_LOCALE_NAME zh_TG.BIG5)
   set(HAS_FTRUNCATE_LENGTH_ISSUE 1)
-  set(UNWIND_CONTEXT_IS_UCONTEXT_T 0)
 elseif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
   if(NOT HAVE_LIBUNWIND_H)
     unset(HAVE_LIBUNWIND_H CACHE)
@@ -879,7 +894,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
   set(KO_KR_LOCALE_NAME ko_KR_LOCALE_NOT_FOUND)
   set(ZH_TW_LOCALE_NAME zh_TW_LOCALE_NOT_FOUND)
   set(HAS_FTRUNCATE_LENGTH_ISSUE 0)
-  set(UNWIND_CONTEXT_IS_UCONTEXT_T 1)
 
   if(EXISTS "/lib/libc.so.7")
     set(FREEBSD_LIBC "/lib/libc.so.7")
@@ -903,7 +917,6 @@ else() # Anything else is Linux
   set(KO_KR_LOCALE_NAME ko_KR_LOCALE_NOT_FOUND)
   set(ZH_TW_LOCALE_NAME zh_TW_LOCALE_NOT_FOUND)
   set(HAS_FTRUNCATE_LENGTH_ISSUE 0)
-  set(UNWIND_CONTEXT_IS_UCONTEXT_T 1)
 endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)

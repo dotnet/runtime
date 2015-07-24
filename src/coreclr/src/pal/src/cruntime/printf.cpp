@@ -123,6 +123,45 @@ BOOL Internal_AddPaddingA(LPSTR *Out, INT Count, LPSTR In,
     }
 }
 
+/*******************************************************************************
+Function:
+  PAL_printf_arg_remover
+
+Parameters:
+  ap
+    - pointer to the va_list from which to remove arguments
+  Precision
+    - the precision of the current format option
+  Type
+    - the type of the argument for the current format option
+  Prefix
+    - the prefix for the current format option
+*******************************************************************************/
+void PAL_printf_arg_remover(va_list *ap, INT Precision, INT Type, INT Prefix)
+{
+    /* remove arg and precision if needed */
+    if (PRECISION_STAR == Precision ||
+        PRECISION_INVALID == Precision)
+    {
+        (void)va_arg(*ap, int);
+    }
+    if (Type == PFF_TYPE_FLOAT)
+    {
+        (void)va_arg(*ap, double);
+    }
+    else if (Type == PFF_TYPE_INT && Prefix == PFF_PREFIX_LONGLONG)
+    {
+        (void)va_arg(*ap, INT64);
+    }
+    else if (Type == PFF_TYPE_INT || Type == PFF_TYPE_CHAR)
+    {
+        (void)va_arg(*ap, int);
+    }
+    else
+    {
+        (void)va_arg(*ap, void *);
+    }
+}
 
 /*++
 Function:

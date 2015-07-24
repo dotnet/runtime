@@ -849,6 +849,7 @@ DebugClient::GetThreadContextById(
     dtcontext = (DT_CONTEXT*)context;
     dtcontext->ContextFlags = contextFlags;
 
+#ifdef DBG_TARGET_AMD64
     dtcontext->Rip = frame.GetPC();
     dtcontext->Rsp = frame.GetSP();
     dtcontext->Rbp = frame.GetFP();
@@ -875,6 +876,26 @@ DebugClient::GetThreadContextById(
     dtcontext->SegEs = GetRegister(frame, "es");
     dtcontext->SegFs = GetRegister(frame, "fs");
     dtcontext->SegGs = GetRegister(frame, "gs");
+#elif DBG_TARGET_ARM
+    dtcontext->Pc = frame.GetPC();
+    dtcontext->Sp = frame.GetSP();
+    dtcontext->Lr = GetRegister(frame, "lr");
+    dtcontext->Cpsr = GetRegister(frame, "cpsr");
+
+    dtcontext->R0 = GetRegister(frame, "r0");
+    dtcontext->R1 = GetRegister(frame, "r1");
+    dtcontext->R2 = GetRegister(frame, "r2");
+    dtcontext->R3 = GetRegister(frame, "r3");
+    dtcontext->R4 = GetRegister(frame, "r4");
+    dtcontext->R5 = GetRegister(frame, "r5");
+    dtcontext->R6 = GetRegister(frame, "r6");
+    dtcontext->R7 = GetRegister(frame, "r7");
+    dtcontext->R8 = GetRegister(frame, "r8");
+    dtcontext->R9 = GetRegister(frame, "r9");
+    dtcontext->R10 = GetRegister(frame, "r10");
+    dtcontext->R11 = GetRegister(frame, "r11");
+    dtcontext->R12 = GetRegister(frame, "r12");
+#endif
 
     hr = S_OK;
 

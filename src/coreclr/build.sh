@@ -3,7 +3,7 @@
 usage()
 {
     echo "Usage: $0 [BuildArch] [BuildType] [clean] [verbose] [clangx.y]"
-    echo "BuildArch can be: x64"
+    echo "BuildArch can be: x64, ARM"
     echo "BuildType can be: Debug, Release"
     echo "clean - optional argument to force a clean build."
     echo "verbose - optional argument to enable verbose build output."
@@ -92,7 +92,7 @@ echo "Commencing CoreCLR Repo build"
 
 # Argument types supported by this script:
 #
-# Build architecture - valid value is: x64.
+# Build architecture - valid values are: x64, ARM.
 # Build Type         - valid values are: Debug, Release
 #
 # Set the default arguments for build
@@ -156,6 +156,10 @@ for i in "$@"
         x64)
         __BuildArch=x64
         __MSBuildBuildArch=x64
+        ;;
+        arm)
+        __BuildArch=arm
+        __MSBuildBuildArch=arm
         ;;
         debug)
         __BuildType=Debug

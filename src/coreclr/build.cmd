@@ -26,6 +26,7 @@ set __SkipTestBuild=
 if "%1" == "" goto ArgsDone
 if /i "%1" == "/?" goto Usage
 if /i "%1" == "x64"    (set __BuildArch=x64&&shift&goto Arg_Loop)
+if /i "%1" == "arm"    (set __BuildArch=arm&&shift&goto Arg_Loop)
 
 if /i "%1" == "debug"    (set __BuildType=Debug&shift&goto Arg_Loop)
 if /i "%1" == "release"   (set __BuildType=Release&shift&goto Arg_Loop)

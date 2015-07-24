@@ -98,13 +98,25 @@ set(VM_CROSSGEN_SOURCES
     ../dbggcinfodecoder.cpp
     ../gcinfodecoder.cpp
     ../sha1.cpp
-    ../amd64/stublinkeramd64.cpp
     ../crossgencompile.cpp
 )
 
 include_directories(BEFORE ..)
 include_directories(${CLR_DIR}/src/gc)
-include_directories(../amd64)
+
+if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
+  include_directories(../amd64)
+  list(APPEND VM_CROSSGEN_SOURCES 
+    ../amd64/stublinkeramd64.cpp
+  )
+elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
+  include_directories(../arm)
+  list(APPEND VM_CROSSGEN_SOURCES 
+    ../arm/stubs.cpp
+  )
+else()
+  message(FATAL_ERROR "Only ARM and AMD64 is supported")
+endif()
 
 if (WIN32)
   list(APPEND VM_CROSSGEN_SOURCES

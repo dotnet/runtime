@@ -1256,6 +1256,11 @@ emitter::insSize   emitter::emitInsSize(insFormat  insFmt)
     unsigned uval32 = (unsigned) val32;
     unsigned imm8   = uval32 & 0xff;
     unsigned encode = imm8 >> 7;
+    unsigned imm32a;
+    unsigned imm32b;
+    unsigned imm32c;
+    unsigned mask32;
+    unsigned temp;
 
     /* encode = 0000x */
     if (imm8 == uval32)
@@ -1263,7 +1268,7 @@ emitter::insSize   emitter::emitInsSize(insFormat  insFmt)
         goto DONE;
     }
 
-    unsigned imm32a = (imm8 << 16) | imm8;
+    imm32a = (imm8 << 16) | imm8;
     /* encode = 0001x */
     if (imm32a == uval32)
     {
@@ -1271,7 +1276,7 @@ emitter::insSize   emitter::emitInsSize(insFormat  insFmt)
         goto DONE;
     }
 
-    unsigned imm32b = (imm32a << 8);
+    imm32b = (imm32a << 8);
     /* encode = 0010x */
     if (imm32b == uval32)
     {
@@ -1279,7 +1284,7 @@ emitter::insSize   emitter::emitInsSize(insFormat  insFmt)
         goto DONE;
     }
 
-    unsigned imm32c = (imm32a | imm32b);
+    imm32c = (imm32a | imm32b);
     /* encode = 0011x */
     if (imm32c == uval32)
     {
@@ -1287,8 +1292,7 @@ emitter::insSize   emitter::emitInsSize(insFormat  insFmt)
         goto DONE;
     }
 
-    unsigned mask32 = 0x00000ff;
-    unsigned temp;
+    mask32 = 0x00000ff;
 
     encode = 31;  /* 11111 */
     do {
@@ -1557,6 +1561,9 @@ COMMON_PUSH_POP:
             assert(!"Instruction cannot be encoded");
         }
         break;
+        
+    default:
+        unreached();
     }
     assert((fmt == IF_T1_B)  ||
            (fmt == IF_T1_L0) ||
@@ -1616,7 +1623,9 @@ void                emitter::emitIns_R(instruction ins,
     case INS_mvn:
         emitIns_R_R_I(ins, attr, reg, reg, 0);
         return;
-
+        
+    default:
+        unreached();
     }
     assert((fmt == IF_T1_D1) ||
            (fmt == IF_T2_E2));
@@ -1929,6 +1938,9 @@ void                emitter::emitIns_R_I(instruction ins,
             assert(!"Instruction cannot be encoded");
         }
         break;
+        
+    default:
+        unreached();
     }
     assert((fmt == IF_T1_F ) ||
            (fmt == IF_T1_J0) ||
@@ -2313,6 +2325,9 @@ void                emitter::emitIns_R_I_I(instruction ins,
             sf  = INS_FLAGS_NOT_SET;
         }
         break;
+        
+    default:
+        unreached();
     }
     assert(fmt == IF_T2_D1);
     assert(sf != INS_FLAGS_DONT_CARE);
@@ -3145,6 +3160,9 @@ void                emitter::emitIns_R_R_I_I(instruction ins,
         fmt = IF_T2_D0;
         sf  = INS_FLAGS_NOT_SET;
         break;
+        
+    default:
+        unreached();
     }
     assert((fmt == IF_T2_D0));
     assert(sf != INS_FLAGS_DONT_CARE);
@@ -3326,6 +3344,9 @@ COMMON_THUMB2_LDST:
             assert(!"Instruction cannot be encoded");
         }   
         break;
+        
+    default:
+        unreached();
     }
     assert((fmt == IF_T2_C0) ||
            (fmt == IF_T2_E0) ||
@@ -3385,6 +3406,8 @@ void                emitter::emitIns_R_R_R_R(instruction ins,
     case INS_mls:
         fmt = IF_T2_F2;
         break;
+    default:
+        unreached();
     }
     assert((fmt == IF_T2_F1) || (fmt == IF_T2_F2));
 
@@ -4246,6 +4269,9 @@ void                emitter::emitIns_J(instruction   ins,
     case INS_ble:
         fmt = IF_LARGEJMP;  /* Assume the jump will be long */
         break;
+        
+    default:
+        unreached();
     }
     assert((fmt == IF_LARGEJMP) ||
            (fmt == IF_T2_J2));
@@ -4390,6 +4416,8 @@ void                emitter::emitIns_R_L  (instruction   ins,
     case INS_movw:
         fmt = IF_T2_N1;
         break;
+    default:
+        unreached();
     }
     assert(fmt == IF_T2_N1);
 
@@ -6661,6 +6689,9 @@ static bool        insAlwaysSetFlags(instruction ins)
     case INS_tst:
         result = true;
         break;
+        
+    default:
+        break;
     }
     return result;
 }
@@ -6853,7 +6884,7 @@ void                emitter::emitDispReg(regNumber reg, emitAttr  attr, bool add
 {
     if (isFloatReg(reg))
     {
-        char *size = attr == EA_8BYTE ? "d" : "s";
+        const char *size = attr == EA_8BYTE ? "d" : "s";
         printf("%s%s", size, emitFloatRegName(reg, attr)+1);
     }
     else

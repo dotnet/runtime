@@ -94,6 +94,8 @@ extern "C" {
 #define _M_IA64 64100
 #elif defined(__x86_64__) && !defined(_M_AMD64)
 #define _M_AMD64 100
+#elif defined(__ARM_ARCH) && !defined(_M_ARM)
+#define _M_ARM 7
 #endif
 
 #if defined(_M_IX86) && !defined(_X86_)
@@ -114,6 +116,8 @@ extern "C" {
 #define _IA64_
 #elif defined(_M_AMD64) && !defined(_AMD64_)
 #define _AMD64_
+#elif defined(_M_ARM) && !defined(_ARM_)
+#define _ARM_
 #endif
 
 #endif // !_MSC_VER
@@ -190,6 +194,14 @@ extern "C" {
 #define UNALIGNED
 
 #endif // _MSC_VER
+
+#ifndef FORCEINLINE
+#if _MSC_VER < 1200
+#define FORCEINLINE inline
+#else
+#define FORCEINLINE __forceinline
+#endif
+#endif
 
 #ifdef _M_ALPHA
 
@@ -2942,6 +2954,185 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
 } KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
 
+#elif defined(_ARM_)
+
+#define CONTEXT_ARM   0x00200000L
+
+// end_wx86
+
+#define CONTEXT_CONTROL (CONTEXT_ARM | 0x1L)
+#define CONTEXT_INTEGER (CONTEXT_ARM | 0x2L)
+#define CONTEXT_FLOATING_POINT  (CONTEXT_ARM | 0x4L)
+#define CONTEXT_DEBUG_REGISTERS (CONTEXT_ARM | 0x8L)
+
+#define CONTEXT_FULL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT)
+
+#define CONTEXT_ALL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS)
+
+#define CONTEXT_EXCEPTION_ACTIVE 0x8000000L
+#define CONTEXT_SERVICE_ACTIVE 0x10000000L
+#define CONTEXT_EXCEPTION_REQUEST 0x40000000L
+#define CONTEXT_EXCEPTION_REPORTING 0x80000000L
+
+//
+// This flag is set by the unwinder if it has unwound to a call
+// site, and cleared whenever it unwinds through a trap frame.
+// It is used by language-specific exception handlers to help
+// differentiate exception scopes during dispatching.
+//
+
+#define CONTEXT_UNWOUND_TO_CALL 0x20000000
+
+//
+// Specify the number of breakpoints and watchpoints that the OS
+// will track. Architecturally, ARM supports up to 16. In practice,
+// however, almost no one implements more than 4 of each.
+//
+
+#define ARM_MAX_BREAKPOINTS     8
+#define ARM_MAX_WATCHPOINTS     1
+
+typedef struct _NEON128 {
+    ULONGLONG Low;
+    LONGLONG High;
+} NEON128, *PNEON128;
+
+//
+// Context Frame
+//
+//  This frame has a several purposes: 1) it is used as an argument to
+//  NtContinue, 2) it is used to constuct a call frame for APC delivery,
+//  and 3) it is used in the user level thread creation routines.
+//
+//
+// The flags field within this record controls the contents of a CONTEXT
+// record.
+//
+// If the context record is used as an input parameter, then for each
+// portion of the context record controlled by a flag whose value is
+// set, it is assumed that that portion of the context record contains
+// valid context. If the context record is being used to modify a threads
+// context, then only that portion of the threads context is modified.
+//
+// If the context record is used as an output parameter to capture the
+// context of a thread, then only those portions of the thread's context
+// corresponding to set flags will be returned.
+//
+// CONTEXT_CONTROL specifies Sp, Lr, Pc, and Cpsr
+//
+// CONTEXT_INTEGER specifies R0-R12
+//
+// CONTEXT_FLOATING_POINT specifies Q0-Q15 / D0-D31 / S0-S31
+//
+// CONTEXT_DEBUG_REGISTERS specifies up to 16 of DBGBVR, DBGBCR, DBGWVR,
+//      DBGWCR.
+//
+
+typedef struct DECLSPEC_ALIGN(8) _CONTEXT {
+
+    //
+    // Control flags.
+    //
+
+    DWORD ContextFlags;
+
+    //
+    // Integer registers
+    //
+
+    DWORD R0;
+    DWORD R1;
+    DWORD R2;
+    DWORD R3;
+    DWORD R4;
+    DWORD R5;
+    DWORD R6;
+    DWORD R7;
+    DWORD R8;
+    DWORD R9;
+    DWORD R10;
+    DWORD R11;
+    DWORD R12;
+
+    //
+    // Control Registers
+    //
+
+    DWORD Sp;
+    DWORD Lr;
+    DWORD Pc;
+    DWORD Cpsr;
+
+    //
+    // Floating Point/NEON Registers
+    //
+
+    DWORD Fpscr;
+    DWORD Padding;
+    union {
+        NEON128 Q[16];
+        ULONGLONG D[32];
+        DWORD S[32];
+    };
+
+    //
+    // Debug registers
+    //
+
+    DWORD Bvr[ARM_MAX_BREAKPOINTS];
+    DWORD Bcr[ARM_MAX_BREAKPOINTS];
+    DWORD Wvr[ARM_MAX_WATCHPOINTS];
+    DWORD Wcr[ARM_MAX_WATCHPOINTS];
+
+    DWORD Padding2[2];
+
+} CONTEXT, *PCONTEXT, *LPCONTEXT;
+
+//
+// Nonvolatile context pointer record.
+//
+
+typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
+
+    PDWORD R4;
+    PDWORD R5;
+    PDWORD R6;
+    PDWORD R7;
+    PDWORD R8;
+    PDWORD R9;
+    PDWORD R10;
+    PDWORD R11;
+    PDWORD Lr;
+
+    PULONGLONG D8;
+    PULONGLONG D9;
+    PULONGLONG D10;
+    PULONGLONG D11;
+    PULONGLONG D12;
+    PULONGLONG D13;
+    PULONGLONG D14;
+    PULONGLONG D15;
+
+} KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
+
+typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
+    DWORD BeginAddress;
+    union {
+        DWORD UnwindData;
+        struct {
+            DWORD Flag : 2;
+            DWORD FunctionLength : 11;
+            DWORD Ret : 2;
+            DWORD H : 1;
+            DWORD Reg : 3;
+            DWORD R : 1;
+            DWORD L : 1;
+            DWORD C : 1;
+            DWORD StackAdjust : 10;
+        };
+    };
+} IMAGE_ARM_RUNTIME_FUNCTION_ENTRY, * PIMAGE_ARM_RUNTIME_FUNCTION_ENTRY;
+
 #else
 #error Unknown architecture for defining CONTEXT.
 #endif
@@ -3041,6 +3232,13 @@ DWORD
 PALAPI
 PAL_GetLogicalCpuCountFromOS();
 
+PALIMPORT
+size_t
+PALAPI
+PAL_GetLogicalProcessorCacheSizeFromOS();
+
+#define GetLogicalProcessorCacheSizeFromOS PAL_GetLogicalProcessorCacheSizeFromOS
+
 #ifdef PLATFORM_UNIX
 
 #if defined(__FreeBSD__) && defined(_X86_)
@@ -3059,7 +3257,10 @@ PAL_GetLogicalCpuCountFromOS();
 #define PAL_CS_NATIVE_DATA_SIZE 120
 #elif defined(__LINUX__) && defined(__x86_64__)
 #define PAL_CS_NATIVE_DATA_SIZE 96
+#elif defined(__LINUX__) && defined(_ARM_)
+#define PAL_CS_NATIVE_DATA_SIZE 80
 #else 
+#warning 
 #error  PAL_CS_NATIVE_DATA_SIZE is not defined for this architecture
 #endif
     
@@ -3378,7 +3579,6 @@ VirtualProtect(
            IN DWORD flNewProtect,
            OUT PDWORD lpflOldProtect);
 
-#if defined(_AMD64_)
 typedef struct _MEMORYSTATUSEX {
   DWORD     dwLength;
   DWORD     dwMemoryLoad;
@@ -3396,8 +3596,6 @@ BOOL
 PALAPI
 GlobalMemoryStatusEx(
             IN OUT LPMEMORYSTATUSEX lpBuffer);
-
-#endif // _AMD64_
 
 typedef struct _MEMORY_BASIC_INFORMATION {
     PVOID BaseAddress;
@@ -5535,11 +5733,11 @@ PALIMPORT double __cdecl _copysign(double, double);
 #ifdef __cplusplus
 extern "C++" {
 
-#if defined(BIT64) && !defined(PAL_STDCPP_COMPAT)
+#if !defined(PAL_STDCPP_COMPAT)
 inline __int64 abs(__int64 _X) {
     return llabs(_X);
 }
-#endif // defined(BIT64) && !defined(PAL_STDCPP_COMPAT)
+#endif // !defined(PAL_STDCPP_COMPAT)
 }
 #endif
 
