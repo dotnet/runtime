@@ -1787,7 +1787,7 @@ static void _wapi_handle_check_share_by_pid (struct _WapiFileShare *share_info)
 {
 #if defined(__native_client__)
 	g_assert_not_reached ();
-#else
+#elif defined(HAVE_KILL)
 	if (kill (share_info->opened_by_pid, 0) == -1 &&
 	    (errno == ESRCH ||
 	     errno == EPERM)) {

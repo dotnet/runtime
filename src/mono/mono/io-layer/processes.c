@@ -178,7 +178,9 @@ is_pid_valid (pid_t pid)
 {
 	gboolean result = FALSE;
 
-#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__FreeBSD__)
+#if defined(HOST_WATCHOS)
+	result = TRUE; // TODO: Rewrite using sysctl
+#elif defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__FreeBSD__)
 	if (((kill(pid, 0) == 0) || (errno == EPERM)) && pid != 0)
 		result = TRUE;
 #elif defined(__HAIKU__)
@@ -2313,6 +2315,7 @@ SetProcessWorkingSetSize (gpointer process, size_t min, size_t max)
 gboolean
 TerminateProcess (gpointer process, gint32 exitCode)
 {
+#if defined(HAVE_KILL)
 	WapiHandle_process *process_handle;
 	int signo;
 	int ret;
@@ -2350,6 +2353,10 @@ TerminateProcess (gpointer process, gint32 exitCode)
 	}
 	
 	return (ret == 0);
+#else
+	g_error ("kill() is not supported by this platform");
+	return FALSE;
+#endif
 }
 
 guint32
