@@ -185,6 +185,7 @@ namespace System.Diagnostics.ProcessTests
             Assert.NotNull(_process.MachineName);
         }
 
+        [ActiveIssue(1896)]
         [Fact]
         public void TestMainModule()
         {
@@ -376,6 +377,7 @@ namespace System.Diagnostics.ProcessTests
             Assert.InRange(processorTimeAtHalfSpin, processorTimeBeforeSpin, Process.GetCurrentProcess().TotalProcessorTime.TotalSeconds);
         }
 
+        [ActiveIssue(2474)]
         [Fact]
         public void TestProcessStartTime()
         {
