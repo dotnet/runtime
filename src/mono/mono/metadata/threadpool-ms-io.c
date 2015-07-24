@@ -503,7 +503,7 @@ cleanup (void)
 
 	mono_mutex_destroy (&threadpool_io->lock);
 
-	mono_cond_destroy (&updates_signal);
+	mono_cond_destroy (&threadpool_io->updates_signal);
 
 	MONO_GC_UNREGISTER_ROOT (threadpool_io->states);
 	mono_g_hash_table_destroy (threadpool_io->states);
