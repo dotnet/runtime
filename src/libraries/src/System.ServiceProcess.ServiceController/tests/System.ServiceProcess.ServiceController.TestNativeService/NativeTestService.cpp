@@ -137,7 +137,7 @@ int _tmain(int argc, _TCHAR* argv [])
 		}
 		else
 		{
-			wprintf(L"error: Invalid action '%s'\n", action);
+			wprintf(L"error: Invalid action '%s'\n", action.c_str());
 			return -1;
 		}
 	}
