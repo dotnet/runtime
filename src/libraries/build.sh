@@ -29,7 +29,7 @@ if [ $? -ne 0 ]; then
         echo "Mono 4.0.1.44 or later is required to build corefx. Please see https://github.com/dotnet/corefx/blob/master/Documentation/building/unix-instructions.md for more details."
         exit 1
     else
-        echo "WARNING: Mono 4.0.1.44 or later is required to build corefx. Unable to asses if current version is supported."
+        echo "WARNING: Mono 4.0.1.44 or later is required to build corefx. Unable to assess if current version is supported."
     fi
 fi
 
