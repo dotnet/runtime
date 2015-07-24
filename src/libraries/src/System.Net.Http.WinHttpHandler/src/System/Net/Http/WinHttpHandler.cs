@@ -1092,7 +1092,7 @@ namespace System.Net.Http
                 return;
             }
 
-            var cancellationTokenRegistration = state.CancellationToken.Register(() => { state.Tcs.TrySetCanceled(); });
+            var cancellationTokenRegistration = state.CancellationToken.Register(s => ((RequestState)s).Tcs.TrySetCanceled(), state);
 
             try
             {
