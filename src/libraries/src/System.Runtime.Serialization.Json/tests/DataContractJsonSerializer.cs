@@ -1033,14 +1033,16 @@ public static class DataContractJsonSerializerTests
     [Fact]
     public static void DCJS_EnumerableCollection()
     {
-        var offsetMinutes = (int)TimeZoneInfo.Local.BaseUtcOffset.TotalMinutes;
-        var timeZoneString = string.Format("{0:+;-}{1}", offsetMinutes, new TimeSpan(0, offsetMinutes, 0).ToString(@"hhmm"));
+        var dates = new DateTime[] {new DateTime(2000, 1, 1), new DateTime(2000, 1, 2), new DateTime(2000, 1, 3)};
         var original = new EnumerableCollection();
-        original.Add(new DateTime(2000, 1, 1).AddMinutes(offsetMinutes));
-        original.Add(new DateTime(2000, 1, 2).AddMinutes(offsetMinutes));
-        original.Add(new DateTime(2000, 1, 3).AddMinutes(offsetMinutes));
-        var actual = SerializeAndDeserialize<EnumerableCollection>(original, string.Format("[\"\\/Date(946684800000{0})\\/\",\"\\/Date(946771200000{0})\\/\",\"\\/Date(946857600000{0})\\/\"]", timeZoneString));
-
+        var timeZoneStrings = new List<string>();
+        foreach (var date in dates)
+        {
+            var offsetMinutes = (int) TimeZoneInfo.Local.GetUtcOffset(date).TotalMinutes;
+            original.Add(date.AddMinutes(offsetMinutes));
+            timeZoneStrings.Add(string.Format("{0:+;-}{1}", offsetMinutes, new TimeSpan(0, offsetMinutes, 0).ToString(@"hhmm")));
+        }
+        var actual = SerializeAndDeserialize<EnumerableCollection>(original, string.Format("[\"\\/Date(946684800000{0})\\/\",\"\\/Date(946771200000{1})\\/\",\"\\/Date(946857600000{2})\\/\"]", timeZoneStrings.ToArray()));
         Assert.Equal((IEnumerable<DateTime>)actual, (IEnumerable<DateTime>)original);
     }
 
