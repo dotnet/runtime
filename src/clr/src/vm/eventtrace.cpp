@@ -3732,7 +3732,7 @@ VOID ETW::TypeSystemLog::FlushObjectAllocationEvents()
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
         CAN_TAKE_LOCK;
     }
