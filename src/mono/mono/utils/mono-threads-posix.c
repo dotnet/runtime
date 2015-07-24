@@ -275,6 +275,8 @@ mono_threads_pthread_kill (MonoThreadInfo *info, int signum)
 #elif defined(__native_client__)
 	/* Workaround pthread_kill abort() in NaCl glibc. */
 	return 0;
+#elif !defined(HAVE_PTHREAD_KILL)
+	g_error ("pthread_kill() is not supported by this platform");
 #else
 	return pthread_kill (mono_thread_info_get_tid (info), signum);
 #endif
