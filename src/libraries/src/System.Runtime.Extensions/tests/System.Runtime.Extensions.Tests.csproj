@@ -45,7 +45,11 @@
     <Compile Include="System\Convert.ToUInt64.cs" />
     <Compile Include="System\Environment.ExpandEnvironmentVariables.cs" />
     <Compile Include="System\Environment.GetEnvironmentVariable.cs" />
+    <Compile Include="System\Environment.NewLine.cs" />
+    <Compile Include="System\Environment.ProcessorCount.cs" />
     <Compile Include="System\Environment.SetEnvironmentVariable.cs" />
+    <Compile Include="System\Environment.StackTrace.cs" />
+    <Compile Include="System\Environment.TickCount.cs" />
     <Compile Include="System\Math.cs" />
     <Compile Include="System\Progress.cs" />
     <Compile Include="System\Random.cs" />
