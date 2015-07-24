@@ -75,8 +75,6 @@ PLOG_TESTS_SRC=test-alloc.cs test-busy.cs test-monitor.cs test-excleave.cs \
 	test-heapshot.cs test-traces.cs
 PLOG_TESTS=$(PLOG_TESTS_SRC:.cs=.exe)
 
--include $(mcs_topdir)/build/config.make
-
 CLASS=$(mcs_topdir)/class/lib/$(DEFAULT_PROFILE)
 
 with_mono_path = MONO_PATH=$(CLASS)
