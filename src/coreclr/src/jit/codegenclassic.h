@@ -703,4 +703,4 @@ protected :
 
 #endif // LEGACY_BACKEND
 
-#endif _CODEGENCLASSIC_H_
+#endif // _CODEGENCLASSIC_H_

@@ -1,13 +1,28 @@
 include_directories(BEFORE "../vm")
 include_directories("../inc")
-include_directories("../vm/amd64") # TODO: use the target cpu
+if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
+  include_directories(BEFORE "../vm/amd64")
+elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
+  include_directories(BEFORE "../vm/arm")
+else()
+  message(FATAL_ERROR "Only ARM and AMD64 is supported")
+endif()
 include_directories("../debug/inc")
 include_directories("../debug/inc/dump")
 
 #TODO for x86
-add_definitions(-DDBG_TARGET_64BIT=1)
-add_definitions(-DDBG_TARGET_AMD64=1)
-add_definitions(-DDBG_TARGET_WIN64=1)
+
+if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
+  add_definitions(-DDBG_TARGET_64BIT=1)
+  add_definitions(-DDBG_TARGET_AMD64=1)
+  add_definitions(-DDBG_TARGET_WIN64=1)
+elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
+  add_definitions(-DDBG_TARGET_32BIT=1)
+  add_definitions(-DDBG_TARGET_ARM=1)
+  add_definitions(-DDBG_TARGET_WIN32=1)
+else()
+  message(FATAL_ERROR "Only ARM and AMD64 is supported")
+endif()
 
 add_subdirectory(bcltype)
 add_subdirectory(float)

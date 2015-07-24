@@ -3,17 +3,28 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 # WINTODO: Conditionalize the next check
 # AMD64 specific sources subdirectory
 set(AMD64_SOURCES_DIR amd64)
+set(ARM_SOURCES_DIR arm)
 
 # Needed due to the cmunged files being in the binary folders, the set(CMAKE_INCLUDE_CURRENT_DIR ON) is not enough
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}) 
 
 include_directories(${CLR_DIR}/src/gc)
-include_directories(${AMD64_SOURCES_DIR})
 
-add_definitions(-D_TARGET_AMD64_=1)
-add_definitions(-DDBG_TARGET_64BIT=1)
-add_definitions(-DDBG_TARGET_AMD64=1)
-add_definitions(-DDBG_TARGET_WIN64=1)
+if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
+    add_definitions(-D_TARGET_AMD64_=1)
+    add_definitions(-DDBG_TARGET_64BIT=1)
+    add_definitions(-DDBG_TARGET_AMD64=1)
+    add_definitions(-DDBG_TARGET_WIN64=1)
+    include_directories(${AMD64_SOURCES_DIR})
+elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
+    add_definitions(-D_TARGET_ARM_=1)
+    add_definitions(-DDBG_TARGET_32BIT=1)
+    add_definitions(-DDBG_TARGET_ARM=1)
+    add_definitions(-DDBG_TARGET_WIN32=1)
+    include_directories(${ARM_SOURCES_DIR})
+else()
+    message(FATAL_ERROR "Only ARM and AMD64 is supported")
+endif()
 
 add_definitions(-DFEATURE_LEAVE_RUNTIME_HOLDER=1)
 
@@ -302,7 +313,7 @@ list(APPEND VM_SOURCES_DAC
 )
 
 # AMD64 specific asm sources
-set(VM_SOURCES_WKS_AMD64_ASM
+set(VM_SOURCES_WKS_ARCH_ASM
     ${AMD64_SOURCES_DIR}/AsmHelpers.asm
     ${AMD64_SOURCES_DIR}/CallDescrWorkerAMD64.asm
     ${AMD64_SOURCES_DIR}/ComCallPreStub.asm
@@ -326,64 +337,95 @@ set(VM_SOURCES_WKS_AMD64_ASM
 )
 
 else()
-set(VM_SOURCES_WKS_AMD64_ASM
-    ${AMD64_SOURCES_DIR}/calldescrworkeramd64.S
-    ${AMD64_SOURCES_DIR}/crthelpers.S
-    ${AMD64_SOURCES_DIR}/externalmethodfixupthunk.S
-    ${AMD64_SOURCES_DIR}/getstate.S
-    ${AMD64_SOURCES_DIR}/jithelpers_fast.S
-    ${AMD64_SOURCES_DIR}/jithelpers_fastwritebarriers.S
-    ${AMD64_SOURCES_DIR}/jithelpers_slow.S
-    ${AMD64_SOURCES_DIR}/theprestubamd64.S
-    ${AMD64_SOURCES_DIR}/unixasmhelpers.S
-    ${AMD64_SOURCES_DIR}/umthunkstub.S
-    ${AMD64_SOURCES_DIR}/virtualcallstubamd64.S
-)
+
+    if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
+        set(VM_SOURCES_WKS_ARCH_ASM
+            ${AMD64_SOURCES_DIR}/calldescrworkeramd64.S
+            ${AMD64_SOURCES_DIR}/crthelpers.S
+            ${AMD64_SOURCES_DIR}/externalmethodfixupthunk.S
+            ${AMD64_SOURCES_DIR}/getstate.S
+            ${AMD64_SOURCES_DIR}/jithelpers_fast.S
+            ${AMD64_SOURCES_DIR}/jithelpers_fastwritebarriers.S
+            ${AMD64_SOURCES_DIR}/jithelpers_slow.S
+            ${AMD64_SOURCES_DIR}/theprestubamd64.S
+            ${AMD64_SOURCES_DIR}/unixasmhelpers.S
+            ${AMD64_SOURCES_DIR}/umthunkstub.S
+            ${AMD64_SOURCES_DIR}/virtualcallstubamd64.S
+        )
+    elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
+        set(VM_SOURCES_WKS_ARCH_ASM
+            ${ARM_SOURCES_DIR}/asmhelpers.S
+            ${ARM_SOURCES_DIR}/crthelpers.S
+            ${ARM_SOURCES_DIR}/ehhelpers.S
+            ${ARM_SOURCES_DIR}/memcpy.S
+            ${ARM_SOURCES_DIR}/patchedcode.S
+        )
+    endif()
+    
 endif(WIN32)
 
-# AMD64 specific cpp sources
 
-set(VM_SOURCES_DAC_AND_WKS_AMD64
-    ${AMD64_SOURCES_DIR}/cgenamd64.cpp
-    ${AMD64_SOURCES_DIR}/excepamd64.cpp
-    ${AMD64_SOURCES_DIR}/gmsamd64.cpp
-    ${AMD64_SOURCES_DIR}/stublinkeramd64.cpp
-)
+if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
+    set(VM_SOURCES_DAC_AND_WKS_ARCH
+        ${AMD64_SOURCES_DIR}/cgenamd64.cpp
+        ${AMD64_SOURCES_DIR}/excepamd64.cpp
+        ${AMD64_SOURCES_DIR}/gmsamd64.cpp
+        ${AMD64_SOURCES_DIR}/stublinkeramd64.cpp
+    )
+    
+    set(VM_SOURCES_WKS_ARCH
+        ${AMD64_SOURCES_DIR}/jithelpersamd64.cpp
+        ${AMD64_SOURCES_DIR}/jitinterfaceamd64.cpp
+        ${AMD64_SOURCES_DIR}/profiler.cpp
+        jitinterfacegen.cpp
+    )
+    
+    if(CLR_CMAKE_PLATFORM_UNIX)
+    
+    list(APPEND VM_SOURCES_WKS_ARCH
+        ${AMD64_SOURCES_DIR}/unixstubs.cpp
+    )
+    
+    endif(CLR_CMAKE_PLATFORM_UNIX)
+elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
+    set(VM_SOURCES_DAC_AND_WKS_ARCH
+        ${ARM_SOURCES_DIR}/exceparm.cpp
+        ${ARM_SOURCES_DIR}/stubs.cpp
+        ${ARM_SOURCES_DIR}/armsinglestepper.cpp
+    )
+    
+    set(VM_SOURCES_WKS_ARCH
+        ${ARM_SOURCES_DIR}/jithelpersarm.cpp
+        ${ARM_SOURCES_DIR}/profiler.cpp
+    )
+    
+    if(CLR_CMAKE_PLATFORM_UNIX)
+    
+    list(APPEND VM_SOURCES_WKS_ARCH
+        ${ARM_SOURCES_DIR}/unixstubs.cpp
+    )
+    
+    endif(CLR_CMAKE_PLATFORM_UNIX)
+endif()
 
-set(VM_SOURCES_WKS_AMD64
-#The following files need to be ported to Linux
-    ${AMD64_SOURCES_DIR}/jithelpersamd64.cpp
-    ${AMD64_SOURCES_DIR}/jitinterfaceamd64.cpp
-    ${AMD64_SOURCES_DIR}/profiler.cpp
-    jitinterfacegen.cpp
-)
-
-if(CLR_CMAKE_PLATFORM_UNIX)
-
-list(APPEND VM_SOURCES_WKS_AMD64
-    ${AMD64_SOURCES_DIR}/unixstubs.cpp
-)
-
-endif(CLR_CMAKE_PLATFORM_UNIX)
-
-set(VM_SOURCES_DAC_AMD64
+set(VM_SOURCES_DAC_ARCH
     gcinfodecoder.cpp
     dbggcinfodecoder.cpp
     exceptionhandling.cpp
 )
 
 list(APPEND VM_SOURCES_WKS 
-    ${VM_SOURCES_WKS_AMD64}
-    ${VM_SOURCES_DAC_AND_WKS_AMD64}
+    ${VM_SOURCES_WKS_ARCH}
+    ${VM_SOURCES_DAC_AND_WKS_ARCH}
 )
 
 list(APPEND VM_SOURCES_DAC
-    ${VM_SOURCES_DAC_AMD64}
-    ${VM_SOURCES_DAC_AND_WKS_AMD64}
+    ${VM_SOURCES_DAC_ARCH}
+    ${VM_SOURCES_DAC_AND_WKS_ARCH}
 )
 
 convert_to_absolute_path(VM_SOURCES_WKS ${VM_SOURCES_WKS})
-convert_to_absolute_path(VM_SOURCES_WKS_AMD64_ASM ${VM_SOURCES_WKS_AMD64_ASM})
+convert_to_absolute_path(VM_SOURCES_WKS_ARCH_ASM ${VM_SOURCES_WKS_ARCH_ASM})
 convert_to_absolute_path(VM_SOURCES_DAC ${VM_SOURCES_DAC})
     
 add_subdirectory(dac)

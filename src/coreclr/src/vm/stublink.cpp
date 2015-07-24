@@ -172,8 +172,8 @@ FindStubFunctionEntry (
                     RUNTIME_FUNCTION__BeginAddress(pCurFunction),
                     RUNTIME_FUNCTION__EndAddress(pCurFunction, (TADDR)pStubHeapSegment->pbBaseAddress)));
 
-            CONSISTENCY_CHECK(RUNTIME_FUNCTION__EndAddress(pCurFunction, (TADDR)pStubHeapSegment->pbBaseAddress) > RUNTIME_FUNCTION__BeginAddress(pCurFunction));
-            CONSISTENCY_CHECK(!pPrevFunction || RUNTIME_FUNCTION__EndAddress(pPrevFunction, (TADDR)pStubHeapSegment->pbBaseAddress) <= RUNTIME_FUNCTION__BeginAddress(pCurFunction));
+            CONSISTENCY_CHECK((RUNTIME_FUNCTION__EndAddress(pCurFunction, (TADDR)pStubHeapSegment->pbBaseAddress) > RUNTIME_FUNCTION__BeginAddress(pCurFunction)));
+            CONSISTENCY_CHECK((!pPrevFunction || RUNTIME_FUNCTION__EndAddress(pPrevFunction, (TADDR)pStubHeapSegment->pbBaseAddress) <= RUNTIME_FUNCTION__BeginAddress(pCurFunction)));
 
             // The entry points are in increasing address order.  They're
             // also contiguous, so after we're sure it's after the start of
@@ -181,7 +181,7 @@ FindStubFunctionEntry (
             // the end address.
             if (RelativeAddress < RUNTIME_FUNCTION__EndAddress(pCurFunction, (TADDR)pStubHeapSegment->pbBaseAddress))
             {
-                CONSISTENCY_CHECK(RelativeAddress >= RUNTIME_FUNCTION__BeginAddress(pCurFunction));
+                CONSISTENCY_CHECK((RelativeAddress >= RUNTIME_FUNCTION__BeginAddress(pCurFunction)));
 
                 return pCurFunction;
             }
@@ -215,7 +215,7 @@ void UnregisterUnwindInfoInLoaderHeapCallback (PVOID pvAllocationBase, SIZE_T cb
 
     StubUnwindInfoHeapSegment *pStubHeapSegment;
     for (StubUnwindInfoHeapSegment **ppPrevStubHeapSegment = &g_StubHeapSegments;
-            pStubHeapSegment = *ppPrevStubHeapSegment; )
+            (pStubHeapSegment = *ppPrevStubHeapSegment); )
     {
         LOG((LF_STUBS, LL_INFO10000, "    have unwind info for address %p size %p\n", pStubHeapSegment->pbBaseAddress, pStubHeapSegment->cbSegment));
 
@@ -354,6 +354,12 @@ StubLinker::StubLinker()
     m_pPatchLabel       = NULL;
     m_stackSize         = 0;
     m_fDataOnly         = FALSE;
+#ifdef _TARGET_ARM_
+    m_fProlog           = FALSE;
+    m_cCalleeSavedRegs  = 0;
+    m_cbStackFrame      = 0;
+    m_fPushArgRegs      = FALSE;
+#endif
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
 #ifdef _DEBUG
     m_pUnwindInfoCheckLabel = NULL;
@@ -362,12 +368,6 @@ StubLinker::StubLinker()
     m_pUnwindInfoList   = NULL;
     m_nUnwindSlots      = 0;
     m_fHaveFramePointer = FALSE;
-#endif
-#ifdef _TARGET_ARM_
-    m_fProlog           = FALSE;
-    m_cCalleeSavedRegs  = 0;
-    m_cbStackFrame      = 0;
-    m_fPushArgRegs      = FALSE;
 #endif
 #ifdef _TARGET_ARM64_
     m_fProlog           = FALSE;
