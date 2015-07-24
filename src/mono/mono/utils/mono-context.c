@@ -34,7 +34,7 @@
 void
 mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 {
-#if defined (__native_client__)
+#if defined (__native_client__) || defined (HOST_WATCHOS)
 	printf("WARNING: mono_arch_sigctx_to_monoctx() called!\n");
 	mctx->eax = 0xDEADBEEF;
 	mctx->ebx = 0xDEADBEEF;
@@ -87,7 +87,7 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 void
 mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 {
-#if defined(__native_client__)
+#if defined(__native_client__) || defined(HOST_WATCHOS)
 	printf("WARNING: mono_arch_monoctx_to_sigctx() called!\n");
 #elif defined(MONO_SIGNAL_USE_SIGACTION)
 	ucontext_t *ctx = (ucontext_t*)sigctx;

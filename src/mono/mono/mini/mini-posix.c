@@ -68,7 +68,7 @@
 
 #include "jit-icalls.h"
 
-#if defined(__native_client__)
+#if defined(__native_client__) || defined(HOST_WATCHOS)
 
 void
 mono_runtime_setup_stat_profiler (void)
@@ -89,10 +89,12 @@ MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 	return FALSE;
 }
 
+#ifndef PLATFORM_MACOSX
 void
 mono_runtime_install_handlers (void)
 {
 }
+#endif
 
 void
 mono_runtime_shutdown_handlers (void)
@@ -104,6 +106,7 @@ mono_runtime_cleanup_handlers (void)
 {
 }
 
+#if !defined(PLATFORM_MACOSX)
 pid_t
 mono_runtime_syscall_fork (void)
 {
@@ -115,6 +118,7 @@ void
 mono_gdb_render_native_backtraces (pid_t crashed_pid)
 {
 }
+#endif
 
 #else
 
@@ -389,7 +393,7 @@ add_signal_handler (int signo, gpointer handler)
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 
 /*Apple likes to deliver SIGBUS for *0 */
-#ifdef __APPLE__
+#ifdef PLATFORM_MACOSX
 	if (signo == SIGSEGV || signo == SIGBUS) {
 #else
 	if (signo == SIGSEGV) {
@@ -628,7 +632,7 @@ mono_runtime_setup_stat_profiler (void)
 #endif
 }
 
-#if !defined(__APPLE__)
+#if !defined(PLATFORM_MACOSX)
 pid_t
 mono_runtime_syscall_fork ()
 {

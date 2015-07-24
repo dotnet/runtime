@@ -884,7 +884,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 gpointer
 mono_arch_ip_from_context (void *sigctx)
 {
-#if defined(__native_client__)
+#if defined(__native_client__) || defined(HOST_WATCHOS)
 	printf("WARNING: mono_arch_ip_from_context() called!\n");
 	return (NULL);
 #elif defined(MONO_ARCH_USE_SIGACTION)
