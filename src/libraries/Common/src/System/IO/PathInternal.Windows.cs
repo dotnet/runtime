@@ -2,16 +2,17 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.Contracts;
+using System.Text;
 
 namespace System.IO
 {
     /// <summary>Contains internal path helpers that are shared between many projects.</summary>
     internal static partial class PathInternal
     {
-        internal const string LongPathPrefix = @"\\?\";
-        internal const string UNCPathPrefix = @"\\";
-        internal const string UNCLongPathPrefixToInsert = @"?\UNC\";
-        internal const string UNCLongPathPrefix = @"\\?\UNC\";
+        internal const string ExtendedPathPrefix = @"\\?\";
+        internal const string UncPathPrefix = @"\\";
+        internal const string UncExtendedPrefixToInsert = @"?\UNC\";
+        internal const string UncExtendedPathPrefix = @"\\?\UNC\";
 
         internal static readonly char[] InvalidPathChars =
         {
@@ -32,6 +33,95 @@ namespace System.IO
         };
 
         /// <summary>
+        /// Adds the extended path prefix (\\?\) if not already present.
+        /// </summary>
+        internal static string AddExtendedPathPrefix(string path)
+        {
+            if (IsExtended(path))
+                return path;
+
+            // Given \\server\share in longpath becomes \\?\UNC\server\share
+            if (path.StartsWith(UncPathPrefix, StringComparison.OrdinalIgnoreCase))
+                return path.Insert(2, PathInternal.UncExtendedPrefixToInsert);
+
+            return PathInternal.ExtendedPathPrefix + path;
+        }
+
+        /// <summary>
+        /// Removes the extended path prefix (\\?\) if present.
+        /// </summary>
+        internal static string RemoveExtendedPathPrefix(string path)
+        {
+            if (!IsExtended(path))
+                return path;
+
+            // Given \\?\UNC\server\share we return \\server\share
+            if (IsExtendedUnc(path))
+                return path.Remove(2, 6);
+
+            return path.Substring(4);
+        }
+
+        /// <summary>
+        /// Removes the extended path prefix (\\?\) if present.
+        /// </summary>
+        internal static StringBuilder RemoveExtendedPathPrefix(StringBuilder path)
+        {
+            if (!IsExtended(path))
+                return path;
+
+            // Given \\?\UNC\server\share we return \\server\share
+            if (IsExtendedUnc(path))
+                return path.Remove(2, 6);
+
+            return path.Remove(0, 4);
+        }
+
+        /// <summary>
+        /// Returns true if the path uses the extended syntax (\\?\)
+        /// </summary>
+        internal static bool IsExtended(string path)
+        {
+            return path != null && path.StartsWith(ExtendedPathPrefix, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Returns true if the path uses the extended syntax (\\?\)
+        /// </summary>
+        internal static bool IsExtended(StringBuilder path)
+        {
+            return path != null && path.StartsWithOrdinal(ExtendedPathPrefix);
+        }
+
+        /// <summary>
+        /// Returns true if the path uses the extended UNC syntax (\\?\UNC\)
+        /// </summary>
+        internal static bool IsExtendedUnc(string path)
+        {
+            return path != null && path.StartsWith(UncExtendedPathPrefix, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Returns true if the path uses the extended UNC syntax (\\?\UNC\)
+        /// </summary>
+        internal static bool IsExtendedUnc(StringBuilder path)
+        {
+            return path != null && path.StartsWithOrdinal(UncExtendedPathPrefix);
+        }
+
+        private static bool StartsWithOrdinal(this StringBuilder builder, string value)
+        {
+            if (value == null || builder.Length < value.Length)
+                return false;
+
+            for (int i = 0; i < value.Length; i++)
+            {
+                if (builder[i] != value[i]) return false;
+            }
+            return true;
+        }
+
+        /// <summary>
         /// Returns a value indicating if the given path contains invalid characters (", &lt;, &gt;, | 
         /// NUL, or any ASCII char whose integer representation is in the range of 1 through 31), 
         /// optionally checking for ? and *.
@@ -43,7 +133,7 @@ namespace System.IO
             Contract.Requires(path != null);
 
             // Question mark is a normal part of extended path syntax (\\?\)
-            int startIndex = path.StartsWith(LongPathPrefix, StringComparison.Ordinal) ? LongPathPrefix.Length : 0;
+            int startIndex = PathInternal.IsExtended(path) ? ExtendedPathPrefix.Length : 0;
             return path.IndexOfAny(checkAdditional ? InvalidPathCharsWithAdditionalChecks : InvalidPathChars, startIndex) >= 0;
         }
 
@@ -59,20 +149,20 @@ namespace System.IO
             int volumeSeparatorLength = 2;  // Length to the colon "C:"
             int uncRootLength = 2;          // Length to the start of the server name "\\"
 
-            bool extendedSyntax = path.StartsWith(LongPathPrefix, StringComparison.Ordinal);
-            bool extendedUncSyntax = extendedSyntax && path.StartsWith(UNCLongPathPrefix, StringComparison.Ordinal);
+            bool extendedSyntax = IsExtended(path);
+            bool extendedUncSyntax = IsExtendedUnc(path);
             if (extendedSyntax)
             {
                 // Shift the position we look for the root from to account for the extended prefix
                 if (extendedUncSyntax)
                 {
-                    // "C:" -> "\\?\C:"
-                    uncRootLength = UNCLongPathPrefix.Length;
+                    // "\\" -> "\\?\UNC\"
+                    uncRootLength = UncExtendedPathPrefix.Length;
                 }
                 else
                 {
-                    // "\\" -> "\\?\UNC\"
-                    volumeSeparatorLength += LongPathPrefix.Length;
+                    // "C:" -> "\\?\C:"
+                    volumeSeparatorLength += ExtendedPathPrefix.Length;
                 }
             }
 

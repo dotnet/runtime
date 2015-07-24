@@ -22,7 +22,7 @@ namespace System.IO
         //    Valid: a..b  abc..d
         //    Invalid: ..ab   ab..  ..   abc..d\abc..
         //
-        internal static void CheckSearchPattern(String searchPattern)
+        internal static void CheckSearchPattern(string searchPattern)
         {
             for (int index = 0; (index = searchPattern.IndexOf("..", index, StringComparison.Ordinal)) != -1; index += 2)
             {
@@ -40,9 +40,16 @@ namespace System.IO
             if (path == null)
                 throw new ArgumentNullException("path");
 
-            string pathTrimmed = path.TrimStart(TrimStartChars).TrimEnd(TrimEndChars);
-
-            return Path.GetFullPath(Path.IsPathRooted(pathTrimmed) ? pathTrimmed : path);
+            if (PathInternal.IsExtended(path))
+            {
+                // Don't want to trim extended paths
+                return Path.GetFullPath(path);
+            }
+            else
+            {
+                string pathTrimmed = path.TrimStart(TrimStartChars).TrimEnd(TrimEndChars);
+                return Path.GetFullPath(Path.IsPathRooted(pathTrimmed) ? pathTrimmed : path);
+            }
         }
 
         // this is a lightweight version of GetDirectoryName that doesn't renormalize

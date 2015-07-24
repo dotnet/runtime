@@ -50,7 +50,7 @@ namespace System.IO
             // Emulate FileIOPermissions checks, retained for compatibility
             PathInternal.CheckInvalidPathChars(fullPath, true);
 
-            int startIndex = fullPath.StartsWith(PathInternal.LongPathPrefix, StringComparison.Ordinal) ? PathInternal.LongPathPrefix.Length + 2 : 2;
+            int startIndex = PathInternal.IsExtended(fullPath) ? PathInternal.ExtendedPathPrefix.Length + 2 : 2;
             if (fullPath.Length > startIndex && fullPath.IndexOf(':', startIndex) != -1)
             {
                 throw new NotSupportedException(SR.Argument_PathFormatNotSupported);
@@ -66,22 +66,22 @@ namespace System.IO
         /// <returns>'true' if the path passes validity checks.</returns>
         private static bool ValidateExtendedPath(string path, bool fullCheck)
         {
-            if (path.Length == PathInternal.LongPathPrefix.Length)
+            if (path.Length == PathInternal.ExtendedPathPrefix.Length)
             {
                 // Effectively empty and therefore invalid
                 return false;
             }
 
-            if (path.StartsWith(PathInternal.UNCLongPathPrefix, StringComparison.Ordinal))
+            if (path.StartsWith(PathInternal.UncExtendedPathPrefix, StringComparison.Ordinal))
             {
                 // UNC specific checks
-                if (path.Length == PathInternal.UNCLongPathPrefix.Length || path[PathInternal.UNCLongPathPrefix.Length] == DirectorySeparatorChar)
+                if (path.Length == PathInternal.UncExtendedPathPrefix.Length || path[PathInternal.UncExtendedPathPrefix.Length] == DirectorySeparatorChar)
                 {
                     // Effectively empty and therefore invalid (\\?\UNC\ or \\?\UNC\\)
                     return false;
                 }
 
-                int serverShareSeparator = path.IndexOf(DirectorySeparatorChar, PathInternal.UNCLongPathPrefix.Length);
+                int serverShareSeparator = path.IndexOf(DirectorySeparatorChar, PathInternal.UncExtendedPathPrefix.Length);
                 if (serverShareSeparator == -1 || serverShareSeparator == path.Length - 1)
                 {
                     // Need at least a Server\Share
@@ -94,7 +94,7 @@ namespace System.IO
             char oneBack = DirectorySeparatorChar;
             char currentCharacter;
             bool periodSegment = false;
-            for (int i = PathInternal.LongPathPrefix.Length; i < path.Length; i++)
+            for (int i = PathInternal.ExtendedPathPrefix.Length; i < path.Length; i++)
             {
                 currentCharacter = path[i];
                 switch (currentCharacter)
@@ -136,7 +136,7 @@ namespace System.IO
             Contract.Requires(path != null, "path can't be null");
 
             // If the path is in extended syntax, we don't need to normalize, but we still do some basic validity checks
-            if (path.StartsWith(PathInternal.LongPathPrefix, StringComparison.Ordinal))
+            if (PathInternal.IsExtended(path))
             {
                 if (!ValidateExtendedPath(path, fullCheck))
                 {
@@ -599,41 +599,6 @@ namespace System.IO
                 returnVal = path;
             }
             return returnVal;
-        }
-
-        internal static string AddLongPathPrefix(string path)
-        {
-            if (path.StartsWith(PathInternal.LongPathPrefix, StringComparison.Ordinal))
-                return path;
-
-            if (path.StartsWith(PathInternal.UNCPathPrefix, StringComparison.Ordinal))
-                return path.Insert(2, PathInternal.UNCLongPathPrefixToInsert); // Given \\server\share in longpath becomes \\?\UNC\server\share  => UNCLongPathPrefix + path.SubString(2); => The actual command simply reduces the operation cost.
-
-            return PathInternal.LongPathPrefix + path;
-        }
-
-        internal static string RemoveLongPathPrefix(string path)
-        {
-            if (!path.StartsWith(PathInternal.LongPathPrefix, StringComparison.Ordinal))
-                return path;
-
-            if (path.StartsWith(PathInternal.UNCLongPathPrefix, StringComparison.OrdinalIgnoreCase))
-                return path.Remove(2, 6); // Given \\?\UNC\server\share we return \\server\share => @'\\' + path.SubString(UNCLongPathPrefix.Length) => The actual command simply reduces the operation cost.
-
-            return path.Substring(4);
-        }
-
-        internal static StringBuilder RemoveLongPathPrefix(StringBuilder pathSB)
-        {
-            string path = pathSB.ToString();
-            
-            if (!path.StartsWith(PathInternal.LongPathPrefix, StringComparison.Ordinal))
-                return pathSB;
-
-            if (path.StartsWith(PathInternal.UNCLongPathPrefix, StringComparison.OrdinalIgnoreCase))
-                return pathSB.Remove(2, 6); // Given \\?\UNC\server\share we return \\server\share => @'\\' + path.SubString(UNCLongPathPrefix.Length) => The actual command simply reduces the operation cost.
-
-            return pathSB.Remove(0, 4);
         }
 
         [System.Security.SecuritySafeCritical]
