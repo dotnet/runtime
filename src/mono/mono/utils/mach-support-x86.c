@@ -81,20 +81,27 @@ mono_mach_arch_get_thread_state_size ()
 kern_return_t
 mono_mach_arch_get_thread_state (thread_port_t thread, thread_state_t state, mach_msg_type_number_t *count)
 {
+#if defined(HOST_WATCHOS)
+	g_error ("thread_get_state() is not supported by this platform");
+#else
 	x86_thread_state32_t *arch_state = (x86_thread_state32_t *) state;
 	kern_return_t ret;
 
 	*count = x86_THREAD_STATE32_COUNT;
-
 	ret = thread_get_state (thread, x86_THREAD_STATE32, (thread_state_t) arch_state, count);
 
 	return ret;
+#endif
 }
 
 kern_return_t
 mono_mach_arch_set_thread_state (thread_port_t thread, thread_state_t state, mach_msg_type_number_t count)
 {
+#if defined(HOST_WATCHOS)
+	g_error ("thread_set_state() is not supported by this platform");
+#else
 	return thread_set_state (thread, x86_THREAD_STATE32, state, count);
+#endif	
 }
 
 void *
