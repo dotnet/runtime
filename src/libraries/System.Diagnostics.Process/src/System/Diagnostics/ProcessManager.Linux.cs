@@ -118,7 +118,7 @@ namespace System.Diagnostics
                         pi._threadInfoList.Add(new ThreadInfo
                         {
                             _processId = pid,
-                            _threadId = tid,
+                            _threadId = (ulong)tid,
                             _basePriority = pi.BasePriority,
                             _currentPriority = (int)stat.nice,
                             _startAddress = (IntPtr)stat.startstack,

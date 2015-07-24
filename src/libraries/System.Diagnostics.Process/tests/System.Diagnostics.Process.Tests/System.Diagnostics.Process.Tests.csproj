@@ -12,10 +12,16 @@
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\AssertWithCallerAttributes.cs">
+      <Link>Common\tests\System\Diagnostics\AssertWithCallerAttributes.cs</Link>
+    </Compile>
+    <Compile Include="ProcessModuleTests.cs" />
     <Compile Include="ProcessStartInfoTests.cs" />
     <Compile Include="Interop.cs" />
     <Compile Include="ProcessTests.cs" />
@@ -25,6 +31,7 @@
       <Link>Common\Interop\Interop.PlatformDetection.cs</Link>
     </Compile>
     <Compile Include="ProcessTestBase.cs" />
+    <Compile Include="ProcessThreadTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
