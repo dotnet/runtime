@@ -9,8 +9,8 @@ namespace System.Net.Http.Headers
     {
         public double? Quality
         {
-            get { return HeaderUtilities.GetQuality(Parameters); }
-            set { HeaderUtilities.SetQuality(Parameters, value); }
+            get { return HeaderUtilities.GetQuality((ObjectCollection<NameValueHeaderValue>)Parameters); }
+            set { HeaderUtilities.SetQuality((ObjectCollection<NameValueHeaderValue>)Parameters, value); }
         }
 
         internal MediaTypeWithQualityHeaderValue()

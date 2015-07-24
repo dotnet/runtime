@@ -11,7 +11,7 @@ namespace System.Net.Http.Headers
     public class RangeHeaderValue : ICloneable
     {
         private string _unit;
-        private ICollection<RangeItemHeaderValue> _ranges;
+        private ObjectCollection<RangeItemHeaderValue> _ranges;
 
         public string Unit
         {
@@ -66,21 +66,24 @@ namespace System.Net.Http.Headers
             StringBuilder sb = new StringBuilder(_unit);
             sb.Append('=');
 
-            bool first = true;
-            foreach (RangeItemHeaderValue range in Ranges)
+            if (_ranges != null)
             {
-                if (first)
+                bool first = true;
+                foreach (RangeItemHeaderValue range in _ranges)
                 {
-                    first = false;
-                }
-                else
-                {
-                    sb.Append(", ");
-                }
+                    if (first)
+                    {
+                        first = false;
+                    }
+                    else
+                    {
+                        sb.Append(", ");
+                    }
 
-                sb.Append(range.From);
-                sb.Append('-');
-                sb.Append(range.To);
+                    sb.Append(range.From);
+                    sb.Append('-');
+                    sb.Append(range.To);
+                }
             }
 
             return sb.ToString();
@@ -96,16 +99,19 @@ namespace System.Net.Http.Headers
             }
 
             return string.Equals(_unit, other._unit, StringComparison.OrdinalIgnoreCase) &&
-                HeaderUtilities.AreEqualCollections(Ranges, other.Ranges);
+                HeaderUtilities.AreEqualCollections(_ranges, other._ranges);
         }
 
         public override int GetHashCode()
         {
             int result = StringComparer.OrdinalIgnoreCase.GetHashCode(_unit);
 
-            foreach (RangeItemHeaderValue range in Ranges)
+            if (_ranges != null)
             {
-                result = result ^ range.GetHashCode();
+                foreach (RangeItemHeaderValue range in _ranges)
+                {
+                    result = result ^ range.GetHashCode();
+                }
             }
 
             return result;
