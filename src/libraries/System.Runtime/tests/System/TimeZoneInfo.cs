@@ -96,7 +96,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
+    [ActiveIssue(2465, PlatformID.AnyUnix)]
     public static void ValidateRussiaTimeZoneTest()
     {
         TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(s_strRussian);
@@ -160,13 +160,13 @@ public static class TimeZoneInfoTests
         VerifyConvert(new DateTimeOffset(DateTime.MinValue.AddHours(5), new TimeSpan(-3, 0, 0)), s_strPacific, new DateTimeOffset(DateTime.MinValue, new TimeSpan(-8, 0, 0)));
 
         VerifyConvert(DateTime.MaxValue, s_strPacific, s_strSydney, DateTime.MaxValue);
-        if (Interop.IsWindows) // [ActiveIssue(846, PlatformID.AnyUnix)]
+        if (Interop.IsWindows) // [ActiveIssue(2465, PlatformID.AnyUnix)]
         {
             VerifyConvert(DateTime.MaxValue.AddHours(-19), s_strPacific, s_strSydney, DateTime.MaxValue);
         }
         VerifyConvert(DateTime.MaxValue.AddHours(-19.5), s_strPacific, s_strSydney, DateTime.MaxValue.AddHours(-0.5));
         VerifyConvert(DateTime.MinValue, s_strSydney, s_strPacific, DateTime.MinValue);
-        if (Interop.IsWindows) // [ActiveIssue(846, PlatformID.AnyUnix)]
+        if (Interop.IsWindows) // [ActiveIssue(2465, PlatformID.AnyUnix)]
         {
             VerifyConvert(DateTime.MinValue.AddHours(19), s_strSydney, s_strPacific, DateTime.MinValue);
             VerifyConvert(DateTime.MinValue.AddHours(19.5), s_strSydney, s_strPacific, DateTime.MinValue.AddHours(0.5));
