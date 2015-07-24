@@ -1,16 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.IO;
-using System.Text;
-using System.Diagnostics;
-using System.Globalization;
-using System.Runtime.InteropServices;
-
-using Internal.Cryptography;
-using Internal.Cryptography.Pal;
-
 namespace System.Security.Cryptography.X509Certificates
 {
     public sealed class PublicKey
@@ -20,23 +10,11 @@ namespace System.Security.Cryptography.X509Certificates
             _oid = new Oid(oid);
             EncodedParameters = new AsnEncodedData(parameters);
             EncodedKeyValue = new AsnEncodedData(keyValue);
-            return;
         }
 
         public AsnEncodedData EncodedKeyValue { get; private set; }
 
         public AsnEncodedData EncodedParameters { get; private set; }
-
-        public AsymmetricAlgorithm Key
-        {
-            get
-            {
-                AsymmetricAlgorithm key = _lazyKey;
-                if (key == null)
-                    key = _lazyKey = X509Pal.Instance.DecodePublicKey(Oid, EncodedKeyValue.RawData, EncodedParameters.RawData);
-                return key;
-            }
-        }
 
         public Oid Oid
         {
@@ -47,7 +25,6 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         private Oid _oid;
-        private AsymmetricAlgorithm _lazyKey;
     }
 }
 

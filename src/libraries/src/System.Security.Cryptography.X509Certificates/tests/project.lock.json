@@ -33,15 +33,15 @@
           "lib/DNXCore50/System.Console.dll": {}
         }
       },
-      "System.Diagnostics.Debug/4.0.10-beta-23024": {
+      "System.Diagnostics.Debug/4.0.10-beta-22703": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-23024"
+          "System.Runtime": "4.0.0-beta-22703"
         },
         "compile": {
-          "ref/dotnet/System.Diagnostics.Debug.dll": {}
+          "lib/contract/System.Diagnostics.Debug.dll": {}
         },
         "runtime": {
-          "lib/DNXCore50/System.Diagnostics.Debug.dll": {}
+          "lib/aspnetcore50/System.Diagnostics.Debug.dll": {}
         }
       },
       "System.Globalization/4.0.10-beta-23024": {
@@ -217,101 +217,6 @@
           "lib/dotnet/System.Runtime.Numerics.dll": {}
         }
       },
-      "System.Security.Cryptography.Encoding/4.0.0-beta-23024": {
-        "dependencies": {
-          "System.Runtime": "4.0.20-beta-23024",
-          "System.Runtime.InteropServices": "4.0.20-beta-23024",
-          "System.Resources.ResourceManager": "4.0.0-beta-23024",
-          "System.Security.Cryptography.Encryption": "4.0.0-beta-23024",
-          "System.Runtime.Handles": "4.0.0-beta-23024",
-          "System.Diagnostics.Debug": "4.0.10-beta-23024"
-        },
-        "compile": {
-          "ref/dotnet/System.Security.Cryptography.Encoding.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Security.Cryptography.Encoding.dll": {}
-        }
-      },
-      "System.Security.Cryptography.Encryption/4.0.0-beta-23024": {
-        "dependencies": {
-          "System.Runtime": "4.0.20-beta-23024",
-          "System.Resources.ResourceManager": "4.0.0-beta-23024",
-          "System.Threading.Tasks": "4.0.0-beta-23024",
-          "System.Globalization": "4.0.0-beta-23024",
-          "System.IO": "4.0.10-beta-23024"
-        },
-        "compile": {
-          "ref/dotnet/System.Security.Cryptography.Encryption.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Security.Cryptography.Encryption.dll": {}
-        }
-      },
-      "System.Security.Cryptography.Hashing/4.0.0-beta-23024": {
-        "dependencies": {
-          "System.Runtime": "4.0.20-beta-23024",
-          "System.Resources.ResourceManager": "4.0.0-beta-23024",
-          "System.IO": "4.0.0-beta-23024"
-        },
-        "compile": {
-          "ref/dotnet/System.Security.Cryptography.Hashing.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Security.Cryptography.Hashing.dll": {}
-        }
-      },
-      "System.Security.Cryptography.Hashing.Algorithms/4.0.0-beta-23024": {
-        "dependencies": {
-          "System.Runtime": "4.0.20-beta-23024",
-          "System.Resources.ResourceManager": "4.0.0-beta-23024",
-          "System.Security.Cryptography.Encryption": "4.0.0-beta-23024",
-          "System.Runtime.Handles": "4.0.0-beta-23024",
-          "System.Security.Cryptography.RandomNumberGenerator": "4.0.0-beta-23024",
-          "System.Security.Cryptography.Hashing": "4.0.0-beta-23024"
-        },
-        "compile": {
-          "ref/dotnet/System.Security.Cryptography.Hashing.Algorithms.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Security.Cryptography.Hashing.Algorithms.dll": {}
-        }
-      },
-      "System.Security.Cryptography.RandomNumberGenerator/4.0.0-beta-23024": {
-        "dependencies": {
-          "System.Runtime": "4.0.20-beta-23024",
-          "System.Security.Cryptography.Encryption": "4.0.0-beta-23024"
-        },
-        "compile": {
-          "ref/dotnet/System.Security.Cryptography.RandomNumberGenerator.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Security.Cryptography.RandomNumberGenerator.dll": {}
-        }
-      },
-      "System.Security.Cryptography.RSA/4.0.0-beta-23024": {
-        "dependencies": {
-          "System.Runtime": "4.0.20-beta-23024",
-          "System.Runtime.InteropServices": "4.0.20-beta-23024",
-          "System.Resources.ResourceManager": "4.0.0-beta-23024",
-          "System.Security.Cryptography.Encoding": "4.0.0-beta-23024",
-          "System.Reflection": "4.0.0-beta-23024",
-          "System.Security.Cryptography.Hashing": "4.0.0-beta-23024",
-          "System.Security.Cryptography.Encryption": "4.0.0-beta-23024",
-          "System.Runtime.Handles": "4.0.0-beta-23024",
-          "System.Security.Cryptography.Hashing.Algorithms": "4.0.0-beta-23024",
-          "System.IO": "4.0.10-beta-23024",
-          "System.Diagnostics.Debug": "4.0.10-beta-23024",
-          "System.Runtime.Extensions": "4.0.10-beta-23024",
-          "System.Threading": "4.0.10-beta-23024"
-        },
-        "compile": {
-          "ref/dotnet/System.Security.Cryptography.RSA.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Security.Cryptography.RSA.dll": {}
-        }
-      },
       "System.Security.Cryptography.X509Certificates.TestData/1.0.0-prerelease": {},
       "System.Text.Encoding/4.0.10-beta-23024": {
         "dependencies": {
@@ -423,7 +328,7 @@
           "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.core.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00056": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00060": {
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10-beta-22703",
           "System.IO": "4.0.10-beta-22703",
@@ -499,29 +404,17 @@
         "ref/net46/System.Console.dll"
       ]
     },
-    "System.Diagnostics.Debug/4.0.10-beta-23024": {
-      "serviceable": true,
-      "sha512": "dnfynhlmsMaRB/YvN5JifCdYYnRf/mTjFAAM1awp3wrjsgOSpAzOE4sxYX0hdY1FyAFTDcUnusQ+H3AMcF3Stw==",
+    "System.Diagnostics.Debug/4.0.10-beta-22703": {
+      "sha512": "7AzDwVW8YPh2mPbQuKZTbTnV4wSApdFLWpQKICf6+y8ofQqjNvA9kJuJFO54GVF+vV4BGz/FQDkESwR2inouMw==",
       "files": [
-        "System.Diagnostics.Debug.4.0.10-beta-23024.nupkg",
-        "System.Diagnostics.Debug.4.0.10-beta-23024.nupkg.sha512",
+        "License.rtf",
+        "System.Diagnostics.Debug.4.0.10-beta-22703.nupkg",
+        "System.Diagnostics.Debug.4.0.10-beta-22703.nupkg.sha512",
         "System.Diagnostics.Debug.nuspec",
-        "lib/DNXCore50/System.Diagnostics.Debug.dll",
-        "lib/net46/_._",
-        "lib/netcore50/System.Diagnostics.Debug.dll",
-        "ref/dotnet/System.Diagnostics.Debug.dll",
-        "ref/dotnet/System.Diagnostics.Debug.xml",
-        "ref/dotnet/de/System.Diagnostics.Debug.xml",
-        "ref/dotnet/es/System.Diagnostics.Debug.xml",
-        "ref/dotnet/fr/System.Diagnostics.Debug.xml",
-        "ref/dotnet/it/System.Diagnostics.Debug.xml",
-        "ref/dotnet/ja/System.Diagnostics.Debug.xml",
-        "ref/dotnet/ko/System.Diagnostics.Debug.xml",
-        "ref/dotnet/ru/System.Diagnostics.Debug.xml",
-        "ref/dotnet/zh-hans/System.Diagnostics.Debug.xml",
-        "ref/dotnet/zh-hant/System.Diagnostics.Debug.xml",
-        "ref/net46/_._",
-        "runtimes/win8-aot/lib/netcore50/System.Diagnostics.Debug.dll"
+        "lib/aspnetcore50/System.Diagnostics.Debug.dll",
+        "lib/contract/System.Diagnostics.Debug.dll",
+        "lib/net45/System.Diagnostics.Debug.dll",
+        "lib/portable-wpa81+wp80+win80+net45+aspnetcore50/System.Diagnostics.Debug.dll"
       ]
     },
     "System.Globalization/4.0.10-beta-23024": {
@@ -846,144 +739,6 @@
         "ref/win8/_._"
       ]
     },
-    "System.Security.Cryptography.Encoding/4.0.0-beta-23024": {
-      "serviceable": true,
-      "sha512": "iVoGz5YMJHjXzwyfUJ1slIgik6xJQzBaKRZ27w3AeYwX+Yb5sy4RIXEF3rcBNoekaI57jeJMP4wljoThHZuBYA==",
-      "files": [
-        "System.Security.Cryptography.Encoding.4.0.0-beta-23024.nupkg",
-        "System.Security.Cryptography.Encoding.4.0.0-beta-23024.nupkg.sha512",
-        "System.Security.Cryptography.Encoding.nuspec",
-        "lib/DNXCore50/System.Security.Cryptography.Encoding.dll",
-        "lib/net46/System.Security.Cryptography.Encoding.dll",
-        "ref/dotnet/System.Security.Cryptography.Encoding.dll",
-        "ref/dotnet/System.Security.Cryptography.Encoding.xml",
-        "ref/dotnet/de/System.Security.Cryptography.Encoding.xml",
-        "ref/dotnet/es/System.Security.Cryptography.Encoding.xml",
-        "ref/dotnet/fr/System.Security.Cryptography.Encoding.xml",
-        "ref/dotnet/it/System.Security.Cryptography.Encoding.xml",
-        "ref/dotnet/ja/System.Security.Cryptography.Encoding.xml",
-        "ref/dotnet/ko/System.Security.Cryptography.Encoding.xml",
-        "ref/dotnet/ru/System.Security.Cryptography.Encoding.xml",
-        "ref/dotnet/zh-hans/System.Security.Cryptography.Encoding.xml",
-        "ref/dotnet/zh-hant/System.Security.Cryptography.Encoding.xml",
-        "ref/net46/System.Security.Cryptography.Encoding.dll"
-      ]
-    },
-    "System.Security.Cryptography.Encryption/4.0.0-beta-23024": {
-      "serviceable": true,
-      "sha512": "LGHXdvs2WCJjLSKuvn+0SDZhevPyaHNwHx3BiojKsCYPfP3RmTqVMWAAn/tGpn18zV6E1TWGhuJt8xWtbjJk0Q==",
-      "files": [
-        "System.Security.Cryptography.Encryption.4.0.0-beta-23024.nupkg",
-        "System.Security.Cryptography.Encryption.4.0.0-beta-23024.nupkg.sha512",
-        "System.Security.Cryptography.Encryption.nuspec",
-        "lib/DNXCore50/System.Security.Cryptography.Encryption.dll",
-        "lib/net46/System.Security.Cryptography.Encryption.dll",
-        "ref/dotnet/System.Security.Cryptography.Encryption.dll",
-        "ref/dotnet/System.Security.Cryptography.Encryption.xml",
-        "ref/dotnet/de/System.Security.Cryptography.Encryption.xml",
-        "ref/dotnet/es/System.Security.Cryptography.Encryption.xml",
-        "ref/dotnet/fr/System.Security.Cryptography.Encryption.xml",
-        "ref/dotnet/it/System.Security.Cryptography.Encryption.xml",
-        "ref/dotnet/ja/System.Security.Cryptography.Encryption.xml",
-        "ref/dotnet/ko/System.Security.Cryptography.Encryption.xml",
-        "ref/dotnet/ru/System.Security.Cryptography.Encryption.xml",
-        "ref/dotnet/zh-hans/System.Security.Cryptography.Encryption.xml",
-        "ref/dotnet/zh-hant/System.Security.Cryptography.Encryption.xml",
-        "ref/net46/System.Security.Cryptography.Encryption.dll"
-      ]
-    },
-    "System.Security.Cryptography.Hashing/4.0.0-beta-23024": {
-      "serviceable": true,
-      "sha512": "C+9YD6iJMgH52kvLZAMwYyIGkBviWOLFv4Du1jRzqJZllzR5yA99ebkAkpifSdnjk+nVyWjP3cs5cNsH+oUGWw==",
-      "files": [
-        "System.Security.Cryptography.Hashing.4.0.0-beta-23024.nupkg",
-        "System.Security.Cryptography.Hashing.4.0.0-beta-23024.nupkg.sha512",
-        "System.Security.Cryptography.Hashing.nuspec",
-        "lib/DNXCore50/System.Security.Cryptography.Hashing.dll",
-        "lib/net46/System.Security.Cryptography.Hashing.dll",
-        "ref/dotnet/System.Security.Cryptography.Hashing.dll",
-        "ref/dotnet/System.Security.Cryptography.Hashing.xml",
-        "ref/dotnet/de/System.Security.Cryptography.Hashing.xml",
-        "ref/dotnet/es/System.Security.Cryptography.Hashing.xml",
-        "ref/dotnet/fr/System.Security.Cryptography.Hashing.xml",
-        "ref/dotnet/it/System.Security.Cryptography.Hashing.xml",
-        "ref/dotnet/ja/System.Security.Cryptography.Hashing.xml",
-        "ref/dotnet/ko/System.Security.Cryptography.Hashing.xml",
-        "ref/dotnet/ru/System.Security.Cryptography.Hashing.xml",
-        "ref/dotnet/zh-hans/System.Security.Cryptography.Hashing.xml",
-        "ref/dotnet/zh-hant/System.Security.Cryptography.Hashing.xml",
-        "ref/net46/System.Security.Cryptography.Hashing.dll"
-      ]
-    },
-    "System.Security.Cryptography.Hashing.Algorithms/4.0.0-beta-23024": {
-      "serviceable": true,
-      "sha512": "N6jDiWLmF6rYAXVFj9LSqDyMt7XUazNirhogJQlvC6dp4dhBfb22DZHkzu8lzXLMhQXdK64wvVhE9Xx0MGtqtQ==",
-      "files": [
-        "System.Security.Cryptography.Hashing.Algorithms.4.0.0-beta-23024.nupkg",
-        "System.Security.Cryptography.Hashing.Algorithms.4.0.0-beta-23024.nupkg.sha512",
-        "System.Security.Cryptography.Hashing.Algorithms.nuspec",
-        "lib/DNXCore50/System.Security.Cryptography.Hashing.Algorithms.dll",
-        "lib/net46/System.Security.Cryptography.Hashing.Algorithms.dll",
-        "ref/dotnet/System.Security.Cryptography.Hashing.Algorithms.dll",
-        "ref/dotnet/System.Security.Cryptography.Hashing.Algorithms.xml",
-        "ref/dotnet/de/System.Security.Cryptography.Hashing.Algorithms.xml",
-        "ref/dotnet/es/System.Security.Cryptography.Hashing.Algorithms.xml",
-        "ref/dotnet/fr/System.Security.Cryptography.Hashing.Algorithms.xml",
-        "ref/dotnet/it/System.Security.Cryptography.Hashing.Algorithms.xml",
-        "ref/dotnet/ja/System.Security.Cryptography.Hashing.Algorithms.xml",
-        "ref/dotnet/ko/System.Security.Cryptography.Hashing.Algorithms.xml",
-        "ref/dotnet/ru/System.Security.Cryptography.Hashing.Algorithms.xml",
-        "ref/dotnet/zh-hans/System.Security.Cryptography.Hashing.Algorithms.xml",
-        "ref/dotnet/zh-hant/System.Security.Cryptography.Hashing.Algorithms.xml",
-        "ref/net46/System.Security.Cryptography.Hashing.Algorithms.dll"
-      ]
-    },
-    "System.Security.Cryptography.RandomNumberGenerator/4.0.0-beta-23024": {
-      "serviceable": true,
-      "sha512": "ZRE4IsCRLIntjeP6zYeTnnOWWF2CovZKx2BtuDPbU04LiomLpqdSmi4UxXU2gVriH7wUxoGaNfkR5t22ndDsFg==",
-      "files": [
-        "System.Security.Cryptography.RandomNumberGenerator.4.0.0-beta-23024.nupkg",
-        "System.Security.Cryptography.RandomNumberGenerator.4.0.0-beta-23024.nupkg.sha512",
-        "System.Security.Cryptography.RandomNumberGenerator.nuspec",
-        "lib/DNXCore50/System.Security.Cryptography.RandomNumberGenerator.dll",
-        "lib/net46/System.Security.Cryptography.RandomNumberGenerator.dll",
-        "ref/dotnet/System.Security.Cryptography.RandomNumberGenerator.dll",
-        "ref/dotnet/System.Security.Cryptography.RandomNumberGenerator.xml",
-        "ref/dotnet/de/System.Security.Cryptography.RandomNumberGenerator.xml",
-        "ref/dotnet/es/System.Security.Cryptography.RandomNumberGenerator.xml",
-        "ref/dotnet/fr/System.Security.Cryptography.RandomNumberGenerator.xml",
-        "ref/dotnet/it/System.Security.Cryptography.RandomNumberGenerator.xml",
-        "ref/dotnet/ja/System.Security.Cryptography.RandomNumberGenerator.xml",
-        "ref/dotnet/ko/System.Security.Cryptography.RandomNumberGenerator.xml",
-        "ref/dotnet/ru/System.Security.Cryptography.RandomNumberGenerator.xml",
-        "ref/dotnet/zh-hans/System.Security.Cryptography.RandomNumberGenerator.xml",
-        "ref/dotnet/zh-hant/System.Security.Cryptography.RandomNumberGenerator.xml",
-        "ref/net46/System.Security.Cryptography.RandomNumberGenerator.dll"
-      ]
-    },
-    "System.Security.Cryptography.RSA/4.0.0-beta-23024": {
-      "serviceable": true,
-      "sha512": "Bs1F6Bp8tPCM/yGkIqyMk9lDJTOV6pK7u4bbJQcgBrGkUDWWrQYUZF1V3jpyEDx88CVmHXzGCsFAFZ/t6O0G7A==",
-      "files": [
-        "System.Security.Cryptography.RSA.4.0.0-beta-23024.nupkg",
-        "System.Security.Cryptography.RSA.4.0.0-beta-23024.nupkg.sha512",
-        "System.Security.Cryptography.RSA.nuspec",
-        "lib/DNXCore50/System.Security.Cryptography.RSA.dll",
-        "lib/net46/System.Security.Cryptography.RSA.dll",
-        "ref/dotnet/System.Security.Cryptography.RSA.dll",
-        "ref/dotnet/System.Security.Cryptography.RSA.xml",
-        "ref/dotnet/de/System.Security.Cryptography.RSA.xml",
-        "ref/dotnet/es/System.Security.Cryptography.RSA.xml",
-        "ref/dotnet/fr/System.Security.Cryptography.RSA.xml",
-        "ref/dotnet/it/System.Security.Cryptography.RSA.xml",
-        "ref/dotnet/ja/System.Security.Cryptography.RSA.xml",
-        "ref/dotnet/ko/System.Security.Cryptography.RSA.xml",
-        "ref/dotnet/ru/System.Security.Cryptography.RSA.xml",
-        "ref/dotnet/zh-hans/System.Security.Cryptography.RSA.xml",
-        "ref/dotnet/zh-hant/System.Security.Cryptography.RSA.xml",
-        "ref/net46/System.Security.Cryptography.RSA.dll"
-      ]
-    },
     "System.Security.Cryptography.X509Certificates.TestData/1.0.0-prerelease": {
       "sha512": "UbpXPyovZcwfKhYg/O85pLjFEO3hkrEjCLGus7P9y45Peoqrfc8XKzdCW5k5WIDCtLw9M1PJHGlOFV/U0D1tkg==",
       "files": [
@@ -1212,11 +967,11 @@
         "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.runner.utility.xml"
       ]
     },
-    "xunit.netcore.extensions/1.0.0-prerelease-00056": {
-      "sha512": "UPxtAjxht7LkVoI6njl23cSXiNtPjM0zT9ouhtS0Ju3bXDSUfWjT3i4vRx8f7xrV24AOdbLfxVETP8DapKHClw==",
+    "xunit.netcore.extensions/1.0.0-prerelease-00060": {
+      "sha512": "DOz290GkOdQNSnCj/1OYTLhho4ZmWgIYc646EAKQV2Abr8tpeDM3d1dOifApzaRj5QJb8HAuTyDY53FQVQ0jfg==",
       "files": [
-        "xunit.netcore.extensions.1.0.0-prerelease-00056.nupkg",
-        "xunit.netcore.extensions.1.0.0-prerelease-00056.nupkg.sha512",
+        "xunit.netcore.extensions.1.0.0-prerelease-00060.nupkg",
+        "xunit.netcore.extensions.1.0.0-prerelease-00060.nupkg.sha512",
         "xunit.netcore.extensions.nuspec",
         "lib/portable-wpa80+win80+net45+aspnetcore50/Xunit.NetCore.Extensions.dll"
       ]
@@ -1245,9 +1000,6 @@
       "System.Runtime >= 4.0.20-beta-*",
       "System.Runtime.Extensions >= 4.0.10-beta-*",
       "System.Runtime.Numerics >= 4.0.0-beta-*",
-      "System.Security.Cryptography.Encoding >= 4.0.0-beta-*",
-      "System.Security.Cryptography.Encryption >= 4.0.0-beta-*",
-      "System.Security.Cryptography.RSA >= 4.0.0-beta-*",
       "System.Security.Cryptography.X509Certificates.TestData >= 1.0.0-prerelease",
       "xunit >= 2.0.0-beta5-build2785",
       "xunit.abstractions.netcore >= 1.0.0-prerelease",

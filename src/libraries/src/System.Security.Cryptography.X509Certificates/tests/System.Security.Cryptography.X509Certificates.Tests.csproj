@@ -15,6 +15,18 @@
       <Project>{6f8576c2-6cd0-4df3-8394-00b002d82e40}</Project>
       <Name>System.Security.Cryptography.X509Certificates</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\System.Security.Cryptography.Primitives\src\System.Security.Cryptography.Primitives.csproj">
+      <Project>{D04A73AE-E418-4ACD-A132-7688435BE8B5}</Project>
+      <Name>System.Security.Cryptography.Primitives</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Security.Cryptography.Encoding\src\System.Security.Cryptography.Encoding.csproj">
+      <Project>{AA81E343-5E54-40B0-9381-C459419BE780}</Project>
+      <Name>System.Security.Cryptography.Encoding</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Security.Cryptography.Algorithms\src\System.Security.Cryptography.Algorithms.csproj">
+      <Project>{81A05E2E-E3AE-4246-B4E6-DD5F31FB71F9}</Project>
+      <Name>System.Security.Cryptography.Algorithms</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ByteUtils.cs" />

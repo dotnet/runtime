@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <ProjectGuid>{508A7D81-6462-459C-9F8F-B58FCCCFC8E7}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Security.Cryptography.Algorithms.Tests</AssemblyName>
+    <RootNamespace>System.Security.Cryptography.Algorithms.Tests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Security.Cryptography.Algorithms.csproj">
+      <Project>{81A05E2E-E3AE-4246-B4E6-DD5F31FB71F9}</Project>
+      <Name>System.Security.Cryptography.Algorithms</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Security.Cryptography.Primitives\src\System.Security.Cryptography.Primitives.csproj">
+      <Project>{D04A73AE-E418-4ACD-A132-7688435BE8B5}</Project>
+      <Name>System.Security.Cryptography.Primitives</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AesCipherTests.Data.cs" />
+    <Compile Include="AesCipherTests.cs" />
+    <Compile Include="AesContractTests.cs" />
+    <Compile Include="AesModeTests.cs" />
+    <Compile Include="ByteUtils.cs" />
+    <Compile Include="DecryptorReusability.cs" />
+    <Compile Include="HashAlgorithmTest.cs" />
+    <Compile Include="InvalidUsageTests.cs" />
+    <Compile Include="HmacSha1Tests.cs" />
+    <Compile Include="HmacSha256Tests.cs" />
+    <Compile Include="HmacSha384Tests.cs" />
+    <Compile Include="HmacSha512Tests.cs" />
+    <Compile Include="HmacTests.cs" />
+    <Compile Include="MD5Tests.cs" />
+    <Compile Include="RandomNumberGeneratorTests.cs" />
+    <Compile Include="ReusabilityTests.cs" />
+    <Compile Include="Rfc2202HmacTests.cs" />
+    <Compile Include="Rfc2898Tests.cs" />
+    <Compile Include="Rfc4231HmacTests.cs" />
+    <Compile Include="Sha1Tests.cs" />
+    <Compile Include="Sha256Tests.cs" />
+    <Compile Include="Sha384Tests.cs" />
+    <Compile Include="Sha512Tests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
