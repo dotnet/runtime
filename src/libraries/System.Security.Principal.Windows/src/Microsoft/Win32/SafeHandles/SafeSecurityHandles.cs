@@ -96,28 +96,4 @@ namespace Microsoft.Win32.SafeHandles
             return Interop.mincore.LsaFreeReturnBuffer(handle) >= 0;
         }
     }
-
-    internal sealed class SafeLocalAllocHandle : SafeBuffer, IDisposable
-    {
-        private SafeLocalAllocHandle() : base(true) { }
-
-        // 0 is an Invalid Handle
-        internal SafeLocalAllocHandle(IntPtr handle) : base(true)
-        {
-            SetHandle(handle);
-        }
-
-        internal static SafeLocalAllocHandle InvalidHandle
-        {
-            get
-            {
-                return new SafeLocalAllocHandle(IntPtr.Zero);
-            }
-        }
-
-        override protected bool ReleaseHandle()
-        {
-            return Interop.mincore_obsolete.LocalFree(handle) == IntPtr.Zero;
-        }
-    }
 }
