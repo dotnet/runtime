@@ -11,7 +11,9 @@ Visual Studio 2013 (Update 3 or later) or Visual Studio 2015 (Preview or later) 
 
 The following free downloads are compatible:
 * [Visual Studio Community 2013 (with Update 3)](http://www.visualstudio.com/en-us/visual-studio-community-vs.aspx)
-* [Visual Studio Enterprise 2015 RC](http://www.visualstudio.com/en-us/downloads/visual-studio-2015-downloads-vs)
+* [Visual Studio Community 2015](http://www.visualstudio.com/en-us/downloads/visual-studio-2015-downloads-vs)
+
+Note: In order to build our C++ projects be sure to select "Programming Languages | Visual C++ | Common Tools for Visual C++ 2015" while installing VS 2015 (or modify your install to include it).
 
 ## Building From the Command Line
 
