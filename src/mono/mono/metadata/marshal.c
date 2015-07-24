@@ -5680,6 +5680,8 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			emit_struct_conv (mb, klass, FALSE);
 
 			mono_mb_patch_branch (mb, pos2);
+		} else if (klass == mono_defaults.stringbuilder_class) {
+			// FIXME: What to do here ?
 		} else {
 			/* byval [Out] marshalling */
 
