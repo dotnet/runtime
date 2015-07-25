@@ -11,6 +11,13 @@ add_compile_options(-Wall -Werror -fPIC)
 
 if (CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL amd64)
     add_definitions(-DBIT64=1)
+elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l)
+    add_definitions(-DBIT32=1)
+    # Because we don't use CMAKE_C_COMPILER/CMAKE_CXX_COMPILER to use clang
+    # we have to set the triple by adding a compiler argument
+    add_compile_options(-target armv7-linux-gnueabihf)
+    add_compile_options(-mthumb)
+    add_compile_options(-mfpu=vfpv3)
 endif ()
 
 string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
