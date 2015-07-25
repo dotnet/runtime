@@ -8,8 +8,6 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.IO.FileSystem.Tests</AssemblyName>
     <TestCategories>InnerLoop;OuterLoop</TestCategories>
-    <!-- Setting temporarily until we can publish a new package drop of Runtime.Extensions -->
-    <TestWithLocalLibraries>true</TestWithLocalLibraries>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
@@ -29,6 +27,18 @@
       <Project>{879c23dc-d828-4dfb-8e92-abbc11b71035}</Project>
       <Name>System.IO.FileSystem</Name>
       <Private>True</Private>
+    </ProjectReference>
+
+    <!-- 
+      Until an updated packages is published, temporarily copy the locally built System.Runtime.Extensions library
+      but still reference the contract from the package for compiling. 
+      Issue https://github.com/dotnet/corefx/issues/2519 is tracking the removal of this ProjectReference
+    -->
+    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.CoreCLR.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
