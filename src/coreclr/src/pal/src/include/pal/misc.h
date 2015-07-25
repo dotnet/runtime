@@ -49,6 +49,17 @@ Function :
 int __cdecl PAL_rand(void);
 
 /*++
+Function:
+TIMEInitialize
+
+Return value:
+TRUE if initialize succeeded
+FALSE otherwise
+
+--*/
+BOOL TIMEInitialize( void );
+
+/*++
 Function :
     MsgBoxInitialize
 

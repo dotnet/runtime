@@ -486,6 +486,12 @@ Initialize(
             goto CLEANUP5;
         }
 
+        if (FALSE == TIMEInitialize())
+        {
+            ERROR("Unable to initialize TIME support\n");
+            goto CLEANUP6;
+        }
+
         /* Initialize the File mapping critical section. */
         if (FALSE == MAPInitialize())
         {
