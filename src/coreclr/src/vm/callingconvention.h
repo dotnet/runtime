@@ -368,7 +368,7 @@ public:
         if (m_argType == ELEMENT_TYPE_VALUETYPE)
         {
             _ASSERTE(!m_argTypeHandle.IsNull());
-            return ((m_argSize > ENREGISTERED_PARAMTYPE_MAXSIZE) && (!m_argTypeHandle.IsHFA() || IsVarArg()));
+            return ((m_argSize > ENREGISTERED_PARAMTYPE_MAXSIZE) && (!m_argTypeHandle.IsHFA() || this->IsVarArg()));
         }
         return FALSE;
 #else

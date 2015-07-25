@@ -12,7 +12,7 @@
 // #error this file should only be used on an ARM platform
 // #endif // _ARM64_
 
-#include "..\..\inc\switches.h"
+#include "../../inc/switches.h"
 
 //-----------------------------------------------------------------------------
 
@@ -23,6 +23,10 @@
 #ifndef ASMCONSTANTS_RUNTIME_ASSERT
 #define ASMCONSTANTS_RUNTIME_ASSERT(cond)
 #endif
+
+#define DynamicHelperFrameFlags_Default     0
+#define DynamicHelperFrameFlags_ObjectArg   1
+#define DynamicHelperFrameFlags_ObjectArg2  2
 
 #define               Thread__m_fPreemptiveGCDisabled   0x0C
 #define               Thread__m_pFrame                  0x10

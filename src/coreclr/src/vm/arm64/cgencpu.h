@@ -407,7 +407,7 @@ extern "C" void SinglecastDelegateInvokeStub();
 #define DATA_ALIGNMENT 8
 
 
-DECLSPEC_ALIGN(16) struct UMEntryThunkCode
+struct DECLSPEC_ALIGN(16) UMEntryThunkCode
 {
     DWORD        m_code[4];
 
@@ -490,8 +490,8 @@ struct StubPrecode {
         CONTRACTL_END;
 
         EnsureWritableExecutablePages(&m_pTarget);
-        return (TADDR)InterlockedCompareExchange(
-            (TADDR*)&m_pTarget, (TADDR)target, (TADDR)expected) == expected;
+        return (TADDR)InterlockedCompareExchange64(
+            (LONGLONG*)&m_pTarget, (TADDR)target, (TADDR)expected) == expected;
     }
 
 #ifdef FEATURE_PREJIT
