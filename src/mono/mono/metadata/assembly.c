@@ -3258,6 +3258,8 @@ mono_assembly_get_image (MonoAssembly *assembly)
  * mono_assembly_get_name:
  * @assembly: The assembly to retrieve the name from
  *
+ * The returned name's lifetime is the same as @assembly's.
+ *
  * Returns: the MonoAssemblyName associated with this assembly.
  */
 MonoAssemblyName *
