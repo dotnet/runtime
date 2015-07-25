@@ -216,7 +216,7 @@ struct ResolveHolder
          //ldr w13, [x10 + DATA_OFFSET(_hashedToken)]
          offset = DATA_OFFSET(_hashedToken);
          _ASSERTE(offset >=0 && offset%8 == 0);
-         _stub._resolveEntryPoint[n++] = 0xB940014D | offset<<8;
+         _stub._resolveEntryPoint[n++] = 0xB940014D | offset<<7;
 
          //eor x9,x9,x13
          _stub._resolveEntryPoint[n++] = 0xCA0D0129;
@@ -326,13 +326,13 @@ struct ResolveHolder
          //ldr x12, [x10 , DATA_OFFSET(_token)]
          offset=DATA_OFFSET(_token);
          _ASSERTE(offset >=0 && offset%8 == 0);
-         _stub._slowEntryPoint[n++] = 0xF940014C | (offset<<10); 
+         _stub._slowEntryPoint[n++] = 0xF940014C | (offset<<7);
          
          //
          //ldr x9, [x10 , DATA_OFFSET(_resolveWorkerTarget)]
          offset=DATA_OFFSET(_resolveWorkerTarget);
          _ASSERTE(offset >=0 && offset%8 == 0);
-         _stub._slowEntryPoint[n++] = 0xF9400149 | (offset<<10); 
+         _stub._slowEntryPoint[n++] = 0xF9400149 | (offset<<7);
          
          //  br x9 
          _stub._slowEntryPoint[n++] = 0xD61F0120;

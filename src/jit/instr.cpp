@@ -3890,7 +3890,7 @@ void                CodeGen::instGen_MemoryBarrier()
 #elif defined (_TARGET_ARM_)
     getEmitter()->emitIns_I(INS_dmb, EA_4BYTE, 0xf);
 #elif defined (_TARGET_ARM64_)
-    NYI_ARM64("instGen_MemoryBarrier");
+    getEmitter()->emitIns_BARR(INS_dmb, INS_BARRIER_ST);
 #else
 #error "Unknown _TARGET_"
 #endif

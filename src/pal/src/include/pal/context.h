@@ -103,6 +103,44 @@ typedef ucontext_t native_context_t;
 
 #ifdef BIT64
 
+#if defined(_ARM64_)
+#define MCREG_X0(mc)      ((mc).regs[0])
+#define MCREG_X1(mc)      ((mc).regs[1])
+#define MCREG_X2(mc)      ((mc).regs[2])
+#define MCREG_X3(mc)      ((mc).regs[3])
+#define MCREG_X4(mc)      ((mc).regs[4])
+#define MCREG_X5(mc)      ((mc).regs[5])
+#define MCREG_X6(mc)      ((mc).regs[6])
+#define MCREG_X7(mc)      ((mc).regs[7])
+#define MCREG_X8(mc)      ((mc).regs[8])
+#define MCREG_X9(mc)      ((mc).regs[9])
+#define MCREG_X10(mc)     ((mc).regs[10])
+#define MCREG_X11(mc)     ((mc).regs[11])
+#define MCREG_X12(mc)     ((mc).regs[12])
+#define MCREG_X13(mc)     ((mc).regs[13])
+#define MCREG_X14(mc)     ((mc).regs[14])
+#define MCREG_X15(mc)     ((mc).regs[15])
+#define MCREG_X16(mc)     ((mc).regs[16])
+#define MCREG_X17(mc)     ((mc).regs[17])
+#define MCREG_X18(mc)     ((mc).regs[18])
+#define MCREG_X19(mc)     ((mc).regs[19])
+#define MCREG_X20(mc)     ((mc).regs[20])
+#define MCREG_X21(mc)     ((mc).regs[21])
+#define MCREG_X22(mc)     ((mc).regs[22])
+#define MCREG_X23(mc)     ((mc).regs[23])
+#define MCREG_X24(mc)     ((mc).regs[24])
+#define MCREG_X25(mc)     ((mc).regs[25])
+#define MCREG_X26(mc)     ((mc).regs[26])
+#define MCREG_X27(mc)     ((mc).regs[27])
+#define MCREG_X28(mc)     ((mc).regs[28])
+#define MCREG_Fp(mc)      ((mc).regs[29])
+#define MCREG_Lr(mc)      ((mc).regs[30])
+
+#define MCREG_Sp(mc)      ((mc).sp)
+#define MCREG_Pc(mc)      ((mc).pc)
+#define MCREG_PState(mc)  ((mc).pstate)
+#define MCREG_Cpsr(mc)    ((mc).cpsr)
+#else
     // For FreeBSD, as found in x86/ucontext.h
 #define MCREG_Rbp(mc)	    ((mc).mc_rbp)
 #define MCREG_Rip(mc)	    ((mc).mc_rip)
@@ -138,6 +176,7 @@ typedef ucontext_t native_context_t;
 
 #define FPREG_Xmm(uc, index)    *(M128A*) &(FPSTATE(uc)->sv_xmm[index])
 #define FPREG_St(uc, index)     *(M128A*) &(FPSTATE(uc)->sv_fp[index].fp_acc)
+#endif
 
 #else // BIT64
 

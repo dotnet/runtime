@@ -30,6 +30,9 @@ if(CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL amd
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l)
   set(PAL_CMAKE_PLATFORM_ARCH_ARM 1)
   add_definitions(-D_ARM_)
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
+  set(PAL_CMAKE_PLATFORM_ARCH_ARM64 1)
+  add_definitions(-D_ARM64_)
 else()
   message(FATAL_ERROR "Only ARM and AMD64 is supported")
 endif()
@@ -60,6 +63,9 @@ if(PAL_CMAKE_PLATFORM_ARCH_AMD64)
 elseif(PAL_CMAKE_PLATFORM_ARCH_ARM)
   add_definitions(-DBIT32=1)
   add_definitions(-D_WIN32=1)
+elseif(PAL_CMAKE_PLATFORM_ARCH_ARM64)
+  add_definitions(-DBIT64=1)
+  add_definitions(-D_WIN64=1)
 endif()
 
 
@@ -75,6 +81,11 @@ elseif(PAL_CMAKE_PLATFORM_ARCH_ARM)
   set(ARCH_SOURCES
     arch/arm/context2.S
     arch/arm/processor.cpp
+  )
+elseif(PAL_CMAKE_PLATFORM_ARCH_ARM64)
+  set(ARCH_SOURCES
+    arch/arm64/context2.S
+    arch/arm64/processor.cpp
   )
 endif()
 
