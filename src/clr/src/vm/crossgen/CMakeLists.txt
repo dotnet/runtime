@@ -114,8 +114,13 @@ elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
   list(APPEND VM_CROSSGEN_SOURCES 
     ../arm/stubs.cpp
   )
+elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
+  include_directories(../arm64)
+  list(APPEND VM_CROSSGEN_SOURCES 
+    ../arm64/stubs.cpp
+  )
 else()
-  message(FATAL_ERROR "Only ARM and AMD64 is supported")
+  message(FATAL_ERROR "Only ARM, ARM64 and AMD64 is supported")
 endif()
 
 if (WIN32)

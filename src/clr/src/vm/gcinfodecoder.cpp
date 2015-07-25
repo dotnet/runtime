@@ -1793,6 +1793,24 @@ void GcInfoDecoder::ReportRegisterToGC( // ARM64
     pCallBack(hCallBack, pObjRef, gcFlags DAC_ARG(DacSlotLocation(regNum, 0, false)));
 }
 
+#ifdef FEATURE_PAL
+OBJECTREF* GcInfoDecoder::GetCapturedRegister(
+    int             regNum,
+    PREGDISPLAY     pRD
+    )
+{
+    _ASSERTE(regNum >= 0 && regNum <= 28);
+
+    // The fields of CONTEXT are in the same order as
+    // the processor encoding numbers.
+
+    DWORD64 *pX0;
+    pX0 = &pRD->pCurrentContext->X0;
+
+    return (OBJECTREF*)(pX0 + regNum);
+}
+#endif // FEATURE_PAL
+
 #else // Unknown platform
 
 OBJECTREF* GcInfoDecoder::GetRegisterSlot(
