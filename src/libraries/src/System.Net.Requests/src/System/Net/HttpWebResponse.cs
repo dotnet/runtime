@@ -167,22 +167,29 @@ namespace System.Net
 
         private string GetHeaderValueAsString(IEnumerable<string> values)
         {
-            var buffer = new StringBuilder();
-
             // There is always at least one value even if it is an empty string.
             var enumerator = values.GetEnumerator();
             bool success = enumerator.MoveNext();
             Debug.Assert(success, "There should be at least one value");
-            buffer.Append(enumerator.Current);
 
-            // Handle more values if present.
-            while (enumerator.MoveNext())
+            string headerValue = enumerator.Current;
+
+            if (enumerator.MoveNext())
             {
-                buffer.Append(", ");
-                buffer.Append(enumerator.Current);
+                // Multi-valued header
+                var buffer = new StringBuilder();
+                buffer.Append(headerValue);
+
+                do
+                {
+                    buffer.Append(", ");
+                    buffer.Append(enumerator.Current);
+                } while (enumerator.MoveNext());
+
+                return buffer.ToString();
             }
 
-            return buffer.ToString();
+            return headerValue;
         }
     }
 }

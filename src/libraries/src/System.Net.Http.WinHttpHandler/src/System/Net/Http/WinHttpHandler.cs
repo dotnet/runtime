@@ -1871,12 +1871,11 @@ namespace System.Net.Http
                     Interop.WinHttp.WINHTTP_QUERY_CONTENT_ENCODING);
                 if (!string.IsNullOrEmpty(contentEncoding))
                 {
-                    contentEncoding = contentEncoding.ToUpperInvariant();
-                    if (contentEncoding.Contains(EncodingNameDeflate))
+                    if (contentEncoding.IndexOf(EncodingNameDeflate, StringComparison.OrdinalIgnoreCase) > -1)
                     {
                         useDeflateDecompression = true;
                     }
-                    else if (contentEncoding.Contains(EncodingNameGzip))
+                    else if (contentEncoding.IndexOf(EncodingNameGzip, StringComparison.OrdinalIgnoreCase) > -1)
                     {
                         useGzipDecompression = true;
                     }
