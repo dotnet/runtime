@@ -1803,19 +1803,6 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 
 #endif /* DISABLE_JIT */
 
-/* Resolve a patch info at compile time */
-gpointer
-mini_resolve_patch_info (MonoCompile *cfg, MonoJumpInfoType type, gpointer data)
-{
-	MonoJumpInfo ji;
-
-	memset (&ji, 0, sizeof (MonoJumpInfo));
-	ji.type = type;
-	ji.data.target = data;
-
-	return mono_resolve_patch_target (cfg->method, cfg->domain, cfg->native_code, &ji, FALSE);
-}
-
 #define EMUL_HIT_SHIFT 3
 #define EMUL_HIT_MASK ((1 << EMUL_HIT_SHIFT) - 1)
 /* small hit bitmap cache */

@@ -1548,7 +1548,10 @@ mini_emit_interface_bitmap_check (MonoCompile *cfg, int intf_bit_reg, int base_r
 	NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, ibitmap_reg, base_reg, offset);
 	MONO_ADD_INS (cfg->cbb, ins);
 	args [0] = ins;
-	EMIT_NEW_AOTCONST (cfg, args [1], MONO_PATCH_INFO_IID, klass);
+	if (cfg->compile_aot)
+		EMIT_NEW_AOTCONST (cfg, args [1], MONO_PATCH_INFO_IID, klass);
+	else
+		EMIT_NEW_ICONST (cfg, args [1], klass->interface_id);
 	res = mono_emit_jit_icall (cfg, mono_class_interface_match, args);
 	MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, intf_bit_reg, res->dreg);
 #else
@@ -2025,7 +2028,10 @@ emit_push_lmf (MonoCompile *cfg)
 			/* jit_tls = pthread_getspecific (mono_jit_tls_id); lmf_addr = &jit_tls->lmf; */
 
 			/* Load mono_jit_tls_id */
-			EMIT_NEW_AOTCONST (cfg, args [0], MONO_PATCH_INFO_JIT_TLS_ID, NULL);
+			if (cfg->compile_aot)
+				EMIT_NEW_AOTCONST (cfg, args [0], MONO_PATCH_INFO_JIT_TLS_ID, NULL);
+			else
+				EMIT_NEW_ICONST (cfg, args [0], mono_jit_tls_id);
 			/* call pthread_getspecific () */
 			jit_tls_ins = mono_emit_jit_icall (cfg, pthread_getspecific, args);
 			/* lmf_addr = &jit_tls->lmf */
@@ -2418,14 +2424,20 @@ emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoMethod *method, Mon
 
 		if (imt_arg) {
 			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, method_reg, imt_arg->dreg);
-		} else {
+		} else if (cfg->compile_aot) {
 			MONO_EMIT_NEW_AOTCONST (cfg, method_reg, method, MONO_PATCH_INFO_METHODCONST);
+		} else {
+			MonoInst *ins;
+			MONO_INST_NEW (cfg, ins, OP_PCONST);
+			ins->inst_p0 = method;
+			ins->dreg = method_reg;
+			MONO_ADD_INS (cfg->cbb, ins);
 		}
 
 #ifdef ENABLE_LLVM
 		call->imt_arg_reg = method_reg;
 #endif
-		mono_call_inst_add_outarg_reg (cfg, call, method_reg, MONO_ARCH_IMT_REG, FALSE);
+	mono_call_inst_add_outarg_reg (cfg, call, method_reg, MONO_ARCH_IMT_REG, FALSE);
 		return;
 	}
 
@@ -2433,8 +2445,14 @@ emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoMethod *method, Mon
 
 	if (imt_arg) {
 		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, method_reg, imt_arg->dreg);
-	} else {
+	} else if (cfg->compile_aot) {
 		MONO_EMIT_NEW_AOTCONST (cfg, method_reg, method, MONO_PATCH_INFO_METHODCONST);
+	} else {
+		MonoInst *ins;
+		MONO_INST_NEW (cfg, ins, OP_PCONST);
+		ins->inst_p0 = method;
+		ins->dreg = method_reg;
+		MONO_ADD_INS (cfg->cbb, ins);
 	}
 
 	mono_call_inst_add_outarg_reg (cfg, call, method_reg, MONO_ARCH_IMT_REG, FALSE);
@@ -3082,6 +3100,7 @@ emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value)
 	} else if (card_table && !cfg->compile_aot && !mono_gc_card_table_nursery_check ()) {
 		int offset_reg = alloc_preg (cfg);
 		int card_reg  = alloc_preg (cfg);
+		MonoInst *ins;
 
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHR_UN_IMM, offset_reg, ptr->dreg, card_table_shift_bits);
 		if (card_table_mask)
@@ -3090,7 +3109,15 @@ emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value)
 		/*We can't use PADD_IMM since the cardtable might end up in high addresses and amd64 doesn't support
 		 * IMM's larger than 32bits.
 		 */
-		MONO_EMIT_NEW_AOTCONST (cfg, card_reg, NULL, MONO_PATCH_INFO_GC_CARD_TABLE_ADDR);
+		if (cfg->compile_aot) {
+			MONO_EMIT_NEW_AOTCONST (cfg, card_reg, NULL, MONO_PATCH_INFO_GC_CARD_TABLE_ADDR);
+		} else {
+			MONO_INST_NEW (cfg, ins, OP_PCONST);
+			ins->inst_p0 = card_table;
+			ins->dreg = card_reg;
+			MONO_ADD_INS (cfg->cbb, ins);
+		}
+
 		MONO_EMIT_NEW_BIALU (cfg, OP_PADD, offset_reg, offset_reg, card_reg);
 		MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI1_MEMBASE_IMM, offset_reg, 0, 1);
 	} else {
@@ -3847,17 +3874,19 @@ mini_emit_check_array_type (MonoCompile *cfg, MonoInst *obj, MonoClass *array_cl
 		vtable_ins = emit_get_rgctx_klass (cfg, context_used, array_class, MONO_RGCTX_INFO_VTABLE);
 		MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, vtable_reg, vtable_ins->dreg);
 	} else {
-		MonoVTable *vtable;
-
-		if (!(vtable = mono_class_vtable (cfg->domain, array_class)))
-			return;
 		if (cfg->compile_aot) {
 			int vt_reg;
+			MonoVTable *vtable;
 
+			if (!(vtable = mono_class_vtable (cfg->domain, array_class)))
+				return;
 			vt_reg = alloc_preg (cfg);
 			MONO_EMIT_NEW_VTABLECONST (cfg, vt_reg, vtable);
 			MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, vtable_reg, vt_reg);
 		} else {
+			MonoVTable *vtable;
+			if (!(vtable = mono_class_vtable (cfg->domain, array_class)))
+				return;
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, vtable_reg, vtable);
 		}
 	}
@@ -11960,9 +11989,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			}
 			case CEE_MONO_LDPTR_CARD_TABLE: {
+				int shift_bits;
+				gpointer card_mask;
 				CHECK_STACK_OVF (1);
 
-				EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_GC_CARD_TABLE_ADDR, NULL);
+				if (cfg->compile_aot)
+					EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_GC_CARD_TABLE_ADDR, NULL);
+				else
+					EMIT_NEW_PCONST (cfg, ins, mono_gc_get_card_table (&shift_bits, &card_mask));
 
 				*sp++ = ins;
 				ip += 2;
@@ -11970,9 +12004,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			}
 			case CEE_MONO_LDPTR_NURSERY_START: {
+				int shift_bits;
+				size_t size;
 				CHECK_STACK_OVF (1);
 
-				EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_GC_NURSERY_START, NULL);
+				if (cfg->compile_aot)
+					EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_GC_NURSERY_START, NULL);
+				else
+					EMIT_NEW_PCONST (cfg, ins, mono_gc_get_nursery (&shift_bits, &size));
 
 				*sp++ = ins;
 				ip += 2;
@@ -11982,7 +12021,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			case CEE_MONO_LDPTR_INT_REQ_FLAG: {
 				CHECK_STACK_OVF (1);
 
-				EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG, NULL);
+				if (cfg->compile_aot)
+					EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG, NULL);
+				else
+					EMIT_NEW_PCONST (cfg, ins, mono_thread_interruption_request_flag ());
 
 				*sp++ = ins;
 				ip += 2;

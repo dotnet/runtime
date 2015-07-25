@@ -2217,7 +2217,6 @@ MonoInst* mono_emit_jit_icall (MonoCompile *cfg, gconstpointer func, MonoInst **
 MonoInst* mono_emit_jit_icall_by_info (MonoCompile *cfg, MonoJitICallInfo *info, MonoInst **args);
 MonoInst* mono_emit_method_call (MonoCompile *cfg, MonoMethod *method, MonoInst **args, MonoInst *this);
 void      mono_create_helper_signatures (void);
-gpointer  mini_resolve_patch_info (MonoCompile *cfg, MonoJumpInfoType type, gpointer data);
 
 gboolean  mini_class_is_system_array (MonoClass *klass);
 MonoMethodSignature *mono_get_element_address_signature (int arity);
