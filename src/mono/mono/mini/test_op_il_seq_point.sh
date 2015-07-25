@@ -6,7 +6,7 @@ USE_AOT=$2
 TMP_FILE_PREFIX=$(basename $0).tmp
 BASEDIR=$(dirname $0)
 
-MONO_PATH=$BASEDIR/../../mcs/class/lib/net_4_5:$BASEDIR
+MONO_PATH=$BASEDIR/../../mcs/class/lib/net_4_x:$BASEDIR
 RUNTIME=$BASEDIR/../../runtime/mono-wrapper
 
 trap "rm -rf ${TMP_FILE_PREFIX}*" EXIT
