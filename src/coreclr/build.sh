@@ -161,6 +161,10 @@ for i in "$@"
         __BuildArch=arm
         __MSBuildBuildArch=arm
         ;;
+        arm64)
+        __BuildArch=arm64
+        __MSBuildBuildArch=arm64
+        ;;
         debug)
         __BuildType=Debug
         ;;

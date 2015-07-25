@@ -1,0 +1,130 @@
+//
+// Copyright (c) Geoff Norton. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information. 
+//
+
+#include "unixasmmacros.inc"
+#include "asmconstants.h"
+
+//-----------------------------------------------------------------------------
+// This helper routine enregisters the appropriate arguments and makes the
+// actual call.
+//-----------------------------------------------------------------------------
+//void CallDescrWorkerInternal(CallDescrData * pCallDescrData);
+
+NESTED_ENTRY CallDescrWorkerInternal, _TEXT, UnhandledExceptionHandlerUnix
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, #-32
+    PROLOG_SAVE_REG    x19, #16   //the stack slot at sp+24 is empty for 16 byte alligment
+
+    mov     x19, x0 // save pCallDescrData in x19
+
+    ldr     w1, [x19,#CallDescrData__numStackSlots]
+    cbz     w1, LOCAL_LABEL(donestack)
+
+    // Add frame padding to ensure frame size is a multiple of 16 (a requirement of the OS ABI).
+    // We push two registers (above) and numStackSlots arguments (below). If this comes to an odd number
+    // of slots we must pad with another. This simplifies to "if the low bit of numStackSlots is set,
+    // extend the stack another eight bytes".
+    ldr     x0, [x19,#CallDescrData__pSrc]
+    add     x0, x0, x1, lsl #3           // pSrcEnd=pSrc+8*numStackSlots 
+    ands    x2, x1, #1
+    beq     LOCAL_LABEL(stackloop)
+    
+    // This loop copies numStackSlots words
+    // from [pSrcEnd-8,pSrcEnd-16,...] to [sp-8,sp-16,...]
+
+    // pad and store one stack slot as number of slots are odd
+    ldr     x4, [x0,#-8]!
+    str     x4, [sp,#-16]!
+    subs    x1, x1, #1
+    beq     LOCAL_LABEL(donestack)
+LOCAL_LABEL(stackloop):
+    ldp     x2, x4, [x0,#-16]!
+    stp     x2, x4, [sp,#-16]!
+    subs    x1, x1, #2
+    bne     LOCAL_LABEL(stackloop)
+LOCAL_LABEL(donestack):
+
+    // If FP arguments are supplied in registers (x8 != NULL) then initialize all of them from the pointer
+    // given in x8. 
+    ldr     x8, [x19,#CallDescrData__pFloatArgumentRegisters]
+    cbz     x8, LOCAL_LABEL(NoFloatingPoint)
+    ldp     d0, d1, [x8]
+    ldp     d2, d3, [x8, #16]
+    ldp     d4, d5, [x8, #32]
+    ldp     d6, d7, [x8, #48]
+LOCAL_LABEL(NoFloatingPoint):
+
+    // Copy [pArgumentRegisters, ..., pArgumentRegisters + 56]
+    // into x0, ..., x7
+
+    ldr     x8, [x19,#CallDescrData__pArgumentRegisters]
+    ldp     x0, x1, [x8]
+    ldp     x2, x3, [x8, #16]
+    ldp     x4, x5, [x8, #32]
+    ldp     x6, x7, [x8, #48]
+
+    // ARM64TODO: => see if anything special needs to be done for remoting
+    // call pTarget
+    ldr     x8, [x19,#CallDescrData__pTarget]
+    blr     x8
+
+    ldr     w3, [x19,#CallDescrData__fpReturnSize]
+
+    // Int return case
+    cbz     w3, LOCAL_LABEL(IntReturn)
+
+    // Float return case
+    cmp     w3, #4
+    beq     LOCAL_LABEL(FloatReturn)
+
+    // Double return case
+    cmp     w3, #8
+    bne     LOCAL_LABEL(NoDoubleReturn)
+
+LOCAL_LABEL(FloatReturn):
+    str     d0, [x19, #(CallDescrData__returnValue + 0)]
+    b       LOCAL_LABEL(ReturnDone)
+
+LOCAL_LABEL(NoDoubleReturn):
+
+    //FloatHFAReturn  return case
+    cmp     w3, #16
+    bne     LOCAL_LABEL(NoFloatHFAReturn)
+
+    stp     s0, s1, [x19, #(CallDescrData__returnValue + 0)]
+    stp     s2, s3, [x19, #(CallDescrData__returnValue + 0x08)]
+    b       LOCAL_LABEL(ReturnDone)
+LOCAL_LABEL(NoFloatHFAReturn):
+
+    //DoubleHFAReturn  return case
+    cmp     w3, #32
+    bne     LOCAL_LABEL(NoDoubleHFAReturn)
+
+    stp     d0, d1, [x19, #(CallDescrData__returnValue + 0)]
+    stp     d2, d3, [x19, #(CallDescrData__returnValue + 0x10)]
+    b       LOCAL_LABEL(ReturnDone)
+
+LOCAL_LABEL(NoDoubleHFAReturn):
+
+    EMIT_BREAKPOINT // Unreachable
+
+LOCAL_LABEL(IntReturn):
+    // Save return value into retbuf for int
+    str     x0, [x19, #(CallDescrData__returnValue + 0)]
+
+LOCAL_LABEL(ReturnDone):
+
+#ifdef _DEBUG
+    // trash the floating point registers to ensure that the HFA return values 
+    // won't survive by accident
+    ldp     d0, d1, [sp]
+    ldp     d2, d3, [sp, #16]
+#endif
+
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG      x19, #16    //the stack slot at sp+24 is empty for 16 byte alligment
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, #32
+    EPILOG_RETURN
+NESTED_END CallDescrWorkerInternal, _TEXT
