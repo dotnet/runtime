@@ -187,6 +187,8 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
         (dest)->inst_imm = (imm); \
 	} while (0)
 
+/* NEW_AOTCONST works in JIT mode too by calling mono_resolve_patch_target () */
+
 #ifdef MONO_ARCH_NEED_GOT_VAR
 
 #define NEW_PATCH_INFO(cfg,dest,el1,el2) do {	\
@@ -205,8 +207,8 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 			(dest)->inst_basereg = got_loc->dreg;			\
 			(dest)->inst_p1 = group;			\
 		} else {						\
-			(dest)->inst_p0 = (cons);			\
-			(dest)->inst_i1 = (gpointer)(patch_type);	\
+			gpointer _data = mini_resolve_patch_info ((cfg), (patch_type), (cons)); \
+			(dest)->inst_p0 = (_data); \
 		}							\
 		(dest)->type = STACK_PTR;				\
 		(dest)->dreg = alloc_dreg ((cfg), STACK_PTR);	\
@@ -229,8 +231,13 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 
 #define NEW_AOTCONST(cfg,dest,patch_type,cons) do {    \
         MONO_INST_NEW ((cfg), (dest), cfg->compile_aot ? OP_AOTCONST : OP_PCONST); \
-		(dest)->inst_p0 = (cons);	\
-		(dest)->inst_i1 = (gpointer)(patch_type); \
+		if (cfg->compile_aot) { 											\
+			(dest)->inst_p0 = (cons);			  \
+			(dest)->inst_i1 = (gpointer)(patch_type);	\
+		} else { \
+			gpointer _data = mini_resolve_patch_info ((cfg), (patch_type), (cons)); \
+			(dest)->inst_p0 = (_data); \
+		} \
 		(dest)->type = STACK_PTR;	\
 		(dest)->dreg = alloc_dreg ((cfg), STACK_PTR);	\
     } while (0)
@@ -254,7 +261,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 
 #define NEW_METHODCONST(cfg,dest,val) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_METHODCONST, (val))
 
-#define NEW_VTABLECONST(cfg,dest,vtable) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_VTABLE, cfg->compile_aot ? (gpointer)((vtable)->klass) : (vtable))
+#define NEW_VTABLECONST(cfg,dest,vtable) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_VTABLE, (vtable)->klass)
 
 #define NEW_SFLDACONST(cfg,dest,val) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_SFLDA, (val))
 
@@ -440,7 +447,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 
 #define EMIT_NEW_METHODCONST(cfg,dest,val) do { NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_METHODCONST, (val)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
-#define EMIT_NEW_VTABLECONST(cfg,dest,vtable) do { NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_VTABLE, cfg->compile_aot ? (gpointer)((vtable)->klass) : (vtable)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
+#define EMIT_NEW_VTABLECONST(cfg,dest,vtable) do { NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_VTABLE, (vtable)->klass); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
 #define EMIT_NEW_SFLDACONST(cfg,dest,val) do { NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_SFLDA, (val)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
@@ -623,17 +630,15 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 
 #define	MONO_EMIT_NEW_AOTCONST(cfg,dr,imm,type) do { \
         MonoInst *inst; \
-        MONO_INST_NEW ((cfg), (inst), cfg->compile_aot ? OP_AOTCONST : OP_PCONST); \
+        NEW_AOTCONST ((cfg), (inst), (type), (imm)); \
         inst->dreg = dr; \
-        inst->inst_p0 = imm; \
-        inst->inst_c1 = type; \
 		MONO_ADD_INS ((cfg)->cbb, inst); \
 	} while (0)
 
 #endif
 
 #define	MONO_EMIT_NEW_CLASSCONST(cfg,dr,imm) MONO_EMIT_NEW_AOTCONST(cfg,dr,imm,MONO_PATCH_INFO_CLASS)
-#define MONO_EMIT_NEW_VTABLECONST(cfg,dest,vtable) MONO_EMIT_NEW_AOTCONST ((cfg), (dest), (cfg)->compile_aot ? (gpointer)((vtable)->klass) : (vtable), MONO_PATCH_INFO_VTABLE)
+#define MONO_EMIT_NEW_VTABLECONST(cfg,dest,vtable) MONO_EMIT_NEW_AOTCONST ((cfg), (dest), (vtable)->klass, MONO_PATCH_INFO_VTABLE)
 #define MONO_EMIT_NEW_SIGNATURECONST(cfg,dr,sig) MONO_EMIT_NEW_AOTCONST ((cfg), (dr), (sig), MONO_PATCH_INFO_SIGNATURE)
 
 #define MONO_EMIT_NEW_VZERO(cfg,dr,kl) do {	\
