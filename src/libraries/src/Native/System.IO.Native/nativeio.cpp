@@ -27,7 +27,7 @@ static void ConvertFileStats(const struct stat_& src, FileStats* dst)
     dst->StatusChangeTime = src.st_ctime;
 
 #if HAVE_STAT_BIRTHTIME
-    dst->CreationTime = src->st_birthtime;
+    dst->CreationTime = src.st_birthtime;
     dst->Flags |= FILESTATS_FLAGS_HAS_CREATION_TIME;
 #endif
 }
