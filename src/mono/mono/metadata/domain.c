@@ -1297,10 +1297,10 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 }
 
 /**
- * mono_domain_get_id:
+ * mono_domain_get_by_id:
  * @domainid: the ID
  *
- * Returns: the a domain for a specific domain id.
+ * Returns: the domain for a specific domain id.
  */
 MonoDomain * 
 mono_domain_get_by_id (gint32 domainid) 
@@ -1317,12 +1317,29 @@ mono_domain_get_by_id (gint32 domainid)
 	return domain;
 }
 
+/*
+ * mono_domain_get_id:
+ *
+ * A domain ID is guaranteed to be unique for as long as the domain
+ * using it is alive. It may be reused later once the domain has been
+ * unloaded.
+ *
+ * Returns: The unique ID for @domain.
+ */
 gint32
 mono_domain_get_id (MonoDomain *domain)
 {
 	return domain->domain_id;
 }
 
+/*
+ * mono_domain_get_friendly_name:
+ *
+ * The returned string's lifetime is the same as @domain's. Consider
+ * copying it if you need to store it somewhere.
+ *
+ * Returns: The friendly name of @domain. Can be NULL if not yet set.
+ */
 const char *
 mono_domain_get_friendly_name (MonoDomain *domain)
 {
@@ -1504,12 +1521,25 @@ mono_context_get (void)
 	return GET_APPCONTEXT ();
 }
 
+/*
+ * mono_context_get_id:
+ *
+ * Context IDs are guaranteed to be unique for the duration of a Mono
+ * process; they are never reused.
+ *
+ * Returns: The unique ID for @context.
+ */
 gint32
 mono_context_get_id (MonoAppContext *context)
 {
 	return context->context_id;
 }
 
+/*
+ * mono_context_get_domain_id:
+ *
+ * Returns: The ID of the domain that @context was created in.
+ */
 gint32
 mono_context_get_domain_id (MonoAppContext *context)
 {
