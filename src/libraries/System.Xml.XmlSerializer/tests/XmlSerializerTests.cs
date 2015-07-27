@@ -54,7 +54,7 @@ public class XmlSerializerTests
     [Fact]
     public static void Xml_DateTimeAsRoot()
     {
-        var offsetMinutes = (int)TimeZoneInfo.Local.BaseUtcOffset.TotalMinutes;
+        var offsetMinutes = (int)TimeZoneInfo.Local.GetUtcOffset(new DateTime(2013, 1, 2)).TotalMinutes;
         var timeZoneString = string.Format("{0:+;-}{1}", offsetMinutes, new TimeSpan(0, offsetMinutes, 0).ToString(@"hh\:mm"));
         Assert.StrictEqual(SerializeAndDeserialize<DateTime>(new DateTime(2013, 1, 2), "<?xml version=\"1.0\"?>" + Environment.NewLine + "<dateTime>2013-01-02T00:00:00</dateTime>"), new DateTime(2013, 1, 2));
         Assert.StrictEqual(SerializeAndDeserialize<DateTime>(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Local), string.Format("<?xml version=\"1.0\"?>" + Environment.NewLine + "<dateTime>2013-01-02T03:04:05.006{0}</dateTime>", timeZoneString)), new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Local));
