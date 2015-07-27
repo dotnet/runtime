@@ -41,17 +41,14 @@ public static class TimeZoneInfoTests
     {
         TimeZoneInfo local = TimeZoneInfo.Local;
         TimeZoneInfo utc = TimeZoneInfo.Utc;
-        Assert.NotEqual(local.DaylightName, utc.DaylightName);
-        Assert.NotEqual(local.DisplayName, utc.DisplayName);
-        Assert.NotEqual(local.StandardName, utc.StandardName);
 
-        Assert.NotEqual(local.DaylightName, null);
-        Assert.NotEqual(local.DisplayName, null);
-        Assert.NotEqual(local.StandardName, null);
+        Assert.NotNull(local.DaylightName);
+        Assert.NotNull(local.DisplayName);
+        Assert.NotNull(local.StandardName);
 
-        Assert.NotEqual(utc.DaylightName, null);
-        Assert.NotEqual(utc.DisplayName, null);
-        Assert.NotEqual(utc.StandardName, null);
+        Assert.NotNull(utc.DaylightName);
+        Assert.NotNull(utc.DisplayName);
+        Assert.NotNull(utc.StandardName);
     }
 
     [Fact]
