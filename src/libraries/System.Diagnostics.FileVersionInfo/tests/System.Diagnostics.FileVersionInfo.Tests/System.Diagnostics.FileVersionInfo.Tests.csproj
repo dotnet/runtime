@@ -27,7 +27,7 @@
     <Content Include="SecondNativeLibrary.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\testAssembly\Assembly1.cs">
+    <Content Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\Assembly1.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -40,11 +40,11 @@
   </ItemGroup>
   <!-- References used -->
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Diagnostics.FileVersionInfo.csproj">
+    <ProjectReference Include="..\..\src\System.Diagnostics.FileVersionInfo.csproj">
       <Project>{00eda5fd-e802-40d3-92d5-56c27612d36d}</Project>
       <Name>System.Diagnostics.FileVersionInfo</Name>
     </ProjectReference>
-    <ProjectReference Include="..\testAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj">
+    <ProjectReference Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj">
       <Project>{28eb14be-3bc9-4543-aba6-a932424dfbd0}</Project>
       <Name>System.Diagnostics.FileVersionInfo.TestAssembly</Name>
     </ProjectReference>
