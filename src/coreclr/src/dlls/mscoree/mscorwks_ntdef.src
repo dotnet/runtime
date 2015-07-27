@@ -17,6 +17,12 @@ EXPORTS
         ; This cannot change, or else CoreCLR debugging will not work.
         ; See clr\src\DLLS\dbgshim\dbgshim.cpp.
         g_CLREngineMetrics                                  @2 data
+        
+        ; Unix hosting API
+        coreclr_create_delegate
+        coreclr_execute_assembly
+        coreclr_initialize
+        coreclr_shutdown
 
 #ifdef FEATURE_PREJIT
         ; MetaDataGetDispenser is needed for nidump. We want nidump to work on non-debug
