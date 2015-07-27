@@ -49,8 +49,7 @@ namespace System.Net.Http
 
             PrepareContent();
             // If the stream can't be re-read, make sure that it gets disposed once it is consumed.
-            StreamToStreamCopy sc = new StreamToStreamCopy(_content, stream, _bufferSize, !_content.CanSeek);
-            return sc.StartAsync();
+            return StreamToStreamCopy.CopyAsync(_content, stream, _bufferSize, !_content.CanSeek);
         }
 
         protected internal override bool TryComputeLength(out long length)
