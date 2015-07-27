@@ -265,6 +265,10 @@
         <CppCompile Include="..\DelayLoad.cpp" />
     </ItemGroup>
 
+    <ItemGroup Condition="'$(FeatureCoreclr)'=='true'">
+        <CppCompile Include="..\unixinterface.cpp" />
+    </ItemGroup>
+
     <ItemGroup>
         <Assemble386 Condition="'$(BuildArchitecture)' == 'i386'" Include="..\i386\handlers.asm" />
     </ItemGroup>
