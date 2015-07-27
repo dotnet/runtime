@@ -1094,28 +1094,28 @@ mono_thread_exit ()
 }
 
 void
-ves_icall_System_Threading_Thread_ConstructInternalThread (MonoThread *this)
+ves_icall_System_Threading_Thread_ConstructInternalThread (MonoThread *this_obj)
 {
 	MonoInternalThread *internal = create_internal_thread ();
 
 	internal->state = ThreadState_Unstarted;
 
-	InterlockedCompareExchangePointer ((gpointer)&this->internal_thread, internal, NULL);
+	InterlockedCompareExchangePointer ((gpointer)&this_obj->internal_thread, internal, NULL);
 }
 
 HANDLE
-ves_icall_System_Threading_Thread_Thread_internal (MonoThread *this,
+ves_icall_System_Threading_Thread_Thread_internal (MonoThread *this_obj,
 												   MonoObject *start)
 {
 	StartInfo *start_info;
 	MonoInternalThread *internal;
 	gboolean res;
 
-	THREAD_DEBUG (g_message("%s: Trying to start a new thread: this (%p) start (%p)", __func__, this, start));
+	THREAD_DEBUG (g_message("%s: Trying to start a new thread: this (%p) start (%p)", __func__, this_obj, start));
 
-	if (!this->internal_thread)
-		ves_icall_System_Threading_Thread_ConstructInternalThread (this);
-	internal = this->internal_thread;
+	if (!this_obj->internal_thread)
+		ves_icall_System_Threading_Thread_ConstructInternalThread (this_obj);
+	internal = this_obj->internal_thread;
 
 	LOCK_THREAD (internal);
 
@@ -1127,17 +1127,17 @@ ves_icall_System_Threading_Thread_Thread_internal (MonoThread *this,
 
 	if ((internal->state & ThreadState_Aborted) != 0) {
 		UNLOCK_THREAD (internal);
-		return this;
+		return this_obj;
 	}
 	/* This is freed in start_wrapper */
 	start_info = g_new0 (StartInfo, 1);
 	start_info->func = NULL;
-	start_info->start_arg = this->start_obj; /* FIXME: GC object stored in unmanaged memory */
+	start_info->start_arg = this_obj->start_obj; /* FIXME: GC object stored in unmanaged memory */
 	start_info->delegate = start;
-	start_info->obj = this;
-	g_assert (this->obj.vtable->domain == mono_domain_get ());
+	start_info->obj = this_obj;
+	g_assert (this_obj->obj.vtable->domain == mono_domain_get ());
 
-	res = create_thread (this, internal, start_info, FALSE, 0, FALSE);
+	res = create_thread (this_obj, internal, start_info, FALSE, 0, FALSE);
 	if (!res) {
 		UNLOCK_THREAD (internal);
 		return NULL;
@@ -1155,7 +1155,7 @@ ves_icall_System_Threading_Thread_Thread_internal (MonoThread *this,
  * This is called from the finalizer of the internal thread object.
  */
 void
-ves_icall_System_Threading_InternalThread_Thread_free_internal (MonoInternalThread *this, HANDLE thread)
+ves_icall_System_Threading_InternalThread_Thread_free_internal (MonoInternalThread *this_obj, HANDLE thread)
 {
 	THREAD_DEBUG (g_message ("%s: Closing thread %p, handle %p", __func__, this, thread));
 
@@ -1167,16 +1167,16 @@ ves_icall_System_Threading_InternalThread_Thread_free_internal (MonoInternalThre
 	if (thread)
 		CloseHandle (thread);
 
-	if (this->synch_cs) {
-		mono_mutex_t *synch_cs = this->synch_cs;
-		this->synch_cs = NULL;
+	if (this_obj->synch_cs) {
+		mono_mutex_t *synch_cs = this_obj->synch_cs;
+		this_obj->synch_cs = NULL;
 		mono_mutex_destroy (synch_cs);
 		g_free (synch_cs);
 	}
 
-	if (this->name) {
-		void *name = this->name;
-		this->name = NULL;
+	if (this_obj->name) {
+		void *name = this_obj->name;
+		this_obj->name = NULL;
 		g_free (name);
 	}
 }
@@ -2022,23 +2022,23 @@ ves_icall_System_Threading_Thread_GetState (MonoInternalThread* this)
 	return state;
 }
 
-void ves_icall_System_Threading_Thread_Interrupt_internal (MonoThread *this)
+void ves_icall_System_Threading_Thread_Interrupt_internal (MonoThread *this_obj)
 {
 	MonoInternalThread *current;
 	gboolean throw;
-	MonoInternalThread *this_obj = this->internal_thread;
+	MonoInternalThread *thread = this_obj->internal_thread;
 
-	LOCK_THREAD (this_obj);
+	LOCK_THREAD (thread);
 
 	current = mono_thread_internal_current ();
 
-	this_obj->thread_interrupt_requested = TRUE;
-	throw = current != this_obj && (this_obj->state & ThreadState_WaitSleepJoin);
+	thread->thread_interrupt_requested = TRUE;
+	throw = current != thread && (thread->state & ThreadState_WaitSleepJoin);
 
-	UNLOCK_THREAD (this_obj);
+	UNLOCK_THREAD (thread);
 	
 	if (throw) {
-		abort_thread_internal (this_obj, TRUE, FALSE);
+		abort_thread_internal (thread, TRUE, FALSE);
 	}
 }
 
@@ -2104,7 +2104,7 @@ ves_icall_System_Threading_Thread_Abort (MonoInternalThread *thread, MonoObject 
 }
 
 void
-ves_icall_System_Threading_Thread_ResetAbort (MonoThread *this)
+ves_icall_System_Threading_Thread_ResetAbort (MonoThread *this_obj)
 {
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	gboolean was_aborting;
@@ -2208,9 +2208,9 @@ mono_thread_suspend (MonoInternalThread *thread)
 }
 
 void
-ves_icall_System_Threading_Thread_Suspend (MonoThread *this)
+ves_icall_System_Threading_Thread_Suspend (MonoThread *this_obj)
 {
-	if (!mono_thread_suspend (this->internal_thread)) {
+	if (!mono_thread_suspend (this_obj->internal_thread)) {
 		mono_set_pending_exception (mono_get_exception_thread_state ("Thread has not been started, or is dead."));
 		return;
 	}
