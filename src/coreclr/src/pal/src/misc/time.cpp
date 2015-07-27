@@ -35,8 +35,6 @@ static mach_timebase_info_data_t s_TimebaseInfo;
 
 SET_DEFAULT_DEBUG_CHANNEL(MISC);
 
-static BOOL s_TimeInitialized = FALSE;
-
 /*++
 Function :
 TIMEInitialize
@@ -53,11 +51,6 @@ BOOL TIMEInitialize(void)
 {
     BOOL bRet = FALSE;
 
-    if (s_TimeInitialized)
-    {
-        goto Exit;
-    }
-
 #if HAVE_MACH_ABSOLUTE_TIME
     kern_return_t machRet;
     if ((machRet = mach_timebase_info(&s_TimebaseInfo)) != KERN_SUCCESS)
@@ -66,8 +59,6 @@ BOOL TIMEInitialize(void)
         goto Exit;
     }
 #endif
-
-    s_TimeInitialized = TRUE;
     bRet = TRUE;
 Exit:
     return bRet;
@@ -225,14 +216,7 @@ QueryPerformanceCounter(
     }
 #elif HAVE_MACH_ABSOLUTE_TIME
     {
-        // use denom == 0 to indicate that s_TimebaseInfo is uninitialised.
-        if (s_TimebaseInfo.denom == 0)
-        {
-            ASSERT("s_TimebaseInfo is uninitialized.\n");
-            goto EXIT;
-        }
-        lpPerformanceCount->QuadPart = 
-            (LONGLONG)mach_absolute_time() * (LONGLONG)s_TimebaseInfo.numer / (LONGLONG)s_TimebaseInfo.denom;
+        lpPerformanceCount->QuadPart = (LONGLONG)mach_absolute_time();
     }
 #elif HAVE_GETHRTIME
     {
@@ -276,16 +260,28 @@ QueryPerformanceFrequency(
     OUT LARGE_INTEGER *lpFrequency
     )
 {
+    BOOL retval = TRUE;
     PERF_ENTRY(QueryPerformanceFrequency);
     ENTRY("QueryPerformanceFrequency()\n");
-#if HAVE_GETHRTIME || HAVE_READ_REAL_TIME || HAVE_CLOCK_MONOTONIC || HAVE_MACH_ABSOLUTE_TIME
+#if HAVE_GETHRTIME || HAVE_READ_REAL_TIME || HAVE_CLOCK_MONOTONIC
     lpFrequency->QuadPart = (LONGLONG)tccSecondsToNanoSeconds;
+#elif HAVE_MACH_ABSOLUTE_TIME
+    // use denom == 0 to indicate that s_TimebaseInfo is uninitialised.
+    if (s_TimebaseInfo.denom == 0)
+    {
+        ASSERT("s_TimebaseInfo is uninitialized.\n");
+        retval = FALSE;
+    }
+    else
+    {
+        lpFrequency->QuadPart = (LONGLONG)tccSecondsToNanoSeconds * ((LONGLONG)s_TimebaseInfo.denom / (LONGLONG)s_TimebaseInfo.numer);
+    }
 #else
     lpFrequency->QuadPart = (LONGLONG)tccSecondsToMicroSeconds;
 #endif // HAVE_GETHRTIME || HAVE_READ_REAL_TIME || HAVE_CLOCK_MONOTONIC 
     LOGEXIT("QueryPerformanceFrequency\n");
     PERF_EXIT(QueryPerformanceFrequency);
-    return TRUE;
+    return retval;
 }
 
 BOOL
@@ -364,3 +360,4 @@ GetTickCount64()
 EXIT:    
     return retval;
 }
+
