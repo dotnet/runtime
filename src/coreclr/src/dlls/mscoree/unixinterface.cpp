@@ -112,8 +112,10 @@ int coreclr_initialize(
             void** hostHandle,
             unsigned int* domainId)
 {
+    HRESULT hr;
+#ifdef FEATURE_PAL
     DWORD error = PAL_InitializeCoreCLR(exePath);
-    HRESULT hr = HRESULT_FROM_WIN32(error);
+    hr = HRESULT_FROM_WIN32(error);
 
     // If PAL initialization failed, then we should return right away and avoid
     // calling any other APIs because they can end up calling into the PAL layer again.
@@ -121,6 +123,7 @@ int coreclr_initialize(
     {
         return hr;
     }
+#endif
 
     ReleaseHolder<ICLRRuntimeHost2> host;
 
@@ -167,7 +170,7 @@ int coreclr_initialize(
         propertyCount,
         propertyKeysW,
         propertyValuesW,
-        domainId);
+        (DWORD *)domainId);
 
     if (SUCCEEDED(hr))
     {
@@ -280,12 +283,13 @@ int coreclr_execute_assembly(
     
     ConstWStringHolder managedAssemblyPathW = StringToUnicode(managedAssemblyPath);
 
-    HRESULT hr = host->ExecuteAssembly(domainId, managedAssemblyPathW, argc, argvW, exitCode);
+    HRESULT hr = host->ExecuteAssembly(domainId, managedAssemblyPathW, argc, argvW, (DWORD *)exitCode);
     IfFailRet(hr);
 
     return hr;
 }
 
+#ifdef PLATFORM_UNIX
 //
 // Execute a managed assembly with given arguments
 //
@@ -369,3 +373,4 @@ HRESULT ExecuteAssembly(
 
     return hr;
 }
+#endif
