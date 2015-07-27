@@ -1546,8 +1546,27 @@ void Rationalizer::RewriteLdObj(GenTreePtr* ppTree, Compiler::fgWalkData* data)
     if (srcAddr->OperGet() == GT_ADDR && comp->isSIMDTypeLocal(srcAddr->gtGetOp1()))
     {
         GenTree* src = srcAddr->gtGetOp1();
-        comp->fgSnipInnerNode(ldObj);
         comp->fgSnipInnerNode(srcAddr);
+        // It is possible for the ldobj to be the last node in the tree, if its result is
+        // not actually stored anywhere and is not eliminated.
+        // This can happen with an unused SIMD expression involving a localVar or temporary value,
+        // where the SIMD expression is returning a non-SIMD value, and the expression is sufficiently
+        // complex (e.g. a call to vector * scalar which is inlined but not an intrinsic).
+        // The ldobj of the localVar is not eliminated, because it involves an indirection,
+        // and therefore appears potentially unsafe to eliminate. However, when we transform the ldobj into
+        // a plain localVar during the Rationalizer, we need to correctly handle the case where it has
+        // no parent.
+        // This happens, for example, with this source code:
+        //      Vector4.Dot(default(Vector4) * 2f, Vector4.One);
+        if (ldObj->gtNext == nullptr)
+        {
+            SplitData *tmpState = (SplitData *) data->pCallbackData;
+            comp->fgSnipNode(tmpState->root->AsStmt(), ldObj);
+        }
+        else
+        {
+            comp->fgSnipInnerNode(ldObj);
+        }
         src->gtType = simdType;
 
         *ppTree = src;
