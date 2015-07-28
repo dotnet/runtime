@@ -334,19 +334,19 @@ static MonoObject *
 mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 {
 	MonoMethodMessage *msg;
-	MonoTransparentProxy *this;
+	MonoTransparentProxy *this_obj;
 	MonoObject *res, *exc;
 	MonoArray *out_args;
 
-	this = *((MonoTransparentProxy **)params [0]);
+	this_obj = *((MonoTransparentProxy **)params [0]);
 
-	g_assert (this);
-	g_assert (((MonoObject *)this)->vtable->klass == mono_defaults.transparent_proxy_class);
+	g_assert (this_obj);
+	g_assert (((MonoObject *)this_obj)->vtable->klass == mono_defaults.transparent_proxy_class);
 	
 	/* skip the this pointer */
 	params++;
 
-	if (mono_class_is_contextbound (this->remote_class->proxy_class) && this->rp->context == (MonoObject *) mono_context_get ())
+	if (mono_class_is_contextbound (this_obj->remote_class->proxy_class) && this_obj->rp->context == (MonoObject *) mono_context_get ())
 	{
 		int i;
 		MonoMethodSignature *sig = mono_method_signature (method);
@@ -370,12 +370,12 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 			}
 		}
 
-		return mono_runtime_invoke (method, method->klass->valuetype? mono_object_unbox ((MonoObject*)this): this, mparams, NULL);
+		return mono_runtime_invoke (method, method->klass->valuetype? mono_object_unbox ((MonoObject*)this_obj): this_obj, mparams, NULL);
 	}
 
 	msg = mono_method_call_message_new (method, params, NULL, NULL, NULL);
 
-	res = mono_remoting_invoke ((MonoObject *)this->rp, msg, &exc, &out_args);
+	res = mono_remoting_invoke ((MonoObject *)this_obj->rp, msg, &exc, &out_args);
 
 	if (exc)
 		mono_raise_exception ((MonoException *)exc);

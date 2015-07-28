@@ -119,39 +119,36 @@ mono_class_init_or_throw (MonoClass *klass)
 }
 
 ICALL_EXPORT MonoObject *
-ves_icall_System_Array_GetValueImpl (MonoObject *this, guint32 pos)
+ves_icall_System_Array_GetValueImpl (MonoArray *arr, guint32 pos)
 {
 	MonoClass *ac;
-	MonoArray *ao;
 	gint32 esize;
 	gpointer *ea;
 
-	ao = (MonoArray *)this;
-	ac = (MonoClass *)ao->obj.vtable->klass;
+	ac = (MonoClass *)arr->obj.vtable->klass;
 
 	esize = mono_array_element_size (ac);
-	ea = (gpointer*)((char*)ao->vector + (pos * esize));
+	ea = (gpointer*)((char*)arr->vector + (pos * esize));
 
 	if (ac->element_class->valuetype)
-		return mono_value_box (this->vtable->domain, ac->element_class, ea);
+		return mono_value_box (arr->obj.vtable->domain, ac->element_class, ea);
 	else
 		return *ea;
 }
 
 ICALL_EXPORT MonoObject *
-ves_icall_System_Array_GetValue (MonoObject *this, MonoObject *idxs)
+ves_icall_System_Array_GetValue (MonoArray *arr, MonoArray *idxs)
 {
 	MonoClass *ac, *ic;
-	MonoArray *ao, *io;
+	MonoArray *io;
 	gint32 i, pos, *ind;
 
 	MONO_CHECK_ARG_NULL (idxs, NULL);
 
-	io = (MonoArray *)idxs;
+	io = idxs;
 	ic = (MonoClass *)io->obj.vtable->klass;
 	
-	ao = (MonoArray *)this;
-	ac = (MonoClass *)ao->obj.vtable->klass;
+	ac = (MonoClass *)arr->obj.vtable->klass;
 
 	g_assert (ic->rank == 1);
 	if (io->bounds != NULL || io->max_length !=  ac->rank) {
@@ -161,33 +158,33 @@ ves_icall_System_Array_GetValue (MonoObject *this, MonoObject *idxs)
 
 	ind = (gint32 *)io->vector;
 
-	if (ao->bounds == NULL) {
-		if (*ind < 0 || *ind >= ao->max_length) {
+	if (arr->bounds == NULL) {
+		if (*ind < 0 || *ind >= arr->max_length) {
 			mono_set_pending_exception (mono_get_exception_index_out_of_range ());
 			return NULL;
 		}
 
-		return ves_icall_System_Array_GetValueImpl (this, *ind);
+		return ves_icall_System_Array_GetValueImpl (arr, *ind);
 	}
 	
 	for (i = 0; i < ac->rank; i++) {
-		if ((ind [i] < ao->bounds [i].lower_bound) ||
-		    (ind [i] >=  (mono_array_lower_bound_t)ao->bounds [i].length + ao->bounds [i].lower_bound)) {
+		if ((ind [i] < arr->bounds [i].lower_bound) ||
+		    (ind [i] >=  (mono_array_lower_bound_t)arr->bounds [i].length + arr->bounds [i].lower_bound)) {
 			mono_set_pending_exception (mono_get_exception_index_out_of_range ());
 			return NULL;
 		}
 	}
 
-	pos = ind [0] - ao->bounds [0].lower_bound;
+	pos = ind [0] - arr->bounds [0].lower_bound;
 	for (i = 1; i < ac->rank; i++)
-		pos = pos*ao->bounds [i].length + ind [i] - 
-			ao->bounds [i].lower_bound;
+		pos = pos * arr->bounds [i].length + ind [i] - 
+			arr->bounds [i].lower_bound;
 
-	return ves_icall_System_Array_GetValueImpl (this, pos);
+	return ves_icall_System_Array_GetValueImpl (arr, pos);
 }
 
 ICALL_EXPORT void
-ves_icall_System_Array_SetValueImpl (MonoArray *this, MonoObject *value, guint32 pos)
+ves_icall_System_Array_SetValueImpl (MonoArray *arr, MonoObject *value, guint32 pos)
 {
 	MonoClass *ac, *vc, *ec;
 	gint32 esize, vsize;
@@ -203,11 +200,11 @@ ves_icall_System_Array_SetValueImpl (MonoArray *this, MonoObject *value, guint32
 	else
 		vc = NULL;
 
-	ac = this->obj.vtable->klass;
+	ac = arr->obj.vtable->klass;
 	ec = ac->element_class;
 
 	esize = mono_array_element_size (ac);
-	ea = (gpointer*)((char*)this->vector + (pos * esize));
+	ea = (gpointer*)((char*)arr->vector + (pos * esize));
 	va = (gpointer*)((char*)value + sizeof (MonoObject));
 
 	if (mono_class_is_nullable (ec)) {
@@ -277,7 +274,7 @@ ves_icall_System_Array_SetValueImpl (MonoArray *this, MonoObject *value, guint32
 	if (!ec->valuetype) {
 		if (!mono_object_isinst (value, ec))
 			INVALID_CAST;
-		mono_gc_wbarrier_set_arrayref (this, ea, (MonoObject*)value);
+		mono_gc_wbarrier_set_arrayref (arr, ea, (MonoObject*)value);
 		return;
 	}
 
@@ -469,7 +466,7 @@ ves_icall_System_Array_SetValueImpl (MonoArray *this, MonoObject *value, guint32
 }
 
 ICALL_EXPORT void 
-ves_icall_System_Array_SetValue (MonoArray *this, MonoObject *value,
+ves_icall_System_Array_SetValue (MonoArray *arr, MonoObject *value,
 				 MonoArray *idxs)
 {
 	MonoClass *ac, *ic;
@@ -478,7 +475,7 @@ ves_icall_System_Array_SetValue (MonoArray *this, MonoObject *value,
 	MONO_CHECK_ARG_NULL (idxs,);
 
 	ic = idxs->obj.vtable->klass;
-	ac = this->obj.vtable->klass;
+	ac = arr->obj.vtable->klass;
 
 	g_assert (ic->rank == 1);
 	if (idxs->bounds != NULL || idxs->max_length != ac->rank) {
@@ -488,29 +485,29 @@ ves_icall_System_Array_SetValue (MonoArray *this, MonoObject *value,
 
 	ind = (gint32 *)idxs->vector;
 
-	if (this->bounds == NULL) {
-		if (*ind < 0 || *ind >= this->max_length) {
+	if (arr->bounds == NULL) {
+		if (*ind < 0 || *ind >= arr->max_length) {
 			mono_set_pending_exception (mono_get_exception_index_out_of_range ());
 			return;
 		}
 
-		ves_icall_System_Array_SetValueImpl (this, value, *ind);
+		ves_icall_System_Array_SetValueImpl (arr, value, *ind);
 		return;
 	}
 	
 	for (i = 0; i < ac->rank; i++)
-		if ((ind [i] < this->bounds [i].lower_bound) ||
-		    (ind [i] >= (mono_array_lower_bound_t)this->bounds [i].length + this->bounds [i].lower_bound)) {
+		if ((ind [i] < arr->bounds [i].lower_bound) ||
+		    (ind [i] >= (mono_array_lower_bound_t)arr->bounds [i].length + arr->bounds [i].lower_bound)) {
 			mono_set_pending_exception (mono_get_exception_index_out_of_range ());
 			return;
 		}
 
-	pos = ind [0] - this->bounds [0].lower_bound;
+	pos = ind [0] - arr->bounds [0].lower_bound;
 	for (i = 1; i < ac->rank; i++)
-		pos = pos * this->bounds [i].length + ind [i] - 
-			this->bounds [i].lower_bound;
+		pos = pos * arr->bounds [i].length + ind [i] - 
+			arr->bounds [i].lower_bound;
 
-	ves_icall_System_Array_SetValueImpl (this, value, pos);
+	ves_icall_System_Array_SetValueImpl (arr, value, pos);
 }
 
 ICALL_EXPORT MonoArray *
@@ -609,15 +606,15 @@ ves_icall_System_Array_CreateInstanceImpl64 (MonoReflectionType *type, MonoArray
 }
 
 ICALL_EXPORT gint32 
-ves_icall_System_Array_GetRank (MonoObject *this)
+ves_icall_System_Array_GetRank (MonoObject *arr)
 {
-	return this->vtable->klass->rank;
+	return arr->vtable->klass->rank;
 }
 
 ICALL_EXPORT gint32
-ves_icall_System_Array_GetLength (MonoArray *this, gint32 dimension)
+ves_icall_System_Array_GetLength (MonoArray *arr, gint32 dimension)
 {
-	gint32 rank = ((MonoObject *)this)->vtable->klass->rank;
+	gint32 rank = arr->obj.vtable->klass->rank;
 	uintptr_t length;
 
 	if ((dimension < 0) || (dimension >= rank)) {
@@ -625,10 +622,10 @@ ves_icall_System_Array_GetLength (MonoArray *this, gint32 dimension)
 		return 0;
 	}
 	
-	if (this->bounds == NULL)
-		length = this->max_length;
+	if (arr->bounds == NULL)
+		length = arr->max_length;
 	else
-		length = this->bounds [dimension].length;
+		length = arr->bounds [dimension].length;
 
 #ifdef MONO_BIG_ARRAYS
 	if (length > G_MAXINT32) {
@@ -640,35 +637,35 @@ ves_icall_System_Array_GetLength (MonoArray *this, gint32 dimension)
 }
 
 ICALL_EXPORT gint64
-ves_icall_System_Array_GetLongLength (MonoArray *this, gint32 dimension)
+ves_icall_System_Array_GetLongLength (MonoArray *arr, gint32 dimension)
 {
-	gint32 rank = ((MonoObject *)this)->vtable->klass->rank;
+	gint32 rank = arr->obj.vtable->klass->rank;
 
 	if ((dimension < 0) || (dimension >= rank)) {
 		mono_set_pending_exception (mono_get_exception_index_out_of_range ());
 		return 0;
 	}
 	
-	if (this->bounds == NULL)
- 		return this->max_length;
+	if (arr->bounds == NULL)
+ 		return arr->max_length;
  	
- 	return this->bounds [dimension].length;
+ 	return arr->bounds [dimension].length;
 }
 
 ICALL_EXPORT gint32
-ves_icall_System_Array_GetLowerBound (MonoArray *this, gint32 dimension)
+ves_icall_System_Array_GetLowerBound (MonoArray *arr, gint32 dimension)
 {
-	gint32 rank = ((MonoObject *)this)->vtable->klass->rank;
+	gint32 rank = arr->obj.vtable->klass->rank;
 
 	if ((dimension < 0) || (dimension >= rank)) {
 		mono_set_pending_exception (mono_get_exception_index_out_of_range ());
 		return 0;
 	}
 	
-	if (this->bounds == NULL)
+	if (arr->bounds == NULL)
 		return 0;
 	
-	return this->bounds [dimension].lower_bound;
+	return arr->bounds [dimension].lower_bound;
 }
 
 ICALL_EXPORT void
@@ -743,36 +740,32 @@ ves_icall_System_Array_FastCopy (MonoArray *source, int source_idx, MonoArray* d
 }
 
 ICALL_EXPORT void
-ves_icall_System_Array_GetGenericValueImpl (MonoObject *this, guint32 pos, gpointer value)
+ves_icall_System_Array_GetGenericValueImpl (MonoArray *arr, guint32 pos, gpointer value)
 {
 	MonoClass *ac;
-	MonoArray *ao;
 	gint32 esize;
 	gpointer *ea;
 
-	ao = (MonoArray *)this;
-	ac = (MonoClass *)ao->obj.vtable->klass;
+	ac = (MonoClass *)arr->obj.vtable->klass;
 
 	esize = mono_array_element_size (ac);
-	ea = (gpointer*)((char*)ao->vector + (pos * esize));
+	ea = (gpointer*)((char*)arr->vector + (pos * esize));
 
 	mono_gc_memmove_atomic (value, ea, esize);
 }
 
 ICALL_EXPORT void
-ves_icall_System_Array_SetGenericValueImpl (MonoObject *this, guint32 pos, gpointer value)
+ves_icall_System_Array_SetGenericValueImpl (MonoArray *arr, guint32 pos, gpointer value)
 {
 	MonoClass *ac, *ec;
-	MonoArray *ao;
 	gint32 esize;
 	gpointer *ea;
 
-	ao = (MonoArray *)this;
-	ac = (MonoClass *)ao->obj.vtable->klass;
+	ac = (MonoClass *)arr->obj.vtable->klass;
 	ec = ac->element_class;
 
 	esize = mono_array_element_size (ac);
-	ea = (gpointer*)((char*)ao->vector + (pos * esize));
+	ea = (gpointer*)((char*)arr->vector + (pos * esize));
 
 	if (MONO_TYPE_IS_REFERENCE (&ec->byval_arg)) {
 		g_assert (esize == sizeof (gpointer));
@@ -933,13 +926,13 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStac
 }
 
 ICALL_EXPORT MonoObject *
-ves_icall_System_Object_MemberwiseClone (MonoObject *this)
+ves_icall_System_Object_MemberwiseClone (MonoObject *this_obj)
 {
-	return mono_object_clone (this);
+	return mono_object_clone (this_obj);
 }
 
 ICALL_EXPORT gint32
-ves_icall_System_ValueType_InternalGetHashCode (MonoObject *this, MonoArray **fields)
+ves_icall_System_ValueType_InternalGetHashCode (MonoObject *this_obj, MonoArray **fields)
 {
 	MonoClass *klass;
 	MonoObject **values = NULL;
@@ -949,7 +942,7 @@ ves_icall_System_ValueType_InternalGetHashCode (MonoObject *this, MonoArray **fi
 	MonoClassField* field;
 	gpointer iter;
 
-	klass = mono_object_class (this);
+	klass = mono_object_class (this_obj);
 
 	if (mono_class_num_fields (klass) == 0)
 		return result;
@@ -968,11 +961,11 @@ ves_icall_System_ValueType_InternalGetHashCode (MonoObject *this, MonoArray **fi
 		/* FIXME: Add more types */
 		switch (field->type->type) {
 		case MONO_TYPE_I4:
-			result ^= *(gint32*)((guint8*)this + field->offset);
+			result ^= *(gint32*)((guint8*)this_obj + field->offset);
 			break;
 		case MONO_TYPE_STRING: {
 			MonoString *s;
-			s = *(MonoString**)((guint8*)this + field->offset);
+			s = *(MonoString**)((guint8*)this_obj + field->offset);
 			if (s != NULL)
 				result ^= mono_string_hash (s);
 			break;
@@ -980,7 +973,7 @@ ves_icall_System_ValueType_InternalGetHashCode (MonoObject *this, MonoArray **fi
 		default:
 			if (!values)
 				values = g_newa (MonoObject*, mono_class_num_fields (klass));
-			o = mono_field_get_value_object (mono_object_domain (this), field, this);
+			o = mono_field_get_value_object (mono_object_domain (this_obj), field, this_obj);
 			values [count++] = o;
 		}
 	}
@@ -997,7 +990,7 @@ ves_icall_System_ValueType_InternalGetHashCode (MonoObject *this, MonoArray **fi
 }
 
 ICALL_EXPORT MonoBoolean
-ves_icall_System_ValueType_Equals (MonoObject *this, MonoObject *that, MonoArray **fields)
+ves_icall_System_ValueType_Equals (MonoObject *this_obj, MonoObject *that, MonoArray **fields)
 {
 	MonoClass *klass;
 	MonoObject **values = NULL;
@@ -1008,13 +1001,13 @@ ves_icall_System_ValueType_Equals (MonoObject *this, MonoObject *that, MonoArray
 
 	MONO_CHECK_ARG_NULL (that, FALSE);
 
-	if (this->vtable != that->vtable)
+	if (this_obj->vtable != that->vtable)
 		return FALSE;
 
-	klass = mono_object_class (this);
+	klass = mono_object_class (this_obj);
 
 	if (klass->enumtype && mono_class_enum_basetype (klass) && mono_class_enum_basetype (klass)->type == MONO_TYPE_I4)
-		return (*(gint32*)((guint8*)this + sizeof (MonoObject)) == *(gint32*)((guint8*)that + sizeof (MonoObject)));
+		return (*(gint32*)((guint8*)this_obj + sizeof (MonoObject)) == *(gint32*)((guint8*)that + sizeof (MonoObject)));
 
 	/*
 	 * Do the comparison for fields of primitive type and return a result if
@@ -1034,31 +1027,31 @@ ves_icall_System_ValueType_Equals (MonoObject *this, MonoObject *that, MonoArray
 		case MONO_TYPE_U1:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_BOOLEAN:
-			if (*((guint8*)this + field->offset) != *((guint8*)that + field->offset))
+			if (*((guint8*)this_obj + field->offset) != *((guint8*)that + field->offset))
 				return FALSE;
 			break;
 		case MONO_TYPE_U2:
 		case MONO_TYPE_I2:
 		case MONO_TYPE_CHAR:
-			if (*(gint16*)((guint8*)this + field->offset) != *(gint16*)((guint8*)that + field->offset))
+			if (*(gint16*)((guint8*)this_obj + field->offset) != *(gint16*)((guint8*)that + field->offset))
 				return FALSE;
 			break;
 		case MONO_TYPE_U4:
 		case MONO_TYPE_I4:
-			if (*(gint32*)((guint8*)this + field->offset) != *(gint32*)((guint8*)that + field->offset))
+			if (*(gint32*)((guint8*)this_obj + field->offset) != *(gint32*)((guint8*)that + field->offset))
 				return FALSE;
 			break;
 		case MONO_TYPE_U8:
 		case MONO_TYPE_I8:
-			if (*(gint64*)((guint8*)this + field->offset) != *(gint64*)((guint8*)that + field->offset))
+			if (*(gint64*)((guint8*)this_obj + field->offset) != *(gint64*)((guint8*)that + field->offset))
 				return FALSE;
 			break;
 		case MONO_TYPE_R4:
-			if (*(float*)((guint8*)this + field->offset) != *(float*)((guint8*)that + field->offset))
+			if (*(float*)((guint8*)this_obj + field->offset) != *(float*)((guint8*)that + field->offset))
 				return FALSE;
 			break;
 		case MONO_TYPE_R8:
-			if (*(double*)((guint8*)this + field->offset) != *(double*)((guint8*)that + field->offset))
+			if (*(double*)((guint8*)this_obj + field->offset) != *(double*)((guint8*)that + field->offset))
 				return FALSE;
 			break;
 
@@ -1066,7 +1059,7 @@ ves_icall_System_ValueType_Equals (MonoObject *this, MonoObject *that, MonoArray
 		case MONO_TYPE_STRING: {
 			MonoString *s1, *s2;
 			guint32 s1len, s2len;
-			s1 = *(MonoString**)((guint8*)this + field->offset);
+			s1 = *(MonoString**)((guint8*)this_obj + field->offset);
 			s2 = *(MonoString**)((guint8*)that + field->offset);
 			if (s1 == s2)
 				break;
@@ -1084,9 +1077,9 @@ ves_icall_System_ValueType_Equals (MonoObject *this, MonoObject *that, MonoArray
 		default:
 			if (!values)
 				values = g_newa (MonoObject*, mono_class_num_fields (klass) * 2);
-			o = mono_field_get_value_object (mono_object_domain (this), field, this);
+			o = mono_field_get_value_object (mono_object_domain (this_obj), field, this_obj);
 			values [count++] = o;
-			o = mono_field_get_value_object (mono_object_domain (this), field, that);
+			o = mono_field_get_value_object (mono_object_domain (this_obj), field, that);
 			values [count++] = o;
 		}
 
@@ -1817,12 +1810,12 @@ ves_icall_System_RuntimeFieldHandle_SetValueDirect (MonoReflectionField *field, 
 }
 
 ICALL_EXPORT MonoObject *
-ves_icall_MonoField_GetRawConstantValue (MonoReflectionField *this)
+ves_icall_MonoField_GetRawConstantValue (MonoReflectionField *rfield)
 {	
 	MonoObject *o = NULL;
-	MonoClassField *field = this->field;
+	MonoClassField *field = rfield->field;
 	MonoClass *klass;
-	MonoDomain *domain = mono_object_domain (this); 
+	MonoDomain *domain = mono_object_domain (rfield);
 	gchar *v;
 	MonoTypeEnum def_type;
 	const char *def_value;
@@ -2675,7 +2668,7 @@ ves_icall_MonoMethod_GetGenericArguments (MonoReflectionMethod *method)
 }
 
 ICALL_EXPORT MonoObject *
-ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoArray *params, MonoException **exc) 
+ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this_arg, MonoArray *params, MonoException **exc) 
 {
 	/* 
 	 * Invoke from reflection is supposed to always be a virtual call (the API
@@ -2686,7 +2679,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 	MonoMethodSignature *sig = mono_method_signature (m);
 	MonoImage *image;
 	int pcount;
-	void *obj = this;
+	void *obj = this_arg;
 
 	*exc = NULL;
 
@@ -2699,9 +2692,9 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 			return NULL;
 		}
 
-		if (this) {
-			if (!mono_object_isinst (this, m->klass)) {
-				char *this_name = mono_type_get_full_name (mono_object_get_class (this));
+		if (this_arg) {
+			if (!mono_object_isinst (this_arg, m->klass)) {
+				char *this_name = mono_type_get_full_name (mono_object_get_class (this_arg));
 				char *target_name = mono_type_get_full_name (m->klass);
 				char *msg = g_strdup_printf ("Object of type '%s' doesn't match target type '%s'", this_name, target_name);
 				mono_gc_wbarrier_generic_store (exc, (MonoObject*) mono_exception_from_name_msg (mono_defaults.corlib, "System.Reflection", "TargetException", msg));
@@ -2710,10 +2703,10 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 				g_free (this_name);
 				return NULL;
 			}
-			m = mono_object_get_virtual_method (this, m);
+			m = mono_object_get_virtual_method (this_arg, m);
 			/* must pass the pointer to the value for valuetype methods */
 			if (m->klass->valuetype)
-				obj = mono_object_unbox (this);
+				obj = mono_object_unbox (this_arg);
 		} else if (strcmp (m->name, ".ctor") && !m->wrapper_type) {
 			mono_gc_wbarrier_generic_store (exc, (MonoObject*) mono_exception_from_name_msg (mono_defaults.corlib, "System.Reflection", "TargetException", "Non-static method requires a target."));
 			return NULL;
@@ -2731,7 +2724,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 		return NULL;
 	}
 
-	if ((m->klass->flags & TYPE_ATTRIBUTE_ABSTRACT) && !strcmp (m->name, ".ctor") && !this) {
+	if ((m->klass->flags & TYPE_ATTRIBUTE_ABSTRACT) && !strcmp (m->name, ".ctor") && !this_arg) {
 		mono_gc_wbarrier_generic_store (exc, (MonoObject*) mono_exception_from_name_msg (mono_defaults.corlib, "System.Reflection", "TargetException", "Cannot invoke constructor of an abstract class."));
 		return NULL;
 	}
@@ -2790,7 +2783,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 
 #ifndef DISABLE_REMOTING
 ICALL_EXPORT MonoObject *
-ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoArray *params, MonoArray **outArgs) 
+ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this_arg, MonoArray *params, MonoArray **outArgs) 
 {
 	MonoDomain *domain = mono_object_domain (method); 
 	MonoMethod *m = method->method;
@@ -2801,16 +2794,16 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 
 	if (m->klass == mono_defaults.object_class) {
 		if (!strcmp (m->name, "FieldGetter")) {
-			MonoClass *k = this->vtable->klass;
+			MonoClass *k = this_arg->vtable->klass;
 			MonoString *name;
 			char *str;
 			
 			/* If this is a proxy, then it must be a CBO */
 			if (k == mono_defaults.transparent_proxy_class) {
-				MonoTransparentProxy *tp = (MonoTransparentProxy*) this;
-				this = tp->rp->unwrapped_server;
-				g_assert (this);
-				k = this->vtable->klass;
+				MonoTransparentProxy *tp = (MonoTransparentProxy*) this_arg;
+				this_arg = tp->rp->unwrapped_server;
+				g_assert (this_arg);
+				k = this_arg->vtable->klass;
 			}
 			
 			name = mono_array_get (params, MonoString *, 1);
@@ -2821,9 +2814,9 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 				if (field) {
 					MonoClass *field_klass =  mono_class_from_mono_type (field->type);
 					if (field_klass->valuetype)
-						result = mono_value_box (domain, field_klass, (char *)this + field->offset);
+						result = mono_value_box (domain, field_klass, (char *)this_arg + field->offset);
 					else 
-						result = *((gpointer *)((char *)this + field->offset));
+						result = *((gpointer *)((char *)this_arg + field->offset));
 				
 					out_args = mono_array_new (domain, mono_defaults.object_class, 1);
 					mono_gc_wbarrier_generic_store (outArgs, (MonoObject*) out_args);
@@ -2838,7 +2831,7 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 			g_assert_not_reached ();
 
 		} else if (!strcmp (m->name, "FieldSetter")) {
-			MonoClass *k = this->vtable->klass;
+			MonoClass *k = this_arg->vtable->klass;
 			MonoString *name;
 			guint32 size;
 			gint32 align;
@@ -2846,10 +2839,10 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 			
 			/* If this is a proxy, then it must be a CBO */
 			if (k == mono_defaults.transparent_proxy_class) {
-				MonoTransparentProxy *tp = (MonoTransparentProxy*) this;
-				this = tp->rp->unwrapped_server;
-				g_assert (this);
-				k = this->vtable->klass;
+				MonoTransparentProxy *tp = (MonoTransparentProxy*) this_arg;
+				this_arg = tp->rp->unwrapped_server;
+				g_assert (this_arg);
+				k = this_arg->vtable->klass;
 			}
 			
 			name = mono_array_get (params, MonoString *, 1);
@@ -2864,9 +2857,9 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 					if (field_klass->valuetype) {
 						size = mono_type_size (field->type, &align);
 						g_assert (size == mono_class_value_size (field_klass, NULL));
-						mono_gc_wbarrier_value_copy ((char *)this + field->offset, (char*)val + sizeof (MonoObject), 1, field_klass);
+						mono_gc_wbarrier_value_copy ((char *)this_arg + field->offset, (char*)val + sizeof (MonoObject), 1, field_klass);
 					} else {
-						mono_gc_wbarrier_set_field (this, (char*)this + field->offset, val);
+						mono_gc_wbarrier_set_field (this_arg, (char*)this_arg + field->offset, val);
 					}
 				
 					out_args = mono_array_new (domain, mono_defaults.object_class, 0);
@@ -2894,11 +2887,11 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 	
 	/* handle constructors only for objects already allocated */
 	if (!strcmp (method->method->name, ".ctor"))
-		g_assert (this);
+		g_assert (this_arg);
 
 	/* This can be called only on MBR objects, so no need to unbox for valuetypes. */
 	g_assert (!method->method->klass->valuetype);
-	result = mono_runtime_invoke_array (method->method, this, params, NULL);
+	result = mono_runtime_invoke_array (method->method, this_arg, params, NULL);
 
 	for (i = 0, j = 0; i < mono_array_length (params); i++) {
 		if (sig->params [i]->byref) {
@@ -3010,7 +3003,7 @@ ves_icall_System_Enum_InternalHasFlag (MonoObject *a, MonoObject *b)
 }
 
 ICALL_EXPORT MonoObject *
-ves_icall_System_Enum_get_value (MonoObject *this)
+ves_icall_System_Enum_get_value (MonoObject *eobj)
 {
 	MonoObject *res;
 	MonoClass *enumc;
@@ -3018,15 +3011,15 @@ ves_icall_System_Enum_get_value (MonoObject *this)
 	gpointer src;
 	int size;
 
-	if (!this)
+	if (!eobj)
 		return NULL;
 
-	g_assert (this->vtable->klass->enumtype);
+	g_assert (eobj->vtable->klass->enumtype);
 	
-	enumc = mono_class_from_mono_type (mono_class_enum_basetype (this->vtable->klass));
-	res = mono_object_new (mono_object_domain (this), enumc);
+	enumc = mono_class_from_mono_type (mono_class_enum_basetype (eobj->vtable->klass));
+	res = mono_object_new (mono_object_domain (eobj), enumc);
 	dst = (char *)res + sizeof (MonoObject);
-	src = (char *)this + sizeof (MonoObject);
+	src = (char *)eobj + sizeof (MonoObject);
 	size = mono_class_value_size (enumc, NULL);
 
 	memcpy (dst, src, size);
@@ -3053,17 +3046,17 @@ ves_icall_System_Enum_get_underlying_type (MonoReflectionType *type)
 }
 
 ICALL_EXPORT int
-ves_icall_System_Enum_compare_value_to (MonoObject *this, MonoObject *other)
+ves_icall_System_Enum_compare_value_to (MonoObject *eobj, MonoObject *other)
 {
-	gpointer tdata = (char *)this + sizeof (MonoObject);
+	gpointer tdata = (char *)eobj + sizeof (MonoObject);
 	gpointer odata = (char *)other + sizeof (MonoObject);
-	MonoType *basetype = mono_class_enum_basetype (this->vtable->klass);
+	MonoType *basetype = mono_class_enum_basetype (eobj->vtable->klass);
 	g_assert (basetype);
 
 	if (other == NULL)
 		return 1;
 
-	if (this->vtable->klass != other->vtable->klass)
+	if (eobj->vtable->klass != other->vtable->klass)
 		return 2;
 
 #define COMPARE_ENUM_VALUES(ENUM_TYPE) do { \
@@ -3101,10 +3094,10 @@ ves_icall_System_Enum_compare_value_to (MonoObject *this, MonoObject *other)
 }
 
 ICALL_EXPORT int
-ves_icall_System_Enum_get_hashcode (MonoObject *this)
+ves_icall_System_Enum_get_hashcode (MonoObject *eobj)
 {
-	gpointer data = (char *)this + sizeof (MonoObject);
-	MonoType *basetype = mono_class_enum_basetype (this->vtable->klass);
+	gpointer data = (char *)eobj + sizeof (MonoObject);
+	MonoType *basetype = mono_class_enum_basetype (eobj->vtable->klass);
 	g_assert (basetype);
 
 	switch (basetype->type) {
@@ -4654,24 +4647,24 @@ ves_icall_System_MonoType_getFullName (MonoReflectionType *object, gboolean full
 }
 
 ICALL_EXPORT int
-vell_icall_MonoType_get_core_clr_security_level (MonoReflectionType *this)
+vell_icall_MonoType_get_core_clr_security_level (MonoReflectionType *rfield)
 {
-	MonoClass *klass = mono_class_from_mono_type (this->type);
+	MonoClass *klass = mono_class_from_mono_type (rfield->type);
 	mono_class_init_or_throw (klass);
 	return mono_security_core_clr_class_level (klass);
 }
 
 ICALL_EXPORT int
-ves_icall_MonoField_get_core_clr_security_level (MonoReflectionField *this)
+ves_icall_MonoField_get_core_clr_security_level (MonoReflectionField *rfield)
 {
-	MonoClassField *field = this->field;
+	MonoClassField *field = rfield->field;
 	return mono_security_core_clr_field_level (field, TRUE);
 }
 
 ICALL_EXPORT int
-ves_icall_MonoMethod_get_core_clr_security_level (MonoReflectionMethod *this)
+ves_icall_MonoMethod_get_core_clr_security_level (MonoReflectionMethod *rfield)
 {
-	MonoMethod *method = this->method;
+	MonoMethod *method = rfield->method;
 	return mono_security_core_clr_method_level (method, TRUE);
 }
 
@@ -5709,11 +5702,11 @@ ves_icall_System_Buffer_BlockCopyInternal (MonoArray *src, gint32 src_offset, Mo
 
 #ifndef DISABLE_REMOTING
 ICALL_EXPORT MonoObject *
-ves_icall_Remoting_RealProxy_GetTransparentProxy (MonoObject *this, MonoString *class_name)
+ves_icall_Remoting_RealProxy_GetTransparentProxy (MonoObject *this_obj, MonoString *class_name)
 {
-	MonoDomain *domain = mono_object_domain (this); 
+	MonoDomain *domain = mono_object_domain (this_obj); 
 	MonoObject *res;
-	MonoRealProxy *rp = ((MonoRealProxy *)this);
+	MonoRealProxy *rp = ((MonoRealProxy *)this_obj);
 	MonoTransparentProxy *tp;
 	MonoType *type;
 	MonoClass *klass;
@@ -5725,7 +5718,7 @@ ves_icall_Remoting_RealProxy_GetTransparentProxy (MonoObject *this, MonoString *
 	type = ((MonoReflectionType *)rp->class_to_proxy)->type;
 	klass = mono_class_from_mono_type (type);
 
-	tp->custom_type_info = (mono_object_isinst (this, mono_defaults.iremotingtypeinfo_class) != NULL);
+	tp->custom_type_info = (mono_object_isinst (this_obj, mono_defaults.iremotingtypeinfo_class) != NULL);
 	tp->remote_class = mono_remote_class (domain, class_name, klass);
 
 	res->vtable = mono_remote_class_vtable (domain, tp->remote_class, rp);
@@ -6209,11 +6202,11 @@ ves_icall_System_Runtime_Versioning_VersioningHelper_GetRuntimeId (void)
 }
 
 ICALL_EXPORT void
-ves_icall_MonoMethodMessage_InitMessage (MonoMethodMessage *this, 
+ves_icall_MonoMethodMessage_InitMessage (MonoMethodMessage *this_obj, 
 					 MonoReflectionMethod *method,
 					 MonoArray *out_args)
 {
-	mono_message_init (mono_object_domain (this), this, method, out_args);
+	mono_message_init (mono_object_domain (this_obj), this_obj, method, out_args);
 }
 
 #ifndef DISABLE_REMOTING

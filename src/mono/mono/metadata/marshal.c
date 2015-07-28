@@ -458,12 +458,12 @@ mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 		MonoMarshalSpec **mspecs;
 		MonoMethod *invoke = mono_get_delegate_invoke (klass);
 		MonoMethodPInvoke piinfo;
-		MonoObject *this;
+		MonoObject *this_obj;
 		int i;
 
 		if (use_aot_wrappers) {
 			wrapper = mono_marshal_get_native_func_wrapper_aot (klass);
-			this = mono_value_box (mono_domain_get (), mono_defaults.int_class, &ftn);
+			this_obj = mono_value_box (mono_domain_get (), mono_defaults.int_class, &ftn);
 		} else {
 			memset (&piinfo, 0, sizeof (piinfo));
 			parse_unmanaged_function_pointer_attr (klass, &piinfo);
@@ -475,7 +475,7 @@ mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 			sig->hasthis = 0;
 
 			wrapper = mono_marshal_get_native_func_wrapper (klass->image, sig, &piinfo, mspecs, ftn);
-			this = NULL;
+			this_obj = NULL;
 
 			for (i = mono_method_signature (invoke)->param_count; i >= 0; i--)
 				if (mspecs [i])
@@ -485,7 +485,7 @@ mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 		}
 
 		d = (MonoDelegate*)mono_object_new (mono_domain_get (), klass);
-		mono_delegate_ctor_with_method ((MonoObject*)d, this, mono_compile_method (wrapper), wrapper);
+		mono_delegate_ctor_with_method ((MonoObject*)d, this_obj, mono_compile_method (wrapper), wrapper);
 	}
 
 	if (d->object.vtable->domain != mono_domain_get ())

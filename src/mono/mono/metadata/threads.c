@@ -1325,7 +1325,7 @@ ves_icall_System_Threading_Thread_GetPriority (MonoThread *this)
 }
 
 void
-ves_icall_System_Threading_Thread_SetPriority (MonoThread *this, int priority)
+ves_icall_System_Threading_Thread_SetPriority (MonoThread *this_obj, int priority)
 {
 }
 
@@ -1385,35 +1385,35 @@ mono_thread_internal_current (void)
 }
 
 gboolean
-ves_icall_System_Threading_Thread_Join_internal(MonoThread *this, int ms)
+ves_icall_System_Threading_Thread_Join_internal(MonoThread *this_obj, int ms)
 {
-	MonoInternalThread *this_obj = this->internal_thread;
-	HANDLE thread = this_obj->handle;
+	MonoInternalThread *thread = this_obj->internal_thread;
+	HANDLE handle = thread->handle;
 	MonoInternalThread *cur_thread = mono_thread_internal_current ();
 	gboolean ret;
 
 	mono_thread_current_check_pending_interrupt ();
 
-	LOCK_THREAD (this_obj);
+	LOCK_THREAD (thread);
 	
-	if ((this_obj->state & ThreadState_Unstarted) != 0) {
-		UNLOCK_THREAD (this_obj);
+	if ((thread->state & ThreadState_Unstarted) != 0) {
+		UNLOCK_THREAD (thread);
 		
 		mono_set_pending_exception (mono_get_exception_thread_state ("Thread has not been started."));
 		return FALSE;
 	}
 
-	UNLOCK_THREAD (this_obj);
+	UNLOCK_THREAD (thread);
 
 	if(ms== -1) {
 		ms=INFINITE;
 	}
-	THREAD_DEBUG (g_message ("%s: joining thread handle %p, %d ms", __func__, thread, ms));
+	THREAD_DEBUG (g_message ("%s: joining thread handle %p, %d ms", __func__, handle, ms));
 	
 	mono_thread_set_state (cur_thread, ThreadState_WaitSleepJoin);
 
 	MONO_PREPARE_BLOCKING
-	ret=WaitForSingleObjectEx (thread, ms, TRUE);
+	ret=WaitForSingleObjectEx (handle, ms, TRUE);
 	MONO_FINISH_BLOCKING
 
 	mono_thread_clr_state (cur_thread, ThreadState_WaitSleepJoin);
@@ -1563,7 +1563,7 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 }
 
 /* FIXME: exitContext isnt documented */
-gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this, HANDLE handle, gint32 ms, gboolean exitContext)
+gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this_obj, HANDLE handle, gint32 ms, gboolean exitContext)
 {
 	guint32 ret;
 	MonoInternalThread *thread = mono_thread_internal_current ();
@@ -2149,9 +2149,9 @@ mono_thread_internal_reset_abort (MonoInternalThread *thread)
 }
 
 MonoObject*
-ves_icall_System_Threading_Thread_GetAbortExceptionState (MonoThread *this)
+ves_icall_System_Threading_Thread_GetAbortExceptionState (MonoThread *this_obj)
 {
-	MonoInternalThread *thread = this->internal_thread;
+	MonoInternalThread *thread = this_obj->internal_thread;
 	MonoObject *state, *deserialized = NULL, *exc;
 	MonoDomain *domain;
 

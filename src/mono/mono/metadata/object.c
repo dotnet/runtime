@@ -5838,7 +5838,7 @@ ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_Invoke (MonoAsyncResult 
 
 void
 mono_message_init (MonoDomain *domain,
-		   MonoMethodMessage *this, 
+		   MonoMethodMessage *this_obj, 
 		   MonoReflectionMethod *method,
 		   MonoArray *out_args)
 {
@@ -5868,20 +5868,20 @@ mono_message_init (MonoDomain *domain,
 		mono_atomic_store_release (&object_array_klass, klass);
 	}
 
-	MONO_OBJECT_SETREF (this, method, method);
+	MONO_OBJECT_SETREF (this_obj, method, method);
 
-	MONO_OBJECT_SETREF (this, args, mono_array_new_specific (mono_class_vtable (domain, object_array_klass), sig->param_count));
-	MONO_OBJECT_SETREF (this, arg_types, mono_array_new_specific (mono_class_vtable (domain, byte_array_klass), sig->param_count));
-	this->async_result = NULL;
-	this->call_type = CallType_Sync;
+	MONO_OBJECT_SETREF (this_obj, args, mono_array_new_specific (mono_class_vtable (domain, object_array_klass), sig->param_count));
+	MONO_OBJECT_SETREF (this_obj, arg_types, mono_array_new_specific (mono_class_vtable (domain, byte_array_klass), sig->param_count));
+	this_obj->async_result = NULL;
+	this_obj->call_type = CallType_Sync;
 
 	names = g_new (char *, sig->param_count);
 	mono_method_get_param_names (method->method, (const char **) names);
-	MONO_OBJECT_SETREF (this, names, mono_array_new_specific (mono_class_vtable (domain, string_array_klass), sig->param_count));
+	MONO_OBJECT_SETREF (this_obj, names, mono_array_new_specific (mono_class_vtable (domain, string_array_klass), sig->param_count));
 	
 	for (i = 0; i < sig->param_count; i++) {
 		name = mono_string_new (domain, names [i]);
-		mono_array_setref (this->names, i, name);	
+		mono_array_setref (this_obj->names, i, name);	
 	}
 
 	g_free (names);
@@ -5889,7 +5889,7 @@ mono_message_init (MonoDomain *domain,
 		if (sig->params [i]->byref) {
 			if (out_args) {
 				MonoObject* arg = mono_array_get (out_args, gpointer, j);
-				mono_array_setref (this->args, i, arg);
+				mono_array_setref (this_obj->args, i, arg);
 				j++;
 			}
 			arg_type = 2;
@@ -5900,7 +5900,7 @@ mono_message_init (MonoDomain *domain,
 			if (sig->params [i]->attrs & PARAM_ATTRIBUTE_OUT)
 				arg_type |= 4;
 		}
-		mono_array_set (this->arg_types, guint8, i, arg_type);
+		mono_array_set (this_obj->arg_types, guint8, i, arg_type);
 	}
 }
 
@@ -6104,14 +6104,14 @@ mono_print_unhandled_exception (MonoObject *exc)
  * correct instantiation of the method.
  */
 void
-mono_delegate_ctor_with_method (MonoObject *this, MonoObject *target, gpointer addr, MonoMethod *method)
+mono_delegate_ctor_with_method (MonoObject *this_obj, MonoObject *target, gpointer addr, MonoMethod *method)
 {
-	MonoDelegate *delegate = (MonoDelegate *)this;
+	MonoDelegate *delegate = (MonoDelegate *)this_obj;
 
-	g_assert (this);
+	g_assert (this_obj);
 	g_assert (addr);
 
-	g_assert (mono_class_has_parent (mono_object_class (this), mono_defaults.multicastdelegate_class));
+	g_assert (mono_class_has_parent (mono_object_class (this_obj), mono_defaults.multicastdelegate_class));
 
 	if (method)
 		delegate->method = method;
@@ -6143,7 +6143,7 @@ mono_delegate_ctor_with_method (MonoObject *this, MonoObject *target, gpointer a
  * This is used to initialize a delegate.
  */
 void
-mono_delegate_ctor (MonoObject *this, MonoObject *target, gpointer addr)
+mono_delegate_ctor (MonoObject *this_obj, MonoObject *target, gpointer addr)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitInfo *ji;
@@ -6160,7 +6160,7 @@ mono_delegate_ctor (MonoObject *this, MonoObject *target, gpointer addr)
 		g_assert (!method->klass->generic_container);
 	}
 
-	mono_delegate_ctor_with_method (this, target, addr, method);
+	mono_delegate_ctor_with_method (this_obj, target, addr, method);
 }
 
 /**
@@ -6289,18 +6289,18 @@ mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoAr
  * Returns: an address pointing to the value of field.
  */
 gpointer
-mono_load_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *field, gpointer *res)
+mono_load_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, gpointer *res)
 {
 	static MonoMethod *getter = NULL;
 	MonoDomain *domain = mono_domain_get ();
-	MonoTransparentProxy *tp = (MonoTransparentProxy *) this;
+	MonoTransparentProxy *tp = (MonoTransparentProxy *) this_obj;
 	MonoClass *field_class;
 	MonoMethodMessage *msg;
 	MonoArray *out_args;
 	MonoObject *exc;
 	char* full_name;
 
-	g_assert (mono_object_is_transparent_proxy (this));
+	g_assert (mono_object_is_transparent_proxy (this_obj));
 	g_assert (res != NULL);
 
 	if (mono_class_is_contextbound (tp->remote_class->proxy_class) && tp->rp->context == (MonoObject *) mono_context_get ()) {
@@ -6348,18 +6348,18 @@ mono_load_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fiel
  * Missing documentation.
  */
 MonoObject *
-mono_load_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField *field)
+mono_load_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassField *field)
 {
 	static MonoMethod *getter = NULL;
 	MonoDomain *domain = mono_domain_get ();
-	MonoTransparentProxy *tp = (MonoTransparentProxy *) this;
+	MonoTransparentProxy *tp = (MonoTransparentProxy *) this_obj;
 	MonoClass *field_class;
 	MonoMethodMessage *msg;
 	MonoArray *out_args;
 	MonoObject *exc, *res;
 	char* full_name;
 
-	g_assert (mono_object_is_transparent_proxy (this));
+	g_assert (mono_object_is_transparent_proxy (this_obj));
 
 	field_class = mono_class_from_mono_type (field->type);
 
@@ -6404,21 +6404,21 @@ mono_load_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField *
 
 /**
  * mono_store_remote_field:
- * @this: pointer to an object
+ * @this_obj: pointer to an object
  * @klass: klass of the object containing @field
  * @field: the field to load
  * @val: the value/object to store
  *
  * This method is called by the runtime on attempts to store fields of
- * transparent proxy objects. @this points to such TP, @klass is the class of
+ * transparent proxy objects. @this_obj points to such TP, @klass is the class of
  * the object containing @field. @val is the new value to store in @field.
  */
 void
-mono_store_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *field, gpointer val)
+mono_store_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, gpointer val)
 {
 	static MonoMethod *setter = NULL;
 	MonoDomain *domain = mono_domain_get ();
-	MonoTransparentProxy *tp = (MonoTransparentProxy *) this;
+	MonoTransparentProxy *tp = (MonoTransparentProxy *) this_obj;
 	MonoClass *field_class;
 	MonoMethodMessage *msg;
 	MonoArray *out_args;
@@ -6426,7 +6426,7 @@ mono_store_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fie
 	MonoObject *arg;
 	char* full_name;
 
-	g_assert (mono_object_is_transparent_proxy (this));
+	g_assert (mono_object_is_transparent_proxy (this_obj));
 
 	field_class = mono_class_from_mono_type (field->type);
 
@@ -6463,7 +6463,7 @@ mono_store_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fie
 
 /**
  * mono_store_remote_field_new:
- * @this:
+ * @this_obj:
  * @klass:
  * @field:
  * @arg:
@@ -6471,18 +6471,18 @@ mono_store_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fie
  * Missing documentation
  */
 void
-mono_store_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField *field, MonoObject *arg)
+mono_store_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, MonoObject *arg)
 {
 	static MonoMethod *setter = NULL;
 	MonoDomain *domain = mono_domain_get ();
-	MonoTransparentProxy *tp = (MonoTransparentProxy *) this;
+	MonoTransparentProxy *tp = (MonoTransparentProxy *) this_obj;
 	MonoClass *field_class;
 	MonoMethodMessage *msg;
 	MonoArray *out_args;
 	MonoObject *exc;
 	char* full_name;
 
-	g_assert (mono_object_is_transparent_proxy (this));
+	g_assert (mono_object_is_transparent_proxy (this_obj));
 
 	field_class = mono_class_from_mono_type (field->type);
 

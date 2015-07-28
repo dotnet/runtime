@@ -54,11 +54,11 @@ ves_icall_System_Diagnostics_Process_GetPid_internal (void)
 	return mono_process_current_pid ();
 }
 
-void ves_icall_System_Diagnostics_Process_Process_free_internal (MonoObject *this,
+void ves_icall_System_Diagnostics_Process_Process_free_internal (MonoObject *this_obj,
 								 HANDLE process)
 {
 #ifdef THREAD_DEBUG
-	g_message ("%s: Closing process %p, handle %p", __func__, this, process);
+	g_message ("%s: Closing process %p, handle %p", __func__, this_obj, process);
 #endif
 
 #if defined(TARGET_WIN32) || defined(HOST_WIN32)
@@ -68,9 +68,9 @@ void ves_icall_System_Diagnostics_Process_Process_free_internal (MonoObject *thi
 #endif
 }
 
-#define STASH_SYS_ASS(this) \
+#define STASH_SYS_ASS(this_obj) \
 	if(system_assembly == NULL) { \
-		system_assembly=this->vtable->klass->image; \
+		system_assembly=this_obj->vtable->klass->image; \
 	}
 
 static MonoImage *system_assembly=NULL;
@@ -470,7 +470,7 @@ static GPtrArray* get_domain_assemblies (MonoDomain *domain)
 }
 
 /* Returns an array of System.Diagnostics.ProcessModule */
-MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this, HANDLE process)
+MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this_obj, HANDLE process)
 {
 	MonoArray *temp_arr = NULL;
 	MonoArray *arr;
@@ -489,7 +489,7 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject 
 		current_process = ves_icall_System_Diagnostics_Process_GetProcess_internal (pid);
 	}
 
-	STASH_SYS_ASS (this);
+	STASH_SYS_ASS (this_obj);
 
 	if (process == current_process) {
 		assemblies = get_domain_assemblies (mono_domain_get ());
@@ -547,12 +547,12 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject 
 	return arr;
 }
 
-void ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoObject *this, MonoString *filename)
+void ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoObject *this_obj, MonoString *filename)
 {
-	STASH_SYS_ASS (this);
+	STASH_SYS_ASS (this_obj);
 	
-	process_get_fileversion (this, mono_string_chars (filename));
-	process_set_field_string (this, "filename",
+	process_get_fileversion (this_obj, mono_string_chars (filename));
+	process_set_field_string (this_obj, "filename",
 				  mono_string_chars (filename),
 				  mono_string_length (filename));
 }
@@ -803,7 +803,7 @@ MonoBoolean ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoPro
 	return(ret);
 }
 
-MonoBoolean ves_icall_System_Diagnostics_Process_WaitForExit_internal (MonoObject *this, HANDLE process, gint32 ms)
+MonoBoolean ves_icall_System_Diagnostics_Process_WaitForExit_internal (MonoObject *this_obj, HANDLE process, gint32 ms)
 {
 	guint32 ret;
 	
@@ -823,7 +823,7 @@ MonoBoolean ves_icall_System_Diagnostics_Process_WaitForExit_internal (MonoObjec
 	}
 }
 
-MonoBoolean ves_icall_System_Diagnostics_Process_WaitForInputIdle_internal (MonoObject *this, HANDLE process, gint32 ms)
+MonoBoolean ves_icall_System_Diagnostics_Process_WaitForInputIdle_internal (MonoObject *this_obj, HANDLE process, gint32 ms)
 {
 	guint32 ret;
 	

@@ -668,7 +668,7 @@ static gint32 get_family_hint(void)
 	}
 }
 
-gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, gint32 family, gint32 type, gint32 proto, gint32 *error)
+gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this_obj, gint32 family, gint32 type, gint32 proto, gint32 *error)
 {
 	SOCKET sock;
 	gint32 sock_family;
