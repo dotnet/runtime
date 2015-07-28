@@ -20,6 +20,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />  
   <ItemGroup>
     <Compile Include="HttpClientHandlerTest.cs" />
+    <Compile Include="HttpMethodTest.cs" />
     <Compile Include="XunitTestAssemblyAtrributes.cs" />
   </ItemGroup>
   <ItemGroup>
