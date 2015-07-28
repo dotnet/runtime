@@ -26,6 +26,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ImportExportCspBlob.cs" />
+    <Compile Include="RSACryptoServiceProviderBackCompat.cs" />
     <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\RSA\EncryptDecrypt.cs" />
     <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\RSA\ImportExport.cs" />
     <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\RSA\KeyGeneration.cs" />
