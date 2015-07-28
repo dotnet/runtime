@@ -177,8 +177,7 @@ namespace System.Net
             if (enumerator.MoveNext())
             {
                 // Multi-valued header
-                var buffer = new StringBuilder();
-                buffer.Append(headerValue);
+                var buffer = new StringBuilder(headerValue);
 
                 do
                 {
