@@ -5601,9 +5601,21 @@ GenTreePtr          Compiler::fgMorphCall(GenTreeCall* call)
         if (szFailReason == nullptr)
         {
             canFastTailCall = fgCanFastTailCall(call);
-            if (call->IsImplicitTailCall() && !canFastTailCall)
-            {    
-                szFailReason = "Opportunistic tail call cannot be dispatched as epilog+jmp";
+            if (!canFastTailCall)
+            {
+                if (call->IsImplicitTailCall())
+                {
+                    szFailReason = "Opportunistic tail call cannot be dispatched as epilog+jmp";
+                }
+#ifndef LEGACY_BACKEND
+                // Methods with non-standard args will have indirection cell or cookie param passed
+                // in callee trash register (e.g. R11). Tail call helper doesn't preserve it before
+                // tail calling the target method.
+                else if (call->HasNonStandardArgs())
+                {
+                    szFailReason = "Method with non-standard args passed in callee trash register cannot be tail called via helper";
+                }
+#endif //LEGACY_BACKEND
             }
         }
 
