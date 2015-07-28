@@ -34,6 +34,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\winhttp\Interop.winhttp_types.cs">
       <Link>Common\Interop\Windows\winhttp\Interop.winhttp_types.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\System\Net\Http\CertificateHelper.cs">
       <Link>ProductionCode\CertificateHelper.cs</Link>
     </Compile>
