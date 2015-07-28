@@ -9,6 +9,7 @@ namespace InterProcessCommunication.Tests
 {
     public class MemoryMappedFilesTests : IpcTestBase
     {
+        [ActiveIssue(2498, PlatformID.AnyUnix)]
         [Fact]
         public void DataShared()
         {
