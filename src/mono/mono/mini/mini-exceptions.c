@@ -511,7 +511,7 @@ static MonoGenericContext
 get_generic_context_from_stack_frame (MonoJitInfo *ji, gpointer generic_info)
 {
 	MonoGenericContext context = { NULL, NULL };
-	MonoClass *class, *method_container_class;
+	MonoClass *klass, *method_container_class;
 	MonoMethod *method;
 
 	g_assert (generic_info);
@@ -521,15 +521,15 @@ get_generic_context_from_stack_frame (MonoJitInfo *ji, gpointer generic_info)
 	if (mono_method_get_context (method)->method_inst) {
 		MonoMethodRuntimeGenericContext *mrgctx = generic_info;
 
-		class = mrgctx->class_vtable->klass;
+		klass = mrgctx->class_vtable->klass;
 		context.method_inst = mrgctx->method_inst;
 		g_assert (context.method_inst);
 	} else if ((method->flags & METHOD_ATTRIBUTE_STATIC) || method->klass->valuetype) {
 		MonoVTable *vtable = generic_info;
 
-		class = vtable->klass;
+		klass = vtable->klass;
 	} else {
-		class = generic_info;
+		klass = generic_info;
 	}
 
 	//g_assert (!method->klass->generic_container);
@@ -539,18 +539,18 @@ get_generic_context_from_stack_frame (MonoJitInfo *ji, gpointer generic_info)
 		method_container_class = method->klass;
 
 	/* class might refer to a subclass of method's class */
-	while (!(class == method->klass || (class->generic_class && class->generic_class->container_class == method_container_class))) {
-		class = class->parent;
-		g_assert (class);
+	while (!(klass == method->klass || (klass->generic_class && klass->generic_class->container_class == method_container_class))) {
+		klass = klass->parent;
+		g_assert (klass);
 	}
 
-	if (class->generic_class || class->generic_container)
-		context.class_inst = mini_class_get_context (class)->class_inst;
+	if (klass->generic_class || klass->generic_container)
+		context.class_inst = mini_class_get_context (klass)->class_inst;
 
-	if (class->generic_class)
-		g_assert (mono_class_has_parent_and_ignore_generics (class->generic_class->container_class, method_container_class));
+	if (klass->generic_class)
+		g_assert (mono_class_has_parent_and_ignore_generics (klass->generic_class->container_class, method_container_class));
 	else
-		g_assert (mono_class_has_parent_and_ignore_generics (class, method_container_class));
+		g_assert (mono_class_has_parent_and_ignore_generics (klass, method_container_class));
 
 	return context;
 }

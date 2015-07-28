@@ -5813,13 +5813,13 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 
 	/* add the this argument */
 	if (this_reg != -1) {
-		MonoInst *this;
-		MONO_INST_NEW (cfg, this, OP_MOVE);
-		this->type = this_type;
-		this->sreg1 = this_reg;
-		this->dreg = mono_alloc_ireg (cfg);
-		mono_bblock_add_inst (cfg->cbb, this);
-		mono_call_inst_add_outarg_reg (cfg, inst, this->dreg, this_dreg, FALSE);
+		MonoInst *this_ins;
+		MONO_INST_NEW (cfg, this_ins, OP_MOVE);
+		this_ins->type = this_type;
+		this_ins->sreg1 = this_reg;
+		this_ins->dreg = mono_alloc_ireg (cfg);
+		mono_bblock_add_inst (cfg->cbb, this_ins);
+		mono_call_inst_add_outarg_reg (cfg, inst, this_ins->dreg, this_dreg, FALSE);
 	}
 
 	if (vt_reg != -1) {

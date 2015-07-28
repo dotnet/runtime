@@ -6502,7 +6502,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 	MonoMethodSignature *sig;
 	guint8 **arg_buf;
 	void **args;
-	MonoObject *this, *res, *exc;
+	MonoObject *this_arg, *res, *exc;
 	MonoDomain *domain;
 	guint8 *this_buf;
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
@@ -6514,8 +6514,8 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 		/* 
 		 * Invoke this method directly, currently only Environment.Exit () is supported.
 		 */
-		this = NULL;
-		DEBUG_PRINTF (1, "[%p] Invoking method '%s' on receiver '%s'.\n", (gpointer)GetCurrentThreadId (), mono_method_full_name (invoke->method, TRUE), this ? this->vtable->klass->name : "<null>");
+		this_arg = NULL;
+		DEBUG_PRINTF (1, "[%p] Invoking method '%s' on receiver '%s'.\n", (gpointer)GetCurrentThreadId (), mono_method_full_name (invoke->method, TRUE), this_arg ? this_arg->vtable->klass->name : "<null>");
 		mono_runtime_invoke (invoke->method, NULL, invoke->args, &exc);
 		g_assert_not_reached ();
 	}
@@ -6557,50 +6557,50 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 	}
 
 	if (!m->klass->valuetype)
-		this = *(MonoObject**)this_buf;
+		this_arg = *(MonoObject**)this_buf;
 	else
-		this = NULL;
+		this_arg = NULL;
 
 	if (MONO_CLASS_IS_INTERFACE (m->klass)) {
-		if (!this) {
+		if (!this_arg) {
 			DEBUG_PRINTF (1, "[%p] Error: Interface method invoked without this argument.\n", (gpointer)GetCurrentThreadId ());
 			return ERR_INVALID_ARGUMENT;
 		}
-		m = mono_object_get_virtual_method (this, m);
+		m = mono_object_get_virtual_method (this_arg, m);
 		/* Transform this to the format the rest of the code expects it to be */
 		if (m->klass->valuetype) {
 			this_buf = g_alloca (mono_class_instance_size (m->klass));
-			memcpy (this_buf, mono_object_unbox (this), mono_class_instance_size (m->klass));
+			memcpy (this_buf, mono_object_unbox (this_arg), mono_class_instance_size (m->klass));
 		}
 	} else if ((m->flags & METHOD_ATTRIBUTE_VIRTUAL) && !m->klass->valuetype && invoke->flags & INVOKE_FLAG_VIRTUAL) {
-		if (!this) {
+		if (!this_arg) {
 			DEBUG_PRINTF (1, "[%p] Error: invoke with INVOKE_FLAG_VIRTUAL flag set without this argument.\n", (gpointer)GetCurrentThreadId ());
 			return ERR_INVALID_ARGUMENT;
 		}
-		m = mono_object_get_virtual_method (this, m);
+		m = mono_object_get_virtual_method (this_arg, m);
 		if (m->klass->valuetype) {
 			this_buf = g_alloca (mono_class_instance_size (m->klass));
-			memcpy (this_buf, mono_object_unbox (this), mono_class_instance_size (m->klass));
+			memcpy (this_buf, mono_object_unbox (this_arg), mono_class_instance_size (m->klass));
 		}
 	}
 
-	DEBUG_PRINTF (1, "[%p] Invoking method '%s' on receiver '%s'.\n", (gpointer)GetCurrentThreadId (), mono_method_full_name (m, TRUE), this ? this->vtable->klass->name : "<null>");
+	DEBUG_PRINTF (1, "[%p] Invoking method '%s' on receiver '%s'.\n", (gpointer)GetCurrentThreadId (), mono_method_full_name (m, TRUE), this_arg ? this_arg->vtable->klass->name : "<null>");
 
-	if (this && this->vtable->domain != domain)
+	if (this_arg && this_arg->vtable->domain != domain)
 		NOT_IMPLEMENTED;
 
-	if (!m->klass->valuetype && !(m->flags & METHOD_ATTRIBUTE_STATIC) && !this) {
+	if (!m->klass->valuetype && !(m->flags & METHOD_ATTRIBUTE_STATIC) && !this_arg) {
 		if (!strcmp (m->name, ".ctor")) {
 			if (m->klass->flags & TYPE_ATTRIBUTE_ABSTRACT)
 				return ERR_INVALID_ARGUMENT;
 			else
-				this = mono_object_new (domain, m->klass);
+				this_arg = mono_object_new (domain, m->klass);
 		} else {
 			return ERR_INVALID_ARGUMENT;
 		}
 	}
 
-	if (this && !obj_is_of_type (this, &m->klass->byval_arg))
+	if (this_arg && !obj_is_of_type (this_arg, &m->klass->byval_arg))
 		return ERR_INVALID_ARGUMENT;
 
 	nargs = decode_int (p, &p, end);
@@ -6664,7 +6664,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 	if (m->klass->valuetype)
 		res = mono_runtime_invoke (m, this_buf, args, &exc);
 	else
-		res = mono_runtime_invoke (m, this, args, &exc);
+		res = mono_runtime_invoke (m, this_arg, args, &exc);
 	mono_stopwatch_stop (&watch);
 	DEBUG_PRINTF (1, "[%p] Invoke result: %p, exc: %s, time: %ld ms.\n", (gpointer)GetCurrentThreadId (), res, exc ? exc->vtable->klass->name : NULL, (long)mono_stopwatch_elapsed_ms (&watch));
 	if (exc) {
@@ -6682,7 +6682,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 		if (sig->ret->type == MONO_TYPE_VOID) {
 			if (!strcmp (m->name, ".ctor")) {
 				if (!m->klass->valuetype)
-					buffer_add_value (buf, &mono_defaults.object_class->byval_arg, &this, domain);
+					buffer_add_value (buf, &mono_defaults.object_class->byval_arg, &this_arg, domain);
 				else
 					buffer_add_value (buf, &m->klass->byval_arg, this_buf, domain);
 			} else {

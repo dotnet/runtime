@@ -703,7 +703,7 @@ mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
 static gpointer
 mono_vcall_trampoline (mgreg_t *regs, guint8 *code, int slot, guint8 *tramp)
 {
-	MonoObject *this;
+	MonoObject *this_arg;
 	MonoVTable *vt;
 	gpointer *vtable_slot;
 	MonoMethod *m;
@@ -722,10 +722,10 @@ mono_vcall_trampoline (mgreg_t *regs, guint8 *code, int slot, guint8 *tramp)
 	/*
 	 * Obtain the vtable from the 'this' arg.
 	 */
-	this = mono_arch_get_this_arg_from_call (regs, code);
-	g_assert (this);
+	this_arg = mono_arch_get_this_arg_from_call (regs, code);
+	g_assert (this_arg);
 
-	vt = this->vtable;
+	vt = this_arg->vtable;
 
 	if (slot >= 0) {
 		/* Normal virtual call */

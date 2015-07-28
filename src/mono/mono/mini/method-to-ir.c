@@ -1158,7 +1158,8 @@ param_table [STACK_MAX] [STACK_MAX] = {
 };
 
 static int
-check_values_to_signature (MonoInst *args, MonoType *this, MonoMethodSignature *sig) {
+check_values_to_signature (MonoInst *args, MonoType *this_ins, MonoMethodSignature *sig)
+{
 	int i;
 
 	if (sig->hasthis) {
@@ -2726,12 +2727,12 @@ emit_get_rgctx_klass (MonoCompile *cfg, int context_used, MonoClass *klass, Mono
 
 static MonoInst*
 mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSignature *sig, gboolean tail,
-							MonoInst **args, MonoInst *this, MonoInst *imt_arg, MonoInst *rgctx_arg)
+							MonoInst **args, MonoInst *this_ins, MonoInst *imt_arg, MonoInst *rgctx_arg)
 {
 #ifndef DISABLE_REMOTING
 	gboolean might_be_remote = FALSE;
 #endif
-	gboolean virtual = this != NULL;
+	gboolean virtual = this_ins != NULL;
 	gboolean enable_for_aot = TRUE;
 	int context_used;
 	MonoCallInst *call;
@@ -2758,9 +2759,9 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 	context_used = mini_method_check_context_used (cfg, method);
 
 #ifndef DISABLE_REMOTING
-	might_be_remote = this && sig->hasthis &&
+	might_be_remote = this_ins && sig->hasthis &&
 		(mono_class_is_marshalbyref (method->klass) || method->klass == mono_defaults.object_class) &&
-		!(method->flags & METHOD_ATTRIBUTE_VIRTUAL) && (!MONO_CHECK_THIS (this) || context_used);
+		!(method->flags & METHOD_ATTRIBUTE_VIRTUAL) && (!MONO_CHECK_THIS (this_ins) || context_used);
 
 	if (might_be_remote && context_used) {
 		MonoInst *addr;
@@ -2784,14 +2785,14 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 #endif
 		call->method = method;
 	call->inst.flags |= MONO_INST_HAS_METHOD;
-	call->inst.inst_left = this;
+	call->inst.inst_left = this_ins;
 	call->tail_call = tail;
 
 	if (virtual) {
 		int vtable_reg, slot_reg, this_reg;
 		int offset;
 
-		this_reg = this->dreg;
+		this_reg = this_ins->dreg;
 
 		if ((method->klass->parent == mono_defaults.multicastdelegate_class) && !strcmp (method->name, "Invoke")) {
 			MonoInst *dummy_use;
@@ -2885,9 +2886,9 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 }
 
 MonoInst*
-mono_emit_method_call (MonoCompile *cfg, MonoMethod *method, MonoInst **args, MonoInst *this)
+mono_emit_method_call (MonoCompile *cfg, MonoMethod *method, MonoInst **args, MonoInst *this_ins)
 {
-	return mono_emit_method_call_full (cfg, method, mono_method_signature (method), FALSE, args, this, NULL, NULL);
+	return mono_emit_method_call_full (cfg, method, mono_method_signature (method), FALSE, args, this_ins, NULL, NULL);
 }
 
 MonoInst*
@@ -3365,19 +3366,19 @@ mini_emit_initobj (MonoCompile *cfg, MonoInst *dest, const guchar *ip, MonoClass
 static MonoInst*
 emit_get_rgctx (MonoCompile *cfg, MonoMethod *method, int context_used)
 {
-	MonoInst *this = NULL;
+	MonoInst *this_ins = NULL;
 
 	g_assert (cfg->gshared);
 
 	if (!(method->flags & METHOD_ATTRIBUTE_STATIC) &&
 			!(context_used & MONO_GENERIC_CONTEXT_USED_METHOD) &&
 			!method->klass->valuetype)
-		EMIT_NEW_ARGLOAD (cfg, this, 0);
+		EMIT_NEW_ARGLOAD (cfg, this_ins, 0);
 
 	if (context_used & MONO_GENERIC_CONTEXT_USED_METHOD) {
 		MonoInst *mrgctx_loc, *mrgctx_var;
 
-		g_assert (!this);
+		g_assert (!this_ins);
 		g_assert (method->is_inflated && mono_method_get_context (method)->method_inst);
 
 		mrgctx_loc = mono_get_vtable_var (cfg);
@@ -3387,7 +3388,7 @@ emit_get_rgctx (MonoCompile *cfg, MonoMethod *method, int context_used)
 	} else if (method->flags & METHOD_ATTRIBUTE_STATIC || method->klass->valuetype) {
 		MonoInst *vtable_loc, *vtable_var;
 
-		g_assert (!this);
+		g_assert (!this_ins);
 
 		vtable_loc = mono_get_vtable_var (cfg);
 		EMIT_NEW_TEMPLOAD (cfg, vtable_var, vtable_loc->inst_c0);
@@ -3407,7 +3408,7 @@ emit_get_rgctx (MonoCompile *cfg, MonoMethod *method, int context_used)
 		int vtable_reg;
 	
 		vtable_reg = alloc_preg (cfg);
-		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, vtable_reg, this->dreg, MONO_STRUCT_OFFSET (MonoObject, vtable));
+		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, vtable_reg, this_ins->dreg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 		return ins;
 	}
 }
@@ -6650,7 +6651,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
  */
 inline static MonoInst*
 mini_redirect_call (MonoCompile *cfg, MonoMethod *method,  
-					MonoMethodSignature *signature, MonoInst **args, MonoInst *this)
+					MonoMethodSignature *signature, MonoInst **args, MonoInst *this_ins)
 {
 	if (method->klass == mono_defaults.string_class) {
 		/* managed string allocation support */
@@ -6667,7 +6668,7 @@ mini_redirect_call (MonoCompile *cfg, MonoMethod *method,
 				return NULL;
 			EMIT_NEW_VTABLECONST (cfg, iargs [0], vtable);
 			iargs [1] = args [0];
-			return mono_emit_method_call (cfg, managed_alloc, iargs, this);
+			return mono_emit_method_call (cfg, managed_alloc, iargs, this_ins);
 		}
 	}
 	return NULL;
@@ -7478,12 +7479,12 @@ emit_optimized_ldloca_ir (MonoCompile *cfg, unsigned char *ip, unsigned char *en
 }
 
 static gboolean
-is_exception_class (MonoClass *class)
+is_exception_class (MonoClass *klass)
 {
-	while (class) {
-		if (class == mono_defaults.exception_class)
+	while (klass) {
+		if (klass == mono_defaults.exception_class)
 			return TRUE;
-		class = class->parent;
+		klass = klass->parent;
 	}
 	return FALSE;
 }

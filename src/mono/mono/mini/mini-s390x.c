@@ -791,20 +791,20 @@ enum_parmtype:
 			case MONO_TYPE_CLASS :
 			case MONO_TYPE_OBJECT : {
 				MonoObject *obj = *((MonoObject **) curParm);
-				MonoClass *class;
+				MonoClass *klass;
 				if ((obj) && (obj->vtable)) {
 					printf("[CLASS/OBJ:");
-					class = obj->vtable->klass;
+					klass = obj->vtable->klass;
 					printf("%p [%p] ",obj,curParm);
-					if (class == mono_defaults.string_class) {
+					if (klass == mono_defaults.string_class) {
 						printf("[STRING:%p:%s]", 
 						       obj, mono_string_to_utf8 ((MonoString *) obj));
-					} else if (class == mono_defaults.int32_class) { 
+					} else if (klass == mono_defaults.int32_class) { 
 						printf("[INT32:%p:%d]", 
 							obj, *(gint32 *)((char *)obj + sizeof (MonoObject)));
 					} else
 						printf("[%s.%s:%p]", 
-						       class->name_space, class->name, obj);
+						       klass->name_space, klass->name, obj);
 					printf("], ");
 				} else {
 					printf("[OBJECT:null], ");
@@ -893,7 +893,7 @@ static void
 enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 {
 	int i, oParm = 0, iParm = 0;
-	MonoClass *class;
+	MonoClass *klass;
 	MonoObject *obj;
 	MonoMethodSignature *sig;
 	char *fname;
@@ -923,26 +923,26 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 	}
 
 	if (sig->hasthis) {
-		gpointer *this = (gpointer *) rParm->gr[iParm];
-		obj = (MonoObject *) this;
+		gpointer *this_arg = (gpointer *) rParm->gr[iParm];
+		obj = (MonoObject *) this_arg;
 		switch(method->klass->this_arg.type) {
 		case MONO_TYPE_VALUETYPE:
 			if (obj) {
-				guint64 *value = (guint64 *) ((uintptr_t)this + sizeof(MonoObject));
-				printf("this:[value:%p:%016lx], ", this, *value);
+				guint64 *value = (guint64 *) ((uintptr_t)this_arg + sizeof(MonoObject));
+				printf("this:[value:%p:%016lx], ", this_arg, *value);
 			} else 
 				printf ("this:[NULL], ");
 			break;
 		case MONO_TYPE_STRING:
 			if (obj) {
 				if (obj->vtable) {
-					class = obj->vtable->klass;
-					if (class == mono_defaults.string_class) {
+					klass = obj->vtable->klass;
+					if (klass == mono_defaults.string_class) {
 						printf ("this:[STRING:%p:%s], ", 
 							obj, mono_string_to_utf8 ((MonoString *)obj));
 					} else {
 						printf ("this:%p[%s.%s], ", 
-							obj, class->name_space, class->name);
+							obj, klass->name_space, klass->name);
 					}
 				} else 
 					printf("vtable:[NULL], ");
@@ -950,7 +950,7 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 				printf ("this:[NULL], ");
 			break;
 		default :
-			printf("this[%s]: %p, ",cvtMonoType(method->klass->this_arg.type),this);
+			printf("this[%s]: %p, ",cvtMonoType(method->klass->this_arg.type),this_arg);
 		}
 		oParm++;
 	}
