@@ -28,7 +28,42 @@ Abstract:
 #include <errno.h>
 #include <string.h>
 
+#if HAVE_MACH_ABSOLUTE_TIME
+#include <mach/mach_time.h>
+static mach_timebase_info_data_t s_TimebaseInfo;
+#endif
+
 SET_DEFAULT_DEBUG_CHANNEL(MISC);
+
+/*++
+Function :
+TIMEInitialize
+
+Initialize all Time-related stuff related
+
+(no parameters)
+
+Return value :
+TRUE  if Time support initialization succeeded
+FALSE otherwise
+--*/
+BOOL TIMEInitialize(void)
+{
+    BOOL bRet = FALSE;
+
+#if HAVE_MACH_ABSOLUTE_TIME
+    kern_return_t machRet;
+    if ((machRet = mach_timebase_info(&s_TimebaseInfo)) != KERN_SUCCESS)
+    {
+        ASSERT("mach_timebase_info() failed: %s\n", mach_error_string(machRet));
+        goto Exit;
+    }
+#endif
+    bRet = TRUE;
+Exit:
+    return bRet;
+}
+
 
 /*++
 Function:
@@ -179,6 +214,10 @@ QueryPerformanceCounter(
         lpPerformanceCount->QuadPart = 
             (LONGLONG)ts.tv_sec * (LONGLONG)tccSecondsToNanoSeconds + (LONGLONG)ts.tv_nsec;
     }
+#elif HAVE_MACH_ABSOLUTE_TIME
+    {
+        lpPerformanceCount->QuadPart = (LONGLONG)mach_absolute_time();
+    }
 #elif HAVE_GETHRTIME
     {
         lpPerformanceCount->QuadPart = (LONGLONG)gethrtime();
@@ -221,16 +260,28 @@ QueryPerformanceFrequency(
     OUT LARGE_INTEGER *lpFrequency
     )
 {
+    BOOL retval = TRUE;
     PERF_ENTRY(QueryPerformanceFrequency);
     ENTRY("QueryPerformanceFrequency()\n");
 #if HAVE_GETHRTIME || HAVE_READ_REAL_TIME || HAVE_CLOCK_MONOTONIC
     lpFrequency->QuadPart = (LONGLONG)tccSecondsToNanoSeconds;
+#elif HAVE_MACH_ABSOLUTE_TIME
+    // use denom == 0 to indicate that s_TimebaseInfo is uninitialised.
+    if (s_TimebaseInfo.denom == 0)
+    {
+        ASSERT("s_TimebaseInfo is uninitialized.\n");
+        retval = FALSE;
+    }
+    else
+    {
+        lpFrequency->QuadPart = (LONGLONG)tccSecondsToNanoSeconds * ((LONGLONG)s_TimebaseInfo.denom / (LONGLONG)s_TimebaseInfo.numer);
+    }
 #else
     lpFrequency->QuadPart = (LONGLONG)tccSecondsToMicroSeconds;
 #endif // HAVE_GETHRTIME || HAVE_READ_REAL_TIME || HAVE_CLOCK_MONOTONIC 
     LOGEXIT("QueryPerformanceFrequency\n");
     PERF_EXIT(QueryPerformanceFrequency);
-    return TRUE;
+    return retval;
 }
 
 BOOL
@@ -270,6 +321,16 @@ GetTickCount64()
         }
         retval = (ts.tv_sec * tccSecondsToMillieSeconds)+(ts.tv_nsec / tccMillieSecondsToNanoSeconds);
     }
+#elif HAVE_MACH_ABSOLUTE_TIME
+    {
+        // use denom == 0 to indicate that s_TimebaseInfo is uninitialised.
+        if (s_TimebaseInfo.denom == 0)
+        {
+            ASSERT("s_TimebaseInfo is uninitialized.\n");
+            goto EXIT;
+        }
+        retval = (mach_absolute_time() * s_TimebaseInfo.numer / s_TimebaseInfo.denom) / tccMillieSecondsToNanoSeconds;
+    }
 #elif HAVE_GETHRTIME
     {
         retval = (ULONGLONG)(gethrtime() / tccMillieSecondsToNanoSeconds);
@@ -299,3 +360,4 @@ GetTickCount64()
 EXIT:    
     return retval;
 }
+
