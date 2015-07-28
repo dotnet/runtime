@@ -71,13 +71,11 @@
     <ClCompile Include="..\mono\metadata\mono-basic-block.c" />
     <ClCompile Include="..\mono\metadata\mono-config.c" />
     <ClCompile Include="..\mono\metadata\mono-config-dirs.c" />
-    <ClCompile Include="..\mono\metadata\mono-cq.c" />
     <ClCompile Include="..\mono\metadata\mono-debug.c" />
     <ClCompile Include="..\mono\metadata\mono-endian.c" />
     <ClCompile Include="..\mono\metadata\mono-hash.c" />
     <ClCompile Include="..\mono\metadata\mono-mlist.c" />
     <ClCompile Include="..\mono\metadata\mono-perfcounters.c" />
-    <ClCompile Include="..\mono\metadata\mono-wsq.c" />
     <ClCompile Include="..\mono\metadata\nacl-stub.c" />
     <ClCompile Include="..\mono\metadata\null-gc.c" />
     <ClCompile Include="..\mono\metadata\number-ms.c" />
@@ -129,8 +127,6 @@
     <ClCompile Include="..\mono\metadata\socket-io.c" />
     <ClCompile Include="..\mono\metadata\string-icalls.c" />
     <ClCompile Include="..\mono\metadata\sysmath.c" />
-    <ClCompile Include="..\mono\metadata\threadpool.c" />
-    <ClCompile Include="..\mono\metadata\tpool-poll.c" />
     <ClCompile Include="..\mono\metadata\threads.c" />
     <ClCompile Include="..\mono\metadata\verify.c" />
     <ClCompile Include="..\mono\mini\mini-cross-helpers.c" />
@@ -178,7 +174,6 @@
     <ClInclude Include="..\mono\metadata\mono-basic-block.h" />
     <ClInclude Include="..\mono\metadata\mono-config.h" />
     <ClInclude Include="..\mono\metadata\mono-config-dirs.h" />
-    <ClInclude Include="..\mono\metadata\mono-cq.h" />
     <ClInclude Include="..\mono\metadata\mono-debug-debugger.h" />
     <ClInclude Include="..\mono\metadata\mono-debug.h" />
     <ClInclude Include="..\mono\metadata\mono-endian.h" />
@@ -187,7 +182,6 @@
     <ClInclude Include="..\mono\metadata\mono-perfcounters-def.h" />
     <ClInclude Include="..\mono\metadata\mono-perfcounters.h" />
     <ClInclude Include="..\mono\metadata\mono-ptr-array.h" />
-    <ClInclude Include="..\mono\metadata\mono-wsq.h" />
     <ClInclude Include="..\mono\metadata\normalization-tables.h" />
     <ClInclude Include="..\mono\metadata\number-formatter.h" />
     <ClInclude Include="..\mono\metadata\object-internals.h" />
@@ -226,8 +220,6 @@
     <ClInclude Include="..\mono\metadata\string-icalls.h" />
     <ClInclude Include="..\mono\metadata\sysmath.h" />
     <ClInclude Include="..\mono\metadata\tabledefs.h" />
-    <ClInclude Include="..\mono\metadata\threadpool-internals.h" />
-    <ClInclude Include="..\mono\metadata\threadpool.h" />
     <ClInclude Include="..\mono\metadata\threads-types.h" />
     <ClInclude Include="..\mono\metadata\verify-internals.h" />
     <ClInclude Include="..\mono\metadata\verify.h" />
