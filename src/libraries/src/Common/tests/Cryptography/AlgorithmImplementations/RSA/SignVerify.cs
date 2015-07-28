@@ -1,9 +1,9 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using Test.IO.Streams;
 using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
@@ -146,10 +146,10 @@ namespace System.Security.Cryptography.Rsa.Tests
             byte[] signature;
 
             using (Stream stream = new PositionValueStream(10))
-            using (var rsa = new RSACryptoServiceProvider())
+            using (RSA rsa = RSAFactory.Create())
             {
                 rsa.ImportParameters(TestData.RSA1024Params);
-                signature = rsa.SignData(stream, "SHA256");
+                signature = rsa.SignData(stream, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
             }
 
             Assert.Equal(expectedSignature, signature);
@@ -286,11 +286,11 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public static void NegativeVerify_WrongAlgorithm()
         {
-            using (var rsa = new RSACryptoServiceProvider())
+            using (RSA rsa = RSAFactory.Create())
             {
                 rsa.ImportParameters(TestData.RSA2048Params);
-                byte[] signature = rsa.SignData(TestData.HelloBytes, "SHA1");
-                bool signatureMatched = rsa.VerifyData(TestData.HelloBytes, "SHA256", signature);
+                byte[] signature = rsa.SignData(TestData.HelloBytes, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
+                bool signatureMatched = rsa.VerifyData(TestData.HelloBytes, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
 
                 Assert.False(signatureMatched);
             }
@@ -299,15 +299,15 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public static void NegativeVerify_WrongSignature()
         {
-            using (var rsa = new RSACryptoServiceProvider())
+            using (RSA rsa = RSAFactory.Create())
             {
                 rsa.ImportParameters(TestData.RSA2048Params);
-                byte[] signature = rsa.SignData(TestData.HelloBytes, "SHA1");
+                byte[] signature = rsa.SignData(TestData.HelloBytes, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
 
                 // Invalidate the signature.
                 signature[0] = (byte)~signature[0];
 
-                bool signatureMatched = rsa.VerifyData(TestData.HelloBytes, "SHA1", signature);
+                bool signatureMatched = rsa.VerifyData(TestData.HelloBytes, signature, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
                 Assert.False(signatureMatched);
             }
         }
@@ -315,11 +315,11 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public static void NegativeVerify_TamperedData()
         {
-            using (var rsa = new RSACryptoServiceProvider())
+            using (RSA rsa = RSAFactory.Create())
             {
                 rsa.ImportParameters(TestData.RSA2048Params);
-                byte[] signature = rsa.SignData(TestData.HelloBytes, "SHA1");
-                bool signatureMatched = rsa.VerifyData(Array.Empty<byte>(), "SHA1", signature);
+                byte[] signature = rsa.SignData(TestData.HelloBytes, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
+                bool signatureMatched = rsa.VerifyData(Array.Empty<byte>(), signature, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
                 Assert.False(signatureMatched);
             }
         }
@@ -329,16 +329,16 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             byte[] signature;
 
-            using (var rsa = new RSACryptoServiceProvider())
+            using (RSA rsa = RSAFactory.Create())
             {
                 rsa.ImportParameters(TestData.RSA2048Params);
-                signature = rsa.SignData(TestData.HelloBytes, "SHA1");
+                signature = rsa.SignData(TestData.HelloBytes, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
             }
 
-            using (var rsa = new RSACryptoServiceProvider())
+            using (RSA rsa = RSAFactory.Create())
             {
                 rsa.ImportParameters(TestData.RSA1024Params);
-                bool signatureMatched = rsa.VerifyData(TestData.HelloBytes, "SHA1", signature);
+                bool signatureMatched = rsa.VerifyData(TestData.HelloBytes, signature, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
 
                 Assert.False(signatureMatched);
             }
@@ -606,45 +606,6 @@ namespace System.Security.Cryptography.Rsa.Tests
             VerifyHashSignature(hashSignature, dataHash, "SHA256", TestData.RSA2048Params);
         }
 
-        [Theory]
-        [MemberData("AlgorithmIdentifiers")]
-        public static void AlgorithmLookups(string primaryId, object halg)
-        {
-            byte[] data = { 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 };
-
-            using (var rsa = new RSACryptoServiceProvider())
-            {
-                rsa.ImportParameters(TestData.RSA2048Params);
-
-                byte[] primary = rsa.SignData(data, primaryId);
-                byte[] lookup = rsa.SignData(data, halg);
-
-                Assert.Equal(primary, lookup);
-            }
-        }
-
-        public static IEnumerable<object[]> AlgorithmIdentifiers()
-        {
-            return new[]
-            {
-                new object[] { "MD5", MD5.Create() },
-                new object[] { "MD5", typeof(MD5) },
-                new object[] { "MD5", "1.2.840.113549.2.5" },
-                new object[] { "SHA1", SHA1.Create() },
-                new object[] { "SHA1", typeof(SHA1) },
-                new object[] { "SHA1", "1.3.14.3.2.26" },
-                new object[] { "SHA256", SHA256.Create() },
-                new object[] { "SHA256", typeof(SHA256) },
-                new object[] { "SHA256", "2.16.840.1.101.3.4.2.1" },
-                new object[] { "SHA384", SHA384.Create() },
-                new object[] { "SHA384", typeof(SHA384) },
-                new object[] { "SHA384", "2.16.840.1.101.3.4.2.2" },
-                new object[] { "SHA512", SHA512.Create() },
-                new object[] { "SHA512", typeof(SHA512) },
-                new object[] { "SHA512", "2.16.840.1.101.3.4.2.3" },
-            };
-        }
-
         private static void ExpectSignature(
             byte[] expectedSignature,
             byte[] data,
@@ -657,10 +618,10 @@ namespace System.Security.Cryptography.Rsa.Tests
             // the signature is deterministic, so we can safely verify it here.
             byte[] signature;
 
-            using (var rsa = new RSACryptoServiceProvider())
+            using (RSA rsa = RSAFactory.Create())
             {
                 rsa.ImportParameters(rsaParameters);
-                signature = rsa.SignData(data, hashAlgorithmName);
+                signature = rsa.SignData(data, new HashAlgorithmName(hashAlgorithmName), RSASignaturePadding.Pkcs1);
             }
 
             Assert.Equal(expectedSignature, signature);
@@ -678,10 +639,10 @@ namespace System.Security.Cryptography.Rsa.Tests
             // the signature is deterministic, so we can safely verify it here.
             byte[] signature;
 
-            using (var rsa = new RSACryptoServiceProvider())
+            using (RSA rsa = RSAFactory.Create())
             {
                 rsa.ImportParameters(rsaParameters);
-                signature = rsa.SignHash(dataHash, hashAlgorithmName);
+                signature = rsa.SignHash(dataHash, new HashAlgorithmName(hashAlgorithmName), RSASignaturePadding.Pkcs1);
             }
 
             Assert.Equal(expectedSignature, signature);
@@ -701,10 +662,10 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             bool signatureMatched;
 
-            using (var rsa = new RSACryptoServiceProvider())
+            using (RSA rsa = RSAFactory.Create())
             {
                 rsa.ImportParameters(publicOnly);
-                signatureMatched = rsa.VerifyData(data, hashAlgorithmName, signature);
+                signatureMatched = rsa.VerifyData(data, signature, new HashAlgorithmName(hashAlgorithmName), RSASignaturePadding.Pkcs1);
             }
 
             Assert.True(signatureMatched);
@@ -724,10 +685,10 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             bool signatureMatched;
 
-            using (var rsa = new RSACryptoServiceProvider())
+            using (RSA rsa = RSAFactory.Create())
             {
                 rsa.ImportParameters(publicOnly);
-                signatureMatched = rsa.VerifyHash(dataHash, hashAlgorithmName, signature);
+                signatureMatched = rsa.VerifyHash(dataHash, signature, new HashAlgorithmName(hashAlgorithmName), RSASignaturePadding.Pkcs1);
             }
 
             Assert.True(signatureMatched);
@@ -735,11 +696,11 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         private static void SignAndVerify(byte[] data, string hashAlgorithmName, RSAParameters rsaParameters)
         {
-            using (var rsa = new RSACryptoServiceProvider())
+            using (RSA rsa = RSAFactory.Create())
             {
                 rsa.ImportParameters(rsaParameters);
-                byte[] signature = rsa.SignData(data, hashAlgorithmName);
-                bool signatureMatched = rsa.VerifyData(data, hashAlgorithmName, signature);
+                byte[] signature = rsa.SignData(data, new HashAlgorithmName(hashAlgorithmName), RSASignaturePadding.Pkcs1);
+                bool signatureMatched = rsa.VerifyData(data, signature, new HashAlgorithmName(hashAlgorithmName), RSASignaturePadding.Pkcs1);
                 Assert.True(signatureMatched);
             }
         }

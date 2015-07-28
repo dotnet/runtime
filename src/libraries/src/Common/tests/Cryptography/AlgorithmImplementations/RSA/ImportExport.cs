@@ -14,7 +14,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             RSAParameters publicParams;
             int keySize;
 
-            using (RSA rsa = new RSACryptoServiceProvider())
+            using (RSA rsa = RSAFactory.Create())
             {
                 keySize = rsa.KeySize;
 
@@ -53,7 +53,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             RSAParameters diminishedDPParamaters = TestData.DiminishedDPParamaters;
             RSAParameters exported;
 
-            using (RSA rsa = new RSACryptoServiceProvider())
+            using (RSA rsa = RSAFactory.Create())
             {
                 rsa.ImportParameters(diminishedDPParamaters);
                 exported = rsa.ExportParameters(true);
@@ -69,7 +69,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             RSAParameters imported = TestData.RSA16384Params;
 
-            using (RSA rsa = new RSACryptoServiceProvider())
+            using (RSA rsa = RSAFactory.Create())
             {
                 try
                 {
@@ -106,7 +106,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             RSAParameters unusualExponentParameters = TestData.UnusualExponentParameters;
             RSAParameters exported;
 
-            using (RSA rsa = new RSACryptoServiceProvider())
+            using (RSA rsa = RSAFactory.Create())
             {
                 rsa.ImportParameters(unusualExponentParameters);
                 exported = rsa.ExportParameters(true);
@@ -120,7 +120,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public static void ImportReset()
         {
-            using (RSA rsa = new RSACryptoServiceProvider())
+            using (RSA rsa = RSAFactory.Create())
             {
                 RSAParameters exported = rsa.ExportParameters(true);
                 RSAParameters imported;
@@ -152,7 +152,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             RSAParameters imported = TestData.RSA1024Params;
 
-            using (RSA rsa = new RSACryptoServiceProvider())
+            using (RSA rsa = RSAFactory.Create())
             {
                 rsa.ImportParameters(imported);
 
@@ -187,7 +187,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 Exponent = TestData.RSA1024Params.Exponent,
             };
 
-            using (RSA rsa = new RSACryptoServiceProvider())
+            using (RSA rsa = RSAFactory.Create())
             {
                 rsa.ImportParameters(imported);
                 Assert.Throws<CryptographicException>(() => rsa.ExportParameters(true));
@@ -202,7 +202,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 Modulus = TestData.RSA1024Params.Modulus,
             };
 
-            using (RSA rsa = new RSACryptoServiceProvider())
+            using (RSA rsa = RSAFactory.Create())
             {
                 Assert.Throws<CryptographicException>(() => rsa.ImportParameters(imported));
             }
@@ -216,7 +216,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 Exponent = TestData.RSA1024Params.Exponent,
             };
 
-            using (RSA rsa = new RSACryptoServiceProvider())
+            using (RSA rsa = RSAFactory.Create())
             {
                 Assert.Throws<CryptographicException>(() => rsa.ImportParameters(imported));
             }
@@ -230,7 +230,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             RSAParameters imported = TestData.RSA1024Params;
             imported.DP = null;
 
-            using (RSA rsa = new RSACryptoServiceProvider())
+            using (RSA rsa = RSAFactory.Create())
             {
                 Assert.Throws<CryptographicException>(() => rsa.ImportParameters(imported));
             }

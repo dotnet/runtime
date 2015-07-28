@@ -46,12 +46,12 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             int keySize;
 
-            using (var rsa = new RSACryptoServiceProvider())
+            using (RSA rsa = RSAFactory.Create())
             {
                 keySize = getSize(rsa);
             }
 
-            using (var rsa = new RSACryptoServiceProvider(keySize))
+            using (RSA rsa = RSAFactory.Create(keySize))
             {
                 Assert.Equal(keySize, rsa.KeySize);
 
