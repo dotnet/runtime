@@ -295,7 +295,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	char *tramp_name;
 	guint8 *buf, *code, *tramp, *br [2], *r11_save_code, *after_r11_save_code;
 	int i, lmf_offset, offset, res_offset, arg_offset, rax_offset, tramp_offset, ctx_offset, saved_regs_offset;
-	int saved_fpregs_offset, rbp_offset, framesize, orig_rsp_to_rbp_offset, cfa_offset;
+	int r11_save_offset, saved_fpregs_offset, rbp_offset, framesize, orig_rsp_to_rbp_offset, cfa_offset;
 	gboolean has_caller;
 	GSList *unwind_ops = NULL;
 	MonoJumpInfo *ji = NULL;
@@ -320,6 +320,9 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	rax_offset = -offset;
 
 	offset += sizeof(mgreg_t);
+	r11_save_offset = -offset;
+
+	offset += sizeof(mgreg_t);
 	tramp_offset = -offset;
 
 	offset += sizeof(gpointer);
@@ -341,7 +344,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	orig_rsp_to_rbp_offset = 0;
 	r11_save_code = code;
 	/* Reserve space for the mov_membase_reg to save R11 */
-	code += 8;
+	code += 5;
 	after_r11_save_code = code;
 
 	// CFA = sp + 16 (the trampoline address is on the stack)
@@ -406,8 +409,13 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 			/* We have to save R11 right at the start of
 			   the trampoline code because it's used as a
 			   scratch register */
-			amd64_mov_membase_reg (r11_save_code, AMD64_RSP, saved_regs_offset + orig_rsp_to_rbp_offset + (i * sizeof(mgreg_t)), i, sizeof(mgreg_t));
+			/* This happens before the frame is set up, so it goes into the redzone */
+			amd64_mov_membase_reg (r11_save_code, AMD64_RSP, r11_save_offset + orig_rsp_to_rbp_offset, i, sizeof(mgreg_t));
 			g_assert (r11_save_code == after_r11_save_code);
+
+			/* Copy from the save slot into the register array slot */
+			amd64_mov_reg_membase (code, i, AMD64_RSP, r11_save_offset + orig_rsp_to_rbp_offset, sizeof(mgreg_t));
+			amd64_mov_membase_reg (code, AMD64_RBP, saved_regs_offset + (i * sizeof(mgreg_t)), i, sizeof(mgreg_t));
 		}
 	}
 	for (i = 0; i < 8; ++i)
