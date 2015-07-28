@@ -279,50 +279,7 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *a
 
 #endif /* __native_client_codegen__ */
 
-
 	InterlockedExchangePointer (plt_jump_table_entry, addr);
-}
-
-static gpointer
-get_vcall_slot (guint8 *code, mgreg_t *regs, int *displacement)
-{
-	guint8 buf [10];
-	gint32 disp;
-	MonoJitInfo *ji = NULL;
-
-#ifdef ENABLE_LLVM
-	/* code - 9 might be before the start of the method */
-	/* FIXME: Avoid this expensive call somehow */
-	ji = mono_jit_info_table_find (mono_domain_get (), (char*)code);
-#endif
-
-	mono_breakpoint_clean_code (ji ? ji->code_start : NULL, code, 9, buf, sizeof (buf));
-	code = buf + 9;
-
-	*displacement = 0;
-
-	code -= 7;
-
-	if ((code [0] == 0x41) && (code [1] == 0xff) && (code [2] == 0x15)) {
-		/* call OFFSET(%rip) */
-		g_assert_not_reached ();
-		*displacement = *(guint32*)(code + 3);
-		return (gpointer*)(code + disp + 7);
-	} else {
-		g_assert_not_reached ();
-		return NULL;
-	}
-}
-
-static gpointer*
-get_vcall_slot_addr (guint8* code, mgreg_t *regs)
-{
-	gpointer vt;
-	int displacement;
-	vt = get_vcall_slot (code, regs, &displacement);
-	if (!vt)
-		return NULL;
-	return (gpointer*)((char*)vt + displacement);
 }
 
 static void
