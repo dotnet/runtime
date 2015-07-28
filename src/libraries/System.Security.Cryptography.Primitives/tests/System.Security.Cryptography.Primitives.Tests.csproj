@@ -22,12 +22,14 @@
     <Compile Include="HmacAlgorithmTest.cs" />
     <Compile Include="KeyedHashAlgorithmTests.cs" />
     <Compile Include="Length32Hash.cs" />
-    <Compile Include="PositionValueStream.cs" />
     <Compile Include="SimpleHashAlgorithmTest.cs" />
     <Compile Include="Sum32Hash.cs" />
     <Compile Include="SymmetricAlgorithm\Minimal.cs" />
     <Compile Include="SymmetricAlgorithm\Trivial.cs" />
     <Compile Include="CryptographicException.cs" />
+    <Compile Include="$(CommonTestPath)\Streams\PositionValueStream.cs">
+      <Link>CommonTest\Streams\PositionValueStream.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Text;
+using Test.Cryptography;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {

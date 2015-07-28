@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Test.Cryptography;
+
 namespace System.Security.Cryptography.Hashing.Algorithms.Tests
 {
     public abstract class Rfc2202HmacTests : HmacTests
