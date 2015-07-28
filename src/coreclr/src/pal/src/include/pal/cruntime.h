@@ -122,6 +122,8 @@ Function:
 Parameters:
   ap
     - pointer to the va_list from which to remove arguments
+  Width
+    - the width of the current format option
   Precision
     - the precision of the current format option
   Type
@@ -129,7 +131,7 @@ Parameters:
   Prefix
     - the prefix for the current format option
 *******************************************************************************/
-void PAL_printf_arg_remover(va_list *ap, INT Precision, INT Type, INT Prefix);
+void PAL_printf_arg_remover(va_list *ap, INT Width, INT Precision, INT Type, INT Prefix);
 
 /*++
 Function:
