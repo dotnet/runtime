@@ -32,10 +32,10 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             byte[] output;
 
-            using (var rsa = new RSACryptoServiceProvider())
+            using (RSA rsa = RSAFactory.Create())
             {
                 rsa.ImportParameters(TestData.RSA1024Params);
-                output = rsa.Decrypt(cipherBytes, true);
+                output = rsa.Decrypt(cipherBytes, RSAEncryptionPadding.OaepSHA1);
             }
 
             Assert.Equal(TestData.HelloBytes, output);
@@ -66,10 +66,10 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             byte[] output;
 
-            using (var rsa = new RSACryptoServiceProvider())
+            using (RSA rsa = RSAFactory.Create())
             {
                 rsa.ImportParameters(TestData.UnusualExponentParameters);
-                output = rsa.Decrypt(cipherBytes, true);
+                output = rsa.Decrypt(cipherBytes, RSAEncryptionPadding.OaepSHA1);
             }
 
             Assert.Equal(TestData.HelloBytes, output);
@@ -81,10 +81,10 @@ namespace System.Security.Cryptography.Rsa.Tests
             byte[] crypt;
             byte[] output;
 
-            using (var rsa = new RSACryptoServiceProvider())
+            using (RSA rsa = RSAFactory.Create())
             {
-                crypt = rsa.Encrypt(TestData.HelloBytes, true);
-                output = rsa.Decrypt(crypt, true);
+                crypt = rsa.Encrypt(TestData.HelloBytes, RSAEncryptionPadding.OaepSHA1);
+                output = rsa.Decrypt(crypt, RSAEncryptionPadding.OaepSHA1);
             }
 
             Assert.NotEqual(crypt, output);
@@ -96,13 +96,13 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             byte[] output;
 
-            using (var rsa = new RSACryptoServiceProvider())
+            using (RSA rsa = RSAFactory.Create())
             {
-                byte[] crypt = rsa.Encrypt(TestData.HelloBytes, true);
+                byte[] crypt = rsa.Encrypt(TestData.HelloBytes, RSAEncryptionPadding.OaepSHA1);
 
                 // Export the key, this should not clear/destroy the key.
                 RSAParameters ignored = rsa.ExportParameters(true);
-                output = rsa.Decrypt(crypt, true);
+                output = rsa.Decrypt(crypt, RSAEncryptionPadding.OaepSHA1);
             }
 
             Assert.Equal(TestData.HelloBytes, output);
@@ -113,7 +113,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             byte[] output;
 
-            using (var rsa = new RSACryptoServiceProvider())
+            using (RSA rsa = RSAFactory.Create())
             {
                 try
                 {
@@ -125,11 +125,11 @@ namespace System.Security.Cryptography.Rsa.Tests
                     return;
                 }
 
-                byte[] crypt = rsa.Encrypt(TestData.HelloBytes, true);
+                byte[] crypt = rsa.Encrypt(TestData.HelloBytes, RSAEncryptionPadding.OaepSHA1);
 
                 Assert.Equal(rsa.KeySize, crypt.Length * 8);
 
-                output = rsa.Decrypt(crypt, true);
+                output = rsa.Decrypt(crypt, RSAEncryptionPadding.OaepSHA1);
             }
 
             Assert.Equal(TestData.HelloBytes, output);
@@ -141,12 +141,12 @@ namespace System.Security.Cryptography.Rsa.Tests
             byte[] crypt;
             byte[] output;
 
-            using (var rsa = new RSACryptoServiceProvider())
+            using (RSA rsa = RSAFactory.Create())
             {
                 rsa.ImportParameters(TestData.UnusualExponentParameters);
 
-                crypt = rsa.Encrypt(TestData.HelloBytes, true);
-                output = rsa.Decrypt(crypt, true);
+                crypt = rsa.Encrypt(TestData.HelloBytes, RSAEncryptionPadding.OaepSHA1);
+                output = rsa.Decrypt(crypt, RSAEncryptionPadding.OaepSHA1);
             }
 
             Assert.NotEqual(crypt, output);

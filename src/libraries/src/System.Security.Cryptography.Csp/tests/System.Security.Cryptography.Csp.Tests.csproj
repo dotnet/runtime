@@ -27,14 +27,30 @@
   <ItemGroup>
     <Compile Include="ImportExportCspBlob.cs" />
     <Compile Include="RSACryptoServiceProviderBackCompat.cs" />
-    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\RSA\EncryptDecrypt.cs" />
-    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\RSA\ImportExport.cs" />
-    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\RSA\KeyGeneration.cs" />
-    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\RSA\SignVerify.cs" />
-    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\RSA\TestData.cs" />
-    <Compile Include="$(CommonTestPath)\Streams\PositionValueStream.cs" />
+    <Compile Include="RSACryptoServiceProviderProvider.cs" />
     <Compile Include="$(CommonTestPath)\Cryptography\ByteUtils.cs">
       <Link>CommonTest\Cryptography\ByteUtils.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\RSA\EncryptDecrypt.cs">
+      <Link>CommonTest\Cryptography\AlgorithmImplementations\RSA\EncryptDecrypt.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\RSA\ImportExport.cs">
+      <Link>CommonTest\Cryptography\AlgorithmImplementations\RSA\ImportExport.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\RSA\KeyGeneration.cs">
+      <Link>CommonTest\Cryptography\AlgorithmImplementations\RSA\KeyGeneration.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\RSA\RSAFactory.cs">
+      <Link>CommonTest\Cryptography\AlgorithmImplementations\RSA\RSAFactory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\RSA\SignVerify.cs">
+      <Link>CommonTest\Cryptography\AlgorithmImplementations\RSA\SignVerify.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\RSA\TestData.cs">
+      <Link>CommonTest\Cryptography\AlgorithmImplementations\RSA\TestData.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\Streams\PositionValueStream.cs">
+      <Link>CommonTest\Streams\PositionValueStream.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
