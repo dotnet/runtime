@@ -2397,42 +2397,7 @@ delete_image_set (MonoImageSet *set)
 	g_hash_table_destroy (set->gmethod_cache);
 	g_hash_table_destroy (set->gsignature_cache);
 
-	if (set->wrapper_caches.delegate_abstract_invoke_cache)
-		g_hash_table_destroy (set->wrapper_caches.delegate_abstract_invoke_cache);
-	if (set->wrapper_caches.runtime_invoke_direct_cache)
-		g_hash_table_destroy (set->wrapper_caches.runtime_invoke_direct_cache);
-	if (set->wrapper_caches.managed_wrapper_cache)
-		g_hash_table_destroy (set->wrapper_caches.managed_wrapper_cache);
-	if (set->wrapper_caches.native_wrapper_cache)
-		g_hash_table_destroy (set->wrapper_caches.native_wrapper_cache);
-	if (set->wrapper_caches.native_wrapper_aot_cache)
-		g_hash_table_destroy (set->wrapper_caches.native_wrapper_aot_cache);
-	if (set->wrapper_caches.native_wrapper_check_cache)
-		g_hash_table_destroy (set->wrapper_caches.native_wrapper_check_cache);
-	if (set->wrapper_caches.native_wrapper_aot_check_cache)
-		g_hash_table_destroy (set->wrapper_caches.native_wrapper_aot_check_cache);
-	if (set->wrapper_caches.native_func_wrapper_aot_cache)
-		g_hash_table_destroy (set->wrapper_caches.native_func_wrapper_aot_cache);
-	if (set->wrapper_caches.remoting_invoke_cache)
-		g_hash_table_destroy (set->wrapper_caches.remoting_invoke_cache);
-	if (set->wrapper_caches.unbox_wrapper_cache)
-		g_hash_table_destroy (set->wrapper_caches.unbox_wrapper_cache);
-	if (set->wrapper_caches.cominterop_invoke_cache)
-		g_hash_table_destroy (set->wrapper_caches.cominterop_invoke_cache);
-	if (set->wrapper_caches.cominterop_wrapper_cache)
-		g_hash_table_destroy (set->wrapper_caches.cominterop_wrapper_cache);
-	if (set->wrapper_caches.thunk_invoke_cache)
-		g_hash_table_destroy (set->wrapper_caches.thunk_invoke_cache);
-	if (set->wrapper_caches.runtime_invoke_cache)
-		g_hash_table_destroy (set->wrapper_caches.runtime_invoke_cache);
-	if (set->wrapper_caches.delegate_invoke_cache)
-		g_hash_table_destroy (set->wrapper_caches.delegate_invoke_cache);
-	if (set->wrapper_caches.delegate_begin_invoke_cache)
-		g_hash_table_destroy (set->wrapper_caches.delegate_begin_invoke_cache);
-	if (set->wrapper_caches.delegate_end_invoke_cache)
-		g_hash_table_destroy (set->wrapper_caches.delegate_end_invoke_cache);
-	if (set->wrapper_caches.synchronized_cache)
-		g_hash_table_destroy (set->wrapper_caches.synchronized_cache);
+	mono_wrapper_caches_free (&set->wrapper_caches);
 
 	image_sets_lock ();
 

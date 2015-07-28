@@ -851,5 +851,8 @@ mono_get_method_checked (MonoImage *image, guint32 token, MonoClass *klass, Mono
 guint32
 mono_metadata_localscope_from_methoddef (MonoImage *meta, guint32 index);
 
+void
+mono_wrapper_caches_free (MonoWrapperCaches *cache);
+
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 
