@@ -133,7 +133,20 @@
   </ItemGroup>
   
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
-    <Compile Include="System\Net\Http\HttpClientHandler.Unix.cs" />
+    <Compile Include="System\Net\Http\Unix\CurlHandler.cs" />
+    <Compile Include="System\Net\Http\Unix\HttpClientHandler.Unix.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.libcurl.cs">
+      <Link>Common\Interop\Unix\libcurl\Interop.libcurl.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.libcurl_types.cs">
+      <Link>Common\Interop\Unix\libcurl\Interop.libcurl_types.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.SafeCurlHandle.cs">
+      <Link>Common\Interop\Unix\libcurl\Interop.SafeCurlHandle.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>    
