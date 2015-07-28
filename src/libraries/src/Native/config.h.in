@@ -2,3 +2,12 @@
 
 #cmakedefine01 HAVE_STAT64
 #cmakedefine01 HAVE_STAT_BIRTHTIME
+
+// Mac OS X has stat64, but it is deprecated since plain stat now
+// provides the same 64-bit aware struct when targeting OS X > 10.5
+// and not passing _DARWIN_NO_64_BIT_INODE.
+#ifdef __APPLE__
+#    undef HAVE_STAT64
+#    define HAVE_STAT64 0
+#endif
+
