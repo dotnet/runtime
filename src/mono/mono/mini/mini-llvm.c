@@ -6094,7 +6094,7 @@ AddJitGlobal (MonoLLVMModule *lmodule, LLVMTypeRef type, const char *name)
 	LLVMValueRef v;
 
 	s = g_strdup_printf ("%s%s", lmodule->global_prefix, name);
-	v = LLVMAddGlobal (lmodule->module, type, s);
+	v = LLVMAddGlobal (lmodule->module, LLVMInt8Type (), s);
 	g_free (s);
 	return v;
 }
@@ -6204,6 +6204,9 @@ emit_aot_file_info (MonoLLVMModule *lmodule)
 		fields [tindex ++] = LLVMConstNull (eltype);
 		fields [tindex ++] = LLVMConstNull (eltype);
 	}
+
+	for (i = 0; i < MONO_AOT_FILE_INFO_NUM_SYMBOLS; ++i)
+		fields [2 + i] = LLVMConstBitCast (fields [2 + i], eltype);
 
 	/* Scalars */
 	fields [tindex ++] = LLVMConstInt (LLVMInt32Type (), info->plt_got_offset_base, FALSE);
