@@ -3,9 +3,7 @@
 
 using System.Globalization;
 
-// Temporarily placing ByteUtils in System.Security.Cryptography so that all of the merged tests
-// see it as within their implicit resolution scope.
-namespace System.Security.Cryptography
+namespace Test.Cryptography
 {
     internal static class ByteUtils
     {
@@ -21,7 +19,7 @@ namespace System.Security.Cryptography
             return bytes;
         }
 
-        internal static byte[] HexToByteArray(string hexString)
+        internal static byte[] HexToByteArray(this string hexString)
         {
             byte[] bytes = new byte[hexString.Length / 2];
 

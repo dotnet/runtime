@@ -25,7 +25,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ByteUtils.cs" />
     <Compile Include="ImportExportCspBlob.cs" />
     <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\RSA\EncryptDecrypt.cs" />
     <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\RSA\ImportExport.cs" />
@@ -33,6 +32,9 @@
     <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\RSA\SignVerify.cs" />
     <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\RSA\TestData.cs" />
     <Compile Include="$(CommonTestPath)\Streams\PositionValueStream.cs" />
+    <Compile Include="$(CommonTestPath)\Cryptography\ByteUtils.cs">
+      <Link>CommonTest\Cryptography\ByteUtils.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

@@ -24,7 +24,6 @@
     <Compile Include="AesCipherTests.cs" />
     <Compile Include="AesContractTests.cs" />
     <Compile Include="AesModeTests.cs" />
-    <Compile Include="ByteUtils.cs" />
     <Compile Include="DecryptorReusability.cs" />
     <Compile Include="HashAlgorithmTest.cs" />
     <Compile Include="InvalidUsageTests.cs" />
@@ -43,6 +42,9 @@
     <Compile Include="Sha256Tests.cs" />
     <Compile Include="Sha384Tests.cs" />
     <Compile Include="Sha512Tests.cs" />
+    <Compile Include="$(CommonTestPath)\Cryptography\ByteUtils.cs">
+      <Link>CommonTest\Cryptography\ByteUtils.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
