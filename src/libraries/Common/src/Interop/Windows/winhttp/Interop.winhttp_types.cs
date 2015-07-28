@@ -3,11 +3,13 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Text;
 
 internal partial class Interop
 {
     internal partial class WinHttp
     {
+        public const uint ERROR_SUCCESS = 0;
         public const uint ERROR_FILE_NOT_FOUND = 2;
         public const uint ERROR_INVALID_HANDLE = 6;
         public const uint ERROR_INVALID_PARAMETER = 87;
@@ -15,6 +17,7 @@ internal partial class Interop
         public const uint ERROR_NOT_FOUND = 1168;
         public const uint ERROR_WINHTTP_INVALID_OPTION = 12009;
         public const uint ERROR_WINHTTP_LOGIN_FAILURE = 12015;
+        public const uint ERROR_WINHTTP_OPERATION_CANCELLED = 12017;
         public const uint ERROR_WINHTTP_INCORRECT_HANDLE_STATE = 12019;
         public const uint ERROR_WINHTTP_CONNECTION_ERROR = 12030;
         public const uint ERROR_WINHTTP_RESEND_REQUEST = 12032;
@@ -58,7 +61,7 @@ internal partial class Interop
 
         public const uint WINHTTP_FLAG_SECURE = 0x00800000;
 
-        public const string WINHTTP_NO_ADDITIONAL_HEADERS = null;
+        public const StringBuilder WINHTTP_NO_ADDITIONAL_HEADERS = null;
 
         public const uint WINHTTP_QUERY_FLAG_NUMBER = 0x20000000;
         public const uint WINHTTP_QUERY_VERSION = 18;
@@ -141,6 +144,28 @@ internal partial class Interop
         public const uint WINHTTP_OPTION_MAX_RESPONSE_DRAIN_SIZE = 92;
         public const uint WINHTTP_OPTION_CONNECTION_INFO = 93;
 
+        public const uint WINHTTP_OPTION_ASSURED_NON_BLOCKING_CALLBACKS = 111;
+
+        public const uint WINHTTP_OPTION_UPGRADE_TO_WEB_SOCKET = 114;
+        public const uint WINHTTP_OPTION_WEB_SOCKET_CLOSE_TIMEOUT = 115;
+        public const uint WINHTTP_OPTION_WEB_SOCKET_KEEPALIVE_INTERVAL = 116;
+
+        public const uint WINHTTP_OPTION_WEB_SOCKET_RECEIVE_BUFFER_SIZE = 122;
+        public const uint WINHTTP_OPTION_WEB_SOCKET_SEND_BUFFER_SIZE = 123;
+
+        public enum WINHTTP_WEB_SOCKET_BUFFER_TYPE
+        {
+            WINHTTP_WEB_SOCKET_BINARY_MESSAGE_BUFFER_TYPE = 0,
+            WINHTTP_WEB_SOCKET_BINARY_FRAGMENT_BUFFER_TYPE = 1,
+            WINHTTP_WEB_SOCKET_UTF8_MESSAGE_BUFFER_TYPE = 2,
+            WINHTTP_WEB_SOCKET_UTF8_FRAGMENT_BUFFER_TYPE = 3,
+            WINHTTP_WEB_SOCKET_CLOSE_BUFFER_TYPE = 4
+        }
+
+        public const uint WINHTTP_OPTION_CONTEXT_VALUE = 45;
+
+        public const uint WINHTTP_FLAG_ASYNC = 0x10000000;
+
         public const uint WINHTTP_CALLBACK_STATUS_RESOLVING_NAME = 0x00000001;
         public const uint WINHTTP_CALLBACK_STATUS_NAME_RESOLVED = 0x00000002;
         public const uint WINHTTP_CALLBACK_STATUS_CONNECTING_TO_SERVER = 0x00000004;
@@ -218,6 +243,41 @@ internal partial class Interop
             public byte[] LocalAddress; // SOCKADDR_STORAGE
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 128)]
             public byte[] RemoteAddress; // SOCKADDR_STORAGE
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        public struct WINHTTP_ASYNC_RESULT
+        {
+            public IntPtr dwResult;
+            public uint dwError;
+        }
+
+        public const uint API_RECEIVE_RESPONSE = 1;
+        public const uint API_QUERY_DATA_AVAILABLE = 2;
+        public const uint API_READ_DATA = 3;
+        public const uint API_WRITE_DATA = 4;
+        public const uint API_SEND_REQUEST = 5;
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        public struct WINHTTP_WEB_SOCKET_ASYNC_RESULT
+        {
+            public WINHTTP_ASYNC_RESULT AsyncResult;
+            public WINHTTP_WEB_SOCKET_OPERATION Operation;
+        }
+
+        public enum WINHTTP_WEB_SOCKET_OPERATION
+        {
+            WINHTTP_WEB_SOCKET_SEND_OPERATION = 0,
+            WINHTTP_WEB_SOCKET_RECEIVE_OPERATION = 1,
+            WINHTTP_WEB_SOCKET_CLOSE_OPERATION = 2,
+            WINHTTP_WEB_SOCKET_SHUTDOWN_OPERATION = 3
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        public struct WINHTTP_WEB_SOCKET_STATUS
+        {
+            public uint dwBytesTransferred;
+            public WINHTTP_WEB_SOCKET_BUFFER_TYPE eBufferType;
         }
     }
 }
