@@ -3103,11 +3103,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	} else if (callvirt) {
 		GHashTable **cache_ptr;
 
-		if (method->is_inflated) {
-			MonoMethodInflated *imethod = (MonoMethodInflated *)method;
-			cache_ptr = &imethod->owner->wrapper_caches.delegate_abstract_invoke_cache;
-		} else
-			cache_ptr = &method->klass->image->wrapper_caches.delegate_abstract_invoke_cache;
+		cache_ptr = &mono_method_get_wrapper_cache (method)->delegate_abstract_invoke_cache;
 
 		/* We need to cache the signature+method pair */
 		mono_marshal_lock ();
@@ -3837,11 +3833,9 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 	 */
 	if (virtual)
 		cache = get_cache (&method->klass->image->runtime_invoke_vcall_cache, mono_aligned_addr_hash, NULL);
-	else if (method->is_inflated) {
-		MonoMethodInflated *imethod = (MonoMethodInflated *)method;
-		cache = get_cache (&imethod->owner->wrapper_caches.runtime_invoke_direct_cache, mono_aligned_addr_hash, NULL);
-	} else
-		cache = get_cache (&method->klass->image->wrapper_caches.runtime_invoke_direct_cache, mono_aligned_addr_hash, NULL);
+	else
+		cache = get_cache (&mono_method_get_wrapper_cache (method)->runtime_invoke_direct_cache, mono_aligned_addr_hash, NULL);
+
 	res = mono_marshal_find_in_cache (cache, method);
 	if (res)
 		return res;
@@ -3887,19 +3881,10 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 		callsig = mono_marshal_get_runtime_invoke_sig (callsig);
 		GHashTable **cache_table = NULL;
 
-
-		if (method->is_inflated) {
-			MonoMethodInflated *imethod = (MonoMethodInflated *)method;
-			if (method->klass->valuetype && mono_method_signature (method)->hasthis)
-				cache_table = &imethod->owner->wrapper_caches.runtime_invoke_vtype_cache;
-			else
-				cache_table = &imethod->owner->wrapper_caches.runtime_invoke_cache;
-		} else {
-			if (method->klass->valuetype && mono_method_signature (method)->hasthis)
-				cache_table = &target_klass->image->wrapper_caches.runtime_invoke_vtype_cache;
-			else
-				cache_table = &target_klass->image->wrapper_caches.runtime_invoke_cache;
-		}
+		if (method->klass->valuetype && mono_method_signature (method)->hasthis)
+			cache_table = &mono_method_get_wrapper_cache (method)->runtime_invoke_vtype_cache;
+		else
+			cache_table = &mono_method_get_wrapper_cache (method)->runtime_invoke_cache;
 
 		cache = get_cache (cache_table, (GHashFunc)mono_signature_hash,
 							   (GCompareFunc)runtime_invoke_signature_equal);
@@ -3980,11 +3965,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 				res = newm;
 				g_hash_table_insert (cache, callsig, res);
 				/* Can't insert it into wrapper_hash since the key is a signature */
-
-				if (method->is_inflated)
-					direct_cache = ((MonoMethodInflated*)method)->owner->wrapper_caches.runtime_invoke_direct_cache;
-				else
-					direct_cache = method->klass->image->wrapper_caches.runtime_invoke_direct_cache;
+				direct_cache = mono_method_get_wrapper_cache (method)->runtime_invoke_direct_cache;
 
 				g_hash_table_insert (direct_cache, method, res);
 			} else {
@@ -7249,31 +7230,16 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 
 	GHashTable **cache_ptr;
 
-	if (method->is_inflated) {
-		MonoMethodInflated *imethod = (MonoMethodInflated *)method;
-		if (aot) {
-			if (check_exceptions)
-				cache_ptr = &imethod->owner->wrapper_caches.native_wrapper_aot_check_cache;
-			else
-				cache_ptr = &imethod->owner->wrapper_caches.native_wrapper_aot_cache;
-		} else {
-			if (check_exceptions)
-				cache_ptr = &imethod->owner->wrapper_caches.native_wrapper_check_cache;
-			else
-				cache_ptr = &imethod->owner->wrapper_caches.native_wrapper_cache;
-		}
+	if (aot) {
+		if (check_exceptions)
+			cache_ptr = &mono_method_get_wrapper_cache (method)->native_wrapper_aot_check_cache;
+		else
+			cache_ptr = &mono_method_get_wrapper_cache (method)->native_wrapper_aot_cache;
 	} else {
-		if (aot) {
-			if (check_exceptions)
-				cache_ptr = &method->klass->image->wrapper_caches.native_wrapper_aot_check_cache;
-			else
-				cache_ptr = &method->klass->image->wrapper_caches.native_wrapper_aot_cache;
-		} else {
-			if (check_exceptions)
-				cache_ptr = &method->klass->image->wrapper_caches.native_wrapper_check_cache;
-			else
-				cache_ptr = &method->klass->image->wrapper_caches.native_wrapper_cache;
-		}
+		if (check_exceptions)
+			cache_ptr = &mono_method_get_wrapper_cache (method)->native_wrapper_check_cache;
+		else
+			cache_ptr = &mono_method_get_wrapper_cache (method)->native_wrapper_cache;
 	}
 
 	cache = get_cache (cache_ptr, mono_aligned_addr_hash, NULL);
@@ -7549,11 +7515,7 @@ mono_marshal_get_native_func_wrapper_aot (MonoClass *klass)
 	/*
 	 * The wrapper is associated with the delegate type, to pick up the marshalling info etc.
 	 */
-	if (invoke->is_inflated) {
-		MonoMethodInflated *imethod = (MonoMethodInflated *)invoke;
-		cache = get_cache (&imethod->owner->wrapper_caches.native_func_wrapper_aot_cache, mono_aligned_addr_hash, NULL);
-	} else
-		cache = get_cache (&image->wrapper_caches.native_func_wrapper_aot_cache, mono_aligned_addr_hash, NULL);
+	cache = get_cache (&mono_method_get_wrapper_cache (invoke)->native_func_wrapper_aot_cache, mono_aligned_addr_hash, NULL);
 
 	if ((res = mono_marshal_find_in_cache (cache, invoke)))
 		return res;
@@ -7907,11 +7869,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	 * could be called with different delegates, thus different marshalling
 	 * options.
 	 */
-	if (method->is_inflated) {
-		MonoMethodInflated *imethod = (MonoMethodInflated *)method;
-		cache = get_cache (&imethod->owner->wrapper_caches.managed_wrapper_cache, mono_aligned_addr_hash, NULL);
-	} else
-		cache = get_cache (&method->klass->image->wrapper_caches.managed_wrapper_cache, mono_aligned_addr_hash, NULL);
+	cache = get_cache (&mono_method_get_wrapper_cache (method)->managed_wrapper_cache, mono_aligned_addr_hash, NULL);
 
 	if (!target_handle && (res = mono_marshal_find_in_cache (cache, method)))
 		return res;
@@ -8920,11 +8878,7 @@ mono_marshal_get_unbox_wrapper (MonoMethod *method)
 	MonoMethod *res;
 	GHashTable *cache;
 
-	if (method->is_inflated) {
-		MonoMethodInflated *imethod = (MonoMethodInflated *)method;
-		cache = get_cache (&imethod->owner->wrapper_caches.unbox_wrapper_cache, mono_aligned_addr_hash, NULL);
-	} else
-		cache = get_cache (&method->klass->image->wrapper_caches.unbox_wrapper_cache, mono_aligned_addr_hash, NULL);
+	cache = get_cache (&mono_method_get_wrapper_cache (method)->unbox_wrapper_cache, mono_aligned_addr_hash, NULL);
 
 	if ((res = mono_marshal_find_in_cache (cache, method)))
 		return res;
@@ -11158,11 +11112,8 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
 	klass = method->klass;
 	image = method->klass->image;
 
-	if (method->is_inflated) {
-		MonoMethodInflated *imethod = (MonoMethodInflated *)method;
-		cache = get_cache (&imethod->owner->wrapper_caches.thunk_invoke_cache, mono_aligned_addr_hash, NULL);
-	} else
-		cache = get_cache (&image->wrapper_caches.thunk_invoke_cache, mono_aligned_addr_hash, NULL);
+	cache = get_cache (&mono_method_get_wrapper_cache (method)->thunk_invoke_cache, mono_aligned_addr_hash, NULL);
+
 
 	if ((res = mono_marshal_find_in_cache (cache, method)))
 		return res;

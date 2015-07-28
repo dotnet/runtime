@@ -6560,3 +6560,13 @@ mono_metadata_get_corresponding_property_from_generic_type_definition (MonoPrope
 	return gtd->ext->properties + offset;
 }
 
+MonoWrapperCaches*
+mono_method_get_wrapper_cache (MonoMethod *method)
+{
+	if (method->is_inflated) {
+		MonoMethodInflated *imethod = (MonoMethodInflated *)method;
+		return &imethod->owner->wrapper_caches;
+	} else {
+		return &method->klass->image->wrapper_caches;
+	}
+}

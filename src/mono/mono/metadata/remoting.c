@@ -262,16 +262,11 @@ static inline MonoMethod*
 mono_marshal_remoting_find_in_cache (MonoMethod *method, int wrapper_type)
 {
 	MonoMethod *res = NULL;
-	MonoRemotingMethods *wrps;
+	MonoRemotingMethods *wrps = NULL;
 
 	mono_marshal_lock_internal ();
-	if (method->is_inflated && ((MonoMethodInflated *)method)->owner->wrapper_caches.remoting_invoke_cache) {
-		MonoMethodInflated *imethod = (MonoMethodInflated *)method;
-		wrps = g_hash_table_lookup (imethod->owner->wrapper_caches.remoting_invoke_cache, method);
-	} else if (method->klass->image->wrapper_caches.remoting_invoke_cache)
-		wrps = g_hash_table_lookup (method->klass->image->wrapper_caches.remoting_invoke_cache, method);
-	else
-		wrps = NULL;
+	if (mono_method_get_wrapper_cache (method)->remoting_invoke_cache)
+		wrps = g_hash_table_lookup (mono_method_get_wrapper_cache (method)->remoting_invoke_cache, method);
 
 	if (wrps) {
 		switch (wrapper_type) {
@@ -299,11 +294,7 @@ mono_remoting_mb_create_and_cache (MonoMethod *key, MonoMethodBuilder *mb,
 	MonoRemotingMethods *wrps;
 	GHashTable *cache;
 
-	if (key->is_inflated) {
-		MonoMethodInflated *imethod = (MonoMethodInflated *)key;
-		cache = get_cache_full (&imethod->owner->wrapper_caches.remoting_invoke_cache, mono_aligned_addr_hash, NULL, NULL, g_free);
-	} else
-		cache = get_cache_full (&key->klass->image->wrapper_caches.remoting_invoke_cache, mono_aligned_addr_hash, NULL, NULL, g_free);
+	cache = get_cache_full (&mono_method_get_wrapper_cache (key)->remoting_invoke_cache, mono_aligned_addr_hash, NULL, NULL, g_free);
 
 	mono_marshal_lock_internal ();
 	wrps = g_hash_table_lookup (cache, key);
