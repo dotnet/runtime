@@ -3,6 +3,9 @@ project(System.Security.Cryptography.Native)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+# Issue 2546 - Many deprecation warnings in System.Security.Cryptography.Native on Mac OS X
+add_compile_options(-Wno-deprecated-declarations)
+
 add_definitions(-DPIC=1)
 
 find_library(CRYPTO NAMES crypto)
