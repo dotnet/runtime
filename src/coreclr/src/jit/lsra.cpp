@@ -2421,8 +2421,6 @@ LinearScan::getKillSetForNode(GenTree* tree)
         }
         break;
 #endif // _TARGET_XARCH_
-
-#ifdef _TARGET_AMD64_
     case GT_COPYOBJ:
         killMask = compiler->compHelperCallKillSet(CORINFO_HELP_ASSIGN_BYREF);
         break;
@@ -2435,10 +2433,14 @@ LinearScan::getKillSetForNode(GenTree* tree)
             case GenTreeBlkOp::BlkOpKindHelper:
                 killMask = compiler->compHelperCallKillSet(CORINFO_HELP_MEMCPY);
                 break;
+#ifdef _TARGET_AMD64_
             case GenTreeBlkOp::BlkOpKindRepInstr:
                 // rep movs kills RCX, RDI and RSI
                 killMask = RBM_RCX | RBM_RDI | RBM_RSI;
                 break;
+#else
+            case GenTreeBlkOp::BlkOpKindRepInstr:
+#endif
             case GenTreeBlkOp::BlkOpKindUnroll:
             case GenTreeBlkOp::BlkOpKindInvalid:
                 // for these 'cpBlkNode->gtBlkOpKind' kinds, we leave 'killMask' = RBM_NONE
@@ -2455,6 +2457,7 @@ LinearScan::getKillSetForNode(GenTree* tree)
             case GenTreeBlkOp::BlkOpKindHelper:
                 killMask = compiler->compHelperCallKillSet(CORINFO_HELP_MEMSET);
                 break;
+#ifdef _TARGET_AMD64_
             case GenTreeBlkOp::BlkOpKindRepInstr:
                 // rep stos kills RCX and RDI
                 killMask = RBM_RDI;
@@ -2463,6 +2466,9 @@ LinearScan::getKillSetForNode(GenTree* tree)
                     killMask |= RBM_RCX;
                 }
                 break;
+#else
+            case GenTreeBlkOp::BlkOpKindRepInstr:
+#endif
             case GenTreeBlkOp::BlkOpKindUnroll:
             case GenTreeBlkOp::BlkOpKindInvalid:
                 // for these 'cpBlkNode->gtBlkOpKind' kinds, we leave 'killMask' = RBM_NONE
@@ -2470,11 +2476,6 @@ LinearScan::getKillSetForNode(GenTree* tree)
             }
         }
         break;
-#else // !_TARGET_AMD64_
-    case GT_INITBLK:
-    case GT_COPYBLK:
-    case GT_COPYOBJ:
-#endif // !_TARGET_AMD64_
     case GT_LSH:
     case GT_RSH:
     case GT_RSZ:
