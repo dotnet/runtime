@@ -106,7 +106,7 @@ namespace System.Net.Http
 
         public override int GetHashCode()
         {
-            return StringComparer.OrdinalIgnoreCase.GetHashCode(_method);
+            return _method.ToUpperInvariant().GetHashCode();
         }
 
         public override string ToString()
