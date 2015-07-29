@@ -122,7 +122,7 @@ void DebuggerRCThread::CloseIPCHandles()
 // cBufSizeInChars - the size of the buffer in characters, including the null.
 // pPrefx - The undecorated name of the event.
 //-----------------------------------------------------------------------------
-void GetPidDecoratedName(__out_z __in_ecount(cBufSizeInChars) WCHAR * pBuf,
+void GetPidDecoratedName(__out_ecount(cBufSizeInChars) WCHAR * pBuf,
                          int cBufSizeInChars,
                          const WCHAR * pPrefix)
 {
