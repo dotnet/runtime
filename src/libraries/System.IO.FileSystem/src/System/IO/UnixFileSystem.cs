@@ -524,18 +524,6 @@ namespace System.IO
                 }
             }
 
-            private struct PathPair
-            {
-                internal readonly string UserPath;
-                internal readonly string FullPath;
-
-                internal PathPair(string userPath, string fullPath)
-                {
-                    UserPath = userPath;
-                    FullPath = fullPath;
-                }
-            }
-
             private static string NormalizeSearchPattern(string searchPattern)
             {
                 if (searchPattern == "." || searchPattern == "*.*")
