@@ -392,7 +392,7 @@ void GetComClassFromCLSID(REFCLSID clsid, STRINGREF srefServer, OBJECTREF* pRef)
 void GetComClassHelper(OBJECTREF *pRef,
                        EEClassFactoryInfoHashTable *pClassFactHash,
                        ClassFactoryInfo *pClassFactInfo,
-                       __in_opt __in_z WCHAR *wszProgID);
+                       __in_opt WCHAR *wszProgID);
 
 //-------------------------------------------------------------
 // check if a ComClassFactory/WinRTClassFactory has been setup for this class

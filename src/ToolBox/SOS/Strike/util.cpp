@@ -1493,7 +1493,7 @@ const char * ElementTypeNamespace(unsigned type)
     return CorElementTypeNamespace[type];
 }
 
-void ComposeName_s(CorElementType Type, __out_ecount(bufSize) LPSTR buffer, size_t capacity_buffer)
+void ComposeName_s(CorElementType Type, __out_ecount(capacity_buffer) LPSTR buffer, size_t capacity_buffer)
 {
     const char *p = ElementTypeNamespace(Type);
     if ((p) && (*p != '\0'))
@@ -2666,7 +2666,7 @@ BOOL DebuggerModuleNamesMatch (CLRDATA_ADDRESS PEFileAddr, __in __in_z LPSTR mNa
     return FALSE;
 }
 
-DWORD_PTR *ModuleFromName(__in __in_z __in_opt LPSTR mName, int *numModule)
+DWORD_PTR *ModuleFromName(__in_opt LPSTR mName, int *numModule)
 {
     if (numModule == NULL)
         return NULL;

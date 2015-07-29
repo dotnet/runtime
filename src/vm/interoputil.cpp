@@ -5183,7 +5183,7 @@ void GetComClassFromCLSID(REFCLSID clsid, STRINGREF srefServer, OBJECTREF *pRef)
     _ASSERTE(*pRef != NULL);
 }
 
-void GetComClassHelper(OBJECTREF *pRef, EEClassFactoryInfoHashTable *pClassFactHash, ClassFactoryInfo *pClassFactInfo, __in_opt __in_z WCHAR *wszProgID)
+void GetComClassHelper(OBJECTREF *pRef, EEClassFactoryInfoHashTable *pClassFactHash, ClassFactoryInfo *pClassFactInfo, __in_opt WCHAR *wszProgID)
 {
     CONTRACTL
     {

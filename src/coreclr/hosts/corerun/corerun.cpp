@@ -415,7 +415,7 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
     log << W("Loading: ") << managedAssemblyFullName << Logger::endl;
    
     wcscpy_s(appLocalWinmetadata, appPath);
-    wcscat(appLocalWinmetadata, W("\\WinMetadata"));
+    wcscat_s(appLocalWinmetadata, W("\\WinMetadata"));
    
     DWORD dwAttrib = ::GetFileAttributes(appLocalWinmetadata);
     bool appLocalWinMDexists = dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY);
@@ -424,7 +424,7 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
         wcscpy_s(appLocalWinmetadata, W(""));
     }
     wcscpy_s(appNiPath, appPath);
-    wcscat(appNiPath, W("NI"));
+    wcscat_s(appNiPath, W("NI"));
     wcscat_s(appNiPath, MAX_PATH * 2, W(";"));
     wcscat_s(appNiPath, MAX_PATH * 2, appPath);
 
