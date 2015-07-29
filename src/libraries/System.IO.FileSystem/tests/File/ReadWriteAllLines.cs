@@ -30,6 +30,8 @@ namespace System.IO.FileSystem.Tests
         {
             Assert.Throws<ArgumentNullException>(() => Write(null, new string[] { "Text" }));
             Assert.Throws<ArgumentException>(() => Write(string.Empty, new string[] { "Text" }));
+            Assert.Throws<ArgumentNullException>(() => Read(null));
+            Assert.Throws<ArgumentException>(() => Read(string.Empty));
         }
 
         [Fact]

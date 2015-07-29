@@ -55,10 +55,6 @@ namespace System.IO
 
             int lengthRoot = PathInternal.GetRootLength(fullPath);
 
-            // For UNC paths that are only // or /// 
-            if (length == 2 && PathInternal.IsDirectorySeparator(fullPath[1]))
-                throw new IOException(SR.Format(SR.IO_CannotCreateDirectory, fullPath));
-
             // We can save a bunch of work if the directory we want to create already exists.  This also
             // saves us in the case where sub paths are inaccessible (due to ERROR_ACCESS_DENIED) but the
             // final path is accessable and the directory already exists.  For example, consider trying

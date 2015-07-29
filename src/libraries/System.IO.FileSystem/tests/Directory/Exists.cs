@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Linq;
 using Xunit;
 
 namespace System.IO.FileSystem.Tests
@@ -54,9 +55,12 @@ namespace System.IO.FileSystem.Tests
         public void PathWithInvalidCharactersAsPath_ReturnsFalse()
         {
             // Checks that errors aren't thrown when calling Exists() on paths with impossible to create characters
+            char[] trimmed = { (char)0x9, (char)0xA, (char)0xB, (char)0xC, (char)0xD, (char)0x20, (char)0x85, (char)0xA0 };
             Assert.All((IOInputs.GetPathsWithInvalidCharacters()), (component) =>
             {
                 Assert.False(Exists(component));
+                if (!trimmed.Contains(component.ToCharArray()[0]))
+                    Assert.False(Exists(TestDirectory + Path.DirectorySeparatorChar + component));
             });
         }
 

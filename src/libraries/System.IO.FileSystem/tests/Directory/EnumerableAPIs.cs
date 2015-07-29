@@ -69,6 +69,51 @@ namespace System.IO.FileSystem.Tests
         {
             return Directory.EnumerateFileSystemEntries(dirName, searchPattern).ToArray();
         }
+
+        [Fact]
+        public void Clone_Enumerator_Empty()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            var enumerator1 = Directory.EnumerateFileSystemEntries(testDir.FullName);
+            var enumerator2 = enumerator1;
+            Assert.Equal(enumerator1.ToArray(), enumerator2.ToArray());
+        }
+
+        [Fact]
+        public void Clone_Enumerator_Trimmed_SearchPattern()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            var enumerator1 = Directory.EnumerateFileSystemEntries(testDir.FullName, ((char)0xA).ToString());
+            var enumerator2 = enumerator1;
+            Assert.Empty(enumerator1.ToArray());
+            Assert.Empty(enumerator2.ToArray());
+        }
+
+        [Fact]
+        public void Delete_Directory_After_Creating_Enumerable()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            DirectoryInfo subDir1 = Directory.CreateDirectory(Path.Combine(testDir.FullName, "a"));
+            DirectoryInfo subDir2 = Directory.CreateDirectory(Path.Combine(testDir.FullName, "b"));
+            var enumerator = Directory.EnumerateDirectories(testDir.FullName);
+            foreach (var dir in enumerator)
+            {
+                Directory.Delete(dir);
+            }
+            Assert.Equal(0, enumerator.ToArray().Length);
+        }
+
+
+        [Fact]
+        public void Trailing_Slash_Adds_Trailing_Star()
+        {
+            // A searchpattern of c:\temp\ will become c:\temp\* internally
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            DirectoryInfo subDir1 = Directory.CreateDirectory(Path.Combine(testDir.FullName, "a"));
+            DirectoryInfo subDir2 = Directory.CreateDirectory(Path.Combine(testDir.FullName, "b"));
+            var enumerator = Directory.EnumerateDirectories(testDir.FullName, "a" + Path.DirectorySeparatorChar);
+            Assert.Equal(0, enumerator.ToArray().Length);
+        }
     }
 
     public class Directory_EnumFSE_str_str_so : Directory_GetFileSystemEntries_str_str_so
