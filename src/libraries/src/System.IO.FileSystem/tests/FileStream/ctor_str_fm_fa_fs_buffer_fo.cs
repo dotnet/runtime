@@ -26,12 +26,12 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
-        [ActiveIssue(1434)]
         public void ValidFileOptions()
         {
+            int i = 0;
             foreach(FileOptions option in Enum.GetValues(typeof(FileOptions)))
             {
-                using (CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, c_DefaultBufferSize, option))
+                using (CreateFileStream(GetTestFilePath(i++), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, c_DefaultBufferSize, option))
                 { }
             }
 
