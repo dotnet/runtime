@@ -40,7 +40,7 @@ static const int rotate[4] = {
 HRESULT
 SymCryptMarvin32ExpandSeed(   
     __out               PSYMCRYPT_MARVIN32_EXPANDED_SEED    pExpandedSeed,
-    __in_ecount(cbKey)  PCBYTE                              pbSeed,
+    __in_ecount(cbSeed) PCBYTE                              pbSeed,
                         SIZE_T                              cbSeed )
 {
     HRESULT retVal = S_OK;

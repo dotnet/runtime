@@ -1929,7 +1929,7 @@ BOOL IsObjectArray (DacpObjectData *pData);
  *      You must clean up the return value of this array by calling delete [] on it, or using the
  *      ArrayHolder class.
  */
-DWORD_PTR *ModuleFromName(__in __in_z __in_opt LPSTR name, int *numModules);
+DWORD_PTR *ModuleFromName(__in_opt LPSTR name, int *numModules);
 void GetInfoFromName(DWORD_PTR ModuleAddr, const char* name);
 void GetInfoFromModule (DWORD_PTR ModuleAddr, ULONG token, DWORD_PTR *ret=NULL);
 
