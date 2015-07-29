@@ -2767,7 +2767,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 
 		guint32 imt_slot = mono_method_get_imt_slot (method);
 
-		icall_args [0] = this;
+		icall_args [0] = this_ins;
 		EMIT_NEW_ICONST (cfg, icall_args [1], imt_slot);
 		if (imt_arg) {
 			icall_args [2] = imt_arg;
@@ -2821,7 +2821,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 
 		int slot = mono_method_get_vtable_index (method);
 
-		icall_args [0] = this;
+		icall_args [0] = this_ins;
 		EMIT_NEW_ICONST (cfg, icall_args [1], slot);
 		if (imt_arg) {
 			icall_args [2] = imt_arg;
