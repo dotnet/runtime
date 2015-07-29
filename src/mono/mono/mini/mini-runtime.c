@@ -3592,6 +3592,17 @@ void mono_precompile_assemblies ()
 	g_hash_table_destroy (assemblies);
 }
 
+/*
+ * Used by LLVM.
+ * Have to export this for AOT.
+ */
+void
+mono_personality (void)
+{
+	/* Not used */
+	g_assert_not_reached ();
+}
+
 #ifdef USE_JUMP_TABLES
 #define DEFAULT_JUMPTABLE_CHUNK_ELEMENTS 128
 

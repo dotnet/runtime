@@ -2252,14 +2252,6 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 	;
 }
 
-/* Have to export this for AOT */
-void
-mono_personality (void)
-{
-	/* Not used */
-	g_assert_not_reached ();
-}
-
 static void
 process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, MonoInst *ins)
 {
@@ -2622,7 +2614,7 @@ emit_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef builder
 
 	if (cfg->compile_aot) {
 		/* Use a dummy personality function */
-		personality = LLVMGetNamedFunction (module, "mono_aot_personality");
+		personality = LLVMGetNamedFunction (module, "mono_personality");
 		g_assert (personality);
 	} else {
 		personality = LLVMGetNamedFunction (module, "mono_personality");
@@ -6013,21 +6005,6 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 
 		aot_module.got_var = LLVMAddGlobal (lmodule->module, got_type, "mono_dummy_got");
 		LLVMSetInitializer (lmodule->got_var, LLVMConstNull (got_type));
-	}
-
-	/* Add a dummy personality function */
-	{
-		LLVMBasicBlockRef lbb;
-		LLVMBuilderRef lbuilder;
-		LLVMValueRef personality;
-
-		personality = LLVMAddFunction (lmodule->module, "mono_aot_personality", LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE));
-		LLVMSetLinkage (personality, LLVMInternalLinkage);
-		lbb = LLVMAppendBasicBlock (personality, "BB0");
-		lbuilder = LLVMCreateBuilder ();
-		LLVMPositionBuilderAtEnd (lbuilder, lbb);
-		LLVMBuildRetVoid (lbuilder);
-		mark_as_used (lmodule, personality);
 	}
 
 	lmodule->llvm_types = g_hash_table_new (NULL, NULL);
