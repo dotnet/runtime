@@ -44,6 +44,29 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
+        public void SearchPatternDotIsStar()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            testDir.CreateSubdirectory("TestDir1");
+            testDir.CreateSubdirectory("TestDir2");
+            using (File.Create(Path.Combine(testDir.FullName, "TestFile1")))
+            using (File.Create(Path.Combine(testDir.FullName, "TestFile2")))
+            {
+                string[] strArr = GetEntries(testDir.FullName, ".");
+                if (TestFiles)
+                {
+                    Assert.Contains(Path.Combine(testDir.FullName, "TestFile1"), strArr);
+                    Assert.Contains(Path.Combine(testDir.FullName, "TestFile2"), strArr);
+                }
+                if (TestDirectories)
+                {
+                    Assert.Contains(Path.Combine(testDir.FullName, "TestDir1"), strArr);
+                    Assert.Contains(Path.Combine(testDir.FullName, "TestDir2"), strArr);
+                }
+            }
+        }
+
+        [Fact]
         public void SearchPatternWithTrailingStar()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());

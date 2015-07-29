@@ -204,6 +204,10 @@ namespace System.IO.FileSystem.Tests
             });
         }
 
+        #endregion
+
+        #region PlatformSpecific
+
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
         public void DirectoryLongerThanMaxPathAsPath_ThrowsPathTooLongException()
@@ -215,10 +219,6 @@ namespace System.IO.FileSystem.Tests
             });
         }
 
-        #endregion
-
-        #region PlatformSpecific
-
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
         public void DirectoryLongerThanMaxDirectoryAsPath_ThrowsPathTooLongException()
@@ -227,6 +227,7 @@ namespace System.IO.FileSystem.Tests
             Assert.All(paths, (path) =>
             {
                 Assert.Throws<PathTooLongException>(() => Create(path));
+                Directory.Delete(Path.Combine(Path.GetPathRoot(Directory.GetCurrentDirectory()), path.Split(Path.DirectorySeparatorChar)[1]), true);
             });
         }
 
@@ -371,6 +372,13 @@ namespace System.IO.FileSystem.Tests
             {
                 Assert.Throws<ArgumentException>(() => Create(path));
             }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)] // UNC shares
+        public void UNCPathWithOnlySlashes()
+        {
+            Assert.Throws<ArgumentException>(() => Create("//"));
         }
 
         [Fact]

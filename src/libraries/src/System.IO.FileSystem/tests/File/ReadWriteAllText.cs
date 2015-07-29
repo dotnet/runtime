@@ -33,6 +33,12 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
+        public void NonExistentPath()
+        {
+            Assert.Throws<DirectoryNotFoundException>(() => Write(Path.Combine(TestDirectory, GetTestFileName(), GetTestFileName()), "Text"));
+        }
+
+        [Fact]
         public void NullContent_CreatesFile()
         {
             string path = GetTestFilePath();
@@ -53,7 +59,7 @@ namespace System.IO.FileSystem.Tests
         {
             string path = GetTestFilePath();
             Assert.Throws<ArgumentException>(() => Write(string.Empty, "Text"));
-            Assert.Throws<ArgumentException>(() => File.ReadAllText(string.Empty));
+            Assert.Throws<ArgumentException>(() => Read(""));
         }
 
         [Theory]
