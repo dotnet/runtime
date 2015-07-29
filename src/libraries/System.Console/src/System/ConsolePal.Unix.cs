@@ -378,7 +378,7 @@ namespace System
                 try
                 {
                     _handle.DangerousAddRef(ref gotFd);
-                    Interop.System.FileStats buf;
+                    Interop.System.FileStatus buf;
                     _handleType =
                         Interop.System.FStat((int)_handle.DangerousGetHandle(), out buf) == 0 ?
                             (buf.Mode & Interop.System.FileTypes.S_IFMT) :

@@ -8,9 +8,9 @@ internal static partial class Interop
 {
     internal static partial class System
     {
-        internal struct FileStats
+        internal struct FileStatus
         {
-            private FileStatsFlags Flags;
+            internal FileStatusFlags Flags;
             internal int Mode;
             internal int Uid;
             internal int Gid;
@@ -32,19 +32,19 @@ internal static partial class Interop
         }
 
         [Flags]
-        internal enum FileStatsFlags
+        internal enum FileStatusFlags
         {
             None = 0,
             HasCreationTime = 1,
         }
 
         [DllImport(Libraries.SystemNative, SetLastError = true)]
-        internal static extern int FStat(int fileDescriptor, out FileStats output);
+        internal static extern int FStat(int fileDescriptor, out FileStatus output);
 
         [DllImport(Libraries.SystemNative, SetLastError = true)]
-        internal static extern int Stat(string path, out FileStats output);
+        internal static extern int Stat(string path, out FileStatus output);
 
         [DllImport(Libraries.SystemNative, SetLastError = true)]
-        internal static extern int LStat(string path, out FileStats output);
+        internal static extern int LStat(string path, out FileStatus output);
     }
 }
