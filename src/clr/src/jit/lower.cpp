@@ -1727,6 +1727,8 @@ void Lowering::LowerFastTailCall(GenTreeCall *call)
                     }
 
                     lcl->SetLclNum(tmpLclNum);
+                    lcl->SetOper(GT_LCL_VAR);
+
                 }                
             }
         }
