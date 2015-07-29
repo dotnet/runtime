@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 
@@ -11,6 +12,19 @@ namespace System.Net.Http.Tests
 {
     public class HttpMethodTest
     {
+        private static readonly object[][] s_staticHttpMethods =
+        {
+            new object[] { HttpMethod.Get },
+            new object[] { HttpMethod.Put },
+            new object[] { HttpMethod.Post },
+            new object[] { HttpMethod.Delete },
+            new object[] { HttpMethod.Head },
+            new object[] { HttpMethod.Options },
+            new object[] { HttpMethod.Trace }
+        };
+
+        public static IEnumerable<object[]> StaticHttpMethods { get { return s_staticHttpMethods; } }
+
         [Fact]
         public void StaticProperties_VerifyValues_PropertyNameMatchesHttpMethodName()
         {
@@ -80,12 +94,23 @@ namespace System.Net.Http.Tests
             Assert.False(HttpMethod.Trace == null);
         }
 
-        [Fact]
-        public void GetHashCode_UseCustomStringMethod_SameAsStringHashCode()
+        [Theory]
+        [InlineData("GET")]
+        [InlineData("get")]
+        [InlineData("Get")]
+        [InlineData("CUSTOM")]
+        [InlineData("cUsToM")]
+        public void GetHashCode_CustomStringMethod_SameAsStringToUpperInvariantHashCode(string input)
         {
-            string custom = "CUSTOM";
-            HttpMethod method = new HttpMethod(custom);
-            Assert.Equal(custom.GetHashCode(), method.GetHashCode());
+            HttpMethod method = new HttpMethod(input);
+            Assert.Equal(input.ToUpperInvariant().GetHashCode(), method.GetHashCode());
+        }
+
+        [Theory]
+        [MemberData("StaticHttpMethods")]
+        public void GetHashCode_StaticMethods_SameAsStringToUpperInvariantHashCode(HttpMethod method)
+        {
+            Assert.Equal(method.ToString().ToUpperInvariant().GetHashCode(), method.GetHashCode());
         }
 
         [Fact]
