@@ -165,6 +165,14 @@ void Compiler::optCopyProp(BasicBlock* block, GenTreePtr stmt, GenTreePtr tree, 
         {
             continue;
         }
+        
+        // Skip variables with assignments embedded in the statement (i.e., with a comma). Because we
+        // are not currently updating their SSA names as live in the copy-prop pass of the stmt.
+        if (VarSetOps::IsMember(this, optCopyPropKillSet, lvaTable[newLclNum].lvVarIndex))
+        {
+            continue;
+        }
+
         if (op->gtFlags & GTF_VAR_CAST)
         {
             continue;
@@ -268,6 +276,15 @@ void Compiler::optCopyProp(BasicBlock* block, GenTreePtr stmt, GenTreePtr tree, 
 
 /**************************************************************************************
  *
+ * Helper to check if tree is a local that participates in SSA numbering.
+ */
+bool Compiler::optIsSsaLocal(GenTreePtr tree)
+{
+    return tree->IsLocal() && !fgExcludeFromSsa(tree->AsLclVarCommon()->GetLclNum());
+}
+
+/**************************************************************************************
+ *
  * Perform copy propagation using currently live definitions on the current block's
  * variables. Also as new definitions are encountered update the "curSsaName" which
  * tracks the currently live definitions.
@@ -282,26 +299,44 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curS
     VarSetOps::Assign(this, compCurLife, block->bbLiveIn);
     for (GenTreePtr stmt = block->bbTreeList; stmt; stmt = stmt->gtNext)
     {
+        VarSetOps::ClearD(this, optCopyPropKillSet);
+
         // Walk the tree to find if any local variable can be replaced with current live definitions.
         for (GenTreePtr tree = stmt->gtStmt.gtStmtList; tree; tree = tree->gtNext)
         {
             compUpdateLife</*ForCodeGen*/false>(tree);
             optCopyProp(block, stmt, tree, curSsaName);
+
+            // TODO-Review: Merge this loop with the following loop to correctly update the
+            // live SSA num while also propagating copies.
+            //
+            // 1. This loop performs copy prop with currently live (on-top-of-stack) SSA num.
+            // 2. The subsequent loop maintains a stack for each lclNum with
+            //    currently active SSA numbers when definitions are encountered.
+            //
+            // If there is an embedded definition using a "comma" in a stmt, then the currently 
+            // live SSA number will get updated only in the next loop (2). However, this new
+            // definition is now supposed to be live (on tos). If we did not update the stacks
+            // using (2), copy prop (1) will use a SSA num defined outside the stmt ignoring the
+            // embedded update. Killing the variable is a simplification to produce 0 ASM diffs
+            // for an update release.
+            //
+            if (optIsSsaLocal(tree) && (tree->gtFlags & GTF_VAR_DEF))
+            {
+                VarSetOps::AddElemD(this, optCopyPropKillSet, lvaTable[tree->gtLclVarCommon.gtLclNum].lvVarIndex);
+            }
         }
 
         // This logic must be in sync with SSA renaming process.
         for (GenTreePtr tree = stmt->gtStmt.gtStmtList; tree; tree = tree->gtNext)
         {
-            if (!tree->IsLocal())
+            if (!optIsSsaLocal(tree))
             {
                 continue;
             }
 
-            unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
-            if (fgExcludeFromSsa(lclNum))
-            {
-                continue;
-            }
+            unsigned lclNum = tree->gtLclVarCommon.gtLclNum;
+
             // As we encounter a definition add it to the stack as a live definition.
             if (tree->gtFlags & GTF_VAR_DEF)
             {
@@ -387,6 +422,7 @@ void Compiler::optVnCopyProp()
     typedef jitstd::vector<BlockWork> BlockWorkStack;
 
     VarSetOps::AssignNoCopy(this, compCurLife, VarSetOps::MakeEmpty(this));
+    VarSetOps::AssignNoCopy(this, optCopyPropKillSet, VarSetOps::MakeEmpty(this));
 
     // The map from lclNum to its recently live definitions as a stack.
     LclNumToGenTreePtrStack curSsaName(getAllocator());
