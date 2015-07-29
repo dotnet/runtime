@@ -12,6 +12,7 @@ using SafeCurlHandle = Interop.libcurl.SafeCurlHandle;
 using CURLoption = Interop.libcurl.CURLoption;
 using CURLcode = Interop.libcurl.CURLcode;
 using CURLINFO = Interop.libcurl.CURLINFO;
+using CURLProxyType = Interop.libcurl.curl_proxytype;
 
 namespace System.Net.Http
 {
@@ -20,7 +21,7 @@ namespace System.Net.Http
         #region Constants
 
         private const string UriSchemeHttps = "https";
-
+        private readonly static string[] AuthenticationSchemes = { "Negotiate", "Digest", "Basic" }; // the order in which libcurl goes over authentication schemes
         #endregion
 
         #region Fields
@@ -28,6 +29,9 @@ namespace System.Net.Http
         private volatile bool _anyOperationStarted;
         private volatile bool _disposed;
         private bool _automaticRedirection = true;
+        private IWebProxy _proxy = null;
+        private ICredentials _serverCredentials = null;
+        private ProxyUsePolicy _proxyPolicy = ProxyUsePolicy.UseDefaultProxy;
 
         #endregion
 
@@ -50,6 +54,59 @@ namespace System.Net.Http
             }
         }
 
+        internal bool SupportsProxy
+        {
+            get
+            {
+                return true;
+            }
+        }
+
+        internal bool UseProxy
+        {
+            get
+            {
+                return _proxyPolicy != ProxyUsePolicy.DoNotUseProxy;
+            }
+            set
+            {
+                CheckDisposedOrStarted();
+                if (value)
+                {
+                    _proxyPolicy = ProxyUsePolicy.UseCustomProxy;
+                }
+                else
+                {
+                    _proxyPolicy = ProxyUsePolicy.DoNotUseProxy;
+                }
+            }
+        }
+
+        internal IWebProxy Proxy
+        {
+            get
+            {
+                return _proxy;
+            }
+            set
+            {
+                CheckDisposedOrStarted();
+                _proxy = value;
+            }
+        }
+        
+        internal ICredentials Credentials
+        {
+            get
+            {
+                return _serverCredentials;
+            }
+            set
+            {
+                CheckDisposedOrStarted();
+                _serverCredentials = value;
+            }
+        }
         #endregion
 
         protected override void Dispose(bool disposing)
@@ -175,9 +232,81 @@ namespace System.Net.Http
                 Interop.libcurl.curl_easy_setopt(requestHandle, CURLoption.CURLOPT_FOLLOWLOCATION, 1);
             }
 
-            // TODO: Handle headers, proxy and other options
+            SetProxyOptions(state, requestHandle);
+            // TODO: Handle headers and other options
 
             return requestHandle;
+        }
+
+        private static void SetProxyOptions(RequestCompletionSource state, SafeCurlHandle requestHandle)
+        {
+            var requestUri = state.RequestMessage.RequestUri;
+            Debug.Assert(state.Handler != null);
+            if (state.Handler._proxyPolicy == ProxyUsePolicy.DoNotUseProxy)
+            {
+                Interop.libcurl.curl_easy_setopt(requestHandle, CURLoption.CURLOPT_PROXY, string.Empty);
+                return;
+            }
+
+            if ((state.Handler._proxyPolicy == ProxyUsePolicy.UseDefaultProxy) || (state.Handler.Proxy == null))
+            {
+                return;
+            }
+
+            Debug.Assert( (state.Handler.Proxy != null) && (state.Handler._proxyPolicy == ProxyUsePolicy.UseCustomProxy));
+            if (state.Handler.Proxy.IsBypassed(requestUri))
+            {
+                Interop.libcurl.curl_easy_setopt(requestHandle, CURLoption.CURLOPT_PROXY, string.Empty);
+                return;
+            }
+
+            var proxyUri = state.Handler.Proxy.GetProxy(requestUri);
+            if (proxyUri == null)
+            {
+                return;
+            }
+
+            Interop.libcurl.curl_easy_setopt(requestHandle, CURLoption.CURLOPT_PROXYTYPE, CURLProxyType.CURLPROXY_HTTP);
+            Interop.libcurl.curl_easy_setopt(requestHandle, CURLoption.CURLOPT_PROXY, proxyUri.AbsoluteUri);
+            Interop.libcurl.curl_easy_setopt(requestHandle, CURLoption.CURLOPT_PROXYPORT, proxyUri.Port);
+            NetworkCredential credentials = GetCredentials(state.Handler.Proxy.Credentials, requestUri);
+            if (credentials != null)
+            {
+                if (string.IsNullOrEmpty(credentials.UserName))
+                {
+                    throw new ArgumentException(SR.net_http_argument_empty_string, "UserName");
+                }
+
+                string credentialText;
+                if (string.IsNullOrEmpty(credentials.Domain))
+                {
+                    credentialText = string.Format("{0}:{1}", credentials.UserName, credentials.Password);
+                }
+                else
+                {
+                    credentialText = string.Format("{2}\\{0}:{1}", credentials.UserName, credentials.Password, credentials.Domain);
+                }
+                Interop.libcurl.curl_easy_setopt(requestHandle, CURLoption.CURLOPT_PROXYUSERPWD, credentialText);
+            }
+        }
+
+        private static NetworkCredential GetCredentials(ICredentials proxyCredentials, Uri requestUri)
+        {
+            if (proxyCredentials == null)
+            {
+                return null;
+            }
+
+            foreach (var authScheme in AuthenticationSchemes)
+            {
+                NetworkCredential proxyCreds = proxyCredentials.GetCredential(requestUri, authScheme);
+                if (proxyCreds != null)
+                {
+                    return proxyCreds;
+                }
+            }
+
+            return null;
         }
 
         private HttpResponseMessage CreateResponseMessage(SafeCurlHandle requestHandle, HttpRequestMessage request)
@@ -190,7 +319,7 @@ namespace System.Net.Http
             {
                 throw new HttpRequestException(SR.net_http_client_execution_error, GetCurlException(result));
             }
-            response.StatusCode = (HttpStatusCode) httpStatusCode;
+            response.StatusCode = (HttpStatusCode)httpStatusCode;
 
             // TODO: Do error processing if needed and return actual response
             response.Content =
@@ -255,5 +384,13 @@ namespace System.Net.Http
 
             public CurlHandler Handler { get; set; }
         }
+
+        private enum ProxyUsePolicy
+        {
+            DoNotUseProxy = 0, // Do not use proxy. Ignores the value set in the environment.
+            UseDefaultProxy = 1, // Do not set the proxy parameter. Use the value of environment variable, if any.
+            UseCustomProxy = 2  // Use The proxy specified by the user.
+        }
     }
 }
+
