@@ -2235,7 +2235,6 @@ emit_llvm_code_start (MonoLLVMModule *lmodule)
 
 	func = LLVMAddFunction (module, "llvm_code_start", LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE));
 	LLVMSetLinkage (func, LLVMInternalLinkage);
-	LLVMSetVisibility (func, LLVMHiddenVisibility);
 	LLVMAddFunctionAttr (func, LLVMNoUnwindAttribute);
 	lmodule->code_start = func;
 	entry_bb = LLVMAppendBasicBlock (func, "ENTRY");
@@ -2254,7 +2253,6 @@ emit_llvm_code_end (MonoLLVMModule *lmodule)
 
 	func = LLVMAddFunction (module, "llvm_code_end", LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE));
 	LLVMSetLinkage (func, LLVMInternalLinkage);
-	LLVMSetVisibility (func, LLVMHiddenVisibility);
 	LLVMAddFunctionAttr (func, LLVMNoUnwindAttribute);
 	lmodule->code_end = func;
 	entry_bb = LLVMAppendBasicBlock (func, "ENTRY");
