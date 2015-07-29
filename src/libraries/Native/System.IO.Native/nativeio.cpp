@@ -7,7 +7,7 @@
 #include "nativeio.h"
 #include <sys/stat.h>
 
-#if HAVE_STAT64 && !(defined(__APPLE__) && defined(_AMD64_))
+#if HAVE_STAT64
 #    define stat_ stat64
 #    define fstat_ fstat64
 #else
