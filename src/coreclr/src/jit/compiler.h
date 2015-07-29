@@ -5302,10 +5302,14 @@ public:
     typedef ArrayStack<GenTreePtr> GenTreePtrStack;
     typedef SimplerHashTable<unsigned, SmallPrimitiveKeyFuncs<unsigned>, GenTreePtrStack*, DefaultSimplerHashBehavior> LclNumToGenTreePtrStack;
 
+    // Kill set to track variables with intervening definitions.
+    VARSET_TP optCopyPropKillSet;
+
     // Copy propagation functions.
     void optCopyProp(BasicBlock* block, GenTreePtr stmt, GenTreePtr tree, LclNumToGenTreePtrStack* curSsaName);
     void optBlockCopyPropPopStacks(BasicBlock* block, LclNumToGenTreePtrStack* curSsaName);
     void optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curSsaName);
+    bool optIsSsaLocal(GenTreePtr tree);
     int optCopyProp_LclVarScore(LclVarDsc* lclVarDsc, LclVarDsc* copyVarDsc, bool preferOp2);
     void optVnCopyProp();
 
