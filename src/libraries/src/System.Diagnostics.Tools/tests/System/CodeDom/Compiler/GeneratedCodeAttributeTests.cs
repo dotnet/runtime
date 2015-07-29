@@ -3,14 +3,14 @@
 
 using Xunit;
 
-namespace System.CodeDom.Compiler
+namespace System.CodeDom.Compiler.Tests
 {
-    public static class GeneratedCodeAttributeTests
+    public class GeneratedCodeAttributeTests
     {
         [Theory]
         [InlineData(null, null)]
         [InlineData("Tool", "Version")]
-        public static void Constructor(string tool, string version)
+        public void TestConstructor(string tool, string version)
         {
             GeneratedCodeAttribute gca = new GeneratedCodeAttribute(tool, version);
 
