@@ -2,19 +2,22 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Runtime.InteropServices;
 using Xunit;
 
 public static class TimeZoneInfoTests
 {
-    private static String s_strPacific = "Pacific Standard Time";
-    private static String s_strSydney = "AUS Eastern Standard Time";
-    private static String s_strGMT = "GMT Standard Time";
-    private static String s_strTonga = "Tonga Standard Time";
-    private static String s_strBrasil = "E. South America Standard Time";
-    private static String s_strPerth = "W. Australia Standard Time";
-    private static String s_strBrasilia = "E. South America Standard Time";
-    private static String s_strNairobi = "E. Africa Standard Time";
-    private static String s_strAmsterdam = "W. Europe Standard Time";
+    private static String s_strPacific = Interop.IsWindows ? "Pacific Standard Time" : "America/Los_Angeles";
+    private static String s_strSydney = Interop.IsWindows ? "AUS Eastern Standard Time" : "Australia/Sydney";
+    private static String s_strGMT = Interop.IsWindows ? "GMT Standard Time" : "Europe/London";
+    private static String s_strTonga = Interop.IsWindows ? "Tonga Standard Time" : "Pacific/Tongatapu";
+    private static String s_strBrasil = Interop.IsWindows ? "E. South America Standard Time" : "America/Sao_Paulo";
+    private static String s_strPerth = Interop.IsWindows ? "W. Australia Standard Time" : "Australia/Perth";
+    private static String s_strBrasilia = Interop.IsWindows ? "E. South America Standard Time" : "America/Sao_Paulo";
+    private static String s_strNairobi = Interop.IsWindows ? "E. Africa Standard Time" : "Africa/Nairobi";
+    private static String s_strAmsterdam = Interop.IsWindows ? "W. Europe Standard Time" : "Europe/Berlin";
+    private static String s_strRussian = Interop.IsWindows ? "Russian Standard Time" : "Europe/Moscow";
+    private static String s_strLibya = Interop.IsWindows ? "Libya Standard Time" : "Africa/Tripoli";
 
     private static TimeZoneInfo s_myUtc = TimeZoneInfo.Utc;
     private static TimeZoneInfo s_myLocal = TimeZoneInfo.Local;
@@ -23,7 +26,7 @@ public static class TimeZoneInfoTests
     private static TimeZoneInfo s_nairobiTz = TimeZoneInfo.FindSystemTimeZoneById(s_strNairobi);
     private static TimeZoneInfo s_amsterdamTz = TimeZoneInfo.FindSystemTimeZoneById(s_strAmsterdam);
 
-    private static bool s_localIsPST = TimeZoneInfo.Local.StandardName == "Pacific Standard Time";
+    private static bool s_localIsPST = TimeZoneInfo.Local.Id == s_strPacific;
     private static bool s_regLocalSupportsDST = s_regLocal.SupportsDaylightSavingTime;
     private static bool s_localSupportsDST = TimeZoneInfo.Local.SupportsDaylightSavingTime;
 
@@ -72,7 +75,7 @@ public static class TimeZoneInfoTests
         // Make sure first the timezone data is updated in the machine as it should include Libya Timezone
         try
         {
-            tripoli = TimeZoneInfo.FindSystemTimeZoneById("Libya Standard Time");
+            tripoli = TimeZoneInfo.FindSystemTimeZoneById(s_strLibya);
         }
         catch (Exception /* TimeZoneNotFoundException */ )
         {
@@ -90,10 +93,10 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
+    [ActiveIssue(2465, PlatformID.AnyUnix)]
     public static void ValidateRussiaTimeZoneTest()
     {
-        TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time");
+        TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(s_strRussian);
         var inputUtcDate = new DateTime(2013, 6, 1, 0, 0, 0, DateTimeKind.Utc);
 
         DateTime russiaTime = TimeZoneInfo.ConvertTime(inputUtcDate, tz);
@@ -106,7 +109,6 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void ValidateExceptionsTest()
     {
         DateTimeOffset time1 = new DateTimeOffset(2006, 5, 12, 0, 0, 0, TimeSpan.Zero);
@@ -134,7 +136,6 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void NearMinMaxDateTimeOffsetConvertTest()
     {
         VerifyConvert(DateTimeOffset.MaxValue, TimeZoneInfo.Utc.Id, DateTimeOffset.MaxValue);
@@ -156,15 +157,20 @@ public static class TimeZoneInfoTests
         VerifyConvert(new DateTimeOffset(DateTime.MinValue.AddHours(5), new TimeSpan(-3, 0, 0)), s_strPacific, new DateTimeOffset(DateTime.MinValue, new TimeSpan(-8, 0, 0)));
 
         VerifyConvert(DateTime.MaxValue, s_strPacific, s_strSydney, DateTime.MaxValue);
-        VerifyConvert(DateTime.MaxValue.AddHours(-19), s_strPacific, s_strSydney, DateTime.MaxValue);
+        if (Interop.IsWindows) // [ActiveIssue(2465, PlatformID.AnyUnix)]
+        {
+            VerifyConvert(DateTime.MaxValue.AddHours(-19), s_strPacific, s_strSydney, DateTime.MaxValue);
+        }
         VerifyConvert(DateTime.MaxValue.AddHours(-19.5), s_strPacific, s_strSydney, DateTime.MaxValue.AddHours(-0.5));
         VerifyConvert(DateTime.MinValue, s_strSydney, s_strPacific, DateTime.MinValue);
-        VerifyConvert(DateTime.MinValue.AddHours(19), s_strSydney, s_strPacific, DateTime.MinValue);
-        VerifyConvert(DateTime.MinValue.AddHours(19.5), s_strSydney, s_strPacific, DateTime.MinValue.AddHours(0.5));
+        if (Interop.IsWindows) // [ActiveIssue(2465, PlatformID.AnyUnix)]
+        {
+            VerifyConvert(DateTime.MinValue.AddHours(19), s_strSydney, s_strPacific, DateTime.MinValue);
+            VerifyConvert(DateTime.MinValue.AddHours(19.5), s_strSydney, s_strPacific, DateTime.MinValue.AddHours(0.5));
+        }
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void DateTimeOffsetVariousSystemTimeZonesTest()
     {
         var time1 = new DateTimeOffset(2006, 5, 12, 5, 17, 42, new TimeSpan(-7, 0, 0));
@@ -273,7 +279,6 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void SameTimeZonesTest()
     {
         var time1 = new DateTimeOffset(2003, 10, 26, 3, 0, 1, new TimeSpan(-2, 0, 0));
@@ -451,7 +456,6 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void UtcToUtcTest()
     {
         var time1utc = new DateTime(2003, 3, 30, 0, 0, 23, DateTimeKind.Utc);
@@ -469,7 +473,6 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void UtcToLocalTest()
     {
         if (s_localIsPST)
@@ -736,7 +739,6 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void DtKindTest()
     {
         VerifyConvertException<ArgumentException>(new DateTime(2006, 2, 13, 5, 37, 48, DateTimeKind.Utc), s_strPacific, s_strSydney);
@@ -753,7 +755,6 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void MiscUtcTests()
     {
         VerifyConvert(new DateTime(2003, 4, 6, 1, 30, 0, DateTimeKind.Utc), "UTC", DateTime.SpecifyKind(new DateTime(2003, 4, 6, 1, 30, 0), DateTimeKind.Utc));
@@ -809,7 +810,6 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void BrasiliaTests()
     {
         var time1 = new DateTimeOffset(2003, 10, 26, 3, 0, 1, new TimeSpan(-2, 0, 0));
@@ -829,7 +829,6 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void TongaTests()
     {
         var time1 = new DateTime(2006, 5, 12, 5, 17, 42, DateTimeKind.Utc);
@@ -918,7 +917,6 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void ThrowOnNairobiAmbiguousOffsetsTests()
     {
         VerifyAmbiguousOffsetsException<ArgumentException>(s_nairobiTz, new DateTime(2006, 1, 15, 7, 15, 23));
@@ -934,7 +932,6 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void AmsterdamAmbiguousOffsetsTests()
     {
         //
@@ -1178,7 +1175,6 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void LocalAmbiguousOffsetsTests()
     {
         if (!s_localIsPST)
@@ -1218,7 +1214,6 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void DstTests()
     {
         VerifyDST(TimeZoneInfo.Utc, new DateTime(2006, 1, 15, 7, 15, 23), false);
@@ -1421,7 +1416,6 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void InvalidTimeTests()
     {
         VerifyInv(TimeZoneInfo.Utc, new DateTime(2006, 1, 15, 7, 15, 23), false);
