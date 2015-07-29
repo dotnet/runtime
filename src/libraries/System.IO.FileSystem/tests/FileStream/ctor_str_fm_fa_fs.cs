@@ -61,12 +61,13 @@ namespace System.IO.FileSystem.Tests
         public void FileShareCreate()
         {
             // just check that the inputs are accepted, actual sharing varies by platform so we seperate the behavior testing
+            int i = 0;
             foreach (FileShare share in shares)
             {
-                using (FileStream fs = CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, share))
+                using (FileStream fs = CreateFileStream(GetTestFilePath(i++), FileMode.Create, FileAccess.ReadWrite, share))
                 { }
 
-                using (FileStream fs = CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.Write, share))
+                using (FileStream fs = CreateFileStream(GetTestFilePath(i++), FileMode.Create, FileAccess.Write, share))
                 { }
             }
         }
@@ -75,15 +76,16 @@ namespace System.IO.FileSystem.Tests
         public void FileShareOpenOrCreate()
         {
             // just check that the inputs are accepted, actual sharing varies by platform so we seperate the behavior testing
+            int i = 0;
             foreach (FileShare share in shares)
             {
-                using (FileStream fs = CreateFileStream(GetTestFilePath(), FileMode.OpenOrCreate, FileAccess.ReadWrite, share))
+                using (FileStream fs = CreateFileStream(GetTestFilePath(i++), FileMode.OpenOrCreate, FileAccess.ReadWrite, share))
                 { }
 
-                using (FileStream fs = CreateFileStream(GetTestFilePath(), FileMode.OpenOrCreate, FileAccess.Write, share))
+                using (FileStream fs = CreateFileStream(GetTestFilePath(i++), FileMode.OpenOrCreate, FileAccess.Write, share))
                 { }
 
-                using (FileStream fs = CreateFileStream(GetTestFilePath(), FileMode.OpenOrCreate, FileAccess.Read, share))
+                using (FileStream fs = CreateFileStream(GetTestFilePath(i++), FileMode.OpenOrCreate, FileAccess.Read, share))
                 { }
             }
         }
