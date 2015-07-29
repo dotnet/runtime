@@ -9146,7 +9146,7 @@ compile_asm (MonoAotCompile *acfg)
 	g_strdelimit (ld_flags, ";", ' ');
 
 #ifdef LD_NAME
-	command = g_strdup_printf ("%s -o %s %s %s.o %s", LD_NAME, tmp_outfile_name, llvm_ofile, acfg->tmpfname, ld_flags);
+	command = g_strdup_printf ("%s -o \"%s\" \"%s\" \"%s.o\" %s", LD_NAME, tmp_outfile_name, llvm_ofile, acfg->tmpfname, ld_flags);
 #else
 	command = g_strdup_printf ("\"%sld\" %s -shared -o %s %s %s.o %s", tool_prefix, LD_OPTIONS, tmp_outfile_name, llvm_ofile,
 		acfg->tmpfname, ld_flags);
@@ -9187,7 +9187,7 @@ compile_asm (MonoAotCompile *acfg)
 	rename (tmp_outfile_name, outfile_name);
 
 #if defined(TARGET_MACH)
-	command = g_strdup_printf ("dsymutil %s", outfile_name);
+	command = g_strdup_printf ("dsymutil \"%s\"", outfile_name);
 	aot_printf (acfg, "Executing dsymutil: %s\n", command);
 	if (execute_system (command) != 0) {
 		return 1;
