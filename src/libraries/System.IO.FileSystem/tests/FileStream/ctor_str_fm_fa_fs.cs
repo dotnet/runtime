@@ -9,7 +9,7 @@ namespace System.IO.FileSystem.Tests
 {
     public partial class FileStream_ctor_str_fm_fa_fs : FileStream_ctor_str_fm_fa
     {
-        protected sealed override FileStream CreateFileStream(string path, FileMode mode, FileAccess access)
+        protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access)
         {
             return CreateFileStream(path, mode, access, FileShare.Read);
         }
@@ -67,6 +67,23 @@ namespace System.IO.FileSystem.Tests
                 { }
 
                 using (FileStream fs = CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.Write, share))
+                { }
+            }
+        }
+
+        [Fact]
+        public void FileShareOpenOrCreate()
+        {
+            // just check that the inputs are accepted, actual sharing varies by platform so we seperate the behavior testing
+            foreach (FileShare share in shares)
+            {
+                using (FileStream fs = CreateFileStream(GetTestFilePath(), FileMode.OpenOrCreate, FileAccess.ReadWrite, share))
+                { }
+
+                using (FileStream fs = CreateFileStream(GetTestFilePath(), FileMode.OpenOrCreate, FileAccess.Write, share))
+                { }
+
+                using (FileStream fs = CreateFileStream(GetTestFilePath(), FileMode.OpenOrCreate, FileAccess.Read, share))
                 { }
             }
         }

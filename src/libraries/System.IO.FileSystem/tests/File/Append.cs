@@ -20,10 +20,10 @@ namespace System.IO.FileSystem.Tests
         {
             string path = GetTestFilePath();
             string lines = new string('c', 200);
-            string overwriteLines = new string('b', 100);
+            string appendLines = new string('b', 100);
             Write(path, lines);
-            Write(path, overwriteLines);
-            Assert.Equal(lines + overwriteLines, Read(path));
+            Write(path, appendLines);
+            Assert.Equal(lines + appendLines, Read(path));
         }
     }
 
@@ -39,10 +39,10 @@ namespace System.IO.FileSystem.Tests
         {
             string path = GetTestFilePath();
             string lines = new string('c', 200);
-            string overwriteLines = new string('b', 100);
+            string appendLines = new string('b', 100);
             Write(path, lines);
-            Write(path, overwriteLines);
-            Assert.Equal(lines + overwriteLines, Read(path));
+            Write(path, appendLines);
+            Assert.Equal(lines + appendLines, Read(path));
         }
     }
 
@@ -72,10 +72,10 @@ namespace System.IO.FileSystem.Tests
         {
             string path = GetTestFilePath();
             string[] lines = new string[] { new string('c', 200) };
-            string[] overwriteLines = new string[] { new string('b', 100) };
+            string[] appendLines = new string[] { new string('b', 100) };
             Write(path, lines);
-            Write(path, overwriteLines);
-            Assert.Equal(new string[] { lines[0], overwriteLines[0] }, Read(path));
+            Write(path, appendLines);
+            Assert.Equal(new string[] { lines[0], appendLines[0] }, Read(path));
         }
     }
 

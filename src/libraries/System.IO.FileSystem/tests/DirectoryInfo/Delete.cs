@@ -7,16 +7,10 @@ namespace System.IO.FileSystem.Tests
 {
     public class DirectoryInfo_Delete : Directory_Delete_str
     {
-        #region Utilities
-
         public override void Delete(string path)
         {
             new DirectoryInfo(path).Delete();
         }
-
-        #endregion
-
-        #region UniversalTests
 
         [Fact]
         public void ExistsDoesntRefreshOnDelete()
@@ -31,14 +25,10 @@ namespace System.IO.FileSystem.Tests
             dir.Refresh();
             Assert.False(dir.Exists);
         }
-
-        #endregion
     }
 
     public class DirectoryInfo_Delete_bool : Directory_Delete_str_bool
     {
-        #region Utilities
-
         public override void Delete(string path)
         {
             new DirectoryInfo(path).Delete(false);
@@ -48,7 +38,5 @@ namespace System.IO.FileSystem.Tests
         {
             new DirectoryInfo(path).Delete(recursive);
         }
-
-        #endregion
     }
 }

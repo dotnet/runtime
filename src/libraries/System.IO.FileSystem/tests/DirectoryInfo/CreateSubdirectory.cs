@@ -56,6 +56,13 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
+        public void Conflicting_Parent_Directory()
+        {
+            string path = Path.Combine(TestDirectory, GetTestFileName(), "c");
+            Assert.Throws<ArgumentException>(() => new DirectoryInfo(TestDirectory).CreateSubdirectory(path));
+        }
+
+        [Fact]
         public void DotDotIsParentDirectory()
         {
             DirectoryInfo result = new DirectoryInfo(TestDirectory).CreateSubdirectory(Path.Combine(GetTestFileName(), ".."));
@@ -200,6 +207,15 @@ namespace System.IO.FileSystem.Tests
             Assert.True(subDir.Exists);
             Assert.StartsWith(@"\\?\", subDir.FullName);
         }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)] // UNC shares
+        public void UNCPathWithOnlySlashes()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            Assert.Throws<ArgumentException>(() => testDir.CreateSubdirectory("//"));
+        }
+
         #endregion
     }
 }

@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 internal static class IOInputs
 {
@@ -136,6 +134,9 @@ internal static class IOInputs
 
         if (Interop.IsWindows) // alternate data streams, drive labels, etc.
         {
+            yield return "\0";
+            yield return "middle\0path";
+            yield return "trailing\0";
             yield return @":";
             yield return @" :";
             yield return @"  :";

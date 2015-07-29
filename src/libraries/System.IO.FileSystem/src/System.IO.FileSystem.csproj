@@ -331,6 +331,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.utime.cs">
       <Link>Common\Interop\Unix\Interop.utime.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.link.cs">
+      <Link>Common\Interop\Unix\Interop.link.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.unlink.cs">
       <Link>Common\Interop\Unix\Interop.unlink.cs</Link>
     </Compile>
