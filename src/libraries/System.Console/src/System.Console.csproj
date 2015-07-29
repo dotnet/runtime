@@ -138,8 +138,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.GetFileInformation.cs">
       <Link>Common\Interop\Unix\Interop.GetFileInformation.cs"</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.IO.Native\Interop.NativeIO.cs">
-      <Link>Common\Interop\Unix\Interop.NativeIO.cs"</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Stat.cs">
+      <Link>Common\Interop\Unix\Interop.Stat.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.SetConsoleCtrlHandler.cs">
       <Link>Common\Interop\Unix\Interop.SetConsoleCtrlHandler.cs"</Link>

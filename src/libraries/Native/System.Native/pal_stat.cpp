@@ -4,7 +4,7 @@
 //
 
 #include "../config.h"
-#include "nativeio.h"
+#include "pal_stat.h"
 #include <sys/stat.h>
 
 #if HAVE_STAT64

@@ -91,7 +91,7 @@ namespace System
                         UnixConsoleStream ucs = sw.BaseStream as UnixConsoleStream;
                         if (ucs != null)
                         {
-                            return ucs._handleType == Interop.NativeIO.FileTypes.S_IFCHR;
+                            return ucs._handleType == Interop.System.FileTypes.S_IFCHR;
                         }
                     }
                 }
@@ -378,11 +378,11 @@ namespace System
                 try
                 {
                     _handle.DangerousAddRef(ref gotFd);
-                    Interop.NativeIO.FileStats buf;
+                    Interop.System.FileStats buf;
                     _handleType =
-                        Interop.NativeIO.FStat((int)_handle.DangerousGetHandle(), out buf) == 0 ?
-                            (buf.Mode & Interop.NativeIO.FileTypes.S_IFMT) :
-                            Interop.NativeIO.FileTypes.S_IFREG; // if something goes wrong, don't fail, just say it's a regular file
+                        Interop.System.FStat((int)_handle.DangerousGetHandle(), out buf) == 0 ?
+                            (buf.Mode & Interop.System.FileTypes.S_IFMT) :
+                            Interop.System.FileTypes.S_IFREG; // if something goes wrong, don't fail, just say it's a regular file
                 }
                 finally
                 {

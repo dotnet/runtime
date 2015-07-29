@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class NativeIO
+    internal static partial class System
     {
         internal struct FileStats
         {
@@ -38,13 +38,13 @@ internal static partial class Interop
             HasCreationTime = 1,
         }
 
-        [DllImport(Libraries.IOInterop, SetLastError = true)]
+        [DllImport(Libraries.SystemNative, SetLastError = true)]
         internal static extern int FStat(int fileDescriptor, out FileStats output);
 
-        [DllImport(Libraries.IOInterop, SetLastError = true)]
+        [DllImport(Libraries.SystemNative, SetLastError = true)]
         internal static extern int Stat(string path, out FileStats output);
 
-        [DllImport(Libraries.IOInterop, SetLastError = true)]
+        [DllImport(Libraries.SystemNative, SetLastError = true)]
         internal static extern int LStat(string path, out FileStats output);
     }
 }
