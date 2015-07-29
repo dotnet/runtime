@@ -69,8 +69,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.poll.cs">
       <Link>Common\Interop\Unix\Interop.poll.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.IO.Native\Interop.NativeIO.cs">
-      <Link>Common\Interop\Unix\Interop.NativeIO.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Stat.cs">
+      <Link>Common\Interop\Unix\Interop.Stat.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
