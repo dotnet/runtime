@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -185,35 +186,18 @@ namespace System.Diagnostics.ProcessTests
             Assert.NotNull(_process.MachineName);
         }
 
-        [ActiveIssue(1896)]
-        [Fact]
-        public void TestMainModule()
+        [Fact, PlatformSpecific(~PlatformID.OSX)]
+        public void TestMainModuleOnNonOSX()
         {
-            // Module support is not enabled on OSX
-            if (global::Interop.IsOSX)
-            {
-                Assert.Null(_process.MainModule);
-                Assert.Equal(0, _process.Modules.Count);
-                return;
-            }
+            string fileName = "corerun";
+            if (global::Interop.IsWindows)
+                fileName = "CoreRun.exe";
 
-            // Ensure the process has loaded the modules.
-            Assert.True(SpinWait.SpinUntil(() =>
-            {
-                if (_process.Modules.Count > 0)
-                    return true;
-                _process.Refresh();
-                return false;
-            }, WaitInMS));
-
-            // Get MainModule property from a Process object
-            ProcessModule mainModule = _process.MainModule;
-            Assert.NotNull(mainModule);
-            Assert.Equal(CoreRunName, Path.GetFileNameWithoutExtension(mainModule.ModuleName));
-
-            // Check that the mainModule is present in the modules list.
-            IEnumerable<string> processModuleNames = _process.Modules.Cast<ProcessModule>().Select(p => Path.GetFileNameWithoutExtension(p.ModuleName));
-            Assert.Contains(CoreRunName, processModuleNames);
+            Process p = Process.GetCurrentProcess();
+            Assert.True(p.Modules.Count > 0);
+            Assert.Equal(fileName, p.MainModule.ModuleName);
+            Assert.EndsWith(fileName, p.MainModule.FileName);
+            Assert.Equal(string.Format("System.Diagnostics.ProcessModule ({0})", fileName), p.MainModule.ToString());
         }
 
         [Fact]
@@ -377,7 +361,6 @@ namespace System.Diagnostics.ProcessTests
             Assert.InRange(processorTimeAtHalfSpin, processorTimeBeforeSpin, Process.GetCurrentProcess().TotalProcessorTime.TotalSeconds);
         }
 
-        [ActiveIssue(2474)]
         [Fact]
         public void TestProcessStartTime()
         {
@@ -391,8 +374,10 @@ namespace System.Diagnostics.ProcessTests
                 // Thus, because there are HZ timer interrupts in a second, there are HZ jiffies in a second. Hence 1\HZ, will
                 // be the resolution of system timer. The lowest value of HZ on unix is 100, hence the timer resolution is 10 ms.
                 // Allowing for error in 10 ms.
-                long beforeTicks = timeBeforeCreatingProcess.Ticks - new TimeSpan(0, 0, 0, 0, 10).Ticks;
-                Assert.InRange(p.StartTime.ToUniversalTime().Ticks, beforeTicks, DateTime.UtcNow.Ticks);
+                long tenMSTicks = new TimeSpan(0, 0, 0, 0, 10).Ticks;
+                long beforeTicks = timeBeforeCreatingProcess.Ticks - tenMSTicks;
+                long afterTicks = DateTime.UtcNow.Ticks + tenMSTicks;
+                Assert.InRange(p.StartTime.ToUniversalTime().Ticks, beforeTicks, afterTicks);
             }
             finally
             {

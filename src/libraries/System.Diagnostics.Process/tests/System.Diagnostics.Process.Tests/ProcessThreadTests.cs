@@ -79,8 +79,10 @@ namespace System.Diagnostics.ProcessTests
                     // Thus, because there are HZ timer interrupts in a second, there are HZ jiffies in a second. Hence 1\HZ, will
                     // be the resolution of system timer. The lowest value of HZ on unix is 100, hence the timer resolution is 10 ms.
                     // Allowing for error in 10 ms.
-                    long beforeTicks = timeBeforeCreatingProcess.Ticks - new TimeSpan(0, 0, 0, 0, 10).Ticks;
-                    Assert.InRange(thread.StartTime.ToUniversalTime().Ticks, beforeTicks, DateTime.UtcNow.Ticks);
+                    long tenMSTicks = new TimeSpan(0, 0, 0, 0, 10).Ticks;
+                    long beforeTicks = timeBeforeCreatingProcess.Ticks - tenMSTicks;
+                    long afterTicks = DateTime.UtcNow.Ticks + tenMSTicks;
+                    Assert.InRange(thread.StartTime.ToUniversalTime().Ticks, beforeTicks, afterTicks);
                 }
             }
             finally
