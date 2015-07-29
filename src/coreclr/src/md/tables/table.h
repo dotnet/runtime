@@ -208,7 +208,7 @@ public:
     
     __checkReturn 
     inline HRESULT AddRecord(
-        __out_bcount(m_cbRecordSize) BYTE  **ppbRecord, 
+        __out                        BYTE  **ppbRecord, 
         __out                        UINT32 *pnIndex)
     {
         return m_RecordStorage.AddRecord(ppbRecord, pnIndex);

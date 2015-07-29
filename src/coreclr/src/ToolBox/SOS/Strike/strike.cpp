@@ -2065,7 +2065,7 @@ CLRDATA_ADDRESS isSecurityExceptionObj(CLRDATA_ADDRESS mtObj)
 // Fill the passed in buffer with a text header for generated exception information.
 // Returns the number of characters in the wszBuffer array on exit.
 // If NULL is passed for wszBuffer, just returns the number of characters needed.
-size_t AddExceptionHeader (__out_ecount (bufferLength) __out_opt WCHAR *wszBuffer, size_t bufferLength)
+size_t AddExceptionHeader (__out_ecount_opt(bufferLength) WCHAR *wszBuffer, size_t bufferLength)
 {
 #ifdef _TARGET_WIN64_
     const WCHAR *wszHeader = W("    SP               IP               Function\n");
@@ -2219,7 +2219,7 @@ BOOL IsAsyncException(const DacpExceptionObjectData & excData)
 #define SOS_STACKTRACE_SHOWEXPLICITFRAMES  0x00000002
 size_t FormatGeneratedException (DWORD_PTR dataPtr, 
     UINT bytes, 
-    __out_ecount (bufferLength) __out_opt WCHAR *wszBuffer, 
+    __out_ecount_opt(bufferLength) WCHAR *wszBuffer, 
     size_t bufferLength, 
     BOOL bAsync,
     BOOL bNestedCase=FALSE,
