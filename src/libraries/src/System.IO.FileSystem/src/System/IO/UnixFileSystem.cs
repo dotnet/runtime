@@ -52,6 +52,14 @@ namespace System.IO
 
         public override void MoveFile(string sourceFullPath, string destFullPath)
         {
+            // The desired behavior for Move(source, dest) is to not overwrite the destination file
+            // if it exists. Since rename(source, dest) will replace the file at 'dest' if it exists,
+            // a check is added before rename is called. Note that this is a race condition. Possible
+            // better solutions would be to use link/unlink or platform specific functions instead of
+            // rename(source, dest). Regardless of the implementation, an IOException should be thrown if 
+            // 'dest' refers to a file that already exists.
+            if (File.Exists(destFullPath))
+                throw new IOException(SR.GetResourceString(SR.IO_AlreadyExists_Name, destFullPath));
             while (Interop.libc.rename(sourceFullPath, destFullPath) < 0)
             {
                 int errno = Marshal.GetLastWin32Error();
@@ -59,11 +67,22 @@ namespace System.IO
                 {
                     continue;
                 }
-                else if (errno == Interop.Errors.EXDEV) // rename fails across devices / mount points
+                else if (errno == Interop.Errors.EXDEV) // link fails across devices / mount points
                 {
                     CopyFile(sourceFullPath, destFullPath, overwrite: false);
-                    DeleteFile(sourceFullPath);
                     break;
+                }
+                //else if (errno == Interop.Errors.ENOENT && (!Directory.Exists(Path.GetDirectoryName(sourceFullPath)) || !Directory.Exists(Path.GetDirectoryName(destFullPath)))) // The parent directory for either source or dest can't be found
+                else if (errno == Interop.Errors.ENOENT && !Directory.Exists(Path.GetDirectoryName(destFullPath))) // The parent directory of destFile can't be found
+                {
+                    // Windows distinguishes between whether the directory or the file isn't found,
+                    // and throws a different exception in these cases.  We attempt to approximate that
+                    // here; there is a race condition here, where something could change between
+                    // when the error occurs and our checks, but it's the best we can do, and the
+                    // worst case in such a race condition (which could occur if the file system is
+                    // being manipulated concurrently with these checks) is that we throw a
+                    // FileNotFoundException instead of DirectoryNotFoundexception.
+                    throw Interop.GetExceptionForIoErrno(errno, destFullPath, isDirectory: true);
                 }
                 else
                 {

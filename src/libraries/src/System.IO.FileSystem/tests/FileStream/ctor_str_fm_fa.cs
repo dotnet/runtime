@@ -9,7 +9,7 @@ namespace System.IO.FileSystem.Tests
 {
     public class FileStream_ctor_str_fm_fa : FileStream_ctor_str_fm
     {
-        protected sealed override FileStream CreateFileStream(string path, FileMode mode)
+        protected override FileStream CreateFileStream(string path, FileMode mode)
         {
             // Run the path/mode tests against this constructor
             return CreateFileStream(path, mode, mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite);

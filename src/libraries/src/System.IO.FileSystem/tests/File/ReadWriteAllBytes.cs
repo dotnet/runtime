@@ -55,6 +55,33 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
+        [OuterLoop]
+        public void ReadFileOver2GB()
+        {
+            string path = GetTestFilePath();
+            int split = 10;
+            string toWrite = new string('a', Int32.MaxValue / split);
+            using (var writer = new StreamWriter(File.Create(path)))
+            {
+                for (int i = 0; i < (split + 1); i++)
+                {
+                    try
+                    {
+                        writer.Write(toWrite);
+                        writer.Flush();
+                    }
+                    catch (OutOfMemoryException)
+                    {
+                        split /= 2;
+                        toWrite = new string('a', Int32.MaxValue / split);
+                    }
+                }
+            }
+            // File is too large for ReadAllBytes at once
+            Assert.Throws<IOException>(() => File.ReadAllBytes(path));
+        }
+
+        [Fact]
         public void Overwrite()
         {
             string path = GetTestFilePath();
