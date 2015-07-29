@@ -1864,7 +1864,7 @@ mono_metadata_signature_dup_internal_with_padding (MonoImage *image, MonoMemPool
 	MonoMethodSignature *ret;
 	sigsize = sig_header_size = MONO_SIZEOF_METHOD_SIGNATURE + sig->param_count * sizeof (MonoType *) + padding;
 	if (sig->ret)
-		sigsize += sizeof (MonoType);
+		sigsize += MONO_SIZEOF_TYPE;
 
 	if (image) {
 		ret = mono_image_alloc (image, sigsize);
@@ -1881,7 +1881,7 @@ mono_metadata_signature_dup_internal_with_padding (MonoImage *image, MonoMemPool
 		// Danger! Do not alter padding use without changing the dup_add_this below
 		intptr_t end_of_header = (intptr_t)( (char*)(ret) + sig_header_size);
 		ret->ret = (MonoType *)end_of_header;
-		*ret->ret = *sig->ret;
+		memcpy (ret->ret, sig->ret, MONO_SIZEOF_TYPE);
 	}
 
 	return ret;
