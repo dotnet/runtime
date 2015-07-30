@@ -2076,11 +2076,19 @@ gboolean
 mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboolean save_public_key, gboolean *is_version_defined, gboolean *is_token_defined)
 {
 	gchar *dllname;
+	gchar *dllname_uq;
 	gchar *version = NULL;
+	gchar *version_uq;
 	gchar *culture = NULL;
+	gchar *culture_uq;
 	gchar *token = NULL;
+	gchar *token_uq;
 	gchar *key = NULL;
+	gchar *key_uq;
 	gchar *retargetable = NULL;
+	gchar *retargetable_uq;
+	gchar *procarch;
+	gchar *procarch_uq;
 	gboolean res;
 	gchar *value, *part_name;
 	guint32 part_name_len;
@@ -2152,29 +2160,42 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 
 		if (part_name_len == 12 && !g_ascii_strncasecmp (part_name, "Retargetable", part_name_len)) {
 			retargetable = value;
-			if (strlen (retargetable) == 0) {
-				goto cleanup_and_fail;
-			}
+			retargetable_uq = unquote (retargetable);
+			if (retargetable_uq != NULL)
+				retargetable = retargetable_uq;
+
 			if (!g_ascii_strcasecmp (retargetable, "yes")) {
 				flags |= ASSEMBLYREF_RETARGETABLE_FLAG;
 			} else if (g_ascii_strcasecmp (retargetable, "no")) {
+				free (retargetable_uq);
 				goto cleanup_and_fail;
 			}
+
+			free (retargetable_uq);
 			tmp++;
 			continue;
 		}
 
 		if (part_name_len == 21 && !g_ascii_strncasecmp (part_name, "ProcessorArchitecture", part_name_len)) {
-			if (!g_ascii_strcasecmp (value, "MSIL"))
+			procarch = value;
+			procarch_uq = unquote (procarch);
+			if (procarch_uq != NULL)
+				procarch = procarch_uq;
+
+			if (!g_ascii_strcasecmp (procarch, "MSIL"))
 				arch = MONO_PROCESSOR_ARCHITECTURE_MSIL;
-			else if (!g_ascii_strcasecmp (value, "X86"))
+			else if (!g_ascii_strcasecmp (procarch, "X86"))
 				arch = MONO_PROCESSOR_ARCHITECTURE_X86;
-			else if (!g_ascii_strcasecmp (value, "IA64"))
+			else if (!g_ascii_strcasecmp (procarch, "IA64"))
 				arch = MONO_PROCESSOR_ARCHITECTURE_IA64;
-			else if (!g_ascii_strcasecmp (value, "AMD64"))
+			else if (!g_ascii_strcasecmp (procarch, "AMD64"))
 				arch = MONO_PROCESSOR_ARCHITECTURE_AMD64;
-			else
+			else {
+				free (procarch_uq);
 				goto cleanup_and_fail;
+			}
+
+			free (procarch_uq);
 			tmp++;
 			continue;
 		}
@@ -2188,14 +2209,55 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 		goto cleanup_and_fail;
 	}
 
-	res = build_assembly_name (dllname, version, culture, token, key, flags, arch,
-		aname, save_public_key);
+	dllname_uq = unquote (dllname);
+	version_uq = unquote (version);
+	culture_uq = unquote (culture);
+	token_uq = unquote (token);
+	key_uq = unquote (key);
+
+	res = build_assembly_name (
+		dllname_uq == NULL ? dllname : dllname_uq,
+		version_uq == NULL ? version : version_uq,
+		culture_uq == NULL ? culture : culture_uq,
+		token_uq == NULL ? token : token_uq,
+		key_uq == NULL ? key : key_uq,
+		flags, arch, aname, save_public_key);
+
+	free (dllname_uq);
+	free (version_uq);
+	free (culture_uq);
+	free (token_uq);
+	free (key_uq);
+
 	g_strfreev (parts);
 	return res;
 
 cleanup_and_fail:
 	g_strfreev (parts);
 	return FALSE;
+}
+
+static char*
+unquote (const char *str)
+{
+	gint slen;
+	const char *end;
+
+	if (str == NULL)
+		return NULL;
+
+	slen = strlen (str);
+	if (slen < 2)
+		return NULL;
+
+	if (*str != '\'' && *str != '\"')
+		return NULL;
+
+	end = str + slen - 1;
+	if (*str != *end)
+		return NULL;
+
+	return g_strndup (str + 1, slen - 2);
 }
 
 /**
