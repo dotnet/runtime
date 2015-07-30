@@ -15,6 +15,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
     <Compile Include="System\CodeDom\Compiler\GeneratedCodeAttributeTests.cs" />
+    <Compile Include="System\Diagnostics\CodeAnalysis\SuppressMessageAttributeTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Compile tests against the contract, but copy our local-built implementation for testing -->
