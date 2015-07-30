@@ -78,7 +78,7 @@ BOOL GetCalleeSite (DWORD_PTR IP, DWORD_PTR &IPCallee);
 
 HRESULT CheckEEDll ();
 
-void DisasmAndClean (DWORD_PTR &IP, __out_ecount (length) __out_opt char *line, ULONG length);
+void DisasmAndClean (DWORD_PTR &IP, __out_ecount_opt(length) char *line, ULONG length);
 
 INT_PTR GetValueFromExpr(__in __in_z char *ptr, INT_PTR &value);
 

@@ -1142,7 +1142,7 @@ STDAPI LoadLibraryShimInternal(LPCWSTR szDllName, LPCWSTR szVersion, LPVOID pvRe
     if (!PAL_GetPALDirectoryW(szDllPath, _MAX_PATH)) {
         IfFailGo(HRESULT_FROM_GetLastError());
     }
-    wcsncat(szDllPath, szDllName, _MAX_PATH - wcslen(szDllPath));
+    wcsncat_s(szDllPath, _MAX_PATH+1, szDllName, _MAX_PATH - wcslen(szDllPath));
     
     if ((*phModDll = WszLoadLibrary(szDllPath)) == NULL)
         IfFailGo(HRESULT_FROM_GetLastError());
