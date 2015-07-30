@@ -147,6 +147,9 @@ int
 mono_unwind_get_dwarf_pc_reg (void);
 
 guint8*
+mono_unwind_ops_encode_full (GSList *unwind_ops, guint32 *out_len, gboolean enable_extensions);
+
+guint8*
 mono_unwind_ops_encode (GSList *unwind_ops, guint32 *out_len);
 
 void
