@@ -1048,7 +1048,10 @@ typedef struct _UNWIND_INFO {
     // dummy
 } UNWIND_INFO, *PUNWIND_INFO;
 
+EXTERN_C
+NTSYSAPI
 PEXCEPTION_ROUTINE
+NTAPI
 RtlVirtualUnwind(
     IN ULONG HandlerType,
     IN ULONG64 ImageBase,
