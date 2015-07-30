@@ -87,9 +87,16 @@ janhenke@freebsd-frankfurt:~/git/coreclr % cp bin/Product/FreeBSD.x64.Debug/core
 janhenke@freebsd-frankfurt:~/git/coreclr % cp bin/Product/FreeBSD.x64.Debug/libcoreclr*.so ~/coreclr-demo/runtime
 ```
 
-Build the Framework 
-===================
+Build the Framework Native Components
+======================================
 
+```
+janhenke@freebsd-frankfurt:~/git/corefx$ src/Native/build.sh
+janhenke@freebsd-frankfurt:~/git/corefx$ cp bin/FreeBSD.x64.Debug/Native/*.so ~/coreclr-demo/runtime
+```
+
+Build the Framework Managed Components
+======================================
 We don't _yet_ have support for building managed code on FreeBSD, so you'll need a Windows machine with clones of both the CoreCLR and CoreFX projects.
 
 You will build `mscorlib.dll` out of the coreclr repository and the rest of the framework that out of the corefx repository.  For mscorlib (from a regular command prompt window) run:
