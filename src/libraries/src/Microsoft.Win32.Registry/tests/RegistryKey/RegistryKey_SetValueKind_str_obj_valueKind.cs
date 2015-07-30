@@ -158,10 +158,10 @@ namespace Microsoft.Win32.RegistryTests
             Assert.Equal(expectedValueKind2, _testRegistryKey.GetValueKind(valueName));
         }
 
-        public IEnumerable<object[]> TestValueNames { get { return TestData.TestValueNames; } }
+        public static IEnumerable<object[]> TestValueNames { get { return TestData.TestValueNames; } }
 
         [Theory]
-        [InlineData("TestValueNames")]
+        [MemberData("TestValueNames")]
         public void SetValueWithNameTest(string valueName)
         {
             const long expectedValue = long.MaxValue;
