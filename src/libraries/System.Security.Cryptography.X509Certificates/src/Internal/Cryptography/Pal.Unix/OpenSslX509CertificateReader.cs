@@ -35,41 +35,6 @@ namespace Internal.Cryptography.Pal
             _cert = handle;
         }
 
-        internal unsafe OpenSslX509CertificateReader(byte[] data)
-        {
-            SafeX509Handle cert;
-
-            // If the first byte is a hyphen then this is likely PEM-encoded,
-            // otherwise it's DER-encoded (or not a certificate).
-            if (data[0] == '-')
-            {
-                using (SafeBioHandle bio = Interop.libcrypto.BIO_new(Interop.libcrypto.BIO_s_mem()))
-                {
-                    Interop.libcrypto.CheckValidOpenSslHandle(bio);
-
-                    Interop.libcrypto.BIO_write(bio, data, data.Length);
-                    cert = Interop.libcrypto.PEM_read_bio_X509_AUX(bio, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
-                }
-            }
-            else
-            {
-                cert = Interop.libcrypto.OpenSslD2I(Interop.libcrypto.d2i_X509, data);
-            }
-
-            Interop.libcrypto.CheckValidOpenSslHandle(cert);
-
-            // X509_check_purpose has the effect of populating the sha1_hash value,
-            // and other "initialize" type things.
-            bool init = Interop.libcrypto.X509_check_purpose(cert, -1, 0);
-
-            if (!init)
-            {
-                throw Interop.libcrypto.CreateOpenSslCryptographicException();
-            }
-
-            _cert = cert;
-        }
-
         public bool HasPrivateKey
         {
             get { return false; }

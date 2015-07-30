@@ -14,7 +14,7 @@ internal static partial class Interop
 
         internal unsafe delegate int I2DFunc<in THandle>(THandle handle, byte** @out);
 
-        internal static unsafe THandle OpenSslD2I<THandle>(D2IFunc<THandle> d2i, byte[] data)
+        internal static unsafe THandle OpenSslD2I<THandle>(D2IFunc<THandle> d2i, byte[] data, bool checkHandle=true)
             where THandle : SafeHandle
         {
             // The OpenSSL d2i_* functions are set up for cascaded calls, so they increment *ppData while reading.
@@ -27,7 +27,10 @@ internal static partial class Interop
 
                 THandle handle = d2i(IntPtr.Zero, ppData, data.Length);
 
-                CheckValidOpenSslHandle(handle);
+                if (checkHandle)
+                {
+                    CheckValidOpenSslHandle(handle);
+                }
 
                 return handle;
             }
