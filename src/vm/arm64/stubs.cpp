@@ -1707,7 +1707,7 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
 EXTERN_C UINT32 _tls_index;
 void StubLinkerCPU::EmitGetThreadInlined(IntReg Xt)
 {
-#ifdef FEATURE_IMPLICIT_TLS
+#if defined(FEATURE_IMPLICIT_TLS) && !defined(FEATURE_PAL)
     // Trashes x8.
     IntReg X8 = IntReg(8);
     _ASSERTE(Xt != X8);
@@ -1716,8 +1716,7 @@ void StubLinkerCPU::EmitGetThreadInlined(IntReg Xt)
     EmitLabelRef(NewExternalCodeLabel((LPVOID)&_tls_index), reinterpret_cast<LoadFromLabelInstructionFormat&>(gLoadFromLabelIF), X8);
     
     // Load Teb->ThreadLocalStoragePointer into x8
-// FIXME: I know what TEB is, but how is it in scope here?  
-//    EmitLoadStoreRegImm(eLOAD, Xt, IntReg(18), offsetof(_TEB, ThreadLocalStoragePointer));
+    EmitLoadStoreRegImm(eLOAD, Xt, IntReg(18), offsetof(_TEB, ThreadLocalStoragePointer));
 
     // index it with _tls_index, i.e Teb->ThreadLocalStoragePointer[_tls_index]. 
     // This will give us the TLS section for the module on this thread's context
