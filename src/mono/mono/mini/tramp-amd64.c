@@ -349,6 +349,11 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	offset += sizeof (MonoLMFTramp);
 	lmf_offset = -offset;
 
+#ifdef TARGET_WIN32
+	/* Reserve space where the callee can save the argument registers */
+	offset += 4 * sizeof (mgreg_t);
+#endif
+
 	framesize = ALIGN_TO (offset, MONO_ARCH_FRAME_ALIGNMENT);
 
 	// CFA = sp + 16 (the trampoline address is on the stack)
