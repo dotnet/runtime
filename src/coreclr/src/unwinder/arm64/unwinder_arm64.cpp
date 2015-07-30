@@ -1611,15 +1611,15 @@ RtlVirtualUnwind(
     DWORD64 startingPc = ControlPc;
     DWORD64 startingSp = ContextRecord->Sp;
     
-    T_RUNTIME_FUNCTION Rfe;
+    T_RUNTIME_FUNCTION rfe;
 
-    Rfe.BeginAddress = FunctionEntry->BeginAddress;
-    Rfe.UnwindData = FunctionEntry->UnwindData;
+    rfe.BeginAddress = FunctionEntry->BeginAddress;
+    rfe.UnwindData = FunctionEntry->UnwindData;
 
-    if ((Rfe.UnwindData & 3) != 0) 
+    if ((rfe.UnwindData & 3) != 0) 
     {
         hr = RtlpUnwindFunctionCompact(ControlPc - ImageBase,
-                                        &Rfe,
+                                        &rfe,
                                         ContextRecord,
                                         EstablisherFrame,
                                         &handlerRoutine,
@@ -1631,7 +1631,7 @@ RtlVirtualUnwind(
     {
         hr = RtlpUnwindFunctionFull(ControlPc - ImageBase,
                                     ImageBase,
-                                    &Rfe,
+                                    &rfe,
                                     ContextRecord,
                                     EstablisherFrame,
                                     &handlerRoutine,
