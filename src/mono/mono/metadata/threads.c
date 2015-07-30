@@ -3180,7 +3180,7 @@ print_stack_frame_to_string (MonoStackFrameInfo *frame, MonoContext *ctx, gpoint
 {
 	GString *p = (GString*)data;
 	MonoMethod *method = NULL;
-	if (frame->ji)
+	if (frame->type == FRAME_TYPE_MANAGED)
 		method = mono_jit_info_get_method (frame->ji);
 
 	if (method) {
@@ -4421,7 +4421,7 @@ abort_thread_critical (MonoThreadInfo *info, gpointer ud)
 	InterlockedIncrement (&thread_interruption_requested);
 
 	ji = mono_thread_info_get_last_managed (info);
-	protected_wrapper = ji && mono_threads_is_critical_method (mono_jit_info_get_method (ji));
+	protected_wrapper = ji && !ji->is_trampoline && !ji->async && mono_threads_is_critical_method (mono_jit_info_get_method (ji));
 	running_managed = mono_jit_info_match (ji, MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx));
 
 	if (!protected_wrapper && running_managed) {
@@ -4489,7 +4489,7 @@ suspend_thread_critical (MonoThreadInfo *info, gpointer ud)
 	gboolean running_managed;
 
 	ji = mono_thread_info_get_last_managed (info);
-	protected_wrapper = ji && !ji->async && mono_threads_is_critical_method (mono_jit_info_get_method (ji));
+	protected_wrapper = ji && !ji->is_trampoline && !ji->async && mono_threads_is_critical_method (mono_jit_info_get_method (ji));
 	running_managed = mono_jit_info_match (ji, MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx));
 
 	if (running_managed && !protected_wrapper) {

@@ -11,4 +11,9 @@ void mono_fast_set_tls_key (int, int);
 int mono_fallback_get_tls_key (int);
 void mono_fallback_set_tls_key (int, int);
 
+/* End of thunks */
+
+void mono_fast_get_tls_key_end (void);
+void mono_fast_set_tls_key_end (void);
+
 #endif

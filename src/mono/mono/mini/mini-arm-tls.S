@@ -14,6 +14,16 @@
 	 * within can be tracked. The tls value is returned in R0.
 	 */
 
+.macro DECLARE_GLOBAL_SYMBOL name
+#ifdef TARGET_MACH
+	.global _\name
+_\name:
+#else
+	.global \name
+\name:
+#endif
+.endm
+
 	.text
 /* no .arch on clang. it only supports armv6+ anyway */
 #ifndef TARGET_MACH
@@ -21,13 +31,8 @@
 #endif
 	.arm
 	.align 4
-#ifdef TARGET_MACH
-	.global _mono_fast_get_tls_key
-_mono_fast_get_tls_key :
-#else
-	.global mono_fast_get_tls_key
-mono_fast_get_tls_key :
-#endif
+
+DECLARE_GLOBAL_SYMBOL mono_fast_get_tls_key
 #if defined(__linux__)
 	mrc	p15, 0, r1, c13, c0, 3
 #if defined(HAVE_KW_THREAD)
@@ -42,6 +47,7 @@ mono_fast_get_tls_key :
 	ldr	r0, [r1, r0, lsl #2]
 	bx	lr
 #endif
+DECLARE_GLOBAL_SYMBOL mono_fast_get_tls_key_end
 
 	/*
 	 * The following thunks fetch the value corresponding to the key/offset
@@ -50,13 +56,7 @@ mono_fast_get_tls_key :
 	 */
 
 	.align 4
-#ifdef TARGET_MACH
-	.global _mono_fallback_get_tls_key
-_mono_fallback_get_tls_key :
-#else
-	.global mono_fallback_get_tls_key
-mono_fallback_get_tls_key :
-#endif
+DECLARE_GLOBAL_SYMBOL mono_fallback_get_tls_key
 #if defined(__linux__)
 	mov	r1, r0
 	mvn	r0, #0xf000
@@ -82,13 +82,7 @@ mono_fallback_get_tls_key :
 	 */
 
 	.align 4
-#ifdef TARGET_MACH
-	.global _mono_fast_set_tls_key
-_mono_fast_set_tls_key :
-#else
-	.global mono_fast_set_tls_key
-mono_fast_set_tls_key :
-#endif
+DECLARE_GLOBAL_SYMBOL mono_fast_set_tls_key
 #if defined(__linux__)
 	mrc	p15, 0, r2, c13, c0, 3
 #if defined(HAVE_KW_THREAD)
@@ -103,6 +97,7 @@ mono_fast_set_tls_key :
 	str	r1, [r2, r0, lsl #2]
 	bx	lr
 #endif
+DECLARE_GLOBAL_SYMBOL mono_fast_set_tls_key_end
 
 	/*
 	 * The following thunks set the value corresponding to the key/offset
@@ -111,13 +106,7 @@ mono_fast_set_tls_key :
 	 */
 
 	.align 4
-#ifdef TARGET_MACH
-	.global _mono_fallback_set_tls_key
-_mono_fallback_set_tls_key :
-#else
-	.global mono_fallback_set_tls_key
-mono_fallback_set_tls_key :
-#endif
+DECLARE_GLOBAL_SYMBOL mono_fallback_set_tls_key
 #if defined(__linux__)
 	mov	r2, r0
 	mvn	r0, #0xf000

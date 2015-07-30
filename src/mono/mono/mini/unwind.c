@@ -1164,7 +1164,7 @@ mono_unwind_decode_llvm_mono_fde (guint8 *fde, int fde_len, guint8 *cie, guint8 
 GSList*
 mono_unwind_get_cie_program (void)
 {
-#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_POWERPC)
+#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_POWERPC) || defined(TARGET_ARM)
 	return mono_arch_get_cie_program ();
 #else
 	return NULL;

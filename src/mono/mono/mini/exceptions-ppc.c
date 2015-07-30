@@ -532,13 +532,16 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		guint32 unwind_info_len;
 		guint8 *unwind_info;
 
-		frame->type = FRAME_TYPE_MANAGED;
+		if (ji->is_trampoline)
+			frame->type = FRAME_TYPE_TRAMPOLINE;
+		else
+			frame->type = FRAME_TYPE_MANAGED;
 
 		unwind_info = mono_jinfo_get_unwind_info (ji, &unwind_info_len);
 
 		sframe = (MonoPPCStackFrame*)MONO_CONTEXT_GET_SP (ctx);
 		MONO_CONTEXT_SET_BP (new_ctx, sframe->sp);
-		if (jinfo_get_method (ji)->save_lmf) {
+		if (!ji->is_trampoline && jinfo_get_method (ji)->save_lmf) {
 			/* sframe->sp points just past the end of the LMF */
 			guint8 *lmf_addr = (guint8*)sframe->sp - sizeof (MonoLMF);
 			memcpy (&new_ctx->fregs, lmf_addr + G_STRUCT_OFFSET (MonoLMF, fregs), sizeof (double) * MONO_SAVED_FREGS);
@@ -653,7 +656,7 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 		const char *method;
 		/* we don't do much now, but we can warn the user with a useful message */
 		fprintf (stderr, "Stack overflow: IP: %p, SP: %p\n", mono_arch_ip_from_context (sigctx), (gpointer)UCONTEXT_REG_Rn(uc, 1));
-		if (ji && jinfo_get_method (ji))
+		if (ji && !ji->is_trampoline && jinfo_get_method (ji))
 			method = mono_method_full_name (jinfo_get_method (ji), TRUE);
 		else
 			method = "Unmanaged";

@@ -2079,6 +2079,20 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	init_gots (amodule);
 
 	/*
+	 * Register the plt region as a single trampoline so we can unwind from this code
+	 */
+	mono_tramp_info_register (
+		mono_tramp_info_create (
+			NULL,
+			amodule->plt,
+			amodule->plt_end - amodule->plt,
+			NULL,
+			mono_unwind_get_cie_program ()
+			),
+		NULL
+		);
+
+	/*
 	 * Since we store methoddef and classdef tokens when referring to methods/classes in
 	 * referenced assemblies, we depend on the exact versions of the referenced assemblies.
 	 * MS calls this 'hard binding'. This means we have to load all referenced assemblies
@@ -4627,13 +4641,61 @@ mono_aot_get_trampoline_full (const char *name, MonoTrampInfo **out_tinfo)
 gpointer
 mono_aot_get_trampoline (const char *name)
 {
-	return mono_aot_get_trampoline_full (name, NULL);
+	MonoTrampInfo *out_tinfo;
+	gpointer code;
+
+	code =  mono_aot_get_trampoline_full (name, &out_tinfo);
+	mono_tramp_info_register (out_tinfo, NULL);
+
+	return code;
+}
+
+static gpointer
+read_unwind_info (MonoAotModule *amodule, MonoTrampInfo *info, const char *symbol_name)
+{
+	gpointer symbol_addr;
+	guint32 uw_offset, uw_info_len;
+	guint8 *uw_info;
+
+	find_symbol (amodule->sofile, amodule->globals, symbol_name, &symbol_addr);
+
+	if (!symbol_addr)
+		return NULL;
+
+	uw_offset = *(guint32*)symbol_addr;
+	uw_info = amodule->unwind_info + uw_offset;
+	uw_info_len = decode_value (uw_info, &uw_info);
+
+	info->uw_info = uw_info;
+	info->uw_info_len = uw_info_len;
+
+	/* If successful return the address of the following data */
+	return (guint32*)symbol_addr + 1;
 }
 
 #ifdef MONOTOUCH
 #include <mach/mach.h>
 
 static TrampolinePage* trampoline_pages [MONO_AOT_TRAMP_NUM];
+
+static void
+read_page_trampoline_uwinfo (MonoTrampInfo *info, int tramp_type, gboolean is_generic)
+{
+	char symbol_name [128];
+
+	if (tramp_type == MONO_AOT_TRAMP_SPECIFIC)
+		sprintf (symbol_name, "specific_trampolines_page_%s_p", is_generic ? "gen" : "sp");
+	else if (tramp_type == MONO_AOT_TRAMP_STATIC_RGCTX)
+		sprintf (symbol_name, "rgctx_trampolines_page_%s_p", is_generic ? "gen" : "sp");
+	else if (tramp_type == MONO_AOT_TRAMP_IMT_THUNK)
+		sprintf (symbol_name, "imt_trampolines_page_%s_p", is_generic ? "gen" : "sp");
+	else if (tramp_type == MONO_AOT_TRAMP_GSHAREDVT_ARG)
+		sprintf (symbol_name, "gsharedvt_trampolines_page_%s_p", is_generic ? "gen" : "sp");
+	else
+		g_assert_not_reached ();
+
+	read_unwind_info (mono_defaults.corlib->aot_module, info, symbol_name);
+}
 
 static unsigned char*
 get_new_trampoline_from_page (int tramp_type)
@@ -4686,6 +4748,8 @@ get_new_trampoline_from_page (int tramp_type)
 	count = 40;
 	page = NULL;
 	while (page == NULL && count-- > 0) {
+		MonoTrampInfo *gen_info, *sp_info;
+
 		addr = 0;
 		/* allocate two contiguous pages of memory: the first page will contain the data (like a local constant pool)
 		 * while the second will contain the trampolines.
@@ -4726,6 +4790,23 @@ get_new_trampoline_from_page (int tramp_type)
 		code = page->trampolines;
 		page->trampolines += specific_trampoline_size;
 		mono_aot_page_unlock ();
+
+		/* Register the generic part at the beggining of the trampoline page */
+		gen_info = mono_tramp_info_create (NULL, (guint8*)taddr, amodule->info.tramp_page_code_offsets [tramp_type], NULL, NULL);
+		read_page_trampoline_uwinfo (gen_info, tramp_type, TRUE);
+		mono_tramp_info_register (gen_info, NULL);
+		/*
+		 * FIXME
+		 * Registering each specific trampoline produces a lot of
+		 * MonoJitInfo structures. Jump trampolines are also registered
+		 * separately.
+		 */
+		if (tramp_type != MONO_AOT_TRAMP_SPECIFIC) {
+			/* Register the rest of the page as a single trampoline */
+			sp_info = mono_tramp_info_create (NULL, code, page->trampolines_end - code, NULL, NULL);
+			read_page_trampoline_uwinfo (sp_info, tramp_type, FALSE);
+			mono_tramp_info_register (sp_info, NULL);
+		}
 		return code;
 	}
 	g_error ("Cannot allocate more trampoline pages: %d", ret);
@@ -4805,6 +4886,7 @@ get_new_gsharedvt_arg_trampoline_from_page (gpointer tramp, gpointer arg)
 }
 
 /* Return a given kind of trampoline */
+/* FIXME set unwind info for these trampolines */
 static gpointer
 get_numerous_trampoline (MonoAotTrampoline tramp_type, int n_got_slots, MonoAotModule **out_amodule, guint32 *got_offset, guint32 *out_tramp_size)
 {
@@ -4923,6 +5005,8 @@ mono_aot_get_unbox_trampoline (MonoMethod *method)
 	gpointer code;
 	guint32 *ut, *ut_end, *entry;
 	int low, high, entry_index = 0;
+	gpointer symbol_addr;
+	MonoTrampInfo *tinfo;
 
 	if (method->is_inflated && !mono_method_is_generic_sharable_full (method, FALSE, FALSE, FALSE)) {
 		method_index = find_aot_method (method, &amodule);
@@ -4961,6 +5045,17 @@ mono_aot_get_unbox_trampoline (MonoMethod *method)
 
 	code = get_call_table_entry (amodule->unbox_trampoline_addresses, entry_index);
 	g_assert (code);
+
+	tinfo = mono_tramp_info_create (NULL, code, 0, NULL, NULL);
+
+	symbol_addr = read_unwind_info (amodule, tinfo, "unbox_trampoline_p");
+	if (!symbol_addr) {
+		mono_tramp_info_free (tinfo);
+		return FALSE;
+	}
+
+	tinfo->code_size = *(guint32*)symbol_addr;
+	mono_tramp_info_register (tinfo, NULL);
 
 	/* The caller expects an ftnptr */
 	return mono_create_ftnptr (mono_domain_get (), code);

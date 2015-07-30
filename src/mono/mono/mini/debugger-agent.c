@@ -2520,7 +2520,7 @@ get_last_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 {
 	GetLastFrameUserData *data = user_data;
 
-	if (info->type == FRAME_TYPE_MANAGED_TO_NATIVE)
+	if (info->type == FRAME_TYPE_MANAGED_TO_NATIVE || info->type == FRAME_TYPE_TRAMPOLINE)
 		return FALSE;
 
 	if (!data->last_frame_set) {
@@ -2556,7 +2556,7 @@ thread_interrupt (DebuggerTlsData *tls, MonoThreadInfo *info, MonoJitInfo *ji)
 	// FIXME: Races when the thread leaves managed code before hitting a single step
 	// event.
 
-	if (ji) {
+	if (ji && !ji->is_trampoline) {
 		/* Running managed code, will be suspended by the single step code */
 		DEBUG_PRINTF (1, "[%p] Received interrupt while at %s(%p), continuing.\n", (gpointer)(gsize)tid, jinfo_get_method (ji)->name, ip);
 	} else {
@@ -2648,7 +2648,11 @@ debugger_interrupt_critical (MonoThreadInfo *info, gpointer user_data)
 	MonoJitInfo *ji;
 
 	data->valid_info = TRUE;
-	ji = mono_jit_info_table_find (mono_thread_info_get_suspend_state (info)->unwind_data [MONO_UNWIND_DATA_DOMAIN], MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx));
+	ji = mono_jit_info_table_find_internal (
+			mono_thread_info_get_suspend_state (info)->unwind_data [MONO_UNWIND_DATA_DOMAIN],
+			MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx),
+			TRUE,
+			TRUE);
 
 	/* This is signal safe */
 	thread_interrupt (data->tls, info, ji);
@@ -4637,7 +4641,7 @@ process_breakpoint_inner (DebuggerTlsData *tls, gboolean from_signal)
 
 	ip = MONO_CONTEXT_GET_IP (ctx);
 	ji = mini_jit_info_table_find (mono_domain_get (), (char*)ip, NULL);
-	g_assert (ji);
+	g_assert (ji && !ji->is_trampoline);
 	method = jinfo_get_method (ji);
 
 	/* Compute the native offset of the breakpoint from the ip */
@@ -4901,7 +4905,7 @@ process_single_step_inner (DebuggerTlsData *tls, gboolean from_signal)
 	}
 
 	ji = mini_jit_info_table_find (mono_domain_get (), (char*)ip, &domain);
-	g_assert (ji);
+	g_assert (ji && !ji->is_trampoline);
 	method = jinfo_get_method (ji);
 	g_assert (method);
 

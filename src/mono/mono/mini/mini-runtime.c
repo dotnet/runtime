@@ -155,7 +155,7 @@ get_method_from_ip (void *ip)
 	if (!domain)
 		domain = mono_get_root_domain ();
 
-	ji = mono_jit_info_table_find (domain, ip);
+	ji = mono_jit_info_table_find_internal (domain, ip, TRUE, TRUE);
 	if (!ji) {
 		user_data.ip = ip;
 		user_data.method = NULL;
@@ -170,7 +170,11 @@ get_method_from_ip (void *ip)
 		}
 		else
 			return NULL;
+	} else if (ji->is_trampoline) {
+		res = g_strdup_printf ("<%p - %s trampoline>", ip, ((MonoTrampInfo*)ji->d.tramp_info)->name);
+		return res;
 	}
+
 	method = mono_method_full_name (jinfo_get_method (ji), TRUE);
 	/* FIXME: unused ? */
 	location = mono_debug_lookup_source_location (jinfo_get_method (ji), (guint32)((guint8*)ip - (guint8*)ji->code_start), domain);
@@ -286,7 +290,7 @@ gboolean mono_method_same_domain (MonoJitInfo *caller, MonoJitInfo *callee)
 {
 	MonoMethod *cmethod;
 
-	if (!caller || !callee)
+	if (!caller || caller->is_trampoline || !callee || callee->is_trampoline)
 		return FALSE;
 
 	/*
@@ -460,14 +464,10 @@ mono_tramp_info_create (const char *name, guint8 *code, guint32 code_size, MonoJ
 void
 mono_tramp_info_free (MonoTrampInfo *info)
 {
-	GSList *l;
-
 	g_free (info->name);
 
 	// FIXME: ji
-	for (l = info->unwind_ops; l; l = l->next)
-		g_free (l->data);
-	g_slist_free (info->unwind_ops);
+	mono_free_unwind_info (info->unwind_ops);
 	g_free (info);
 }
 
@@ -480,7 +480,8 @@ register_trampoline_jit_info (MonoDomain *domain, MonoTrampInfo *info)
 	mono_jit_info_init (ji, NULL, info->code, info->code_size, 0, 0, 0);
 	ji->d.tramp_info = info;
 	ji->is_trampoline = TRUE;
-	// FIXME: Unwind info
+
+	ji->unwind_info = mono_cache_unwind_info (info->uw_info, info->uw_info_len);
 
 	mono_jit_info_table_add (domain, ji);
 }
@@ -493,17 +494,28 @@ register_trampoline_jit_info (MonoDomain *domain, MonoTrampInfo *info)
  * Frees INFO.
  */
 void
-mono_tramp_info_register (MonoTrampInfo *info)
+mono_tramp_info_register (MonoTrampInfo *info, MonoDomain *domain)
 {
 	MonoTrampInfo *copy;
 
 	if (!info)
 		return;
 
+	if (!domain)
+		domain = mono_get_root_domain ();
+
 	copy = g_new0 (MonoTrampInfo, 1);
 	copy->code = info->code;
 	copy->code_size = info->code_size;
 	copy->name = g_strdup (info->name);
+
+	if (info->unwind_ops) {
+		copy->uw_info = mono_unwind_ops_encode (info->unwind_ops, &copy->uw_info_len);
+	} else {
+		/* Trampolines from aot have the unwind ops already encoded */
+		copy->uw_info = info->uw_info;
+		copy->uw_info_len = info->uw_info_len;
+	}
 
 	mono_jit_lock ();
 	tramp_infos = g_slist_prepend (tramp_infos, copy);
@@ -511,8 +523,9 @@ mono_tramp_info_register (MonoTrampInfo *info)
 
 	mono_save_trampoline_xdebug_info (info);
 
-	if (mono_get_root_domain ())
-		register_trampoline_jit_info (mono_get_root_domain (), copy);
+	/* Only register trampolines that have unwind infos */
+	if (mono_get_root_domain () && copy->uw_info)
+		register_trampoline_jit_info (domain, copy);
 
 	if (mono_jit_map_is_enabled ())
 		mono_emit_jit_tramp (info->code, info->code_size, info->name);
@@ -2333,7 +2346,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigfpe_signal_handler)
 	MONO_SIG_HANDLER_INFO_TYPE *info = MONO_SIG_HANDLER_GET_INFO ();
 	MONO_SIG_HANDLER_GET_CONTEXT;
 
-	ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context (ctx));
+	ji = mono_jit_info_table_find_internal (mono_domain_get (), mono_arch_ip_from_context (ctx), TRUE, TRUE);
 
 #if defined(MONO_ARCH_HAVE_IS_INT_OVERFLOW)
 	if (mono_arch_is_int_overflow (ctx, info))
@@ -2419,7 +2432,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 	}
 #endif
 
-	ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context (ctx));
+	ji = mono_jit_info_table_find_internal (mono_domain_get (), mono_arch_ip_from_context (ctx), TRUE, TRUE);
 
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 	if (mono_handle_soft_stack_ovf (jit_tls, ji, ctx, info, (guint8*)info->si_addr))
@@ -2599,8 +2612,10 @@ mono_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod *met
 	/* FIXME Support more cases */
 	if (mono_aot_only) {
 		char tramp_name [256];
+		const char *imt = load_imt_reg ? "_imt" : "";
+		int ind = (load_imt_reg ? (-offset) : offset) / SIZEOF_VOID_P;
 
-		sprintf (tramp_name, "delegate_virtual_invoke%s_%d", load_imt_reg ? "_imt" : "", offset / SIZEOF_VOID_P);
+		sprintf (tramp_name, "delegate_virtual_invoke%s_%d", imt, ind);
 		cache [idx] = mono_aot_get_trampoline (tramp_name);
 		g_assert (cache [idx]);
 	} else {

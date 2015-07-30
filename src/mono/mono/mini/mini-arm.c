@@ -746,9 +746,10 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 #define MAX_ARCH_DELEGATE_PARAMS 3
 
 static gpointer
-get_delegate_invoke_impl (gboolean has_target, gboolean param_count, guint32 *code_size)
+get_delegate_invoke_impl (MonoTrampInfo **info, gboolean has_target, gboolean param_count)
 {
 	guint8 *code, *start;
+	GSList *unwind_ops = mono_arch_get_cie_program ();
 
 	if (has_target) {
 		start = code = mono_global_codeman_reserve (12);
@@ -779,9 +780,15 @@ get_delegate_invoke_impl (gboolean has_target, gboolean param_count, guint32 *co
 		mono_arch_flush_icache (start, size);
 	}
 
+	if (has_target) {
+		 *info = mono_tramp_info_create ("delegate_invoke_impl_has_target", start, code - start, NULL, unwind_ops);
+	} else {
+		 char *name = g_strdup_printf ("delegate_invoke_impl_target_%d", param_count);
+		 *info = mono_tramp_info_create (name, start, code - start, NULL, unwind_ops);
+		 g_free (name);
+	}
+
 	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_DELEGATE_INVOKE, NULL);
-	if (code_size)
-		*code_size = code - start;
 
 	return start;
 }
@@ -796,19 +803,15 @@ GSList*
 mono_arch_get_delegate_invoke_impls (void)
 {
 	GSList *res = NULL;
-	guint8 *code;
-	guint32 code_len;
+	MonoTrampInfo *info;
 	int i;
-	char *tramp_name;
 
-	code = get_delegate_invoke_impl (TRUE, 0, &code_len);
-	res = g_slist_prepend (res, mono_tramp_info_create ("delegate_invoke_impl_has_target", code, code_len, NULL, NULL));
+	get_delegate_invoke_impl (&info, TRUE, 0);
+	res = g_slist_prepend (res, info);
 
 	for (i = 0; i <= MAX_ARCH_DELEGATE_PARAMS; ++i) {
-		code = get_delegate_invoke_impl (FALSE, i, &code_len);
-		tramp_name = g_strdup_printf ("delegate_invoke_impl_target_%d", i);
-		res = g_slist_prepend (res, mono_tramp_info_create (tramp_name, code, code_len, NULL, NULL));
-		g_free (tramp_name);
+		get_delegate_invoke_impl (&info, FALSE, i);
+		res = g_slist_prepend (res, info);
 	}
 
 	return res;
@@ -833,10 +836,13 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 			return cached;
 		}
 
-		if (mono_aot_only)
+		if (mono_aot_only) {
 			start = mono_aot_get_trampoline ("delegate_invoke_impl_has_target");
-		else
-			start = get_delegate_invoke_impl (TRUE, 0, NULL);
+		} else {
+			MonoTrampInfo *info;
+			start = get_delegate_invoke_impl (&info, TRUE, 0);
+			mono_tramp_info_register (info, NULL);
+		}
 		cached = start;
 		mono_mini_arch_unlock ();
 		return cached;
@@ -862,7 +868,9 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 			start = mono_aot_get_trampoline (name);
 			g_free (name);
 		} else {
-			start = get_delegate_invoke_impl (FALSE, sig->param_count, NULL);
+			MonoTrampInfo *info;
+			start = get_delegate_invoke_impl (&info, FALSE, sig->param_count);
+			mono_tramp_info_register (info, NULL);
 		}
 		cache [sig->param_count] = start;
 		mono_mini_arch_unlock ();
@@ -6003,6 +6011,27 @@ mono_arch_register_lowlevel_calls (void)
 		if (mono_arm_have_fast_tls ()) {
 			mono_register_jit_icall (mono_fast_get_tls_key, "mono_get_tls_key", mono_create_icall_signature ("ptr ptr"), TRUE);
 			mono_register_jit_icall (mono_fast_set_tls_key, "mono_set_tls_key", mono_create_icall_signature ("void ptr ptr"), TRUE);
+
+			mono_tramp_info_register (
+				mono_tramp_info_create (
+					"mono_get_tls_key",
+					(guint8*)mono_fast_get_tls_key,
+					(guint8*)mono_fast_get_tls_key_end - (guint8*)mono_fast_get_tls_key,
+					NULL,
+					mono_arch_get_cie_program ()
+					),
+				NULL
+				);
+			mono_tramp_info_register (
+				mono_tramp_info_create (
+					"mono_set_tls_key",
+					(guint8*)mono_fast_set_tls_key,
+					(guint8*)mono_fast_set_tls_key_end - (guint8*)mono_fast_set_tls_key,
+					NULL,
+					mono_arch_get_cie_program ()
+					),
+				NULL
+				);
 		} else {
 			g_warning ("No fast tls on device. Using fallbacks.");
 			mono_register_jit_icall (mono_fallback_get_tls_key, "mono_get_tls_key", mono_create_icall_signature ("ptr ptr"), TRUE);
@@ -6140,10 +6169,10 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		 * FIXME: Optimize this.
 		 */
 		ARM_PUSH (code, (1 << ARMREG_R7) | (1 << ARMREG_LR));
-		ARM_MOV_REG_REG (code, ARMREG_R7, ARMREG_SP);
 		prev_sp_offset += 8; /* r7 and lr */
 		mono_emit_unwind_op_def_cfa_offset (cfg, code, prev_sp_offset);
 		mono_emit_unwind_op_offset (cfg, code, ARMREG_R7, (- prev_sp_offset) + 0);
+		ARM_MOV_REG_REG (code, ARMREG_R7, ARMREG_SP);
 	}
 
 	if (!method->save_lmf) {
@@ -6607,6 +6636,9 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	 */
 	code = cfg->native_code + cfg->code_len;
 
+	/* Save the uwind state which is needed by the out-of-line code */
+	mono_emit_unwind_op_remember_state (cfg, code);
+
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method)) {
 		code = mono_arch_instrument_epilog (cfg, mono_trace_leave_method, code, TRUE);
 	}
@@ -6642,7 +6674,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 
 	if (method->save_lmf) {
-		int lmf_offset, reg, sp_adj, regmask;
+		int lmf_offset, reg, sp_adj, regmask, nused_int_regs = 0;
 		/* all but r0-r3, sp and pc */
 		pos += sizeof (MonoLMF) - (MONO_ARM_NUM_SAVED_REGS * sizeof (mgreg_t));
 		lmf_offset = pos;
@@ -6664,15 +6696,33 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			regmask &= ~(1 << ARMREG_PC);
 		/* point sp at the registers to restore: 10 is 14 -4, because we skip r0-r3 */
 		code = emit_big_add (code, ARMREG_SP, cfg->frame_reg, cfg->stack_usage - lmf_offset + sp_adj);
+		for (i = 0; i < 16; i++) {
+			if (regmask & (1 << i))
+				nused_int_regs ++;
+		}
+		mono_emit_unwind_op_def_cfa (cfg, code, ARMREG_SP, ((iphone_abi ? 3 : 0) + nused_int_regs) * 4);
 		/* restore iregs */
 		ARM_POP (code, regmask); 
 		if (iphone_abi) {
+			for (i = 0; i < 16; i++) {
+				if (regmask & (1 << i))
+					mono_emit_unwind_op_same_value (cfg, code, i);
+			}
 			/* Restore saved r7, restore LR to PC */
 			/* Skip lr from the lmf */
+			mono_emit_unwind_op_def_cfa_offset (cfg, code, 3 * 4);
 			ARM_ADD_REG_IMM (code, ARMREG_SP, ARMREG_SP, sizeof (gpointer), 0);
+			mono_emit_unwind_op_def_cfa_offset (cfg, code, 2 * 4);
 			ARM_POP (code, (1 << ARMREG_R7) | (1 << ARMREG_PC));
 		}
 	} else {
+		int i, nused_int_regs = 0;
+
+		for (i = 0; i < 16; i++) {
+			if (cfg->used_int_regs & (1 << i))
+				nused_int_regs ++;
+		}
+
 		if ((i = mono_arm_is_rotated_imm8 (cfg->stack_usage, &rot_amount)) >= 0) {
 			ARM_ADD_REG_IMM (code, ARMREG_SP, cfg->frame_reg, i, rot_amount);
 		} else {
@@ -6680,16 +6730,31 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			ARM_ADD_REG_REG (code, ARMREG_SP, cfg->frame_reg, ARMREG_IP);
 		}
 
+		if (cfg->frame_reg != ARMREG_SP) {
+			mono_emit_unwind_op_def_cfa_reg (cfg, code, ARMREG_SP);
+		}
+
 		if (iphone_abi) {
 			/* Restore saved gregs */
-			if (cfg->used_int_regs)
+			if (cfg->used_int_regs) {
+				mono_emit_unwind_op_def_cfa_offset (cfg, code, (2 + nused_int_regs) * 4);
 				ARM_POP (code, cfg->used_int_regs);
+				for (i = 0; i < 16; i++) {
+					if (cfg->used_int_regs & (1 << i))
+						mono_emit_unwind_op_same_value (cfg, code, i);
+				}
+			}
+			mono_emit_unwind_op_def_cfa_offset (cfg, code, 2 * 4);
 			/* Restore saved r7, restore LR to PC */
 			ARM_POP (code, (1 << ARMREG_R7) | (1 << ARMREG_PC));
 		} else {
+			mono_emit_unwind_op_def_cfa_offset (cfg, code, (nused_int_regs + 1) * 4);
 			ARM_POP (code, cfg->used_int_regs | (1 << ARMREG_PC));
 		}
 	}
+
+	/* Restore the unwind state to be the same as before the epilog */
+	mono_emit_unwind_op_restore_state (cfg, code);
 
 	cfg->code_len = code - cfg->native_code;
 
@@ -6845,6 +6910,16 @@ mono_arch_find_static_call_vtable (mgreg_t *regs, guint8 *code)
 	return (MonoVTable*) regs [MONO_ARCH_RGCTX_REG];
 }
 
+GSList*
+mono_arch_get_cie_program (void)
+{
+	GSList *l = NULL;
+
+	mono_add_unwind_op_def_cfa (l, (guint8*)NULL, (guint8*)NULL, ARMREG_SP, 0);
+
+	return l;
+}
+
 /* #define ENABLE_WRONG_METHOD_CHECK 1 */
 #define BASE_SIZE (6 * 4)
 #define BSEARCH_ENTRY_SIZE (4 * 4)
@@ -6913,6 +6988,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 #ifdef ENABLE_WRONG_METHOD_CHECK
 	char * cond;
 #endif
+	GSList *unwind_ops;
 
 	size = BASE_SIZE;
 #ifdef USE_JUMP_TABLES
@@ -6967,6 +7043,8 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		code = mono_domain_code_reserve (domain, size);
 	start = code;
 
+	unwind_ops = mono_arch_get_cie_program ();
+
 #ifdef DEBUG_IMT
 	g_print ("Building IMT thunk for class %s %s entries %d code size %d code at %p end %p vtable %p fail_tramp %p\n", vtable->klass->name_space, vtable->klass->name, count, size, start, ((guint8*)start) + size, vtable, fail_tramp);
 	for (i = 0; i < count; ++i) {
@@ -6977,6 +7055,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 
 #ifdef USE_JUMP_TABLES
 	ARM_PUSH3 (code, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, 3 * sizeof (mgreg_t));
 #define VTABLE_JTI 0
 #define IMT_METHOD_OFFSET 0
 #define TARGET_CODE_OFFSET 1
@@ -6991,10 +7070,13 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_R2, VTABLE_JTI);
 	set_jumptable_element (jte, VTABLE_JTI, vtable);
 #else
-	if (large_offsets)
+	if (large_offsets) {
 		ARM_PUSH4 (code, ARMREG_R0, ARMREG_R1, ARMREG_IP, ARMREG_PC);
-	else
+		mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, 4 * sizeof (mgreg_t));
+	} else {
 		ARM_PUSH2 (code, ARMREG_R0, ARMREG_R1);
+		mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, 2 * sizeof (mgreg_t));
+	}
 	ARM_LDR_IMM (code, ARMREG_R0, ARMREG_LR, -4);
 	vtable_target = code;
 	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
@@ -7067,6 +7149,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 				code = load_element_with_regbase_cond (code, ARMREG_R1, ARMREG_R2, target_code_jti, ARMCOND_AL);
 				/* Restore registers */
 				ARM_POP3 (code, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+				mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, 0);
 				/*  And branch */
 				ARM_BX (code, ARMREG_R1);
 				set_jumptable_element (jte, target_code_jti, item->value.target_code);
@@ -7098,6 +7181,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 					ARM_LDR_REG_REG (code, ARMREG_IP, ARMREG_IP, ARMREG_R1);
 					/* Restore registers and branch */
 					ARM_POP3 (code, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+					mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, 0);
 					ARM_BX (code, ARMREG_IP);
 #else
 					vtable_offset_ins = code;
@@ -7114,11 +7198,15 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 #ifdef USE_JUMP_TABLES
 					ARM_LDR_IMM (code, ARMREG_IP, ARMREG_IP, vtable_offset);
 					ARM_POP3 (code, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+					mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, 0);
 					ARM_BX (code, ARMREG_IP);
 #else
 					ARM_POP2 (code, ARMREG_R0, ARMREG_R1);
-					if (large_offsets)
+					if (large_offsets) {
+						mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, 2 * sizeof (mgreg_t));
 						ARM_ADD_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, 2 * sizeof (gpointer));
+					}
+					mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, 0);
 					ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, vtable_offset);
 #endif
 				}
@@ -7132,6 +7220,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 				code = load_element_with_regbase_cond (code, ARMREG_R1, ARMREG_R2, target_code_jti, ARMCOND_AL);
 				/* Restore registers */
 				ARM_POP3 (code, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+				mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, 0);
 				/* And branch */
 				ARM_BX (code, ARMREG_R1);
 				set_jumptable_element (jte, target_code_jti, fail_tramp);
@@ -7231,6 +7320,9 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	mono_stats.imt_thunks_size += code - start;
 
 	g_assert (DISTANCE (start, code) <= size);
+
+	mono_tramp_info_register (mono_tramp_info_create (NULL, (guint8*)start, DISTANCE (start, code), NULL, unwind_ops), domain);
+
 	return start;
 }
 

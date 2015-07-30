@@ -821,6 +821,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		ji = frame.ji;
 
 		// FIXME: For skipped frames, scan the param area of the parent frame conservatively ?
+		// FIXME: trampolines
 
 		if (frame.type == FRAME_TYPE_MANAGED_TO_NATIVE) {
 			/*
