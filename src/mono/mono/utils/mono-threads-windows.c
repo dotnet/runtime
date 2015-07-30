@@ -395,26 +395,4 @@ mono_threads_core_set_name (MonoNativeThreadId tid, const char *name)
 #endif
 }
 
-
-gpointer
-mono_threads_core_prepare_interrupt (HANDLE thread_handle)
-{
-	return NULL;
-}
-
-void
-mono_threads_core_finish_interrupt (gpointer wait_handle)
-{
-}
-
-void
-mono_threads_core_self_interrupt (void)
-{
-}
-
-void
-mono_threads_core_clear_interruption (void)
-{
-}
-
 #endif
