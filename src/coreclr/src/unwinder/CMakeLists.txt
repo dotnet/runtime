@@ -23,8 +23,14 @@ elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
     list(APPEND UNWINDER_SOURCES
         arm/unwinder_arm.cpp
     )
+elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
+    include_directories(arm64)
+    
+    list(APPEND UNWINDER_SOURCES
+        arm64/unwinder_arm64.cpp
+    )
 else()
-  message(FATAL_ERROR "Only ARM and AMD64 is supported")
+  message(FATAL_ERROR "Only ARM, ARM64 and AMD64 is supported")
 endif()
 
 convert_to_absolute_path(UNWINDER_SOURCES ${UNWINDER_SOURCES})

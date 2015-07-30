@@ -1621,7 +1621,7 @@ BOOL IsMiniDumpFile();
 void ReportOOM();
 
 BOOL SafeReadMemory (TADDR offset, PVOID lpBuffer, ULONG cb, PULONG lpcbBytesRead);
-#if !defined(_TARGET_WIN64_)
+#if !defined(_TARGET_WIN64_) && !defined(_ARM64_)
 // on 64-bit platforms TADDR and CLRDATA_ADDRESS are identical
 inline BOOL SafeReadMemory (CLRDATA_ADDRESS offset, PVOID lpBuffer, ULONG cb, PULONG lpcbBytesRead)
 { return SafeReadMemory(TO_TADDR(offset), lpBuffer, cb, lpcbBytesRead); }

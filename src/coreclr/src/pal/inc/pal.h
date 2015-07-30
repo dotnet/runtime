@@ -94,8 +94,10 @@ extern "C" {
 #define _M_IA64 64100
 #elif defined(__x86_64__) && !defined(_M_AMD64)
 #define _M_AMD64 100
-#elif defined(__ARM_ARCH) && !defined(_M_ARM)
+#elif defined(__arm__) && !defined(_M_ARM)
 #define _M_ARM 7
+#elif defined(__aarch64__) && !defined(_M_ARM64)
+#define _M_ARM64 1
 #endif
 
 #if defined(_M_IX86) && !defined(_X86_)
@@ -118,6 +120,8 @@ extern "C" {
 #define _AMD64_
 #elif defined(_M_ARM) && !defined(_ARM_)
 #define _ARM_
+#elif defined(_M_ARM64) && !defined(_ARM64_)
+#define _ARM64_
 #endif
 
 #endif // !_MSC_VER
@@ -3133,6 +3137,184 @@ typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
     };
 } IMAGE_ARM_RUNTIME_FUNCTION_ENTRY, * PIMAGE_ARM_RUNTIME_FUNCTION_ENTRY;
 
+#elif defined(_ARM64_)
+
+#define CONTEXT_ARM64   0x00400000L
+
+#define CONTEXT_CONTROL (CONTEXT_ARM64 | 0x1L)
+#define CONTEXT_INTEGER (CONTEXT_ARM64 | 0x2L)
+#define CONTEXT_FLOATING_POINT  (CONTEXT_ARM64 | 0x4L)
+#define CONTEXT_DEBUG_REGISTERS (CONTEXT_ARM64 | 0x8L)
+
+#define CONTEXT_FULL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT)
+
+#define CONTEXT_ALL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS)
+
+#define CONTEXT_EXCEPTION_ACTIVE 0x8000000L
+#define CONTEXT_SERVICE_ACTIVE 0x10000000L
+#define CONTEXT_EXCEPTION_REQUEST 0x40000000L
+#define CONTEXT_EXCEPTION_REPORTING 0x80000000L
+
+//
+// This flag is set by the unwinder if it has unwound to a call
+// site, and cleared whenever it unwinds through a trap frame.
+// It is used by language-specific exception handlers to help
+// differentiate exception scopes during dispatching.
+//
+
+#define CONTEXT_UNWOUND_TO_CALL 0x20000000
+
+//
+// Define initial Cpsr/Fpscr value
+//
+
+#define INITIAL_CPSR 0x10
+#define INITIAL_FPSCR 0
+
+// begin_ntoshvp
+
+//
+// Specify the number of breakpoints and watchpoints that the OS
+// will track. Architecturally, ARM64 supports up to 16. In practice,
+// however, almost no one implements more than 4 of each.
+//
+
+#define ARM64_MAX_BREAKPOINTS     8
+#define ARM64_MAX_WATCHPOINTS     2
+
+//
+// Context Frame
+//
+//  This frame has a several purposes: 1) it is used as an argument to
+//  NtContinue, 2) it is used to constuct a call frame for APC delivery,
+//  and 3) it is used in the user level thread creation routines.
+//
+//
+// The flags field within this record controls the contents of a CONTEXT
+// record.
+//
+// If the context record is used as an input parameter, then for each
+// portion of the context record controlled by a flag whose value is
+// set, it is assumed that that portion of the context record contains
+// valid context. If the context record is being used to modify a threads
+// context, then only that portion of the threads context is modified.
+//
+// If the context record is used as an output parameter to capture the
+// context of a thread, then only those portions of the thread's context
+// corresponding to set flags will be returned.
+//
+// CONTEXT_CONTROL specifies Sp, Lr, Pc, and Cpsr
+//
+// CONTEXT_INTEGER specifies R0-R12
+//
+// CONTEXT_FLOATING_POINT specifies Q0-Q15 / D0-D31 / S0-S31
+//
+// CONTEXT_DEBUG_REGISTERS specifies up to 16 of DBGBVR, DBGBCR, DBGWVR,
+//      DBGWCR.
+//
+
+typedef struct _NEON128 {
+    ULONGLONG Low;
+    LONGLONG High;
+} NEON128, *PNEON128;
+
+typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
+
+    //
+    // Control flags.
+    //
+
+    /* +0x000 */ DWORD ContextFlags;
+
+    //
+    // Integer registers
+    //
+
+    /* +0x004 */ DWORD Cpsr;       // NZVF + DAIF + CurrentEL + SPSel
+    /* +0x008 */ DWORD64 X0;
+                 DWORD64 X1;
+                 DWORD64 X2;
+                 DWORD64 X3;
+                 DWORD64 X4;
+                 DWORD64 X5;
+                 DWORD64 X6;
+                 DWORD64 X7;
+                 DWORD64 X8;
+                 DWORD64 X9;
+                 DWORD64 X10;
+                 DWORD64 X11;
+                 DWORD64 X12;
+                 DWORD64 X13;
+                 DWORD64 X14;
+                 DWORD64 X15;
+                 DWORD64 X16;
+                 DWORD64 X17;
+                 DWORD64 X18;
+                 DWORD64 X19;
+                 DWORD64 X20;
+                 DWORD64 X21;
+                 DWORD64 X22;
+                 DWORD64 X23;
+                 DWORD64 X24;
+                 DWORD64 X25;
+                 DWORD64 X26;
+                 DWORD64 X27;
+                 DWORD64 X28;
+    /* +0x0f0 */ DWORD64 Fp;
+    /* +0x0f8 */ DWORD64 Lr;
+    /* +0x100 */ DWORD64 Sp;
+    /* +0x108 */ DWORD64 Pc;
+
+    //
+    // Floating Point/NEON Registers
+    //
+
+    /* +0x110 */ NEON128 V[32];
+    /* +0x310 */ DWORD Fpcr;
+    /* +0x314 */ DWORD Fpsr;
+
+    //
+    // Debug registers
+    //
+
+    /* +0x318 */ DWORD Bcr[ARM64_MAX_BREAKPOINTS];
+    /* +0x338 */ DWORD64 Bvr[ARM64_MAX_BREAKPOINTS];
+    /* +0x378 */ DWORD Wcr[ARM64_MAX_WATCHPOINTS];
+    /* +0x380 */ DWORD64 Wvr[ARM64_MAX_WATCHPOINTS];
+    /* +0x390 */
+
+} CONTEXT, *PCONTEXT, *LPCONTEXT;
+
+//
+// Nonvolatile context pointer record.
+//
+
+typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
+
+    PDWORD64 X19;
+    PDWORD64 X20;
+    PDWORD64 X21;
+    PDWORD64 X22;
+    PDWORD64 X23;
+    PDWORD64 X24;
+    PDWORD64 X25;
+    PDWORD64 X26;
+    PDWORD64 X27;
+    PDWORD64 X28;
+    PDWORD64 Fp;
+    PDWORD64 Lr;
+
+    PDWORD64 D8;
+    PDWORD64 D9;
+    PDWORD64 D10;
+    PDWORD64 D11;
+    PDWORD64 D12;
+    PDWORD64 D13;
+    PDWORD64 D14;
+    PDWORD64 D15;
+
+} KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
+
 #else
 #error Unknown architecture for defining CONTEXT.
 #endif
@@ -3259,6 +3441,8 @@ PAL_GetLogicalProcessorCacheSizeFromOS();
 #define PAL_CS_NATIVE_DATA_SIZE 96
 #elif defined(__LINUX__) && defined(_ARM_)
 #define PAL_CS_NATIVE_DATA_SIZE 80
+#elif defined(__LINUX__) && defined(_ARM64_)
+#define PAL_CS_NATIVE_DATA_SIZE 116
 #else 
 #warning 
 #error  PAL_CS_NATIVE_DATA_SIZE is not defined for this architecture

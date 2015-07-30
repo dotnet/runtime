@@ -77,7 +77,7 @@ bool IsStackNormalType(CorInfoType cit);
 CorInfoType CorInfoTypeStackNormalize(CorInfoType cit);
 
 // Returns the (byte) size of "cit".  Requires that "cit" is not a CORINFO_TYPE_VALUECLASS.
-inline size_t CorInfoTypeSize(CorInfoType cit);
+size_t CorInfoTypeSize(CorInfoType cit);
 
 // Returns true iff "cit" is an unsigned integral type.
 bool CorInfoTypeIsUnsigned(CorInfoType cit);
@@ -101,7 +101,7 @@ inline size_t CorInfoTypeStackNormalSize(CorInfoType cit)
     return CorInfoTypeSize(cit);
 }
 
-inline getClassSize(CORINFO_CLASS_HANDLE clsHnd)
+inline size_t getClassSize(CORINFO_CLASS_HANDLE clsHnd)
 {
     TypeHandle VMClsHnd(clsHnd);
     return VMClsHnd.GetSize();
@@ -778,32 +778,31 @@ public:
     // operand type stack.
     Interpreter(InterpreterMethodInfo* methInfo_, bool directCall_, BYTE* ilArgs_, void* stubContext_, BYTE* frameMemory) 
         : m_methInfo(methInfo_),
+          m_interpCeeInfo(methInfo_->m_method),
+          m_ILCodePtr(methInfo_->m_ILCode),
           m_directCall(directCall_),
           m_ilArgs(ilArgs_),
           m_stubContext(stubContext_),
-          m_ILCodePtr(methInfo_->m_ILCode),
-          m_curStackHt(0),
-          m_interpCeeInfo(methInfo_->m_method),
+          m_orOfPushedInterpreterTypes(0),
           m_largeStructOperandStack(NULL),
           m_largeStructOperandStackHt(0),
           m_largeStructOperandStackAllocSize(0),
-          m_thisArg(NULL),
-          m_securityObject(TADDR(NULL)),
-          m_args(NULL),
-          m_argsSize(0),
-          m_structRetValITPtr(NULL),
-          m_callThisArg(NULL), 
-          m_orOfPushedInterpreterTypes(0),
-          m_preciseGenericsContext(NULL),
-          m_functionPointerStack(NULL),
-          m_genericsCtxtArg(NULL),
-          m_inFlightException(NULL),
+          m_curStackHt(0),
+          m_leaveInfoStack(),
           m_filterNextScan(0),
           m_filterHandlerOffset(0),
           m_filterExcILOffset(0),
+          m_inFlightException(NULL),
+          m_thisArg(NULL),
 #ifdef USE_CHECKED_OBJECTREFS
           m_retBufArg(NULL),  // Initialize to NULL so we can safely declare protected.
 #endif // USE_CHECKED_OBJECTREFS
+          m_genericsCtxtArg(NULL),
+          m_securityObject(TADDR(NULL)),
+          m_args(NULL),
+          m_argsSize(0),
+          m_callThisArg(NULL), 
+          m_structRetValITPtr(NULL),
 #ifndef DACCESS_COMPILE
           // Means "uninitialized"
           m_thisExecCache(UninitExecCache), 
@@ -811,7 +810,8 @@ public:
           m_constrainedFlag(false),
           m_readonlyFlag(false),
           m_locAllocData(NULL),
-          m_leaveInfoStack()
+          m_preciseGenericsContext(NULL),
+          m_functionPointerStack(NULL)
     {
         // We must zero the locals.
         memset(frameMemory, 0, methInfo_->LocalMemSize() + sizeof(GSCookie));
@@ -1604,7 +1604,7 @@ private:
             {
                 for (unsigned i = 0; i < m_locAllocCurIdx; i++)
                 {
-                    delete[] m_locAllocs[i];
+                    delete[] reinterpret_cast<char*>(m_locAllocs[i]);
                 }
             }
             delete[] m_locAllocs;
