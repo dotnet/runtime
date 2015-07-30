@@ -132,8 +132,13 @@
     <Compile Include="@(CompileItem)" />
   </ItemGroup>
   
+  <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <Compile Include="System\Net\Http\Unix\CurlCallbacks.cs" />
     <Compile Include="System\Net\Http\Unix\CurlHandler.cs" />
+    <Compile Include="System\Net\Http\Unix\CurlResponseMessage.cs" />
     <Compile Include="System\Net\Http\Unix\HttpClientHandler.Unix.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
