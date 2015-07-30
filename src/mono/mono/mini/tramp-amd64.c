@@ -1234,7 +1234,15 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 
 	code = buf = mono_global_codeman_reserve (tramp_size);
 
-	framesize = sizeof (MonoContext);
+	framesize = 0;
+#ifdef TARGET_WIN32
+	/* Reserve space where the callee can save the argument registers */
+	framesize += 4 * sizeof (mgreg_t);
+#endif
+
+	ctx_offset = framesize;
+	framesize += sizeof (MonoContext);
+
 	framesize = ALIGN_TO (framesize, MONO_ARCH_FRAME_ALIGNMENT);
 
 	// CFA = sp + 8
@@ -1252,7 +1260,6 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	mono_add_unwind_op_def_cfa_reg (unwind_ops, code, buf, AMD64_RBP);
 	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, framesize);
 
-	ctx_offset = 0;
 	gregs_offset = ctx_offset + MONO_STRUCT_OFFSET (MonoContext, gregs);
 
 	/* Initialize a MonoContext structure on the stack */
