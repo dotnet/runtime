@@ -12,6 +12,8 @@ namespace System.Security.Cryptography
 {
     public sealed class RSAOpenSsl : RSA
     {
+        private const int BitsPerByte = 8;
+
         // 65537 (0x10001) in big-endian form
         private static readonly byte[] s_defaultExponent = { 0x01, 0x00, 0x01 };
 
@@ -43,6 +45,31 @@ namespace System.Security.Cryptography
         {
             _legalKeySizesValue = new[] { s_legalKeySizes };
             ImportParameters(parameters);
+        }
+
+        /// <summary>
+        /// Create an RSAOpenSsl from an existing <see cref="IntPtr"/> whose value is an
+        /// existing OpenSSL <c>RSA*</c>.
+        /// </summary>
+        /// <remarks>
+        /// This method will increase the reference count of the <c>RSA*</c>, the caller should
+        /// continue to manage the lifetime of their reference.
+        /// </remarks>
+        /// <param name="handle">A pointer to an OpenSSL <c>RSA*</c></param>
+        /// <exception cref="ArgumentException"><paramref name="handle" /> is invalid</exception>
+        public RSAOpenSsl(IntPtr handle)
+        {
+            if (handle == IntPtr.Zero)
+                throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, "handle");
+
+            _legalKeySizesValue = new[] { s_legalKeySizes };
+
+            SafeRsaHandle rsaHandle = SafeRsaHandle.DuplicateHandle(handle);
+
+            // Set base.KeySize to avoid throwing an extra Lazy at the GC when
+            // using something other than the default keysize.
+            base.KeySize = BitsPerByte * Interop.libcrypto.RSA_size(rsaHandle);
+            _key = new Lazy<SafeRsaHandle>(() => rsaHandle);
         }
 
         public override int KeySize
@@ -224,7 +251,7 @@ namespace System.Security.Cryptography
 
             // Set base.KeySize directly, since we don't want to free the key
             // (which we would do if the keysize changed on import)
-            base.KeySize = 8 * Interop.libcrypto.RSA_size(key);
+            base.KeySize = BitsPerByte * Interop.libcrypto.RSA_size(key);
         }
 
         protected override void Dispose(bool disposing)
