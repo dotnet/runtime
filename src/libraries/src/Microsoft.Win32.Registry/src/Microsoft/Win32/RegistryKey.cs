@@ -842,10 +842,10 @@ namespace Microsoft.Win32
         {
             EnsureNotDisposed();
             int subkeys = InternalSubKeyCount();
-            String[] names = new String[subkeys];  // Returns 0-length array if empty.
 
             if (subkeys > 0)
             {
+                String[] names = new String[subkeys];
                 char[] name = new char[MaxKeyLength + 1];
 
                 int namelen;
@@ -868,9 +868,11 @@ namespace Microsoft.Win32
                         names[i] = new String(namePtr);
                     }
                 }
+
+                return names;
             }
 
-            return names;
+            return Array.Empty<String>();
         }
 
         /**
@@ -921,10 +923,10 @@ namespace Microsoft.Win32
             EnsureNotDisposed();
 
             int values = InternalValueCount();
-            String[] names = new String[values];
 
             if (values > 0)
             {
+                String[] names = new String[values];
                 char[] name = new char[MaxValueLength + 1];
                 int namelen;
 
@@ -953,9 +955,11 @@ namespace Microsoft.Win32
                         names[i] = new String(namePtr);
                     }
                 }
+
+                return names;
             }
 
-            return names;
+            return Array.Empty<String>();
         }
 
         /**
@@ -1201,10 +1205,7 @@ namespace Microsoft.Win32
                             try
                             {
                                 char[] newBlob = new char[checked(blob.Length + 1)];
-                                for (int i = 0; i < blob.Length; i++)
-                                {
-                                    newBlob[i] = blob[i];
-                                }
+                                Array.Copy(blob, 0, newBlob, 0, blob.Length);
                                 newBlob[newBlob.Length - 1] = (char)0;
                                 blob = newBlob;
                             }
@@ -1215,8 +1216,7 @@ namespace Microsoft.Win32
                             blob[blob.Length - 1] = (char)0;
                         }
 
-
-                        IList<String> strings = new List<String>();
+                        var strings = new List<String>();
                         int cur = 0;
                         int len = blob.Length;
 
@@ -1250,8 +1250,7 @@ namespace Microsoft.Win32
                             cur = nextNull + 1;
                         }
 
-                        data = new String[strings.Count];
-                        strings.CopyTo((String[])data, 0);
+                        data = strings.ToArray();
                     }
                     break;
                 case Interop.mincore.RegistryValues.REG_LINK:
