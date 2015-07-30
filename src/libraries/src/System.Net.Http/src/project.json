@@ -6,6 +6,7 @@
     "System.Globalization": "4.0.10",
     "System.IO": "4.0.10",
     "System.IO.Compression": "4.0.0",
+    "System.IO.UnmanagedMemoryStream": "4.0.0",
     "System.Net.Primitives": "4.0.10-beta-*",
     "System.Resources.ResourceManager": "4.0.0",
     "System.Runtime.Extensions": "4.0.10",
