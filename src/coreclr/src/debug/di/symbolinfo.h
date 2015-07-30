@@ -117,7 +117,7 @@ public:
 
     STDMETHOD(GetTypeDefProps)(             // S_OK or error.
         mdTypeDef   td,                     // [IN] TypeDef token for inquiry.
-      __out_ecount_part_opt(cchTypeDef, pchTypeDef)
+      __out_ecount_part_opt(cchTypeDef, *pchTypeDef)
         LPWSTR      szTypeDef,              // [OUT] Put name here.
         ULONG       cchTypeDef,             // [IN] size of name buffer in wide chars.
         ULONG       *pchTypeDef,            // [OUT] put size of name (wide chars) here.
