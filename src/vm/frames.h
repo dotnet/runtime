@@ -754,7 +754,7 @@ public:
         return VPTR_HOST_VTABLE_TO_TADDR(*(LPVOID*)this);
     }
 
-#ifdef _DEBUG
+#if defined(_DEBUG) && !defined(DACCESS_COMPILE)
     virtual BOOL Protects(OBJECTREF *ppObjectRef)
     {
         LIMITED_METHOD_CONTRACT;

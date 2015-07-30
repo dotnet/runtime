@@ -215,7 +215,11 @@ Return Value:
         SourceAddress = StartingSp + FIELD_OFFSET(ARM64_KTRAP_FRAME, X);
         for (RegIndex = 0; RegIndex < 18; RegIndex++) {
             UPDATE_CONTEXT_POINTERS(UnwindParams, RegIndex, SourceAddress);
+#ifdef __clang__
+            *(&ContextRecord->X0 + (RegIndex * sizeof(void*))) = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
+#else
             ContextRecord->X[RegIndex] = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
+#endif
             SourceAddress += sizeof(ULONG_PTR);
         }
         
@@ -288,10 +292,14 @@ Return Value:
         // Restore X0-X28, and D0-D31
         //
         
-        SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, X);
+        SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, X0);
         for (RegIndex = 0; RegIndex < 29; RegIndex++) {
             UPDATE_CONTEXT_POINTERS(UnwindParams, RegIndex, SourceAddress);
+#ifdef __clang__
+            *(&ContextRecord->X0 + (RegIndex * sizeof(void*))) = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
+#else
             ContextRecord->X[RegIndex] = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
+#endif
             SourceAddress += sizeof(ULONG_PTR);
         }
         
@@ -473,7 +481,11 @@ Return Value:
 
     for (RegIndex = 0; RegIndex < RegisterCount; RegIndex++) {
         UPDATE_CONTEXT_POINTERS(UnwindParams, RegIndex, CurAddress);
+#ifdef __clang__
+        *(&ContextRecord->X0 + (RegIndex * sizeof(void*))) = MEMORY_READ_QWORD(UnwindParams, CurAddress);
+#else
         ContextRecord->X[FirstRegister + RegIndex] = MEMORY_READ_QWORD(UnwindParams, CurAddress);
+#endif
         CurAddress += 8;
     }
     if (SpOffset < 0) {
@@ -1534,7 +1546,7 @@ BOOL OOPStackUnwinderArm64::Unwind(T_CONTEXT * pContext)
 
     if ((Rfe.UnwindData & 3) != 0) 
     {
-        hr = RtlpUnwindFunctionCompact(pContext->Pc - (ULONG)ImageBase,
+        hr = RtlpUnwindFunctionCompact(pContext->Pc - ImageBase,
                                         &Rfe,
                                         pContext,
                                         &DummyEstablisherFrame,
@@ -1545,8 +1557,8 @@ BOOL OOPStackUnwinderArm64::Unwind(T_CONTEXT * pContext)
     }
     else
     {
-        hr = RtlpUnwindFunctionFull(pContext->Pc - (ULONG)ImageBase,
-                                    (ULONG)ImageBase,
+        hr = RtlpUnwindFunctionFull(pContext->Pc - ImageBase,
+                                    ImageBase,
                                     &Rfe,
                                     pContext,
                                     &DummyEstablisherFrame,
@@ -1578,3 +1590,57 @@ BOOL DacUnwindStackFrame(T_CONTEXT *pContext, T_KNONVOLATILE_CONTEXT_POINTERS* p
     
     return res;
 }
+
+#if defined(FEATURE_PAL)
+//TODO: Fix the context pointers
+PEXCEPTION_ROUTINE
+RtlVirtualUnwind(
+    IN ULONG HandlerType,
+    IN ULONG64 ImageBase,
+    IN ULONG64 ControlPc,
+    IN PRUNTIME_FUNCTION FunctionEntry,
+    IN OUT PCONTEXT ContextRecord,
+    OUT PVOID *HandlerData,
+    OUT PULONG64 EstablisherFrame,
+    IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL
+    )
+{
+    PEXCEPTION_ROUTINE handlerRoutine;
+    HRESULT hr;
+
+    DWORD64 startingPc = ControlPc;
+    DWORD64 startingSp = ContextRecord->Sp;
+    
+    T_RUNTIME_FUNCTION rfe;
+
+    rfe.BeginAddress = FunctionEntry->BeginAddress;
+    rfe.UnwindData = FunctionEntry->UnwindData;
+
+    if ((rfe.UnwindData & 3) != 0) 
+    {
+        hr = RtlpUnwindFunctionCompact(ControlPc - ImageBase,
+                                        &rfe,
+                                        ContextRecord,
+                                        EstablisherFrame,
+                                        &handlerRoutine,
+                                        HandlerData,
+                                        NULL);
+
+    }
+    else
+    {
+        hr = RtlpUnwindFunctionFull(ControlPc - ImageBase,
+                                    ImageBase,
+                                    &rfe,
+                                    ContextRecord,
+                                    EstablisherFrame,
+                                    &handlerRoutine,
+                                    HandlerData,
+                                    NULL);
+    }
+
+    _ASSERTE(SUCCEEDED(hr));
+
+    return handlerRoutine;
+}
+#endif
