@@ -3391,7 +3391,7 @@ HRESULT ImportHelper::CompareAssemblyRefToAssembly(    // S_OK, S_FALSE or error
         if (IsAfPublicKey(dwFlags1) &&
             (cbPublicKeyOrToken1 != cbPublicKey2 ||
              memcmp(pbPublicKeyOrToken1, pbPublicKey2, cbPublicKeyOrToken1)))
-            return FALSE;
+            return S_FALSE;
 
         // Otherwise we need to compress the def public key into a token.
         if (!StrongNameTokenFromPublicKey((BYTE*)pbPublicKey2,

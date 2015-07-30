@@ -435,7 +435,7 @@ void UnassemblyUnmanaged(DWORD_PTR IP, BOOL bSuppressLines)
 }
 
 
-void DisasmAndClean (DWORD_PTR &IP, __out_ecount (length) __out_opt char *line, ULONG length)
+void DisasmAndClean (DWORD_PTR &IP, __out_ecount_opt(length) char *line, ULONG length)
 {
     ULONG64 vIP = TO_CDADDR(IP);
     g_ExtControl->Disassemble (vIP, 0, line, length, NULL, &vIP);

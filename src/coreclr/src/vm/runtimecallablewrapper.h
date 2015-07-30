@@ -1268,7 +1268,7 @@ public :
     
     //--------------------------------------------------------------
     // Init the ComClassFactory
-    void Init(__in_opt __in_z WCHAR* pwszProgID, __in_opt __in_z WCHAR* pwszServer, MethodTable* pClassMT);
+    void Init(__in_opt WCHAR* pwszProgID, __in_opt WCHAR* pwszServer, MethodTable* pClassMT);
 
     //-------------------------------------------------------------
     // create instance, calls IClassFactory::CreateInstance

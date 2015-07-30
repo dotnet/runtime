@@ -64,7 +64,7 @@ typedef const SYMCRYPT_MARVIN32_STATE *PCSYMCRYPT_MARVIN32_STATE;
 //
 HRESULT SymCryptMarvin32ExpandSeed(
         __out               PSYMCRYPT_MARVIN32_EXPANDED_SEED    pExpandedSeed,
-        __in_ecount(cbKey)  PCBYTE                              pbSeed,
+        __in_ecount(cbSeed) PCBYTE                              pbSeed,
                             SIZE_T                              cbSeed);
 
 VOID SymCryptMarvin32Init(_Out_   PSYMCRYPT_MARVIN32_STATE            pState,
@@ -72,7 +72,7 @@ VOID SymCryptMarvin32Init(_Out_   PSYMCRYPT_MARVIN32_STATE            pState,
 
 VOID SymCryptMarvin32Result(
         _Inout_                                        PSYMCRYPT_MARVIN32_STATE    pState,
-        _Out_writes_(SYMCRYPT_MARVIN32_RESULT_SIZE)  PBYTE                       pbResult);
+        _Out_  PBYTE                       pbResult);
 
 VOID SymCryptMarvin32Append(_Inout_                    SYMCRYPT_MARVIN32_STATE * state,
         _In_reads_bytes_(cbData) PCBYTE                    pbData,
