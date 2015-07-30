@@ -94,8 +94,14 @@ Copy the runtime and corerun into the demo directory.
     dotnet-mbp:coreclr richlander$ cp bin/Product/OSX.x64.Debug/corerun ~/coreclr-demo/runtime/
     dotnet-mbp:coreclr richlander$ cp bin/Product/OSX.x64.Debug/libcoreclr.dylib ~/coreclr-demo/runtime/
 
-Build the Framework
-===================
+Build the Framework Native Components
+=====================================
+
+    dotnet-mbp:corefx richlander$ src/Native/build.sh
+    dotnet-mbp:corefx richlander$ cp bin/OSX.x64.Debug/Native/*.dylib ~/coreclr-demo/runtime
+
+Build the Framework Managed Components
+======================================
 
 While CoreFX can be built on OS X, building mscorlib still requires Windows.
 
