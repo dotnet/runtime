@@ -30,15 +30,22 @@ namespace System.IO.FileSystem.Tests
         }
 
         // Generates a test file path to use that is unique name per test case / call
-        public string GetTestFilePath([CallerMemberName]string fileName = null, [CallerLineNumber] int lineNumber = 0)
+        public string GetTestFilePath([CallerMemberName]string memberName = null, [CallerLineNumber] int lineNumber = 0)
         {
-            return Path.Combine(TestDirectory, String.Format("{0}_{1}", fileName ?? "testFile", lineNumber));
+            return Path.Combine(TestDirectory, String.Format("{0}_{1}", memberName ?? "testFile", lineNumber));
+        }
+
+        // Generates a test file path to use that is unique name per test case / call with an additional
+        // variable to specify a trailing identifier
+        public string GetTestFilePath(int index, [CallerMemberName]string memberName = null, [CallerLineNumber] int lineNumber = 0)
+        {
+            return Path.Combine(TestDirectory, String.Format("{0}_{1}_{2}", memberName ?? "testFile", lineNumber, index));
         }
 
         // Generates a test file name to use that is unique name per test case / call
-        public string GetTestFileName([CallerMemberName]string fileName = null, [CallerLineNumber] int lineNumber = 0)
+        public string GetTestFileName([CallerMemberName]string memberName = null, [CallerLineNumber] int lineNumber = 0)
         {
-            return String.Format("{0}_{1}", fileName ?? "testFile", lineNumber);
+            return String.Format("{0}_{1}", memberName ?? "testFile", lineNumber);
         }
 
         public void Dispose()
