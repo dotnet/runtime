@@ -20,7 +20,7 @@ public static class DataContractSerializerTests
     [Fact]
     public static void DCS_DateTimeOffsetAsRoot()
     {
-        var offsetMinutes = TimeZoneInfo.Local.BaseUtcOffset.TotalMinutes;
+        var offsetMinutes = TimeZoneInfo.Local.GetUtcOffset(new DateTime(2013, 1, 2)).TotalMinutes;
         var objs = new DateTimeOffset[]
         {
             // Adding offsetMinutes so the DateTime component in serialized strings are time-zone independent
@@ -43,7 +43,10 @@ public static class DataContractSerializerTests
         };
         for (int i = 0; i < objs.Length; ++i)
         {
-            Assert.StrictEqual(SerializeAndDeserialize<DateTimeOffset>(objs[i], serializedStrings[i]), objs[i]);
+            var actual = objs[i];
+            var expected = SerializeAndDeserialize<DateTimeOffset>(actual, serializedStrings[i]);
+            Assert.StrictEqual(expected, actual);
+            Assert.StrictEqual(expected.Offset, actual.Offset);
         }
     }
 
@@ -84,7 +87,7 @@ public static class DataContractSerializerTests
     [Fact]
     public static void DCS_DateTimeAsRoot()
     {
-        var offsetMinutes = (int)TimeZoneInfo.Local.BaseUtcOffset.TotalMinutes;
+        var offsetMinutes = (int)TimeZoneInfo.Local.GetUtcOffset(new DateTime(2013, 1, 2)).TotalMinutes;
         Assert.StrictEqual(SerializeAndDeserialize<DateTime>(new DateTime(2013, 1, 2), "<dateTime xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/\">2013-01-02T00:00:00</dateTime>"), new DateTime(2013, 1, 2));
         Assert.StrictEqual(SerializeAndDeserialize<DateTime>(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Local), string.Format("<dateTime xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/\">2013-01-02T03:04:05.006{0:+;-}{1}</dateTime>", offsetMinutes, new TimeSpan(0, offsetMinutes, 0).ToString(@"hh\:mm"))), new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Local));
         Assert.StrictEqual(SerializeAndDeserialize<DateTime>(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Unspecified), "<dateTime xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/\">2013-01-02T03:04:05.006</dateTime>"), new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Unspecified));
@@ -1360,16 +1363,19 @@ public static class DataContractSerializerTests
         var value = new TypeWithDateTimeOffsetTypeProperty() { ModifiedTime = new DateTimeOffset(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Utc)) };
         var actual = SerializeAndDeserialize(value, "<TypeWithDateTimeOffsetTypeProperty xmlns=\"http://schemas.datacontract.org/2004/07/SerializationTypes\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><ModifiedTime xmlns:a=\"http://schemas.datacontract.org/2004/07/System\"><a:DateTime>2013-01-02T03:04:05.006Z</a:DateTime><a:OffsetMinutes>0</a:OffsetMinutes></ModifiedTime></TypeWithDateTimeOffsetTypeProperty>");
         Assert.StrictEqual(value.ModifiedTime, actual.ModifiedTime);
+        Assert.StrictEqual(value.ModifiedTime.Offset, actual.ModifiedTime.Offset);
 
-        var offsetMinutes = TimeZoneInfo.Local.BaseUtcOffset.TotalMinutes;
+        var offsetMinutes = TimeZoneInfo.Local.GetUtcOffset(new DateTime(2013, 1, 2)).TotalMinutes;
         // Adding offsetMinutes to ModifiedTime property so the DateTime component in serialized strings are time-zone independent
         value = new TypeWithDateTimeOffsetTypeProperty() { ModifiedTime = new DateTimeOffset(new DateTime(2013, 1, 2, 3, 4, 5, 6).AddMinutes(offsetMinutes)) };
         actual = SerializeAndDeserialize(value, string.Format("<TypeWithDateTimeOffsetTypeProperty xmlns=\"http://schemas.datacontract.org/2004/07/SerializationTypes\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><ModifiedTime xmlns:a=\"http://schemas.datacontract.org/2004/07/System\"><a:DateTime>2013-01-02T03:04:05.006Z</a:DateTime><a:OffsetMinutes>{0}</a:OffsetMinutes></ModifiedTime></TypeWithDateTimeOffsetTypeProperty>", offsetMinutes));
         Assert.StrictEqual(value.ModifiedTime, actual.ModifiedTime);
+        Assert.StrictEqual(value.ModifiedTime.Offset, actual.ModifiedTime.Offset);
 
         value = new TypeWithDateTimeOffsetTypeProperty() { ModifiedTime = new DateTimeOffset(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Local).AddMinutes(offsetMinutes)) };
         actual = SerializeAndDeserialize(value, string.Format("<TypeWithDateTimeOffsetTypeProperty xmlns=\"http://schemas.datacontract.org/2004/07/SerializationTypes\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><ModifiedTime xmlns:a=\"http://schemas.datacontract.org/2004/07/System\"><a:DateTime>2013-01-02T03:04:05.006Z</a:DateTime><a:OffsetMinutes>{0}</a:OffsetMinutes></ModifiedTime></TypeWithDateTimeOffsetTypeProperty>", offsetMinutes));
         Assert.StrictEqual(value.ModifiedTime, actual.ModifiedTime);
+        Assert.StrictEqual(value.ModifiedTime.Offset, actual.ModifiedTime.Offset);
     }
 
     [Fact]
