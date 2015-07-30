@@ -1424,7 +1424,7 @@ void                CodeGen::genCodeForBBlist()
                 {
                     VarSetOps::AddElemD(compiler, removedGCVars, varIndex);
                 }
-#endif DEBUG
+#endif // DEBUG
                 VarSetOps::RemoveElemD(compiler, gcInfo.gcVarPtrSetCur, varIndex);
             }
             else if (compiler->lvaIsGCTracked(varDsc))
@@ -1434,7 +1434,7 @@ void                CodeGen::genCodeForBBlist()
                 {
                     VarSetOps::AddElemD(compiler, addedGCVars, varIndex);
                 }
-#endif DEBUG
+#endif // DEBUG
                 VarSetOps::AddElemD(compiler, gcInfo.gcVarPtrSetCur, varIndex);
             }
         }
@@ -3341,6 +3341,8 @@ CodeGen::genLclHeap(GenTreePtr tree)
     var_types   type          = genActualType(size->gtType);
     emitAttr    easz          = emitTypeSize(type);
     BasicBlock* endLabel      = nullptr;    
+    BasicBlock* loop          = nullptr;
+    unsigned stackAdjustment  = 0;
     
 #ifdef DEBUG
     // Verify ESP
@@ -3417,7 +3419,7 @@ CodeGen::genLclHeap(GenTreePtr tree)
         inst_RV_IV(INS_AND, regCnt, ~(STACK_ALIGN - 1), emitActualTypeSize(type));
     }
 
-    unsigned stackAdjustment = 0;
+    stackAdjustment = 0;
 #if FEATURE_EH_FUNCLETS 
     // If we have PSPsym, then need to re-locate it after localloc.
     if (hasPspSym)
@@ -3507,7 +3509,7 @@ CodeGen::genLclHeap(GenTreePtr tree)
         genSetRegToIcon(regCnt, amount, ((int)amount == amount)? TYP_INT : TYP_LONG);
     }
 
-    BasicBlock* loop = genCreateTempLabel();
+    loop = genCreateTempLabel();
     if (compiler->info.compInitMem)
     {
         // At this point 'regCnt' is set to the total number of bytes to locAlloc.

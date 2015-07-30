@@ -5,6 +5,4 @@
 
 // 
 
-#include "stdafx.h"
-
 #include "../../shared/arm64/primitives.cpp"

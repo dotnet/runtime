@@ -42,22 +42,22 @@ static CorInfoType asCorInfoType(CORINFO_CLASS_HANDLE clsHnd)
 InterpreterMethodInfo::InterpreterMethodInfo(CEEInfo* comp, CORINFO_METHOD_INFO* methInfo)
     : m_method(methInfo->ftn),
       m_module(methInfo->scope),
+      m_jittedCode(0),
       m_ILCode(methInfo->ILCode),
       m_ILCodeEnd(methInfo->ILCode + methInfo->ILCodeSize),
       m_maxStack(methInfo->maxStack),
-      m_numArgs(methInfo->args.numArgs),
-      m_flags(0),
-      m_argDescs(NULL),
-      m_numLocals(methInfo->locals.numArgs),
-      m_returnType(methInfo->args.retType),
-      m_invocations(0),
-      m_jittedCode(0),
 #if INTERP_PROFILE
       m_totIlInstructionsExeced(0),
       m_maxIlInstructionsExeced(0),
 #endif
       m_ehClauseCount(methInfo->EHcount),
       m_varArgHandleArgNum(NO_VA_ARGNUM),
+      m_numArgs(methInfo->args.numArgs),
+      m_numLocals(methInfo->locals.numArgs),
+      m_flags(0),
+      m_argDescs(NULL),
+      m_returnType(methInfo->args.retType),
+      m_invocations(0),
       m_methodCache(NULL)
 { 
     // Overflow sanity check. (Can ILCodeSize ever be zero?)
@@ -431,7 +431,7 @@ InterpreterMethodInfo::~InterpreterMethodInfo()
 {
     if (m_methodCache != NULL)
     {
-        delete m_methodCache;
+        delete reinterpret_cast<ILOffsetToItemCache*>(m_methodCache);
     }
 }
 
@@ -534,7 +534,7 @@ void Interpreter::ArgState::AddArg(unsigned canonIndex, short numSlots, bool noR
         argOffsets[canonIndex] = offset.Value();
 #if defined(_ARM_) || defined(_ARM64_)
         callerArgStackSlots += numSlots;
-#endif;
+#endif
     }
 #endif // !_AMD64_
 }
@@ -1063,7 +1063,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
         // for instance a VT with two float fields will have the same size as a VT with 1 double field. (ARM64TODO: Verify it)
         // It works on ARM because the overlapping layout of the floating point registers
         // but it won't work on ARM64.
-        cHFAVars = (comp->getHFAType(info->args.retTypeClass) == ELEMENT_TYPE_R4) ? HFARetTypeSize/sizeof(float) : HFARetTypeSize/sizeof(double);
+        cHFAVars = (CorInfoTypeIsFloatingPoint(comp->getHFAType(info->args.retTypeClass))) ? HFARetTypeSize/sizeof(float) : HFARetTypeSize/sizeof(double);
 #endif
     }
 
@@ -1815,14 +1815,6 @@ enum OPCODE_2BYTE {
 #include "opcode.def"
 #undef OPDEF
 };
-
-#ifdef _DEBUG
-static const char* getMethodName(CEEInfo* info, CORINFO_METHOD_HANDLE meth, const char** pClsName)
-{
-    GCX_PREEMP();
-    return info->getMethodName(meth, pClsName);
-}
-#endif // _DEBUG
 
 // Optimize the interpreter loop for speed.
 #ifdef _MSC_VER
@@ -4825,10 +4817,6 @@ void Interpreter::BinaryArithOvfOp()
         }
         break;
 
-    case CORINFO_TYPE_SHIFTED_CLASS:
-        VerificationError("Can't do binary arithmetic overflow operation on object references.");
-        break;
-
     default:
         _ASSERTE_MSG(false, "Non-stack-normal type on stack.");
     }
@@ -5099,7 +5087,7 @@ void Interpreter::ShiftOpWork(unsigned op1idx, CorInfoType cit2)
             res = (static_cast<UT>(val)) >> shiftAmt;
         }
     } 
-    else if (cit2 = CORINFO_TYPE_NATIVEINT)
+    else if (cit2 == CORINFO_TYPE_NATIVEINT)
     {
         NativeInt shiftAmt = OpStackGet<NativeInt>(op2idx);
         if (op == CEE_SHL)
@@ -5932,7 +5920,7 @@ void Interpreter::NewObj()
         {
             void* dest = LargeStructOperandStackPush(sz);
             memcpy(dest, tempDest, sz);
-            delete[] tempDest;
+            delete[] reinterpret_cast<BYTE*>(tempDest);
             OpStackSet<void*>(m_curStackHt, dest);
         }
         else
