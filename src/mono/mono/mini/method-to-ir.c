@@ -9174,7 +9174,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		 	    !(MONO_METHOD_IS_FINAL (cmethod) && 
 			      cmethod->wrapper_type != MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK) &&
 			    fsig->generic_param_count && 
-				!(cfg->gsharedvt && mini_is_gsharedvt_signature (fsig))) {
+				!(cfg->gsharedvt && mini_is_gsharedvt_signature (fsig)) &&
+				!cfg->llvm_only) {
 				MonoInst *this_temp, *this_arg_temp, *store;
 				MonoInst *iargs [4];
 				gboolean use_imt = FALSE;
@@ -9554,6 +9555,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoMethodSignature *rgctx_sig;
 				int rgctx_reg, tmp_reg;
 
+				MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg);
+
 				NEW_BBLOCK (cfg, rgctx_bb);
 				NEW_BBLOCK (cfg, end_bb);
 
@@ -9595,7 +9598,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				for (i = 0; i < fsig->param_count; ++i)
 					args [i + 2] = sp [i + 1];
 				rgctx_sig = sig_to_rgctx_sig (fsig);
-				call2 = mono_emit_calli (cfg, rgctx_sig, args, call_target, NULL, vtable_arg);
+				call2 = mono_emit_calli (cfg, rgctx_sig, args, call_target, NULL, NULL);
 				call2->dreg = call1->dreg;
 				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
 				/* End */

@@ -4006,16 +4006,18 @@ init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, M
 void
 mono_aot_init_llvm_method (gpointer aot_module, guint32 method_index)
 {
+	MonoAotModule *amodule = aot_module;
 	gboolean res;
 
 	// FIXME: Handle failure
-	res = init_method ((MonoAotModule*)aot_module, method_index, NULL, NULL, NULL);
+	res = init_method (amodule, method_index, NULL, NULL, NULL);
 	g_assert (res);
 }
 
 void
 mono_aot_init_gshared_method_this (gpointer aot_module, guint32 method_index, MonoObject *this)
 {
+	MonoAotModule *amodule = aot_module;
 	gboolean res;
 	MonoClass *klass;
 
@@ -4024,13 +4026,14 @@ mono_aot_init_gshared_method_this (gpointer aot_module, guint32 method_index, Mo
 
 	// FIXME: Handle failure
 	klass = this->vtable->klass;
-	res = init_method ((MonoAotModule*)aot_module, method_index, NULL, klass, klass->generic_class ? &klass->generic_class->context : NULL);
+	res = init_method (amodule, method_index, NULL, klass, klass->generic_class ? &klass->generic_class->context : NULL);
 	g_assert (res);
 }
 
 void
 mono_aot_init_gshared_method_rgctx  (gpointer aot_module, guint32 method_index, MonoMethodRuntimeGenericContext *rgctx)
 {
+	MonoAotModule *amodule = aot_module;
 	gboolean res;
 	MonoGenericContext context = { NULL, NULL };
 	MonoClass *klass = rgctx->class_vtable->klass;
@@ -4041,7 +4044,7 @@ mono_aot_init_gshared_method_rgctx  (gpointer aot_module, guint32 method_index, 
 		context.class_inst = klass->generic_container->context.class_inst;
 	context.method_inst = rgctx->method_inst;
 
-	res = init_method ((MonoAotModule*)aot_module, method_index, NULL, rgctx->class_vtable->klass, &context);
+	res = init_method (amodule, method_index, NULL, rgctx->class_vtable->klass, &context);
 	g_assert (res);
 }
 
