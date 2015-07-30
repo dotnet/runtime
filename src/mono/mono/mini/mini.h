@@ -1366,8 +1366,10 @@ typedef enum {
 	JIT_FLAG_LLVM = (1 << 3),
 	/* Whenever to disable direct calls to direct calls to icall functions */
 	JIT_FLAG_NO_DIRECT_ICALLS = (1 << 4),
+	/* Emit explicit null checks */
+	JIT_FLAG_EXPLICIT_NULL_CHECKS = (1 << 5),
 	/* Whenever to compile in llvm-only mode */
-	JIT_FLAG_LLVM_ONLY = (1 << 5)
+	JIT_FLAG_LLVM_ONLY = (1 << 6),
 } JitFlags;
 
 /* Bit-fields in the MonoBasicBlock.region */

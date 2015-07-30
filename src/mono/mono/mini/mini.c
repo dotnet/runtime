@@ -3286,7 +3286,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	cfg->opt |= MONO_OPT_LOOP;
 #endif
 
-	cfg->explicit_null_checks = debug_options.explicit_null_checks;
+	cfg->explicit_null_checks = debug_options.explicit_null_checks || (flags & JIT_FLAG_EXPLICIT_NULL_CHECKS);
 	cfg->soft_breakpoints = debug_options.soft_breakpoints;
 	cfg->check_pinvoke_callconv = debug_options.check_pinvoke_callconv;
 	cfg->disable_direct_icalls = disable_direct_icalls;
