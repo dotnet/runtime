@@ -152,7 +152,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         private static X509Certificate2 LoadCertificateFromFile()
         {
-            string path = Path.Combine("TestData", "Ms.cer");
+            string path = Path.Combine("TestData", "MS.cer");
             if (!File.Exists(path))
                 throw new Exception(string.Format("Test infrastructure failure: Expected to find file \"{0}\".", path));
             byte[] data = File.ReadAllBytes(path);
