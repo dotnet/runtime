@@ -3758,7 +3758,11 @@ find_aot_method_in_amodule (MonoAotModule *amodule, MonoMethod *method, guint32 
 		amodule_unlock (amodule);
 		if (!m) {
 			m = decode_resolve_method_ref_with_target (amodule, method, p, &p);
-			if (m) {
+			/*
+			 * Can't catche runtime invoke wrappers since it would break
+			 * the check in decode_method_ref_with_target ().
+			 */
+			if (m && m->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
 				amodule_lock (amodule);
 				g_hash_table_insert (amodule->method_ref_to_method, orig_p, m);
 				amodule_unlock (amodule);
