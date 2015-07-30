@@ -81,6 +81,40 @@ C_FUNC(\Name\()_End):
 // Define the prolog for a TransitionFrame-based method. This macro should be called first in the method and
 // comprises the entire prolog (i.e. don't modify SP after calling this).The locals must be 8 byte aligned 
 //
+// Stack layout:
+//
+// (stack parameters)
+// ...
+// fp
+// lr 
+// CalleeSavedRegisters::x28
+// CalleeSavedRegisters::x27
+// CalleeSavedRegisters::x26
+// CalleeSavedRegisters::x25
+// CalleeSavedRegisters::x24
+// CalleeSavedRegisters::x23
+// CalleeSavedRegisters::x22
+// CalleeSavedRegisters::x21
+// CalleeSavedRegisters::x20
+// CalleeSavedRegisters::x19
+// CalleeSavedRegisters::x30 (Lr)
+// CalleeSavedRegisters::x29 (Fp)
+// ArgumentRegisters::x7
+// ArgumentRegisters::x6
+// ArgumentRegisters::x5
+// ArgumentRegisters::x4
+// ArgumentRegisters::x3
+// ArgumentRegisters::x2
+// ArgumentRegisters::x1
+// ArgumentRegisters::x0
+// FloatRegisters::d7
+// FloatRegisters::d6
+// FloatRegisters::d5
+// FloatRegisters::d4
+// FloatRegisters::d3
+// FloatRegisters::d2
+// FloatRegisters::d1
+// FloatRegisters::d0
 .macro PROLOG_WITH_TRANSITION_BLOCK extraLocals, SaveFPArgs
 
         __PWTB_FloatArgumentRegisters = \extraLocals
