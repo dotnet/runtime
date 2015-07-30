@@ -2864,6 +2864,9 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         case EA_8BYTE:
             result = INS_OPTS_1D;
             break;
+        default:
+            // TODO-Cleanup: add unreached() here
+            break;
         }
     }
     else if (datasize == EA_16BYTE)
@@ -2881,6 +2884,9 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             break;
         case EA_8BYTE:
             result = INS_OPTS_2D;
+            break;
+        default:
+            // TODO-Cleanup: add unreached() here
             break;
         }
     }
@@ -3095,6 +3101,9 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             case EA_8BYTE:
                 result = (index < 1);
                 break;
+            default:
+                // TODO-Cleanup: add unreached() here
+                break;
             }
         }
         else if (datasize == EA_16BYTE)
@@ -3112,6 +3121,9 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
                 break;
             case EA_8BYTE:
                 result = (index < 2);
+                break;
+            default:
+                // TODO-Cleanup: add unreached() here
                 break;
             }
         }
@@ -3163,6 +3175,9 @@ void                emitter::emitIns_I(instruction ins,
             assert(!"Instruction cannot be encoded: IF_SI_0A");
         }
         break;
+    default:
+        // TODO-Cleanup: add unreached() here
+        break;
     }
     assert(fmt != IF_NONE);
 
@@ -3203,6 +3218,10 @@ void                emitter::emitIns_R(instruction ins,
         assert(isGeneralRegister(reg));
         id = emitNewInstrSmall(attr);
         fmt = IF_BR_1A;
+        break;
+
+    default:
+        // TODO-Cleanup: add unreached() here
         break;
 
     }
@@ -3463,6 +3482,10 @@ void                emitter::emitIns_R_I(instruction ins,
         }
         break;
 
+    default:
+        // TODO-Cleanup: add unreached() here
+        break;
+
     }  // end switch (ins)
 
     assert(canEncode);
@@ -3551,6 +3574,11 @@ void                emitter::emitIns_R_F(instruction ins,
             }
         }
         break;
+
+    default:
+        // TODO-Cleanup: add unreached() here
+        break;
+
     }  // end switch (ins)
 
     assert(canEncode);
@@ -3988,6 +4016,10 @@ void                emitter::emitIns_R_R(instruction ins,
         fmt = IF_DV_2J;
         break;
 
+    default:
+        // TODO-Cleanup: add unreached() here
+        break;
+
     }  // end switch (ins)
 
     assert(fmt != IF_NONE);
@@ -4085,6 +4117,10 @@ void                emitter::emitIns_R_I_I(instruction ins,
             assert(isValidImmHWVal(immOut, size));
             fmt = IF_DI_1B;
         }
+        break;
+
+    default:
+        // TODO-Cleanup: add unreached() here
         break;
 
     }  // end switch (ins)
@@ -4527,6 +4563,10 @@ void                emitter::emitIns_R_R_I(instruction ins,
         isLdSt = true;
         break;
 
+    default:
+        // TODO-Cleanup: add unreached() here
+        break;
+
     }  // end switch (ins)
 
     if (isLdSt)
@@ -4932,6 +4972,10 @@ void                emitter::emitIns_R_R_R(instruction ins,
         emitIns_R_R_R_I(ins, attr, reg1, reg2, reg3, 0);
         return;
 
+    default:
+        // TODO-Cleanup: add unreached() here
+        break;
+
     }  // end switch (ins)
 
     assert(fmt != IF_NONE);
@@ -5097,6 +5141,10 @@ void                emitter::emitIns_R_R_R_I(instruction ins,
             scale = (size == EA_8BYTE) ? 3 : 2;
         }
         isLdSt = true;
+        break;
+
+    default:
+        // TODO-Cleanup: add unreached() here
         break;
 
     }  // end switch (ins)
@@ -5280,6 +5328,10 @@ void                emitter::emitIns_R_R_R_Ext(instruction ins,
         }
         break;
 
+    default:
+        // TODO-Cleanup: add unreached() here
+        break;
+
     }  // end switch (ins)
 
     assert(scale != -1);
@@ -5415,6 +5467,10 @@ void                emitter::emitIns_R_R_I_I(instruction ins,
         fmt = IF_DV_2F;
         break;
 
+    default:
+        // TODO-Cleanup: add unreached() here
+        break;
+
     }
     assert(fmt != IF_NONE);
 
@@ -5478,6 +5534,11 @@ void                emitter::emitIns_R_R_R_R(instruction ins,
     case INS_invalid:
         fmt = IF_NONE;
         break;
+
+    default:
+        // TODO-Cleanup: add unreached() here
+        break;
+
     }
     assert(fmt != IF_NONE);
 
@@ -5520,6 +5581,10 @@ void                emitter::emitIns_R_COND(instruction ins,
         assert(isGeneralRegister(reg));
         cfi.cond = cond;
         fmt = IF_DR_1D;
+        break;
+
+    default:
+        // TODO-Cleanup: add unreached() here
         break;
 
     }  // end switch (ins)
@@ -5565,6 +5630,9 @@ void                emitter::emitIns_R_R_COND(instruction ins,
         assert(isGeneralRegister(reg2));
         cfi.cond  = cond;
         fmt = IF_DR_2D;
+        break;
+    default:
+        // TODO-Cleanup: add unreached() here
         break;
 
     }  // end switch (ins)
@@ -5616,6 +5684,10 @@ void                emitter::emitIns_R_R_R_COND(instruction ins,
         fmt = IF_DR_3D;
         break;
 
+    default:
+        // TODO-Cleanup: add unreached() here
+        break;
+
     }  // end switch (ins)
 
     assert(fmt != IF_NONE);
@@ -5664,7 +5736,9 @@ void                emitter::emitIns_R_R_FLAGS_COND (instruction ins,
         cfi.cond  = cond;
         fmt = IF_DR_2I;
         break;
-
+    default:
+        // TODO-Cleanup: add unreached() here
+        break;
     }  // end switch (ins)
 
     assert(fmt != IF_NONE);
@@ -5723,7 +5797,9 @@ void                emitter::emitIns_R_I_FLAGS_COND (instruction ins,
             assert(!"Instruction cannot be encoded: ccmp/ccmn imm5");
         }
         break;
-
+    default:
+        // TODO-Cleanup: add unreached() here
+        break;
     }  // end switch (ins)
 
     assert(fmt != IF_NONE);
@@ -5762,7 +5838,9 @@ void            emitter::emitIns_BARR (instruction  ins,
         fmt = IF_SI_0B;
         imm = (ssize_t) barrier;
         break;
-
+    default:
+        // TODO-Cleanup: add unreached() here
+        break;
     }  // end switch (ins)
 
     assert(fmt != IF_NONE);
@@ -6295,6 +6373,9 @@ void                emitter::emitIns_R_L  (instruction   ins,
     case INS_adrp:
         fmt = IF_DI_1E;
         break;
+    default:
+        // TODO-Cleanup: add unreached() here
+        break;
     }
     assert(fmt == IF_DI_1E);
 
@@ -6405,6 +6486,9 @@ void                emitter::emitIns_J(instruction   ins,
     case INS_ble:
         // TODO-ARM64-CQ: fmt = IF_LARGEJMP;  /* Assume the jump will be long */
         fmt = IF_BI_0B;
+        break;
+    default:
+        // TODO-Cleanup: add unreached() here
         break;
     }
     assert((fmt == IF_BI_0A) ||
@@ -8564,6 +8648,9 @@ size_t              emitter::emitOutputInstr(insGroup  *ig,
         case EA_8BYTE:
             cmode = 0xE;                   // 1110
             break;
+        default:
+            // TODO-Cleanup: add unreached() here
+            break;
         }
 
         code  = emitInsCode(ins, fmt);
@@ -9479,7 +9566,7 @@ void                emitter::emitDispAddrRI(regNumber reg, insOpts opt, ssize_t 
         }
         else
         {
-            printf(operStr[1]);
+            printf("%c", operStr[1]);
         }
         emitDispImm(imm, false);
         printf("]");

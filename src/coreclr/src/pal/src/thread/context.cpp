@@ -41,6 +41,8 @@ extern void CONTEXT_CaptureContext(LPCONTEXT lpContext);
 #define CONTEXT_ALL_FLOATING CONTEXT_FLOATING_POINT
 #elif defined(_ARM_)
 #define CONTEXT_ALL_FLOATING CONTEXT_FLOATING_POINT
+#elif defined(_ARM64_)
+#define CONTEXT_ALL_FLOATING CONTEXT_FLOATING_POINT
 #else
 #error Unexpected architecture.
 #endif
@@ -117,6 +119,45 @@ extern void CONTEXT_CaptureContext(LPCONTEXT lpContext);
         ASSIGN_REG(R10)     \
         ASSIGN_REG(R11)     \
         ASSIGN_REG(R12)
+#elif defined(_ARM64_)
+#define ASSIGN_CONTROL_REGS \
+        ASSIGN_REG(Sp)      \
+        ASSIGN_REG(Lr)      \
+        ASSIGN_REG(Pc)
+
+#define ASSIGN_INTEGER_REGS \
+	ASSIGN_REG(X0)      \
+	ASSIGN_REG(X1)      \
+	ASSIGN_REG(X2)      \
+	ASSIGN_REG(X3)      \
+	ASSIGN_REG(X4)      \
+	ASSIGN_REG(X5)      \
+	ASSIGN_REG(X6)      \
+	ASSIGN_REG(X7)      \
+	ASSIGN_REG(X8)      \
+	ASSIGN_REG(X9)      \
+	ASSIGN_REG(X10)     \
+	ASSIGN_REG(X11)     \
+	ASSIGN_REG(X12)     \
+	ASSIGN_REG(X13)     \
+	ASSIGN_REG(X14)     \
+	ASSIGN_REG(X15)     \
+	ASSIGN_REG(X16)     \
+	ASSIGN_REG(X17)     \
+	ASSIGN_REG(X18)     \
+	ASSIGN_REG(X19)     \
+	ASSIGN_REG(X20)     \
+	ASSIGN_REG(X21)     \
+	ASSIGN_REG(X22)     \
+	ASSIGN_REG(X23)     \
+	ASSIGN_REG(X24)     \
+	ASSIGN_REG(X25)     \
+	ASSIGN_REG(X26)     \
+	ASSIGN_REG(X27)     \
+	ASSIGN_REG(X28)
+
+#else
+#error Don't know how to assign registers on this architecture
 #endif
 
 #define ASSIGN_ALL_REGS     \
@@ -201,6 +242,10 @@ BOOL CONTEXT_GetRegisters(DWORD processId, ucontext_t *registers)
 #define ASSIGN_REG(reg) MCREG_##reg(registers->uc_mcontext) = PTREG_##reg(ptrace_registers);
 #elif HAVE_BSD_REGS_T
 #define ASSIGN_REG(reg) MCREG_##reg(registers->uc_mcontext) = BSDREG_##reg(ptrace_registers);
+#else
+#define ASSIGN_REG(reg)
+	ASSERT("Don't know how to get the context of another process on this platform!");
+	return bRet;
 #endif
         ASSIGN_ALL_REGS
 #undef ASSIGN_REG
@@ -352,6 +397,10 @@ CONTEXT_SetThreadContext(
 #define ASSIGN_REG(reg) PTREG_##reg(ptrace_registers) = lpContext->reg;
 #elif HAVE_BSD_REGS_T
 #define ASSIGN_REG(reg) BSDREG_##reg(ptrace_registers) = lpContext->reg;
+#else
+#define ASSIGN_REG(reg)
+	ASSERT("Don't know how to set the context of another process on this platform!");
+	return FALSE;
 #endif
         if (lpContext->ContextFlags & CONTEXT_CONTROL)
         {
@@ -517,6 +566,10 @@ LPVOID CONTEXTGetPC(const native_context_t *context)
     return (LPVOID) MCREG_Eip(context->uc_mcontext);
 #elif defined(_ARM_)
     return (LPVOID) MCREG_Pc(context->uc_mcontext);
+#elif defined(_ARM64_)
+    return (LPVOID) MCREG_Pc(context->uc_mcontext);
+#else
+#   error implement me for this architecture
 #endif
 }
 

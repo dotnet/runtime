@@ -79,8 +79,17 @@ elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
     codegenarm.cpp
     unwindarm.cpp
   )
+elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
+  set( ARCH_SOURCES
+    codegenarm64.cpp
+    emitarm64.cpp
+    lowerarm64.cpp
+    targetarm64.cpp
+    unwindarm.cpp
+    unwindarm64.cpp
+  )
 else()
-  message(FATAL_ERROR "Only ARM and AMD64 is supported")
+  message(FATAL_ERROR "Only ARM, ARM64 and AMD64 is supported")
 endif()
 
 set( SOURCES

@@ -322,6 +322,15 @@ protected:
         BOOL            m_fPushArgRegs;         // If true, r0-r3 are saved before callee saved regs
 #endif // _TARGET_ARM_
 
+#ifdef _TARGET_ARM64_
+protected:
+        BOOL            m_fProlog;              // True if DescribeProlog has been called
+        UINT            m_cIntRegArgs;          // Count of int register arguments (x0 - x7)
+        UINT            m_cVecRegArgs;          // Count of FP register arguments (v0 - v7)
+        UINT            m_cCalleeSavedRegs;     // Count of callee saved registers (x19 - x28)
+        UINT            m_cbStackSpace;         // Additional stack space for return buffer and stack alignment
+#endif // _TARGET_ARM64_
+
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
 
 #ifdef _DEBUG
@@ -368,12 +377,6 @@ private:
 
 #ifdef _TARGET_ARM64_
 #define MAX_UNWIND_CODE_WORDS 5  /* maximum number of 32-bit words to store unwind codes */
-protected:
-        BOOL            m_fProlog;              // True if DescribeProlog has been called
-        UINT            m_cIntRegArgs;          // Count of int register arguments (x0 - x7)
-        UINT            m_cVecRegArgs;          // Count of FP register arguments (v0 - v7)
-        UINT            m_cCalleeSavedRegs;     // Count of callee saved registers (x19 - x28)
-        UINT            m_cbStackSpace;         // Additional stack space for return buffer and stack alignment
 
 private:
         // Reserve fixed size block that's big enough to fit any unwind info we can have

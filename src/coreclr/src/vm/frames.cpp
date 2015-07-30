@@ -1068,7 +1068,7 @@ void InterpreterFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 
 #endif // FEATURE_INTERPRETER
 
-#ifdef _DEBUG
+#if defined(_DEBUG) && !defined (DACCESS_COMPILE)
 
 struct IsProtectedByGCFrameStruct
 {

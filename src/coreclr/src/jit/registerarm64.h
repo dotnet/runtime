@@ -12,7 +12,7 @@
 #define REGALIAS(alias, realname)
 #endif
 
-#define RMASK(x) (1LL << (x))
+#define RMASK(x) (1ULL << (x))
 
 /*
 REGDEF(name, rnum,       mask, xname, wname) */
@@ -57,7 +57,7 @@ REGALIAS(R29, FP)
 REGALIAS(R30, LR)
 
 #define VBASE 32
-#define VMASK(x) (1LL << (VBASE+(x)))
+#define VMASK(x) (1ULL << (VBASE+(x)))
 
 /*
 REGDEF(name,  rnum,       mask,  xname,  wname) */
