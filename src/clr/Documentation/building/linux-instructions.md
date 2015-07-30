@@ -67,8 +67,16 @@ ellismg@linux:~/git/coreclr$ cp bin/Product/Linux.x64.Debug/corerun ~/coreclr-de
 ellismg@linux:~/git/coreclr$ cp bin/Product/Linux.x64.Debug/libcoreclr.so ~/coreclr-demo/runtime
 ```
 
-Build the Framework 
-===================
+Build the Framework Native Components
+======================================
+
+```
+ellismg@linux:~/git/corefx$ src/Native/build.sh
+ellismg@linux:~/git/corefx$ cp bin/Linux.x64.Debug/Native/*.so ~/coreclr-demo/runtime
+```
+
+Build the Framework Managed Components
+======================================
 
 We don't _yet_ have support for building managed code on Linux, so you'll need a Windows machine with clones of both the CoreCLR and CoreFX projects.
 
