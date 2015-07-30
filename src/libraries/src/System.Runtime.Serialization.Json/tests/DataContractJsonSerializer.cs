@@ -89,7 +89,7 @@ public static class DataContractJsonSerializerTests
     [Fact]
     public static void DCJS_DateTimeAsRoot()
     {
-        var offsetMinutes = (int)TimeZoneInfo.Local.BaseUtcOffset.TotalMinutes;
+        var offsetMinutes = (int)TimeZoneInfo.Local.GetUtcOffset(new DateTime(2013, 1, 2)).TotalMinutes;
         var timeZoneString = string.Format("{0:+;-}{1}", offsetMinutes, new TimeSpan(0, offsetMinutes, 0).ToString(@"hhmm"));
         Assert.StrictEqual(SerializeAndDeserialize<DateTime>(new DateTime(2013, 1, 2).AddMinutes(offsetMinutes), string.Format("\"\\/Date(1357084800000{0})\\/\"", timeZoneString)), new DateTime(2013, 1, 2).AddMinutes(offsetMinutes));
         Assert.StrictEqual(SerializeAndDeserialize<DateTime>(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Local).AddMinutes(offsetMinutes), string.Format("\"\\/Date(1357095845006{0})\\/\"", timeZoneString)), new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Local).AddMinutes(offsetMinutes));
@@ -997,7 +997,7 @@ public static class DataContractJsonSerializerTests
         Assert.Equal(jaggedStringArray[1], actualJaggedStringArray[1]);
         Assert.Equal(jaggedStringArray[2], actualJaggedStringArray[2]);
 
-        var offsetMinutes = (int)TimeZoneInfo.Local.BaseUtcOffset.TotalMinutes;
+        var offsetMinutes = (int)TimeZoneInfo.Local.GetUtcOffset(new DateTime(2013, 1, 2)).TotalMinutes;
         var timeZoneString = string.Format("{0:+;-}{1}", offsetMinutes, new TimeSpan(0, offsetMinutes, 0).ToString(@"hhmm"));
         object[] objectArray = new object[] { 1, 1.0F, 1.0, "string", Guid.Parse("2054fd3e-e118-476a-9962-1a882be51860"), new DateTime(2013, 1, 2).AddMinutes(offsetMinutes) };
         var actualObjectArray = SerializeAndDeserialize<object[]>(objectArray, string.Format("[1,1,1,\"string\",\"2054fd3e-e118-476a-9962-1a882be51860\",\"\\/Date(1357084800000{0})\\/\"]", timeZoneString));
