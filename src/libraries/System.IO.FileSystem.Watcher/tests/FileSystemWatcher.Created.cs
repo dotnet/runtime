@@ -99,9 +99,6 @@ public partial class FileSystemWatcher_4000_Tests
                 testFile.WriteByte(0xFF);
                 testFile.Flush();
 
-                // rename a file in the same directory
-                testFile.Move(testFile.Path + "_rename");
-
                 // renaming a directory
                 testDir.Move(testDir.Path + "_rename");
 
