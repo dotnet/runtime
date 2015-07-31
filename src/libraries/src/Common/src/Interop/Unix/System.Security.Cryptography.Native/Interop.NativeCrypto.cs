@@ -13,10 +13,19 @@ internal static partial class Interop
         private delegate int NegativeSizeReadMethod<in THandle>(THandle handle, byte[] buf, int cBuf);
 
         [DllImport(Libraries.CryptoInterop)]
+        internal static extern int BioTell(SafeBioHandle bio);
+
+        [DllImport(Libraries.CryptoInterop)]
+        internal static extern int BioSeek(SafeBioHandle bio, int pos);
+
+        [DllImport(Libraries.CryptoInterop)]
         private static extern int GetX509Thumbprint(SafeX509Handle x509, byte[] buf, int cBuf);
 
         [DllImport(Libraries.CryptoInterop)]
         private static extern int GetX509NameRawBytes(IntPtr x509Name, byte[] buf, int cBuf);
+
+        [DllImport(Libraries.CryptoInterop)]
+        internal static extern SafeX509Handle ReadX509AsDerFromBio(SafeBioHandle bio);
 
         [DllImport(Libraries.CryptoInterop)]
         internal static extern IntPtr GetX509NotBefore(SafeX509Handle x509);

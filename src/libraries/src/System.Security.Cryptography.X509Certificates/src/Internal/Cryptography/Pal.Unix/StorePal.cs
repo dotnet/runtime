@@ -34,7 +34,22 @@ namespace Internal.Cryptography.Pal
 
         public static IStorePal FromFile(string fileName, string password, X509KeyStorageFlags keyStorageFlags)
         {
-            throw new NotImplementedException();
+            using (SafeBioHandle fileBio = Interop.libcrypto.BIO_new_file(fileName, "rb"))
+            {
+                Interop.libcrypto.CheckValidOpenSslHandle(fileBio);
+
+                OpenSslPkcs12Reader pfx;
+
+                if (OpenSslPkcs12Reader.TryRead(fileBio, out pfx))
+                {
+                    using (pfx)
+                    {
+                        return PfxToCollection(pfx, password);
+                    }
+                }
+            }
+
+            return null;
         }
 
         public static IStorePal FromCertificate(ICertificatePal cert)
