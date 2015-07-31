@@ -32,8 +32,8 @@
 //-----------------------------------------------------------------------------
 //void CallDescrWorkerInternal(CallDescrData * pCallDescrData)//
         NESTED_ENTRY CallDescrWorkerInternal,_TEXT,NoHandler
-        push    {r4,r5,r7,lr}
-        mov     r7, sp
+        PROLOG_PUSH         "{r4,r5,r7,lr}"
+        PROLOG_STACK_SAVE   r7
 
         mov     r5,r0 // save pCallDescrData in r5
 
@@ -130,8 +130,8 @@ LOCAL_LABEL(LReturnDone):
         vldm    sp, {d0-d3}
 #endif
 
-        mov     sp, r7
-        pop     {r4,r5,r7,pc}
+        EPILOG_STACK_RESTORE    r7
+        EPILOG_POP              "{r4,r5,r7,pc}"
 
         NESTED_END CallDescrWorkerInternal,_TEXT
 
@@ -173,9 +173,9 @@ LOCAL_LABEL(LReturnDone):
         //
         
         // Spill callee saved registers and return address.
-        push         {r4-r11,lr}
+        PROLOG_PUSH         "{r4-r11,lr}"
         
-        mov r7, sp
+        PROLOG_STACK_SAVE   r7
 
         //
         // This is the code that would have to run to setup this frame
@@ -242,8 +242,8 @@ LOCAL_LABEL(GoodGSCookie):
         // 
         // epilog
         //
-        mov sp, r7
-        pop {r4-r11,lr}
+        EPILOG_STACK_RESTORE    r7
+        EPILOG_POP              "{r4-r11,lr}"
         bx lr
         
     NESTED_END TailCallHelperStub, _TEXT
@@ -310,9 +310,9 @@ LOCAL_LABEL(LNullThis):
 // r12 = UMEntryThunk*
 //
         NESTED_ENTRY UMThunkStub,_TEXT,NoHandler
-        push {r4,r5,r7,r11,lr}
-        push {r0-r3,r12}
-        mov r7, sp
+        PROLOG_PUSH         "{r4,r5,r7,r11,lr}"
+        push                {r0-r3,r12}
+        PROLOG_STACK_SAVE   r7
 
         //GBLA UMThunkStub_HiddenArg // offset of saved UMEntryThunk *
         //GBLA UMThunkStub_StackArgs // offset of original stack args (total size of UMThunkStub frame)
@@ -375,9 +375,9 @@ LOCAL_LABEL(UMThunkStub_PostCall):
         mov                 r4, 0
         str                 r4, [r5, #Thread__m_fPreemptiveGCDisabled]
 
-        mov sp, r7
-        add sp, sp, #(4 * 5)
-        pop {r4,r5,r7,r11,pc}
+        EPILOG_STACK_RESTORE r7
+        free_stack           4 * 5
+        EPILOG_POP           "{r4,r5,r7,r11,pc}"
 
 LOCAL_LABEL(UMThunkStub_DoThreadSetup):
         sub                 sp, #SIZEOF__FloatArgumentRegisters
@@ -424,8 +424,8 @@ LOCAL_LABEL(UMThunkStub_WrongAppDomain):
 
         NESTED_ENTRY UM2MThunk_WrapperHelper, _TEXT, NoHandler
 
-        push {r4-r7,r11,lr}
-        mov r7, sp
+        PROLOG_PUSH         "{r4-r7,r11,lr}"
+        PROLOG_STACK_SAVE   r7
 
         CHECK_STACK_ALIGNMENT
 
@@ -481,8 +481,8 @@ LOCAL_LABEL(UM2MThunk_WrapperHelper_ArgumentsSetup):
         vldm                sp, {d0-d3}
 #endif
 
-        mov sp, r7
-        pop {r4-r7,r11,pc}
+        EPILOG_STACK_RESTORE r7
+        EPILOG_POP          "{r4-r7,r11,pc}"
 
         NESTED_END UM2MThunk_WrapperHelper, _TEXT
 
@@ -543,7 +543,7 @@ ThePreStubPatchLabel:
 
         // r12 = FixupPrecode *
 
-        push     {r0-r1}
+        PROLOG_PUSH     "{r0-r1}"
 
         // Inline computation done by FixupPrecode::GetMethodDesc()
         ldrb    r0, [r12, #3]           // m_PrecodeChunkIndex
@@ -554,7 +554,7 @@ ThePreStubPatchLabel:
         ldr     r0, [r0,#8]
         add     r12,r0,r1,lsl #2
 
-        pop {r0-r1}
+        EPILOG_POP      "{r0-r1}"
         b C_FUNC(ThePreStub)
 
         NESTED_END PrecodeFixupThunk, _TEXT
@@ -676,9 +676,9 @@ LOCAL_LABEL(Done):
 
         NESTED_ENTRY RedirectedHandledJITCaseFor\reason\()_Stub, _TEXT, NoHandler
 
-        push {r7,lr}     // return address
-        alloc_stack 4    // stack slot to save the CONTEXT *
-        mov r7, sp
+        PROLOG_PUSH "{r7,lr}"   // return address
+        alloc_stack 4           // stack slot to save the CONTEXT *
+        PROLOG_STACK_SAVE r7
 
         //REDIRECTSTUB_SP_OFFSET_CONTEXT is defined in asmconstants.h
         //If CONTEXT is not saved at 0 offset from SP it must be changed as well.
@@ -762,7 +762,7 @@ LOCAL_LABEL(checkStack_neg):
     NESTED_END checkStack, _TEXT
 
     NESTED_ENTRY stackProbe, _TEXT, NoHandler
-    push {r5,r6}
+    PROLOG_PUSH "{r5,r6}"
     mov         r6, r12
     bfc         r6, #0, #0xc  // align down (4K)
 LOCAL_LABEL(stackProbe_loop):
@@ -770,7 +770,7 @@ LOCAL_LABEL(stackProbe_loop):
     ldr         r5,[r4]       // try to read ... this should move the guard page
     cmp         r4,r6
     bne         LOCAL_LABEL(stackProbe_loop)
-    pop {r5,r6}
+    EPILOG_POP "{r5,r6}"
     sub r4,sp,r12
     bx lr
     NESTED_END stackProbe, _TEXT
@@ -907,15 +907,15 @@ LOCAL_LABEL(stackProbe_loop):
 //
     NESTED_ENTRY JIT_RareDisableHelper, _TEXT, NoHandler
 
-    push {r0-r1, r11, lr} // save integer return value
-    vpush {d0-d3}         // floating point return value
+    PROLOG_PUSH "{r0-r1, r11, lr}" // save integer return value
+    vpush {d0-d3}                  // floating point return value
 
     CHECK_STACK_ALIGNMENT
 
     bl          C_FUNC(JIT_RareDisableHelperWorker)
 
     vpop {d0-d3}
-    pop {r0-r1, r11, pc}
+    EPILOG_POP "{r0-r1, r11, pc}"
 
     NESTED_END JIT_RareDisableHelper, _TEXT
 
