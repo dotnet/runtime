@@ -39,7 +39,7 @@ OFFSET_OF_FRAME=(4 + SIZEOF__GSCookie)
         // IN: lr: original IP before redirect
         //
 
-        push         {r4,r7,lr}
+        PROLOG_PUSH  "{r4,r7,lr}"
         alloc_stack  OFFSET_OF_FRAME + SIZEOF__FaultingExceptionFrame
 
         // At this point, the stack maybe misaligned if the thread abort was asynchronously
@@ -47,7 +47,7 @@ OFFSET_OF_FRAME=(4 + SIZEOF__GSCookie)
         // align the stack before calling into the VM.
         //
         // Runtime check for 8-byte alignment. 
-        mov r7, sp
+        PROLOG_STACK_SAVE r7
         and r0, r7, #4
         sub sp, sp, r0
 
@@ -99,7 +99,7 @@ OFFSET_OF_FRAME=(4 + SIZEOF__GSCookie)
         // This helper enables us to call into a funclet after applying the non-volatiles
         NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
 
-        push         {r4-r11, lr}
+        PROLOG_PUSH  "{r4-r11, lr}"
         alloc_stack  4
 
         // On entry:
@@ -117,7 +117,7 @@ OFFSET_OF_FRAME=(4 + SIZEOF__GSCookie)
         blx r1
 
         free_stack   4
-        pop          {r4-r11, pc}
+        EPILOG_POP   "{r4-r11, pc}"
 
         NESTED_END CallEHFunclet, _TEXT
 
@@ -125,7 +125,7 @@ OFFSET_OF_FRAME=(4 + SIZEOF__GSCookie)
         // frame pointer for accessing the locals in the parent method.
         NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
 
-        push         {lr}
+        PROLOG_PUSH  "{lr}"
         alloc_stack  4
 
         // On entry:
@@ -141,6 +141,6 @@ OFFSET_OF_FRAME=(4 + SIZEOF__GSCookie)
         blx r2
 
         free_stack   4
-        pop          {pc}
+        EPILOG_POP   "{pc}"
 
         NESTED_END CallEHFilterFunclet, _TEXT

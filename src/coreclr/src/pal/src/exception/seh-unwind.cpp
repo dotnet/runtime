@@ -89,9 +89,9 @@ static void WinContextToUnwindCursor(CONTEXT *winContext, unw_cursor_t *cursor)
     unw_set_reg(cursor, UNW_X86_64_R14, winContext->R14);
     unw_set_reg(cursor, UNW_X86_64_R15, winContext->R15);
 #elif defined(_ARM_)
-    unw_set_reg(cursor, UNW_REG_IP, winContext->Pc);
-    unw_set_reg(cursor, UNW_REG_SP, winContext->Sp);
+    unw_set_reg(cursor, UNW_ARM_R13, winContext->Sp);
     unw_set_reg(cursor, UNW_ARM_R14, winContext->Lr);
+    unw_set_reg(cursor, UNW_ARM_R15, winContext->Pc);
     unw_set_reg(cursor, UNW_ARM_R4, winContext->R4);
     unw_set_reg(cursor, UNW_ARM_R5, winContext->R5);
     unw_set_reg(cursor, UNW_ARM_R6, winContext->R6);
@@ -116,9 +116,9 @@ static void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_X86_64_R14, (unw_word_t *) &winContext->R14);
     unw_get_reg(cursor, UNW_X86_64_R15, (unw_word_t *) &winContext->R15);
 #elif defined(_ARM_)
-    unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Pc);
-    unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Sp);
+    unw_get_reg(cursor, UNW_ARM_R13, (unw_word_t *) &winContext->Sp);
     unw_get_reg(cursor, UNW_ARM_R14, (unw_word_t *) &winContext->Lr);
+    unw_get_reg(cursor, UNW_ARM_R15, (unw_word_t *) &winContext->Pc);
     unw_get_reg(cursor, UNW_ARM_R4, (unw_word_t *) &winContext->R4);
     unw_get_reg(cursor, UNW_ARM_R5, (unw_word_t *) &winContext->R5);
     unw_get_reg(cursor, UNW_ARM_R6, (unw_word_t *) &winContext->R6);
