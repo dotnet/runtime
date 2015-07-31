@@ -10,7 +10,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     public static class LoadFromFileTests
     {
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestIssuer()
         {
             using (X509Certificate2 c = LoadCertificateFromFile())
@@ -18,13 +17,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 string issuer = c.Issuer;
 
                 Assert.Equal(
-                    "CN=Microsoft Code Signing PCA, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+                    TestData.NormalizeX500String("CN=Microsoft Code Signing PCA, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"),
                     issuer);
             }
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestSubject()
         {
             using (X509Certificate2 c = LoadCertificateFromFile())
@@ -32,13 +30,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 string subject = c.Subject;
 
                 Assert.Equal(
-                    "CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+                    TestData.NormalizeX500String("CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"),
                     subject);
             }
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestSerial()
         {
             byte[] expectedSerial = "b00000000100dd9f3bd08b0aaf11b000000033".HexToByteArray();
@@ -51,7 +48,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestThumbprint()
         {
             byte[] expectedThumbPrint = "108e2ba23632620c427c570b6d9db51ac31387fe".HexToByteArray();
@@ -64,7 +60,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestGetFormat()
         {
             using (X509Certificate2 c = LoadCertificateFromFile())
@@ -75,7 +70,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestGetKeyAlgorithm()
         {
             using (X509Certificate2 c = LoadCertificateFromFile())
@@ -86,7 +80,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestGetKeyAlgorithmParameters()
         {
             string expected = "0500";
@@ -101,7 +94,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestGetPublicKey()
         {
             byte[] expectedPublicKey = (

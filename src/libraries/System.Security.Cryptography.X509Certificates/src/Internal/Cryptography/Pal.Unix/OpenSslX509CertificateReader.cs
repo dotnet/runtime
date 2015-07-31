@@ -35,6 +35,72 @@ namespace Internal.Cryptography.Pal
 
             _cert = handle;
         }
+      
+        internal static ICertificatePal FromBio(SafeBioHandle bio, string password)
+        {
+            // Try reading the value as: PEM-X509, DER-X509, DER-PKCS12.
+            int bioPosition = Interop.NativeCrypto.BioTell(bio);
+
+            Debug.Assert(bioPosition >= 0);
+
+            SafeX509Handle cert = Interop.libcrypto.PEM_read_bio_X509_AUX(bio, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+
+            if (cert != null && !cert.IsInvalid)
+            {
+                return new OpenSslX509CertificateReader(cert);
+            }
+
+            // Rewind, try again.
+            Interop.NativeCrypto.BioSeek(bio, bioPosition);
+            cert = Interop.NativeCrypto.ReadX509AsDerFromBio(bio);
+
+            if (cert != null && !cert.IsInvalid)
+            {
+                return new OpenSslX509CertificateReader(cert);
+            }
+
+            // Rewind, try again.
+            Interop.NativeCrypto.BioSeek(bio, bioPosition);
+
+            OpenSslPkcs12Reader pfx;
+
+            if (OpenSslPkcs12Reader.TryRead(bio, out pfx))
+            {
+                using (pfx)
+                {
+                    pfx.Decrypt(password);
+
+                    ICertificatePal first = null;
+
+                    foreach (OpenSslX509CertificateReader certPal in pfx.ReadCertificates())
+                    {
+                        // When requesting an X509Certificate2 from a PFX only the first entry is
+                        // returned.  Other entries should be disposed.
+                        if (first == null)
+                        {
+                            first = certPal;
+                        }
+                        else
+                        {
+                            certPal.Dispose();
+                        }
+                    }
+
+                    return first;
+                }
+            }
+
+            // Since we aren't going to finish reading, leaving the buffer where it was when we got
+            // it seems better than leaving it in some arbitrary other position.
+            // 
+            // But, before seeking back to start, save the Exception representing the last reported
+            // OpenSSL error in case the last BioSeek would change it.
+            Exception openSslException = Interop.libcrypto.CreateOpenSslCryptographicException();
+
+            Interop.NativeCrypto.BioSeek(bio, bioPosition);
+
+            throw openSslException;
+        }
 
         public bool HasPrivateKey
         {

@@ -80,7 +80,13 @@ namespace Internal.Cryptography.Pal
 
         public static ICertificatePal FromFile(string fileName, string password, X509KeyStorageFlags keyStorageFlags)
         {
-            throw new NotImplementedException();
+            // If we can't open the file, fail right away.
+            using (SafeBioHandle fileBio = Interop.libcrypto.BIO_new_file(fileName, "rb"))
+            {
+                Interop.libcrypto.CheckValidOpenSslHandle(fileBio);
+
+                return OpenSslX509CertificateReader.FromBio(fileBio, password);
+            }
         }
     }
 }
