@@ -2817,6 +2817,14 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 		MonoInst *icall_args [16];
 		MonoInst *ins;
 
+		if (sig->generic_param_count) {
+			/*
+			 * Generic virtual call, pass the concrete method as the imt argument.
+			 */
+			imt_arg = emit_get_rgctx_method (cfg, context_used,
+											 method, MONO_RGCTX_INFO_METHOD);
+		}
+
 		// FIXME: Optimize this
 
 		int slot = mono_method_get_vtable_index (method);
