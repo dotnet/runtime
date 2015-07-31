@@ -22,6 +22,7 @@ namespace System.Diagnostics.ProcessTests
 
             if (ThreadState.Terminated != thread.ThreadState)
             {
+                Assert.True(thread.Id >= 0);
                 Assert.Equal(_process.BasePriority, thread.BasePriority);
                 Assert.True(thread.CurrentPriority >= 0);
                 Assert.True(thread.PrivilegedProcessorTime.TotalSeconds >= 0);
