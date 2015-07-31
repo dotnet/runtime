@@ -133,6 +133,10 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore_obsolete\Interop.LocalAlloc.cs">
       <Link>Common\Interop\Interop.LocalAlloc.cs</Link>
     </Compile>
+
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs">
+      <Link>Common\Microsoft\Win32\SafeHandlres\SafeLocalAllocHandle.cs</Link>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
