@@ -41,5 +41,12 @@ extern "C"
      * Returns 0 for success, -1 for failure. Sets errno on failure.
      */
     int32_t Stat(const char* path, FileStats* output);
+
+    /**
+    * Get file stats from a full path. Implemented as shim to lstat(2).
+    *
+    * Returns 0 for success, -1 for failure. Sets errno on failure.
+    */
+    int32_t LStat(const char* path, FileStats* output);
 }
 
