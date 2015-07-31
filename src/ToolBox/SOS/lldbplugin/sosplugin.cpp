@@ -14,5 +14,7 @@ lldb::PluginInitialize (lldb::SBDebugger debugger)
 {
     corerunCommandInitialize(debugger);
     sosCommandInitialize(debugger);
+    setclrpathCommandInitialize(debugger);
+    setsostidCommandInitialize(debugger);
     return true;
 }

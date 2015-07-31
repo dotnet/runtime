@@ -11,7 +11,6 @@
 class sosCommand : public lldb::SBCommandPluginInterface
 {
     void *m_sosHandle;
-    char m_coreclrDirectory[MAX_PATH];
 
 public:
     sosCommand()
@@ -24,7 +23,7 @@ public:
                char** arguments,
                lldb::SBCommandReturnObject &result)
     {
-        DebugClient* client = new DebugClient(debugger, result, m_coreclrDirectory);
+        DebugClient* client = new DebugClient(debugger, result);
         if (arguments)
         {
             LoadSos(client);
@@ -65,16 +64,24 @@ public:
     {
         if (m_sosHandle == NULL)
         {
-            const char *coreclrModule = MAKEDLLNAME_A("coreclr");
-            const char *directory = client->GetModuleDirectory(coreclrModule);
-            if (directory == NULL)
+            if (g_coreclrDirectory == NULL)
             {
-                client->Output(DEBUG_OUTPUT_WARNING, "The %s module is not loaded yet in the target process\n", coreclrModule);
+                const char *coreclrModule = MAKEDLLNAME_A("coreclr");
+                const char *directory = client->GetModuleDirectory(coreclrModule);
+                if (directory != NULL)
+                {
+                    std::string path(directory);
+                    path.append("/");
+                    g_coreclrDirectory = strdup(path.c_str());
+                }
+                else
+                {
+                    client->Output(DEBUG_OUTPUT_WARNING, "The %s module is not loaded yet in the target process\n", coreclrModule);
+                }
             }
-            else 
+
+            if (g_coreclrDirectory != NULL)
             {
-                strcpy(m_coreclrDirectory, directory);
-                strcat(m_coreclrDirectory, "/");
 
                 // Load the DAC module first explicitly because SOS and DBI
                 // have implicit references to the DAC's PAL.
@@ -88,7 +95,7 @@ public:
     void *
     LoadModule(DebugClient *client, const char *moduleName)
     {
-        std::string modulePath(m_coreclrDirectory);
+        std::string modulePath(g_coreclrDirectory);
         modulePath.append(moduleName);
 
         void *moduleHandle = dlopen(modulePath.c_str(), RTLD_NOW);
