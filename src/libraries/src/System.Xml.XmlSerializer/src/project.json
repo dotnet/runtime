@@ -1,34 +1,34 @@
 {
-    "dependencies": {
-        "System.Collections": "4.0.10-beta-*",
-        "System.Diagnostics.Debug": "4.0.10-beta-*",
-        "System.Diagnostics.Tools": "4.0.0-beta-*",
-        "System.Globalization": "4.0.10-beta-*",
-        "System.IO": "4.0.10-beta-*",
-        "System.Linq": "4.0.0-beta-*",
-        "System.Reflection": "4.0.10-beta-*",
-        "System.Reflection.Emit": "4.0.0-beta-*",
-        "System.Reflection.Emit.ILGeneration": "4.0.0-beta-*",
-        "System.Reflection.Extensions": "4.0.0-beta-*",
-        "System.Reflection.Primitives": "4.0.0-beta-*",
-        "System.Reflection.TypeExtensions": "4.0.0-beta-*",
-        "System.Resources.ResourceManager": "4.0.0-beta-*",
-        "System.Runtime": "4.0.20-beta-*",
-        "System.Runtime.Extensions": "4.0.10-beta-*",
-        "System.Text.Encoding": "4.0.10-beta-*",
-        "System.Text.RegularExpressions": "4.0.10-beta-*",
-        "System.Threading": "4.0.10-beta-*",
-        "System.Threading.Tasks": "4.0.10-beta-*",
-        "System.Threading.Thread": "4.0.0-beta-*",
-        "System.Xml.ReaderWriter": "4.0.10-beta-*",
-        "System.Xml.XmlDocument": "4.0.0-beta-*"
-    },
-    "frameworks": {
-        "dnxcore50": { },
-        "netcore50": {
-            "dependencies": {
-                "System.Runtime.WindowsRuntime": "4.0.10-beta-*"
-            }
-        }
+  "dependencies": {
+    "System.Collections": "4.0.10",
+    "System.Diagnostics.Debug": "4.0.10",
+    "System.Diagnostics.Tools": "4.0.0",
+    "System.Globalization": "4.0.10",
+    "System.IO": "4.0.10",
+    "System.Linq": "4.0.0",
+    "System.Reflection": "4.0.10",
+    "System.Reflection.Emit": "4.0.0",
+    "System.Reflection.Emit.ILGeneration": "4.0.0",
+    "System.Reflection.Extensions": "4.0.0",
+    "System.Reflection.Primitives": "4.0.0",
+    "System.Reflection.TypeExtensions": "4.0.0",
+    "System.Resources.ResourceManager": "4.0.0",
+    "System.Runtime": "4.0.20",
+    "System.Runtime.Extensions": "4.0.10",
+    "System.Text.Encoding": "4.0.10",
+    "System.Text.RegularExpressions": "4.0.10",
+    "System.Threading": "4.0.10",
+    "System.Threading.Tasks": "4.0.10",
+    "System.Threading.Thread": "4.0.0-beta-*",
+    "System.Xml.ReaderWriter": "4.0.10",
+    "System.Xml.XmlDocument": "4.0.0"
+  },
+  "frameworks": {
+    "dnxcore50": {},
+    "netcore50": {
+      "dependencies": {
+        "System.Runtime.WindowsRuntime": "4.0.10"
+      }
     }
+  }
 }

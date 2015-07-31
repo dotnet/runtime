@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "System.Runtime.InteropServices": "4.0.20-beta-23008",
+    "System.Runtime.InteropServices": "4.0.20",
     "xunit": "2.0.0-beta5-build2785",
     "xunit.abstractions.netcore": "1.0.0-prerelease",
     "xunit.assert": "2.0.0-beta5-build2785",

@@ -1,14 +1,14 @@
 {
   "dependencies": {
-    "System.Collections": "4.0.10-beta-*",
-    "System.Globalization": "4.0.10-beta-*",
-    "System.Reflection": "4.0.10-beta-*",
-    "System.Resources.ResourceManager": "4.0.0-beta-*",
-    "System.Runtime": "4.0.20-beta-*",
-    "System.Threading": "4.0.10-beta-*",
-    "System.Diagnostics.Tools": "4.0.0-beta-*",
-    "System.Diagnostics.Debug": "4.0.10-beta-*",
-    "System.Diagnostics.Contracts": "4.0.0-beta-*"
+    "System.Collections": "4.0.10",
+    "System.Globalization": "4.0.10",
+    "System.Reflection": "4.0.10",
+    "System.Resources.ResourceManager": "4.0.0",
+    "System.Runtime": "4.0.20",
+    "System.Threading": "4.0.10",
+    "System.Diagnostics.Tools": "4.0.0",
+    "System.Diagnostics.Debug": "4.0.10",
+    "System.Diagnostics.Contracts": "4.0.0"
   },
   "frameworks": {
     "dnxcore50": {}

@@ -11,9 +11,9 @@
           "ref/any/System.Collections.dll": {}
         }
       },
-      "System.Diagnostics.Debug/4.0.10-beta-23024": {
+      "System.Diagnostics.Debug/4.0.10": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-23024"
+          "System.Runtime": "4.0.0"
         },
         "compile": {
           "ref/dotnet/System.Diagnostics.Debug.dll": {}
@@ -47,7 +47,7 @@
           "lib/aspnetcore50/System.Linq.dll": {}
         }
       },
-      "System.Private.Uri/4.0.0-beta-23024": {
+      "System.Private.Uri/4.0.0": {
         "runtime": {
           "lib/DNXCore50/System.Private.Uri.dll": {}
         }
@@ -65,13 +65,13 @@
           "lib/aspnetcore50/System.Reflection.dll": {}
         }
       },
-      "System.Reflection.Emit/4.0.0-beta-23024": {
+      "System.Reflection.Emit/4.0.0": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-23024",
-          "System.Reflection": "4.0.0-beta-23024",
-          "System.Reflection.Emit.ILGeneration": "4.0.0-beta-23024",
-          "System.IO": "4.0.0-beta-23024",
-          "System.Reflection.Primitives": "4.0.0-beta-23024"
+          "System.Runtime": "4.0.0",
+          "System.Reflection": "4.0.0",
+          "System.Reflection.Emit.ILGeneration": "4.0.0",
+          "System.IO": "4.0.0",
+          "System.Reflection.Primitives": "4.0.0"
         },
         "compile": {
           "ref/dotnet/System.Reflection.Emit.dll": {}
@@ -80,11 +80,11 @@
           "lib/DNXCore50/System.Reflection.Emit.dll": {}
         }
       },
-      "System.Reflection.Emit.ILGeneration/4.0.0-beta-23024": {
+      "System.Reflection.Emit.ILGeneration/4.0.0": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-23024",
-          "System.Reflection": "4.0.0-beta-23024",
-          "System.Reflection.Primitives": "4.0.0-beta-23024"
+          "System.Runtime": "4.0.0",
+          "System.Reflection": "4.0.0",
+          "System.Reflection.Primitives": "4.0.0"
         },
         "compile": {
           "ref/dotnet/System.Reflection.Emit.ILGeneration.dll": {}
@@ -93,12 +93,12 @@
           "lib/DNXCore50/System.Reflection.Emit.ILGeneration.dll": {}
         }
       },
-      "System.Reflection.Emit.Lightweight/4.0.0-beta-23024": {
+      "System.Reflection.Emit.Lightweight/4.0.0": {
         "dependencies": {
-          "System.Reflection": "4.0.0-beta-23024",
-          "System.Reflection.Primitives": "4.0.0-beta-23024",
-          "System.Runtime": "4.0.0-beta-23024",
-          "System.Reflection.Emit.ILGeneration": "4.0.0-beta-23024"
+          "System.Reflection": "4.0.0",
+          "System.Reflection.Primitives": "4.0.0",
+          "System.Runtime": "4.0.0",
+          "System.Reflection.Emit.ILGeneration": "4.0.0"
         },
         "compile": {
           "ref/dotnet/System.Reflection.Emit.Lightweight.dll": {}
@@ -107,9 +107,9 @@
           "lib/DNXCore50/System.Reflection.Emit.Lightweight.dll": {}
         }
       },
-      "System.Reflection.Primitives/4.0.0-beta-23024": {
+      "System.Reflection.Primitives/4.0.0": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-23024"
+          "System.Runtime": "4.0.0"
         },
         "compile": {
           "ref/dotnet/System.Reflection.Primitives.dll": {}
@@ -118,10 +118,10 @@
           "lib/DNXCore50/System.Reflection.Primitives.dll": {}
         }
       },
-      "System.Reflection.TypeExtensions/4.0.0-beta-23024": {
+      "System.Reflection.TypeExtensions/4.0.0": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-23024",
-          "System.Reflection": "4.0.0-beta-23024"
+          "System.Runtime": "4.0.0",
+          "System.Reflection": "4.0.0"
         },
         "compile": {
           "ref/dotnet/System.Reflection.TypeExtensions.dll": {}
@@ -130,9 +130,9 @@
           "lib/DNXCore50/System.Reflection.TypeExtensions.dll": {}
         }
       },
-      "System.Runtime/4.0.20-beta-23024": {
+      "System.Runtime/4.0.20": {
         "dependencies": {
-          "System.Private.Uri": "4.0.0-beta-23024"
+          "System.Private.Uri": "4.0.0"
         },
         "compile": {
           "ref/dotnet/System.Runtime.dll": {}
@@ -141,9 +141,9 @@
           "lib/DNXCore50/System.Runtime.dll": {}
         }
       },
-      "System.Runtime.Extensions/4.0.10-beta-23024": {
+      "System.Runtime.Extensions/4.0.10": {
         "dependencies": {
-          "System.Runtime": "4.0.20-beta-23024"
+          "System.Runtime": "4.0.20"
         },
         "compile": {
           "ref/dotnet/System.Runtime.Extensions.dll": {}
@@ -263,7 +263,7 @@
           "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.core.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00056": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00066": {
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10-beta-22703",
           "System.IO": "4.0.10-beta-22703",
@@ -304,16 +304,20 @@
         "ref/win8/_._"
       ]
     },
-    "System.Diagnostics.Debug/4.0.10-beta-23024": {
+    "System.Diagnostics.Debug/4.0.10": {
       "serviceable": true,
-      "sha512": "dnfynhlmsMaRB/YvN5JifCdYYnRf/mTjFAAM1awp3wrjsgOSpAzOE4sxYX0hdY1FyAFTDcUnusQ+H3AMcF3Stw==",
+      "sha512": "pi2KthuvI2LWV2c2V+fwReDsDiKpNl040h6DcwFOb59SafsPT/V1fCy0z66OKwysurJkBMmp5j5CBe3Um+ub0g==",
       "files": [
-        "System.Diagnostics.Debug.4.0.10-beta-23024.nupkg",
-        "System.Diagnostics.Debug.4.0.10-beta-23024.nupkg.sha512",
+        "System.Diagnostics.Debug.4.0.10.nupkg",
+        "System.Diagnostics.Debug.4.0.10.nupkg.sha512",
         "System.Diagnostics.Debug.nuspec",
         "lib/DNXCore50/System.Diagnostics.Debug.dll",
+        "lib/MonoAndroid10/_._",
+        "lib/MonoTouch10/_._",
         "lib/net46/_._",
         "lib/netcore50/System.Diagnostics.Debug.dll",
+        "lib/xamarinios10/_._",
+        "lib/xamarinmac20/_._",
         "ref/dotnet/System.Diagnostics.Debug.dll",
         "ref/dotnet/System.Diagnostics.Debug.xml",
         "ref/dotnet/de/System.Diagnostics.Debug.xml",
@@ -325,7 +329,11 @@
         "ref/dotnet/ru/System.Diagnostics.Debug.xml",
         "ref/dotnet/zh-hans/System.Diagnostics.Debug.xml",
         "ref/dotnet/zh-hant/System.Diagnostics.Debug.xml",
+        "ref/MonoAndroid10/_._",
+        "ref/MonoTouch10/_._",
         "ref/net46/_._",
+        "ref/xamarinios10/_._",
+        "ref/xamarinmac20/_._",
         "runtimes/win8-aot/lib/netcore50/System.Diagnostics.Debug.dll"
       ]
     },
@@ -355,12 +363,12 @@
         "lib/portable-wpa81+wp80+win80+net45+aspnetcore50/System.Linq.dll"
       ]
     },
-    "System.Private.Uri/4.0.0-beta-23024": {
+    "System.Private.Uri/4.0.0": {
       "serviceable": true,
-      "sha512": "SJbplxSAYqzECE4GzsXfkES5vug34KI34ERs2ySNAfuVcEbtto0YieQQqLQERzYINfbFVbOPbV4yN3VTzjW0DQ==",
+      "sha512": "CtuxaCKcRIvPcsqquVl3mPp79EDZPMr2UogfiFCxCs+t2z1VjbpQsKNs1GHZ8VQetqbk1mr0V1yAfMe6y8CHDA==",
       "files": [
-        "System.Private.Uri.4.0.0-beta-23024.nupkg",
-        "System.Private.Uri.4.0.0-beta-23024.nupkg.sha512",
+        "System.Private.Uri.4.0.0.nupkg",
+        "System.Private.Uri.4.0.0.nupkg.sha512",
         "System.Private.Uri.nuspec",
         "lib/DNXCore50/System.Private.Uri.dll",
         "lib/netcore50/System.Private.Uri.dll",
@@ -382,15 +390,17 @@
         "lib/portable-wpa81+wp80+win80+net45+aspnetcore50/System.Reflection.dll"
       ]
     },
-    "System.Reflection.Emit/4.0.0-beta-23024": {
-      "sha512": "VNrqiyCvlNoPLQIak1J1+PL6f7tN7Esn6HTmoWvLwSjyztV+CikHfAYv+jQRYEOPILfEgsPFS73sj4H49b/1qw==",
+    "System.Reflection.Emit/4.0.0": {
+      "sha512": "CqnQz5LbNbiSxN10cv3Ehnw3j1UZOBCxnE0OO0q/keGQ5ENjyFM6rIG4gm/i0dX6EjdpYkAgKcI/mhZZCaBq4A==",
       "files": [
-        "System.Reflection.Emit.4.0.0-beta-23024.nupkg",
-        "System.Reflection.Emit.4.0.0-beta-23024.nupkg.sha512",
+        "System.Reflection.Emit.4.0.0.nupkg",
+        "System.Reflection.Emit.4.0.0.nupkg.sha512",
         "System.Reflection.Emit.nuspec",
         "lib/DNXCore50/System.Reflection.Emit.dll",
+        "lib/MonoAndroid10/_._",
         "lib/net45/_._",
         "lib/netcore50/System.Reflection.Emit.dll",
+        "lib/xamarinmac20/_._",
         "ref/dotnet/System.Reflection.Emit.dll",
         "ref/dotnet/System.Reflection.Emit.xml",
         "ref/dotnet/de/System.Reflection.Emit.xml",
@@ -402,18 +412,21 @@
         "ref/dotnet/ru/System.Reflection.Emit.xml",
         "ref/dotnet/zh-hans/System.Reflection.Emit.xml",
         "ref/dotnet/zh-hant/System.Reflection.Emit.xml",
-        "ref/net45/_._"
+        "ref/MonoAndroid10/_._",
+        "ref/net45/_._",
+        "ref/xamarinmac20/_._"
       ]
     },
-    "System.Reflection.Emit.ILGeneration/4.0.0-beta-23024": {
-      "sha512": "p6QfhflZWlM7VEQMMaBZSJ1ntASpnnD/usgOfUO9EtBcXfYsav0BoIB++p1ih41Zt2iPG5DUv9aYnP+njQb/SQ==",
+    "System.Reflection.Emit.ILGeneration/4.0.0": {
+      "sha512": "02okuusJ0GZiHZSD2IOLIN41GIn6qOr7i5+86C98BPuhlwWqVABwebiGNvhDiXP1f9a6CxEigC7foQD42klcDg==",
       "files": [
-        "System.Reflection.Emit.ILGeneration.4.0.0-beta-23024.nupkg",
-        "System.Reflection.Emit.ILGeneration.4.0.0-beta-23024.nupkg.sha512",
+        "System.Reflection.Emit.ILGeneration.4.0.0.nupkg",
+        "System.Reflection.Emit.ILGeneration.4.0.0.nupkg.sha512",
         "System.Reflection.Emit.ILGeneration.nuspec",
         "lib/DNXCore50/System.Reflection.Emit.ILGeneration.dll",
         "lib/net45/_._",
         "lib/netcore50/System.Reflection.Emit.ILGeneration.dll",
+        "lib/wp80/_._",
         "ref/dotnet/System.Reflection.Emit.ILGeneration.dll",
         "ref/dotnet/System.Reflection.Emit.ILGeneration.xml",
         "ref/dotnet/de/System.Reflection.Emit.ILGeneration.xml",
@@ -425,18 +438,20 @@
         "ref/dotnet/ru/System.Reflection.Emit.ILGeneration.xml",
         "ref/dotnet/zh-hans/System.Reflection.Emit.ILGeneration.xml",
         "ref/dotnet/zh-hant/System.Reflection.Emit.ILGeneration.xml",
-        "ref/net45/_._"
+        "ref/net45/_._",
+        "ref/wp80/_._"
       ]
     },
-    "System.Reflection.Emit.Lightweight/4.0.0-beta-23024": {
-      "sha512": "62RQjYRXZ0TxpJuQfQvQDswngVg0Tf6qS2Njd2EU5hlg1vaXZYQOf0U8Xl1MM3pBUIebFh1H0JqEUdAgZAm3/Q==",
+    "System.Reflection.Emit.Lightweight/4.0.0": {
+      "sha512": "DJZhHiOdkN08xJgsJfDjkuOreLLmMcU8qkEEqEHqyhkPUZMMQs0lE8R+6+68BAFWgcdzxtNu0YmIOtEug8j00w==",
       "files": [
-        "System.Reflection.Emit.Lightweight.4.0.0-beta-23024.nupkg",
-        "System.Reflection.Emit.Lightweight.4.0.0-beta-23024.nupkg.sha512",
+        "System.Reflection.Emit.Lightweight.4.0.0.nupkg",
+        "System.Reflection.Emit.Lightweight.4.0.0.nupkg.sha512",
         "System.Reflection.Emit.Lightweight.nuspec",
         "lib/DNXCore50/System.Reflection.Emit.Lightweight.dll",
         "lib/net45/_._",
         "lib/netcore50/System.Reflection.Emit.Lightweight.dll",
+        "lib/wp80/_._",
         "ref/dotnet/System.Reflection.Emit.Lightweight.dll",
         "ref/dotnet/System.Reflection.Emit.Lightweight.xml",
         "ref/dotnet/de/System.Reflection.Emit.Lightweight.xml",
@@ -448,20 +463,23 @@
         "ref/dotnet/ru/System.Reflection.Emit.Lightweight.xml",
         "ref/dotnet/zh-hans/System.Reflection.Emit.Lightweight.xml",
         "ref/dotnet/zh-hant/System.Reflection.Emit.Lightweight.xml",
-        "ref/net45/_._"
+        "ref/net45/_._",
+        "ref/wp80/_._"
       ]
     },
-    "System.Reflection.Primitives/4.0.0-beta-23024": {
+    "System.Reflection.Primitives/4.0.0": {
       "serviceable": true,
-      "sha512": "y2g5Rwm68Nnt3Ag+pAKLRwUifIKhm1gMy36bnU5rFrZhxg21hls93QH75HDZqXjK80leEr0BC1ajZZ+IcZvKCw==",
+      "sha512": "n9S0XpKv2ruc17FSnaiX6nV47VfHTZ1wLjKZlAirUZCvDQCH71mVp+Ohabn0xXLh5pK2PKp45HCxkqu5Fxn/lA==",
       "files": [
-        "System.Reflection.Primitives.4.0.0-beta-23024.nupkg",
-        "System.Reflection.Primitives.4.0.0-beta-23024.nupkg.sha512",
+        "System.Reflection.Primitives.4.0.0.nupkg",
+        "System.Reflection.Primitives.4.0.0.nupkg.sha512",
         "System.Reflection.Primitives.nuspec",
         "lib/DNXCore50/System.Reflection.Primitives.dll",
         "lib/net45/_._",
         "lib/netcore50/System.Reflection.Primitives.dll",
         "lib/win8/_._",
+        "lib/wp80/_._",
+        "lib/wpa81/_._",
         "ref/dotnet/System.Reflection.Primitives.dll",
         "ref/dotnet/System.Reflection.Primitives.xml",
         "ref/dotnet/de/System.Reflection.Primitives.xml",
@@ -477,19 +495,25 @@
         "ref/netcore50/System.Reflection.Primitives.dll",
         "ref/netcore50/System.Reflection.Primitives.xml",
         "ref/win8/_._",
+        "ref/wp80/_._",
+        "ref/wpa81/_._",
         "runtimes/win8-aot/lib/netcore50/System.Reflection.Primitives.dll"
       ]
     },
-    "System.Reflection.TypeExtensions/4.0.0-beta-23024": {
+    "System.Reflection.TypeExtensions/4.0.0": {
       "serviceable": true,
-      "sha512": "UTsspl61Om2E/x08euAQIrf5d6ebbx4YB8iLvtUrgYBV/iia81X6yMiRobUfYSNKu7WVAxwVrzxyPM8gDaA0rA==",
+      "sha512": "YRM/msNAM86hdxPyXcuZSzmTO0RQFh7YMEPBLTY8cqXvFPYIx2x99bOyPkuU81wRYQem1c1HTkImQ2DjbOBfew==",
       "files": [
-        "System.Reflection.TypeExtensions.4.0.0-beta-23024.nupkg",
-        "System.Reflection.TypeExtensions.4.0.0-beta-23024.nupkg.sha512",
+        "System.Reflection.TypeExtensions.4.0.0.nupkg",
+        "System.Reflection.TypeExtensions.4.0.0.nupkg.sha512",
         "System.Reflection.TypeExtensions.nuspec",
         "lib/DNXCore50/System.Reflection.TypeExtensions.dll",
+        "lib/MonoAndroid10/_._",
+        "lib/MonoTouch10/_._",
         "lib/net46/System.Reflection.TypeExtensions.dll",
         "lib/netcore50/System.Reflection.TypeExtensions.dll",
+        "lib/xamarinios10/_._",
+        "lib/xamarinmac20/_._",
         "ref/dotnet/System.Reflection.TypeExtensions.dll",
         "ref/dotnet/System.Reflection.TypeExtensions.xml",
         "ref/dotnet/de/System.Reflection.TypeExtensions.xml",
@@ -501,20 +525,28 @@
         "ref/dotnet/ru/System.Reflection.TypeExtensions.xml",
         "ref/dotnet/zh-hans/System.Reflection.TypeExtensions.xml",
         "ref/dotnet/zh-hant/System.Reflection.TypeExtensions.xml",
+        "ref/MonoAndroid10/_._",
+        "ref/MonoTouch10/_._",
         "ref/net46/System.Reflection.TypeExtensions.dll",
+        "ref/xamarinios10/_._",
+        "ref/xamarinmac20/_._",
         "runtimes/win8-aot/lib/netcore50/System.Reflection.TypeExtensions.dll"
       ]
     },
-    "System.Runtime/4.0.20-beta-23024": {
+    "System.Runtime/4.0.20": {
       "serviceable": true,
-      "sha512": "vacwPrf5OZcHwSL58Vdoq/vqqMrz1xbHXdZiSA5cHBCIVmo5bD9Gw+Qu4NgGekCxV3fgKs9Qq97oibezsZZ+8w==",
+      "sha512": "X7N/9Bz7jVPorqdVFO86ns1sX6MlQM+WTxELtx+Z4VG45x9+LKmWH0GRqjgKprUnVuwmfB9EJ9DQng14Z7/zwg==",
       "files": [
-        "System.Runtime.4.0.20-beta-23024.nupkg",
-        "System.Runtime.4.0.20-beta-23024.nupkg.sha512",
+        "System.Runtime.4.0.20.nupkg",
+        "System.Runtime.4.0.20.nupkg.sha512",
         "System.Runtime.nuspec",
         "lib/DNXCore50/System.Runtime.dll",
+        "lib/MonoAndroid10/_._",
+        "lib/MonoTouch10/_._",
         "lib/net46/_._",
         "lib/netcore50/System.Runtime.dll",
+        "lib/xamarinios10/_._",
+        "lib/xamarinmac20/_._",
         "ref/dotnet/System.Runtime.dll",
         "ref/dotnet/System.Runtime.xml",
         "ref/dotnet/de/System.Runtime.xml",
@@ -526,20 +558,28 @@
         "ref/dotnet/ru/System.Runtime.xml",
         "ref/dotnet/zh-hans/System.Runtime.xml",
         "ref/dotnet/zh-hant/System.Runtime.xml",
+        "ref/MonoAndroid10/_._",
+        "ref/MonoTouch10/_._",
         "ref/net46/_._",
+        "ref/xamarinios10/_._",
+        "ref/xamarinmac20/_._",
         "runtimes/win8-aot/lib/netcore50/System.Runtime.dll"
       ]
     },
-    "System.Runtime.Extensions/4.0.10-beta-23024": {
+    "System.Runtime.Extensions/4.0.10": {
       "serviceable": true,
-      "sha512": "Cj6RMtpMINFjTBHeClYAWk3SvDTdmo6c3rHIGwzn0R0P5B7wt0YclQibiZnjRzN/00XQ44067E6ZvRU/Z6AWgA==",
+      "sha512": "5dsEwf3Iml7d5OZeT20iyOjT+r+okWpN7xI2v+R4cgd3WSj4DeRPTvPFjDpacbVW4skCAZ8B9hxXJYgkCFKJ1A==",
       "files": [
-        "System.Runtime.Extensions.4.0.10-beta-23024.nupkg",
-        "System.Runtime.Extensions.4.0.10-beta-23024.nupkg.sha512",
+        "System.Runtime.Extensions.4.0.10.nupkg",
+        "System.Runtime.Extensions.4.0.10.nupkg.sha512",
         "System.Runtime.Extensions.nuspec",
         "lib/DNXCore50/System.Runtime.Extensions.dll",
+        "lib/MonoAndroid10/_._",
+        "lib/MonoTouch10/_._",
         "lib/net46/_._",
         "lib/netcore50/System.Runtime.Extensions.dll",
+        "lib/xamarinios10/_._",
+        "lib/xamarinmac20/_._",
         "ref/dotnet/System.Runtime.Extensions.dll",
         "ref/dotnet/System.Runtime.Extensions.xml",
         "ref/dotnet/de/System.Runtime.Extensions.xml",
@@ -551,7 +591,11 @@
         "ref/dotnet/ru/System.Runtime.Extensions.xml",
         "ref/dotnet/zh-hans/System.Runtime.Extensions.xml",
         "ref/dotnet/zh-hant/System.Runtime.Extensions.xml",
+        "ref/MonoAndroid10/_._",
+        "ref/MonoTouch10/_._",
         "ref/net46/_._",
+        "ref/xamarinios10/_._",
+        "ref/xamarinmac20/_._",
         "runtimes/win8-aot/lib/netcore50/System.Runtime.Extensions.dll"
       ]
     },
@@ -710,11 +754,12 @@
         "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.runner.utility.xml"
       ]
     },
-    "xunit.netcore.extensions/1.0.0-prerelease-00056": {
-      "sha512": "UPxtAjxht7LkVoI6njl23cSXiNtPjM0zT9ouhtS0Ju3bXDSUfWjT3i4vRx8f7xrV24AOdbLfxVETP8DapKHClw==",
+    "xunit.netcore.extensions/1.0.0-prerelease-00066": {
+      "serviceable": true,
+      "sha512": "2PaXokTLqG10/ffcuCqWMjpamfop/Kx2AQXUDgN//O9NSiDFKK5sjVSRhyVwpVpCh2Vr5vuj9COtBLH8XKlnMw==",
       "files": [
-        "xunit.netcore.extensions.1.0.0-prerelease-00056.nupkg",
-        "xunit.netcore.extensions.1.0.0-prerelease-00056.nupkg.sha512",
+        "xunit.netcore.extensions.1.0.0-prerelease-00066.nupkg",
+        "xunit.netcore.extensions.1.0.0-prerelease-00066.nupkg.sha512",
         "xunit.netcore.extensions.nuspec",
         "lib/portable-wpa80+win80+net45+aspnetcore50/Xunit.NetCore.Extensions.dll"
       ]
@@ -722,12 +767,12 @@
   },
   "projectFileDependencyGroups": {
     "": [
-      "System.Diagnostics.Debug >= 4.0.10-beta-*",
-      "System.Reflection.Emit >= 4.0.0-beta-*",
-      "System.Runtime >= 4.0.20-beta-*",
-      "System.Runtime.Extensions >= 4.0.10-beta-*",
-      "System.Reflection.Emit.Lightweight >= 4.0.0-beta-*",
-      "System.Reflection.TypeExtensions >= 4.0.0-beta-*",
+      "System.Diagnostics.Debug >= 4.0.10",
+      "System.Reflection.Emit >= 4.0.0",
+      "System.Runtime >= 4.0.20",
+      "System.Runtime.Extensions >= 4.0.10",
+      "System.Reflection.Emit.Lightweight >= 4.0.0",
+      "System.Reflection.TypeExtensions >= 4.0.0",
       "xunit >= 2.0.0-beta5-build2785",
       "xunit.abstractions.netcore >= 1.0.0-prerelease",
       "xunit.netcore.extensions >= 1.0.0-prerelease-*",
