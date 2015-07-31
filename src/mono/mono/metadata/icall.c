@@ -1924,28 +1924,30 @@ typedef enum {
 } PInfo;
 
 ICALL_EXPORT void
-ves_icall_get_property_info (MonoReflectionProperty *property, MonoPropertyInfo *info, PInfo req_info)
+ves_icall_get_property_info (const MonoReflectionProperty *property, MonoPropertyInfo *info, PInfo req_info)
 {
 	MonoDomain *domain = mono_object_domain (property); 
+	const MonoProperty *pproperty = property->property;
 
 	if ((req_info & PInfo_ReflectedType) != 0)
 		MONO_STRUCT_SETREF (info, parent, mono_type_get_object (domain, &property->klass->byval_arg));
 	if ((req_info & PInfo_DeclaringType) != 0)
-		MONO_STRUCT_SETREF (info, declaring_type, mono_type_get_object (domain, &property->property->parent->byval_arg));
+		MONO_STRUCT_SETREF (info, declaring_type, mono_type_get_object (domain, &pproperty->parent->byval_arg));
 
 	if ((req_info & PInfo_Name) != 0)
-		MONO_STRUCT_SETREF (info, name, mono_string_new (domain, property->property->name));
+		MONO_STRUCT_SETREF (info, name, mono_string_new (domain, pproperty->name));
 
 	if ((req_info & PInfo_Attributes) != 0)
-		info->attrs = property->property->attrs;
+		info->attrs = pproperty->attrs;
 
 	if ((req_info & PInfo_GetMethod) != 0)
-		MONO_STRUCT_SETREF (info, get, property->property->get ?
-							mono_method_get_object (domain, property->property->get, property->klass): NULL);
-	
+		MONO_STRUCT_SETREF (info, get, pproperty->get &&
+							(((pproperty->get->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) != METHOD_ATTRIBUTE_PRIVATE) || pproperty->get->klass == property->klass) ?
+							mono_method_get_object (domain, pproperty->get, property->klass): NULL);
 	if ((req_info & PInfo_SetMethod) != 0)
-		MONO_STRUCT_SETREF (info, set, property->property->set ?
-							mono_method_get_object (domain, property->property->set, property->klass): NULL);
+		MONO_STRUCT_SETREF (info, set, pproperty->set &&
+							(((pproperty->set->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) != METHOD_ATTRIBUTE_PRIVATE) || pproperty->set->klass == property->klass) ?
+							mono_method_get_object (domain, pproperty->set, property->klass): NULL);
 	/* 
 	 * There may be other methods defined for properties, though, it seems they are not exposed 
 	 * in the reflection API 
