@@ -299,10 +299,20 @@ namespace System.IO
             {
                 string fullPath = parent != null ? parent.GetPath(false, directoryName) : directoryName;
 
+                // inotify_add_watch will fail if this is a symlink, so check that we didn't get a symlink
+                Interop.NativeIO.FileStats stats = default(Interop.NativeIO.FileStats);
+                if ((Interop.NativeIO.LStat(fullPath, out stats) == 0) &&
+                    ((stats.Mode & (uint)Interop.NativeIO.FileTypes.S_IFMT) == Interop.NativeIO.FileTypes.S_IFLNK))
+                {
+                    return null;
+                }
+
                 // Add a watch for the full path.  If the path is already being watched, this will return 
-                // the existing descriptor.  This works even in the case of a rename.
+                // the existing descriptor.  This works even in the case of a rename. We also add the DONT_FOLLOW
+                // and EXCL_UNLINK flags to keep parity with Windows where we don't pickup symlinks or unlinked
+                // files (which don't exist in Windows)
                 int wd = (int)SysCall(
-                    (fd, path, thisRef) => Interop.libc.inotify_add_watch(fd, path, (uint)thisRef._notifyFilters),
+                    (fd, path, thisRef) => Interop.libc.inotify_add_watch(fd, path, (uint)(thisRef._notifyFilters | Interop.libc.NotifyEvents.IN_DONT_FOLLOW | Interop.libc.NotifyEvents.IN_EXCL_UNLINK)),
                     fullPath,
                     this);
 
@@ -476,7 +486,21 @@ namespace System.IO
                         string expandedName = null;
                         WatchedDirectory associatedDirectoryEntry = null;
 
-                        if (nextEvent.wd != -1) // wd is -1 for events like IN_Q_OVERFLOW that aren't tied to a particular watch descriptor
+                        // An overflow event means that we can't trust our state without restarting since we missed events and 
+                        // some of those events could be a directory create, meaning we wouldn't have added the directory to the 
+                        // watch and would not provide correct data to the caller.
+                        if ((mask & (uint)Interop.libc.NotifyEvents.IN_Q_OVERFLOW) != 0)
+                        {
+                            // Notify the caller of the error and, if the includeSubdirectories flag is set, restart to pick up any
+                            // potential directories we missed due to the overflow.
+                            watcher.NotifyInternalBufferOverflowEvent();
+                            if (_includeSubdirectories)
+                            {
+                                watcher.Restart();
+                            }
+                            break;
+                        }
+                        else
                         {
                             // Look up the directory information for the supplied wd
                             lock (SyncObj)
@@ -543,15 +567,11 @@ namespace System.IO
                         }
 
                         const Interop.libc.NotifyEvents switchMask =
-                            Interop.libc.NotifyEvents.IN_Q_OVERFLOW | Interop.libc.NotifyEvents.IN_IGNORED |
-                            Interop.libc.NotifyEvents.IN_CREATE | Interop.libc.NotifyEvents.IN_DELETE |
+                            Interop.libc.NotifyEvents.IN_IGNORED |Interop.libc.NotifyEvents.IN_CREATE | Interop.libc.NotifyEvents.IN_DELETE |
                             Interop.libc.NotifyEvents.IN_ACCESS | Interop.libc.NotifyEvents.IN_MODIFY | Interop.libc.NotifyEvents.IN_ATTRIB |
                             Interop.libc.NotifyEvents.IN_MOVED_FROM | Interop.libc.NotifyEvents.IN_MOVED_TO;
                         switch ((Interop.libc.NotifyEvents)(mask & (uint)switchMask))
                         {
-                            case Interop.libc.NotifyEvents.IN_Q_OVERFLOW:
-                                watcher.NotifyInternalBufferOverflowEvent();
-                                break;
                             case Interop.libc.NotifyEvents.IN_CREATE:
                                 watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Created, expandedName);
                                 break;
@@ -573,9 +593,35 @@ namespace System.IO
                                 watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Changed, expandedName);
                                 break;
                             case Interop.libc.NotifyEvents.IN_MOVED_FROM:
+                                // We need to check if this MOVED_FROM event is standalone - meaning the item was moved out
+                                // of scope. We do this by checking if we are at the end of our buffer (meaning no more events) 
+                                // and if there is data to be read by polling the fd. If there aren't any more events, fire the
+                                // deleted event; if there are more events, handle it via next pass. This adds an additional
+                                // edge case where we get the MOVED_FROM event and the MOVED_TO event hasn't been generated yet
+                                // so we will send a DELETE for this event and a CREATE when the MOVED_TO is eventually processed.
+                                if (_bufferPos == _bufferAvailable)
+                                {
+                                    bool success = false;
+                                    Interop.libc.PollFlags resultFlags;
+                                    _inotifyHandle.DangerousAddRef(ref success);
+                                    Debug.Assert(success, "Failed to add-ref inotify handle");
+                                    int result = Interop.libc.poll(_inotifyHandle.DangerousGetHandle().ToInt32(), Interop.libc.PollFlags.POLLIN, 0, out resultFlags);
+                                    _inotifyHandle.DangerousRelease();
+
+                                    // If we error or don't have any signaled handles, send the deleted event
+                                    if (result <= 0)
+                                    {
+                                        // There isn't any more data in the queue so this is a deleted event
+                                        watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Deleted, expandedName);
+                                        break;
+                                    }
+                                }
+
+                                // We will set these values if the buffer has more data OR if the poll call tells us that more data is available.
                                 previousEventName = expandedName;
                                 previousEventParent = isDir ? associatedDirectoryEntry : null;
                                 previousEventCookie = nextEvent.cookie;
+
                                 break;
                             case Interop.libc.NotifyEvents.IN_MOVED_TO:
                                 if (previousEventName != null)

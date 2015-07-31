@@ -10,9 +10,11 @@
 #if HAVE_STAT64
 #    define stat_ stat64
 #    define fstat_ fstat64
+#    define lstat_ lstat64
 #else
 #   define stat_ stat
 #   define fstat_ fstat
+#   define lstat_ lstat
 #endif
 
 static void ConvertFileStats(const struct stat_& src, FileStats* dst)
@@ -51,6 +53,19 @@ extern "C"
     {
         struct stat_ result;
         int ret = fstat_(fileDescriptor, &result);
+
+        if (ret == 0)
+        {
+            ConvertFileStats(result, output);
+        }
+
+        return ret; // TODO: errno conversion
+    }
+
+    int32_t LStat(const char* path, struct FileStats* output)
+    {
+        struct stat_ result;
+        int ret = lstat_(path, &result);
 
         if (ret == 0)
         {
