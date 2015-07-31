@@ -45,7 +45,6 @@ public partial class FileSystemWatcher_4000_Tests
         }
     }
 
-
     [Fact]
     public static void FileSystemWatcher_Deleted_Negative()
     {
@@ -69,9 +68,6 @@ public partial class FileSystemWatcher_4000_Tests
                 // change a file
                 testFile.WriteByte(0xFF);
                 testFile.Flush();
-
-                // rename a file in the same directory
-                testFile.Move(testFile.Path + "_rename");
 
                 // renaming a directory
                 testDir.Move(testDir.Path + "_rename");
