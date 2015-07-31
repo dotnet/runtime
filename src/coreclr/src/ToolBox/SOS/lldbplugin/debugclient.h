@@ -8,7 +8,6 @@ class DebugClient : public IDebugClient
 private:
     lldb::SBDebugger &m_debugger;
     lldb::SBCommandReturnObject &m_returnObject;
-    char *m_coreclrDirectory;
 
     void OutputString(ULONG mask, PCSTR str);
     lldb::SBProcess GetCurrentProcess();
@@ -19,7 +18,7 @@ private:
     DWORD_PTR GetRegister(lldb::SBFrame frame, const char *name);
 
 public:
-    DebugClient(lldb::SBDebugger &debugger, lldb::SBCommandReturnObject &returnObject, char *coreclrDirectory);
+    DebugClient(lldb::SBDebugger &debugger, lldb::SBCommandReturnObject &returnObject);
     ~DebugClient();
 
     //----------------------------------------------------------------------------
@@ -139,6 +138,9 @@ public:
         ULONG loadedImageNameBufferSize,
         PULONG loadedImageNameSize);
 
+    PCSTR GetModuleDirectory(
+        PCSTR name);
+
     //----------------------------------------------------------------------------
     // IDebugSystemObjects
     //----------------------------------------------------------------------------
@@ -187,7 +189,4 @@ public:
 
     DWORD_PTR GetExpression(
         PCSTR exp);
-
-    PCSTR GetModuleDirectory(
-        PCSTR name);
 };
