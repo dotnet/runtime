@@ -40,11 +40,6 @@ namespace Internal.Cryptography.Pal
             get { return false; }
         }
 
-        public AsymmetricAlgorithm PrivateKey
-        {
-            get { return null; }
-        }
-
         public IntPtr Handle
         {
             get { return _cert == null ? IntPtr.Zero : _cert.DangerousGetHandle(); }
@@ -233,9 +228,9 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        public void SetPrivateKey(AsymmetricAlgorithm privateKey, AsymmetricAlgorithm publicKey)
+        public RSA GetRSAPrivateKey()
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public string GetNameInfo(X509NameType nameType, bool forIssuer)
