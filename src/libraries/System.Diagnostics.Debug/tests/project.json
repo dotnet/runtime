@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "Microsoft.DotNet.CoreCLR": "1.0.0-prerelease",
-    "System.Threading.Tasks": "4.0.10-beta-*",
+    "System.Threading.Tasks": "4.0.10",
     "xunit": "2.0.0-beta5-build2785",
     "xunit.abstractions.netcore": "1.0.0-prerelease",
     "xunit.assert": "2.0.0-beta5-build2785",
