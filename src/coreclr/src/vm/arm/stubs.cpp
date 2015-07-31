@@ -533,7 +533,12 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
 
     do
     {
+#ifndef FEATURE_PAL
         pvControlPc = Thread::VirtualUnwindCallFrame(&ctx, &nonVolRegPtrs);
+#else // !FEATURE_PAL
+        PAL_VirtualUnwind(&ctx, &nonVolRegPtrs);
+        pvControlPc = GetIP(&ctx);
+#endif // !FEATURE_PAL
 
         if (funCallDepth > 0)
         {

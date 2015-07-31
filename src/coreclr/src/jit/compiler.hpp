@@ -764,11 +764,17 @@ inline
 
 inline
 float               getR4LittleEndian(const BYTE * ptr)
-{ return *(UNALIGNED float*)ptr; }
+{
+    __int32 val = getI4LittleEndian(ptr);
+    return *(float *)&val;
+}
 
 inline
 double              getR8LittleEndian(const BYTE * ptr)
-{ return *(UNALIGNED double*)ptr; }
+{
+    __int64 val = getI8LittleEndian(ptr);
+    return *(double *)&val;
+}
 
 
 /*****************************************************************************

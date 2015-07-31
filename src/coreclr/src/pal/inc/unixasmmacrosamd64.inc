@@ -3,6 +3,30 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
+.macro NESTED_ENTRY Name, Section, Handler
+        LEAF_ENTRY \Name, \Section
+        .ifnc \Handler, NoHandler
+#if defined(__APPLE__)
+        .cfi_personality 0x9b, C_FUNC(\Handler) // 0x9b == DW_EH_PE_indirect | DW_EH_PE_pcrel | DW_EH_PE_sdata4
+#else
+        .cfi_personality 0, C_FUNC(\Handler) // 0 == DW_EH_PE_absptr
+#endif
+        .endif
+.endm
+
+.macro NESTED_END Name, Section
+        LEAF_END \Name, \Section
+#if defined(__APPLE__)
+        .section __LD,__compact_unwind,regular,debug
+        .quad C_FUNC(\Name)
+        .set C_FUNC(\Name\()_Size), C_FUNC(\Name\()_End) - C_FUNC(\Name)
+        .long C_FUNC(\Name\()_Size)
+        .long 0x04000000 # DWARF
+        .quad 0
+        .quad 0
+#endif
+.endm
+
 .macro PATCH_LABEL Name
         .global C_FUNC(\Name)
 C_FUNC(\Name):
