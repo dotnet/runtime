@@ -1063,7 +1063,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
         // for instance a VT with two float fields will have the same size as a VT with 1 double field. (ARM64TODO: Verify it)
         // It works on ARM because the overlapping layout of the floating point registers
         // but it won't work on ARM64.
-        cHFAVars = (CorInfoTypeIsFloatingPoint(comp->getHFAType(info->args.retTypeClass))) ? HFARetTypeSize/sizeof(float) : HFARetTypeSize/sizeof(double);
+        cHFAVars = (comp->getHFAType(info->args.retTypeClass) == CORINFO_TYPE_FLOAT) ? HFARetTypeSize/sizeof(float) : HFARetTypeSize/sizeof(double);
 #endif
     }
 
