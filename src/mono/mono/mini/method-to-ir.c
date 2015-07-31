@@ -7725,9 +7725,9 @@ sig_to_rgctx_sig (MonoMethodSignature *sig)
 	res = g_malloc (MONO_SIZEOF_METHOD_SIGNATURE + (sig->param_count + 1) * sizeof (MonoType*));
 	memcpy (res, sig, MONO_SIZEOF_METHOD_SIGNATURE);
 	res->param_count = sig->param_count + 1;
-	res->params [0] = &mono_defaults.int_class->byval_arg;
 	for (i = 0; i < sig->param_count; ++i)
-		res->params [i + 1] = sig->params [i];
+		res->params [i] = sig->params [i];
+	res->params [sig->param_count] = &mono_defaults.int_class->byval_arg;
 	return res;
 }
 
@@ -9593,10 +9593,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* Make a call with an rgctx */
 				g_assert (fsig->param_count + 2 < 16);
 				args [0] = sp [0];
-				tmp_reg = alloc_preg (cfg);
-				EMIT_NEW_UNALU (cfg, args [1], OP_MOVE, tmp_reg, rgctx_reg);
 				for (i = 0; i < fsig->param_count; ++i)
-					args [i + 2] = sp [i + 1];
+					args [i + 1] = sp [i + 1];
+				tmp_reg = alloc_preg (cfg);
+				EMIT_NEW_UNALU (cfg, args [fsig->param_count + 1], OP_MOVE, tmp_reg, rgctx_reg);
 				rgctx_sig = sig_to_rgctx_sig (fsig);
 				call2 = mono_emit_calli (cfg, rgctx_sig, args, call_target, NULL, NULL);
 				call2->dreg = call1->dreg;

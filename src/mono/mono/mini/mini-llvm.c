@@ -1294,13 +1294,6 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 	}
 	if (vretaddr && vret_arg_pindex == pindex)
 		param_types [pindex ++] = IntPtrType ();
-	if (ctx->lmodule->llvm_only && cinfo && cinfo->rgctx_arg) {
-		/* Pass the rgctx after 'this' */
-		if (sinfo)
-			sinfo->rgctx_arg_pindex = pindex;
-		param_types [pindex] = ctx->lmodule->ptr_type;
-		pindex ++;
-	}
 	if (vretaddr && vret_arg_pindex == pindex)
 		param_types [pindex ++] = IntPtrType ();
 	for (i = 0; i < sig->param_count; ++i) {
@@ -1363,6 +1356,13 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 	}
 	if (vretaddr && vret_arg_pindex == pindex)
 		param_types [pindex ++] = IntPtrType ();
+	if (ctx->lmodule->llvm_only && cinfo && cinfo->rgctx_arg) {
+		/* Pass the rgctx as the last argument */
+		if (sinfo)
+			sinfo->rgctx_arg_pindex = pindex;
+		param_types [pindex] = ctx->lmodule->ptr_type;
+		pindex ++;
+	}
 
 	CHECK_FAILURE (ctx);
 

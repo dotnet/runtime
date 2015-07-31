@@ -2338,10 +2338,6 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		pindex = 0;
 		if (sig->hasthis)
 			args [pindex ++] = &obj;
-		if (info->needs_rgctx) {
-			rgctx = mini_method_get_rgctx (method);
-			args [pindex ++] = &rgctx;
-		}
 		for (i = 0; i < sig->param_count; ++i) {
 			MonoType *t = sig->params [i];
 
@@ -2352,6 +2348,10 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 			} else {
 				args [pindex ++] = params [i];
 			}
+		}
+		if (info->needs_rgctx) {
+			rgctx = mini_method_get_rgctx (method);
+			args [pindex ++] = &rgctx;
 		}
 
 		//printf ("M: %s\n", mono_method_full_name (method, TRUE));
@@ -2378,9 +2378,9 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		args = g_alloca ((sig->param_count + sig->hasthis + info->needs_rgctx) * sizeof (gpointer));
 		pindex = 0;
 		rgctx = mini_method_get_rgctx (method);
-		args [pindex ++] = &rgctx;
 		for (i = 0; i < sig->param_count; ++i)
 			args [pindex ++] = params [i];
+		args [pindex ++] = &rgctx;
 		return runtime_invoke (obj, args, exc, info->compiled_method);
 	} else {
 		return runtime_invoke (obj, params, exc, info->compiled_method);
