@@ -1,0 +1,2499 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="net_nonClsCompliantException" xml:space="preserve">
+    <value>A non-CLS Compliant Exception (i.e. an object that does not derive from System.Exception) was thrown.</value>
+  </data>
+  <data name="net_illegalConfigWith" xml:space="preserve">
+    <value>The '{0}' attribute cannot appear when '{1}' is present.</value>
+  </data>
+  <data name="net_illegalConfigWithout" xml:space="preserve">
+    <value>The '{0}' attribute can only appear when '{1}' is present.</value>
+  </data>
+  <data name="net_baddate" xml:space="preserve">
+    <value>The value of the date string in the header is invalid.</value>
+  </data>
+  <data name="net_writestarted" xml:space="preserve">
+    <value>This property cannot be set after writing has started.</value>
+  </data>
+  <data name="net_clsmall" xml:space="preserve">
+    <value>The Content-Length value must be greater than or equal to zero.</value>
+  </data>
+  <data name="net_reqsubmitted" xml:space="preserve">
+    <value>This operation cannot be performed after the request has been submitted.</value>
+  </data>
+  <data name="net_rspsubmitted" xml:space="preserve">
+    <value>This operation cannot be performed after the response has been submitted.</value>
+  </data>
+  <data name="net_ftp_no_http_cmd" xml:space="preserve">
+    <value>The requested FTP command is not supported when using HTTP proxy.</value>
+  </data>
+  <data name="net_ftp_invalid_method_name" xml:space="preserve">
+    <value>FTP Method names cannot be null or empty.</value>
+  </data>
+  <data name="net_ftp_invalid_renameto" xml:space="preserve">
+    <value>The RenameTo filename cannot be null or empty.</value>
+  </data>
+  <data name="net_ftp_no_defaultcreds" xml:space="preserve">
+    <value>Default credentials are not supported on an FTP request.</value>
+  </data>
+  <data name="net_ftpnoresponse" xml:space="preserve">
+    <value>This type of FTP request does not return a response stream.</value>
+  </data>
+  <data name="net_ftp_response_invalid_format" xml:space="preserve">
+    <value>The response string '{0}' has invalid format.</value>
+  </data>
+  <data name="net_ftp_no_offsetforhttp" xml:space="preserve">
+    <value>Offsets are not supported when sending an FTP request over an HTTP proxy.</value>
+  </data>
+  <data name="net_ftp_invalid_uri" xml:space="preserve">
+    <value>The requested URI is invalid for this FTP command.</value>
+  </data>
+  <data name="net_ftp_invalid_status_response" xml:space="preserve">
+    <value>The status response ({0}) is not expected in response to '{1}' command.</value>
+  </data>
+  <data name="net_ftp_server_failed_passive" xml:space="preserve">
+    <value>The server failed the passive mode request with status response ({0}).</value>
+  </data>
+  <data name="net_ftp_active_address_different" xml:space="preserve">
+    <value>The data connection was made from an address that is different than the address to which the FTP connection was made.</value>
+  </data>
+  <data name="net_ftp_proxy_does_not_support_ssl" xml:space="preserve">
+    <value>SSL cannot be enabled when using a proxy.</value>
+  </data>
+  <data name="net_ftp_invalid_response_filename" xml:space="preserve">
+    <value>The server returned the filename ({0}) which is not valid.</value>
+  </data>
+  <data name="net_ftp_unsupported_method" xml:space="preserve">
+    <value>This method is not supported.</value>
+  </data>
+  <data name="net_resubmitcanceled" xml:space="preserve">
+    <value>An error occurred on an automatic resubmission of the request.</value>
+  </data>
+  <data name="net_redirect_perm" xml:space="preserve">
+    <value>WebPermission demand failed for redirect URI.</value>
+  </data>
+  <data name="net_resubmitprotofailed" xml:space="preserve">
+    <value>Cannot handle redirect from HTTP/HTTPS protocols to other dissimilar ones.</value>
+  </data>
+  <data name="net_needchunked" xml:space="preserve">
+    <value>TransferEncoding requires the SendChunked property to be set to true.</value>
+  </data>
+  <data name="net_nochunked" xml:space="preserve">
+    <value>Chunked encoding must be set via the SendChunked property.</value>
+  </data>
+  <data name="net_nochunkuploadonhttp10" xml:space="preserve">
+    <value>Chunked encoding upload is not supported on the HTTP/1.0 protocol.</value>
+  </data>
+  <data name="net_connarg" xml:space="preserve">
+    <value>Keep-Alive and Close may not be set using this property.</value>
+  </data>
+  <data name="net_no100" xml:space="preserve">
+    <value>100-Continue may not be set using this property.</value>
+  </data>
+  <data name="net_fromto" xml:space="preserve">
+    <value>The From parameter cannot be less than To.</value>
+  </data>
+  <data name="net_rangetoosmall" xml:space="preserve">
+    <value>The From or To parameter cannot be less than 0.</value>
+  </data>
+  <data name="net_entitytoobig" xml:space="preserve">
+    <value>Bytes to be written to the stream exceed the Content-Length bytes size specified.</value>
+  </data>
+  <data name="net_invalidversion" xml:space="preserve">
+    <value>This protocol version is not supported.</value>
+  </data>
+  <data name="net_invalidstatus" xml:space="preserve">
+    <value>The status code must be exactly three digits.</value>
+  </data>
+  <data name="net_toosmall" xml:space="preserve">
+    <value>The specified value must be greater than 0.</value>
+  </data>
+  <data name="net_toolong" xml:space="preserve">
+    <value>The size of {0} is too long. It cannot be longer than {1} characters.</value>
+  </data>
+  <data name="net_connclosed" xml:space="preserve">
+    <value>The underlying connection was closed: {0}.</value>
+  </data>
+  <data name="net_noseek" xml:space="preserve">
+    <value>This stream does not support seek operations.</value>
+  </data>
+  <data name="net_servererror" xml:space="preserve">
+    <value>The remote server returned an error: {0}.</value>
+  </data>
+  <data name="net_nouploadonget" xml:space="preserve">
+    <value>Cannot send a content-body with this verb-type.</value>
+  </data>
+  <data name="net_mutualauthfailed" xml:space="preserve">
+    <value>The requirement for mutual authentication was not met by the remote server.</value>
+  </data>
+  <data name="net_invasync" xml:space="preserve">
+    <value>Cannot block a call on this socket while an earlier asynchronous call is in progress.</value>
+  </data>
+  <data name="net_inasync" xml:space="preserve">
+    <value>An asynchronous call is already in progress. It must be completed or canceled before you can call this method.</value>
+  </data>
+  <data name="net_mustbeuri" xml:space="preserve">
+    <value>The {0} parameter must represent a valid Uri (see inner exception).</value>
+  </data>
+  <data name="net_format_shexp" xml:space="preserve">
+    <value>The shell expression '{0}' could not be parsed because it is formatted incorrectly.</value>
+  </data>
+  <data name="net_cannot_load_proxy_helper" xml:space="preserve">
+    <value>Failed to load the proxy script runtime environment from the Microsoft.JScript assembly.</value>
+  </data>
+  <data name="net_invalid_host" xml:space="preserve">
+    <value>The specified value is not a valid Host header string.</value>
+  </data>
+  <data name="net_repcall" xml:space="preserve">
+    <value>Cannot re-call BeginGetRequestStream/BeginGetResponse while a previous call is still in progress.</value>
+  </data>
+  <data name="net_wrongversion" xml:space="preserve">
+    <value>Only HTTP/1.0 and HTTP/1.1 version requests are currently supported.</value>
+  </data>
+  <data name="net_badmethod" xml:space="preserve">
+    <value>Cannot set null or blank methods on request.</value>
+  </data>
+  <data name="net_io_notenoughbyteswritten" xml:space="preserve">
+    <value>Cannot close stream until all bytes are written.</value>
+  </data>
+  <data name="net_io_timeout_use_ge_zero" xml:space="preserve">
+    <value>Timeout can be only be set to 'System.Threading.Timeout.Infinite' or a value &gt;= 0.</value>
+  </data>
+  <data name="net_io_timeout_use_gt_zero" xml:space="preserve">
+    <value>Timeout can be only be set to 'System.Threading.Timeout.Infinite' or a value &gt; 0.</value>
+  </data>
+  <data name="net_io_no_0timeouts" xml:space="preserve">
+    <value>NetworkStream does not support a 0 millisecond timeout, use a value greater than zero for the timeout instead.</value>
+  </data>
+  <data name="net_requestaborted" xml:space="preserve">
+    <value>The request was aborted: {0}.</value>
+  </data>
+  <data name="net_tooManyRedirections" xml:space="preserve">
+    <value>Too many automatic redirections were attempted.</value>
+  </data>
+  <data name="net_authmodulenotregistered" xml:space="preserve">
+    <value>The supplied authentication module is not registered.</value>
+  </data>
+  <data name="net_authschemenotregistered" xml:space="preserve">
+    <value>There is no registered module for this authentication scheme.</value>
+  </data>
+  <data name="net_proxyschemenotsupported" xml:space="preserve">
+    <value>The ServicePointManager does not support proxies with the {0} scheme.</value>
+  </data>
+  <data name="net_maxsrvpoints" xml:space="preserve">
+    <value>The maximum number of service points was exceeded.</value>
+  </data>
+  <data name="net_unknown_prefix" xml:space="preserve">
+    <value>The URI prefix is not recognized.</value>
+  </data>
+  <data name="net_notconnected" xml:space="preserve">
+    <value>The operation is not allowed on non-connected sockets.</value>
+  </data>
+  <data name="net_notstream" xml:space="preserve">
+    <value>The operation is not allowed on non-stream oriented sockets.</value>
+  </data>
+  <data name="net_timeout" xml:space="preserve">
+    <value>The operation has timed out.</value>
+  </data>
+  <data name="net_nocontentlengthonget" xml:space="preserve">
+    <value>Content-Length or Chunked Encoding cannot be set for an operation that does not write data.</value>
+  </data>
+  <data name="net_contentlengthmissing" xml:space="preserve">
+    <value>When performing a write operation with AllowWriteStreamBuffering set to false, you must either set ContentLength to a non-negative number or set SendChunked to true.</value>
+  </data>
+  <data name="net_nonhttpproxynotallowed" xml:space="preserve">
+    <value>The URI scheme for the supplied IWebProxy has the illegal value '{0}'. Only 'http' is supported.</value>
+  </data>
+  <data name="net_nottoken" xml:space="preserve">
+    <value>The supplied string is not a valid HTTP token.</value>
+  </data>
+  <data name="net_rangetype" xml:space="preserve">
+    <value>A different range specifier has already been added to this request.</value>
+  </data>
+  <data name="net_need_writebuffering" xml:space="preserve">
+    <value>This request requires buffering data to succeed.</value>
+  </data>
+  <data name="net_securitypackagesupport" xml:space="preserve">
+    <value>The requested security package is not supported.</value>
+  </data>
+  <data name="net_securityprotocolnotsupported" xml:space="preserve">
+    <value>The requested security protocol is not supported.</value>
+  </data>
+  <data name="net_nodefaultcreds" xml:space="preserve">
+    <value>Default credentials cannot be supplied for the {0} authentication scheme.</value>
+  </data>
+  <data name="net_stopped" xml:space="preserve">
+    <value>Not listening. You must call the Start() method before calling this method.</value>
+  </data>
+  <data name="net_udpconnected" xml:space="preserve">
+    <value>Cannot send packets to an arbitrary host while connected.</value>
+  </data>
+  <data name="net_readonlystream" xml:space="preserve">
+    <value>The stream does not support writing.</value>
+  </data>
+  <data name="net_writeonlystream" xml:space="preserve">
+    <value>The stream does not support reading.</value>
+  </data>
+  <data name="net_no_concurrent_io_allowed" xml:space="preserve">
+    <value>The stream does not support concurrent IO read or write operations.</value>
+  </data>
+  <data name="net_needmorethreads" xml:space="preserve">
+    <value>There were not enough free threads in the ThreadPool to complete the operation.</value>
+  </data>
+  <data name="net_MethodNotImplementedException" xml:space="preserve">
+    <value>This method is not implemented by this class.</value>
+  </data>
+  <data name="net_PropertyNotImplementedException" xml:space="preserve">
+    <value>This property is not implemented by this class.</value>
+  </data>
+  <data name="net_MethodNotSupportedException" xml:space="preserve">
+    <value>This method is not supported by this class.</value>
+  </data>
+  <data name="net_PropertyNotSupportedException" xml:space="preserve">
+    <value>This property is not supported by this class.</value>
+  </data>
+  <data name="net_ProtocolNotSupportedException" xml:space="preserve">
+    <value>The '{0}' protocol is not supported by this class.</value>
+  </data>
+  <data name="net_SelectModeNotSupportedException" xml:space="preserve">
+    <value>The '{0}' select mode is not supported by this class.</value>
+  </data>
+  <data name="net_InvalidSocketHandle" xml:space="preserve">
+    <value>The socket handle is not valid.</value>
+  </data>
+  <data name="net_InvalidAddressFamily" xml:space="preserve">
+    <value>The AddressFamily {0} is not valid for the {1} end point, use {2} instead.</value>
+  </data>
+  <data name="net_InvalidEndPointAddressFamily" xml:space="preserve">
+    <value>The supplied EndPoint of AddressFamily {0} is not valid for this Socket, use {1} instead.</value>
+  </data>
+  <data name="net_InvalidSocketAddressSize" xml:space="preserve">
+    <value>The supplied {0} is an invalid size for the {1} end point.</value>
+  </data>
+  <data name="net_invalidAddressList" xml:space="preserve">
+    <value>None of the discovered or specified addresses match the socket address family.</value>
+  </data>
+  <data name="net_invalidPingBufferSize" xml:space="preserve">
+    <value>The buffer length must not exceed 65500 bytes.</value>
+  </data>
+  <data name="net_cant_perform_during_shutdown" xml:space="preserve">
+    <value>This operation cannot be performed while the AppDomain is shutting down.</value>
+  </data>
+  <data name="net_cant_create_environment" xml:space="preserve">
+    <value>Unable to create another web proxy script environment at this time.</value>
+  </data>
+  <data name="net_completed_result" xml:space="preserve">
+    <value>This operation cannot be performed on a completed asynchronous result object.</value>
+  </data>
+  <data name="net_protocol_invalid_family" xml:space="preserve">
+    <value>'{0}' Client can only accept InterNetwork or InterNetworkV6 addresses.</value>
+  </data>
+  <data name="net_protocol_invalid_multicast_family" xml:space="preserve">
+    <value>Multicast family is not the same as the family of the '{0}' Client.</value>
+  </data>
+  <data name="net_empty_osinstalltype" xml:space="preserve">
+    <value>The Registry value '{0}' was either empty or not a string type.</value>
+  </data>
+  <data name="net_unknown_osinstalltype" xml:space="preserve">
+    <value>Unknown Windows installation type '{0}'.</value>
+  </data>
+  <data name="net_cant_determine_osinstalltype" xml:space="preserve">
+    <value>Can't determine OS installation type: Can't read key '{0}'. Exception message: {1}</value>
+  </data>
+  <data name="net_osinstalltype" xml:space="preserve">
+    <value>Current OS installation type is '{0}'.</value>
+  </data>
+  <data name="net_entire_body_not_written" xml:space="preserve">
+    <value>You must write ContentLength bytes to the request stream before calling [Begin]GetResponse.</value>
+  </data>
+  <data name="net_must_provide_request_body" xml:space="preserve">
+    <value>You must provide a request body if you set ContentLength&gt;0 or SendChunked==true.  Do this by calling [Begin]GetRequestStream before [Begin]GetResponse.</value>
+  </data>
+  <data name="net_ssp_dont_support_cbt" xml:space="preserve">
+    <value>The Security Service Providers don't support extended protection. Please install the latest Security Service Providers update.</value>
+  </data>
+  <data name="net_sockets_zerolist" xml:space="preserve">
+    <value>The parameter {0} must contain one or more elements.</value>
+  </data>
+  <data name="net_sockets_blocking" xml:space="preserve">
+    <value>The operation is not allowed on a non-blocking Socket.</value>
+  </data>
+  <data name="net_sockets_useblocking" xml:space="preserve">
+    <value>Use the Blocking property to change the status of the Socket.</value>
+  </data>
+  <data name="net_sockets_select" xml:space="preserve">
+    <value>The operation is not allowed on objects of type {0}. Use only objects of type {1}.</value>
+  </data>
+  <data name="net_sockets_toolarge_select" xml:space="preserve">
+    <value>The {0} list contains too many items; a maximum of {1} is allowed.</value>
+  </data>
+  <data name="net_sockets_empty_select" xml:space="preserve">
+    <value>All lists are either null or empty.</value>
+  </data>
+  <data name="net_sockets_mustbind" xml:space="preserve">
+    <value>You must call the Bind method before performing this operation.</value>
+  </data>
+  <data name="net_sockets_mustlisten" xml:space="preserve">
+    <value>You must call the Listen method before performing this operation.</value>
+  </data>
+  <data name="net_sockets_mustnotlisten" xml:space="preserve">
+    <value>You may not perform this operation after calling the Listen method.</value>
+  </data>
+  <data name="net_sockets_mustnotbebound" xml:space="preserve">
+    <value>The socket must not be bound or connected.</value>
+  </data>
+  <data name="net_sockets_namedmustnotbebound" xml:space="preserve">
+    <value>{0}: The socket must not be bound or connected.</value>
+  </data>
+  <data name="net_sockets_invalid_socketinformation" xml:space="preserve">
+    <value>The specified value for the socket information is invalid.</value>
+  </data>
+  <data name="net_sockets_invalid_ipaddress_length" xml:space="preserve">
+    <value>The number of specified IP addresses has to be greater than 0.</value>
+  </data>
+  <data name="net_sockets_invalid_optionValue" xml:space="preserve">
+    <value>The specified value is not a valid '{0}'.</value>
+  </data>
+  <data name="net_sockets_invalid_optionValue_all" xml:space="preserve">
+    <value>The specified value is not valid.</value>
+  </data>
+  <data name="net_sockets_invalid_dnsendpoint" xml:space="preserve">
+    <value>The parameter {0} must not be of type DnsEndPoint.</value>
+  </data>
+  <data name="net_sockets_disconnectedConnect" xml:space="preserve">
+    <value>Once the socket has been disconnected, you can only reconnect again asynchronously, and only to a different EndPoint.  BeginConnect must be called on a thread that won't exit until the operation has been completed.</value>
+  </data>
+  <data name="net_sockets_disconnectedAccept" xml:space="preserve">
+    <value>Once the socket has been disconnected, you can only accept again asynchronously.  BeginAccept must be called on a thread that won't exit until the operation has been completed.</value>
+  </data>
+  <data name="net_tcplistener_mustbestopped" xml:space="preserve">
+    <value>The TcpListener must not be listening before performing this operation.</value>
+  </data>
+  <data name="net_sockets_no_duplicate_async" xml:space="preserve">
+    <value>BeginConnect cannot be called while another asynchronous operation is in progress on the same Socket.</value>
+  </data>
+  <data name="net_socketopinprogress" xml:space="preserve">
+    <value>An asynchronous socket operation is already in progress using this SocketAsyncEventArgs instance.</value>
+  </data>
+  <data name="net_buffercounttoosmall" xml:space="preserve">
+    <value>The Buffer space specified by the Count property is insufficient for the AcceptAsync method.</value>
+  </data>
+  <data name="net_multibuffernotsupported" xml:space="preserve">
+    <value>Multiple buffers cannot be used with this method.</value>
+  </data>
+  <data name="net_ambiguousbuffers" xml:space="preserve">
+    <value>Buffer and BufferList properties cannot both be non-null.</value>
+  </data>
+  <data name="net_sockets_ipv6only" xml:space="preserve">
+    <value>This operation is only valid for IPv6 Sockets.</value>
+  </data>
+  <data name="net_perfcounter_initialized_success" xml:space="preserve">
+    <value>System.Net performance counters initialization completed successful.</value>
+  </data>
+  <data name="net_perfcounter_initialized_error" xml:space="preserve">
+    <value>System.Net performance counters initialization completed with errors. See System.Net trace file for more information.</value>
+  </data>
+  <data name="net_perfcounter_nocategory" xml:space="preserve">
+    <value>Performance counter category '{0}' doesn't exist. No System.Net performance counter values available.</value>
+  </data>
+  <data name="net_perfcounter_initialization_started" xml:space="preserve">
+    <value>System.Net performance counter initialization started.</value>
+  </data>
+  <data name="net_perfcounter_cant_queue_workitem" xml:space="preserve">
+    <value>Can't queue counter initialization logic on a thread pool thread. System.Net performance counters will not be available.</value>
+  </data>
+  <data name="net_config_proxy" xml:space="preserve">
+    <value>Error creating the Web Proxy specified in the 'system.net/defaultProxy' configuration section.</value>
+  </data>
+  <data name="net_config_proxy_module_not_public" xml:space="preserve">
+    <value>The specified proxy module type is not public.</value>
+  </data>
+  <data name="net_config_authenticationmodules" xml:space="preserve">
+    <value>Error creating the modules specified in the 'system.net/authenticationModules' configuration section.</value>
+  </data>
+  <data name="net_config_webrequestmodules" xml:space="preserve">
+    <value>Error creating the modules specified in the 'system.net/webRequestModules' configuration section.</value>
+  </data>
+  <data name="net_config_requestcaching" xml:space="preserve">
+    <value>Error creating the Web Request caching policy specified in the 'system.net/requestCaching' configuration section.</value>
+  </data>
+  <data name="net_config_section_permission" xml:space="preserve">
+    <value>Insufficient permissions for setting the configuration section '{0}'.</value>
+  </data>
+  <data name="net_config_element_permission" xml:space="preserve">
+    <value>Insufficient permissions for setting the configuration element '{0}'.</value>
+  </data>
+  <data name="net_config_property_permission" xml:space="preserve">
+    <value>Insufficient permissions for setting the configuration property '{0}'.</value>
+  </data>
+  <data name="net_WebResponseParseError_InvalidHeaderName" xml:space="preserve">
+    <value>Header name is invalid</value>
+  </data>
+  <data name="net_WebResponseParseError_InvalidContentLength" xml:space="preserve">
+    <value>'Content-Length' header value is invalid</value>
+  </data>
+  <data name="net_WebResponseParseError_IncompleteHeaderLine" xml:space="preserve">
+    <value>Invalid header name</value>
+  </data>
+  <data name="net_WebResponseParseError_CrLfError" xml:space="preserve">
+    <value>CR must be followed by LF</value>
+  </data>
+  <data name="net_WebResponseParseError_InvalidChunkFormat" xml:space="preserve">
+    <value>Response chunk format is invalid</value>
+  </data>
+  <data name="net_WebResponseParseError_UnexpectedServerResponse" xml:space="preserve">
+    <value>Unexpected server response received</value>
+  </data>
+  <data name="net_webstatus_Success" xml:space="preserve">
+    <value>Status success</value>
+  </data>
+  <data name="net_webstatus_NameResolutionFailure" xml:space="preserve">
+    <value>The remote name could not be resolved</value>
+  </data>
+  <data name="net_webstatus_ConnectFailure" xml:space="preserve">
+    <value>Unable to connect to the remote server</value>
+  </data>
+  <data name="net_webstatus_ReceiveFailure" xml:space="preserve">
+    <value>An unexpected error occurred on a receive</value>
+  </data>
+  <data name="net_webstatus_SendFailure" xml:space="preserve">
+    <value>An unexpected error occurred on a send</value>
+  </data>
+  <data name="net_webstatus_PipelineFailure" xml:space="preserve">
+    <value>A pipeline failure occurred</value>
+  </data>
+  <data name="net_webstatus_RequestCanceled" xml:space="preserve">
+    <value>The request was canceled</value>
+  </data>
+  <data name="net_webstatus_ConnectionClosed" xml:space="preserve">
+    <value>The connection was closed unexpectedly</value>
+  </data>
+  <data name="net_webstatus_TrustFailure" xml:space="preserve">
+    <value>Could not establish trust relationship for the SSL/TLS secure channel</value>
+  </data>
+  <data name="net_webstatus_SecureChannelFailure" xml:space="preserve">
+    <value>Could not create SSL/TLS secure channel</value>
+  </data>
+  <data name="net_webstatus_ServerProtocolViolation" xml:space="preserve">
+    <value>The server committed a protocol violation</value>
+  </data>
+  <data name="net_webstatus_KeepAliveFailure" xml:space="preserve">
+    <value>A connection that was expected to be kept alive was closed by the server</value>
+  </data>
+  <data name="net_webstatus_ProxyNameResolutionFailure" xml:space="preserve">
+    <value>The proxy name could not be resolved</value>
+  </data>
+  <data name="net_webstatus_MessageLengthLimitExceeded" xml:space="preserve">
+    <value>The message length limit was exceeded</value>
+  </data>
+  <data name="net_webstatus_CacheEntryNotFound" xml:space="preserve">
+    <value>The request cache-only policy does not allow a network request and the response is not found in cache</value>
+  </data>
+  <data name="net_webstatus_RequestProhibitedByCachePolicy" xml:space="preserve">
+    <value>The request could not be satisfied using a cache-only policy</value>
+  </data>
+  <data name="net_webstatus_Timeout" xml:space="preserve">
+    <value>The operation has timed out</value>
+  </data>
+  <data name="net_webstatus_RequestProhibitedByProxy" xml:space="preserve">
+    <value>The IWebProxy object associated with the request did not allow the request to proceed</value>
+  </data>
+  <data name="net_InvalidStatusCode" xml:space="preserve">
+    <value>The server returned a status code outside the valid range of 100-599.</value>
+  </data>
+  <data name="net_ftpstatuscode_ServiceNotAvailable" xml:space="preserve">
+    <value>Service not available, closing control connection</value>
+  </data>
+  <data name="net_ftpstatuscode_CantOpenData" xml:space="preserve">
+    <value>Can't open data connection</value>
+  </data>
+  <data name="net_ftpstatuscode_ConnectionClosed" xml:space="preserve">
+    <value>Connection closed; transfer aborted</value>
+  </data>
+  <data name="net_ftpstatuscode_ActionNotTakenFileUnavailableOrBusy" xml:space="preserve">
+    <value>File unavailable (e.g., file busy)</value>
+  </data>
+  <data name="net_ftpstatuscode_ActionAbortedLocalProcessingError" xml:space="preserve">
+    <value>Local error in processing</value>
+  </data>
+  <data name="net_ftpstatuscode_ActionNotTakenInsufficentSpace" xml:space="preserve">
+    <value>Insufficient storage space in system</value>
+  </data>
+  <data name="net_ftpstatuscode_CommandSyntaxError" xml:space="preserve">
+    <value>Syntax error, command unrecognized</value>
+  </data>
+  <data name="net_ftpstatuscode_ArgumentSyntaxError" xml:space="preserve">
+    <value>Syntax error in parameters or arguments</value>
+  </data>
+  <data name="net_ftpstatuscode_CommandNotImplemented" xml:space="preserve">
+    <value>Command not implemented</value>
+  </data>
+  <data name="net_ftpstatuscode_BadCommandSequence" xml:space="preserve">
+    <value>Bad sequence of commands</value>
+  </data>
+  <data name="net_ftpstatuscode_NotLoggedIn" xml:space="preserve">
+    <value>Not logged in</value>
+  </data>
+  <data name="net_ftpstatuscode_AccountNeeded" xml:space="preserve">
+    <value>Need account for storing files</value>
+  </data>
+  <data name="net_ftpstatuscode_ActionNotTakenFileUnavailable" xml:space="preserve">
+    <value>File unavailable (e.g., file not found, no access)</value>
+  </data>
+  <data name="net_ftpstatuscode_ActionAbortedUnknownPageType" xml:space="preserve">
+    <value>Page type unknown</value>
+  </data>
+  <data name="net_ftpstatuscode_FileActionAborted" xml:space="preserve">
+    <value>Exceeded storage allocation (for current directory or data set)</value>
+  </data>
+  <data name="net_ftpstatuscode_ActionNotTakenFilenameNotAllowed" xml:space="preserve">
+    <value>File name not allowed</value>
+  </data>
+  <data name="net_httpstatuscode_NoContent" xml:space="preserve">
+    <value>No Content</value>
+  </data>
+  <data name="net_httpstatuscode_NonAuthoritativeInformation" xml:space="preserve">
+    <value>Non Authoritative Information</value>
+  </data>
+  <data name="net_httpstatuscode_ResetContent" xml:space="preserve">
+    <value>Reset Content</value>
+  </data>
+  <data name="net_httpstatuscode_PartialContent" xml:space="preserve">
+    <value>Partial Content</value>
+  </data>
+  <data name="net_httpstatuscode_MultipleChoices" xml:space="preserve">
+    <value>Multiple Choices Redirect</value>
+  </data>
+  <data name="net_httpstatuscode_Ambiguous" xml:space="preserve">
+    <value>Ambiguous Redirect</value>
+  </data>
+  <data name="net_httpstatuscode_MovedPermanently" xml:space="preserve">
+    <value>Moved Permanently Redirect</value>
+  </data>
+  <data name="net_httpstatuscode_Moved" xml:space="preserve">
+    <value>Moved Redirect</value>
+  </data>
+  <data name="net_httpstatuscode_Found" xml:space="preserve">
+    <value>Found Redirect</value>
+  </data>
+  <data name="net_httpstatuscode_Redirect" xml:space="preserve">
+    <value>Redirect</value>
+  </data>
+  <data name="net_httpstatuscode_SeeOther" xml:space="preserve">
+    <value>See Other</value>
+  </data>
+  <data name="net_httpstatuscode_RedirectMethod" xml:space="preserve">
+    <value>Redirect Method</value>
+  </data>
+  <data name="net_httpstatuscode_NotModified" xml:space="preserve">
+    <value>Not Modified</value>
+  </data>
+  <data name="net_httpstatuscode_UseProxy" xml:space="preserve">
+    <value>Use Proxy Redirect</value>
+  </data>
+  <data name="net_httpstatuscode_TemporaryRedirect" xml:space="preserve">
+    <value>Temporary Redirect</value>
+  </data>
+  <data name="net_httpstatuscode_RedirectKeepVerb" xml:space="preserve">
+    <value>Redirect Keep Verb</value>
+  </data>
+  <data name="net_httpstatuscode_BadRequest" xml:space="preserve">
+    <value>Bad Request</value>
+  </data>
+  <data name="net_httpstatuscode_Unauthorized" xml:space="preserve">
+    <value>Unauthorized</value>
+  </data>
+  <data name="net_httpstatuscode_PaymentRequired" xml:space="preserve">
+    <value>Payment Required</value>
+  </data>
+  <data name="net_httpstatuscode_Forbidden" xml:space="preserve">
+    <value>Forbidden</value>
+  </data>
+  <data name="net_httpstatuscode_NotFound" xml:space="preserve">
+    <value>Not Found</value>
+  </data>
+  <data name="net_httpstatuscode_MethodNotAllowed" xml:space="preserve">
+    <value>Method Not Allowed</value>
+  </data>
+  <data name="net_httpstatuscode_NotAcceptable" xml:space="preserve">
+    <value>Not Acceptable</value>
+  </data>
+  <data name="net_httpstatuscode_ProxyAuthenticationRequired" xml:space="preserve">
+    <value>Proxy Authentication Required</value>
+  </data>
+  <data name="net_httpstatuscode_RequestTimeout" xml:space="preserve">
+    <value>Request Timeout</value>
+  </data>
+  <data name="net_httpstatuscode_Conflict" xml:space="preserve">
+    <value>Conflict</value>
+  </data>
+  <data name="net_httpstatuscode_Gone" xml:space="preserve">
+    <value>Gone</value>
+  </data>
+  <data name="net_httpstatuscode_LengthRequired" xml:space="preserve">
+    <value>Length Required</value>
+  </data>
+  <data name="net_httpstatuscode_InternalServerError" xml:space="preserve">
+    <value>Internal Server Error</value>
+  </data>
+  <data name="net_httpstatuscode_NotImplemented" xml:space="preserve">
+    <value>Not Implemented</value>
+  </data>
+  <data name="net_httpstatuscode_BadGateway" xml:space="preserve">
+    <value>Bad Gateway</value>
+  </data>
+  <data name="net_httpstatuscode_ServiceUnavailable" xml:space="preserve">
+    <value>Server Unavailable</value>
+  </data>
+  <data name="net_httpstatuscode_GatewayTimeout" xml:space="preserve">
+    <value>Gateway Timeout</value>
+  </data>
+  <data name="net_httpstatuscode_HttpVersionNotSupported" xml:space="preserve">
+    <value>Http Version Not Supported</value>
+  </data>
+  <data name="net_uri_BadScheme" xml:space="preserve">
+    <value>Invalid URI: The URI scheme is not valid.</value>
+  </data>
+  <data name="net_uri_BadFormat" xml:space="preserve">
+    <value>Invalid URI: The format of the URI could not be determined.</value>
+  </data>
+  <data name="net_uri_BadUserPassword" xml:space="preserve">
+    <value>Invalid URI: The username:password construct is badly formed.</value>
+  </data>
+  <data name="net_uri_BadHostName" xml:space="preserve">
+    <value>Invalid URI: The hostname could not be parsed.</value>
+  </data>
+  <data name="net_uri_BadAuthority" xml:space="preserve">
+    <value>Invalid URI: The Authority/Host could not be parsed.</value>
+  </data>
+  <data name="net_uri_BadAuthorityTerminator" xml:space="preserve">
+    <value>Invalid URI: The Authority/Host cannot end with a backslash character ('\\').</value>
+  </data>
+  <data name="net_uri_EmptyUri" xml:space="preserve">
+    <value>Invalid URI: The URI is empty.</value>
+  </data>
+  <data name="net_uri_BadString" xml:space="preserve">
+    <value>Invalid URI: There is an invalid sequence in the string.</value>
+  </data>
+  <data name="net_uri_MustRootedPath" xml:space="preserve">
+    <value>Invalid URI: A Dos path must be rooted, for example, 'c:\\'.</value>
+  </data>
+  <data name="net_uri_BadPort" xml:space="preserve">
+    <value>Invalid URI: Invalid port specified.</value>
+  </data>
+  <data name="net_uri_SizeLimit" xml:space="preserve">
+    <value>Invalid URI: The Uri string is too long.</value>
+  </data>
+  <data name="net_uri_SchemeLimit" xml:space="preserve">
+    <value>Invalid URI: The Uri scheme is too long.</value>
+  </data>
+  <data name="net_uri_NotAbsolute" xml:space="preserve">
+    <value>This operation is not supported for a relative URI.</value>
+  </data>
+  <data name="net_uri_PortOutOfRange" xml:space="preserve">
+    <value>A derived type '{0}' has reported an invalid value for the Uri port '{1}'.</value>
+  </data>
+  <data name="net_uri_UserDrivenParsing" xml:space="preserve">
+    <value>A derived type '{0}' is responsible for parsing this Uri instance. The base implementation must not be used.</value>
+  </data>
+  <data name="net_uri_AlreadyRegistered" xml:space="preserve">
+    <value>A URI scheme name '{0}' already has a registered custom parser.</value>
+  </data>
+  <data name="net_uri_NeedFreshParser" xml:space="preserve">
+    <value> The URI parser instance passed into 'uriParser' parameter is already registered with the scheme name '{0}'.</value>
+  </data>
+  <data name="net_uri_CannotCreateRelative" xml:space="preserve">
+    <value>A relative URI cannot be created because the 'uriString' parameter represents an absolute URI.</value>
+  </data>
+  <data name="net_uri_InvalidUriKind" xml:space="preserve">
+    <value>The value '{0}' passed for the UriKind parameter is invalid.</value>
+  </data>
+  <data name="net_uri_BadUnicodeHostForIdn" xml:space="preserve">
+    <value>An invalid Unicode character by IDN standards was specified in the host.</value>
+  </data>
+  <data name="net_uri_GenericAuthorityNotDnsSafe" xml:space="preserve">
+    <value>The generic authority '{0}' is not a valid dns name.</value>
+  </data>
+  <data name="net_uri_NotJustSerialization" xml:space="preserve">
+    <value>UriComponents.SerializationInfoString must not be combined with other UriComponents.</value>
+  </data>
+  <data name="net_emptystringcall" xml:space="preserve">
+    <value>The parameter '{0}' cannot be an empty string.</value>
+  </data>
+  <data name="net_emptystringset" xml:space="preserve">
+    <value>This property cannot be set to an empty string.</value>
+  </data>
+  <data name="net_headers_req" xml:space="preserve">
+    <value>This collection holds response headers and cannot contain the specified request header.</value>
+  </data>
+  <data name="net_headers_rsp" xml:space="preserve">
+    <value>This collection holds request headers and cannot contain the specified response header.</value>
+  </data>
+  <data name="net_headers_toolong" xml:space="preserve">
+    <value>Header values cannot be longer than {0} characters.</value>
+  </data>
+  <data name="net_WebHeaderInvalidControlChars" xml:space="preserve">
+    <value>Specified value has invalid Control characters.</value>
+  </data>
+  <data name="net_WebHeaderInvalidCRLFChars" xml:space="preserve">
+    <value>Specified value has invalid CRLF characters.</value>
+  </data>
+  <data name="net_WebHeaderInvalidHeaderChars" xml:space="preserve">
+    <value>Specified value has invalid HTTP Header characters.</value>
+  </data>
+  <data name="net_WebHeaderInvalidNonAsciiChars" xml:space="preserve">
+    <value>Specified value has invalid non-ASCII characters.</value>
+  </data>
+  <data name="net_WebHeaderMissingColon" xml:space="preserve">
+    <value>Specified value does not have a ':' separator.</value>
+  </data>
+  <data name="net_headerrestrict" xml:space="preserve">
+    <value>The '{0}' header must be modified using the appropriate property or method.</value>
+  </data>
+  <data name="net_io_completionportwasbound" xml:space="preserve">
+    <value>The socket has already been bound to an io completion port.</value>
+  </data>
+  <data name="net_io_writefailure" xml:space="preserve">
+    <value>Unable to write data to the transport connection: {0}.</value>
+  </data>
+  <data name="net_io_readfailure" xml:space="preserve">
+    <value>Unable to read data from the transport connection: {0}.</value>
+  </data>
+  <data name="net_io_connectionclosed" xml:space="preserve">
+    <value>The connection was closed</value>
+  </data>
+  <data name="net_io_transportfailure" xml:space="preserve">
+    <value>Unable to create a transport connection.</value>
+  </data>
+  <data name="net_io_internal_bind" xml:space="preserve">
+    <value>Internal Error: A socket handle could not be bound to a completion port.</value>
+  </data>
+  <data name="net_io_invalidasyncresult" xml:space="preserve">
+    <value>The IAsyncResult object was not returned from the corresponding asynchronous method on this class.</value>
+  </data>
+  <data name="net_io_invalidnestedcall" xml:space="preserve">
+    <value> The {0} method cannot be called when another {1} operation is pending.</value>
+  </data>
+  <data name="net_io_invalidendcall" xml:space="preserve">
+    <value>{0} can only be called once for each asynchronous operation.</value>
+  </data>
+  <data name="net_io_must_be_rw_stream" xml:space="preserve">
+    <value>The stream has to be read/write.</value>
+  </data>
+  <data name="net_io_header_id" xml:space="preserve">
+    <value>Found a wrong header field {0} read : {1}, expected : {2}.</value>
+  </data>
+  <data name="net_io_out_range" xml:space="preserve">
+    <value>The byte count must not exceed {0} bytes for this stream type.</value>
+  </data>
+  <data name="net_io_encrypt" xml:space="preserve">
+    <value>The encryption operation failed, see inner exception.</value>
+  </data>
+  <data name="net_io_decrypt" xml:space="preserve">
+    <value>The decryption operation failed, see inner exception.</value>
+  </data>
+  <data name="net_io_read" xml:space="preserve">
+    <value>The read operation failed, see inner exception.</value>
+  </data>
+  <data name="net_io_write" xml:space="preserve">
+    <value>The write operation failed, see inner exception.</value>
+  </data>
+  <data name="net_io_eof" xml:space="preserve">
+    <value> Received an unexpected EOF or 0 bytes from the transport stream.</value>
+  </data>
+  <data name="net_io_async_result" xml:space="preserve">
+    <value>The parameter: {0} is not valid. Use the object returned from corresponding Begin async call.</value>
+  </data>
+  <data name="net_listener_mustcall" xml:space="preserve">
+    <value>Please call the {0} method before calling this method.</value>
+  </data>
+  <data name="net_listener_mustcompletecall" xml:space="preserve">
+    <value>The in-progress method {0} must be completed first.</value>
+  </data>
+  <data name="net_listener_callinprogress" xml:space="preserve">
+    <value>Cannot re-call {0} while a previous call is still in progress.</value>
+  </data>
+  <data name="net_listener_scheme" xml:space="preserve">
+    <value>Only Uri prefixes starting with 'http://' or 'https://' are supported.</value>
+  </data>
+  <data name="net_listener_host" xml:space="preserve">
+    <value>Only Uri prefixes with a valid hostname are supported.</value>
+  </data>
+  <data name="net_listener_slash" xml:space="preserve">
+    <value>Only Uri prefixes ending in '/' are allowed.</value>
+  </data>
+  <data name="net_listener_repcall" xml:space="preserve">
+    <value>This method cannot be called twice.</value>
+  </data>
+  <data name="net_listener_invalid_cbt_type" xml:space="preserve">
+    <value>Querying the {0} Channel Binding is not supported.</value>
+  </data>
+  <data name="net_listener_no_spns" xml:space="preserve">
+    <value>No service names could be determined from the registered prefixes. Either add prefixes from which default service names can be derived or specify an ExtendedProtectionPolicy object which contains an explicit list of service names.</value>
+  </data>
+  <data name="net_listener_cannot_set_custom_cbt" xml:space="preserve">
+    <value>Custom channel bindings are not supported.</value>
+  </data>
+  <data name="net_listener_cbt_not_supported" xml:space="preserve">
+    <value>HTTP.SYS doesn't support extended protection. Please install the latest HTTP.SYS update.</value>
+  </data>
+  <data name="net_listener_detach_error" xml:space="preserve">
+    <value>Can't detach Url group from request queue. Status code: {0}.</value>
+  </data>
+  <data name="net_listener_close_urlgroup_error" xml:space="preserve">
+    <value>Can't close Url group. Status code: {0}.</value>
+  </data>
+  <data name="net_tls_version" xml:space="preserve">
+    <value>The SSL version is not supported.</value>
+  </data>
+  <data name="net_perm_target" xml:space="preserve">
+    <value>Cannot cast target permission type.</value>
+  </data>
+  <data name="net_perm_both_regex" xml:space="preserve">
+    <value>Cannot subset Regex. Only support if both patterns are identical.</value>
+  </data>
+  <data name="net_perm_none" xml:space="preserve">
+    <value>There are no permissions to check.</value>
+  </data>
+  <data name="net_perm_attrib_count" xml:space="preserve">
+    <value>The value for '{0}' must be specified.</value>
+  </data>
+  <data name="net_perm_invalid_val" xml:space="preserve">
+    <value>The parameter value '{0}={1}' is invalid.</value>
+  </data>
+  <data name="net_perm_attrib_multi" xml:space="preserve">
+    <value>The permission '{0}={1}' cannot be added. Add a separate Attribute statement.</value>
+  </data>
+  <data name="net_perm_epname" xml:space="preserve">
+    <value>The argument value '{0}' is invalid for creating a SocketPermission object.</value>
+  </data>
+  <data name="net_perm_invalid_val_in_element" xml:space="preserve">
+    <value>The '{0}' element contains one or more invalid values.</value>
+  </data>
+  <data name="net_invalid_ip_addr" xml:space="preserve">
+    <value>IPv4 address 0.0.0.0 and IPv6 address ::0 are unspecified addresses that cannot be used as a target address.</value>
+  </data>
+  <data name="dns_bad_ip_address" xml:space="preserve">
+    <value>An invalid IP address was specified.</value>
+  </data>
+  <data name="net_bad_mac_address" xml:space="preserve">
+    <value>An invalid physical address was specified.</value>
+  </data>
+  <data name="net_ping" xml:space="preserve">
+    <value>An exception occurred during a Ping request.</value>
+  </data>
+  <data name="net_bad_ip_address_prefix" xml:space="preserve">
+    <value>An invalid IP address prefix was specified.</value>
+  </data>
+  <data name="net_max_ip_address_list_length_exceeded" xml:space="preserve">
+    <value>Too many addresses to sort. The maximum number of addresses allowed are {0}.</value>
+  </data>
+  <data name="net_ipv4_not_installed" xml:space="preserve">
+    <value>IPv4 is not installed.</value>
+  </data>
+  <data name="net_ipv6_not_installed" xml:space="preserve">
+    <value>IPv6 is not installed.</value>
+  </data>
+  <data name="net_webclient" xml:space="preserve">
+    <value>An exception occurred during a WebClient request.</value>
+  </data>
+  <data name="net_webclient_ContentType" xml:space="preserve">
+    <value>The Content-Type header cannot be changed from its default value for this request.</value>
+  </data>
+  <data name="net_webclient_Multipart" xml:space="preserve">
+    <value>The Content-Type header cannot be set to a multipart type for this request.</value>
+  </data>
+  <data name="net_webclient_no_concurrent_io_allowed" xml:space="preserve">
+    <value>WebClient does not support concurrent I/O operations.</value>
+  </data>
+  <data name="net_webclient_invalid_baseaddress" xml:space="preserve">
+    <value>The specified value is not a valid base address.</value>
+  </data>
+  <data name="net_container_add_cookie" xml:space="preserve">
+    <value>An error occurred when adding a cookie to the container.</value>
+  </data>
+  <data name="net_cookie_invalid" xml:space="preserve">
+    <value>Invalid contents for cookie : '{0}'.</value>
+  </data>
+  <data name="net_cookie_size" xml:space="preserve">
+    <value>The value size of the cookie is '{0}'. This exceeds the configured maximum size, which is '{1}'.</value>
+  </data>
+  <data name="net_cookie_parse_header" xml:space="preserve">
+    <value>An error occurred when parsing the Cookie header for Uri '{0}'.</value>
+  </data>
+  <data name="net_cookie_attribute" xml:space="preserve">
+    <value>The '{0}'='{1}' part of the cookie is invalid.</value>
+  </data>
+  <data name="net_cookie_format" xml:space="preserve">
+    <value>Cookie format error.</value>
+  </data>
+  <data name="net_cookie_exists" xml:space="preserve">
+    <value>Cookie already exists.</value>
+  </data>
+  <data name="net_cookie_capacity_range" xml:space="preserve">
+    <value>'{0}' has to be greater than '{1}' and less than '{2}'.</value>
+  </data>
+  <data name="net_set_token" xml:space="preserve">
+    <value>Failed to impersonate a thread doing authentication of a Web Request.</value>
+  </data>
+  <data name="net_revert_token" xml:space="preserve">
+    <value>Failed to revert the thread token after authenticating a Web Request.</value>
+  </data>
+  <data name="net_ssl_io_async_context" xml:space="preserve">
+    <value>Async context creation failed.</value>
+  </data>
+  <data name="net_ssl_io_encrypt" xml:space="preserve">
+    <value>The encryption operation failed, see inner exception.</value>
+  </data>
+  <data name="net_ssl_io_decrypt" xml:space="preserve">
+    <value>The decryption operation failed, see inner exception.</value>
+  </data>
+  <data name="net_ssl_io_context_expired" xml:space="preserve">
+    <value>The security context has expired.</value>
+  </data>
+  <data name="net_ssl_io_handshake_start" xml:space="preserve">
+    <value>The handshake failed. The remote side has dropped the stream.</value>
+  </data>
+  <data name="net_ssl_io_handshake" xml:space="preserve">
+    <value> The handshake failed, see inner exception.</value>
+  </data>
+  <data name="net_ssl_io_frame" xml:space="preserve">
+    <value>The handshake failed due to an unexpected packet format.</value>
+  </data>
+  <data name="net_ssl_io_corrupted" xml:space="preserve">
+    <value>The stream is corrupted due to an invalid SSL version number in the SSL protocol header.</value>
+  </data>
+  <data name="net_ssl_io_cert_validation" xml:space="preserve">
+    <value>The remote certificate is invalid according to the validation procedure.</value>
+  </data>
+  <data name="net_ssl_io_invalid_end_call" xml:space="preserve">
+    <value>{0} can only be called once for each asynchronous operation.</value>
+  </data>
+  <data name="net_ssl_io_invalid_begin_call" xml:space="preserve">
+    <value>{0} cannot be called when another {1} operation is pending.</value>
+  </data>
+  <data name="net_ssl_io_no_server_cert" xml:space="preserve">
+    <value>The server mode SSL must use a certificate with the associated private key.</value>
+  </data>
+  <data name="net_auth_bad_client_creds" xml:space="preserve">
+    <value>The server has rejected the client credentials.</value>
+  </data>
+  <data name="net_auth_bad_client_creds_or_target_mismatch" xml:space="preserve">
+    <value>Either the target name is incorrect or the server has rejected the client credentials.</value>
+  </data>
+  <data name="net_auth_context_expectation" xml:space="preserve">
+    <value>A security requirement was not fulfilled during authentication. Required: {0}, negotiated: {1}.</value>
+  </data>
+  <data name="net_auth_context_expectation_remote" xml:space="preserve">
+    <value>A remote side security requirement was not fulfilled during authentication. Try increasing the ProtectionLevel and/or ImpersonationLevel.</value>
+  </data>
+  <data name="net_auth_supported_impl_levels" xml:space="preserve">
+    <value>The supported values are Identification, Impersonation or Delegation.</value>
+  </data>
+  <data name="net_auth_no_anonymous_support" xml:space="preserve">
+    <value>The TokenImpersonationLevel.Anonymous level is not supported for authentication.</value>
+  </data>
+  <data name="net_auth_reauth" xml:space="preserve">
+    <value>This operation is not allowed on a security context that has already been authenticated.</value>
+  </data>
+  <data name="net_auth_noauth" xml:space="preserve">
+    <value>This operation is only allowed using a successfully authenticated context.</value>
+  </data>
+  <data name="net_auth_client_server" xml:space="preserve">
+    <value>Once authentication is attempted as the client or server, additional authentication attempts must use the same client or server role.</value>
+  </data>
+  <data name="net_auth_noencryption" xml:space="preserve">
+    <value>This authenticated context does not support data encryption.</value>
+  </data>
+  <data name="net_auth_SSPI" xml:space="preserve">
+    <value>A call to SSPI failed, see inner exception.</value>
+  </data>
+  <data name="net_auth_failure" xml:space="preserve">
+    <value>Authentication failed, see inner exception.</value>
+  </data>
+  <data name="net_auth_eof" xml:space="preserve">
+    <value>Authentication failed because the remote party has closed the transport stream.</value>
+  </data>
+  <data name="net_auth_alert" xml:space="preserve">
+    <value>Authentication failed on the remote side (the stream might still be available for additional authentication attempts).</value>
+  </data>
+  <data name="net_auth_ignored_reauth" xml:space="preserve">
+    <value>Re-authentication failed because the remote party continued to encrypt more than {0} bytes before answering re-authentication.</value>
+  </data>
+  <data name="net_auth_empty_read" xml:space="preserve">
+    <value>Protocol error: cannot proceed with SSPI handshake because an empty blob was received.</value>
+  </data>
+  <data name="net_auth_message_not_encrypted" xml:space="preserve">
+    <value>Protocol error: A received message contains a valid signature but it was not encrypted as required by the effective Protection Level.</value>
+  </data>
+  <data name="net_auth_must_specify_extended_protection_scheme" xml:space="preserve">
+    <value>An extended protection policy must specify either a custom channel binding or a custom service name collection.</value>
+  </data>
+  <data name="net_frame_size" xml:space="preserve">
+    <value>Received an invalid authentication frame. The message size is limited to {0} bytes, attempted to read {1} bytes.</value>
+  </data>
+  <data name="net_frame_read_io" xml:space="preserve">
+    <value>Received incomplete authentication message. Remote party has probably closed the connection.</value>
+  </data>
+  <data name="net_frame_read_size" xml:space="preserve">
+    <value>Cannot determine the frame size or a corrupted frame was received.</value>
+  </data>
+  <data name="net_frame_max_size" xml:space="preserve">
+    <value>The payload size is limited to {0}, attempted set it to {1}.</value>
+  </data>
+  <data name="net_jscript_load" xml:space="preserve">
+    <value>The proxy JScript file threw an exception while being initialized: {0}.</value>
+  </data>
+  <data name="net_proxy_not_gmt" xml:space="preserve">
+    <value>The specified value is not a valid GMT time.</value>
+  </data>
+  <data name="net_proxy_invalid_dayofweek" xml:space="preserve">
+    <value>The specified value is not a valid day of the week.</value>
+  </data>
+  <data name="net_proxy_invalid_url_format" xml:space="preserve">
+    <value>The system proxy settings contain an invalid proxy server setting: '{0}'.</value>
+  </data>
+  <data name="net_param_not_string" xml:space="preserve">
+    <value>Argument must be a string instead of {0}.</value>
+  </data>
+  <data name="net_value_cannot_be_negative" xml:space="preserve">
+    <value>The specified value cannot be negative.</value>
+  </data>
+  <data name="net_invalid_offset" xml:space="preserve">
+    <value>Value of offset cannot be negative or greater than the length of the buffer.</value>
+  </data>
+  <data name="net_offset_plus_count" xml:space="preserve">
+    <value>Sum of offset and count cannot be greater than the length of the buffer.</value>
+  </data>
+  <data name="net_cannot_be_false" xml:space="preserve">
+    <value>The specified value cannot be false.</value>
+  </data>
+  <data name="net_invalid_enum" xml:space="preserve">
+    <value>The specified value is not valid in the '{0}' enumeration.</value>
+  </data>
+  <data name="net_listener_already" xml:space="preserve">
+    <value>Failed to listen on prefix '{0}' because it conflicts with an existing registration on the machine.</value>
+  </data>
+  <data name="net_cache_shadowstream_not_writable" xml:space="preserve">
+    <value>Shadow stream must be writable.</value>
+  </data>
+  <data name="net_cache_validator_fail" xml:space="preserve">
+    <value>The validation method {0}() returned a failure for this request.</value>
+  </data>
+  <data name="net_cache_access_denied" xml:space="preserve">
+    <value>For this RequestCache object, {0} access is denied.</value>
+  </data>
+  <data name="net_cache_validator_result" xml:space="preserve">
+    <value>The validation method {0}() returned the unexpected status: {1}.</value>
+  </data>
+  <data name="net_cache_retrieve_failure" xml:space="preserve">
+    <value>Cache retrieve failed: {0}.</value>
+  </data>
+  <data name="net_cache_not_supported_body" xml:space="preserve">
+    <value>The cached response is not supported for a request with a content body.</value>
+  </data>
+  <data name="net_cache_not_supported_command" xml:space="preserve">
+    <value>The cached response is not supported for a request with the specified request method.</value>
+  </data>
+  <data name="net_cache_not_accept_response" xml:space="preserve">
+    <value>The cache protocol refused the server response. To allow automatic request retrying, set request.AllowAutoRedirect to true.</value>
+  </data>
+  <data name="net_cache_method_failed" xml:space="preserve">
+    <value>The request (Method : {0}) cannot be served from the cache and will fail because of the effective CachePolicy: {1}.</value>
+  </data>
+  <data name="net_cache_key_failed" xml:space="preserve">
+    <value>The request failed because no cache entry (CacheKey : {0}) was found and the effective CachePolicy is {1}.</value>
+  </data>
+  <data name="net_cache_no_stream" xml:space="preserve">
+    <value>The cache protocol returned a cached response but the cache entry is invalid because it has a null stream. (Cache Key : {0}).</value>
+  </data>
+  <data name="net_cache_unsupported_partial_stream" xml:space="preserve">
+    <value>A partial content stream does not support this operation or some method argument is out of range.</value>
+  </data>
+  <data name="net_cache_not_configured" xml:space="preserve">
+    <value>No cache protocol is available for this request.</value>
+  </data>
+  <data name="net_cache_non_seekable_stream_not_supported" xml:space="preserve">
+    <value>The transport stream instance passed in the RangeStream constructor is not seekable and therefore is not supported.</value>
+  </data>
+  <data name="net_invalid_cast" xml:space="preserve">
+    <value>Invalid cast from {0} to {1}.</value>
+  </data>
+  <data name="net_collection_readonly" xml:space="preserve">
+    <value>The collection is read-only.</value>
+  </data>
+  <data name="net_not_ipermission" xml:space="preserve">
+    <value>Specified value does not contain 'IPermission' as its tag.</value>
+  </data>
+  <data name="net_no_classname" xml:space="preserve">
+    <value>Specified value does not contain a 'class' attribute.</value>
+  </data>
+  <data name="net_no_typename" xml:space="preserve">
+    <value>The value class attribute is not valid.</value>
+  </data>
+  <data name="net_array_too_small" xml:space="preserve">
+    <value>The target array is too small.</value>
+  </data>
+  <data name="net_servicePointAddressNotSupportedInHostMode" xml:space="preserve">
+    <value>This property is not supported for protocols that do not use URI.</value>
+  </data>
+  <data name="net_Websockets_AlreadyOneOutstandingOperation" xml:space="preserve">
+    <value>There is already one outstanding '{0}' call for this WebSocket instance. ReceiveAsync and SendAsync can be called simultaneously, but at most one outstanding operation for each of them is allowed at the same time.</value>
+  </data>
+  <data name="net_Websockets_WebSocketBaseFaulted" xml:space="preserve">
+    <value>An exception caused the WebSocket to enter the Aborted state. Please see the InnerException, if present, for more details.</value>
+  </data>
+  <data name="net_WebSockets_NativeSendResponseHeaders" xml:space="preserve">
+    <value>An error occurred when sending the WebSocket HTTP upgrade response during the {0} operation. The HRESULT returned is '{1}'</value>
+  </data>
+  <data name="net_WebSockets_Generic" xml:space="preserve">
+    <value>An internal WebSocket error occurred. Please see the innerException, if present, for more details. </value>
+  </data>
+  <data name="net_WebSockets_NotAWebSocket_Generic" xml:space="preserve">
+    <value>A WebSocket operation was called on a request or response that is not a WebSocket.</value>
+  </data>
+  <data name="net_WebSockets_UnsupportedWebSocketVersion_Generic" xml:space="preserve">
+    <value>Unsupported WebSocket version.</value>
+  </data>
+  <data name="net_WebSockets_HeaderError_Generic" xml:space="preserve">
+    <value>The WebSocket request or response contained unsupported header(s). </value>
+  </data>
+  <data name="net_WebSockets_UnsupportedProtocol_Generic" xml:space="preserve">
+    <value>The WebSocket request or response operation was called with unsupported protocol(s). </value>
+  </data>
+  <data name="net_WebSockets_UnsupportedPlatform" xml:space="preserve">
+    <value>The WebSocket protocol is not supported on this platform.</value>
+  </data>
+  <data name="net_WebSockets_AcceptNotAWebSocket" xml:space="preserve">
+    <value>The {0} operation was called on an incoming request that did not specify a '{1}: {2}' header or the {2} header not contain '{3}'. {2} specified by the client was '{4}'.</value>
+  </data>
+  <data name="net_WebSockets_AcceptUnsupportedWebSocketVersion" xml:space="preserve">
+    <value>The {0} operation was called on an incoming request with WebSocket version '{1}', expected '{2}'. </value>
+  </data>
+  <data name="net_WebSockets_AcceptHeaderNotFound" xml:space="preserve">
+    <value>The {0} operation was called on an incoming WebSocket request without required '{1}' header. </value>
+  </data>
+  <data name="net_WebSockets_AcceptUnsupportedProtocol" xml:space="preserve">
+    <value>The WebSocket client request requested '{0}' protocol(s), but server is only accepting '{1}' protocol(s).</value>
+  </data>
+  <data name="net_WebSockets_ClientAcceptingNoProtocols" xml:space="preserve">
+    <value>The WebSocket client did not request any protocols, but server attempted to accept '{0}' protocol(s). </value>
+  </data>
+  <data name="net_WebSockets_ClientSecWebSocketProtocolsBlank" xml:space="preserve">
+    <value>The WebSocket client sent a blank '{0}' header; this is not allowed by the WebSocket protocol specification. The client should omit the header if the client is not negotiating any sub-protocols. </value>
+  </data>
+  <data name="net_WebSockets_ArgumentOutOfRange_TooSmall" xml:space="preserve">
+    <value>The argument must be a value greater than {0}.</value>
+  </data>
+  <data name="net_WebSockets_ArgumentOutOfRange_InternalBuffer" xml:space="preserve">
+    <value>The byte array must have a length of at least '{0}' bytes.  </value>
+  </data>
+  <data name="net_WebSockets_ArgumentOutOfRange_TooBig" xml:space="preserve">
+    <value>The value of the '{0}' parameter ({1}) must be less than or equal to {2}.</value>
+  </data>
+  <data name="net_WebSockets_InvalidState_Generic" xml:space="preserve">
+    <value>The WebSocket instance cannot be used for communication because it has been transitioned into an invalid state.</value>
+  </data>
+  <data name="net_WebSockets_InvalidState_ClosedOrAborted" xml:space="preserve">
+    <value>The '{0}' instance cannot be used for communication because it has been transitioned into the '{1}' state.</value>
+  </data>
+  <data name="net_WebSockets_InvalidState" xml:space="preserve">
+    <value>The WebSocket is in an invalid state ('{0}') for this operation. Valid states are: '{1}'</value>
+  </data>
+  <data name="net_WebSockets_ReceiveAsyncDisallowedAfterCloseAsync" xml:space="preserve">
+    <value>The WebSocket is in an invalid state for this operation. The '{0}' method has already been called before on this instance. Use '{1}' instead to keep being able to receive data but close the output channel.</value>
+  </data>
+  <data name="net_WebSockets_InvalidMessageType" xml:space="preserve">
+    <value>The received message type '{2}' is invalid after calling {0}. {0} should only be used if no more data is expected from the remote endpoint. Use '{1}' instead to keep being able to receive data but close the output channel.</value>
+  </data>
+  <data name="net_WebSockets_InvalidBufferType" xml:space="preserve">
+    <value>The buffer type '{0}' is invalid. Valid buffer types are: '{1}', '{2}', '{3}', '{4}', '{5}'.</value>
+  </data>
+  <data name="net_WebSockets_InvalidMessageType_Generic" xml:space="preserve">
+    <value>The received  message type is invalid after calling {0}. {0} should only be used if no more data is expected from the remote endpoint. Use '{1}' instead to keep being able to receive data but close the output channel.</value>
+  </data>
+  <data name="net_WebSockets_Argument_InvalidMessageType" xml:space="preserve">
+    <value>The message type '{0}' is not allowed for the '{1}' operation. Valid message types are: '{2}, {3}'. To close the WebSocket, use the '{4}' operation instead. </value>
+  </data>
+  <data name="net_WebSockets_ConnectionClosedPrematurely_Generic" xml:space="preserve">
+    <value>The remote party closed the WebSocket connection without completing the close handshake.</value>
+  </data>
+  <data name="net_WebSockets_InvalidCharInProtocolString" xml:space="preserve">
+    <value>The WebSocket protocol '{0}' is invalid because it contains the invalid character '{1}'.</value>
+  </data>
+  <data name="net_WebSockets_InvalidEmptySubProtocol" xml:space="preserve">
+    <value>Empty string is not a valid subprotocol value. Please use \"null\" to specify no value.</value>
+  </data>
+  <data name="net_WebSockets_ReasonNotNull" xml:space="preserve">
+    <value>The close status description '{0}' is invalid. When using close status code '{1}' the description must be null.</value>
+  </data>
+  <data name="net_WebSockets_InvalidCloseStatusCode" xml:space="preserve">
+    <value>The close status code '{0}' is reserved for system use only and cannot be specified when calling this method.</value>
+  </data>
+  <data name="net_WebSockets_InvalidCloseStatusDescription" xml:space="preserve">
+    <value>The close status description '{0}' is too long. The UTF8-representation of the status description must not be longer than {1} bytes.</value>
+  </data>
+  <data name="net_WebSockets_Scheme" xml:space="preserve">
+    <value>Only Uris starting with 'ws://' or 'wss://' are supported.</value>
+  </data>
+  <data name="net_WebSockets_AlreadyStarted" xml:space="preserve">
+    <value>The WebSocket has already been started.</value>
+  </data>
+  <data name="net_WebSockets_Connect101Expected" xml:space="preserve">
+    <value>The server returned status code '{0}' when status code '101' was expected.</value>
+  </data>
+  <data name="net_WebSockets_InvalidResponseHeader" xml:space="preserve">
+    <value>The '{0}' header value '{1}' is invalid.</value>
+  </data>
+  <data name="net_WebSockets_NotConnected" xml:space="preserve">
+    <value>The WebSocket is not connected.</value>
+  </data>
+  <data name="net_WebSockets_InvalidRegistration" xml:space="preserve">
+    <value>The WebSocket schemes must be registered with the HttpWebRequest class.</value>
+  </data>
+  <data name="net_WebSockets_NoDuplicateProtocol" xml:space="preserve">
+    <value>Duplicate protocols are not allowed: '{0}'.</value>
+  </data>
+  <data name="net_log_exception" xml:space="preserve">
+    <value>Exception in {0}::{1} - {2}.</value>
+  </data>
+  <data name="net_log_listener_delegate_exception" xml:space="preserve">
+    <value>Sending 500 response, AuthenticationSchemeSelectorDelegate threw an exception: {0}.</value>
+  </data>
+  <data name="net_log_listener_unsupported_authentication_scheme" xml:space="preserve">
+    <value>Received a request with an unsupported authentication scheme, Authorization:{0} SupportedSchemes:{1}.</value>
+  </data>
+  <data name="net_log_listener_unmatched_authentication_scheme" xml:space="preserve">
+    <value>Received a request with an unmatched or no authentication scheme. AuthenticationSchemes:{0}, Authorization:{1}.</value>
+  </data>
+  <data name="net_log_listener_create_valid_identity_failed" xml:space="preserve">
+    <value>Failed to create a valid Identity for an incoming request.</value>
+  </data>
+  <data name="net_log_listener_httpsys_registry_null" xml:space="preserve">
+    <value>Can't open Registry key '{0}'.</value>
+  </data>
+  <data name="net_log_listener_httpsys_registry_error" xml:space="preserve">
+    <value>Exception thrown while reading Registry key '{0}': {1}</value>
+  </data>
+  <data name="net_log_listener_cant_convert_raw_path" xml:space="preserve">
+    <value>Can't convert Uri path '{0}' using encoding '{1}'.</value>
+  </data>
+  <data name="net_log_listener_cant_convert_percent_value" xml:space="preserve">
+    <value>Can't convert percent encoded value '{0}'.</value>
+  </data>
+  <data name="net_log_listener_cant_convert_bytes" xml:space="preserve">
+    <value>Can't convert bytes '{0}' into UTF-16 characters: {1}</value>
+  </data>
+  <data name="net_log_listener_cant_convert_to_utf8" xml:space="preserve">
+    <value>Can't convert string '{0}' into UTF-8 bytes: {1}</value>
+  </data>
+  <data name="net_log_listener_cant_create_uri" xml:space="preserve">
+    <value>Can't create Uri from string '{0}://{1}{2}{3}'.</value>
+  </data>
+  <data name="net_log_listener_no_cbt_disabled" xml:space="preserve">
+    <value>No channel binding check because extended protection is disabled.</value>
+  </data>
+  <data name="net_log_listener_no_cbt_http" xml:space="preserve">
+    <value>No channel binding check for requests without a secure channel.</value>
+  </data>
+  <data name="net_log_listener_no_cbt_platform" xml:space="preserve">
+    <value>No channel binding check because the underlying platform does not support extended protection.</value>
+  </data>
+  <data name="net_log_listener_no_cbt_trustedproxy" xml:space="preserve">
+    <value>No channel binding check for the trusted proxy scenario.</value>
+  </data>
+  <data name="net_log_listener_cbt" xml:space="preserve">
+    <value>Channel binding check enabled.</value>
+  </data>
+  <data name="net_log_listener_no_spn_kerberos" xml:space="preserve">
+    <value>No explicit service name check because Kerberos authentication already validates the service name.</value>
+  </data>
+  <data name="net_log_listener_no_spn_disabled" xml:space="preserve">
+    <value>No service name check because extended protection is disabled.</value>
+  </data>
+  <data name="net_log_listener_no_spn_cbt" xml:space="preserve">
+    <value>No service name check because the channel binding was already checked.</value>
+  </data>
+  <data name="net_log_listener_no_spn_platform" xml:space="preserve">
+    <value>No service name check because the underlying platform does not support extended protection.</value>
+  </data>
+  <data name="net_log_listener_no_spn_whensupported" xml:space="preserve">
+    <value>No service name check because the client did not provide a service name and the server was configured for PolicyEnforcement.WhenSupported.</value>
+  </data>
+  <data name="net_log_listener_no_spn_loopback" xml:space="preserve">
+    <value>No service name check because the authentication was from a client on the local machine.</value>
+  </data>
+  <data name="net_log_listener_spn" xml:space="preserve">
+    <value>Client provided service name '{0}'.</value>
+  </data>
+  <data name="net_log_listener_spn_passed" xml:space="preserve">
+    <value>Service name check succeeded.</value>
+  </data>
+  <data name="net_log_listener_spn_failed" xml:space="preserve">
+    <value>Service name check failed.</value>
+  </data>
+  <data name="net_log_listener_spn_failed_always" xml:space="preserve">
+    <value>Service name check failed because the client did not provide a service name and the server was configured for PolicyEnforcement.Always.</value>
+  </data>
+  <data name="net_log_listener_spn_failed_empty" xml:space="preserve">
+    <value>No acceptable service names were configured!</value>
+  </data>
+  <data name="net_log_listener_spn_failed_dump" xml:space="preserve">
+    <value>Dumping acceptable service names:</value>
+  </data>
+  <data name="net_log_listener_spn_add" xml:space="preserve">
+    <value>Adding default service name '{0}' from prefix '{1}'.</value>
+  </data>
+  <data name="net_log_listener_spn_not_add" xml:space="preserve">
+    <value>No default service name added for prefix '{0}'.</value>
+  </data>
+  <data name="net_log_listener_spn_remove" xml:space="preserve">
+    <value>Removing default service name '{0}' from prefix '{1}'.</value>
+  </data>
+  <data name="net_log_listener_spn_not_remove" xml:space="preserve">
+    <value>No default service name removed for prefix '{0}'.</value>
+  </data>
+  <data name="net_log_sspi_enumerating_security_packages" xml:space="preserve">
+    <value>Enumerating security packages:</value>
+  </data>
+  <data name="net_log_sspi_security_package_not_found" xml:space="preserve">
+    <value>Security package '{0}' was not found.</value>
+  </data>
+  <data name="net_log_sspi_security_context_input_buffer" xml:space="preserve">
+    <value>{0}(In-Buffer length={1}, Out-Buffer length={2}, returned code={3}).</value>
+  </data>
+  <data name="net_log_sspi_security_context_input_buffers" xml:space="preserve">
+    <value>{0}(In-Buffers count={1}, Out-Buffer length={2}, returned code={3}).</value>
+  </data>
+  <data name="net_log_sspi_selected_cipher_suite" xml:space="preserve">
+    <value>{0}(Protocol={1}, Cipher={2} {3} bit strength, Hash={4} {5} bit strength, Key Exchange={6} {7} bit strength).</value>
+  </data>
+  <data name="net_log_remote_certificate" xml:space="preserve">
+    <value>Remote certificate: {0}.</value>
+  </data>
+  <data name="net_log_locating_private_key_for_certificate" xml:space="preserve">
+    <value>Locating the private key for the certificate: {0}.</value>
+  </data>
+  <data name="net_log_cert_is_of_type_2" xml:space="preserve">
+    <value>Certificate is of type X509Certificate2 and contains the private key.</value>
+  </data>
+  <data name="net_log_found_cert_in_store" xml:space="preserve">
+    <value>Found the certificate in the {0} store.</value>
+  </data>
+  <data name="net_log_did_not_find_cert_in_store" xml:space="preserve">
+    <value>Cannot find the certificate in either the LocalMachine store or the CurrentUser store.</value>
+  </data>
+  <data name="net_log_open_store_failed" xml:space="preserve">
+    <value>Opening Certificate store {0} failed, exception: {1}.</value>
+  </data>
+  <data name="net_log_got_certificate_from_delegate" xml:space="preserve">
+    <value>Got a certificate from the client delegate.</value>
+  </data>
+  <data name="net_log_no_delegate_and_have_no_client_cert" xml:space="preserve">
+    <value>Client delegate did not provide a certificate; and there are not other user-provided certificates. Need to attempt a session restart.</value>
+  </data>
+  <data name="net_log_no_delegate_but_have_client_cert" xml:space="preserve">
+    <value>Client delegate did not provide a certificate; but there are other user-provided certificates.</value>
+  </data>
+  <data name="net_log_attempting_restart_using_cert" xml:space="preserve">
+    <value>Attempting to restart the session using the user-provided certificate: {0}.</value>
+  </data>
+  <data name="net_log_no_issuers_try_all_certs" xml:space="preserve">
+    <value>We have user-provided certificates. The server has not specified any issuers, so try all the certificates.</value>
+  </data>
+  <data name="net_log_server_issuers_look_for_matching_certs" xml:space="preserve">
+    <value>We have user-provided certificates. The server has specified {0} issuer(s). Looking for certificates that match any of the issuers.</value>
+  </data>
+  <data name="net_log_selected_cert" xml:space="preserve">
+    <value>Selected certificate: {0}.</value>
+  </data>
+  <data name="net_log_n_certs_after_filtering" xml:space="preserve">
+    <value>Left with {0} client certificates to choose from.</value>
+  </data>
+  <data name="net_log_finding_matching_certs" xml:space="preserve">
+    <value>Trying to find a matching certificate in the certificate store.</value>
+  </data>
+  <data name="net_log_using_cached_credential" xml:space="preserve">
+    <value>Using the cached credential handle.</value>
+  </data>
+  <data name="net_log_remote_cert_user_declared_valid" xml:space="preserve">
+    <value>Remote certificate was verified as valid by the user.</value>
+  </data>
+  <data name="net_log_remote_cert_user_declared_invalid" xml:space="preserve">
+    <value>Remote certificate was verified as invalid by the user.</value>
+  </data>
+  <data name="net_log_remote_cert_has_no_errors" xml:space="preserve">
+    <value>Remote certificate has no errors.</value>
+  </data>
+  <data name="net_log_remote_cert_has_errors" xml:space="preserve">
+    <value>Remote certificate has errors:</value>
+  </data>
+  <data name="net_log_remote_cert_not_available" xml:space="preserve">
+    <value>The remote server did not provide a certificate.</value>
+  </data>
+  <data name="net_log_remote_cert_name_mismatch" xml:space="preserve">
+    <value>Certificate name mismatch.</value>
+  </data>
+  <data name="net_log_proxy_autodetect_script_location_parse_error" xml:space="preserve">
+    <value>WebProxy failed to parse the auto-detected location of a proxy script:\"{0}\" into a Uri.</value>
+  </data>
+  <data name="net_log_proxy_autodetect_failed" xml:space="preserve">
+    <value>WebProxy failed to autodetect a Uri for a proxy script.</value>
+  </data>
+  <data name="net_log_proxy_script_execution_error" xml:space="preserve">
+    <value>WebProxy caught an exception while executing the ScriptReturn script: {0}.</value>
+  </data>
+  <data name="net_log_proxy_script_download_compile_error" xml:space="preserve">
+    <value>WebProxy caught an exception while  downloading/compiling the proxy script: {0}.</value>
+  </data>
+  <data name="net_log_proxy_system_setting_update" xml:space="preserve">
+    <value>ScriptEngine was notified of a potential change in the system's proxy settings and will update WebProxy settings.</value>
+  </data>
+  <data name="net_log_proxy_update_due_to_ip_config_change" xml:space="preserve">
+    <value>ScriptEngine was notified of a change in the IP configuration and will update WebProxy settings.</value>
+  </data>
+  <data name="net_log_proxy_called_with_null_parameter" xml:space="preserve">
+    <value>{0} was called with a null '{1}' parameter.</value>
+  </data>
+  <data name="net_log_proxy_called_with_invalid_parameter" xml:space="preserve">
+    <value>{0} was called with an invalid parameter.</value>
+  </data>
+  <data name="net_log_proxy_ras_supported" xml:space="preserve">
+    <value>RAS supported: {0}</value>
+  </data>
+  <data name="net_log_proxy_ras_notsupported_exception" xml:space="preserve">
+    <value>RAS is not supported. Can't create RasHelper instance.</value>
+  </data>
+  <data name="net_log_proxy_winhttp_cant_open_session" xml:space="preserve">
+    <value>Can't open WinHttp session. Error code: {0}.</value>
+  </data>
+  <data name="net_log_proxy_winhttp_getproxy_failed" xml:space="preserve">
+    <value>Can't retrieve proxy settings for Uri '{0}'. Error code: {1}.</value>
+  </data>
+  <data name="net_log_proxy_winhttp_timeout_error" xml:space="preserve">
+    <value>Can't specify proxy discovery timeout. Error code: {0}.</value>
+  </data>
+  <data name="net_log_cache_validation_failed_resubmit" xml:space="preserve">
+    <value> Resubmitting this request because cache cannot validate the response.</value>
+  </data>
+  <data name="net_log_cache_refused_server_response" xml:space="preserve">
+    <value>Caching protocol has refused the server response. To allow automatic request retrying set request.AllowAutoRedirect=true.</value>
+  </data>
+  <data name="net_log_cache_ftp_proxy_doesnt_support_partial" xml:space="preserve">
+    <value>This FTP request is configured to use a proxy through HTTP protocol. Cache revalidation and partially cached responses are not supported.</value>
+  </data>
+  <data name="net_log_cache_ftp_method" xml:space="preserve">
+    <value>FTP request method={0}.</value>
+  </data>
+  <data name="net_log_cache_ftp_supports_bin_only" xml:space="preserve">
+    <value>Caching is not supported for non-binary FTP request mode.</value>
+  </data>
+  <data name="net_log_cache_replacing_entry_with_HTTP_200" xml:space="preserve">
+    <value>Replacing cache entry metadata with 'HTTP/1.1 200 OK' status line to satisfy HTTP cache protocol logic.</value>
+  </data>
+  <data name="net_log_cache_now_time" xml:space="preserve">
+    <value>[Now Time (UTC)] : {0}.</value>
+  </data>
+  <data name="net_log_cache_max_age_absolute" xml:space="preserve">
+    <value>[MaxAge] Absolute time expiration check (sensitive to clock skew), cache Expires: {0}.</value>
+  </data>
+  <data name="net_log_cache_age1" xml:space="preserve">
+    <value>[Age1] Now - LastSynchronized : [Age1] Now - LastSynchronized : {0}, Last Synchronized: {1}.</value>
+  </data>
+  <data name="net_log_cache_age1_date_header" xml:space="preserve">
+    <value>[Age1] NowTime-Date Header : {0}, Date Header: {1}.</value>
+  </data>
+  <data name="net_log_cache_age1_last_synchronized" xml:space="preserve">
+    <value>[Age1] Now - LastSynchronized + AgeHeader : {0}, Last Synchronized: {1}.</value>
+  </data>
+  <data name="net_log_cache_age1_last_synchronized_age_header" xml:space="preserve">
+    <value>[Age1] Now - LastSynchronized + AgeHeader : {0}, Last Synchronized: {1}, Age Header: {2}.</value>
+  </data>
+  <data name="net_log_cache_age2" xml:space="preserve">
+    <value>[Age2] AgeHeader : {0}.</value>
+  </data>
+  <data name="net_log_cache_max_age_cache_s_max_age" xml:space="preserve">
+    <value>[MaxAge] Cache s_MaxAge : {0}.</value>
+  </data>
+  <data name="net_log_cache_max_age_expires_date" xml:space="preserve">
+    <value>[MaxAge] Cache Expires - Date : {0}, Expires: {1}.</value>
+  </data>
+  <data name="net_log_cache_max_age_cache_max_age" xml:space="preserve">
+    <value>[MaxAge] Cache MaxAge : {0}.</value>
+  </data>
+  <data name="net_log_cache_no_max_age_use_10_percent" xml:space="preserve">
+    <value>[MaxAge] Cannot compute Cache MaxAge, use 10% since LastModified: {0}, LastModified: {1}.</value>
+  </data>
+  <data name="net_log_cache_no_max_age_use_default" xml:space="preserve">
+    <value>[MaxAge] Cannot compute Cache MaxAge, using default RequestCacheValidator.UnspecifiedMaxAge: {0}.</value>
+  </data>
+  <data name="net_log_cache_validator_invalid_for_policy" xml:space="preserve">
+    <value>This validator should not be called for policy : {0}.</value>
+  </data>
+  <data name="net_log_cache_response_last_modified" xml:space="preserve">
+    <value>Response LastModified={0},  ContentLength= {1}.</value>
+  </data>
+  <data name="net_log_cache_cache_last_modified" xml:space="preserve">
+    <value>Cache    LastModified={0},  ContentLength= {1}.</value>
+  </data>
+  <data name="net_log_cache_partial_and_non_zero_content_offset" xml:space="preserve">
+    <value>A Cache Entry is partial and the user request has non zero ContentOffset : {0}. A restart from cache is not supported for partial cache entries.</value>
+  </data>
+  <data name="net_log_cache_response_valid_based_on_policy" xml:space="preserve">
+    <value>Response is valid based on Policy : {0}.</value>
+  </data>
+  <data name="net_log_cache_null_response_failure" xml:space="preserve">
+    <value>Response is null so this Request should fail.</value>
+  </data>
+  <data name="net_log_cache_ftp_response_status" xml:space="preserve">
+    <value>FTP Response Status={0}, {1}.</value>
+  </data>
+  <data name="net_log_cache_resp_valid_based_on_retry" xml:space="preserve">
+    <value>Accept this response as valid based on the retry count : {0}.</value>
+  </data>
+  <data name="net_log_cache_no_update_based_on_method" xml:space="preserve">
+    <value>Cache is not updated based on the request Method : {0}.</value>
+  </data>
+  <data name="net_log_cache_removed_existing_invalid_entry" xml:space="preserve">
+    <value>Existing entry is removed because it was found invalid.</value>
+  </data>
+  <data name="net_log_cache_not_updated_based_on_policy" xml:space="preserve">
+    <value>Cache is not updated based on Policy : {0}.</value>
+  </data>
+  <data name="net_log_cache_not_updated_because_no_response" xml:space="preserve">
+    <value>Cache is not updated because there is no response associated with the request.</value>
+  </data>
+  <data name="net_log_cache_removed_existing_based_on_method" xml:space="preserve">
+    <value>Existing cache entry is removed based on the request Method : {0}.</value>
+  </data>
+  <data name="net_log_cache_existing_not_removed_because_unexpected_response_status" xml:space="preserve">
+    <value>Existing cache entry should but cannot be removed due to unexpected response Status : ({0}) {1}.</value>
+  </data>
+  <data name="net_log_cache_removed_existing_based_on_policy" xml:space="preserve">
+    <value>Existing cache entry is removed based on Policy : {0}.</value>
+  </data>
+  <data name="net_log_cache_not_updated_based_on_ftp_response_status" xml:space="preserve">
+    <value>Cache is not updated based on the FTP response status. Expected : {0}, actual : {1}.</value>
+  </data>
+  <data name="net_log_cache_update_not_supported_for_ftp_restart" xml:space="preserve">
+    <value>Cache update is not supported for restarted FTP responses. Restart offset : {0}.</value>
+  </data>
+  <data name="net_log_cache_removed_entry_because_ftp_restart_response_changed" xml:space="preserve">
+    <value>Existing cache entry is removed since a restarted response was changed on the server, cache LastModified date : {0}, new LastModified date : {1}.</value>
+  </data>
+  <data name="net_log_cache_last_synchronized" xml:space="preserve">
+    <value>The cache entry last synchronized time : {0}.</value>
+  </data>
+  <data name="net_log_cache_suppress_update_because_synched_last_minute" xml:space="preserve">
+    <value>Suppressing cache update since the entry was synchronized within the last minute.</value>
+  </data>
+  <data name="net_log_cache_updating_last_synchronized" xml:space="preserve">
+    <value>Updating cache entry last synchronized time : {0}.</value>
+  </data>
+  <data name="net_log_cache_cannot_remove" xml:space="preserve">
+    <value>{0} Cannot Remove (throw): Key : {1}, Error : {2}.</value>
+  </data>
+  <data name="net_log_cache_key_status" xml:space="preserve">
+    <value>{0}, Key : {1}, -&gt; Status : {2}.</value>
+  </data>
+  <data name="net_log_cache_key_remove_failed_status" xml:space="preserve">
+    <value>{0}, Key : {1}, Remove operation failed -&gt; Status : {2}.</value>
+  </data>
+  <data name="net_log_cache_usecount_file" xml:space="preserve">
+    <value>{0}, UseCount : {1}, File : {2}.</value>
+  </data>
+  <data name="net_log_cache_stream" xml:space="preserve">
+    <value>{0}, stream : {1}.</value>
+  </data>
+  <data name="net_log_cache_filename" xml:space="preserve">
+    <value>{0} -&gt; Filename : {1}, Status : {2}.</value>
+  </data>
+  <data name="net_log_cache_lookup_failed" xml:space="preserve">
+    <value>{0}, Lookup operation failed -&gt; {1}.</value>
+  </data>
+  <data name="net_log_cache_exception" xml:space="preserve">
+    <value>{0}, Exception : {1}.</value>
+  </data>
+  <data name="net_log_cache_expected_length" xml:space="preserve">
+    <value>Expected length (0=none)= {0}.</value>
+  </data>
+  <data name="net_log_cache_last_modified" xml:space="preserve">
+    <value>LastModified    (0=none)= {0}.</value>
+  </data>
+  <data name="net_log_cache_expires" xml:space="preserve">
+    <value>Expires         (0=none)= {0}.</value>
+  </data>
+  <data name="net_log_cache_max_stale" xml:space="preserve">
+    <value>MaxStale (sec)          : {0}.</value>
+  </data>
+  <data name="net_log_cache_dumping_metadata" xml:space="preserve">
+    <value>...Dumping Metadata...</value>
+  </data>
+  <data name="net_log_cache_create_failed" xml:space="preserve">
+    <value>Create operation failed -&gt; {0}.</value>
+  </data>
+  <data name="net_log_cache_set_expires" xml:space="preserve">
+    <value>Set Expires               ={0}.</value>
+  </data>
+  <data name="net_log_cache_set_last_modified" xml:space="preserve">
+    <value>Set LastModified          ={0}.</value>
+  </data>
+  <data name="net_log_cache_set_last_synchronized" xml:space="preserve">
+    <value>Set LastSynchronized      ={0}.</value>
+  </data>
+  <data name="net_log_cache_enable_max_stale" xml:space="preserve">
+    <value>Enable MaxStale (sec) ={0}.</value>
+  </data>
+  <data name="net_log_cache_disable_max_stale" xml:space="preserve">
+    <value>Disable MaxStale (set to 0).</value>
+  </data>
+  <data name="net_log_cache_set_new_metadata" xml:space="preserve">
+    <value>Set new Metadata.</value>
+  </data>
+  <data name="net_log_cache_dumping" xml:space="preserve">
+    <value>...Dumping...</value>
+  </data>
+  <data name="net_log_cache_key" xml:space="preserve">
+    <value>{0}, Key : {1}.</value>
+  </data>
+  <data name="net_log_cache_no_commit" xml:space="preserve">
+    <value>{0}, Nothing was written to the stream, do not commit that cache entry.</value>
+  </data>
+  <data name="net_log_cache_error_deleting_filename" xml:space="preserve">
+    <value>{0}, Error deleting a Filename : {1}.</value>
+  </data>
+  <data name="net_log_cache_update_failed" xml:space="preserve">
+    <value>{0}, Key : {1}, Update operation failed -&gt; {2}.</value>
+  </data>
+  <data name="net_log_cache_delete_failed" xml:space="preserve">
+    <value>{0}, Key : {1}, Delete operation failed -&gt; {2}.</value>
+  </data>
+  <data name="net_log_cache_commit_failed" xml:space="preserve">
+    <value>{0}, Key : {1}, Commit operation failed -&gt; {2}.</value>
+  </data>
+  <data name="net_log_cache_committed_as_partial" xml:space="preserve">
+    <value>{0}, Key : {1}, Committed entry as partial, not cached bytes count : {2}.</value>
+  </data>
+  <data name="net_log_cache_max_stale_and_update_status" xml:space="preserve">
+    <value>{0}, MaxStale : {1}, Update Status : {2}.</value>
+  </data>
+  <data name="net_log_cache_failing_request_with_exception" xml:space="preserve">
+    <value>Failing request with the WebExceptionStatus : {0}.</value>
+  </data>
+  <data name="net_log_cache_request_method" xml:space="preserve">
+    <value>Request Method : {0}.</value>
+  </data>
+  <data name="net_log_cache_http_status_parse_failure" xml:space="preserve">
+    <value>Cannot Parse Cache HTTP Status Line: {0}.</value>
+  </data>
+  <data name="net_log_cache_http_status_line" xml:space="preserve">
+    <value>Entry Status Line : HTTP/{0} {1} {2}.</value>
+  </data>
+  <data name="net_log_cache_cache_control" xml:space="preserve">
+    <value>Cache Cache-Control : {0}.</value>
+  </data>
+  <data name="net_log_cache_invalid_http_version" xml:space="preserve">
+    <value>The cached version is invalid, assuming HTTP 1.0.</value>
+  </data>
+  <data name="net_log_cache_no_http_response_header" xml:space="preserve">
+    <value>This Cache Entry does not carry HTTP response headers.</value>
+  </data>
+  <data name="net_log_cache_http_header_parse_error" xml:space="preserve">
+    <value>Cannot parse HTTP headers in entry metadata, offending string: {0}.</value>
+  </data>
+  <data name="net_log_cache_metadata_name_value_parse_error" xml:space="preserve">
+    <value>Cannot parse all strings in system metadata as \"name:value\", offending string: {0}.</value>
+  </data>
+  <data name="net_log_cache_content_range_error" xml:space="preserve">
+    <value>Invalid format of Response Content-Range:{0}.</value>
+  </data>
+  <data name="net_log_cache_cache_control_error" xml:space="preserve">
+    <value>Invalid CacheControl header : {0}.</value>
+  </data>
+  <data name="net_log_cache_unexpected_status" xml:space="preserve">
+    <value>The cache protocol method {0} has returned unexpected status: {1}.</value>
+  </data>
+  <data name="net_log_cache_object_and_exception" xml:space="preserve">
+    <value>{0} exception: {1}.</value>
+  </data>
+  <data name="net_log_cache_revalidation_not_needed" xml:space="preserve">
+    <value>{0}, No cache entry revalidation is needed.</value>
+  </data>
+  <data name="net_log_cache_not_updated_based_on_cache_protocol_status" xml:space="preserve">
+    <value>{0}, Cache is not updated based on the current cache protocol status : {1}.</value>
+  </data>
+  <data name="net_log_cache_closing_cache_stream" xml:space="preserve">
+    <value>{0}: {1} Closing effective cache stream, type : {2}, cache entry key : {3}.</value>
+  </data>
+  <data name="net_log_cache_exception_ignored" xml:space="preserve">
+    <value>{0}: an exception (ignored) on {1} : {2}.</value>
+  </data>
+  <data name="net_log_cache_no_cache_entry" xml:space="preserve">
+    <value>{0} has requested a cache response but the entry does not exist (Stream.Null).</value>
+  </data>
+  <data name="net_log_cache_null_cached_stream" xml:space="preserve">
+    <value>{0} has requested a cache response but the cached stream is null.</value>
+  </data>
+  <data name="net_log_cache_requested_combined_but_null_cached_stream" xml:space="preserve">
+    <value>{0} has requested a combined response but the cached stream is null.</value>
+  </data>
+  <data name="net_log_cache_returned_range_cache" xml:space="preserve">
+    <value>{0} has returned a range cache stream, Offset : {1}, Length : {2}.</value>
+  </data>
+  <data name="net_log_cache_entry_not_found_freshness_undefined" xml:space="preserve">
+    <value>{0}, Cache Entry not found, freshness result : Undefined.</value>
+  </data>
+  <data name="net_log_cache_dumping_cache_context" xml:space="preserve">
+    <value>...Dumping Cache Context...</value>
+  </data>
+  <data name="net_log_cache_result" xml:space="preserve">
+    <value>{0}, result : {1}.</value>
+  </data>
+  <data name="net_log_cache_uri_with_query_has_no_expiration" xml:space="preserve">
+    <value>Request Uri has a Query, and no explicit expiration time is provided.</value>
+  </data>
+  <data name="net_log_cache_uri_with_query_and_cached_resp_from_http_10" xml:space="preserve">
+    <value>Request Uri has a Query, and cached response is from HTTP 1.0 server.</value>
+  </data>
+  <data name="net_log_cache_valid_as_fresh_or_because_policy" xml:space="preserve">
+    <value>Valid as fresh or because of Cache Policy : {0}.</value>
+  </data>
+  <data name="net_log_cache_accept_based_on_retry_count" xml:space="preserve">
+    <value>Accept this response base on the retry count : {0}.</value>
+  </data>
+  <data name="net_log_cache_date_header_older_than_cache_entry" xml:space="preserve">
+    <value>Response Date header value is older than that of the cache entry.</value>
+  </data>
+  <data name="net_log_cache_server_didnt_satisfy_range" xml:space="preserve">
+    <value>Server did not satisfy the range: {0}.</value>
+  </data>
+  <data name="net_log_cache_304_received_on_unconditional_request" xml:space="preserve">
+    <value>304 response was received on an unconditional request.</value>
+  </data>
+  <data name="net_log_cache_304_received_on_unconditional_request_expected_200_206" xml:space="preserve">
+    <value>304 response was received on an unconditional request, but expected response code is 200 or 206.</value>
+  </data>
+  <data name="net_log_cache_last_modified_header_older_than_cache_entry" xml:space="preserve">
+    <value>HTTP 1.0 Response Last-Modified header value is older than that of the cache entry.</value>
+  </data>
+  <data name="net_log_cache_freshness_outside_policy_limits" xml:space="preserve">
+    <value>Response freshness is not within the specified policy limits.</value>
+  </data>
+  <data name="net_log_cache_need_to_remove_invalid_cache_entry_304" xml:space="preserve">
+    <value>Need to remove an invalid cache entry with status code == 304(NotModified).</value>
+  </data>
+  <data name="net_log_cache_resp_status" xml:space="preserve">
+    <value>Response Status : {0}.</value>
+  </data>
+  <data name="net_log_cache_resp_304_or_request_head" xml:space="preserve">
+    <value>Response=304 or Request was HEAD, updating cache entry.</value>
+  </data>
+  <data name="net_log_cache_dont_update_cached_headers" xml:space="preserve">
+    <value>Do not update Cached Headers.</value>
+  </data>
+  <data name="net_log_cache_update_cached_headers" xml:space="preserve">
+    <value>Update Cached Headers.</value>
+  </data>
+  <data name="net_log_cache_partial_resp_not_combined_with_existing_entry" xml:space="preserve">
+    <value>A partial response is not combined with existing cache entry, Cache Stream Size : {0}, response Range Start : {1}.</value>
+  </data>
+  <data name="net_log_cache_request_contains_conditional_header" xml:space="preserve">
+    <value>User Request contains a conditional header.</value>
+  </data>
+  <data name="net_log_cache_not_a_get_head_post" xml:space="preserve">
+    <value>This was Not a GET, HEAD or POST request.</value>
+  </data>
+  <data name="net_log_cache_cannot_update_cache_if_304" xml:space="preserve">
+    <value>Cannot update cache if Response status == 304 and a cache entry was not found.</value>
+  </data>
+  <data name="net_log_cache_cannot_update_cache_with_head_resp" xml:space="preserve">
+    <value>Cannot update cache with HEAD response if the cache entry does not exist.</value>
+  </data>
+  <data name="net_log_cache_http_resp_is_null" xml:space="preserve">
+    <value>HttpWebResponse is null.</value>
+  </data>
+  <data name="net_log_cache_resp_cache_control_is_no_store" xml:space="preserve">
+    <value>Response Cache-Control : no-store.</value>
+  </data>
+  <data name="net_log_cache_resp_cache_control_is_public" xml:space="preserve">
+    <value>Response Cache-Control : public.</value>
+  </data>
+  <data name="net_log_cache_resp_cache_control_is_private" xml:space="preserve">
+    <value>Response Cache-Control : private, and Cache is public.</value>
+  </data>
+  <data name="net_log_cache_resp_cache_control_is_private_plus_headers" xml:space="preserve">
+    <value>Response Cache-Control : private+Headers, removing those headers.</value>
+  </data>
+  <data name="net_log_cache_resp_older_than_cache" xml:space="preserve">
+    <value>HttpWebResponse date is older than of the cached one.</value>
+  </data>
+  <data name="net_log_cache_revalidation_required" xml:space="preserve">
+    <value>Response revalidation is always required but neither Last-Modified nor ETag header is set on the response.</value>
+  </data>
+  <data name="net_log_cache_needs_revalidation" xml:space="preserve">
+    <value>Response can be cached although it will always require revalidation.</value>
+  </data>
+  <data name="net_log_cache_resp_allows_caching" xml:space="preserve">
+    <value>Response explicitly allows caching : Cache-Control: {0}.</value>
+  </data>
+  <data name="net_log_cache_auth_header_and_no_s_max_age" xml:space="preserve">
+    <value>Request carries Authorization Header and no s-maxage, proxy-revalidate or public directive found.</value>
+  </data>
+  <data name="net_log_cache_post_resp_without_cache_control_or_expires" xml:space="preserve">
+    <value>POST Response without Cache-Control or Expires headers.</value>
+  </data>
+  <data name="net_log_cache_valid_based_on_status_code" xml:space="preserve">
+    <value>Valid based on Status Code: {0}.</value>
+  </data>
+  <data name="net_log_cache_resp_no_cache_control" xml:space="preserve">
+    <value>Response with no CacheControl and Status Code : {0}.</value>
+  </data>
+  <data name="net_log_cache_age" xml:space="preserve">
+    <value>Cache Age : {0}, Cache MaxAge : {1}.</value>
+  </data>
+  <data name="net_log_cache_policy_min_fresh" xml:space="preserve">
+    <value>Client Policy MinFresh : {0}.</value>
+  </data>
+  <data name="net_log_cache_policy_max_age" xml:space="preserve">
+    <value>Client Policy MaxAge : {0}.</value>
+  </data>
+  <data name="net_log_cache_policy_cache_sync_date" xml:space="preserve">
+    <value>Client Policy CacheSyncDate (UTC) : {0}, Cache LastSynchronizedUtc : {1}.</value>
+  </data>
+  <data name="net_log_cache_policy_max_stale" xml:space="preserve">
+    <value>Client Policy MaxStale : {0}.</value>
+  </data>
+  <data name="net_log_cache_control_no_cache" xml:space="preserve">
+    <value>Cached CacheControl : no-cache.</value>
+  </data>
+  <data name="net_log_cache_control_no_cache_removing_some_headers" xml:space="preserve">
+    <value>Cached CacheControl : no-cache, Removing some headers.</value>
+  </data>
+  <data name="net_log_cache_control_must_revalidate" xml:space="preserve">
+    <value>Cached CacheControl : must-revalidate and Cache is not fresh.</value>
+  </data>
+  <data name="net_log_cache_cached_auth_header" xml:space="preserve">
+    <value>The cached entry has Authorization Header and cache is not fresh.</value>
+  </data>
+  <data name="net_log_cache_cached_auth_header_no_control_directive" xml:space="preserve">
+    <value>The cached entry has Authorization Header and no Cache-Control directive present that would allow to use that entry.</value>
+  </data>
+  <data name="net_log_cache_after_validation" xml:space="preserve">
+    <value>After Response Cache Validation.</value>
+  </data>
+  <data name="net_log_cache_resp_status_304" xml:space="preserve">
+    <value>Response status == 304 but the cache entry does not exist.</value>
+  </data>
+  <data name="net_log_cache_head_resp_has_different_content_length" xml:space="preserve">
+    <value>A response resulted from a HEAD request has different Content-Length header.</value>
+  </data>
+  <data name="net_log_cache_head_resp_has_different_content_md5" xml:space="preserve">
+    <value>A response resulted from a HEAD request has different Content-MD5 header.</value>
+  </data>
+  <data name="net_log_cache_head_resp_has_different_etag" xml:space="preserve">
+    <value>A response resulted from a HEAD request has different ETag header.</value>
+  </data>
+  <data name="net_log_cache_304_head_resp_has_different_last_modified" xml:space="preserve">
+    <value>A 304 response resulted from a HEAD request has different Last-Modified header.</value>
+  </data>
+  <data name="net_log_cache_existing_entry_has_to_be_discarded" xml:space="preserve">
+    <value>An existing cache entry has to be discarded.</value>
+  </data>
+  <data name="net_log_cache_existing_entry_should_be_discarded" xml:space="preserve">
+    <value>An existing cache entry should be discarded.</value>
+  </data>
+  <data name="net_log_cache_206_resp_non_matching_entry" xml:space="preserve">
+    <value>A 206 Response has been received and either ETag or Last-Modified header value does not match cache entry.</value>
+  </data>
+  <data name="net_log_cache_206_resp_starting_position_not_adjusted" xml:space="preserve">
+    <value>The starting position for 206 Response is not adjusted to the end of cache entry.</value>
+  </data>
+  <data name="net_log_cache_combined_resp_requested" xml:space="preserve">
+    <value>Creation of a combined response has been requested from the cache protocol.</value>
+  </data>
+  <data name="net_log_cache_updating_headers_on_304" xml:space="preserve">
+    <value>Updating headers on 304 response.</value>
+  </data>
+  <data name="net_log_cache_suppressing_headers_update_on_304" xml:space="preserve">
+    <value>Suppressing cache headers update on 304, new headers don't add anything.</value>
+  </data>
+  <data name="net_log_cache_status_code_not_304_206" xml:space="preserve">
+    <value>A Response Status Code is not 304 or 206.</value>
+  </data>
+  <data name="net_log_cache_sxx_resp_cache_only" xml:space="preserve">
+    <value>A 5XX Response and Cache-Only like policy, serving from cache.</value>
+  </data>
+  <data name="net_log_cache_sxx_resp_can_be_replaced" xml:space="preserve">
+    <value>A 5XX Response that can be replaced by existing cache entry.</value>
+  </data>
+  <data name="net_log_cache_vary_header_empty" xml:space="preserve">
+    <value>Cache entry Vary header is empty.</value>
+  </data>
+  <data name="net_log_cache_vary_header_contains_asterisks" xml:space="preserve">
+    <value>Cache entry Vary header contains '*'.</value>
+  </data>
+  <data name="net_log_cache_no_headers_in_metadata" xml:space="preserve">
+    <value>No request headers are found in cached metadata to test based on the cached response Vary header.</value>
+  </data>
+  <data name="net_log_cache_vary_header_mismatched_count" xml:space="preserve">
+    <value>Vary header: Request and cache header fields count does not match, header name : {0}.</value>
+  </data>
+  <data name="net_log_cache_vary_header_mismatched_field" xml:space="preserve">
+    <value>Vary header: A Cache header field mismatch the request one, header name : {0}, cache field : {1}, request field : {2}.</value>
+  </data>
+  <data name="net_log_cache_vary_header_match" xml:space="preserve">
+    <value>All required Request headers match based on cached Vary response header.</value>
+  </data>
+  <data name="net_log_cache_range" xml:space="preserve">
+    <value>Request Range (not in Cache yet) : Range:{0}.</value>
+  </data>
+  <data name="net_log_cache_range_invalid_format" xml:space="preserve">
+    <value>Invalid format of Request Range:{0}.</value>
+  </data>
+  <data name="net_log_cache_range_not_in_cache" xml:space="preserve">
+    <value>Cannot serve from Cache, Range:{0}.</value>
+  </data>
+  <data name="net_log_cache_range_in_cache" xml:space="preserve">
+    <value>Serving Request Range from cache, Range:{0}.</value>
+  </data>
+  <data name="net_log_cache_partial_resp" xml:space="preserve">
+    <value>Serving Partial Response (206) from cache, Content-Range:{0}.</value>
+  </data>
+  <data name="net_log_cache_range_request_range" xml:space="preserve">
+    <value>Range Request (user specified), Range: {0}.</value>
+  </data>
+  <data name="net_log_cache_could_be_partial" xml:space="preserve">
+    <value>Could be a Partial Cached Response, Size : {0}, Response Content Length : {1}.</value>
+  </data>
+  <data name="net_log_cache_condition_if_none_match" xml:space="preserve">
+    <value>Request Condition : If-None-Match:{0}.</value>
+  </data>
+  <data name="net_log_cache_condition_if_modified_since" xml:space="preserve">
+    <value>Request Condition : If-Modified-Since:{0}.</value>
+  </data>
+  <data name="net_log_cache_cannot_construct_conditional_request" xml:space="preserve">
+    <value>A Conditional Request cannot be constructed.</value>
+  </data>
+  <data name="net_log_cache_cannot_construct_conditional_range_request" xml:space="preserve">
+    <value>A Conditional Range request cannot be constructed.</value>
+  </data>
+  <data name="net_log_cache_entry_size_too_big" xml:space="preserve">
+    <value>Cached Entry Size : {0} is too big, cannot do a range request.</value>
+  </data>
+  <data name="net_log_cache_condition_if_range" xml:space="preserve">
+    <value>Request Condition : If-Range:{0}.</value>
+  </data>
+  <data name="net_log_cache_conditional_range_not_implemented_on_http_10" xml:space="preserve">
+    <value>A Conditional Range request on Http &lt;= 1.0 is not implemented.</value>
+  </data>
+  <data name="net_log_cache_saving_request_headers" xml:space="preserve">
+    <value>Saving Request Headers, Vary: {0}.</value>
+  </data>
+  <data name="net_log_cache_only_byte_range_implemented" xml:space="preserve">
+    <value>Ranges other than bytes are not implemented.</value>
+  </data>
+  <data name="net_log_cache_multiple_complex_range_not_implemented" xml:space="preserve">
+    <value>Multiple/complexe ranges are not implemented.</value>
+  </data>
+  <data name="net_log_digest_hash_algorithm_not_supported" xml:space="preserve">
+    <value>The hash algorithm is not supported by Digest authentication: {0}.</value>
+  </data>
+  <data name="net_log_digest_qop_not_supported" xml:space="preserve">
+    <value>The Quality of Protection value is not supported by Digest authentication: {0}.</value>
+  </data>
+  <data name="net_log_digest_requires_nonce" xml:space="preserve">
+    <value>A nonce parameter required for Digest authentication was not found or was preceded by an invalid parameter.</value>
+  </data>
+  <data name="net_log_auth_invalid_challenge" xml:space="preserve">
+    <value>The challenge string is not valid for this authentication module: {0}</value>
+  </data>
+  <data name="net_log_unknown" xml:space="preserve">
+    <value>unknown</value>
+  </data>
+  <data name="net_log_operation_returned_something" xml:space="preserve">
+    <value>{0} returned {1}.</value>
+  </data>
+  <data name="net_log_operation_failed_with_error" xml:space="preserve">
+    <value>{0} failed with error {1}.</value>
+  </data>
+  <data name="net_log_buffered_n_bytes" xml:space="preserve">
+    <value>Buffered {0} bytes.</value>
+  </data>
+  <data name="net_log_method_equal" xml:space="preserve">
+    <value>Method={0}.</value>
+  </data>
+  <data name="net_log_releasing_connection" xml:space="preserve">
+    <value>Releasing FTP connection#{0}.</value>
+  </data>
+  <data name="net_log_unexpected_exception" xml:space="preserve">
+    <value>Unexpected exception in {0}.</value>
+  </data>
+  <data name="net_log_server_response_error_code" xml:space="preserve">
+    <value>Error code {0} was received from server response.</value>
+  </data>
+  <data name="net_log_resubmitting_request" xml:space="preserve">
+    <value>Resubmitting request.</value>
+  </data>
+  <data name="net_log_retrieving_localhost_exception" xml:space="preserve">
+    <value>An unexpected exception while retrieving the local address list: {0}.</value>
+  </data>
+  <data name="net_log_resolved_servicepoint_may_not_be_remote_server" xml:space="preserve">
+    <value>A resolved ServicePoint host could be wrongly considered as a remote server.</value>
+  </data>
+  <data name="net_log_closed_idle" xml:space="preserve">
+    <value>{0}#{1} - Closed as idle.</value>
+  </data>
+  <data name="net_log_received_status_line" xml:space="preserve">
+    <value>Received status line: Version={0}, StatusCode={1}, StatusDescription={2}.</value>
+  </data>
+  <data name="net_log_sending_headers" xml:space="preserve">
+    <value>Sending headers\r\n{{\r\n{0}}}.</value>
+  </data>
+  <data name="net_log_received_headers" xml:space="preserve">
+    <value>Received headers\r\n{{\r\n{0}}}.</value>
+  </data>
+  <data name="net_log_shell_expression_pattern_format_warning" xml:space="preserve">
+    <value>ShellServices.ShellExpression.Parse() was called with a badly formatted 'pattern':{0}.</value>
+  </data>
+  <data name="net_log_exception_in_callback" xml:space="preserve">
+    <value>Exception in callback: {0}.</value>
+  </data>
+  <data name="net_log_sending_command" xml:space="preserve">
+    <value>Sending command [{0}]</value>
+  </data>
+  <data name="net_log_received_response" xml:space="preserve">
+    <value>Received response [{0}]</value>
+  </data>
+  <data name="net_log_socket_connected" xml:space="preserve">
+    <value>Created connection from {0} to {1}.</value>
+  </data>
+  <data name="net_log_socket_accepted" xml:space="preserve">
+    <value>Accepted connection from {0} to {1}.</value>
+  </data>
+  <data name="net_log_socket_not_logged_file" xml:space="preserve">
+    <value>Not logging data from file: {0}.</value>
+  </data>
+  <data name="net_log_socket_connect_dnsendpoint" xml:space="preserve">
+    <value>Connecting to a DnsEndPoint.</value>
+  </data>
+  <data name="MailAddressInvalidFormat" xml:space="preserve">
+    <value>The specified string is not in the form required for an e-mail address.</value>
+  </data>
+  <data name="MailSubjectInvalidFormat" xml:space="preserve">
+    <value>The specified string is not in the form required for a subject.</value>
+  </data>
+  <data name="MailBase64InvalidCharacter" xml:space="preserve">
+    <value>An invalid character was found in the Base-64 stream.</value>
+  </data>
+  <data name="MailCollectionIsReadOnly" xml:space="preserve">
+    <value>The collection is read-only.</value>
+  </data>
+  <data name="MailDateInvalidFormat" xml:space="preserve">
+    <value>The date is in an invalid format.</value>
+  </data>
+  <data name="MailHeaderFieldAlreadyExists" xml:space="preserve">
+    <value>The specified singleton field already exists in the collection and cannot be added.</value>
+  </data>
+  <data name="MailHeaderFieldInvalidCharacter" xml:space="preserve">
+    <value>An invalid character was found in the mail header: '{0}'.</value>
+  </data>
+  <data name="MailHeaderFieldMalformedHeader" xml:space="preserve">
+    <value>The mail header is malformed.</value>
+  </data>
+  <data name="MailHeaderFieldMismatchedName" xml:space="preserve">
+    <value>The header name does not match this property.</value>
+  </data>
+  <data name="MailHeaderIndexOutOfBounds" xml:space="preserve">
+    <value>The index value is outside the bounds of the array.</value>
+  </data>
+  <data name="MailHeaderItemAccessorOnlySingleton" xml:space="preserve">
+    <value>The Item property can only be used with singleton fields.</value>
+  </data>
+  <data name="MailHeaderListHasChanged" xml:space="preserve">
+    <value>The underlying list has been changed and the enumeration is out of date.</value>
+  </data>
+  <data name="MailHeaderResetCalledBeforeEOF" xml:space="preserve">
+    <value>The stream should have been consumed before resetting.</value>
+  </data>
+  <data name="MailHeaderTargetArrayTooSmall" xml:space="preserve">
+    <value>The target array is too small to contain all the headers.</value>
+  </data>
+  <data name="MailHeaderInvalidCID" xml:space="preserve">
+    <value>The ContentID cannot contain a '&lt;' or '&gt;' character.</value>
+  </data>
+  <data name="MailHostNotFound" xml:space="preserve">
+    <value>The SMTP host was not found.</value>
+  </data>
+  <data name="MailReaderGetContentStreamAlreadyCalled" xml:space="preserve">
+    <value>GetContentStream() can only be called once.</value>
+  </data>
+  <data name="MailReaderTruncated" xml:space="preserve">
+    <value>Premature end of stream.</value>
+  </data>
+  <data name="MailWriterIsInContent" xml:space="preserve">
+    <value>This operation cannot be performed while in content.</value>
+  </data>
+  <data name="MailServerDoesNotSupportStartTls" xml:space="preserve">
+    <value>Server does not support secure connections.</value>
+  </data>
+  <data name="MailServerResponse" xml:space="preserve">
+    <value>The server response was: {0}</value>
+  </data>
+  <data name="SSPIAuthenticationOrSPNNull" xml:space="preserve">
+    <value>AuthenticationType and ServicePrincipalName cannot be specified as null for server's SSPI Negotiation module.</value>
+  </data>
+  <data name="SSPIPInvokeError" xml:space="preserve">
+    <value>{0} failed with error {1}.</value>
+  </data>
+  <data name="SSPIInvalidHandleType" xml:space="preserve">
+    <value>'{0}' is not a supported handle type.</value>
+  </data>
+  <data name="SmtpAlreadyConnected" xml:space="preserve">
+    <value>Already connected.</value>
+  </data>
+  <data name="SmtpAuthenticationFailed" xml:space="preserve">
+    <value>Authentication failed.</value>
+  </data>
+  <data name="SmtpAuthenticationFailedNoCreds" xml:space="preserve">
+    <value>Authentication failed due to lack of credentials.</value>
+  </data>
+  <data name="SmtpDataStreamOpen" xml:space="preserve">
+    <value>Data stream is still open.</value>
+  </data>
+  <data name="SmtpDefaultMimePreamble" xml:space="preserve">
+    <value>This is a multi-part MIME message.</value>
+  </data>
+  <data name="SmtpDefaultSubject" xml:space="preserve">
+    <value>@@SOAP Application Message</value>
+  </data>
+  <data name="SmtpInvalidResponse" xml:space="preserve">
+    <value>Smtp server returned an invalid response.</value>
+  </data>
+  <data name="SmtpNotConnected" xml:space="preserve">
+    <value>Not connected.</value>
+  </data>
+  <data name="SmtpSystemStatus" xml:space="preserve">
+    <value>System status, or system help reply.</value>
+  </data>
+  <data name="SmtpHelpMessage" xml:space="preserve">
+    <value>Help message.</value>
+  </data>
+  <data name="SmtpServiceReady" xml:space="preserve">
+    <value>Service ready.</value>
+  </data>
+  <data name="SmtpServiceClosingTransmissionChannel" xml:space="preserve">
+    <value>Service closing transmission channel.</value>
+  </data>
+  <data name="SmtpOK" xml:space="preserve">
+    <value>Completed.</value>
+  </data>
+  <data name="SmtpUserNotLocalWillForward" xml:space="preserve">
+    <value>User not local; will forward to specified path.</value>
+  </data>
+  <data name="SmtpStartMailInput" xml:space="preserve">
+    <value>Start mail input; end with &lt;CRLF&gt;.&lt;CRLF&gt;.</value>
+  </data>
+  <data name="SmtpServiceNotAvailable" xml:space="preserve">
+    <value>Service not available, closing transmission channel.</value>
+  </data>
+  <data name="SmtpMailboxBusy" xml:space="preserve">
+    <value>Mailbox unavailable.</value>
+  </data>
+  <data name="SmtpLocalErrorInProcessing" xml:space="preserve">
+    <value>Error in processing.</value>
+  </data>
+  <data name="SmtpInsufficientStorage" xml:space="preserve">
+    <value>Insufficient system storage.</value>
+  </data>
+  <data name="SmtpPermissionDenied" xml:space="preserve">
+    <value>Client does not have permission to Send As this sender.</value>
+  </data>
+  <data name="SmtpCommandUnrecognized" xml:space="preserve">
+    <value>Syntax error, command unrecognized.</value>
+  </data>
+  <data name="SmtpSyntaxError" xml:space="preserve">
+    <value>Syntax error in parameters or arguments.</value>
+  </data>
+  <data name="SmtpCommandNotImplemented" xml:space="preserve">
+    <value>Command not implemented.</value>
+  </data>
+  <data name="SmtpBadCommandSequence" xml:space="preserve">
+    <value>Bad sequence of commands.</value>
+  </data>
+  <data name="SmtpCommandParameterNotImplemented" xml:space="preserve">
+    <value>Command parameter not implemented.</value>
+  </data>
+  <data name="SmtpMailboxUnavailable" xml:space="preserve">
+    <value>Mailbox unavailable.</value>
+  </data>
+  <data name="SmtpUserNotLocalTryAlternatePath" xml:space="preserve">
+    <value>User not local; please try a different path.</value>
+  </data>
+  <data name="SmtpExceededStorageAllocation" xml:space="preserve">
+    <value>Exceeded storage allocation.</value>
+  </data>
+  <data name="SmtpMailboxNameNotAllowed" xml:space="preserve">
+    <value>Mailbox name not allowed.</value>
+  </data>
+  <data name="SmtpTransactionFailed" xml:space="preserve">
+    <value>Transaction failed.</value>
+  </data>
+  <data name="SmtpSendMailFailure" xml:space="preserve">
+    <value>Failure sending mail.</value>
+  </data>
+  <data name="SmtpRecipientFailed" xml:space="preserve">
+    <value>Unable to send to a recipient.</value>
+  </data>
+  <data name="SmtpRecipientRequired" xml:space="preserve">
+    <value>A recipient must be specified.</value>
+  </data>
+  <data name="SmtpFromRequired" xml:space="preserve">
+    <value>A from address must be specified.</value>
+  </data>
+  <data name="SmtpAllRecipientsFailed" xml:space="preserve">
+    <value>Unable to send to all recipients.</value>
+  </data>
+  <data name="SmtpClientNotPermitted" xml:space="preserve">
+    <value>Client does not have permission to submit mail to this server.</value>
+  </data>
+  <data name="SmtpMustIssueStartTlsFirst" xml:space="preserve">
+    <value>The SMTP server requires a secure connection or the client was not authenticated.</value>
+  </data>
+  <data name="SmtpNeedAbsolutePickupDirectory" xml:space="preserve">
+    <value>Only absolute directories are allowed for pickup directory.</value>
+  </data>
+  <data name="SmtpGetIisPickupDirectoryFailed" xml:space="preserve">
+    <value>Cannot get IIS pickup directory.</value>
+  </data>
+  <data name="SmtpPickupDirectoryDoesnotSupportSsl" xml:space="preserve">
+    <value>SSL must not be enabled for pickup-directory delivery methods.</value>
+  </data>
+  <data name="SmtpOperationInProgress" xml:space="preserve">
+    <value>Previous operation is still in progress.</value>
+  </data>
+  <data name="SmtpAuthResponseInvalid" xml:space="preserve">
+    <value>The server returned an invalid response in the authentication handshake.</value>
+  </data>
+  <data name="SmtpEhloResponseInvalid" xml:space="preserve">
+    <value>The server returned an invalid response to the EHLO command.</value>
+  </data>
+  <data name="SmtpNonAsciiUserNotSupported" xml:space="preserve">
+    <value>The client or server is only configured for E-mail addresses with ASCII local-parts: {0}.</value>
+  </data>
+  <data name="SmtpInvalidHostName" xml:space="preserve">
+    <value>The address has an invalid host name: {0}.</value>
+  </data>
+  <data name="MimeTransferEncodingNotSupported" xml:space="preserve">
+    <value>The MIME transfer encoding '{0}' is not supported.</value>
+  </data>
+  <data name="SeekNotSupported" xml:space="preserve">
+    <value>Seeking is not supported on this stream.</value>
+  </data>
+  <data name="WriteNotSupported" xml:space="preserve">
+    <value>Writing is not supported on this stream.</value>
+  </data>
+  <data name="InvalidHexDigit" xml:space="preserve">
+    <value>Invalid hex digit '{0}'.</value>
+  </data>
+  <data name="InvalidSSPIContext" xml:space="preserve">
+    <value>The SSPI context is not valid.</value>
+  </data>
+  <data name="InvalidSSPIContextKey" xml:space="preserve">
+    <value>A null session key was obtained from SSPI.</value>
+  </data>
+  <data name="InvalidSSPINegotiationElement" xml:space="preserve">
+    <value>Invalid SSPI BinaryNegotiationElement.</value>
+  </data>
+  <data name="InvalidHeaderName" xml:space="preserve">
+    <value>An invalid character was found in header name.</value>
+  </data>
+  <data name="InvalidHeaderValue" xml:space="preserve">
+    <value>An invalid character was found in header value.</value>
+  </data>
+  <data name="CannotGetEffectiveTimeOfSSPIContext" xml:space="preserve">
+    <value>Cannot get the effective time of the SSPI context.</value>
+  </data>
+  <data name="CannotGetExpiryTimeOfSSPIContext" xml:space="preserve">
+    <value>Cannot get the expiry time of the SSPI context.</value>
+  </data>
+  <data name="ReadNotSupported" xml:space="preserve">
+    <value>Reading is not supported on this stream.</value>
+  </data>
+  <data name="InvalidAsyncResult" xml:space="preserve">
+    <value>The AsyncResult is not valid.</value>
+  </data>
+  <data name="UnspecifiedHost" xml:space="preserve">
+    <value>The SMTP host was not specified.</value>
+  </data>
+  <data name="InvalidPort" xml:space="preserve">
+    <value>The specified port is invalid. The port must be greater than 0.</value>
+  </data>
+  <data name="SmtpInvalidOperationDuringSend" xml:space="preserve">
+    <value>This operation cannot be performed while a message is being sent.</value>
+  </data>
+  <data name="MimePartCantResetStream" xml:space="preserve">
+    <value>One of the streams has already been used and can't be reset to the origin.</value>
+  </data>
+  <data name="MediaTypeInvalid" xml:space="preserve">
+    <value>The specified media type is invalid.</value>
+  </data>
+  <data name="ContentTypeInvalid" xml:space="preserve">
+    <value>The specified content type is invalid.</value>
+  </data>
+  <data name="ContentDispositionInvalid" xml:space="preserve">
+    <value>The specified content disposition is invalid.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Bounds_Lower_Upper" xml:space="preserve">
+    <value>Argument must be between {0} and {1}.</value>
+  </data>
+  <data name="InvalidOperation_EnumFailedVersion" xml:space="preserve">
+    <value>Collection was modified after the enumerator was instantiated.</value>
+  </data>
+  <data name="InvalidOperation_EnumOpCantHappen" xml:space="preserve">
+    <value>Enumerator is positioned before the first element or after the last element of the collection.</value>
+  </data>
+  <data name="security_ExtendedProtectionPolicy_UseDifferentConstructorForNever" xml:space="preserve">
+    <value>To construct a policy with PolicyEnforcement.Never, the single-parameter constructor must be used.</value>
+  </data>
+  <data name="security_ExtendedProtectionPolicy_NoEmptyServiceNameCollection" xml:space="preserve">
+    <value>The ServiceNameCollection must contain at least one service name.</value>
+  </data>
+  <data name="security_ServiceNameCollection_EmptyServiceName" xml:space="preserve">
+    <value>A service name must not be null or empty.</value>
+  </data>
+  <data name="security_X509Certificate_NotSupported" xml:space="preserve">
+    <value>X509Certificate is not supported. Use X509Certificate2 instead.</value>
+  </data>
+  <data name="InvalidOperation_WrongAsyncResultOrEndReadCalledMultiple" xml:space="preserve">
+    <value>Either the IAsyncResult object did not come from the corresponding async method on this type, or EndRead was called multiple times with the same IAsyncResult.</value>
+  </data>
+  <data name="InvalidOperation_WrongAsyncResultOrEndWriteCalledMultiple" xml:space="preserve">
+    <value>Either the IAsyncResult object did not come from the corresponding async method on this type, or EndWrite was called multiple times with the same IAsyncResult.</value>
+  </data>
+  <data name="ObjectDisposed_StreamIsClosed" xml:space="preserve">
+    <value>Cannot access a closed Stream.</value>
+  </data>
+  <data name="NotSupported_UnreadableStream" xml:space="preserve">
+    <value>Stream does not support reading.</value>
+  </data>
+  <data name="NotSupported_UnwritableStream" xml:space="preserve">
+    <value>Stream does not support writing.</value>
+  </data>
+</root>
