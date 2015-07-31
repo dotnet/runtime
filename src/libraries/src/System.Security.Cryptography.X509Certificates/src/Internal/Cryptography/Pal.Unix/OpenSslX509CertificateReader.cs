@@ -18,6 +18,7 @@ namespace Internal.Cryptography.Pal
         private static DateTimeFormatInfo s_validityDateTimeFormatInfo;
 
         private SafeX509Handle _cert;
+        private SafeEvpPkeyHandle _privateKey;
         private X500DistinguishedName _subjectName;
         private X500DistinguishedName _issuerName;
 
@@ -37,7 +38,7 @@ namespace Internal.Cryptography.Pal
 
         public bool HasPrivateKey
         {
-            get { return false; }
+            get { return _privateKey != null; }
         }
 
         public IntPtr Handle
@@ -228,9 +229,22 @@ namespace Internal.Cryptography.Pal
             }
         }
 
+        internal void SetPrivateKey(SafeEvpPkeyHandle privateKey)
+        {
+            _privateKey = privateKey;
+        }
+
         public RSA GetRSAPrivateKey()
         {
-            return null;
+            if (_privateKey == null || _privateKey.IsInvalid)
+            {
+                return null;
+            }
+
+            using (SafeRsaHandle rsaHandle = Interop.libcrypto.EVP_PKEY_get1_RSA(_privateKey))
+            {
+                return new RSAOpenSsl(rsaHandle.DangerousGetHandle());
+            }
         }
 
         public string GetNameInfo(X509NameType nameType, bool forIssuer)
@@ -258,10 +272,25 @@ namespace Internal.Cryptography.Pal
 
         public void AppendPrivateKeyInfo(StringBuilder sb)
         {
+            if (!HasPrivateKey)
+            {
+                return;
+            }
+
+            // There's nothing really to say about the key, just acknowledge there is one.
+            sb.AppendLine();
+            sb.AppendLine();
+            sb.AppendLine("[Private Key]");
         }
 
         public void Dispose()
         {
+            if (_privateKey != null)
+            {
+                _privateKey.Dispose();
+                _privateKey = null;
+            }
+
             if (_cert != null)
             {
                 _cert.Dispose();

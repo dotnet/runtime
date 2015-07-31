@@ -120,6 +120,12 @@ namespace Internal.Cryptography.Pal
                 OpenSslX509CertificateReader reader = new OpenSslX509CertificateReader(_x509Handle);
                 _x509Handle = null;
 
+                if (_evpPkeyHandle != null && !_evpPkeyHandle.IsInvalid)
+                {
+                    reader.SetPrivateKey(_evpPkeyHandle);
+                    _evpPkeyHandle = null;
+                }
+
                 certs.Add(reader);
             }
 
