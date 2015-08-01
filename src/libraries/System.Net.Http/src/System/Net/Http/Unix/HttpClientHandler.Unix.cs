@@ -39,8 +39,14 @@ namespace System.Net.Http
 
         public ClientCertificateOption ClientCertificateOptions
         {
-            get { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
-            set { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
+            get
+            {
+                return _curlHandler.ClientCertificateOptions;
+            }
+            set
+            {
+                _curlHandler.ClientCertificateOptions = value;
+            }
         }
 
         public DecompressionMethods AutomaticDecompression
