@@ -463,7 +463,7 @@ mono_monitor_try_enter_internal (MonoObject *obj, guint32 ms, gboolean allow_int
 	LOCK_DEBUG (g_message("%s: (%d) Trying to lock object %p (%d ms)", __func__, id, obj, ms));
 
 	if (G_UNLIKELY (!obj)) {
-		mono_raise_exception (mono_get_exception_argument_null ("obj"));
+		mono_set_pending_exception (mono_get_exception_argument_null ("obj"));
 		return FALSE;
 	}
 
@@ -759,7 +759,7 @@ mono_monitor_exit (MonoObject *obj)
 	LOCK_DEBUG (g_message ("%s: (%d) Unlocking %p", __func__, mono_thread_info_get_small_id (), obj));
 
 	if (G_UNLIKELY (!obj)) {
-		mono_raise_exception (mono_get_exception_argument_null ("obj"));
+		mono_set_pending_exception (mono_get_exception_argument_null ("obj"));
 		return;
 	}
 
@@ -889,8 +889,10 @@ ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObject
 void
 mono_monitor_enter_v4 (MonoObject *obj, char *lock_taken)
 {
-	if (*lock_taken == 1)
-		mono_raise_exception (mono_get_exception_argument ("lockTaken", "lockTaken is already true"));
+	if (*lock_taken == 1) {
+		mono_set_pending_exception (mono_get_exception_argument ("lockTaken", "lockTaken is already true"));
+		return;
+	}
 
 	ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (obj, INFINITE, lock_taken);
 }
