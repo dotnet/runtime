@@ -12,6 +12,7 @@ set __Exclude=%~dp0\issues.targets
 :Arg_Loop
 if "%1" == "" goto ArgsDone
 if /i "%1" == "x64"    (set __BuildArch=x64&set __MSBuildBuildArch=x64&shift&goto Arg_Loop)
+if /i "%1" == "x86"    (set __BuildArch=x86&set __MSBuildBuildArch=x86&shift&goto Arg_Loop)
 
 if /i "%1" == "debug"    (set __BuildType=debug&shift&goto Arg_Loop)
 if /i "%1" == "release"   (set __BuildType=release&shift&goto Arg_Loop)
@@ -144,7 +145,7 @@ echo.
 echo Usage:
 echo %0 BuildArch BuildType [SkipWrapperGeneration] [Exclude EXCLUSION_TARGETS] [TestEnv TEST_ENV_SCRIPT] [vsversion] CORE_ROOT   where:
 echo.
-echo BuildArch is x64
+echo BuildArch is x64, x86
 echo BuildType can be: Debug, Release
 echo SkipWrapperGeneration- Optional parameter - this will run the same set of tests as the last time it was run
 echo Exclude- Optional parameter - this will exclude individual tests from running, specified by ExcludeList ItemGroup in an .targets file.

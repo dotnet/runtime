@@ -849,7 +849,7 @@ InterlockedCompareExchangePointer (
 #define InterlockedCompareExchangeRelease _InterlockedCompareExchange_rel
 #endif
 
-#if defined(_X86_)
+#if defined(_X86_) & !defined(InterlockedIncrement64)
 
 // Interlockedxxx64 that do not have intrinsics are only supported on Windows Server 2003 
 // or higher for X86 so define our own portable implementation
