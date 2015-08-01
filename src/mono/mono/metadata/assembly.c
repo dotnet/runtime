@@ -179,6 +179,8 @@ mono_set_corlib_data (void *data, size_t size)
 
 #endif
 
+static char* unquote (const char *str);
+
 /* This protects loaded_assemblies and image->references */
 #define mono_assemblies_lock() mono_mutex_lock (&assemblies_mutex)
 #define mono_assemblies_unlock() mono_mutex_unlock (&assemblies_mutex)

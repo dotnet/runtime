@@ -860,8 +860,5 @@ mono_method_get_wrapper_cache (MonoMethod *method);
 MonoWrapperCaches*
 mono_method_get_wrapper_cache (MonoMethod *method);
 
-static char*
-unquote (const char *str);
-
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 
