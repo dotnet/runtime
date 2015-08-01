@@ -4318,6 +4318,7 @@ icall_is_direct_callable (MonoCompile *cfg, MonoMethod *cmethod)
 		g_hash_table_insert (h, (char*)"Decimal", GUINT_TO_POINTER (1));
 		g_hash_table_insert (h, (char*)"Number", GUINT_TO_POINTER (1));
 		g_hash_table_insert (h, (char*)"Buffer", GUINT_TO_POINTER (1));
+		g_hash_table_insert (h, (char*)"Monitor", GUINT_TO_POINTER (1));
 		mono_memory_barrier ();
 		direct_icall_type_hash = h;
 	}
@@ -8846,6 +8847,20 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			} else {
 				fsig = mono_method_get_signature_checked (cmethod, image, token, generic_context, &cfg->error);
 				CHECK_CFG_ERROR;
+			}
+
+			/* See code below */
+			if (cmethod->klass == mono_defaults.monitor_class && !strcmp (cmethod->name, "Enter") && mono_method_signature (cmethod)->param_count == 1) {
+				MonoBasicBlock *tbb;
+
+				GET_BBLOCK (cfg, tbb, ip + 5);
+				if (tbb->try_start && MONO_REGION_FLAGS(tbb->region) == MONO_EXCEPTION_CLAUSE_FINALLY) {
+					/*
+					 * We want to extend the try block to cover the call, but we can't do it if the
+					 * call is made directly since its followed by an exception check.
+					 */
+					direct_icall = FALSE;
+				}
 			}
 
 			mono_save_token_info (cfg, image, token, cil_method);
