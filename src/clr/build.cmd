@@ -26,6 +26,7 @@ set __SkipTestBuild=
 if "%1" == "" goto ArgsDone
 if /i "%1" == "/?" goto Usage
 if /i "%1" == "x64"    (set __BuildArch=x64&&shift&goto Arg_Loop)
+if /i "%1" == "x86"    (set __BuildArch=x86&&shift&goto Arg_Loop)
 if /i "%1" == "arm"    (set __BuildArch=arm&&shift&goto Arg_Loop)
 
 if /i "%1" == "debug"    (set __BuildType=Debug&shift&goto Arg_Loop)
@@ -135,7 +136,9 @@ echo Commencing build of native components for %__BuildOS%.%__BuildArch%.%__Buil
 echo.
 
 :: Set the environment for the native build
-call "!VS%__VSProductVersion%COMNTOOLS!\..\..\VC\vcvarsall.bat" x86_amd64
+set __VCBuildArch=x86_amd64
+if /i "%__BuildArch%" == "x86" (set __VCBuildArch=x86)
+call "!VS%__VSProductVersion%COMNTOOLS!\..\..\VC\vcvarsall.bat" %__VCBuildArch%
 
 if exist "%VSINSTALLDIR%DIA SDK" goto GenVSSolution
 echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
@@ -151,7 +154,7 @@ exit /b 1
 :GenVSSolution
 :: Regenerate the VS solution
 pushd "%__IntermediatesDir%"
-call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%" %__VSVersion%
+call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%" %__VSVersion% %__BuildArch%
 popd
 
 :BuildComponents
@@ -234,7 +237,7 @@ echo.
 echo Usage:
 echo %0 BuildArch BuildType [clean] [vsversion] where:
 echo.
-echo BuildArch can be: x64
+echo BuildArch can be: x64, x86
 echo BuildType can be: Debug, Release
 echo Clean - optional argument to force a clean build.
 echo VSVersion - optional argument to use VS2013 or VS2015 (default VS2013)

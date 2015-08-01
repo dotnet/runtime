@@ -3,18 +3,12 @@ if (WIN32)
 
 add_precompiled_header(stdafx.h ../stdafx.cpp CORDBEE_SOURCES_WKS)
 
-if (IS_64BIT_BUILD EQUAL 1)
-  FIND_PROGRAM(ASM_COMPILER ml64.exe)
-else ()
-  FIND_PROGRAM(ASM_COMPILER ml.exe)
-endif (IS_64BIT_BUILD EQUAL 1)
-
 get_include_directories(ASM_INCLUDE_DIRECTORIES)
 get_compile_definitions(ASM_DEFINITIONS)
 
 # Need to compile asm file using custom command as include directories are not provided to asm compiler
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/dbghelpers.obj
-                   COMMAND ${ASM_COMPILER} ${ASM_INCLUDE_DIRECTORIES} ${ASM_DEFINITIONS} /c /Zi /Fo${CMAKE_CURRENT_BINARY_DIR}/dbghelpers.obj /W3 /errorReport:prompt /Ta${CORDBEE_DIR}/${ARCH_SOURCES_DIR}/dbghelpers.asm
+                   COMMAND ${CMAKE_ASM_MASM_COMPILER} ${ASM_INCLUDE_DIRECTORIES} ${ASM_DEFINITIONS} /c /Zi /Fo${CMAKE_CURRENT_BINARY_DIR}/dbghelpers.obj /W3 /errorReport:prompt /Ta${CORDBEE_DIR}/${ARCH_SOURCES_DIR}/dbghelpers.asm
                    DEPENDS ${CORDBEE_DIR}/${ARCH_SOURCES_DIR}/dbghelpers.asm
                    COMMENT "Compiling dbghelpers.asm")
 
