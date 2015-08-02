@@ -3900,6 +3900,10 @@ handle_thunk (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *
 					/* Free entry */
 					target_thunk = p;
 					break;
+				} else if (((guint32*)p) [2] == (guint32)target) {
+					/* Thunk already points to target */
+					target_thunk = p;
+					break;
 				}
 			}
 		}
