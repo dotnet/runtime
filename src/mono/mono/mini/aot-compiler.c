@@ -9221,7 +9221,7 @@ compile_asm (MonoAotCompile *acfg)
 	tmp_outfile_name = g_strdup_printf ("%s.tmp", outfile_name);
 
 	if (acfg->llvm) {
-		llvm_ofile = g_strdup (acfg->llvm_ofile);
+		llvm_ofile = g_strdup_printf ("\"%s\"", acfg->llvm_ofile);
 	} else {
 		llvm_ofile = g_strdup ("");
 	}
@@ -9230,7 +9230,7 @@ compile_asm (MonoAotCompile *acfg)
 	g_strdelimit (ld_flags, ";", ' ');
 
 #ifdef LD_NAME
-	command = g_strdup_printf ("%s -o \"%s\" \"%s\" \"%s.o\" %s", LD_NAME, tmp_outfile_name, llvm_ofile, acfg->tmpfname, ld_flags);
+	command = g_strdup_printf ("%s -o \"%s\" %s \"%s.o\" %s", LD_NAME, tmp_outfile_name, llvm_ofile, acfg->tmpfname, ld_flags);
 #else
 	command = g_strdup_printf ("\"%sld\" %s -shared -o %s %s %s.o %s", tool_prefix, LD_OPTIONS, tmp_outfile_name, llvm_ofile,
 		acfg->tmpfname, ld_flags);
