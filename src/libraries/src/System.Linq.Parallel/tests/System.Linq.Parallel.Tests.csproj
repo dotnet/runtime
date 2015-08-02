@@ -23,6 +23,7 @@
       <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
     </Compile>
     <Compile Include="Combinatorial\CancellationParallelQueryCombinationTests.cs" />
+    <Compile Include="Combinatorial\FailingParallelQueryCombinationTests.cs" />
     <Compile Include="Combinatorial\LabeledOperation.cs" />
     <Compile Include="Combinatorial\ParallelQueryCombinationTests.cs" />
     <Compile Include="Combinatorial\SourcesAndOperators.cs" />
