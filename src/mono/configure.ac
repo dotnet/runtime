@@ -77,17 +77,10 @@ has_dtrace=no
 parallel_mark=yes
 ikvm_native=yes
 
-case "$host" in
-	powerpc*-*-linux*)
-		# https://bugzilla.novell.com/show_bug.cgi?id=504411
-		disable_munmap=yes
-	;;
-esac
-
 host_win32=no
 target_win32=no
 platform_android=no
-platform_darwin=no
+host_darwin=no
 case "$host" in
 	*-mingw*|*-*-cygwin*)
 		AC_DEFINE(DISABLE_PORTABILITY,1,[Disable the io-portability layer])
@@ -118,7 +111,6 @@ case "$host" in
 		libgc_configure_args="$libgc_configure_args --enable-win32-dllmain=yes"
 		;;
 	*-*-*netbsd*)
-		host_win32=no
 		CPPFLAGS="$CPPFLAGS -D_REENTRANT -DGC_NETBSD_THREADS -D_GNU_SOURCE"
 		libmono_cflags="-D_REENTRANT"
 		LDFLAGS="$LDFLAGS -pthread"
@@ -131,7 +123,6 @@ case "$host" in
 		use_sigposix=yes
 		;;
 	*-*-kfreebsd*-gnu)
-		host_win32=no
 		CPPFLAGS="$CPPFLAGS -DGC_FREEBSD_THREADS -D_GNU_SOURCE -D_REENTRANT -DUSE_MMAP -DUSE_MUNMAP -DTHREAD_LOCAL_ALLOC -pthread"
 		libmono_cflags="-D_REENTRANT -DTHREAD_LOCAL_ALLOC -pthread"
 		libmono_ldflags="-lpthread -pthread"
@@ -142,7 +133,6 @@ case "$host" in
 		use_sigposix=yes
 		;;
 	*-*-*freebsd*)
-		host_win32=no
 		if test "x$PTHREAD_CFLAGS" = "x"; then
 			CPPFLAGS="$CPPFLAGS -DGC_FREEBSD_THREADS"
 			libmono_cflags=
@@ -166,7 +156,6 @@ case "$host" in
 		has_dtrace=yes
 		;;
 	*-*-*openbsd*)
-		host_win32=no
 		CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE -DGC_OPENBSD_THREADS -DPLATFORM_BSD -D_REENTRANT -DUSE_MMAP"
 		if test "x$disable_munmap" != "xyes"; then
 		CPPFLAGS="$CPPFLAGS -DUSE_MUNMAP"
@@ -181,7 +170,6 @@ case "$host" in
 		use_sigposix=yes
 		;;
 	*-*-linux-android*)
-		host_win32=no
 		platform_android=yes
 		AC_DEFINE(PLATFORM_ANDROID,1,[Targeting the Android platform])
 		AC_DEFINE(TARGET_ANDROID,1,[Targeting the Android platform])
@@ -220,7 +208,6 @@ case "$host" in
 		mono_cv_clang=no
 		;;
 	*-*-linux*)
-		host_win32=no
 		CPPFLAGS="$CPPFLAGS -DGC_LINUX_THREADS -D_GNU_SOURCE -D_REENTRANT -DUSE_MMAP"
 		if test "x$disable_munmap" != "xyes"; then
 			CPPFLAGS="$CPPFLAGS -DUSE_MUNMAP"
@@ -239,10 +226,13 @@ case "$host" in
 			support_boehm=no
 			with_gc=sgen
 			;;
+		powerpc*-*-linux*)
+			# https://bugzilla.novell.com/show_bug.cgi?id=504411
+			disable_munmap=yes
+			;;
 		esac
 		;;
 	*-*-nacl*)
-		host_win32=no
 		CPPFLAGS="$CPPFLAGS -DGC_LINUX_THREADS -D_GNU_SOURCE -D_REENTRANT -DUSE_MMAP"
 		if test "x$disable_munmap" != "xyes"; then
 			CPPFLAGS="$CPPFLAGS -DUSE_MUNMAP"
@@ -256,7 +246,6 @@ case "$host" in
 		AC_DEFINE(DISABLE_ATTACH, 1, [Disable agent attach support])
 		;;
 	*-*-hpux*)
-	        host_win32=no
 		CPPFLAGS="$CPPFLAGS -DGC_HPUX_THREADS -D_HPUX_SOURCE -D_XOPEN_SOURCE_EXTENDED -D_REENTRANT"
 		# +ESdbgasm only valid on bundled cc on RISC
 		# silently ignored for ia64
@@ -275,7 +264,6 @@ case "$host" in
 		use_sigposix=yes
 		;;
 	*-*-solaris*)
-		host_win32=no
 		CPPFLAGS="$CPPFLAGS -DGC_SOLARIS_THREADS -DGC_SOLARIS_PTHREADS -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS -DUSE_MMAP -DUSE_MUNMAP -DPLATFORM_SOLARIS"
 		need_link_unlink=yes
 		libmono_cflags="-D_REENTRANT"
@@ -288,8 +276,7 @@ case "$host" in
 		;;
 	*-*-darwin*)
 		parallel_mark="Disabled_Currently_Hangs_On_MacOSX"
-		host_win32=no
-		platform_darwin=yes
+		host_darwin=yes
 		target_mach=yes
 		CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE -DGC_MACOSX_THREADS -DPLATFORM_MACOSX -DUSE_MMAP -DUSE_MUNMAP"
 		libmono_cflags="-D_THREAD_SAFE"
@@ -327,7 +314,6 @@ case "$host" in
 		esac
 		;;
 	*-*-haiku*)
-		host_win32=no
 		CPPFLAGS="$CPPFLAGS -D_REENTRANT -D_THREAD_SAFE"
 		libmono_cflags="-D_REENTRANT -D_THREAD_SAFE"
 		libdl=
@@ -339,7 +325,6 @@ case "$host" in
 		;;
 	*)
 		AC_MSG_WARN([*** Please add $host to configure.ac checks!])
-		host_win32=no
 		libdl="-ldl"
 		;;
 esac
@@ -360,9 +345,8 @@ fi
 AC_SUBST(extra_runtime_ldflags)
 AM_CONDITIONAL(HOST_WIN32, test x$host_win32 = xyes)
 AM_CONDITIONAL(TARGET_WIN32, test x$target_win32 = xyes)
-AM_CONDITIONAL(PLATFORM_GNU, echo x$target_os | grep -q -- -gnu)
 AM_CONDITIONAL(PLATFORM_LINUX, echo x$target_os | grep -q linux)
-AM_CONDITIONAL(PLATFORM_DARWIN, test x$platform_darwin = xyes)
+AM_CONDITIONAL(PLATFORM_DARWIN, test x$host_darwin = xyes)
 AM_CONDITIONAL(PLATFORM_SIGPOSIX, test x$use_sigposix = xyes)
 AM_CONDITIONAL(PLATFORM_ANDROID, test x$platform_android = xyes)
 
@@ -667,17 +651,9 @@ AC_CONFIG_SUBDIRS(eglib)
 
 GLIB_CFLAGS='-I$(top_srcdir)/eglib/src -I$(top_builddir)/eglib/src'
 GLIB_LIBS='-L$(top_builddir)/eglib/src -leglib -lm'
-BUILD_GLIB_CFLAGS="$GLIB_CFLAGS"
-BUILD_GLIB_LIBS="$GLIB_LIBS"
-GMODULE_CFLAGS="$GLIB_CFLAGS"
-GMODULE_LIBS="$GLIB_LIBS"
   
 AC_SUBST(GLIB_CFLAGS)
 AC_SUBST(GLIB_LIBS)
-AC_SUBST(GMODULE_CFLAGS)
-AC_SUBST(GMODULE_LIBS)
-AC_SUBST(BUILD_GLIB_CFLAGS)
-AC_SUBST(BUILD_GLIB_LIBS)
 
 # Enable support for fast thread-local storage
 # Some systems have broken support, so we allow to disable it.
@@ -953,12 +929,6 @@ if test x$has_extension_module != xno ; then
 	AC_MSG_NOTICE([Enabling mono extension module.])
 fi
 
-AC_ARG_ENABLE(gsharing, [  --enable-gsharing Enable gsharing], enable_gsharing=$enableval, enable_gsharing=no)
-if test x$enable_gsharing = xyes; then
-	AC_DEFINE(ENABLE_GSHAREDVT,1,[Gsharing])
-fi
-
-# A synonym
 AC_ARG_ENABLE(gsharedvt, [  --enable-gsharedvt Enable generic valuetype sharing], enable_gsharedvt=$enableval, enable_gsharedvt=no)
 if test x$enable_gsharedvt = xyes; then
 	AC_DEFINE(ENABLE_GSHAREDVT,1,[Gsharedvt])
@@ -1941,7 +1911,7 @@ if test x$host_win32 = xno; then
 	dnl * back 
 	dnl **************************************
 	if test "x$havekqueue" = "xyes" -a "x$ac_cv_header_sys_event_h" = "xyes"; then
-		if test "x$platform_darwin" = "xno"; then
+		if test "x$host_darwin" = "xno"; then
 			AC_DEFINE(USE_KQUEUE_FOR_THREADPOOL, 1, [Use kqueue for the threadpool])
 		fi
 	fi
@@ -2189,10 +2159,6 @@ if test x$host_win32 = xno; then
 	 #endif
 	])
 	AC_CHECK_HEADERS([termios.h])
-
-	dnl * This is provided in io-layer, but on windows it's only available
-	dnl * on xp+
-	AC_DEFINE(HAVE_GETPROCESSID, 1, [Define if GetProcessId is available])
 else
 	dnl *********************************
 	dnl *** Checks for Windows compilation ***
@@ -2351,16 +2317,6 @@ else
 	AC_CHECK_DECLS(InterlockedAdd, [], [], [[#include <windows.h>]])
 	AC_CHECK_DECLS(InterlockedAdd64, [], [], [[#include <windows.h>]])
 	AC_CHECK_DECLS(__readfsdword, [], [], [[#include <windows.h>]])
-
-	AC_MSG_CHECKING(for GetProcessId)
-	AC_TRY_COMPILE([#include <windows.h>], [
-		GetProcessId (0);
-	], [
-	   AC_MSG_RESULT(yes)
-	   AC_DEFINE(HAVE_GETPROCESSID)
-	], [
-	   AC_MSG_RESULT(no)
-	])
 fi
 
 dnl socklen_t check
@@ -3359,7 +3315,7 @@ if test ${TARGET} = ARM; then
 	fpu=NONE
 
 	# iOS GCC always uses the 'softfp' ABI.
-	if test x"$GCC" = xyes && test x$platform_darwin = xyes; then
+	if test x"$GCC" = xyes && test x$host_darwin = xyes; then
 		fpu=VFP
 	fi
 
@@ -3915,7 +3871,7 @@ if test x$host_win32 = xyes; then
    sed -e "s,-mno-cygwin,,g" libtool > libtool.new; mv libtool.new libtool; chmod 755 libtool
 fi
 
-if test x$platform_darwin = xyes; then
+if test x$host_darwin = xyes; then
    # This doesn't seem to be required and it slows down parallel builds
    sed -e 's,lock_old_archive_extraction=yes,lock_old_archive_extraction=no,g' < libtool > libtool.new && mv libtool.new libtool && chmod +x libtool
 fi
@@ -3964,7 +3920,7 @@ fi
 
     echo "MONO_VERSION = $myver" >> $mcs_topdir/build/config.make
 
-    if test x$platform_darwin = xyes; then
+    if test x$host_darwin = xyes; then
       echo "PLATFORM = darwin" >> $mcs_topdir/build/config.make
     fi
 
