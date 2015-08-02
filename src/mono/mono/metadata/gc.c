@@ -82,9 +82,9 @@ guarded_wait (HANDLE handle, guint32 timeout, gboolean alertable)
 {
 	guint32 result;
 
-	MONO_PREPARE_BLOCKING
+	MONO_PREPARE_BLOCKING;
 	result = WaitForSingleObjectEx (handle, timeout, alertable);
-	MONO_FINISH_BLOCKING
+	MONO_FINISH_BLOCKING;
 
 	return result;
 }
@@ -1088,7 +1088,7 @@ finalizer_thread (gpointer unused)
 
 		g_assert (mono_domain_get () == mono_get_root_domain ());
 		mono_gc_set_skip_thread (TRUE);
-		MONO_PREPARE_BLOCKING
+		MONO_PREPARE_BLOCKING;
 
 		if (wait) {
 		/* An alertable wait is required so this thread can be suspended on windows */
@@ -1099,7 +1099,7 @@ finalizer_thread (gpointer unused)
 #endif
 		}
 		wait = TRUE;
-		MONO_FINISH_BLOCKING
+		MONO_FINISH_BLOCKING;
 		mono_gc_set_skip_thread (FALSE);
 
 		mono_threads_perform_thread_dump ();

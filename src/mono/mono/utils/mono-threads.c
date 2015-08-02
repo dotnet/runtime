@@ -362,9 +362,9 @@ unregister_thread (void *arg)
 	This ensures that we won't lose any suspend requests as a suspend initiator must hold the lock.
 	Once we're holding the suspend lock, no threads can suspend us and once we unregister, no thread can find us. 
 	*/
-	MONO_PREPARE_BLOCKING
+	MONO_PREPARE_BLOCKING;
 	mono_thread_info_suspend_lock ();
-	MONO_FINISH_BLOCKING
+	MONO_FINISH_BLOCKING;
 
 	/*
 	Now perform the callback that must be done under locks.

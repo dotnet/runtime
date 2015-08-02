@@ -232,9 +232,9 @@ static gint32 managed_thread_id_counter = 0;
 static void
 mono_threads_lock (void)
 {
-	MONO_TRY_BLOCKING
+	MONO_TRY_BLOCKING;
 	mono_locks_acquire (&threads_mutex, ThreadsLock);
-	MONO_FINISH_TRY_BLOCKING
+	MONO_FINISH_TRY_BLOCKING;
 }
 
 static void
@@ -379,9 +379,9 @@ lock_thread (MonoInternalThread *thread)
 
 	g_assert (thread->synch_cs);
 
-	MONO_TRY_BLOCKING
+	MONO_TRY_BLOCKING;
 	mono_mutex_lock (thread->synch_cs);
-	MONO_FINISH_TRY_BLOCKING
+	MONO_FINISH_TRY_BLOCKING;
 }
 
 static inline void
@@ -832,10 +832,10 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, StartInfo *star
 	 */
 	create_flags = CREATE_SUSPENDED;
 
-	MONO_PREPARE_BLOCKING
+	MONO_PREPARE_BLOCKING;
 	thread_handle = mono_threads_create_thread ((LPTHREAD_START_ROUTINE)start_wrapper, start_info,
 												stack_size, create_flags, &tid);
-	MONO_FINISH_BLOCKING
+	MONO_FINISH_BLOCKING;
 
 	if (thread_handle == NULL) {
 		/* The thread couldn't be created, so throw an exception */
@@ -867,9 +867,9 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, StartInfo *star
 	if (!handle_store (thread, FALSE))
 		return FALSE;
 
-	MONO_PREPARE_BLOCKING
+	MONO_PREPARE_BLOCKING;
 	mono_thread_info_resume (tid);
-	MONO_FINISH_BLOCKING
+	MONO_FINISH_BLOCKING;
 
 	if (internal->start_notify) {
 		/*
@@ -880,9 +880,9 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, StartInfo *star
 		 */
 		THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") waiting for thread %p (%"G_GSIZE_FORMAT") to start", __func__, GetCurrentThreadId (), internal, (gsize)internal->tid));
 
-		MONO_PREPARE_BLOCKING
+		MONO_PREPARE_BLOCKING;
 		WaitForSingleObjectEx (internal->start_notify, INFINITE, FALSE);
-		MONO_FINISH_BLOCKING
+		MONO_FINISH_BLOCKING;
 
 		CloseHandle (internal->start_notify);
 		internal->start_notify = NULL;
@@ -1194,9 +1194,9 @@ ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
 	while (TRUE) {
 		mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
 	
-		MONO_PREPARE_BLOCKING
+		MONO_PREPARE_BLOCKING;
 		res = SleepEx(ms,TRUE);
-		MONO_FINISH_BLOCKING
+		MONO_FINISH_BLOCKING;
 	
 		mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 
@@ -1412,9 +1412,9 @@ ves_icall_System_Threading_Thread_Join_internal(MonoThread *this_obj, int ms)
 	
 	mono_thread_set_state (cur_thread, ThreadState_WaitSleepJoin);
 
-	MONO_PREPARE_BLOCKING
+	MONO_PREPARE_BLOCKING;
 	ret=WaitForSingleObjectEx (handle, ms, TRUE);
-	MONO_FINISH_BLOCKING
+	MONO_FINISH_BLOCKING;
 
 	mono_thread_clr_state (cur_thread, ThreadState_WaitSleepJoin);
 	
@@ -1440,12 +1440,12 @@ mono_wait_uninterrupted (MonoInternalThread *thread, gboolean multiple, guint32 
 
 	start = (ms == -1) ? 0 : mono_100ns_ticks ();
 	do {
-		MONO_PREPARE_BLOCKING
+		MONO_PREPARE_BLOCKING;
 			if (multiple)
 			ret = WaitForMultipleObjectsEx (numhandles, handles, waitall, wait, alertable);
 		else
 			ret = WaitForSingleObjectEx (handles [0], ms, alertable);
-		MONO_FINISH_BLOCKING
+		MONO_FINISH_BLOCKING;
 
 		if (ret != WAIT_IO_COMPLETION)
 			break;
@@ -1606,9 +1606,9 @@ ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal (HANDLE toSignal, H
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
 	
-	MONO_PREPARE_BLOCKING
+	MONO_PREPARE_BLOCKING;
 	ret = SignalObjectAndWait (toSignal, toWait, ms, TRUE);
-	MONO_FINISH_BLOCKING
+	MONO_FINISH_BLOCKING;
 	
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 
@@ -2709,9 +2709,9 @@ static void wait_for_tids (struct wait_data *wait, guint32 timeout)
 	
 	THREAD_DEBUG (g_message("%s: %d threads to wait for in this batch", __func__, wait->num));
 
-	MONO_PREPARE_BLOCKING
+	MONO_PREPARE_BLOCKING;
 	ret=WaitForMultipleObjectsEx(wait->num, wait->handles, TRUE, timeout, TRUE);
-	MONO_FINISH_BLOCKING
+	MONO_FINISH_BLOCKING;
 
 	if(ret==WAIT_FAILED) {
 		/* See the comment in build_wait_tids() */
@@ -2772,9 +2772,9 @@ static void wait_for_tids_or_state_change (struct wait_data *wait, guint32 timeo
 		count++;
 	}
 
-	MONO_PREPARE_BLOCKING
+	MONO_PREPARE_BLOCKING;
 	ret=WaitForMultipleObjectsEx (count, wait->handles, FALSE, timeout, TRUE);
-	MONO_FINISH_BLOCKING
+	MONO_FINISH_BLOCKING;
 
 	if(ret==WAIT_FAILED) {
 		/* See the comment in build_wait_tids() */
