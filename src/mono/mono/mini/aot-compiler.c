@@ -6158,7 +6158,7 @@ emit_trampolines (MonoAotCompile *acfg)
 	int tramp_type;
 #endif
 
-	if (!mono_aot_mode_is_full (&acfg->aot_opts))
+	if (!mono_aot_mode_is_full (&acfg->aot_opts) || REALLY_LLVMONLY)
 		return;
 	
 	g_assert (acfg->image->assembly);
@@ -6574,6 +6574,10 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->bind_to_runtime_version = TRUE;
 		} else if (str_begins_with (arg, "full")) {
 			opts->mode = MONO_AOT_MODE_FULL;
+			if (REALLY_LLVMONLY) {
+				opts->llvm = TRUE;
+				opts->llvm_only = TRUE;
+			}
 		} else if (str_begins_with (arg, "hybrid")) {
 			opts->mode = MONO_AOT_MODE_HYBRID;			
 		} else if (str_begins_with (arg, "threads=")) {
@@ -7413,6 +7417,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 		// FIXME: -O2
 		// FIXME: llc/opt flags
 		command = g_strdup_printf ("clang -march=x86-64 -fpic -O0 -c -o \"%s\" \"%s.bc\"", acfg->llvm_ofile, acfg->tmpbasename);
+		//command = g_strdup_printf ("/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang  -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS8.3.sdk -Qunused-arguments -miphoneos-version-min=8.2 -arch arm64 -fpic -O0 -c -o \"%s\" \"%s.bc\"", acfg->llvm_ofile, acfg->tmpbasename);
 
 		aot_printf (acfg, "Executing clang: %s\n", command);
 		if (execute_system (command) != 0)
@@ -8408,6 +8413,9 @@ emit_got (MonoAotCompile *acfg)
 {
 	char symbol [256];
 
+	if (!acfg->has_jitted_code && REALLY_LLVMONLY)
+		return;
+
 	/* Don't make GOT global so accesses to it don't need relocations */
 	sprintf (symbol, "%s", acfg->got_symbol);
 
@@ -8551,6 +8559,9 @@ static void
 emit_mem_end (MonoAotCompile *acfg)
 {
 	char symbol [128];
+
+	if (!acfg->has_jitted_code && REALLY_LLVMONLY)
+		return;
 
 	sprintf (symbol, "mem_end");
 	emit_section_change (acfg, ".text", 1);

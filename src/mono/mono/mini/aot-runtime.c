@@ -3651,11 +3651,12 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 
 	if (!code) {
 		/* JITted method */
-		/*
-		if (!method)
-			method = mono_get_method (image, token, NULL);
-		printf ("%s\n", mono_method_full_name (method, 1));
-		*/
+		if (mono_llvm_only && REALLY_LLVMONLY) {
+			if (!method)
+				method = mono_get_method (image, token, NULL);
+			printf ("%s\n", mono_method_full_name (method, 1));
+			g_assert_not_reached ();
+		}
 
 		if (amodule->methods [method_index] == GINT_TO_POINTER (-1)) {
 			if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT)) {
@@ -4742,10 +4743,8 @@ mono_aot_get_trampoline_full (const char *name, MonoTrampInfo **out_tinfo)
 {
 	MonoAotModule *amodule = get_mscorlib_aot_module ();
 
-	/*
-	if (mono_llvm_only)
+	if (mono_llvm_only && REALLY_LLVMONLY)
 		return no_trampolines;
-	*/
 
 	return mono_create_ftnptr_malloc (load_function_full (amodule, name, out_tinfo));
 }
@@ -5036,6 +5035,12 @@ get_numerous_trampoline (MonoAotTrampoline tramp_type, int n_got_slots, MonoAotM
 	return amodule->trampolines [tramp_type] + (index * tramp_size);
 }
 
+static void
+no_specific_trampoline (void)
+{
+	g_assert_not_reached ();
+}
+
 /*
  * Return a specific trampoline from the AOT file.
  */
@@ -5048,6 +5053,9 @@ mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampo
 	static gpointer generic_trampolines [MONO_TRAMPOLINE_NUM];
 	static gboolean inited;
 	static guint32 num_trampolines;
+
+	if (!mono_llvm_only && REALLY_LLVMONLY)
+		return no_specific_trampoline;
 
 	if (!inited) {
 		mono_aot_lock ();
@@ -5214,6 +5222,12 @@ mono_aot_get_lazy_fetch_trampoline (guint32 slot)
 	return mono_create_ftnptr (mono_domain_get (), code);
 }
 
+static void
+no_imt_thunk (void)
+{
+       g_assert_not_reached ();
+}
+
 gpointer
 mono_aot_get_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp)
 {
@@ -5222,6 +5236,9 @@ mono_aot_get_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem
 	gpointer *buf;
 	int i, index, real_count;
 	MonoAotModule *amodule;
+
+	if (mono_llvm_only && REALLY_LLVMONLY)
+		return no_imt_thunk;
 
 	real_count = 0;
 	for (i = 0; i < count; ++i) {

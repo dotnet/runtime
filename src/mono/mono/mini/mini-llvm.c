@@ -4461,6 +4461,18 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
+		case OP_TLS_SET_REG: {
+#if defined(TARGET_AMD64) && defined(TARGET_OSX)
+			/* See emit_tls_get_reg () */
+			// 256 == GS segment register
+			LLVMTypeRef ptrtype = LLVMPointerType (IntPtrType (), 256);
+			LLVMBuildStore (builder, convert (ctx, lhs, IntPtrType ()), LLVMBuildIntToPtr (builder, convert (ctx, rhs, LLVMInt32Type ()), ptrtype, ""));
+#else
+			LLVM_FAILURE (ctx, "opcode tls-set-reg");
+#endif
+			break;
+		}
+
 			/*
 			 * Overflow opcodes.
 			 */
@@ -5331,6 +5343,9 @@ mono_llvm_check_method_supported (MonoCompile *cfg)
 {
 	int i, j;
 
+	if (REALLY_LLVMONLY)
+		return;
+
 	if (cfg->method->save_lmf) {
 		cfg->exception_message = g_strdup ("lmf");
 		cfg->disable_llvm = TRUE;
@@ -5502,10 +5517,10 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		LLVMSetLinkage (method, LLVMPrivateLinkage);
 	}
 
-	if (cfg->method->save_lmf)
+	if (cfg->method->save_lmf && !REALLY_LLVMONLY)
 		LLVM_FAILURE (ctx, "lmf");
 
-	if (sig->pinvoke && cfg->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE)
+	if (sig->pinvoke && cfg->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE && !REALLY_LLVMONLY)
 		LLVM_FAILURE (ctx, "pinvoke signature");
 
 	header = cfg->header;
@@ -6586,7 +6601,10 @@ emit_aot_file_info (MonoLLVMModule *lmodule)
 	 * for symbols defined in the .s file emitted by the aot compiler.
 	 */
 	eltype = eltypes [tindex];
-	fields [tindex ++] = AddJitGlobal (lmodule, eltype, "jit_got");
+	if (lmodule->has_jitted_code && REALLY_LLVMONLY)
+		fields [tindex ++] = AddJitGlobal (lmodule, eltype, "jit_got");
+	else
+		fields [tindex ++] = LLVMConstNull (eltype);
 	fields [tindex ++] = lmodule->got_var;
 	/* llc defines this directly */
 	if (TRUE) //(!lmodule->llvm_only)

@@ -6,6 +6,13 @@
 #ifndef __MONO_MINI_H__
 #define __MONO_MINI_H__
 
+#define REALLY_LLVMONLY_MODE 1
+#ifdef REALLY_LLVMONLY_MODE
+#define REALLY_LLVMONLY 1
+#else
+#define REALLY_LLVMONLY 0
+#endif
+
 #include "config.h"
 #include <glib.h>
 #ifdef HAVE_SIGNAL_H
