@@ -889,10 +889,8 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			int atype = decode_value (p, &p);
 
 			ref->method = mono_gc_get_managed_allocator_by_type (atype, !!(mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS));
-			if (!ref->method) {
-				fprintf (stderr, "Error: No managed allocator, but we need one for AOT.\nAre you using non-standard GC options?\n");
-				exit (1);
-			}
+			if (!ref->method)
+				g_error ("Error: No managed allocator, but we need one for AOT.\nAre you using non-standard GC options?\n");
 			break;
 		}
 		case MONO_WRAPPER_WRITE_BARRIER:
@@ -1834,10 +1832,8 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	}
 
 	if (!sofile && !globals) {
-		if (mono_aot_only && assembly->image->tables [MONO_TABLE_METHOD].rows) {
-			fprintf (stderr, "Failed to load AOT module '%s' in aot-only mode.\n", aot_name);
-			exit (1);
-		}
+		if (mono_aot_only && assembly->image->tables [MONO_TABLE_METHOD].rows)
+			g_error ("Failed to load AOT module '%s' in aot-only mode.\n", aot_name);
 		g_free (aot_name);
 		return;
 	}
@@ -1864,8 +1860,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 	if (!usable) {
 		if (mono_aot_only) {
-			fprintf (stderr, "Failed to load AOT module '%s' while running in aot-only mode: %s.\n", aot_name, msg);
-			exit (1);
+			g_error ("Failed to load AOT module '%s' while running in aot-only mode: %s.\n", aot_name, msg);
 		} else {
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: module %s is unusable: %s.\n", aot_name, msg);
 		}
@@ -2116,10 +2111,8 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 	if (amodule->out_of_date) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: Module %s is unusable because a dependency is out-of-date.\n", assembly->image->name);
-		if (mono_aot_only) {
-			fprintf (stderr, "Failed to load AOT module '%s' while running in aot-only mode because a dependency cannot be found or it is out of date.\n", aot_name);
-			exit (1);
-		}
+		if (mono_aot_only)
+			g_error ("Failed to load AOT module '%s' while running in aot-only mode because a dependency cannot be found or it is out of date.\n", aot_name);
 	}
 	else
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: loaded AOT Module for %s.\n", assembly->image->name);
