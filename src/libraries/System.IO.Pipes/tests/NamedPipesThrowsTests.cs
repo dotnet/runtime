@@ -8,20 +8,23 @@ using Xunit;
 
 namespace System.IO.Pipes.Tests
 {
-    public class NamedPipesThrowsTests
+    public class NamedPipesThrowsTests : BaseCommonTests
     {
-        private static void NotReachable(object obj) { Assert.True(false, "This should not be reached."); }
-
         // Server Parameter Checking throws
         [Fact]
         public static void ServerNullPipeNameThrows()
         {
-            Assert.Throws<ArgumentNullException>(() => new NamedPipeServerStream(null));
-            Assert.Throws<ArgumentNullException>(() => new NamedPipeServerStream(null, PipeDirection.In));
-            Assert.Throws<ArgumentNullException>(() => new NamedPipeServerStream(null, PipeDirection.In, 2));
-            Assert.Throws<ArgumentNullException>(() => new NamedPipeServerStream(null, PipeDirection.In, 3, PipeTransmissionMode.Byte));
-            Assert.Throws<ArgumentNullException>(() => new NamedPipeServerStream(null, PipeDirection.In, 3, PipeTransmissionMode.Byte, PipeOptions.None));
-            Assert.Throws<ArgumentNullException>(() => new NamedPipeServerStream(null, PipeDirection.In, 3, PipeTransmissionMode.Byte, PipeOptions.None, 0, 0));
+            Assert.Throws<ArgumentNullException>("pipeName", () => new NamedPipeServerStream(null));
+            Assert.Throws<ArgumentNullException>("pipeName", () => new NamedPipeServerStream(null, PipeDirection.In));
+            Assert.Throws<ArgumentNullException>("pipeName", () => new NamedPipeServerStream(null, PipeDirection.In, 2));
+            Assert.Throws<ArgumentNullException>("pipeName", () => new NamedPipeServerStream(null, PipeDirection.In, 3, PipeTransmissionMode.Byte));
+            Assert.Throws<ArgumentNullException>("pipeName", () => new NamedPipeServerStream(null, PipeDirection.In, 3, PipeTransmissionMode.Byte, PipeOptions.None));
+            Assert.Throws<ArgumentNullException>("pipeName", () => new NamedPipeServerStream(null, PipeDirection.In, 3, PipeTransmissionMode.Byte, PipeOptions.None, 0, 0));
+            Assert.Throws<ArgumentNullException>("pipeName", () => new NamedPipeServerStream(null, PipeDirection.Out));
+            Assert.Throws<ArgumentNullException>("pipeName", () => new NamedPipeServerStream(null, PipeDirection.Out, 2));
+            Assert.Throws<ArgumentNullException>("pipeName", () => new NamedPipeServerStream(null, PipeDirection.Out, 3, PipeTransmissionMode.Byte));
+            Assert.Throws<ArgumentNullException>("pipeName", () => new NamedPipeServerStream(null, PipeDirection.Out, 3, PipeTransmissionMode.Byte, PipeOptions.None));
+            Assert.Throws<ArgumentNullException>("pipeName", () => new NamedPipeServerStream(null, PipeDirection.Out, 3, PipeTransmissionMode.Byte, PipeOptions.None, 0, 0));
         }
 
         [Fact]
@@ -33,6 +36,11 @@ namespace System.IO.Pipes.Tests
             Assert.Throws<ArgumentException>(() => new NamedPipeServerStream("", PipeDirection.In, 3, PipeTransmissionMode.Byte));
             Assert.Throws<ArgumentException>(() => new NamedPipeServerStream("", PipeDirection.In, 3, PipeTransmissionMode.Byte, PipeOptions.None));
             Assert.Throws<ArgumentException>(() => new NamedPipeServerStream("", PipeDirection.In, 3, PipeTransmissionMode.Byte, PipeOptions.None, 0, 0));
+            Assert.Throws<ArgumentException>(() => new NamedPipeServerStream("", PipeDirection.Out));
+            Assert.Throws<ArgumentException>(() => new NamedPipeServerStream("", PipeDirection.Out, 2));
+            Assert.Throws<ArgumentException>(() => new NamedPipeServerStream("", PipeDirection.Out, 3, PipeTransmissionMode.Byte));
+            Assert.Throws<ArgumentException>(() => new NamedPipeServerStream("", PipeDirection.Out, 3, PipeTransmissionMode.Byte, PipeOptions.None));
+            Assert.Throws<ArgumentException>(() => new NamedPipeServerStream("", PipeDirection.Out, 3, PipeTransmissionMode.Byte, PipeOptions.None, 0, 0));
         }
 
         [Fact]
@@ -40,59 +48,240 @@ namespace System.IO.Pipes.Tests
         public static void ServerReservedPipeNameThrows()
         {
             const string reservedName = "anonymous";
-            Assert.Throws<ArgumentOutOfRangeException>(() => new NamedPipeServerStream(reservedName));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new NamedPipeServerStream(reservedName, PipeDirection.In));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new NamedPipeServerStream(reservedName, PipeDirection.In, 1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new NamedPipeServerStream(reservedName, PipeDirection.In, 1, PipeTransmissionMode.Byte));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new NamedPipeServerStream(reservedName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.None));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new NamedPipeServerStream(reservedName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.None, 0, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeServerStream(reservedName));
+            Assert.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeServerStream(reservedName, PipeDirection.In));
+            Assert.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeServerStream(reservedName, PipeDirection.In, 1));
+            Assert.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeServerStream(reservedName, PipeDirection.In, 1, PipeTransmissionMode.Byte));
+            Assert.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeServerStream(reservedName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.None));
+            Assert.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeServerStream(reservedName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.None, 0, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeServerStream(reservedName, PipeDirection.Out));
+            Assert.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeServerStream(reservedName, PipeDirection.Out, 1));
+            Assert.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeServerStream(reservedName, PipeDirection.Out, 1, PipeTransmissionMode.Byte));
+            Assert.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeServerStream(reservedName, PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.None));
+            Assert.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeServerStream(reservedName, PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.None, 0, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeServerStream(reservedName, PipeDirection.InOut));
+            Assert.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeServerStream(reservedName, PipeDirection.InOut, 1));
+            Assert.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeServerStream(reservedName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte));
+            Assert.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeServerStream(reservedName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.None));
+            Assert.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeServerStream(reservedName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.None, 0, 0));
         }
 
         [Fact]
         public static void ServerPipeDirectionThrows()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new NamedPipeServerStream("temp1", (PipeDirection)123));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new NamedPipeServerStream("temp1", (PipeDirection)123, 1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new NamedPipeServerStream("temp1", (PipeDirection)123, 1, PipeTransmissionMode.Byte));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new NamedPipeServerStream("temp1", (PipeDirection)123, 1, PipeTransmissionMode.Byte, PipeOptions.None));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new NamedPipeServerStream("tempx", (PipeDirection)123, 1, PipeTransmissionMode.Byte, PipeOptions.None, 0, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("direction", () => new NamedPipeServerStream("temp1", (PipeDirection)123));
+            Assert.Throws<ArgumentOutOfRangeException>("direction", () => new NamedPipeServerStream("temp1", (PipeDirection)123, 1));
+            Assert.Throws<ArgumentOutOfRangeException>("direction", () => new NamedPipeServerStream("temp1", (PipeDirection)123, 1, PipeTransmissionMode.Byte));
+            Assert.Throws<ArgumentOutOfRangeException>("direction", () => new NamedPipeServerStream("temp1", (PipeDirection)123, 1, PipeTransmissionMode.Byte, PipeOptions.None));
+            Assert.Throws<ArgumentOutOfRangeException>("direction", () => new NamedPipeServerStream("tempx", (PipeDirection)123, 1, PipeTransmissionMode.Byte, PipeOptions.None, 0, 0));
         }
 
         [Fact]
         public static void ServerServerInstancesThrows()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new NamedPipeServerStream("temp3", PipeDirection.Out, 0));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new NamedPipeServerStream("temp3", PipeDirection.Out, 0, PipeTransmissionMode.Byte));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new NamedPipeServerStream("temp3", PipeDirection.Out, 0, PipeTransmissionMode.Byte, PipeOptions.None));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new NamedPipeServerStream("temp3", PipeDirection.Out, 0, PipeTransmissionMode.Byte, PipeOptions.None, 0, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("maxNumberOfServerInstances", () => new NamedPipeServerStream("temp3", PipeDirection.Out, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("maxNumberOfServerInstances", () => new NamedPipeServerStream("temp3", PipeDirection.Out, 0, PipeTransmissionMode.Byte));
+            Assert.Throws<ArgumentOutOfRangeException>("maxNumberOfServerInstances", () => new NamedPipeServerStream("temp3", PipeDirection.Out, 0, PipeTransmissionMode.Byte, PipeOptions.None));
+            Assert.Throws<ArgumentOutOfRangeException>("maxNumberOfServerInstances", () => new NamedPipeServerStream("temp3", PipeDirection.Out, 0, PipeTransmissionMode.Byte, PipeOptions.None, 0, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("maxNumberOfServerInstances", () => new NamedPipeServerStream("temp3", PipeDirection.In, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("maxNumberOfServerInstances", () => new NamedPipeServerStream("temp3", PipeDirection.In, 0, PipeTransmissionMode.Byte));
+            Assert.Throws<ArgumentOutOfRangeException>("maxNumberOfServerInstances", () => new NamedPipeServerStream("temp3", PipeDirection.In, 0, PipeTransmissionMode.Byte, PipeOptions.None));
+            Assert.Throws<ArgumentOutOfRangeException>("maxNumberOfServerInstances", () => new NamedPipeServerStream("temp3", PipeDirection.In, 0, PipeTransmissionMode.Byte, PipeOptions.None, 0, 0));
         }
 
         [Fact]
         public static void ServerTransmissionModeThrows()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new NamedPipeServerStream("temp1", PipeDirection.Out, 1, (PipeTransmissionMode)123));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new NamedPipeServerStream("temp1", PipeDirection.Out, 1, (PipeTransmissionMode)123, PipeOptions.None));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new NamedPipeServerStream("tempx", PipeDirection.Out, 1, (PipeTransmissionMode)123, PipeOptions.None, 0, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("transmissionMode", () => new NamedPipeServerStream("temp1", PipeDirection.Out, 1, (PipeTransmissionMode)123));
+            Assert.Throws<ArgumentOutOfRangeException>("transmissionMode", () => new NamedPipeServerStream("temp1", PipeDirection.Out, 1, (PipeTransmissionMode)123, PipeOptions.None));
+            Assert.Throws<ArgumentOutOfRangeException>("transmissionMode", () => new NamedPipeServerStream("tempx", PipeDirection.Out, 1, (PipeTransmissionMode)123, PipeOptions.None, 0, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("transmissionMode", () => new NamedPipeServerStream("temp1", PipeDirection.In, 1, (PipeTransmissionMode)123));
+            Assert.Throws<ArgumentOutOfRangeException>("transmissionMode", () => new NamedPipeServerStream("temp1", PipeDirection.In, 1, (PipeTransmissionMode)123, PipeOptions.None));
+            Assert.Throws<ArgumentOutOfRangeException>("transmissionMode", () => new NamedPipeServerStream("tempx", PipeDirection.In, 1, (PipeTransmissionMode)123, PipeOptions.None, 0, 0));
         }
 
         [Fact]
         public static void ServerPipeOptionsThrows()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new NamedPipeServerStream("temp1", PipeDirection.Out, 1, PipeTransmissionMode.Byte, (PipeOptions)255));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new NamedPipeServerStream("tempx", PipeDirection.Out, 1, PipeTransmissionMode.Byte, (PipeOptions)255, 0, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("options", () => new NamedPipeServerStream("temp1", PipeDirection.Out, 1, PipeTransmissionMode.Byte, (PipeOptions)255));
+            Assert.Throws<ArgumentOutOfRangeException>("options", () => new NamedPipeServerStream("tempx", PipeDirection.Out, 1, PipeTransmissionMode.Byte, (PipeOptions)255, 0, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("options", () => new NamedPipeServerStream("temp1", PipeDirection.In, 1, PipeTransmissionMode.Byte, (PipeOptions)255));
+            Assert.Throws<ArgumentOutOfRangeException>("options", () => new NamedPipeServerStream("tempx", PipeDirection.In, 1, PipeTransmissionMode.Byte, (PipeOptions)255, 0, 0));
         }
 
         [Fact]
         public static void ServerBufferSizeThrows()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new NamedPipeServerStream("temp2", PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.None, -1, 0));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new NamedPipeServerStream("temp2", PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.None, 0, -123));
+            Assert.Throws<ArgumentOutOfRangeException>("inBufferSize", () => new NamedPipeServerStream("temp2", PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.None, -1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("outBufferSize", () => new NamedPipeServerStream("temp2", PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.None, 0, -123));
+            Assert.Throws<ArgumentOutOfRangeException>("inBufferSize", () => new NamedPipeServerStream("temp2", PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.None, -1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("outBufferSize", () => new NamedPipeServerStream("temp2", PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.None, 0, -123));
+            Assert.Throws<ArgumentOutOfRangeException>("inBufferSize", () => new NamedPipeServerStream("temp2", PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.None, -1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("outBufferSize", () => new NamedPipeServerStream("temp2", PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.None, 0, -123));
+
+
         }
 
         [Fact]
         public static void ServerNullPipeHandleThrows()
         {
-            Assert.Throws<ArgumentNullException>(() => new NamedPipeServerStream(PipeDirection.InOut, false, true, null));
+            Assert.Throws<ArgumentNullException>("safePipeHandle", () => new NamedPipeServerStream(PipeDirection.InOut, false, true, null));
+            Assert.Throws<ArgumentNullException>("safePipeHandle", () => new NamedPipeServerStream(PipeDirection.Out, false, true, null));
+            Assert.Throws<ArgumentNullException>("safePipeHandle", () => new NamedPipeServerStream(PipeDirection.In, false, true, null));
+        }
+
+        [Fact]
+        public static void ServerWriteBufferNullThrows()
+        {
+            using (NamedPipeServerStream server = new NamedPipeServerStream("unique3", PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "unique3", PipeDirection.In))
+            {
+                Task clientConnect = client.ConnectAsync();
+                server.WaitForConnection();
+                clientConnect.Wait();
+
+                ConnectedPipeWriteBufferNullThrows(server);
+            }
+        }
+
+        [Fact]
+        public static void ServerWriteNegativeOffsetThrows()
+        {
+            using (NamedPipeServerStream server = new NamedPipeServerStream("unique3", PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "unique3", PipeDirection.In))
+            {
+                Task clientConnect = client.ConnectAsync();
+                server.WaitForConnection();
+                clientConnect.Wait();
+
+                ConnectedPipeWriteNegativeOffsetThrows(server);
+            }
+        }
+
+        [Fact]
+        public static void ServerWriteNegativeCountThrows()
+        {
+            using (NamedPipeServerStream server = new NamedPipeServerStream("unique3", PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "unique3", PipeDirection.In))
+            {
+                Task clientConnect = client.ConnectAsync();
+                server.WaitForConnection();
+                clientConnect.Wait();
+
+                ConnectedPipeWriteNegativeCountThrows(server);
+            }
+        }
+
+        [Fact]
+        public static void ServerWriteArrayOutOfBoundsThrows()
+        {
+            using (NamedPipeServerStream server = new NamedPipeServerStream("unique3", PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "unique3", PipeDirection.In))
+            {
+                Task clientConnect = client.ConnectAsync();
+                server.WaitForConnection();
+                clientConnect.Wait();
+
+                ConnectedPipeWriteArrayOutOfBoundsThrows(server);
+            }
+        }
+
+        [Fact]
+        public static void ServerWriteOnlyThrows()
+        {
+            using (NamedPipeServerStream server = new NamedPipeServerStream("unique3", PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "unique3", PipeDirection.In))
+            {
+                Task clientConnect = client.ConnectAsync();
+                server.WaitForConnection();
+                clientConnect.Wait();
+
+                ConnectedPipeWriteOnlyThrows(server);
+            }
+        }
+
+        [Fact]
+        public static void ServerUnsupportedOperationThrows()
+        {
+            using (NamedPipeServerStream server = new NamedPipeServerStream("unique3", PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "unique3", PipeDirection.In))
+            {
+                Task clientConnect = client.ConnectAsync();
+                server.WaitForConnection();
+                clientConnect.Wait();
+
+                ConnectedPipeUnsupportedOperationThrows(server);
+            }
+        }
+
+        [Fact]
+        public static void ServerReadBufferNullThrows()
+        {
+            using (NamedPipeServerStream server = new NamedPipeServerStream("unique3", PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "unique3", PipeDirection.Out))
+            {
+                Task clientConnect = client.ConnectAsync();
+                server.WaitForConnection();
+                clientConnect.Wait();
+
+                ConnectedPipeReadBufferNullThrows(server);
+            }
+        }
+
+        [Fact]
+        public static void ServerReadNegativeOffsetThrows()
+        {
+            using (NamedPipeServerStream server = new NamedPipeServerStream("unique3", PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "unique3", PipeDirection.Out))
+            {
+                Task clientConnect = client.ConnectAsync();
+                server.WaitForConnection();
+                clientConnect.Wait();
+
+                ConnectedPipeReadNegativeOffsetThrows(server);
+            }
+        }
+
+        [Fact]
+        public static void ServerReadNegativeCountThrows()
+        {
+            using (NamedPipeServerStream server = new NamedPipeServerStream("unique3", PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "unique3", PipeDirection.Out))
+            {
+                Task clientConnect = client.ConnectAsync();
+                server.WaitForConnection();
+                clientConnect.Wait();
+
+                ConnectedPipeReadNegativeCountThrows(server);
+            }
+        }
+
+        [Fact]
+        public static void ServerReadArrayOutOfBoundsThrows()
+        {
+            using (NamedPipeServerStream server = new NamedPipeServerStream("unique3", PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "unique3", PipeDirection.Out))
+            {
+                Task clientConnect = client.ConnectAsync();
+                server.WaitForConnection();
+                clientConnect.Wait();
+
+                ConnectedPipeReadArrayOutOfBoundsThrows(server);
+            }
+        }
+
+        [Fact]
+        public static void ServerReadOnlyThrows()
+        {
+            using (NamedPipeServerStream server = new NamedPipeServerStream("unique3", PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "unique3", PipeDirection.Out))
+            {
+                Task clientConnect = client.ConnectAsync();
+                server.WaitForConnection();
+                clientConnect.Wait();
+
+                ConnectedPipeReadOnlyThrows(server);
+            }
         }
 
         [Fact]
@@ -155,9 +344,7 @@ namespace System.IO.Pipes.Tests
 
                 Assert.Throws<ObjectDisposedException>(() => server.Disconnect());  // disconnect when disposed
                 Assert.Throws<ObjectDisposedException>(() => server.WaitForConnection());  // disconnect when disposed
-                Assert.Throws<ObjectDisposedException>(() => server.WriteByte(5));
-                Assert.Throws<ObjectDisposedException>(() => server.ReadByte());
-                Assert.Throws<ObjectDisposedException>(() => server.IsMessageComplete);
+                WhenDisposedPipeThrows(server);
             }
         }
 
@@ -169,14 +356,17 @@ namespace System.IO.Pipes.Tests
             {
                 Task clientConnect = client.ConnectAsync();
                 server.WaitForConnection();
+                await clientConnect;
+
                 Assert.Throws<InvalidOperationException>(() => server.IsMessageComplete);
                 Assert.Throws<InvalidOperationException>(() => server.WaitForConnection());
                 await Assert.ThrowsAsync<InvalidOperationException>(() => server.WaitForConnectionAsync());
 
                 server.Disconnect();
+
                 Assert.Throws<InvalidOperationException>(() => server.Disconnect());    // double disconnect
-                Assert.Throws<InvalidOperationException>(() => server.WriteByte(5));
-                Assert.Throws<InvalidOperationException>(() => server.IsMessageComplete);
+
+                AfterDisconnectWriteOnlyPipeThrows(server);
             }
 
             if (Interop.IsWindows) // on Unix, InOut doesn't result in the same Disconnect-based errors due to allowing for other connections
@@ -193,10 +383,10 @@ namespace System.IO.Pipes.Tests
                     await Assert.ThrowsAsync<InvalidOperationException>(() => server.WaitForConnectionAsync());
 
                     server.Disconnect();
+
                     Assert.Throws<InvalidOperationException>(() => server.Disconnect());    // double disconnect
-                    Assert.Throws<InvalidOperationException>(() => server.WriteByte(5));
-                    Assert.Throws<InvalidOperationException>(() => server.ReadByte());
-                    Assert.Throws<InvalidOperationException>(() => server.IsMessageComplete);
+
+                    AfterDisconnectReadWritePipeThrows(server);
                 }
             }
         }
@@ -224,7 +414,7 @@ namespace System.IO.Pipes.Tests
         public static void ServerInvalidPipeHandleThrows()
         {
             SafePipeHandle pipeHandle = new SafePipeHandle(new IntPtr(-1), true);
-            Assert.Throws<ArgumentException>(() => new NamedPipeServerStream(PipeDirection.InOut, false, true, pipeHandle));
+            Assert.Throws<ArgumentException>("safePipeHandle", () => new NamedPipeServerStream(PipeDirection.InOut, false, true, pipeHandle));
         }
 
         [Fact]
@@ -256,8 +446,8 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public static void ClientNullPipeNameParameterThrows()
         {
-            Assert.Throws<ArgumentNullException>(() => new NamedPipeClientStream(null));
-            Assert.Throws<ArgumentNullException>(() => new NamedPipeClientStream(".", null));
+            Assert.Throws<ArgumentNullException>("pipeName", () => new NamedPipeClientStream(null));
+            Assert.Throws<ArgumentNullException>("pipeName", () => new NamedPipeClientStream(".", null));
         }
 
         [Fact]
@@ -270,10 +460,10 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public static void ClientNullServerNameParameterThrows()
         {
-            Assert.Throws<ArgumentNullException>(() => new NamedPipeClientStream(null, "client1"));
-            Assert.Throws<ArgumentNullException>(() => new NamedPipeClientStream(null, "client1", PipeDirection.In));
-            Assert.Throws<ArgumentNullException>(() => new NamedPipeClientStream(null, "client1", PipeDirection.In, PipeOptions.None));
-            Assert.Throws<ArgumentNullException>(() => new NamedPipeClientStream(null, "client1", PipeDirection.In, PipeOptions.None, Security.Principal.TokenImpersonationLevel.None));
+            Assert.Throws<ArgumentNullException>("serverName", () => new NamedPipeClientStream(null, "client1"));
+            Assert.Throws<ArgumentNullException>("serverName", () => new NamedPipeClientStream(null, "client1", PipeDirection.In));
+            Assert.Throws<ArgumentNullException>("serverName", () => new NamedPipeClientStream(null, "client1", PipeDirection.In, PipeOptions.None));
+            Assert.Throws<ArgumentNullException>("serverName", () => new NamedPipeClientStream(null, "client1", PipeDirection.In, PipeOptions.None, Security.Principal.TokenImpersonationLevel.None));
         }
 
         [Fact]
@@ -288,21 +478,21 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public static void ClientPipeDiretionThrows()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new NamedPipeClientStream(".", "client1", (PipeDirection)123));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new NamedPipeClientStream(".", "client1", (PipeDirection)123, PipeOptions.None));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new NamedPipeClientStream(".", "client1", (PipeDirection)123, PipeOptions.None, Security.Principal.TokenImpersonationLevel.None));
+            Assert.Throws<ArgumentOutOfRangeException>("direction", () => new NamedPipeClientStream(".", "client1", (PipeDirection)123));
+            Assert.Throws<ArgumentOutOfRangeException>("direction", () => new NamedPipeClientStream(".", "client1", (PipeDirection)123, PipeOptions.None));
+            Assert.Throws<ArgumentOutOfRangeException>("direction", () => new NamedPipeClientStream(".", "client1", (PipeDirection)123, PipeOptions.None, Security.Principal.TokenImpersonationLevel.None));
         }
         [Fact]
         public static void ClientPipeOptionsThrows()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new NamedPipeClientStream(".", "client1", PipeDirection.In, (PipeOptions)255));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new NamedPipeClientStream(".", "client1", PipeDirection.In, (PipeOptions)255, Security.Principal.TokenImpersonationLevel.None));
+            Assert.Throws<ArgumentOutOfRangeException>("options", () => new NamedPipeClientStream(".", "client1", PipeDirection.In, (PipeOptions)255));
+            Assert.Throws<ArgumentOutOfRangeException>("options", () => new NamedPipeClientStream(".", "client1", PipeDirection.In, (PipeOptions)255, Security.Principal.TokenImpersonationLevel.None));
         }
 
         [Fact]
         public static void ClientImpersonationLevelThrows()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new NamedPipeClientStream(".", "client1", PipeDirection.In, PipeOptions.None, (System.Security.Principal.TokenImpersonationLevel)999));
+            Assert.Throws<ArgumentOutOfRangeException>("impersonationLevel", () => new NamedPipeClientStream(".", "client1", PipeDirection.In, PipeOptions.None, (System.Security.Principal.TokenImpersonationLevel)999));
         }
 
         [Fact]
@@ -310,22 +500,22 @@ namespace System.IO.Pipes.Tests
         {
             using (NamedPipeClientStream client = new NamedPipeClientStream("client1"))
             {
-                Assert.Throws<ArgumentOutOfRangeException>(() => client.Connect(-111));
-                Assert.Throws<ArgumentOutOfRangeException>(() => NotReachable(client.ConnectAsync(-111)));
+                Assert.Throws<ArgumentOutOfRangeException>("timeout", () => client.Connect(-111));
+                Assert.Throws<ArgumentOutOfRangeException>("timeout", () => { client.ConnectAsync(-111); } );
             }
         }
 
         [Fact]
         public static void ClientNullHandleThrows()
         {
-            Assert.Throws<ArgumentNullException>(() => new NamedPipeClientStream(PipeDirection.InOut, false, true, null));
+            Assert.Throws<ArgumentNullException>("safePipeHandle", () => new NamedPipeClientStream(PipeDirection.InOut, false, true, null));
         }
 
         [Fact]
         public static void ClientInvalidHandleThrows()
         {
             SafePipeHandle pipeHandle = new SafePipeHandle(new IntPtr(-1), true);
-            Assert.Throws<ArgumentException>(() => new NamedPipeClientStream(PipeDirection.InOut, false, true, pipeHandle));
+            Assert.Throws<ArgumentException>("safePipeHandle", () => new NamedPipeClientStream(PipeDirection.InOut, false, true, pipeHandle));
         }
 
         [Fact]
@@ -393,6 +583,160 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        public static void ClientReadBufferNullThrows()
+        {
+            using (NamedPipeServerStream server = new NamedPipeServerStream("unique4", PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "unique4", PipeDirection.In))
+            {
+                Task clientConnect = client.ConnectAsync();
+                server.WaitForConnection();
+                clientConnect.Wait();
+
+                ConnectedPipeReadBufferNullThrows(client);
+            }
+        }
+
+        [Fact]
+        public static void ClientReadNegativeOffsetThrows()
+        {
+            using (NamedPipeServerStream server = new NamedPipeServerStream("unique4", PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "unique4", PipeDirection.In))
+            {
+                Task clientConnect = client.ConnectAsync();
+                server.WaitForConnection();
+                clientConnect.Wait();
+
+                ConnectedPipeReadNegativeOffsetThrows(client);
+            }
+        }
+
+        [Fact]
+        public static void ClientReadNegativeCountThrows()
+        {
+            using (NamedPipeServerStream server = new NamedPipeServerStream("unique4", PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "unique4", PipeDirection.In))
+            {
+                Task clientConnect = client.ConnectAsync();
+                server.WaitForConnection();
+                clientConnect.Wait();
+
+                ConnectedPipeReadNegativeCountThrows(client);
+            }
+        }
+
+        [Fact]
+        public static void ClientReadArrayOutOfBoundsThrows()
+        {
+            using (NamedPipeServerStream server = new NamedPipeServerStream("unique4", PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "unique4", PipeDirection.In))
+            {
+                Task clientConnect = client.ConnectAsync();
+                server.WaitForConnection();
+                clientConnect.Wait();
+
+                ConnectedPipeReadArrayOutOfBoundsThrows(client);
+            }
+        }
+
+        [Fact]
+        public static void ClientConnectedPipeReadOnlyThrows()
+        {
+            using (NamedPipeServerStream server = new NamedPipeServerStream("unique4", PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "unique4", PipeDirection.In))
+            {
+                Task clientConnect = client.ConnectAsync();
+                server.WaitForConnection();
+                clientConnect.Wait();
+
+                ConnectedPipeReadOnlyThrows(client);
+            }
+        }
+
+        [Fact]
+        public static void ClientWriteBufferNullThrows()
+        {
+            using (NamedPipeServerStream server = new NamedPipeServerStream("unique4", PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "unique4", PipeDirection.Out))
+            {
+                Task clientConnect = client.ConnectAsync();
+                server.WaitForConnection();
+                clientConnect.Wait();
+
+                ConnectedPipeWriteBufferNullThrows(client);
+            }
+        }
+
+        [Fact]
+        public static void ClientWriteNegativeOffsetThrows()
+        {
+            using (NamedPipeServerStream server = new NamedPipeServerStream("unique4", PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "unique4", PipeDirection.Out))
+            {
+                Task clientConnect = client.ConnectAsync();
+                server.WaitForConnection();
+                clientConnect.Wait();
+
+                ConnectedPipeWriteNegativeOffsetThrows(client);
+            }
+        }
+
+        [Fact]
+        public static void ClientWriteNegativeCountThrows()
+        {
+            using (NamedPipeServerStream server = new NamedPipeServerStream("unique4", PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "unique4", PipeDirection.Out))
+            {
+                Task clientConnect = client.ConnectAsync();
+                server.WaitForConnection();
+                clientConnect.Wait();
+
+                ConnectedPipeWriteNegativeCountThrows(client);
+            }
+        }
+
+        [Fact]
+        public static void ClientWriteArrayOutOfBoundsThrows()
+        {
+            using (NamedPipeServerStream server = new NamedPipeServerStream("unique4", PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "unique4", PipeDirection.Out))
+            {
+                Task clientConnect = client.ConnectAsync();
+                server.WaitForConnection();
+                clientConnect.Wait();
+
+                ConnectedPipeWriteArrayOutOfBoundsThrows(client);
+            }
+        }
+
+        [Fact]
+        public static void ClientWriteOnlyThrows()
+        {
+            using (NamedPipeServerStream server = new NamedPipeServerStream("unique4", PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "unique4", PipeDirection.Out))
+            {
+                Task clientConnect = client.ConnectAsync();
+                server.WaitForConnection();
+                clientConnect.Wait();
+
+                ConnectedPipeWriteOnlyThrows(client);
+            }
+        }
+
+        [Fact]
+        public static void ClientUnsupportedOperationThrows()
+        {
+            using (NamedPipeServerStream server = new NamedPipeServerStream("unique4", PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "unique4", PipeDirection.Out))
+            {
+                Task clientConnect = client.ConnectAsync();
+                server.WaitForConnection();
+                clientConnect.Wait();
+
+                ConnectedPipeUnsupportedOperationThrows(client);
+            }
+        }
+
+        [Fact]
         public static async Task ClientAllReadyConnectedThrows()
         {
             using (NamedPipeServerStream server = new NamedPipeServerStream("testServer1", PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
@@ -448,9 +792,7 @@ namespace System.IO.Pipes.Tests
 
                 client.Dispose();
 
-                Assert.Throws<IOException>(() => server.Write(buffer, 0, buffer.Length));
-                Assert.Throws<IOException>(() => server.WriteByte(123));
-                Assert.Throws<IOException>(() => server.Flush());
+                OtherSidePipeDisconnectWriteThrows(server);
             }
 
             using (NamedPipeServerStream server = new NamedPipeServerStream("testServer2", PipeDirection.In))
@@ -467,8 +809,7 @@ namespace System.IO.Pipes.Tests
 
                 client.Dispose();
 
-                server.Read(buffer, 0, buffer.Length);
-                server.ReadByte();
+                OtherSidePipeDisconnectVerifyRead(server);
             }
 
             if (Interop.IsWindows) // Unix implementation of InOut doesn't fail on server.Write/Read when client disconnects due to allowing for additional connections
@@ -487,15 +828,10 @@ namespace System.IO.Pipes.Tests
 
                     client.Dispose();
 
-                    Assert.Throws<IOException>(() => server.Write(buffer, 0, buffer.Length));
-                    Assert.Throws<IOException>(() => server.WriteByte(123));
-                    Assert.Throws<IOException>(() => server.Flush());
-                    int length = server.Read(buffer, 0, buffer.Length);
-                    Assert.Equal(0, length);
-                    int byt = server.ReadByte();
+                    OtherSidePipeDisconnectWriteThrows(server);
+                    OtherSidePipeDisconnectVerifyRead(server);
                 }
             }
-
         }
 
         [Fact]
@@ -515,9 +851,7 @@ namespace System.IO.Pipes.Tests
 
                 server.Dispose();
 
-                Assert.Throws<IOException>(() => client.Write(buffer, 0, buffer.Length));
-                Assert.Throws<IOException>(() => client.WriteByte(123));
-                Assert.Throws<IOException>(() => client.Flush());
+                OtherSidePipeDisconnectWriteThrows(client);
             }
 
             if (Interop.IsWindows) // Unix implementation of InOut doesn't fail on server.Write/Read when client disconnects due to allowing for additional connections
@@ -536,15 +870,36 @@ namespace System.IO.Pipes.Tests
 
                     server.Dispose();
 
-                    Assert.Throws<IOException>(() => client.Write(buffer, 0, buffer.Length));
-                    Assert.Throws<IOException>(() => client.WriteByte(123));
-                    Assert.Throws<IOException>(() => client.Flush());
-                    int length = client.Read(buffer, 0, buffer.Length);
-                    Assert.Equal(0, length);
-                    int byt = client.ReadByte();
+                    OtherSidePipeDisconnectWriteThrows(client);
+                    OtherSidePipeDisconnectVerifyRead(client);
                 }
             }
+        }
 
+        // Unix port currently doesn't recognize conflicts in pipe direction
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public static void ClientConnectWrongConflictingDirection()
+        {
+            const string serverName1 = "testServer4";
+
+            using (NamedPipeServerStream server = new NamedPipeServerStream(serverName1, PipeDirection.Out))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", serverName1, PipeDirection.Out))
+            {
+                Assert.Throws<UnauthorizedAccessException>(() => client.Connect());
+
+                Assert.False(client.IsConnected);
+            }
+
+            const string serverName2 = "testServer5";
+
+            using (NamedPipeServerStream server = new NamedPipeServerStream(serverName2, PipeDirection.In))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", serverName2, PipeDirection.In))
+            {
+                Assert.Throws<UnauthorizedAccessException>(() => client.Connect());
+
+                Assert.False(client.IsConnected);
+            }
         }
     }
 }
