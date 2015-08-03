@@ -16,7 +16,7 @@ namespace Test
         //
 
         // Get a set of ranges from 0 to each count, with an extra parameter containing the expected average.
-        public static IEnumerable<object[]> AverageData(object[] counts)
+        public static IEnumerable<object[]> AverageData(int[] counts)
         {
             Func<int, double> average = x => (x - 1) / 2.0;
             foreach (object[] results in UnorderedSources.Ranges(counts.Cast<int>(), average)) yield return results;

@@ -13,13 +13,13 @@ namespace Test
         //
         // Take
         //
-        public static IEnumerable<object[]> TakeUnorderedData(object[] counts)
+        public static IEnumerable<object[]> TakeUnorderedData(int[] counts)
         {
             Func<int, IEnumerable<int>> take = x => new[] { -x, -1, 0, 1, x / 2, x, x * 2 }.Distinct();
             foreach (object[] results in UnorderedSources.Ranges(counts.Cast<int>(), take)) yield return results;
         }
 
-        public static IEnumerable<object[]> TakeData(object[] counts)
+        public static IEnumerable<object[]> TakeData(int[] counts)
         {
             Func<int, IEnumerable<int>> take = x => new[] { -x, -1, 0, 1, x / 2, x, x * 2 }.Distinct();
             foreach (object[] results in Sources.Ranges(counts.Cast<int>(), take)) yield return results;
@@ -116,7 +116,7 @@ namespace Test
         //
         // TakeWhile
         //
-        public static IEnumerable<object[]> TakeWhileData(object[] counts)
+        public static IEnumerable<object[]> TakeWhileData(int[] counts)
         {
             foreach (object[] results in Sources.Ranges(counts.Cast<int>()))
             {

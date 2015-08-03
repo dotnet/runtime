@@ -17,7 +17,7 @@ namespace Test
         //
         // SequenceEqual
         //
-        public static IEnumerable<object[]> SequenceEqualData(object[] counts)
+        public static IEnumerable<object[]> SequenceEqualData(int[] counts)
         {
             foreach (object[] left in Sources.Ranges(counts.Cast<int>()))
             {
@@ -28,7 +28,7 @@ namespace Test
             }
         }
 
-        public static IEnumerable<object[]> SequenceEqualUnequalSizeData(object[] counts)
+        public static IEnumerable<object[]> SequenceEqualUnequalSizeData(int[] counts)
         {
             foreach (object[] left in Sources.Ranges(counts.Cast<int>()))
             {
@@ -39,7 +39,7 @@ namespace Test
             }
         }
 
-        public static IEnumerable<object[]> SequenceEqualUnequalData(object[] counts)
+        public static IEnumerable<object[]> SequenceEqualUnequalData(int[] counts)
         {
             foreach (object[] left in Sources.Ranges(counts.Cast<int>()))
             {

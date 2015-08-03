@@ -14,13 +14,13 @@ namespace Test
         // Skip
         //
 
-        public static IEnumerable<object[]> SkipUnorderedData(object[] counts)
+        public static IEnumerable<object[]> SkipUnorderedData(int[] counts)
         {
             Func<int, IEnumerable<int>> skip = x => new[] { -x, -1, 0, 1, x / 2, x, x * 2 }.Distinct();
             foreach (object[] results in UnorderedSources.Ranges(counts.Cast<int>(), skip)) yield return results;
         }
 
-        public static IEnumerable<object[]> SkipData(object[] counts)
+        public static IEnumerable<object[]> SkipData(int[] counts)
         {
             Func<int, IEnumerable<int>> skip = x => new[] { -x, -1, 0, 1, x / 2, x, x * 2 }.Distinct();
             foreach (object[] results in Sources.Ranges(counts.Cast<int>(), skip)) yield return results;
@@ -117,7 +117,7 @@ namespace Test
         //
         // SkipWhile
         //
-        public static IEnumerable<object[]> SkipWhileData(object[] counts)
+        public static IEnumerable<object[]> SkipWhileData(int[] counts)
         {
             foreach (object[] results in Sources.Ranges(counts.Cast<int>()))
             {
