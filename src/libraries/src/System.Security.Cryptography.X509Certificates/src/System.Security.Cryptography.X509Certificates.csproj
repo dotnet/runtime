@@ -129,6 +129,7 @@
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="Internal\Cryptography\Pal.Unix\CertificatePal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\ChainPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslPkcs12Reader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslX509CertificateReader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslX509ChainProcessor.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslX509Encoder.cs" />
@@ -156,8 +157,17 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.ERR.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.ERR.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.EvpPkey.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.EvpPkey.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.EvpPkey.Rsa.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.EvpPkey.Rsa.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.Initialization.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.Initialization.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.Pkcs12.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.Pkcs12.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.Rsa.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.Rsa.cs</Link>
@@ -179,6 +189,12 @@
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeBioHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeBioHandle.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeEvpPkeyHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeEvpPkeyHandle.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafePkcs12Handle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafePkcs12Handle.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeRsaHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeRsaHandle.Unix.cs</Link>

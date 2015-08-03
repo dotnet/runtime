@@ -18,6 +18,7 @@ namespace Internal.Cryptography.Pal
         private static DateTimeFormatInfo s_validityDateTimeFormatInfo;
 
         private SafeX509Handle _cert;
+        private SafeEvpPkeyHandle _privateKey;
         private X500DistinguishedName _subjectName;
         private X500DistinguishedName _issuerName;
 
@@ -34,50 +35,76 @@ namespace Internal.Cryptography.Pal
 
             _cert = handle;
         }
-
-        internal unsafe OpenSslX509CertificateReader(byte[] data)
+      
+        internal static ICertificatePal FromBio(SafeBioHandle bio, string password)
         {
-            SafeX509Handle cert;
+            // Try reading the value as: PEM-X509, DER-X509, DER-PKCS12.
+            int bioPosition = Interop.NativeCrypto.BioTell(bio);
 
-            // If the first byte is a hyphen then this is likely PEM-encoded,
-            // otherwise it's DER-encoded (or not a certificate).
-            if (data[0] == '-')
+            Debug.Assert(bioPosition >= 0);
+
+            SafeX509Handle cert = Interop.libcrypto.PEM_read_bio_X509_AUX(bio, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+
+            if (cert != null && !cert.IsInvalid)
             {
-                using (SafeBioHandle bio = Interop.libcrypto.BIO_new(Interop.libcrypto.BIO_s_mem()))
-                {
-                    Interop.libcrypto.CheckValidOpenSslHandle(bio);
+                return new OpenSslX509CertificateReader(cert);
+            }
 
-                    Interop.libcrypto.BIO_write(bio, data, data.Length);
-                    cert = Interop.libcrypto.PEM_read_bio_X509_AUX(bio, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+            // Rewind, try again.
+            Interop.NativeCrypto.BioSeek(bio, bioPosition);
+            cert = Interop.NativeCrypto.ReadX509AsDerFromBio(bio);
+
+            if (cert != null && !cert.IsInvalid)
+            {
+                return new OpenSslX509CertificateReader(cert);
+            }
+
+            // Rewind, try again.
+            Interop.NativeCrypto.BioSeek(bio, bioPosition);
+
+            OpenSslPkcs12Reader pfx;
+
+            if (OpenSslPkcs12Reader.TryRead(bio, out pfx))
+            {
+                using (pfx)
+                {
+                    pfx.Decrypt(password);
+
+                    ICertificatePal first = null;
+
+                    foreach (OpenSslX509CertificateReader certPal in pfx.ReadCertificates())
+                    {
+                        // When requesting an X509Certificate2 from a PFX only the first entry is
+                        // returned.  Other entries should be disposed.
+                        if (first == null)
+                        {
+                            first = certPal;
+                        }
+                        else
+                        {
+                            certPal.Dispose();
+                        }
+                    }
+
+                    return first;
                 }
             }
-            else
-            {
-                cert = Interop.libcrypto.OpenSslD2I(Interop.libcrypto.d2i_X509, data);
-            }
 
-            Interop.libcrypto.CheckValidOpenSslHandle(cert);
+            // Since we aren't going to finish reading, leaving the buffer where it was when we got
+            // it seems better than leaving it in some arbitrary other position.
+            // 
+            // But, before seeking back to start, save the Exception representing the last reported
+            // OpenSSL error in case the last BioSeek would change it.
+            Exception openSslException = Interop.libcrypto.CreateOpenSslCryptographicException();
 
-            // X509_check_purpose has the effect of populating the sha1_hash value,
-            // and other "initialize" type things.
-            bool init = Interop.libcrypto.X509_check_purpose(cert, -1, 0);
+            Interop.NativeCrypto.BioSeek(bio, bioPosition);
 
-            if (!init)
-            {
-                throw Interop.libcrypto.CreateOpenSslCryptographicException();
-            }
-
-            _cert = cert;
+            throw openSslException;
         }
 
         public bool HasPrivateKey
         {
-            get { return false; }
-        }
-
-        public AsymmetricAlgorithm PrivateKey
-        {
-            get { return null; }
+            get { return _privateKey != null; }
         }
 
         public IntPtr Handle
@@ -268,9 +295,22 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        public void SetPrivateKey(AsymmetricAlgorithm privateKey, AsymmetricAlgorithm publicKey)
+        internal void SetPrivateKey(SafeEvpPkeyHandle privateKey)
         {
-            throw new NotImplementedException();
+            _privateKey = privateKey;
+        }
+
+        public RSA GetRSAPrivateKey()
+        {
+            if (_privateKey == null || _privateKey.IsInvalid)
+            {
+                return null;
+            }
+
+            using (SafeRsaHandle rsaHandle = Interop.libcrypto.EVP_PKEY_get1_RSA(_privateKey))
+            {
+                return new RSAOpenSsl(rsaHandle.DangerousGetHandle());
+            }
         }
 
         public string GetNameInfo(X509NameType nameType, bool forIssuer)
@@ -298,10 +338,25 @@ namespace Internal.Cryptography.Pal
 
         public void AppendPrivateKeyInfo(StringBuilder sb)
         {
+            if (!HasPrivateKey)
+            {
+                return;
+            }
+
+            // There's nothing really to say about the key, just acknowledge there is one.
+            sb.AppendLine();
+            sb.AppendLine();
+            sb.AppendLine("[Private Key]");
         }
 
         public void Dispose()
         {
+            if (_privateKey != null)
+            {
+                _privateKey.Dispose();
+                _privateKey = null;
+            }
+
             if (_cert != null)
             {
                 _cert.Dispose();

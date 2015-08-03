@@ -154,7 +154,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void ImportPfx()
         {
             using (var pfxCer = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
@@ -173,6 +172,43 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     Assert.Equal(pfxCer.Thumbprint, c.Thumbprint);
                 }
             }
+        }
+
+        [Fact]
+        public static void ImportFullChainPfx()
+        {
+            X509Certificate2Collection certs = new X509Certificate2Collection();
+            certs.Import(Path.Combine("TestData", "test.pfx"), "test", X509KeyStorageFlags.DefaultKeySet);
+            int count = certs.Count;
+            Assert.Equal(3, count);
+
+            // Verify that the read ordering is consistent across the platforms
+            string[] expectedSubjects =
+            {
+                "MS Passport Test Sub CA",
+                "MS Passport Test Root CA",
+                "test.local",
+            };
+
+            string[] actualSubjects = certs.OfType<X509Certificate2>().
+                Select(cert => cert.GetNameInfo(X509NameType.SimpleName, false)).
+                ToArray();
+
+            Assert.Equal(expectedSubjects, actualSubjects);
+            
+            // And verify that we have private keys when we expect them
+            bool[] expectedHasPrivateKeys =
+            {
+                false,
+                false,
+                true,
+            };
+
+            bool[] actualHasPrivateKeys = certs.OfType<X509Certificate2>().
+                Select(cert => cert.HasPrivateKey).
+                ToArray();
+
+            Assert.Equal(expectedHasPrivateKeys, actualHasPrivateKeys);
         }
 
         [Fact]
@@ -268,7 +304,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void ImportFromFileTests()
         {
             using (var pfxCer = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
