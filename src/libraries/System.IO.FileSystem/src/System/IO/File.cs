@@ -260,7 +260,7 @@ namespace System.IO
         public static DateTime GetCreationTime(String path)
         {
             String fullPath = PathHelpers.GetFullPathInternal(path);
-            return FileSystem.Current.GetCreationTime(fullPath).DateTime;
+            return FileSystem.Current.GetCreationTime(fullPath).LocalDateTime;
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
@@ -286,7 +286,7 @@ namespace System.IO
         public static DateTime GetLastAccessTime(String path)
         {
             String fullPath = PathHelpers.GetFullPathInternal(path);
-            return FileSystem.Current.GetLastAccessTime(fullPath).DateTime;
+            return FileSystem.Current.GetLastAccessTime(fullPath).LocalDateTime;
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
@@ -312,7 +312,7 @@ namespace System.IO
         public static DateTime GetLastWriteTime(String path)
         {
             String fullPath = PathHelpers.GetFullPathInternal(path);
-            return FileSystem.Current.GetLastWriteTime(fullPath).DateTime;
+            return FileSystem.Current.GetLastWriteTime(fullPath).LocalDateTime;
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
