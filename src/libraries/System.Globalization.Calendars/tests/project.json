@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "System.Globalization": "4.0.10",
     "System.Threading.Tasks": "4.0.10",
     "System.Runtime.Extensions": "4.0.10",
     "System.Globalization.Calendars": "4.0.0",

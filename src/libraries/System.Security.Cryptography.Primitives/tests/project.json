@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "System.Console": "4.0.0-beta-*",
+    "System.Globalization": "4.0.10",
     "System.Runtime": "4.0.20",
     "System.Runtime.Extensions": "4.0.10",
     "xunit": "2.1.0-beta3-*",

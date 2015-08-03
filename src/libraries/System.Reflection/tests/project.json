@@ -2,6 +2,7 @@
   "dependencies": {
     "System.Collections": "4.0.10",
     "System.Diagnostics.Debug": "4.0.10",
+    "System.Globalization": "4.0.10",
     "System.IO": "4.0.10",
     "System.Linq": "4.0.0",
     "System.Reflection": "4.0.10",
