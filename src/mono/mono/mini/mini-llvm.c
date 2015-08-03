@@ -2758,7 +2758,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 
 	if (bb->flags & BB_EXCEPTION_HANDLER) {
 		if (!bblocks [bb->block_num].invoke_target) {
-			//LLVM_FAILURE (ctx, "handler without invokes");
+			LLVM_FAILURE (ctx, "handler without invokes");
 		}
 
 		emit_handler_start (ctx, bb, builder);
