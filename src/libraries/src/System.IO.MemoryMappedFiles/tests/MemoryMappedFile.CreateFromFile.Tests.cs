@@ -401,7 +401,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// The accesses to yield.  Non-writable accesses will be skipped if the current mode doesn't support it.
         /// </param>
         public static IEnumerable<object[]> MemberData_ValidArgumentCombinationsWithPath(
-            object[] modes, object[] mapNames, object[] capacities, object[] accesses)
+            FileMode[] modes, string[] mapNames, long[] capacities, MemoryMappedFileAccess[] accesses)
         {
             foreach (FileMode mode in modes)
             {
@@ -482,7 +482,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <param name="inheritabilities">The inheritabilities to yield.</param>
         /// <param name="inheritabilities">The leaveOpen values to yield.</param>
         public static IEnumerable<object[]> MemberData_ValidArgumentCombinationsWithStream(
-            object[] mapNames, object[] capacities, object[] accesses, object[] inheritabilities, object[] leaveOpens)
+            string[] mapNames, long[] capacities, MemoryMappedFileAccess[] accesses, HandleInheritability[] inheritabilities, bool[] leaveOpens)
         {
             foreach (string tmpMapName in mapNames)
             {
