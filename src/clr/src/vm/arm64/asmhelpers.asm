@@ -234,6 +234,13 @@ ThePreStubPatchLabel
 
         NESTED_END
 
+        NESTED_ENTRY ResolveWorkerChainLookupAsmStub
+
+        // ARMSTUB TODO: implement chained lookup
+        b ResolveWorkerAsmStub
+
+        NESTED_END
+
 ;-----------------------------------------------------------------------------
 ; The following Macros help in WRITE_BARRIER Implemetations
     ; WRITE_BARRIER_ENTRY
