@@ -125,7 +125,7 @@ public class TextInfoTests
     [InlineData("")]
     [InlineData("en-US")]
     [InlineData("fr-FR")]
-    public static void NoUnicodeSpecalCases(string localeName)
+    public static void NoUnicodeSpecialCases(string localeName)
     {
         // Unicode defines some codepoints which expand into multiple codepoints
         // when cased (see SpecialCasing.txt from UNIDATA for some examples).  We have never done

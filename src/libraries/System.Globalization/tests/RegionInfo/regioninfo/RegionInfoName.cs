@@ -16,7 +16,7 @@ namespace System.Globalization.Tests
         {
             RegionInfo regionInfo = new RegionInfo("en-US");
             string strName = regionInfo.Name;
-            Assert.Equal(strName, "US");
+            Assert.Equal("US", strName); //note: this is not consistent with full .NET
         }
 
         // PosTest2:Return the property Name in RegionInfo object 2
@@ -26,12 +26,11 @@ namespace System.Globalization.Tests
         {
             RegionInfo regionInfo = new RegionInfo("zh-CN");
             string strName = regionInfo.Name;
-            Assert.Equal(strName, "CN");
+            Assert.Equal("CN", strName); //note: this is not consistent with full .NET
         }
 
         // PosTest3:Return the property Name in RegionInfo object 3
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void PosTest3()
         {
             RegionInfo regionInfo = new RegionInfo("US");
@@ -41,7 +40,6 @@ namespace System.Globalization.Tests
 
         // PosTest4:Return the property Name in RegionInfo object 4
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void PosTest4()
         {
             RegionInfo regionInfo = new RegionInfo("CN");
