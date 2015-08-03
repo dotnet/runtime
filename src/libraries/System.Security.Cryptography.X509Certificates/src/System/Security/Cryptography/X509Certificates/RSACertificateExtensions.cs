@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             // When the CNG contract comes online this needs to return an RsaCng on Windows, unless CNG reports
             // an error, then try falling back to CAPI (for CAPI-only smartcards).
-            return (RSA)certificate.Pal.PrivateKey;
+            return certificate.Pal.GetRSAPrivateKey();
         }
 
         private static bool IsRSA(X509Certificate2 certificate)

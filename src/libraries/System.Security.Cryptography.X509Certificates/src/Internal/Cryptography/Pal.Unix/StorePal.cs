@@ -8,6 +8,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
+using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography.Pal
 {
@@ -18,12 +19,37 @@ namespace Internal.Cryptography.Pal
 
         public static IStorePal FromBlob(byte[] rawData, string password, X509KeyStorageFlags keyStorageFlags)
         {
-            throw new NotImplementedException();
+            OpenSslPkcs12Reader pfx;
+
+            if (OpenSslPkcs12Reader.TryRead(rawData, out pfx))
+            {
+                using (pfx)
+                {
+                    return PfxToCollection(pfx, password);
+                }
+            }
+
+            return null;
         }
 
         public static IStorePal FromFile(string fileName, string password, X509KeyStorageFlags keyStorageFlags)
         {
-            throw new NotImplementedException();
+            using (SafeBioHandle fileBio = Interop.libcrypto.BIO_new_file(fileName, "rb"))
+            {
+                Interop.libcrypto.CheckValidOpenSslHandle(fileBio);
+
+                OpenSslPkcs12Reader pfx;
+
+                if (OpenSslPkcs12Reader.TryRead(fileBio, out pfx))
+                {
+                    using (pfx)
+                    {
+                        return PfxToCollection(pfx, password);
+                    }
+                }
+            }
+
+            return null;
         }
 
         public static IStorePal FromCertificate(ICertificatePal cert)
@@ -77,6 +103,20 @@ namespace Internal.Cryptography.Pal
 
             // TODO (#2207): Support the rest of the stores, or throw PlatformNotSupportedException.
             throw new NotImplementedException();
+        }
+
+        private static IStorePal PfxToCollection(OpenSslPkcs12Reader pfx, string password)
+        {
+            pfx.Decrypt(password);
+
+            X509Certificate2Collection coll = new X509Certificate2Collection();
+
+            foreach (OpenSslX509CertificateReader certPal in pfx.ReadCertificates())
+            {
+                coll.Add(new X509Certificate2(certPal));
+            }
+
+            return new OpenSslX509StoreProvider(coll);
         }
 
         private static IStorePal CloneStore(X509Certificate2Collection seed)

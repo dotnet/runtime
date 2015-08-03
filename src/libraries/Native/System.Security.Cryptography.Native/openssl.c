@@ -775,3 +775,76 @@ GetX509RootStorePath()
 
     return dir;
 }
+
+/*
+Function:
+ReadX509AsDerFromBio
+
+Used by System.Security.Cryptography.X509Certificates' OpenSslX509CertificateReader when attempting
+to turn the contents of a file into an ICertificatePal object.
+
+Return values:
+If bio containns a valid DER-encoded X509 object, a pointer to that X509 structure that was deserialized,
+otherwise NULL.
+*/
+X509*
+ReadX509AsDerFromBio(
+    BIO* bio)
+{
+    return d2i_X509_bio(bio, NULL);
+}
+
+/*
+Function:
+BioTell
+
+Used by System.Security.Cryptography.X509Certificates' OpenSslX509CertificateReader when attempting
+to turn the contents of a file into an ICertificatePal object to allow seeking back to the start point
+in the event of a deserialization failure.
+
+Return values:
+The current seek position of the BIO if it is a file-related BIO, -1 on NULL inputs, and has unspecified
+behavior on non-file, non-null BIO objects.
+
+See also:
+OpenSSL's BIO_tell
+*/
+int BioTell(
+    BIO* bio)
+{
+    if (!bio)
+    {
+        return -1;
+    }
+
+    return BIO_tell(bio);
+}
+
+/*
+Function:
+BioTell
+
+Used by System.Security.Cryptography.X509Certificates' OpenSslX509CertificateReader when attempting
+to turn the contents of a file into an ICertificatePal object to seek back to the start point
+in the event of a deserialization failure.
+
+Return values:
+-1 if bio is NULL
+-1 if bio is a file-related BIO and seek fails
+0 if bio is a file-related BIO and seek succeeds
+otherwise unspecified
+
+See also:
+OpenSSL's BIO_seek
+*/
+int BioSeek(
+    BIO* bio,
+    int ofs)
+{
+    if (!bio)
+    {
+        return -1;
+    }
+
+    return BIO_seek(bio, ofs);
+}

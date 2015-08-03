@@ -19,6 +19,9 @@ internal static partial class Interop
         internal static extern SafeBioHandle BIO_new(IntPtr type);
 
         [DllImport(Libraries.LibCrypto)]
+        internal static extern SafeBioHandle BIO_new_file(string filename, string mode);
+
+        [DllImport(Libraries.LibCrypto)]
         internal static extern IntPtr BIO_s_mem();
 
         [DllImport(Libraries.LibCrypto)]
