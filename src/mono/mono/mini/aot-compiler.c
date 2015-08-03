@@ -42,7 +42,6 @@
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/gc-internal.h>
-#include <mono/metadata/monitor.h>
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/threads-types.h>
@@ -1611,14 +1610,6 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
 	/* Similar to the PPC code above */
 
 	/* FIXME: Could this clobber the register needed by get_vcall_slot () ? */
-
-	/* We clobber ECX, since EAX is used as MONO_ARCH_MONITOR_OBJECT_REG */
-#ifdef MONO_ARCH_MONITOR_OBJECT_REG
-	g_assert (MONO_ARCH_MONITOR_OBJECT_REG != X86_ECX);
-#ifdef MONO_ARCH_MONITOR_LOCK_TAKEN_REG
-	g_assert (MONO_ARCH_MONITOR_LOCK_TAKEN_REG != X86_ECX);
-#endif
-#endif
 
 	code = buf;
 	/* Load mscorlib got address */
@@ -3204,9 +3195,6 @@ is_plt_patch (MonoJumpInfo *patch_info)
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 	case MONO_PATCH_INFO_ICALL_ADDR:
 	case MONO_PATCH_INFO_RGCTX_FETCH:
-	case MONO_PATCH_INFO_MONITOR_ENTER:
-	case MONO_PATCH_INFO_MONITOR_ENTER_V4:
-	case MONO_PATCH_INFO_MONITOR_EXIT:
 	case MONO_PATCH_INFO_LLVM_IMT_TRAMPOLINE:
 		return TRUE;
 	default:
@@ -5438,9 +5426,6 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		encode_patch (acfg, entry->data, p, &p);
 		break;
 	}
-	case MONO_PATCH_INFO_MONITOR_ENTER:
-	case MONO_PATCH_INFO_MONITOR_ENTER_V4:
-	case MONO_PATCH_INFO_MONITOR_EXIT:
 	case MONO_PATCH_INFO_SEQ_POINT_INFO:
 		break;
 	case MONO_PATCH_INFO_LLVM_IMT_TRAMPOLINE:
@@ -6304,17 +6289,6 @@ emit_trampolines (MonoAotCompile *acfg)
 			mono_arch_create_generic_trampoline (tramp_type, &info, acfg->aot_opts.use_trampolines_page? 2: TRUE);
 			emit_trampoline (acfg, acfg->got_offset, info);
 		}
-
-#if defined(MONO_ARCH_MONITOR_OBJECT_REG)
-		mono_arch_create_monitor_enter_trampoline (&info, FALSE, TRUE);
-		emit_trampoline (acfg, acfg->got_offset, info);
-#if defined(MONO_ARCH_MONITOR_LOCK_TAKEN_REG)
-		mono_arch_create_monitor_enter_trampoline (&info, TRUE, TRUE);
-		emit_trampoline (acfg, acfg->got_offset, info);
-#endif
-		mono_arch_create_monitor_exit_trampoline (&info, TRUE);
-		emit_trampoline (acfg, acfg->got_offset, info);
-#endif
 
 		/* Emit the exception related code pieces */
 		mono_arch_get_restore_context (&info, TRUE);

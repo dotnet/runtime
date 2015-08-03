@@ -1212,9 +1212,6 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_GC_CARD_TABLE_ADDR:
 	case MONO_PATCH_INFO_GC_NURSERY_START:
 	case MONO_PATCH_INFO_JIT_TLS_ID:
-	case MONO_PATCH_INFO_MONITOR_ENTER:
-	case MONO_PATCH_INFO_MONITOR_ENTER_V4:
-	case MONO_PATCH_INFO_MONITOR_EXIT:
 	case MONO_PATCH_INFO_GOT_OFFSET:
 	case MONO_PATCH_INFO_GC_SAFE_POINT_FLAG:
 		return (ji->type << 8);
@@ -1602,15 +1599,6 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		target = mono_create_rgctx_lazy_fetch_trampoline (slot);
 		break;
 	}
-	case MONO_PATCH_INFO_MONITOR_ENTER:
-		target = mono_create_monitor_enter_trampoline ();
-		break;
-	case MONO_PATCH_INFO_MONITOR_ENTER_V4:
-		target = mono_create_monitor_enter_v4_trampoline ();
-		break;
-	case MONO_PATCH_INFO_MONITOR_EXIT:
-		target = mono_create_monitor_exit_trampoline ();
-		break;
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 	case MONO_PATCH_INFO_SEQ_POINT_INFO:
 		if (!run_cctors)

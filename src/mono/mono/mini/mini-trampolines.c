@@ -896,29 +896,6 @@ mono_rgctx_lazy_fetch_trampoline (mgreg_t *regs, guint8 *code, gpointer data, gu
 		return mono_class_fill_runtime_generic_context (arg, index);
 }
 
-void
-mono_monitor_enter_trampoline (mgreg_t *regs, guint8 *code, MonoObject *obj, guint8 *tramp)
-{
-	mono_monitor_enter (obj);
-}
-
-void
-mono_monitor_enter_v4_trampoline (mgreg_t *regs, guint8 *code, MonoObject *obj, guint8 *tramp)
-{
-#ifdef MONO_ARCH_MONITOR_LOCK_TAKEN_REG
-	char *lock_taken = (char*)regs [MONO_ARCH_MONITOR_LOCK_TAKEN_REG];
-	mono_monitor_enter_v4 (obj, lock_taken);
-#else
-	g_assert_not_reached ();
-#endif
-}
-
-void
-mono_monitor_exit_trampoline (mgreg_t *regs, guint8 *code, MonoObject *obj, guint8 *tramp)
-{
-	mono_monitor_exit (obj);
-}
-
 /*
  * Precompute data to speed up mono_delegate_trampoline ().
  * METHOD might be NULL.
@@ -1210,12 +1187,6 @@ mono_get_trampoline_func (MonoTrampolineType tramp_type)
 	case MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING:
 		return mono_generic_virtual_remoting_trampoline;
 #endif
-	case MONO_TRAMPOLINE_MONITOR_ENTER:
-		return mono_monitor_enter_trampoline;
-	case MONO_TRAMPOLINE_MONITOR_ENTER_V4:
-		return mono_monitor_enter_v4_trampoline;
-	case MONO_TRAMPOLINE_MONITOR_EXIT:
-		return mono_monitor_exit_trampoline;
 	case MONO_TRAMPOLINE_VCALL:
 		return mono_vcall_trampoline;
 #ifdef MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD
@@ -1260,9 +1231,6 @@ mono_trampolines_init (void)
 #ifndef DISABLE_REMOTING
 	mono_trampoline_code [MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING] = create_trampoline_code (MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING);
 #endif
-	mono_trampoline_code [MONO_TRAMPOLINE_MONITOR_ENTER] = create_trampoline_code (MONO_TRAMPOLINE_MONITOR_ENTER);
-	mono_trampoline_code [MONO_TRAMPOLINE_MONITOR_ENTER_V4] = create_trampoline_code (MONO_TRAMPOLINE_MONITOR_ENTER_V4);
-	mono_trampoline_code [MONO_TRAMPOLINE_MONITOR_EXIT] = create_trampoline_code (MONO_TRAMPOLINE_MONITOR_EXIT);
 	mono_trampoline_code [MONO_TRAMPOLINE_VCALL] = create_trampoline_code (MONO_TRAMPOLINE_VCALL);
 #ifdef MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD
 	mono_trampoline_code [MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD] = create_trampoline_code (MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD);
@@ -1502,95 +1470,6 @@ mono_create_rgctx_lazy_fetch_trampoline (guint32 offset)
 
 	return ptr;
 }
-
-gpointer
-mono_create_monitor_enter_trampoline (void)
-{
-	static gpointer code;
-
-	if (mono_aot_only) {
-		if (!code)
-			code = mono_aot_get_trampoline ("monitor_enter_trampoline");
-		return code;
-	}
-
-#ifdef MONO_ARCH_MONITOR_OBJECT_REG
-	mono_trampolines_lock ();
-
-	if (!code) {
-		MonoTrampInfo *info;
-
-		code = mono_arch_create_monitor_enter_trampoline (&info, FALSE, FALSE);
-		mono_tramp_info_register (info, NULL);
-	}
-
-	mono_trampolines_unlock ();
-#else
-	code = NULL;
-	g_assert_not_reached ();
-#endif
-
-	return code;
-}
-
-gpointer
-mono_create_monitor_enter_v4_trampoline (void)
-{
-	static gpointer code;
-
-	if (mono_aot_only) {
-		if (!code)
-			code = mono_aot_get_trampoline ("monitor_enter_v4_trampoline");
-		return code;
-	}
-
-#if defined(MONO_ARCH_MONITOR_OBJECT_REG) && defined(MONO_ARCH_MONITOR_LOCK_TAKEN_REG)
-	mono_trampolines_lock ();
-
-	if (!code) {
-		MonoTrampInfo *info;
-
-		code = mono_arch_create_monitor_enter_trampoline (&info, TRUE, FALSE);
-		mono_tramp_info_register (info, NULL);
-	}
-
-	mono_trampolines_unlock ();
-#else
-	code = NULL;
-	g_assert_not_reached ();
-#endif
-
-	return code;
-}
-
-gpointer
-mono_create_monitor_exit_trampoline (void)
-{
-	static gpointer code;
-
-	if (mono_aot_only) {
-		if (!code)
-			code = mono_aot_get_trampoline ("monitor_exit_trampoline");
-		return code;
-	}
-
-#ifdef MONO_ARCH_MONITOR_OBJECT_REG
-	mono_trampolines_lock ();
-
-	if (!code) {
-		MonoTrampInfo *info;
-
-		code = mono_arch_create_monitor_exit_trampoline (&info, FALSE);
-		mono_tramp_info_register (info, NULL);
-	}
-
-	mono_trampolines_unlock ();
-#else
-	code = NULL;
-	g_assert_not_reached ();
-#endif
-	return code;
-}
  
 #ifdef MONO_ARCH_LLVM_SUPPORTED
 /*
@@ -1641,9 +1520,6 @@ static const char*tramp_names [MONO_TRAMPOLINE_NUM] = {
 	"delegate",
 	"restore_stack_prot",
 	"generic_virtual_remoting",
-	"monitor_enter",
-	"monitor_enter_v4",
-	"monitor_exit",
 	"vcall",
 	"handler_block_guard"
 };

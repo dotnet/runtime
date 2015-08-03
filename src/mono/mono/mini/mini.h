@@ -113,7 +113,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 120
+#define MONO_AOT_FILE_VERSION 121
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -1326,9 +1326,6 @@ typedef enum {
 	MONO_TRAMPOLINE_DELEGATE,
 	MONO_TRAMPOLINE_RESTORE_STACK_PROT,
 	MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING,
-	MONO_TRAMPOLINE_MONITOR_ENTER,
-	MONO_TRAMPOLINE_MONITOR_ENTER_V4,
-	MONO_TRAMPOLINE_MONITOR_EXIT,
 	MONO_TRAMPOLINE_VCALL,
 	MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD,
 	MONO_TRAMPOLINE_NUM
@@ -1337,17 +1334,11 @@ typedef enum {
 /* These trampolines return normally to their caller */
 #define MONO_TRAMPOLINE_TYPE_MUST_RETURN(t)		\
 	((t) == MONO_TRAMPOLINE_RESTORE_STACK_PROT ||	\
-	 (t) == MONO_TRAMPOLINE_RGCTX_LAZY_FETCH ||	\
-	 (t) == MONO_TRAMPOLINE_MONITOR_ENTER ||	\
-	 (t) == MONO_TRAMPOLINE_MONITOR_ENTER_V4 ||	\
-	 (t) == MONO_TRAMPOLINE_MONITOR_EXIT)
+	 (t) == MONO_TRAMPOLINE_RGCTX_LAZY_FETCH)
 
 /* These trampolines receive an argument directly in a register */
 #define MONO_TRAMPOLINE_TYPE_HAS_ARG(t)		\
-	((t) == MONO_TRAMPOLINE_MONITOR_ENTER ||		\
-	 (t) == MONO_TRAMPOLINE_MONITOR_ENTER_V4 ||		\
-	 (t) == MONO_TRAMPOLINE_MONITOR_EXIT ||			\
-	 (t) == MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD)
+	((t) == MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD)
 
 /* optimization flags */
 #define OPTFLAG(id,shift,name,descr) MONO_OPT_ ## id = 1 << shift,
