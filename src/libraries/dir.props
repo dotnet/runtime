@@ -47,7 +47,6 @@
   <ItemGroup>
     <NuGetSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-buildtools" />
     <NuGetSourceList Include="https:%2F%2Fwww.nuget.org/api/v2" />
-    <NuGetSourceList Include="E:\LocalNuGetRepo" />
   </ItemGroup>
 
   <!-- Common nuget properties -->
@@ -74,7 +73,6 @@
     <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-corefxtestdata/" />
     <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-buildtools/" />
     <DnuSourceList Include="https:%2F%2Fwww.nuget.org/api/v2/" />
-    <DnuSourceList Include="E:\LocalNuGetRepo" />
   </ItemGroup>
 
     <!-- list of directories to perform batch restore -->
