@@ -10,7 +10,7 @@
 
   <!-- Build Tools Versions -->
   <PropertyGroup>
-    <BuildToolsVersion>1.0.25-prerelease-00066</BuildToolsVersion>
+    <BuildToolsVersion>1.0.25-prerelease-00068</BuildToolsVersion>
     <DnxVersion>1.0.0-beta5-12101</DnxVersion>
     <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'!='Unix'">dnx-coreclr-win-x86.$(DnxVersion)</DnxPackageName>
     <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'=='Unix'">dnx-mono.$(DnxVersion)</DnxPackageName>
@@ -47,6 +47,7 @@
   <ItemGroup>
     <NuGetSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-buildtools" />
     <NuGetSourceList Include="https:%2F%2Fwww.nuget.org/api/v2" />
+    <NuGetSourceList Include="E:\LocalNuGetRepo" />
   </ItemGroup>
 
   <!-- Common nuget properties -->
@@ -73,6 +74,7 @@
     <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-corefxtestdata/" />
     <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-buildtools/" />
     <DnuSourceList Include="https:%2F%2Fwww.nuget.org/api/v2/" />
+    <DnuSourceList Include="E:\LocalNuGetRepo" />
   </ItemGroup>
 
     <!-- list of directories to perform batch restore -->
