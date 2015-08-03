@@ -1,10 +1,10 @@
 {
   "dependencies": {
-    "System.Collections.NonGeneric": "4.0.0-beta-*",
-    "System.Collections.Specialized": "4.0.0-beta-*",
-    "System.Resources.ResourceManager": "4.0.0-beta-*",
-    "System.Runtime": "4.0.20-beta-*",
-    "System.Text.Encoding": "4.0.10-beta-*",
+    "System.Collections.NonGeneric": "4.0.0",
+    "System.Collections.Specialized": "4.0.0",
+    "System.Resources.ResourceManager": "4.0.0",
+    "System.Runtime": "4.0.20",
+    "System.Text.Encoding": "4.0.10"
   },
   "frameworks": {
     "dnxcore50": {}

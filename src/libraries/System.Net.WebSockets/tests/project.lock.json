@@ -3,10 +3,10 @@
   "version": -9996,
   "targets": {
     "DNXCore,Version=v5.0": {
-      "Microsoft.Win32.Primitives/4.0.0-beta-23024": {
+      "Microsoft.Win32.Primitives/4.0.0-beta-23127": {
         "dependencies": {
-          "System.Runtime": "4.0.20-beta-23024",
-          "System.Runtime.InteropServices": "4.0.20-beta-23024"
+          "System.Runtime": "4.0.20-beta-23127",
+          "System.Runtime.InteropServices": "4.0.20-beta-23127"
         },
         "compile": {
           "ref/dotnet/Microsoft.Win32.Primitives.dll": {}
@@ -34,9 +34,9 @@
           "lib/aspnetcore50/System.Diagnostics.Debug.dll": {}
         }
       },
-      "System.Globalization/4.0.0-beta-23024": {
+      "System.Globalization/4.0.0-beta-23127": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-23024"
+          "System.Runtime": "4.0.0-beta-23127"
         },
         "compile": {
           "ref/dotnet/System.Globalization.dll": {}
@@ -67,12 +67,12 @@
           "lib/aspnetcore50/System.Linq.dll": {}
         }
       },
-      "System.Net.WebSockets/4.0.0-beta-23024": {
+      "System.Net.WebSockets/4.0.0-beta-23127": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-23024",
-          "System.Resources.ResourceManager": "4.0.0-beta-23024",
-          "System.Threading.Tasks": "4.0.0-beta-23024",
-          "Microsoft.Win32.Primitives": "4.0.0-beta-23024"
+          "System.Runtime": "4.0.20-beta-23127",
+          "System.Resources.ResourceManager": "4.0.0-beta-23127",
+          "System.Threading.Tasks": "4.0.0-beta-23127",
+          "Microsoft.Win32.Primitives": "4.0.0-beta-23127"
         },
         "compile": {
           "ref/dotnet/System.Net.WebSockets.dll": {}
@@ -81,7 +81,7 @@
           "lib/DNXCore50/System.Net.WebSockets.dll": {}
         }
       },
-      "System.Private.Uri/4.0.0-beta-23024": {
+      "System.Private.Uri/4.0.0": {
         "runtime": {
           "lib/DNXCore50/System.Private.Uri.dll": {}
         }
@@ -99,9 +99,9 @@
           "lib/aspnetcore50/System.Reflection.dll": {}
         }
       },
-      "System.Reflection.Primitives/4.0.0-beta-23024": {
+      "System.Reflection.Primitives/4.0.0-beta-23127": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-23024"
+          "System.Runtime": "4.0.0-beta-23127"
         },
         "compile": {
           "ref/dotnet/System.Reflection.Primitives.dll": {}
@@ -110,11 +110,11 @@
           "lib/DNXCore50/System.Reflection.Primitives.dll": {}
         }
       },
-      "System.Resources.ResourceManager/4.0.0-beta-23024": {
+      "System.Resources.ResourceManager/4.0.0-beta-23127": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-23024",
-          "System.Reflection": "4.0.0-beta-23024",
-          "System.Globalization": "4.0.0-beta-23024"
+          "System.Runtime": "4.0.0-beta-23127",
+          "System.Reflection": "4.0.0-beta-23127",
+          "System.Globalization": "4.0.0-beta-23127"
         },
         "compile": {
           "ref/dotnet/System.Resources.ResourceManager.dll": {}
@@ -123,9 +123,9 @@
           "lib/DNXCore50/System.Resources.ResourceManager.dll": {}
         }
       },
-      "System.Runtime/4.0.20-beta-23024": {
+      "System.Runtime/4.0.20": {
         "dependencies": {
-          "System.Private.Uri": "4.0.0-beta-23024"
+          "System.Private.Uri": "4.0.0"
         },
         "compile": {
           "ref/dotnet/System.Runtime.dll": {}
@@ -145,9 +145,9 @@
           "lib/aspnetcore50/System.Runtime.Extensions.dll": {}
         }
       },
-      "System.Runtime.Handles/4.0.0-beta-23024": {
+      "System.Runtime.Handles/4.0.0-beta-23127": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-23024"
+          "System.Runtime": "4.0.0-beta-23127"
         },
         "compile": {
           "ref/dotnet/System.Runtime.Handles.dll": {}
@@ -156,12 +156,12 @@
           "lib/DNXCore50/System.Runtime.Handles.dll": {}
         }
       },
-      "System.Runtime.InteropServices/4.0.20-beta-23024": {
+      "System.Runtime.InteropServices/4.0.20-beta-23127": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-23024",
-          "System.Reflection": "4.0.0-beta-23024",
-          "System.Reflection.Primitives": "4.0.0-beta-23024",
-          "System.Runtime.Handles": "4.0.0-beta-23024"
+          "System.Runtime": "4.0.0-beta-23127",
+          "System.Reflection": "4.0.0-beta-23127",
+          "System.Reflection.Primitives": "4.0.0-beta-23127",
+          "System.Runtime.Handles": "4.0.0-beta-23127"
         },
         "compile": {
           "ref/dotnet/System.Runtime.InteropServices.dll": {}
@@ -256,7 +256,7 @@
           "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.core.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00056": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00066": {
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10-beta-22703",
           "System.IO": "4.0.10-beta-22703",
@@ -283,15 +283,19 @@
     }
   },
   "libraries": {
-    "Microsoft.Win32.Primitives/4.0.0-beta-23024": {
+    "Microsoft.Win32.Primitives/4.0.0-beta-23127": {
       "serviceable": true,
-      "sha512": "CILMy3sPDbjCjDhaP43dLVGD7E613CUVo7TpQGo2HjoG7Stv5JMiGsOJB3P4Mqymtb+P8FKYzchJwifCnO7cbw==",
+      "sha512": "RhBDkPQpFEEx6gHmNlge7eG9up6U0lC41Sbgh8ugosNeputVZRzbskXMOPkgNz3I5FMU/E+g0YuJB/T8K0Slhg==",
       "files": [
-        "Microsoft.Win32.Primitives.4.0.0-beta-23024.nupkg",
-        "Microsoft.Win32.Primitives.4.0.0-beta-23024.nupkg.sha512",
+        "Microsoft.Win32.Primitives.4.0.0-beta-23127.nupkg",
+        "Microsoft.Win32.Primitives.4.0.0-beta-23127.nupkg.sha512",
         "Microsoft.Win32.Primitives.nuspec",
         "lib/dotnet/Microsoft.Win32.Primitives.dll",
+        "lib/MonoAndroid10/_._",
+        "lib/MonoTouch10/_._",
         "lib/net46/Microsoft.Win32.Primitives.dll",
+        "lib/xamarinios10/_._",
+        "lib/xamarinmac20/_._",
         "ref/dotnet/Microsoft.Win32.Primitives.dll",
         "ref/dotnet/Microsoft.Win32.Primitives.xml",
         "ref/dotnet/de/Microsoft.Win32.Primitives.xml",
@@ -303,7 +307,11 @@
         "ref/dotnet/ru/Microsoft.Win32.Primitives.xml",
         "ref/dotnet/zh-hans/Microsoft.Win32.Primitives.xml",
         "ref/dotnet/zh-hant/Microsoft.Win32.Primitives.xml",
-        "ref/net46/Microsoft.Win32.Primitives.dll"
+        "ref/MonoAndroid10/_._",
+        "ref/MonoTouch10/_._",
+        "ref/net46/Microsoft.Win32.Primitives.dll",
+        "ref/xamarinios10/_._",
+        "ref/xamarinmac20/_._"
       ]
     },
     "System.Collections/4.0.0-beta-22809": {
@@ -333,15 +341,21 @@
         "lib/portable-wpa81+wp80+win80+net45+aspnetcore50/System.Diagnostics.Debug.dll"
       ]
     },
-    "System.Globalization/4.0.0-beta-23024": {
-      "sha512": "spLUZdsogiGRrw0J/WPrayNmvrKO9luR3SewdrW6Khw2Jc3K5dVTlF75d7oRHAQ7zELn37/Pvb66ASFuJg835g==",
+    "System.Globalization/4.0.0-beta-23127": {
+      "sha512": "aeIAximdNakmhRV4TtKHUnC1UwR89D7KDSw5CdKvRiMqj/kUFJ16TqT7VKSPaPck3CaE/Mxre5JG+u468UN16A==",
       "files": [
         "License.rtf",
-        "System.Globalization.4.0.0-beta-23024.nupkg",
-        "System.Globalization.4.0.0-beta-23024.nupkg.sha512",
+        "System.Globalization.4.0.0-beta-23127.nupkg",
+        "System.Globalization.4.0.0-beta-23127.nupkg.sha512",
         "System.Globalization.nuspec",
+        "lib/MonoAndroid10/_._",
+        "lib/MonoTouch10/_._",
         "lib/net45/_._",
         "lib/win8/_._",
+        "lib/wp80/_._",
+        "lib/wpa81/_._",
+        "lib/xamarinios10/_._",
+        "lib/xamarinmac20/_._",
         "ref/dotnet/System.Globalization.dll",
         "ref/dotnet/System.Globalization.xml",
         "ref/dotnet/de/System.Globalization.xml",
@@ -353,6 +367,8 @@
         "ref/dotnet/ru/System.Globalization.xml",
         "ref/dotnet/zh-hans/System.Globalization.xml",
         "ref/dotnet/zh-hant/System.Globalization.xml",
+        "ref/MonoAndroid10/_._",
+        "ref/MonoTouch10/_._",
         "ref/net45/_._",
         "ref/netcore50/System.Globalization.dll",
         "ref/netcore50/System.Globalization.xml",
@@ -365,7 +381,11 @@
         "ref/netcore50/ru/System.Globalization.xml",
         "ref/netcore50/zh-hans/System.Globalization.xml",
         "ref/netcore50/zh-hant/System.Globalization.xml",
-        "ref/win8/_._"
+        "ref/win8/_._",
+        "ref/wp80/_._",
+        "ref/wpa81/_._",
+        "ref/xamarinios10/_._",
+        "ref/xamarinmac20/_._"
       ]
     },
     "System.IO/4.0.10-beta-22703": {
@@ -394,15 +414,19 @@
         "lib/portable-wpa81+wp80+win80+net45+aspnetcore50/System.Linq.dll"
       ]
     },
-    "System.Net.WebSockets/4.0.0-beta-23024": {
+    "System.Net.WebSockets/4.0.0-beta-23127": {
       "serviceable": true,
-      "sha512": "J2s/9a0PIPWOCTb8kdZhCVY0kw4PoPUAsxaPXQfJBuLnrg9xzawqIHRmzPM9NJKFbTIeBshUlKLeujNU6JS2vg==",
+      "sha512": "M4tjy5UOlczMWQXRVMs81rr6xzuvh7mH0DXewCWTTMh6YhiqSgOOKPpof7G3+IFN9sA50Gi2fpADdROd+TsBiA==",
       "files": [
-        "System.Net.WebSockets.4.0.0-beta-23024.nupkg",
-        "System.Net.WebSockets.4.0.0-beta-23024.nupkg.sha512",
+        "System.Net.WebSockets.4.0.0-beta-23127.nupkg",
+        "System.Net.WebSockets.4.0.0-beta-23127.nupkg.sha512",
         "System.Net.WebSockets.nuspec",
         "lib/DNXCore50/System.Net.WebSockets.dll",
+        "lib/MonoAndroid10/_._",
+        "lib/MonoTouch10/_._",
         "lib/net46/System.Net.WebSockets.dll",
+        "lib/xamarinios10/_._",
+        "lib/xamarinmac20/_._",
         "ref/dotnet/System.Net.WebSockets.dll",
         "ref/dotnet/System.Net.WebSockets.xml",
         "ref/dotnet/de/System.Net.WebSockets.xml",
@@ -414,15 +438,19 @@
         "ref/dotnet/ru/System.Net.WebSockets.xml",
         "ref/dotnet/zh-hans/System.Net.WebSockets.xml",
         "ref/dotnet/zh-hant/System.Net.WebSockets.xml",
-        "ref/net46/System.Net.WebSockets.dll"
+        "ref/MonoAndroid10/_._",
+        "ref/MonoTouch10/_._",
+        "ref/net46/System.Net.WebSockets.dll",
+        "ref/xamarinios10/_._",
+        "ref/xamarinmac20/_._"
       ]
     },
-    "System.Private.Uri/4.0.0-beta-23024": {
+    "System.Private.Uri/4.0.0": {
       "serviceable": true,
-      "sha512": "SJbplxSAYqzECE4GzsXfkES5vug34KI34ERs2ySNAfuVcEbtto0YieQQqLQERzYINfbFVbOPbV4yN3VTzjW0DQ==",
+      "sha512": "CtuxaCKcRIvPcsqquVl3mPp79EDZPMr2UogfiFCxCs+t2z1VjbpQsKNs1GHZ8VQetqbk1mr0V1yAfMe6y8CHDA==",
       "files": [
-        "System.Private.Uri.4.0.0-beta-23024.nupkg",
-        "System.Private.Uri.4.0.0-beta-23024.nupkg.sha512",
+        "System.Private.Uri.4.0.0.nupkg",
+        "System.Private.Uri.4.0.0.nupkg.sha512",
         "System.Private.Uri.nuspec",
         "lib/DNXCore50/System.Private.Uri.dll",
         "lib/netcore50/System.Private.Uri.dll",
@@ -444,17 +472,19 @@
         "lib/portable-wpa81+wp80+win80+net45+aspnetcore50/System.Reflection.dll"
       ]
     },
-    "System.Reflection.Primitives/4.0.0-beta-23024": {
+    "System.Reflection.Primitives/4.0.0-beta-23127": {
       "serviceable": true,
-      "sha512": "y2g5Rwm68Nnt3Ag+pAKLRwUifIKhm1gMy36bnU5rFrZhxg21hls93QH75HDZqXjK80leEr0BC1ajZZ+IcZvKCw==",
+      "sha512": "qUjIaT8GBhxh5pyY1xhQd3/Rn5CJMu023GGNWXObr6/I/lX9LWpJD+UJAsPcLMEXOFq3QaKk6+giNjaqIdcf7Q==",
       "files": [
-        "System.Reflection.Primitives.4.0.0-beta-23024.nupkg",
-        "System.Reflection.Primitives.4.0.0-beta-23024.nupkg.sha512",
+        "System.Reflection.Primitives.4.0.0-beta-23127.nupkg",
+        "System.Reflection.Primitives.4.0.0-beta-23127.nupkg.sha512",
         "System.Reflection.Primitives.nuspec",
         "lib/DNXCore50/System.Reflection.Primitives.dll",
         "lib/net45/_._",
         "lib/netcore50/System.Reflection.Primitives.dll",
         "lib/win8/_._",
+        "lib/wp80/_._",
+        "lib/wpa81/_._",
         "ref/dotnet/System.Reflection.Primitives.dll",
         "ref/dotnet/System.Reflection.Primitives.xml",
         "ref/dotnet/de/System.Reflection.Primitives.xml",
@@ -470,20 +500,24 @@
         "ref/netcore50/System.Reflection.Primitives.dll",
         "ref/netcore50/System.Reflection.Primitives.xml",
         "ref/win8/_._",
+        "ref/wp80/_._",
+        "ref/wpa81/_._",
         "runtimes/win8-aot/lib/netcore50/System.Reflection.Primitives.dll"
       ]
     },
-    "System.Resources.ResourceManager/4.0.0-beta-23024": {
+    "System.Resources.ResourceManager/4.0.0-beta-23127": {
       "serviceable": true,
-      "sha512": "xIiopNepii+eLPHo3lak0jmJK2EhQa/Su33Kjpin3t2/ZrFB2m8NoJF/LMV7wpsz2k7rr74RsG1+/m8pZprx+w==",
+      "sha512": "+stu9oGQvmjeFJfhg4zRf/D0jNGa2L7MIkGz3ik70loEFHLE3OrOXFt3T+3eG37Z6md2KCWKe+85ct6VDaEtWA==",
       "files": [
-        "System.Resources.ResourceManager.4.0.0-beta-23024.nupkg",
-        "System.Resources.ResourceManager.4.0.0-beta-23024.nupkg.sha512",
+        "System.Resources.ResourceManager.4.0.0-beta-23127.nupkg",
+        "System.Resources.ResourceManager.4.0.0-beta-23127.nupkg.sha512",
         "System.Resources.ResourceManager.nuspec",
         "lib/DNXCore50/System.Resources.ResourceManager.dll",
         "lib/net45/_._",
         "lib/netcore50/System.Resources.ResourceManager.dll",
         "lib/win8/_._",
+        "lib/wp80/_._",
+        "lib/wpa81/_._",
         "ref/dotnet/System.Resources.ResourceManager.dll",
         "ref/dotnet/System.Resources.ResourceManager.xml",
         "ref/dotnet/de/System.Resources.ResourceManager.xml",
@@ -499,19 +533,25 @@
         "ref/netcore50/System.Resources.ResourceManager.dll",
         "ref/netcore50/System.Resources.ResourceManager.xml",
         "ref/win8/_._",
+        "ref/wp80/_._",
+        "ref/wpa81/_._",
         "runtimes/win8-aot/lib/netcore50/System.Resources.ResourceManager.dll"
       ]
     },
-    "System.Runtime/4.0.20-beta-23024": {
+    "System.Runtime/4.0.20": {
       "serviceable": true,
-      "sha512": "vacwPrf5OZcHwSL58Vdoq/vqqMrz1xbHXdZiSA5cHBCIVmo5bD9Gw+Qu4NgGekCxV3fgKs9Qq97oibezsZZ+8w==",
+      "sha512": "X7N/9Bz7jVPorqdVFO86ns1sX6MlQM+WTxELtx+Z4VG45x9+LKmWH0GRqjgKprUnVuwmfB9EJ9DQng14Z7/zwg==",
       "files": [
-        "System.Runtime.4.0.20-beta-23024.nupkg",
-        "System.Runtime.4.0.20-beta-23024.nupkg.sha512",
+        "System.Runtime.4.0.20.nupkg",
+        "System.Runtime.4.0.20.nupkg.sha512",
         "System.Runtime.nuspec",
         "lib/DNXCore50/System.Runtime.dll",
+        "lib/MonoAndroid10/_._",
+        "lib/MonoTouch10/_._",
         "lib/net46/_._",
         "lib/netcore50/System.Runtime.dll",
+        "lib/xamarinios10/_._",
+        "lib/xamarinmac20/_._",
         "ref/dotnet/System.Runtime.dll",
         "ref/dotnet/System.Runtime.xml",
         "ref/dotnet/de/System.Runtime.xml",
@@ -523,7 +563,11 @@
         "ref/dotnet/ru/System.Runtime.xml",
         "ref/dotnet/zh-hans/System.Runtime.xml",
         "ref/dotnet/zh-hant/System.Runtime.xml",
+        "ref/MonoAndroid10/_._",
+        "ref/MonoTouch10/_._",
         "ref/net46/_._",
+        "ref/xamarinios10/_._",
+        "ref/xamarinmac20/_._",
         "runtimes/win8-aot/lib/netcore50/System.Runtime.dll"
       ]
     },
@@ -540,16 +584,20 @@
         "lib/portable-wpa81+wp80+win80+net45+aspnetcore50/System.Runtime.Extensions.dll"
       ]
     },
-    "System.Runtime.Handles/4.0.0-beta-23024": {
+    "System.Runtime.Handles/4.0.0-beta-23127": {
       "serviceable": true,
-      "sha512": "O82TxLtp/afDkQixdjJutB7jdVlRx7vrQ+RPgL7iVLSREYE+HpuXpaKsW/3HqKm2G5D/FLmvYxZLiZitHfZ4Vw==",
+      "sha512": "q+CqdcecC00xfyVHTQhtned/RNzZhAtS/04uchISsl5ovKEAnnSRCOPOJJud/dl9iW12U+Lt8YlKub/LoxbZtQ==",
       "files": [
-        "System.Runtime.Handles.4.0.0-beta-23024.nupkg",
-        "System.Runtime.Handles.4.0.0-beta-23024.nupkg.sha512",
+        "System.Runtime.Handles.4.0.0-beta-23127.nupkg",
+        "System.Runtime.Handles.4.0.0-beta-23127.nupkg.sha512",
         "System.Runtime.Handles.nuspec",
         "lib/DNXCore50/System.Runtime.Handles.dll",
+        "lib/MonoAndroid10/_._",
+        "lib/MonoTouch10/_._",
         "lib/net46/_._",
         "lib/netcore50/System.Runtime.Handles.dll",
+        "lib/xamarinios10/_._",
+        "lib/xamarinmac20/_._",
         "ref/dotnet/System.Runtime.Handles.dll",
         "ref/dotnet/System.Runtime.Handles.xml",
         "ref/dotnet/de/System.Runtime.Handles.xml",
@@ -561,20 +609,28 @@
         "ref/dotnet/ru/System.Runtime.Handles.xml",
         "ref/dotnet/zh-hans/System.Runtime.Handles.xml",
         "ref/dotnet/zh-hant/System.Runtime.Handles.xml",
+        "ref/MonoAndroid10/_._",
+        "ref/MonoTouch10/_._",
         "ref/net46/_._",
+        "ref/xamarinios10/_._",
+        "ref/xamarinmac20/_._",
         "runtimes/win8-aot/lib/netcore50/System.Runtime.Handles.dll"
       ]
     },
-    "System.Runtime.InteropServices/4.0.20-beta-23024": {
+    "System.Runtime.InteropServices/4.0.20-beta-23127": {
       "serviceable": true,
-      "sha512": "004lCjqaK1zgrQ8d+on557Qny5Szp/l0W6PqB10vgs9pe+0BqfHNPui1eDnzmfhIkp6OW5t35Oqu5Lo3fROqCA==",
+      "sha512": "oJpQACYOQ/TXcIEZh8MdIqkDlRrnXV9DoPiVnXUgnKYFub7NnKb02sx65eWrNPwutt0ewDD9hNAuPjAGBC1MQA==",
       "files": [
-        "System.Runtime.InteropServices.4.0.20-beta-23024.nupkg",
-        "System.Runtime.InteropServices.4.0.20-beta-23024.nupkg.sha512",
+        "System.Runtime.InteropServices.4.0.20-beta-23127.nupkg",
+        "System.Runtime.InteropServices.4.0.20-beta-23127.nupkg.sha512",
         "System.Runtime.InteropServices.nuspec",
         "lib/DNXCore50/System.Runtime.InteropServices.dll",
+        "lib/MonoAndroid10/_._",
+        "lib/MonoTouch10/_._",
         "lib/net46/_._",
         "lib/netcore50/System.Runtime.InteropServices.dll",
+        "lib/xamarinios10/_._",
+        "lib/xamarinmac20/_._",
         "ref/dotnet/System.Runtime.InteropServices.dll",
         "ref/dotnet/System.Runtime.InteropServices.xml",
         "ref/dotnet/de/System.Runtime.InteropServices.xml",
@@ -586,7 +642,11 @@
         "ref/dotnet/ru/System.Runtime.InteropServices.xml",
         "ref/dotnet/zh-hans/System.Runtime.InteropServices.xml",
         "ref/dotnet/zh-hant/System.Runtime.InteropServices.xml",
+        "ref/MonoAndroid10/_._",
+        "ref/MonoTouch10/_._",
         "ref/net46/_._",
+        "ref/xamarinios10/_._",
+        "ref/xamarinmac20/_._",
         "runtimes/win8-aot/lib/netcore50/System.Runtime.InteropServices.dll"
       ]
     },
@@ -719,11 +779,12 @@
         "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.runner.utility.xml"
       ]
     },
-    "xunit.netcore.extensions/1.0.0-prerelease-00056": {
-      "sha512": "UPxtAjxht7LkVoI6njl23cSXiNtPjM0zT9ouhtS0Ju3bXDSUfWjT3i4vRx8f7xrV24AOdbLfxVETP8DapKHClw==",
+    "xunit.netcore.extensions/1.0.0-prerelease-00066": {
+      "serviceable": true,
+      "sha512": "2PaXokTLqG10/ffcuCqWMjpamfop/Kx2AQXUDgN//O9NSiDFKK5sjVSRhyVwpVpCh2Vr5vuj9COtBLH8XKlnMw==",
       "files": [
-        "xunit.netcore.extensions.1.0.0-prerelease-00056.nupkg",
-        "xunit.netcore.extensions.1.0.0-prerelease-00056.nupkg.sha512",
+        "xunit.netcore.extensions.1.0.0-prerelease-00066.nupkg",
+        "xunit.netcore.extensions.1.0.0-prerelease-00066.nupkg.sha512",
         "xunit.netcore.extensions.nuspec",
         "lib/portable-wpa80+win80+net45+aspnetcore50/Xunit.NetCore.Extensions.dll"
       ]
@@ -732,7 +793,7 @@
   "projectFileDependencyGroups": {
     "": [
       "System.Net.WebSockets >= 4.0.0-beta-*",
-      "System.Runtime >= 4.0.20-beta-*",
+      "System.Runtime >= 4.0.20",
       "xunit >= 2.0.0-beta5-build2785",
       "xunit.abstractions.netcore >= 1.0.0-prerelease",
       "xunit.assert >= 2.0.0-beta5-build2785",

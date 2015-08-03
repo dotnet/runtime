@@ -1,14 +1,14 @@
 {
   "dependencies": {
-    "System.Runtime": "4.0.20-beta-*",
-    "System.Runtime.Extensions": "4.0.10-beta-*",
-    "System.IO": "4.0.10-beta-*",
-    "System.Threading": "4.0.10-beta-*",
-    "System.Threading.Tasks": "4.0.10-beta-*",
-    "System.Xml.ReaderWriter": "4.0.10-beta-*",
-    "System.Linq": "4.0.0-beta-*",
-    "System.Text.Encoding": "4.0.10-beta-*",
-    "System.Collections": "4.0.10-beta-*",
+    "System.Runtime": "4.0.20",
+    "System.Runtime.Extensions": "4.0.10",
+    "System.IO": "4.0.10",
+    "System.Threading": "4.0.10",
+    "System.Threading.Tasks": "4.0.10",
+    "System.Xml.ReaderWriter": "4.0.10",
+    "System.Linq": "4.0.0",
+    "System.Text.Encoding": "4.0.10",
+    "System.Collections": "4.0.10",
     "System.Console": "4.0.0-beta-*"
   },
   "frameworks": {

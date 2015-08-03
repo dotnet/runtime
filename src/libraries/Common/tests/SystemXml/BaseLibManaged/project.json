@@ -1,7 +1,7 @@
 {
   "dependencies": {
-    "System.Runtime": "4.0.20-beta-*",
-    "System.Runtime.Extensions": "4.0.10-beta-*"
+    "System.Runtime": "4.0.20",
+    "System.Runtime.Extensions": "4.0.10"
   },
   "frameworks": {
     "dnxcore50": {}
