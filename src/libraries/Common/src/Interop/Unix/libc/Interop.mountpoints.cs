@@ -36,13 +36,13 @@ internal static partial class Interop
         /// <param name="name">The drive name to retrieve the statfs data for.</param>
         /// <param name="data">The data retrieved from the mount point.</param>
         /// <returns>Returns true if data was filled with the results; otherwise, false.</returns>
-        internal static bool TryGetStatFsForDriveName(string name, out statfs data, out int errno)
+        internal static bool TryGetStatFsForDriveName(string name, out statfs data, out ErrorInfo errorInfo)
         {
             data = default(statfs);
-            errno = 0;
+            errorInfo = default(ErrorInfo);
             if (get_statfs(name, out data) < 0)
             {
-                errno = Marshal.GetLastWin32Error();
+                errorInfo = Interop.System.GetLastErrorInfo();
                 return false;
             }
             return true;
@@ -56,12 +56,12 @@ internal static partial class Interop
         internal static statfs GetStatFsForDriveName(string name)
         {
             statfs data;
-            int errno;
-            if (!TryGetStatFsForDriveName(name, out data, out errno))
+            ErrorInfo errorInfo;
+            if (!TryGetStatFsForDriveName(name, out data, out errorInfo))
             {
-                throw errno == Errors.ENOENT ?
-                    new System.IO.DriveNotFoundException(SR.Format(SR.IO_DriveNotFound_Drive, name)) : // match Win32 exception
-                    GetExceptionForIoErrno(errno, isDirectory: true);
+                throw errorInfo.Error == Error.ENOENT ?
+                    new global::System.IO.DriveNotFoundException(SR.Format(SR.IO_DriveNotFound_Drive, name)) : // match Win32 exception
+                    GetExceptionForIoErrno(errorInfo, isDirectory: true);
             }
             return data;
         }

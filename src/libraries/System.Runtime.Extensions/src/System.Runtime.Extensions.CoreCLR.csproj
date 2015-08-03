@@ -124,9 +124,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gnu_get_libc_version.cs">
       <Link>Common\Interop\Unix\libc\Interop.gnu_get_libc_version.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs">
-      <Link>Common\Interop\Unix\libc\Interop.strerror.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.EnsureOpenSslInitialized.cs">
       <Link>Common\Interop\Unix\libcoreclr\Interop.EnsureOpenSslInitialized.cs</Link>
     </Compile>
@@ -148,27 +145,18 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
-    <Compile Include="$(CommonPath)\Interop\Linux\Interop.Errors.cs">
-      <Link>Common\Interop\Linux\Interop.Errors.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.PathConfNames.cs">
       <Link>Common\Interop\Linux\libc\Interop.PathConfNames.cs</Link>
     </Compile>
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
-    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Errors.cs">
-      <Link>Common\Interop\OSX\Interop.Errors.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.PathConfNames.cs">
       <Link>Common\Interop\OSX\libc\Interop.PathConfNames.cs</Link>
     </Compile>
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetsFreeBSD)' == 'true' ">
-    <Compile Include="$(CommonPath)\Interop\FreeBSD\Interop.Errors.cs">
-      <Link>Common\Interop\FreeBSD\Interop.Errors.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\FreeBSD\libc\Interop.PathConfNames.cs">
       <Link>Common\Interop\FreeBSD\libc\Interop.PathConfNames.cs</Link>
     </Compile>

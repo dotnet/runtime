@@ -20,13 +20,15 @@ namespace System.IO
             /// <summary>The last cached stat information about the file.</summary>
             private Interop.libcoreclr.fileinfo _fileinfo;
 
-            /// <summary>
-            /// Whether we've successfully cached a stat structure.
-            /// -1 if we need to refresh _fileinfo, 0 if we've successfully cached one,
-            /// or any other value that serves as an errno error code from the
-            /// last time we tried and failed to refresh _fileinfo.
-            /// </summary>
-            private int _fileinfoInitialized = -1;
+            enum InitializationState : byte
+            {
+                RefreshNeeded,     // we need to refresh _fileInfo
+                SuccessfullyCached, // we've successfully cached the stat structure
+                ErrorEncountered   // we hit an error on last try, get errno from _InitializatonErrno 
+            }
+
+            private InitializationState _fileinfoInitialization;
+            private Interop.ErrorInfo _fileinfoInitializationError; 
 
             public UnixFileSystemObject(string fullPath, bool asDirectory)
             {
@@ -83,7 +85,7 @@ namespace System.IO
                     // just changing its permissions accordingly.
                     EnsureStatInitialized();
                     IsReadOnlyAssumesInitialized = (value & FileAttributes.ReadOnly) != 0;
-                    _fileinfoInitialized = -1;
+                    _fileinfoInitialization = InitializationState.RefreshNeeded;
                 }
             }
 
@@ -159,12 +161,12 @@ namespace System.IO
             {
                 get
                 {
-                    if (_fileinfoInitialized == -1)
+                    if (_fileinfoInitialization == InitializationState.RefreshNeeded)
                     {
                         Refresh();
                     }
                     return
-                        _fileinfoInitialized == 0 && // avoid throwing if Refresh failed; instead just return false
+                        _fileinfoInitialization == InitializationState.SuccessfullyCached && // avoid throwing if Refresh failed; instead just return false
                         _isDirectory == IsDirectoryAssumesInitialized;
                 }
             }
@@ -210,13 +212,13 @@ namespace System.IO
 
             private void SetAccessWriteTimes(IntPtr? accessTime, IntPtr? writeTime)
             {
-                _fileinfoInitialized = -1; // force a refresh so that we have an up-to-date times for values not being overwritten
+                _fileinfoInitialization = InitializationState.RefreshNeeded; // force a refresh so that we have an up-to-date times for values not being overwritten
                 EnsureStatInitialized();
                 Interop.libc.utimbuf buf;
                 buf.actime = accessTime ?? new IntPtr(_fileinfo.atime);
                 buf.modtime = writeTime ?? new IntPtr(_fileinfo.mtime);
                 while (Interop.CheckIo(Interop.libc.utime(_fullPath, ref buf), _fullPath, _isDirectory)) ;
-                _fileinfoInitialized = -1;
+                _fileinfoInitialization = InitializationState.RefreshNeeded;
             }
 
             public long Length
@@ -238,16 +240,17 @@ namespace System.IO
                     result = Interop.libcoreclr.GetFileInformationFromPath(_fullPath, out _fileinfo);
                     if (result >= 0)
                     {
-                        _fileinfoInitialized = 0;
+                        _fileinfoInitialization = InitializationState.SuccessfullyCached;
                     }
                     else
                     {
-                        int errno = Marshal.GetLastWin32Error();
-                        if (errno == Interop.Errors.EINTR)
+                        Interop.ErrorInfo errorInfo = Interop.System.GetLastErrorInfo();
+                        if (errorInfo.Error == Interop.Error.EINTR)
                         {
                             continue;
                         }
-                        _fileinfoInitialized = errno;
+                        _fileinfoInitialization = InitializationState.ErrorEncountered; 
+                        _fileinfoInitializationError = errorInfo;
                     }
                     break;
                 }
@@ -255,15 +258,15 @@ namespace System.IO
 
             private void EnsureStatInitialized()
             {
-                if (_fileinfoInitialized == -1)
+                if (_fileinfoInitialization == InitializationState.RefreshNeeded)
                 {
                     Refresh();
                 }
 
-                if (_fileinfoInitialized != 0)
+                if (_fileinfoInitialization != InitializationState.SuccessfullyCached)
                 {
-                    int errno = _fileinfoInitialized;
-                    _fileinfoInitialized = -1;
+                    Interop.ErrorInfo errorInfo = _fileinfoInitializationError;
+                    _fileinfoInitialization = InitializationState.RefreshNeeded;
 
                     // Windows distinguishes between whether the directory or the file isn't found,
                     // and throws a different exception in these cases.  We attempt to approximate that
@@ -275,8 +278,8 @@ namespace System.IO
 
                     // directoryError is true only if a FileNotExists error was provided and the parent 
                     // directory of the file represented by _fullPath is nonexistent
-                    bool directoryError = (errno == Interop.Errors.ENOENT && !Directory.Exists(Path.GetDirectoryName(PathHelpers.TrimEndingDirectorySeparator(_fullPath)))); // The destFile's path is invalid
-                    throw Interop.GetExceptionForIoErrno(errno, _fullPath, directoryError);
+                    bool directoryError = (errorInfo.Error == Interop.Error.ENOENT && !Directory.Exists(Path.GetDirectoryName(PathHelpers.TrimEndingDirectorySeparator(_fullPath)))); // The destFile's path is invalid
+                    throw Interop.GetExceptionForIoErrno(errorInfo, _fullPath, directoryError);
                 }
             }
         }

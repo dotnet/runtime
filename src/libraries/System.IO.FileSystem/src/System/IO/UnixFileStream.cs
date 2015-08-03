@@ -1037,14 +1037,14 @@ namespace System.IO
                     long result = sysCall(fd, arg1, arg2);
                     if (result < 0)
                     {
-                        int errno = Marshal.GetLastWin32Error();
-                        if (errno == Interop.Errors.EINTR)
+                        Interop.ErrorInfo errorInfo = Interop.System.GetLastErrorInfo();
+                        if (errorInfo.Error == Interop.Error.EINTR)
                         {
                             continue;
                         }
                         else if (throwOnError)
                         {
-                            throw Interop.GetExceptionForIoErrno(errno, _path, isDirectory: false);
+                            throw Interop.GetExceptionForIoErrno(errorInfo, _path, isDirectory: false);
                         }
                     }
                     return result;
