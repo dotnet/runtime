@@ -352,7 +352,7 @@ namespace System.Diagnostics
             }
 
             // Could not find the file
-            throw new Win32Exception(Interop.Errors.ENOENT);
+            throw new Win32Exception(new Interop.ErrorInfo(Interop.Error.ENOENT).Errno);
         }
 
         /// <summary>Convert a number of "jiffies", or ticks, to a TimeSpan.</summary>

@@ -322,9 +322,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.rmdir.cs">
       <Link>Common\Interop\Unix\Interop.remove.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs">
-      <Link>Common\Interop\Unix\Interop.strerror.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.write.cs">
       <Link>Common\Interop\Unix\Interop.write.cs</Link>
     </Compile>
@@ -350,9 +347,6 @@
     <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseSensitive.cs">
       <Link>Common\System\IO\PathInternal.CaseSensitive.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\FreeBSD\Interop.Errors.cs">
-      <Link>Common\Interop\FreeBSD\Interop.Errors.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\FreeBSD\libc\Interop.dirent.cs">
       <Link>Common\Interop\FreeBSD\Interop.dirent.cs</Link>
     </Compile>
@@ -374,9 +368,6 @@
     <Compile Include="System\IO\UnixFileStream.posix_fadvise.cs" />
     <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseSensitive.cs">
       <Link>Common\System\IO\PathInternal.CaseSensitive.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\Interop.Errors.cs">
-      <Link>Common\Interop\Linux\Interop.Errors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.readdir.cs">
       <Link>Common\Interop\Linux\Interop.readdir.cs</Link>
@@ -404,9 +395,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.PathConfNames.cs">
       <Link>Common\Interop\OSX\Interop.PathConfNames.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Errors.cs">
-      <Link>Common\Interop\OSX\Interop.Errors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
       <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>

@@ -315,13 +315,13 @@ namespace System.Diagnostics
                     // Something went wrong, e.g. it's not a child process,
                     // or waitpid was already called for this child, or
                     // that the call was interrupted by a signal.
-                    int errno = Marshal.GetLastWin32Error();
-                    if (errno == Interop.Errors.EINTR)
+                    Interop.Error errno = Interop.System.GetLastError();
+                    if (errno == Interop.Error.EINTR)
                     {
                         // waitpid was interrupted. Try again.
                         continue;
                     }
-                    else if (errno == Interop.Errors.ECHILD)
+                    else if (errno == Interop.Error.ECHILD)
                     {
                         // waitpid was used with a non-child process.  We won't be
                         // able to get an exit code, but we'll at least be able 
@@ -335,14 +335,14 @@ namespace System.Diagnostics
                         }
                         else // error from kill
                         {
-                            errno = Marshal.GetLastWin32Error();
-                            if (errno == Interop.Errors.ESRCH)
+                            errno = Interop.System.GetLastError();
+                            if (errno == Interop.Error.ESRCH)
                             {
                                 // Couldn't find the process; assume it's exited
                                 SetExited();
                                 return;
                             }
-                            else if (errno == Interop.Errors.EPERM)
+                            else if (errno == Interop.Error.EPERM)
                             {
                                 // Don't have permissions to the process; assume it's alive
                                 return;

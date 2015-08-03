@@ -552,7 +552,7 @@ namespace System
                     {
                         // Don't throw in this case, as we'll be polling multiple locations looking for the file.
                         // But we still want to retry if the open is interrupted by a signal.
-                        if (Marshal.GetLastWin32Error() != Interop.Errors.EINTR)
+                        if (Interop.System.GetLastError() != Interop.Error.EINTR)
                         {
                             fd = -1;
                             return false;
@@ -1194,9 +1194,9 @@ namespace System
                 {
                     int error = Marshal.GetLastWin32Error(); // Win32 error code from coreclr PAL, not a Unix errno value
                     throw Interop.GetExceptionForIoErrno(
-                        error == Interop.libcoreclr.ERROR_INVALID_PARAMETER ? Interop.Errors.EINVAL :
-                        error == Interop.libcoreclr.ERROR_NOT_ENOUGH_MEMORY ? Interop.Errors.ENOMEM :
-                        Interop.Errors.EIO);
+                        error == Interop.libcoreclr.ERROR_INVALID_PARAMETER ? new Interop.ErrorInfo(Interop.Error.EINVAL) :
+                        error == Interop.libcoreclr.ERROR_NOT_ENOUGH_MEMORY ? new Interop.ErrorInfo(Interop.Error.ENOMEM) :
+                        new Interop.ErrorInfo(Interop.Error.EIO));
                 }
                 _handlerRegistered = register;
             }

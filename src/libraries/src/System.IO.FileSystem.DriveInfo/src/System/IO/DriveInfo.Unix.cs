@@ -26,20 +26,20 @@ namespace System.IO
             get
             {
                 Interop.libc.statfs data;
-                int errno;
-                if (Interop.libc.TryGetStatFsForDriveName(Name, out data, out errno))
+                Interop.ErrorInfo errorInfo;
+                if (Interop.libc.TryGetStatFsForDriveName(Name, out data, out errorInfo))
                 {
                     return GetDriveType(Interop.libc.GetMountPointFsType(data));
                 }
 
                 // This is one of the few properties that doesn't throw on failure,
                 // instead returning a value from the enum.
-                switch (errno)
+                switch (errorInfo.Error)
                 {
-                    case Interop.Errors.ELOOP:
-                    case Interop.Errors.ENAMETOOLONG:
-                    case Interop.Errors.ENOENT:
-                    case Interop.Errors.ENOTDIR:
+                    case Interop.Error.ELOOP:
+                    case Interop.Error.ENAMETOOLONG:
+                    case Interop.Error.ENOENT:
+                    case Interop.Error.ENOTDIR:
                         return DriveType.NoRootDirectory;
                     default:
                         return DriveType.Unknown;

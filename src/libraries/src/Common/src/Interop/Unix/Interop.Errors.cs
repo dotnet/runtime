@@ -1,48 +1,166 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Runtime.InteropServices;
+
 internal static partial class Interop
 {
     /// <summary>Common Unix errno error codes.</summary>
-    internal static partial class Errors
+    internal enum Error
     {
-        // These values were defined in:
-        // include/asm-generic/errno-base.h
-        // /usr/include/sys/errno.h
+        // These values were defined in src/Native/System.Native/fxerrno.h
+        //
+        // They compare against values obtaied via Interop.System.GetLastError() not Marshal.GetLastWin32Error()
+        // which obtains the raw errno that varies between unixes. The strong typing as an enum is meant to
+        // prevent confusing the two. Casting to or from int is suspect. Use GetLastErrorInfo() if you need to
+        // correlate these to the underlying platform values or obtain the correspodning error message.
+        // 
 
-        internal const int EPERM = 1;
-        internal const int ENOENT = 2;
-        internal const int ESRCH = 3;
-        internal const int EINTR = 4;
-        internal const int EIO = 5;
-        internal const int ENXIO = 6;
-        internal const int E2BIG = 7;
-        internal const int ENOEXEC = 8;
-        internal const int EBADF = 9;
-        internal const int ECHILD = 10;
+        E2BIG            = 0x10001,           // Argument list too long.
+        EACCES           = 0x10002,           // Permission denied.
+        EADDRINUSE       = 0x10003,           // Address in use.
+        EADDRNOTAVAIL    = 0x10004,           // Address not available.
+        EAFNOSUPPORT     = 0x10005,           // Address family not supported.
+        EAGAIN           = 0x10006,           // Resource unavailable, try again (same value as EWOULDBLOCK),
+        EALREADY         = 0x10007,           // Connection already in progress.
+        EBADF            = 0x10008,           // Bad file descriptor.
+        EBADMSG          = 0x10009,           // Bad message.
+        EBUSY            = 0x1000A,           // Device or resource busy.
+        ECANCELED        = 0x1000B,           // Operation canceled.
+        ECHILD           = 0x1000C,           // No child processes.
+        ECONNABORTED     = 0x1000D,           // Connection aborted.
+        ECONNREFUSED     = 0x1000E,           // Connection refused.
+        ECONNRESET       = 0x1000F,           // Connection reset.
+        EDEADLK          = 0x10010,           // Resource deadlock would occur.
+        EDESTADDRREQ     = 0x10011,           // Destination address required.
+        EDOM             = 0x10012,           // Mathematics argument out of domain of function.
+        EDQUOT           = 0x10013,           // Reserved.
+        EEXIST           = 0x10014,           // File exists.
+        EFAULT           = 0x10015,           // Bad address.
+        EFBIG            = 0x10016,           // File too large.
+        EHOSTUNREACH     = 0x10017,           // Host is unreachable.
+        EIDRM            = 0x10018,           // Identifier removed.
+        EILSEQ           = 0x10019,           // Illegal byte sequence.
+        EINPROGRESS      = 0x1001A,           // Operation in progress.
+        EINTR            = 0x1001B,           // Interrupted function.
+        EINVAL           = 0x1001C,           // Invalid argument.
+        EIO              = 0x1001D,           // I/O error.
+        EISCONN          = 0x1001E,           // Socket is connected.
+        EISDIR           = 0x1001F,           // Is a directory.
+        ELOOP            = 0x10020,           // Too many levels of symbolic links.
+        EMFILE           = 0x10021,           // File descriptor value too large.
+        EMLINK           = 0x10022,           // Too many links.
+        EMSGSIZE         = 0x10023,           // Message too large.
+        EMULTIHOP        = 0x10024,           // Reserved.
+        ENAMETOOLONG     = 0x10025,           // Filename too long.
+        ENETDOWN         = 0x10026,           // Network is down.
+        ENETRESET        = 0x10027,           // Connection aborted by network.
+        ENETUNREACH      = 0x10028,           // Network unreachable.
+        ENFILE           = 0x10029,           // Too many files open in system.
+        ENOBUFS          = 0x1002A,           // No buffer space available.
+        ENODATA          = 0x1002B,           // No message is available on the STREAM head read queue.
+        ENODEV           = 0x1002C,           // No such device.
+        ENOENT           = 0x1002D,           // No such file or directory.
+        ENOEXEC          = 0x1002E,           // Executable file format error.
+        ENOLCK           = 0x1002F,           // No locks available.
+        ENOLINK          = 0x10030,           // Reserved.
+        ENOMEM           = 0x10031,           // Not enough space.
+        ENOMSG           = 0x10032,           // No message of the desired type.
+        ENOPROTOOPT      = 0x10033,           // Protocol not available.
+        ENOSPC           = 0x10034,           // No space left on device.
+        ENOSR            = 0x10035,           // No STREAM resources.
+        ENOSTR           = 0x10036,           // Not a STREAM.
+        ENOSYS           = 0x10037,           // Function not supported.
+        ENOTCONN         = 0x10038,           // The socket is not connected.
+        ENOTDIR          = 0x10039,           // Not a directory or a symbolic link to a directory.
+        ENOTEMPTY        = 0x1003A,           // Directory not empty.
+        ENOTRECOVERABLE  = 0x1003B,           // State not recoverable.
+        ENOTSOCK         = 0x1003C,           // Not a socket.
+        ENOTSUP          = 0x1003D,           // Not supported (same value as EOPNOTSUP).
+        ENOTTY           = 0x1003E,           // Inappropriate I/O control operation.
+        ENXIO            = 0x1003F,           // No such device or address.
+        EOVERFLOW        = 0x10040,           // Value too large to be stored in data type.
+        EOWNERDEAD       = 0x10041,           // Previous owner died.
+        EPERM            = 0x10042,           // Operation not permitted.
+        EPIPE            = 0x10043,           // Broken pipe.
+        EPROTO           = 0x10044,           // Protocol error.
+        EPROTONOSUPPORT  = 0x10045,           // Protocol not supported.
+        EPROTOTYPE       = 0x10046,           // Protocol wrong type for socket.
+        ERANGE           = 0x10047,           // Result too large.
+        EROFS            = 0x10048,           // Read-only file system.
+        ESPIPE           = 0x10049,           // Invalid seek.
+        ESRCH            = 0x1004A,           // No such process.
+        ESTALE           = 0x1004B,           // Reserved.
+        ETIME            = 0x1004C,           // Stream ioctl() timeout.
+        ETIMEDOUT        = 0x1004D,           // Connection timed out.
+        ETXTBSY          = 0x1004E,           // Text file busy.
+        EXDEV            = 0x1004F,           // Cross-device link.
 
-        internal const int ENOMEM = 12;
-        internal const int EACCES = 13;
-        internal const int EFAULT = 14;
-        internal const int ENOTBLK = 15;
-        internal const int EBUSY = 16;
-        internal const int EEXIST = 17;
-        internal const int EXDEV = 18;
-        internal const int ENODEV = 19;
-        internal const int ENOTDIR = 20;
-        internal const int EISDIR = 21;
-        internal const int EINVAL = 22;
-        internal const int ENFILE = 23;
-        internal const int EMFILE = 24;
-        internal const int ENOTTY = 25;
-        internal const int ETXTBSY = 26;
-        internal const int EFBIG = 27;
-        internal const int ENOSPC = 28;
-        internal const int ESPIPE = 29;
-        internal const int EROFS = 30;
-        internal const int EMLINK = 31;
-        internal const int EPIPE = 32;
-        internal const int EDOM = 33;
-        internal const int ERANGE = 34;
+        // POSIX permits these to have the same value and we make them always equal so
+        // that CoreFX cannot introduce a dependency on distinguishing between them that
+        // would not work on all platforms.
+        EOPNOTSUPP      = ENOTSUP,            // Operation not supported on socket
+        EWOULDBLOCK     = EAGAIN,             // Operation would block
+    }
+
+    // Represents a platform-agnostic Error and underlying platform-specific errno
+    internal struct ErrorInfo
+    {
+        internal readonly Error Error;
+        internal readonly int Errno;
+
+        internal ErrorInfo(Error error)
+        {
+            Error = error;
+            Errno = Interop.System.ConvertErrorPalToPlatform(error);
+        }
+
+        internal ErrorInfo(int errno)
+        {
+            Error = Interop.System.ConvertErrorPlatformToPal(errno);
+            Errno = errno;
+        }
+
+        internal ErrorInfo(Error error, int errno)
+        {
+            Error = error;
+            Errno = errno;
+        }
+
+        internal string GetErrorMessage()
+        {
+            return Interop.System.StrError(Errno);
+        }
+    }
+
+    internal partial class System
+    {
+        internal static Error GetLastError()
+        {
+            return ConvertErrorPlatformToPal(Marshal.GetLastWin32Error());
+        }
+
+        internal static ErrorInfo GetLastErrorInfo()
+        {
+            return new ErrorInfo(Marshal.GetLastWin32Error());
+        }
+
+        internal static unsafe string StrError(int platformErrno)
+        {
+            const int maxErrorMessageLength = 1024; // length long enough for most any Unix error
+            byte* buffer = stackalloc byte[maxErrorMessageLength];
+            IntPtr message = StrErrorR(platformErrno, buffer, maxErrorMessageLength);
+            return Marshal.PtrToStringAnsi(message);
+        }
+
+        [DllImport(Libraries.SystemNative)]
+        internal static extern Error ConvertErrorPlatformToPal(int platformErrno);
+
+        [DllImport(Libraries.SystemNative)]
+        internal static extern int ConvertErrorPalToPlatform(Error error);
+
+        [DllImport(Libraries.SystemNative)]
+        private static unsafe extern IntPtr StrErrorR(int platformErrno, byte* buffer, int bufferSize);
     }
 }
