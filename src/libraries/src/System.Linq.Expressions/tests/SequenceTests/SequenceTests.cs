@@ -3870,6 +3870,27 @@ namespace Tests
             Assert.Equal("null", f(null));
         }
 
+        static class System_Linq_Expressions_Expression_TDelegate__1
+        {
+            public static T Default<T>() { return default(T); }
+            public static void UseSystem_Linq_Expressions_Expression_TDelegate__1(bool call) // call this passing false
+            {
+                if (call)
+                {
+                    Default<System.Linq.Expressions.Expression<System.Object>>().Compile();
+                    Default<System.Linq.Expressions.Expression<System.Object>>().Update(
+                Default<System.Linq.Expressions.Expression>(),
+                Default<System.Collections.Generic.IEnumerable<System.Linq.Expressions.ParameterExpression>>());
+                }
+            }
+        }
+
+        [Fact]
+        public static void ExprT_Update()
+        {
+            System_Linq_Expressions_Expression_TDelegate__1.UseSystem_Linq_Expressions_Expression_TDelegate__1(false);
+        }
+
         public class TestComparers
         {
             public static bool CaseInsensitiveStringCompare(string s1, string s2)
