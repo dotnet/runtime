@@ -101,7 +101,7 @@ inline size_t CorInfoTypeStackNormalSize(CorInfoType cit)
     return CorInfoTypeSize(cit);
 }
 
-inline size_t getClassSize(CORINFO_CLASS_HANDLE clsHnd)
+inline unsigned getClassSize(CORINFO_CLASS_HANDLE clsHnd)
 {
     TypeHandle VMClsHnd(clsHnd);
     return VMClsHnd.GetSize();
