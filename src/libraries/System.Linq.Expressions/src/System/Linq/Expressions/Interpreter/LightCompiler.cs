@@ -2694,7 +2694,7 @@ namespace System.Linq.Expressions.Interpreter
                 return node;
             }
 
-            protected internal override Expression VisitLambda(LambdaExpression node)
+            protected internal override Expression VisitLambda<T>(Expression<T> node)
             {
                 PushParameters(node.Parameters);
 

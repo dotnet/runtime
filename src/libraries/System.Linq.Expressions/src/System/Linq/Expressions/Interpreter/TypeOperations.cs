@@ -2262,7 +2262,7 @@ namespace System.Linq.Expressions.Interpreter
                 _frame = frame;
             }
 
-            protected internal override Expression VisitLambda(LambdaExpression node)
+            protected internal override Expression VisitLambda<T>(Expression<T> node)
             {
                 _shadowedVars.Push(new Set<ParameterExpression>(node.Parameters));
                 Expression b = Visit(node.Body);
