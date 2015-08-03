@@ -871,6 +871,7 @@ ICALL(MONIT_4, "Monitor_test_owner", ves_icall_System_Threading_Monitor_Monitor_
 ICALL(MONIT_5, "Monitor_test_synchronised", ves_icall_System_Threading_Monitor_Monitor_test_synchronised)
 ICALL(MONIT_6, "Monitor_try_enter", ves_icall_System_Threading_Monitor_Monitor_try_enter)
 ICALL(MONIT_7, "Monitor_wait", ves_icall_System_Threading_Monitor_Monitor_wait)
+ICALL(MONIT_10, "enter_with_atomic_var", mono_monitor_enter_v4)
 ICALL(MONIT_9, "try_enter_with_atomic_var", ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var)
 
 ICALL_TYPE(MUTEX, "System.Threading.Mutex", MUTEX_1)

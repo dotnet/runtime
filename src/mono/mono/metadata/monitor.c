@@ -908,13 +908,27 @@ ves_icall_System_Threading_Monitor_Monitor_try_enter (MonoObject *obj, guint32 m
 void
 ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObject *obj, guint32 ms, char *lockTaken)
 {
+	gint32 res;
+	do {
+		res = mono_monitor_try_enter_internal (obj, ms, TRUE);
+		/*This means we got interrupted during the wait and didn't got the monitor.*/
+		if (res == -1)
+			mono_thread_interruption_checkpoint ();
+	} while (res == -1);
+	/*It's safe to do it from here since interruption would happen only on the wrapper.*/
+	*lockTaken = res == 1;
+}
+
+void
+mono_monitor_enter_v4 (MonoObject *obj, char *lock_taken)
+{
 	/* FASTPATH */
 #ifdef HAVE_MOVING_COLLECTOR
 	MonoThreadsSync *mon;
 	gsize id = mono_thread_info_get_small_id ();
 	guint32 new_status, old_status, tmp_status;
 
-	if (G_LIKELY (obj && ms == INFINITE && *lockTaken == 0)) {
+	if (G_LIKELY (obj && *lock_taken == 0)) {
 		mon = obj->synchronisation;
 
 		if (G_LIKELY (mon)) {
@@ -932,7 +946,7 @@ ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObject
 					tmp_status = InterlockedCompareExchange ((gint32*)&mon->status, new_status, old_status);
 					if (G_LIKELY (tmp_status == old_status)) {
 						/* Success */
-						*lockTaken = 1;
+						*lock_taken = 1;
 						g_assert (mon->nest == 1);
 						return;
 					}
@@ -942,20 +956,6 @@ ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObject
 	}
 #endif
 
-	gint32 res;
-	do {
-		res = mono_monitor_try_enter_internal (obj, ms, TRUE);
-		/*This means we got interrupted during the wait and didn't got the monitor.*/
-		if (res == -1)
-			mono_thread_interruption_checkpoint ();
-	} while (res == -1);
-	/*It's safe to do it from here since interruption would happen only on the wrapper.*/
-	*lockTaken = res == 1;
-}
-
-void
-mono_monitor_enter_v4 (MonoObject *obj, char *lock_taken)
-{
 	if (*lock_taken == 1) {
 		mono_set_pending_exception (mono_get_exception_argument ("lockTaken", "lockTaken is already true"));
 		return;
