@@ -451,7 +451,7 @@ namespace System.IO
             if (byteBuffer[0]==0xFE && byteBuffer[1]==0xFF) {
                 // Big Endian Unicode
 
-                encoding = new UnicodeEncoding(true, true);
+                encoding = Encoding.BigEndianUnicode;
                 CompressBuffer(2);
                 changedEncoding = true;
             }
@@ -459,13 +459,13 @@ namespace System.IO
             else if (byteBuffer[0]==0xFF && byteBuffer[1]==0xFE) {
                 // Little Endian Unicode, or possibly little endian UTF32
                 if (byteLen < 4 || byteBuffer[2] != 0 || byteBuffer[3] != 0) {
-                    encoding = new UnicodeEncoding(false, true);
+                    encoding = Encoding.Unicode;
                     CompressBuffer(2);
                     changedEncoding = true;
                 }
 #if FEATURE_UTF32   
                 else {
-                    encoding = new UTF32Encoding(false, true);
+                    encoding = Encoding.UTF32;
                     CompressBuffer(4);
                 changedEncoding = true;
             }
