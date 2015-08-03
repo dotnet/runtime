@@ -1,10 +1,10 @@
 {
   "dependencies": {
     "System.Console": "4.0.0-beta-*",
-    "System.IO": "4.0.10-beta-*",
+    "System.IO": "4.0.10",
     "System.IO.Pipes": "4.0.0-beta-*",
-    "System.Runtime": "4.0.20-beta-*",
-    "System.Threading.Tasks": "4.0.10-beta-*"
+    "System.Runtime": "4.0.20",
+    "System.Threading.Tasks": "4.0.10"
   },
   "frameworks": {
     "dnxcore50": {}

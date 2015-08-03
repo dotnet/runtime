@@ -1,8 +1,8 @@
 {
   "dependencies": {
-    "System.Threading.Tasks": "4.0.10-beta-*",
-    "System.Runtime.Extensions": "4.0.10-beta-*",
-    "System.Globalization.Calendars": "4.0.0-beta-*",
+    "System.Threading.Tasks": "4.0.10",
+    "System.Runtime.Extensions": "4.0.10",
+    "System.Globalization.Calendars": "4.0.0",
     "xunit": "2.0.0-beta5-build2785",
     "xunit.abstractions.netcore": "1.0.0-prerelease",
     "xunit.netcore.extensions": "1.0.0-prerelease-*",
