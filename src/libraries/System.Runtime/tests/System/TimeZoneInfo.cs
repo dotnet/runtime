@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Runtime.InteropServices;
 using Xunit;
 
 public static class TimeZoneInfoTests
@@ -30,6 +29,9 @@ public static class TimeZoneInfoTests
     private static bool s_localIsPST = TimeZoneInfo.Local.Id == s_strPacific;
     private static bool s_regLocalSupportsDST = s_regLocal.SupportsDaylightSavingTime;
     private static bool s_localSupportsDST = TimeZoneInfo.Local.SupportsDaylightSavingTime;
+
+    // In 2006, Australia delayed ending DST by a week.  However, Windows says it still ended the last week of March.
+    private static readonly int s_sydneyOffsetLastWeekOfMarch2006 = Interop.IsWindows ? 10 : 11;
 
     [Fact]
     public static void TestKind()
@@ -94,7 +96,6 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    [ActiveIssue(2465, PlatformID.AnyUnix)]
     public static void ValidateRussiaTimeZoneTest()
     {
         TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(s_strRussian);
@@ -158,16 +159,21 @@ public static class TimeZoneInfoTests
         VerifyConvert(new DateTimeOffset(DateTime.MinValue.AddHours(5), new TimeSpan(-3, 0, 0)), s_strPacific, new DateTimeOffset(DateTime.MinValue, new TimeSpan(-8, 0, 0)));
 
         VerifyConvert(DateTime.MaxValue, s_strPacific, s_strSydney, DateTime.MaxValue);
-        if (s_isWindows) // [ActiveIssue(2465, PlatformID.AnyUnix)]
-        {
             VerifyConvert(DateTime.MaxValue.AddHours(-19), s_strPacific, s_strSydney, DateTime.MaxValue);
-        }
         VerifyConvert(DateTime.MaxValue.AddHours(-19.5), s_strPacific, s_strSydney, DateTime.MaxValue.AddHours(-0.5));
+
         VerifyConvert(DateTime.MinValue, s_strSydney, s_strPacific, DateTime.MinValue);
-        if (s_isWindows) // [ActiveIssue(2465, PlatformID.AnyUnix)]
+        if (s_isWindows)
         {
             VerifyConvert(DateTime.MinValue.AddHours(19), s_strSydney, s_strPacific, DateTime.MinValue);
             VerifyConvert(DateTime.MinValue.AddHours(19.5), s_strSydney, s_strPacific, DateTime.MinValue.AddHours(0.5));
+        }
+        else
+        {
+            // for early times, IANA uses local mean time (LMT), which is based on the solar time.
+            // The Pacific Standard Time LMT is UTC-07:53.  For Sydney, LMT is UTC+10:04.
+            VerifyConvert(DateTime.MinValue.AddHours(17).AddMinutes(57), s_strSydney, s_strPacific, DateTime.MinValue);
+            VerifyConvert(DateTime.MinValue.AddHours(17.5).AddMinutes(57), s_strSydney, s_strPacific, DateTime.MinValue.AddHours(0.5));
         }
     }
 
@@ -315,7 +321,6 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void NearMinMaxDateTimeConvertTest()
     {
         DateTime time1 = new DateTime(2006, 5, 12);
@@ -327,13 +332,25 @@ public static class TimeZoneInfoTests
         VerifyConvert(utcMaxValue, s_strPacific, DateTime.MaxValue.AddHours(-8));
         DateTime utcMinValue = DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc);
         VerifyConvert(utcMinValue, s_strPacific, DateTime.MinValue);
+
+        if (Interop.IsWindows)
+        {
         VerifyConvert(utcMinValue.AddHours(8), s_strPacific, DateTime.MinValue);
         VerifyConvert(utcMinValue.AddHours(8.5), s_strPacific, DateTime.MinValue.AddHours(0.5));
         VerifyConvert(utcMinValue, s_strSydney, DateTime.MinValue.AddHours(11));
     }
+        else
+        {
+            // for early times, IANA uses local mean time (LMT), which is based on the solar time.
+            // The Pacific Standard Time LMT is UTC-07:53.
+            VerifyConvert(utcMinValue.AddHours(8).AddMinutes(-7), s_strPacific, DateTime.MinValue);
+            VerifyConvert(utcMinValue.AddHours(8.5).AddMinutes(-7), s_strPacific, DateTime.MinValue.AddHours(0.5));
+            // For Sydney, LMT is UTC+10:04.
+            VerifyConvert(utcMinValue, s_strSydney, DateTime.MinValue.AddHours(10).AddMinutes(4));
+        }
+    }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void DateTimeVariousSystemTimeZonesTest()
     {
         var time1utc = new DateTime(2006, 5, 12, 5, 17, 42, DateTimeKind.Utc);
@@ -345,7 +362,7 @@ public static class TimeZoneInfoTests
         time1utc = new DateTime(2006, 3, 28, 9, 47, 12, DateTimeKind.Utc);
         time1 = new DateTime(2006, 3, 28, 9, 47, 12);
         VerifyConvert(time1utc, s_strPacific, time1.AddHours(-8));
-        VerifyConvert(time1utc, s_strSydney, time1.AddHours(10));
+        VerifyConvert(time1utc, s_strSydney, time1.AddHours(s_sydneyOffsetLastWeekOfMarch2006));
         time1utc = new DateTime(2006, 11, 5, 1, 3, 0, DateTimeKind.Utc);
         time1 = new DateTime(2006, 11, 5, 1, 3, 0);
         VerifyConvert(time1utc, s_strPacific, time1.AddHours(-8));
@@ -382,8 +399,8 @@ public static class TimeZoneInfoTests
         VerifyConvert(time1, s_strPacific, s_strSydney, time1.AddHours(17));
         VerifyConvert(time1, s_strSydney, s_strPacific, time1.AddHours(-17));
         time1 = new DateTime(2006, 3, 28, 9, 47, 12);
-        VerifyConvert(time1, s_strPacific, s_strSydney, time1.AddHours(18));
-        VerifyConvert(time1, s_strSydney, s_strPacific, time1.AddHours(-18));
+        VerifyConvert(time1, s_strPacific, s_strSydney, time1.AddHours(s_sydneyOffsetLastWeekOfMarch2006 + 8));
+        VerifyConvert(time1, s_strSydney, s_strPacific, time1.AddHours(-(s_sydneyOffsetLastWeekOfMarch2006 + 8)));
         time1 = new DateTime(2006, 11, 5, 1, 3, 0);
         VerifyConvert(time1, s_strPacific, s_strSydney, time1.AddHours(19));
         VerifyConvert(time1, s_strSydney, s_strPacific, time1.AddHours(-19));
@@ -393,7 +410,6 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void PerthRulesTest()
     {
         var time1utc = new DateTime(2005, 12, 31, 15, 59, 59, DateTimeKind.Utc);
@@ -424,11 +440,20 @@ public static class TimeZoneInfoTests
         time1utc = new DateTime(2006, 11, 30, 18, 0, 0, DateTimeKind.Utc);
         time1 = new DateTime(2006, 12, 1, 2, 0, 0);
         VerifyConvert(time1utc, s_strPerth, time1);
-        // ambiguous time between rules
-        // this is not ideal, but the way it works
+
         time1utc = new DateTime(2006, 12, 31, 15, 59, 59, DateTimeKind.Utc);
         time1 = new DateTime(2006, 12, 31, 15, 59, 59);
+        if (Interop.IsWindows)
+        {
+            // ambiguous time between rules
+            // this is not ideal, but the way it works
         VerifyConvert(time1utc, s_strPerth, time1.AddHours(8));
+        }
+        else
+        {
+            // Linux has the correct rules for Perth for days from December 3, 2006 to the end of the year
+            VerifyConvert(time1utc, s_strPerth, time1.AddHours(9));
+        }
 
         // 2007 rule
         time1utc = new DateTime(2006, 12, 31, 20, 1, 2, DateTimeKind.Utc);
@@ -512,7 +537,6 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void LocalToSystemTest()
     {
         var time1 = new DateTime(2006, 5, 12, 5, 17, 42);
@@ -522,13 +546,16 @@ public static class TimeZoneInfoTests
         VerifyConvert(time1local, s_strSydney, time1.Subtract(localOffset).AddHours(10));
         VerifyConvert(time1, s_strPacific, time1.Subtract(localOffset).AddHours(-7));
         VerifyConvert(time1local, s_strPacific, time1.Subtract(localOffset).AddHours(-7));
+
         time1 = new DateTime(2006, 3, 28, 9, 47, 12);
         time1local = new DateTime(2006, 3, 28, 9, 47, 12, DateTimeKind.Local);
         localOffset = TimeZoneInfo.Local.GetUtcOffset(time1);
-        VerifyConvert(time1, s_strSydney, time1.Subtract(localOffset).AddHours(10));
-        VerifyConvert(time1local, s_strSydney, time1.Subtract(localOffset).AddHours(10));
+        VerifyConvert(time1, s_strSydney, time1.Subtract(localOffset).AddHours(s_sydneyOffsetLastWeekOfMarch2006));
+        VerifyConvert(time1local, s_strSydney, time1.Subtract(localOffset).AddHours(s_sydneyOffsetLastWeekOfMarch2006));
+
         VerifyConvert(time1, s_strPacific, time1.Subtract(localOffset).AddHours(-8));
         VerifyConvert(time1local, s_strPacific, time1.Subtract(localOffset).AddHours(-8));
+
         time1 = new DateTime(2006, 11, 5, 1, 3, 0);
         time1local = new DateTime(2006, 11, 5, 1, 3, 0, DateTimeKind.Local);
         localOffset = TimeZoneInfo.Local.GetUtcOffset(time1);
@@ -603,7 +630,6 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void LocalToLocalTest()
     {
         if (s_localIsPST)
@@ -662,7 +688,6 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void LocalToUtcTest()
     {
         var time1 = new DateTime(1964, 6, 19, 12, 45, 10);
