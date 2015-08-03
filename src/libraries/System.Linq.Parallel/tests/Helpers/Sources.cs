@@ -18,7 +18,7 @@ namespace Test
         }
 
         // Wrapper for attribute calls
-        public static IEnumerable<object[]> Ranges(object[] counts)
+        public static IEnumerable<object[]> Ranges(int[] counts)
         {
             foreach (object[] parms in Ranges(counts.Cast<int>())) yield return parms;
         }

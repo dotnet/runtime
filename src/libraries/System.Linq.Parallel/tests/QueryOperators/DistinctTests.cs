@@ -12,7 +12,7 @@ namespace Test
     {
         private const int DuplicateFactor = 4;
 
-        public static IEnumerable<object[]> DistinctUnorderedData(object[] counts)
+        public static IEnumerable<object[]> DistinctUnorderedData(int[] counts)
         {
             foreach (object[] results in UnorderedSources.Ranges(counts.Cast<int>().Select(x => x * DuplicateFactor)))
             {
@@ -20,7 +20,7 @@ namespace Test
             }
         }
 
-        public static IEnumerable<object[]> DistinctData(object[] counts)
+        public static IEnumerable<object[]> DistinctData(int[] counts)
         {
             foreach (object[] results in Sources.Ranges(counts.Cast<int>().Select(x => x * DuplicateFactor)))
             {
@@ -28,7 +28,7 @@ namespace Test
             }
         }
 
-        public static IEnumerable<object[]> DistinctSourceMultipleData(object[] counts)
+        public static IEnumerable<object[]> DistinctSourceMultipleData(int[] counts)
         {
             foreach (int count in counts.Cast<int>())
             {
