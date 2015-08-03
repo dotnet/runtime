@@ -4420,6 +4420,22 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else
 				ppc_mr (code, ins->dreg, ins->sreg1);
 			break;
+#else
+		case OP_ICONV_TO_R4:
+		case OP_ICONV_TO_R8: {
+			if (cpu_hw_caps & PPC_ISA_64) {
+				ppc_srawi(code, ppc_r0, ins->sreg1, 31);
+				ppc_stw (code, ppc_r0, -8, ppc_r1);
+				ppc_stw (code, ins->sreg1, -4, ppc_r1);
+				ppc_lfd (code, ins->dreg, -8, ppc_r1);
+				ppc_fcfid (code, ins->dreg, ins->dreg);
+				if (ins->opcode == OP_ICONV_TO_R4)
+					ppc_frsp (code, ins->dreg, ins->dreg);
+				}
+			break;
+		}
+#endif
+
 		case OP_ATOMIC_ADD_I4:
 		CASE_PPC64 (OP_ATOMIC_ADD_I8) {
 			int location = ins->inst_basereg;
@@ -4453,21 +4469,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_mr (code, ins->dreg, ppc_r0);
 			break;
 		}
-#else
-		case OP_ICONV_TO_R4:
-		case OP_ICONV_TO_R8: {
-			if (cpu_hw_caps & PPC_ISA_64) {
-				ppc_srawi(code, ppc_r0, ins->sreg1, 31);
-				ppc_stw (code, ppc_r0, -8, ppc_r1);
-				ppc_stw (code, ins->sreg1, -4, ppc_r1);
-				ppc_lfd (code, ins->dreg, -8, ppc_r1);
-				ppc_fcfid (code, ins->dreg, ins->dreg);
-				if (ins->opcode == OP_ICONV_TO_R4)
-					ppc_frsp (code, ins->dreg, ins->dreg);
-				}
-			break;
-		}
-#endif
 		case OP_ATOMIC_CAS_I4:
 		CASE_PPC64 (OP_ATOMIC_CAS_I8) {
 			int location = ins->sreg1;
