@@ -3,12 +3,15 @@
   "version": -9996,
   "targets": {
     "DNXCore,Version=v5.0": {
-      "System.Collections/4.0.0": {
+      "System.Collections/4.0.10": {
         "dependencies": {
-          "System.Runtime": "4.0.0"
+          "System.Runtime": "4.0.20"
         },
         "compile": {
           "ref/dotnet/System.Collections.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.Collections.dll": {}
         }
       },
       "System.Console/4.0.0-beta-23127": {
@@ -87,13 +90,13 @@
           "lib/dotnet/System.IO.FileSystem.Primitives.dll": {}
         }
       },
-      "System.Linq/4.0.0-beta-23121": {
+      "System.Linq/4.0.0-beta-23127": {
         "dependencies": {
-          "System.Runtime": "4.0.20-beta-23121",
-          "System.Collections": "4.0.10-beta-23121",
-          "System.Resources.ResourceManager": "4.0.0-beta-23121",
-          "System.Diagnostics.Debug": "4.0.10-beta-23121",
-          "System.Runtime.Extensions": "4.0.10-beta-23121"
+          "System.Runtime": "4.0.20-beta-23127",
+          "System.Collections": "4.0.10-beta-23127",
+          "System.Resources.ResourceManager": "4.0.0-beta-23127",
+          "System.Diagnostics.Debug": "4.0.10-beta-23127",
+          "System.Runtime.Extensions": "4.0.10-beta-23127"
         },
         "compile": {
           "ref/dotnet/System.Linq.dll": {}
@@ -287,20 +290,20 @@
           "lib/dnxcore50/xunit.execution.dnx.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-10001": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00069": {
         "dependencies": {
-          "System.Diagnostics.Debug": "4.0.10-beta-23121",
-          "System.IO": "4.0.10-beta-23121",
-          "System.Linq": "4.0.0-beta-23121",
-          "System.Reflection": "4.0.10-beta-23121",
-          "System.Reflection.Primitives": "4.0.0-beta-23121",
-          "System.Runtime": "4.0.20-beta-23121",
-          "System.Runtime.Extensions": "4.0.10-beta-23121",
-          "System.Runtime.Handles": "4.0.0-beta-23121",
-          "System.Runtime.InteropServices": "4.0.20-beta-23121",
-          "System.Text.Encoding": "4.0.10-beta-23121",
-          "System.Threading": "4.0.10-beta-23121",
-          "System.Threading.Tasks": "4.0.10-beta-23121",
+          "System.Diagnostics.Debug": "4.0.10-beta-23127",
+          "System.IO": "4.0.10-beta-23127",
+          "System.Linq": "4.0.0-beta-23127",
+          "System.Reflection": "4.0.10-beta-23127",
+          "System.Reflection.Primitives": "4.0.0-beta-23127",
+          "System.Runtime": "4.0.20-beta-23127",
+          "System.Runtime.Extensions": "4.0.10-beta-23127",
+          "System.Runtime.Handles": "4.0.0-beta-23127",
+          "System.Runtime.InteropServices": "4.0.20-beta-23127",
+          "System.Text.Encoding": "4.0.10-beta-23127",
+          "System.Threading": "4.0.10-beta-23127",
+          "System.Threading.Tasks": "4.0.10-beta-23127",
           "xunit": "2.1.0-beta3-build3029"
         },
         "compile": {
@@ -313,19 +316,18 @@
     }
   },
   "libraries": {
-    "System.Collections/4.0.0": {
-      "sha512": "i2vsGDIEbWdHcUSNDPKZP/ZWod6o740el7mGTCy0dqbCxQh74W4QoC+klUwPEtGEFuvzJ7bJgvwJqscosVNyZQ==",
+    "System.Collections/4.0.10": {
+      "serviceable": true,
+      "sha512": "ux6ilcZZjV/Gp7JEZpe+2V1eTueq6NuoGRM3eZCFuPM25hLVVgCRuea6STW8hvqreIOE59irJk5/ovpA5xQipw==",
       "files": [
-        "License.rtf",
-        "System.Collections.4.0.0.nupkg",
-        "System.Collections.4.0.0.nupkg.sha512",
+        "System.Collections.4.0.10.nupkg",
+        "System.Collections.4.0.10.nupkg.sha512",
         "System.Collections.nuspec",
+        "lib/DNXCore50/System.Collections.dll",
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
-        "lib/net45/_._",
-        "lib/win8/_._",
-        "lib/wp80/_._",
-        "lib/wpa81/_._",
+        "lib/net46/_._",
+        "lib/netcore50/System.Collections.dll",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
         "ref/dotnet/System.Collections.dll",
@@ -341,23 +343,10 @@
         "ref/dotnet/zh-hant/System.Collections.xml",
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
-        "ref/net45/_._",
-        "ref/netcore50/System.Collections.dll",
-        "ref/netcore50/System.Collections.xml",
-        "ref/netcore50/de/System.Collections.xml",
-        "ref/netcore50/es/System.Collections.xml",
-        "ref/netcore50/fr/System.Collections.xml",
-        "ref/netcore50/it/System.Collections.xml",
-        "ref/netcore50/ja/System.Collections.xml",
-        "ref/netcore50/ko/System.Collections.xml",
-        "ref/netcore50/ru/System.Collections.xml",
-        "ref/netcore50/zh-hans/System.Collections.xml",
-        "ref/netcore50/zh-hant/System.Collections.xml",
-        "ref/win8/_._",
-        "ref/wp80/_._",
-        "ref/wpa81/_._",
+        "ref/net46/_._",
         "ref/xamarinios10/_._",
-        "ref/xamarinmac20/_._"
+        "ref/xamarinmac20/_._",
+        "runtimes/win8-aot/lib/netcore50/System.Collections.dll"
       ]
     },
     "System.Console/4.0.0-beta-23127": {
@@ -553,12 +542,12 @@
         "ref/xamarinmac20/_._"
       ]
     },
-    "System.Linq/4.0.0-beta-23121": {
+    "System.Linq/4.0.0-beta-23127": {
       "serviceable": true,
-      "sha512": "nReSL6kOJorYhZ+As4UJaKBd/rx11LoPQ4sZ1Pc104uo/UwGPhGvyv1Xfm1a80r+0ybMFNyBug9OX8q+QI+k8A==",
+      "sha512": "pvB6d8TuwcsU20Im73SKprww15O6Nf48NPd80rmJHDJofRgpzMZ6M5VTBcMXBMlS8jXHpq0ORXOUQ8F+0OmVCg==",
       "files": [
-        "System.Linq.4.0.0-beta-23121.nupkg",
-        "System.Linq.4.0.0-beta-23121.nupkg.sha512",
+        "System.Linq.4.0.0-beta-23127.nupkg",
+        "System.Linq.4.0.0-beta-23127.nupkg.sha512",
         "System.Linq.nuspec",
         "lib/dotnet/System.Linq.dll",
         "lib/net45/_._",
@@ -1060,12 +1049,12 @@
         "lib/Xamarin.iOS/xunit.execution.iOS-Universal.xml"
       ]
     },
-    "xunit.netcore.extensions/1.0.0-prerelease-10001": {
+    "xunit.netcore.extensions/1.0.0-prerelease-00069": {
       "serviceable": true,
-      "sha512": "KUv/7RIjYk0uZFIPkurUqYEJFj6dWR/zAyeMAZJBbBSuxeMHPzKCLixtYk/sdS0zDizj7aT9ilFnJboXOy+cDQ==",
+      "sha512": "d0z25PO5BYq6m7VolkHOqWvFoaC8RCtdSPoNZVqPpms+/KZ3EG3+3CXBoEvD6XecD+ablnwNmWe+YwCzhHe4Rw==",
       "files": [
-        "xunit.netcore.extensions.1.0.0-prerelease-10001.nupkg",
-        "xunit.netcore.extensions.1.0.0-prerelease-10001.nupkg.sha512",
+        "xunit.netcore.extensions.1.0.0-prerelease-00069.nupkg",
+        "xunit.netcore.extensions.1.0.0-prerelease-00069.nupkg.sha512",
         "xunit.netcore.extensions.nuspec",
         "lib/dotnet/Xunit.NetCore.Extensions.dll"
       ]
@@ -1073,7 +1062,7 @@
   },
   "projectFileDependencyGroups": {
     "": [
-      "System.Collections >= 4.0.0",
+      "System.Collections >= 4.0.10",
       "System.Console >= 4.0.0-beta-*",
       "System.Diagnostics.Debug >= 4.0.10",
       "System.Diagnostics.Tracing >= 4.0.20",
