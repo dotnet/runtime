@@ -5783,56 +5783,41 @@ mono_async_result_new (MonoDomain *domain, HANDLE handle, MonoObject *state, gpo
 }
 
 MonoObject *
-mono_async_result_invoke (MonoAsyncResult *ares, MonoObject **exc)
+ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_Invoke (MonoAsyncResult *this)
 {
 	MonoAsyncCall *ac;
 	MonoObject *res;
-	MonoInternalThread *thread;
 
-	g_assert (ares);
-	g_assert (ares->async_delegate);
+	g_assert (this);
+	g_assert (this->async_delegate);
 
-	thread = mono_thread_internal_current ();
-
-	ac = (MonoAsyncCall*) ares->object_data;
+	ac = (MonoAsyncCall*) this->object_data;
 	if (!ac) {
-		res = mono_runtime_delegate_invoke (ares->async_delegate, (void**) &ares->async_state, exc);
+		res = mono_runtime_delegate_invoke (this->async_delegate, (void**) &this->async_state, NULL);
 	} else {
-		MonoArray *out_args = NULL;
 		gpointer wait_event = NULL;
 
+		g_assert (ac->msg);
 		ac->msg->exc = NULL;
-		res = mono_message_invoke (ares->async_delegate, ac->msg, exc, &out_args);
-		MONO_OBJECT_SETREF (ac->msg, exc, *exc);
+
+		res = mono_message_invoke (this->async_delegate, ac->msg, &ac->msg->exc, &ac->out_args);
 		MONO_OBJECT_SETREF (ac, res, res);
-		MONO_OBJECT_SETREF (ac, out_args, out_args);
 
-		mono_monitor_enter ((MonoObject*) ares);
-		ares->completed = 1;
-		if (ares->handle)
-			wait_event = mono_wait_handle_get_handle ((MonoWaitHandle*) ares->handle);
-		mono_monitor_exit ((MonoObject*) ares);
+		mono_monitor_enter ((MonoObject*) this);
 
-		if (wait_event != NULL)
+		this->completed = TRUE;
+
+		if (this->handle)
+			wait_event = mono_wait_handle_get_handle ((MonoWaitHandle*) this->handle);
+		if (wait_event)
 			SetEvent (wait_event);
 
-		if (!ac->cb_method) {
-			*exc = NULL;
-		} else {
-			mono_runtime_invoke (ac->cb_method, ac->cb_target, (gpointer*) &ares, exc);
-		}
+		mono_monitor_exit ((MonoObject*) this);
+
+		if (ac->cb_method)
+			mono_runtime_invoke (ac->cb_method, ac->cb_target, (gpointer*) &this, NULL);
 	}
 
-	return res;
-}
-
-MonoObject *
-ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_Invoke (MonoAsyncResult *this_obj)
-{
-	MonoObject *exc = NULL;
-	MonoObject *res = mono_async_result_invoke (this_obj, &exc);
-	if (exc)
-		mono_raise_exception ((MonoException*) exc);
 	return res;
 }
 
