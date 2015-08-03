@@ -314,5 +314,5 @@ vcall2_membase: src1:b len:16 clob:c
 
 jump_table: dest:i len:8
 
-atomic_add_i4: src1:b src2:i dest:i len:20
+atomic_add_i4: src1:b src2:i dest:i len:28
 atomic_cas_i4: src1:b src2:i src3:i dest:i len:38
