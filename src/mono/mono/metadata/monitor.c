@@ -740,6 +740,39 @@ retry_contended:
 gboolean 
 mono_monitor_enter (MonoObject *obj)
 {
+	/* FASTPATH */
+#ifdef HAVE_MOVING_COLLECTOR
+	MonoThreadsSync *mon;
+	gsize id = mono_thread_info_get_small_id ();
+	guint32 new_status, old_status, tmp_status;
+
+	if (G_LIKELY (obj)) {
+		mon = obj->synchronisation;
+
+		if (G_LIKELY (mon)) {
+			LockWord lw;
+			lw.sync = mon;
+			if (G_LIKELY (!(lw.lock_word & LOCK_WORD_THIN_HASH))) {
+				LockWord lw;
+				lw.sync = mon;
+				lw.lock_word &= ~LOCK_WORD_BITS_MASK;
+				mon = lw.sync;
+
+				old_status = mon->status;
+				if (G_LIKELY (mon_status_get_owner (old_status) == 0)) {
+					new_status = mon_status_set_owner (old_status, id);
+					tmp_status = InterlockedCompareExchange ((gint32*)&mon->status, new_status, old_status);
+					if (G_LIKELY (tmp_status == old_status)) {
+						/* Success */
+						g_assert (mon->nest == 1);
+						return 1;
+					}
+				}
+			}
+		}
+	}
+#endif
+
 	return mono_monitor_try_enter_internal (obj, INFINITE, FALSE) == 1;
 }
 
@@ -875,6 +908,40 @@ ves_icall_System_Threading_Monitor_Monitor_try_enter (MonoObject *obj, guint32 m
 void
 ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObject *obj, guint32 ms, char *lockTaken)
 {
+	/* FASTPATH */
+#ifdef HAVE_MOVING_COLLECTOR
+	MonoThreadsSync *mon;
+	gsize id = mono_thread_info_get_small_id ();
+	guint32 new_status, old_status, tmp_status;
+
+	if (G_LIKELY (obj && ms == INFINITE && *lockTaken == 0)) {
+		mon = obj->synchronisation;
+
+		if (G_LIKELY (mon)) {
+			LockWord lw;
+			lw.sync = mon;
+			if (G_LIKELY (!(lw.lock_word & LOCK_WORD_THIN_HASH))) {
+				LockWord lw;
+				lw.sync = mon;
+				lw.lock_word &= ~LOCK_WORD_BITS_MASK;
+				mon = lw.sync;
+
+				old_status = mon->status;
+				if (G_LIKELY (mon_status_get_owner (old_status) == 0)) {
+					new_status = mon_status_set_owner (old_status, id);
+					tmp_status = InterlockedCompareExchange ((gint32*)&mon->status, new_status, old_status);
+					if (G_LIKELY (tmp_status == old_status)) {
+						/* Success */
+						*lockTaken = 1;
+						g_assert (mon->nest == 1);
+						return;
+					}
+				}
+			}
+		}
+	}
+#endif
+
 	gint32 res;
 	do {
 		res = mono_monitor_try_enter_internal (obj, ms, TRUE);
