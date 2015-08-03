@@ -18,7 +18,6 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void PosTest2()
         {
             RegionInfo regionInfo1 = new RegionInfo("en-US");
@@ -27,6 +26,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void PosTest3()
         {
             RegionInfo regionInfo1 = new RegionInfo("US");
