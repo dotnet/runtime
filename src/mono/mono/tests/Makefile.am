@@ -589,7 +589,8 @@ DISABLED_TESTS_WRENCH=	\
 	delegate2.exe	\
 	finally_guard.exe \
 	gc-altstack.exe \
-	generic-xdomain.2.exe
+	generic-xdomain.2.exe \
+	finally_block_ending_in_dead_bb.exe
 
 AOT_DISABLED_TESTS=constraints-load.exe
 
