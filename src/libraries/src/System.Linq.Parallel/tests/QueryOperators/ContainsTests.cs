@@ -11,7 +11,7 @@ namespace Test
 {
     public class ContainsTests
     {
-        public static IEnumerable<object[]> OnlyOneData(object[] counts)
+        public static IEnumerable<object[]> OnlyOneData(int[] counts)
         {
             Func<int, IEnumerable<int>> positions = x => new[] { 0, x / 2, Math.Max(0, x - 1) }.Distinct();
             foreach (object[] results in UnorderedSources.Ranges(counts.Cast<int>(), positions)) yield return results;

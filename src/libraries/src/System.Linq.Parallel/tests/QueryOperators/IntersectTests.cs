@@ -12,7 +12,7 @@ namespace Test
     {
         private const int DuplicateFactor = 4;
 
-        public static IEnumerable<object[]> IntersectUnorderedData(object[] leftCounts, object[] rightCounts)
+        public static IEnumerable<object[]> IntersectUnorderedData(int[] leftCounts, int[] rightCounts)
         {
             foreach (object[] parms in UnorderedSources.BinaryRanges(leftCounts.Cast<int>(), (l, r) => 0 - r / 2, rightCounts.Cast<int>()))
             {
@@ -21,7 +21,7 @@ namespace Test
             }
         }
 
-        public static IEnumerable<object[]> IntersectData(object[] leftCounts, object[] rightCounts)
+        public static IEnumerable<object[]> IntersectData(int[] leftCounts, int[] rightCounts)
         {
             foreach (object[] parms in IntersectUnorderedData(leftCounts, rightCounts))
             {
@@ -30,7 +30,7 @@ namespace Test
             }
         }
 
-        public static IEnumerable<object[]> IntersectSourceMultipleData(object[] counts)
+        public static IEnumerable<object[]> IntersectSourceMultipleData(int[] counts)
         {
             foreach (int leftCount in counts.Cast<int>())
             {

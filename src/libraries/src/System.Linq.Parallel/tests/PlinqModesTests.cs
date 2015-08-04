@@ -69,7 +69,7 @@ namespace Test
         /// <returns>Entries for test data.
         /// The first element is the Labeled{ParallelQuery{int}} range,
         /// the second element is the count, and the third is the execution mode.</returns>
-        public static IEnumerable<object[]> EasyQueryData(object[] counts, object[] modes)
+        public static IEnumerable<object[]> EasyQueryData(int[] counts, int[] modes)
         {
             // Test doesn't apply to DOP == 1.  It verifies that work is actually
             // happening in parallel, which won't be the case with DOP == 1.
@@ -122,7 +122,7 @@ namespace Test
         /// <returns>Entries for test data.
         /// The first element is the Labeled{ParallelQuery{int}} range,
         /// the second element is the count, and the third is the execution mode.</returns>
-        public static IEnumerable<object[]> HardQueryData(object[] counts, object[] modes)
+        public static IEnumerable<object[]> HardQueryData(int[] counts, ParallelExecutionMode[] modes)
         {
             // Test doesn't apply to DOP == 1.  It verifies that work is actually
             // happening in parallel, which won't be the case with DOP == 1.

@@ -1,12 +1,10 @@
 {
   "dependencies": {
+    "System.Globalization": "4.0.10",
     "System.Runtime": "4.0.20",
     "System.Threading": "4.0.10",
     "System.Threading.Tasks": "4.0.10",
-    "xunit": "2.0.0-beta5-build2785",
-    "xunit.abstractions.netcore": "1.0.0-prerelease",
-    "xunit.assert": "2.0.0-beta5-build2785",
-    "xunit.core.netcore": "1.0.1-prerelease",
+    "xunit": "2.1.0-beta3-*",
     "xunit.netcore.extensions": "1.0.0-prerelease-*"
   },
   "frameworks": {

@@ -217,7 +217,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <param name="options">The options to yield.</param>
         /// <param name="inheritabilities">The inheritabilities to yield.</param>
         public static IEnumerable<object[]> MemberData_ValidArgumentCombinations(
-            object[] mapNames, object[] capacities, object[] accesses, object[] options, object[] inheritabilities)
+            string[] mapNames, long[] capacities, MemoryMappedFileAccess[] accesses, MemoryMappedFileOptions[] options, HandleInheritability[] inheritabilities)
         {
             foreach (string tmpMapName in mapNames)
             {

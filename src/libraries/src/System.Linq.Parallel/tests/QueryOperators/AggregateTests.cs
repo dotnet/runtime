@@ -14,7 +14,7 @@ namespace Test
     {
         private const int ResultFuncModifier = 17;
 
-        public static IEnumerable<object[]> AggregateExceptionData(object[] counts)
+        public static IEnumerable<object[]> AggregateExceptionData(int[] counts)
         {
             foreach (object[] results in UnorderedSources.Ranges(counts.Cast<int>()))
             {

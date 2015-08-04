@@ -26,7 +26,7 @@ namespace Test
         /// <returns>Entries for test data.
         /// The first element is the Labeled{ParallelQuery{int}} range,
         /// the second element is the count, and the third is the number of partitions or degrees of parallelism to use.</returns>
-        public static IEnumerable<object[]> PartitioningData(object[] counts)
+        public static IEnumerable<object[]> PartitioningData(int[] counts)
         {
             foreach (object[] results in Sources.Ranges(counts.Cast<int>(), x => new[] { 1, 2, 4 }))
             {
@@ -42,7 +42,7 @@ namespace Test
         /// <returns>Entries for test data.
         /// The first element is the Labeled{ParallelQuery{int}} range,
         /// the second element is the count, and the third is the ParallelMergeOption to use.</returns>
-        public static IEnumerable<object[]> MergeData(object[] counts)
+        public static IEnumerable<object[]> MergeData(int[] counts)
         {
             foreach (object[] results in Sources.Ranges(counts.Cast<int>(), x => Options))
             {
@@ -57,7 +57,7 @@ namespace Test
         /// <returns>Entries for test data.
         /// The first element is the Labeled{ParallelQuery{int}} range,
         /// the second element is the count, and the third is the ParallelMergeOption to use.</returns>
-        public static IEnumerable<object[]> ThrowOnCount_AllMergeOptions_MemberData(object[] counts)
+        public static IEnumerable<object[]> ThrowOnCount_AllMergeOptions_MemberData(int[] counts)
         {
             foreach (int count in counts.Cast<int>())
             {

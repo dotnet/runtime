@@ -10,12 +10,12 @@ namespace Test
 {
     public class ConcatTests
     {
-        public static IEnumerable<object[]> ConcatUnorderedData(object[] counts)
+        public static IEnumerable<object[]> ConcatUnorderedData(int[] counts)
         {
             foreach (object[] parms in UnorderedSources.BinaryRanges(counts.Cast<int>(), (left, right) => left, counts.Cast<int>())) yield return parms.Take(4).ToArray();
         }
 
-        public static IEnumerable<object[]> ConcatData(object[] counts)
+        public static IEnumerable<object[]> ConcatData(int[] counts)
         {
             foreach (object[] parms in ConcatUnorderedData(counts))
             {

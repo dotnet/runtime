@@ -11,14 +11,14 @@ namespace Test
 {
     public class SingleSingleOrDefaultTests
     {
-        public static IEnumerable<object[]> SingleSpecificData(object[] counts)
+        public static IEnumerable<object[]> SingleSpecificData(int[] counts)
         {
             Func<int, IEnumerable<int>> positions = x => new[] { 0, x / 2, Math.Max(0, x - 1) }.Distinct();
             foreach (object[] results in UnorderedSources.Ranges(counts.Cast<int>(), positions)) yield return results;
             foreach (object[] results in Sources.Ranges(counts.Cast<int>(), positions)) yield return results;
         }
 
-        public static IEnumerable<object[]> SingleData(object[] elements, object[] counts)
+        public static IEnumerable<object[]> SingleData(int[] elements, int[] counts)
         {
             foreach (int element in elements)
             {

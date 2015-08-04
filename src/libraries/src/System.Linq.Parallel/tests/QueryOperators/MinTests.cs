@@ -12,7 +12,7 @@ namespace Test
     public class MinTests
     {
         // Get a set of ranges from 0 to each count, with an extra parameter for a minimum where each item is negated (-x).
-        public static IEnumerable<object[]> MinData(object[] counts)
+        public static IEnumerable<object[]> MinData(int[] counts)
         {
             Func<int, int> min = x => 1 - x;
             foreach (object[] results in UnorderedSources.Ranges(counts.Cast<int>(), min))

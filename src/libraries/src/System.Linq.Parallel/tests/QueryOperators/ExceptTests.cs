@@ -13,7 +13,7 @@ namespace Test
     {
         private const int DuplicateFactor = 4;
 
-        public static IEnumerable<object[]> ExceptUnorderedData(object[] leftCounts, object[] rightCounts)
+        public static IEnumerable<object[]> ExceptUnorderedData(int[] leftCounts, int[] rightCounts)
         {
             foreach (object[] parms in UnorderedSources.BinaryRanges(leftCounts.Cast<int>(), (l, r) => 0 - r / 2, rightCounts.Cast<int>()))
             {
@@ -21,7 +21,7 @@ namespace Test
             }
         }
 
-        public static IEnumerable<object[]> ExceptData(object[] leftCounts, object[] rightCounts)
+        public static IEnumerable<object[]> ExceptData(int[] leftCounts, int[] rightCounts)
         {
             foreach (object[] parms in ExceptUnorderedData(leftCounts, rightCounts))
             {
@@ -30,7 +30,7 @@ namespace Test
             }
         }
 
-        public static IEnumerable<object[]> ExceptSourceMultipleData(object[] counts)
+        public static IEnumerable<object[]> ExceptSourceMultipleData(int[] counts)
         {
             foreach (int leftCount in counts.Cast<int>())
             {
