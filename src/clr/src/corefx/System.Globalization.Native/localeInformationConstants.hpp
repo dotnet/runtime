@@ -3,7 +3,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
-// Enum that corresponds to CultureData.LocaleNumberData enum.
+// Enum that corresponds to managed enum CultureData.LocaleNumberData.
 // The numeric values of the enum members match their Win32 counterparts. 
 enum LocaleNumberData : int32_t
 {
@@ -23,7 +23,7 @@ enum LocaleNumberData : int32_t
 	Monetary = 0x00000018
 };
 
-// Enum that corresponds to CultureData.LocaleStringData enum.
+// Enum that corresponds to managed enum CultureData.LocaleStringData.
 // The numeric values of the enum members match their Win32 counterparts. 
 enum LocaleStringData : int32_t
 {

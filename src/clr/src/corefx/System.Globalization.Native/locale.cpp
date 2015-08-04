@@ -16,6 +16,14 @@
 
 /*
 Function:
+UErrorCodeToBool
+
+Convert an ICU UErrorCode to a Bool compatible with Win32 (1=success)
+*/
+inline int32_t UErrorCodeToBool(UErrorCode code) { return U_SUCCESS(code) ? 1 : 0; }
+
+/*
+Function:
 GetLocale
 
 Returns a locale given the locale name
@@ -67,20 +75,22 @@ PAL Function:
 getCanonicalLocaleName
 
 Obtains a canonical locale given the locale name
+Returns 1 for success, 0 otherwise
 */
-extern "C" bool GetLocaleName(const UChar* localeName, UChar* value, int32_t valueLength)
+extern "C" int32_t GetLocaleName(const UChar* localeName, UChar* value, int32_t valueLength)
 {
 	Locale locale = GetLocale(localeName, true);
 
 	if (locale.isBogus())
 	{
-		return false;
+		// localeName not properly formatted
+		return UErrorCodeToBool(U_ILLEGAL_ARGUMENT_ERROR);
 	}
 
 	if (strlen(locale.getISO3Language()) == 0)
 	{
 		// unknown language; language is required (script and country optional)
-		return false;
+		return UErrorCodeToBool(U_ILLEGAL_ARGUMENT_ERROR);
 	}
 
 	UErrorCode status = u_charsToUChars_safe(locale.getName(), value, valueLength);
@@ -98,7 +108,7 @@ extern "C" bool GetLocaleName(const UChar* localeName, UChar* value, int32_t val
 
 	assert(status != U_BUFFER_OVERFLOW_ERROR);
 
-	return U_SUCCESS(status);
+	return UErrorCodeToBool(status);
 }
 
 /*
@@ -124,14 +134,15 @@ UErrorCode GetMeasurementSystem(const char *localeId, int32_t *value)
 PAL Function:
 GetLocaleInfoInt
 
-Returns integer locale information
+Obtains integer locale information
+Returns 1 for success, 0 otherwise
 */
-extern "C" bool GetLocaleInfoInt(const UChar* localeName, LocaleNumberData localeNumberData, int32_t* value)
+extern "C" int32_t GetLocaleInfoInt(const UChar* localeName, LocaleNumberData localeNumberData, int32_t* value)
 {
 	Locale locale = GetLocale(localeName);
 	if (locale.isBogus())
 	{
-		return false;
+		return UErrorCodeToBool(U_ILLEGAL_ARGUMENT_ERROR);
 	}
 
 	UErrorCode status = U_ZERO_ERROR;
@@ -181,7 +192,7 @@ extern "C" bool GetLocaleInfoInt(const UChar* localeName, LocaleNumberData local
 
 	assert(status != U_BUFFER_OVERFLOW_ERROR);
 
-	return U_SUCCESS(status);
+	return UErrorCodeToBool(status);
 }
 
 /*
@@ -262,14 +273,15 @@ UErrorCode GetLocaleInfoAmPm(const Locale &locale, bool am, UChar* value, int32_
 PAL Function:
 GetLocaleInfoString
 
-Obtains string locale information
+Obtains string locale information.
+Returns 1 for success, 0 otherwise
 */
-extern "C" bool GetLocaleInfoString(const UChar* localeName, LocaleStringData localeStringData, UChar* value, int32_t valueLength)
+extern "C" int32_t GetLocaleInfoString(const UChar* localeName, LocaleStringData localeStringData, UChar* value, int32_t valueLength)
 {
 	Locale locale = GetLocale(localeName);
 	if (locale.isBogus())
 	{
-		return U_ILLEGAL_ARGUMENT_ERROR;
+		return UErrorCodeToBool(U_ILLEGAL_ARGUMENT_ERROR);
 	}
 
 	UnicodeString str;
@@ -376,5 +388,5 @@ extern "C" bool GetLocaleInfoString(const UChar* localeName, LocaleStringData lo
 
 	assert(status != U_BUFFER_OVERFLOW_ERROR);
 
-	return U_SUCCESS(status);
+	return UErrorCodeToBool(status);
 }
