@@ -4,7 +4,7 @@
 
   <ItemDefinitionGroup>
     <ProjectFile>
-      <ProductGroups>VS;FX</ProductGroups>
+      <ProductGroups>FX;PK</ProductGroups>
     </ProjectFile>
   </ItemDefinitionGroup>
 
@@ -13,11 +13,14 @@
     <BuildInPhase1>true</BuildInPhase1>
     <BuildInPhase2>true</BuildInPhase2>
     <BuildSysBinaries>true</BuildSysBinaries>
+    <!-- for now only binplace the xplat bits during official builds -->
+    <GetAllXPlatBinaries Condition="'$(GetAllXPlatBinaries)' == '' and '$(OfficialBuild)' != ''">true</GetAllXPlatBinaries>
   </PropertyGroup>
 
   <!-- Build in all phases -->
   <ItemGroup>
     <ProjectFile Include="src\dirs.proj" Condition="'$(BuildSysBuildOnlyForARM64)' == 'true'" />
+    <ProjectFile Include="xplat\GetAllXPlatBinaries.proj" Condition="'$(GetAllXPlatBinaries)' == 'true' and '$(FeatureCoreclr)' == 'true' and '$(TargetArch)' == 'amd64'" />
   </ItemGroup>
 
   <!--Import the targets-->
