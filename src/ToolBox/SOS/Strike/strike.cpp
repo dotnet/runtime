@@ -14019,4 +14019,4 @@ Help(PDEBUG_CLIENT Client, PCSTR Args)
     return S_OK;
 }
 
-#endif // !FEATURE_PAL
+#endif // FEATURE_PAL
