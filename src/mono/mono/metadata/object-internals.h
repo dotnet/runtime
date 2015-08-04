@@ -358,7 +358,8 @@ typedef struct {
 struct _MonoAsyncCall {
 	MonoObject object;
 	MonoMethodMessage *msg;
-	MonoDelegate *callback;
+	MonoMethod *cb_method;
+	MonoDelegate *cb_target;
 	MonoObject *state;
 	MonoObject *res;
 	MonoArray *out_args;
@@ -633,6 +634,9 @@ MONO_COLD void mono_set_pending_exception (MonoException *exc);
 MonoAsyncResult *
 mono_async_result_new (MonoDomain *domain, HANDLE handle, MonoObject *state, gpointer data);
 
+MonoObject *
+ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_Invoke (MonoAsyncResult *this);
+
 MonoWaitHandle *
 mono_wait_handle_new	    (MonoDomain *domain, HANDLE handle);
 
@@ -644,8 +648,8 @@ mono_message_init	    (MonoDomain *domain, MonoMethodMessage *this_obj,
 			     MonoReflectionMethod *method, MonoArray *out_args);
 
 MonoObject *
-ves_icall_System_Runtime_Remoting_Messaging_MonoMethodMessage_Invoke (MonoMethodMessage *this,
-		MonoObject *target, MonoArray **out_args);
+mono_message_invoke	    (MonoObject *target, MonoMethodMessage *msg, 
+			     MonoObject **exc, MonoArray **out_args);
 
 MonoMethodMessage *
 mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *invoke, 

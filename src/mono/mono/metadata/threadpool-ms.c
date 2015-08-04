@@ -1260,17 +1260,16 @@ mono_threadpool_ms_begin_invoke (MonoDomain *domain, MonoObject *target, MonoMet
 
 	mono_lazy_initialize (&status, initialize);
 
-	if (params)
-		message = mono_method_call_message_new (method, params, mono_get_delegate_invoke (method->klass), &async_callback, &state);
-	else
-		message = mono_method_call_message_new (method, params, mono_get_delegate_invoke (method->klass), NULL, NULL);
+	message = mono_method_call_message_new (method, params, mono_get_delegate_invoke (method->klass), (params != NULL) ? (&async_callback) : NULL, (params != NULL) ? (&state) : NULL);
 
 	async_call = (MonoAsyncCall*) mono_object_new (domain, async_call_klass);
 	MONO_OBJECT_SETREF (async_call, msg, message);
 	MONO_OBJECT_SETREF (async_call, state, state);
 
-	if (async_callback)
-		MONO_OBJECT_SETREF (async_call, callback, async_callback);
+	if (async_callback) {
+		MONO_OBJECT_SETREF (async_call, cb_method, mono_get_delegate_invoke (((MonoObject*) async_callback)->vtable->klass));
+		MONO_OBJECT_SETREF (async_call, cb_target, async_callback);
+	}
 
 	async_result = mono_async_result_new (domain, NULL, async_call->state, NULL);
 	MONO_OBJECT_SETREF (async_result, async_delegate, target);
