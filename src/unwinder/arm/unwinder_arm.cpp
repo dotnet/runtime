@@ -22,7 +22,7 @@
 
 #define UPDATE_CONTEXT_POINTERS(Params, RegisterNumber, Address)                \
 do {                                                                            \
-    PKNONVOLATILE_CONTEXT_POINTERS ContextPointers = (Params)->ContextPointers; \
+    PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers = (Params)->ContextPointers; \
     if (ARGUMENT_PRESENT(ContextPointers)) {                                    \
         if (RegisterNumber >=  4 && RegisterNumber <= 11) {                     \
             (&ContextPointers->R4)[RegisterNumber - 4] = (PULONG)Address;       \
@@ -34,7 +34,7 @@ do {                                                                            
 
 #define UPDATE_FP_CONTEXT_POINTERS(Params, RegisterNumber, Address)             \
 do {                                                                            \
-    PKNONVOLATILE_CONTEXT_POINTERS ContextPointers = (Params)->ContextPointers; \
+    PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers = (Params)->ContextPointers; \
     if (ARGUMENT_PRESENT(ContextPointers) &&                                    \
         (RegisterNumber >=  8) &&                                               \
         (RegisterNumber <= 15)) {                                               \
@@ -55,7 +55,7 @@ do {                                                                            
 
 typedef struct _ARM_UNWIND_PARAMS
 {
-    PKNONVOLATILE_CONTEXT_POINTERS ContextPointers;
+    PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers;
 } ARM_UNWIND_PARAMS, *PARM_UNWIND_PARAMS;
 
 //
@@ -1502,7 +1502,7 @@ PEXCEPTION_ROUTINE RtlVirtualUnwind(
     __in OUT PCONTEXT ContextRecord,
     __out PVOID *HandlerData,
     __out PULONG EstablisherFrame,
-    __inout_opt PKNONVOLATILE_CONTEXT_POINTERS ContextPointers
+    __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
     )
 {
     PEXCEPTION_ROUTINE handlerRoutine;
