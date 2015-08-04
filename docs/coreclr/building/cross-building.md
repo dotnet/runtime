@@ -29,14 +29,14 @@ and if you wanted to generate the rootfs elsewhere:
 
 Cross compiling CoreCLR
 -----------------------
-Once the rootfs has been generated it will be possible to cross compile CoreCLR. If `ROOTFS_DIR` was set when generating the rootfs, then it must also be set when running `build.sh`.
+Once the rootfs has been generated it will be possible to cross compile CoreCLR. To cross compile CoreCLR the binutils for the target are required, for ARM this is `binutils-arm-linux-gnueabihf` and for ARM64 this is `binutils-aarch64-linux-gnu`. If `ROOTFS_DIR` was set when generating the rootfs, then it must also be set when running `build.sh`.
 
 So, without `ROOTFS_DIR`:
 
-    ./build.sh arm debug verbose clean cross
+    ben@ubuntu ~/git/coreclr/ $ ./build.sh arm debug verbose clean cross
 
 And with:
 
-    ROOTFS_DIR=/home/ben/coreclr-cross/arm ./build.sh arm debug verbose clean cross
+    ben@ubuntu ~/git/coreclr/ $ ROOTFS_DIR=/home/ben/coreclr-cross/arm ./build.sh arm debug verbose clean cross
 
 As usual the resulting binaries will be found in `bin/Product/BuildOS.BuildArch.BuildType/`
