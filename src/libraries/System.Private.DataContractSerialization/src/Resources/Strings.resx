@@ -597,6 +597,9 @@
   <data name="XmlArrayTooSmallOutput" xml:space="preserve">
     <value>Array too small.  Must be able to hold at least {0}.</value>
   </data>
+  <data name="XmlAsyncIsRunningException" xml:space="preserve">
+    <value>An asynchronous operation is already in progress.</value>
+  </data>
   <data name="XmlInvalidBase64Length" xml:space="preserve">
     <value>Base64 sequence length ({0}) not valid. Must be a multiple of 4.</value>
   </data>

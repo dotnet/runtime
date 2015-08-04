@@ -57,7 +57,8 @@ namespace System.Xml
 #if NET_NATIVE || MERGE_DCJS
             XmlUTF8TextWriter writer = new XmlUTF8TextWriter();
             writer.SetOutput(stream, encoding, ownsStream);
-            return writer;
+            var asyncWriter = new XmlDictionaryAsyncCheckWriter(writer);
+            return asyncWriter;
 #else
             XmlWriterSettings settings = new XmlWriterSettings();
             if (s_UTF8Encoding.WebName == encoding.WebName)
