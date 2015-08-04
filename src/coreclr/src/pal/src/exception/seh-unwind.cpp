@@ -203,7 +203,7 @@ static DWORD64 GetPc(CONTEXT *context)
 {
 #if defined(_AMD64_)
     return context->Rip;
-#elif defined(_ARM64_)
+#elif defined(_ARM64_) || defined(_ARM_)
     return context->Pc;
 #else
 #error don't know how to get the program counter for this architecture
@@ -214,7 +214,7 @@ static void SetPc(CONTEXT *context, DWORD64 pc)
 {
 #if defined(_AMD64_)
     context->Rip = pc;
-#elif defined(_ARM64_)
+#elif defined(_ARM64_) || defined(_ARM_)
     context->Pc = pc;
 #else
 #error don't know how to set the program counter for this architecture
