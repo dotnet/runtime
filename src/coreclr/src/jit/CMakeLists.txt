@@ -7,9 +7,9 @@ include_directories("../inc")
 # add_definitions(-DALT_JIT)
 
 if (WIN32) 
-if (IS_64BIT_BUILD EQUAL 1)
+if (CLR_CMAKE_PLATFORM_ARCH_AMD64)
   add_definitions(-DFEATURE_SIMD -DFEATURE_AVX_SUPPORT) 
-endif (IS_64BIT_BUILD EQUAL 1)
+endif (CLR_CMAKE_PLATFORM_ARCH_AMD64)
 endif (WIN32)
 
 set( JIT_SOURCES
@@ -79,6 +79,13 @@ elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
     codegenarm.cpp
     unwindarm.cpp
   )
+elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
+  set( ARCH_SOURCES
+    emitxarch.cpp
+    targetx86.cpp
+    lowerxarch.cpp
+    codegenxarch.cpp
+  )
 elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
   set( ARCH_SOURCES
     codegenarm64.cpp
@@ -89,7 +96,7 @@ elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
     unwindarm64.cpp
   )
 else()
-  message(FATAL_ERROR "Only ARM, ARM64 and AMD64 is supported")
+  clr_unknown_arch()
 endif()
 
 set( SOURCES

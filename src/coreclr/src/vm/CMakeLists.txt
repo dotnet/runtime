@@ -10,6 +10,11 @@ if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
     add_definitions(-DDBG_TARGET_64BIT=1)
     add_definitions(-DDBG_TARGET_AMD64=1)
     add_definitions(-DDBG_TARGET_WIN64=1)
+elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
+    add_definitions(-D_TARGET_X86_=1)
+    add_definitions(-DDBG_TARGET_32BIT=1)
+    add_definitions(-DDBG_TARGET_X86=1)
+    add_definitions(-DDBG_TARGET_WIN32=1)
 elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
     add_definitions(-D_TARGET_ARM_=1)
     add_definitions(-DDBG_TARGET_32BIT=1)
@@ -21,7 +26,7 @@ elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
     add_definitions(-DDBG_TARGET_ARM64=1)
     add_definitions(-DDBG_TARGET_WIN64=1)
 else()
-    message(FATAL_ERROR "Only ARM, ARM64 and AMD64 is supported")
+    clr_unknown_arch()
 endif()
 
 include_directories(${ARCH_SOURCES_DIR})
@@ -312,29 +317,38 @@ list(APPEND VM_SOURCES_DAC
     clrprivtypecachewinrt.cpp
 )
 
-# AMD64 specific asm sources
-set(VM_SOURCES_WKS_ARCH_ASM
-    ${ARCH_SOURCES_DIR}/AsmHelpers.asm
-    ${ARCH_SOURCES_DIR}/CallDescrWorkerAMD64.asm
-    ${ARCH_SOURCES_DIR}/ComCallPreStub.asm
-    ${ARCH_SOURCES_DIR}/CrtHelpers.asm
-    ${ARCH_SOURCES_DIR}/GenericComCallStubs.asm
-    ${ARCH_SOURCES_DIR}/GenericComPlusCallStubs.asm
-    ${ARCH_SOURCES_DIR}/getstate.asm
-    ${ARCH_SOURCES_DIR}/InstantiatingStub.asm
-    ${ARCH_SOURCES_DIR}/JitHelpers_Fast.asm
-    ${ARCH_SOURCES_DIR}/JitHelpers_FastWriteBarriers.asm
-    ${ARCH_SOURCES_DIR}/JitHelpers_InlineGetAppDomain.asm
-    ${ARCH_SOURCES_DIR}/JitHelpers_InlineGetThread.asm
-    ${ARCH_SOURCES_DIR}/JitHelpers_Slow.asm
-    ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
-    ${ARCH_SOURCES_DIR}/RedirectedHandledJITCase.asm
-    ${ARCH_SOURCES_DIR}/ThePreStubAMD64.asm
-    ${ARCH_SOURCES_DIR}/ExternalMethodFixupThunk.asm
-    ${ARCH_SOURCES_DIR}/TlsGetters.asm # Condition="'$(FeatureImplicitTls)' != 'true'
-    ${ARCH_SOURCES_DIR}/UMThunkStub.asm
-    ${ARCH_SOURCES_DIR}/VirtualCallStubAMD64.asm
-)
+if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
+    set(VM_SOURCES_WKS_ARCH_ASM
+        ${ARCH_SOURCES_DIR}/AsmHelpers.asm
+        ${ARCH_SOURCES_DIR}/CallDescrWorkerAMD64.asm
+        ${ARCH_SOURCES_DIR}/ComCallPreStub.asm
+        ${ARCH_SOURCES_DIR}/CrtHelpers.asm
+        ${ARCH_SOURCES_DIR}/GenericComCallStubs.asm
+        ${ARCH_SOURCES_DIR}/GenericComPlusCallStubs.asm
+        ${ARCH_SOURCES_DIR}/getstate.asm
+        ${ARCH_SOURCES_DIR}/InstantiatingStub.asm
+        ${ARCH_SOURCES_DIR}/JitHelpers_Fast.asm
+        ${ARCH_SOURCES_DIR}/JitHelpers_FastWriteBarriers.asm
+        ${ARCH_SOURCES_DIR}/JitHelpers_InlineGetAppDomain.asm
+        ${ARCH_SOURCES_DIR}/JitHelpers_InlineGetThread.asm
+        ${ARCH_SOURCES_DIR}/JitHelpers_Slow.asm
+        ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
+        ${ARCH_SOURCES_DIR}/RedirectedHandledJITCase.asm
+        ${ARCH_SOURCES_DIR}/ThePreStubAMD64.asm
+        ${ARCH_SOURCES_DIR}/ExternalMethodFixupThunk.asm
+        ${ARCH_SOURCES_DIR}/TlsGetters.asm # Condition="'$(FeatureImplicitTls)' != 'true'
+        ${ARCH_SOURCES_DIR}/UMThunkStub.asm
+        ${ARCH_SOURCES_DIR}/VirtualCallStubAMD64.asm
+    )
+elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
+    set(VM_SOURCES_WKS_ARCH_ASM
+        ${ARCH_SOURCES_DIR}/RedirectedHandledJITCase.asm
+        ${ARCH_SOURCES_DIR}/asmhelpers.asm
+        ${ARCH_SOURCES_DIR}/fptext.asm
+        ${ARCH_SOURCES_DIR}/gmsasm.asm
+        ${ARCH_SOURCES_DIR}/jithelp.asm
+    )
+endif()
 
 else()
 
@@ -385,6 +399,20 @@ if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
         ${ARCH_SOURCES_DIR}/jitinterfaceamd64.cpp
         ${ARCH_SOURCES_DIR}/profiler.cpp
         jitinterfacegen.cpp
+    )
+elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
+    set(VM_SOURCES_DAC_AND_WKS_ARCH
+        exinfo.cpp
+        ${ARCH_SOURCES_DIR}/cgenx86.cpp
+        ${ARCH_SOURCES_DIR}/excepx86.cpp
+        ${ARCH_SOURCES_DIR}/gmsx86.cpp
+        ${ARCH_SOURCES_DIR}/stublinkerx86.cpp
+    )
+    
+    set(VM_SOURCES_WKS_ARCH
+        ${ARCH_SOURCES_DIR}/jithelp.asm
+        ${ARCH_SOURCES_DIR}/jitinterfacex86.cpp
+        ${ARCH_SOURCES_DIR}/profiler.cpp
     )
 elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
     set(VM_SOURCES_DAC_AND_WKS_ARCH
