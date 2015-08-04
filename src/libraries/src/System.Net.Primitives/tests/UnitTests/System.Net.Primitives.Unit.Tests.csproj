@@ -28,8 +28,8 @@
     <Compile Include="..\..\src\System\Net\CookieContainer.cs" >
       <Link>ProductionCode\System\Net\CookieContainer.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\cookiecollection.cs" >
-      <Link>ProductionCode\System\Net\cookiecollection.cs</Link>
+    <Compile Include="..\..\src\System\Net\CookieCollection.cs" >
+      <Link>ProductionCode\System\Net\CookieCollection.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\CookieException.cs" >
       <Link>ProductionCode\System\Net\CookieException.cs</Link>
