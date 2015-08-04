@@ -22,23 +22,25 @@ usage()
     echo "usage: run-test [options]"
     echo
     echo "Input sources:"
-    echo "    --coreclr-bins <location>     Location of root of the binaries directory"
-    echo "                                  containing the linux/mac coreclr build"
-    echo "                                  default: <repo_root>/bin/Product/<OS>.x64.<Configuration>"
-    echo "    --mscorlib-bins <location>    Location of the root binaries directory containing"
-    echo "                                  the linux/mac mscorlib.dll"
-    echo "                                  default: <repo_root>/bin/Product/<OS>.x64.<Configuration>"
-    echo "    --corefx-tests <location>     Location of the root binaries location containing"
-    echo "                                  the windows tests"
-    echo "                                  default: <repo_root>/bin/tests/Windows_NT.AnyCPU.<Configuration>"
-    echo "    --corefx-bins <location>      Location of the linux/mac corefx binaries"
-    echo "                                  default: <repo_root>/bin/<OS>.AnyCPU.<Configuration>"
+    echo "    --coreclr-bins <location>         Location of root of the binaries directory"
+    echo "                                      containing the linux/mac coreclr build"
+    echo "                                      default: <repo_root>/bin/Product/<OS>.x64.<Configuration>"
+    echo "    --mscorlib-bins <location>        Location of the root binaries directory containing"
+    echo "                                      the linux/mac mscorlib.dll"
+    echo "                                      default: <repo_root>/bin/Product/<OS>.x64.<Configuration>"
+    echo "    --corefx-tests <location>         Location of the root binaries location containing"
+    echo "                                      the windows tests"
+    echo "                                      default: <repo_root>/bin/tests/Windows_NT.AnyCPU.<Configuration>"
+    echo "    --corefx-bins <location>          Location of the linux/mac corefx binaries"
+    echo "                                      default: <repo_root>/bin/<OS>.AnyCPU.<Configuration>"
+    echo "    --corefx-native-bins <location>   Location of the linux/mac native corefx binaries"
+    echo "                                      default: <repo_root>/bin/<OS>.x64.<Configuration>"
     echo
     echo "Flavor/OS options:"
-    echo "    --configuration <config>      Configuration to run (Debug/Release)"
-    echo "                                  default: Debug"
-    echo "    --os <os>                     OS to run (OSX/Linux)"
-    echo "                                  default: detect current OS"
+    echo "    --configuration <config>          Configuration to run (Debug/Release)"
+    echo "                                      default: Debug"
+    echo "    --os <os>                         OS to run (OSX/Linux)"
+    echo "                                      default: detect current OS"
     echo
     echo "Execution options:"
     echo "    --restrict-proj <regex>       Run test projects that match regex"
@@ -133,10 +135,12 @@ create_test_overlay()
   find $CoreFxBins -name '*.dll' -and -not -name "*Test*" -exec cp '{}' "$OverlayDir" ";"
 
   # Then the native CoreFX binaries
-  #
-  # TODO: Currently, CI does not build the native CoreFX components so build them here
-  #       in the test phase for now.
-  ( $ProjectRoot/src/Native/build.sh && cp $ProjectRoot/bin/$OS.x64.$Configuration/Native/* $OverlayDir ) || exit 1
+  if [ ! -d $CoreFxNativeBins ]
+  then
+	echo "Corefx native binaries should be built (use build.sh in root)"
+	exit 1
+  fi
+  cp $CoreFxNativeBins/* $OverlayDir
 }
 
 copy_test_overlay()
@@ -220,6 +224,9 @@ do
         --corefx-bins)
         CoreFxBins=$2
         ;;
+        --corefx-native-bins)
+        CoreFxNativeBins=$2
+        ;;
         --restrict-proj)
         TestSelection=$2
         ;;
@@ -255,6 +262,11 @@ fi
 if [ "$CoreFxBins" == "" ]
 then
     CoreFxBins="$ProjectRoot/bin/$OS.AnyCPU.$Configuration"
+fi
+
+if [ "$CoreFxNativeBins" == "" ]
+then
+    CoreFxNativeBins="$ProjectRoot/bin/$OS.x64.$Configuration/Native"
 fi
 
 # Check parameters up front for valid values:
