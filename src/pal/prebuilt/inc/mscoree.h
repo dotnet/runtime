@@ -235,7 +235,7 @@ struct IActivationFactory;
 
 #define	CLR_MINOR_VERSION	( 0 )
 
-#define	CLR_BUILD_VERSION	( 22828 )
+#define	CLR_BUILD_VERSION	( 23203 )
 
 #define	CLR_ASSEMBLY_MAJOR_VERSION	( 4 )
 
@@ -264,7 +264,7 @@ DEPRECATED_CLR_STDAPI GetCORVersion(_Out_writes_to_(cchBuffer, *dwLength) LPWSTR
 DEPRECATED_CLR_STDAPI GetFileVersion(LPCWSTR szFilename, _Out_writes_to_opt_(cchBuffer, *dwLength) LPWSTR szBuffer, DWORD cchBuffer, DWORD* dwLength);
 DEPRECATED_CLR_STDAPI GetCORRequiredVersion(_Out_writes_to_(cchBuffer, *dwLength) LPWSTR pbuffer, DWORD cchBuffer, DWORD* dwLength);
 DEPRECATED_CLR_STDAPI GetRequestedRuntimeInfo(LPCWSTR pExe, LPCWSTR pwszVersion, LPCWSTR pConfigurationFile, DWORD startupFlags, DWORD runtimeInfoFlags, _Out_writes_opt_(dwDirectory) LPWSTR pDirectory, DWORD dwDirectory, _Out_opt_ DWORD *dwDirectoryLength, _Out_writes_opt_(cchBuffer) LPWSTR pVersion, DWORD cchBuffer, _Out_opt_ DWORD* dwlength);
-DEPRECATED_CLR_STDAPI GetRequestedRuntimeVersion(_In_ LPWSTR pExe, _Out_writes_to_(cchBuffer, *pdwLength) LPWSTR pVersion, DWORD cchBuffer, _Out_ DWORD* dwLength);
+DEPRECATED_CLR_STDAPI GetRequestedRuntimeVersion(_In_ LPWSTR pExe, _Out_writes_to_(cchBuffer, *dwLength) LPWSTR pVersion, DWORD cchBuffer, _Out_ DWORD* dwLength);
 DEPRECATED_CLR_STDAPI CorBindToRuntimeHost(LPCWSTR pwszVersion, LPCWSTR pwszBuildFlavor, LPCWSTR pwszHostConfigFile, VOID* pReserved, DWORD startupFlags, REFCLSID rclsid, REFIID riid, LPVOID FAR *ppv);
 DEPRECATED_CLR_STDAPI CorBindToRuntimeEx(LPCWSTR pwszVersion, LPCWSTR pwszBuildFlavor, DWORD startupFlags, REFCLSID rclsid, REFIID riid, LPVOID FAR *ppv);
 DEPRECATED_CLR_STDAPI CorBindToRuntimeByCfg(IStream* pCfgStream, DWORD reserved, DWORD startupFlags, REFCLSID rclsid,REFIID riid, LPVOID FAR* ppv);
@@ -2232,6 +2232,7 @@ extern RPC_IF_HANDLE __MIDL_itf_mscoree_0000_0013_v0_0_s_ifspec;
 /* library mscoree */
 /* [helpstring][version][uuid] */ 
 
+#define CCW_PTR int *
 
 EXTERN_C const IID LIBID_mscoree;
 
@@ -2676,7 +2677,7 @@ EXTERN_C const IID IID_IManagedObject;
         virtual HRESULT STDMETHODCALLTYPE GetObjectIdentity( 
             /* [out] */ BSTR *pBSTRGUID,
             /* [out] */ int *AppDomainID,
-            /* [out] */ __int64 *pCCW) = 0;
+            /* [out] */ int *pCCW) = 0;
         
     };
     
@@ -2707,7 +2708,7 @@ EXTERN_C const IID IID_IManagedObject;
             IManagedObject * This,
             /* [out] */ BSTR *pBSTRGUID,
             /* [out] */ int *AppDomainID,
-            /* [out] */ __int64 *pCCW);
+            /* [out] */ int *pCCW);
         
         END_INTERFACE
     } IManagedObjectVtbl;

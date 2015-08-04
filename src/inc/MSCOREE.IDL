@@ -2255,8 +2255,10 @@ library mscoree
 
 #ifdef _WIN64
     #define CCW_PTR __int64 *
+    cpp_quote("#define CCW_PTR __int64 *")
 #else // WIN64
     #define CCW_PTR int *
+    cpp_quote("#define CCW_PTR int *")
 #endif // WIN64
 
 #ifdef FEATURE_COMINTEROP
