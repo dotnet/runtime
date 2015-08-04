@@ -15,6 +15,7 @@ namespace System.Reflection.Compatibility.UnitTests
     {
         // Positive Test 1: add Event handler to the not static event
         [Fact]
+        [ActiveIssue(2619, PlatformID.Linux)]
         public void PosTest1()
         {
             TestClass1 tc1 = new TestClass1();
@@ -27,6 +28,7 @@ namespace System.Reflection.Compatibility.UnitTests
 
         // Positive Test 2:add to Event handler to the static event and the target is null
         [Fact]
+        [ActiveIssue(2619, PlatformID.Linux)]
         public void PosTest2()
         {
             TestClass1 tc1 = new TestClass1();
@@ -39,6 +41,7 @@ namespace System.Reflection.Compatibility.UnitTests
 
         // Positive Test 3:add to Event handler to the static event and the target is not null
         [Fact]
+        [ActiveIssue(2619, PlatformID.Linux)]
         public void PosTest3()
         {
             TestClass1 tc1 = new TestClass1();
