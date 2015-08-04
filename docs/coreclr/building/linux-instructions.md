@@ -110,6 +110,13 @@ Download Dependencies
 
 The rest of the assemblies you need to run are presently just facades that point to mscorlib.  We can pull these dependencies down via NuGet (which currently requires Mono).
 
+Create a folder for the packages:
+
+```
+ellismg@linux:~$ mkdir ~/coreclr-demo/packages
+ellismg@linux:~$ cd ~/coreclr-demo/packages
+```
+
 Install Mono
 ------------
 
@@ -135,12 +142,7 @@ ellismg@linux:~/coreclr-demo/packages$ curl -L -O https://nuget.org/nuget.exe
 Download NuGet Packages
 -----------------------
 
-With Mono and NuGet in hand, you can use NuGet to get the required dependencies.  Place all the NuGet packages together:
-
-```
-ellismg@linux:~$ mkdir ~/coreclr-demo/packages
-ellismg@linux:~$ cd ~/coreclr-demo/packages
-```
+With Mono and NuGet in hand, you can use NuGet to get the required dependencies. 
 
 Make a `packages.config` file with the following text. These are the required dependencies of this particular app. Different apps will have different dependencies and require a different `packages.config` - see [Issue #480](https://github.com/dotnet/coreclr/issues/480).
 
