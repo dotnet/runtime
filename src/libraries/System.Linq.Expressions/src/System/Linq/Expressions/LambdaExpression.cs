@@ -120,23 +120,6 @@ namespace System.Linq.Expressions
 #endif 
         }
 
-        /// <summary>
-        /// Dispatches to the specific visit method for this node type.
-        /// </summary>
-        protected internal override Expression Accept(ExpressionVisitor visitor)
-        {
-            return visitor.VisitLambda(this);
-        }
-
-        public virtual LambdaExpression Update(Expression body, IEnumerable<ParameterExpression> parameters)
-        {
-            if (body == Body && parameters == Parameters)
-            {
-                return this;
-            }
-            return Expression.Lambda(Type, body, Name, TailCall, parameters);
-        }
-
 #if FEATURE_CORECLR
         internal abstract LambdaExpression Accept(Compiler.StackSpiller spiller);
 #endif 
@@ -178,7 +161,7 @@ namespace System.Linq.Expressions
         /// <param name="body">The <see cref="LambdaExpression.Body">Body</see> property of the result.</param>
         /// <param name="parameters">The <see cref="LambdaExpression.Parameters">Parameters</see> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
-        public override LambdaExpression Update(Expression body, IEnumerable<ParameterExpression> parameters)
+        public Expression<TDelegate> Update(Expression body, IEnumerable<ParameterExpression> parameters)
         {
             if (body == Body && parameters == Parameters)
             {
