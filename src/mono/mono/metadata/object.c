@@ -5760,7 +5760,7 @@ mono_runtime_capture_context (MonoDomain *domain)
  *
  */
 MonoAsyncResult *
-mono_async_result_new (MonoDomain *domain, HANDLE handle, MonoObject *state, gpointer data)
+mono_async_result_new (MonoDomain *domain, HANDLE handle, MonoObject *state, gpointer data, MonoObject *object_data)
 {
 	MonoAsyncResult *res = (MonoAsyncResult *)mono_object_new (domain, mono_defaults.asyncresult_class);
 	MonoObject *context = mono_runtime_capture_context (domain);
@@ -5771,6 +5771,7 @@ mono_async_result_new (MonoDomain *domain, HANDLE handle, MonoObject *state, gpo
 	}
 
 	res->data = data;
+	MONO_OBJECT_SETREF (res, object_data, object_data);
 	MONO_OBJECT_SETREF (res, async_state, state);
 	if (handle != NULL)
 		MONO_OBJECT_SETREF (res, handle, (MonoObject *) mono_wait_handle_new (domain, handle));
@@ -5784,21 +5785,23 @@ mono_async_result_new (MonoDomain *domain, HANDLE handle, MonoObject *state, gpo
 MonoObject *
 ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_Invoke (MonoAsyncResult *this)
 {
+	MonoAsyncCall *ac;
 	MonoObject *res;
 
 	g_assert (this);
 	g_assert (this->async_delegate);
 
-	if (!this->async_call) {
+	ac = (MonoAsyncCall*) this->object_data;
+	if (!ac) {
 		res = mono_runtime_delegate_invoke (this->async_delegate, (void**) &this->async_state, NULL);
 	} else {
 		gpointer wait_event = NULL;
 
-		g_assert (this->async_call->msg);
-		this->async_call->msg->exc = NULL;
+		g_assert (ac->msg);
+		ac->msg->exc = NULL;
 
-		res = mono_message_invoke (this->async_delegate, this->async_call->msg, &this->async_call->msg->exc, &this->async_call->out_args);
-		MONO_OBJECT_SETREF (this->async_call, res, res);
+		res = mono_message_invoke (this->async_delegate, ac->msg, &ac->msg->exc, &ac->out_args);
+		MONO_OBJECT_SETREF (ac, res, res);
 
 		mono_monitor_enter ((MonoObject*) this);
 
@@ -5811,8 +5814,8 @@ ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_Invoke (MonoAsyncResult 
 
 		mono_monitor_exit ((MonoObject*) this);
 
-		if (this->async_call->cb_method)
-			mono_runtime_invoke (this->async_call->cb_method, this->async_call->cb_target, (gpointer*) &this, NULL);
+		if (ac->cb_method)
+			mono_runtime_invoke (ac->cb_method, ac->cb_target, (gpointer*) &this, NULL);
 	}
 
 	return res;

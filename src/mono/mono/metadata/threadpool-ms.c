@@ -1271,9 +1271,8 @@ mono_threadpool_ms_begin_invoke (MonoDomain *domain, MonoObject *target, MonoMet
 		MONO_OBJECT_SETREF (async_call, cb_target, async_callback);
 	}
 
-	async_result = mono_async_result_new (domain, NULL, async_call->state, NULL);
+	async_result = mono_async_result_new (domain, NULL, async_call->state, NULL, (MonoObject*) async_call);
 	MONO_OBJECT_SETREF (async_result, async_delegate, target);
-	MONO_OBJECT_SETREF (async_result, async_call, async_call);
 
 #ifndef DISABLE_SOCKETS
 	if (mono_threadpool_ms_is_io (target, state))
@@ -1286,9 +1285,9 @@ mono_threadpool_ms_begin_invoke (MonoDomain *domain, MonoObject *target, MonoMet
 }
 
 MonoObject *
-mono_threadpool_ms_end_invoke (MonoAsyncResult *async_result, MonoArray **out_args, MonoObject **exc)
+mono_threadpool_ms_end_invoke (MonoAsyncResult *ares, MonoArray **out_args, MonoObject **exc)
 {
-	MonoAsyncCall *async_call;
+	MonoAsyncCall *ac;
 
 	g_assert (exc);
 	g_assert (out_args);
@@ -1297,40 +1296,40 @@ mono_threadpool_ms_end_invoke (MonoAsyncResult *async_result, MonoArray **out_ar
 	*out_args = NULL;
 
 	/* check if already finished */
-	mono_monitor_enter ((MonoObject*) async_result);
+	mono_monitor_enter ((MonoObject*) ares);
 
-	if (async_result->endinvoke_called) {
+	if (ares->endinvoke_called) {
 		*exc = (MonoObject*) mono_get_exception_invalid_operation (NULL);
-		mono_monitor_exit ((MonoObject*) async_result);
+		mono_monitor_exit ((MonoObject*) ares);
 		return NULL;
 	}
 
-	MONO_OBJECT_SETREF (async_result, endinvoke_called, 1);
+	MONO_OBJECT_SETREF (ares, endinvoke_called, 1);
 
 	/* wait until we are really finished */
-	if (async_result->completed) {
-		mono_monitor_exit ((MonoObject *) async_result);
+	if (ares->completed) {
+		mono_monitor_exit ((MonoObject *) ares);
 	} else {
 		gpointer wait_event;
-		if (async_result->handle) {
-			wait_event = mono_wait_handle_get_handle ((MonoWaitHandle*) async_result->handle);
+		if (ares->handle) {
+			wait_event = mono_wait_handle_get_handle ((MonoWaitHandle*) ares->handle);
 		} else {
 			wait_event = CreateEvent (NULL, TRUE, FALSE, NULL);
 			g_assert(wait_event);
-			MONO_OBJECT_SETREF (async_result, handle, (MonoObject*) mono_wait_handle_new (mono_object_domain (async_result), wait_event));
+			MONO_OBJECT_SETREF (ares, handle, (MonoObject*) mono_wait_handle_new (mono_object_domain (ares), wait_event));
 		}
-		mono_monitor_exit ((MonoObject*) async_result);
+		mono_monitor_exit ((MonoObject*) ares);
 		MONO_PREPARE_BLOCKING;
 		WaitForSingleObjectEx (wait_event, INFINITE, TRUE);
 		MONO_FINISH_BLOCKING;
 	}
 
-	async_call = async_result->async_call;
-	g_assert (async_call);
-	*exc = async_call->msg->exc; /* FIXME: GC add write barrier */
-	*out_args = async_call->out_args;
+	ac = (MonoAsyncCall*) ares->object_data;
+	g_assert (ac);
 
-	return async_call->res;
+	*exc = ac->msg->exc; /* FIXME: GC add write barrier */
+	*out_args = ac->out_args;
+	return ac->res;
 }
 
 gboolean
