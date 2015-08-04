@@ -544,6 +544,34 @@ namespace System.Diagnostics.ProcessTests
             Assert.True(Process.GetProcessesByName(currentProcess.ProcessName, currentProcess.MachineName).Count() > 0, "TestGetProcessesByName001 failed");
         }
 
+        public static IEnumerable<object[]> GetTestProcess()
+        {
+            Process currentProcess = Process.GetCurrentProcess();
+            yield return new object[] { currentProcess, Process.GetProcessById(currentProcess.Id, "127.0.0.1") };
+            yield return new object[] { currentProcess, Process.GetProcessesByName(currentProcess.ProcessName, "127.0.0.1").Where(p => p.Id == currentProcess.Id).Single() };
+        }
+
+        [Theory, PlatformSpecific(PlatformID.Windows)]
+        [MemberData("GetTestProcess")]
+        public void TestProcessOnRemoteMachineWindows(Process currentProcess, Process remoteProcess)
+        {
+            Assert.Equal(currentProcess.Id, remoteProcess.Id);
+            Assert.Equal(currentProcess.BasePriority, remoteProcess.BasePriority);
+            Assert.Equal(currentProcess.EnableRaisingEvents, remoteProcess.EnableRaisingEvents);
+            Assert.Equal("127.0.0.1", remoteProcess.MachineName);
+            // This property throws exception only on remote processes.
+            Assert.Throws<NotSupportedException>(() => remoteProcess.MainModule);
+        }
+
+        [Fact, PlatformSpecific(PlatformID.AnyUnix)]
+        public void TestProcessOnRemoteMachineUnix()
+        {
+            Process currentProcess = Process.GetCurrentProcess();
+
+            Assert.Throws<PlatformNotSupportedException>(() => Process.GetProcessesByName(currentProcess.ProcessName, "127.0.0.1"));
+            Assert.Throws<PlatformNotSupportedException>(() => Process.GetProcessById(currentProcess.Id, "127.0.0.1"));
+        }
+
         [Fact]
         public void TestStartInfo()
         {
