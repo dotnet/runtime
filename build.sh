@@ -2,12 +2,14 @@
 
 usage()
 {
-    echo "Usage: $0 [BuildArch] [BuildType] [clean] [verbose] [clangx.y]"
+    echo "Usage: $0 [BuildArch] [BuildType] [clean] [verbose] [cross] [clangx.y]"
     echo "BuildArch can be: x64, ARM"
     echo "BuildType can be: Debug, Release"
     echo "clean - optional argument to force a clean build."
     echo "verbose - optional argument to enable verbose build output."
     echo "clangx.y - optional argument to build using clang version x.y."
+    echo "cross - optional argument to signify cross compilation,"
+    echo "      - will use ROOTFS_DIR environment variable if set."
 
     exit 1
 }
@@ -59,7 +61,7 @@ build_coreclr()
     
     # Regenerate the CMake solution
     echo "Invoking cmake with arguments: \"$__ProjectRoot\" $__CMakeArgs"
-    "$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion $__ClangMinorVersion $__CMakeArgs
+    "$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__CMakeArgs
     
     # Check that the makefiles were created.
     
@@ -142,6 +144,7 @@ __UnprocessedBuildArgs=
 __MSBCleanBuildArgs=
 __CleanBuild=false
 __VerboseBuild=false
+__CrossBuild=false
 __ClangMajorVersion=3
 __ClangMinorVersion=5
 
@@ -177,6 +180,9 @@ for i in "$@"
         ;;
         verbose)
         __VerboseBuild=1
+        ;;
+        cross)
+        __CrossBuild=1
         ;;
         clang3.5)
         __ClangMajorVersion=3
@@ -215,6 +221,14 @@ fi
 # Configure environment if we are doing a verbose build
 if [ $__VerboseBuild == 1 ]; then
 	export VERBOSE=1
+fi
+
+# Configure environment if we are doing a cross compile.
+if [ $__CrossBuild == 1 ]; then
+    export CROSSCOMPILE=1
+    if ! [[ -n "$ROOTFS_DIR" ]]; then
+        export ROOTFS_DIR="$__ProjectRoot/cross/rootfs/$__BuildArch"
+    fi
 fi
 
 # Make the directories necessary for build if they don't exist
