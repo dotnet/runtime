@@ -33,14 +33,17 @@
           "ref/dotnet/System.Globalization.dll": {}
         }
       },
-      "System.IO/4.0.0": {
+      "System.IO/4.0.10": {
         "dependencies": {
-          "System.Runtime": "4.0.0",
+          "System.Runtime": "4.0.20",
           "System.Text.Encoding": "4.0.0",
           "System.Threading.Tasks": "4.0.0"
         },
         "compile": {
           "ref/dotnet/System.IO.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.IO.dll": {}
         }
       },
       "System.Private.Uri/4.0.0": {
@@ -249,19 +252,18 @@
         "ref/xamarinmac20/_._"
       ]
     },
-    "System.IO/4.0.0": {
-      "sha512": "MoCHQ0u5n0OMwUS8OX4Gl48qKiQziSW5cXvt82d+MmAcsLq9OL90+ihnu/aJ1h6OOYcBswrZAEuApfZha9w2lg==",
+    "System.IO/4.0.10": {
+      "serviceable": true,
+      "sha512": "kghf1CeYT+W2lw8a50/GxFz5HR9t6RkL4BvjxtTp1NxtEFWywnMA9W8FH/KYXiDNThcw9u/GOViDON4iJFGXIQ==",
       "files": [
-        "License.rtf",
-        "System.IO.4.0.0.nupkg",
-        "System.IO.4.0.0.nupkg.sha512",
+        "System.IO.4.0.10.nupkg",
+        "System.IO.4.0.10.nupkg.sha512",
         "System.IO.nuspec",
+        "lib/DNXCore50/System.IO.dll",
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
-        "lib/net45/_._",
-        "lib/win8/_._",
-        "lib/wp80/_._",
-        "lib/wpa81/_._",
+        "lib/net46/_._",
+        "lib/netcore50/System.IO.dll",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
         "ref/dotnet/System.IO.dll",
@@ -277,23 +279,10 @@
         "ref/dotnet/zh-hant/System.IO.xml",
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
-        "ref/net45/_._",
-        "ref/netcore50/System.IO.dll",
-        "ref/netcore50/System.IO.xml",
-        "ref/netcore50/de/System.IO.xml",
-        "ref/netcore50/es/System.IO.xml",
-        "ref/netcore50/fr/System.IO.xml",
-        "ref/netcore50/it/System.IO.xml",
-        "ref/netcore50/ja/System.IO.xml",
-        "ref/netcore50/ko/System.IO.xml",
-        "ref/netcore50/ru/System.IO.xml",
-        "ref/netcore50/zh-hans/System.IO.xml",
-        "ref/netcore50/zh-hant/System.IO.xml",
-        "ref/win8/_._",
-        "ref/wp80/_._",
-        "ref/wpa81/_._",
+        "ref/net46/_._",
         "ref/xamarinios10/_._",
-        "ref/xamarinmac20/_._"
+        "ref/xamarinmac20/_._",
+        "runtimes/win8-aot/lib/netcore50/System.IO.dll"
       ]
     },
     "System.Private.Uri/4.0.0": {
@@ -621,6 +610,7 @@
     "": [
       "System.Diagnostics.Contracts >= 4.0.0",
       "System.Diagnostics.Debug >= 4.0.10",
+      "System.IO >= 4.0.10",
       "System.Resources.ResourceManager >= 4.0.0",
       "System.Runtime >= 4.0.20",
       "System.Runtime.InteropServices >= 4.0.20"
