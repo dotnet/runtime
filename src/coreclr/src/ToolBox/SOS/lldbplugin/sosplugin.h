@@ -11,8 +11,18 @@
 
 typedef HRESULT (*CommandFunc)(PDEBUG_CLIENT client, const char *args);
 
+extern char *g_coreclrDirectory;
+extern ULONG g_currentThreadIndex;
+extern ULONG g_currentThreadSystemId;
+
 bool 
 sosCommandInitialize(lldb::SBDebugger debugger);
+
+bool
+setsostidCommandInitialize(lldb::SBDebugger debugger);
+
+bool
+setclrpathCommandInitialize(lldb::SBDebugger debugger);
 
 bool
 corerunCommandInitialize(lldb::SBDebugger debugger);
