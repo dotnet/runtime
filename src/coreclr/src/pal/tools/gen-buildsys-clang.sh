@@ -3,12 +3,13 @@
 # This file invokes cmake and generates the build system for gcc.
 #
 
-if [ $# -lt 3 -o $# -gt 4 ]
+if [ $# -lt 4 -o $# -gt 5 ]
 then
   echo "Usage..."
-  echo "gen-buildsys-clang.sh <path to top level CMakeLists.txt> <ClangMajorVersion> <ClangMinorVersion> [build flavor]"
+  echo "gen-buildsys-clang.sh <path to top level CMakeLists.txt> <ClangMajorVersion> <ClangMinorVersion> <Architecture> [build flavor]"
   echo "Specify the path to the top level CMake file - <ProjectK>/src/NDP"
   echo "Specify the clang version to use, split into major and minor version"
+  echo "Specify the target architecture." 
   echo "Optionally specify the build configuration (flavor.) Defaults to DEBUG." 
   exit 1
 fi
@@ -31,14 +32,16 @@ else
     exit 1
 fi
 
+build_arch="$4"
+
 # Possible build types are DEBUG, RELEASE, RELWITHDEBINFO, MINSIZEREL.
 # Default to DEBUG
-if [ -z "$4" ]
+if [ -z "$5" ]
 then
   echo "Defaulting to DEBUG build."
   buildtype="DEBUG"
 else
-  buildtype="$4"
+  buildtype="$5"
 fi
 
 OS=`uname`
@@ -101,6 +104,14 @@ if [[ -n "$LLDB_LIB_DIR" ]]; then
 fi
 if [[ -n "$LLDB_INCLUDE_DIR" ]]; then
     cmake_extra_defines="$cmake_extra_defines -DWITH_LLDB_INCLUDES=$LLDB_INCLUDE_DIR"
+fi
+if [[ -n "$CROSSCOMPILE" ]]; then
+    if ! [[ -n "$ROOTFS_DIR" ]]; then
+        echo "ROOTFS_DIR not set for crosscompile"
+        exit 1
+    fi
+    cmake_extra_defines="$cmake_extra_defines -C $1/cross/$build_arch/tryrun.cmake"
+    cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$1/cross/$build_arch/toolchain.cmake"
 fi
 
 cmake \
