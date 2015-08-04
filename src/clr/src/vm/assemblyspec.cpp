@@ -1859,7 +1859,7 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::GetAssembly
         // It is possible that the AssemblySpec corresponds to a TPA assembly, so try the lookup
         // against the TPABinder context.
         ICLRPrivBinder* pTPABinderContext = pSpecDomain->GetTPABinderContext();
-        if (!AreSameBinderInstance(pTPABinderContext, pBinderContextForLookup))
+        if ((pTPABinderContext != NULL) && !AreSameBinderInstance(pTPABinderContext, pBinderContextForLookup))
         {
             UINT_PTR tpaBinderID = 0;
             HRESULT hr = pTPABinderContext->GetBinderID(&tpaBinderID);
