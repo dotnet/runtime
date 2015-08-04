@@ -3,6 +3,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
+#include <assert.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -10,6 +11,7 @@
 
 #include "unicode/dcfmtsym.h" //decimal
 #include "unicode/dtfmtsym.h" //date
+#include "unicode/localpointer.h"
 #include "unicode/ulocdata.h"
 
 /*
@@ -46,9 +48,10 @@ Locale GetLocale(const UChar* localeName, bool canonize = false)
 Function:
 GopyCharToUChar
 
-Copies the given char to UChar with error checking
+Copies the given null terminated char* to UChar with error checking
+Replacement for u_charsToUChars
 */
-UErrorCode CopyCharToUChar(const char *str, UChar* value, int32_t valueLength)
+UErrorCode u_charsToUChars_safe(const char *str, UChar* value, int32_t valueLength)
 {
 	int len = strlen(str);
 	if (len >= valueLength)
@@ -65,22 +68,22 @@ getCanonicalLocaleName
 
 Obtains a canonical locale given the locale name
 */
-extern "C" int32_t GetLocaleName(const UChar* localeName, UChar* value, int32_t valueLength)
+extern "C" bool GetLocaleName(const UChar* localeName, UChar* value, int32_t valueLength)
 {
 	Locale locale = GetLocale(localeName, true);
 
 	if (locale.isBogus())
 	{
-		return U_ILLEGAL_ARGUMENT_ERROR;
+		return false;
 	}
 
 	if (strlen(locale.getISO3Language()) == 0)
 	{
 		// unknown language; language is required (script and country optional)
-		return U_ILLEGAL_ARGUMENT_ERROR;
+		return false;
 	}
 
-	UErrorCode status = CopyCharToUChar(locale.getName(), value, valueLength);
+	UErrorCode status = u_charsToUChars_safe(locale.getName(), value, valueLength);
 	if (U_SUCCESS(status))
 	{
 		// replace underscores with hyphens to interop with existing .NET code
@@ -93,7 +96,9 @@ extern "C" int32_t GetLocaleName(const UChar* localeName, UChar* value, int32_t 
 		}
 	}
 
-	return status;
+	assert(status != U_BUFFER_OVERFLOW_ERROR);
+
+	return U_SUCCESS(status);
 }
 
 /*
@@ -121,12 +126,12 @@ GetLocaleInfoInt
 
 Returns integer locale information
 */
-extern "C" int32_t GetLocaleInfoInt(const UChar* localeName, LocaleNumberData localeNumberData, int32_t* value)
+extern "C" bool GetLocaleInfoInt(const UChar* localeName, LocaleNumberData localeNumberData, int32_t* value)
 {
 	Locale locale = GetLocale(localeName);
 	if (locale.isBogus())
 	{
-		return U_ILLEGAL_ARGUMENT_ERROR;
+		return false;
 	}
 
 	UErrorCode status = U_ZERO_ERROR;
@@ -170,10 +175,13 @@ extern "C" int32_t GetLocaleInfoInt(const UChar* localeName, LocaleNumberData lo
 			break;
 		default:
 			status = U_UNSUPPORTED_ERROR;
+			assert(false);
 			break;
 	}
 
-	return status;
+	assert(status != U_BUFFER_OVERFLOW_ERROR);
+
+	return U_SUCCESS(status);
 }
 
 /*
@@ -185,20 +193,18 @@ Obtains the value of a DecimalFormatSymbols
 UErrorCode GetLocaleInfoDecimalFormatSymbol(const Locale &locale, DecimalFormatSymbols::ENumberFormatSymbol symbol, UChar* value, int32_t valueLength)
 {
 	UErrorCode status = U_ZERO_ERROR;
-	DecimalFormatSymbols *decimalsymbols = new DecimalFormatSymbols(locale, status);
+	LocalPointer<DecimalFormatSymbols> decimalsymbols(new DecimalFormatSymbols(locale, status));
 	if (decimalsymbols == NULL)
 	{
-		return U_MEMORY_ALLOCATION_ERROR;
+		status = U_MEMORY_ALLOCATION_ERROR;
 	}
 
 	if (U_FAILURE(status))
 	{
-		delete decimalsymbols;
 		return status;
 	}
 
 	UnicodeString s = decimalsymbols->getSymbol(symbol);
-	delete decimalsymbols;
 
 	s.extract(value, valueLength, status);
 	return status;
@@ -229,15 +235,14 @@ Obtains the value of a DateFormatSymbols Am or Pm string
 UErrorCode GetLocaleInfoAmPm(const Locale &locale, bool am, UChar* value, int32_t valueLength)
 {
 	UErrorCode status = U_ZERO_ERROR;
-	DateFormatSymbols *dateFormatSymbols = new DateFormatSymbols(locale, status);
+	LocalPointer<DateFormatSymbols> dateFormatSymbols(new DateFormatSymbols(locale, status));
 	if (dateFormatSymbols == NULL)
 	{
-		return U_MEMORY_ALLOCATION_ERROR;
+		status = U_MEMORY_ALLOCATION_ERROR;
 	}
 
 	if (U_FAILURE(status))
 	{
-		delete dateFormatSymbols;
 		return status;
 	}
 
@@ -250,7 +255,6 @@ UErrorCode GetLocaleInfoAmPm(const Locale &locale, bool am, UChar* value, int32_
 	}
 
 	tempStr[offset].extract(value, valueLength, status);
-	delete dateFormatSymbols;
 	return status;
 }
 
@@ -260,7 +264,7 @@ GetLocaleInfoString
 
 Obtains string locale information
 */
-extern "C" int32_t GetLocaleInfoString(const UChar* localeName, LocaleStringData localeStringData, UChar* value, int32_t valueLength)
+extern "C" bool GetLocaleInfoString(const UChar* localeName, LocaleStringData localeStringData, UChar* value, int32_t valueLength)
 {
 	Locale locale = GetLocale(localeName);
 	if (locale.isBogus())
@@ -346,11 +350,11 @@ extern "C" int32_t GetLocaleInfoString(const UChar* localeName, LocaleStringData
 			status = GetLocaleInfoDecimalFormatSymbol(locale, DecimalFormatSymbols::kMinusSignSymbol, value, valueLength);
 			break;
 		case Iso639LanguageName:
-			status = CopyCharToUChar(locale.getLanguage(), value, valueLength);
+			status = u_charsToUChars_safe(locale.getLanguage(), value, valueLength);
 			break;
 		case Iso3166CountryName:
 			// coreclr expects 2-character version, not 3 (3 would correspond to LOCALE_SISO3166CTRYNAME2 and locale.getISO3Country)
-			status = CopyCharToUChar(locale.getCountry(), value, valueLength);
+			status = u_charsToUChars_safe(locale.getCountry(), value, valueLength);
 			break;
 		case NaNSymbol:
 			status = GetLocaleInfoDecimalFormatSymbol(locale, DecimalFormatSymbols::kNaNSymbol, value, valueLength);
@@ -366,8 +370,11 @@ extern "C" int32_t GetLocaleInfoString(const UChar* localeName, LocaleStringData
 			break;
 		default:
 			status = U_UNSUPPORTED_ERROR;
+			assert(false);
 			break;
 	};
 
-	return status;
+	assert(status != U_BUFFER_OVERFLOW_ERROR);
+
+	return U_SUCCESS(status);
 }

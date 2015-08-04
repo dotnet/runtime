@@ -10,12 +10,12 @@ internal static partial class Interop
     internal static partial class GlobalizationInterop
     {
         [DllImport(Libraries.GlobalizationInterop, CharSet = CharSet.Unicode)]
-        internal unsafe static extern int GetLocaleName(string localeName, StringBuilder value, int valueLength);
+        internal unsafe static extern bool GetLocaleName(string localeName, StringBuilder value, int valueLength);
 
         [DllImport(Libraries.GlobalizationInterop, CharSet = CharSet.Unicode)]
-        internal unsafe static extern int GetLocaleInfoString(string localeName, uint localeStringData, StringBuilder value, int valueLength);
+        internal unsafe static extern bool GetLocaleInfoString(string localeName, uint localeStringData, StringBuilder value, int valueLength);
 
         [DllImport(Libraries.GlobalizationInterop, CharSet = CharSet.Unicode)]
-        internal unsafe static extern int GetLocaleInfoInt(string localeName, uint localeNumberData, ref int value);
+        internal unsafe static extern bool GetLocaleInfoInt(string localeName, uint localeNumberData, ref int value);
     }
 }

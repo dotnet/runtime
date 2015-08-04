@@ -17,7 +17,6 @@ namespace System.Globalization
         //ICU constants
         const int ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY = 100; // max size of keyword or value
         const int ICU_ULOC_FULLNAME_CAPACITY = 157;           // max size of locale name
-        const int ICU_U_UNSUPPORTED_ERROR = 16;               // unknown enum value
 
         /// <summary>
         /// This method uses the sRealName field (which is initialized by the constructor before this is called) to
@@ -27,7 +26,6 @@ namespace System.Globalization
         {
             Contract.Assert(this.sRealName != null);
 
-            int result = 0;
             string realNameBuffer;
             if (this.sRealName == LOCALE_NAME_SYSTEM_DEFAULT)
             {
@@ -39,11 +37,9 @@ namespace System.Globalization
             }
 
             StringBuilder sb = StringBuilderCache.Acquire(ICU_ULOC_FULLNAME_CAPACITY);
-            result = Interop.GlobalizationInterop.GetLocaleName(realNameBuffer, sb, sb.Capacity);
-
-            if (result > 0)
+            if (!Interop.GlobalizationInterop.GetLocaleName(realNameBuffer, sb, sb.Capacity))
             {
-                return false; // fail
+                return false; // Fail
             }
 
             // Success, so use the locale name returned
@@ -57,7 +53,6 @@ namespace System.Globalization
 
             this.iLanguage = this.ILANGUAGE;
             this.bNeutral = this.SISO3166CTRYNAME.Length == 0;
-
 
             return true;
         }
@@ -89,16 +84,11 @@ namespace System.Globalization
 
             StringBuilder sb = StringBuilderCache.Acquire(ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY);
 
-            int result = Interop.GlobalizationInterop.GetLocaleInfoString(localeName, (uint)type, sb, sb.Capacity);
-            if (result > 0)
+            bool result = Interop.GlobalizationInterop.GetLocaleInfoString(localeName, (uint)type, sb, sb.Capacity);
+            if (!result)
             {
-                if (result == ICU_U_UNSUPPORTED_ERROR)
-                {
-                    Contract.Assert(false, "[CultureData.GetLocaleInfo(LocaleStringData)] Unmatched case");
-                    throw new NotImplementedException();
-                }
-
                 // Failed, just use empty string
+                Contract.Assert(false, "[CultureData.GetLocaleInfo(LocaleStringData)] Failed");
                 return String.Empty;
             }
             return sb.ToString();
@@ -109,15 +99,11 @@ namespace System.Globalization
             Contract.Assert(this.sWindowsName != null, "[CultureData.GetLocaleInfo(LocaleNumberData)] Expected this.sWindowsName to be populated by already");
 
             int value = 0;
-            int result = Interop.GlobalizationInterop.GetLocaleInfoInt(this.sWindowsName, (uint)type, ref value);
-            if (result > 0)
+            bool result = Interop.GlobalizationInterop.GetLocaleInfoInt(this.sWindowsName, (uint)type, ref value);
+            if (!result)
             {
-                if (result == ICU_U_UNSUPPORTED_ERROR)
-                {
-                    Contract.Assert(false, "[CultureData.GetLocaleInfo(LocaleNumberData)] Unmatched case");
-                    throw new NotImplementedException();
-                }
                 // Failed, just use 0
+                Contract.Assert(false, "[CultureData.GetLocaleInfo(LocaleNumberData)] failed");
             }
             return value;
         }
