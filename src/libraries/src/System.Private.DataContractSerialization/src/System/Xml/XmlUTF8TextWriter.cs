@@ -5,6 +5,7 @@ using System.IO;
 using System.Runtime;
 using System.Security;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace System.Xml
 {
@@ -219,6 +220,20 @@ namespace System.Xml
             WriteLocalName(localName);
         }
 
+        public override async Task WriteStartElementAsync(string prefix, string localName)
+        {
+            await WriteByteAsync('<').ConfigureAwait(false);
+            if (prefix.Length != 0)
+            {
+                // This method calls into unsafe method which cannot run asyncly.
+                WritePrefix(prefix);
+                await WriteByteAsync(':').ConfigureAwait(false);
+            }
+
+            // This method calls into unsafe method which cannot run asyncly.
+            WriteLocalName(localName);
+        }
+
         public override void WriteStartElement(string prefix, XmlDictionaryString localName)
         {
             WriteStartElement(prefix, localName.Value);
@@ -247,6 +262,18 @@ namespace System.Xml
             }
         }
 
+        public override async Task WriteEndStartElementAsync(bool isEmpty)
+        {
+            if (!isEmpty)
+            {
+                await WriteByteAsync('>').ConfigureAwait(false);
+            }
+            else
+            {
+                await WriteBytesAsync('/', '>').ConfigureAwait(false);
+            }
+        }
+
         public override void WriteEndElement(string prefix, string localName)
         {
             WriteBytes('<', '/');
@@ -257,6 +284,18 @@ namespace System.Xml
             }
             WriteLocalName(localName);
             WriteByte('>');
+        }
+
+        public override async Task WriteEndElementAsync(string prefix, string localName)
+        {
+            await WriteBytesAsync('<', '/').ConfigureAwait(false);
+            if (prefix.Length != 0)
+            {
+                WritePrefix(prefix);
+                await WriteByteAsync(':').ConfigureAwait(false);
+            }
+            WriteLocalName(localName);
+            await WriteByteAsync('>').ConfigureAwait(false);
         }
 
         public override void WriteEndElement(byte[] prefixBuffer, int prefixOffset, int prefixLength, byte[] localNameBuffer, int localNameOffset, int localNameLength)
@@ -350,6 +389,12 @@ namespace System.Xml
         public override void WriteEndAttribute()
         {
             WriteByte('"');
+            _inAttribute = false;
+        }
+
+        public override async Task WriteEndAttributeAsync()
+        {
+            await WriteByteAsync('"').ConfigureAwait(false);
             _inAttribute = false;
         }
 
@@ -695,6 +740,16 @@ namespace System.Xml
             InternalWriteBase64Text(buffer, offset, count);
         }
 
+        public override async Task WriteBase64TextAsync(byte[] trailBytes, int trailByteCount, byte[] buffer, int offset, int count)
+        {
+            if (trailByteCount > 0)
+            {
+                await InternalWriteBase64TextAsync(trailBytes, 0, trailByteCount).ConfigureAwait(false);
+            }
+
+            await InternalWriteBase64TextAsync(buffer, offset, count).ConfigureAwait(false);
+        }
+
         private void InternalWriteBase64Text(byte[] buffer, int offset, int count)
         {
             Base64Encoding encoding = XmlConverter.Base64Encoding;
@@ -712,6 +767,31 @@ namespace System.Xml
             {
                 int charOffset;
                 byte[] chars = GetBuffer(4, out charOffset);
+                Advance(encoding.GetChars(buffer, offset, count, chars, charOffset));
+            }
+        }
+
+        private async Task InternalWriteBase64TextAsync(byte[] buffer, int offset, int count)
+        {
+            Base64Encoding encoding = XmlConverter.Base64Encoding;
+            while (count >= 3)
+            {
+                int byteCount = Math.Min(bufferLength / 4 * 3, count - count % 3);
+                int charCount = byteCount / 3 * 4;
+                int charOffset;
+                BytesWithOffset bufferResult = await GetBufferAsync(charCount).ConfigureAwait(false);
+                byte[] chars = bufferResult.Bytes;
+                charOffset = bufferResult.Offset;
+                Advance(encoding.GetChars(buffer, offset, byteCount, chars, charOffset));
+                offset += byteCount;
+                count -= byteCount;
+            }
+            if (count > 0)
+            {
+                int charOffset;
+                BytesWithOffset bufferResult = await GetBufferAsync(4).ConfigureAwait(false);
+                byte[] chars = bufferResult.Bytes;
+                charOffset = bufferResult.Offset;
                 Advance(encoding.GetChars(buffer, offset, count, chars, charOffset));
             }
         }

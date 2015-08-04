@@ -77,6 +77,8 @@
     <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerWriteContextComplex.cs" Condition="$(NetNative) Or $(MergeDcjs)" />
     <Compile Include="$(RuntimeSerializationSources)\BitFlagsGenerator.cs" Condition="!$(NetNative) And $(MergeDcjs)" />
     <Compile Include="$(XmlSources)\ArrayHelper.cs" />
+    <Compile Include="$(XmlSources)\BytesWithOffset.cs" />
+    <Compile Include="$(XmlSources)\XmlDictionaryAsyncCheckWriter.cs" />
     <Compile Include="$(XmlSources)\IStreamProvider.cs" />
     <Compile Include="$(XmlSources)\IXmlDictionary.cs" />
     <Compile Include="$(XmlSources)\PrefixHandle.cs" />
