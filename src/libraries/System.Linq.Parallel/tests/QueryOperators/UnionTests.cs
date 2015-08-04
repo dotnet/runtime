@@ -13,7 +13,7 @@ namespace Test
         private const int DuplicateFactor = 8;
 
         // Get two ranges, with the right starting where the left ends
-        public static IEnumerable<object[]> UnionUnorderedData(object[] leftCounts, object[] rightCounts)
+        public static IEnumerable<object[]> UnionUnorderedData(int[] leftCounts, int[] rightCounts)
         {
             foreach (object[] parms in UnorderedSources.BinaryRanges(leftCounts.Cast<int>(), (l, r) => l, rightCounts.Cast<int>()))
             {
@@ -23,7 +23,7 @@ namespace Test
 
         // Union returns only the ordered portion ordered.  See Issue #1331
         // Get two ranges, both ordered.
-        public static IEnumerable<object[]> UnionData(object[] leftCounts, object[] rightCounts)
+        public static IEnumerable<object[]> UnionData(int[] leftCounts, int[] rightCounts)
         {
             foreach (object[] parms in UnionUnorderedData(leftCounts, rightCounts))
             {
@@ -32,7 +32,7 @@ namespace Test
         }
 
         // Get two ranges, with only the left being ordered.
-        public static IEnumerable<object[]> UnionFirstOrderedData(object[] leftCounts, object[] rightCounts)
+        public static IEnumerable<object[]> UnionFirstOrderedData(int[] leftCounts, int[] rightCounts)
         {
             foreach (object[] parms in UnionUnorderedData(leftCounts, rightCounts))
             {
@@ -41,7 +41,7 @@ namespace Test
         }
 
         // Get two ranges, with only the right being ordered.
-        public static IEnumerable<object[]> UnionSecondOrderedData(object[] leftCounts, object[] rightCounts)
+        public static IEnumerable<object[]> UnionSecondOrderedData(int[] leftCounts, int[] rightCounts)
         {
             foreach (object[] parms in UnionUnorderedData(leftCounts, rightCounts))
             {
@@ -51,7 +51,7 @@ namespace Test
 
         // Get two ranges, both sourced from arrays, with duplicate items in each array.
         // Used in distinctness tests, in contrast to relying on a Select predicate to generate duplicate items.
-        public static IEnumerable<object[]> UnionSourceMultipleData(object[] counts)
+        public static IEnumerable<object[]> UnionSourceMultipleData(int[] counts)
         {
             foreach (int leftCount in counts.Cast<int>())
             {

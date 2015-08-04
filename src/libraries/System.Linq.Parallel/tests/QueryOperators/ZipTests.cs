@@ -15,7 +15,7 @@ namespace Test
         //
 
         // Get two ranges, where the right starts at the end of the left range.
-        public static IEnumerable<object[]> ZipUnorderedData(object[] counts)
+        public static IEnumerable<object[]> ZipUnorderedData(int[] counts)
         {
             foreach (object[] parms in UnorderedSources.BinaryRanges(counts.Cast<int>(), (left, right) => left, counts.Cast<int>()))
             {
@@ -25,7 +25,7 @@ namespace Test
 
         // Get two ranges, where the right starts and the end of the left range.
         // Either or both range will be ordered.
-        public static IEnumerable<object[]> ZipData(object[] counts)
+        public static IEnumerable<object[]> ZipData(int[] counts)
         {
             foreach (object[] parms in ZipUnorderedData(counts))
             {
@@ -36,7 +36,7 @@ namespace Test
         }
 
         // Get two ranges, both from 0 to each count, and having an extra parameter denoting the degree or parallelism to use.
-        public static IEnumerable<object[]> ZipThreadedData(object[] counts, object[] degrees)
+        public static IEnumerable<object[]> ZipThreadedData(int[] counts, int[] degrees)
         {
             foreach (object[] left in Sources.Ranges(counts))
             {

@@ -12,7 +12,7 @@ namespace Test
     public class MaxTests
     {
         // Get a set of ranges from 0 to each count, having an extra parameter describing the maximum (count - 1)
-        public static IEnumerable<object[]> MaxData(object[] counts)
+        public static IEnumerable<object[]> MaxData(int[] counts)
         {
             Func<int, int> max = x => x - 1;
             foreach (object[] results in UnorderedSources.Ranges(counts.Cast<int>(), max))

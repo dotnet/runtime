@@ -11,7 +11,7 @@ namespace Test
 {
     public class SumTests
     {
-        public static IEnumerable<object[]> SumData(object[] counts)
+        public static IEnumerable<object[]> SumData(int[] counts)
         {
             foreach (object[] results in UnorderedSources.Ranges(counts.Cast<int>(), x => Functions.SumRange(0L, x))) yield return results;
         }

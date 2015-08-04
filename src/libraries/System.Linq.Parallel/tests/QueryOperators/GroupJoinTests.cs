@@ -13,7 +13,7 @@ namespace Test
         private const int KeyFactor = 8;
         private const int ElementFactor = 4;
 
-        public static IEnumerable<object[]> GroupJoinData(object[] leftCounts, object[] rightCounts)
+        public static IEnumerable<object[]> GroupJoinData(int[] leftCounts, int[] rightCounts)
         {
             foreach (object[] parms in UnorderedSources.BinaryRanges(leftCounts, rightCounts))
             {

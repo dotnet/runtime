@@ -16,7 +16,7 @@ namespace Test
         private const int GroupFactor = 8;
 
         // Get ranges from 0 to each count.  The data is random, seeded from the size of the range.
-        public static IEnumerable<object[]> OrderByRandomData(object[] counts)
+        public static IEnumerable<object[]> OrderByRandomData(int[] counts)
         {
             foreach (int count in counts.Cast<int>())
             {
@@ -39,7 +39,7 @@ namespace Test
         }
 
         // Get a set of ranges, from 0 to each count, and an additional parameter denoting degree of parallelism.
-        public static IEnumerable<object[]> OrderByThreadedData(object[] counts, object[] degrees)
+        public static IEnumerable<object[]> OrderByThreadedData(int[] counts, int[] degrees)
         {
             foreach (object[] results in UnorderedSources.Ranges(counts.Cast<int>(), x => degrees.Cast<int>()))
             {

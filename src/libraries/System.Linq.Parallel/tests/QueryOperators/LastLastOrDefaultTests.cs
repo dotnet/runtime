@@ -11,13 +11,13 @@ namespace Test
 {
     public class LastLastOrDefaultTests
     {
-        public static IEnumerable<object[]> LastUnorderedData(object[] counts)
+        public static IEnumerable<object[]> LastUnorderedData(int[] counts)
         {
             Func<int, IEnumerable<int>> positions = x => new[] { 1, x / 2 + 1, Math.Max(1, x - 1) }.Distinct();
             foreach (object[] results in UnorderedSources.Ranges(counts.Cast<int>(), positions)) yield return results;
         }
 
-        public static IEnumerable<object[]> LastData(object[] counts)
+        public static IEnumerable<object[]> LastData(int[] counts)
         {
             Func<int, IEnumerable<int>> positions = x => new[] { 1, x / 2 + 1, Math.Max(1, x - 1) }.Distinct();
             foreach (object[] results in Sources.Ranges(counts.Cast<int>(), positions)) yield return results;

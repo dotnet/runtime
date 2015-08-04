@@ -207,7 +207,7 @@ namespace Test
         // SelectMany
         //
 
-        public static IEnumerable<object[]> SelectManyUnorderedData(object[] counts)
+        public static IEnumerable<object[]> SelectManyUnorderedData(int[] counts)
         {
             foreach (object[] results in UnorderedSources.Ranges(counts.Cast<int>()))
             {
@@ -221,7 +221,7 @@ namespace Test
             }
         }
 
-        public static IEnumerable<object[]> SelectManyData(object[] counts)
+        public static IEnumerable<object[]> SelectManyData(int[] counts)
         {
             foreach (object[] results in Sources.Ranges(counts.Cast<int>()))
             {
