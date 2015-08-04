@@ -634,7 +634,10 @@ mono_async_result_new	    (MonoDomain *domain, HANDLE handle,
 			     MonoObject *state, gpointer data, MonoObject *object_data);
 
 MonoObject *
-ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_Invoke (MonoAsyncResult *this);
+mono_async_result_invoke    (MonoAsyncResult *ares, MonoObject **exc);
+
+MonoObject *
+ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_Invoke (MonoAsyncResult *this_obj);
 
 MonoWaitHandle *
 mono_wait_handle_new	    (MonoDomain *domain, HANDLE handle);
