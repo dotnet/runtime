@@ -6,6 +6,13 @@ set( GCINFO_SOURCES
   dbggcinfoencoder.cpp
 )
 
+if(CLR_CMAKE_PLATFORM_ARCH_I386)
+  list(APPEND GCINFO_SOURCES
+    ../gcdump/gcdump.cpp
+    ../gcdump/i386/gcdumpx86.cpp
+  )
+endif(CLR_CMAKE_PLATFORM_ARCH_I386)
+
 convert_to_absolute_path(GCINFO_SOURCES ${GCINFO_SOURCES})
 
 if(CLR_CMAKE_PLATFORM_UNIX)

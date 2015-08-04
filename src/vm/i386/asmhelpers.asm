@@ -118,6 +118,11 @@ EXTERN @ProfileEnter@8:PROC
 EXTERN @ProfileLeave@8:PROC
 EXTERN @ProfileTailcall@8:PROC
 
+UNREFERENCED macro arg
+    local unref
+    unref equ size arg
+endm
+
 FASTCALL_FUNC macro FuncName,cbArgs
 FuncNameReal EQU @&FuncName&@&cbArgs
 FuncNameReal proc public
@@ -1236,6 +1241,7 @@ UM2MThunk_WrapperHelper proc stdcall public,
                         pAddr : DWORD,
                         pEntryThunk : DWORD,
                         pThread : DWORD
+    UNREFERENCED argLen
 
     push    ebx
 
