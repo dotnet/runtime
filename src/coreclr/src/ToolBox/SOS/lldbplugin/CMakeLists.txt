@@ -28,7 +28,7 @@ if(NOT ENABLE_LLDBPLUGIN)
 endif()
 
 # Check for LLDB library
-find_library(LLDB NAMES lldb-3.6 lldb-3.5 LLDB lldb PATHS "${WITH_LLDB_LIBS}" PATH_SUFFIXES llvm)
+find_library(LLDB NAMES LLDB lldb lldb-3.6 lldb-3.5 PATHS "${WITH_LLDB_LIBS}" PATH_SUFFIXES llvm)
 if(LLDB STREQUAL LLDB-NOTFOUND)
     if(REQUIRE_LLDBPLUGIN)
         message(FATAL_ERROR "Cannot find lldb-3.5 or lldb-3.6. Try installing lldb-3.6-dev (or the appropriate package for your platform)")
@@ -70,6 +70,8 @@ include_directories(${CLR_DIR}/src/coreclr/hosts/unixcoreruncommon)
 set(SOURCES
     sosplugin.cpp
     soscommand.cpp
+    setclrpathcommand.cpp
+    setsostidcommand.cpp
     coreruncommand.cpp
     debugclient.cpp
     ${CLR_DIR}/src/coreclr/hosts/unixcorerun/corerun.cpp
