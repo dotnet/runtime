@@ -17,7 +17,7 @@ namespace System.Net.Http
 
         public virtual bool SupportsProxy
         {
-            get { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
+            get { return this._curlHandler.SupportsProxy; }
         }
 
         public virtual bool SupportsRedirectConfiguration
@@ -51,14 +51,14 @@ namespace System.Net.Http
 
         public bool UseProxy
         {
-            get { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
-            set { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
+            get { return this._curlHandler.UseProxy; }
+            set { this._curlHandler.UseProxy = value; }
         }
 
         public IWebProxy Proxy
         {
-            get { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
-            set { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
+            get { return this._curlHandler.Proxy; }
+            set { this._curlHandler.Proxy = value; }
         }
 
         public bool PreAuthenticate
@@ -75,8 +75,8 @@ namespace System.Net.Http
 
         public ICredentials Credentials
         {
-            get { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
-            set { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
+            get { return this._curlHandler.Credentials; }
+            set { this._curlHandler.Credentials = value; }
         }
 
         public bool AllowAutoRedirect
