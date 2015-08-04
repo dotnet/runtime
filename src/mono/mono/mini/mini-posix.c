@@ -97,6 +97,12 @@ mono_runtime_install_handlers (void)
 #endif
 
 void
+mono_runtime_posix_install_handlers(void)
+{
+
+}
+
+void
 mono_runtime_shutdown_handlers (void)
 {
 }
