@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>System.Runtime.Loader.TestAssembly</RootNamespace>
-    <AssemblyName>System.Runtime.Loader.TestAssembly</AssemblyName>
+    <RootNamespace>System.Runtime.Loader.Test.Assembly</RootNamespace>
+    <AssemblyName>System.Runtime.Loader.Test.Assembly</AssemblyName>
     <ProjectGuid>{396D6EBF-60BD-4DAF-8783-FB403E070A56}</ProjectGuid>
   </PropertyGroup>
   <ItemGroup>

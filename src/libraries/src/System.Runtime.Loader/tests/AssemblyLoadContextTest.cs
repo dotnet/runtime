@@ -13,7 +13,7 @@ namespace System.Runtime.Loader.Tests
 {
     public class AssemblyLoadContextTest
     {
-        const string TESTASSEMBLY = "System.Runtime.Loader.TestAssembly";
+        private const string TestAssembly = "System.Runtime.Loader.Test.Assembly";
 
         [Fact]
         public static void GetAssemblyNameTest_ValidAssembly()
@@ -40,7 +40,7 @@ namespace System.Runtime.Loader.Tests
         [Fact]
         public static void LoadAssemblyByPath_ValidUserAssembly()
         {            
-            var asmName = new AssemblyName(TESTASSEMBLY);
+            var asmName = new AssemblyName(TestAssembly);
             var loadContext = new ResourceAssemblyLoadContext();
             loadContext.LoadBy = LoadBy.Path;
 
@@ -53,7 +53,7 @@ namespace System.Runtime.Loader.Tests
         [Fact]
         public static void LoadAssemblyByStream_ValidUserAssembly()
         {
-            var asmName = new AssemblyName(TESTASSEMBLY);
+            var asmName = new AssemblyName(TestAssembly);
             var loadContext = new ResourceAssemblyLoadContext();
             loadContext.LoadBy = LoadBy.Stream;
 
@@ -90,14 +90,14 @@ namespace System.Runtime.Loader.Tests
         [Fact]
         public static void GetLoadContextTest_ValidUserAssembly()
         {
-            var asmName = new AssemblyName(TESTASSEMBLY);
-            var loadContext = new ResourceAssemblyLoadContext();
-            loadContext.LoadBy = LoadBy.Stream;
+            var asmName = new AssemblyName(TestAssembly);
+            var expectedContext = new ResourceAssemblyLoadContext();
+            expectedContext.LoadBy = LoadBy.Stream;
 
-            var asm = loadContext.LoadFromAssemblyName(asmName);
-            var context = AssemblyLoadContext.GetLoadContext(asm);
+            var asm = expectedContext.LoadFromAssemblyName(asmName);
+            var actualContext = AssemblyLoadContext.GetLoadContext(asm);
 
-            Assert.True(context == loadContext);
+            Assert.Equal(expectedContext, actualContext);
         }
 
         [Fact]
