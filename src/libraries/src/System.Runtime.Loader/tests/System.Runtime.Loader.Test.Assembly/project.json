@@ -1,0 +1,10 @@
+{
+    "dependencies": {
+      "System.Runtime": "4.0.20-beta-*",
+      "System.Reflection": "4.0.10-beta-*",
+      "System.Runtime.Extensions": "4.0.10-beta-*"        
+    },
+  "frameworks": {
+    "dnxcore50": {}
+  }
+}
