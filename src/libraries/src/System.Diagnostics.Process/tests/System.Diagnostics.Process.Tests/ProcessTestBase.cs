@@ -31,7 +31,10 @@ namespace System.Diagnostics.ProcessTests
         protected Process CreateProcess(string optionalArgument = ""/*String.Empty is not a constant*/)
         {
             Process p = new Process();
-            _processes.Add(p);
+            lock (_processes)
+            {
+                _processes.Add(p);
+            }
 
             p.StartInfo.FileName = CoreRunName;
             p.StartInfo.Arguments = string.IsNullOrWhiteSpace(optionalArgument) ?
