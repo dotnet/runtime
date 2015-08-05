@@ -31,7 +31,7 @@
         <ProjectFile Include="md\dirs.proj" />
         <ProjectFile Include="classlibnative\dirs.proj" />
         <ProjectFile Include="strongname\dirs.proj" >
-            <ProductGroups>VS;FX</ProductGroups>
+            <ProductGroups>FX</ProductGroups>
         </ProjectFile>
         <ProjectFile Include="zap\dirs.proj" />
         <ProjectFile Include="gcdump\lib\gcdump.nativeproj" />
@@ -53,7 +53,7 @@
 
         <ProjectFile Include="tools\dirs.proj" />
         <ProjectFile Include="toolbox\dirs.proj" >
-            <ProductGroups>VS;FX</ProductGroups>
+            <ProductGroups>FX</ProductGroups>
         </ProjectFile>
         <ProjectFile Include="misc\misc.proj" />
     </ItemGroup>
@@ -70,7 +70,7 @@
         <ProjectFile Include="bcl\mscorlib.csproj" />
         <ProjectFile Include="managedlibraries\dirs.proj" />
         <ProjectFile Include="config\config.nativeproj" >
-            <ProductGroups>VS;FX</ProductGroups>
+            <ProductGroups>FX</ProductGroups>
         </ProjectFile>
         <ProjectFile Include="usagelog\usagelog.nativeproj" />
         <ProjectFile Include="lhdwshim\dirs.proj" />
