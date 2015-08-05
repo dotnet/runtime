@@ -107,6 +107,22 @@ namespace System.Net.Http
                 _serverCredentials = value;
             }
         }
+
+        internal ClientCertificateOption ClientCertificateOptions
+        {
+            get
+            {
+                return ClientCertificateOption.Manual;
+            }
+            set
+            {
+                if (ClientCertificateOption.Manual != value)
+                {
+                    throw new PlatformNotSupportedException(SR.net_http_unix_invalid_client_cert_option);
+                }
+            }
+        }
+
         #endregion
 
         protected override void Dispose(bool disposing)
@@ -126,10 +142,6 @@ namespace System.Net.Http
             if (request == null)
             {
                 throw new ArgumentNullException("request", SR.net_http_handler_norequest);
-            }
-            if (request.RequestUri.Scheme == UriSchemeHttps)
-            {
-                throw NotImplemented.ByDesignWithMessage("HTTPS stack is not yet implemented");
             }
             if (request.Content != null)
             {
