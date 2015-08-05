@@ -233,7 +233,6 @@ namespace System.IO.FileSystem.Tests
 
         [Fact]
         [PlatformSpecific(PlatformID.AnyUnix)]
-        [ActiveIssue(645)]
         public void UnixPathLongerThan256_Allowed()
         {
             DirectoryInfo testDir = Create(GetTestFilePath());
@@ -245,11 +244,14 @@ namespace System.IO.FileSystem.Tests
 
         [Fact]
         [PlatformSpecific(PlatformID.AnyUnix)]
-        public void UnixPathLongerThan256_Throws()
+        public void UnixPathWithDeeplyNestedDirectories()
         {
-            DirectoryInfo testDir = Create(GetTestFilePath());
-            PathInfo path = IOServices.GetPath(testDir.FullName, 257, IOInputs.MaxComponent);
-            Assert.Throws<PathTooLongException>(() => Create(path.FullPath));
+            DirectoryInfo parent = Create(GetTestFilePath());
+            for (int i = 1; i <= 100; i++) // 100 == arbitrarily large number of directories
+            {
+                parent = Create(Path.Combine(parent.FullName, "dir" + i));
+                Assert.True(Directory.Exists(parent.FullName));
+            }
         }
 
         [Fact]
