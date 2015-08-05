@@ -25,6 +25,7 @@
 
 #include "mini.h"
 #include "mini-x86.h"
+#include "debugger-agent.h"
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
@@ -763,6 +764,106 @@ mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpoint
 	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), domain);
 
 	return start;
+}
+
+/*
+ * mono_arch_create_sdb_trampoline:
+ *
+ *   Return a trampoline which captures the current context, passes it to
+ * debugger_agent_single_step_from_context ()/debugger_agent_breakpoint_from_context (),
+ * then restores the (potentially changed) context.
+ */
+guint8*
+mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gboolean aot)
+{
+	int tramp_size = 256;
+	int framesize, ctx_offset, cfa_offset;
+	guint8 *code, *buf;
+	GSList *unwind_ops = NULL;
+	MonoJumpInfo *ji = NULL;
+
+	code = buf = mono_global_codeman_reserve (tramp_size);
+
+	framesize = 0;
+
+	/* Argument area */
+	framesize += sizeof (mgreg_t);
+
+	ctx_offset = framesize;
+	framesize += sizeof (MonoContext);
+
+	framesize = ALIGN_TO (framesize, MONO_ARCH_FRAME_ALIGNMENT);
+
+	// CFA = sp + 4
+	cfa_offset = 4;
+	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, X86_ESP, 4);
+	// IP saved at CFA - 4
+	mono_add_unwind_op_offset (unwind_ops, code, buf, X86_NREG, -cfa_offset);
+
+	x86_push_reg (code, X86_EBP);
+	cfa_offset += sizeof(mgreg_t);
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, cfa_offset);
+	mono_add_unwind_op_offset (unwind_ops, code, buf, X86_EBP, - cfa_offset);
+
+	x86_mov_reg_reg (code, X86_EBP, X86_ESP, sizeof(mgreg_t));
+	mono_add_unwind_op_def_cfa_reg (unwind_ops, code, buf, X86_EBP);
+	/* The + 8 makes the stack aligned */
+	x86_alu_reg_imm (code, X86_SUB, X86_ESP, framesize + 8);
+
+	/* Initialize a MonoContext structure on the stack */
+	x86_mov_membase_reg (code, X86_ESP, ctx_offset + G_STRUCT_OFFSET (MonoContext, eax), X86_EAX, sizeof (mgreg_t));
+	x86_mov_membase_reg (code, X86_ESP, ctx_offset + G_STRUCT_OFFSET (MonoContext, ebx), X86_EBX, sizeof (mgreg_t));
+	x86_mov_membase_reg (code, X86_ESP, ctx_offset + G_STRUCT_OFFSET (MonoContext, ecx), X86_ECX, sizeof (mgreg_t));
+	x86_mov_membase_reg (code, X86_ESP, ctx_offset + G_STRUCT_OFFSET (MonoContext, edx), X86_EDX, sizeof (mgreg_t));
+	x86_mov_reg_membase (code, X86_EAX, X86_EBP, 0, sizeof (mgreg_t));
+	x86_mov_membase_reg (code, X86_ESP, ctx_offset + G_STRUCT_OFFSET (MonoContext, ebp), X86_EAX, sizeof (mgreg_t));
+	x86_mov_reg_reg (code, X86_EAX, X86_EBP, sizeof (mgreg_t));
+	x86_alu_reg_imm (code, X86_ADD, X86_EAX, cfa_offset);
+	x86_mov_membase_reg (code, X86_ESP, ctx_offset + G_STRUCT_OFFSET (MonoContext, esp), X86_ESP, sizeof (mgreg_t));
+	x86_mov_membase_reg (code, X86_ESP, ctx_offset + G_STRUCT_OFFSET (MonoContext, esi), X86_ESI, sizeof (mgreg_t));
+	x86_mov_membase_reg (code, X86_ESP, ctx_offset + G_STRUCT_OFFSET (MonoContext, edi), X86_EDI, sizeof (mgreg_t));
+	x86_mov_reg_membase (code, X86_EAX, X86_EBP, 4, sizeof (mgreg_t));
+	x86_mov_membase_reg (code, X86_ESP, ctx_offset + G_STRUCT_OFFSET (MonoContext, eip), X86_EAX, sizeof (mgreg_t));
+
+	/* Call the single step/breakpoint function in sdb */
+	x86_lea_membase (code, X86_EAX, X86_ESP, ctx_offset);
+	x86_mov_membase_reg (code, X86_ESP, 0, X86_EAX, sizeof (mgreg_t));
+
+	if (aot) {
+		g_assert_not_reached ();
+	} else {
+		if (single_step)
+			x86_call_code (code, debugger_agent_single_step_from_context);
+		else
+			x86_call_code (code, debugger_agent_breakpoint_from_context);
+	}
+
+	/* Restore registers from ctx */
+	/* Overwrite the saved ebp */
+	x86_mov_reg_membase (code, X86_EAX, X86_ESP, ctx_offset + G_STRUCT_OFFSET (MonoContext, ebp), sizeof (mgreg_t));
+	x86_mov_membase_reg (code, X86_EBP, 0, X86_EAX, sizeof (mgreg_t));
+	/* Overwrite saved eip */
+	x86_mov_reg_membase (code, X86_EAX, X86_ESP, ctx_offset + G_STRUCT_OFFSET (MonoContext, eip), sizeof (mgreg_t));
+	x86_mov_membase_reg (code, X86_EBP, 4, X86_EAX, sizeof (mgreg_t));
+	x86_mov_reg_membase (code, X86_EAX, X86_ESP, ctx_offset + G_STRUCT_OFFSET (MonoContext, eax), sizeof (mgreg_t));
+	x86_mov_reg_membase (code, X86_EBX, X86_ESP, ctx_offset + G_STRUCT_OFFSET (MonoContext, ebx), sizeof (mgreg_t));
+	x86_mov_reg_membase (code, X86_ECX, X86_ESP, ctx_offset + G_STRUCT_OFFSET (MonoContext, ecx), sizeof (mgreg_t));
+	x86_mov_reg_membase (code, X86_EDX, X86_ESP, ctx_offset + G_STRUCT_OFFSET (MonoContext, edx), sizeof (mgreg_t));
+	x86_mov_reg_membase (code, X86_ESI, X86_ESP, ctx_offset + G_STRUCT_OFFSET (MonoContext, esi), sizeof (mgreg_t));
+	x86_mov_reg_membase (code, X86_EDI, X86_ESP, ctx_offset + G_STRUCT_OFFSET (MonoContext, edi), sizeof (mgreg_t));
+
+	x86_leave (code);
+	cfa_offset -= sizeof (mgreg_t);
+	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, X86_ESP, cfa_offset);
+	x86_ret (code);
+
+	mono_arch_flush_icache (code, code - buf);
+	g_assert (code - buf <= tramp_size);
+
+	const char *tramp_name = single_step ? "sdb_single_step_trampoline" : "sdb_breakpoint_trampoline";
+	*info = mono_tramp_info_create (tramp_name, buf, code - buf, ji, unwind_ops);
+
+	return buf;
 }
 
 #if defined(ENABLE_GSHAREDVT)

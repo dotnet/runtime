@@ -165,6 +165,8 @@ typedef struct {
 	gboolean need_stack_frame_inited;
 	gboolean need_stack_frame;
 	int sp_fp_offset, param_area_size;
+	gpointer ss_tramp_var;
+	gpointer bp_tramp_var;
 } MonoCompileArch;
 
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->eax = (gsize)exc; } while (0)
@@ -252,6 +254,7 @@ typedef struct {
 #define MONO_ARCH_HAVE_TRANSLATE_TLS_OFFSET 1
 #define MONO_ARCH_HAVE_TLS_GET_REG 1
 #define MONO_ARCH_HAVE_DUMMY_INIT 1
+#define MONO_ARCH_HAVE_SDB_TRAMPOLINES 1
 #define MONO_ARCH_HAVE_PATCH_CODE_NEW 1
 
 /* Used for optimization, not complete */
