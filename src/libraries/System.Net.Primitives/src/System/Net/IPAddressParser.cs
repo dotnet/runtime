@@ -68,7 +68,7 @@ namespace System.Net
                 return null;
             }
 
-            Exception e = new SocketException(IPAddressPal.GetSocketErrorForErrorCode(error));
+            Exception e = new SocketException(IPAddressPal.GetSocketErrorForErrorCode(error), error);
             throw new FormatException(SR.dns_bad_ip_address, e);
         }
 
@@ -83,7 +83,7 @@ namespace System.Net
             }
             else
             {
-                throw new SocketException(IPAddressPal.GetSocketErrorForErrorCode(errorCode));
+                throw new SocketException(IPAddressPal.GetSocketErrorForErrorCode(errorCode), errorCode);
             }
         }
 
@@ -98,7 +98,7 @@ namespace System.Net
             }
             else
             {
-                throw new SocketException(IPAddressPal.GetSocketErrorForErrorCode(errorCode));
+                throw new SocketException(IPAddressPal.GetSocketErrorForErrorCode(errorCode), errorCode);
             }
         }
     }

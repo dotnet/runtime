@@ -11,5 +11,11 @@
     <UnsupportedPlatforms>Linux;OSX;FreeBSD</UnsupportedPlatforms>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)\System.Net.Primitives.Unit.Tests.projinc" />
+  <Import Project="$(MSBuildThisFileDirectory)\System.Net.Primitives.Unit.Tests.msbuild" />
+
+  <ItemGroup>
+    <Compile Include="@(CompileItem)" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

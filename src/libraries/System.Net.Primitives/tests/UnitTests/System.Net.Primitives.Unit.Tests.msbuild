@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Windows_Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <OutputType>Library</OutputType>
+    <ProjectGuid>{7860A11A-1841-4416-8A30-28EEEB42C6BB}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	<NoWarn>169,649</NoWarn>
+    <StringResourcesPath>..\..\src\Resources\Strings.resx</StringResourcesPath>
+  </PropertyGroup>
+  
+  <!-- Help VS understand available configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
+  
+  <ItemGroup>
+    <CompileItem Include="CookieContainerTest.cs" />
+    <CompileItem Include="CookieInternalTest.cs" />
+
+    <CompileItem Include="Fakes\GlobalLog.cs" />
+    <CompileItem Include="Fakes\HostInformation.cs" />
+    <CompileItem Include="Fakes\IPAddressPal.cs" />
+
+    <CompileItem Include="..\..\src\System\Net\Cookie.cs" >
+      <Link>ProductionCode\System\Net\Cookie.cs</Link>
+    </CompileItem>
+    <CompileItem Include="..\..\src\System\Net\CookieContainer.cs" >
+      <Link>ProductionCode\System\Net\CookieContainer.cs</Link>
+    </CompileItem>
+    <CompileItem Include="..\..\src\System\Net\CookieCollection.cs" >
+      <Link>ProductionCode\System\Net\CookieCollection.cs</Link>
+    </CompileItem>
+    <CompileItem Include="..\..\src\System\Net\CookieException.cs" >
+      <Link>ProductionCode\System\Net\CookieException.cs</Link>
+    </CompileItem>
+    <CompileItem Include="..\..\src\System\Net\EndPoint.cs" >
+      <Link>ProductionCode\System\Net\EndPoint.cs</Link>
+    </CompileItem>
+    <CompileItem Include="..\..\src\System\Net\IPAddress.cs" >
+      <Link>ProductionCode\System\Net\IPAddress.cs</Link>
+    </CompileItem>
+    <CompileItem Include="..\..\src\System\Net\IPAddressParser.cs" >
+      <Link>ProductionCode\System\Net\IPAddressParser.cs</Link>
+    </CompileItem>
+    <CompileItem Include="..\..\src\System\Net\IPEndPoint.cs" >
+      <Link>ProductionCode\System\Net\IPEndPoint.cs</Link>
+    </CompileItem>
+    <CompileItem Include="..\..\src\System\Net\Sockets\SocketAddress.cs" >
+      <Link>ProductionCode\System\Net\Sockets\SocketAddress.cs</Link>
+    </CompileItem>
+    <CompileItem Include="..\..\src\System\Net\SocketException.cs" >
+      <Link>ProductionCode\System\Net\SocketException.cs</Link>
+    </CompileItem>
+    <CompileItem Include="..\..\src\System\Net\Sockets\AddressFamily.cs" >
+      <Link>ProductionCode\System\Net\Sockets\AddressFamily.cs</Link>
+    </CompileItem>
+    <CompileItem Include="..\..\src\System\Net\Sockets\SocketError.cs" >
+      <Link>ProductionCode\System\Net\Sockets\SocketError.cs</Link>
+    </CompileItem>
+    <CompileItem Include="$(CommonPath)\System\Net\ByteOrder.cs" >
+      <Link>ProductionCode\Common\System\Net\ByteOrder.cs</Link>
+    </CompileItem>
+    <CompileItem Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs" >
+      <Link>ProductionCode\Common\System\Net\HttpKnownHeaderNames.cs</Link>
+    </CompileItem>
+    <CompileItem Include="$(CommonPath)\System\Net\TcpValidationHelpers.cs" >
+      <Link>ProductionCode\Common\System\Net\TcpValidationHelpers.cs</Link>
+    </CompileItem>
+    <CompileItem Include="$(CommonPath)\System\Net\UriScheme.cs" >
+      <Link>ProductionCode\Common\System\Net\UriScheme.cs</Link>
+    </CompileItem>
+
+    <!-- Logging -->
+    <CompileItem Include="$(CommonPath)\System\Net\Shims\TraceSource.cs" >
+      <Link>ProductionCode\Common\System\Net\Shims\TraceSource.cs</Link>
+    </CompileItem>
+    <CompileItem Include="$(CommonPath)\System\Net\Logging\Logging.cs" >
+      <Link>ProductionCode\Common\System\Net\Logging\Logging.cs</Link>
+    </CompileItem>
+    <CompileItem Include="$(CommonPath)\System\Net\Logging\EventSourceLogging.cs" >
+      <Link>ProductionCode\Common\System\Net\Logging\EventSourceLogging.cs</Link>
+    </CompileItem>
+    <CompileItem Include="$(CommonPath)\System\Net\InternalException.cs" >
+      <Link>ProductionCode\Common\System\Net\InternalException.cs</Link>
+    </CompileItem>
+
+    <CompileItem Include="$(CommonPath)\System\NotImplemented.cs" >
+      <Link>ProductionCode\Common\System\NotImplemented.cs</Link>
+    </CompileItem>
+
+    <CompileItem Include="$(CommonPath)\Interop\Windows\Winsock\Interop.ErrorCodes.cs" >
+      <Link>ProductionCode\Common\Interop\Windows\Winsock\Interop.ErrorCodes.cs</Link>
+    </CompileItem>
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+    <CompileItem Include="..\..\src\System\Net\SocketAddressPal.Windows.cs" >
+      <Link>ProductionCode\System\Net\SocketAddressPal.Unix.cs</Link>
+    </CompileItem>
+    <CompileItem Include="..\..\src\System\Net\SocketException.Windows.cs" >
+      <Link>ProductionCode\System\Net\SocketException.Unix.cs</Link>
+    </CompileItem>
+  </ItemGroup>
+  
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <CompileItem Include="..\..\src\System\Net\SocketAddressPal.Unix.cs" >
+      <Link>ProductionCode\System\Net\SocketAddressPal.Unix.cs</Link>
+    </CompileItem>
+    <CompileItem Include="..\..\src\System\Net\SocketException.Unix.cs" >
+      <Link>ProductionCode\System\Net\SocketException.Unix.cs</Link>
+    </CompileItem>
+
+    <CompileItem Include="$(CommonPath)\Interop\Interop.CheckedAccess.cs" >
+      <Link>ProductionCode\Common\Interop\Interop.CheckedAccess.cs</Link>
+    </CompileItem>
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' ">
+    <CompileItem Include="$(CommonPath)\Interop\Unix\libc\Interop.addrinfo.cs" >
+      <Link>ProductionCode\Common\Interop\Unix\libc\Interop.addrinfo.cs</Link>
+    </CompileItem>
+    <CompileItem Include="$(CommonPath)\Interop\Unix\libc\Interop.sockaddr.cs" >
+      <Link>ProductionCode\Common\Interop\Unix\libc\Interop.sockaddr.cs</Link>
+    </CompileItem>
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
+    <CompileItem Include="$(CommonPath)\Interop\OSX\libc\Interop.addrinfo.cs" >
+      <Link>ProductionCode\Common\Interop\OSX\libc\Interop.addrinfo.cs</Link>
+    </CompileItem>
+    <CompileItem Include="$(CommonPath)\Interop\OSX\libc\Interop.sockaddr.cs" >
+      <Link>ProductionCode\Common\Interop\OSX\libc\Interop.sockaddr.cs</Link>
+    </CompileItem>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+</Project>

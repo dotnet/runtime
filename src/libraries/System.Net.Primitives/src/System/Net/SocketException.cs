@@ -12,7 +12,7 @@ namespace System.Net.Sockets
     ///       Provides socket exceptions to the application.
     ///    </para>
     /// </devdoc>
-    public class SocketException : Win32Exception
+    public partial class SocketException : Win32Exception
     {
         private EndPoint _endPoint;
 
