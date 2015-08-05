@@ -2463,7 +2463,7 @@ namespace System {
         /// </summary>
         /// <param name="inputPtr">Pointer to first input char</param>
         /// <param name="inputLength">Number of input chars</param>
-        /// <param name="destPtr">Pointer to location for teh first result byte</param>
+        /// <param name="destPtr">Pointer to location for the first result byte</param>
         /// <param name="destLength">Max length of the preallocated result buffer</param>
         /// <returns>If the result buffer was not large enough to write all result bytes, return -1;
         /// Otherwise return the number of result bytes actually produced.</returns>
