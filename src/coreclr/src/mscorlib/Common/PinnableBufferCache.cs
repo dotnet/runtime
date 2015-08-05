@@ -403,7 +403,7 @@ namespace System
                     return true;
                 }
 
-                // Move buffers from teh free list back to the non-aged list.  If we don't use them by next time, then we'll consider trimming them.
+                // Move buffers from the free list back to the non-aged list.  If we don't use them by next time, then we'll consider trimming them.
                 PinnableBufferCacheEventSource.Log.TrimExperiment(m_CacheName, m_buffersUnderManagement, freeCount, trimSize);
                 object buffer;
                 for (int i = 0; i < trimSize; i++)
