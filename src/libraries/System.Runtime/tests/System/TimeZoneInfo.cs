@@ -18,6 +18,7 @@ public static class TimeZoneInfoTests
     private static String s_strAmsterdam = s_isWindows ? "W. Europe Standard Time" : "Europe/Berlin";
     private static String s_strRussian = s_isWindows ? "Russian Standard Time" : "Europe/Moscow";
     private static String s_strLibya = s_isWindows ? "Libya Standard Time" : "Africa/Tripoli";
+    private static String s_strCatamarca = s_isWindows ? "Argentina Standard Time" : "America/Catamarca";
 
     private static TimeZoneInfo s_myUtc = TimeZoneInfo.Utc;
     private static TimeZoneInfo s_myLocal = TimeZoneInfo.Local;
@@ -25,6 +26,7 @@ public static class TimeZoneInfoTests
     private static TimeZoneInfo s_GMTLondon = TimeZoneInfo.FindSystemTimeZoneById(s_strGMT);
     private static TimeZoneInfo s_nairobiTz = TimeZoneInfo.FindSystemTimeZoneById(s_strNairobi);
     private static TimeZoneInfo s_amsterdamTz = TimeZoneInfo.FindSystemTimeZoneById(s_strAmsterdam);
+    private static TimeZoneInfo s_catamarcaTz = TimeZoneInfo.FindSystemTimeZoneById(s_strCatamarca);
 
     private static bool s_localIsPST = TimeZoneInfo.Local.Id == s_strPacific;
     private static bool s_regLocalSupportsDST = s_regLocal.SupportsDaylightSavingTime;
@@ -159,7 +161,7 @@ public static class TimeZoneInfoTests
         VerifyConvert(new DateTimeOffset(DateTime.MinValue.AddHours(5), new TimeSpan(-3, 0, 0)), s_strPacific, new DateTimeOffset(DateTime.MinValue, new TimeSpan(-8, 0, 0)));
 
         VerifyConvert(DateTime.MaxValue, s_strPacific, s_strSydney, DateTime.MaxValue);
-            VerifyConvert(DateTime.MaxValue.AddHours(-19), s_strPacific, s_strSydney, DateTime.MaxValue);
+        VerifyConvert(DateTime.MaxValue.AddHours(-19), s_strPacific, s_strSydney, DateTime.MaxValue);
         VerifyConvert(DateTime.MaxValue.AddHours(-19.5), s_strPacific, s_strSydney, DateTime.MaxValue.AddHours(-0.5));
 
         VerifyConvert(DateTime.MinValue, s_strSydney, s_strPacific, DateTime.MinValue);
@@ -335,10 +337,10 @@ public static class TimeZoneInfoTests
 
         if (Interop.IsWindows)
         {
-        VerifyConvert(utcMinValue.AddHours(8), s_strPacific, DateTime.MinValue);
-        VerifyConvert(utcMinValue.AddHours(8.5), s_strPacific, DateTime.MinValue.AddHours(0.5));
-        VerifyConvert(utcMinValue, s_strSydney, DateTime.MinValue.AddHours(11));
-    }
+            VerifyConvert(utcMinValue.AddHours(8), s_strPacific, DateTime.MinValue);
+            VerifyConvert(utcMinValue.AddHours(8.5), s_strPacific, DateTime.MinValue.AddHours(0.5));
+            VerifyConvert(utcMinValue, s_strSydney, DateTime.MinValue.AddHours(11));
+        }
         else
         {
             // for early times, IANA uses local mean time (LMT), which is based on the solar time.
@@ -447,7 +449,7 @@ public static class TimeZoneInfoTests
         {
             // ambiguous time between rules
             // this is not ideal, but the way it works
-        VerifyConvert(time1utc, s_strPerth, time1.AddHours(8));
+            VerifyConvert(time1utc, s_strPerth, time1.AddHours(8));
         }
         else
         {
@@ -1653,6 +1655,29 @@ public static class TimeZoneInfoTests
         VerifyInv(s_amsterdamTz, new DateTime(2006, 10, 29, 07, 10, 01), false);
         VerifyInv(s_amsterdamTz, new DateTime(2006, 11, 15, 10, 15, 43), false);
         VerifyInv(s_amsterdamTz, new DateTime(2006, 12, 15, 12, 15, 44), false);
+    }
+
+    [Fact]
+    [PlatformSpecific(PlatformID.AnyUnix)]
+    public static void TestCatamarcaMultiYearDaylightSavings()
+    {
+        // America/Catamarca had DST from
+        //     1946-10-01T04:00:00.0000000Z {-03:00:00 DST=True}
+        //     1963-10-01T03:00:00.0000000Z {-04:00:00 DST=False}
+
+        VerifyDST(s_catamarcaTz, new DateTime(1946, 09, 30, 17, 00, 00, DateTimeKind.Utc), false);
+        VerifyDST(s_catamarcaTz, new DateTime(1946, 10, 01, 03, 00, 00, DateTimeKind.Utc), false);
+        VerifyDST(s_catamarcaTz, new DateTime(1946, 10, 01, 03, 59, 00, DateTimeKind.Utc), false);
+        VerifyDST(s_catamarcaTz, new DateTime(1946, 10, 01, 04, 00, 00, DateTimeKind.Utc), true);
+        VerifyDST(s_catamarcaTz, new DateTime(1950, 01, 01, 00, 00, 00, DateTimeKind.Utc), true);
+        VerifyDST(s_catamarcaTz, new DateTime(1953, 03, 01, 15, 00, 00, DateTimeKind.Utc), true);
+        VerifyDST(s_catamarcaTz, new DateTime(1955, 05, 01, 16, 00, 00, DateTimeKind.Utc), true);
+        VerifyDST(s_catamarcaTz, new DateTime(1957, 07, 01, 17, 00, 00, DateTimeKind.Utc), true);
+        VerifyDST(s_catamarcaTz, new DateTime(1959, 09, 01, 00, 00, 00, DateTimeKind.Utc), true);
+        VerifyDST(s_catamarcaTz, new DateTime(1961, 11, 01, 00, 00, 00, DateTimeKind.Utc), true);
+        VerifyDST(s_catamarcaTz, new DateTime(1963, 10, 01, 02, 00, 00, DateTimeKind.Utc), true);
+        VerifyDST(s_catamarcaTz, new DateTime(1963, 10, 01, 02, 59, 00, DateTimeKind.Utc), true);
+        VerifyDST(s_catamarcaTz, new DateTime(1963, 10, 01, 03, 00, 00, DateTimeKind.Utc), false);
     }
 
     //
