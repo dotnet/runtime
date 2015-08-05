@@ -37,7 +37,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        public static void TestByteArrayConstructor()
+        public static void TestByteArrayConstructor_DER()
         {
             byte[] expectedThumbPrint = new byte[]
             {
@@ -49,24 +49,28 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (X509Certificate2 c = new X509Certificate2(TestData.MsCertificate))
             {
                 IntPtr h = c.Handle;
-                object ignored;
                 Assert.NotEqual(IntPtr.Zero, h);
                 byte[] actualThumbprint = c.GetCertHash();
                 Assert.Equal(expectedThumbPrint, actualThumbprint);
+            }
+        }
 
-                c.Dispose();
+        [Fact]
+        public static void TestByteArrayConstructor_PEM()
+        {
+            byte[] expectedThumbPrint =
+            {
+                0x10, 0x8e, 0x2b, 0xa2, 0x36, 0x32, 0x62, 0x0c,
+                0x42, 0x7c, 0x57, 0x0b, 0x6d, 0x9d, 0xb5, 0x1a,
+                0xc3, 0x13, 0x87, 0xfe,
+            };
 
-                // For compat reasons, Dispose() acts like the now-defunct Reset() method rather than causing ObjectDisposedExceptions.
-                h = c.Handle;
-                Assert.Equal(IntPtr.Zero, h);
-                Assert.Throws<CryptographicException>(() => c.GetCertHash());
-                Assert.Throws<CryptographicException>(() => c.GetKeyAlgorithm());
-                Assert.Throws<CryptographicException>(() => c.GetKeyAlgorithmParameters());
-                Assert.Throws<CryptographicException>(() => c.GetKeyAlgorithmParametersString());
-                Assert.Throws<CryptographicException>(() => c.GetPublicKey());
-                Assert.Throws<CryptographicException>(() => c.GetSerialNumber());
-                Assert.Throws<CryptographicException>(() => ignored = c.Issuer);
-                Assert.Throws<CryptographicException>(() => ignored = c.Subject);
+            using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificatePemBytes))
+            {
+                IntPtr h = cert.Handle;
+                Assert.NotEqual(IntPtr.Zero, h);
+                byte[] actualThumbprint = cert.GetCertHash();
+                Assert.Equal(expectedThumbPrint, actualThumbprint);
             }
         }
 
