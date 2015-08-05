@@ -24,28 +24,28 @@ namespace System.IO.FileSystem.Tests
         public void RelativeDirectory()
         {
             string root = Directory.GetDirectoryRoot(Path.DirectorySeparatorChar + "testDir");
-            Assert.Equal(Path.GetPathRoot(TestDirectory), root);
+            Assert.Equal(Path.GetPathRoot(Directory.GetCurrentDirectory()), root);
         }
 
         [Fact]
         public void NestedDirectories()
         {
             string root = Directory.GetDirectoryRoot(Path.Combine("a", "a", "a", "b") + Path.DirectorySeparatorChar);
-            Assert.Equal(Path.GetPathRoot(TestDirectory), root);
+            Assert.Equal(Path.GetPathRoot(Directory.GetCurrentDirectory()), root);
         }
 
         [Fact]
         public void DotPaths()
         {
             string root = Directory.GetDirectoryRoot(Path.Combine("Test1", ".", "test2", "..", "test3"));
-            Assert.Equal(Path.GetPathRoot(TestDirectory), root);
+            Assert.Equal(Path.GetPathRoot(Directory.GetCurrentDirectory()), root);
         }
 
         [Fact]
         public void WhitespacePaths()
         {
             string root = Directory.GetDirectoryRoot(Path.Combine("T es t1", "te s  t2", "t  est 3"));
-            Assert.Equal(Path.GetPathRoot(TestDirectory), root);
+            Assert.Equal(Path.GetPathRoot(Directory.GetCurrentDirectory()), root);
         }
 
         [Fact]

@@ -10,7 +10,7 @@ using Xunit;
 namespace InterProcessCommunication.Tests
 {
     /// <summary>Base class used for all inter-process communication tests.</summary>
-    public abstract class IpcTestBase : TemporaryFilesCleanupTestBase
+    public abstract class IpcTestBase : FileCleanupTestBase
     {
         /// <summary>The CoreCLR host used to host the test console app.</summary>
         private const string HostRunner = "corerun";

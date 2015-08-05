@@ -208,7 +208,7 @@ namespace System.IO.FileSystem.Tests
 
             Assert.All(IOInputs.GetSimpleWhiteSpace(), (component) =>
             {
-                string path = GetTestFilePath("Extended") + component;
+                string path = GetTestFilePath(memberName: "Extended") + component;
                 testDir = Directory.CreateDirectory(@"\\?\" + path);
                 Assert.False(Exists(path), path);
                 Assert.True(Exists(testDir.FullName));

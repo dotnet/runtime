@@ -66,7 +66,7 @@ namespace System.IO.FileSystem.Tests
             using (File.Create(testFile1))
             using (File.Create(testFile2))
             {
-                string[] results = GetEntries(Directory.GetCurrentDirectory(), Path.Combine(new DirectoryInfo(TestDirectory).Name, "*"), SearchOption.AllDirectories);
+                string[] results = GetEntries(Directory.GetParent(TestDirectory).FullName, Path.Combine(Path.GetFileName(TestDirectory), "*"), SearchOption.AllDirectories);
                 if (TestFiles)
                 {
                     Assert.Contains(testFile1, results);
