@@ -34,7 +34,7 @@ namespace System.IO.FileSystem.Tests
         [PlatformSpecific(PlatformID.Windows)]
         public void UNCShares()
         {
-            string root = Path.GetPathRoot(TestDirectory);
+            string root = Path.GetPathRoot(Directory.GetCurrentDirectory());
             string path = Path.DirectorySeparatorChar + Path.Combine("Machine", "Test");
             Assert.Equal(root, new DirectoryInfo(path).Root.FullName);
 

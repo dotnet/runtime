@@ -9,7 +9,7 @@ using Xunit;
 namespace System.IO.MemoryMappedFiles.Tests
 {
     /// <summary>Base class from which all of the memory mapped files test classes derive.</summary>
-    public abstract class MemoryMappedFilesTestBase : TemporaryFilesCleanupTestBase
+    public abstract class MemoryMappedFilesTestBase : FileCleanupTestBase
     {
         /// <summary>Gets whether named maps are supported by the current platform.</summary>
         protected static bool MapNamesSupported { get { return Interop.IsWindows; } }
@@ -66,7 +66,7 @@ namespace System.IO.MemoryMappedFiles.Tests
             if (MapNamesSupported)
             {
                 yield return MemoryMappedFile.CreateNew(CreateUniqueMapName(), capacity, access);
-                yield return MemoryMappedFile.CreateFromFile(GetTestFilePath(fileName, lineNumber), FileMode.CreateNew, CreateUniqueMapName(), capacity, access);
+                yield return MemoryMappedFile.CreateFromFile(GetTestFilePath(null, fileName, lineNumber), FileMode.CreateNew, CreateUniqueMapName(), capacity, access);
             }
         }
 
