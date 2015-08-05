@@ -3,12 +3,12 @@
 
 using System;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Security;
-using System.Diagnostics.Contracts;
 
-namespace Microsoft.Win32.SafeHandles {
+using ErrorCode = Interop.NCrypt.ErrorCode;
+
+namespace Microsoft.Win32.SafeHandles
+{
 
     /// <summary>
     ///     Base class for NCrypt handles which need to support being pseudo-duplicated. This class is not for
@@ -34,8 +34,10 @@ namespace Microsoft.Win32.SafeHandles {
     ///                       ref count to zero.  Instances of a holder handle should never be referenced by
     ///                       anything but a duplicate handle.
     /// </remarks>
-    public abstract class SafeNCryptHandle : SafeHandle {
-        private enum OwnershipState {
+    public abstract class SafeNCryptHandle : SafeHandle
+    {
+        private enum OwnershipState
+        {
             /// <summary>
             ///     The safe handle owns the native handle outright. This must be value 0, as this is the
             ///     state the marshaler will place the handle in when marshaling back a SafeHandle
@@ -53,42 +55,43 @@ namespace Microsoft.Win32.SafeHandles {
             Holder
         }
 
-        private OwnershipState m_ownershipState;
+        private OwnershipState _ownershipState;
 
         /// <summary>
         ///     If the handle is a Duplicate, this points at the safe handle which actually owns the native handle.
         /// </summary>
-        private SafeNCryptHandle m_holder;
+        private SafeNCryptHandle _holder;
 
-        protected SafeNCryptHandle() : base(IntPtr.Zero, true) {
+        protected SafeNCryptHandle() : base(IntPtr.Zero, true)
+        {
             return;
         }
 
         /// <summary>
-        ///     Wrapper for the m_holder field which ensures that we're in a consistent state
+        ///     Wrapper for the _holder field which ensures that we're in a consistent state
         /// </summary>
-        private SafeNCryptHandle Holder {
-            get {
-                Contract.Requires((m_ownershipState == OwnershipState.Duplicate && m_holder != null) ||
-                                  (m_ownershipState != OwnershipState.Duplicate && m_holder == null));
-                Contract.Requires(m_holder == null || m_holder.m_ownershipState == OwnershipState.Holder);
+        private SafeNCryptHandle Holder
+        {
+            get
+            {
+                Debug.Assert((_ownershipState == OwnershipState.Duplicate && _holder != null) ||
+                             (_ownershipState != OwnershipState.Duplicate && _holder == null));
+                Debug.Assert(_holder == null || _holder._ownershipState == OwnershipState.Holder);
 
-                return m_holder;
+                return _holder;
             }
 
-            set {
-                Contract.Ensures(m_holder.m_ownershipState == OwnershipState.Holder);
-                Contract.Ensures(m_ownershipState == OwnershipState.Duplicate);
+            set
+            {
 #if DEBUG
-                Contract.Ensures(IsValidOpenState);
-                Contract.Assert(value.IsValidOpenState);
+                Debug.Assert(value.IsValidOpenState);
 #endif
-                Contract.Assert(m_ownershipState != OwnershipState.Duplicate);
-                Contract.Assert(value.m_ownershipState == OwnershipState.Holder);
-                
-               
-                m_holder = value;
-                m_ownershipState = OwnershipState.Duplicate;
+                Debug.Assert(_ownershipState != OwnershipState.Duplicate);
+                Debug.Assert(value._ownershipState == OwnershipState.Holder);
+
+
+                _holder = value;
+                _ownershipState = OwnershipState.Duplicate;
             }
         }
 
@@ -96,10 +99,12 @@ namespace Microsoft.Win32.SafeHandles {
         /// <summary>
         ///     Ensure the state of the handle is consistent for an open handle
         /// </summary>
-        private bool IsValidOpenState {
-            [Pure]
-            get {
-                switch (m_ownershipState) {
+        private bool IsValidOpenState
+        {
+            get
+            {
+                switch (_ownershipState)
+                {
                     // Owner handles do not have a holder
                     case OwnershipState.Owner:
                         return Holder == null && !IsInvalid && !IsClosed;
@@ -108,10 +113,12 @@ namespace Microsoft.Win32.SafeHandles {
                     case OwnershipState.Duplicate:
                         bool acquiredHolder = false;
 
-                        try {
+                        try
+                        {
                             IntPtr holderRawHandle = IntPtr.Zero;
 
-                            if (Holder != null) {
+                            if (Holder != null)
+                            {
                                 Holder.DangerousAddRef(ref acquiredHolder);
                                 holderRawHandle = Holder.DangerousGetHandle();
                             }
@@ -125,8 +132,10 @@ namespace Microsoft.Win32.SafeHandles {
 
                             return holderValid && !IsInvalid && !IsClosed;
                         }
-                        finally {
-                            if (acquiredHolder) {
+                        finally
+                        {
+                            if (acquiredHolder)
+                            {
                                 Holder.DangerousRelease();
                             }
                         }
@@ -164,25 +173,20 @@ namespace Microsoft.Win32.SafeHandles {
         ///     * Holder    - Specifically disallowed. Holders should only ever be referenced by duplicates,
         ///                   so duplication will occur on the duplicate rather than the holder handle.
         /// </remarks>
-        internal T Duplicate<T>() where T : SafeNCryptHandle, new() {
-            // Spec#: Consider adding a model variable for ownership state?
-            Contract.Ensures(Contract.Result<T>() != null);
-            Contract.Ensures(m_ownershipState == OwnershipState.Duplicate);
-            Contract.Ensures(Contract.Result<T>().m_ownershipState == OwnershipState.Duplicate);
+        internal T Duplicate<T>() where T : SafeNCryptHandle, new()
+        {
 #if DEBUG
-            // Spec#: Consider a debug-only? model variable for IsValidOpenState?
-            Contract.Ensures(Contract.Result<T>().IsValidOpenState);
-            Contract.Ensures(IsValidOpenState);
-
-            Contract.Assert(IsValidOpenState);
+            Debug.Assert(IsValidOpenState);
 #endif
-            Contract.Assert(m_ownershipState != OwnershipState.Holder);
-            Contract.Assert(typeof(T) == this.GetType());
+            Debug.Assert(_ownershipState != OwnershipState.Holder);
+            Debug.Assert(typeof(T) == this.GetType());
 
-            if (m_ownershipState == OwnershipState.Owner) {
+            if (_ownershipState == OwnershipState.Owner)
+            {
                 return DuplicateOwnerHandle<T>();
             }
-            else {
+            else
+            {
                 // If we're not an owner handle, and we're being duplicated then we must be a duplicate handle.
                 return DuplicateDuplicatedHandle<T>();
             }
@@ -194,18 +198,13 @@ namespace Microsoft.Win32.SafeHandles {
         ///     See code:Microsoft.Win32.SafeHandles.SafeNCryptHandle#NCryptHandleDuplicationAlgorithm for
         ///     details about the algorithm.
         /// </summary>
-        private T DuplicateDuplicatedHandle<T>() where T : SafeNCryptHandle, new() {
-            Contract.Ensures(m_ownershipState == OwnershipState.Duplicate);
-            Contract.Ensures(Contract.Result<T>() != null &&
-                             Contract.Result<T>().m_ownershipState == OwnershipState.Duplicate);
+        private T DuplicateDuplicatedHandle<T>() where T : SafeNCryptHandle, new()
+        {
 #if DEBUG
-            Contract.Ensures(IsValidOpenState);
-            Contract.Ensures(Contract.Result<T>().IsValidOpenState);
-
-            Contract.Assert(IsValidOpenState);
+            Debug.Assert(IsValidOpenState);
 #endif
-            Contract.Assert(m_ownershipState == OwnershipState.Duplicate);
-            Contract.Assert(typeof(T) == this.GetType());
+            Debug.Assert(_ownershipState == OwnershipState.Duplicate);
+            Debug.Assert(typeof(T) == this.GetType());
 
             bool addedRef = false;
             T duplicate = new T();
@@ -214,7 +213,8 @@ namespace Microsoft.Win32.SafeHandles {
             // that the duplicated handle will always point back to the Holder, otherwise the Holder will leak
             // since it will never have its ref count reduced to zero.
             try { }
-            finally {
+            finally
+            {
                 Holder.DangerousAddRef(ref addedRef);
                 duplicate.SetHandle(Holder.DangerousGetHandle());
                 duplicate.Holder = Holder;              // Transitions to OwnershipState.Duplicate
@@ -229,18 +229,13 @@ namespace Microsoft.Win32.SafeHandles {
         ///     See code:Microsoft.Win32.SafeHandles.SafeNCryptHandle#NCryptHandleDuplicationAlgorithm for
         ///     details about the algorithm.
         /// </summary>
-        private T DuplicateOwnerHandle<T>() where T : SafeNCryptHandle, new() {
-            Contract.Ensures(m_ownershipState == OwnershipState.Duplicate);
-            Contract.Ensures(Contract.Result<T>() != null &&
-                             Contract.Result<T>().m_ownershipState == OwnershipState.Duplicate);
+        private T DuplicateOwnerHandle<T>() where T : SafeNCryptHandle, new()
+        {
 #if DEBUG
-            Contract.Ensures(IsValidOpenState);
-            Contract.Ensures(Contract.Result<T>().IsValidOpenState);
-
-            Contract.Assert(IsValidOpenState);
+            Debug.Assert(IsValidOpenState);
 #endif
-            Contract.Assert(m_ownershipState == OwnershipState.Owner);
-            Contract.Assert(typeof(T) == this.GetType());
+            Debug.Assert(_ownershipState == OwnershipState.Owner);
+            Debug.Assert(typeof(T) == this.GetType());
 
             bool addRef = false;
 
@@ -251,9 +246,10 @@ namespace Microsoft.Win32.SafeHandles {
             // with the current view of the world.  If the state of the various handles gets out of sync, then
             // we'll end up leaking since reference counts will not be set up properly.
             try { }
-            finally {
+            finally
+            {
                 // Setup a holder safe handle to ref count the native handle
-                holder.m_ownershipState = OwnershipState.Holder;
+                holder._ownershipState = OwnershipState.Holder;
                 holder.SetHandle(DangerousGetHandle());
                 GC.SuppressFinalize(holder);
 
@@ -287,12 +283,15 @@ namespace Microsoft.Win32.SafeHandles {
         ///     * Holder    - Call the release P/Invoke. Note that ReleaseHandle on a holder implies a reference
         ///                   count of zero.
         /// </remarks>
-        protected override bool ReleaseHandle() {
-            if (m_ownershipState == OwnershipState.Duplicate) {
+        protected override bool ReleaseHandle()
+        {
+            if (_ownershipState == OwnershipState.Duplicate)
+            {
                 Holder.DangerousRelease();
                 return true;
             }
-            else {
+            else
+            {
                 return ReleaseNativeHandle();
             }
         }
@@ -301,58 +300,68 @@ namespace Microsoft.Win32.SafeHandles {
         ///     Perform the actual release P/Invoke
         /// </summary>
         protected abstract bool ReleaseNativeHandle();
+
+        /// <summary>
+        ///     Since all NCrypt handles are released the same way, no sense in writing the same code three times.
+        /// </summary>
+        internal bool ReleaseNativeWithNCryptFreeObject()
+        {
+            ErrorCode errorCode = Interop.NCrypt.NCryptFreeObject(handle);
+            bool success = (errorCode == ErrorCode.ERROR_SUCCESS);
+            Debug.Assert(success);
+            return success;
+        }
     }
 
     /// <summary>
     ///     Safe handle representing an NCRYPT_KEY_HANDLE
     /// </summary>
-    public sealed class SafeNCryptKeyHandle : SafeNCryptHandle {
-        [DllImport("ncrypt.dll")]
-        private static extern int NCryptFreeObject(IntPtr hObject);
-
-        internal SafeNCryptKeyHandle Duplicate() {
+    public sealed class SafeNCryptKeyHandle : SafeNCryptHandle
+    {
+        internal SafeNCryptKeyHandle Duplicate()
+        {
             return Duplicate<SafeNCryptKeyHandle>();
         }
 
-        protected override bool ReleaseNativeHandle() {
-            return NCryptFreeObject(handle) == 0;
+        protected override bool ReleaseNativeHandle()
+        {
+            return ReleaseNativeWithNCryptFreeObject();
         }
     }
 
     /// <summary>
     ///     Safe handle representing an NCRYPT_PROV_HANDLE
     /// </summary>
-    public sealed class SafeNCryptProviderHandle : SafeNCryptHandle {
-        [DllImport("ncrypt.dll")]
-        private static extern int NCryptFreeObject(IntPtr hObject);
-
-        internal SafeNCryptProviderHandle Duplicate() {
+    public sealed class SafeNCryptProviderHandle : SafeNCryptHandle
+    {
+        internal SafeNCryptProviderHandle Duplicate()
+        {
             return Duplicate<SafeNCryptProviderHandle>();
         }
 
-        internal void SetHandleValue(IntPtr newHandleValue) {
-            Contract.Requires(newHandleValue != IntPtr.Zero);
-            Contract.Requires(!IsClosed);
-            Contract.Ensures(!IsInvalid);
-            Contract.Assert(handle == IntPtr.Zero);
+        internal void SetHandleValue(IntPtr newHandleValue)
+        {
+            Debug.Assert(newHandleValue != IntPtr.Zero);
+            Debug.Assert(!IsClosed);
+            Debug.Assert(handle == IntPtr.Zero);
 
             SetHandle(newHandleValue);
         }
 
-        protected override bool ReleaseNativeHandle() {
-            return NCryptFreeObject(handle) == 0;
+        protected override bool ReleaseNativeHandle()
+        {
+            return ReleaseNativeWithNCryptFreeObject();
         }
     }
 
     /// <summary>
     ///     Safe handle representing an NCRYPT_SECRET_HANDLE
     /// </summary>
-    public sealed class SafeNCryptSecretHandle : SafeNCryptHandle {
-        [DllImport("ncrypt.dll")]
-        private static extern int NCryptFreeObject(IntPtr hObject);
-
-        protected override bool ReleaseNativeHandle() {
-            return NCryptFreeObject(handle) == 0;
+    public sealed class SafeNCryptSecretHandle : SafeNCryptHandle
+    {
+        protected override bool ReleaseNativeHandle()
+        {
+            return ReleaseNativeWithNCryptFreeObject();
         }
     }
-}
+} 
