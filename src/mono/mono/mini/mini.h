@@ -6,7 +6,7 @@
 #ifndef __MONO_MINI_H__
 #define __MONO_MINI_H__
 
-#define REALLY_LLVMONLY_MODE 1
+//#define REALLY_LLVMONLY_MODE 1
 #ifdef REALLY_LLVMONLY_MODE
 #define REALLY_LLVMONLY 1
 #else
