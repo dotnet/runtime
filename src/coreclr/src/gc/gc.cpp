@@ -1019,7 +1019,7 @@ retry:
                 if (obj == alloc_objects[i])
                 {
                     needs_checking = 0;
-                    dprintf (3, ("cm: will spin", obj));
+                    dprintf (3, ("cm: will spin"));
                     spin_and_switch (spin_count, (obj != alloc_objects[i]));
                     goto retry;
                 }
@@ -1082,7 +1082,7 @@ retry:
         }
         else
         {
-            dprintf (3, ("loh alloc: will spin on checking", obj));
+            dprintf (3, ("loh alloc: will spin on checking %Ix", obj));
             spin_and_switch (spin_count, (needs_checking == 0));
             goto retry;
         }
@@ -1340,11 +1340,6 @@ BOOL recursive_gc_sync::allow_foreground()
 
 #endif //BACKGROUND_GC
 #endif //DACCESS_COMPILE
-
-#ifdef _MSC_VER
-// disable new LKG8 warning
-#pragma warning(disable:4293)
-#endif //_MSC_VER
 
 #if  defined(COUNT_CYCLES) || defined(JOIN_STATS) || defined(SYNCHRONIZATION_STATS)
 #ifdef _MSC_VER
@@ -22995,7 +22990,7 @@ void gc_heap::reloc_ref_in_shortened_obj (BYTE** address_to_set_card, BYTE** add
         if ((relocated_addr < hp->demotion_high) &&
             (relocated_addr >= hp->demotion_low))
         {
-            dprintf (3, ("%Ix on h#d, set card for location %Ix(%Ix)",
+            dprintf (3, ("%Ix on h%d, set card for location %Ix(%Ix)",
                         relocated_addr, hp->heap_number, (size_t)address_to_set_card, card_of((BYTE*)address_to_set_card)));
 
             set_card (card_of ((BYTE*)address_to_set_card));
@@ -26766,7 +26761,7 @@ void gc_heap::fix_brick_to_highest (BYTE* o, BYTE* next_o)
     size_t limit = brick_of (next_o);
     //dprintf(3,(" fixing brick %Ix to point to object %Ix, till %Ix(%Ix)",
     dprintf(3,("b:%Ix->%Ix-%Ix", 
-               new_current_brick, (size_t)o, (size_t)next_o, limit));
+               new_current_brick, (size_t)o, (size_t)next_o));
     while (b < limit)
     {
         set_brick (b,(new_current_brick - b));
@@ -29072,7 +29067,7 @@ static size_t linear_allocation_model (float allocation_fraction, size_t new_all
 {
     if ((allocation_fraction < 0.95) && (allocation_fraction > 0.0))
     {
-        dprintf (2, ("allocation fraction: %d%", (int)(allocation_fraction/100.0)));
+        dprintf (2, ("allocation fraction: %d", (int)(allocation_fraction/100.0)));
         new_allocation = (size_t)(allocation_fraction*new_allocation + (1.0-allocation_fraction)*previous_desired_allocation);
     }
 #if 0 
