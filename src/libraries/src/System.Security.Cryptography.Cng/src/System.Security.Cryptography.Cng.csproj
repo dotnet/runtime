@@ -20,18 +20,48 @@
       <Project>{D04A73AE-E418-4ACD-A132-7688435BE8B5}</Project>
       <Name>System.Security.Cryptography.Primitives</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Security.Cryptography.Encoding\src\System.Security.Cryptography.Encoding.csproj">
-      <Project>{AA81E343-5E54-40B0-9381-C459419BE780}</Project>
-      <Name>System.Security.Cryptography.Encoding</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\System.Security.Cryptography.Algorithms\src\System.Security.Cryptography.Algorithms.csproj">
       <Project>{81A05E2E-E3AE-4246-B4E6-DD5F31FB71F9}</Project>
       <Name>System.Security.Cryptography.Algorithms</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-     <Compile Include="ContractStubs.cs" />
+     <Compile Include="System\Security\Cryptography\CngAlgorithm.cs" />
+     <Compile Include="System\Security\Cryptography\CngAlgorithmGroup.cs" />
+     <Compile Include="System\Security\Cryptography\CngExportPolicies.cs" />
+     <Compile Include="System\Security\Cryptography\CngKey.cs" />
+     <Compile Include="System\Security\Cryptography\CngKey.Properties.cs" />
+     <Compile Include="System\Security\Cryptography\CngKey.StandardProperties.cs" />
+     <Compile Include="System\Security\Cryptography\CngKey.Create.cs" />
+     <Compile Include="System\Security\Cryptography\CngKey.Import.cs" />
+     <Compile Include="System\Security\Cryptography\CngKey.Export.cs" />
+     <Compile Include="System\Security\Cryptography\CngKey.Delete.cs" />
+     <Compile Include="System\Security\Cryptography\CngKey.Exists.cs" />
+     <Compile Include="System\Security\Cryptography\CngKey.Open.cs" />
+     <Compile Include="System\Security\Cryptography\CngKey.OpenHandle.cs" />
+     <Compile Include="System\Security\Cryptography\CngKeyBlobFormat.cs" />
+     <Compile Include="System\Security\Cryptography\CngKeyCreationOptions.cs" />
+     <Compile Include="System\Security\Cryptography\CngKeyCreationParameters.cs" />
+     <Compile Include="System\Security\Cryptography\CngKeyHandleOpenOptions.cs" />
+     <Compile Include="System\Security\Cryptography\CngKeyOpenOptions.cs" />
+     <Compile Include="System\Security\Cryptography\CngKeyUsages.cs" />
+     <Compile Include="System\Security\Cryptography\CngProperty.cs" />
+     <Compile Include="System\Security\Cryptography\CngPropertyCollection.cs" />
+     <Compile Include="System\Security\Cryptography\CngPropertyOptions.cs" />
+     <Compile Include="System\Security\Cryptography\CngProvider.cs" />
+     <Compile Include="System\Security\Cryptography\CngUIPolicy.cs" />
+     <Compile Include="System\Security\Cryptography\CngUIProtectionLevels.cs" />
+     <Compile Include="System\Security\Cryptography\RSACng.cs" />
+
      <Compile Include="Microsoft\Win32\SafeHandles\NCryptSafeHandles.cs" />
+
+     <Compile Include="Internal\Cryptography\Helpers.cs" />
+     <Compile Include="Internal\Cryptography\KeyPropertyName.cs" />
+     <Compile Include="Internal\Cryptography\ProviderPropertyName.cs" />
+
+     <Compile Include="Interop\Interop.Libraries.cs" />
+     <Compile Include="Interop\NCrypt\NCrypt.cs" />
+
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

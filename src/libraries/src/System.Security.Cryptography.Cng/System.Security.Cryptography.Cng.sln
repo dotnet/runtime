@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.23107.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Cryptography.Cng", "src\System.Security.Cryptography.Cng.csproj", "{4C1BD451-6A99-45E7-9339-79C77C42EE9E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Cryptography.Cng.Tests", "tests\System.Security.Cryptography.Cng.Tests.csproj", "{FF53459F-66F7-4F00-8D36-DF440CE18419}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4C1BD451-6A99-45E7-9339-79C77C42EE9E}.Windows_Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
+		{4C1BD451-6A99-45E7-9339-79C77C42EE9E}.Windows_Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
+		{4C1BD451-6A99-45E7-9339-79C77C42EE9E}.Windows_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
+		{4C1BD451-6A99-45E7-9339-79C77C42EE9E}.Windows_Release|Any CPU.Build.0 = Windows_Release|Any CPU
+		{FF53459F-66F7-4F00-8D36-DF440CE18419}.Windows_Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
+		{FF53459F-66F7-4F00-8D36-DF440CE18419}.Windows_Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
+		{FF53459F-66F7-4F00-8D36-DF440CE18419}.Windows_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
+		{FF53459F-66F7-4F00-8D36-DF440CE18419}.Windows_Release|Any CPU.Build.0 = Windows_Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
