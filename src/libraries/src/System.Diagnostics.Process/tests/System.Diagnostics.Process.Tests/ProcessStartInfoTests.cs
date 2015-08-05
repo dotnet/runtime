@@ -230,47 +230,53 @@ namespace System.Diagnostics.ProcessTests
         public void TestUserCredentialsPropertiesOnWindows()
         {
             string username = "test", password = "PassWord123!!";
-            
-            if (Interop.NetUserAdd(username, password))
+            try
             {
-                Process p = CreateProcessInfinite();
+                Interop.NetUserAdd(username, password);
+            }
+            catch (Exception exc)
+            {
+                Console.Error.WriteLine("TestUserCredentialsPropertiesOnWindows: NetUserAdd failed: {0}", exc.Message);
+                return; // test is irrelevant if we can't add a user
+            }
 
-                p.StartInfo.LoadUserProfile = true;
-                p.StartInfo.UserName = username;
-                p.StartInfo.Password = GetSecureString(password);
+            Process p = CreateProcessInfinite();
 
-                SafeProcessHandle handle = null;
-                try
+            p.StartInfo.LoadUserProfile = true;
+            p.StartInfo.UserName = username;
+            p.StartInfo.Password = GetSecureString(password);
+
+            SafeProcessHandle handle = null;
+            try
+            {
+                p.Start();
+                if (Interop.OpenProcessToken(p.SafeHandle, 0x8u, out handle))
                 {
-                    p.Start();
-                    if (Interop.OpenProcessToken(p.SafeHandle, 0x8u, out handle))
+                    SecurityIdentifier sid;
+                    if (Interop.ProcessTokenToSid(handle, out sid))
                     {
-                        SecurityIdentifier sid;
-                        if (Interop.ProcessTokenToSid(handle, out sid))
-                        {
-                            string actualUserName = sid.Translate(typeof(NTAccount)).ToString();
-                            int indexOfDomain = actualUserName.IndexOf('\\');
-                            if (indexOfDomain != -1)
-                                actualUserName = actualUserName.Substring(indexOfDomain + 1);
+                        string actualUserName = sid.Translate(typeof(NTAccount)).ToString();
+                        int indexOfDomain = actualUserName.IndexOf('\\');
+                        if (indexOfDomain != -1)
+                            actualUserName = actualUserName.Substring(indexOfDomain + 1);
 
-                            bool isProfileLoaded = GetNamesOfUserProfiles().Any(profile => profile.Equals(username));
+                        bool isProfileLoaded = GetNamesOfUserProfiles().Any(profile => profile.Equals(username));
 
-                            Assert.Equal(username, actualUserName);
-                            Assert.True(isProfileLoaded);
-                        }
+                        Assert.Equal(username, actualUserName);
+                        Assert.True(isProfileLoaded);
                     }
                 }
-                finally
-                {
-                    if (handle != null)
-                        handle.Dispose();
+            }
+            finally
+            {
+                if (handle != null)
+                    handle.Dispose();
 
-                    if (!p.HasExited)
-                        p.Kill();
+                if (!p.HasExited)
+                    p.Kill();
 
-                    Interop.NetUserDel(null, username);
-                    Assert.True(p.WaitForExit(WaitInMS));
-                }
+                Interop.NetUserDel(null, username);
+                Assert.True(p.WaitForExit(WaitInMS));
             }
         }
 
