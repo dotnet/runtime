@@ -135,6 +135,7 @@ AC_CHECK_SIZEOF(void *)
 AC_CHECK_SIZEOF(long)
 AC_CHECK_SIZEOF(long long)
 AC_CHECK_FUNCS(strlcpy stpcpy strtok_r rewinddir vasprintf)
+AC_CHECK_FUNC(vasprintf, have_vasprintf=yes)
 AC_CHECK_FUNCS(getrlimit)
 
 #
