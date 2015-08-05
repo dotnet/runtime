@@ -95,7 +95,7 @@ namespace System.Text
         [System.Security.SecurityCritical]  // auto-generated_required
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            // Make sure to get teh base stuff too This throws if info is null
+            // Make sure to get the base stuff too This throws if info is null
             SerializeEncoding(info, context);
             Contract.Assert(info!=null, "[ISCIIEncoding.GetObjectData] Expected null info to throw");
 
