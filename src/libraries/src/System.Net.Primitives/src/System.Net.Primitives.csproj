@@ -99,6 +99,7 @@
     <Compile Include="System\Net\IPAddressPal.Windows.cs" />
     <Compile Include="System\Net\HostInformationPal.Windows.cs" />
     <Compile Include="System\Net\SocketAddressPal.Windows.cs" />
+    <Compile Include="System\Net\SocketException.Windows.cs" />
 
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs" >
       <Link>Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs</Link>
@@ -146,6 +147,7 @@
     <Compile Include="System\Net\IPAddressPal.Unix.cs" />
     <Compile Include="System\Net\HostInformationPal.Unix.cs" />
     <Compile Include="System\Net\SocketAddressPal.Unix.cs" />
+    <Compile Include="System\Net\SocketException.Unix.cs" />
 
     <Compile Include="$(CommonPath)\Interop\Interop.CheckedAccess.cs" >
       <Link>Common\Interop\Interop.CheckedAccess.cs</Link>
