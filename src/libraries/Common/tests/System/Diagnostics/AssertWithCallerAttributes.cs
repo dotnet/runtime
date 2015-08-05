@@ -274,27 +274,6 @@ internal static class Assert
         catch (Exception e) { throw WrapException(e, path, line); }
     }
 
-    public static void None(IEnumerable collection, object expected,
-        [CallerFilePath] string path = null, [CallerLineNumber] int line = 0)
-    {
-        try { Xunit.Assert.DoesNotContain(expected, (IEnumerable<object>)collection); }
-        catch (Exception e) { throw WrapException(e, path, line); }
-    }
-
-    public static void None<T>(IEnumerable<T> collection, Predicate<T> predicate,
-        [CallerFilePath] string path = null, [CallerLineNumber] int line = 0)
-    {
-        try { Xunit.Assert.DoesNotContain(collection, predicate); }
-        catch (Exception e) { throw WrapException(e, path, line); }
-    }
-
-    public static void None<T>(IEnumerable<T> collection, T expected,
-        [CallerFilePath] string path = null, [CallerLineNumber] int line = 0)
-    {
-        try { Xunit.Assert.DoesNotContain(expected, collection); }
-        catch (Exception e) { throw WrapException(e, path, line); }
-    }
-
     public static void NotEmpty(IEnumerable collection,
         [CallerFilePath] string path = null, [CallerLineNumber] int line = 0)
     {
