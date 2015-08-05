@@ -16,6 +16,10 @@ Debugging CoreCLR on Windows
 
 Steps 1-8 only need to be done once, and then (9) can be repeated whenever you want to start debugging. The above can be done with Visual Studio 2013.
 
+####api-ms-win-core-* DLL missing error
+If you get the `The program can't start because api-ms-win-core-winrt-string-l1-1-0.dll is missing from your computer. Try reinstalling the program to fix this problem` error while debugging, build the tests project. After build completes, place the required dlls from "**_..\coreclr\tests\src\packages\Microsoft.DotNet.CoreCLR.TestDependencies.1.0.0-prerelease\lib\aspnetcore50_**" alongside the coreclr.dll. See [Issue #65](https://github.com/dotnet/coreclr/issues/65) and this [topic](http://forums.dotnetfoundation.org/t/coreclr-on-win7-api-ms-win-core-winrt-string-l1-1-0-is-missing/853/4).
+
+
 Debugging Mscorlib and/or managed application
 =============================================
 
