@@ -133,10 +133,12 @@ namespace System.Diagnostics.ProcessTests
         {
             DateTime timeBeforeProcessStart = DateTime.UtcNow;
             Process p = CreateProcessInfinite();
-            StartAndKillProcessWithDelay(p);
+            p.Start();
+            Assert.Throws<InvalidOperationException>(() => p.ExitTime);
+            p.Kill();
+            Assert.True(p.WaitForExit(WaitInMS));
             Assert.True(p.ExitTime.ToUniversalTime() > timeBeforeProcessStart, "TestExitTime is incorrect.");
         }
-
 
         [Fact]
         public void TestId()
@@ -366,6 +368,8 @@ namespace System.Diagnostics.ProcessTests
         {
             DateTime timeBeforeCreatingProcess = DateTime.UtcNow;
             Process p = CreateProcessInfinite();
+
+            Assert.Throws<InvalidOperationException>(() => p.StartTime);
             try
             {
                 p.Start();
@@ -376,8 +380,19 @@ namespace System.Diagnostics.ProcessTests
                 // Allowing for error in 10 ms.
                 long tenMSTicks = new TimeSpan(0, 0, 0, 0, 10).Ticks;
                 long beforeTicks = timeBeforeCreatingProcess.Ticks - tenMSTicks;
-                long afterTicks = DateTime.UtcNow.Ticks + tenMSTicks;
-                Assert.InRange(p.StartTime.ToUniversalTime().Ticks, beforeTicks, afterTicks);
+
+                try
+                {
+                    // Ensure the process has started, p.id throws InvalidOperationException, if the process has not yet started.
+                    Assert.Equal(p.Id, Process.GetProcessById(p.Id).Id);
+
+                    long afterTicks = DateTime.UtcNow.Ticks + tenMSTicks;
+                    Assert.InRange(p.StartTime.ToUniversalTime().Ticks, beforeTicks, afterTicks);
+                }
+                catch (InvalidOperationException)
+                {
+                    Assert.True(p.StartTime.ToUniversalTime().Ticks > beforeTicks);
+                }
             }
             finally
             {
