@@ -151,7 +151,7 @@ namespace System.Globalization {
 
 #region Serialization 
         //
-        //  m_cultureId is needed for serialization only to detect the case if teh region info is created using the name or using the LCID.
+        //  m_cultureId is needed for serialization only to detect the case if the region info is created using the name or using the LCID.
         //  in case m_cultureId is zero means that the RigionInfo is created using name. otherwise it is created using LCID.
         //
 
