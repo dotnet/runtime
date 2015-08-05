@@ -137,7 +137,6 @@ sgen_thread_handshake (BOOL suspend)
 	} END_FOREACH_THREAD_SAFE
 	return count;
 }
-#endif
 
 void
 sgen_os_init (void)
@@ -155,5 +154,6 @@ mono_gc_get_restart_signal (void)
 {
 	return -1;
 }
+#endif
 #endif
 #endif
