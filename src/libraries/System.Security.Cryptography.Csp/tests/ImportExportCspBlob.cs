@@ -9,7 +9,6 @@ namespace System.Security.Cryptography.Rsa.Tests
     public class ImportExportCspBlob
     {
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
         public static void ExportImportPublicOnly()
         {
             byte[] expectedExport = ByteUtils.HexToByteArray(
@@ -42,7 +41,6 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
         public static void ExportImportPublicPrivate()
         {
             // This blob contains the private key of TestData.CspTestKey. The guidelines for the TestData class
