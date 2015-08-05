@@ -53,13 +53,9 @@ namespace System.IO
         {
             // The desired behavior for Move(source, dest) is to not overwrite the destination file
             // if it exists. Since rename(source, dest) will replace the file at 'dest' if it exists,
-            // a check is added before rename is called. Note that this is a race condition. Possible
-            // better solutions would be to use link/unlink or platform specific functions instead of
-            // rename(source, dest). Regardless of the implementation, an IOException should be thrown if 
-            // 'dest' refers to a file that already exists.
-            if (File.Exists(destFullPath))
-                throw new IOException(SR.GetResourceString(SR.IO_AlreadyExists_Name, destFullPath));
-            while (Interop.libc.rename(sourceFullPath, destFullPath) < 0)
+            // link/unlink are used instead. Note that the Unix FileSystemWatcher will treat a Move 
+            // as a Creation and Deletion instead of a Rename and thus differ from Windows.
+            while (Interop.libc.link(sourceFullPath, destFullPath) < 0)
             {
                 int errno = Marshal.GetLastWin32Error();
                 if (errno == Interop.Errors.EINTR) // interrupted; try again
@@ -71,7 +67,6 @@ namespace System.IO
                     CopyFile(sourceFullPath, destFullPath, overwrite: false);
                     break;
                 }
-                //else if (errno == Interop.Errors.ENOENT && (!Directory.Exists(Path.GetDirectoryName(sourceFullPath)) || !Directory.Exists(Path.GetDirectoryName(destFullPath)))) // The parent directory for either source or dest can't be found
                 else if (errno == Interop.Errors.ENOENT && !Directory.Exists(Path.GetDirectoryName(destFullPath))) // The parent directory of destFile can't be found
                 {
                     // Windows distinguishes between whether the directory or the file isn't found,
@@ -88,6 +83,7 @@ namespace System.IO
                     throw Interop.GetExceptionForIoErrno(errno);
                 }
             }
+            DeleteFile(sourceFullPath);
         }
 
         public override void DeleteFile(string fullPath)

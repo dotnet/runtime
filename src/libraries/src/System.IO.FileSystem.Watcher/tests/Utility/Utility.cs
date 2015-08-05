@@ -106,7 +106,7 @@ public static class Utility
         Action<AutoResetEvent, TemporaryTestDirectory> action,
         NotifyFilters changeFilers = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.DirectoryName)
     {
-        using (var dir = Utility.CreateTestDirectory())
+        using (var dir = Utility.CreateTestDirectory(Guid.NewGuid().ToString()))
         using (var watcher = new FileSystemWatcher())
         {
             AutoResetEvent createdOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created); // not "using" to avoid race conditions with FSW callbacks

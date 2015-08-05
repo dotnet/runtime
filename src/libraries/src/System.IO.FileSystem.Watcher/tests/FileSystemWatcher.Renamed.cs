@@ -8,27 +8,6 @@ using Xunit;
 public partial class FileSystemWatcher_4000_Tests
 {
     [Fact]
-    public static void FileSystemWatcher_Renamed_File()
-    {
-        using (var file = Utility.CreateTestFile())
-        using (var watcher = new FileSystemWatcher("."))
-        {
-            watcher.Filter = Path.GetFileName(file.Path);
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Renamed);
-
-            string newName = file.Path + "_rename";
-            Utility.EnsureDelete(newName);
-
-            watcher.EnableRaisingEvents = true;
-
-            file.Move(newName);
-
-            Utility.ExpectEvent(eventOccured, "renamed");
-        }
-    }
-
-
-    [Fact]
     public static void FileSystemWatcher_Renamed_Directory()
     {
         using (var dir = Utility.CreateTestDirectory())
@@ -86,19 +65,6 @@ public partial class FileSystemWatcher_4000_Tests
         {
             ttd.Move(ttd.Path + "_2");
             Utility.ExpectEvent(are, "renamed");
-        });
-    }
-
-    [Fact]
-    public static void FileSystemWatcher_Renamed_FileInNestedDirectory()
-    {
-        Utility.TestNestedDirectoriesHelper(WatcherChangeTypes.Renamed, (AutoResetEvent are, TemporaryTestDirectory ttd) =>
-        {
-            using (var nestedFile = new TemporaryTestFile(Path.Combine(ttd.Path, "nestedFile")))
-            {
-                nestedFile.Move(nestedFile.Path + "_2");
-                Utility.ExpectEvent(are, "renamed");
-            }
         });
     }
 }

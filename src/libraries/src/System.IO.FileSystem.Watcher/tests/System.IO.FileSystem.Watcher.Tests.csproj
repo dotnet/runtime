@@ -24,6 +24,7 @@
     <Compile Include="FileSystemWatcher.InternalBufferSize.cs" />
     <Compile Include="FileSystemWatcher.NotifyFilter.cs" />
     <Compile Include="FileSystemWatcher.Renamed.cs" />
+    <Compile Include="FileSystemWatcher.MoveFile.cs" />
     <Compile Include="Utility\TemporaryTestDirectory.cs" />
     <Compile Include="Utility\TemporaryTestFile.cs" />
     <Compile Include="Utility\TestFileSystemWatcher.cs" />
