@@ -3,6 +3,17 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
+.macro NESTED_ENTRY Name, Section, Handler
+        LEAF_ENTRY \Name, \Section
+        .ifnc \Handler, NoHandler
+        .cfi_personality 0, C_FUNC(\Handler) // 0 == DW_EH_PE_absptr
+        .endif
+.endm
+
+.macro NESTED_END Name, Section
+        LEAF_END \Name, \Section
+.endm
+
 .macro PATCH_LABEL Name
         .global C_FUNC(\Name)
 C_FUNC(\Name):
