@@ -62,7 +62,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Instructs the Process component to wait the specified number of milliseconds for the associated process to exit.
         /// </summary>
-        public bool WaitForExitCore(int milliseconds)
+        private bool WaitForExitCore(int milliseconds)
         {
             bool exited = GetWaitState().WaitForExit(milliseconds);
             Debug.Assert(exited || milliseconds != Timeout.Infinite);
