@@ -4,7 +4,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -15,7 +14,7 @@ namespace System.IO
     {
         public override int MaxPath { get { return Interop.libc.MaxPath; } }
 
-        public override int MaxDirectoryPath { get { return Interop.libc.MaxName; } }
+        public override int MaxDirectoryPath { get { return Interop.libc.MaxPath; } }
 
         public override FileStreamBase Open(string fullPath, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, FileStream parent)
         {
