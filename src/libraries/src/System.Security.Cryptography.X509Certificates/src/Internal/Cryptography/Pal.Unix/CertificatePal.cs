@@ -35,6 +35,8 @@ namespace Internal.Cryptography.Pal
                 }
 
                 Interop.libcrypto.CheckValidOpenSslHandle(cert);
+
+                return new OpenSslX509CertificateReader(cert);
             }
 
             // DER-X509
