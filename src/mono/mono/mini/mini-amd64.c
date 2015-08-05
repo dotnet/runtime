@@ -65,9 +65,6 @@ static gboolean optimize_for_xen = TRUE;
 #define mono_mini_arch_unlock() mono_mutex_unlock (&mini_arch_mutex)
 static mono_mutex_t mini_arch_mutex;
 
-MonoBreakpointInfo
-mono_breakpoint_info [MONO_BREAKPOINT_ARRAY_SIZE];
-
 /*
  * The code generated for sequence points reads from this location, which is
  * made read-only when single stepping is enabled.

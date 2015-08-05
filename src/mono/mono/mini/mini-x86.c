@@ -71,9 +71,6 @@ static mono_mutex_t mini_arch_mutex;
 
 #define OP_SEQ_POINT_BP_OFFSET 7
 
-MonoBreakpointInfo
-mono_breakpoint_info [MONO_BREAKPOINT_ARRAY_SIZE];
-
 static guint8*
 emit_load_aotconst (guint8 *start, guint8 *code, MonoCompile *cfg, MonoJumpInfo **ji, int dreg, int tramp_type, gconstpointer target);
 
@@ -6751,7 +6748,6 @@ void
 mono_arch_stop_single_stepping (void)
 {
 	ss_trampoline = NULL;
-	//mono_mprotect (ss_trigger_page, mono_pagesize (), MONO_MMAP_READ);
 }
 
 /*
@@ -6765,23 +6761,6 @@ mono_arch_is_single_step_event (void *info, void *sigctx)
 {
 	/* We use soft breakpoints */
 	return FALSE;
-#if 0
-#ifdef TARGET_WIN32
-	EXCEPTION_RECORD* einfo = ((EXCEPTION_POINTERS*)info)->ExceptionRecord;	/* Sometimes the address is off by 4 */
-
-	if (((gpointer)einfo->ExceptionInformation[1] >= ss_trigger_page && (guint8*)einfo->ExceptionInformation[1] <= (guint8*)ss_trigger_page + 128))
-		return TRUE;
-	else
-		return FALSE;
-#else
-	siginfo_t* sinfo = (siginfo_t*) info;
-	/* Sometimes the address is off by 4 */
-	if (sinfo->si_signo == DBG_SIGNAL && (sinfo->si_addr >= ss_trigger_page && (guint8*)sinfo->si_addr <= (guint8*)ss_trigger_page + 128))
-		return TRUE;
-	else
-		return FALSE;
-#endif
-#endif
 }
 
 gboolean
@@ -6789,22 +6768,6 @@ mono_arch_is_breakpoint_event (void *info, void *sigctx)
 {
 	/* We use soft breakpoints */
 	return FALSE;
-#if 0
-#ifdef TARGET_WIN32
-	EXCEPTION_RECORD* einfo = ((EXCEPTION_POINTERS*)info)->ExceptionRecord;	/* Sometimes the address is off by 4 */
-	if (((gpointer)einfo->ExceptionInformation[1] >= bp_trigger_page && (guint8*)einfo->ExceptionInformation[1] <= (guint8*)bp_trigger_page + 128))
-		return TRUE;
-	else
-		return FALSE;
-#else
-	siginfo_t* sinfo = (siginfo_t*)info;
-	/* Sometimes the address is off by 4 */
-	if (sinfo->si_signo == DBG_SIGNAL && (sinfo->si_addr >= bp_trigger_page && (guint8*)sinfo->si_addr <= (guint8*)bp_trigger_page + 128))
-		return TRUE;
-	else
-		return FALSE;
-#endif
-#endif
 }
 
 #define BREAKPOINT_SIZE 2
@@ -6818,7 +6781,6 @@ void
 mono_arch_skip_breakpoint (MonoContext *ctx, MonoJitInfo *ji)
 {
 	g_assert_not_reached ();
-	//MONO_CONTEXT_SET_IP (ctx, (guint8*)MONO_CONTEXT_GET_IP (ctx) + BREAKPOINT_SIZE);
 }
 
 /*
@@ -6830,7 +6792,6 @@ void
 mono_arch_skip_single_step (MonoContext *ctx)
 {
 	g_assert_not_reached ();
-	//MONO_CONTEXT_SET_IP (ctx, (guint8*)MONO_CONTEXT_GET_IP (ctx) + 6);
 }
 
 /*

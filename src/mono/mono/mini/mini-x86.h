@@ -268,13 +268,6 @@ typedef struct {
 			MONO_EMIT_NEW_COND_EXC (cfg, LE_UN, "IndexOutOfRangeException"); \
 	} while (0)
 
-typedef struct {
-	guint8 *address;
-	guint8 saved_byte;
-} MonoBreakpointInfo;
-
-extern MonoBreakpointInfo mono_breakpoint_info [MONO_BREAKPOINT_ARRAY_SIZE];
-
 /* Return value marshalling for calls between gsharedvt and normal code */
 typedef enum {
 	GSHAREDVT_RET_NONE = 0,

@@ -404,13 +404,6 @@ mono_amd64_get_exception_trampolines (gboolean aot);
 int
 mono_amd64_get_tls_gs_offset (void) MONO_LLVM_INTERNAL;
 
-typedef struct {
-	guint8 *address;
-	guint8 saved_byte;
-} MonoBreakpointInfo;
-
-extern MonoBreakpointInfo mono_breakpoint_info [MONO_BREAKPOINT_ARRAY_SIZE];
-
 #ifdef TARGET_WIN32
 
 void mono_arch_unwindinfo_add_push_nonvol (gpointer* monoui, gpointer codebegin, gpointer nextip, guchar reg );
