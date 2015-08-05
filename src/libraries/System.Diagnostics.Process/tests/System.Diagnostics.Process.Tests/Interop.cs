@@ -93,7 +93,7 @@ namespace System.Diagnostics.ProcessTests
         [DllImport("advapi32.dll")]
         internal static extern bool GetTokenInformation(SafeProcessHandle TokenHandle, uint TokenInformationClass, IntPtr TokenInformation, int TokenInformationLength, ref int ReturnLength);
 
-        internal static bool NetUserAdd(string username, string password)
+        internal static void NetUserAdd(string username, string password)
         {
             USER_INFO_1 userInfo = new USER_INFO_1();
             userInfo.usri1_name = username;
@@ -103,12 +103,12 @@ namespace System.Diagnostics.ProcessTests
             uint parm_err;
             uint result = NetUserAdd(null, 1, ref userInfo, out parm_err);
 
-            if (result != 0)
+            if (result != 0) // NERR_Success
             {
-                throw new Win32Exception();
+                // most likely result == ERROR_ACCESS_DENIED 
+                // due to running without elevated privileges
+                throw new Win32Exception((int)result);
             }
-
-            return true;
         }
 
         internal static bool ProcessTokenToSid(SafeProcessHandle token, out SecurityIdentifier sid)
