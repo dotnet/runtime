@@ -165,5 +165,33 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal("1.2.840.113549.1.1.1", cert2.GetKeyAlgorithm());
             }
         }
+
+        [Fact]
+        public static void UseAfterDispose()
+        {
+            using (X509Certificate2 c = new X509Certificate2(TestData.MsCertificate))
+            {
+                IntPtr h = c.Handle;
+
+                // Do a couple of things that would only be true on a valid certificate, as a precondition.
+                Assert.NotEqual(IntPtr.Zero, h);
+                byte[] actualThumbprint = c.GetCertHash();
+
+                c.Dispose();
+
+                // For compat reasons, Dispose() acts like the now-defunct Reset() method rather than
+                // causing ObjectDisposedExceptions.
+                h = c.Handle;
+                Assert.Equal(IntPtr.Zero, h);
+                Assert.Throws<CryptographicException>(() => c.GetCertHash());
+                Assert.Throws<CryptographicException>(() => c.GetKeyAlgorithm());
+                Assert.Throws<CryptographicException>(() => c.GetKeyAlgorithmParameters());
+                Assert.Throws<CryptographicException>(() => c.GetKeyAlgorithmParametersString());
+                Assert.Throws<CryptographicException>(() => c.GetPublicKey());
+                Assert.Throws<CryptographicException>(() => c.GetSerialNumber());
+                Assert.Throws<CryptographicException>(() => c.Issuer);
+                Assert.Throws<CryptographicException>(() => c.Subject);
+            }
+        }
     }
 }
