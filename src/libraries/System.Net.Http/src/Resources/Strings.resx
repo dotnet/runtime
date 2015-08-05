@@ -285,4 +285,7 @@
   <data name="net_cookie_attribute" xml:space="preserve">
     <value>The '{0}'='{1}' part of the cookie is invalid.</value>
   </data>
+  <data name="net_http_unix_invalid_client_cert_option" xml:space="preserve">
+    <value>libcurl supports only manual client certificate selection</value>
+  </data>
 </root>
