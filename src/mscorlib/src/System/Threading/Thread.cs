@@ -1059,7 +1059,7 @@ namespace System.Threading {
         // If the culture is safe (not customized or created in current app domain) 
         // then the FCALL will return a reference to that culture otherwise the 
         // FCALL will return failure. In case of failure we'll return the default culture.
-        // If the app domain owning a customized culture that is set to teh thread and this
+        // If the app domain owning a customized culture that is set to the thread and this
         // app domain get unloaded there is a code to clean up the culture from the thread
         // using the code in AppDomain::ReleaseDomainStores.
 
@@ -1175,7 +1175,7 @@ namespace System.Threading {
         // If the culture is safe (not customized or created in current app domain) 
         // then the FCALL will return a reference to that culture otherwise the 
         // FCALL will return failure. In case of failure we'll return the default culture.
-        // If the app domain owning a customized culture that is set to teh thread and this
+        // If the app domain owning a customized culture that is set to the thread and this
         // app domain get unloaded there is a code to clean up the culture from the thread
         // using the code in AppDomain::ReleaseDomainStores.
 
