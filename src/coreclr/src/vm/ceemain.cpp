@@ -256,6 +256,11 @@
 #include "perfmap.h"
 #endif
 
+#ifndef FEATURE_PAL
+// Included for referencing __security_cookie
+#include "process.h"
+#endif // !FEATURE_PAL
+
 #ifdef FEATURE_IPCMAN
 static HRESULT InitializeIPCManager(void);
 static void PublishIPCManager(void);
@@ -683,15 +688,6 @@ DWORD __stdcall BBSweepStartFunction(LPVOID lpArgs)
 
 //-----------------------------------------------------------------------------
 
-#ifndef FEATURE_PAL
-// Defined by CRT
-extern "C"
-{
-    extern DWORD_PTR __security_cookie;
-    extern void __fastcall __security_check_cookie(DWORD_PTR cookie);
-}
-#endif // !FEATURE_PAL
-
 void InitGSCookie()
 {
     CONTRACTL
@@ -717,7 +713,7 @@ void InitGSCookie()
                               PAGE_EXECUTE_WRITECOPY|PAGE_WRITECOMBINE)) == 0));
 
     // Forces VC cookie to be initialized.
-    void (__fastcall *pf)(DWORD_PTR cookie) = &__security_check_cookie;
+    void * pf = &__security_check_cookie;
     pf = NULL;
 
     GSCookie val = (GSCookie)(__security_cookie ^ GetTickCount());
