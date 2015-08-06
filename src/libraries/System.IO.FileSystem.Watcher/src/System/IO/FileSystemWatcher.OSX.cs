@@ -229,7 +229,7 @@ namespace System.IO
             FSEventStreamEventId[] eventIds)
         {
             Debug.Assert((numEvents.ToInt32() == eventPaths.Length) && (numEvents.ToInt32() == eventFlags.Length) && (numEvents.ToInt32() == eventIds.Length));
-            
+
             // Since renames come in pairs, when we find the first we need to search for the next one. Once we find it, we'll add it to this
             // list so when the for-loop comes across it, we'll skip it since it's already been processed as part of the original of the pair.
             List<FSEventStreamEventId> handledRenameEvents = null;
@@ -310,19 +310,21 @@ namespace System.IO
                     }
                     else
                     {
-                        // Note: we keep the same order (Create, delete, modify) as *nix but since OS X does some coalescing on it's own, we need to
-                        //       fire multiple events for the same item (potentially).
-                        if (IsFlagSet(eventFlags[i], Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemCreated))
+                        // OS X is wonky where it can give back kFSEventStreamEventFlagItemCreated and kFSEventStreamEventFlagItemRemoved
+                        // for the same item. The only option we have is to stat and see if the item exists; if so send created, otherwise send deleted.
+                        if ((IsFlagSet(eventFlags[i], Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemCreated)) ||
+                            (IsFlagSet(eventFlags[i], Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemRemoved)))
                         {
-                            // Next look for creates since a create + modification coalesced could confuse apps since a file they haven't heard of yet would get a mod event
-                            NotifyFileSystemEventArgs(WatcherChangeTypes.Created, relativePath);
+                            if (DoesItemExist(eventPaths[i], IsFlagSet(eventFlags[i], Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsFile)))
+                            {
+                                NotifyFileSystemEventArgs(WatcherChangeTypes.Created, relativePath);
+                            }
+                            else
+                            {
+                                NotifyFileSystemEventArgs(WatcherChangeTypes.Deleted, relativePath);
+                            }
                         }
-                        
-                        if (IsFlagSet(eventFlags[i], Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemRemoved))
-                        {
-                            NotifyFileSystemEventArgs(WatcherChangeTypes.Deleted, relativePath);
-                        }
-                        
+
                         if (IsFlagSet(eventFlags[i], Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemInodeMetaMod) ||
                             IsFlagSet(eventFlags[i], Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemModified) ||
                             IsFlagSet(eventFlags[i], Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemFinderInfoMod) ||

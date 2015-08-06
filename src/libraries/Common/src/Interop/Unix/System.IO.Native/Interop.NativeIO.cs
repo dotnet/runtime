@@ -43,5 +43,8 @@ internal static partial class Interop
 
         [DllImport(Libraries.IOInterop, SetLastError = true)]
         internal static extern int Stat(string path, out FileStats output);
+
+        [DllImport(Libraries.IOInterop, SetLastError = true)]
+        internal static extern int LStat(string path, out FileStats output);
     }
 }

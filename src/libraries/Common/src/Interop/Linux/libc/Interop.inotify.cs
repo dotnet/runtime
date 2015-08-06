@@ -53,6 +53,7 @@ internal static partial class Interop
             IN_Q_OVERFLOW  = 0x00004000,
             IN_IGNORED     = 0x00008000,
             IN_ONLYDIR     = 0x01000000,
+            IN_DONT_FOLLOW = 0x02000000,
             IN_EXCL_UNLINK = 0x04000000,
             IN_ISDIR       = 0x40000000,
         }
