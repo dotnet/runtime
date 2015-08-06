@@ -13,6 +13,8 @@
 #include <memory.h>
 
 #include "contract.h"
+#include "contract.inl"
+
 #include "bitvector.h"
 
 #if USE_BITVECTOR
