@@ -1304,7 +1304,7 @@ mono_threadpool_ms_end_invoke (MonoAsyncResult *ares, MonoArray **out_args, Mono
 		return NULL;
 	}
 
-	MONO_OBJECT_SETREF (ares, endinvoke_called, 1);
+	ares->endinvoke_called = 1;
 
 	/* wait until we are really finished */
 	if (ares->completed) {
