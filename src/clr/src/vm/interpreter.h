@@ -798,7 +798,7 @@ public:
           m_retBufArg(NULL),  // Initialize to NULL so we can safely declare protected.
 #endif // USE_CHECKED_OBJECTREFS
           m_genericsCtxtArg(NULL),
-          m_securityObject(TADDR(NULL)),
+          m_securityObject((Object*)NULL),
           m_args(NULL),
           m_argsSize(0),
           m_callThisArg(NULL), 
