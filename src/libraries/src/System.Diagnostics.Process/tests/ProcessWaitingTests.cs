@@ -121,5 +121,71 @@ namespace System.Diagnostics.ProcessTests
             }
         }
 
+        [Fact]
+        public void WaitForPeerProcess()
+        {
+            Process child1 = CreateProcessInfinite();
+            child1.Start();
+
+            Process child2 = CreateProcess(peerId =>
+            {
+                Process peer = Process.GetProcessById(int.Parse(peerId));
+                Console.WriteLine("Signal");
+                Assert.True(peer.WaitForExit(WaitInMS));
+                return SuccessExitCode;
+            }, child1.Id.ToString());
+            child2.StartInfo.RedirectStandardOutput = true;
+            child2.Start();
+            Assert.Equal("Signal", child2.StandardOutput.ReadLine()); // wait for the signal before killing the peer
+
+            child1.Kill();
+            Assert.True(child1.WaitForExit(WaitInMS));
+            Assert.True(child2.WaitForExit(WaitInMS));
+
+            Assert.Equal(SuccessExitCode, child2.ExitCode);
+        }
+
+        [Fact]
+        public void WaitChain()
+        {
+            Process root = CreateProcess(() =>
+            {
+                Process child1 = CreateProcess(() =>
+                {
+                    Process child2 = CreateProcess(() =>
+                    {
+                        Process child3 = CreateProcess(() => SuccessExitCode);
+                        child3.Start();
+                        Assert.True(child3.WaitForExit(WaitInMS));
+                        return child3.ExitCode;
+                    });
+                    child2.Start();
+                    Assert.True(child2.WaitForExit(WaitInMS));
+                    return child2.ExitCode;
+                });
+                child1.Start();
+                Assert.True(child1.WaitForExit(WaitInMS));
+                return child1.ExitCode;
+            });
+            root.Start();
+            Assert.True(root.WaitForExit(WaitInMS));
+            Assert.Equal(SuccessExitCode, root.ExitCode);
+        }
+
+        [Fact]
+        public void WaitForSelfTerminatingChild()
+        {
+            Process child = CreateProcess(() =>
+            {
+                Process.GetCurrentProcess().Kill();
+                Assert.False(true, "Shouldn't get here");
+                return SuccessExitCode;
+            });
+            child.Start();
+            Assert.True(child.WaitForExit(WaitInMS));
+            Assert.NotEqual(SuccessExitCode, child.ExitCode);
+        }
+
+
     }
 }
