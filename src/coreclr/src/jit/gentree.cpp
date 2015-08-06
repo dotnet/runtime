@@ -8596,13 +8596,13 @@ GenTreePtr          Compiler::gtDispLinearTree(GenTreeStmt* curStmt,
                 // special case for child of initblk and cpblk
                 // op1 is dst, op2 is src, and op2 must show up first
                 assert(tree->OperIsBlkOp());
-                sprintf_s(bufp, sizeof(buf), "Source", listElemNum, 0);
+                sprintf_s(bufp, sizeof(buf), "Source");
                 indentStack->Push(indentInfo);
                 nextLinearNode = gtDispLinearTree(curStmt, nextLinearNode, child->gtOp.gtOp2, indentStack, bufp);
                 indentStack->Pop();
 
                 indentInfo = IIArc;
-                sprintf_s(bufp, sizeof(buf), "Destination", listElemNum, 0);
+                sprintf_s(bufp, sizeof(buf), "Destination");
                 indentStack->Push(indentInfo);
                 nextLinearNode = gtDispLinearTree(curStmt, nextLinearNode, child->gtOp.gtOp1, indentStack, bufp);
                 indentStack->Pop();
@@ -8641,7 +8641,7 @@ GenTreePtr          Compiler::gtDispLinearTree(GenTreeStmt* curStmt,
                     }
                     else
                     {
-                        sprintf_s(bufp, sizeof(buf), "List Item %d", listElemNum, 0);
+                        sprintf_s(bufp, sizeof(buf), "List Item %d", listElemNum);
                     }
                     indentStack->Push(indentInfo);
                     nextLinearNode = gtDispLinearTree(curStmt, nextLinearNode, listElem, indentStack, bufp);
