@@ -18,11 +18,22 @@
   </PropertyGroup>
   <!-- Compiled Source Files -->
   <ItemGroup>
-    <Compile Include="AnonymousPipesSimpleTest.cs" />
-    <Compile Include="AnonymousPipesThrowsTests.cs" />
-    <Compile Include="BaseCommonTests.cs" />
-    <Compile Include="NamedPipesSimpleTest.cs" />
-    <Compile Include="NamedPipesThrowsTests.cs" />
+    <Compile Include="AnonymousPipeTests\AnonymousPipeTest.CreateServer.cs" />
+    <Compile Include="AnonymousPipeTests\AnonymousPipeTest.CreateClient.cs" />
+    <Compile Include="AnonymousPipeTests\AnonymousPipeTestBase.cs" />
+    <Compile Include="AnonymousPipeTests\AnonymousPipeTest.Read.cs" />
+    <Compile Include="AnonymousPipeTests\AnonymousPipeTest.Specific.cs" />
+    <Compile Include="AnonymousPipeTests\AnonymousPipeTest.Write.cs" />
+    <Compile Include="NamedPipeTests\NamedPipeTest.CreateServer.cs" />
+    <Compile Include="NamedPipeTests\NamedPipeTest.CreateClient.cs" />
+    <Compile Include="NamedPipeTests\NamedPipeTestBase.cs" />
+    <Compile Include="NamedPipeTests\NamedPipeTest.Read.cs" />
+    <Compile Include="NamedPipeTests\NamedPipeTest.Write.cs" />
+    <Compile Include="NamedPipeTests\NamedPipeTest.Specific.cs" />
+    <Compile Include="NamedPipeTests\NamedPipeTest.Simple.cs" />
+    <Compile Include="PipeTestBase.cs" />
+    <Compile Include="PipeTest.Read.cs" />
+    <Compile Include="PipeTest.Write.cs" />
   </ItemGroup>
   <!-- Automatically added by VS -->
   <ItemGroup>
