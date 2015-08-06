@@ -7,17 +7,18 @@ using Xunit;
 
 public static class TimeZoneInfoTests
 {
-    private static String s_strPacific = Interop.IsWindows ? "Pacific Standard Time" : "America/Los_Angeles";
-    private static String s_strSydney = Interop.IsWindows ? "AUS Eastern Standard Time" : "Australia/Sydney";
-    private static String s_strGMT = Interop.IsWindows ? "GMT Standard Time" : "Europe/London";
-    private static String s_strTonga = Interop.IsWindows ? "Tonga Standard Time" : "Pacific/Tongatapu";
-    private static String s_strBrasil = Interop.IsWindows ? "E. South America Standard Time" : "America/Sao_Paulo";
-    private static String s_strPerth = Interop.IsWindows ? "W. Australia Standard Time" : "Australia/Perth";
-    private static String s_strBrasilia = Interop.IsWindows ? "E. South America Standard Time" : "America/Sao_Paulo";
-    private static String s_strNairobi = Interop.IsWindows ? "E. Africa Standard Time" : "Africa/Nairobi";
-    private static String s_strAmsterdam = Interop.IsWindows ? "W. Europe Standard Time" : "Europe/Berlin";
-    private static String s_strRussian = Interop.IsWindows ? "Russian Standard Time" : "Europe/Moscow";
-    private static String s_strLibya = Interop.IsWindows ? "Libya Standard Time" : "Africa/Tripoli";
+    private static readonly bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+    private static String s_strPacific = s_isWindows ? "Pacific Standard Time" : "America/Los_Angeles";
+    private static String s_strSydney = s_isWindows ? "AUS Eastern Standard Time" : "Australia/Sydney";
+    private static String s_strGMT = s_isWindows ? "GMT Standard Time" : "Europe/London";
+    private static String s_strTonga = s_isWindows ? "Tonga Standard Time" : "Pacific/Tongatapu";
+    private static String s_strBrasil = s_isWindows ? "E. South America Standard Time" : "America/Sao_Paulo";
+    private static String s_strPerth = s_isWindows ? "W. Australia Standard Time" : "Australia/Perth";
+    private static String s_strBrasilia = s_isWindows ? "E. South America Standard Time" : "America/Sao_Paulo";
+    private static String s_strNairobi = s_isWindows ? "E. Africa Standard Time" : "Africa/Nairobi";
+    private static String s_strAmsterdam = s_isWindows ? "W. Europe Standard Time" : "Europe/Berlin";
+    private static String s_strRussian = s_isWindows ? "Russian Standard Time" : "Europe/Moscow";
+    private static String s_strLibya = s_isWindows ? "Libya Standard Time" : "Africa/Tripoli";
 
     private static TimeZoneInfo s_myUtc = TimeZoneInfo.Utc;
     private static TimeZoneInfo s_myLocal = TimeZoneInfo.Local;
@@ -157,13 +158,13 @@ public static class TimeZoneInfoTests
         VerifyConvert(new DateTimeOffset(DateTime.MinValue.AddHours(5), new TimeSpan(-3, 0, 0)), s_strPacific, new DateTimeOffset(DateTime.MinValue, new TimeSpan(-8, 0, 0)));
 
         VerifyConvert(DateTime.MaxValue, s_strPacific, s_strSydney, DateTime.MaxValue);
-        if (Interop.IsWindows) // [ActiveIssue(2465, PlatformID.AnyUnix)]
+        if (s_isWindows) // [ActiveIssue(2465, PlatformID.AnyUnix)]
         {
             VerifyConvert(DateTime.MaxValue.AddHours(-19), s_strPacific, s_strSydney, DateTime.MaxValue);
         }
         VerifyConvert(DateTime.MaxValue.AddHours(-19.5), s_strPacific, s_strSydney, DateTime.MaxValue.AddHours(-0.5));
         VerifyConvert(DateTime.MinValue, s_strSydney, s_strPacific, DateTime.MinValue);
-        if (Interop.IsWindows) // [ActiveIssue(2465, PlatformID.AnyUnix)]
+        if (s_isWindows) // [ActiveIssue(2465, PlatformID.AnyUnix)]
         {
             VerifyConvert(DateTime.MinValue.AddHours(19), s_strSydney, s_strPacific, DateTime.MinValue);
             VerifyConvert(DateTime.MinValue.AddHours(19.5), s_strSydney, s_strPacific, DateTime.MinValue.AddHours(0.5));

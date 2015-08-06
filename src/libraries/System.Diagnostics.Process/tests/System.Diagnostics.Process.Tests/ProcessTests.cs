@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
 
@@ -21,14 +22,13 @@ namespace System.Diagnostics.ProcessTests
 
         private void AssertNonZeroWindowsZeroUnix(long value)
         {
-            switch (global::Interop.PlatformDetection.OperatingSystem)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                case global::Interop.OperatingSystem.Windows:
-                    Assert.NotEqual(0, value);
-                    break;
-                default:
-                    Assert.Equal(0, value);
-                    break;
+                Assert.NotEqual(0, value);
+            }
+            else
+            {
+                Assert.Equal(0, value);
             }
         }
 
@@ -143,7 +143,7 @@ namespace System.Diagnostics.ProcessTests
         [Fact]
         public void TestId()
         {
-            if (global::Interop.IsWindows)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 Assert.Equal(_process.Id, Interop.GetProcessId(_process.SafeHandle));
             }
@@ -192,7 +192,7 @@ namespace System.Diagnostics.ProcessTests
         public void TestMainModuleOnNonOSX()
         {
             string fileName = "corerun";
-            if (global::Interop.IsWindows)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 fileName = "CoreRun.exe";
 
             Process p = Process.GetCurrentProcess();
@@ -211,13 +211,13 @@ namespace System.Diagnostics.ProcessTests
                 Assert.True((long)p.MinWorkingSet >= 0);
             }
 
-            if (global::Interop.IsOSX)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 return; // doesn't support getting/setting working set for other processes
 
             long curValue = (long)_process.MaxWorkingSet;
             Assert.True(curValue >= 0);
 
-            if (global::Interop.IsWindows)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 try
                 {
@@ -246,13 +246,13 @@ namespace System.Diagnostics.ProcessTests
                 Assert.True((long)p.MinWorkingSet >= 0);
             }
 
-            if (global::Interop.IsOSX)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 return; // doesn't support getting/setting working set for other processes
 
             long curValue = (long)_process.MinWorkingSet;
             Assert.True(curValue >= 0);
 
-            if (global::Interop.IsWindows)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 try
                 {
@@ -497,7 +497,7 @@ namespace System.Diagnostics.ProcessTests
         public void TestSessionId()
         {
             uint sessionId;
-            if (global::Interop.IsWindows)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 Interop.ProcessIdToSessionId((uint)_process.Id, out sessionId);
             }
@@ -515,7 +515,7 @@ namespace System.Diagnostics.ProcessTests
             Process current = Process.GetCurrentProcess();
             Assert.NotNull(current);
 
-            int currentProcessId = global::Interop.IsWindows ?
+            int currentProcessId = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
                 Interop.GetCurrentProcessId() :
                 Interop.getpid();
 

@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Linq;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.IO.FileSystem.Tests
@@ -55,7 +56,7 @@ namespace System.IO.FileSystem.Tests
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
             testFile.Create().Dispose();
-            if (Interop.IsWindows)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 Assert.Throws<FileNotFoundException>(() => Copy(GetTestFilePath(), testFile.FullName));
                 Assert.Throws<DirectoryNotFoundException>(() => Copy(testFile.FullName, Path.Combine(TestDirectory, GetTestFileName(), GetTestFileName())));

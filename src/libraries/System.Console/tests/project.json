@@ -6,6 +6,7 @@
     "System.IO.FileSystem": "4.0.0",
     "System.Runtime": "4.0.20",
     "System.Runtime.Extensions": "4.0.10",
+    "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-beta-*",
     "System.Text.Encoding": "4.0.10",
     "System.Threading": "4.0.10",
     "System.Threading.Overlapped": "4.0.0",
