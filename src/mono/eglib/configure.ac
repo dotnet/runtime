@@ -135,7 +135,6 @@ AC_CHECK_SIZEOF(void *)
 AC_CHECK_SIZEOF(long)
 AC_CHECK_SIZEOF(long long)
 AC_CHECK_FUNCS(strlcpy stpcpy strtok_r rewinddir vasprintf)
-AC_CHECK_FUNC(vasprintf, have_vasprintf=yes)
 AC_CHECK_FUNCS(getrlimit)
 
 #
@@ -151,7 +150,7 @@ elif test x$target_ios = xno; then
 AC_CHECK_FUNCS(strndup getpwuid_r)
 fi
 
-AM_CONDITIONAL(NEED_VASPRINTF, test x$have_vasprintf = x )
+AM_CONDITIONAL(NEED_VASPRINTF, test x$ac_cv_func_vasprintf = x )
 AM_ICONV()
 AC_SEARCH_LIBS(sqrtf, m)
 
