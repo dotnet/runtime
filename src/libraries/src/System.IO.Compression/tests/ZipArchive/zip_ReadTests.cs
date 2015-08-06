@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -25,7 +26,7 @@ namespace System.IO.Compression.Test
                 ZipTest.zfile("emptydir.zip"), ZipTest.zfolder("emptydir"), ZipArchiveMode.Read);
             await ZipTest.IsZipSameAsDirAsync(
                 ZipTest.zfile("small.zip"), ZipTest.zfolder("small"), ZipArchiveMode.Read);
-            if (Interop.IsWindows) // [ActiveIssue(846, PlatformID.AnyUnix)]
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // [ActiveIssue(846, PlatformID.AnyUnix)]
             {
                 await ZipTest.IsZipSameAsDirAsync(
                     ZipTest.zfile("unicode.zip"), ZipTest.zfolder("unicode"), ZipArchiveMode.Read);
@@ -39,7 +40,7 @@ namespace System.IO.Compression.Test
 
             await TestStreamingRead(ZipTest.zfile("normal.zip"), ZipTest.zfolder("normal"));
             await TestStreamingRead(ZipTest.zfile("fake64.zip"), ZipTest.zfolder("small"));
-            if (Interop.IsWindows) // [ActiveIssue(846, PlatformID.AnyUnix)]
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // [ActiveIssue(846, PlatformID.AnyUnix)]
             {
                 await TestStreamingRead(ZipTest.zfile("unicode.zip"), ZipTest.zfolder("unicode"));
             }

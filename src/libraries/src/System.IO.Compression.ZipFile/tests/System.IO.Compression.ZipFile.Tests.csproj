@@ -37,9 +37,6 @@
     <Compile Include="$(CommonTestPath)\Compression\Utilities\ZipTestHelper.cs">
       <Link>Common\Compression\Utilities\ZipTestHelper.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs">
-      <Link>Common\Interop\Interop.PlatformDetection.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

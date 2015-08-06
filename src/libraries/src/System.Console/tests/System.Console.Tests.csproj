@@ -26,9 +26,6 @@
     <Compile Include="Timeout.cs" />
     <Compile Include="ThreadSafety.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
-    <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs">
-      <Link>Common\Interop\Interop.PlatformDetection.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Console.csproj">

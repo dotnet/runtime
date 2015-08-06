@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.Win32.SafeHandles;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -293,7 +294,8 @@ namespace System.IO.Pipes.Tests
                 PipeTransmissionMode transmitMode = server.TransmissionMode;
                 Assert.Throws<ArgumentOutOfRangeException>(() => server.ReadMode = (PipeTransmissionMode)999);
 
-                if (Interop.IsWindows || Interop.IsLinux)
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
+                    RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 {
                     Assert.Equal(0, server.InBufferSize);
                     Assert.Equal(0, server.OutBufferSize);
@@ -369,7 +371,7 @@ namespace System.IO.Pipes.Tests
                 AfterDisconnectWriteOnlyPipeThrows(server);
             }
 
-            if (Interop.IsWindows) // on Unix, InOut doesn't result in the same Disconnect-based errors due to allowing for other connections
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // on Unix, InOut doesn't result in the same Disconnect-based errors due to allowing for other connections
             {
                 using (NamedPipeServerStream server = new NamedPipeServerStream("unique3", PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
                 using (NamedPipeClientStream client = new NamedPipeClientStream("unique3"))
@@ -398,7 +400,7 @@ namespace System.IO.Pipes.Tests
             {
                 var ctx = new CancellationTokenSource();
 
-                if (Interop.IsWindows) // [ActiveIssue(812, PlatformID.AnyUnix)] - cancellation token after the operation has been initiated
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // [ActiveIssue(812, PlatformID.AnyUnix)] - cancellation token after the operation has been initiated
                 {
                     Task serverWaitTimeout = server.WaitForConnectionAsync(ctx.Token);
                     ctx.Cancel();
@@ -566,7 +568,7 @@ namespace System.IO.Pipes.Tests
             {
                 var ctx = new CancellationTokenSource();
 
-                if (Interop.IsWindows) // [ActiveIssue(812, PlatformID.AnyUnix)] - Unix implementation currently ignores timeout and cancellation token once the operation has been initiated
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // [ActiveIssue(812, PlatformID.AnyUnix)] - Unix implementation currently ignores timeout and cancellation token once the operation has been initiated
                 {
                     Assert.Throws<TimeoutException>(() => client.Connect(60));  // 60 to be over internal 50 interval
                     await Assert.ThrowsAsync<TimeoutException>(() => client.ConnectAsync(50));
@@ -754,7 +756,7 @@ namespace System.IO.Pipes.Tests
                 Assert.Throws<InvalidOperationException>(() => client.Connect());
 
                 var ctx = new CancellationTokenSource();
-                if (Interop.IsWindows) // [ActiveIssue(812, PlatformID.AnyUnix)] - the cancellation token is ignored after the operation is initiated, due to base Stream's implementation
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // [ActiveIssue(812, PlatformID.AnyUnix)] - the cancellation token is ignored after the operation is initiated, due to base Stream's implementation
                 {
                     Task clientReadToken = client.ReadAsync(buffer, 0, buffer.Length, ctx.Token);
                     ctx.Cancel();
@@ -764,7 +766,7 @@ namespace System.IO.Pipes.Tests
                 Assert.True(client.ReadAsync(buffer, 0, buffer.Length, ctx.Token).IsCanceled);
 
                 var ctx1 = new CancellationTokenSource();
-                if (Interop.IsWindows) // [ActiveIssue(812, PlatformID.AnyUnix)] - the cancellation token is ignored after the operation is initiated, due to base Stream's implementation
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // [ActiveIssue(812, PlatformID.AnyUnix)] - the cancellation token is ignored after the operation is initiated, due to base Stream's implementation
                 {
                     Task serverReadToken = server.ReadAsync(buffer, 0, buffer.Length, ctx1.Token);
                     ctx1.Cancel();
@@ -812,7 +814,7 @@ namespace System.IO.Pipes.Tests
                 OtherSidePipeDisconnectVerifyRead(server);
             }
 
-            if (Interop.IsWindows) // Unix implementation of InOut doesn't fail on server.Write/Read when client disconnects due to allowing for additional connections
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // Unix implementation of InOut doesn't fail on server.Write/Read when client disconnects due to allowing for additional connections
             {
                 using (NamedPipeServerStream server = new NamedPipeServerStream("testServer2", PipeDirection.InOut))
                 using (NamedPipeClientStream client = new NamedPipeClientStream("testServer2"))
@@ -854,7 +856,7 @@ namespace System.IO.Pipes.Tests
                 OtherSidePipeDisconnectWriteThrows(client);
             }
 
-            if (Interop.IsWindows) // Unix implementation of InOut doesn't fail on server.Write/Read when client disconnects due to allowing for additional connections
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // Unix implementation of InOut doesn't fail on server.Write/Read when client disconnects due to allowing for additional connections
             {
                 using (NamedPipeServerStream server = new NamedPipeServerStream("testServer3", PipeDirection.InOut))
                 using (NamedPipeClientStream client = new NamedPipeClientStream("testServer3"))

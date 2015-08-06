@@ -4,6 +4,7 @@
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.IO.FileSystem.Tests
@@ -91,7 +92,7 @@ namespace System.IO.FileSystem.Tests
 
                     fs.WriteByte(0);
                     fsr.Position++;
-                    if (Interop.IsWindows) // TODO: [ActiveIssue(812)]: Remove guard when async I/O is properly implemented on Unix
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // TODO: [ActiveIssue(812)]: Remove guard when async I/O is properly implemented on Unix
                     {
                         Assert.Throws<IOException>(() => FSAssert.CompletesSynchronously(fs.ReadAsync(new byte[1], 0, 1)));
                     }

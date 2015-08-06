@@ -23,9 +23,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.geteuid.cs">
       <Link>Common\Interop\Unix\libc\Interop.geteuid.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs">
-      <Link>Common\Interop\Interop.PlatformDetection.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Security.SecureString.csproj">

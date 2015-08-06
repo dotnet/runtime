@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 
@@ -19,7 +20,7 @@ public class Color
     [Fact]
     public static void RoundtrippingColor()
     {
-        if (Interop.IsWindows)
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             Console.BackgroundColor = Console.BackgroundColor;
             Console.ForegroundColor = Console.ForegroundColor;

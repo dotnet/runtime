@@ -12,7 +12,7 @@ namespace System.IO.MemoryMappedFiles.Tests
     public abstract class MemoryMappedFilesTestBase : FileCleanupTestBase
     {
         /// <summary>Gets whether named maps are supported by the current platform.</summary>
-        protected static bool MapNamesSupported { get { return Interop.IsWindows; } }
+        protected static bool MapNamesSupported { get { return RuntimeInformation.IsOSPlatform(OSPlatform.Windows); } }
 
         /// <summary>Creates a map name guaranteed to be unique.</summary>
         protected static string CreateUniqueMapName() { return Guid.NewGuid().ToString("N"); }
@@ -288,7 +288,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         protected static Lazy<int> s_pageSize = new Lazy<int>(() => 
         {
             int pageSize;
-            if (Interop.IsWindows)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 SYSTEM_INFO info;
                 GetSystemInfo(out info);
@@ -300,8 +300,8 @@ namespace System.IO.MemoryMappedFiles.Tests
                 const int _SC_PAGESIZE_FreeBSD = 47;
                 const int _SC_PAGESIZE_Linux = 30;
                 pageSize = sysconf(
-                    Interop.IsOSX ? _SC_PAGESIZE_OSX :
-                    Interop.IsFreeBSD ? _SC_PAGESIZE_FreeBSD :
+                    RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? _SC_PAGESIZE_OSX :
+                    RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")) ? _SC_PAGESIZE_FreeBSD :
                     _SC_PAGESIZE_Linux);
             }
             Assert.InRange(pageSize, 1, Int32.MaxValue);
@@ -311,7 +311,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>Asserts that the handle's inheritability matches the specified value.</summary>
         protected static void AssertInheritability(SafeHandle handle, HandleInheritability inheritability)
         {
-            if (Interop.IsWindows)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 uint flags;
                 Assert.True(GetHandleInformation(handle.DangerousGetHandle(), out flags));
