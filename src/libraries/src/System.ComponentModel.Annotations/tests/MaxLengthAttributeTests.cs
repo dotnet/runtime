@@ -1,6 +1,9 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using Xunit;
 
 namespace System.ComponentModel.DataAnnotations
@@ -64,6 +67,26 @@ namespace System.ComponentModel.DataAnnotations
             Assert.Equal(ValidationResult.Success, new MaxLengthAttribute(16).GetValidationResult(new string[16], s_testValidationContext));
             Assert.Equal(ValidationResult.Success, new MaxLengthAttribute(-1).GetValidationResult(new object[500], s_testValidationContext));
             Assert.NotNull((new MaxLengthAttribute(12).GetValidationResult(new byte[13], s_testValidationContext)).ErrorMessage);
+        }
+
+        [Fact]
+        public static void GetValidationResult_validates_collection_length()
+        {
+            Assert.Equal(ValidationResult.Success, new MaxLengthAttribute().GetValidationResult(new Collection<int>(new int[500]), s_testValidationContext));
+            Assert.Equal(ValidationResult.Success, new MaxLengthAttribute(15).GetValidationResult(new Collection<string>(new string[14]), s_testValidationContext));
+            Assert.Equal(ValidationResult.Success, new MaxLengthAttribute(16).GetValidationResult(new Collection<string>(new string[16]), s_testValidationContext));
+            Assert.Equal(ValidationResult.Success, new MaxLengthAttribute(-1).GetValidationResult(new Collection<object>(new object[500]), s_testValidationContext));
+            Assert.NotNull((new MaxLengthAttribute(12).GetValidationResult(new Collection<byte>(new byte[13]), s_testValidationContext)).ErrorMessage);
+        }
+
+        [Fact]
+        public static void GetValidationResult_validates_list_length()
+        {
+            Assert.Equal(ValidationResult.Success, new MaxLengthAttribute().GetValidationResult(new List<int>(new int[500]), s_testValidationContext));
+            Assert.Equal(ValidationResult.Success, new MaxLengthAttribute(15).GetValidationResult(new List<string>(new string[14]), s_testValidationContext));
+            Assert.Equal(ValidationResult.Success, new MaxLengthAttribute(16).GetValidationResult(new List<string>(new string[16]), s_testValidationContext));
+            Assert.Equal(ValidationResult.Success, new MaxLengthAttribute(-1).GetValidationResult(new List<object>(new object[500]), s_testValidationContext));
+            Assert.NotNull((new MaxLengthAttribute(12).GetValidationResult(new List<byte>(new byte[13]), s_testValidationContext)).ErrorMessage);
         }
     }
 }
