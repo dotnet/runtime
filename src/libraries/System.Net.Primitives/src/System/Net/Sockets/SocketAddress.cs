@@ -13,18 +13,18 @@ namespace System.Net
     /// <devdoc>
     ///    <para>
     ///       This class is used when subclassing EndPoint, and provides indication
-    ///       on how to format the memory buffers that winsock uses for network addresses.
+    ///       on how to format the memory buffers that the platform uses for network addresses.
     ///    </para>
     /// </devdoc>
     public class SocketAddress
     {
-        internal const int IPv6AddressSize = 28;
-        internal const int IPv4AddressSize = 16;
+        internal const int IPv6AddressSize = SocketAddressPal.IPv6AddressSize;
+        internal const int IPv4AddressSize = SocketAddressPal.IPv4AddressSize;
 
         internal int InternalSize;
         internal byte[] Buffer;
 
-        private const int WriteableOffset = 2;
+        private const int MinSize = 2;
         private const int MaxSize = 32; // IrDA requires 32 bytes
         private bool _changed = true;
         private int _hash;
@@ -33,13 +33,7 @@ namespace System.Net
         {
             get
             {
-                int family;
-#if BIGENDIAN
-                family = ((int)Buffer[0]<<8) | Buffer[1];
-#else
-                family = Buffer[0] | ((int)Buffer[1] << 8);
-#endif
-                return (AddressFamily)family;
+                return SocketAddressPal.GetAddressFamily(Buffer);
             }
         }
 
@@ -85,22 +79,15 @@ namespace System.Net
 
         public SocketAddress(AddressFamily family, int size)
         {
-            if (size < WriteableOffset)
+            if (size < MinSize)
             {
-                // It doesn't make sense to create a socket address with less than
-                // 2 bytes: that's where we store the address family.
                 throw new ArgumentOutOfRangeException("size");
             }
+
             InternalSize = size;
             Buffer = new byte[(size / IntPtr.Size + 2) * IntPtr.Size];
 
-#if BIGENDIAN
-            Buffer[0] = unchecked((byte)((int)family>>8));
-            Buffer[1] = unchecked((byte)((int)family   ));
-#else
-            Buffer[0] = unchecked((byte)((int)family));
-            Buffer[1] = unchecked((byte)((int)family >> 8));
-#endif
+            SocketAddressPal.SetAddressFamily(Buffer, family);
         }
 
         internal SocketAddress(IPAddress ipAddress)
@@ -108,46 +95,23 @@ namespace System.Net
                 ((ipAddress.AddressFamily == AddressFamily.InterNetwork) ? IPv4AddressSize : IPv6AddressSize))
         {
             // No Port
-            Buffer[2] = (byte)0;
-            Buffer[3] = (byte)0;
+            SocketAddressPal.SetPort(Buffer, 0);
 
             if (ipAddress.AddressFamily == AddressFamily.InterNetworkV6)
             {
-                // No handling for Flow Information
-                Buffer[4] = (byte)0;
-                Buffer[5] = (byte)0;
-                Buffer[6] = (byte)0;
-                Buffer[7] = (byte)0;
-
-                // Scope serialization
-                long scope = ipAddress.ScopeId;
-                Buffer[24] = (byte)scope;
-                Buffer[25] = (byte)(scope >> 8);
-                Buffer[26] = (byte)(scope >> 16);
-                Buffer[27] = (byte)(scope >> 24);
-
-                // Address serialization
-                byte[] addressBytes = ipAddress.GetAddressBytes();
-                for (int i = 0; i < addressBytes.Length; i++)
-                {
-                    Buffer[8 + i] = addressBytes[i];
-                }
+                SocketAddressPal.SetIPv6Address(Buffer, ipAddress.GetAddressBytes(), (uint)ipAddress.ScopeId);
             }
             else
             {
-                // IPv4 Address serialization
-                Buffer[4] = unchecked((byte)(ipAddress.Address));
-                Buffer[5] = unchecked((byte)(ipAddress.Address >> 8));
-                Buffer[6] = unchecked((byte)(ipAddress.Address >> 16));
-                Buffer[7] = unchecked((byte)(ipAddress.Address >> 24));
+                Debug.Assert(ipAddress.AddressFamily == AddressFamily.InterNetwork);
+                SocketAddressPal.SetIPv4Address(Buffer, (uint)ipAddress.Address);
             }
         }
 
         internal SocketAddress(IPAddress ipaddress, int port)
             : this(ipaddress)
         {
-            Buffer[2] = (byte)(port >> 8);
-            Buffer[3] = (byte)port;
+            SocketAddressPal.SetPort(Buffer, unchecked((ushort)port));
         }
 
         internal IPAddress GetIPAddress()
@@ -157,29 +121,15 @@ namespace System.Net
                 Debug.Assert(Size >= IPv6AddressSize);
 
                 byte[] address = new byte[IPAddressParser.IPv6AddressBytes];
-                for (int i = 0; i < address.Length; i++)
-                {
-                    address[i] = Buffer[i + 8];
-                }
+                uint scope;
+                SocketAddressPal.GetIPv6Address(Buffer, address, out scope);
 
-                long scope = (long)((Buffer[27] << 24) +
-                                    (Buffer[26] << 16) +
-                                    (Buffer[25] << 8) +
-                                    (Buffer[24]));
-
-                return new IPAddress(address, scope);
+                return new IPAddress(address, (long)scope);
             }
             else if (Family == AddressFamily.InterNetwork)
             {
                 Debug.Assert(Size >= IPv4AddressSize);
-
-                long address = (long)(
-                        (Buffer[4] & 0x000000FF) |
-                        (Buffer[5] << 8 & 0x0000FF00) |
-                        (Buffer[6] << 16 & 0x00FF0000) |
-                        (Buffer[7] << 24)
-                        ) & 0x00000000FFFFFFFF;
-
+                long address = (long)SocketAddressPal.GetIPv4Address(Buffer) & 0x0FFFFFFFF;
                 return new IPAddress(address);
             }
             else
@@ -191,7 +141,7 @@ namespace System.Net
         internal IPEndPoint GetIPEndPoint()
         {
             IPAddress address = GetIPAddress();
-            int port = (int)((Buffer[2] << 8 & 0xFF00) | (Buffer[3]));
+            int port = (int)SocketAddressPal.GetPort(Buffer);
             return new IPEndPoint(address, port);
         }
 
@@ -216,6 +166,7 @@ namespace System.Net
             // Apparently it must be less or equal the original value since ReceiveFrom cannot reallocate the address buffer
             InternalSize = *(int*)ptr;
         }
+
         public override bool Equals(object comparand)
         {
             SocketAddress castedComparand = comparand as SocketAddress;
@@ -269,9 +220,9 @@ namespace System.Net
         public override string ToString()
         {
             StringBuilder bytes = new StringBuilder();
-            for (int i = WriteableOffset; i < this.Size; i++)
+            for (int i = SocketAddressPal.DataOffset; i < this.Size; i++)
             {
-                if (i > WriteableOffset)
+                if (i > SocketAddressPal.DataOffset)
                 {
                     bytes.Append(",");
                 }
