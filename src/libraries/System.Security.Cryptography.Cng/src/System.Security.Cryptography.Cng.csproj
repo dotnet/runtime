@@ -52,15 +52,23 @@
      <Compile Include="System\Security\Cryptography\CngUIPolicy.cs" />
      <Compile Include="System\Security\Cryptography\CngUIProtectionLevels.cs" />
      <Compile Include="System\Security\Cryptography\RSACng.cs" />
+     <Compile Include="System\Security\Cryptography\RSACng.EncryptDecrypt.cs" />
+     <Compile Include="System\Security\Cryptography\RSACng.HashData.cs" />
+     <Compile Include="System\Security\Cryptography\RSACng.ImportExport.cs" />
+     <Compile Include="System\Security\Cryptography\RSACng.Key.cs" />
+     <Compile Include="System\Security\Cryptography\RSACng.SignVerify.cs" />
 
      <Compile Include="Microsoft\Win32\SafeHandles\NCryptSafeHandles.cs" />
 
      <Compile Include="Internal\Cryptography\Helpers.cs" />
      <Compile Include="Internal\Cryptography\KeyPropertyName.cs" />
      <Compile Include="Internal\Cryptography\ProviderPropertyName.cs" />
+     <Compile Include="Internal\Cryptography\SafeUnicodeStringHandle.cs" />
 
      <Compile Include="Interop\Interop.Libraries.cs" />
      <Compile Include="Interop\NCrypt\NCrypt.cs" />
+     <Compile Include="Interop\BCrypt\Interop.Blobs.cs" />
+     <Compile Include="Interop\BCrypt\Interop.AsymmetricEncryption.Types.cs" />
 
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
