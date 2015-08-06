@@ -3385,7 +3385,7 @@ SIZE_T NativeImageDumper::TranslateAddressCallback(IXCLRDisassemblySupport *dis,
     if( ret == 0 )
     {
         _snwprintf_s(name, nameSize, _TRUNCATE, W("@TRANSLATED ADDRESS@ %p"),
-                     addr + (SIZE_T)pThis->m_currentAddress );
+                     (TADDR)(addr + (SIZE_T)pThis->m_currentAddress) );
         ret = wcslen(name);
         *offset = -1;
     }
@@ -3429,7 +3429,7 @@ SIZE_T NativeImageDumper::TranslateFixupCallback(IXCLRDisassemblySupport *dis,
     SIZE_T ret = pThis->TranslateSymbol(dis, address, name, nameSize, offset);
     if( ret == 0 )
     {
-        _snwprintf_s(name, nameSize, _TRUNCATE, W("@TRANSLATED FIXUP@ %p"), address);
+        _snwprintf_s(name, nameSize, _TRUNCATE, W("@TRANSLATED FIXUP@ %p"), (TADDR)address);
         ret = wcslen(name);
         *offset = -1;
     }

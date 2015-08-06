@@ -1044,7 +1044,7 @@ HRESULT ExpressionNode::PopulateTextValueHelper()
     case ELEMENT_TYPE_OBJECT:
         ULONG64 pointer;
         if(pInnerValue != NULL && SUCCEEDED(pInnerValue->GetAddress(&pointer)))
-            _snwprintf_s(pTextValue, MAX_EXPRESSION, _TRUNCATE, L"@ 0x%p", pointer);
+            _snwprintf_s(pTextValue, MAX_EXPRESSION, _TRUNCATE, L"@ 0x%p", (void *) pointer);
         break;
 
     case ELEMENT_TYPE_BOOLEAN:
