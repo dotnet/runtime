@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
 
@@ -101,7 +102,14 @@ public partial class FileSystemWatcher_4000_Tests
                 testFile.Flush();
 
                 // renaming a directory
-                testDir.Move(testDir.Path + "_rename");
+                //
+                // We don't do this on Linux because depending on the timing of MOVED_FROM and MOVED_TO events,
+                // a rename can trigger delete + create as a deliberate handling of an edge case, and this
+                // test is checking that no create events are raised.
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    testDir.Move(testDir.Path + "_rename");
+                }
 
                 // deleting a file & directory by leaving the using block
             }
