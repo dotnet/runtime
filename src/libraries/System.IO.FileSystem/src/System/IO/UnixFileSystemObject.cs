@@ -20,15 +20,13 @@ namespace System.IO
             /// <summary>The last cached stat information about the file.</summary>
             private Interop.libcoreclr.fileinfo _fileinfo;
 
-            enum InitializationState : byte
-            {
-                RefreshNeeded,     // we need to refresh _fileInfo
-                SuccessfullyCached, // we've successfully cached the stat structure
-                ErrorEncountered   // we hit an error on last try, get errno from _InitializatonErrno 
-            }
-
-            private InitializationState _fileinfoInitialization;
-            private Interop.ErrorInfo _fileinfoInitializationError; 
+            /// <summary>
+            /// Whether we've successfully cached a stat structure.
+            /// -1 if we need to refresh _fileinfo, 0 if we've successfully cached one,
+            /// or any other value that serves as an errno error code from the
+            /// last time we tried and failed to refresh _fileinfo.
+            /// </summary>
+            private int _fileinfoInitialized = -1;
 
             public UnixFileSystemObject(string fullPath, bool asDirectory)
             {
@@ -85,7 +83,7 @@ namespace System.IO
                     // just changing its permissions accordingly.
                     EnsureStatInitialized();
                     IsReadOnlyAssumesInitialized = (value & FileAttributes.ReadOnly) != 0;
-                    _fileinfoInitialization = InitializationState.RefreshNeeded;
+                    _fileinfoInitialized = -1;
                 }
             }
 
@@ -161,12 +159,12 @@ namespace System.IO
             {
                 get
                 {
-                    if (_fileinfoInitialization == InitializationState.RefreshNeeded)
+                    if (_fileinfoInitialized == -1)
                     {
                         Refresh();
                     }
                     return
-                        _fileinfoInitialization == InitializationState.SuccessfullyCached && // avoid throwing if Refresh failed; instead just return false
+                        _fileinfoInitialized == 0 && // avoid throwing if Refresh failed; instead just return false
                         _isDirectory == IsDirectoryAssumesInitialized;
                 }
             }
@@ -212,13 +210,13 @@ namespace System.IO
 
             private void SetAccessWriteTimes(IntPtr? accessTime, IntPtr? writeTime)
             {
-                _fileinfoInitialization = InitializationState.RefreshNeeded; // force a refresh so that we have an up-to-date times for values not being overwritten
+                _fileinfoInitialized = -1; // force a refresh so that we have an up-to-date times for values not being overwritten
                 EnsureStatInitialized();
                 Interop.libc.utimbuf buf;
                 buf.actime = accessTime ?? new IntPtr(_fileinfo.atime);
                 buf.modtime = writeTime ?? new IntPtr(_fileinfo.mtime);
                 while (Interop.CheckIo(Interop.libc.utime(_fullPath, ref buf), _fullPath, _isDirectory)) ;
-                _fileinfoInitialization = InitializationState.RefreshNeeded;
+                _fileinfoInitialized = -1;
             }
 
             public long Length
@@ -240,17 +238,16 @@ namespace System.IO
                     result = Interop.libcoreclr.GetFileInformationFromPath(_fullPath, out _fileinfo);
                     if (result >= 0)
                     {
-                        _fileinfoInitialization = InitializationState.SuccessfullyCached;
+                        _fileinfoInitialized = 0;
                     }
                     else
                     {
-                        Interop.ErrorInfo errorInfo = Interop.System.GetLastErrorInfo();
+                        var errorInfo = Interop.Sys.GetLastErrorInfo();
                         if (errorInfo.Error == Interop.Error.EINTR)
                         {
                             continue;
                         }
-                        _fileinfoInitialization = InitializationState.ErrorEncountered; 
-                        _fileinfoInitializationError = errorInfo;
+                        _fileinfoInitialized = errorInfo.RawErrno;
                     }
                     break;
                 }
@@ -258,15 +255,16 @@ namespace System.IO
 
             private void EnsureStatInitialized()
             {
-                if (_fileinfoInitialization == InitializationState.RefreshNeeded)
+                if (_fileinfoInitialized == -1)
                 {
                     Refresh();
                 }
 
-                if (_fileinfoInitialization != InitializationState.SuccessfullyCached)
+                if (_fileinfoInitialized != 0)
                 {
-                    Interop.ErrorInfo errorInfo = _fileinfoInitializationError;
-                    _fileinfoInitialization = InitializationState.RefreshNeeded;
+                    int errno = _fileinfoInitialized;
+                    _fileinfoInitialized = -1;
+                    var errorInfo =  new Interop.ErrorInfo(errno);
 
                     // Windows distinguishes between whether the directory or the file isn't found,
                     // and throws a different exception in these cases.  We attempt to approximate that

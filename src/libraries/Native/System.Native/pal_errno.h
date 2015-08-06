@@ -11,7 +11,7 @@
  * Only the names (without the PAL_ prefix) are specified by POSIX.
  *
  * The values chosen below are simply assigned arbitrarily (originally
- * in alphabetical order they appear in the spec, they can't change so
+ * in alphabetical order they appear in the spec, but they can't change so
  * add new values to the end!).
  *
  * Also, the values chosen are deliberately outside the range of
@@ -152,6 +152,13 @@ int32_t ConvertErrorPalToPlatform(
  *
  *  2. We don't lose the ability to get the system error message for
  *     non-standard, platform-specific errors.
+ * 
+ * Note that buffer may or may not be used and the error message is
+ * passed back via the return value.
+ *
+ * If the buffer was too small to fit the full message, null is 
+ * returned and the buffer is filled with as much of the message
+ * as possible and null-terminated.
  */
 extern "C"
 const char* StrErrorR(

@@ -48,7 +48,7 @@ internal static partial class Interop
         [DllImport(Libraries.Libc, SetLastError = true)]
         internal static extern int setpriority(PriorityWhich which, int who, int prio);
 
-        internal static global::System.Diagnostics.ThreadPriorityLevel GetThreadPriorityFromNiceValue(int nice)
+        internal static System.Diagnostics.ThreadPriorityLevel GetThreadPriorityFromNiceValue(int nice)
         {
             Debug.Assert((nice >= -20) && (nice <= 20));
             return
@@ -61,7 +61,7 @@ internal static partial class Interop
                 ThreadPriorityLevel.Idle;
         }
 
-        internal static int GetNiceValueFromThreadPriority(global::System.Diagnostics.ThreadPriorityLevel priority)
+        internal static int GetNiceValueFromThreadPriority(System.Diagnostics.ThreadPriorityLevel priority)
         {
             return (priority == ThreadPriorityLevel.TimeCritical ? -20 :
                 priority == ThreadPriorityLevel.Highest ? -15 :

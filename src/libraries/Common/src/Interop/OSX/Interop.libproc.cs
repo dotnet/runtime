@@ -441,7 +441,7 @@ internal static partial class Interop
             }
 
             // OS X uses UTF-8. The conversion may not strip off all trailing \0s so remove them here
-            return global::System.Text.Encoding.UTF8.GetString(pBuffer, result);
+            return System.Text.Encoding.UTF8.GetString(pBuffer, result);
         }
 
         /// <summary>

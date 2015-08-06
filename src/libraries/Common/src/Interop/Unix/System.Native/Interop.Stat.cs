@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class System
+    internal static partial class Sys
     {
         internal struct FileStatus
         {
@@ -14,11 +14,11 @@ internal static partial class Interop
             internal int Mode;
             internal int Uid;
             internal int Gid;
-            internal int Size;
-            internal int AccessTime;
-            internal int ModificationTime;
-            internal int StatusChangeTime;
-            internal int CreationTime;
+            internal long Size;
+            internal long ATime;
+            internal long MTime;
+            internal long CTime;
+            internal long BirthTime;
         }
 
         internal static class FileTypes

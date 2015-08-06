@@ -1,8 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#define _POSIX_C_SOURCE
-
 #include "../config.h"
 #include "pal_errno.h"
 
@@ -200,7 +198,7 @@ int32_t ConvertErrorPalToPlatform(Error error)
     // We should not use this function to round-trip platform -> pal
     // -> platform. It's here only to synthesize a platform number
     // from the fixed set above. Note that the assert is outside the
-    // switch rather than in a default case default block because not
+    // switch rather than in a default case block because not
     // having a default will trigger a warning (as error) if there's
     // an enum value we haven't handled. Should that trigger, make
     // note that there is probably a corresponding missing case in the
@@ -224,26 +222,26 @@ const char* StrErrorR(int32_t platformErrno, char* buffer, int32_t bufferSize)
     //    - POSIX: int   strerror_r(int, char*, size_t);
     //
     // The former may or may not use the supplied buffer, and returns
-    // the error message string.  The latter stores the error message
-    // string into the supplied buffer.
+    // the error message string. The latter stores the error message
+    // string into the supplied buffer and returns an error code.
 
 #if HAVE_GNU_STRERROR_R
-    return strerror_r(platformErrno, buffer, bufferSize);
+    const char* message = strerror_r(platformErrno, buffer, bufferSize);
+    assert(message != nullptr);
+    return message;
 #else
-    // We deliberately ignore the return value here. The only three
-    // valid return values are 0 for success, EINVAL for an unknown
-    // errno value, and ERANGE if there's not enough buffer space
-    // provided. For EINVAL, it'll still fill the buffer with a
-    // reasonable error string (e.g. "Unknown error: 0x123"), and for
-    // ERANGE, it'll fill the buffer with as much of the error as it
-    // can and null-terminate it.
-    //
-    // Note that although we ignore the error code, we still assign it
-    // to a local to force a compilation error if we somehow end up
-    // with GNU strerror_r yet HAVE_GNU_STRERROR_R == 0 due to a
-    // configuration error.
-    int ignored = strerror_r(platformErrno, buffer, bufferSize);
-    (void)ignored; // suppress compiler warning about unused local
+    int error = strerror_r(platformErrno, buffer, bufferSize);
+    if (error == ERANGE)
+    {
+        // Buffer is too small to hold the entire message, but has
+        // still been filled to the extent possible and null-terminated.
+        return nullptr; 
+    }
+
+    // The only other valid error codes are 0 for success or EINVAL for
+    // an unkown error, but in the latter case a reasonable string (e.g
+    // "Unknown error: 0x123) is returned.
+    assert(error == 0 || error == EINVAL);
     return buffer;
 #endif
 }

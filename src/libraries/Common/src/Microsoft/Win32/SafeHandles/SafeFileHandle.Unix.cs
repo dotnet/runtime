@@ -44,7 +44,7 @@ namespace Microsoft.Win32.SafeHandles
                 // Open the file.
                 int fd;
                 while (Interop.CheckIo(fd = Interop.libc.open(path, flags, mode), path, isDirectory: enoentDueToDirectory,
-                    errorRewriter: e => (e.Error == Interop.Error.EISDIR) ? new Interop.ErrorInfo(Interop.Error.EACCES) : e)) ;
+                    errorRewriter: e => (e.Error == Interop.Error.EISDIR) ? Interop.Error.EACCES.Info() : e)) ;
                 Debug.Assert(fd >= 0);
                 handle.SetHandle((IntPtr)fd);
                 Debug.Assert(!handle.IsInvalid);
@@ -55,12 +55,12 @@ namespace Microsoft.Win32.SafeHandles
                 if (Interop.libcoreclr.GetFileInformationFromFd(fd, out buf) != 0)
                 {
                     handle.Dispose();
-                    throw Interop.GetExceptionForIoErrno(Interop.System.GetLastErrorInfo(), path);
+                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), path);
                 }
                 if ((buf.mode & Interop.libcoreclr.FileTypes.S_IFMT) == Interop.libcoreclr.FileTypes.S_IFDIR)
                 {
                     handle.Dispose();
-                    throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(Interop.Error.EACCES), path, isDirectory: true);
+                    throw Interop.GetExceptionForIoErrno(Interop.Error.EACCES.Info(), path, isDirectory: true);
                 }
             }
             return handle;

@@ -300,9 +300,9 @@ namespace System.IO
                 string fullPath = parent != null ? parent.GetPath(false, directoryName) : directoryName;
 
                 // inotify_add_watch will fail if this is a symlink, so check that we didn't get a symlink
-                Interop.System.FileStatus status = default(Interop.System.FileStatus);
-                if ((Interop.System.LStat(fullPath, out status) == 0) &&
-                    ((status.Mode & (uint)Interop.System.FileTypes.S_IFMT) == Interop.System.FileTypes.S_IFLNK))
+                Interop.Sys.FileStatus status = default(Interop.Sys.FileStatus);
+                if ((Interop.Sys.LStat(fullPath, out status) == 0) &&
+                    ((status.Mode & (uint)Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK))
                 {
                     return null;
                 }

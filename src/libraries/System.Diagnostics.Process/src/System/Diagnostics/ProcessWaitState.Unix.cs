@@ -315,7 +315,7 @@ namespace System.Diagnostics
                     // Something went wrong, e.g. it's not a child process,
                     // or waitpid was already called for this child, or
                     // that the call was interrupted by a signal.
-                    Interop.Error errno = Interop.System.GetLastError();
+                    Interop.Error errno = Interop.Sys.GetLastError();
                     if (errno == Interop.Error.EINTR)
                     {
                         // waitpid was interrupted. Try again.
@@ -335,7 +335,7 @@ namespace System.Diagnostics
                         }
                         else // error from kill
                         {
-                            errno = Interop.System.GetLastError();
+                            errno = Interop.Sys.GetLastError();
                             if (errno == Interop.Error.ESRCH)
                             {
                                 // Couldn't find the process; assume it's exited

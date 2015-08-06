@@ -11,11 +11,13 @@ internal static partial class Interop
     {
         // These values were defined in src/Native/System.Native/fxerrno.h
         //
-        // They compare against values obtaied via Interop.System.GetLastError() not Marshal.GetLastWin32Error()
+        // They compare against values obtaied via Interop.Sys.GetLastError() not Marshal.GetLastWin32Error()
         // which obtains the raw errno that varies between unixes. The strong typing as an enum is meant to
         // prevent confusing the two. Casting to or from int is suspect. Use GetLastErrorInfo() if you need to
-        // correlate these to the underlying platform values or obtain the correspodning error message.
+        // correlate these to the underlying platform values or obtain the corresponding error message.
         // 
+
+        SUCCESS          = 0,
 
         E2BIG            = 0x10001,           // Argument list too long.
         EACCES           = 0x10002,           // Permission denied.
@@ -104,37 +106,42 @@ internal static partial class Interop
         EWOULDBLOCK     = EAGAIN,             // Operation would block
     }
 
+
     // Represents a platform-agnostic Error and underlying platform-specific errno
     internal struct ErrorInfo
     {
-        internal readonly Error Error;
-        internal readonly int Errno;
-
-        internal ErrorInfo(Error error)
-        {
-            Error = error;
-            Errno = Interop.System.ConvertErrorPalToPlatform(error);
-        }
+        private Error _error;
+        private int _rawErrno;
 
         internal ErrorInfo(int errno)
         {
-            Error = Interop.System.ConvertErrorPlatformToPal(errno);
-            Errno = errno;
+            _error = (Error)(-1);
+            _rawErrno = errno;
         }
 
-        internal ErrorInfo(Error error, int errno)
+        internal ErrorInfo(Error error)
         {
-            Error = error;
-            Errno = errno;
+            _error = error;
+            _rawErrno = -1;
+        }
+
+        internal Error Error
+        {
+            get { return _error == (Error)(-1) ? (_error = Interop.Sys.ConvertErrorPlatformToPal(_rawErrno)) : _error; }
+        }
+
+        internal int RawErrno
+        {
+            get { return _rawErrno == -1 ? (_rawErrno = Interop.Sys.ConvertErrorPalToPlatform(_error)) : _rawErrno; }
         }
 
         internal string GetErrorMessage()
         {
-            return Interop.System.StrError(Errno);
+            return Interop.Sys.StrError(RawErrno);
         }
     }
 
-    internal partial class System
+    internal partial class Sys
     {
         internal static Error GetLastError()
         {
@@ -148,10 +155,21 @@ internal static partial class Interop
 
         internal static unsafe string StrError(int platformErrno)
         {
-            const int maxErrorMessageLength = 1024; // length long enough for most any Unix error
-            byte* buffer = stackalloc byte[maxErrorMessageLength];
-            IntPtr message = StrErrorR(platformErrno, buffer, maxErrorMessageLength);
-            return Marshal.PtrToStringAnsi(message);
+            int maxBufferLength = 1024; // should be long enough for most any UNIX error
+            byte* buffer = stackalloc byte[maxBufferLength];
+            byte* message = StrErrorR(platformErrno, buffer, maxBufferLength);
+
+            if (message == null)
+            {
+                // This means the buffer was not large enough, but still contains
+                // as much of the error message as possible and is guaranteed to
+                // be null-terminated. We're not currently resizing/retrying because
+                // maxBufferLength is large enough in practice, but we could do
+                // so here in the future if necessary.
+                message = buffer;
+            }
+
+            return Marshal.PtrToStringAnsi((IntPtr)message);
         }
 
         [DllImport(Libraries.SystemNative)]
@@ -161,6 +179,22 @@ internal static partial class Interop
         internal static extern int ConvertErrorPalToPlatform(Error error);
 
         [DllImport(Libraries.SystemNative)]
-        private static unsafe extern IntPtr StrErrorR(int platformErrno, byte* buffer, int bufferSize);
+        private static unsafe extern byte* StrErrorR(int platformErrno, byte* buffer, int bufferSize);
+    }
+}
+
+// NOTE: extension method can't be nested inside Interop class.
+internal static class InteropErrorExtensions
+{
+    // Intended usage is e.g. Interop.Error.EFAIL.Info() for brevity
+    // vs. new Interop.ErrorInfo(Interop.Error.EFAIL) for synthesizing
+    // errors. Errors originated from the system should be obtained
+    // via GetLastErrorInfo(), not GetLastError().Info() as that will
+    // convert twice, which is not only inefficient but also lossy if
+    // we ever encounter a raw errno that no equivalent in the Error
+    // enum.
+    public static Interop.ErrorInfo Info(this Interop.Error error)
+    {
+        return new Interop.ErrorInfo(error);
     }
 }

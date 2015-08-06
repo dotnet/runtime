@@ -22,7 +22,7 @@ internal static partial class Interop
             int result = Interop.libc.inotify_rm_watch_extern(fd, wd);
             if (result < 0)
             {
-                Error hr = Interop.System.GetLastError();
+                Error hr = Interop.Sys.GetLastError();
                 if (hr == Interop.Error.EINVAL)
                 {
                     // This specific case means that there was a deleted event in the queue that was not processed
@@ -32,7 +32,7 @@ internal static partial class Interop
                 }
                 else
                 {
-                    global::System.Diagnostics.Debug.Fail("inotify_rm_watch failed with " + hr);
+                    System.Diagnostics.Debug.Fail("inotify_rm_watch failed with " + hr);
                 }
             }
 
