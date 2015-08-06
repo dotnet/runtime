@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
@@ -569,10 +570,8 @@ namespace System.IO.Compression
 
         private static Boolean IsDirEmpty(DirectoryInfo possiblyEmptyDir)
         {
-            foreach (FileSystemInfo fi in possiblyEmptyDir.EnumerateFileSystemInfos("*", SearchOption.AllDirectories))
-                return false;
-
-            return true;
+            using (IEnumerator<String> enumerator = Directory.EnumerateFileSystemEntries(possiblyEmptyDir.FullName).GetEnumerator())
+                return !enumerator.MoveNext();
         }
     }  // class ZipFile
 }  // namespace
