@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 
@@ -29,7 +30,7 @@ namespace System.Diagnostics.ProcessTests
                 Assert.True(p.WaitForExit(WaitInMS));
             };
 
-            if (global::Interop.PlatformDetection.OperatingSystem != global::Interop.OperatingSystem.Windows)
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 run(Encoding.UTF8.CodePage);
                 return;

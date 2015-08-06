@@ -5,6 +5,7 @@ using Microsoft.Win32.SafeHandles;
 using System;
 using System.IO;
 using System.IO.Pipes;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -142,7 +143,8 @@ public class AnonymousPipesSimpleTest
             Assert.False(string.IsNullOrWhiteSpace(server.GetClientHandleAsString()));
             Assert.False(server.IsAsync);
             Assert.True(server.IsConnected);
-            if (Interop.IsWindows || Interop.IsLinux)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
+                RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 Assert.True(server.OutBufferSize > 0);
             }
@@ -157,7 +159,7 @@ public class AnonymousPipesSimpleTest
             server.Write(new byte[] { 123 }, 0, 1);
             await server.WriteAsync(new byte[] { 124 }, 0, 1);
             server.Flush();
-            if (Interop.IsWindows)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 server.WaitForPipeDrain();
             }
@@ -174,11 +176,11 @@ public class AnonymousPipesSimpleTest
         {
             Task clientTask = Task.Run(() => StartClient(PipeDirection.Out, server.ClientSafePipeHandle));
 
-            if (Interop.IsWindows)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 Assert.Equal(4096, server.InBufferSize);
             }
-            else if (Interop.IsLinux)
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 Assert.True(server.InBufferSize > 0);
             }
@@ -212,11 +214,11 @@ public class AnonymousPipesSimpleTest
                 Assert.True(client.CanWrite);
                 Assert.False(client.IsAsync);
                 Assert.True(client.IsConnected);
-                if (Interop.IsWindows)
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
                     Assert.Equal(0, client.OutBufferSize);
                 }
-                else if (Interop.IsLinux)
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 {
                     Assert.True(client.OutBufferSize > 0);
                 }
@@ -230,7 +232,7 @@ public class AnonymousPipesSimpleTest
 
                 client.Write(new byte[] { 123 }, 0, 1);
                 await client.WriteAsync(new byte[] { 124 }, 0, 1);
-                if (Interop.IsWindows)
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
                     client.WaitForPipeDrain();
                 }
@@ -250,11 +252,11 @@ public class AnonymousPipesSimpleTest
             {
                 Task serverTask = Task.Run(() => DoStreamOperations(server));
 
-                if (Interop.IsWindows)
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
                     Assert.Equal(4096, client.InBufferSize);
                 }
-                else if (Interop.IsLinux)
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 {
                     Assert.True(client.InBufferSize > 0);
                 }

@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.IO.FileSystem.Tests
@@ -252,11 +253,15 @@ namespace System.IO.FileSystem.Tests
                         // 1) we assumed that this will work in all non-9x machine
                         // 2) Then only in XP
                         // 3) NTFS?
-                        if (Interop.IsWindows && FileSystemDebugInfo.IsCurrentDriveNTFS()) // testing NTFS
+                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) &&
+                            FileSystemDebugInfo.IsCurrentDriveNTFS()) // testing NTFS
+                        {
                             Assert.Throws<IOException>(() => GetEntries(Directory.GetCurrentDirectory(), string.Format("te{0}st", invalidFileNames[i].ToString())));
+                        }
                         else
+                        {
                             GetEntries(Directory.GetCurrentDirectory(), string.Format("te{0}st", invalidFileNames[i].ToString()));
-
+                        }
                         break;
                     case '*':
                     case '?':

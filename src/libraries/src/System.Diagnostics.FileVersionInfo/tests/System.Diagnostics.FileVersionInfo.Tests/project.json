@@ -10,6 +10,7 @@
     "System.Runtime": "4.0.20",
     "System.Runtime.Extensions": "4.0.10",
     "System.Runtime.InteropServices": "4.0.20",
+    "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-beta-*",
     "System.Runtime.Handles": "4.0.0",
     "System.Text.Encoding": "4.0.10",
     "System.Threading.Tasks": "4.0.10",

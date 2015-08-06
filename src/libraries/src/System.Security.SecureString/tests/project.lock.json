@@ -153,6 +153,18 @@
           "lib/DNXCore50/System.Runtime.InteropServices.dll": {}
         }
       },
+      "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23127": {
+        "dependencies": {
+          "System.Runtime": "4.0.20-beta-23127",
+          "System.Resources.ResourceManager": "4.0.0-beta-23127"
+        },
+        "compile": {
+          "ref/dotnet/System.Runtime.InteropServices.RuntimeInformation.dll": {}
+        },
+        "runtime": {
+          "lib/dotnet/System.Runtime.InteropServices.RuntimeInformation.dll": {}
+        }
+      },
       "System.Security.Cryptography.Encryption/4.0.0-beta-23127": {
         "dependencies": {
           "System.Runtime": "4.0.0-beta-23127",
@@ -696,6 +708,25 @@
         "runtimes/win8-aot/lib/netcore50/System.Runtime.InteropServices.dll"
       ]
     },
+    "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23127": {
+      "serviceable": true,
+      "sha512": "bDj3DiQ5yf6Asf8gxuLo5jpqiNw5JprFIiJvYppE58YXqqvf1TI3XGsg9jezFSuoKl3VsHjVlMvy/poFpwvFXQ==",
+      "files": [
+        "System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23127.nupkg",
+        "System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23127.nupkg.sha512",
+        "System.Runtime.InteropServices.RuntimeInformation.nuspec",
+        "lib/dotnet/System.Runtime.InteropServices.RuntimeInformation.dll",
+        "lib/MonoAndroid10/_._",
+        "lib/MonoTouch10/_._",
+        "lib/xamarinios10/_._",
+        "lib/xamarinmac20/_._",
+        "ref/dotnet/System.Runtime.InteropServices.RuntimeInformation.dll",
+        "ref/MonoAndroid10/_._",
+        "ref/MonoTouch10/_._",
+        "ref/xamarinios10/_._",
+        "ref/xamarinmac20/_._"
+      ]
+    },
     "System.Security.Cryptography.Encryption/4.0.0-beta-23127": {
       "serviceable": true,
       "sha512": "B4kpZnSzNOYE/xbrFmuXm0VRYuJ08JwLrxlG1Hc1NZdSLGxMAU7lXH1C+jm8UECk2ETLifV/zukKYkMVtgBFwQ==",
@@ -943,6 +974,7 @@
       "System.Runtime >= 4.0.20",
       "System.Runtime.Extensions >= 4.0.10",
       "System.Runtime.InteropServices >= 4.0.20",
+      "System.Runtime.InteropServices.RuntimeInformation >= 4.0.0-beta-*",
       "System.Security.Cryptography.Encryption >= 4.0.0-beta-*",
       "System.Threading.Tasks >= 4.0.10",
       "xunit >= 2.1.0-beta3-*",

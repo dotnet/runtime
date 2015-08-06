@@ -218,7 +218,7 @@ public partial class FileSystemWatcher_4000_Tests
             file.Write(buffer, 0, buffer.Length);
             file.Flush(flushToDisk: true);
 
-            if (Interop.IsWindows)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 // Change security
                 uint result = SetSecurityInfoByHandle(file.Path,
