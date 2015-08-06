@@ -50,7 +50,8 @@ namespace System.Runtime.Serialization
 
         public DataContractSerializer(Type type, string rootName, string rootNamespace, IEnumerable<Type> knownTypes)
         {
-            Initialize(type, new XmlDictionaryString(null, rootName, 0), new XmlDictionaryString(null, rootNamespace, 0), knownTypes, int.MaxValue, false, false, null, false);
+            XmlDictionary dictionary = new XmlDictionary(2);
+            Initialize(type, dictionary.Add(rootName), dictionary.Add(DataContract.GetNamespace(rootNamespace)), knownTypes, int.MaxValue, false, false, null, false);
         }
 
 
