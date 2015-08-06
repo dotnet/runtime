@@ -199,7 +199,6 @@ public class AnonymousPipesSimpleTest
     }
 
     [Fact]
-    [ActiveIssue(1840, PlatformID.Windows)]
     public static async Task ClientPInvokeChecks()
     {
         using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.In, System.IO.HandleInheritability.None, 4096))
