@@ -18,6 +18,11 @@
 
 #include "gcrecord.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable:4293)
+#pragma warning(disable:4477)
+#endif //_MSC_VER
+
 inline void FATAL_GC_ERROR()
 {
     DebugBreak();

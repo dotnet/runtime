@@ -5936,13 +5936,13 @@ void Compiler::AggregateMemStats::Print(FILE* f)
     fprintf(f, "For %9u methods:\n", nMethods);
     fprintf(f, "  count:       %12u (avg %7u per method)\n",
             allocCnt, allocCnt / nMethods);
-    fprintf(f, "  alloc size : %12llu (avg %7u per method)\n",
+    fprintf(f, "  alloc size : %12llu (avg %7llu per method)\n",
             allocSz, allocSz / nMethods);
     fprintf(f, "  max alloc  : %12llu\n", allocSzMax);
     fprintf(f, "\n");
-    fprintf(f, "  nraAlloc   : %12llu (avg %7u per method)\n",
+    fprintf(f, "  nraAlloc   : %12llu (avg %7llu per method)\n",
             nraTotalSizeAlloc, nraTotalSizeAlloc / nMethods);
-    fprintf(f, "  nraUsed    : %12llu (avg %7u per method)\n",
+    fprintf(f, "  nraUsed    : %12llu (avg %7llu per method)\n",
             nraTotalSizeUsed, nraTotalSizeUsed / nMethods);
     PrintByKind(f);
 }
