@@ -394,7 +394,7 @@ namespace System.Security
 
             private static Exception CreateExceptionFromErrno()
             {
-                Interop.ErrorInfo errorInfo = Interop.System.GetLastErrorInfo();
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 return (errorInfo.Error == Interop.Error.ENOMEM || errorInfo.Error == Interop.Error.EPERM) ?
                     (Exception)new OutOfMemoryException(SR.OutOfMemory_MemoryResourceLimits) :
                     (Exception)new InvalidOperationException(errorInfo.GetErrorMessage());

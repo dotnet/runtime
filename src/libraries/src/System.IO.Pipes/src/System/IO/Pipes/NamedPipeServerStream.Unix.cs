@@ -54,7 +54,7 @@ namespace System.IO.Pipes
                     break;
                 }
 
-                Interop.ErrorInfo errorInfo = Interop.System.GetLastErrorInfo();
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 if (errorInfo.Error == Interop.Error.EINTR)
                 {
                     // interrupted; try again

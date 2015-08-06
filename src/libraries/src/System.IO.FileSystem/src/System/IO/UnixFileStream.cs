@@ -1037,7 +1037,7 @@ namespace System.IO
                     long result = sysCall(fd, arg1, arg2);
                     if (result < 0)
                     {
-                        Interop.ErrorInfo errorInfo = Interop.System.GetLastErrorInfo();
+                        Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                         if (errorInfo.Error == Interop.Error.EINTR)
                         {
                             continue;

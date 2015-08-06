@@ -48,7 +48,7 @@ namespace System.IO.Pipes
                     break;
                 }
 
-                Interop.ErrorInfo errorInfo = Interop.System.GetLastErrorInfo();
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 if (errorInfo.Error == Interop.Error.EINTR)
                 {
                     // I/O was interrupted, try again
@@ -315,7 +315,7 @@ namespace System.IO.Pipes
                     long result = sysCall(fd, arg1, arg2);
                     if (result < 0)
                     {
-                        Interop.ErrorInfo errorInfo = Interop.System.GetLastErrorInfo();
+                        Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
 
                         if (errorInfo.Error == Interop.Error.EINTR)
                             continue;

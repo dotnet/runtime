@@ -26,7 +26,7 @@ internal static partial class Interop
     {
         if (result < 0)
         {
-            ErrorInfo errorInfo = Interop.System.GetLastErrorInfo();
+            ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
             if (errorRewriter != null)
             {
                 errorInfo = errorRewriter(errorInfo);
@@ -90,8 +90,8 @@ internal static partial class Interop
 
             case Error.EWOULDBLOCK:
                 return !string.IsNullOrEmpty(path) ?
-                    new IOException(SR.Format(SR.IO_SharingViolation_File, path), errorInfo.Errno) :
-                    new IOException(SR.IO_SharingViolation_NoFileName, errorInfo.Errno);
+                    new IOException(SR.Format(SR.IO_SharingViolation_File, path), errorInfo.RawErrno) :
+                    new IOException(SR.IO_SharingViolation_NoFileName, errorInfo.RawErrno);
 
             case Error.ECANCELED:
                 return new OperationCanceledException();
@@ -102,7 +102,7 @@ internal static partial class Interop
             case Error.EEXIST:
                 if (!string.IsNullOrEmpty(path))
                 {
-                    return new IOException(SR.Format(SR.IO_FileExists_Name, path), errorInfo.Errno);
+                    return new IOException(SR.Format(SR.IO_FileExists_Name, path), errorInfo.RawErrno);
                 }
                 goto default;
 
@@ -113,6 +113,6 @@ internal static partial class Interop
 
     internal static Exception GetIOException(Interop.ErrorInfo errorInfo)
     {
-        return new IOException(errorInfo.GetErrorMessage(), errorInfo.Errno);
+        return new IOException(errorInfo.GetErrorMessage(), errorInfo.RawErrno);
     }
 }

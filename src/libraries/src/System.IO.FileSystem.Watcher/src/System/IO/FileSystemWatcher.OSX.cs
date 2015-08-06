@@ -145,7 +145,7 @@ namespace System.IO
                 SafeCreateHandle path = Interop.CoreFoundation.CFStringCreateWithCString(_fullDirectory);
                 if (path.IsInvalid)
                 {
-                    throw Interop.GetExceptionForIoErrno(Interop.System.GetLastErrorInfo(), _fullDirectory, true);
+                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), _fullDirectory, true);
                 }
 
                 // Take the CFStringRef and put it into an array to pass to the EventStream
@@ -153,7 +153,7 @@ namespace System.IO
                 if (arrPaths.IsInvalid)
                 {
                     path.Dispose();
-                    throw Interop.GetExceptionForIoErrno(Interop.System.GetLastErrorInfo(), _fullDirectory, true);
+                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), _fullDirectory, true);
                 }
 
                 // Create the callback for the EventStream
@@ -173,7 +173,7 @@ namespace System.IO
                 {
                     arrPaths.Dispose();
                     path.Dispose();
-                    throw Interop.GetExceptionForIoErrno(Interop.System.GetLastErrorInfo(), _fullDirectory, true);
+                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), _fullDirectory, true);
                 }
 
                 // Create and start our watcher thread then wait for the thread to initialize and start 

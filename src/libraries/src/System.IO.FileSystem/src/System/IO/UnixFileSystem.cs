@@ -57,7 +57,7 @@ namespace System.IO
             // as a Creation and Deletion instead of a Rename and thus differ from Windows.
             while (Interop.libc.link(sourceFullPath, destFullPath) < 0)
             {
-                Interop.ErrorInfo errorInfo = Interop.System.GetLastErrorInfo();
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 if (errorInfo.Error == Interop.Error.EINTR) // interrupted; try again
                 {
                     continue;
@@ -90,7 +90,7 @@ namespace System.IO
         {
             while (Interop.libc.unlink(fullPath) < 0)
             {
-                Interop.ErrorInfo errorInfo = Interop.System.GetLastErrorInfo();
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 if (errorInfo.Error == Interop.Error.EINTR) // interrupted; try again
                 {
                     continue;
@@ -102,7 +102,7 @@ namespace System.IO
                 else
                 {
                     if (errorInfo.Error == Interop.Error.EISDIR)
-                        errorInfo = new Interop.ErrorInfo(Interop.Error.EACCES);
+                        errorInfo = Interop.Error.EACCES.Info();
                     throw Interop.GetExceptionForIoErrno(errorInfo, fullPath);
                 }
             }
@@ -165,7 +165,7 @@ namespace System.IO
                 string root = Directory.InternalGetDirectoryRoot(fullPath);
                 if (!DirectoryExists(root))
                 {
-                    throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(Interop.Error.ENOENT), fullPath, isDirectory: true);
+                    throw Interop.GetExceptionForIoErrno(Interop.Error.ENOENT.Info(), fullPath, isDirectory: true);
                 }
                 return;
             }
@@ -183,7 +183,7 @@ namespace System.IO
                 }
 
                 Interop.ErrorInfo errorInfo = default(Interop.ErrorInfo);
-                while ((result = Interop.libc.mkdir(name, (int)Interop.libc.Permissions.S_IRWXU)) < 0 && (errorInfo = Interop.System.GetLastErrorInfo()).Error == Interop.Error.EINTR) ;
+                while ((result = Interop.libc.mkdir(name, (int)Interop.libc.Permissions.S_IRWXU)) < 0 && (errorInfo = Interop.Sys.GetLastErrorInfo()).Error == Interop.Error.EINTR) ;
                 if (result < 0 && firstError.Error == 0)
                 {
                     // While we tried to avoid creating directories that don't
@@ -214,13 +214,13 @@ namespace System.IO
         {
             while (Interop.libc.rename(sourceFullPath, destFullPath) < 0)
             {
-                Interop.ErrorInfo errorInfo = Interop.System.GetLastErrorInfo();
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 switch (errorInfo.Error)
                 {
                     case Interop.Error.EINTR: // interrupted; try again
                         continue;
                     case Interop.Error.EACCES: // match Win32 exception
-                        throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, sourceFullPath), errorInfo.Errno);
+                        throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, sourceFullPath), errorInfo.RawErrno);
                     default:
                         throw Interop.GetExceptionForIoErrno(errorInfo, sourceFullPath, isDirectory: true);
                 }
@@ -231,7 +231,7 @@ namespace System.IO
         {
             if (!DirectoryExists(fullPath))
             {
-                throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(Interop.Error.ENOENT), fullPath, isDirectory: true);
+                throw Interop.GetExceptionForIoErrno(Interop.Error.ENOENT.Info(), fullPath, isDirectory: true);
             }
             RemoveDirectoryInternal(fullPath, recursive, throwOnTopLevelDirectoryNotFound: true);
         }
@@ -285,7 +285,7 @@ namespace System.IO
 
             while (Interop.libc.rmdir(fullPath) < 0)
             {
-                Interop.ErrorInfo errorInfo = Interop.System.GetLastErrorInfo();
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 switch (errorInfo.Error)
                 {
                     case Interop.Error.EINTR: // interrupted; try again
@@ -309,8 +309,8 @@ namespace System.IO
 
         public override bool DirectoryExists(string fullPath)
         {
-            Interop.ErrorInfo errorInfo;
-            return DirectoryExists(fullPath, out errorInfo);
+            Interop.ErrorInfo ignored;
+            return DirectoryExists(fullPath, out ignored);
         }
 
         private static bool DirectoryExists(string fullPath, out Interop.ErrorInfo errorInfo)
@@ -320,8 +320,8 @@ namespace System.IO
 
         public override bool FileExists(string fullPath)
         {
-            Interop.ErrorInfo errorInfo;
-            return FileExists(fullPath, Interop.libcoreclr.FileTypes.S_IFREG, out errorInfo);
+            Interop.ErrorInfo ignored;
+            return FileExists(fullPath, Interop.libcoreclr.FileTypes.S_IFREG, out ignored);
         }
 
         private static bool FileExists(string fullPath, int fileType, out Interop.ErrorInfo errorInfo)
@@ -333,7 +333,7 @@ namespace System.IO
                 int result = Interop.libcoreclr.GetFileInformationFromPath(fullPath, out fileinfo);
                 if (result < 0)
                 {
-                    errorInfo = Interop.System.GetLastErrorInfo();
+                    errorInfo = Interop.Sys.GetLastErrorInfo();
                     if (errorInfo.Error == Interop.Error.EINTR)
                     {
                         continue;
@@ -556,7 +556,7 @@ namespace System.IO
                 Interop.libc.SafeDirHandle handle = Interop.libc.opendir(fullPath);
                 if (handle.IsInvalid)
                 {
-                    throw Interop.GetExceptionForIoErrno(Interop.System.GetLastErrorInfo(), fullPath, isDirectory: true);
+                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), fullPath, isDirectory: true);
                 }
                 return handle;
             }

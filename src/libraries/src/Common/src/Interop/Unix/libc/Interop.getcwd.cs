@@ -61,7 +61,7 @@ internal static partial class Interop
 
             // Otherwise, if it failed due to the buffer being too small, return null;
             // for anything else, throw.
-            ErrorInfo errorInfo = Interop.System.GetLastErrorInfo();
+            ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
             if (errorInfo.Error == Interop.Error.ERANGE)
             {
                return null;

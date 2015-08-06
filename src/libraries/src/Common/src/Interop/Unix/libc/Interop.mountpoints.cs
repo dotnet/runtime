@@ -39,12 +39,13 @@ internal static partial class Interop
         internal static bool TryGetStatFsForDriveName(string name, out statfs data, out ErrorInfo errorInfo)
         {
             data = default(statfs);
-            errorInfo = default(ErrorInfo);
             if (get_statfs(name, out data) < 0)
             {
-                errorInfo = Interop.System.GetLastErrorInfo();
+                errorInfo = Interop.Sys.GetLastErrorInfo();
                 return false;
             }
+
+            errorInfo = default(ErrorInfo);
             return true;
         }
 
@@ -60,7 +61,7 @@ internal static partial class Interop
             if (!TryGetStatFsForDriveName(name, out data, out errorInfo))
             {
                 throw errorInfo.Error == Error.ENOENT ?
-                    new global::System.IO.DriveNotFoundException(SR.Format(SR.IO_DriveNotFound_Drive, name)) : // match Win32 exception
+                    new System.IO.DriveNotFoundException(SR.Format(SR.IO_DriveNotFound_Drive, name)) : // match Win32 exception
                     GetExceptionForIoErrno(errorInfo, isDirectory: true);
             }
             return data;
