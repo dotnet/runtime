@@ -108,6 +108,9 @@ namespace System.IO.Pipes
             {
                 throw new ArgumentOutOfRangeException("maxNumberOfServerInstances", SR.ArgumentOutOfRange_MaxNumServerInstances);
             }
+            // inheritability will always be None since this private constructor is only called from other constructors from which
+            // inheritability is always set to None. Desktop has a public constructor to allow setting it to something else, but Core
+            // doesnt.
             if (inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable)
             {
                 throw new ArgumentOutOfRangeException("inheritability", SR.ArgumentOutOfRange_HandleInheritabilityNoneOrInheritable);
