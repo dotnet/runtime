@@ -115,7 +115,7 @@ internal static partial class Interop
 
         internal ErrorInfo(int errno)
         {
-            _error = (Error)(-1);
+            _error = Interop.Sys.ConvertErrorPlatformToPal(errno);
             _rawErrno = errno;
         }
 
@@ -127,7 +127,7 @@ internal static partial class Interop
 
         internal Error Error
         {
-            get { return _error == (Error)(-1) ? (_error = Interop.Sys.ConvertErrorPlatformToPal(_rawErrno)) : _error; }
+            get { return _error; }
         }
 
         internal int RawErrno
