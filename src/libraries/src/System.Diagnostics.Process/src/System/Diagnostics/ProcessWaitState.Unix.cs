@@ -330,7 +330,9 @@ namespace System.Diagnostics
                         int killResult = Interop.libc.kill(_processId, 0); // 0 means don't send a signal
                         if (killResult == 0)
                         {
-                            // Process is still running
+                            // Process is still running.  This could also be a defunct process that has completed
+                            // its work but still has an entry in the processes table due to its parent not yet
+                            // having waited on it to clean it up.
                             return;
                         }
                         else // error from kill
