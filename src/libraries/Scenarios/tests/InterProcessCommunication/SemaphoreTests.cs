@@ -2,12 +2,13 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Diagnostics;
 using System.Threading;
 using Xunit;
 
 namespace InterProcessCommunication.Tests
 {
-    public class SemaphoreTests : IpcTestBase
+    public class SemaphoreTests : RemoteExecutorTestBase
     {
         [ActiveIssue("https://github.com/dotnet/coreclr/issues/1237", PlatformID.AnyUnix)]
         [Fact]
@@ -20,7 +21,7 @@ namespace InterProcessCommunication.Tests
             // Create the two semaphores and the other process with which to synchronize
             using (var inbound = new Semaphore(1, 1, inboundName))
             using (var outbound = new Semaphore(0, 1, outboundName))
-            using (var remote = RemoteInvoke("PingPong_OtherProcess", outboundName, inboundName))
+            using (var remote = RemoteInvoke(PingPong_OtherProcess, outboundName, inboundName))
             {
                 // Repeatedly wait for count in one semaphore and then release count into the other
                 for (int i = 0; i < 10; i++)
@@ -31,7 +32,7 @@ namespace InterProcessCommunication.Tests
             }
         }
 
-        public static int PingPong_OtherProcess(string inboundName, string outboundName)
+        private static int PingPong_OtherProcess(string inboundName, string outboundName)
         {
             // Open the two semaphores
             using (var inbound = Semaphore.OpenExisting(inboundName))

@@ -4,15 +4,15 @@
   <PropertyGroup>
     <ProjectGuid>{F5E941C8-AF2F-47AB-A066-FF25470CE382}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>InterProcessCommunication.Tests</RootNamespace>
-    <AssemblyName>InterProcessCommunication.TestConsoleApp</AssemblyName>
+    <RootNamespace>RemoteExecutorConsoleApp</RootNamespace>
+    <AssemblyName>RemoteExecutorConsoleApp</AssemblyName>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
-    <Compile Include="TestConsoleApp.cs" />
+    <Compile Include="RemoteExecutorConsoleApp.cs" />
     <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs">
       <Link>Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs</Link>
     </Compile>

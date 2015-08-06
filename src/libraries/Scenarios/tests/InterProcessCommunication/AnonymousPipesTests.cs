@@ -1,13 +1,14 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
 using Xunit;
 
 namespace InterProcessCommunication.Tests
 {
-    public class AnonymousPipesTests : IpcTestBase
+    public class AnonymousPipesTests : RemoteExecutorTestBase
     {
         [Fact]
         public void PingPong()
@@ -16,7 +17,7 @@ namespace InterProcessCommunication.Tests
             // Then spawn another process to communicate with.
             using (var outbound = new AnonymousPipeServerStream(PipeDirection.Out, HandleInheritability.Inheritable))
             using (var inbound = new AnonymousPipeServerStream(PipeDirection.In, HandleInheritability.Inheritable))
-            using (var remote = RemoteInvoke("PingPong_OtherProcess", outbound.GetClientHandleAsString(), inbound.GetClientHandleAsString()))
+            using (var remote = RemoteInvoke(PingPong_OtherProcess, outbound.GetClientHandleAsString(), inbound.GetClientHandleAsString()))
             {
                 // Close our local copies of the handles now that we've passed them of to the other process
                 outbound.DisposeLocalCopyOfClientHandle();
@@ -32,7 +33,7 @@ namespace InterProcessCommunication.Tests
             }
         }
 
-        public static int PingPong_OtherProcess(string inHandle, string outHandle)
+        private static int PingPong_OtherProcess(string inHandle, string outHandle)
         {
             // Create the clients associated with the supplied handles
             using (var inbound = new AnonymousPipeClientStream(PipeDirection.In, inHandle))
