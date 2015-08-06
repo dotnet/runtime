@@ -7,6 +7,7 @@ using System.IO;
 using Xunit;
 using System.Threading;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace System.Diagnostics.ProcessTests
 {
@@ -68,7 +69,7 @@ namespace System.Diagnostics.ProcessTests
 
                 ProcessThread thread = threadCollection[0];
 
-                if (global::Interop.IsOSX)
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 {
                     Assert.Throws<PlatformNotSupportedException>(() => thread.StartTime);
                     return;
@@ -104,7 +105,7 @@ namespace System.Diagnostics.ProcessTests
                 if (p.Threads.Count != 0)
                 {
                     ProcessThread thread = p.Threads[0];
-                    Assert.Equal(global::Interop.IsOSX, thread.StartAddress == IntPtr.Zero);
+                    Assert.Equal(RuntimeInformation.IsOSPlatform(OSPlatform.OSX), thread.StartAddress == IntPtr.Zero);
                 }
             }
             finally
@@ -118,7 +119,7 @@ namespace System.Diagnostics.ProcessTests
         {
             ProcessThread thread = _process.Threads[0];
 
-            if (global::Interop.IsOSX)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 Assert.Throws<PlatformNotSupportedException>(() => thread.PriorityLevel);
                 Assert.Throws<PlatformNotSupportedException>(() => thread.PriorityLevel = ThreadPriorityLevel.AboveNormal);
@@ -127,7 +128,7 @@ namespace System.Diagnostics.ProcessTests
 
             ThreadPriorityLevel originalPriority = thread.PriorityLevel;
 
-            if (global::Interop.IsLinux)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 Assert.Throws<PlatformNotSupportedException>(() => thread.PriorityLevel = ThreadPriorityLevel.AboveNormal);
                 return;

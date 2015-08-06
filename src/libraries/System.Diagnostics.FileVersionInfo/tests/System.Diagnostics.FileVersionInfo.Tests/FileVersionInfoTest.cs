@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 
@@ -150,7 +151,7 @@ public class FileVersionInfoTest
             IsPrivateBuild = false,
             IsPreRelease = false,
             IsSpecialBuild = false,
-            Language = Interop.IsWindows ? GetFileVersionLanguage(0x0000) : "Language Neutral", //Language Neutral
+            Language = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? GetFileVersionLanguage(0x0000) : "Language Neutral",
             LegalCopyright = "Copyright, you betcha!",
             LegalTrademarks = "TM",
             OriginalFilename = TestAssemblyFileName,

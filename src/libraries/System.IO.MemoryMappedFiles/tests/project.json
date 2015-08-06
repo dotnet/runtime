@@ -9,6 +9,7 @@
     "System.Runtime.Extensions": "4.0.10",
     "System.Runtime.Handles": "4.0.0",
     "System.Runtime.InteropServices": "4.0.20",
+    "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-beta-*",
     "System.Text.Encoding": "4.0.10",
     "System.Threading.Tasks": "4.0.10",
     "xunit": "2.1.0-beta3-*",

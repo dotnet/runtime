@@ -47,9 +47,6 @@
     <Compile Include="$(CommonTestPath)\Compression\Utilities\ZipTestHelper.cs">
       <Link>Common\Compression\Utilities\ZipTestHelper.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs">
-      <Link>Common\Interop\Interop.PlatformDetection.cs</Link>
-    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <!-- Temporary until we have new work in build tools to

@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -15,7 +16,7 @@ namespace System.IO.Compression.Test
                 await StreamHelpers.CreateTempCopyStream(ZipTest.zfile("normal.zip")), ZipTest.zfolder("normal"), ZipArchiveMode.Update, false, false);
             ZipTest.IsZipSameAsDir(
                 await StreamHelpers.CreateTempCopyStream(ZipTest.zfile("fake64.zip")), ZipTest.zfolder("small"), ZipArchiveMode.Update, false, false);
-            if (Interop.IsWindows)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 ZipTest.IsZipSameAsDir(
                     await StreamHelpers.CreateTempCopyStream(ZipTest.zfile("unicode.zip")), ZipTest.zfolder("unicode"), ZipArchiveMode.Update, false, false);
@@ -52,7 +53,7 @@ namespace System.IO.Compression.Test
         {
             await testFolder("normal");
             await testFolder("empty");
-            if (Interop.IsWindows)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 await testFolder("unicode");
             }

@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.IO.FileSystem.Tests
@@ -17,7 +18,7 @@ namespace System.IO.FileSystem.Tests
             {
                 Assert.True(File.Exists(fileName));
                 File.Delete(fileName);
-                if (Interop.IsWindows) // file sharing restriction limitations on Unix
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // file sharing restriction limitations on Unix
                 {
                     Assert.True(File.Exists(fileName));
                 }
@@ -54,7 +55,7 @@ namespace System.IO.FileSystem.Tests
             using (FileStream fs = CreateFileStream(fileName, FileMode.Open, FileAccess.ReadWrite, FileShare.Delete))
             {
                 File.Delete(fileName);
-                if (Interop.IsWindows) // file sharing restriction limitations on Unix
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // file sharing restriction limitations on Unix
                 {
                     Assert.True(File.Exists(fileName));
                 }

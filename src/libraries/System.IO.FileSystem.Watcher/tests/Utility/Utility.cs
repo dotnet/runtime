@@ -142,7 +142,7 @@ public static class Utility
 
     public static void CreateSymLink(String sourceItem, String symlinkPath, bool isDirectory)
     {
-        if (global::Interop.IsWindows)
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             Assert.True(CreateSymbolicLink(sourceItem, symlinkPath, (isDirectory ? SYMBOLIC_LINK_FLAG_DIRECTORY : 0)) > 0,
                         String.Format("Failed to create symlink with {0}", Marshal.GetLastWin32Error()));

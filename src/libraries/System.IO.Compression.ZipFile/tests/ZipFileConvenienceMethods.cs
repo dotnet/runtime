@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -13,7 +14,7 @@ namespace System.IO.Compression.Test
         public async Task CreateFromDirectoryNormal()
         {
             await TestCreateDirectory(zfolder("normal"), true);
-            if (Interop.IsWindows) // [ActiveIssue(846, PlatformID.AnyUnix)]
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // [ActiveIssue(846, PlatformID.AnyUnix)]
             {
                 await TestCreateDirectory(zfolder("unicode"), true);
             }
@@ -65,7 +66,7 @@ namespace System.IO.Compression.Test
         public void ExtractToDirectoryNormal()
         {
             TestExtract(zfile("normal.zip"), zfolder("normal"));
-            if (Interop.IsWindows) // [ActiveIssue(846, PlatformID.AnyUnix)]
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // [ActiveIssue(846, PlatformID.AnyUnix)]
             {
                 TestExtract(zfile("unicode.zip"), zfolder("unicode"));
             }
@@ -161,7 +162,7 @@ namespace System.IO.Compression.Test
                 DirsEqual(tempFolder, zfolder("normal"));
             }
 
-            if (Interop.IsWindows) // [ActiveIssue(846, PlatformID.AnyUnix)]
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // [ActiveIssue(846, PlatformID.AnyUnix)]
             {
                 using (ZipArchive archive = ZipFile.OpenRead(zfile("unicode.zip")))
                 {
