@@ -15,13 +15,15 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
     <Compile Include="AnonymousPipesTests.cs" />
-    <Compile Include="IpcTestBase.cs" />
     <Compile Include="MemoryMappedFilesTests.cs" />
     <Compile Include="NamedPipesTests.cs" />
     <Compile Include="EventWaitHandleTests.cs" />
     <Compile Include="SemaphoreTests.cs" />
     <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
       <Link>Common\System\IO\TempFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorTestBase.cs">
+      <Link>Common\System\Diagnostics\RemoteExecutorTestBase.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
       <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
@@ -47,9 +49,9 @@
       <Project>{bcf9255a-4321-4277-ad7d-f5094092c554}</Project>
       <Name>System.IO.UnmanagedMemoryStream</Name>
     </ProjectReference>
-    <ProjectReference Include="InterProcessCommunication.TestConsoleApp\InterProcessCommunication.TestConsoleApp.csproj">
+    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
-      <Name>InterProcessCommunication.TestConsoleApp</Name>
+      <Name>RemoteExecutorConsoleApp</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
