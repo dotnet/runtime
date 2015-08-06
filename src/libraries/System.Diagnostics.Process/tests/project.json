@@ -8,6 +8,7 @@
     "System.IO.FileSystem": "4.0.0",
     "System.IO.Pipes": "4.0.0-beta-*",
     "System.Linq": "4.0.0",
+    "System.Reflection.Extensions": "4.0.0",
     "System.Runtime": "4.0.20",
     "System.Runtime.Extensions": "4.0.10",
     "System.Runtime.InteropServices": "4.0.20",

@@ -98,7 +98,7 @@ namespace System.Diagnostics.ProcessTests
             }
 
             p.Kill();
-            await tcs.Task;
+            Assert.True(await tcs.Task);
 
             Assert.True(p.WaitForExit(0));
         }
