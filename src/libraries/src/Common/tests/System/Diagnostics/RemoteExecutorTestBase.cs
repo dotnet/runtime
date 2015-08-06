@@ -91,8 +91,7 @@ namespace System.Diagnostics
             {
                 FileName = HostRunner,
                 Arguments = TestConsoleApp + " \"" + a.FullName + "\" " + t.FullName + " " + method.Name + " " + string.Join(" ", args),
-                UseShellExecute = false,
-                CreateNoWindow = false
+                UseShellExecute = false
             };
 
             // Profilers / code coverage tools doing coverage of the test process set environment
