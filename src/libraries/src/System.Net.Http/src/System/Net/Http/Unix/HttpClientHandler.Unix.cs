@@ -12,7 +12,7 @@ namespace System.Net.Http
 
         public virtual bool SupportsAutomaticDecompression
         {
-            get { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
+            get { return _curlHandler.SupportsAutomaticDecompression; }
         }
 
         public virtual bool SupportsProxy
@@ -51,8 +51,8 @@ namespace System.Net.Http
 
         public DecompressionMethods AutomaticDecompression
         {
-            get { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
-            set { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
+            get { return _curlHandler.AutomaticDecompression; }
+            set { _curlHandler.AutomaticDecompression = value; }
         }
 
         public bool UseProxy
