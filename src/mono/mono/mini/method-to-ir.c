@@ -13089,7 +13089,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 	}
 
-	if (cfg->lmf_var && cfg->method == method && (!cfg->llvm_only && REALLY_LLVMONLY)) {
+	if (cfg->lmf_var && cfg->method == method && !(cfg->llvm_only && REALLY_LLVMONLY)) {
 		cfg->cbb = init_localsbb;
 		emit_push_lmf (cfg);
 	}

@@ -6601,10 +6601,10 @@ emit_aot_file_info (MonoLLVMModule *lmodule)
 	 * for symbols defined in the .s file emitted by the aot compiler.
 	 */
 	eltype = eltypes [tindex];
-	if (lmodule->has_jitted_code && REALLY_LLVMONLY)
-		fields [tindex ++] = AddJitGlobal (lmodule, eltype, "jit_got");
-	else
+	if (!lmodule->has_jitted_code && REALLY_LLVMONLY)
 		fields [tindex ++] = LLVMConstNull (eltype);
+	else
+		fields [tindex ++] = AddJitGlobal (lmodule, eltype, "jit_got");
 	fields [tindex ++] = lmodule->got_var;
 	/* llc defines this directly */
 	if (TRUE) //(!lmodule->llvm_only)
