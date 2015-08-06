@@ -67,4 +67,152 @@ public partial class FileSystemWatcher_4000_Tests
             Utility.ExpectEvent(are, "renamed");
         });
     }
+
+    [Fact]
+    public static void FileSystemWatcher_Renamed_FileInNestedDirectory()
+    {
+        Utility.TestNestedDirectoriesHelper(WatcherChangeTypes.Renamed | WatcherChangeTypes.Created, (AutoResetEvent are, TemporaryTestDirectory ttd) =>
+        {
+            using (var nestedFile = new TemporaryTestFile(Path.Combine(ttd.Path, "nestedFile")))
+            {
+                Utility.ExpectEvent(are, "file created", Utility.WaitForCreationTimeoutInMs);
+                nestedFile.Move(nestedFile.Path + "_2");
+                Utility.ExpectEvent(are, "renamed");
+            }
+        });
+    }
+
+    [Fact]
+    // Note: Can't use the TestNestedDirectoriesHelper since we need access to the root
+    public static void FileSystemWatcher_Moved_NestedDirectoryRoot()
+    {
+        // Create a test root with our watch dir and a temp directory since, on the default Ubuntu install, the system
+        // temp directory is on a different mount point and Directory.Move does not work across mount points.
+        using (var root = Utility.CreateTestDirectory())
+        using (var dir = Utility.CreateTestDirectory(Path.Combine(root.Path, "test_root")))
+        using (var temp = Utility.CreateTestDirectory(Path.Combine(root.Path, "temp")))
+        using (var watcher = new FileSystemWatcher())
+        {
+            AutoResetEvent createdOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created); // not "using" to avoid race conditions with FSW callbacks
+            AutoResetEvent deletedOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Deleted);
+
+            watcher.Path = Path.GetFullPath(dir.Path);
+            watcher.Filter = "*";
+            watcher.IncludeSubdirectories = true;
+            watcher.EnableRaisingEvents = true;
+
+            using (var dir1 = new TemporaryTestDirectory(Path.Combine(dir.Path, "dir1")))
+            {
+                Utility.ExpectEvent(createdOccured, "dir1 created", Utility.WaitForCreationTimeoutInMs);
+
+                using (var dir2 = new TemporaryTestDirectory(Path.Combine(dir1.Path, "dir2")))
+                {
+                    Utility.ExpectEvent(createdOccured, "dir2 created", Utility.WaitForCreationTimeoutInMs);
+
+                    using (var file = Utility.CreateTestFile(Path.Combine(dir2.Path, "test file"))) { };
+
+                    // Move the directory out of the watched folder and expect that we get a deleted event
+                    string original = dir1.Path;
+                    string target = Path.Combine(temp.Path, Path.GetFileName(dir1.Path));
+                    dir1.Move(target);
+                    Utility.ExpectEvent(deletedOccured, "dir1 moved out");
+
+                    // Move the directory back and expect a created event
+                    dir1.Move(original);
+                    Utility.ExpectEvent(createdOccured, "dir1 moved back");
+                }
+            }
+        }
+    }
+
+    [Fact]
+    // Note: Can't use the TestNestedDirectoriesHelper since we need access to the root
+    public static void FileSystemWatcher_Moved_NestedDirectoryRootWithoutSubdirectoriesFlag()
+    {
+        // Create a test root with our watch dir and a temp directory since, on the default Ubuntu install, the system
+        // temp directory is on a different mount point and Directory.Move does not work across mount points.
+        using (var root = Utility.CreateTestDirectory())
+        using (var dir = Utility.CreateTestDirectory(Path.Combine(root.Path, "test_root")))
+        using (var temp = Utility.CreateTestDirectory(Path.Combine(root.Path, "temp")))
+        using (var watcher = new FileSystemWatcher())
+        {
+            AutoResetEvent createdOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created); // not "using" to avoid race conditions with FSW callbacks
+            AutoResetEvent deletedOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Deleted);
+
+            watcher.Path = Path.GetFullPath(dir.Path);
+            watcher.Filter = "*";
+            watcher.IncludeSubdirectories = false;
+            watcher.EnableRaisingEvents = true;
+
+            using (var dir1 = new TemporaryTestDirectory(Path.Combine(dir.Path, "dir1")))
+            {
+                Utility.ExpectEvent(createdOccured, "dir1 created", Utility.WaitForCreationTimeoutInMs);
+
+                using (var dir2 = new TemporaryTestDirectory(Path.Combine(dir1.Path, "dir2")))
+                {
+                    Utility.ExpectNoEvent(createdOccured, "dir2 created", Utility.WaitForCreationTimeoutInMs);
+
+                    using (var file = Utility.CreateTestFile(Path.Combine(dir2.Path, "test file"))) { };
+
+                    // Move the directory out of the watched folder and expect that we get a deleted event
+                    string original = dir1.Path;
+                    string target = Path.Combine(temp.Path, Path.GetFileName(dir1.Path));
+                    dir1.Move(target);
+                    Utility.ExpectEvent(deletedOccured, "dir1 moved out");
+
+                    // Move the directory back and expect a created event
+                    dir1.Move(original);
+                    Utility.ExpectEvent(createdOccured, "dir1 moved back");
+                }
+            }
+        }
+    }
+
+    [Fact]
+    // Note: Can't use the TestNestedDirectoriesHelper since we need access to the root
+    public static void FileSystemWatcher_Moved_NestedDirectoryTreeMoveFileAndFolder()
+    {
+        using (var root = Utility.CreateTestDirectory())
+        using (var dir = Utility.CreateTestDirectory(Path.Combine(root.Path, "test_root")))
+        using (var temp = Utility.CreateTestDirectory(Path.Combine(root.Path, "temp")))
+        using (var dir1 = new TemporaryTestDirectory(Path.Combine(dir.Path, "dir1")))
+        using (var watcher = new FileSystemWatcher())
+        {
+            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created | WatcherChangeTypes.Deleted | WatcherChangeTypes.Changed);
+
+            watcher.Path = Path.GetFullPath(dir.Path);
+            watcher.Filter = "*";
+            watcher.IncludeSubdirectories = true;
+            watcher.EnableRaisingEvents = true;
+
+            string filePath = Path.Combine(dir1.Path, "test_file");
+            using (var file = File.Create(filePath))
+            {
+                // Wait for the file to be created then make a change to validate that we get a change
+                Utility.ExpectEvent(eventOccured, "test file created");
+                byte[] buffer = new byte[4096];
+                file.Write(buffer, 0, buffer.Length);
+                file.Flush();
+            }
+            Utility.ExpectEvent(eventOccured, "test file changed");
+
+            // Move the nested dir out of scope and validate that we get a single deleted event
+            string original = dir1.Path;
+            string target = Path.Combine(temp.Path, "dir1");
+            dir1.Move(target);
+            Utility.ExpectEvent(eventOccured, "nested dir deleted");
+
+            // Move the dir (and child file) back into scope and validate that we get a created event
+            dir1.Move(original);
+            Utility.ExpectEvent(eventOccured, "nested dir created");
+
+            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Write))
+            {
+                byte[] buffer = new byte[4096];
+                fs.Write(buffer, 0, buffer.Length);
+                fs.Flush();
+            }
+            Utility.ExpectEvent(eventOccured, "test file changed");
+        }
+    }
 }

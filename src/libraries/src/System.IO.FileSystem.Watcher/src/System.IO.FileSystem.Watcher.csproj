@@ -66,6 +66,12 @@
     <Compile Include="$(CommonPath)\Interop\Linux\Interop.Errors.cs">
       <Link>Common\Interop\Linux\Interop.Errors.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.poll.cs">
+      <Link>Common\Interop\Unix\Interop.poll.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.IO.Native\Interop.NativeIO.cs">
+      <Link>Common\Interop\Unix\Interop.NativeIO.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
     <Compile Include="System\IO\FileSystemWatcher.OSX.cs" />

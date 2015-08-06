@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using Xunit;
@@ -119,5 +120,93 @@ public partial class FileSystemWatcher_4000_Tests
                 Utility.ExpectEvent(are, "nested file created", 1000 * 30);
             }
         });
+    }
+
+    // This can potentially fail, depending on where the test is run from, due to 
+    // the MAX_PATH limitation. When issue 645 is closed, this shouldn't be a problem
+    [Fact, ActiveIssue(645, PlatformID.Any)]
+    public static void FileSystemWatcher_Created_DeepDirectoryStructure()
+    {
+        // List of created directories
+        List<TemporaryTestDirectory> lst = new List<TemporaryTestDirectory>();
+
+        try
+        {
+            using (var dir = Utility.CreateTestDirectory())
+            using (var watcher = new FileSystemWatcher())
+            {
+                AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created);
+
+                // put everything in our own directory to avoid collisions
+                watcher.Path = Path.GetFullPath(dir.Path);
+                watcher.Filter = "*.*";
+                watcher.IncludeSubdirectories = true;
+                watcher.EnableRaisingEvents = true;
+
+                // Priming directory
+                TemporaryTestDirectory priming = new TemporaryTestDirectory(Path.Combine(dir.Path, "dir"));
+                lst.Add(priming);
+                Utility.ExpectEvent(eventOccured, "priming create");
+
+                // Create a deep directory structure and expect things to work
+                for (int i = 1; i < 20; i++)
+                {
+                    lst.Add(new TemporaryTestDirectory(Path.Combine(lst[i - 1].Path, String.Format("dir{0}", i))));
+                    Utility.ExpectEvent(eventOccured, lst[i].Path + " create");
+                }
+
+                // Put a file at the very bottom and expect it to raise an event
+                using (var file = new TemporaryTestFile(Path.Combine(lst[lst.Count - 1].Path, "temp file")))
+                {
+                    Utility.ExpectEvent(eventOccured, "temp file create");
+                }
+            }
+        }
+        finally
+        {
+            // Cleanup
+            foreach (TemporaryTestDirectory d in lst)
+                d.Dispose();
+        }
+    }
+
+    [Fact, ActiveIssue(1477, PlatformID.Windows)]
+    public static void FileSystemWatcher_Created_WatcherDoesntFollowSymLinkToFile()
+    {
+        using (var dir = Utility.CreateTestDirectory())
+        using (var temp = Utility.CreateTestFile(Path.GetTempFileName()))
+        using (var watcher = new FileSystemWatcher())
+        {
+            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created);
+
+            // put everything in our own directory to avoid collisions
+            watcher.Path = Path.GetFullPath(dir.Path);
+            watcher.Filter = "*";
+            watcher.EnableRaisingEvents = true;
+
+            // Make the symlink in our path (to the temp file) and make sure an event is raised
+            Utility.CreateSymLink(Path.GetFullPath(temp.Path), Path.Combine(dir.Path, Path.GetFileName(temp.Path)), false);
+            Utility.ExpectEvent(eventOccured, "symlink created");
+        }
+    }
+
+    [Fact, ActiveIssue(1477, PlatformID.Windows)]
+    public static void FileSystemWatcher_Created_WatcherDoesntFollowSymLinkToFolder()
+    {
+        using (var dir = Utility.CreateTestDirectory())
+        using (var temp = Utility.CreateTestDirectory(Path.Combine(Path.GetTempPath(), "FooBar")))
+        using (var watcher = new FileSystemWatcher())
+        {
+            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created);
+
+            // put everything in our own directory to avoid collisions
+            watcher.Path = Path.GetFullPath(dir.Path);
+            watcher.Filter = "*";
+            watcher.EnableRaisingEvents = true;
+
+            // Make the symlink in our path (to the temp folder) and make sure an event is raised
+            Utility.CreateSymLink(Path.GetFullPath(temp.Path), Path.Combine(dir.Path, Path.GetFileName(temp.Path)), true);
+            Utility.ExpectEvent(eventOccured, "symlink created");
+        }
     }
 }
