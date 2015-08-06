@@ -132,6 +132,9 @@
   <data name="Cryptography_ArgRSAaRequiresRSAKey" xml:space="preserve">
     <value>Keys used with the RSACng algorithm must have an algorithm group of RSA.</value>
   </data>
+  <data name="Cryptography_HashAlgorithmNameNullOrEmpty" xml:space="preserve">
+    <value>The hash algorithm name cannot be null or empty.</value>
+  </data>
   <data name="Cryptography_InvalidAlgorithmGroup" xml:space="preserve">
     <value>The algorithm group '{0}' is invalid.</value>
   </data>
@@ -182,5 +185,8 @@
   </data>
   <data name="WorkInProgress" xml:space="preserve">
     <value>WorkInProgress.</value>
+  </data>
+  <data name="WorkInProgress_UnsupportedHash" xml:space="preserve">
+    <value>Unsupported hash algorithm. RSACng currently supports only MD5, SHA1, SHA256, SHA384 and SHA512.</value>
   </data>
 </root>
