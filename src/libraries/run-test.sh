@@ -190,9 +190,17 @@ runtest()
 
   copy_test_overlay $dirName
 
+  pushd $dirName > /dev/null
+
+  # Remove the mscorlib native image, since our current test layout build process
+  # uses a windows runtime and so we include the windows native image for mscorlib
+  if [ -e mscorlib.ni.dll ]
+  then
+    rm mscorlib.ni.dll
+  fi
+  
   # Invoke xunit
 
-  pushd $dirName > /dev/null
   echo
   echo "Running tests in $dirName"
   echo "./corerun xunit.console.netcore.exe $testDllName -xml testResults.xml -notrait category=failing -notrait category=OuterLoop -notrait category=$xunitOSCategory"
