@@ -40,7 +40,7 @@ namespace System.Collections.Immutable
         public static readonly ImmutableArray<T> Empty = new ImmutableArray<T>(new T[0]);
 
         /// <summary>
-        /// The backing field for this instance. References to this value should never be shared with outside code. 
+        /// The backing field for this instance. References to this value should never be shared with outside code.
         /// </summary>
         /// <remarks>
         /// This would be private, but we make it internal so that our own extension methods can access it.
@@ -583,11 +583,11 @@ namespace System.Collections.Immutable
 
             if (self.IsEmpty)
             {
-                return new ImmutableArray<T>(items.array);
+                return items;
             }
             else if (items.IsEmpty)
             {
-                return new ImmutableArray<T>(self.array);
+                return self;
             }
 
             return self.InsertRange(index, items.array);
@@ -636,7 +636,7 @@ namespace System.Collections.Immutable
             if (self.IsEmpty)
             {
                 // Be sure what we return is marked as initialized.
-                return new ImmutableArray<T>(items.array);
+                return items;
             }
             else if (items.IsEmpty)
             {
@@ -728,7 +728,7 @@ namespace System.Collections.Immutable
             self.ThrowNullRefIfNotInitialized();
             int index = self.IndexOf(item, equalityComparer);
             return index < 0
-                ? new ImmutableArray<T>(self.array)
+                ? self
                 : self.RemoveAt(index);
         }
 
@@ -876,7 +876,7 @@ namespace System.Collections.Immutable
 
             if (self.IsEmpty)
             {
-                return new ImmutableArray<T>(self.array);
+                return self;
             }
 
             List<int> removeIndexes = null;
@@ -942,14 +942,14 @@ namespace System.Collections.Immutable
             Requires.Range(index >= 0, "index");
             Requires.Range(count >= 0 && index + count <= self.Length, "count");
 
-            if (comparer == null)
-            {
-                comparer = Comparer<T>.Default;
-            }
-
             // 0 and 1 element arrays don't need to be sorted.
             if (count > 1)
             {
+                if (comparer == null)
+                {
+                    comparer = Comparer<T>.Default;
+                }
+            
                 // Avoid copying the entire array when the array is already sorted.
                 bool outOfOrder = false;
                 for (int i = index + 1; i < index + count; i++)
@@ -970,7 +970,7 @@ namespace System.Collections.Immutable
                 }
             }
 
-            return new ImmutableArray<T>(self.array);
+            return self;
         }
 
         /// <summary>
@@ -1007,7 +1007,7 @@ namespace System.Collections.Immutable
         /// Returns a hash code for this instance.
         /// </summary>
         /// <returns>
-        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
+        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.
         /// </returns>
         [Pure]
         public override int GetHashCode()
@@ -1592,16 +1592,16 @@ namespace System.Collections.Immutable
         {
             // Force NullReferenceException if array is null by touching its Length.
             // This way of checking has a nice property of requiring very little code
-            // and not having any conditions/branches. 
+            // and not having any conditions/branches.
             // In a faulting scenario we are relying on hardware to generate the fault.
-            // And in the non-faulting scenario (most common) the check is virtually free since 
+            // And in the non-faulting scenario (most common) the check is virtually free since
             // if we are going to do anything with the array, we will need Length anyways
-            // so touching it, and potentially causing a cache miss, is not going to be an 
+            // so touching it, and potentially causing a cache miss, is not going to be an
             // extra expense.
             var unused = this.array.Length;
 
             // This line is a workaround for a bug in C# compiler
-            // The code in this line will not be emitted, but it will prevent incorrect 
+            // The code in this line will not be emitted, but it will prevent incorrect
             // optimizing away of "Length" call above in Release builds.
             // TODO: remove the workaround when building with Roslyn which does not have this bug.
             var unused2 = unused;
@@ -1612,7 +1612,7 @@ namespace System.Collections.Immutable
         /// <see cref="IsDefault"/> property returns true.  The
         /// <see cref="InvalidOperationException"/> message specifies that the operation cannot be performed
         /// on a default instance of <see cref="ImmutableArray{T}"/>.
-        /// 
+        ///
         /// This is intended for explicitly implemented interface method and property implementations.
         /// </summary>
         private void ThrowInvalidOperationIfNotInitialized()
@@ -1642,7 +1642,7 @@ namespace System.Collections.Immutable
             if (indexesToRemove.Count == 0)
             {
                 // Be sure to return a !IsDefault instance.
-                return new ImmutableArray<T>(self.array);
+                return self;
             }
 
             var newArray = new T[self.Length - indexesToRemove.Count];
