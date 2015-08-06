@@ -1,12 +1,13 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections;
 using System.Globalization;
 
 namespace System.ComponentModel.DataAnnotations
 {
     /// <summary>
-    ///     Specifies the minimum length of array/string data allowed in a property.
+    ///     Specifies the minimum length of collection/string data allowed in a property.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter,
         AllowMultiple = false)]
@@ -16,7 +17,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     Initializes a new instance of the <see cref="MinLengthAttribute" /> class.
         /// </summary>
         /// <param name="length">
-        ///     The minimum allowable length of array/string data.
+        ///     The minimum allowable length of collection/string data.
         ///     Value must be greater than or equal to zero.
         /// </param>
         public MinLengthAttribute(int length)
@@ -26,7 +27,7 @@ namespace System.ComponentModel.DataAnnotations
         }
 
         /// <summary>
-        ///     Gets the minimum allowable length of the array/string data.
+        ///     Gets the minimum allowable length of the collection/string data.
         /// </summary>
         public int Length { get; private set; }
 
@@ -61,8 +62,18 @@ namespace System.ComponentModel.DataAnnotations
             }
             else
             {
-                // We expect a cast exception if a non-{string|array} property was passed in.
-                length = ((Array)value).Length;
+                ICollection collection = value as ICollection;
+
+                if (collection != null)
+                {
+                    length = collection.Count;
+                }
+                else
+                {
+                    // A cast exception previously occurred if a non-{string|array} property was passed
+                    // in so preserve this behavior if the value does not implement ICollection
+                    length = ((Array)value).Length;
+                }
             }
 
             return length >= Length;
