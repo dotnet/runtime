@@ -11,7 +11,7 @@ namespace RemoteExecutorConsoleApp
     /// <summary>
     /// Provides an entry point in a new process that will load a specified method and invoke it.
     /// </summary>
-    static class Program
+    internal static class Program
     {
         static int Main(string[] args)
         {
