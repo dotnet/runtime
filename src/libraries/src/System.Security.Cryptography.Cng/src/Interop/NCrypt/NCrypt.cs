@@ -44,6 +44,18 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.NCrypt, CharSet = CharSet.Unicode)]
         internal static extern ErrorCode NCryptFinalizeKey(SafeNCryptKeyHandle hKey, int dwFlags);
 
+        [DllImport(Interop.Libraries.NCrypt, CharSet = CharSet.Unicode)]
+        internal static unsafe extern ErrorCode NCryptEncrypt(SafeNCryptKeyHandle hKey, [In] byte[] pbInput, int cbInput, void* pPaddingInfo, [Out] byte[] pbOutput, int cbOutput, out int pcbResult, AsymmetricPaddingMode dwFlags);
+
+        [DllImport(Interop.Libraries.NCrypt, CharSet = CharSet.Unicode)]
+        internal static unsafe extern ErrorCode NCryptDecrypt(SafeNCryptKeyHandle hKey, [In] byte[] pbInput, int cbInput, void* pPaddingInfo, [Out] byte[] pbOutput, int cbOutput, out int pcbResult, AsymmetricPaddingMode dwFlags);
+
+        [DllImport(Interop.Libraries.NCrypt, CharSet = CharSet.Unicode)]
+        internal static unsafe extern ErrorCode NCryptSignHash(SafeNCryptKeyHandle hKey, void* pPaddingInfo, [In] byte[] pbHashValue, int cbHashValue, [Out] byte[] pbSignature, int cbSignature, out int pcbResult, AsymmetricPaddingMode dwFlags);
+
+        [DllImport(Interop.Libraries.NCrypt, CharSet = CharSet.Unicode)]
+        internal static unsafe extern ErrorCode NCryptVerifySignature(SafeNCryptKeyHandle hKey, void *pPaddingInfo, [In] byte[] pbHashValue, int cbHashValue, [In] byte[] pbSignature, int cbSignature, AsymmetricPaddingMode dwFlags);
+
         /// <summary>
         ///     Result codes from NCrypt APIs
         /// </summary>
@@ -68,5 +80,14 @@ internal static partial class Interop
             public IntPtr pszFriendlyName;
             public IntPtr pszDescription;
         }
+
+        internal enum AsymmetricPaddingMode : int
+        {
+            NCRYPT_NO_PADDING_FLAG = 0x00000001,
+            NCRYPT_PAD_PKCS1_FLAG = 0x00000002,    // NCryptEncrypt/Decrypt or NCryptSignHash/VerifySignature
+            NCRYPT_PAD_OAEP_FLAG = 0x00000004,     // NCryptEncrypt/Decrypt
+            NCRYPT_PAD_PSS_FLAG = 0x00000008,      // NCryptSignHash/VerifySignature
+        }
     }
 }
+ 
