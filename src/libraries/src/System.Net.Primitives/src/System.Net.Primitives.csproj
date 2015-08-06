@@ -9,9 +9,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);FEATURE_CORECLR</DefineConstants>
   </PropertyGroup>
+
   <!-- Help VS understand available configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Release|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU' " />
@@ -51,8 +50,8 @@
     <Compile Include="System\Security\Authentication\ExtendedProtection\ChannelBinding.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ChannelBindingKind.cs" />
 
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs" >
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\ByteOrder.cs" >
+      <Link>Common\System\Net\ByteOrder.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs" >
       <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
@@ -88,9 +87,24 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.Alg.cs" >
       <Link>Common\Interop\Windows\Crypt32\Interop.Alg.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs" >
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\SChannel\Interop.SchProtocols.cs" >
+      <Link>Common\Interop\Windows\SChannel\Interop.SchProtocols.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.ErrorCodes.cs" >
+      <Link>Common\Interop\Windows\Winsock\Interop.ErrorCodes.cs</Link>
+    </Compile>
+  </ItemGroup>
+  
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+    <Compile Include="System\Net\IPAddressPal.Windows.cs" />
+    <Compile Include="System\Net\HostInformationPal.Windows.cs" />
+    <Compile Include="System\Net\SocketAddressPal.Windows.cs" />
+    <Compile Include="System\Net\SocketException.Windows.cs" />
+
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs" >
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs</Link>
+    </Compile>
+
     <Compile Include="$(CommonPath)\Interop\Windows\IpHlpApi\Interop.ErrorCodes.cs" >
       <Link>Common\Interop\Windows\IpHlpApi\Interop.ErrorCodes.cs</Link>
     </Compile>
@@ -102,6 +116,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\IpHlpApi\Interop.IP_ADDR_STRING.cs" >
       <Link>Common\Interop\Windows\IpHlpApi\Interop.IP_ADDR_STRING.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs" >
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore_obsolete\Interop.LocalAlloc.cs" >
       <Link>Common\Interop\Windows\mincore_obsolete\Interop.LocalAlloc.cs</Link>
@@ -124,19 +141,55 @@
     <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlIpv6StringToAddressEx.cs" >
       <Link>Common\Interop\Windows\NtDll\Interop.RtlIpv6StringToAddressEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\SChannel\Interop.SchProtocols.cs" >
-      <Link>Common\Interop\Windows\SChannel\Interop.SchProtocols.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.ErrorCodes.cs" >
-      <Link>Common\Interop\Windows\Winsock\Interop.ErrorCodes.cs</Link>
-    </Compile>
+  </ItemGroup>
+  
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <Compile Include="System\Net\IPAddressPal.Unix.cs" />
+    <Compile Include="System\Net\HostInformationPal.Unix.cs" />
+    <Compile Include="System\Net\SocketAddressPal.Unix.cs" />
+    <Compile Include="System\Net\SocketException.Unix.cs" />
 
+    <Compile Include="$(CommonPath)\Interop\Interop.CheckedAccess.cs" >
+      <Link>Common\Interop\Interop.CheckedAccess.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs" >
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.freeaddrinfo.cs" >
+      <Link>Common\Interop\Unix\libc\Interop.freeaddrinfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getaddrinfo.cs" >
+      <Link>Common\Interop\Unix\libc\Interop.getaddrinfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gethostname.cs" >
+      <Link>Common\Interop\Unix\libc\Interop.gethostname.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getdomainname.cs" >
+      <Link>Common\Interop\Unix\libc\Interop.getdomainname.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getnameinfo.cs" >
+      <Link>Common\Interop\Unix\libc\Interop.getnameinfo.cs</Link>
+    </Compile>
   </ItemGroup>
-  
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
-    <!-- TODO -->
+
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' ">
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.addrinfo.cs" >
+      <Link>Common\Interop\Unix\libc\Interop.addrinfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.sockaddr.cs" >
+      <Link>Common\Interop\Unix\libc\Interop.sockaddr.cs</Link>
+    </Compile>
   </ItemGroup>
-  
+
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.addrinfo.cs" >
+      <Link>Common\Interop\OSX\libc\Interop.addrinfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.sockaddr.cs" >
+      <Link>Common\Interop\OSX\libc\Interop.sockaddr.cs</Link>
+    </Compile>
+  </ItemGroup>
+
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
