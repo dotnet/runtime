@@ -269,15 +269,19 @@ namespace CorUnix
 
         // Object signal count accessor methods
         LONG GetSignalCount(void) 
-        { 
+        {
+            _ASSERTE(m_lSignalCount >= 0);
             return m_lSignalCount; 
         }
         void SetSignalCount(LONG lSignalCount) 
         { 
+            _ASSERTE(m_lSignalCount >= 0);
+            _ASSERTE(lSignalCount >= 0);
             m_lSignalCount = lSignalCount; 
         }
         LONG DecrementSignalCount(void) 
-        { 
+        {
+            _ASSERTE(m_lSignalCount > 0);
             return --m_lSignalCount; 
         }
 
@@ -481,10 +485,10 @@ namespace CorUnix
         //
         // ISynchStateController methods
         //
-        virtual PAL_ERROR GetSignalCount(DWORD *pdwSignalCount);
-        virtual PAL_ERROR SetSignalCount(DWORD dwNewCount);
-        virtual PAL_ERROR IncrementSignalCount(DWORD dwAmountToIncrement);
-        virtual PAL_ERROR DecrementSignalCount(DWORD dwAmountToDecrement);
+        virtual PAL_ERROR GetSignalCount(LONG *plSignalCount);
+        virtual PAL_ERROR SetSignalCount(LONG lNewCount);
+        virtual PAL_ERROR IncrementSignalCount(LONG lAmountToIncrement);
+        virtual PAL_ERROR DecrementSignalCount(LONG lAmountToDecrement);
         virtual PAL_ERROR SetOwner(CPalThread *pNewOwningThread);
         virtual PAL_ERROR DecrementOwnershipCount(void);
         virtual void ReleaseController(void);
