@@ -27,12 +27,14 @@ namespace System.ServiceProcess
         private string _displayName;
         private int _commandsAccepted;
         private bool _statusGenerated;
+        private bool _startTypeInitialized;
         private int _type;
         private bool _disposed;
         private SafeServiceHandle _serviceManagerHandle;
         private ServiceControllerStatus _status;
         private ServiceController[] _dependentServices;
         private ServiceController[] _servicesDependedOn;
+        private ServiceStartMode _startType;
 
         private const int SERVICENAMEMAXLENGTH = 80;
         private const int DISPLAYNAMEBUFFERSIZE = 256;
@@ -305,6 +307,56 @@ namespace System.ServiceProcess
             }
         }
 
+        public ServiceStartMode StartType
+        {
+            get
+            {
+                if (_startTypeInitialized)
+                    return _startType;
+
+                IntPtr serviceHandle = IntPtr.Zero;
+                try
+                {
+                    serviceHandle = GetServiceHandle(Interop.mincore.ServiceOptions.SERVICE_QUERY_CONFIG);
+
+                    int bytesNeeded = 0;
+                    bool success = Interop.mincore.QueryServiceConfig(serviceHandle, IntPtr.Zero, 0, out bytesNeeded);
+
+                    int lastError = Marshal.GetLastWin32Error();
+                    if (lastError != Interop.mincore.Errors.ERROR_INSUFFICIENT_BUFFER)
+                        throw new Win32Exception(lastError);
+
+                    // get the info
+                    IntPtr bufPtr = IntPtr.Zero;
+                    try
+                    {
+                        bufPtr = Marshal.AllocHGlobal((IntPtr)bytesNeeded);
+                        success = Interop.mincore.QueryServiceConfig(serviceHandle, bufPtr, bytesNeeded, out bytesNeeded);
+                        if (!success)
+                            throw new Win32Exception(Marshal.GetLastWin32Error());
+
+                        Interop.mincore.QUERY_SERVICE_CONFIG config = new Interop.mincore.QUERY_SERVICE_CONFIG();
+                        Marshal.PtrToStructure(bufPtr, config);
+
+                        _startType = (ServiceStartMode)config.dwStartType;
+                        _startTypeInitialized = true;
+                    }
+                    finally
+                    {
+                        if (bufPtr != IntPtr.Zero)
+                            Marshal.FreeHGlobal(bufPtr);
+                    }
+                }
+                finally
+                {
+                    if (serviceHandle != IntPtr.Zero)
+                        Interop.mincore.CloseServiceHandle(serviceHandle);
+                }
+
+                return _startType;
+            }
+        }
+
         public SafeHandle ServiceHandle
         {
             get
@@ -357,6 +409,7 @@ namespace System.ServiceProcess
             }
 
             _statusGenerated = false;
+            _startTypeInitialized = false;
             _type = Interop.mincore.ServiceTypeOptions.SERVICE_TYPE_ALL;
             _disposed = true;
         }
@@ -673,6 +726,7 @@ namespace System.ServiceProcess
         public void Refresh()
         {
             _statusGenerated = false;
+            _startTypeInitialized = false;
             _dependentServices = null;
             _servicesDependedOn = null;
         }
