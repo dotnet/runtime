@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Globalization;
 using Xunit;
 
 public static class TimeZoneInfoTests
@@ -19,6 +20,7 @@ public static class TimeZoneInfoTests
     private static String s_strRussian = s_isWindows ? "Russian Standard Time" : "Europe/Moscow";
     private static String s_strLibya = s_isWindows ? "Libya Standard Time" : "Africa/Tripoli";
     private static String s_strCatamarca = s_isWindows ? "Argentina Standard Time" : "America/Catamarca";
+    private static String s_strLisbon = Interop.IsWindows ? "GMT Standard Time" : "Europe/Lisbon";
 
     private static TimeZoneInfo s_myUtc = TimeZoneInfo.Utc;
     private static TimeZoneInfo s_myLocal = TimeZoneInfo.Local;
@@ -27,6 +29,7 @@ public static class TimeZoneInfoTests
     private static TimeZoneInfo s_nairobiTz = TimeZoneInfo.FindSystemTimeZoneById(s_strNairobi);
     private static TimeZoneInfo s_amsterdamTz = TimeZoneInfo.FindSystemTimeZoneById(s_strAmsterdam);
     private static TimeZoneInfo s_catamarcaTz = TimeZoneInfo.FindSystemTimeZoneById(s_strCatamarca);
+    private static TimeZoneInfo s_LisbonTz = TimeZoneInfo.FindSystemTimeZoneById(s_strLisbon);
 
     private static bool s_localIsPST = TimeZoneInfo.Local.Id == s_strPacific;
     private static bool s_regLocalSupportsDST = s_regLocal.SupportsDaylightSavingTime;
@@ -1678,6 +1681,30 @@ public static class TimeZoneInfoTests
         VerifyDST(s_catamarcaTz, new DateTime(1963, 10, 01, 02, 00, 00, DateTimeKind.Utc), true);
         VerifyDST(s_catamarcaTz, new DateTime(1963, 10, 01, 02, 59, 00, DateTimeKind.Utc), true);
         VerifyDST(s_catamarcaTz, new DateTime(1963, 10, 01, 03, 00, 00, DateTimeKind.Utc), false);
+    }
+
+    [Theory]
+    [PlatformSpecific(PlatformID.AnyUnix)]
+    // in 1996 Europe/Lisbon changed from standard time to DST without changing the UTC offset
+    [InlineData("1995-09-30T17:00:00.0000000Z", false, "1:00:00")]
+    [InlineData("1996-03-31T00:59:59.0000000Z", false, "1:00:00")]
+    [InlineData("1996-03-31T01:00:00.0000000Z", true, "1:00:00")]
+    [InlineData("1996-03-31T01:00:01.0000000Z", true, "1:00:00")]
+    [InlineData("1996-03-31T11:00:01.0000000Z", true, "1:00:00")]
+    [InlineData("1996-08-31T11:00:00.0000000Z", true, "1:00:00")]
+    [InlineData("1996-10-27T00:00:00.0000000Z", true, "1:00:00")]
+    [InlineData("1996-10-27T00:59:59.0000000Z", true, "1:00:00")]
+    [InlineData("1996-10-27T01:00:00.0000000Z", false, "0:00:00")]
+    [InlineData("1996-10-28T01:00:00.0000000Z", false, "0:00:00")]
+    [InlineData("1997-03-30T00:59:59.0000000Z", false, "0:00:00")]
+    [InlineData("1997-03-30T01:00:00.0000000Z", true, "1:00:00")]
+    public static void TestLisbonDaylightSavingsWithNoOffsetChange(string dateTimeString, bool expectedDST, string expectedOffsetString)
+    {
+        DateTime dt = DateTime.ParseExact(dateTimeString, "o", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal);
+        VerifyDST(s_LisbonTz, dt, expectedDST);
+
+        TimeSpan offset = TimeSpan.Parse(expectedOffsetString, CultureInfo.InvariantCulture);
+        Assert.Equal(offset, s_LisbonTz.GetUtcOffset(dt));
     }
 
     //
