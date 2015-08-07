@@ -150,7 +150,7 @@ public partial class FileSystemWatcher_4000_Tests
 
                 using (var dir2 = new TemporaryTestDirectory(Path.Combine(dir1.Path, "dir2")))
                 {
-                    Utility.ExpectNoEvent(createdOccured, "dir2 created", Utility.WaitForCreationTimeoutInMs);
+                    Utility.ExpectNoEvent(createdOccured, "dir2 created");
 
                     using (var file = Utility.CreateTestFile(Path.Combine(dir2.Path, "test file"))) { };
 
