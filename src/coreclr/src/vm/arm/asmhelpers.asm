@@ -63,7 +63,7 @@
     IMPORT OnHijackObjectWorker
     IMPORT OnHijackInteriorPointerWorker
     IMPORT OnHijackScalarWorker
-#endif ;FEATURE_HIJACK
+#endif ; FEATURE_HIJACK
 
     IMPORT GetCurrentSavedRedirectContext
 

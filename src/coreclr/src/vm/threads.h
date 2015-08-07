@@ -551,12 +551,12 @@ EXTERN_C void LeaveSyncHelper    (UINT_PTR caller, void *pAwareLock);
 
 #endif  // TRACK_SYNC
 
-#if defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK)
+#if defined(FEATURE_HIJACK)
+
 // Used to capture information about the state of execution of a *SUSPENDED* thread.
 struct ExecutionState;
-#endif // FEATURE_HIJACK || FEATURE_UNIX_GC_REDIRECT_HIJACK
 
-#ifdef FEATURE_HIJACK
+#ifndef PLATFORM_UNIX
 //***************************************************************************
 // This is the type of the start function of a redirected thread pulled from
 // a HandledJITCase during runtime suspension
@@ -564,6 +564,8 @@ typedef void (__stdcall *PFN_REDIRECTTARGET)();
 
 // Describes the weird argument sets during hijacking
 struct HijackArgs;
+#endif // !PLATFORM_UNIX
+
 #endif // FEATURE_HIJACK
 
 //***************************************************************************
@@ -3268,10 +3270,10 @@ public:
         return s_NextSelfAbortEndTime;
     }
 
-#ifdef FEATURE_HIJACK
+#if defined(FEATURE_HIJACK) && !defined(PLATFORM_UNIX)
     // Tricks for resuming threads from fully interruptible code with a ThreadStop.
     BOOL           ResumeUnderControl(T_CONTEXT *pCtx);
-#endif // FEATURE_HIJACK
+#endif // FEATURE_HIJACK && !PLATFORM_UNIX
 
     enum InducedThrowReason {
         InducedThreadStop = 1,
@@ -3691,7 +3693,7 @@ private:
     ARG_SLOT CallPropertyGet(BinderMethodID id, OBJECTREF pObject);
     ARG_SLOT CallPropertySet(BinderMethodID id, OBJECTREF pObject, OBJECTREF pValue);
 
-#ifdef FEATURE_HIJACK
+#if defined(FEATURE_HIJACK) && !defined(PLATFORM_UNIX)
     // Used in suspension code to redirect a thread at a HandledJITCase
     BOOL RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt);
     BOOL RedirectCurrentThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt, T_CONTEXT *pCurrentThreadCtx);
@@ -3709,14 +3711,11 @@ private:
 
 #if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS)
 public:
-
     BOOL CheckForAndDoRedirectForGCStress (T_CONTEXT *pCurrentThreadCtx);
-
 private:
-
     bool        m_fPreemptiveGCDisabledForGCStress;
 #endif // HAVE_GCCOVER && USE_REDIRECT_FOR_GCSTRESS
-#endif // FEATURE_HIJACK
+#endif // FEATURE_HIJACK && !PLATFORM_UNIX
 
 public:
 
@@ -3849,7 +3848,7 @@ public:
     // is optional.
     static BOOL CommitThreadStack(Thread* pThreadOptional);
 
-#ifdef FEATURE_HIJACK
+#if defined(FEATURE_HIJACK) && !defined(PLATFORM_UNIX)
 private:
     // Redirecting of threads in managed code at suspension
 
@@ -3872,7 +3871,7 @@ private:
 #endif // defined(HAVE_GCCOVER) && USE_REDIRECT_FOR_GCSTRESS
 
     friend void CPFH_AdjustContextForThreadSuspensionRace(T_CONTEXT *pContext, Thread *pThread);
-#endif // FEATURE_HIJACK
+#endif // FEATURE_HIJACK && !PLATFORM_UNIX
 
 private:
     //-------------------------------------------------------------
@@ -3988,20 +3987,23 @@ public:
     BOOL GetSafelyRedirectableThreadContext(DWORD dwOptions, T_CONTEXT * pCtx, REGDISPLAY * pRD);
 
 private:
-#if defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK)
+#if defined(FEATURE_HIJACK)
     void    HijackThread(VOID *pvHijackAddr, ExecutionState *esb);
 
     VOID        *m_pvHJRetAddr;           // original return address (before hijack)
     VOID       **m_ppvHJRetAddrPtr;       // place we bashed a new return address
     MethodDesc  *m_HijackedFunction;      // remember what we hijacked
-#endif
 
-#ifdef FEATURE_HIJACK
+#if !defined(PLATFORM_UNIX)
     BOOL    HandledJITCase(BOOL ForTaskSwitchIn = FALSE);
+
 #ifdef _TARGET_X86_
     PCODE       m_LastRedirectIP;
     ULONG       m_SpinCount;
 #endif // _TARGET_X86_
+
+#endif // !PLATFORM_UNIX
+
 #endif // FEATURE_HIJACK
 
     DWORD       m_Win32FaultAddress;

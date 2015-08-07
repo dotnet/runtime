@@ -671,7 +671,7 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->Esp  = (DWORD)(pRD->PCTAddr + sizeof(TADDR));
 }
 
-#endif  // FEATURE_HIJACK
+#endif // FEATURE_HIJACK
 
 void PInvokeCalliFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 {

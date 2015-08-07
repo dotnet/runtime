@@ -12173,7 +12173,7 @@ HRESULT Thread::YieldTask()
             break;
         }
 
-#ifdef FEATURE_HIJACK
+#if defined(FEATURE_HIJACK) && !defined(PLATFORM_UNIX)
 
 #ifdef _DEBUG
         if (pCurThread != NULL)
@@ -12207,7 +12207,8 @@ HRESULT Thread::YieldTask()
         }
 #endif //_DEBUG
 
-#endif // FEATURE_HIJACK
+#endif // FEATURE_HIJACK && !PLATFORM_UNIX
+
 Retry:
         ::ResumeThread(hThread);
         if (fDone)
