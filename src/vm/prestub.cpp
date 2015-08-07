@@ -1249,6 +1249,8 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
 
     // record if remoting needs to intercept this call
     BOOL  fRemotingIntercepted = IsRemotingInterceptedViaPrestub();
+
+    BOOL  fReportCompilationFinished = FALSE;
     
     /**************************   CODE CREATION  *************************/
     if (IsUnboxingStub())
@@ -1359,7 +1361,11 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
         {
             Module * pModule = GetModule();
             if (pModule->IsReadyToRun())
+            {
                 pCode = pModule->GetReadyToRunInfo()->GetEntryPoint(this);
+                if (pCode != NULL)
+                    fReportCompilationFinished = TRUE;
+            }
         }
 #endif // FEATURE_READYTORUN
 
@@ -1601,6 +1607,9 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
     _ASSERTE(!IsPointingToPrestub());
     _ASSERTE(HasStableEntryPoint());
 #endif // FEATURE_INTERPRETER
+
+    if (fReportCompilationFinished)
+        DACNotifyCompilationFinished(this);
 
     RETURN DoBackpatch(pMT, pDispatchingMT, FALSE);
 }
