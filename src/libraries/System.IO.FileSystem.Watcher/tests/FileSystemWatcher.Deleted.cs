@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
 
@@ -70,9 +71,16 @@ public partial class FileSystemWatcher_4000_Tests
                 testFile.Flush();
 
                 // renaming a directory
-                testDir.Move(testDir.Path + "_rename");
+                //
+                // We don't do this on Linux because depending on the timing of MOVED_FROM and MOVED_TO events,
+                // a rename can trigger delete + create as a deliberate handling of an edge case, and this
+                // test is checking that no delete events are raised.
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    testDir.Move(testDir.Path + "_rename");
+                }
 
-                Utility.ExpectNoEvent(eventOccured, "changed");
+                Utility.ExpectNoEvent(eventOccured, "deleted");
             }
         }
     }
