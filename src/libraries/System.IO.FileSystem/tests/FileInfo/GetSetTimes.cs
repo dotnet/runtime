@@ -53,7 +53,10 @@ namespace System.IO.FileSystem.Tests
             {
                 DateTime dt = new DateTime(2014, 12, 1, 12, 0, 0, tuple.Item3);
                 tuple.Item1(testFile, dt);
-                Assert.Equal(dt, tuple.Item2(testFile));
+                var result = tuple.Item2(testFile);
+                Assert.Equal(dt, result);
+                Assert.Equal(dt.ToLocalTime(), result.ToLocalTime());
+                Assert.Equal(dt.ToUniversalTime(), result.ToUniversalTime());
             });
         }
 

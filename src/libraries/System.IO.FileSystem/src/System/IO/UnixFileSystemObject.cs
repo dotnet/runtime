@@ -193,7 +193,7 @@ namespace System.IO
                 get
                 {
                     EnsureStatInitialized();
-                    return DateTimeOffset.FromUnixTimeSeconds(_fileinfo.atime);
+                    return DateTimeOffset.FromUnixTimeSeconds(_fileinfo.atime).ToLocalTime();
                 }
                 set { SetAccessWriteTimes((IntPtr)value.ToUnixTimeSeconds(), null); }
             }
@@ -203,7 +203,7 @@ namespace System.IO
                 get
                 {
                     EnsureStatInitialized();
-                    return DateTimeOffset.FromUnixTimeSeconds(_fileinfo.mtime);
+                    return DateTimeOffset.FromUnixTimeSeconds(_fileinfo.mtime).ToLocalTime();
                 }
                 set { SetAccessWriteTimes(null, (IntPtr)value.ToUnixTimeSeconds()); }
             }
