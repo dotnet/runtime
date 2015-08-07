@@ -3469,6 +3469,13 @@ AC_ARG_WITH(cooperative_gc, [  --with-cooperative-gc=yes|no      Enable cooperat
 	fi
 ], [with_cooperative_gc=no])
 
+AC_ARG_WITH(checked_build, [  --with-checked-build=yes|no      Enable checked build (expensive asserts)) (defaults to no)],[
+	if test x$with_checked_build != xno ; then
+		AC_DEFINE(CHECKED_BUILD,1,[Enable checked build.])
+	fi
+], [with_checked_build=no])
+
+
 AC_CHECK_HEADER([malloc.h], 
 		[AC_DEFINE([HAVE_USR_INCLUDE_MALLOC_H], [1], 
 			[Define to 1 if you have /usr/include/malloc.h.])],,)
