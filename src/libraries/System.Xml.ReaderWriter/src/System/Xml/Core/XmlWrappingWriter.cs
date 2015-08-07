@@ -197,7 +197,7 @@ namespace System.Xml
         {
             if (disposing)
             {
-                ((IDisposable)writer).Dispose();
+                writer.Dispose();
             }
         }
     }

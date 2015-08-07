@@ -15,7 +15,7 @@ namespace System.IO
         internal static SyncTextWriter GetSynchronizedTextWriter(TextWriter writer)
         {
             Debug.Assert(writer != null);
-            return writer as SyncTextWriter ?? 
+            return writer as SyncTextWriter ??
                 new SyncTextWriter(writer);
         }
 
@@ -47,8 +47,7 @@ namespace System.IO
             {
                 lock (_methodLock)
                 {
-                    // Explicitly pick up a potentially methodimpl'ed Dispose
-                    ((IDisposable)_out).Dispose();
+                    _out.Dispose();
                 }
             }
         }
