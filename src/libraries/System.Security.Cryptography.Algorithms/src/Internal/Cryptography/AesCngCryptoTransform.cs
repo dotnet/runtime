@@ -20,8 +20,9 @@ namespace Internal.Cryptography
                 _iv = cipherIv.CloneByteArray();
                 _currentIv = new byte[cipherIv.Length];
             }
-            _hKey = s_hAlg.BCryptImportKey(key);
-            _hKey.SetCipherMode(cipherMode);
+
+            SafeAlgorithmHandle hAlg = GetCipherAlgorithm(cipherMode);
+            _hKey = hAlg.BCryptImportKey(key);
             Reset();
         }
 
@@ -72,6 +73,29 @@ namespace Internal.Cryptography
             }
         }
 
+        private static SafeAlgorithmHandle GetCipherAlgorithm(CipherMode cipherMode)
+        {
+            // Windows 8 added support to set the CipherMode value on a key,
+            // but Windows 7 requires that it be set on the algorithm before key creation.
+            switch (cipherMode)
+            {
+                case CipherMode.CBC:
+                    return s_hAlgCbc;
+                case CipherMode.ECB:
+                    return s_hAlgEcb;
+                default:
+                    throw new NotSupportedException();
+            }
+        }
+
+        private static SafeAlgorithmHandle OpenAesAlgorithm(string cipherMode)
+        {
+            SafeAlgorithmHandle hAlg = Cng.BCryptOpenAlgorithmProvider(Cng.BCRYPT_AES_ALGORITHM, null, Cng.OpenAlgorithmProviderFlags.NONE);
+            hAlg.SetCipherMode(cipherMode);
+
+            return hAlg;
+        }
+
         protected abstract int UncheckedTransformBlock(SafeKeyHandle hKey, byte[] currentIv, byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset);
 
         protected abstract byte[] UncheckedTransformFinalBlock(SafeKeyHandle hKey, byte[] currentIv, byte[] inputBuffer, int inputOffset, int inputCount);
@@ -80,6 +104,7 @@ namespace Internal.Cryptography
         private byte[] _iv;         // _iv holds a copy of the original IV for Reset(), until it is cleared by Dispose().
         private byte[] _currentIv;  // CNG mutates this with the updated IV for the next stage on each Encrypt/Decrypt call.
 
-        private static readonly SafeAlgorithmHandle s_hAlg = Cng.BCryptOpenAlgorithmProvider(Cng.BCRYPT_AES_ALGORITHM, null, Cng.OpenAlgorithmProviderFlags.NONE);
+        private static readonly SafeAlgorithmHandle s_hAlgCbc = OpenAesAlgorithm("ChainingModeCBC");
+        private static readonly SafeAlgorithmHandle s_hAlgEcb = OpenAesAlgorithm("ChainingModeECB");
     }
 }
