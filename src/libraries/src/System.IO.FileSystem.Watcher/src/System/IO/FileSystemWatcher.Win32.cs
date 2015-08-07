@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -11,70 +10,73 @@ namespace System.IO
 {
     public partial class FileSystemWatcher
     {
+        /// <summary>Start monitoring the current directory.</summary>
         private void StartRaisingEvents()
         {
-            // If we're attached, don't do anything.
-            if (!IsHandleInvalid)
-            {
+            // If we're already running, don't do anything.
+            if (!IsHandleInvalid(_directoryHandle))
                 return;
-            }
 
             // Create handle to directory being monitored
-            _directoryHandle = NativeMethods.CreateFile(_directory,            // Directory name
-                                UnsafeNativeMethods.FILE_LIST_DIRECTORY,           // access (read-write) mode
-                                UnsafeNativeMethods.FILE_SHARE_READ |
-                                    UnsafeNativeMethods.FILE_SHARE_DELETE |
-                                    UnsafeNativeMethods.FILE_SHARE_WRITE,          // share mode
-                                null,                                              // security descriptor
-                                UnsafeNativeMethods.OPEN_EXISTING,                 // how to create
-                                UnsafeNativeMethods.FILE_FLAG_BACKUP_SEMANTICS |
-                                    UnsafeNativeMethods.FILE_FLAG_OVERLAPPED,      // file attributes
-                                new SafeFileHandle(IntPtr.Zero, false)             // file with attributes to copy
-                            );
-
-            if (IsHandleInvalid)
+            var defaultSecAttrs = default(Interop.mincore.SECURITY_ATTRIBUTES);
+            _directoryHandle = Interop.mincore.CreateFile(
+                lpFileName: _directory,
+                dwDesiredAccess: Interop.mincore.FileOperations.FILE_LIST_DIRECTORY,
+                dwShareMode: FileShare.Read | FileShare.Delete | FileShare.Write,
+                securityAttrs: ref defaultSecAttrs,
+                dwCreationDisposition: FileMode.Open,
+                dwFlagsAndAttributes: Interop.mincore.FileOperations.FILE_FLAG_BACKUP_SEMANTICS | Interop.mincore.FileOperations.FILE_FLAG_OVERLAPPED,
+                hTemplateFile: IntPtr.Zero);
+            if (IsHandleInvalid(_directoryHandle))
             {
+                _directoryHandle = null;
                 throw new FileNotFoundException(SR.Format(SR.FSW_IOError, _directory));
             }
 
-            _stopListening = false;
-            // Start ignoring all events that were initiated before this.
-            Interlocked.Increment(ref _currentSession);
-
-            // Attach handle to thread pool
-
-            _threadPoolBinding = ThreadPoolBoundHandle.BindHandle(_directoryHandle);
-            _enabled = true;
-
-            // Setup IO completion port
-            Monitor(null);
-        }
-
-        /// <devdoc>
-        ///    Stops monitoring the specified directory.
-        /// </devdoc>
-        private void StopRaisingEvents()
-        {
-            // If we're not attached, do nothing.
-            if (IsHandleInvalid)
+            // Create the state associated with the operation of monitoring the direction
+            AsyncReadState state;
+            try
             {
-                return;
+                // Start ignoring all events that were initiated before this, and 
+                // allocate the buffer to be pinned and used for the duration of the operation
+                int session = Interlocked.Increment(ref _currentSession);
+                byte[] buffer = AllocateBuffer();
+
+                // Store all state, including a preallocated overlapped, into the state object that'll be
+                // passed from iteration to iteration during the lifetime of the operation.  The buffer will be pinned
+                // from now until the end of the operation.
+                state = new AsyncReadState(session, buffer, _directoryHandle, ThreadPoolBoundHandle.BindHandle(_directoryHandle));
+                unsafe { state.PreAllocatedOverlapped = new PreAllocatedOverlapped(ReadDirectoryChangesCallback, state, buffer); }
+            }
+            catch
+            {
+                // Make sure we don't leave a valid directory handle set if we're not running
+                _directoryHandle.Dispose();
+                _directoryHandle = null;
+                throw;
             }
 
-            // Close directory handle
-            // This operation doesn't need to be atomic because the API will deal with a closed
-            // handle appropriately.
-            // Ensure that the directoryHandle is set to INVALID_HANDLE before closing it, so that
-            // the Monitor() can shutdown appropriately.
-            // If we get here while asynchronously waiting on a change notification, closing the
-            // directory handle should cause CompletionStatusChanged be be called
-            // thus freeing the pinned buffer.
-            _stopListening = true;
-            _directoryHandle.Dispose();
-            _threadPoolBinding.Dispose();
+            // Start monitoring
+            _enabled = true;
+            Monitor(state);
+        }
+
+        /// <summary>Stop monitoring the current directory.</summary>
+        private void StopRaisingEvents()
+        {
+            // If we're not running, do nothing.
+            if (IsHandleInvalid(_directoryHandle))
+                return;
 
             // Start ignoring all events occurring after this.
             Interlocked.Increment(ref _currentSession);
+
+            // Close the directory handle.  This will cause the async operation to stop processing.
+            // This operation doesn't need to be atomic because the API will deal with a closed
+            // handle appropriately. If we get here while asynchronously waiting on a change notification, 
+            // closing the directory handle should cause ReadDirectoryChangesCallback be be called,
+            // cleaning up the operation.
+            _directoryHandle.Dispose();
 
             // Set enabled to false
             _enabled = false;
@@ -82,113 +84,93 @@ namespace System.IO
 
         private void FinalizeDispose()
         {
-            // We must explicitly dispose the handle to insure it gets closed before this object is finalized.
-            // Otherwise it is possible that the GC will decide to finalize the handle after this
+            // We must explicitly dispose the handle to ensure it gets closed before this object is finalized.
+            // Otherwise, it is possible that the GC will decide to finalize the handle after this,
             // leaving a window of time where our callback could be invoked on a non-existent object.
-            _stopListening = true;
-            if (!IsHandleInvalid)
-            {
+            if (!IsHandleInvalid(_directoryHandle))
                 _directoryHandle.Dispose();
-                _threadPoolBinding.Dispose();
-            }
         }
 
         // -----------------------------
         // ---- PAL layer ends here ----
         // -----------------------------
 
-        // Unmanaged handle to monitored directory
-        private SafeFileHandle _directoryHandle;
-
-        private ThreadPoolBoundHandle _threadPoolBinding;
-
         // Current "session" ID to ignore old events whenever we stop then restart.
         private int _currentSession;
 
-        // Thread gate holder and constats
-        private bool _stopListening = false;
+        // Unmanaged handle to monitored directory
+        private SafeFileHandle _directoryHandle;
 
-        private bool IsHandleInvalid { get { return IsHandleInstanceInvalid(_directoryHandle); } }
-
-        private bool IsHandleInstanceInvalid(SafeFileHandle handle)
+        private static bool IsHandleInvalid(SafeFileHandle handle)
         {
             return handle == null || handle.IsInvalid || handle.IsClosed;
         }
 
-        /// <devdoc>
-        ///     Calls native API and sets up handle with the directory change API.
-        /// </devdoc>
-        /// <internalonly/>
-        private unsafe void Monitor(byte[] buffer)
+        /// <summary>
+        /// Initiates the next asynchronous read operation if monitoring is still desired.
+        /// If the directory handle has been closed due to an error or due to event monitoring
+        /// being disabled, this cleans up state associated with the operation.
+        /// </summary>
+        private unsafe void Monitor(AsyncReadState state)
         {
-            if (!_enabled || IsHandleInvalid)
-            {
-                return;
-            }
+            // This method should only ever access the directory handle via the state object passed in, and not access it
+            // via _directoryHandle.  While this function is executing asynchronously, another thread could set 
+            // EnableRaisingEvents to false and then back to true, restarting the FSW and causing a new directory handle 
+            // and thread pool binding to be stored.  This function could then get into an inconsistent state by doing some 
+            // operations against the old handles and some against the new.
 
-            if (buffer == null)
-            {
-                buffer = AllocateBuffer();
-            }
-
-            // Use a local copy of _threadPoolBinding for the remainder of the method.
-            // Otherwise, the value of the field could get replaced by a different
-            // instance if events are stopped and then restarted, and we could end up
-            // trying to use the new binding with an overlapped created on the old binding.
-            // Similarly for the directory handle.
-            ThreadPoolBoundHandle threadPoolBinding = _threadPoolBinding;
-            SafeFileHandle directoryHandle = _directoryHandle;
-
-            // Pass "session" counter to callback:
-            FSWAsyncResult asyncResult = new FSWAsyncResult();
-            asyncResult.session = _currentSession;
-            asyncResult.buffer = buffer;
-            asyncResult.threadPoolBinding = threadPoolBinding;
-
-            NativeOverlapped* overlappedPointer = threadPoolBinding.AllocateNativeOverlapped(new IOCompletionCallback(this.CompletionStatusChanged), asyncResult, buffer);
-
-            // Can now call OS:
-            int size;
-            bool ok = false;
-
+            NativeOverlapped* overlappedPointer = null;
+            bool continueExecuting = false;
             try
             {
-                // There could be a race in user code between calling StopRaisingEvents (where we close the handle)
-                // and when we get here from CompletionStatusChanged.
-                // We might need to take a lock to prevent race absolutely, instead just catch
-                // ObjectDisposedException from SafeHandle in case it is disposed
-                if (!IsHandleInstanceInvalid(directoryHandle))
-                {
-                    // An interrupt is possible here
-                    fixed (byte* buffPtr = buffer)
-                    {
-                        ok = UnsafeNativeMethods.ReadDirectoryChangesW(directoryHandle,
-                                                           buffPtr,
-                                                           _internalBufferSize,
-                                                           _includeSubdirectories ? 1 : 0,
-                                                           (int)_notifyFilters,
-                                                           out size,
-                                                           overlappedPointer,
-                                                           IntPtr.Zero);
-                    }
-                }
+                // If shutdown has been requested, exit.  The finally block will handle
+                // cleaning up the entire operation, as continueExecuting will remain false.
+                if (!_enabled || IsHandleInvalid(state.DirectoryHandle))
+                    return;
+
+                // Get the overlapped pointer to use for this iteration.
+                overlappedPointer = state.ThreadPoolBinding.AllocateNativeOverlapped(state.PreAllocatedOverlapped);
+                int size;
+                continueExecuting = Interop.mincore.ReadDirectoryChangesW(
+                    state.DirectoryHandle,
+                    state.Buffer, // the buffer is kept pinned for the duration of the sync and async operation by the PreAllocatedOverlapped
+                    _internalBufferSize,
+                    _includeSubdirectories,
+                    (int)_notifyFilters,
+                    out size,
+                    overlappedPointer,
+                    IntPtr.Zero);
             }
             catch (ObjectDisposedException)
-            { //Ignore
+            {
+                // Ignore.  Disposing of the handle is the mechanism by which the FSW communicates
+                // to the asynchronous operation to stop processing.
             }
             catch (ArgumentNullException)
-            { //Ignore
-                Debug.Assert(IsHandleInstanceInvalid(directoryHandle), "ArgumentNullException from something other than SafeHandle?");
+            {
+                //Ignore.  The disposed handle could also manifest as an ArgumentNullException.
+                Debug.Assert(IsHandleInvalid(state.DirectoryHandle), "ArgumentNullException from something other than SafeHandle?");
             }
             finally
             {
-                if (!ok)
+                // At this point the operation has either been initiated and we'll let the callback
+                // handle things from here, or the operation has been stopped or failed, in which case
+                // we need to cleanup because we're no longer executing.
+                if (!continueExecuting)
                 {
-                    threadPoolBinding.FreeNativeOverlapped(overlappedPointer);
+                    // Clean up the overlapped pointer created for this iteration
+                    if (overlappedPointer != null)
+                    {
+                        state.ThreadPoolBinding.FreeNativeOverlapped(overlappedPointer);
+                    }
 
-                    // If the handle was for some reason changed or closed during this call, then don't throw an
-                    // exception.  Else, it's a valid error.
-                    if (!IsHandleInstanceInvalid(directoryHandle))
+                    // Clean up the thread pool binding created for the entire operation
+                    state.PreAllocatedOverlapped.Dispose();
+                    state.ThreadPoolBinding.Dispose();
+
+                    // Finally, if the handle was for some reason changed or closed during this call, 
+                    // then don't throw an exception.  Otherwise, it's a valid error.
+                    if (!IsHandleInvalid(state.DirectoryHandle))
                     {
                         OnError(new ErrorEventArgs(new Win32Exception()));
                     }
@@ -196,234 +178,206 @@ namespace System.IO
             }
         }
 
-        /// <devdoc>
-        ///     Callback from thread pool.
-        /// </devdoc>
-        /// <internalonly/>
-        private unsafe void CompletionStatusChanged(uint errorCode, uint numBytes, NativeOverlapped* overlappedPointer)
+        /// <summary>Callback invoked when an asynchronous read on the directory handle completes.</summary>
+        private unsafe void ReadDirectoryChangesCallback(uint errorCode, uint numBytes, NativeOverlapped* overlappedPointer)
         {
-            FSWAsyncResult asyncResult = (FSWAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(overlappedPointer);
-
+            AsyncReadState state = (AsyncReadState)ThreadPoolBoundHandle.GetNativeOverlappedState(overlappedPointer);
             try
             {
-                if (_stopListening)
+                if (IsHandleInvalid(state.DirectoryHandle))
+                    return;
+
+                if (errorCode != 0)
                 {
+                    // Inside a service the first completion status is false;
+                    // need to monitor again.
+
+                    const int ERROR_OPERATION_ABORTED = 995;
+                    if (errorCode != ERROR_OPERATION_ABORTED)
+                    {
+                        OnError(new ErrorEventArgs(new Win32Exception((int)errorCode)));
+                        EnableRaisingEvents = false;
+                    }
                     return;
                 }
 
-                lock (this)
+                // Ignore any events that occurred before this "session",
+                // so we don't get changed or error events after we
+                // told FSW to stop.  Even with this check, though, there's a small 
+                // race condition, as immediately after we do the check, raising
+                // events could be disabled.
+                if (state.Session != Volatile.Read(ref _currentSession))
+                    return;
+
+                if (numBytes == 0)
                 {
-                    if (errorCode != 0)
-                    {
-                        if (errorCode == 995 /* ERROR_OPERATION_ABORTED */)
-                        {
-                            //Inside a service the first completion status is false
-                            //cannot return without monitoring again.
-                            //Because this return statement is inside a try/finally block,
-                            //the finally block will execute. It does restart the monitoring.
-                            return;
-                        }
-                        else
-                        {
-                            OnError(new ErrorEventArgs(new Win32Exception((int)errorCode)));
-                            EnableRaisingEvents = false;
-                            return;
-                        }
-                    }
-
-                    // Ignore any events that occurred before this "session",
-                    // so we don't get changed or error events after we
-                    // told FSW to stop.
-                    if (asyncResult.session != _currentSession)
-                        return;
-
-
-                    if (numBytes == 0)
-                    {
-                        NotifyInternalBufferOverflowEvent();
-                    }
-                    else
-                    {  // Else, parse each of them and notify appropriate delegates
-                        /******
-                            Format for the buffer is the following C struct:
-
-                            typedef struct _FILE_NOTIFY_INFORMATION {
-                               DWORD NextEntryOffset;
-                               DWORD Action;
-                               DWORD FileNameLength;
-                               WCHAR FileName[1];
-                            } FILE_NOTIFY_INFORMATION;
-
-                            NOTE1: FileNameLength is length in bytes.
-                            NOTE2: The Filename is a Unicode string that's NOT NULL terminated.
-                            NOTE3: A NextEntryOffset of zero means that it's the last entry
-                        *******/
-
-                        // Parse the file notify buffer:
-                        int offset = 0;
-                        int nextOffset, action, nameLength;
-                        string oldName = null;
-                        string name = null;
-
-                        do
-                        {
-                            fixed (byte* buffPtr = asyncResult.buffer)
-                            {
-                                // Get next offset:
-                                nextOffset = *((int*)(buffPtr + offset));
-
-                                // Get change flag:
-                                action = *((int*)(buffPtr + offset + 4));
-
-                                // Get filename length (in bytes):
-                                nameLength = *((int*)(buffPtr + offset + 8));
-                                name = new string((char*)(buffPtr + offset + 12), 0, nameLength / 2);
-                            }
-
-
-                            /* A slightly convoluted piece of code follows.  Here's what's happening:
-
-                               We wish to collapse the poorly done rename notifications from the
-                               ReadDirectoryChangesW API into a nice rename event. So to do that,
-                               it's assumed that a FILE_ACTION_RENAMED_OLD_NAME will be followed
-                               immediately by a FILE_ACTION_RENAMED_NEW_NAME in the buffer, which is
-                               all that the following code is doing.
-
-                               On a FILE_ACTION_RENAMED_OLD_NAME, it asserts that no previous one existed
-                               and saves its name.  If there are no more events in the buffer, it'll
-                               assert and fire a RenameEventArgs with the Name field null.
-
-                               If a NEW_NAME action comes in with no previous OLD_NAME, we assert and fire
-                               a rename event with the OldName field null.
-
-                               If the OLD_NAME and NEW_NAME actions are indeed there one after the other,
-                               we'll fire the RenamedEventArgs normally and clear oldName.
-
-                               If the OLD_NAME is followed by another action, we assert and then fire the
-                               rename event with the Name field null and then fire the next action.
-
-                               In case it's not a OLD_NAME or NEW_NAME action, we just fire the event normally.
-
-                               (Phew!)
-                             */
-
-                            // If the action is RENAMED_FROM, save the name of the file
-                            if (action == Direct.FILE_ACTION_RENAMED_OLD_NAME)
-                            {
-                                Debug.Assert(oldName == null, "FileSystemWatcher: Two FILE_ACTION_RENAMED_OLD_NAME " +
-                                                              "in a row!  [" + oldName + "], [ " + name + "]");
-
-                                oldName = name;
-                            }
-                            else if (action == Direct.FILE_ACTION_RENAMED_NEW_NAME)
-                            {
-                                if (oldName != null)
-                                {
-                                    NotifyRenameEventArgs(WatcherChangeTypes.Renamed, name, oldName);
-                                    oldName = null;
-                                }
-                                else
-                                {
-                                    Debug.Fail("FileSystemWatcher: FILE_ACTION_RENAMED_NEW_NAME with no" +
-                                                                  "old name! [ " + name + "]");
-
-                                    NotifyRenameEventArgs(WatcherChangeTypes.Renamed, name, oldName);
-                                    oldName = null;
-                                }
-                            }
-                            else
-                            {
-                                if (oldName != null)
-                                {
-                                    Debug.Fail("FileSystemWatcher: FILE_ACTION_RENAMED_OLD_NAME with no" +
-                                                                  "new name!  [" + oldName + "]");
-
-                                    NotifyRenameEventArgs(WatcherChangeTypes.Renamed, null, oldName);
-                                    oldName = null;
-                                }
-
-                                // Notify each file of change
-                                NotifyFileSystemEventArgs(action, name);
-                            }
-
-                            offset += nextOffset;
-                        } while (nextOffset != 0);
-
-                        if (oldName != null)
-                        {
-                            Debug.Fail("FileSystemWatcher: FILE_ACTION_RENAMED_OLD_NAME with no" +
-                                                          "new name!  [" + oldName + "]");
-
-                            NotifyRenameEventArgs(WatcherChangeTypes.Renamed, null, oldName);
-                            oldName = null;
-                        }
-                    }
+                    NotifyInternalBufferOverflowEvent();
+                }
+                else
+                {
+                    ParseEventBufferAndNotifyForEach(state.Buffer);
                 }
             }
             finally
             {
-                asyncResult.threadPoolBinding.FreeNativeOverlapped(overlappedPointer);
-                if (!_stopListening)
-                {
-                    Monitor(asyncResult.buffer);
-                }
+                // Clean up state associated with this one iteration
+                state.ThreadPoolBinding.FreeNativeOverlapped(overlappedPointer);
+
+                // Then call Monitor again to either start the next iteration or
+                // clean up the whole operation.
+                Monitor(state);
             }
         }
 
-        // Additional state information to pass to callback.  Note that we
-        // never return this object to users, but we do pass state in it.
-        private sealed class FSWAsyncResult
+        private void ParseEventBufferAndNotifyForEach(byte[] buffer)
         {
-            internal int session;
-            internal byte[] buffer;
-            internal ThreadPoolBoundHandle threadPoolBinding;
-        }
+            // Parse each event from the buffer and notify appropriate delegates
 
-        /// <devdoc>
-        ///     Raises the event to each handler in the list.
-        /// </devdoc>
-        /// <internalonly/>
-        private void NotifyFileSystemEventArgs(int action, string name)
-        {
-            switch (action)
+            /******
+                Format for the buffer is the following C struct:
+
+                typedef struct _FILE_NOTIFY_INFORMATION {
+                   DWORD NextEntryOffset;
+                   DWORD Action;
+                   DWORD FileNameLength;
+                   WCHAR FileName[1];
+                } FILE_NOTIFY_INFORMATION;
+
+                NOTE1: FileNameLength is length in bytes.
+                NOTE2: The Filename is a Unicode string that's NOT NULL terminated.
+                NOTE3: A NextEntryOffset of zero means that it's the last entry
+            *******/
+
+            // Parse the file notify buffer:
+            int offset = 0;
+            int nextOffset, action, nameLength;
+            string oldName = null;
+            string name = null;
+
+            do
             {
-                case Direct.FILE_ACTION_ADDED:
-                    NotifyFileSystemEventArgs(WatcherChangeTypes.Created, name);
-                    break;
-                case Direct.FILE_ACTION_REMOVED:
-                    NotifyFileSystemEventArgs(WatcherChangeTypes.Deleted, name);
-                    break;
-                case Direct.FILE_ACTION_MODIFIED:
-                    NotifyFileSystemEventArgs(WatcherChangeTypes.Changed, name);
-                    break;
-                default:
-                    Debug.Fail("Unknown FileSystemEvent action type!  Value: " + action);
-                    break;
+                unsafe
+                {
+                    fixed (byte* buffPtr = buffer)
+                    {
+                        // Get next offset:
+                        nextOffset = *((int*)(buffPtr + offset));
+
+                        // Get change flag:
+                        action = *((int*)(buffPtr + offset + 4));
+
+                        // Get filename length (in bytes):
+                        nameLength = *((int*)(buffPtr + offset + 8));
+                        name = new string((char*)(buffPtr + offset + 12), 0, nameLength / 2);
+                    }
+                }
+
+                /* A slightly convoluted piece of code follows.  Here's what's happening:
+
+                   We wish to collapse the poorly done rename notifications from the
+                   ReadDirectoryChangesW API into a nice rename event. So to do that,
+                   it's assumed that a FILE_ACTION_RENAMED_OLD_NAME will be followed
+                   immediately by a FILE_ACTION_RENAMED_NEW_NAME in the buffer, which is
+                   all that the following code is doing.
+
+                   On a FILE_ACTION_RENAMED_OLD_NAME, it asserts that no previous one existed
+                   and saves its name.  If there are no more events in the buffer, it'll
+                   assert and fire a RenameEventArgs with the Name field null.
+
+                   If a NEW_NAME action comes in with no previous OLD_NAME, we assert and fire
+                   a rename event with the OldName field null.
+
+                   If the OLD_NAME and NEW_NAME actions are indeed there one after the other,
+                   we'll fire the RenamedEventArgs normally and clear oldName.
+
+                   If the OLD_NAME is followed by another action, we assert and then fire the
+                   rename event with the Name field null and then fire the next action.
+
+                   In case it's not a OLD_NAME or NEW_NAME action, we just fire the event normally.
+
+                   (Phew!)
+                 */
+
+                // If the action is RENAMED_FROM, save the name of the file
+                if (action == Interop.mincore.FileOperations.FILE_ACTION_RENAMED_OLD_NAME)
+                {
+                    Debug.Assert(oldName == null, "Two FILE_ACTION_RENAMED_OLD_NAME in a row!  [" + oldName + "], [ " + name + "]");
+                    oldName = name;
+                }
+                else if (action == Interop.mincore.FileOperations.FILE_ACTION_RENAMED_NEW_NAME)
+                {
+                    if (oldName != null)
+                    {
+                        NotifyRenameEventArgs(WatcherChangeTypes.Renamed, name, oldName);
+                        oldName = null;
+                    }
+                    else
+                    {
+                        Debug.Fail("FILE_ACTION_RENAMED_NEW_NAME with no old name! [ " + name + "]");
+                        NotifyRenameEventArgs(WatcherChangeTypes.Renamed, name, oldName);
+                        oldName = null;
+                    }
+                }
+                else
+                {
+                    if (oldName != null)
+                    {
+                        Debug.Fail("Previous FILE_ACTION_RENAMED_OLD_NAME with no new name!  [" + oldName + "]");
+                        NotifyRenameEventArgs(WatcherChangeTypes.Renamed, null, oldName);
+                        oldName = null;
+                    }
+
+                    switch (action)
+                    {
+                        case Interop.mincore.FileOperations.FILE_ACTION_ADDED:
+                            NotifyFileSystemEventArgs(WatcherChangeTypes.Created, name);
+                            break;
+                        case Interop.mincore.FileOperations.FILE_ACTION_REMOVED:
+                            NotifyFileSystemEventArgs(WatcherChangeTypes.Deleted, name);
+                            break;
+                        case Interop.mincore.FileOperations.FILE_ACTION_MODIFIED:
+                            NotifyFileSystemEventArgs(WatcherChangeTypes.Changed, name);
+                            break;
+                        default:
+                            Debug.Fail("Unknown FileSystemEvent action type!  Value: " + action);
+                            break;
+                    }
+                }
+
+                offset += nextOffset;
+            } while (nextOffset != 0);
+
+            if (oldName != null)
+            {
+                Debug.Fail("FILE_ACTION_RENAMED_OLD_NAME with no new name!  [" + oldName + "]");
+                NotifyRenameEventArgs(WatcherChangeTypes.Renamed, null, oldName);
+                oldName = null;
             }
         }
 
-        /// <devdoc>
-        ///    Helper class to hold to N/Direct call declaration and flags.
-        /// </devdoc>
-        private static class Direct
+        /// <summary>
+        /// State information used by the ReadDirectoryChangesW callback.  A single instance of this is used
+        /// for an entire session, getting passed to each iterative call to ReadDirectoryChangesW.
+        /// </summary>
+        private sealed class AsyncReadState
         {
-            // All possible action flags
-            public const int FILE_ACTION_ADDED = 1;
-            public const int FILE_ACTION_REMOVED = 2;
-            public const int FILE_ACTION_MODIFIED = 3;
-            public const int FILE_ACTION_RENAMED_OLD_NAME = 4;
-            public const int FILE_ACTION_RENAMED_NEW_NAME = 5;
+            internal AsyncReadState(int session, byte[] buffer, SafeFileHandle handle, ThreadPoolBoundHandle binding)
+            {
+                Debug.Assert(buffer != null);
+                Debug.Assert(handle != null);
+                Debug.Assert(binding != null);
 
-            // All possible notifications flags
-            public const int FILE_NOTIFY_CHANGE_FILE_NAME = 0x00000001;
-            public const int FILE_NOTIFY_CHANGE_DIR_NAME = 0x00000002;
-            public const int FILE_NOTIFY_CHANGE_NAME = 0x00000003;
-            public const int FILE_NOTIFY_CHANGE_ATTRIBUTES = 0x00000004;
-            public const int FILE_NOTIFY_CHANGE_SIZE = 0x00000008;
-            public const int FILE_NOTIFY_CHANGE_LAST_WRITE = 0x00000010;
-            public const int FILE_NOTIFY_CHANGE_LAST_ACCESS = 0x00000020;
-            public const int FILE_NOTIFY_CHANGE_CREATION = 0x00000040;
-            public const int FILE_NOTIFY_CHANGE_SECURITY = 0x00000100;
+                Session = session;
+                Buffer = buffer;
+                DirectoryHandle = handle;
+                ThreadPoolBinding = binding;
+            }
+
+            internal int Session { get; private set; }
+            internal byte[] Buffer { get; private set; }
+            internal SafeFileHandle DirectoryHandle { get; private set; }
+            internal ThreadPoolBoundHandle ThreadPoolBinding { get; private set; }
+            internal PreAllocatedOverlapped PreAllocatedOverlapped { get; set; }
         }
     }
 }
