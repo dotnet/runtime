@@ -136,7 +136,7 @@ namespace System.Linq
                 //
                 // Normally, this happens when you chain two consecutive Select<,>. There may be
                 // some clever way to handle that second generic parameter within the limitations of the
-                // static type system but it's a lot simpler just to break the chain by inserting 
+                // static type system but it's a lot simpler just to break the chain by inserting
                 // a dummy Where(x => y) in the middle.
                 //
                 return new WhereEnumerableIterator<TSource>(this, x => true).SelectImpl<TResult>(selector);
@@ -1436,7 +1436,8 @@ namespace System.Linq
 
         private static IEnumerable<int> RangeIterator(int start, int count)
         {
-            for (int i = 0; i < count; i++) yield return start + i;
+            for (int end = start + count; start < end; start++)
+                yield return start;
         }
 
         public static IEnumerable<TResult> Repeat<TResult>(TResult element, int count)
