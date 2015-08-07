@@ -184,8 +184,11 @@ namespace System.Linq
 
             public override void Dispose()
             {
-                if (_enumerator is IDisposable) ((IDisposable)_enumerator).Dispose();
-                _enumerator = null;
+                if (_enumerator != null)
+                {
+                    _enumerator.Dispose();
+                    _enumerator = null;
+                }
                 base.Dispose();
             }
 
@@ -347,8 +350,11 @@ namespace System.Linq
 
             public override void Dispose()
             {
-                if (_enumerator is IDisposable) ((IDisposable)_enumerator).Dispose();
-                _enumerator = null;
+                if (_enumerator != null)
+                {
+                    _enumerator.Dispose();
+                    _enumerator = null;
+                }
                 base.Dispose();
             }
 
