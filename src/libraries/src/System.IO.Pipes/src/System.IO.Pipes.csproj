@@ -190,9 +190,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.read.cs">
       <Link>Common\Interop\Unix\Interop.read.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs">
-      <Link>Common\Interop\Unix\Interop.strerror.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.unlink.cs">
       <Link>Common\Interop\Unix\Interop.unlink.cs</Link>
     </Compile>
@@ -207,9 +204,6 @@
   <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
     <Compile Include="System\IO\Pipes\AnonymousPipeServerStream.Linux.cs" />
     <Compile Include="System\IO\Pipes\PipeStream.Linux.cs" />
-    <Compile Include="$(CommonPath)\Interop\Linux\Interop.Errors.cs">
-      <Link>Common\Interop\Linux\Interop.Errors.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.fcntl.cs">
       <Link>Common\Interop\Unix\Interop.fcntl.cs</Link>
     </Compile>
@@ -224,9 +218,6 @@
   <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
     <Compile Include="System\IO\Pipes\AnonymousPipeServerStream.OSX.cs" />
     <Compile Include="System\IO\Pipes\PipeStream.OSX.cs" />
-    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Errors.cs">
-      <Link>Common\Interop\OSX\Interop.Errors.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.OpenFlags.cs">
       <Link>Common\Interop\OSX\Interop.OpenFlags.cs</Link>
     </Compile>

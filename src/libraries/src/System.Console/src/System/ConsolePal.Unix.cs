@@ -91,7 +91,7 @@ namespace System
                         UnixConsoleStream ucs = sw.BaseStream as UnixConsoleStream;
                         if (ucs != null)
                         {
-                            return ucs._handleType == Interop.NativeIO.FileTypes.S_IFCHR;
+                            return ucs._handleType == Interop.Sys.FileTypes.S_IFCHR;
                         }
                     }
                 }
@@ -378,11 +378,11 @@ namespace System
                 try
                 {
                     _handle.DangerousAddRef(ref gotFd);
-                    Interop.NativeIO.FileStats buf;
+                    Interop.Sys.FileStatus buf;
                     _handleType =
-                        Interop.NativeIO.FStat((int)_handle.DangerousGetHandle(), out buf) == 0 ?
-                            (buf.Mode & Interop.NativeIO.FileTypes.S_IFMT) :
-                            Interop.NativeIO.FileTypes.S_IFREG; // if something goes wrong, don't fail, just say it's a regular file
+                        Interop.Sys.FStat((int)_handle.DangerousGetHandle(), out buf) == 0 ?
+                            (buf.Mode & Interop.Sys.FileTypes.S_IFMT) :
+                            Interop.Sys.FileTypes.S_IFREG; // if something goes wrong, don't fail, just say it's a regular file
                 }
                 finally
                 {
@@ -552,7 +552,7 @@ namespace System
                     {
                         // Don't throw in this case, as we'll be polling multiple locations looking for the file.
                         // But we still want to retry if the open is interrupted by a signal.
-                        if (Marshal.GetLastWin32Error() != Interop.Errors.EINTR)
+                        if (Interop.Sys.GetLastError() != Interop.Error.EINTR)
                         {
                             fd = -1;
                             return false;
@@ -1194,9 +1194,9 @@ namespace System
                 {
                     int error = Marshal.GetLastWin32Error(); // Win32 error code from coreclr PAL, not a Unix errno value
                     throw Interop.GetExceptionForIoErrno(
-                        error == Interop.libcoreclr.ERROR_INVALID_PARAMETER ? Interop.Errors.EINVAL :
-                        error == Interop.libcoreclr.ERROR_NOT_ENOUGH_MEMORY ? Interop.Errors.ENOMEM :
-                        Interop.Errors.EIO);
+                        error == Interop.libcoreclr.ERROR_INVALID_PARAMETER ? Interop.Error.EINVAL.Info() :
+                        error == Interop.libcoreclr.ERROR_NOT_ENOUGH_MEMORY ? Interop.Error.ENOMEM.Info() :
+                        Interop.Error.EIO.Info());
                 }
                 _handlerRegistered = register;
             }

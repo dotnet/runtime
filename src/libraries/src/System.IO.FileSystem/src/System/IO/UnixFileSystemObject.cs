@@ -242,12 +242,12 @@ namespace System.IO
                     }
                     else
                     {
-                        int errno = Marshal.GetLastWin32Error();
-                        if (errno == Interop.Errors.EINTR)
+                        var errorInfo = Interop.Sys.GetLastErrorInfo();
+                        if (errorInfo.Error == Interop.Error.EINTR)
                         {
                             continue;
                         }
-                        _fileinfoInitialized = errno;
+                        _fileinfoInitialized = errorInfo.RawErrno;
                     }
                     break;
                 }
@@ -264,6 +264,7 @@ namespace System.IO
                 {
                     int errno = _fileinfoInitialized;
                     _fileinfoInitialized = -1;
+                    var errorInfo =  new Interop.ErrorInfo(errno);
 
                     // Windows distinguishes between whether the directory or the file isn't found,
                     // and throws a different exception in these cases.  We attempt to approximate that
@@ -275,8 +276,8 @@ namespace System.IO
 
                     // directoryError is true only if a FileNotExists error was provided and the parent 
                     // directory of the file represented by _fullPath is nonexistent
-                    bool directoryError = (errno == Interop.Errors.ENOENT && !Directory.Exists(Path.GetDirectoryName(PathHelpers.TrimEndingDirectorySeparator(_fullPath)))); // The destFile's path is invalid
-                    throw Interop.GetExceptionForIoErrno(errno, _fullPath, directoryError);
+                    bool directoryError = (errorInfo.Error == Interop.Error.ENOENT && !Directory.Exists(Path.GetDirectoryName(PathHelpers.TrimEndingDirectorySeparator(_fullPath)))); // The destFile's path is invalid
+                    throw Interop.GetExceptionForIoErrno(errorInfo, _fullPath, directoryError);
                 }
             }
         }

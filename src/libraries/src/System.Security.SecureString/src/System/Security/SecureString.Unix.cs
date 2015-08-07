@@ -394,10 +394,10 @@ namespace System.Security
 
             private static Exception CreateExceptionFromErrno()
             {
-                int errno = Marshal.GetLastWin32Error();
-                return (errno == Interop.Errors.ENOMEM || errno == Interop.Errors.EPERM) ?
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                return (errorInfo.Error == Interop.Error.ENOMEM || errorInfo.Error == Interop.Error.EPERM) ?
                     (Exception)new OutOfMemoryException(SR.OutOfMemory_MemoryResourceLimits) :
-                    (Exception)new InvalidOperationException(Interop.libc.strerror(errno));
+                    (Exception)new InvalidOperationException(errorInfo.GetErrorMessage());
             }
 
             private static int RoundUpToPageSize(int bytes)

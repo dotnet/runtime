@@ -54,13 +54,13 @@ namespace System.IO.Pipes
                     break;
                 }
 
-                int errno = Marshal.GetLastWin32Error();
-                if (errno == Interop.Errors.EINTR)
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                if (errorInfo.Error == Interop.Error.EINTR)
                 {
                     // interrupted; try again
                     continue;
                 }
-                else if (errno == Interop.Errors.EEXIST)
+                else if (errorInfo.Error == Interop.Error.EEXIST)
                 {
                     // FIFO already exists; nothing more to do
                     break;
@@ -68,7 +68,7 @@ namespace System.IO.Pipes
                 else
                 {
                     // something else; fail
-                    throw Interop.GetExceptionForIoErrno(errno, _path);
+                    throw Interop.GetExceptionForIoErrno(errorInfo, _path);
                 }
             }
 

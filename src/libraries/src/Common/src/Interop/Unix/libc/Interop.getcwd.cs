@@ -45,7 +45,7 @@ internal static partial class Interop
             }
 
             // If we couldn't get the cwd with a MaxPath-sized buffer, something's wrong.
-            throw Interop.GetExceptionForIoErrno(Interop.Errors.ENAMETOOLONG);
+            throw Interop.GetExceptionForIoErrno(new ErrorInfo(Interop.Error.ENAMETOOLONG));
         }
 
         private static unsafe string getcwd(byte* ptr, int bufferSize)
@@ -61,12 +61,12 @@ internal static partial class Interop
 
             // Otherwise, if it failed due to the buffer being too small, return null;
             // for anything else, throw.
-            int errno = Marshal.GetLastWin32Error();
-            if (errno == Interop.Errors.ERANGE)
+            ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+            if (errorInfo.Error == Interop.Error.ERANGE)
             {
                return null;
             }
-            throw Interop.GetExceptionForIoErrno(errno);
+            throw Interop.GetExceptionForIoErrno(errorInfo);
         }
 
         [DllImport(Libraries.Libc, SetLastError = true)]

@@ -7,7 +7,10 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_C_FLAGS "-std=c11")
 set(CMAKE_CXX_FLAGS "-std=c++11")
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
-add_compile_options(-Wall -Werror -fPIC)
+
+add_compile_options(-Wall)
+add_compile_options(-Werror)
+add_compile_options(-fPIC)
 
 if (CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL amd64)
     add_definitions(-DBIT64=1)
@@ -33,5 +36,5 @@ endif ()
 
 include(configure.cmake)
 
-add_subdirectory(System.IO.Native)
+add_subdirectory(System.Native)
 add_subdirectory(System.Security.Cryptography.Native)

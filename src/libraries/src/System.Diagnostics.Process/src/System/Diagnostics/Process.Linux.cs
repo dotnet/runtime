@@ -164,7 +164,7 @@ namespace System.Diagnostics
 
                 // If the buffer was too small, loop around again and try with a larger buffer.
                 // Otherwise, bail.
-                if (resultLength == 0 || Marshal.GetLastWin32Error() != Interop.Errors.ENAMETOOLONG)
+                if (resultLength == 0 || Interop.Sys.GetLastError() != Interop.Error.ENAMETOOLONG)
                 {
                     break;
                 }

@@ -22,18 +22,19 @@ internal static partial class Interop
     /// true if the system call should be retried due to it being interrupted; otherwise, false.
     /// An exception will be thrown if the system call failed for any reason other than interruption.
     /// </returns>
-    internal static bool CheckIo(long result, string path = null, bool isDirectory = false, Func<int, int> errorRewriter = null)
+    internal static bool CheckIo(long result, string path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo> errorRewriter = null)
     {
         if (result < 0)
         {
-            int errno = Marshal.GetLastWin32Error();
+            ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
             if (errorRewriter != null)
             {
-                errno = errorRewriter(errno);
+                errorInfo = errorRewriter(errorInfo);
             }
-            if (errno != Interop.Errors.EINTR)
+
+            if (errorInfo.Error != Error.EINTR)
             {
-                throw Interop.GetExceptionForIoErrno(errno, path, isDirectory);
+                throw Interop.GetExceptionForIoErrno(errorInfo, path, isDirectory);
             }
             return true;
         }
@@ -53,17 +54,17 @@ internal static partial class Interop
     }
 
     /// <summary>
-    /// Gets an Exception to represent the supplied errno error code.
+    /// Gets an Exception to represent the supplied error info.
     /// </summary>
-    /// <param name="errno">The error code</param>
+    /// <param name="error">The error info</param>
     /// <param name="path">The path with which this error is associated.  This may be null.</param>
     /// <param name="isDirectory">true if the <paramref name="path"/> is known to be a directory; otherwise, false.</param>
     /// <returns></returns>
-    internal static Exception GetExceptionForIoErrno(int errno, string path = null, bool isDirectory = false)
+    internal static Exception GetExceptionForIoErrno(ErrorInfo errorInfo, string path = null, bool isDirectory = false)
     {
-        switch (errno)
+        switch (errorInfo.Error)
         {
-            case Errors.ENOENT:
+            case Error.ENOENT:
                 if (isDirectory)
                 {
                     return !string.IsNullOrEmpty(path) ?
@@ -77,41 +78,41 @@ internal static partial class Interop
                         new FileNotFoundException(SR.IO_FileNotFound);
                 }
 
-            case Errors.EACCES:
-            case Errors.EBADF:
-            case Errors.EPERM:
+            case Error.EACCES:
+            case Error.EBADF:
+            case Error.EPERM:
                 return !string.IsNullOrEmpty(path) ?
                     new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, path)) :
                     new UnauthorizedAccessException(SR.UnauthorizedAccess_IODenied_NoPathName);
 
-            case Errors.ENAMETOOLONG:
+            case Error.ENAMETOOLONG:
                 return new PathTooLongException(SR.IO_PathTooLong);
 
-            case Errors.EWOULDBLOCK:
+            case Error.EWOULDBLOCK:
                 return !string.IsNullOrEmpty(path) ?
-                    new IOException(SR.Format(SR.IO_SharingViolation_File, path), errno) :
-                    new IOException(SR.IO_SharingViolation_NoFileName, errno);
+                    new IOException(SR.Format(SR.IO_SharingViolation_File, path), errorInfo.RawErrno) :
+                    new IOException(SR.IO_SharingViolation_NoFileName, errorInfo.RawErrno);
 
-            case Errors.ECANCELED:
+            case Error.ECANCELED:
                 return new OperationCanceledException();
 
-            case Errors.EFBIG:
+            case Error.EFBIG:
                 return new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_FileLengthTooBig);
 
-            case Errors.EEXIST:
+            case Error.EEXIST:
                 if (!string.IsNullOrEmpty(path))
                 {
-                    return new IOException(SR.Format(SR.IO_FileExists_Name, path), errno);
+                    return new IOException(SR.Format(SR.IO_FileExists_Name, path), errorInfo.RawErrno);
                 }
                 goto default;
 
             default:
-                return GetIOException(errno);
+                return GetIOException(errorInfo);
         }
     }
 
-    internal static Exception GetIOException(int errno)
+    internal static Exception GetIOException(Interop.ErrorInfo errorInfo)
     {
-        return new IOException(libc.strerror(errno), errno);
+        return new IOException(errorInfo.GetErrorMessage(), errorInfo.RawErrno);
     }
 }

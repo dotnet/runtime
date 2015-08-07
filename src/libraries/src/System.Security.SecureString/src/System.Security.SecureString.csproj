@@ -81,9 +81,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.munmap.cs">
       <Link>Common\Interop\Unix\Interop.munmap.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs">
-      <Link>Common\Interop\Unix\Interop.strerror.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.sysconf.cs">
       <Link>Common\Interop\Unix\Interop.sysconf.cs</Link>
     </Compile>
