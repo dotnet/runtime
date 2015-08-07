@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{ac20a28f-fda8-45e8-8728-058ead16e44c}") = "System.Threading.Timer.Tests", "tests\System.Threading.Timer.Tests.csproj", "{ac20a28f-fda8-45e8-8728-058ead16e44c}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Linux_Debug|Any CPU = Linux_Debug|Any CPU
+		Linux_Release|Any CPU = Linux_Release|Any CPU
+		OSX_Debug|Any CPU = OSX_Debug|Any CPU
+		OSX_Release|Any CPU = OSX_Release|Any CPU
+		Windows_Debug|Any CPU = Windows_Debug|Any CPU
+		Windows_Release|Any CPU = Windows_Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{ac20a28f-fda8-45e8-8728-058ead16e44c}.Linux_Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ac20a28f-fda8-45e8-8728-058ead16e44c}.Linux_Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ac20a28f-fda8-45e8-8728-058ead16e44c}.Linux_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ac20a28f-fda8-45e8-8728-058ead16e44c}.Linux_Release|Any CPU.Build.0 = Release|Any CPU
+		{ac20a28f-fda8-45e8-8728-058ead16e44c}.OSX_Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ac20a28f-fda8-45e8-8728-058ead16e44c}.OSX_Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ac20a28f-fda8-45e8-8728-058ead16e44c}.OSX_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ac20a28f-fda8-45e8-8728-058ead16e44c}.OSX_Release|Any CPU.Build.0 = Release|Any CPU
+		{ac20a28f-fda8-45e8-8728-058ead16e44c}.Windows_Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ac20a28f-fda8-45e8-8728-058ead16e44c}.Windows_Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ac20a28f-fda8-45e8-8728-058ead16e44c}.Windows_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ac20a28f-fda8-45e8-8728-058ead16e44c}.Windows_Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
