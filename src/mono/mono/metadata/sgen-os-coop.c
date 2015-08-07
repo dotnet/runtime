@@ -71,5 +71,11 @@ mono_gc_get_suspend_signal (void)
 	return -1;
 }
 
+int
+mono_gc_get_restart_signal (void)
+{
+	return -1;
+}
+
 #endif
 #endif
