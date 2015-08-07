@@ -5683,6 +5683,13 @@ ves_icall_System_Buffer_BlockCopyInternal (MonoArray *src, gint32 src_offset, Mo
 {
 	guint8 *src_buf, *dest_buf;
 
+	if (count < 0) {
+		mono_set_pending_exception (mono_get_exception_argument ("count", "is negative"));
+		return FALSE;
+	}
+
+	g_assert (count >= 0);
+
 	/* This is called directly from the class libraries without going through the managed wrapper */
 	MONO_CHECK_ARG_NULL (src, FALSE);
 	MONO_CHECK_ARG_NULL (dest, FALSE);
