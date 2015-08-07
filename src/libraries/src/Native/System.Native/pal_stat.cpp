@@ -56,7 +56,7 @@ static void ConvertFileStatus(const struct stat_& src, FileStatus* dst)
 
 #if HAVE_STAT_BIRTHTIME
     dst->BirthTime = src.st_birthtime;
-    dst->Flags |= FILESTATUSFLAGS_HAS_BIRTHTIME;
+    dst->Flags |= FILESTATUS_FLAGS_HAS_BIRTHTIME;
 #else
     dst->BirthTime = 0;
 #endif
