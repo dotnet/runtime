@@ -6,7 +6,7 @@ using System.IO;
 using System.Threading;
 using Xunit;
 
-public partial class FileSystemWatcher_4000_Tests
+public partial class IncludeSubdirectoriesTests
 {
     [Fact]
     [ActiveIssue(1657)]

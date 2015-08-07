@@ -5,7 +5,7 @@ using System.IO;
 using System.Threading;
 using Xunit;
 
-public partial class FileSystemWatcher_4000_Tests
+public partial class RenamedTests
 {
     [Fact]
     public static void FileSystemWatcher_Renamed_Directory()

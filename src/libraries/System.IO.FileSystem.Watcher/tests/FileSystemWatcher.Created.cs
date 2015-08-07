@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
 
-public partial class FileSystemWatcher_4000_Tests
+public class CreatedTests
 {
     [Fact]
     public static void FileSystemWatcher_Created_File()

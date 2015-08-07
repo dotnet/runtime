@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
 
-public partial class FileSystemWatcher_4000_Tests
+public partial class NotifyFilterTests
 {
     [Fact]
     [ActiveIssue(2011, PlatformID.OSX)]
