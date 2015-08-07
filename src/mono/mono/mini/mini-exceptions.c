@@ -453,6 +453,9 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	return TRUE;
 }
 
+/*
+ * This function is async-safe.
+ */
 static gpointer
 get_generic_info_from_stack_frame (MonoJitInfo *ji, MonoContext *ctx)
 {

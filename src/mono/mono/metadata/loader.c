@@ -2380,7 +2380,7 @@ stack_walk_adapter (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data)
 		return FALSE;
 	case FRAME_TYPE_MANAGED:
 		g_assert (frame->ji);
-		return d->func (mono_jit_info_get_method (frame->ji), frame->native_offset, frame->il_offset, frame->managed, d->user_data);
+		return d->func (frame->actual_method, frame->native_offset, frame->il_offset, frame->managed, d->user_data);
 		break;
 	default:
 		g_assert_not_reached ();
@@ -2421,10 +2421,14 @@ async_stack_walk_adapter (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer 
 	case FRAME_TYPE_MANAGED:
 		if (!frame->ji)
 			return FALSE;
-		if (frame->ji->async)
+		if (frame->ji->async) {
 			return d->func (NULL, frame->domain, frame->ji->code_start, frame->native_offset, d->user_data);
-		else
+		} else if (frame->ji->has_generic_jit_info) {
+			/* Can't pass a gshared method to embedding code */
+			return d->func (NULL, frame->domain, frame->ji->code_start, frame->native_offset, d->user_data);
+		} else {
 			return d->func (frame->actual_method, frame->domain, frame->ji->code_start, frame->native_offset, d->user_data);
+		}
 		break;
 	default:
 		g_assert_not_reached ();
