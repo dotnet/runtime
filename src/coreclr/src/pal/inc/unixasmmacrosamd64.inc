@@ -133,6 +133,17 @@ C_FUNC(\Name\()_End):
         
 .endm
 
+.macro PUSH_CALLEE_SAVED_REGISTERS
+
+        push_register rbp
+        push_register rbx
+        push_register r15
+        push_register r14
+        push_register r13
+        push_register r12
+
+.endm
+
 .macro POP_CALLEE_SAVED_REGISTERS
 
         pop_nonvol_reg r12
