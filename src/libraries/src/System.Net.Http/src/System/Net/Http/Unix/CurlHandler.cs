@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -21,6 +22,8 @@ namespace System.Net.Http
         #region Constants
 
         private const string UriSchemeHttps = "https";
+        private const string EncodingNameGzip = "gzip";
+        private const string EncodingNameDeflate = "deflate";
         private readonly static string[] AuthenticationSchemes = { "Negotiate", "Digest", "Basic" }; // the order in which libcurl goes over authentication schemes
         #endregion
 
@@ -32,6 +35,7 @@ namespace System.Net.Http
         private IWebProxy _proxy = null;
         private ICredentials _serverCredentials = null;
         private ProxyUsePolicy _proxyPolicy = ProxyUsePolicy.UseDefaultProxy;
+        private DecompressionMethods _automaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
 
         #endregion
 
@@ -120,6 +124,27 @@ namespace System.Net.Http
                 {
                     throw new PlatformNotSupportedException(SR.net_http_unix_invalid_client_cert_option);
                 }
+            }
+        }
+
+        internal bool SupportsAutomaticDecompression
+        {
+            get
+            {
+                return true;
+            }
+        }
+
+        internal DecompressionMethods AutomaticDecompression
+        {
+            get
+            {
+                return _automaticDecompression;
+            }
+            set
+            {
+                CheckDisposedOrStarted();
+                _automaticDecompression = value;
             }
         }
 
@@ -245,9 +270,24 @@ namespace System.Net.Http
             }
 
             SetProxyOptions(state, requestHandle);
+            SetRequestHandleDecompressionOptions(requestHandle);
             // TODO: Handle headers and other options
 
             return requestHandle;
+        }
+
+        private void SetRequestHandleDecompressionOptions(SafeCurlHandle requestHandle)
+        {
+            bool gzip = (AutomaticDecompression & DecompressionMethods.GZip) != 0;
+            bool deflate = (AutomaticDecompression & DecompressionMethods.Deflate) != 0;
+            if (gzip || deflate)
+            {
+                string encoding = (gzip && deflate) ?
+                                   EncodingNameGzip + "," + EncodingNameDeflate :
+                                   gzip ? EncodingNameGzip :
+                                   EncodingNameDeflate ;
+                Interop.libcurl.curl_easy_setopt(requestHandle, CURLoption.CURLOPT_ACCEPTENCODING, encoding);
+            }
         }
 
         private static void SetProxyOptions(RequestCompletionSource state, SafeCurlHandle requestHandle)

@@ -22,6 +22,7 @@ internal static partial class Interop
             internal const int CURLOPT_WRITEDATA = CurlOptionObjectPointBase + 1;
             internal const int CURLOPT_PROXY = CurlOptionObjectPointBase + 4;
             internal const int CURLOPT_PROXYUSERPWD = CurlOptionObjectPointBase + 6;
+            internal const int CURLOPT_ACCEPTENCODING = CurlOptionObjectPointBase + 102;
         }
 
         // Class for constants defined for the enum CURLINFO in curl.h
