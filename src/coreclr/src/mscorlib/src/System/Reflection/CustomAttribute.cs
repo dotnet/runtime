@@ -434,7 +434,7 @@ namespace System.Reflection
             m_typedCtorArgs = Array.AsReadOnly(new CustomAttributeTypedArgument[] {
                 new CustomAttributeTypedArgument(fieldOffset.Value)
             });
-            m_namedArgs = Array.AsReadOnly(new CustomAttributeNamedArgument[0]);
+            m_namedArgs = Array.AsReadOnly(Array.Empty<CustomAttributeNamedArgument>());
         }
         private void Init(MarshalAsAttribute marshalAs)
         {
@@ -484,14 +484,14 @@ namespace System.Reflection
             typedArgs[0] = new CustomAttributeTypedArgument(typeof(Type), forwardedTo.Destination);
             m_typedCtorArgs = Array.AsReadOnly(typedArgs);
 
-            CustomAttributeNamedArgument[] namedArgs = new CustomAttributeNamedArgument[0];
+            CustomAttributeNamedArgument[] namedArgs = Array.Empty<CustomAttributeNamedArgument>();
             m_namedArgs = Array.AsReadOnly(namedArgs);
         }
         private void Init(object pca)
         {
             m_ctor = pca.GetType().GetConstructors(BindingFlags.Public | BindingFlags.Instance)[0];
-            m_typedCtorArgs = Array.AsReadOnly(new CustomAttributeTypedArgument[0]);
-            m_namedArgs = Array.AsReadOnly(new CustomAttributeNamedArgument[0]);
+            m_typedCtorArgs = Array.AsReadOnly(Array.Empty<CustomAttributeTypedArgument>());
+            m_namedArgs = Array.AsReadOnly(Array.Empty<CustomAttributeNamedArgument>());
         }
         #endregion
 
@@ -2174,7 +2174,7 @@ namespace System.Reflection
 
             bool all = caType == (RuntimeType)typeof(object) || caType == (RuntimeType)typeof(Attribute);
             if (!all && s_pca.GetValueOrDefault(caType) == null && !IsSecurityAttribute(caType))
-                return new Attribute[0];
+                return Array.Empty<Attribute>();
 
             List<Attribute> pcas = new List<Attribute>();
             Attribute pca = null;
@@ -2247,7 +2247,7 @@ namespace System.Reflection
 
             bool all = caType == (RuntimeType)typeof(object) || caType == (RuntimeType)typeof(Attribute);
             if (!all && s_pca.GetValueOrDefault(caType) == null && !IsSecurityAttribute(caType))
-                return new Attribute[0];
+                return Array.Empty<Attribute>();
 
             List<Attribute> pcas = new List<Attribute>();
             Attribute pca = null;
@@ -2375,7 +2375,7 @@ namespace System.Reflection
             bool all = caType == (RuntimeType)typeof(object) || caType == (RuntimeType)typeof(Attribute);
 
             if (!all && s_pca.GetValueOrDefault(caType) == null && !IsSecurityAttribute(caType))
-                return new Attribute[0];
+                return Array.Empty<Attribute>();
 
             List<Attribute> pcas = new List<Attribute>();
             if (includeSecCa && (all || IsSecurityAttribute(caType)))
@@ -2486,7 +2486,7 @@ namespace System.Reflection
             bool all = caType == (RuntimeType)typeof(object) || caType == (RuntimeType)typeof(Attribute);
 
             if (!all && s_pca.GetValueOrDefault(caType) == null && !IsSecurityAttribute(caType))
-                return new Attribute[0];
+                return Array.Empty<Attribute>();
 
             List<Attribute> pcas = new List<Attribute>();
 

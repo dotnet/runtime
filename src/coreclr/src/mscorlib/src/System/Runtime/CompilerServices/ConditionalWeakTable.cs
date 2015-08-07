@@ -78,8 +78,8 @@ namespace System.Runtime.CompilerServices
         [System.Security.SecuritySafeCritical]
         public ConditionalWeakTable()
         {
-            _buckets = new int[0];
-            _entries = new Entry[0];
+            _buckets = Array.Empty<int>();
+            _entries = Array.Empty<Entry>();
             _freeList = -1;
             _lock = new Object();
 
