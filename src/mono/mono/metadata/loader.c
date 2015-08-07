@@ -2423,9 +2423,6 @@ async_stack_walk_adapter (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer 
 			return FALSE;
 		if (frame->ji->async) {
 			return d->func (NULL, frame->domain, frame->ji->code_start, frame->native_offset, d->user_data);
-		} else if (frame->ji->has_generic_jit_info) {
-			/* Can't pass a gshared method to embedding code */
-			return d->func (NULL, frame->domain, frame->ji->code_start, frame->native_offset, d->user_data);
 		} else {
 			return d->func (frame->actual_method, frame->domain, frame->ji->code_start, frame->native_offset, d->user_data);
 		}
