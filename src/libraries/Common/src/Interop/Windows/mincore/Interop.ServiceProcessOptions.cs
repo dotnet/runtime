@@ -71,6 +71,8 @@ internal partial class Interop
 
         internal partial class ServiceStartModes
         {
+            internal const int START_TYPE_BOOT = 0x00000000;
+            internal const int START_TYPE_SYSTEM = 0x00000001;
             internal const int START_TYPE_AUTO = 0x00000002;
             internal const int START_TYPE_DEMAND = 0x00000003;
             internal const int START_TYPE_DISABLED = 0x00000004;
