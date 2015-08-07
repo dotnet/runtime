@@ -46,6 +46,7 @@ GetConsoleOutputCP
 GetCurrentDirectoryW
 GetCurrentProcess
 GetCurrentProcessId
+GetCurrentThreadId
 GetEnvironmentStringsW
 GetEnvironmentVariableW
 GetFileAttributesExW
