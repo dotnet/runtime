@@ -158,38 +158,31 @@ public partial class FileSystemWatcher_4000_Tests
         using (var dir2 = Utility.CreateTestDirectory(Path.Combine(dir1.Path, "dir2")))
         using (var dir3 = Utility.CreateTestDirectory(Path.Combine(dir2.Path, "dir3")))
         {
+            string filePath = Path.Combine(dir3.Path, "testfile.txt");
+            File.WriteAllBytes(filePath, new byte[4096]);
+
+            // Attach the FSW to the existing structure
             AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Changed);
-            byte[] bt = new byte[4096];
+            watcher.Path = Path.GetFullPath(dir.Path);
+            watcher.Filter = "*";
+            watcher.NotifyFilter = NotifyFilters.Attributes;
+            watcher.IncludeSubdirectories = includeSubdirectories;
+            watcher.EnableRaisingEvents = true;
 
-            using (var file = File.Create(Path.Combine(dir3.Path, "testfile.txt")))
-            {
-                // Attach the FSW to the existing structure
-                watcher.Path = Path.GetFullPath(dir.Path);
-                watcher.Filter = "*";
-                watcher.NotifyFilter = NotifyFilters.Attributes | NotifyFilters.CreationTime | NotifyFilters.DirectoryName | NotifyFilters.FileName | NotifyFilters.LastAccess | NotifyFilters.LastWrite | NotifyFilters.Security | NotifyFilters.Size;
-                watcher.IncludeSubdirectories = includeSubdirectories;
-                watcher.EnableRaisingEvents = true;
-
-                // Change the nested file and verify we get (or do not get, depending on the parameter) the changed event 
-                file.Write(bt, 0, bt.Length);
-                file.Flush();
-            }
+            File.SetAttributes(filePath, FileAttributes.ReadOnly);
+            File.SetAttributes(filePath, FileAttributes.Normal);
 
             if (includeSubdirectories)
                 Utility.ExpectEvent(eventOccured, "file changed");
             else
                 Utility.ExpectNoEvent(eventOccured, "file changed");
 
-            // Stop the FSW
+            // Restart the FSW
             watcher.EnableRaisingEvents = false;
+            watcher.EnableRaisingEvents = true;
 
-            using (var file2 = File.Create(Path.Combine(dir3.Path, "testfile2.txt")))
-            {
-                // Start the FSW, write to the file, expect (or don't get, depending on the parameter) to pick up the write
-                watcher.EnableRaisingEvents = true;
-                file2.Write(bt, 0, bt.Length);
-                file2.Flush();
-            }
+            File.SetAttributes(filePath, FileAttributes.ReadOnly);
+            File.SetAttributes(filePath, FileAttributes.Normal);
 
             if (includeSubdirectories)
                 Utility.ExpectEvent(eventOccured, "second file change");
