@@ -601,15 +601,34 @@ namespace System.IO
                                 // so we will send a DELETE for this event and a CREATE when the MOVED_TO is eventually processed.
                                 if (_bufferPos == _bufferAvailable)
                                 {
-                                    bool success = false;
-                                    Interop.libc.PollFlags resultFlags;
-                                    _inotifyHandle.DangerousAddRef(ref success);
-                                    Debug.Assert(success, "Failed to add-ref inotify handle");
-                                    int result = Interop.libc.poll(_inotifyHandle.DangerousGetHandle().ToInt32(), Interop.libc.PollFlags.POLLIN, 0, out resultFlags);
-                                    _inotifyHandle.DangerousRelease();
+                                    int pollResult;
+                                    bool gotRef = false;
+                                    try
+                                    {
+                                        _inotifyHandle.DangerousAddRef(ref gotRef);
+
+                                        // Do the poll with a small timeout value.  Community research showed that a few milliseconds
+                                        // was enough to allow the vast majority of MOVED_TO events that were going to show
+                                        // up to actually arrive.  This doesn't need to be perfect; there's always the chance
+                                        // that a MOVED_TO could show up after whatever timeout is specified, in which case
+                                        // it'll just result in a delete + create instead of a rename.  We need the value to be
+                                        // small so that we don't significantly delay the delivery of the deleted event in case
+                                        // that's actually what's needed (otherwise it'd be fine to block indefinitely waiting
+                                        // for the next event to arrive).
+                                        const int MillisecondsTimeout = 2;
+                                        Interop.libc.PollFlags resultFlags;
+                                        pollResult = Interop.libc.poll(_inotifyHandle.DangerousGetHandle().ToInt32(), Interop.libc.PollFlags.POLLIN, MillisecondsTimeout, out resultFlags);
+                                    }
+                                    finally
+                                    {
+                                        if (gotRef)
+                                        {
+                                            _inotifyHandle.DangerousRelease();
+                                        }
+                                    }
 
                                     // If we error or don't have any signaled handles, send the deleted event
-                                    if (result <= 0)
+                                    if (pollResult <= 0)
                                     {
                                         // There isn't any more data in the queue so this is a deleted event
                                         watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Deleted, expandedName);
