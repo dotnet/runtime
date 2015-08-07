@@ -85,7 +85,7 @@ namespace System.Diagnostics.ProcessTests
                 Process p = CreateProcessInfinite();
                 p.EnableRaisingEvents = true;
                 p.Exited += delegate { isExitedInvoked = true; };
-                StartAndKillProcessWithDelay(p);
+                StartSleepKillWait(p);
                 Assert.True(isExitedInvoked, String.Format("TestCanRaiseEvents0001: {0}", "isExited Event not called when EnableRaisingEvent is set to true."));
             }
 
@@ -95,7 +95,7 @@ namespace System.Diagnostics.ProcessTests
                 // Check with the default settings (false, events will not be raised)
                 Process p = CreateProcessInfinite();
                 p.Exited += delegate { isExitedInvoked = true; };
-                StartAndKillProcessWithDelay(p);
+                StartSleepKillWait(p);
                 Assert.False(isExitedInvoked, String.Format("TestCanRaiseEvents0002: {0}", "isExited Event called with the default settings for EnableRaiseEvents"));
             }
 
@@ -106,7 +106,7 @@ namespace System.Diagnostics.ProcessTests
                 Process p = CreateProcessInfinite();
                 p.EnableRaisingEvents = false;
                 p.Exited += delegate { isExitedInvoked = true; }; ;
-                StartAndKillProcessWithDelay(p);
+                StartSleepKillWait(p);
                 Assert.False(isExitedInvoked, String.Format("TestCanRaiseEvents0003: {0}", "isExited Event called with the EnableRaiseEvents = false"));
             }
         }
@@ -123,7 +123,7 @@ namespace System.Diagnostics.ProcessTests
 
             {
                 Process p = CreateProcessInfinite();
-                StartAndKillProcessWithDelay(p);
+                StartSleepKillWait(p);
                 Assert.NotEqual(0, p.ExitCode);
             }
         }
@@ -149,7 +149,7 @@ namespace System.Diagnostics.ProcessTests
             }
             else
             {
-                IEnumerable<int> testProcessIds = Process.GetProcessesByName(CoreRunName).Select(p => p.Id);
+                IEnumerable<int> testProcessIds = Process.GetProcessesByName(HostRunner).Select(p => p.Id);
                 Assert.Contains(_process.Id, testProcessIds);
             }
         }
@@ -386,9 +386,9 @@ namespace System.Diagnostics.ProcessTests
                     // Ensure the process has started, p.id throws InvalidOperationException, if the process has not yet started.
                     Assert.Equal(p.Id, Process.GetProcessById(p.Id).Id);
 
-                    long afterTicks = DateTime.UtcNow.Ticks + tenMSTicks;
-                    Assert.InRange(p.StartTime.ToUniversalTime().Ticks, beforeTicks, afterTicks);
-                }
+                long afterTicks = DateTime.UtcNow.Ticks + tenMSTicks;
+                Assert.InRange(p.StartTime.ToUniversalTime().Ticks, beforeTicks, afterTicks);
+            }
                 catch (InvalidOperationException)
                 {
                     Assert.True(p.StartTime.ToUniversalTime().Ticks > beforeTicks);
@@ -484,7 +484,7 @@ namespace System.Diagnostics.ProcessTests
         [Fact]
         public void TestProcessName()
         {
-            Assert.Equal(_process.ProcessName, CoreRunName, StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(_process.ProcessName, HostRunner, StringComparer.OrdinalIgnoreCase);
         }
 
         [Fact]
@@ -594,7 +594,7 @@ namespace System.Diagnostics.ProcessTests
                 Process process = CreateProcessInfinite();
                 process.Start();
 
-                Assert.Equal(CoreRunName, process.StartInfo.FileName);
+                Assert.Equal(HostRunner, process.StartInfo.FileName);
 
                 process.Kill();
                 Assert.True(process.WaitForExit(WaitInMS));
@@ -612,8 +612,8 @@ namespace System.Diagnostics.ProcessTests
 
             {
                 Process process = new Process();
-                process.StartInfo = new ProcessStartInfo(TestExeName);
-                Assert.Equal(TestExeName, process.StartInfo.FileName);
+                process.StartInfo = new ProcessStartInfo(TestConsoleApp);
+                Assert.Equal(TestConsoleApp, process.StartInfo.FileName);
             }
 
             {
