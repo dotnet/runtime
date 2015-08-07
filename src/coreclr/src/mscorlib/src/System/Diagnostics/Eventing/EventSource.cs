@@ -1018,7 +1018,7 @@ namespace System.Diagnostics.Tracing
         {
             if (m_eventSourceEnabled)
             {
-                if (arg1 == null) arg1 = new byte[0];
+                if (arg1 == null) arg1 = Array.Empty<byte>();
                 int blobSize = arg1.Length;
                 fixed (byte* blob = &arg1[0])
                 {
@@ -1038,7 +1038,7 @@ namespace System.Diagnostics.Tracing
         {
             if (m_eventSourceEnabled)
             {
-                if (arg2 == null) arg2 = new byte[0];
+                if (arg2 == null) arg2 = Array.Empty<byte>();
                 int blobSize = arg2.Length;
                 fixed (byte* blob = &arg2[0])
                 {
@@ -5854,7 +5854,7 @@ namespace System.Diagnostics.Tracing
         {
             if (this.channelTab == null)
             {
-                return new ulong[0];
+                return Array.Empty<ulong>();
             }
 
             // We create an array indexed by the channel id for fast look up.

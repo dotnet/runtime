@@ -102,7 +102,7 @@ namespace System.Runtime.InteropServices.TCEAdapterGen {
             Contract.Assert(CookieField != null, "Unable to find the field m_dwCookie on the sink helper");
             
             // Retrieve the sink helper's constructor.
-            ConstructorInfo SinkHelperCons = SinkHelperClass.GetConstructor(EventProviderWriter.DefaultLookup | BindingFlags.NonPublic, null, new Type[0], null );    
+            ConstructorInfo SinkHelperCons = SinkHelperClass.GetConstructor(EventProviderWriter.DefaultLookup | BindingFlags.NonPublic, null, Array.Empty<Type>(), null );    
             Contract.Assert(SinkHelperCons != null, "Unable to find the constructor for the sink helper");
             
             // Retrieve the IConnectionPoint.Advise method.
@@ -461,7 +461,7 @@ namespace System.Runtime.InteropServices.TCEAdapterGen {
         private MethodBuilder DefineInitSrcItfMethod( TypeBuilder OutputTypeBuilder, Type SourceInterface, FieldBuilder fbSinkHelperArray, FieldBuilder fbEventCP, FieldBuilder fbCPC )
         {
             // Retrieve the constructor info for the array list's default constructor.
-            ConstructorInfo DefaultArrayListCons = typeof(ArrayList).GetConstructor(EventProviderWriter.DefaultLookup, null, new Type[0], null );
+            ConstructorInfo DefaultArrayListCons = typeof(ArrayList).GetConstructor(EventProviderWriter.DefaultLookup, null, Array.Empty<Type>(), null );
             Contract.Assert(DefaultArrayListCons != null, "Unable to find the constructor for class ArrayList");    
             
             // Temp byte array for Guid
@@ -551,7 +551,7 @@ namespace System.Runtime.InteropServices.TCEAdapterGen {
         private void DefineConstructor( TypeBuilder OutputTypeBuilder, FieldBuilder fbCPC )
         {
             // Retrieve the constructor info for the base class's constructor.
-            ConstructorInfo DefaultBaseClsCons = typeof(Object).GetConstructor(BindingFlags.Instance | BindingFlags.Public, null, new Type[0], null );
+            ConstructorInfo DefaultBaseClsCons = typeof(Object).GetConstructor(BindingFlags.Instance | BindingFlags.Public, null, Array.Empty<Type>(), null );
             Contract.Assert(DefaultBaseClsCons != null, "Unable to find the object's public default constructor");
             
             // Define the default constructor.
