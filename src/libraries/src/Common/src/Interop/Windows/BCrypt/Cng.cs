@@ -164,27 +164,14 @@ namespace Internal.NativeCrypto
             public const UInt32 BCRYPT_KEY_DATA_BLOB_VERSION1 = 0x1;
         }
 
-        public static void SetCipherMode(this SafeKeyHandle hKey, CipherMode cipherMode)
+        public static void SetCipherMode(this SafeAlgorithmHandle hAlg, string cipherMode)
         {
-            String cipherModePropertyName;
-            switch (cipherMode)
-            {
-                case CipherMode.CBC: 
-                    cipherModePropertyName = "ChainingModeCBC"; 
-                    break;
-                case CipherMode.CTS: 
-                    throw new NotSupportedException();
-                case CipherMode.ECB:
-                    cipherModePropertyName = "ChainingModeECB";
-                    break;
+            NTSTATUS ntStatus = Interop.BCryptSetProperty(hAlg, "ChainingMode", cipherMode, (cipherMode.Length + 1) * 2, 0);
 
-                default:
-                    throw new NotSupportedException();
-            }
-            NTSTATUS ntStatus = Interop.BCryptSetProperty(hKey, "ChainingMode", cipherModePropertyName, (cipherModePropertyName.Length + 1) * 2, 0);
             if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+            {
                 throw CreateCryptographicException(ntStatus);
-            return;
+            }
         }
 
         // Note: input and output are allowed to be the same buffer. BCryptEncrypt will correctly do the encryption in place according to CNG documentation.
@@ -300,7 +287,7 @@ namespace Internal.NativeCrypto
             public static extern unsafe NTSTATUS BCryptGetProperty(SafeBCryptHandle hObject, String pszProperty, byte* pbOutput, int cbOutput, out int pcbResult, int dwFlags);
 
             [DllImport(CngDll, CharSet = CharSet.Unicode)]
-            public static extern unsafe NTSTATUS BCryptSetProperty(SafeBCryptHandle hObject, String pszProperty, String pbInput, int cbInput, int dwFlags);
+            public static extern unsafe NTSTATUS BCryptSetProperty(SafeAlgorithmHandle hObject, String pszProperty, String pbInput, int cbInput, int dwFlags);
 
             [DllImport(CngDll, CharSet = CharSet.Unicode)]
             public static extern NTSTATUS BCryptImportKey(SafeAlgorithmHandle hAlgorithm, IntPtr hImportKey, String pszBlobType, out SafeKeyHandle hKey, IntPtr pbKeyObject, int cbKeyObject, byte[] pbInput, int cbInput, int dwFlags);
