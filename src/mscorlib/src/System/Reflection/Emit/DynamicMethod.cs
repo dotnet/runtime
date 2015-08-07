@@ -363,7 +363,7 @@ namespace System.Reflection.Emit
                 }
             }
             else {
-                m_parameterTypes = new RuntimeType[0];
+                m_parameterTypes = Array.Empty<RuntimeType>();
             }
             
             // check and store the return value
