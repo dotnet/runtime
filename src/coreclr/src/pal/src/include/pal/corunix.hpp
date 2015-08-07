@@ -602,25 +602,25 @@ namespace CorUnix
         virtual
         PAL_ERROR
         GetSignalCount(
-            DWORD *pdwSignalCount
+            LONG *plSignalCount
             ) = 0;
 
         virtual
         PAL_ERROR
         SetSignalCount(
-            DWORD dwNewCount
+            LONG lNewCount
             ) = 0;
 
         virtual
         PAL_ERROR
         IncrementSignalCount(
-            DWORD dwAmountToIncrement
+            LONG lAmountToIncrement
             ) = 0;
 
         virtual
         PAL_ERROR
         DecrementSignalCount(
-            DWORD dwAmountToDecrement
+            LONG lAmountToDecrement
             ) = 0;
 
         //
