@@ -469,7 +469,6 @@ CorUnix::InternalReleaseSemaphore(
     IPalObject *pobjSemaphore = NULL;
     ISynchStateController *pssc = NULL;
     SemaphoreImmutableData *pSemaphoreData;
-    DWORD dwOldCount;
     LONG lOldCount;
 
     _ASSERTE(NULL != pthr);
@@ -521,7 +520,7 @@ CorUnix::InternalReleaseSemaphore(
         goto InternalReleaseSemaphoreExit;
     }
 
-    palError = pssc->GetSignalCount(&dwOldCount);
+    palError = pssc->GetSignalCount(&lOldCount);
 
     if (NO_ERROR != palError)
     {
@@ -529,9 +528,8 @@ CorUnix::InternalReleaseSemaphore(
         goto InternalReleaseSemaphoreExit;
     }
 
-    lOldCount = dwOldCount;
-
-    if (lOldCount + lReleaseCount > pSemaphoreData->lMaximumCount)
+    _ASSERTE(lOldCount <= pSemaphoreData->lMaximumCount);
+    if (lReleaseCount > pSemaphoreData->lMaximumCount - lOldCount)
     {
         palError = ERROR_INVALID_PARAMETER;
         goto InternalReleaseSemaphoreExit;
