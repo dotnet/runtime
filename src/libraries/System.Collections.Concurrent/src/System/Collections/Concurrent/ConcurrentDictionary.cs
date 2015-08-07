@@ -1359,7 +1359,7 @@ namespace System.Collections.Concurrent
         {
             if (key == null) throw new ArgumentNullException("key");
 
-            return (key is TKey) && ((ConcurrentDictionary<TKey, TValue>)this).ContainsKey((TKey)key);
+            return (key is TKey) && this.ContainsKey((TKey)key);
         }
 
         /// <summary>Provides an <see cref="T:System.Collections.Generics.IDictionaryEnumerator"/> for the

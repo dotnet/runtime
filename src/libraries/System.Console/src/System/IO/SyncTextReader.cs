@@ -16,7 +16,7 @@ namespace System.IO
         public static SyncTextReader GetSynchronizedTextReader(TextReader reader)
         {
             Debug.Assert(reader != null);
-            return reader as SyncTextReader ?? 
+            return reader as SyncTextReader ??
                 new SyncTextReader(reader);
         }
 
@@ -31,8 +31,7 @@ namespace System.IO
             {
                 lock (_methodLock)
                 {
-                    // Explicitly pick up a potentially methodimpl'ed Dispose
-                    ((IDisposable)_in).Dispose();
+                    _in.Dispose();
                 }
             }
         }
@@ -87,7 +86,7 @@ namespace System.IO
 
         //
         // On SyncTextReader all APIs should run synchronously, even the async ones.
-        // No explicit locking is needed, as they all just delegate 
+        // No explicit locking is needed, as they all just delegate
         //
 
         public override Task<String> ReadLineAsync()
