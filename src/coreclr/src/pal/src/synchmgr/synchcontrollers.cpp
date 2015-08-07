@@ -532,7 +532,7 @@ namespace CorUnix
 
     Returns the current signal count of the target object
     --*/
-    PAL_ERROR CSynchStateController::GetSignalCount(DWORD *pdwSignalCount)
+    PAL_ERROR CSynchStateController::GetSignalCount(LONG *plSignalCount)
     {
         VALIDATEOBJECT(m_psdSynchData);
                 
@@ -540,12 +540,12 @@ namespace CorUnix
         LONG lCount = m_psdSynchData->GetSignalCount();
 
         _ASSERTE(InternalGetCurrentThread() == m_pthrOwner);
-        _ASSERTE(NULL != pdwSignalCount);
+        _ASSERTE(NULL != plSignalCount);
         _ASSERT_MSG(0 <= lCount,
                     "Internal error: negative signal count [signal count=%d]",
                     lCount);
 
-        *pdwSignalCount = (DWORD)lCount;
+        *plSignalCount = lCount;
         return palErr;
     }
     
@@ -556,16 +556,14 @@ namespace CorUnix
     Sets the signal count of the target object, possibly triggering
     waiting threads awakening.
     --*/
-    PAL_ERROR CSynchStateController::SetSignalCount(DWORD dwNewCount)
+    PAL_ERROR CSynchStateController::SetSignalCount(LONG lNewCount)
     {
         VALIDATEOBJECT(m_psdSynchData);
 
         _ASSERTE(InternalGetCurrentThread() == m_pthrOwner);
-        _ASSERT_MSG((DWORD)INT_MAX > dwNewCount,
-                    "Signal count %u too large (max=%u)\n",
-                    dwNewCount, (DWORD)INT_MAX);
+        _ASSERTE(lNewCount >= 0);
                     
-        m_psdSynchData->Signal(m_pthrOwner,(LONG)dwNewCount, false);
+        m_psdSynchData->Signal(m_pthrOwner, lNewCount, false);
         
         return NO_ERROR;
     }
@@ -578,21 +576,19 @@ namespace CorUnix
     waiting threads awakening.
     --*/
     PAL_ERROR CSynchStateController::IncrementSignalCount(
-        DWORD dwAmountToIncrement)
+        LONG lAmountToIncrement)
     {
         VALIDATEOBJECT(m_psdSynchData);
 
-        LONG lOldCount = m_psdSynchData->GetSignalCount();        
-        LONG lNewCount = lOldCount + (LONG)dwAmountToIncrement;
-
         _ASSERTE(InternalGetCurrentThread() == m_pthrOwner);
-        _ASSERT_MSG((DWORD)INT_MAX > dwAmountToIncrement,
-            "Signal count increment %u too large (max=%u)\n",
-            dwAmountToIncrement, (DWORD)INT_MAX);
+        _ASSERTE(lAmountToIncrement > 0);
 
-        _ASSERT_MSG(lNewCount >= lOldCount && (lNewCount >= 0 && static_cast<DWORD>(lNewCount) >= dwAmountToIncrement),
-            "Signal count increment %u would make current signal count %d to "
-            "wrap around\n", dwAmountToIncrement, lOldCount);
+        LONG lOldCount = m_psdSynchData->GetSignalCount();
+        LONG lNewCount = lOldCount + lAmountToIncrement;
+
+        _ASSERT_MSG(lNewCount > lOldCount,
+            "Signal count increment %d would make current signal count %d to "
+            "wrap around\n", lAmountToIncrement, lOldCount);
         
         m_psdSynchData->Signal(m_pthrOwner, lNewCount, false);
 
@@ -606,24 +602,19 @@ namespace CorUnix
     Decrements the signal count of the target object.
     --*/
     PAL_ERROR CSynchStateController::DecrementSignalCount(
-        DWORD dwAmountToDecrement)
+        LONG lAmountToDecrement)
     {
         VALIDATEOBJECT(m_psdSynchData);
+
+        _ASSERTE(InternalGetCurrentThread() == m_pthrOwner);
+        _ASSERTE(lAmountToDecrement > 0);
         
         PAL_ERROR palErr = NO_ERROR;
         LONG lCount = m_psdSynchData->GetSignalCount();
-        
-        _ASSERTE(InternalGetCurrentThread() == m_pthrOwner);
+        _ASSERTE(lAmountToDecrement <= lCount);
 
-        if ((LONG)dwAmountToDecrement > lCount)
-        {
-            ASSERT("Given amount to decrement would make signal count negative\n");
-            palErr = ERROR_INTERNAL_ERROR;
-            goto DSC_exit;
-        }
-        m_psdSynchData->SetSignalCount(lCount - dwAmountToDecrement);
+        m_psdSynchData->SetSignalCount(lCount - lAmountToDecrement);
         
-    DSC_exit:
         return palErr;
     }
     
