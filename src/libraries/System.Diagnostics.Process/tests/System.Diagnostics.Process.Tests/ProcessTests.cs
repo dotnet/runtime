@@ -363,7 +363,7 @@ namespace System.Diagnostics.ProcessTests
             Assert.InRange(processorTimeAtHalfSpin, processorTimeBeforeSpin, Process.GetCurrentProcess().TotalProcessorTime.TotalSeconds);
         }
 
-        [Fact]
+        [Fact, ActiveIssue("https://github.com/dotnet/corefx/issues/2613", PlatformID.Linux)]
         public void TestProcessStartTime()
         {
             DateTime timeBeforeCreatingProcess = DateTime.UtcNow;
