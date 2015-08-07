@@ -91,8 +91,6 @@ llvm_link="$(locate_llvm_exec link)"
 [[ $? -eq 0 ]] || { echo "Unable to locate llvm-link"; exit 1; }
 llvm_nm="$(locate_llvm_exec nm)"
 [[ $? -eq 0 ]] || { echo "Unable to locate llvm-nm"; exit 1; }
-llvm_ranlib="$(locate_llvm_exec ranlib)"
-[[ $? -eq 0 ]] || { echo "Unable to locate llvm-ranlib"; exit 1; }
 if [ $OS = "Linux" -o $OS = "FreeBSD" -o $OS = "OpenBSD" -o $OS = "NetBSD" ]; then
   llvm_objdump="$(locate_llvm_exec objdump)"
   [[ $? -eq 0 ]] || { echo "Unable to locate llvm-objdump"; exit 1; }
@@ -120,7 +118,6 @@ cmake \
   "-DCMAKE_LINKER=$llvm_link" \
   "-DCMAKE_NM=$llvm_nm" \
   "-DCMAKE_OBJDUMP=$llvm_objdump" \
-  "-DCMAKE_RANLIB=$llvm_ranlib" \
   "-DCMAKE_BUILD_TYPE=$buildtype" \
   $cmake_extra_defines \
   "$1"
