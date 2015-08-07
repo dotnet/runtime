@@ -108,12 +108,11 @@ namespace System.IO
         // Thread gate holder and constats
         private bool _stopListening = false;
 
-        private bool IsHandleInvalid
+        private bool IsHandleInvalid { get { return IsHandleInstanceInvalid(_directoryHandle); } }
+
+        private bool IsHandleInstanceInvalid(SafeFileHandle handle)
         {
-            get
-            {
-                return (_directoryHandle == null || _directoryHandle.IsInvalid || _directoryHandle.IsClosed);
-            }
+            return handle == null || handle.IsInvalid || handle.IsClosed;
         }
 
         /// <devdoc>
@@ -132,12 +131,21 @@ namespace System.IO
                 buffer = AllocateBuffer();
             }
 
+            // Use a local copy of _threadPoolBinding for the remainder of the method.
+            // Otherwise, the value of the field could get replaced by a different
+            // instance if events are stopped and then restarted, and we could end up
+            // trying to use the new binding with an overlapped created on the old binding.
+            // Similarly for the directory handle.
+            ThreadPoolBoundHandle threadPoolBinding = _threadPoolBinding;
+            SafeFileHandle directoryHandle = _directoryHandle;
+
             // Pass "session" counter to callback:
             FSWAsyncResult asyncResult = new FSWAsyncResult();
             asyncResult.session = _currentSession;
             asyncResult.buffer = buffer;
+            asyncResult.threadPoolBinding = threadPoolBinding;
 
-            NativeOverlapped* overlappedPointer = _threadPoolBinding.AllocateNativeOverlapped(new IOCompletionCallback(this.CompletionStatusChanged), asyncResult, buffer);
+            NativeOverlapped* overlappedPointer = threadPoolBinding.AllocateNativeOverlapped(new IOCompletionCallback(this.CompletionStatusChanged), asyncResult, buffer);
 
             // Can now call OS:
             int size;
@@ -149,12 +157,12 @@ namespace System.IO
                 // and when we get here from CompletionStatusChanged.
                 // We might need to take a lock to prevent race absolutely, instead just catch
                 // ObjectDisposedException from SafeHandle in case it is disposed
-                if (!IsHandleInvalid)
+                if (!IsHandleInstanceInvalid(directoryHandle))
                 {
                     // An interrupt is possible here
                     fixed (byte* buffPtr = buffer)
                     {
-                        ok = UnsafeNativeMethods.ReadDirectoryChangesW(_directoryHandle,
+                        ok = UnsafeNativeMethods.ReadDirectoryChangesW(directoryHandle,
                                                            buffPtr,
                                                            _internalBufferSize,
                                                            _includeSubdirectories ? 1 : 0,
@@ -170,17 +178,17 @@ namespace System.IO
             }
             catch (ArgumentNullException)
             { //Ignore
-                Debug.Assert(IsHandleInvalid, "ArgumentNullException from something other than SafeHandle?");
+                Debug.Assert(IsHandleInstanceInvalid(directoryHandle), "ArgumentNullException from something other than SafeHandle?");
             }
             finally
             {
                 if (!ok)
                 {
-                    _threadPoolBinding.FreeNativeOverlapped(overlappedPointer);
+                    threadPoolBinding.FreeNativeOverlapped(overlappedPointer);
 
                     // If the handle was for some reason changed or closed during this call, then don't throw an
                     // exception.  Else, it's a valid error.
-                    if (!IsHandleInvalid)
+                    if (!IsHandleInstanceInvalid(directoryHandle))
                     {
                         OnError(new ErrorEventArgs(new Win32Exception()));
                     }
@@ -354,7 +362,7 @@ namespace System.IO
             }
             finally
             {
-                _threadPoolBinding.FreeNativeOverlapped(overlappedPointer);
+                asyncResult.threadPoolBinding.FreeNativeOverlapped(overlappedPointer);
                 if (!_stopListening)
                 {
                     Monitor(asyncResult.buffer);
@@ -368,6 +376,7 @@ namespace System.IO
         {
             internal int session;
             internal byte[] buffer;
+            internal ThreadPoolBoundHandle threadPoolBinding;
         }
 
         /// <devdoc>
