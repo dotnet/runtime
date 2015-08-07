@@ -140,9 +140,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.Permissions.cs">
       <Link>Common\Interop\Unix\Interop.Permissions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs">
-      <Link>Common\Interop\Unix\Interop.strerror.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.sysconf.cs">
       <Link>Common\Interop\Unix\Interop.sysconf.cs</Link>
     </Compile>
@@ -157,9 +154,6 @@
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedView.Unix.MADV_DONTFORK.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.ftruncate.cs">
       <Link>Common\Interop\Unix\Interop.ftruncate.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\Interop.Errors.cs">
-      <Link>Common\Interop\Linux\Interop.Errors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Linux\Interop.Libraries.cs">
       <Link>Common\Interop\Linux\Interop.Libraries.cs</Link>
@@ -188,9 +182,6 @@
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFile.Unix.BackingObject_File.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.unlink.cs">
       <Link>Common\Interop\Unix\Interop.unlink.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Errors.cs">
-      <Link>Common\Interop\OSX\Interop.Errors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
       <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>

@@ -48,20 +48,20 @@ namespace System.IO.Pipes
                     break;
                 }
 
-                int errno = Marshal.GetLastWin32Error();
-                if (errno == Interop.Errors.EINTR)
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                if (errorInfo.Error == Interop.Error.EINTR)
                 {
                     // I/O was interrupted, try again
                     continue;
                 }
-                else if (errno == Interop.Errors.EEXIST)
+                else if (errorInfo.Error == Interop.Error.EEXIST)
                 {
                     // directory already exists
                     break;
                 }
                 else
                 {
-                    throw Interop.GetExceptionForIoErrno(errno, PipeDirectoryPath, isDirectory: true);
+                    throw Interop.GetExceptionForIoErrno(errorInfo, PipeDirectoryPath, isDirectory: true);
                 }
             }
 
@@ -315,15 +315,15 @@ namespace System.IO.Pipes
                     long result = sysCall(fd, arg1, arg2);
                     if (result < 0)
                     {
-                        int errno = Marshal.GetLastWin32Error();
+                        Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
 
-                        if (errno == Interop.Errors.EINTR)
+                        if (errorInfo.Error == Interop.Error.EINTR)
                             continue;
 
-                        if (errno == Interop.Errors.EPIPE)
+                        if (errorInfo.Error == Interop.Error.EPIPE)
                             State = PipeState.Broken;
 
-                        throw Interop.GetExceptionForIoErrno(errno);
+                        throw Interop.GetExceptionForIoErrno(errorInfo);
                     }
                     return result;
                 }

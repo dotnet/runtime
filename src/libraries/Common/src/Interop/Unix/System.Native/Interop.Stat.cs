@@ -6,19 +6,19 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class NativeIO
+    internal static partial class Sys
     {
-        internal struct FileStats
+        internal struct FileStatus
         {
-            private FileStatsFlags Flags;
+            internal FileStatusFlags Flags;
             internal int Mode;
             internal int Uid;
             internal int Gid;
-            internal int Size;
-            internal int AccessTime;
-            internal int ModificationTime;
-            internal int StatusChangeTime;
-            internal int CreationTime;
+            internal long Size;
+            internal long ATime;
+            internal long MTime;
+            internal long CTime;
+            internal long BirthTime;
         }
 
         internal static class FileTypes
@@ -32,19 +32,19 @@ internal static partial class Interop
         }
 
         [Flags]
-        internal enum FileStatsFlags
+        internal enum FileStatusFlags
         {
             None = 0,
             HasCreationTime = 1,
         }
 
-        [DllImport(Libraries.IOInterop, SetLastError = true)]
-        internal static extern int FStat(int fileDescriptor, out FileStats output);
+        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        internal static extern int FStat(int fileDescriptor, out FileStatus output);
 
-        [DllImport(Libraries.IOInterop, SetLastError = true)]
-        internal static extern int Stat(string path, out FileStats output);
+        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        internal static extern int Stat(string path, out FileStatus output);
 
-        [DllImport(Libraries.IOInterop, SetLastError = true)]
-        internal static extern int LStat(string path, out FileStats output);
+        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        internal static extern int LStat(string path, out FileStatus output);
     }
 }

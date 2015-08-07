@@ -121,7 +121,7 @@ namespace System.IO.MemoryMappedFiles
                 }
                 if ((long)addr < 0)
                 {
-                    throw Interop.GetExceptionForIoErrno(Marshal.GetLastWin32Error());
+                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
                 }
 
                 // Based on the HandleInheritability, try to prevent the memory-mapped region 
@@ -164,7 +164,7 @@ namespace System.IO.MemoryMappedFiles
                     Interop.libc.MemoryMappedSyncFlags.MS_SYNC | Interop.libc.MemoryMappedSyncFlags.MS_INVALIDATE);
                 if (result < 0)
                 {
-                    throw Interop.GetExceptionForIoErrno(Marshal.GetLastWin32Error());
+                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
                 }
             }
             finally
