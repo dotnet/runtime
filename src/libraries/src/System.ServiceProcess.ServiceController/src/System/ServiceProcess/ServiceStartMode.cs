@@ -8,5 +8,7 @@ namespace System.ServiceProcess
         Manual = Interop.mincore.ServiceStartModes.START_TYPE_DEMAND,
         Automatic = Interop.mincore.ServiceStartModes.START_TYPE_AUTO,
         Disabled = Interop.mincore.ServiceStartModes.START_TYPE_DISABLED,
+        Boot = Interop.mincore.ServiceStartModes.START_TYPE_BOOT,
+        System = Interop.mincore.ServiceStartModes.START_TYPE_SYSTEM
     }
 }

@@ -7,7 +7,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>System.ServiceProcess.ServiceController</RootNamespace>
     <AssemblyName>System.ServiceProcess.ServiceController</AssemblyName>
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <AssemblyVersion>4.1.0.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ProjectGuid>{F4821CB6-91A3-4546-BC4F-E00DBFBDAA05}</ProjectGuid>
   </PropertyGroup>
