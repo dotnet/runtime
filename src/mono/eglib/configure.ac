@@ -136,6 +136,7 @@ AC_CHECK_SIZEOF(long)
 AC_CHECK_SIZEOF(long long)
 AC_CHECK_FUNCS(strlcpy stpcpy strtok_r rewinddir vasprintf)
 AC_CHECK_FUNCS(getrlimit)
+AC_CHECK_FUNCS(fork execv execve)
 
 #
 # Mono currently supports 10.6, but strndup is not available prior to 10.7; avoiding

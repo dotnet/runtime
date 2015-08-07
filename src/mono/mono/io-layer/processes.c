@@ -554,6 +554,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 			WapiStartupInfo *startup,
 			WapiProcessInformation *process_info)
 {
+#if defined (HAVE_FORK) && defined (HAVE_EXECVE)
 	char *cmd = NULL, *prog = NULL, *full_prog = NULL, *args = NULL, *args_after_prog = NULL;
 	char *dir = NULL, **env_strings = NULL, **argv = NULL;
 	guint32 i, env_count = 0;
@@ -1098,6 +1099,10 @@ free_strings:
 	mono_processes_cleanup ();
 	
 	return ret;
+#else
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+#endif // defined (HAVE_FORK) && defined (HAVE_EXECVE)
 }
 		
 static void

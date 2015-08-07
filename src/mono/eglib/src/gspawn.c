@@ -248,6 +248,9 @@ g_spawn_command_line_sync (const gchar *command_line,
 				GError **error)
 {
 #ifdef G_OS_WIN32
+#elif !defined (HAVE_FORK) || !defined (HAVE_EXECV)
+	fprintf (stderr, "g_spawn_command_line_sync not supported on this platform\n");
+	return FALSE;
 #else
 	pid_t pid;
 	gchar **argv;
@@ -344,6 +347,9 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 			GError **error)
 {
 #ifdef G_OS_WIN32
+#elif !defined (HAVE_FORK) || !defined (HAVE_EXECVE)
+	fprintf (stderr, "g_spawn_async_with_pipes is not supported on this platform\n");
+	return FALSE;
 #else
 	pid_t pid;
 	int info_pipe [2];

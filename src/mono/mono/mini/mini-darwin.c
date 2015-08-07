@@ -239,12 +239,17 @@ mono_runtime_install_handlers (void)
 pid_t
 mono_runtime_syscall_fork ()
 {
+#ifdef HAVE_FORK
 	return (pid_t) fork ();
+#else
+	g_assert_not_reached ();
+#endif
 }
 
 void
 mono_gdb_render_native_backtraces (pid_t crashed_pid)
 {
+#ifdef HAVE_EXECV
 	const char *argv [5];
 	char template [] = "/tmp/mono-gdb-commands.XXXXXX";
 	FILE *commands;
@@ -288,6 +293,9 @@ mono_gdb_render_native_backtraces (pid_t crashed_pid)
 
 	execv (argv [0], (char**)argv);
 	unlink (template);
+#else
+	fprintf (stderr, "mono_gdb_render_native_backtraces not supported on this platform\n");
+#endif // HAVE_EXECV
 }
 
 gboolean
