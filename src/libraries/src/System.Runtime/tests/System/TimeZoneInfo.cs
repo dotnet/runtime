@@ -21,6 +21,7 @@ public static class TimeZoneInfoTests
     private static String s_strLibya = s_isWindows ? "Libya Standard Time" : "Africa/Tripoli";
     private static String s_strCatamarca = s_isWindows ? "Argentina Standard Time" : "America/Catamarca";
     private static String s_strLisbon = Interop.IsWindows ? "GMT Standard Time" : "Europe/Lisbon";
+    private static String s_strNewfoundland = Interop.IsWindows ? "Newfoundland Standard Time" : "America/St_Johns";
 
     private static TimeZoneInfo s_myUtc = TimeZoneInfo.Utc;
     private static TimeZoneInfo s_myLocal = TimeZoneInfo.Local;
@@ -30,6 +31,7 @@ public static class TimeZoneInfoTests
     private static TimeZoneInfo s_amsterdamTz = TimeZoneInfo.FindSystemTimeZoneById(s_strAmsterdam);
     private static TimeZoneInfo s_catamarcaTz = TimeZoneInfo.FindSystemTimeZoneById(s_strCatamarca);
     private static TimeZoneInfo s_LisbonTz = TimeZoneInfo.FindSystemTimeZoneById(s_strLisbon);
+    private static TimeZoneInfo s_NewfoundlandTz = TimeZoneInfo.FindSystemTimeZoneById(s_strNewfoundland);
 
     private static bool s_localIsPST = TimeZoneInfo.Local.Id == s_strPacific;
     private static bool s_regLocalSupportsDST = s_regLocal.SupportsDaylightSavingTime;
@@ -1707,6 +1709,41 @@ public static class TimeZoneInfoTests
         Assert.Equal(offset, s_LisbonTz.GetUtcOffset(dt));
     }
 
+    [Theory]
+    // Newfoundland is UTC-3:30 standard and UTC-2:30 dst
+    // using non-UTC date times in this test to get some converage for non-UTC date times
+    [InlineData("2015-03-08T01:59:59", false, false, false, "-3:30:00", "-8:00:00")]
+    // since DST kicks in a 2AM, from 2AM - 3AM is Invalid
+    [InlineData("2015-03-08T02:00:00", false, true, false,"-3:30:00", "-8:00:00")]
+    [InlineData("2015-03-08T02:59:59", false, true, false,"-3:30:00", "-8:00:00")]
+    [InlineData("2015-03-08T03:00:00", true, false, false,"-2:30:00", "-8:00:00")]
+    [InlineData("2015-03-08T07:29:59", true, false, false,"-2:30:00", "-8:00:00")]
+    [InlineData("2015-03-08T07:30:00", true, false, false,"-2:30:00", "-7:00:00")]
+    [InlineData("2015-11-01T00:59:59", true, false, false, "-2:30:00", "-7:00:00")]
+    [InlineData("2015-11-01T01:00:00", false, false, true, "-3:30:00", "-7:00:00")]
+    [InlineData("2015-11-01T01:59:59", false, false, true, "-3:30:00", "-7:00:00")]
+    [InlineData("2015-11-01T02:00:00", false, false, false, "-3:30:00", "-7:00:00")]
+    [InlineData("2015-11-01T05:29:59", false, false, false, "-3:30:00", "-7:00:00")]
+    [InlineData("2015-11-01T05:30:00", false, false, false, "-3:30:00", "-8:00:00")]
+    public static void TestNewfoundlandTimeZone(string dateTimeString, bool expectedDST, bool isInvalidTime, bool isAmbiguousTime,
+        string expectedOffsetString, string pacificOffsetString)
+    {
+        DateTime dt = DateTime.ParseExact(dateTimeString, "s", CultureInfo.InvariantCulture);
+        VerifyInv(s_NewfoundlandTz, dt, isInvalidTime);
+
+        if (!isInvalidTime)
+        {
+            VerifyDST(s_NewfoundlandTz, dt, expectedDST);
+            VerifyAmbiguous(s_NewfoundlandTz, dt, isAmbiguousTime);
+
+            TimeSpan offset = TimeSpan.Parse(expectedOffsetString, CultureInfo.InvariantCulture);
+            Assert.Equal(offset, s_NewfoundlandTz.GetUtcOffset(dt));
+
+            TimeSpan pacificOffset = TimeSpan.Parse(pacificOffsetString, CultureInfo.InvariantCulture);
+            VerifyConvert(dt, s_strNewfoundland, s_strPacific, dt - (offset - pacificOffset));
+        }
+    }
+
     //
     //  Helper Methods
     //
@@ -1816,5 +1853,11 @@ public static class TimeZoneInfoTests
     {
         bool ret = tz.IsInvalidTime(dt);
         Assert.True(expectedInvalid == ret, String.Format("Test with the zone {0} and date {1} failed", tz.Id, dt));
+    }
+
+    private static void VerifyAmbiguous(TimeZoneInfo tz, DateTime dt, bool expectedAmbiguous)
+    {
+        bool ret = tz.IsAmbiguousTime(dt);
+        Assert.True(expectedAmbiguous == ret, String.Format("Test with the zone {0} and date {1} failed", tz.Id, dt));
     }
 }
