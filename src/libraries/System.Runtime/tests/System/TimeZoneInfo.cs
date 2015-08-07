@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -20,7 +21,7 @@ public static class TimeZoneInfoTests
     private static String s_strAmsterdam = s_isWindows ? "W. Europe Standard Time" : "Europe/Berlin";
     private static String s_strRussian = s_isWindows ? "Russian Standard Time" : "Europe/Moscow";
     private static String s_strLibya = s_isWindows ? "Libya Standard Time" : "Africa/Tripoli";
-    private static String s_strCatamarca = s_isWindows ? "Argentina Standard Time" : "America/Catamarca";
+    private static String s_strCatamarca = s_isWindows ? "Argentina Standard Time" : "America/Argentina/Catamarca";
     private static String s_strLisbon = s_isWindows ? "GMT Standard Time" : "Europe/Lisbon";
     private static String s_strNewfoundland = s_isWindows ? "Newfoundland Standard Time" : "America/St_Johns";
 
@@ -1712,14 +1713,14 @@ public static class TimeZoneInfoTests
 
     [Theory]
     // Newfoundland is UTC-3:30 standard and UTC-2:30 dst
-    // using non-UTC date times in this test to get some converage for non-UTC date times
+    // using non-UTC date times in this test to get some coverage for non-UTC date times
     [InlineData("2015-03-08T01:59:59", false, false, false, "-3:30:00", "-8:00:00")]
     // since DST kicks in a 2AM, from 2AM - 3AM is Invalid
-    [InlineData("2015-03-08T02:00:00", false, true, false,"-3:30:00", "-8:00:00")]
-    [InlineData("2015-03-08T02:59:59", false, true, false,"-3:30:00", "-8:00:00")]
-    [InlineData("2015-03-08T03:00:00", true, false, false,"-2:30:00", "-8:00:00")]
-    [InlineData("2015-03-08T07:29:59", true, false, false,"-2:30:00", "-8:00:00")]
-    [InlineData("2015-03-08T07:30:00", true, false, false,"-2:30:00", "-7:00:00")]
+    [InlineData("2015-03-08T02:00:00", false, true, false, "-3:30:00", "-8:00:00")]
+    [InlineData("2015-03-08T02:59:59", false, true, false, "-3:30:00", "-8:00:00")]
+    [InlineData("2015-03-08T03:00:00", true, false, false, "-2:30:00", "-8:00:00")]
+    [InlineData("2015-03-08T07:29:59", true, false, false, "-2:30:00", "-8:00:00")]
+    [InlineData("2015-03-08T07:30:00", true, false, false, "-2:30:00", "-7:00:00")]
     [InlineData("2015-11-01T00:59:59", true, false, false, "-2:30:00", "-7:00:00")]
     [InlineData("2015-11-01T01:00:00", false, false, true, "-3:30:00", "-7:00:00")]
     [InlineData("2015-11-01T01:59:59", false, false, true, "-3:30:00", "-7:00:00")]
@@ -1742,6 +1743,45 @@ public static class TimeZoneInfoTests
 
             TimeSpan pacificOffset = TimeSpan.Parse(pacificOffsetString, CultureInfo.InvariantCulture);
             VerifyConvert(dt, s_strNewfoundland, s_strPacific, dt - (offset - pacificOffset));
+        }
+    }
+
+    [Fact]
+    public static void TestGetSystemTimeZones()
+    {
+        ReadOnlyCollection<TimeZoneInfo> timeZones = TimeZoneInfo.GetSystemTimeZones();
+        Assert.NotEmpty(timeZones);
+        Assert.Contains(timeZones, t => t.Id == s_strPacific);
+        Assert.Contains(timeZones, t => t.Id == s_strSydney);
+        Assert.Contains(timeZones, t => t.Id == s_strGMT);
+        Assert.Contains(timeZones, t => t.Id == s_strTonga);
+        Assert.Contains(timeZones, t => t.Id == s_strBrasil);
+        Assert.Contains(timeZones, t => t.Id == s_strPerth);
+        Assert.Contains(timeZones, t => t.Id == s_strBrasilia);
+        Assert.Contains(timeZones, t => t.Id == s_strNairobi);
+        Assert.Contains(timeZones, t => t.Id == s_strAmsterdam);
+        Assert.Contains(timeZones, t => t.Id == s_strRussian);
+        Assert.Contains(timeZones, t => t.Id == s_strLibya);
+        Assert.Contains(timeZones, t => t.Id == s_strCatamarca);
+        Assert.Contains(timeZones, t => t.Id == s_strLisbon);
+        Assert.Contains(timeZones, t => t.Id == s_strNewfoundland);
+
+        // ensure the TimeZoneInfos are sorted by BaseUtcOffset and then DisplayName.
+        TimeZoneInfo previous = timeZones[0];
+        for (int i = 1; i < timeZones.Count; i++)
+        {
+            TimeZoneInfo current = timeZones[i];
+            int baseOffsetsCompared = current.BaseUtcOffset.CompareTo(previous.BaseUtcOffset);
+            Assert.True(baseOffsetsCompared >= 0,
+                string.Format("TimeZoneInfos are out of order. {0}:{1} should be before {2}:{3}",
+                    previous.Id, previous.BaseUtcOffset, current.Id, current.BaseUtcOffset));
+
+            if (baseOffsetsCompared == 0)
+            {
+                Assert.True(current.DisplayName.CompareTo(previous.DisplayName) >= 0,
+                    string.Format("TimeZoneInfos are out of order. {0} should be before {1}",
+                        previous.DisplayName, current.DisplayName));
+            }
         }
     }
 
