@@ -614,7 +614,7 @@ namespace System.Net.Http
             TaskCompletionSource<HttpResponseMessage> tcs)
         {
             LogSendError(request, cancellationTokenSource, "SendAsync", null);
-            tcs.TrySetCanceled();
+            tcs.TrySetCanceled(cancellationTokenSource.Token);
             cancellationTokenSource.Dispose();
         }
 
