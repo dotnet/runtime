@@ -9,40 +9,43 @@
     <RootNamespace>System.Diagnostics.Process.Tests</RootNamespace>
     <AssemblyName>System.Diagnostics.Process.Tests</AssemblyName>
     <NuGetPackageImportStamp>b62eec4b</NuGetPackageImportStamp>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\Diagnostics\AssertWithCallerAttributes.cs">
       <Link>Common\tests\System\Diagnostics\AssertWithCallerAttributes.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorTestBase.cs">
+      <Link>Common\System\Diagnostics\RemoteExecutorTestBase.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
+      <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
+    </Compile>
+    <Compile Include="Interop.cs" />
     <Compile Include="ProcessCollectionTests.cs" />
     <Compile Include="ProcessModuleTests.cs" />
-    <Compile Include="ProcessStartInfoTests.cs" />
-    <Compile Include="Interop.cs" />
-    <Compile Include="ProcessWaitingTests.cs" />
-    <Compile Include="ProcessTests.cs" />
     <Compile Include="ProcessStandardConsoleTests.cs" />
+    <Compile Include="ProcessStartInfoTests.cs" />
     <Compile Include="ProcessStreamReadTests.cs" />
+    <Compile Include="ProcessTests.cs" />
     <Compile Include="ProcessTestBase.cs" />
     <Compile Include="ProcessThreadTests.cs" />
+    <Compile Include="ProcessWaitingTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Diagnostics.Process.csproj">
+    <ProjectReference Include="..\src\System.Diagnostics.Process.csproj">
       <Project>{63634289-90d7-4947-8bf3-dbbe98d76c85}</Project>
       <Name>System.Diagnostics.Process</Name>
     </ProjectReference>
-    <ProjectReference Include="..\System.Diagnostics.Process.TestConsoleApp\System.Diagnostics.Process.TestConsoleApp.csproj">
+    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
-      <Name>System.Diagnostics.Process.TestConsoleApp</Name>
+      <Name>RemoteExecutorConsoleApp</Name>
     </ProjectReference>
   </ItemGroup>
   <!--  <ItemGroup>

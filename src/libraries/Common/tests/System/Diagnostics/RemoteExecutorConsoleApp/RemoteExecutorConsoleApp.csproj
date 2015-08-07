@@ -2,17 +2,20 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <ProjectGuid>{69E46A6F-9966-45A5-8945-2559FE337827}</ProjectGuid>
+    <ProjectGuid>{F5E941C8-AF2F-47AB-A066-FF25470CE382}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>System.Diagnostics.ProcessTests</RootNamespace>
-    <AssemblyName>System.Diagnostics.Process.TestConsoleApp</AssemblyName>
+    <RootNamespace>RemoteExecutorConsoleApp</RootNamespace>
+    <AssemblyName>RemoteExecutorConsoleApp</AssemblyName>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
-    <Compile Include="TestConsoleApp.cs" />
+    <Compile Include="RemoteExecutorConsoleApp.cs" />
+    <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs">
+      <Link>Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

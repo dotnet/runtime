@@ -1,13 +1,14 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using Xunit;
 
 namespace InterProcessCommunication.Tests
 {
-    public class MemoryMappedFilesTests : IpcTestBase
+    public class MemoryMappedFilesTests : RemoteExecutorTestBase
     {
         [ActiveIssue(2498, PlatformID.AnyUnix)]
         [Fact]
@@ -28,7 +29,7 @@ namespace InterProcessCommunication.Tests
                 acc.Flush();
 
                 // Spawn and then wait for the other process, which will verify the data and write its own known pattern
-                RemoteInvoke("DataShared_OtherProcess", file.Path).Dispose();
+                RemoteInvoke(DataShared_OtherProcess, file.Path).Dispose();
 
                 // Now verify we're seeing the data from the other process
                 for (int i = 0; i < capacity; i++)
@@ -38,7 +39,7 @@ namespace InterProcessCommunication.Tests
             }
         }
 
-        public static int DataShared_OtherProcess(string path)
+        private static int DataShared_OtherProcess(string path)
         {
             // Open the specified file and load it into a map
             using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
