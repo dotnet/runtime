@@ -6,7 +6,7 @@ using System.IO;
 using System.Threading;
 using Xunit;
 
-public partial class FileSystemWatcher_4000_Tests
+public class ChangedTests
 {
     [Fact]
     [ActiveIssue(2011, PlatformID.OSX)]

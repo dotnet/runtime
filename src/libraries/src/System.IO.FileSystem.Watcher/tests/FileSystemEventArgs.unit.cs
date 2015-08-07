@@ -5,7 +5,7 @@ using System;
 using System.IO;
 using Xunit;
 
-public partial class FileSystemEventArgs_4000_Tests
+public class FileSystemEventArgsTests
 {
     private static void ValidateFileSystemEventArgs(WatcherChangeTypes changeType, string directory, string name)
     {
