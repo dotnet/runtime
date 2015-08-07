@@ -252,7 +252,7 @@ namespace System.Runtime.InteropServices.TCEAdapterGen {
         private void DefineConstructor( TypeBuilder OutputTypeBuilder, FieldBuilder fbCookie, FieldBuilder[] afbDelegates )
         {
             // Retrieve the constructor info for the base classe's constructor.
-            ConstructorInfo DefaultBaseClsCons = typeof(Object).GetConstructor(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public, null, new Type[0], null );
+            ConstructorInfo DefaultBaseClsCons = typeof(Object).GetConstructor(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public, null, Array.Empty<Type>(), null );
             Contract.Assert(DefaultBaseClsCons != null, "Unable to find the constructor for class " + m_InputType.Name);    
         
             // Define the default constructor.
