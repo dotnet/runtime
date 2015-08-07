@@ -52,6 +52,23 @@ namespace System.Net.Http
             get { return _bufferedContent != null; }
         }
 
+#if NETNative        
+        internal void SetBuffer(byte[] buffer, int offset, int count)
+        {
+            _bufferedContent = new MemoryStream(buffer, offset, count, false, true);
+        }
+        
+        internal bool TryGetBuffer(out ArraySegment<byte> buffer)
+        {
+            if (_bufferedContent == null)
+            {
+                return false;
+            }
+            
+            return _bufferedContent.TryGetBuffer(out buffer);
+        }
+#endif
+     
         protected HttpContent()
         {
             // Log to get an ID for the current content. This ID is used when the content gets associated to a message.
