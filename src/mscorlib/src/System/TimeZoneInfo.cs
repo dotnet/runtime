@@ -91,6 +91,7 @@ namespace System {
 
 #if PLATFORM_UNIX
         private const string c_defaultTimeZoneDirectory = "/usr/share/zoneinfo/";
+        private const string c_zoneTabFileName = "zone.tab";
         private const string c_timeZoneEnvironmentVariable = "TZ";
         private const string c_timeZoneDirectoryEnvironmentVariable = "TZDIR";
 #endif // PLATFORM_UNIX
@@ -2144,7 +2145,7 @@ namespace System {
                 return TimeZoneInfo.Utc;
             }
 
-            // UNIXTODO: use CachedData
+            // UNIXTODO: Issue #2497 use CachedData
 
             string timeZoneDirectory = GetTimeZoneDirectory();
             string timeZoneFilePath = Path.Combine(timeZoneDirectory, id);
@@ -2178,9 +2179,96 @@ namespace System {
             return result;
         }
 
-        static public ReadOnlyCollection<TimeZoneInfo> GetSystemTimeZones() {
-            // UNIXTODO
-            throw new NotImplementedException();
+        /// <summary>
+        /// Returns a collection of TimeZoneInfo instances containing all valid TimeZones
+        /// from the local machine.  The entries in the collection are sorted by
+        /// 'DisplayName'.
+        ///
+        /// This method does *not* throw TimeZoneNotFoundException or
+        /// InvalidTimeZoneException, but it can throw a SecurityException.
+        /// </summary>
+        static public ReadOnlyCollection<TimeZoneInfo> GetSystemTimeZones()
+        {
+            // UNIXTODO: Issue #2497 use CachedData
+
+            List<TimeZoneInfo> timeZoneInfos = new List<TimeZoneInfo>();
+
+            string timeZoneDirectory = GetTimeZoneDirectory();
+            foreach (string timeZoneId in GetTimeZoneIds(timeZoneDirectory))
+            {
+                if (!string.IsNullOrEmpty(timeZoneId))
+                {
+                    try
+                    {
+                        TimeZoneInfo timeZoneInfo = FindSystemTimeZoneById(timeZoneId);
+                        timeZoneInfos.Add(timeZoneInfo);
+                    }
+                    catch (InvalidTimeZoneException) { }
+                    catch (TimeZoneNotFoundException) { }
+                }
+            }
+
+            // sort and copy the TimeZoneInfo's into a ReadOnlyCollection for the user
+            timeZoneInfos.Sort(new TimeZoneInfoComparer());
+
+            return new ReadOnlyCollection<TimeZoneInfo>(timeZoneInfos);
+        }
+
+        /// <summary>
+        /// Returns a collection of TimeZone Id values from the zone.tab file in the timeZoneDirectory.
+        /// </summary>
+        /// <remarks>
+        /// Lines that start with # are comments and are skipped.
+        /// </remarks>
+        private static IEnumerable<string> GetTimeZoneIds(string timeZoneDirectory)
+        {
+            string[] zoneTabFileLines = null;
+            try
+            {
+                zoneTabFileLines = File.ReadAllLines(Path.Combine(timeZoneDirectory, c_zoneTabFileName));
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+
+            List<string> timeZoneIds = new List<string>();
+            if (zoneTabFileLines != null)
+            {
+                foreach (string zoneTabFileLine in zoneTabFileLines)
+                {
+                    if (!string.IsNullOrEmpty(zoneTabFileLine) && !zoneTabFileLine.StartsWith("#"))
+                    {
+                        // the format of the line is "country-code \t coordinates \t TimeZone Id \t comments"
+
+                        int firstTabIndex = zoneTabFileLine.IndexOf('\t');
+                        if (firstTabIndex != -1)
+                        {
+                            int secondTabIndex = zoneTabFileLine.IndexOf('\t', firstTabIndex + 1);
+                            if (secondTabIndex != -1)
+                            {
+                                string timeZoneId;
+                                int startIndex = secondTabIndex + 1;
+                                int thirdTabIndex = zoneTabFileLine.IndexOf('\t', startIndex);
+                                if (thirdTabIndex != -1)
+                                {
+                                    int length = thirdTabIndex - startIndex;
+                                    timeZoneId = zoneTabFileLine.Substring(startIndex, length);
+                                }
+                                else
+                                {
+                                    timeZoneId = zoneTabFileLine.Substring(startIndex);
+                                }
+
+                                if (!string.IsNullOrEmpty(timeZoneId))
+                                {
+                                    timeZoneIds.Add(timeZoneId);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return timeZoneIds;
         }
 
         /// <summary>
