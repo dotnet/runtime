@@ -1955,7 +1955,7 @@ bool ShouldSendUMLeafChain(Thread * pThread)
         return false;
     }
 
-#ifdef FEATURE_HIJACK || FEATURE_UNIX_GC_REDIRECT_HIJACK
+#ifdef FEATURE_HIJACK
     if ((ts & Thread::TS_Hijacked) != 0)
     {
         return false;
