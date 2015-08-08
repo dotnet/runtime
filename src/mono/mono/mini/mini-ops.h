@@ -1076,10 +1076,7 @@ MINI_OP(OP_GC_PARAM_SLOT_LIVENESS_DEF, "gc_param_slot_liveness_def", NONE, NONE,
 MINI_OP(OP_GENERIC_CLASS_INIT, "generic_class_init", NONE, IREG, NONE)
 
 /* Arch specific opcodes */
-/* #if defined(__native_client_codegen__) || defined(__native_client__) */
-/* We have to define these in terms of the TARGET defines, not NaCl defines */
-/* because genmdesc.pl doesn't have multiple defines per platform.          */
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
+#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM)
 MINI_OP(OP_GC_SAFE_POINT,     "gc_safe_point", NONE, IREG, NONE)
 #endif
 

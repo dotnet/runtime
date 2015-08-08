@@ -5980,6 +5980,22 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ins->backend.pc_offset = code - cfg->native_code;
 			bb->spill_slot_defs = g_slist_prepend_mempool (cfg->mempool, bb->spill_slot_defs, ins);
 			break;
+		case OP_GC_SAFE_POINT: {
+#if defined (USE_COOP_GC)
+			const char *polling_func = NULL;
+			guint8 *buf [1];
+
+			polling_func = "mono_threads_state_poll";
+			ARM_LDR_IMM (code, ARMREG_IP, ins->sreg1, 0);
+			ARM_CMP_REG_IMM (code, ARMREG_IP, 0, 0);
+			buf [0] = code;
+			ARM_B_COND (code, ARMCOND_EQ, 0);
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, polling_func);
+			code = emit_call_seq (cfg, code);
+			arm_patch (buf [0], code);
+#endif
+			break;
+		}
 
 		default:
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
