@@ -34,7 +34,7 @@
 //    +- FaultingExceptionFrame - this frame was placed on a method which faulted
 //    |                           to save additional state information
 //    |
-#if defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK)
+#ifdef FEATURE_HIJACK
 //    |
 //    +-HijackFrame             - if a method's return address is hijacked, we
 //    |                           construct one of these to allow crawling back
@@ -47,7 +47,7 @@
 //    | |
 //    | +-RedirectedThreadFrame - this frame is used for redirecting threads during suspension
 //    |
-#endif // FEATURE_HIJACK || FEATURE_UNIX_GC_REDIRECT_HIJACK
+#endif // FEATURE_HIJACK
 //    |
 //    |
 #ifdef FEATURE_REMOTING
@@ -217,10 +217,10 @@ Reverse P/Invoke AppDomain selector stub:
 FRAME_ABSTRACT_TYPE_NAME(FrameBase)
 FRAME_ABSTRACT_TYPE_NAME(Frame)
 FRAME_ABSTRACT_TYPE_NAME(TransitionFrame)
-#if defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK)
+#ifdef FEATURE_HIJACK
 FRAME_TYPE_NAME(ResumableFrame)
 FRAME_TYPE_NAME(RedirectedThreadFrame)
-#endif // FEATURE_HIJACK || FEATURE_UNIX_GC_REDIRECT_HIJACK
+#endif // FEATURE_HIJACK
 FRAME_TYPE_NAME(FaultingExceptionFrame)
 #ifdef DEBUGGING_SUPPORTED
 FRAME_TYPE_NAME(FuncEvalFrame)
@@ -242,9 +242,9 @@ FRAME_TYPE_NAME(ComPlusMethodFrame)
 FRAME_TYPE_NAME(ComPrestubMethodFrame)
 #endif // FEATURE_COMINTEROP
 FRAME_TYPE_NAME(PInvokeCalliFrame)
-#if defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK)
+#ifdef FEATURE_HIJACK
 FRAME_TYPE_NAME(HijackFrame)
-#endif // FEATURE_HIJACK || FEATURE_UNIX_GC_REDIRECT_HIJACK
+#endif // FEATURE_HIJACK
 FRAME_TYPE_NAME(PrestubMethodFrame)
 FRAME_TYPE_NAME(StubDispatchFrame)
 FRAME_TYPE_NAME(ExternalMethodFrame)
@@ -417,6 +417,7 @@ class Frame : public FrameBase
     VPTR_ABSTRACT_VTABLE_CLASS(Frame, FrameBase)
 
 public:
+
 #if defined(FEATURE_PAL) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
     virtual ~Frame();
 #endif // FEATURE_PAL && !DACCESS_COMPILE && !CROSSGEN_COMPILE
@@ -859,9 +860,9 @@ protected:
 // exception.  The FRAME_ATTR_RESUMABLE flag tells
 // the GC that the preceding frame needs to be treated
 // like the top of stack (with the important implication that
-// caller-save-registers will be potential roots).
+// caller-save-regsiters will be potential roots).
 //-----------------------------------------------------------------------------
-#if defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK)
+#ifdef FEATURE_HIJACK
 //-----------------------------------------------------------------------------
 
 class ResumableFrame : public Frame
@@ -923,8 +924,7 @@ class RedirectedThreadFrame : public ResumableFrame
 
 public:
 #ifndef DACCESS_COMPILE
-    RedirectedThreadFrame(T_CONTEXT *regs) : ResumableFrame(regs)
-    {
+    RedirectedThreadFrame(T_CONTEXT *regs) : ResumableFrame(regs) {
         LIMITED_METHOD_CONTRACT;
     }
 
@@ -953,14 +953,14 @@ inline T_CONTEXT * GETREDIRECTEDCONTEXT(Thread * thread)
 }
 
 //------------------------------------------------------------------------
-#else // FEATURE_HIJACK || FEATURE_UNIX_GC_REDIRECT_HIJACK
+#else // FEATURE_HIJACK
 //------------------------------------------------------------------------
 
 inline BOOL ISREDIRECTEDTHREAD(Thread * thread) { LIMITED_METHOD_CONTRACT; return FALSE; }
 inline CONTEXT * GETREDIRECTEDCONTEXT(Thread * thread) { LIMITED_METHOD_CONTRACT; return (CONTEXT*) NULL; }
 
 //------------------------------------------------------------------------
-#endif // FEATURE_HIJACK || FEATURE_UNIX_GC_REDIRECT_HIJACK
+#endif // FEATURE_HIJACK
 //------------------------------------------------------------------------
 // This frame represents a transition from one or more nested frameless
 // method calls to either a EE runtime helper function or a framed method.
@@ -2114,7 +2114,7 @@ public:
 };
 
 // Some context-related forwards.
-#if defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK)
+#ifdef FEATURE_HIJACK
 //------------------------------------------------------------------------
 // This frame represents a hijacked return.  If we crawl back through it,
 // it gets us back to where the return should have gone (and eventually will
@@ -2158,7 +2158,7 @@ protected:
     DEFINE_VTABLE_GETTER_AND_CTOR(HijackFrame)
 };
 
-#endif // FEATURE_HIJACK || FEATURE_UNIX_GC_REDIRECT_HIJACK
+#endif // FEATURE_HIJACK
 
 //------------------------------------------------------------------------
 // This represents a call to a method prestub. Because the prestub

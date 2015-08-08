@@ -2389,7 +2389,6 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 }
 
 #ifdef FEATURE_HIJACK
-
 TADDR ResumableFrame::GetReturnAddressPtr(void) 
 { 
     LIMITED_METHOD_DAC_CONTRACT;
@@ -2470,8 +2469,7 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
      SyncRegDisplayToCurrentContext(pRD);
 }
-
-#endif // FEATURE_HIJACK
+#endif
 
 void PInvokeStubForHost(void)
 { 
