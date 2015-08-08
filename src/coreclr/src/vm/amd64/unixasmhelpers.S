@@ -172,7 +172,7 @@ NESTED_ENTRY JIT_RareDisableHelper, _TEXT, NoHandler
 
 NESTED_END JIT_RareDisableHelper, _TEXT
 
-#ifdef FEATURE_UNIX_GC_REDIRECT_HIJACK
+#ifdef FEATURE_HIJACK
 
 //------------------------------------------------
 // OnHijackScalarTripThread
@@ -262,7 +262,7 @@ NESTED_ENTRY OnHijackInteriorPointerTripThread, _TEXT, NoHandler
 
 NESTED_END OnHijackInteriorPointerTripThread, _TEXT
 
-#endif // FEATURE_UNIX_GC_REDIRECT_HIJACK
+#endif // FEATURE_HIJACK
 
 LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT                                        
                                                                                       

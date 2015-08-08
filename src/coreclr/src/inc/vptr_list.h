@@ -97,9 +97,9 @@ VPTR_CLASS(HelperMethodFrame)
 VPTR_CLASS(HelperMethodFrame_1OBJ)
 VPTR_CLASS(HelperMethodFrame_2OBJ)
 VPTR_CLASS(HelperMethodFrame_PROTECTOBJ)
-#if defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK)
+#ifdef FEATURE_HIJACK
 VPTR_CLASS(HijackFrame)
-#endif // FEATURE_HIJACK || FEATURE_UNIX_GC_REDIRECT_HIJACK
+#endif
 VPTR_CLASS(InlinedCallFrame)
 #if defined(FEATURE_INCLUDE_ALL_INTERFACES) && defined(_TARGET_X86_)
 VPTR_CLASS(LeaveRuntimeFrame)
@@ -112,10 +112,10 @@ VPTR_CLASS(PInvokeCalliFrame)
 VPTR_CLASS(PrestubMethodFrame)
 VPTR_CLASS(ProtectByRefsFrame)
 VPTR_CLASS(ProtectValueClassFrame)
-#if defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK)
+#ifdef FEATURE_HIJACK
 VPTR_CLASS(ResumableFrame)
 VPTR_CLASS(RedirectedThreadFrame)
-#endif // FEATURE_HIJACK || FEATURE_UNIX_GC_REDIRECT_HIJACK
+#endif
 VPTR_CLASS(StubDispatchFrame)
 VPTR_CLASS(ExternalMethodFrame)
 #ifdef FEATURE_READYTORUN
