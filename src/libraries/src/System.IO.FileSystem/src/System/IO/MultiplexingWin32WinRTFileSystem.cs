@@ -12,6 +12,13 @@ namespace System.IO
         private readonly FileSystem _win32FileSystem = new Win32FileSystem();
         private readonly FileSystem _winRTFileSystem = new WinRTFileSystem();
 
+        internal static IFileSystemObject GetFileSystemObject(FileSystemInfo caller, string fullPath)
+        {
+            return ShouldUseWinRT(sourceFullPath, isCreate: false) ?
+                (IFileSystemObject)new WinRTFileSystemObject(fullPath, asDirectory: caller is DirectoryInfo) :
+                (IFileSystemObject)caller;
+        }
+
         public override int MaxPath { get { return Interop.mincore.MAX_PATH; } }
         public override int MaxDirectoryPath { get { return Interop.mincore.MAX_DIRECTORY_PATH; } }
 
@@ -141,7 +148,7 @@ namespace System.IO
             return (ShouldUseWinRT(sourceFullPath, isCreate: false) || ShouldUseWinRT(destFullPath, isCreate: true)) ? _winRTFileSystem : _win32FileSystem;
         }
 
-        private bool ShouldUseWinRT(string fullPath, bool isCreate)
+        private static bool ShouldUseWinRT(string fullPath, bool isCreate)
         {
             // The purpose of this method is to determine if we can access a path
             // via Win32 or if we need to fallback to WinRT.

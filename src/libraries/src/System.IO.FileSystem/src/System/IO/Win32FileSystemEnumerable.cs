@@ -596,8 +596,7 @@ namespace System.IO
                 if (Win32FileSystemEnumerableHelpers.IsFile(ref findData))
                 {
                     string fullPathFinal = Path.Combine(fullPath, findData.cFileName);
-                    IFileSystemObject fileSystemObject = new Win32FileSystem.Win32FileSystemObject(fullPathFinal, findData, asDirectory: false);
-                    result = new FileInfo(fullPathFinal, fileSystemObject);
+                    result = new FileInfo(fullPathFinal, ref findData);
                     return true;
                 }
 
@@ -614,8 +613,7 @@ namespace System.IO
                 if (Win32FileSystemEnumerableHelpers.IsDir(ref findData))
                 {
                     string fullPathFinal = Path.Combine(fullPath, findData.cFileName);
-                    IFileSystemObject fileSystemObject = new Win32FileSystem.Win32FileSystemObject(fullPathFinal, findData, asDirectory: true);
-                    result = new DirectoryInfo(fullPathFinal, fileSystemObject);
+                    result = new DirectoryInfo(fullPathFinal, ref findData);
                     return true;
                 }
 
@@ -632,15 +630,13 @@ namespace System.IO
                 if (Win32FileSystemEnumerableHelpers.IsFile(ref findData))
                 {
                     string fullPathFinal = Path.Combine(fullPath, findData.cFileName);
-                    IFileSystemObject fileSystemObject = new Win32FileSystem.Win32FileSystemObject(fullPathFinal, findData, asDirectory: false);
-                    result = new FileInfo(fullPathFinal, fileSystemObject);
+                    result = new FileInfo(fullPathFinal, ref findData);
                     return true;
                 }
                 else if (Win32FileSystemEnumerableHelpers.IsDir(ref findData))
                 {
                     string fullPathFinal = Path.Combine(fullPath, findData.cFileName);
-                    IFileSystemObject fileSystemObject = new Win32FileSystem.Win32FileSystemObject(fullPathFinal, findData, asDirectory: true);
-                    result = new DirectoryInfo(fullPathFinal, fileSystemObject);
+                    result = new DirectoryInfo(fullPathFinal, ref findData);
                     return true;
                 }
 

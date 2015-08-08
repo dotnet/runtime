@@ -57,6 +57,8 @@
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
+    <Compile Include="System\IO\DirectoryInfo.Windows.cs" />
+    <Compile Include="System\IO\FileInfo.Windows.cs" />
     <Compile Include="System\IO\FileStream.Win32.cs" />
     <Compile Include="System\IO\FileSystemInfo.Windows.cs" />
     <Compile Include="System\IO\PathHelpers.Windows.cs" />
@@ -191,6 +193,7 @@
       <Link>Common\Interop\Windows\Interop.CopyFile.cs</Link>
     </Compile>
     <Compile Include="System\IO\FileSystem.Current.Win32.cs" />
+    <Compile Include="System\IO\FileSystemInfo.Win32.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CreateFile.cs">
       <Link>Common\Interop\Windows\Interop.CreateFile.cs</Link>
     </Compile>
@@ -219,6 +222,7 @@
       <Link>Common\Interop\Windows\WinRT\Interop.SetErrorMode.cs</Link>
     </Compile>
     <Compile Include="System\IO\FileSystem.Current.MuxWin32WinRT.cs" />
+    <Compile Include="System\IO\FileSystemInfo.WinRT.cs" />
     <Compile Include="System\IO\MultiplexingWin32WinRTFileSystem.cs" />
     <Compile Include="System\IO\WinRTIOExtensions.cs" />
     <Compile Include="System\IO\WinRTFileStream.cs" />

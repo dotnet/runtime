@@ -267,7 +267,7 @@ namespace System.IO
                 }
 
                 // Copy the information to data
-                data.PopulateFrom(findData);
+                data.PopulateFrom(ref findData);
             }
             else
             {
@@ -373,7 +373,9 @@ namespace System.IO
 
         public override IFileSystemObject GetFileSystemInfo(string fullPath, bool asDirectory)
         {
-            return new Win32FileSystemObject(fullPath, asDirectory);
+            return asDirectory ?
+                (IFileSystemObject)new DirectoryInfo(fullPath, null) :
+                (IFileSystemObject)new FileInfo(fullPath, null);
         }
 
         public override DateTimeOffset GetLastAccessTime(string fullPath)
