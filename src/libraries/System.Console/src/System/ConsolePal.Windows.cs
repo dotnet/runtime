@@ -306,7 +306,6 @@ namespace System
                 int errCode = WriteFileNative(_handle, buffer, offset, count);
                 if (Interop.mincore.Errors.ERROR_SUCCESS != errCode)
                     throw Win32Marshal.GetExceptionForWin32Error(errCode);
-                return;
             }
 
             public override void Flush()
