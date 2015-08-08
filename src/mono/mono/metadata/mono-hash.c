@@ -65,6 +65,9 @@ struct _MonoGHashTable {
 	MonoGHashGCType gc_type;
 };
 
+static MonoGHashTable *
+mono_g_hash_table_new (GHashFunc hash_func, GEqualFunc key_equal_func);
+
 #ifdef HAVE_SGEN_GC
 static MonoGCDescriptor table_hash_descr = MONO_GC_DESCRIPTOR_NULL;
 
@@ -144,7 +147,7 @@ mono_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func, Mono
 	return hash;
 }
 
-MonoGHashTable *
+static MonoGHashTable *
 mono_g_hash_table_new (GHashFunc hash_func, GEqualFunc key_equal_func)
 {
 	MonoGHashTable *hash;
@@ -161,20 +164,6 @@ mono_g_hash_table_new (GHashFunc hash_func, GEqualFunc key_equal_func)
 	hash->table_size = g_spaced_primes_closest (1);
 	hash->table = mg_new0 (Slot *, hash->table_size);
 	hash->last_rehash = hash->table_size;
-	
-	return hash;
-}
-
-MonoGHashTable *
-mono_g_hash_table_new_full (GHashFunc hash_func, GEqualFunc key_equal_func,
-			    GDestroyNotify key_destroy_func, GDestroyNotify value_destroy_func)
-{
-	MonoGHashTable *hash = mono_g_hash_table_new (hash_func, key_equal_func);
-	if (hash == NULL)
-		return NULL;
-	
-	hash->key_destroy_func = key_destroy_func;
-	hash->value_destroy_func = value_destroy_func;
 	
 	return hash;
 }
