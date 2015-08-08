@@ -25,7 +25,7 @@
 
 #include "config.h"
 
-#ifdef HAVE_SGEN_GC
+#if defined(HAVE_SGEN_GC) && !defined(USE_COOP_GC)
 #if !defined(__MACH__) && !MONO_MACH_ARCH_SUPPORTED && defined(HAVE_PTHREAD_KILL)
 
 #include <errno.h>
