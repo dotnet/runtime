@@ -486,7 +486,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	MonoAssembly *ass = NULL;
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
 	const MonoRuntimeInfo* runtimes [G_N_ELEMENTS (supported_runtimes) + 1];
-	int n;
+	int n, dummy;
 
 #ifdef DEBUG_DOMAIN_UNLOAD
 	debug_domain_unload = TRUE;
@@ -514,6 +514,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_counters_register ("Total code space allocated", MONO_COUNTER_INT|MONO_COUNTER_JIT, &total_domain_code_alloc);
 
 	mono_gc_base_init ();
+	mono_thread_info_attach (&dummy);
 
 	MONO_FAST_TLS_INIT (tls_appdomain);
 	mono_native_tls_alloc (&appdomain_thread_id, NULL);
