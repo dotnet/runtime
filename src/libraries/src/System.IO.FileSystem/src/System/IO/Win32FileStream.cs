@@ -577,7 +577,7 @@ namespace System.IO
 #if USE_OVERLAPPED
             if (_isAsync)
             {
-                Task<int> writeTask = WriteInternalCoreAsync(_buffer, 0, _writePos, CancellationToken.None);
+                Task writeTask = WriteInternalCoreAsync(_buffer, 0, _writePos, CancellationToken.None);
                 // With our Whidbey async IO & overlapped support for AD unloads,
                 // we don't strictly need to block here to release resources
                 // since that support takes care of the pinning & freeing the 
@@ -1394,7 +1394,7 @@ namespace System.IO
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
-        unsafe private Task<int> WriteInternalCoreAsync(byte[] bytes, int offset, int numBytes, CancellationToken cancellationToken)
+        private unsafe Task WriteInternalCoreAsync(byte[] bytes, int offset, int numBytes, CancellationToken cancellationToken)
         {
             Debug.Assert(!_handle.IsClosed, "!_handle.IsClosed");
             Debug.Assert(_parent.CanWrite, "_parent.CanWrite");
@@ -1458,9 +1458,10 @@ namespace System.IO
                 // For pipes, when they are closed on the other side, they will come here.
                 if (errorCode == ERROR_NO_DATA)
                 {
-                    // Not an error, but EOF.  AsyncFSCallback will NOT be 
-                    // called.  Call the user callback here.
+                    // Not an error, but EOF. AsyncFSCallback will NOT be called.
+                    // Completing TCS and return cached task allowing the GC to collect TCS.
                     completionSource.SetCompletedSynchronously(0);
+                    return Task.CompletedTask;
                 }
                 else if (errorCode != ERROR_IO_PENDING)
                 {
