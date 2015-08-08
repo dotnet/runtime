@@ -63,7 +63,7 @@ extern volatile size_t mono_polling_required ;
 
 #else
 
-#define MONO_SUSPEND_CHECK do {	} while (0);
+#define MONO_SUSPEND_CHECK() do {	} while (0);
 #define MONO_PREPARE_BLOCKING {
 #define MONO_FINISH_BLOCKING }
 #define MONO_PREPARE_RESET_BLOCKING {
