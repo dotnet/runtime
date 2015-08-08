@@ -3569,6 +3569,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	if (!COMPILE_LLVM (cfg))
 		mono_if_conversion (cfg);
 
+	MONO_SUSPEND_CHECK ();
+
 	/* Depth-first ordering on basic blocks */
 	cfg->bblocks = mono_mempool_alloc (cfg->mempool, sizeof (MonoBasicBlock*) * (cfg->num_bblocks + 1));
 
