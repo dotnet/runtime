@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using Xunit;
 
@@ -39,6 +40,11 @@ namespace Test
         {
             OperationCanceledException oce = Assert.Throws<OperationCanceledException>(query);
             Assert.Equal(source.Token, oce.CancellationToken);
+        }
+
+        public static void Enumerate<T>(this IEnumerable<T> e)
+        {
+            foreach (var x in e) { }
         }
     }
 }
