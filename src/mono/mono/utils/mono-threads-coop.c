@@ -35,7 +35,7 @@ mono_threads_state_poll (void)
 	if (!(info->thread_state & (STATE_ASYNC_SUSPEND_REQUESTED | STATE_SELF_SUSPEND_REQUESTED)))
 		return;
 
-	g_assert (mono_threads_get_runtime_callbacks ()->thread_state_init_from_sigctx (&info->thread_saved_state [SELF_SUSPEND_STATE_INDEX], NULL));
+	mono_threads_get_runtime_callbacks ()->thread_state_init (&info->thread_saved_state [SELF_SUSPEND_STATE_INDEX]);
 
 	/* commit the saved state and notify others if needed */
 	switch (mono_threads_transition_state_poll (info)) {
@@ -64,11 +64,7 @@ mono_threads_prepare_blocking (void)
 	}
 
 retry:
-	/*The JIT might not be able to save*/
-	if (!mono_threads_get_runtime_callbacks ()->thread_state_init_from_sigctx (&info->thread_saved_state [SELF_SUSPEND_STATE_INDEX], NULL)) {
-		THREADS_SUSPEND_DEBUG ("PREPARE-BLOCKING failed %p to save thread state\n", mono_thread_info_get_tid (info));
-		return NULL;
-	}
+	mono_threads_get_runtime_callbacks ()->thread_state_init (&info->thread_saved_state [SELF_SUSPEND_STATE_INDEX]);
 
 	switch (mono_threads_transition_do_blocking (info)) {
 	case DoBlockingContinue:
@@ -165,11 +161,7 @@ mono_threads_try_prepare_blocking (void)
 	}
 
 retry:
-	/*The JIT might not be able to save*/
-	if (!mono_threads_get_runtime_callbacks ()->thread_state_init_from_sigctx (&info->thread_saved_state [SELF_SUSPEND_STATE_INDEX], NULL)) {
-		THREADS_SUSPEND_DEBUG ("PREPARE-TRY-BLOCKING failed %p to save thread state\n", mono_thread_info_get_tid (info));
-		return NULL;
-	}
+	mono_threads_get_runtime_callbacks ()->thread_state_init (&info->thread_saved_state [SELF_SUSPEND_STATE_INDEX]);
 
 	switch (mono_threads_transition_do_blocking (info)) {
 	case DoBlockingContinue:
