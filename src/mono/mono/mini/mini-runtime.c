@@ -2966,6 +2966,7 @@ mini_init (const char *filename, const char *runtime_version)
 	ticallbacks.setup_async_callback = mono_setup_async_callback;
 	ticallbacks.thread_state_init_from_sigctx = mono_thread_state_init_from_sigctx;
 	ticallbacks.thread_state_init_from_handle = mono_thread_state_init_from_handle;
+	ticallbacks.thread_state_init = mono_thread_state_init;
 
 	mono_counters_init ();
 
