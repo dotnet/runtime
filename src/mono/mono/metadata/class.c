@@ -7728,7 +7728,7 @@ search_modules (MonoImage *image, const char *name_space, const char *name)
 }
 
 static MonoClass *
-mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, const char *name, MonoError *error, MonoGHashTable* visited_images)
+mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, const char *name, MonoError *error, GHashTable* visited_images)
 {
 	GHashTable *nspace_table;
 	MonoImage *loaded_image;
@@ -7741,10 +7741,10 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 	mono_error_init (error);
 
 	// Checking visited images avoids stack overflows when cyclic references exist.
-	if (mono_g_hash_table_lookup (visited_images, image))
+	if (g_hash_table_lookup (visited_images, image))
 		return NULL;
 
-	mono_g_hash_table_insert (visited_images, image, GUINT_TO_POINTER(1));
+	g_hash_table_insert (visited_images, image, GUINT_TO_POINTER(1));
 
 	if ((nested = strchr (name, '/'))) {
 		int pos = nested - name;
@@ -7846,13 +7846,13 @@ MonoClass *
 mono_class_from_name_checked (MonoImage *image, const char* name_space, const char *name, MonoError *error)
 {
 	MonoClass *klass;
-	MonoGHashTable *visited_images;
+	GHashTable *visited_images;
 
-	visited_images = mono_g_hash_table_new (g_direct_hash, g_direct_equal);
+	visited_images = g_hash_table_new (g_direct_hash, g_direct_equal);
 
 	klass = mono_class_from_name_checked_aux (image, name_space, name, error, visited_images);
 
-	mono_g_hash_table_destroy (visited_images);
+	g_hash_table_destroy (visited_images);
 
 	return klass;
 }
