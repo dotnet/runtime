@@ -2018,12 +2018,10 @@ Thread::Thread()
     m_pCurrentStackGuard = NULL;
 #endif
 
-#if defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK)
+#ifdef FEATURE_HIJACK
     m_ppvHJRetAddrPtr = (VOID**) 0xCCCCCCCCCCCCCCCC;
     m_pvHJRetAddr = (VOID*) 0xCCCCCCCCCCCCCCCC;
-#endif // FEATURE_HIJACK || FEATURE_UNIX_GC_REDIRECT_HIJACK
 
-#ifdef FEATURE_HIJACK
     X86_ONLY(m_LastRedirectIP = 0);
     X86_ONLY(m_SpinCount = 0);
 #endif // FEATURE_HIJACK
@@ -8246,9 +8244,9 @@ void CommonTripThread()
     if (thread->CatchAtSafePoint())
     {
         _ASSERTE(!ThreadStore::HoldingThreadStore(thread));
-#if defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK)
+#ifdef FEATURE_HIJACK
         thread->UnhijackThread();
-#endif // FEATURE_HIJACK || FEATURE_UNIX_GC_REDIRECT_HIJACK
+#endif // FEATURE_HIJACK
 
         // Trap
         thread->PulseGCMode();
@@ -11243,7 +11241,7 @@ void Thread::AddFiberInfo(DWORD type)
         pInfo->timeStamp = getTimeStamp();
         pInfo->threadID = GetCurrentThreadId();
 
-#if defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK)
+#ifdef FEATURE_HIJACK
         // We can't crawl the stack of a thread that currently has a hijack pending
         // (since the hijack routine won't be recognized by any code manager). So we
         // undo any hijack, the EE will re-attempt it later.

@@ -365,8 +365,8 @@ CPFH_VerifyThreadIsInValidState(Thread* pThread, DWORD exceptionCode, EXCEPTION_
     }
 }
 
-#ifdef FEATURE_HIJACK
 
+#ifdef FEATURE_HIJACK
 void
 CPFH_AdjustContextForThreadSuspensionRace(CONTEXT *pContext, Thread *pThread)
 {
@@ -429,7 +429,6 @@ CPFH_AdjustContextForThreadSuspensionRace(CONTEXT *pContext, Thread *pThread)
         STRESS_LOG1(LF_EH, LL_INFO100, "CPFH_AdjustContextForThreadSuspensionRace: Case 4 setting IP = %x\n", pContext->Eip);
     }
 }
-
 #endif // FEATURE_HIJACK
 
 

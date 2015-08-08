@@ -7735,7 +7735,7 @@ LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
     // the operating system will not be able to walk the stack and not find the handlers for
     // the exception.  It is safe to unhijack the thread in this case for two reasons:
     // 1.  pThread refers to *this* thread.
-    // 2.  If another thread trys to hijack this thread, it will see we are not in managed
+    // 2.  If another thread tries to hijack this thread, it will see we are not in managed
     //     code (and thus won't try to hijack us).
 #if defined(WIN64EXCEPTIONS)
     if (pThread != NULL)
@@ -7784,7 +7784,7 @@ LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
     return retVal;
 #else // !FEATURE_PAL
 
-#ifdef FEATURE_UNIX_GC_REDIRECT_HIJACK
+#if defined(WIN64EXCEPTIONS) && defined(FEATURE_HIJACK)
     Thread *pThread = GetThread();
     if (pThread != NULL)
     {
@@ -8154,7 +8154,7 @@ BOOL IsIPInEE(void *ip)
     }
 }
 
-#if defined(_TARGET_AMD64_) && (defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK))
+#if defined(_TARGET_AMD64_) && defined(FEATURE_HIJACK)
 
 // This function is used to check if the specified IP is in the prolog or not.
 bool IsIPInProlog(EECodeInfo *pCodeInfo)
@@ -8309,7 +8309,7 @@ bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSaf
     return fIsInEpilog;
 }
 
-#endif // defined(_TARGET_AMD64_) && (defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK))
+#endif // defined(_TARGET_AMD64_) && defined(FEATURE_HIJACK)
 
 #define EXCEPTION_VISUALCPP_DEBUGGER        ((DWORD) (1<<30 | 0x6D<<16 | 5000))
 

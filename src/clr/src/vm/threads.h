@@ -551,13 +551,13 @@ EXTERN_C void LeaveSyncHelper    (UINT_PTR caller, void *pAwareLock);
 
 #endif  // TRACK_SYNC
 
-#if defined(FEATURE_HIJACK)
+//***************************************************************************
+#ifdef FEATURE_HIJACK
 
 // Used to capture information about the state of execution of a *SUSPENDED* thread.
 struct ExecutionState;
 
 #ifndef PLATFORM_UNIX
-//***************************************************************************
 // This is the type of the start function of a redirected thread pulled from
 // a HandledJITCase during runtime suspension
 typedef void (__stdcall *PFN_REDIRECTTARGET)();
@@ -569,7 +569,6 @@ struct HijackArgs;
 #endif // FEATURE_HIJACK
 
 //***************************************************************************
-
 #ifdef ENABLE_CONTRACTS_IMPL
 inline Thread* GetThreadNULLOk()
 {
@@ -685,15 +684,17 @@ void InitThreadManager();
 // When we want to take control of a thread at a safe point, the thread will
 // eventually come back to us in one of the following trip functions:
 
-#if defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK)
+#ifdef FEATURE_HIJACK
+
 EXTERN_C void __stdcall OnHijackObjectTripThread();                 // hijacked JIT code is returning an objectref
 EXTERN_C void __stdcall OnHijackInteriorPointerTripThread();        // hijacked JIT code is returning a byref
 EXTERN_C void __stdcall OnHijackScalarTripThread();                 // hijacked JIT code is returning a non-objectref, non-FP
-#endif // FEATURE_HIJACK || FEATURE_UNIX_GC_REDIRECT_HIJACK
 
-#if defined(FEATURE_HIJACK) && defined(_TARGET_X86_)
+#ifdef _TARGET_X86_
 EXTERN_C void __stdcall OnHijackFloatingPointTripThread();          // hijacked JIT code is returning an FP value
-#endif // FEATURE_HIJACK && _TARGET_X86_
+#endif // _TARGET_X86_
+
+#endif // FEATURE_HIJACK
 
 void CommonTripThread();
 
@@ -1012,11 +1013,11 @@ typedef DWORD (*AppropriateWaitFunc) (void *args, DWORD timeout, DWORD option);
 // unstarted System.Thread), then this instance can be found in the TLS
 // of that physical thread.
 
-#if defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK)
+#ifdef FEATURE_HIJACK
 EXTERN_C void STDCALL OnHijackObjectWorker(HijackArgs * pArgs);
 EXTERN_C void STDCALL OnHijackInteriorPointerWorker(HijackArgs * pArgs);
 EXTERN_C void STDCALL OnHijackScalarWorker(HijackArgs * pArgs);
-#endif // FEATURE_HIJACK || FEATURE_UNIX_GC_REDIRECT_HIJACK
+#endif // FEATURE_HIJACK
 
 // This is the code we pass around for Thread.Interrupt, mainly for assertions
 #define APC_Code    0xEECEECEE
@@ -1060,17 +1061,18 @@ class Thread: public IUnknown
 
     friend void CommonTripThread();
 
-#if defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK)
+#ifdef FEATURE_HIJACK
     // MapWin32FaultToCOMPlusException needs access to Thread::IsAddrOfRedirectFunc()
     friend DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord);
     friend void STDCALL OnHijackObjectWorker(HijackArgs *pArgs);
     friend void STDCALL OnHijackInteriorPointerWorker(HijackArgs *pArgs);
     friend void STDCALL OnHijackScalarWorker(HijackArgs *pArgs);
-#endif // FEATURE_HIJACK || FEATURE_UNIX_GC_REDIRECT_HIJACK
 
-#ifdef FEATURE_UNIX_GC_REDIRECT_HIJACK
+#ifdef PLATFORM_UNIX
     friend void PALAPI HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext);
-#endif // FEATURE_UNIX_GC_REDIRECT_HIJACK
+#endif // PLATFORM_UNIX
+
+#endif // FEATURE_HIJACK
 
     friend void         InitThreadManager();
     friend void         ThreadBaseObject::SetDelegate(OBJECTREF delegate);
@@ -1147,9 +1149,9 @@ public:
 
         TS_YieldRequested         = 0x00000040,    // The task should yield
 
-#if defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK)
+#ifdef FEATURE_HIJACK
         TS_Hijacked               = 0x00000080,    // Return address has been hijacked
-#endif // FEATURE_HIJACK || FEATURE_UNIX_GC_REDIRECT_HIJACK
+#endif // FEATURE_HIJACK
 
         TS_BlockGCForSO           = 0x00000100,    // If a thread does not have enough stack, WaitUntilGCComplete may fail.
                                                    // Either GC suspension will wait until the thread has cleared this bit,
@@ -2847,9 +2849,9 @@ public:
         STR_SwitchedOut,
     };
 
-#ifdef FEATURE_UNIX_GC_REDIRECT_HIJACK
+#if defined(FEATURE_HIJACK) && defined(PLATFORM_UNIX)
     bool InjectGcSuspension();
-#endif // FEATURE_UNIX_GC_REDIRECT_HIJACK
+#endif // FEATURE_HIJACK && PLATFORM_UNIX
 
 #ifndef DISABLE_THREADSUSPEND
     // SuspendThread
@@ -3165,9 +3167,9 @@ public:
     BOOL           IsRudeUnload();
     BOOL           IsFuncEvalAbort();
 
-#if defined(_TARGET_AMD64_) && (defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK))
+#if defined(_TARGET_AMD64_) && defined(FEATURE_HIJACK)
     BOOL           IsSafeToInjectThreadAbort(PTR_CONTEXT pContextToCheck);
-#endif // defined(_TARGET_AMD64_) && (defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK))
+#endif // defined(_TARGET_AMD64_) && defined(FEATURE_HIJACK)
 
     inline BOOL IsAbortRequested()
     {
@@ -3950,7 +3952,7 @@ private:
 public:
     FORCEINLINE void UnhijackThreadNoAlloc()
     {
-#if (defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK)) && !defined(DACCESS_COMPILE)
+#if defined(FEATURE_HIJACK) && !defined(DACCESS_COMPILE)
         if (m_State & TS_Hijacked)
         {
             *m_ppvHJRetAddrPtr = m_pvHJRetAddr;
@@ -3987,14 +3989,14 @@ public:
     BOOL GetSafelyRedirectableThreadContext(DWORD dwOptions, T_CONTEXT * pCtx, REGDISPLAY * pRD);
 
 private:
-#if defined(FEATURE_HIJACK)
+#ifdef FEATURE_HIJACK
     void    HijackThread(VOID *pvHijackAddr, ExecutionState *esb);
 
     VOID        *m_pvHJRetAddr;           // original return address (before hijack)
     VOID       **m_ppvHJRetAddrPtr;       // place we bashed a new return address
     MethodDesc  *m_HijackedFunction;      // remember what we hijacked
 
-#if !defined(PLATFORM_UNIX)
+#ifndef PLATFORM_UNIX
     BOOL    HandledJITCase(BOOL ForTaskSwitchIn = FALSE);
 
 #ifdef _TARGET_X86_
@@ -4563,13 +4565,13 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-#if defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK)
-        // Only unhijack the thread if the suspend succeeded.  If it failed, 
+#ifdef FEATURE_HIJACK
+        // Only unhijack the thread if the suspend succeeded. If it failed, 
         // the target thread may currently be using the original stack
         // location of the return address for something else.
         if (SuspendSucceeded)
             UnhijackThread();
-#endif // defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK)
+#endif // FEATURE_HIJACK
 
         ResetThreadState(TS_GCSuspendPending);
     }
@@ -5288,15 +5290,15 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-#if defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK)
+#ifdef FEATURE_HIJACK
         UnhijackThread();
-#endif // defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK)
+#endif // FEATURE_HIJACK
 
         ResetThrowControlForThread();
 
         // Since this Thread has taken an SO, there may be state left-over after we
-        //  short-circuited exception or other error handling, and so we don't want
-        //  to risk recycling it.
+        // short-circuited exception or other error handling, and so we don't want
+        // to risk recycling it.
         SetThreadStateNC(TSNC_CannotRecycle);
     }
 

@@ -4543,9 +4543,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
     ULONG64 stackHighAddress = (ULONG64)PAL_GetStackBase();
     ULONG64 stackLowAddress = (ULONG64)PAL_GetStackLimit();
 
-GetThread()->UnhijackThread(); //////////////
-
-
+    GetThread()->UnhijackThread();
 
     RtlCaptureContext(&frameContext);
 

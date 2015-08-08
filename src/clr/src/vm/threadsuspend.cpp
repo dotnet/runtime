@@ -1296,7 +1296,7 @@ BOOL Thread::IsWithinCer(CrawlFrame *pCf)
     return sContext.m_fWithinCer;
 }
 
-#if defined(_TARGET_AMD64_) && (defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK))
+#if defined(_TARGET_AMD64_) && defined(FEATURE_HIJACK)
 BOOL Thread::IsSafeToInjectThreadAbort(PTR_CONTEXT pContextToCheck)
 {
     CONTRACTL
@@ -1330,7 +1330,7 @@ BOOL Thread::IsSafeToInjectThreadAbort(PTR_CONTEXT pContextToCheck)
         return TRUE;
     }
 }
-#endif // defined(_TARGET_AMD64_) && (defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK))
+#endif // defined(_TARGET_AMD64_) && defined(FEATURE_HIJACK)
 
 #ifdef _TARGET_AMD64_
 // CONTEXT_CONTROL does not include any nonvolatile registers that might be the frame pointer.
@@ -1428,7 +1428,7 @@ BOOL Thread::ReadyForAsyncException(ThreadInterruptMode mode)
                 pStartFrame = pFrameAddr;
             }
         }
-#if defined(_TARGET_AMD64_) && (defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK))
+#if defined(_TARGET_AMD64_) && defined(FEATURE_HIJACK)
         else if (ThrewControlForThread() == Thread::InducedThreadRedirect)
         {
             if (!IsSafeToInjectThreadAbort(m_OSContext))
@@ -1437,7 +1437,7 @@ BOOL Thread::ReadyForAsyncException(ThreadInterruptMode mode)
                 return FALSE;
             }
         }
-#endif // defined(_TARGET_AMD64_) && (defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK))
+#endif // defined(_TARGET_AMD64_) && defined(FEATURE_HIJACK)
     }
     else
     {
@@ -3794,10 +3794,10 @@ void Thread::RareEnablePreemptiveGC()
     STRESS_LOG1(LF_SYNC, LL_INFO100000, "RareEnablePreemptiveGC: entering. Thread state = %x\n", m_State.Load());
     if (!ThreadStore::HoldingThreadStore(this))
     {
-#if defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK)
+#ifdef FEATURE_HIJACK
         // Remove any hijacks we might have.
         UnhijackThread();
-#endif // FEATURE_HIJACK || FEATURE_UNIX_GC_REDIRECT_HIJACK
+#endif // FEATURE_HIJACK
 
         // wake up any threads waiting to suspend us, like the GC thread.
         SetSafeEvent();
@@ -4985,13 +4985,13 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
                 FastInterlockOr((ULONG *) &thread->m_State, Thread::TS_GCSuspendPending);
                 countThreads++;
 
-#ifdef FEATURE_UNIX_GC_REDIRECT_HIJACK
+#if defined(FEATURE_HIJACK) && defined(PLATFORM_UNIX)
                 bool gcSuspensionSignalSuccess = thread->InjectGcSuspension();
                 if (!gcSuspensionSignalSuccess)
                 {
                     STRESS_LOG1(LF_SYNC, LL_INFO1000, "Thread::SuspendRuntime() -   Failed to raise GC suspension signal for thread %p.\n", thread);
                 }
-#endif // FEATURE_UNIX_GC_REDIRECT_HIJACK
+#endif // FEATURE_HIJACK && PLATFORM_UNIX
             }
 
 #else // DISABLE_THREADSUSPEND
@@ -5328,7 +5328,7 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
             }
 #endif
 
-#ifdef FEATURE_UNIX_GC_REDIRECT_HIJACK
+#if defined(FEATURE_HIJACK) && defined(PLATFORM_UNIX)
             _ASSERTE (thread == NULL);
             while ((thread = ThreadStore::GetThreadList(thread)) != NULL)
             {
@@ -8257,7 +8257,7 @@ retry_for_debugger:
 #endif //TIME_SUSPEND
 }
 
-#ifdef FEATURE_UNIX_GC_REDIRECT_HIJACK
+#if defined(FEATURE_HIJACK) && defined(PLATFORM_UNIX)
 
 // This function is called when a GC is pending. It tries to ensure that the current
 // thread is taken to a GC-safe place as quickly as possible. It does this by doing 
@@ -8376,7 +8376,7 @@ bool Thread::InjectGcSuspension()
     return false;
 }
 
-#endif // FEATURE_UNIX_GC_REDIRECT_HIJACK
+#endif // FEATURE_HIJACK && PLATFORM_UNIX
 
 #ifdef _DEBUG
 BOOL Debug_IsLockedViaThreadSuspension()
