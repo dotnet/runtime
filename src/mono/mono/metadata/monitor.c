@@ -947,7 +947,7 @@ retry_contended:
  * If allow_interruption == TRUE, the method will be interrupted if abort or suspend
  * is requested. In this case it returns -1.
  */
-static gint32
+static inline gint32
 mono_monitor_try_enter_internal (MonoObject *obj, guint32 ms, gboolean allow_interruption)
 {
 	LockWord lw;
