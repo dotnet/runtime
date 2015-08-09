@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using Xunit;
 using System;
 using System.Globalization;
@@ -96,33 +99,28 @@ namespace StreamTests
                 Assert.Equal((int)chArr[i], tmp);
             }
         }
+
         [Fact]
         public static void CantWriteNullArray()
         {
             var sw = new StringWriter();
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                sw.Write(null, 0, 0);
-            });
+            Assert.Throws<ArgumentNullException>(() => sw.Write(null, 0, 0));
         }
+
         [Fact]
         public static void CantWriteNegativeOffset()
         {
             var sw = new StringWriter();
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                sw.Write(new char[0], -1, 0);
-            });
+            Assert.Throws<ArgumentOutOfRangeException>(() => sw.Write(new char[0], -1, 0));
         }
+
         [Fact]
         public static void CantWriteNegativeCount()
         {
             var sw = new StringWriter();
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                sw.Write(new char[0], 0, -1);
-            });
+            Assert.Throws<ArgumentOutOfRangeException>(() => sw.Write(new char[0], 0, -1));
         }
+
         [Fact]
         public static void CantWriteIndexLargeValues()
         {
@@ -130,12 +128,10 @@ namespace StreamTests
             for (int i = 0; i < iArrLargeValues.Length; i++)
             {
                 StringWriter sw = new StringWriter();
-                Assert.Throws<ArgumentException>(() =>
-                {
-                    sw.Write(chArr, iArrLargeValues[i], chArr.Length);
-                });
+                Assert.Throws<ArgumentException>(() => sw.Write(chArr, iArrLargeValues[i], chArr.Length));
             }
         }
+
         [Fact]
         public static void CantWriteCountLargeValues()
         {
@@ -143,10 +139,7 @@ namespace StreamTests
             for (int i = 0; i < iArrLargeValues.Length; i++)
             {
                 StringWriter sw = new StringWriter();
-                Assert.Throws<ArgumentException>(() =>
-                {
-                    sw.Write(chArr, 0, iArrLargeValues[i]);
-                });
+                Assert.Throws<ArgumentException>(() => sw.Write(chArr, 0, iArrLargeValues[i]));
             }
         }
 
@@ -185,7 +178,6 @@ namespace StreamTests
                 Assert.Equal(1, strTemp.Length);
             }
         }
-
 
         [Fact]
         public static void WriteWithLargeCount()
@@ -291,7 +283,9 @@ namespace StreamTests
             await sw.WriteLineAsync(new char[] { 'e', 'l', 'l', 'o' });
             await sw.WriteLineAsync("World!");
 
-            Assert.Equal("H\r\nello\r\nWorld!\r\n", sw.ToString());
+            Assert.Equal(
+                string.Format("H{0}ello{0}World!{0}", Environment.NewLine), 
+                sw.ToString());
         }
 
         [Fact]
@@ -304,22 +298,31 @@ namespace StreamTests
         [Fact]
         public static void TestWriteMisc()
         {
-            var sw = new StringWriter();
+            CultureInfo old = CultureInfo.CurrentCulture;
+            CultureInfo.CurrentCulture = new CultureInfo("en-US"); // floating-point formatting comparison depends on culture
+            try
+            {
+                var sw = new StringWriter();
 
-            sw.Write(true);
-            sw.Write((char)'a');
-            sw.Write(new Decimal(1234.01));
-            sw.Write((double)3452342.01);
-            sw.Write((int)23456);
-            sw.Write((long)long.MinValue);
-            sw.Write((float)1234.50f);
-            sw.Write((UInt32)UInt32.MaxValue);
-            sw.Write((UInt64)UInt64.MaxValue);
+                sw.Write(true);
+                sw.Write((char)'a');
+                sw.Write(new Decimal(1234.01));
+                sw.Write((double)3452342.01);
+                sw.Write((int)23456);
+                sw.Write((long)long.MinValue);
+                sw.Write((float)1234.50f);
+                sw.Write((UInt32)UInt32.MaxValue);
+                sw.Write((UInt64)UInt64.MaxValue);
 
-            Assert.Equal("Truea1234.013452342.0123456-92233720368547758081234.5429496729518446744073709551615", sw.ToString());
+                Assert.Equal("Truea1234.013452342.0123456-92233720368547758081234.5429496729518446744073709551615", sw.ToString());
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = old;
+            }
         }
 
- [Fact]
+        [Fact]
         public static void TestWriteObject()
         {
             var sw = new StringWriter();
@@ -330,23 +333,27 @@ namespace StreamTests
         [Fact]
         public static void TestWriteLineMisc()
         {
-            var sw = new StringWriter();
-            sw.WriteLine((bool)false);
-            sw.WriteLine((char)'B');
-            sw.WriteLine((int)987);
-            sw.WriteLine((long)875634);
-            sw.WriteLine((Single)1.23457f);
-            sw.WriteLine((UInt32)45634563);
-            sw.WriteLine((UInt64.MaxValue));
+            CultureInfo old = CultureInfo.CurrentCulture;
+            CultureInfo.CurrentCulture = new CultureInfo("en-US"); // floating-point formatting comparison depends on culture
+            try
+            {
+                var sw = new StringWriter();
+                sw.WriteLine((bool)false);
+                sw.WriteLine((char)'B');
+                sw.WriteLine((int)987);
+                sw.WriteLine((long)875634);
+                sw.WriteLine((Single)1.23457f);
+                sw.WriteLine((UInt32)45634563);
+                sw.WriteLine((UInt64.MaxValue));
 
-            Assert.Equal(@"False
-B
-987
-875634
-1.23457
-45634563
-18446744073709551615
-", sw.ToString());
+                Assert.Equal(
+                    string.Format("False{0}B{0}987{0}875634{0}1.23457{0}45634563{0}18446744073709551615{0}", Environment.NewLine),
+                    sw.ToString());
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = old;
+            }
         }
 
         [Fact]
@@ -354,7 +361,7 @@ B
         {
             var sw = new StringWriter();
             sw.WriteLine(new Object());
-            Assert.Equal("System.Object\r\n", sw.ToString());
+            Assert.Equal("System.Object" + Environment.NewLine, sw.ToString());
         }
     
         [Fact]
@@ -363,7 +370,7 @@ B
             StringWriter sw = new StringWriter();
             sw.WriteLineAsync(new char[] { 'H', 'e', 'l', 'l', 'o' });
 
-            Assert.Equal("Hello\r\n", sw.ToString());
+            Assert.Equal("Hello" + Environment.NewLine, sw.ToString());
         }
     }
 }

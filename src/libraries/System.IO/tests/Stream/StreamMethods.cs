@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -48,7 +51,7 @@ namespace StreamTests
             else
                 stream.Position = btArr.Length;
 
-            Assert.Equal(stream.Position, btArr.Length);
+            Assert.Equal(btArr.Length, stream.Position);
 
             lngPos = stream.Seek(0, SeekOrigin.Begin);
             Assert.Equal(0, lngPos);
@@ -69,7 +72,7 @@ namespace StreamTests
                 Assert.Equal(i + 1, stream.Position);
             }
 
-            Assert.Throws<IOException>( () => {lngPos = stream.Seek(-5, SeekOrigin.Begin); });
+            Assert.Throws<IOException>(() => stream.Seek(-5, SeekOrigin.Begin));
 
             lngPos = stream.Seek(5, SeekOrigin.Begin);
             Assert.Equal(5, lngPos);
@@ -77,7 +80,7 @@ namespace StreamTests
 
             lngPos = stream.Seek(5, SeekOrigin.End);
             Assert.Equal(length + 5, lngPos);
-            Assert.Throws<IOException>( () => { lngPos = stream.Seek(-(btArr.Length + 1), SeekOrigin.End); });
+            Assert.Throws<IOException>(() => stream.Seek(-(btArr.Length + 1), SeekOrigin.End));
 
             lngPos = stream.Seek(-5, SeekOrigin.End);
             Assert.Equal(btArr.Length - 5, lngPos);
@@ -92,7 +95,7 @@ namespace StreamTests
                 Assert.Equal(i - 1, stream.Position);
             }
 
-            Assert.Throws<IOException>( () => {lngPos = stream.Seek(-1, SeekOrigin.Current); });
+            Assert.Throws<IOException>(() => stream.Seek(-1, SeekOrigin.Current));
         }
 
         private static async Task StreamTest(Stream stream, Boolean fSuppress)

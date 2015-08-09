@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using Xunit;
 using System;
 using System.IO;
@@ -7,7 +10,6 @@ namespace BinaryWriterTests
 {
     public class BinaryWriter_WriteByteCharTests
     {
-
         /// <summary>
         /// Cases Tested:
         /// 1) Tests that BinaryWriter properly writes chars into a stream.
@@ -24,31 +26,24 @@ namespace BinaryWriterTests
             Char[] chArr = new Char[0];
             int ii = 0;
 
-            // [] Write a series of characters to a Memorystream and read them back
+            // [] Write a series of characters to a MemoryStream and read them back
             chArr = new Char[] { 'A', 'c', '\0', '\u2701', '$', '.', '1', 'l', '\u00FF', '\n', '\t', '\v' };
             for (ii = 0; ii < chArr.Length; ii++)
                 dw2.Write(chArr[ii]);
 
             dw2.Flush();
             mstr.Position = 0;
-            try
+            for (ii = 0; ii < chArr.Length; ii++)
             {
-                for (ii = 0; ; ii++)
-                {
-                    Assert.Equal(dr2.ReadChar(), chArr[ii]);
-                }
+                char c = dr2.ReadChar();
+                Assert.Equal(chArr[ii], c);
             }
-            catch (EndOfStreamException)
-            {
-            }
-
-            Assert.Equal(ii, chArr.Length);
+            Assert.Throws<EndOfStreamException>(() => dr2.ReadChar());
 
             dw2.Dispose();
             dr2.Dispose();
             mstr.Dispose();
 
-            //VSWhidbey #273805
             //If someone writes out characters using BinaryWriter's Write(char[]) method, they must use something like BinaryReader's ReadChars(int) method to read it back in.  
             //They cannot use BinaryReader's ReadChar().  Similarly, data written using Write(char) can't be read back using ReadChars(int).
 
@@ -73,7 +68,6 @@ namespace BinaryWriterTests
         [Fact]
         public static void BinaryWriter_WriteCharTest_Negative()
         {
-            //VSWhidbey #273805
             //If someone writes out characters using BinaryWriter's Write(char[]) method, they must use something like BinaryReader's ReadChars(int) method to read it back in.  
             //They cannot use BinaryReader's ReadChar().  Similarly, data written using Write(char) can't be read back using ReadChars(int).
 
@@ -86,14 +80,14 @@ namespace BinaryWriterTests
             for (int i = 0; i < randomNumbers.Length; i++)
             {
                 ch = (Char)randomNumbers[i];
-                Assert.Throws<ArgumentException>(delegate { writer.Write(ch); });
+                Assert.Throws<ArgumentException>(() => writer.Write(ch));
             }
             // between 56320 <= x < 57343
             randomNumbers = new int[] { 56320, 57342, 56431, 57001, 56453, 57245, 57111 };
             for (int i = 0; i < randomNumbers.Length; i++)
             {
                 ch = (Char)randomNumbers[i];
-                Assert.Throws<ArgumentException>(delegate { writer.Write(ch); });
+                Assert.Throws<ArgumentException>(() => writer.Write(ch));
             }
 
             writer.Dispose();
@@ -107,8 +101,8 @@ namespace BinaryWriterTests
         [Fact]
         public static void BinaryWriter_WriteCharTest2()
         {
-            //VSWhidbey #275448 - BinaryReader/BinaryWriter don't do well when mixing char or char[] data and binary data.
-            //The bug was Wont Fix for compatibility reasons
+            // BinaryReader/BinaryWriter don't do well when mixing char or char[] data and binary data.
+            // This behavior remains for compat.
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
             Stream stream = new MemoryStream();
@@ -127,7 +121,7 @@ namespace BinaryWriterTests
             stream.Seek(0, SeekOrigin.Begin);
             BinaryReader reader = new BinaryReader(stream, Encoding.GetEncoding(codepageName));
             char japanese = reader.ReadChar();
-            Assert.True((int)japanese == 0x30ca);
+            Assert.Equal(0x30ca, (int)japanese);
             byte[] readBytes = reader.ReadBytes(5);
             for (int i = 0; i < 5; i++)
             {
@@ -162,7 +156,7 @@ namespace BinaryWriterTests
 
             for (ii = 0; ii < bytArr.Length; ii++)
             {
-                Assert.Equal(dr2.ReadByte(), bytArr[ii]);
+                Assert.Equal(bytArr[ii], dr2.ReadByte());
             }
 
             // [] Check End Of Stream
@@ -197,7 +191,7 @@ namespace BinaryWriterTests
 
             for (ii = 0; ii < sbArr.Length; ii++)
             {
-                Assert.Equal(dr2.ReadSByte(), sbArr[ii]);
+                Assert.Equal(sbArr[ii], dr2.ReadSByte());
             }
 
             dr2.Dispose();
@@ -255,7 +249,7 @@ namespace BinaryWriterTests
 
             for (ii = 0; ii < bytArr.Length; ii++)
             {
-                Assert.Equal(dr2.ReadByte(), bytArr[ii]);
+                Assert.Equal(bytArr[ii], dr2.ReadByte());
             }
 
             // [] Check End Of Stream
@@ -348,11 +342,11 @@ namespace BinaryWriterTests
             bReadArr = new Byte[bArr.Length];
             ReturnValue = dr2.Read(bReadArr, 0, bArr.Length);
 
-            Assert.Equal(ReturnValue, bArr.Length);
+            Assert.Equal(bArr.Length, ReturnValue);
 
             for (ii = 0; ii < bArr.Length; ii++)
             {
-                Assert.Equal(bReadArr[ii], bArr[ii]);
+                Assert.Equal(bArr[ii], bReadArr[ii]);
             }
 
             dw2.Dispose();
@@ -393,7 +387,7 @@ namespace BinaryWriterTests
 
             for (ii = 0; ii < chArr.Length; ii++)
             {
-                Assert.Equal(dr2.ReadChar(), chArr[ii]);
+                Assert.Equal(chArr[ii], dr2.ReadChar());
             }
 
             // [] Check End Of Stream
@@ -455,26 +449,23 @@ namespace BinaryWriterTests
 
         /// <summary>
         /// Cases Tested:
-        ///VSWhidbey #273805
-        ///If someone writes out characters using BinaryWriter's Write(char[]) method, they must use something like BinaryReader's ReadChars(int) method to read it back in.  
-        ///They cannot use BinaryReader's ReadChar().  Similarly, data written using Write(char) can't be read back using ReadChars(int).
-        ///
-        ///A high-surrogate is a Unicode code point in the range U+D800 through U+DBFF and a low-surrogate is a Unicode code point in the range U+DC00 through U+DFFF
-        ///
-        ///UPDATE: 9/21/2006: We dont throw on the second read but then throws continuously - note the loop count difference in the 2 loops
-        ///See VSWhdibey 598304
-        ///From [KimHamil]
-        ///BinaryReader was reverting to its original location instead of advancing. This was changed to skip past the char in the surrogate range.
-        ///The affected method is InternalReadOneChar (IROC). Note that the work here is slightly complicated by the way surrogates are handled by 
-        ///the decoding classes. When IROC calls decoder.GetChars(), if the bytes passed in are surrogates, UnicodeEncoding doesn't report it. 
-        ///charsRead would end up being one value, and since BinaryReader doesn't have the logic telling it exactly how many bytes total to expect, 
-        ///it calls GetChars in a second loop. In that loop, UnicodeEncoding matches up a surrogate pair. If it realizes it's too big for the encoding, 
-        ///then it throws an ArgumentException (chars overflow). This meant that BinaryReader.IROC is advancing past two chars in the surrogate 
-        ///range, which is why the position actually needs to be moved back (but not past the first surrogate char).  
-
-        ///Note that UnicodeEncoding doesn't always throw when it encounters two successive chars in the surrogate range. The exception 
-        ///encountered here happens if it finds a valid pair but then determines it's too long. If the pair isn't valid (a low then a high), 
-        ///then it returns 0xfffd, which is why BinaryReader.ReadChar needs to do an explicit check. (It always throws when it encounters a surrogate)
+        /// If someone writes out characters using BinaryWriter's Write(char[]) method, they must use something like BinaryReader's ReadChars(int) method to read it back in.  
+        /// They cannot use BinaryReader's ReadChar().  Similarly, data written using Write(char) can't be read back using ReadChars(int).
+        /// A high-surrogate is a Unicode code point in the range U+D800 through U+DBFF and a low-surrogate is a Unicode code point in the range U+DC00 through U+DFFF
+        /// 
+        /// We dont throw on the second read but then throws continuously - note the loop count difference in the 2 loops
+        /// 
+        /// BinaryReader was reverting to its original location instead of advancing. This was changed to skip past the char in the surrogate range.
+        /// The affected method is InternalReadOneChar (IROC). Note that the work here is slightly complicated by the way surrogates are handled by 
+        /// the decoding classes. When IROC calls decoder.GetChars(), if the bytes passed in are surrogates, UnicodeEncoding doesn't report it. 
+        /// charsRead would end up being one value, and since BinaryReader doesn't have the logic telling it exactly how many bytes total to expect, 
+        /// it calls GetChars in a second loop. In that loop, UnicodeEncoding matches up a surrogate pair. If it realizes it's too big for the encoding, 
+        /// then it throws an ArgumentException (chars overflow). This meant that BinaryReader.IROC is advancing past two chars in the surrogate 
+        /// range, which is why the position actually needs to be moved back (but not past the first surrogate char).  
+        /// 
+        /// Note that UnicodeEncoding doesn't always throw when it encounters two successive chars in the surrogate range. The exception 
+        /// encountered here happens if it finds a valid pair but then determines it's too long. If the pair isn't valid (a low then a high), 
+        /// then it returns 0xfffd, which is why BinaryReader.ReadChar needs to do an explicit check. (It always throws when it encounters a surrogate)
         /// </summary>
         [Fact]
         public static void BinaryWriter_WriteCharArrayTest2()
@@ -502,18 +493,18 @@ namespace BinaryWriterTests
                 {
                     reader.ReadChar();
 
-                    Assert.Equal(i, 1);
+                    Assert.Equal(1, i);
                 }
                 catch (ArgumentException)
                 {
-                    // I guess sometimes it throws and othertimes, it doesn't?
-                    // Based on the comments above.
+                    // ArgumentException is sometimes thrown on ReadChar() due to the 
+                    // behavior outlined in the method summary.
                 }
             }
 
             Char[] chars = reader.ReadChars(randomChars.Length);
             for (int i = 0; i < randomChars.Length; i++)
-                Assert.Equal(chars[i], randomChars[i]);
+                Assert.Equal(randomChars[i], chars[i]);
 
             reader.Dispose();
             writer.Dispose();
@@ -559,11 +550,11 @@ namespace BinaryWriterTests
             dr2 = new BinaryReader(mstr);
             chReadArr = new Char[chArr.Length];
             ReturnValue = dr2.Read(chReadArr, 0, chArr.Length);
-            Assert.Equal(ReturnValue, chArr.Length);
+            Assert.Equal(chArr.Length, ReturnValue);
 
             for (ii = 0; ii < chArr.Length; ii++)
             {
-                Assert.Equal(chReadArr[ii], chArr[ii]);
+                Assert.Equal(chArr[ii], chReadArr[ii]);
             }
 
             mstr.Dispose();

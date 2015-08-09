@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System;
 using System.IO;
 using Xunit;
@@ -16,12 +19,12 @@ namespace StreamWriterTests
 			sw2 = new StreamWriter(new MemoryStream());
 			sw2.Dispose();
 
-			Assert.Throws<ObjectDisposedException>(() => { sw2.Write('A'); });
-			Assert.Throws<ObjectDisposedException>(() => { sw2.Write("hello"); });
-			Assert.Throws<ObjectDisposedException>(() => { sw2.Flush(); });
+			Assert.Throws<ObjectDisposedException>(() => sw2.Write('A'));
+			Assert.Throws<ObjectDisposedException>(() => sw2.Write("hello"));
+			Assert.Throws<ObjectDisposedException>(() => sw2.Flush());
 			Assert.Null(sw2.BaseStream);
 
-			Assert.Throws<ObjectDisposedException>(() => { sw2.AutoFlush = true; });
+			Assert.Throws<ObjectDisposedException>(() => sw2.AutoFlush = true);
 		}
 
 		[Fact]
@@ -50,7 +53,7 @@ namespace StreamWriterTests
 			StreamWriter sw2 = new StreamWriter(memstr2);
 			
 			sw2.Dispose();
-			Assert.Throws<ObjectDisposedException>(() => { sw2.Flush(); });
+			Assert.Throws<ObjectDisposedException>(() => sw2.Flush());
 		}
 	}
 }

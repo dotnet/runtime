@@ -1,10 +1,13 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System;
 using System.IO;
 using Xunit;
 
 namespace StreamTests
 {
-    public class MyStream : Stream
+    public sealed class NopStream : Stream
     {
         public override bool CanRead
         {
@@ -47,8 +50,9 @@ namespace StreamTests
         [Fact]
         public static void TestReadTimeoutCustomStream()
         {
-            TestReadTimeout(new MyStream());
+            TestReadTimeout(new NopStream());
         }
+
         [Fact]
         public static void TestReadTimeoutMemoryStream()
         {
@@ -58,15 +62,16 @@ namespace StreamTests
 
         private static void TestReadTimeout(Stream stream)
         {
-            Assert.Throws<InvalidOperationException>(() => { int readTimeout = stream.ReadTimeout; });
+            Assert.Throws<InvalidOperationException>(() => stream.ReadTimeout);
 
-            Assert.Throws<InvalidOperationException>(() => { stream.ReadTimeout = 500; });
+            Assert.Throws<InvalidOperationException>(() => stream.ReadTimeout = 500);
         }
         [Fact]
         public static void TestWriteTimeoutCustomStream()
         {
-            TestWriteTimeout(new MyStream());
+            TestWriteTimeout(new NopStream());
         }
+
         [Fact]
         public static void TestWriteTimeoutMemoryStream()
         {
@@ -75,14 +80,14 @@ namespace StreamTests
 
         private static void TestWriteTimeout(Stream stream)
         {
-            Assert.Throws<InvalidOperationException>(() => { int WriteTimeout = stream.WriteTimeout; });
-            Assert.Throws<InvalidOperationException>(() => { stream.WriteTimeout = 500; });
+            Assert.Throws<InvalidOperationException>(() => stream.WriteTimeout);
+            Assert.Throws<InvalidOperationException>(() => stream.WriteTimeout = 500);
         }
 
         [Fact]
         public static void TestCanTimeoutCustomStream()
         {
-            TestCanTimeout(new MyStream());
+            TestCanTimeout(new NopStream());
         }
 
         [Fact]

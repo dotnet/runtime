@@ -1,13 +1,16 @@
-using Xunit;
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Xunit;
 
 namespace Tests
 {
     public class BinaryWriterTests
     {
-
         [Fact]
         public static void BinaryWriter_CtorAndWriteTests1()
         {
@@ -28,41 +31,25 @@ namespace Tests
         public static void BinaryWriter_CtorAndWriteTests1_Negative()
         {
             // [] Should throw ArgumentNullException for null argument
-            Assert.Throws<ArgumentNullException>(() => { BinaryWriter writer = new BinaryWriter(null); });
+            Assert.Throws<ArgumentNullException>(() => new BinaryWriter(null));
 
             // [] Can't construct a BinaryWriter on a readonly stream
             using (MemoryStream memStream = new MemoryStream(new byte[10], false))
             {
-                Assert.Throws<ArgumentException>(() => { BinaryWriter writer = new BinaryWriter(memStream); });
+                Assert.Throws<ArgumentException>(() => new BinaryWriter(memStream));
             }
 
             // [] Can't construct a BinaryWriter with a closed stream
             {
                 MemoryStream memStream = new MemoryStream();
                 memStream.Dispose();
-                Assert.Throws<ArgumentException>(() => { BinaryWriter dw2 = new BinaryWriter(memStream); });
+                Assert.Throws<ArgumentException>(() => new BinaryWriter(memStream));
             }
         }
 
-        [Fact]
-        public static void BinaryWriter_EncodingCtorAndWriteTests_UTF8()
-        {
-            BinaryWriter_EncodingCtorAndWriteTests(Encoding.UTF8, "This is UTF8\u00FF");
-        }
-
-        [Fact]
-        public static void BinaryWriter_EncodingCtorAndWriteTests_BigEndianUnicode()
-        {
-            BinaryWriter_EncodingCtorAndWriteTests(Encoding.BigEndianUnicode, "This is BigEndianUnicode\u00FF");
-        }
-
-        [Fact]
-        public static void BinaryWriter_EncodingCtorAndWriteTests_Unicode()
-        {
-            BinaryWriter_EncodingCtorAndWriteTests(Encoding.Unicode, "This is Unicode\u00FF");
-        }
-
-        private static void BinaryWriter_EncodingCtorAndWriteTests(Encoding encoding, string testString)
+        [Theory]
+        [MemberData("EncodingAndEncodingStrings")]
+        public static void BinaryWriter_EncodingCtorAndWriteTests(Encoding encoding, string testString)
         {
             using (MemoryStream memStream = new MemoryStream())
             using (BinaryWriter writer = new BinaryWriter(memStream, encoding))
@@ -76,16 +63,24 @@ namespace Tests
             }
         }
 
+        public static IEnumerable<object[]> EncodingAndEncodingStrings
+        {
+            get
+            {
+                yield return new object[] { Encoding.UTF8, "This is UTF8\u00FF" };
+                yield return new object[] { Encoding.BigEndianUnicode, "This is BigEndianUnicode\u00FF" };
+                yield return new object[] { Encoding.Unicode, "This is Unicode\u00FF" };
+            }
+        }
+
         [Fact]
         public static void BinaryWriter_EncodingCtorAndWriteTests_Negative()
         {
             // [] Check for ArgumentNullException on null stream
-            Assert.Throws<ArgumentNullException>(
-                () => { new BinaryReader((Stream)null, Encoding.UTF8); });
+            Assert.Throws<ArgumentNullException>(() => new BinaryReader((Stream)null, Encoding.UTF8));
 
             // [] Check for ArgumentNullException on null encoding
-            Assert.Throws<ArgumentNullException>(
-               () => { new BinaryReader(new MemoryStream(), null); });
+            Assert.Throws<ArgumentNullException>(() => new BinaryReader(new MemoryStream(), null));
         }
 
         [Fact]
@@ -106,7 +101,7 @@ namespace Tests
             {
                 lReturn = dw2.Seek(iArrLargeValues[iLoop], SeekOrigin.Begin);
 
-                Assert.Equal(lReturn, iArrLargeValues[iLoop]);
+                Assert.Equal(iArrLargeValues[iLoop], lReturn);
             }
             dw2.Dispose();
             mstr.Dispose();
@@ -117,7 +112,7 @@ namespace Tests
             dw2.Write("0123456789".ToCharArray());
             lReturn = dw2.Seek(0, SeekOrigin.Begin);
 
-            Assert.Equal(lReturn, 0);
+            Assert.Equal(0, lReturn);
 
             dw2.Write("lki".ToCharArray());
             dw2.Flush();
@@ -126,7 +121,7 @@ namespace Tests
             for (int i = 0; i < bArr.Length; i++)
                 sb.Append((Char)bArr[i]);
 
-            Assert.Equal(sb.ToString(), "lki3456789");
+            Assert.Equal("lki3456789", sb.ToString());
 
             dw2.Dispose();
             mstr.Dispose();
@@ -137,7 +132,7 @@ namespace Tests
             dw2.Write("0123456789".ToCharArray());
             lReturn = dw2.Seek(3, SeekOrigin.Begin);
 
-            Assert.Equal(lReturn, 3);
+            Assert.Equal(3, lReturn);
 
             dw2.Write("lk".ToCharArray());
             dw2.Flush();
@@ -146,7 +141,7 @@ namespace Tests
             for (int i = 0; i < bArr.Length; i++)
                 sb.Append((Char)bArr[i]);
 
-            Assert.Equal(sb.ToString(), "012lk56789");
+            Assert.Equal("012lk56789", sb.ToString());
 
             dw2.Dispose();
             mstr.Dispose();
@@ -157,7 +152,7 @@ namespace Tests
             dw2.Write("0123456789".ToCharArray());
             lReturn = dw2.Seek(-3, SeekOrigin.End);
 
-            Assert.Equal(lReturn, 7);
+            Assert.Equal(7, lReturn);
 
             dw2.Write("ll".ToCharArray());
             dw2.Flush();
@@ -166,7 +161,7 @@ namespace Tests
             for (int i = 0; i < bArr.Length; i++)
                 sb.Append((Char)bArr[i]);
 
-            Assert.Equal(sb.ToString(), "0123456ll9");
+            Assert.Equal("0123456ll9", sb.ToString());
 
             dw2.Dispose();
             mstr.Dispose();
@@ -178,7 +173,7 @@ namespace Tests
             mstr.Position = 2;
             lReturn = dw2.Seek(2, SeekOrigin.Current);
 
-            Assert.Equal(lReturn, 4);
+            Assert.Equal(4, lReturn);
 
             dw2.Write("ll".ToCharArray());
             dw2.Flush();
@@ -187,7 +182,7 @@ namespace Tests
             for (int i = 0; i < bArr.Length; i++)
                 sb.Append((Char)bArr[i]);
 
-            Assert.Equal(sb.ToString(), "0123ll6789");
+            Assert.Equal("0123ll6789", sb.ToString());
 
             dw2.Dispose();
             mstr.Dispose();
@@ -198,7 +193,7 @@ namespace Tests
             dw2.Write("0123456789".ToCharArray());
             lReturn = dw2.Seek(4, SeekOrigin.End); //This wont throw any exception now.
 
-            Assert.Equal(mstr.Position, 14);
+            Assert.Equal(14, mstr.Position);
 
 
             dw2.Dispose();
@@ -210,7 +205,7 @@ namespace Tests
             dw2.Write("0123456789".ToCharArray());
             lReturn = dw2.Seek(11, SeekOrigin.Begin);  //This wont throw any exception now.
 
-            Assert.Equal(mstr.Position, 11);
+            Assert.Equal(11, mstr.Position);
 
             dw2.Dispose();
             mstr.Dispose();
@@ -221,7 +216,7 @@ namespace Tests
             dw2.Write("0123456789".ToCharArray());
             lReturn = dw2.Seek(10, SeekOrigin.Begin);
 
-            Assert.Equal(lReturn, 10);
+            Assert.Equal(10, lReturn);
 
             dw2.Write("ll".ToCharArray());
             bArr = mstr.ToArray();
@@ -229,30 +224,25 @@ namespace Tests
             for (int i = 0; i < bArr.Length; i++)
                 sb.Append((Char)bArr[i]);
 
-            Assert.Equal(sb.ToString(), "0123456789ll");
+            Assert.Equal("0123456789ll", sb.ToString());
 
             dw2.Dispose();
             mstr.Dispose();
         }
 
-        [Fact]
-        public static void BinaryWriter_SeekTests_NegativeOffset()
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(-2)]
+        [InlineData(-10000)]
+        [InlineData(Int32.MinValue)]
+        public static void BinaryWriter_SeekTests_NegativeOffset(int invalidValue)
         {
-            int[] invalidValues = new Int32[] { -1, -2, -100, -1000, -10000, -100000, -1000000, -10000000, -100000000, -1000000000, Int32.MinValue, Int16.MinValue };
-            
-            // [] ArgumentOutOfRangeException if offset is negative
+            // [] IOException if offset is negative
             using (MemoryStream memStream = new MemoryStream())
             using (BinaryWriter writer = new BinaryWriter(memStream))
             {
                 writer.Write("Hello, this is my string".ToCharArray());
-
-                foreach (int invalidValue in invalidValues)
-                {
-                    Assert.Throws<IOException>(() =>
-                    {
-                        writer.Seek(invalidValue, SeekOrigin.Begin);
-                    });
-                }
+                Assert.Throws<IOException>(() => writer.Seek(invalidValue, SeekOrigin.Begin));
             }
         }
 
@@ -279,7 +269,7 @@ namespace Tests
             using (MemoryStream ms2 = new MemoryStream())
             using (BinaryWriter sr2 = new BinaryWriter(ms2))
             {
-                Assert.Equal(ms2, sr2.BaseStream);
+                Assert.Same(ms2, sr2.BaseStream);
             }
         }
 
@@ -290,11 +280,12 @@ namespace Tests
             using (MemoryStream memstr2 = new MemoryStream())
             using (BinaryWriter bw2 = new BinaryWriter(memstr2))
             {
-                bw2.Write("HelloWorld");
-                //TODO:: Ckeck with dev why it's 11 bytes.
-                Assert.Equal(11, memstr2.Length);
+                string str = "HelloWorld";
+                int expectedLength = str.Length + 1; // 1 for 7-bit encoded length
+                bw2.Write(str);
+                Assert.Equal(expectedLength, memstr2.Length);
                 bw2.Flush();
-                Assert.Equal(11, memstr2.Length);
+                Assert.Equal(expectedLength, memstr2.Length);
             }
 
             // [] Flushing closed writer should not throw an exception.

@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -135,7 +138,7 @@ namespace StreamReaderTests
             var ms = GetSmallStream();
             var sw = new StreamReader(ms);
 
-            Assert.Equal(sw.BaseStream, ms);
+            Assert.Same(sw.BaseStream, ms);
         }
 
         [Fact]
@@ -148,7 +151,7 @@ namespace StreamReaderTests
             for (int i = 0; i < baseInfo.Item1.Length; i++)
             {
                 int tmp = sr.Read();
-                Assert.Equal(tmp, (int)baseInfo.Item1[i]);
+                Assert.Equal((int)baseInfo.Item1[i], tmp);
             }
 
             sr.Dispose();
@@ -168,56 +171,46 @@ namespace StreamReaderTests
                 sr.Read();
             }
         }
+
         [Fact]
         public static void ArgumentNullOnNullArray()
         {
             var baseInfo = GetCharArrayStream();
             var sr = baseInfo.Item2;
 
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                sr.Read(null, 0, 0);
-            });
+            Assert.Throws<ArgumentNullException>(() => sr.Read(null, 0, 0));
         }
+
         [Fact]
         public static void ArgumentOutOfRangeOnInvalidOffset()
         {
             var sr = GetCharArrayStream().Item2;
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                sr.Read(new char[0], -1, 0);
-            });
+            Assert.Throws<ArgumentOutOfRangeException>(() => sr.Read(new char[0], -1, 0));
         }
+
         [Fact]
         public static void ArgumentOutOfRangeOnNegativCount()
         {
             var sr = GetCharArrayStream().Item2;
-            Assert.Throws<ArgumentException>(() =>
-            {
-                sr.Read(new char[0], 0, 1);
-            });
+            Assert.Throws<ArgumentException>(() => sr.Read(new char[0], 0, 1));
         }
+
         [Fact]
         public static void ArgumentExceptionOffsetAndCount()
         {
             var sr = GetCharArrayStream().Item2;
-            Assert.Throws<ArgumentException>(() =>
-            {
-                sr.Read(new Char[0], 2, 0);
-            });
+            Assert.Throws<ArgumentException>(() => sr.Read(new Char[0], 2, 0));
         }
+
         [Fact]
         public static void ObjectDisposedExceptionDisposedStream()
         {
             var sr = GetCharArrayStream().Item2;
             sr.Dispose();
 
-            Assert.Throws<ObjectDisposedException>(() =>
-            {
-                char[] temp = new char[1];
-                sr.Read(temp, 0, 1);
-            });
+            Assert.Throws<ObjectDisposedException>(() => sr.Read(new char[1], 0, 1));
         }
+
         [Fact]
         public static void ObjectDisposedExceptionDisposedBaseStream()
         {
@@ -225,11 +218,7 @@ namespace StreamReaderTests
             var sr = new StreamReader(ms);
             ms.Dispose();
 
-            Assert.Throws<ObjectDisposedException>(() =>
-            {
-                char[] temp = new char[1];
-                sr.Read(temp, 0, 1);
-            });
+            Assert.Throws<ObjectDisposedException>(() => sr.Read(new char[1], 0, 1));
         }
 
         [Fact]
@@ -253,10 +242,10 @@ namespace StreamReaderTests
 
             var read = sr.Read(chArr, 0, chArr.Length);
 
-            Assert.Equal(read, chArr.Length);
+            Assert.Equal(chArr.Length, read);
             for (int i = 0; i < baseInfo.Item1.Length; i++)
             {
-                Assert.Equal(chArr[i], baseInfo.Item1[i]);
+                Assert.Equal(baseInfo.Item1[i], chArr[i]);
             }
         }
 
@@ -274,9 +263,10 @@ namespace StreamReaderTests
             Assert.Equal(read, 3);
             for (int i = 0; i < 3; i++)
             {
-                Assert.Equal(chArr[i + 4], baseInfo.Item1[i]);
+                Assert.Equal(baseInfo.Item1[i], chArr[i + 4]);
             }
         }
+
         [Fact]
         public static void ObjectDisposedReadLine()
         {
@@ -284,11 +274,9 @@ namespace StreamReaderTests
             var sr = baseInfo.Item2;
 
             sr.Dispose();
-            Assert.Throws<ObjectDisposedException>(() =>
-            {
-                sr.ReadLine();
-            });
+            Assert.Throws<ObjectDisposedException>(() => sr.ReadLine());
         }
+
         [Fact]
         public static void ObjectDisposedReadLineBaseStream()
         {
@@ -296,10 +284,7 @@ namespace StreamReaderTests
             var sr = new StreamReader(ms);
 
             ms.Dispose();
-            Assert.Throws<ObjectDisposedException>(() =>
-            {
-                sr.ReadLine();
-            });
+            Assert.Throws<ObjectDisposedException>(() => sr.ReadLine());
         }
        
         [Fact]
@@ -342,7 +327,6 @@ namespace StreamReaderTests
         public static async Task ContinuousNewLinesAndTabsAsync()
         {
             var ms = new MemoryStream();
-            // ms.Write(
             var sw = new StreamWriter(ms);
             sw.Write("\n\n\r\r\n");
             sw.Flush();

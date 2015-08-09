@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System;
 using System.IO;
 using Xunit;
@@ -9,19 +12,7 @@ namespace StringReaderTests
         [Fact]
         public static void StringReaderWithNullString()
         {
-            // [] Null Argument should store null string
-            //-----------------------------------------------------------
-
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                StringReader sr = new StringReader(null);
-                String strTemp = sr.ReadToEnd();
-                sr.ReadLine();
-                sr.Peek();
-                sr.Read();
-                sr.Dispose();
-            });            
-
+            Assert.Throws<ArgumentNullException>(() => new StringReader(null));
         }
 
         [Fact]
