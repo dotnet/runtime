@@ -409,18 +409,7 @@ namespace Internal.NativeCrypto
                         impTypeReturn = GetProviderParameterWorker(safeProvHandle, pb, ref cb, CryptGetProvParamFlags.PP_UNIQUE_CONTAINER);
                         pb = new byte[cb];
                         impTypeReturn = GetProviderParameterWorker(safeProvHandle, pb, ref cb, CryptGetProvParamFlags.PP_UNIQUE_CONTAINER);
-                        //ToDO : I am getting compilation error when trying to use ASCII
-                        // 'System.Text.Encoding' does not contain a definition for 'ASCII'
-                        //If we don't support ASCII then for loop below should do the work.
-                        //Otherwise remove the for loop and keep the commented code below
-                        //char[] ch = Encoding.ASCII.GetChars(pb);
-
-                        char[] ch = new char[cb];
-                        for (int i = 0; i < cb; i++)
-                        {
-                            ch[i] = (char)pb[i];
-                        }
-                        retStr = new string(ch);
+                        retStr = Encoding.ASCII.GetString(pb);
                     }
                     break;
                 default:
