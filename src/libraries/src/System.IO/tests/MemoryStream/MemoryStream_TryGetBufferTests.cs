@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using Xunit;
 using System;
 using System.IO;
@@ -10,10 +13,12 @@ public class MemoryStream_TryGetBufferTests
     {
         var stream = new MemoryStream();
 
-        ArraySegment<byte> _;
-        bool result = stream.TryGetBuffer(out _);
+        ArraySegment<byte> segment;
+        Assert.True(stream.TryGetBuffer(out segment));
 
-        Assert.True(result);
+        Assert.NotNull(segment.Array);
+        Assert.Equal(0, segment.Offset);
+        Assert.Equal(0, segment.Count);
     }
 
     [Fact]
@@ -21,10 +26,12 @@ public class MemoryStream_TryGetBufferTests
     {
         var stream = new MemoryStream(512);
 
-        ArraySegment<byte> _;
-        bool result = stream.TryGetBuffer(out _);
+        ArraySegment<byte> segment;
+        Assert.True(stream.TryGetBuffer(out segment));
 
-        Assert.True(result);
+        Assert.Equal(512, segment.Array.Length);
+        Assert.Equal(0, segment.Offset);
+        Assert.Equal(0, segment.Count);
     }
 
     [Fact]
@@ -32,10 +39,8 @@ public class MemoryStream_TryGetBufferTests
     {
         var stream = new MemoryStream(new byte[512]);
 
-        ArraySegment<byte> _;
-        bool result = stream.TryGetBuffer(out _);
-
-        Assert.False(result);
+        ArraySegment<byte> segment;
+        Assert.False(stream.TryGetBuffer(out segment));
     }
 
     [Fact]
@@ -43,10 +48,8 @@ public class MemoryStream_TryGetBufferTests
     {
         var stream = new MemoryStream(new byte[512], writable: true);
 
-        ArraySegment<byte> _;
-        bool result = stream.TryGetBuffer(out _);
-
-        Assert.False(result);
+        ArraySegment<byte> segment;
+        Assert.False(stream.TryGetBuffer(out segment));
     }
 
     [Fact]
@@ -54,10 +57,8 @@ public class MemoryStream_TryGetBufferTests
     {
         var stream = new MemoryStream(new byte[512], index: 0, count: 512);
 
-        ArraySegment<byte> _;
-        bool result = stream.TryGetBuffer(out _);
-
-        Assert.False(result);
+        ArraySegment<byte> segment;
+        Assert.False(stream.TryGetBuffer(out segment));
     }
 
     [Fact]
@@ -65,10 +66,8 @@ public class MemoryStream_TryGetBufferTests
     {
         var stream = new MemoryStream(new byte[512], index: 0, count: 512, writable: true);
 
-        ArraySegment<byte> _;
-        bool result = stream.TryGetBuffer(out _);
-
-        Assert.False(result);
+        ArraySegment<byte> segment;
+        Assert.False(stream.TryGetBuffer(out segment));
     }
 
     [Fact]
@@ -76,10 +75,8 @@ public class MemoryStream_TryGetBufferTests
     {
         var stream = new MemoryStream(new byte[512], index: 0, count: 512, writable: true, publiclyVisible: false);
 
-        ArraySegment<byte> _;
-        bool result = stream.TryGetBuffer(out _);
-
-        Assert.False(result);
+        ArraySegment<byte> segment;
+        Assert.False(stream.TryGetBuffer(out segment));
     }
 
     [Fact]
@@ -87,95 +84,78 @@ public class MemoryStream_TryGetBufferTests
     {
         var stream = new MemoryStream(new byte[512], index: 0, count: 512, writable: true, publiclyVisible: true);
 
-        ArraySegment<byte> _;
-        bool result = stream.TryGetBuffer(out _);
+        ArraySegment<byte> segment;
+        Assert.True(stream.TryGetBuffer(out segment));
 
-        Assert.True(result);
+        Assert.NotNull(segment.Array);
+        Assert.Equal(512, segment.Array.Length);
+        Assert.Equal(0, segment.Offset);
+        Assert.Equal(512, segment.Count);
     }
 
-    [Fact]
-    public static void TryGetBuffer_Constructor_ByteArray_AlwaysReturnsEmptyArraySegment()
+    [Theory]
+    [MemberData("GetArraysVariedBySize")]
+    public static void TryGetBuffer_Constructor_ByteArray_AlwaysReturnsEmptyArraySegment(byte[] array)
     {
-        var arrays = Inputs.GetArraysVariedBySize();
+        var stream = new MemoryStream(array);
 
-        foreach (byte[] array in arrays)
-        {
-            var stream = new MemoryStream(array);
+        ArraySegment<byte> result;
+        Assert.False(stream.TryGetBuffer(out result));
 
-            ArraySegment<byte> result;
-            stream.TryGetBuffer(out result);
-
-            // publiclyVisible = false;
-            Assert.True(default(ArraySegment<byte>).Equals(result));
-        }
+        // publiclyVisible = false;
+        Assert.True(default(ArraySegment<byte>).Equals(result));
     }
 
-    [Fact]
-    public static void TryGetBuffer_Constructor_ByteArray_Bool_AlwaysReturnsEmptyArraySegment()
+    [Theory]
+    [MemberData("GetArraysVariedBySize")]
+    public static void TryGetBuffer_Constructor_ByteArray_Bool_AlwaysReturnsEmptyArraySegment(byte[] array)
     {
-        var arrays = Inputs.GetArraysVariedBySize();
+        var stream = new MemoryStream(array, writable: true);
 
-        foreach (byte[] array in arrays)
-        {
-            var stream = new MemoryStream(array, writable: true);
+        ArraySegment<byte> result;
+        Assert.False(stream.TryGetBuffer(out result));
 
-            ArraySegment<byte> result;
-            stream.TryGetBuffer(out result);
-
-            // publiclyVisible = false;
-            Assert.True(default(ArraySegment<byte>).Equals(result));
-        }
+        // publiclyVisible = false;
+        Assert.True(default(ArraySegment<byte>).Equals(result));
     }
 
-    [Fact]
-    public static void TryGetBuffer_Constructor_ByteArray_Int32_Int32_AlwaysReturnsEmptyArraySegment()
+    [Theory]
+    [MemberData("GetArraysVariedByOffsetAndLength")]
+    public static void TryGetBuffer_Constructor_ByteArray_Int32_Int32_AlwaysReturnsEmptyArraySegment(ArraySegment<byte> array)
     {
-        var arrays = Inputs.GetArraysVariedByOffsetAndLength();
+        var stream = new MemoryStream(array.Array, index: array.Offset, count: array.Count);
 
-        foreach (var array in arrays)
-        {
-            var stream = new MemoryStream(array.Array, index: array.Offset, count: array.Count);
+        ArraySegment<byte> result;
+        Assert.False(stream.TryGetBuffer(out result));
 
-            ArraySegment<byte> result;
-            stream.TryGetBuffer(out result);
-
-            // publiclyVisible = false;
-            Assert.True(default(ArraySegment<byte>).Equals(result));
-        }
+        // publiclyVisible = false;
+        Assert.True(default(ArraySegment<byte>).Equals(result));
     }
 
-    [Fact]
-    public static void TryGetBuffer_Constructor_ByteArray_Int32_Int32_Bool_AlwaysReturnsEmptyArraySegment()
+    [Theory]
+    [MemberData("GetArraysVariedByOffsetAndLength")]
+    public static void TryGetBuffer_Constructor_ByteArray_Int32_Int32_Bool_AlwaysReturnsEmptyArraySegment(ArraySegment<byte> array)
     {
-        var arrays = Inputs.GetArraysVariedByOffsetAndLength();
+        var stream = new MemoryStream(array.Array, index: array.Offset, count: array.Count, writable: true);
 
-        foreach (var array in arrays)
-        {
-            var stream = new MemoryStream(array.Array, index: array.Offset, count: array.Count, writable: true);
+        ArraySegment<byte> result;
+        Assert.False(stream.TryGetBuffer(out result));
 
-            ArraySegment<byte> result;
-            stream.TryGetBuffer(out result);
-
-            // publiclyVisible = false;
-            Assert.True(default(ArraySegment<byte>).Equals(result));
-        }
+        // publiclyVisible = false;
+        Assert.True(default(ArraySegment<byte>).Equals(result));
     }
 
-    [Fact]
-    public static void TryGetBuffer_Constructor_ByteArray_Int32_Int32_Bool_Bool_FalseAsPubliclyVisible_ReturnsEmptyArraySegment()
+    [Theory]
+    [MemberData("GetArraysVariedByOffsetAndLength")]
+    public static void TryGetBuffer_Constructor_ByteArray_Int32_Int32_Bool_Bool_FalseAsPubliclyVisible_ReturnsEmptyArraySegment(ArraySegment<byte> array)
     {
-        var arrays = Inputs.GetArraysVariedByOffsetAndLength();
+        var stream = new MemoryStream(array.Array, index: array.Offset, count: array.Count, writable: true, publiclyVisible: false);
 
-        foreach (var array in arrays)
-        {
-            var stream = new MemoryStream(array.Array, index: array.Offset, count: array.Count, writable: true, publiclyVisible: false);
+        ArraySegment<byte> result;
+        Assert.False(stream.TryGetBuffer(out result));
 
-            ArraySegment<byte> result;
-            stream.TryGetBuffer(out result);
-
-            // publiclyVisible = false;
-            Assert.True(default(ArraySegment<byte>).Equals(result));
-        }
+        // publiclyVisible = false;
+        Assert.True(default(ArraySegment<byte>).Equals(result));
     }
 
     [Fact]
@@ -184,7 +164,7 @@ public class MemoryStream_TryGetBufferTests
         var stream = new MemoryStream();
 
         ArraySegment<byte> result;
-        stream.TryGetBuffer(out result);
+        Assert.True(stream.TryGetBuffer(out result));
 
         Assert.Equal(0, result.Offset);
 
@@ -196,25 +176,21 @@ public class MemoryStream_TryGetBufferTests
         var stream = new MemoryStream(512);
 
         ArraySegment<byte> result;
-        stream.TryGetBuffer(out result);
+        Assert.True(stream.TryGetBuffer(out result));
 
         Assert.Equal(0, result.Offset);
     }
 
-    [Fact]
-    public static void TryGetBuffer_Constructor_ByteArray_Int32_Int32_Bool_Bool_ValueAsIndexAndTrueAsPubliclyVisible_AlwaysReturnsOffsetSetToIndex()
+    [Theory]
+    [MemberData("GetArraysVariedByOffsetAndLength")]
+    public static void TryGetBuffer_Constructor_ByteArray_Int32_Int32_Bool_Bool_ValueAsIndexAndTrueAsPubliclyVisible_AlwaysReturnsOffsetSetToIndex(ArraySegment<byte> array)
     {
-        var arrays = Inputs.GetArraysVariedByOffsetAndLength();
+        var stream = new MemoryStream(array.Array, index: array.Offset, count: array.Count, writable: true, publiclyVisible: true);
 
-        foreach (var array in arrays)
-        {
-            var stream = new MemoryStream(array.Array, index: array.Offset, count: array.Count, writable: true, publiclyVisible: true);
+        ArraySegment<byte> result;
+        Assert.True(stream.TryGetBuffer(out result));
 
-            ArraySegment<byte> result;
-            stream.TryGetBuffer(out result);
-
-            Assert.Equal(array.Offset, result.Offset);
-        }
+        Assert.Equal(array.Offset, result.Offset);
     }
 
     [Fact]
@@ -223,25 +199,22 @@ public class MemoryStream_TryGetBufferTests
         var stream = new MemoryStream();
 
         ArraySegment<byte> result;
-        stream.TryGetBuffer(out result);
+        Assert.True(stream.TryGetBuffer(out result));
 
         Assert.Equal(0, result.Count);
     }
 
-    [Fact]
-    public static void TryGetBuffer_Constructor_ReturnsCountSetToWrittenLength()
+    [Theory]
+    [MemberData("GetArraysVariedBySize")]
+    public static void TryGetBuffer_Constructor_ReturnsCountSetToWrittenLength(byte[] array)
     {
-        var arrays = Inputs.GetArraysVariedBySize();
-        foreach (var array in arrays)
-        {
-            var stream = new MemoryStream();
-            stream.Write(array, 0, array.Length);
+        var stream = new MemoryStream();
+        stream.Write(array, 0, array.Length);
 
-            ArraySegment<byte> result;
-            stream.TryGetBuffer(out result);
+        ArraySegment<byte> result;
+        Assert.True(stream.TryGetBuffer(out result));
 
-            Assert.Equal(array.Length, result.Count);
-        }
+        Assert.Equal(array.Length, result.Count);
     }
 
     [Fact]
@@ -250,41 +223,34 @@ public class MemoryStream_TryGetBufferTests
         var stream = new MemoryStream(512);
 
         ArraySegment<byte> result;
-        stream.TryGetBuffer(out result);
+        Assert.True(stream.TryGetBuffer(out result));
 
         Assert.Equal(0, result.Offset);
     }
 
-    [Fact]
-    public static void TryGetBuffer_Constructor_Int32_ReturnsCountSetToWrittenLength()
+    [Theory]
+    [MemberData("GetArraysVariedBySize")]
+    public static void TryGetBuffer_Constructor_Int32_ReturnsCountSetToWrittenLength(byte[] array)
     {
-        var arrays = Inputs.GetArraysVariedBySize();
-        foreach (var array in arrays)
-        {
-            var stream = new MemoryStream(512);
-            stream.Write(array, 0, array.Length);
+        var stream = new MemoryStream(512);
+        stream.Write(array, 0, array.Length);
 
-            ArraySegment<byte> result;
-            stream.TryGetBuffer(out result);
+        ArraySegment<byte> result;
+        Assert.True(stream.TryGetBuffer(out result));
 
-            Assert.Equal(array.Length, result.Count);
-        }
+        Assert.Equal(array.Length, result.Count);
     }
 
-    [Fact]
-    public static void TryGetBuffer_Constructor_ByteArray_Int32_Int32_Bool_Bool_ValueAsCountAndTrueAsPubliclyVisible_AlwaysReturnsCountSetToCount()
+    [Theory]
+    [MemberData("GetArraysVariedByOffsetAndLength")]
+    public static void TryGetBuffer_Constructor_ByteArray_Int32_Int32_Bool_Bool_ValueAsCountAndTrueAsPubliclyVisible_AlwaysReturnsCountSetToCount(ArraySegment<byte> array)
     {
-        var arrays = Inputs.GetArraysVariedByOffsetAndLength();
+        var stream = new MemoryStream(array.Array, index: array.Offset, count: array.Count, writable: true, publiclyVisible: true);
 
-        foreach (var array in arrays)
-        {
-            var stream = new MemoryStream(array.Array, index: array.Offset, count: array.Count, writable: true, publiclyVisible: true);
+        ArraySegment<byte> result;
+        Assert.True(stream.TryGetBuffer(out result));
 
-            ArraySegment<byte> result;
-            stream.TryGetBuffer(out result);
-
-            Assert.Equal(array.Count, result.Count);
-        }
+        Assert.Equal(array.Count, result.Count);
     }
 
     [Fact]
@@ -293,7 +259,7 @@ public class MemoryStream_TryGetBufferTests
         var stream = new MemoryStream();
 
         ArraySegment<byte> result;
-        stream.TryGetBuffer(out result);
+        Assert.True(stream.TryGetBuffer(out result));
 
         Assert.NotNull(result.Array);
     }
@@ -305,8 +271,8 @@ public class MemoryStream_TryGetBufferTests
 
         ArraySegment<byte> result1;
         ArraySegment<byte> result2;
-        stream.TryGetBuffer(out result1);
-        stream.TryGetBuffer(out result2);
+        Assert.True(stream.TryGetBuffer(out result1));
+        Assert.True(stream.TryGetBuffer(out result2));
 
         Assert.Same(result1.Array, result2.Array);
     }
@@ -318,8 +284,8 @@ public class MemoryStream_TryGetBufferTests
 
         ArraySegment<byte> result1;
         ArraySegment<byte> result2;
-        stream.TryGetBuffer(out result1);
-        stream.TryGetBuffer(out result2);
+        Assert.True(stream.TryGetBuffer(out result1));
+        Assert.True(stream.TryGetBuffer(out result2));
 
         Assert.Same(result1.Array, result2.Array);
     }
@@ -330,99 +296,120 @@ public class MemoryStream_TryGetBufferTests
         var stream = new MemoryStream(512);
 
         ArraySegment<byte> result1;
-        stream.TryGetBuffer(out result1);
+        Assert.True(stream.TryGetBuffer(out result1));
 
         // Force the stream to resize the underlying array
         stream.Write(new byte[1024], 0, 1024);
 
         ArraySegment<byte> result2;
-        stream.TryGetBuffer(out result2);
+        Assert.True(stream.TryGetBuffer(out result2));
 
         Assert.NotSame(result1.Array, result2.Array);
     }
 
-    [Fact]
-    public static void TryGetBuffer_Constructor_ByteArray_Int32_Int32_Bool_Bool_ValueAsBufferAndTrueAsPubliclyVisible_AlwaysReturnsArraySetToBuffer()
+    [Theory]
+    [MemberData("GetArraysVariedByOffsetAndLength")]
+    public static void TryGetBuffer_Constructor_ByteArray_Int32_Int32_Bool_Bool_ValueAsBufferAndTrueAsPubliclyVisible_AlwaysReturnsArraySetToBuffer(ArraySegment<byte> array)
     {
-        var arrays = Inputs.GetArraysVariedByOffsetAndLength();
+        var stream = new MemoryStream(array.Array, index: array.Offset, count: array.Count, writable: true, publiclyVisible: true);
 
-        foreach (var array in arrays)
-        {
-            var stream = new MemoryStream(array.Array, index: array.Offset, count: array.Count, writable: true, publiclyVisible: true);
+        ArraySegment<byte> result;
+        Assert.True(stream.TryGetBuffer(out result));
 
-            ArraySegment<byte> result;
-            stream.TryGetBuffer(out result);
-
-            Assert.Same(array.Array, result.Array);
-        }
+        Assert.Same(array.Array, result.Array);
     }
 
-    [Fact]
-    public static void TryGetBuffer_WhenDisposed_ReturnsTrue()
+    [Theory]
+    [MemberData("GetArraysVariedByOffsetAndLength")]
+    public static void TryGetBuffer_WhenDisposed_ReturnsTrue(ArraySegment<byte> array)
     {
-        var arrays = Inputs.GetArraysVariedByOffsetAndLength();
+        var stream = new MemoryStream(array.Array, index: array.Offset, count: array.Count, writable: true, publiclyVisible: true);
+        stream.Dispose();
 
-        foreach (var array in arrays)
-        {
-            var stream = new MemoryStream(array.Array, index: array.Offset, count: array.Count, writable: true, publiclyVisible: true);
-            stream.Dispose();
+        ArraySegment<byte> segment;
+        Assert.True(stream.TryGetBuffer(out segment));
 
-            ArraySegment<byte> _;
-            bool result = stream.TryGetBuffer(out _);
-
-            Assert.True(result);
-        }
+        Assert.Same(array.Array, segment.Array);
+        Assert.Equal(array.Offset, segment.Offset);
+        Assert.Equal(array.Count, segment.Count);
     }
 
-    [Fact]
-    public static void TryGetBuffer_WhenDisposed_ReturnsOffsetSetToIndex()
+    [Theory]
+    [MemberData("GetArraysVariedByOffsetAndLength")]
+    public static void TryGetBuffer_WhenDisposed_ReturnsOffsetSetToIndex(ArraySegment<byte> array)
     {
-        var arrays = Inputs.GetArraysVariedByOffsetAndLength();
+        var stream = new MemoryStream(array.Array, index: array.Offset, count: array.Count, writable: true, publiclyVisible: true);
+        stream.Dispose();
 
-        foreach (var array in arrays)
-        {
-            var stream = new MemoryStream(array.Array, index: array.Offset, count: array.Count, writable: true, publiclyVisible: true);
-            stream.Dispose();
+        ArraySegment<byte> result;
+        Assert.True(stream.TryGetBuffer(out result));
 
-            ArraySegment<byte> result;
-            stream.TryGetBuffer(out result);
-
-            Assert.Equal(array.Offset, result.Offset);
-        }
+        Assert.Equal(array.Offset, result.Offset);
     }
 
-
-    [Fact]
-    public static void TryGetBuffer_WhenDisposed_ReturnsCountSetToCount()
+    [Theory]
+    [MemberData("GetArraysVariedByOffsetAndLength")]
+    public static void TryGetBuffer_WhenDisposed_ReturnsCountSetToCount(ArraySegment<byte> array)
     {
-        var arrays = Inputs.GetArraysVariedByOffsetAndLength();
+        var stream = new MemoryStream(array.Array, index: array.Offset, count: array.Count, writable: true, publiclyVisible: true);
+        stream.Dispose();
 
-        foreach (var array in arrays)
-        {
-            var stream = new MemoryStream(array.Array, index: array.Offset, count: array.Count, writable: true, publiclyVisible: true);
-            stream.Dispose();
+        ArraySegment<byte> result;
+        Assert.True(stream.TryGetBuffer(out result));
 
-            ArraySegment<byte> result;
-            stream.TryGetBuffer(out result);
-
-            Assert.Equal(array.Count, result.Count);
-        }
+        Assert.Equal(array.Count, result.Count);
     }
 
-    [Fact]
-    public static void TryGetBuffer_WhenDisposed_ReturnsArraySetToBuffer()
+    [Theory]
+    [MemberData("GetArraysVariedByOffsetAndLength")]
+    public static void TryGetBuffer_WhenDisposed_ReturnsArraySetToBuffer(ArraySegment<byte> array)
     {
-        var arrays = Inputs.GetArraysVariedByOffsetAndLength();
+        var stream = new MemoryStream(array.Array, index: array.Offset, count: array.Count, writable: true, publiclyVisible: true);
+        stream.Dispose();
 
-        foreach (var array in arrays)
+        ArraySegment<byte> result;
+        Assert.True(stream.TryGetBuffer(out result));
+
+        Assert.Same(array.Array, result.Array);
+    }
+
+    public static IEnumerable<object[]> GetArraysVariedByOffsetAndLength()
+    {
+        yield return new object[] { new ArraySegment<byte>(new byte[512], 0, 512) };
+        yield return new object[] { new ArraySegment<byte>(new byte[512], 1, 511) };
+        yield return new object[] { new ArraySegment<byte>(new byte[512], 2, 510) };
+        yield return new object[] { new ArraySegment<byte>(new byte[512], 256, 256) };
+        yield return new object[] { new ArraySegment<byte>(new byte[512], 512, 0) };
+        yield return new object[] { new ArraySegment<byte>(new byte[512], 511, 1) };
+        yield return new object[] { new ArraySegment<byte>(new byte[512], 510, 2) };
+    }
+
+    public static IEnumerable<object[]> GetArraysVariedBySize()
+    {
+        yield return new object[] { FillWithData(new byte[0]) };
+        yield return new object[] { FillWithData(new byte[1]) };
+        yield return new object[] { FillWithData(new byte[2]) };
+        yield return new object[] { FillWithData(new byte[254]) };
+        yield return new object[] { FillWithData(new byte[255]) };
+        yield return new object[] { FillWithData(new byte[256]) };
+        yield return new object[] { FillWithData(new byte[511]) };
+        yield return new object[] { FillWithData(new byte[512]) };
+        yield return new object[] { FillWithData(new byte[513]) };
+        yield return new object[] { FillWithData(new byte[1023]) };
+        yield return new object[] { FillWithData(new byte[1024]) };
+        yield return new object[] { FillWithData(new byte[1025]) };
+        yield return new object[] { FillWithData(new byte[2047]) };
+        yield return new object[] { FillWithData(new byte[2048]) };
+        yield return new object[] { FillWithData(new byte[2049]) };
+    }
+
+    private static byte[] FillWithData(byte[] buffer)
+    {
+        for (int i = 0; i < buffer.Length; i++)
         {
-            var stream = new MemoryStream(array.Array, index: array.Offset, count: array.Count, writable: true, publiclyVisible: true);
-            stream.Dispose();
-
-            ArraySegment<byte> result;
-            stream.TryGetBuffer(out result);
-
-            Assert.Same(array.Array, result.Array);
+            buffer[i] = (byte)i;
         }
+
+        return buffer;
     }
 }

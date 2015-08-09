@@ -1,4 +1,8 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Xunit;
@@ -8,59 +12,16 @@ namespace StreamTests
     public class NullCtorTests
     {
         [Fact]
-        public static void TestNullStream()
+        public static async Task TestNullStream()
         {
-            var t = TestNullStream(Stream.Null);
-            t.Wait();
-        }
-
-        [Fact]
-        public static void TestNullTextReader()
-        {
-            TestTextReader(TextReader.Null);
-        }
-
-        [Fact]
-        public static void TestNullStreamReader()
-        {
-            TestTextReader(StreamReader.Null);
-        }
-
-        [Fact]
-        public static void TestNullStringReader()
-        {
-            TestTextReader(StringReader.Null);
-        }
-
-        [Fact]
-        public static void TestNullTextWriter()
-        {
-            TestTextWriter(TextWriter.Null);
-
-        }
-
-        [Fact]
-        public static void TestNullStreamWriter()
-        {
-            TestTextWriter(StreamWriter.Null);
-        }
-
-        [Fact]
-        public static void TestNullStringWriter()
-        {
-            TestTextWriter(StringWriter.Null);
-        }
-
-        static async Task TestNullStream(Stream s)
-        {
-            int n;
+            Stream s = Stream.Null;
 
             s.Flush();
 
             Assert.Equal(-1, s.ReadByte());
 
             s.WriteByte(5);
-            n = s.Read(new byte[2], 0, 2);
+            int n = s.Read(new byte[2], 0, 2);
             Assert.Equal(0, n);
             s.Write(new byte[2], 0, 2);
 
@@ -70,7 +31,9 @@ namespace StreamTests
             s.Dispose();
         }
 
-        static void TestTextReader(TextReader input)
+        [Theory]
+        [MemberData("NullReaders")]
+        public static void TestNullTextReader(TextReader input)
         {
             StreamReader sr = input as StreamReader;
 
@@ -89,7 +52,9 @@ namespace StreamTests
             input.Dispose();
         }
 
-        static void TestTextWriter(TextWriter output)
+        [Theory]
+        [MemberData("NullWriters")]
+        public static void TextNullTextWriter(TextWriter output)
         {
             output.Flush();
             output.Dispose();
@@ -100,5 +65,26 @@ namespace StreamTests
             output.Flush();
             output.Dispose();
         }
+
+        public static IEnumerable<object[]> NullReaders
+        {
+            get
+            {
+                yield return new object[] { TextReader.Null };
+                yield return new object[] { StreamReader.Null };
+                yield return new object[] { StringReader.Null };
+            }
+        }
+
+        public static IEnumerable<object[]> NullWriters
+        {
+            get
+            {
+                yield return new object[] { TextWriter.Null };
+                yield return new object[] { StreamWriter.Null };
+                yield return new object[] { StringWriter.Null };
+            }
+        }
+
     }
 }

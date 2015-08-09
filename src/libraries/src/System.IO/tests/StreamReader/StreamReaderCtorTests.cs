@@ -1,6 +1,8 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System;
 using System.IO;
-using System.Text;
 using Xunit;
 
 namespace StreamReaderTests
@@ -10,8 +12,7 @@ namespace StreamReaderTests
         [Fact]
         public static void StreamReaderNullPath()
         {
-            Assert.Throws<ArgumentNullException>(
-                () => { new StreamReader((Stream)null, true); });
+            Assert.Throws<ArgumentNullException>(() => new StreamReader((Stream)null, true));
         }
         [Fact]
         public static void InputStreamClosed()
@@ -19,8 +20,7 @@ namespace StreamReaderTests
             var ms2 = new MemoryStream();
             ms2.Dispose();
 
-            Assert.Throws<ArgumentException>(
-                () => { new StreamReader(ms2, false); });
+            Assert.Throws<ArgumentException>(() => new StreamReader(ms2, false));
         }
 
         [Fact]

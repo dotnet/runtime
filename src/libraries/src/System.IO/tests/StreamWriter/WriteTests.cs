@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System;
 using System.IO;
 using System.Text;
@@ -60,7 +63,7 @@ namespace StreamWriterTests
             MemoryStream ms = new MemoryStream();
             StreamWriter sw = new StreamWriter(ms);
 
-            Assert.Throws<ArgumentNullException>(() => { sw.Write(null, 0, 0); });
+            Assert.Throws<ArgumentNullException>(() => sw.Write(null, 0, 0));
             sw.Dispose();
         }
         [Fact]
@@ -72,7 +75,7 @@ namespace StreamWriterTests
             MemoryStream ms = new MemoryStream();
             StreamWriter sw = new StreamWriter(ms);
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => { sw.Write(chArr, -1, 0); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => sw.Write(chArr, -1, 0));
             sw.Dispose();
         }
         [Fact]
@@ -84,7 +87,7 @@ namespace StreamWriterTests
             MemoryStream ms = new MemoryStream();
             StreamWriter sw = new StreamWriter(ms);
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => { sw.Write(chArr, 0, -1); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => sw.Write(chArr, 0, -1));
             sw.Dispose();
         }
 
@@ -139,7 +142,7 @@ namespace StreamWriterTests
             MemoryStream ms = new MemoryStream();
             StreamWriter sw = new StreamWriter(ms);
 
-            Assert.Throws<ArgumentException>(() => { sw.Write(chArr, 1, chArr.Length); });
+            Assert.Throws<ArgumentException>(() => sw.Write(chArr, 1, chArr.Length));
             sw.Dispose();
         }
 

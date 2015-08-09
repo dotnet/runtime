@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System;
 using System.IO;
 using Xunit;
@@ -32,7 +35,7 @@ namespace StreamWriterTests
             // [] Check for ArgumentNullException on null encoding
             //-----------------------------------------------------------------
 
-            Assert.Throws<ArgumentNullException>(() => { new StreamWriter(new MemoryStream(), null); });
+            Assert.Throws<ArgumentNullException>(() => new StreamWriter(new MemoryStream(), null));
         }
         
         [Fact]
