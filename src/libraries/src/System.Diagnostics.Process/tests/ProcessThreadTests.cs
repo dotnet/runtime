@@ -56,6 +56,7 @@ namespace System.Diagnostics.ProcessTests
         }
 
         [Fact]
+        [ActiveIssue(2613, PlatformID.Linux)]
         public void TestStartTimeProperty()
         {
             DateTime timeBeforeCreatingProcess = DateTime.UtcNow;
