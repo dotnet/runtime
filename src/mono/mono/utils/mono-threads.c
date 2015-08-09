@@ -149,7 +149,7 @@ dump_threads (void)
 	MonoThreadInfo *info;
 	MonoThreadInfo *cur = mono_thread_info_current ();
 
-	MOSTLY_ASYNC_SAFE_PRINTF ("STATE CUE CARD: (? means a positive number, usually 1 or 2)\n");
+	MOSTLY_ASYNC_SAFE_PRINTF ("STATE CUE CARD: (? means a positive number, usually 1 or 2, * means any number)\n");
 	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x0\t- starting (GOOD, unless the thread is running managed code)\n");
 	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x1\t- running (BAD, unless it's the gc thread)\n");
 	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x2\t- detached (GOOD, unless the thread is running managed code)\n");
@@ -157,7 +157,7 @@ dump_threads (void)
 	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x?04\t- self suspended (GOOD)\n");
 	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x?05\t- async suspend requested (BAD)\n");
 	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x?06\t- self suspend requested (BAD)\n");
-	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x07\t- blocking (GOOD)\n");
+	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x*07\t- blocking (GOOD)\n");
 	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x?08\t- blocking with pending suspend (GOOD)\n");
 
 	FOREACH_THREAD_SAFE (info) {
@@ -681,7 +681,7 @@ mono_thread_info_end_self_suspend (void)
 		return;
 	THREADS_SUSPEND_DEBUG ("FINISH SELF SUSPEND OF %p\n", info);
 
-	g_assert (mono_threads_get_runtime_callbacks ()->thread_state_init_from_sigctx (&info->thread_saved_state [SELF_SUSPEND_STATE_INDEX], NULL));
+	mono_threads_get_runtime_callbacks ()->thread_state_init (&info->thread_saved_state [SELF_SUSPEND_STATE_INDEX]);
 
 	/* commit the saved state and notify others if needed */
 	switch (mono_threads_transition_state_poll (info)) {
