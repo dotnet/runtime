@@ -453,7 +453,7 @@ namespace System.IO.Compression
                 readEntryNameEncoding = Encoding.UTF8;
             }
 
-            return new string(readEntryNameEncoding.GetChars(entryNameBytes)); //readEntryNameEncoding.GetString(entryNameBytes);
+            return readEntryNameEncoding.GetString(entryNameBytes);
         }
 
         private Byte[] EncodeEntryName(String entryName, out bool isUTF8)
