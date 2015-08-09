@@ -71,9 +71,11 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Assert.False(winObj != winProp);
 
             Assert.True(winObj.Equals(winProp));
+            Assert.True(winObj.Equals((object)winProp));
             Assert.True(conObj.Equals(defaultObj));
 
             Assert.False(defaultObj.Equals(winProp));
+            Assert.False(defaultObj.Equals((object)winProp));
             Assert.False(winObj.Equals(null));
             Assert.False(winObj.Equals("something"));
 
