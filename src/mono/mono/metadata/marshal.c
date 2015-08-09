@@ -11278,12 +11278,3 @@ mono_marshal_free_dynamic_wrappers (MonoMethod *method)
 	if (marshal_mutex_initialized)
 		mono_marshal_unlock ();
 }
-
-static gboolean
-signature_pointer_pair_matches_signature (gpointer key, gpointer value, gpointer user_data)
-{
-       SignaturePointerPair *pair = (SignaturePointerPair*)key;
-       MonoMethodSignature *sig = (MonoMethodSignature*)user_data;
-
-       return mono_metadata_signature_equal (pair->sig, sig);
-}
