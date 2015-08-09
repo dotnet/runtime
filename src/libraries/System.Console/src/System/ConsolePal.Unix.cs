@@ -181,7 +181,7 @@ namespace System
             // See if we've already cached a format string for this foreground/background
             // and specific color choice.  If we have, just output that format string again.
             int fgbgIndex = foreground ? 0 : 1;
-            string evaluatedString = s_fgbgAndColorStrings[fgbgIndex][ccValue]; // benign race
+            string evaluatedString = s_fgbgAndColorStrings[fgbgIndex, ccValue]; // benign race
             if (evaluatedString != null)
             {
                 Console.Write(evaluatedString);
@@ -200,7 +200,7 @@ namespace System
 
                     Console.Write(evaluatedString);
 
-                    s_fgbgAndColorStrings[fgbgIndex][ccValue] = evaluatedString; // benign race
+                    s_fgbgAndColorStrings[fgbgIndex, ccValue] = evaluatedString; // benign race
                 }
             }
         }
@@ -234,18 +234,7 @@ namespace System
         };
 
         /// <summary>Cache of the format strings for foreground/background and ConsoleColor.</summary>
-        private static readonly string[][] s_fgbgAndColorStrings = CreateTwoDimArray(2, 16); // 2 == fg vs bg, 16 == ConsoleColor values
-
-        /// <summary>Constructs a two-dimensional jagged array.</summary>
-        private static string[][] CreateTwoDimArray(int dim1, int dim2)
-        {
-            string[][] arr = new string[dim1][];
-            for (int i = 0; i < dim1; i++)
-            {
-                arr[i] = new string[dim2];
-            }
-            return arr;
-        }
+        private static readonly string[,] s_fgbgAndColorStrings = new string[2, 16]; // 2 == fg vs bg, 16 == ConsoleColor values
 
         /// <summary>Provides a cache of color information sourced from terminfo.</summary>
         private struct TerminalColorInfo
