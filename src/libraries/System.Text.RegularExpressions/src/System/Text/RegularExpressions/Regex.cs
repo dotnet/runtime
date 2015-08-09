@@ -362,10 +362,8 @@ namespace System.Text.RegularExpressions
             {
                 if (_caps != null)
                 {
-                    if (!_caps.ContainsKey(i))
+                    if (!_caps.TryGetValue(i, out i))
                         return String.Empty;
-
-                    i = _caps[i];
                 }
 
                 if (i >= 0 && i < _capslist.Length)
@@ -395,10 +393,10 @@ namespace System.Text.RegularExpressions
             // look up name if we have a hashtable of names
             if (_capnames != null)
             {
-                if (!_capnames.ContainsKey(name))
+                if (!_capnames.TryGetValue(name, out result))
                     return -1;
 
-                return _capnames[name];
+                return result;
             }
 
             // convert to an int if it looks like a number
