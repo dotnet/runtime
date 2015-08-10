@@ -23,6 +23,8 @@ namespace System.Net.Http
     internal partial class CurlHandler
     {
         private const string s_httpPrefix = "HTTP/";
+        private static readonly char[] s_newLineCharArray = new char[] { HttpRuleParser.CR, HttpRuleParser.LF };
+        private const char spaceChar = ' ';
 
         private static Interop.libcurl.curl_readwrite_callback s_receiveHeadersCallback =
             (Interop.libcurl.curl_readwrite_callback) CurlReceiveHeadersCallback;
@@ -204,15 +206,25 @@ namespace System.Net.Http
                 return false;
             }
 
+	    //Clear the header if status line is recieved again. This signifies that there are multiple response headers (like in redirection).
+
+            response.Headers.Clear();
+            
+            response.Content.Headers.Clear();        
+
+            int responseHeaderLength = responseHeader.Length;
+
             // Check if line begins with HTTP/1.1 or HTTP/1.0
             int prefixLength = s_httpPrefix.Length;
-            if ((responseHeader[prefixLength] == '1') && (responseHeader[prefixLength + 1] == '.'))
+            int versionIndex = prefixLength + 2;
+
+            if ((versionIndex < responseHeaderLength) && (responseHeader[prefixLength] == '1') && (responseHeader[prefixLength + 1] == '.'))
             {
-                if (responseHeader[prefixLength + 2] == '1')
+                if (responseHeader[versionIndex] == '1')
                 {
                     response.Version = new Version(1, 1);
                 }
-                else if (responseHeader[prefixLength + 2] == '0')
+                else if (responseHeader[versionIndex] == '0')
                 {
                     response.Version = new Version(1, 0);
                 }
@@ -221,13 +233,39 @@ namespace System.Net.Http
             // Parse first 3 characters after a space as status code
             // TODO: Parsing errors are treated as fatal. Find right behaviour
             int statusCodeLength = 3;
-            int codeIndex = responseHeader.IndexOf(' ') + 1;
-            string strStatusCode = responseHeader.Substring(codeIndex, statusCodeLength);
-            response.StatusCode = (HttpStatusCode)(int.Parse(strStatusCode));
 
-            // The remaining string after the space is the reason phrase
-            response.ReasonPhrase = responseHeader.Substring(codeIndex + statusCodeLength + 1);
+            int spaceIndex = responseHeader.IndexOf(spaceChar);
 
+            if (spaceIndex > -1)
+            {
+                int codeStartIndex = spaceIndex + 1;
+                int codeEndIndex = codeStartIndex + statusCodeLength;
+
+                if (codeEndIndex <= responseHeaderLength)
+                {
+                    string strStatusCode = responseHeader.Substring(codeStartIndex, statusCodeLength);
+                    response.StatusCode = (HttpStatusCode)(int.Parse(strStatusCode));
+
+                    int reasonPhraseIndex = codeEndIndex + 1;
+
+                    if (reasonPhraseIndex < responseHeaderLength && char.Equals(responseHeader[codeEndIndex], spaceChar))
+                    {
+                        string reasonPhrase = responseHeader.Substring(reasonPhraseIndex);
+
+                        //if reasonPhrase contains any of new line character, then consider reasonPhrase till new line.
+                        int newLineCharIndex = reasonPhrase.IndexOfAny(s_newLineCharArray);
+
+                        if (newLineCharIndex > -1)
+                        {
+                            reasonPhrase = reasonPhrase.Substring(0, newLineCharIndex);
+                        }
+
+                        response.ReasonPhrase = reasonPhrase;
+                    }
+                }
+               
+            }
+            
             return true;
         }
 
