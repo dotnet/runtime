@@ -6,7 +6,7 @@ using System.IO;
 using System.Threading;
 using Xunit;
 
-public partial class FileSystemWatcher_4000_Tests
+public class InternalBufferSizeTests
 {
     [Fact]
     [ActiveIssue(1165)]

@@ -5,7 +5,7 @@ using System;
 using System.IO;
 using Xunit;
 
-public partial class RenamedEventArgs_4000_Tests
+public partial class RenamedEventArgsTests
 {
     private static void ValidateRenamedEventArgs(WatcherChangeTypes changeType, string directory, string name, string oldName)
     {
