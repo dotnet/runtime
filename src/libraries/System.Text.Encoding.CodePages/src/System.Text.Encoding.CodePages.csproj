@@ -58,7 +58,21 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Data\CodePageNameMappings.csv" />
+    <None Include="Data\PreferredCodePageNames.csv" />
     <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <!-- Generator for code mapping table, target to invoke is GenerateEncodingSource -->
+  <PropertyGroup>
+    <!-- This Task can be re-run with /t:GenerateEncodingSource
+         An IANA Mapping file contains rows of two elements: a valid IANA encoding identifier, and the equivalent code page.
+         There may be many IANA ids (aliases) mapped to a single code page. -->
+    <IANAMappingPath>Data\CodePageNameMappings.csv</IANAMappingPath>
+    <!-- The preferred name file contains rows of three elements: a code page, the 'canonical' IANA identifier,
+         and an "English" or descriptive name.  There is one row per code page. -->
+    <PreferredIANANamesPath>Data\PreferredCodePageNames.csv</PreferredIANANamesPath>
+    <OutputDataTablePath>System\Text\EncodingTable.Data.cs</OutputDataTablePath>
+  </PropertyGroup>
+  <Import Project="$(ToolsDir)encoding.targets" Condition="Exists('$(ToolsDir)encoding.targets')" />
 </Project>
