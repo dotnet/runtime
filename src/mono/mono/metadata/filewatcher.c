@@ -11,6 +11,16 @@
 #include <config.h>
 #endif
 
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_EVENT_H
+#include <sys/event.h>
+#endif
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/filewatcher.h>
@@ -189,3 +199,54 @@ ves_icall_System_IO_InotifyWatcher_RemoveWatch (int fd, gint32 watch_descriptor)
 }
 #endif
 
+#if HAVE_KQUEUE
+
+static void
+interrupt_kevent (gpointer data)
+{
+	int *kq_ptr = data;
+
+	/* Interrupt the kevent () call by closing the fd */
+	close (*kq_ptr);
+	/* Signal to managed code that the fd is closed */
+	*kq_ptr = -1;
+}
+
+/*
+ * ves_icall_System_IO_KqueueMonitor_kevent_notimeout:
+ *
+ *   Call kevent (), while handling runtime interruptions.
+ */
+int
+ves_icall_System_IO_KqueueMonitor_kevent_notimeout (int *kq_ptr, gpointer changelist, int nchanges, gpointer eventlist, int nevents)
+{
+	int res;
+	gboolean interrupted;
+
+	mono_thread_info_install_interrupt (interrupt_kevent, kq_ptr, &interrupted);
+	if (interrupted) {
+		printf ("1\n");
+		close (*kq_ptr);
+		*kq_ptr = -1;
+		return -1;
+	}
+
+	MONO_PREPARE_BLOCKING;
+	res = kevent (*kq_ptr, changelist, nchanges, eventlist, nevents, NULL);
+	MONO_FINISH_BLOCKING;
+
+	mono_thread_info_uninstall_interrupt (&interrupted);
+
+	return res;
+}
+
+#else
+
+int
+ves_icall_System_IO_KqueueMonitor_kevent_notimeout (int *kq_ptr, gpointer changelist, int nchanges, gpointer eventlist, int nevents)
+{
+	g_assert_not_reached ();
+	return -1;
+}
+
+#endif /* #if HAVE_KQUEUE */
