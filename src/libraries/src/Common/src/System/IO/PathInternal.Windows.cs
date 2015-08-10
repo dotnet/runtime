@@ -13,6 +13,9 @@ namespace System.IO
         internal const string UncPathPrefix = @"\\";
         internal const string UncExtendedPrefixToInsert = @"?\UNC\";
         internal const string UncExtendedPathPrefix = @"\\?\UNC\";
+        internal const int MaxShortPath = 260;
+        internal const int MaxShortDirectoryPath = 248;
+        internal const int MaxExtendedPath = short.MaxValue;
 
         internal static readonly char[] InvalidPathChars =
         {
@@ -31,6 +34,40 @@ namespace System.IO
             (char)21, (char)22, (char)23, (char)24, (char)25, (char)26, (char)27, (char)28, (char)29, (char)30,
             (char)31, '*', '?'
         };
+
+        /// <summary>
+        /// Returns true if the path is too long
+        /// </summary>
+        internal static bool IsPathTooLong(string fullPath)
+        {
+            if (IsExtended(fullPath))
+            {
+                return fullPath.Length >= MaxExtendedPath;
+            }
+            else
+            {
+                // Will need to be updated with #2581 to allow all paths to MaxExtendedPath
+                // minus legth of extended local or UNC prefix.
+                return fullPath.Length >= MaxShortPath;
+            }
+        }
+
+        /// <summary>
+        /// Returns true if the directory is too long
+        /// </summary>
+        internal static bool IsDirectoryTooLong(string fullPath)
+        {
+            if (IsExtended(fullPath))
+            {
+                return fullPath.Length >= MaxExtendedPath;
+            }
+            else
+            {
+                // Will need to be updated with #2581 to allow all paths to MaxExtendedPath
+                // minus legth of extended local or UNC prefix.
+                return fullPath.Length >= MaxShortDirectoryPath;
+            }
+        }
 
         /// <summary>
         /// Adds the extended path prefix (\\?\) if not already present.

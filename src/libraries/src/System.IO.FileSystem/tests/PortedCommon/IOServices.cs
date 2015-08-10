@@ -93,13 +93,20 @@ internal class IOServices
         return null;
     }
 
-
-    public static PathInfo GetPath(int characterCount)
+    public static PathInfo GetPath(int characterCount, bool extended = false)
     {
-        return GetPath(Path.GetPathRoot(Directory.GetCurrentDirectory()), characterCount, IOInputs.MaxComponent);
+        string root = Path.GetPathRoot(Directory.GetCurrentDirectory());
+        if (extended)
+            root = IOInputs.ExtendedPrefix + root;
+        return GetPath(root, characterCount);
     }
 
-    public static PathInfo GetPath(string rootPath, int characterCount, int maxComponent)
+    public static PathInfo GetExtendedPath(int characterCount)
+    {
+        return GetPath(characterCount, extended: true);
+    }
+
+    public static PathInfo GetPath(string rootPath, int characterCount, int maxComponent = IOInputs.MaxComponent)
     {
         List<string> paths = new List<string>();
         rootPath = rootPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
