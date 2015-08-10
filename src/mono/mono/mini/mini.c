@@ -3108,7 +3108,7 @@ mono_insert_safepoints (MonoCompile *cfg)
 		gpointer poll_func = NULL;
 #endif
 
-		if (info->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER && info->d.icall.func == poll_func) {
+		if (info && info->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER && info->d.icall.func == poll_func) {
 			if (cfg->verbose_level > 1)
 				printf ("SKIPPING SAFEPOINTS for the polling function icall\n");
 			return;
