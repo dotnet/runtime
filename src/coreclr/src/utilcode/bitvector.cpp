@@ -12,8 +12,7 @@
 #include "stdafx.h"
 #include <memory.h>
 
-#include "contract.h"
-#include "contract.inl"
+#include "utilcode.h"
 
 #include "bitvector.h"
 
