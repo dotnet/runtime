@@ -254,6 +254,19 @@ namespace System.ServiceProcessServiceController.Tests
             }
         }
 
+        [Fact]
+        public void ServicesStartMode()
+        {
+            var controller = new ServiceController(_testService.TestServiceName);
+            Assert.Equal(ServiceStartMode.Manual, controller.StartType);
+
+            // Check for the startType of the dependent services.
+            for (int i = 0; i < controller.DependentServices.Length; i++)
+            {
+                Assert.Equal(ServiceStartMode.Disabled, controller.DependentServices[i].StartType);
+            }
+        }
+
         public void Dispose()
         {
             _testService.DeleteTestServices();
