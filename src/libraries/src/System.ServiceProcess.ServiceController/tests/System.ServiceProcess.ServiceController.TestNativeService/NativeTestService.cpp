@@ -67,7 +67,7 @@ std::wstring            gDependentServiceDisplayNames[DEPENDENT_SERVICES];
 // Service Management Methods
 VOID GenerateDependentServiceNames();
 BOOL CreateTestServices();
-SC_HANDLE CreateTestService(SC_HANDLE, LPCTSTR, LPCTSTR, LPCTSTR, LPCTSTR dependencies = NULL);
+SC_HANDLE CreateTestService(SC_HANDLE, LPCTSTR, LPCTSTR, LPCTSTR, int, LPCTSTR dependencies = NULL);
 BOOL DeleteTestServices();
 BOOL DeleteTestService(SC_HANDLE, LPCTSTR);
 
@@ -191,7 +191,9 @@ BOOL CreateTestServices()
 		hScManager,
 		gServiceName,
 		gServiceDisplayName,
-		serviceCommand.c_str());
+		serviceCommand.c_str(),
+		SERVICE_DEMAND_START
+		);
 
 	if (hService == NULL)
 	{
@@ -211,6 +213,7 @@ BOOL CreateTestServices()
 			gDependentServiceNames[i].c_str(),
 			gDependentServiceDisplayNames[i].c_str(),
 			serviceCommand.c_str(),
+			SERVICE_DISABLED,
 			dependencies.c_str());
 
 		if (hDependentService == NULL)
@@ -251,7 +254,7 @@ BOOL CreateTestServices()
 	return result;
 }
 
-SC_HANDLE CreateTestService(SC_HANDLE hScManager, LPCTSTR name, LPCTSTR displayName, LPCTSTR command, LPCTSTR dependencies)
+SC_HANDLE CreateTestService(SC_HANDLE hScManager, LPCTSTR name, LPCTSTR displayName, LPCTSTR command, int startType, LPCTSTR dependencies)
 {
 	SC_HANDLE hService = CreateService(
 		hScManager,                // SCM database 
@@ -259,7 +262,7 @@ SC_HANDLE CreateTestService(SC_HANDLE hScManager, LPCTSTR name, LPCTSTR displayN
 		displayName,               // service name to display 
 		SERVICE_ALL_ACCESS,        // desired access 
 		SERVICE_WIN32_OWN_PROCESS, // service type 
-		SERVICE_DEMAND_START,      // start type 
+		startType,                 // start type 
 		SERVICE_ERROR_NORMAL,      // error control type 
 		command,                   // path to service's binary + arguments
 		NULL,                      // no load ordering group 
