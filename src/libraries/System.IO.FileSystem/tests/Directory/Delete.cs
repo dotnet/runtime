@@ -94,10 +94,19 @@ namespace System.IO.FileSystem.Tests
         [PlatformSpecific(PlatformID.Windows)]
         public void WindowsExtendedDirectoryWithSubdirectories()
         {
-            DirectoryInfo testDir = Directory.CreateDirectory(@"\\?\" + GetTestFilePath());
+            DirectoryInfo testDir = Directory.CreateDirectory(IOInputs.ExtendedPrefix + GetTestFilePath());
             testDir.CreateSubdirectory(GetTestFileName());
             Assert.Throws<IOException>(() => Delete(testDir.FullName));
             Assert.True(testDir.Exists);
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void WindowsLongPathExtendedDirectory()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(IOServices.GetPath(IOInputs.ExtendedPrefix + TestDirectory, characterCount: 500).FullPath);
+            Delete(testDir.FullName);
+            Assert.False(testDir.Exists);
         }
 
         [Fact]
@@ -115,7 +124,7 @@ namespace System.IO.FileSystem.Tests
         [PlatformSpecific(PlatformID.Windows)]
         public void WindowsDeleteExtendedReadOnlyDirectory()
         {
-            DirectoryInfo testDir = Directory.CreateDirectory(@"\\?\" + GetTestFilePath());
+            DirectoryInfo testDir = Directory.CreateDirectory(IOInputs.ExtendedPrefix + GetTestFilePath());
             testDir.Attributes = FileAttributes.ReadOnly;
             Assert.Throws<IOException>(() => Delete(testDir.FullName));
             Assert.True(testDir.Exists);
@@ -146,7 +155,7 @@ namespace System.IO.FileSystem.Tests
         [PlatformSpecific(PlatformID.Windows)]
         public void WindowsShouldBeAbleToDeleteExtendedHiddenDirectory()
         {
-            DirectoryInfo testDir = Directory.CreateDirectory(@"\\?\" + GetTestFilePath());
+            DirectoryInfo testDir = Directory.CreateDirectory(IOInputs.ExtendedPrefix + GetTestFilePath());
             testDir.Attributes = FileAttributes.Hidden;
             Delete(testDir.FullName);
             Assert.False(testDir.Exists);

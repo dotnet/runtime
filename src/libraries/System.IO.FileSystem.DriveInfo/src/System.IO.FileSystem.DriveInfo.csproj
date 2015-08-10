@@ -99,6 +99,9 @@
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Unix.cs">
       <Link>Common\System\IO\PathInternal.Unix.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.pathconf.cs">
+      <Link>Common\Interop\Unix\Interop.pathconf.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.mountpoints.cs">
       <Link>Common\Interop\Unix\Interop.mountpoints.cs</Link>
     </Compile>
@@ -123,6 +126,9 @@
     <Compile Include="$(CommonPath)\Interop\Linux\Interop.Libraries.cs">
       <Link>Common\Interop\Linux\Interop.Libraries.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.PathConfNames.cs">
+      <Link>Common\Interop\Linux\Interop.PathConfNames.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsBSD)' == 'true' ">
     <Compile Include="System\IO\DriveInfo.BSD.cs" />
@@ -137,6 +143,9 @@
     <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.statfs.cs">
       <Link>Common\Interop\OSX\Interop.statfs.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.PathConfNames.cs">
+      <Link>Common\Interop\OSX\Interop.PathConfNames.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsFreeBSD)' == 'true'">
     <Compile Include="$(CommonPath)\Interop\FreeBSD\libc\Interop.statfs.cs">
@@ -144,6 +153,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\FreeBSD\Interop.Libraries.cs">
       <Link>Common\Interop\FreeBSD\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\FreeBSD\libc\Interop.PathConfNames.cs">
+      <Link>Common\Interop\FreeBSD\Interop.PathConfNames.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
