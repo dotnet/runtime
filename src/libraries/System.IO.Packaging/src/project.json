@@ -1,12 +1,12 @@
 {
   "dependencies": {
-    "System.Collections": "4.0.10-beta-23008",
-    "System.Diagnostics.Debug": "4.0.10-beta-23008",
-    "System.IO.Compression": "4.0.0-beta-23008",
-    "System.IO.FileSystem": "4.0.0-beta-23008",
-    "System.IO.FileSystem.Primitives": "4.0.0-beta-23008",
-    "System.Runtime": "4.0.20-beta-23008",
-    "System.Xml.ReaderWriter": "4.0.0-beta-23008",
+    "System.Collections": "4.0.10",
+    "System.Diagnostics.Debug": "4.0.10",
+    "System.IO.Compression": "4.0.0",
+    "System.IO.FileSystem": "4.0.0",
+    "System.IO.FileSystem.Primitives": "4.0.0",
+    "System.Runtime": "4.0.20",
+    "System.Xml.ReaderWriter": "4.0.0",
   },
   "frameworks": {
     "dnxcore50": {}
