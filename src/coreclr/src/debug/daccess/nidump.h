@@ -243,18 +243,24 @@ public:
     void FieldDescToString( PTR_FieldDesc fd, mdFieldDef tok, SString& buf );
 
 #ifdef FEATURE_READYTORUN
+private:
+    READYTORUN_HEADER *			m_pReadyToRunHeader;
+
+    PTR_RUNTIME_FUNCTION        m_pRuntimeFunctions;
+    DWORD                       m_nRuntimeFunctions;
+
+    NativeFormat::NativeReader  m_nativeReader;
+    NativeFormat::NativeArray   m_methodDefEntryPoints;
+
+    IMAGE_DATA_DIRECTORY * FindReadyToRunSection(DWORD type);
+
+public:
     void DumpReadyToRun();
     void DumpReadyToRunHeader();
-#endif
+    void DumpReadyToRunMethods();
+    void DumpReadyToRunMethod(PCODE pEntryPoint, PTR_RUNTIME_FUNCTION pRuntimeFunction, SString& name);
+#endif // FEATURE_READYTORUN
 
-#if 0
-    void DumpPEFile( PTR_PEFile file, const char * name );
-    void DumpPEImage( PTR_PEImage image, const char * name );
-#endif
-
-
-    inline PTR_VOID BaseAddress() const { return m_baseAddress; }
-    
 private:
     PEDecoder m_decoder;
     const WCHAR * const m_name;
