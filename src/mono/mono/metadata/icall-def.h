@@ -306,9 +306,6 @@ ICALL(INOW_1, "AddWatch", ves_icall_System_IO_InotifyWatcher_AddWatch)
 ICALL(INOW_2, "GetInotifyInstance", ves_icall_System_IO_InotifyWatcher_GetInotifyInstance)
 ICALL(INOW_3, "RemoveWatch", ves_icall_System_IO_InotifyWatcher_RemoveWatch)
 
-ICALL_TYPE(KQUEM, "System.IO.KqueueMonitor", KQUEM_1)
-ICALL(KQUEM_1, "kevent_notimeout", ves_icall_System_IO_KqueueMonitor_kevent_notimeout)
-
 ICALL_TYPE(MMAPIMPL, "System.IO.MemoryMappedFiles.MemoryMapImpl", MMAPIMPL_1)
 ICALL(MMAPIMPL_1, "CloseMapping", mono_mmap_close)
 ICALL(MMAPIMPL_2, "ConfigureHandleInheritability", mono_mmap_configure_inheritability)
