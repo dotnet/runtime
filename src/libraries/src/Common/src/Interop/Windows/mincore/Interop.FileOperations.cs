@@ -15,9 +15,18 @@ internal partial class Interop
         {
             internal const int OPEN_EXISTING = 3;
             internal const int COPY_FILE_FAIL_IF_EXISTS = 0x00000001;
+
+            internal const int FILE_ACTION_ADDED = 1;
+            internal const int FILE_ACTION_REMOVED = 2;
+            internal const int FILE_ACTION_MODIFIED = 3;
+            internal const int FILE_ACTION_RENAMED_OLD_NAME = 4;
+            internal const int FILE_ACTION_RENAMED_NEW_NAME = 5;
+
             internal const int FILE_FLAG_BACKUP_SEMANTICS = 0x02000000;
             internal const int FILE_FLAG_FIRST_PIPE_INSTANCE = 0x00080000;
             internal const int FILE_FLAG_OVERLAPPED = 0x40000000;
+
+            internal const int FILE_LIST_DIRECTORY = 0x0001;
         }
 
         internal const uint SEM_FAILCRITICALERRORS = 1;

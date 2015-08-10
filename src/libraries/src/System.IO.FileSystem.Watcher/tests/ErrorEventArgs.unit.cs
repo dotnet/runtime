@@ -5,7 +5,7 @@ using System;
 using System.IO;
 using Xunit;
 
-public partial class ErrorEventArgs_4000_Tests
+public class ErrorEventArgsTests
 {
     private static void ValidateErrorEventArgs(Exception exception)
     {

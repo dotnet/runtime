@@ -34,8 +34,21 @@
     <Compile Include="System\IO\WatcherChangeTypes.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
-    <Compile Include="Microsoft\Win32\NativeMethods.cs" />
-    <Compile Include="Microsoft\Win32\UnsafeNativeMethods.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CreateFile.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.CreateFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs">
+      <Link>Common\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FileOperations.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.FileOperations.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ReadDirectoryChangesW.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.ReadDirectoryChangesW.cs</Link>
+    </Compile>
     <Compile Include="System\IO\FileSystemWatcher.Win32.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
