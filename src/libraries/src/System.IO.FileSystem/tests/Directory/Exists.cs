@@ -123,7 +123,7 @@ namespace System.IO.FileSystem.Tests
         {
             Assert.All((IOInputs.GetValidPathComponentNames()), (component) =>
             {
-                string path = @"\\?\" + Path.Combine(TestDirectory, "extended", component);
+                string path = IOInputs.ExtendedPrefix + Path.Combine(TestDirectory, "extended", component);
                 DirectoryInfo testDir = Directory.CreateDirectory(path);
                 Assert.True(Exists(path));
             });
@@ -133,7 +133,7 @@ namespace System.IO.FileSystem.Tests
         [PlatformSpecific(PlatformID.Windows)]
         public void ExtendedPathAlreadyExistsAsFile()
         {
-            string path = @"\\?\" + GetTestFilePath();
+            string path = IOInputs.ExtendedPrefix + GetTestFilePath();
             File.Create(path).Dispose();
 
             Assert.False(Exists(IOServices.RemoveTrailingSlash(path)));
@@ -145,7 +145,7 @@ namespace System.IO.FileSystem.Tests
         [PlatformSpecific(PlatformID.Windows)]
         public void ExtendedPathAlreadyExistsAsDirectory()
         {
-            string path = @"\\?\" + GetTestFilePath();
+            string path = IOInputs.ExtendedPrefix + GetTestFilePath();
             DirectoryInfo testDir = Directory.CreateDirectory(path);
 
             Assert.True(Exists(IOServices.RemoveTrailingSlash(path)));
@@ -203,13 +203,13 @@ namespace System.IO.FileSystem.Tests
             {
                 string path = testDir.FullName + component;
                 Assert.True(Exists(path), path); // string concat in case Path.Combine() trims whitespace before Exists gets to it
-                Assert.False(Exists(@"\\?\" + path), path);
+                Assert.False(Exists(IOInputs.ExtendedPrefix + path), path);
             });
 
             Assert.All(IOInputs.GetSimpleWhiteSpace(), (component) =>
             {
                 string path = GetTestFilePath(memberName: "Extended") + component;
-                testDir = Directory.CreateDirectory(@"\\?\" + path);
+                testDir = Directory.CreateDirectory(IOInputs.ExtendedPrefix + path);
                 Assert.False(Exists(path), path);
                 Assert.True(Exists(testDir.FullName));
             });

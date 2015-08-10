@@ -59,8 +59,23 @@ namespace System.IO.FileSystem.Tests
         [PlatformSpecific(PlatformID.Windows)]
         public void ValidCreation_ExtendedSyntax()
         {
-            DirectoryInfo testDir = Directory.CreateDirectory(@"\\?\" + GetTestFilePath());
-            Assert.StartsWith(@"\\?\", testDir.FullName);
+            DirectoryInfo testDir = Directory.CreateDirectory(IOInputs.ExtendedPrefix + GetTestFilePath());
+            Assert.StartsWith(IOInputs.ExtendedPrefix, testDir.FullName);
+            string testFile = Path.Combine(testDir.FullName, GetTestFileName());
+            using (FileStream stream = Create(testFile))
+            {
+                Assert.True(File.Exists(testFile));
+                Assert.Equal(0, stream.Length);
+                Assert.Equal(0, stream.Position);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void ValidCreation_LongPathExtendedSyntax()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(IOServices.GetPath(IOInputs.ExtendedPrefix + TestDirectory, characterCount: 500).FullPath);
+            Assert.StartsWith(IOInputs.ExtendedPrefix, testDir.FullName);
             string testFile = Path.Combine(testDir.FullName, GetTestFileName());
             using (FileStream stream = Create(testFile))
             {
