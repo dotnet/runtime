@@ -93,8 +93,6 @@ namespace System.Net.Http
                 // TODO: Fail if we find that task is already Canceled or Faulted
                 state.TrySetResult(state.ResponseMessage);
 
-                // TODO: Handle compression and chunked-mode
-
                 // Wait for a reader
                 // TODO: The below call blocks till all the data has been read since
                 //       response body is not suppored to be buffered in memory.
