@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{1F827C19-6023-48D3-909F-9F43AB42FAF0}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>System.IO.Packaging</RootNamespace>
+    <AssemblyName>System.IO.Packaging</AssemblyName>
+    <NuGetTargetFrameworkMoniker>DNXCore,Version=v5.0</NuGetTargetFrameworkMoniker>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="System\IO\Packaging\CompressionOption.cs" />
+    <Compile Include="System\IO\Packaging\ContentType.cs" />
+    <Compile Include="System\IO\Packaging\EncryptionOption.cs" />
+    <Compile Include="System\IO\Packaging\FileFormatException.cs" />
+    <Compile Include="System\IO\Packaging\IgnoreFlushAndCloseStream.cs" />
+    <Compile Include="System\IO\Packaging\InternalRelationshipCollection.cs" />
+    <Compile Include="System\IO\Packaging\Package.cs" />
+    <Compile Include="System\IO\Packaging\PackagePart.cs" />
+    <Compile Include="System\IO\Packaging\PackagePartCollection.cs" />
+    <Compile Include="System\IO\Packaging\PackageProperties.cs" />
+    <Compile Include="System\IO\Packaging\PackageRelationship.cs" />
+    <Compile Include="System\IO\Packaging\PackageRelationshipCollection.cs" />
+    <Compile Include="System\IO\Packaging\PackageRelationshipSelector.cs" />
+    <Compile Include="System\IO\Packaging\PackageRelationshipSelectorType.cs" />
+    <Compile Include="System\IO\Packaging\PackageXmlEnum.cs" />
+    <Compile Include="System\IO\Packaging\PackageXmlStringTable.cs" />
+    <Compile Include="System\IO\Packaging\PackagingUtilities.cs" />
+    <Compile Include="System\IO\Packaging\PackUriHelper.cs" />
+    <Compile Include="System\IO\Packaging\PartBasedPackageProperties.cs" />
+    <Compile Include="System\IO\Packaging\TargetMode.cs" />
+    <Compile Include="System\IO\Packaging\XmlCompatibilityReader.cs" />
+    <Compile Include="System\IO\Packaging\XmlWrappingReader.cs" />
+    <Compile Include="System\IO\Packaging\ZipPackage.cs" />
+    <Compile Include="System\IO\Packaging\ZipPackagePart.cs" />
+    <Compile Include="System\IO\Packaging\ZipStreamManager.cs" />
+    <Compile Include="System\IO\Packaging\ZipWrappingStream.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
