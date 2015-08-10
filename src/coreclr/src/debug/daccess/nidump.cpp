@@ -3440,6 +3440,11 @@ size_t NativeImageDumper::TranslateSymbol(IXCLRDisassemblySupport *dis,
                                           CLRDATA_ADDRESS addr, __out_ecount(nameSize) WCHAR *name,
                                           SIZE_T nameSize, DWORDLONG *offset)
 {
+#ifdef FEATURE_READYTORUN
+    if (m_pReadyToRunHeader != NULL)
+        return 0;
+#endif
+
     if (isInRange((TADDR)addr))
     {
         COUNT_T rva = (COUNT_T)(addr - PTR_TO_TADDR(m_decoder.GetBase()));
@@ -3768,7 +3773,6 @@ void NativeImageDumper::DumpModule( PTR_Module module )
     _ASSERTE(file == NULL); 
     DisplayWriteFieldPointer( m_file, DPtrToPreferredAddr(file), Module,
                               MODULE );
-    //DumpPEFile( file, "PEFile" );
 
     PTR_MethodDesc dllMain( TO_TADDR(module->m_pDllMain) );
     WriteFieldMethodDesc( m_pDllMain, dllMain, Module,
@@ -9279,17 +9283,54 @@ StandardEntryDisplay:
 }
 
 #ifdef FEATURE_READYTORUN
+IMAGE_DATA_DIRECTORY * NativeImageDumper::FindReadyToRunSection(DWORD type)
+{
+    PTR_READYTORUN_SECTION pSections = dac_cast<PTR_READYTORUN_SECTION>(dac_cast<TADDR>(m_pReadyToRunHeader) + sizeof(READYTORUN_HEADER));
+    for (DWORD i = 0; i < m_pReadyToRunHeader->NumberOfSections; i++)
+    {
+        // Verify that section types are sorted
+        _ASSERTE(i == 0 || (pSections[i - 1].Type < pSections[i].Type));
+
+        READYTORUN_SECTION * pSection = pSections + i;
+        if (pSection->Type == type)
+            return &pSection->Section;
+    }
+    return NULL;
+}
+
 //
 // Ready to Run specific dumping methods
 //
 void NativeImageDumper::DumpReadyToRun()
 {
+    m_pReadyToRunHeader = m_decoder.GetReadyToRunHeader();
+
+    m_nativeReader = NativeFormat::NativeReader(dac_cast<PTR_BYTE>(m_decoder.GetBase()), m_decoder.GetVirtualSize());
+
+    IMAGE_DATA_DIRECTORY * pRuntimeFunctionsDir = FindReadyToRunSection(READYTORUN_SECTION_RUNTIME_FUNCTIONS);
+    if (pRuntimeFunctionsDir != NULL)
+    {
+        m_pRuntimeFunctions = dac_cast<PTR_RUNTIME_FUNCTION>(m_decoder.GetDirectoryData(pRuntimeFunctionsDir));
+        m_nRuntimeFunctions = pRuntimeFunctionsDir->Size / sizeof(RUNTIME_FUNCTION);
+    }
+    else
+    {
+        m_nRuntimeFunctions = 0;
+    }
+
+    IMAGE_DATA_DIRECTORY * pEntryPointsDir = FindReadyToRunSection(READYTORUN_SECTION_METHODDEF_ENTRYPOINTS);
+    if (pEntryPointsDir != NULL)
+        m_methodDefEntryPoints = NativeFormat::NativeArray(&m_nativeReader, pEntryPointsDir->VirtualAddress);
+
     DisplayStartCategory("NativeInfo", NATIVE_INFO);
 
     IF_OPT(NATIVE_INFO)
         DumpReadyToRunHeader();
 
     DisplayEndCategory(NATIVE_INFO); //NativeInfo
+
+    IF_OPT_OR3(METHODS, GC_INFO, DISASSEMBLE_CODE)
+        DumpReadyToRunMethods();
 
     IF_OPT(RELOCATIONS)
         DumpBaseRelocs();
@@ -9304,24 +9345,162 @@ const NativeImageDumper::EnumMnemonics s_ReadyToRunFlags[] =
 
 void NativeImageDumper::DumpReadyToRunHeader()
 {
-    PTR_READYTORUN_HEADER nativeHeader(m_decoder.GetReadyToRunHeader());
-
     IF_OPT(NATIVE_INFO)
     {
         m_display->StartStructure( "READYTORUN_HEADER",
-                                   DPtrToPreferredAddr(nativeHeader),
-                                   sizeof(*nativeHeader) );
+                                   DPtrToPreferredAddr(dac_cast<PTR_READYTORUN_HEADER>(m_pReadyToRunHeader)),
+                                   sizeof(*m_pReadyToRunHeader) );
 
-        DisplayWriteFieldUInt( Signature, nativeHeader->Signature, READYTORUN_HEADER, ALWAYS );
-        DisplayWriteFieldUInt( MajorVersion, nativeHeader->MajorVersion, READYTORUN_HEADER, ALWAYS );
-        DisplayWriteFieldUInt( MinorVersion, nativeHeader->MinorVersion, READYTORUN_HEADER, ALWAYS );
+        DisplayWriteFieldUInt( Signature, m_pReadyToRunHeader->Signature, READYTORUN_HEADER, ALWAYS );
+        DisplayWriteFieldUInt( MajorVersion, m_pReadyToRunHeader->MajorVersion, READYTORUN_HEADER, ALWAYS );
+        DisplayWriteFieldUInt( MinorVersion, m_pReadyToRunHeader->MinorVersion, READYTORUN_HEADER, ALWAYS );
 
-        DisplayWriteFieldEnumerated( Flags, nativeHeader->Flags,
+        DisplayWriteFieldEnumerated( Flags, m_pReadyToRunHeader->Flags,
                                      READYTORUN_HEADER, s_ReadyToRunFlags, W(", "),
                                      NATIVE_INFO );
 
         m_display->EndStructure(); //READYTORUN_HEADER
     }
+}
+
+void NativeImageDumper::DumpReadyToRunMethods()
+{
+    DisplayStartArray("Methods", NULL, METHODS);
+
+    for (uint rid = 1; rid <= m_methodDefEntryPoints.GetCount(); rid++)
+    {
+        uint offset;
+        if (!m_methodDefEntryPoints.TryGetAt(rid - 1, &offset))
+            continue;
+
+        uint id;
+        offset = m_nativeReader.DecodeUnsigned(offset, &id);
+
+        if (id & 1)
+        {
+            if (id & 2)
+            {
+                uint val;
+                m_nativeReader.DecodeUnsigned(offset, &val);
+                offset -= val;
+            }
+
+            // TODO: Dump fixups from dac_cast<TADDR>(m_pLayout->GetBase()) + offset
+
+            id >>= 2;
+        }
+        else
+        {
+            id >>= 1;
+        }
+
+        _ASSERTE(id < m_nRuntimeFunctions);
+        PTR_RUNTIME_FUNCTION pRuntimeFunction = m_pRuntimeFunctions + id;
+        PCODE pEntryPoint = dac_cast<TADDR>(m_decoder.GetBase()) + pRuntimeFunction->BeginAddress;
+
+        SString buf;
+        AppendTokenName(TokenFromRid(rid, mdtMethodDef), buf, m_import);
+
+        DumpReadyToRunMethod(pEntryPoint, pRuntimeFunction, buf);
+    }
+
+    DisplayEndArray("Total Methods", METHODS); //Methods
+}
+
+extern PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFunction, /* out */ SIZE_T * pSize);
+
+void NativeImageDumper::DumpReadyToRunMethod(PCODE pEntryPoint, PTR_RUNTIME_FUNCTION pRuntimeFunction, SString& name)
+{
+    //Read the GCInfo to get the total method size.
+    unsigned methodSize = 0;
+    unsigned gcInfoSize = UINT_MAX;
+
+    SIZE_T nUnwindDataSize;
+    PTR_VOID pUnwindData = GetUnwindDataBlob(dac_cast<TADDR>(m_decoder.GetBase()), pRuntimeFunction, &nUnwindDataSize);
+
+    // GCInfo immediatelly follows unwind data
+    PTR_CBYTE gcInfo = dac_cast<PTR_CBYTE>(pUnwindData) + nUnwindDataSize;
+
+    void(*stringOutFn)(const char *, ...);
+    IF_OPT(GC_INFO)
+    {
+        stringOutFn = stringOut;
+    }
+    else
+    {
+        stringOutFn = nullStringOut;
+    }
+    if (gcInfo != NULL)
+    {
+        PTR_CBYTE curGCInfoPtr = gcInfo;
+        g_holdStringOutData.Clear();
+        GCDump gcDump;
+        gcDump.gcPrintf = stringOutFn;
+#if !defined(_TARGET_X86_) && defined(USE_GC_INFO_DECODER)
+        GcInfoDecoder gcInfoDecoder(curGCInfoPtr, DECODE_CODE_LENGTH, 0);
+        methodSize = gcInfoDecoder.GetCodeLength();
+#endif
+
+        //dump the data to a string first so we can get the gcinfo size.
+#ifdef _TARGET_X86_
+        InfoHdr hdr;
+        stringOutFn("method info Block:\n");
+        curGCInfoPtr += gcDump.DumpInfoHdr(curGCInfoPtr, &hdr, &methodSize, 0);
+        stringOutFn("\n");
+#endif
+
+        IF_OPT(METHODS)
+        {
+#ifdef _TARGET_X86_
+            stringOutFn("PointerTable:\n");
+            curGCInfoPtr += gcDump.DumpGCTable(curGCInfoPtr,
+                hdr,
+                methodSize, 0);
+            gcInfoSize = curGCInfoPtr - gcInfo;
+#elif defined(USE_GC_INFO_DECODER)
+            stringOutFn("PointerTable:\n");
+            curGCInfoPtr += gcDump.DumpGCTable(curGCInfoPtr,
+                methodSize, 0);
+            gcInfoSize = (unsigned)(curGCInfoPtr - gcInfo);
+#endif
+        }
+
+        //data is output below.
+    }
+
+    DisplayStartElement("Method", METHODS);
+    DisplayWriteElementStringW("Name", (const WCHAR *)name, METHODS);
+
+    DisplayStartStructure("GCInfo",
+        DPtrToPreferredAddr(gcInfo),
+        gcInfoSize,
+        METHODS);
+
+    DisplayStartTextElement("Contents", GC_INFO);
+    DisplayWriteXmlTextBlock(("%S", (const WCHAR *)g_holdStringOutData), GC_INFO);
+    DisplayEndTextElement(GC_INFO); //Contents
+
+    DisplayEndStructure(METHODS); //GCInfo
+
+    DisplayStartStructure("Code", DataPtrToDisplay(pEntryPoint), methodSize,
+        METHODS);
+
+    IF_OPT(DISASSEMBLE_CODE)
+    {
+        // Disassemble hot code.  Read the code into the host process.
+        /* REVISIT_TODO Mon 10/24/2005
+        * Is this align up right?
+        */
+        BYTE * codeStartHost =
+            reinterpret_cast<BYTE*>(PTR_READ(pEntryPoint,
+                (ULONG32)ALIGN_UP(methodSize,
+                    CODE_SIZE_ALIGN)));
+        DisassembleMethod(codeStartHost, methodSize);
+    }
+
+    DisplayEndStructure(METHODS); //Code 
+
+    DisplayEndElement(METHODS); //Method
 }
 #endif // FEATURE_READYTORUN
 
@@ -9337,36 +9516,6 @@ mdTypeRef NativeImageDumper::FindTypeRefForMT( PTR_MethodTable mt )
 }
 #endif
 
-
-#if 0
-void NativeImageDumper::DumpPEFile( PTR_PEFile file, const char * name )
-{
-    IF_OPT(PE_INFO)
-    {
-        m_display->StartStructure( name, DPtrToPreferredAddr(file),
-                                   sizeof(*file) );
-    }
-    _ASSERTE(file->m_identity);
-    _ASSERTE(file->m_ILimage);
-    _ASSERTE(file->m_nativeImage);
-    DumpPEImage( file->m_identity, "ThisImage" );
-    DumpPEImage( file->m_ILimage, "ILImage" );
-    DumpPEImage( file->m_nativeImage, "NativeImage" );
-
-    IF_OPT(PE_INFO)
-    {
-        m_display->WriteElementFlag( "CanUseNativeImage",
-                                     file->m_fCanUseNativeImage );
-        m_display->WriteElementFlag( "HasPersistentMDImport",
-                                     file->m_bHasPersistentMDImport );
-    }
-#ifdef _DEBUG
-    _ASSERTE( !"Look at m_pDebugName and m_debugName.  Also look at IMDstuff" );
-#endif
-    IF_OPT(PE_INFO)
-        m_display->EndStructure(); //name
-}
-#endif
 
 /* REVISIT_TODO Mon 10/10/2005
  * Here is where it gets bad.  There is no DAC build of gcdump, so instead
