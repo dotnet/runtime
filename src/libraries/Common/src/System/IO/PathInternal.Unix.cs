@@ -41,5 +41,22 @@ namespace System.IO
             Debug.Assert(Path.DirectorySeparatorChar == Path.AltDirectorySeparatorChar);
             return c == Path.DirectorySeparatorChar;
         }
+
+
+        /// <summary>
+        /// Returns true if the path is too long
+        /// </summary>
+        internal static bool IsPathTooLong(string fullPath)
+        {
+            return fullPath.Length >= Interop.libc.MaxPath;
+        }
+
+        /// <summary>
+        /// Returns true if the directory is too long
+        /// </summary>
+        internal static bool IsDirectoryTooLong(string fullPath)
+        {
+            return fullPath.Length >= Interop.libc.MaxPath;
+        }
     }
 }

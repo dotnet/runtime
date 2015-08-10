@@ -105,7 +105,7 @@ namespace System.IO
             {
                 String name = stackDir[stackDir.Count - 1];
                 stackDir.RemoveAt(stackDir.Count - 1);
-                if (name.Length >= Interop.mincore.MAX_DIRECTORY_PATH)
+                if (PathInternal.IsDirectoryTooLong(name))
                     throw new PathTooLongException(SR.IO_PathTooLong);
                 r = Interop.mincore.CreateDirectory(name, ref secAttrs);
                 if (!r && (firstError == 0))

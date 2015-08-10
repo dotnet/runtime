@@ -392,11 +392,10 @@ namespace System.IO
             else
                 fullSourcePath = FullPath + PathHelpers.DirectorySeparatorCharAsString;
 
-            int maxDirectoryPath = FileSystem.Current.MaxDirectoryPath;
-            if (fullSourcePath.Length >= maxDirectoryPath)
+            if (PathInternal.IsDirectoryTooLong(fullSourcePath))
                 throw new PathTooLongException(SR.IO_PathTooLong);
 
-            if (fullDestDirName.Length >= maxDirectoryPath)
+            if (PathInternal.IsDirectoryTooLong(fullDestDirName))
                 throw new PathTooLongException(SR.IO_PathTooLong);
 
             StringComparison pathComparison = PathInternal.GetComparison();

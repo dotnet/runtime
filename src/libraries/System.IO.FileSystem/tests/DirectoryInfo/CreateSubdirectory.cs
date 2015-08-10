@@ -201,11 +201,11 @@ namespace System.IO.FileSystem.Tests
         [PlatformSpecific(PlatformID.Windows)]
         public void ExtendedPathSubdirectory()
         {
-            DirectoryInfo testDir = Directory.CreateDirectory(@"\\?\" + GetTestFilePath());
+            DirectoryInfo testDir = Directory.CreateDirectory(IOInputs.ExtendedPrefix + GetTestFilePath());
             Assert.True(testDir.Exists);
             DirectoryInfo subDir = testDir.CreateSubdirectory("Foo");
             Assert.True(subDir.Exists);
-            Assert.StartsWith(@"\\?\", subDir.FullName);
+            Assert.StartsWith(IOInputs.ExtendedPrefix, subDir.FullName);
         }
 
         [Fact]
