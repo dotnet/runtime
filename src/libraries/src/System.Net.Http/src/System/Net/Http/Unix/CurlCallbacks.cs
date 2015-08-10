@@ -24,7 +24,8 @@ namespace System.Net.Http
     {
         private const string s_httpPrefix = "HTTP/";
         private static readonly char[] s_newLineCharArray = new char[] { HttpRuleParser.CR, HttpRuleParser.LF };
-        private const char spaceChar = ' ';
+        private const char SpaceChar = ' ';
+        private const int StatusCodeLength = 3;
 
         private static Interop.libcurl.curl_readwrite_callback s_receiveHeadersCallback =
             (Interop.libcurl.curl_readwrite_callback) CurlReceiveHeadersCallback;
@@ -206,8 +207,7 @@ namespace System.Net.Http
                 return false;
             }
 
-	    //Clear the header if status line is recieved again. This signifies that there are multiple response headers (like in redirection).
-
+            // Clear the header if status line is recieved again. This signifies that there are multiple response headers (like in redirection).
             response.Headers.Clear();
             
             response.Content.Headers.Clear();        
@@ -222,50 +222,65 @@ namespace System.Net.Http
             {
                 if (responseHeader[versionIndex] == '1')
                 {
-                    response.Version = new Version(1, 1);
+                    response.Version = HttpVersion.Version11;
                 }
                 else if (responseHeader[versionIndex] == '0')
                 {
-                    response.Version = new Version(1, 0);
+                    response.Version = HttpVersion.Version10;
                 }
             }
-
-            // Parse first 3 characters after a space as status code
+         
             // TODO: Parsing errors are treated as fatal. Find right behaviour
-            int statusCodeLength = 3;
-
-            int spaceIndex = responseHeader.IndexOf(spaceChar);
+           
+            int spaceIndex = responseHeader.IndexOf(SpaceChar);
 
             if (spaceIndex > -1)
             {
                 int codeStartIndex = spaceIndex + 1;
-                int codeEndIndex = codeStartIndex + statusCodeLength;
+                int codeEndIndex = codeStartIndex + StatusCodeLength;
+                int statusCode = 0;
 
-                if (codeEndIndex <= responseHeaderLength)
+                // Parse first 3 characters after a space as status code
+                if (TryParseStatusCode(responseHeader, codeStartIndex, out statusCode))
                 {
-                    string strStatusCode = responseHeader.Substring(codeStartIndex, statusCodeLength);
-                    response.StatusCode = (HttpStatusCode)(int.Parse(strStatusCode));
+                    response.StatusCode = (HttpStatusCode)statusCode;
 
                     int reasonPhraseIndex = codeEndIndex + 1;
 
-                    if (reasonPhraseIndex < responseHeaderLength && char.Equals(responseHeader[codeEndIndex], spaceChar))
+                    if (reasonPhraseIndex < responseHeaderLength && responseHeader[codeEndIndex] == SpaceChar)
                     {
-                        string reasonPhrase = responseHeader.Substring(reasonPhraseIndex);
-
-                        //if reasonPhrase contains any of new line character, then consider reasonPhrase till new line.
-                        int newLineCharIndex = reasonPhrase.IndexOfAny(s_newLineCharArray);
-
-                        if (newLineCharIndex > -1)
-                        {
-                            reasonPhrase = reasonPhrase.Substring(0, newLineCharIndex);
-                        }
-
-                        response.ReasonPhrase = reasonPhrase;
+                        int newLineCharIndex = responseHeader.IndexOfAny(s_newLineCharArray, reasonPhraseIndex);
+                        int reasonPhraseEnd = newLineCharIndex >= 0 ? newLineCharIndex : responseHeaderLength;
+                        response.ReasonPhrase = responseHeader.Substring(reasonPhraseIndex, reasonPhraseEnd - reasonPhraseIndex);
                     }
-                }
-               
+                }               
             }
             
+            return true;
+        }
+
+        private static bool TryParseStatusCode(string responseHeader, int statusCodeStartIndex, out int statusCode)
+        {          
+            if (statusCodeStartIndex + StatusCodeLength > responseHeader.Length)
+            {
+                statusCode = 0;
+                return false;
+            }
+
+            char c100 = responseHeader[statusCodeStartIndex];
+            char c10 = responseHeader[statusCodeStartIndex + 1];
+            char c1 = responseHeader[statusCodeStartIndex + 2];
+
+            if (c100 < '0' || c100 > '9' ||
+                c10 < '0' || c10 > '9' ||
+                c1 < '0' || c1 > '9')
+            {
+                statusCode = 0;
+                return false;
+            }
+
+            statusCode =  (c100 - '0') * 100 +  (c10 - '0') * 10 +  (c1 - '0');
+
             return true;
         }
 
