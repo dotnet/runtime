@@ -225,7 +225,6 @@ ves_icall_System_IO_KqueueMonitor_kevent_notimeout (int *kq_ptr, gpointer change
 
 	mono_thread_info_install_interrupt (interrupt_kevent, kq_ptr, &interrupted);
 	if (interrupted) {
-		printf ("1\n");
 		close (*kq_ptr);
 		*kq_ptr = -1;
 		return -1;
