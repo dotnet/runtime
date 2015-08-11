@@ -59,7 +59,14 @@ namespace System.Runtime.Serialization.Json
             // with the restructuring for multi-file, this is no longer true - instead
             // this has become a normal method
             JsonReadWriteDelegates result;
+#if NET_NATIVE
+            // The c passed in could be a clone which is different from the original key,
+            // We'll need to get the original key data contract from generated assembly.
+            DataContract keyDc = DataContract.GetDataContractFromGeneratedAssembly(c.UnderlyingType);
+            return JsonReadWriteDelegates.GetJsonDelegates().TryGetValue(keyDc, out result) ? result : null;
+#else
             return JsonReadWriteDelegates.GetJsonDelegates().TryGetValue(c, out result) ? result : null;
+#endif
         }
 
         internal static JsonReadWriteDelegates GetReadWriteDelegatesFromGeneratedAssembly(DataContract c)

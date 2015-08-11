@@ -344,7 +344,10 @@ namespace System.Runtime.Serialization
 #if !NET_NATIVE
             return new ClassDataContract(type, ns, memberNames);
 #else
-            return (ClassDataContract)DataContract.GetDataContractFromGeneratedAssembly(type);
+            ClassDataContract cdc = (ClassDataContract)DataContract.GetDataContractFromGeneratedAssembly(type);
+            ClassDataContract cloned = cdc.Clone();
+            cloned.UpdateNamespaceAndMembers(type, ns, memberNames);
+            return cloned;
 #endif
         }
 
@@ -1437,6 +1440,38 @@ namespace System.Runtime.Serialization
 
                 internal static DataMemberConflictComparer Singleton = new DataMemberConflictComparer();
             }
+
+#if NET_NATIVE
+            internal ClassDataContractCriticalHelper Clone()
+            {
+                ClassDataContractCriticalHelper clonedHelper = new ClassDataContractCriticalHelper(this.UnderlyingType);
+
+                clonedHelper._baseContract = this._baseContract;
+                clonedHelper._childElementNamespaces = this._childElementNamespaces;
+                clonedHelper.ContractNamespaces = this.ContractNamespaces;
+                clonedHelper._hasDataContract = this._hasDataContract;
+                clonedHelper._isMethodChecked = this._isMethodChecked;
+                clonedHelper._isNonAttributedType = this._isNonAttributedType;
+                clonedHelper.IsReference = this.IsReference;
+                clonedHelper.IsValueType = this.IsValueType;
+                clonedHelper.MemberNames = this.MemberNames;
+                clonedHelper.MemberNamespaces = this.MemberNamespaces;
+                clonedHelper._members = this._members;
+                clonedHelper.Name = this.Name;
+                clonedHelper.Namespace = this.Namespace;
+                clonedHelper._onDeserialized = this._onDeserialized;
+                clonedHelper._onDeserializing = this._onDeserializing;
+                clonedHelper._onSerialized = this._onSerialized;
+                clonedHelper._onSerializing = this._onSerializing;
+                clonedHelper.StableName = this.StableName;
+                clonedHelper.TopLevelElementName = this.TopLevelElementName;
+                clonedHelper.TopLevelElementNamespace = this.TopLevelElementNamespace;
+                clonedHelper._xmlFormatReaderDelegate = this._xmlFormatReaderDelegate;
+                clonedHelper._xmlFormatWriterDelegate = this._xmlFormatWriterDelegate;
+
+                return clonedHelper;
+            }
+#endif
         }
 
 
@@ -1468,6 +1503,38 @@ namespace System.Runtime.Serialization
                     type = Globals.TypeOfValueType;
                 }
                 return type;
+            }
+        }
+#endif
+
+#if NET_NATIVE
+        internal ClassDataContract Clone()
+        {
+            ClassDataContract clonedDc = new ClassDataContract(this.UnderlyingType);
+            clonedDc._helper = _helper.Clone();
+            clonedDc.ContractNamespaces = this.ContractNamespaces;
+            clonedDc.ChildElementNamespaces = this.ChildElementNamespaces;
+            clonedDc.MemberNames = this.MemberNames;
+            clonedDc.MemberNamespaces = this.MemberNamespaces;
+            clonedDc.XmlFormatWriterDelegate = this.XmlFormatWriterDelegate;
+            clonedDc.XmlFormatReaderDelegate = this.XmlFormatReaderDelegate;
+            return clonedDc;
+        }
+
+        internal void UpdateNamespaceAndMembers(Type type, XmlDictionaryString ns, string[] memberNames)
+        {
+            this.StableName = new XmlQualifiedName(GetStableName(type).Name, ns.Value);
+            this.Namespace = ns;
+            XmlDictionary dictionary = new XmlDictionary(1 + memberNames.Length);
+            this.Name = dictionary.Add(StableName.Name);
+            this.Namespace = ns;
+            this.ContractNamespaces = new XmlDictionaryString[] { ns };
+            this.MemberNames = new XmlDictionaryString[memberNames.Length];
+            this.MemberNamespaces = new XmlDictionaryString[memberNames.Length];
+            for (int i = 0; i < memberNames.Length; i++)
+            {
+                this.MemberNames[i] = dictionary.Add(memberNames[i]);
+                this.MemberNamespaces[i] = ns;
             }
         }
 #endif
