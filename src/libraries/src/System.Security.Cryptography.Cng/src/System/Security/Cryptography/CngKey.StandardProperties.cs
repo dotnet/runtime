@@ -64,6 +64,11 @@ namespace System.Security.Cryptography
                 CngExportPolicies policy = (CngExportPolicies)_keyHandle.GetPropertyAsDword(KeyPropertyName.ExportPolicy, CngPropertyOptions.None);
                 return policy;
             }
+
+            internal set
+            {
+                _keyHandle.SetExportPolicy(value);
+            }
         }
 
         /// <summary>

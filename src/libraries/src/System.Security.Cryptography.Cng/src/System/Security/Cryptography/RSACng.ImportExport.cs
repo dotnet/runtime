@@ -38,9 +38,21 @@ namespace System.Security.Cryptography
             unsafe
             {
                 if (parameters.Exponent == null || parameters.Modulus == null)
-                    throw new ArgumentException(SR.Cryptography_InvalidRsaParameters);
+                    throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
 
-                bool includePrivate = parameters.P != null && parameters.Q != null;
+                bool includePrivate;
+                if (parameters.D == null)
+                {
+                    includePrivate = false;
+                    if (parameters.P != null || parameters.DP != null || parameters.Q != null || parameters.DQ != null || parameters.InverseQ != null)
+                        throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
+                }
+                else
+                {
+                    includePrivate = true;
+                    if (parameters.P == null || parameters.DP == null || parameters.Q == null || parameters.DQ == null || parameters.InverseQ == null)
+                        throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
+                }
 
                 //
                 // We need to build a key blob structured as follows:
@@ -94,7 +106,11 @@ namespace System.Security.Cryptography
                     Debug.Assert(offset == blobSize, "offset == blobSize");
                 }
                 CngKeyBlobFormat blobFormat = includePrivate ? s_rsaPrivateBlob : s_rsaPublicBlob;
-                Key = CngKey.Import(rsaBlob, blobFormat);
+
+                CngKey newKey = CngKey.Import(rsaBlob, blobFormat);
+                newKey.ExportPolicy |= CngExportPolicies.AllowPlaintextExport;
+
+                Key = newKey;
             }
         }
 
