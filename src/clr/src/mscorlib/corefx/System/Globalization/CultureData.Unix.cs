@@ -39,11 +39,12 @@ namespace System.Globalization
             StringBuilder sb = StringBuilderCache.Acquire(ICU_ULOC_FULLNAME_CAPACITY);
             if (!Interop.GlobalizationInterop.GetLocaleName(realNameBuffer, sb, sb.Capacity))
             {
+                StringBuilderCache.Release(sb);
                 return false; // Fail
             }
 
             // Success, so use the locale name returned
-            this.sRealName = sb.ToString();
+            this.sRealName = StringBuilderCache.GetStringAndRelease(sb);
             realNameBuffer = this.sRealName;
 
             this.sWindowsName = realNameBuffer;
@@ -88,10 +89,11 @@ namespace System.Globalization
             if (!result)
             {
                 // Failed, just use empty string
+                StringBuilderCache.Release(sb);
                 Contract.Assert(false, "[CultureData.GetLocaleInfo(LocaleStringData)] Failed");
                 return String.Empty;
             }
-            return sb.ToString();
+            return StringBuilderCache.GetStringAndRelease(sb);
         }
 
         private int GetLocaleInfo(LocaleNumberData type)
