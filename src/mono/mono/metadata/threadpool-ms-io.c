@@ -533,7 +533,6 @@ is_socket_async_callback (MonoImage *system_image, MonoClass *class)
 	MonoClass *socket_async_callback_class = NULL;
 
 	socket_async_callback_class = mono_class_from_name (system_image, "System.Net.Sockets", "SocketAsyncCallback");
-	g_assert (socket_async_callback_class);
 
 	return class == socket_async_callback_class;
 }
@@ -544,7 +543,6 @@ is_async_read_handler (MonoImage *system_image, MonoClass *class)
 	MonoClass *async_read_handler_class = NULL;
 
 	async_read_handler_class = mono_class_from_name (system_image, "System.Diagnostics", "Process/AsyncReadHandler");
-	g_assert (async_read_handler_class);
 
 	return class == async_read_handler_class;
 }
