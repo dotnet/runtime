@@ -4,6 +4,7 @@
 using CoreXml.Test.XLinq;
 using Microsoft.Test.ModuleCore;
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -27,7 +28,7 @@ namespace XLinqTests
             AddChild(new TestVariation(OnXElement1) { Attribute = new VariationAttribute("On XElement - string content only") { Param = "<A>text</A>", Priority = 1 } });
             AddChild(new TestVariation(OnXElement1) { Attribute = new VariationAttribute("On XElement - without attributes") { Param = "<A><B/>text<!--comment--></A>", Priority = 1 } });
             AddChild(new TestVariation(OnXElement2) { Attribute = new VariationAttribute("On XElement - empty string content") { Priority = 2 } });
-            AddChild(new TestVariation(OnXElement3) { Attribute = new VariationAttribute("On XElement - loaded content") { Param = "TestData\\XLinq\\books.xml", Priority = 0 } });
+            AddChild(new TestVariation(OnXElement3) { Attribute = new VariationAttribute("On XElement - loaded content") { Param = Path.Combine("TestData", "XLinq", "books.xml"), Priority = 0 } });
         }
 
         /// <summary>

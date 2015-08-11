@@ -568,10 +568,10 @@ namespace CoreXml.Test.XLinq
                 internal string GetTestXmlDirectory()
                 {
                     const string TestXmlDirectoryName = "RuntimeTestXml";
-                    string baseDir = Path.Combine(XLinqTestCase.RootPath, @"TestData\XLinq\");
+                    string baseDir = Path.Combine(XLinqTestCase.RootPath, "TestData", "XLinq");
                     string dir = Path.Combine(baseDir, TestXmlDirectoryName);
 
-                    return Path.Combine(baseDir, "..\\..\\" + TestXmlDirectoryName);
+                    return Path.Combine(baseDir, "..", "..", TestXmlDirectoryName);
                 }
 
                 /// <summary>

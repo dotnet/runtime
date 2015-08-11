@@ -40,7 +40,7 @@ namespace CoreXml.Test.XLinq
             XmlReaderSettings rs = new XmlReaderSettings();
             rs.IgnoreWhitespace = true;
             rs.DtdProcessing = DtdProcessing.Ignore;
-            string filePath = Path.Combine(@"TestData\XLinq", fileName);
+            string filePath = Path.Combine("TestData", "XLinq", fileName);
             using (XmlReader r1 = XmlReader.Create(FilePathUtil.getStream(filePath), rs))
                 xDoc = XDocument.Load(r1);
             using (XmlReader r2 = XmlReader.Create(FilePathUtil.getStream(filePath), rs))

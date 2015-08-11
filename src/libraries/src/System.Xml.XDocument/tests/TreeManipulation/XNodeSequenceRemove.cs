@@ -112,7 +112,7 @@ namespace XLinqTests
         {
             int count = 0;
             _runWithEvents = (bool)Params[0];
-            XDocument doc = XDocument.Load(FilePathUtil.getStream(@"testdata\xlinq\books.xml"), LoadOptions.PreserveWhitespace);
+            XDocument doc = XDocument.Load(FilePathUtil.getStream(Path.Combine("TestData", "XLinq", "Books.xml")), LoadOptions.PreserveWhitespace);
             IEnumerable<XNode> toRemove = doc.DescendantNodes();
             if (_runWithEvents)
             {
@@ -131,7 +131,7 @@ namespace XLinqTests
         {
             int count = 0;
             _runWithEvents = (bool)Params[0];
-            XDocument doc = XDocument.Load(FilePathUtil.getStream(@"testdata\xlinq\books.xml"), LoadOptions.PreserveWhitespace);
+            XDocument doc = XDocument.Load(FilePathUtil.getStream(Path.Combine(@"TestData", "XLinq", "Books.xml")), LoadOptions.PreserveWhitespace);
             IEnumerable<XNode> toRemove = doc.Descendants().OfType<XNode>();
             if (_runWithEvents)
             {
@@ -152,7 +152,7 @@ namespace XLinqTests
         {
             int count = 0;
             _runWithEvents = (bool)Params[0];
-            XDocument doc = XDocument.Load(FilePathUtil.getStream(@"testdata\xlinq\books.xml"), LoadOptions.PreserveWhitespace);
+            XDocument doc = XDocument.Load(FilePathUtil.getStream(Path.Combine("TestData", "XLinq", "Books.xml")), LoadOptions.PreserveWhitespace);
             IEnumerable<XNode> toRemove = doc.Descendants(@"{http://www.books.com/}book").OfType<XNode>();
             if (_runWithEvents)
             {
@@ -170,7 +170,7 @@ namespace XLinqTests
         {
             int count = 0;
             _runWithEvents = (bool)Params[0];
-            XDocument doc = XDocument.Load(FilePathUtil.getStream(@"testdata\xlinq\books.xml"), LoadOptions.PreserveWhitespace);
+            XDocument doc = XDocument.Load(FilePathUtil.getStream(Path.Combine("TestData", "XLinq", "Books.xml")), LoadOptions.PreserveWhitespace);
             IEnumerable<XNode> toRemove = doc.Elements().OfType<XNode>();
             if (_runWithEvents)
             {
@@ -189,7 +189,7 @@ namespace XLinqTests
         {
             int count = 0;
             _runWithEvents = (bool)Params[0];
-            XDocument doc = XDocument.Load(FilePathUtil.getStream(@"testdata\xlinq\books.xml"), LoadOptions.PreserveWhitespace);
+            XDocument doc = XDocument.Load(FilePathUtil.getStream(Path.Combine("TestData", "XLinq", "Books.xml")), LoadOptions.PreserveWhitespace);
             IEnumerable<XNode> toRemove = doc.Elements("bookstore").OfType<XNode>();
             if (_runWithEvents)
             {
@@ -207,7 +207,7 @@ namespace XLinqTests
         {
             int count = 0;
             _runWithEvents = (bool)Params[0];
-            XDocument doc = XDocument.Load(FilePathUtil.getStream(@"testdata\xlinq\books.xml"), LoadOptions.PreserveWhitespace);
+            XDocument doc = XDocument.Load(FilePathUtil.getStream(Path.Combine("TestData", "XLinq", "Books.xml")), LoadOptions.PreserveWhitespace);
             IEnumerable<XNode> toRemove = doc.Nodes();
             if (_runWithEvents)
             {
@@ -253,7 +253,7 @@ namespace XLinqTests
         {
             int count = 0;
             _runWithEvents = (bool)Params[0];
-            XDocument doc = XDocument.Load(FilePathUtil.getStream(@"testdata\xlinq\books.xml"), LoadOptions.PreserveWhitespace);
+            XDocument doc = XDocument.Load(FilePathUtil.getStream(Path.Combine("TestData", "XLinq", "Books.xml")), LoadOptions.PreserveWhitespace);
             XElement e = doc.Descendants(@"{http://www.books.com/}book").Where(x => x.Element("title").Value == "XQL The Golden Years").First();
             TestLog.Compare(e != null, "TEST_FAILED: wrong starting position");
             IEnumerable<XNode> toRemove = e.AncestorsAndSelf().OfType<XNode>();
@@ -274,7 +274,7 @@ namespace XLinqTests
             int count = 0;
             _runWithEvents = (bool)Params[0];
             var useSelf = (bool)Variation.Param;
-            XDocument doc = XDocument.Load(FilePathUtil.getStream(@"testdata\xlinq\books.xml"), LoadOptions.PreserveWhitespace);
+            XDocument doc = XDocument.Load(FilePathUtil.getStream(Path.Combine("TestData", "XLinq", "Books.xml")), LoadOptions.PreserveWhitespace);
             XElement e = doc.Descendants(@"{http://www.books.com/}book").Where(x => x.Element("title").Value == "XQL The Golden Years").First();
             TestLog.Compare(e != null, "TEST_FAILED: wrong starting position");
             IEnumerable<XNode> toRemove = e.AncestorsAndSelf(useSelf ? @"{http://www.books.com/}book" : @"bookstore").OfType<XNode>();
@@ -294,7 +294,7 @@ namespace XLinqTests
         {
             int count = 0;
             _runWithEvents = (bool)Params[0];
-            XDocument doc = XDocument.Load(FilePathUtil.getStream(@"testdata\xlinq\books.xml"), LoadOptions.PreserveWhitespace);
+            XDocument doc = XDocument.Load(FilePathUtil.getStream(Path.Combine("TestData", "XLinq", "Books.xml")), LoadOptions.PreserveWhitespace);
             XElement e = doc.Descendants(@"{http://www.books.com/}book").Where(x => x.Element("title").Value == "XQL The Golden Years").First();
             TestLog.Compare(e != null, "TEST_FAILING: wrong starting position");
             IEnumerable<XNode> toRemove = e.DescendantNodes();
@@ -315,7 +315,7 @@ namespace XLinqTests
         {
             int count = 0;
             _runWithEvents = (bool)Params[0];
-            XDocument doc = XDocument.Load(FilePathUtil.getStream(@"testdata\xlinq\books.xml"), LoadOptions.PreserveWhitespace);
+            XDocument doc = XDocument.Load(FilePathUtil.getStream(Path.Combine("TestData", "XLinq", "Books.xml")), LoadOptions.PreserveWhitespace);
             XElement e = doc.Descendants(@"{http://www.books.com/}book").Where(x => x.Element("title").Value == "XQL The Golden Years").First();
             TestLog.Compare(e != null, "TEST_FAILING: wrong starting position");
             IEnumerable<XNode> toRemove = e.DescendantNodesAndSelf();
@@ -335,7 +335,7 @@ namespace XLinqTests
         {
             int count = 0;
             _runWithEvents = (bool)Params[0];
-            XDocument doc = XDocument.Load(FilePathUtil.getStream(@"testdata\xlinq\books.xml"), LoadOptions.PreserveWhitespace);
+            XDocument doc = XDocument.Load(FilePathUtil.getStream(Path.Combine("TestData", "XLinq", "Books.xml")), LoadOptions.PreserveWhitespace);
             XElement e = doc.Descendants(@"{http://www.books.com/}book").Where(x => x.Element("title").Value == "XQL The Golden Years").First();
             TestLog.Compare(e != null, "TEST_FAILING: wrong starting position");
             IEnumerable<XNode> toRemove = e.Descendants().OfType<XNode>();
@@ -356,7 +356,7 @@ namespace XLinqTests
         {
             int count = 0;
             _runWithEvents = (bool)Params[0];
-            XDocument doc = XDocument.Load(FilePathUtil.getStream(@"testdata\xlinq\books.xml"), LoadOptions.PreserveWhitespace);
+            XDocument doc = XDocument.Load(FilePathUtil.getStream(Path.Combine("TestData", "XLinq", "Books.xml")), LoadOptions.PreserveWhitespace);
             XElement e = doc.Descendants(@"{http://www.books.com/}book").Where(x => x.Element("title").Value == "XQL The Golden Years").First();
             TestLog.Compare(e != null, "TEST_FAILING: wrong starting position");
             IEnumerable<XNode> toRemove = e.DescendantsAndSelf().OfType<XNode>();
@@ -379,7 +379,7 @@ namespace XLinqTests
             int count = 0;
             _runWithEvents = (bool)Params[0];
             var useSelf = (bool)Variation.Param;
-            XDocument doc = XDocument.Load(FilePathUtil.getStream(@"testdata\xlinq\books.xml"), LoadOptions.PreserveWhitespace);
+            XDocument doc = XDocument.Load(FilePathUtil.getStream(Path.Combine("TestData", "XLinq", "Books.xml")), LoadOptions.PreserveWhitespace);
             XElement e = useSelf ? doc.Descendants(@"{http://www.books.com/}book").Where(x => x.Element("title").Value == "XQL The Golden Years").First() : doc.Root;
             TestLog.Compare(e != null, "TEST_FAILING: wrong starting position");
             IEnumerable<XNode> toRemove = e.DescendantsAndSelf(@"{http://www.books.com/}book").OfType<XNode>();
@@ -399,7 +399,7 @@ namespace XLinqTests
         {
             int count = 0;
             _runWithEvents = (bool)Params[0];
-            XDocument doc = XDocument.Load(FilePathUtil.getStream(@"testdata\xlinq\books.xml"), LoadOptions.PreserveWhitespace);
+            XDocument doc = XDocument.Load(FilePathUtil.getStream(Path.Combine("TestData", "XLinq", "Books.xml")), LoadOptions.PreserveWhitespace);
             IEnumerable<XNode> toRemove = doc.Root.Descendants(@"{http://www.books.com/}book").OfType<XNode>();
             if (_runWithEvents)
             {
@@ -417,7 +417,7 @@ namespace XLinqTests
         {
             int count = 0;
             _runWithEvents = (bool)Params[0];
-            XDocument doc = XDocument.Load(FilePathUtil.getStream(@"testdata\xlinq\books.xml"), LoadOptions.PreserveWhitespace);
+            XDocument doc = XDocument.Load(FilePathUtil.getStream(Path.Combine("TestData", "XLinq", "Books.xml")), LoadOptions.PreserveWhitespace);
             XElement e = doc.Descendants(@"{http://www.books.com/}book").Where(x => x.Element("title").Value == "XQL The Golden Years").First();
             TestLog.Compare(e != null, "TEST_FAILING: wrong starting position");
             IEnumerable<XNode> toRemove = e.Elements().OfType<XNode>();
@@ -437,7 +437,7 @@ namespace XLinqTests
         {
             int count = 0;
             _runWithEvents = (bool)Params[0];
-            XDocument doc = XDocument.Load(FilePathUtil.getStream(@"testdata\xlinq\books.xml"), LoadOptions.PreserveWhitespace);
+            XDocument doc = XDocument.Load(FilePathUtil.getStream(Path.Combine("TestData", "XLinq", "Books.xml")), LoadOptions.PreserveWhitespace);
             IEnumerable<XNode> toRemove = doc.Root.Elements(@"{http://www.books.com/}book").OfType<XNode>();
             if (_runWithEvents)
             {
@@ -455,7 +455,7 @@ namespace XLinqTests
         {
             int count = 0;
             _runWithEvents = (bool)Params[0];
-            XDocument doc = XDocument.Load(FilePathUtil.getStream(@"testdata\xlinq\books.xml"), LoadOptions.PreserveWhitespace);
+            XDocument doc = XDocument.Load(FilePathUtil.getStream(Path.Combine("TestData", "XLinq", "Books.xml")), LoadOptions.PreserveWhitespace);
             XElement e = doc.Descendants(@"{http://www.books.com/}book").Where(x => x.Element("title").Value == "XQL The Golden Years").First();
             TestLog.Compare(e != null, "TEST_FAILED: wrong starting position");
             IEnumerable<XNode> toRemove = e.Nodes();
@@ -557,7 +557,7 @@ namespace XLinqTests
         {
             int count = 0;
             _runWithEvents = (bool)Params[0];
-            XDocument doc = XDocument.Load(FilePathUtil.getStream(@"testdata\xlinq\books.xml"), LoadOptions.PreserveWhitespace);
+            XDocument doc = XDocument.Load(FilePathUtil.getStream(Path.Combine("TestData", "XLinq", "Books.xml")), LoadOptions.PreserveWhitespace);
             XElement e = doc.Descendants("magazine").Where(x => x.Element("title").Value == "PC Week").First();
             TestLog.Compare(e != null, "TEST_FAILED: wrong starting position");
             IEnumerable<XNode> toRemove = e.ElementsAfterSelf().OfType<XNode>();
@@ -577,7 +577,7 @@ namespace XLinqTests
         {
             int count = 0;
             _runWithEvents = (bool)Params[0];
-            XDocument doc = XDocument.Load(FilePathUtil.getStream(@"testdata\xlinq\books.xml"), LoadOptions.PreserveWhitespace);
+            XDocument doc = XDocument.Load(FilePathUtil.getStream(Path.Combine("TestData", "XLinq", "Books.xml")), LoadOptions.PreserveWhitespace);
             XElement e = doc.Descendants("magazine").Where(x => x.Element("title").Value == "PC Week").First();
             TestLog.Compare(e != null, "TEST_FAILED: wrong starting position");
             IEnumerable<XNode> toRemove = e.ElementsAfterSelf(@"{http://www.books.com/}book").OfType<XNode>();
@@ -597,7 +597,7 @@ namespace XLinqTests
         {
             int count = 0;
             _runWithEvents = (bool)Params[0];
-            XDocument doc = XDocument.Load(FilePathUtil.getStream(@"testdata\xlinq\books.xml"), LoadOptions.PreserveWhitespace);
+            XDocument doc = XDocument.Load(FilePathUtil.getStream(Path.Combine("TestData", "XLinq", "Books.xml")), LoadOptions.PreserveWhitespace);
             XElement e = doc.Descendants("magazine").Where(x => x.Element("title").Value == "PC Week").First();
             TestLog.Compare(e != null, "TEST_FAILED: wrong starting position");
             IEnumerable<XNode> toRemove = e.ElementsBeforeSelf().OfType<XNode>();
@@ -617,7 +617,7 @@ namespace XLinqTests
         {
             int count = 0;
             _runWithEvents = (bool)Params[0];
-            XDocument doc = XDocument.Load(FilePathUtil.getStream(@"testdata\xlinq\books.xml"), LoadOptions.PreserveWhitespace);
+            XDocument doc = XDocument.Load(FilePathUtil.getStream(Path.Combine("TestData", "XLinq", "Books.xml")), LoadOptions.PreserveWhitespace);
             XElement e = doc.Descendants("magazine").Where(x => x.Element("title").Value == "PC Week").First();
             TestLog.Compare(e != null, "TEST_FAILED: wrong starting position");
             IEnumerable<XNode> toRemove = e.ElementsBeforeSelf(@"{http://www.books.com/}book").OfType<XNode>();
@@ -638,7 +638,7 @@ namespace XLinqTests
         {
             int count = 0;
             _runWithEvents = (bool)Params[0];
-            XDocument doc = XDocument.Load(FilePathUtil.getStream(@"testdata\xlinq\books.xml"), LoadOptions.PreserveWhitespace);
+            XDocument doc = XDocument.Load(FilePathUtil.getStream(Path.Combine("TestData", "XLinq", "Books.xml")), LoadOptions.PreserveWhitespace);
             XElement e = doc.Descendants("last.name").Where(x => x.Value == "Marsh").First();
             TestLog.Compare(e != null, "TEST_FAILED: wrong starting position");
             IEnumerable<XNode> toRemove = e.Ancestors().OfType<XNode>();
@@ -659,7 +659,7 @@ namespace XLinqTests
         {
             int count = 0;
             _runWithEvents = (bool)Params[0];
-            XDocument doc = XDocument.Load(FilePathUtil.getStream(@"testdata\xlinq\books.xml"), LoadOptions.PreserveWhitespace);
+            XDocument doc = XDocument.Load(FilePathUtil.getStream(Path.Combine("TestData", "XLinq", "Books.xml")), LoadOptions.PreserveWhitespace);
             XElement e = doc.Descendants("last.name").Where(x => x.Value == "Marsh").First();
             TestLog.Compare(e != null, "TEST_FAILED: wrong starting position");
             IEnumerable<XNode> toRemove = e.Ancestors("author").OfType<XNode>();
@@ -679,7 +679,7 @@ namespace XLinqTests
         {
             int count = 0;
             _runWithEvents = (bool)Params[0];
-            XDocument doc = XDocument.Load(FilePathUtil.getStream(@"testdata\xlinq\books.xml"), LoadOptions.PreserveWhitespace);
+            XDocument doc = XDocument.Load(FilePathUtil.getStream(Path.Combine("TestData", "XLinq", "Books.xml")), LoadOptions.PreserveWhitespace);
             XElement e = doc.Descendants("magazine").Where(x => x.Element("title").Value == "PC Week").First();
             TestLog.Compare(e != null, "TEST_FAILED: wrong starting position");
             IEnumerable<XNode> toRemove = e.NodesAfterSelf();
@@ -699,7 +699,7 @@ namespace XLinqTests
         {
             int count = 0;
             _runWithEvents = (bool)Params[0];
-            XDocument doc = XDocument.Load(FilePathUtil.getStream(@"testdata\xlinq\books.xml"), LoadOptions.PreserveWhitespace);
+            XDocument doc = XDocument.Load(FilePathUtil.getStream(Path.Combine("TestData", "XLinq", "Books.xml")), LoadOptions.PreserveWhitespace);
             XElement e = doc.Descendants("magazine").Where(x => x.Element("title").Value == "PC Week").First();
             TestLog.Compare(e != null, "TEST_FAILED: wrong starting position");
             IEnumerable<XNode> toRemove = e.NodesBeforeSelf();
