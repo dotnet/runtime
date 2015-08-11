@@ -128,13 +128,32 @@ namespace System.IO.FileSystem.Tests
 
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
-        [ActiveIssue(2402)]
-        public void WindowsWhiteSpaceAsPath_ThrowsArgumentException()
+        public void WindowsControWhiteSpace()
         {
-            var paths = IOInputs.GetWhiteSpace();
-            Assert.All(paths, (path) =>
+            // CreateSubdirectory will throw when passed a path with control whitespace e.g. "\t"
+            var components = IOInputs.GetControlWhiteSpace();
+            Assert.All(components, (component) =>
             {
-                Assert.Throws<ArgumentException>(() => new DirectoryInfo(TestDirectory).CreateSubdirectory(path));
+                string path = IOServices.RemoveTrailingSlash(GetTestFileName());
+                Assert.Throws<ArgumentException>(() => new DirectoryInfo(TestDirectory).CreateSubdirectory(component));
+            });
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void WindowsSimpleWhiteSpace()
+        {
+            // CreateSubdirectory trims all simple whitespace, returning us the parent directory
+            // that called CreateSubdirectory
+            var components = IOInputs.GetSimpleWhiteSpace();
+
+            Assert.All(components, (component) =>
+            {
+                string path = IOServices.RemoveTrailingSlash(GetTestFileName());
+                DirectoryInfo result = new DirectoryInfo(TestDirectory).CreateSubdirectory(component);
+
+                Assert.True(Directory.Exists(result.FullName));
+                Assert.Equal(TestDirectory, IOServices.RemoveTrailingSlash(result.FullName));
             });
         }
 
@@ -148,35 +167,6 @@ namespace System.IO.FileSystem.Tests
                 new DirectoryInfo(TestDirectory).CreateSubdirectory(path);
                 Assert.True(Directory.Exists(Path.Combine(TestDirectory, path)));
             });
-        }
-
-        [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
-        [ActiveIssue(2403)]
-        public void WindowsNonSignificantTrailingWhiteSpace()
-        {
-            // Windows will remove all nonsignificant whitespace in a path
-            var components = IOInputs.GetWhiteSpace();
-
-            Assert.All(components, (component) =>
-            {
-                string path = IOServices.RemoveTrailingSlash(GetTestFileName());
-                DirectoryInfo result = new DirectoryInfo(TestDirectory).CreateSubdirectory(path + component);
-
-                Assert.True(Directory.Exists(result.FullName));
-                Assert.Equal(Path.Combine(TestDirectory, path), IOServices.RemoveTrailingSlash(result.FullName));
-            });
-
-            //{ // Directory.CreateDirectory curtails trailing tab and newline characters
-            //    string filePath = IOServices.RemoveTrailingSlash(GetTestFilePath());
-            //    DirectoryInfo result = Directory.CreateDirectory(filePath + "\n");
-            //    Assert.Equal(filePath, IOServices.RemoveTrailingSlash(result.FullName));
-            //}
-            //{ // DirectoryInfo.CreateSubdirectory throws an ArgumentException when there are newline or tab characters anywhere in a file name
-            //    string fileName = IOServices.RemoveTrailingSlash(GetTestFileName());
-            //    DirectoryInfo parentDir = new DirectoryInfo(TestDirectory);
-            //    Assert.Throws<ArgumentException>(() => parentDir.CreateSubdirectory(fileName + "\n"));
-            //}
         }
 
         [Fact]
