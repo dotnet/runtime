@@ -13,10 +13,6 @@
   <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
     <NoWarn>$(NoWarn);414</NoWarn>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
-    <!-- The System.Threading.Overlapped contract currently only works on Windows -->
-    <DefineConstants>$(DefineConstants);USE_OVERLAPPED</DefineConstants>
-  </PropertyGroup>
   <PropertyGroup>
     <TargetsBSD Condition="'$(TargetsOSX)' == 'true' or '$(TargetsFreeBSD)' == 'true'">true</TargetsBSD>
   </PropertyGroup>
