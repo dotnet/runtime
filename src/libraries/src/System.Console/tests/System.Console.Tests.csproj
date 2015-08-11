@@ -26,6 +26,7 @@
     <Compile Include="Timeout.cs" />
     <Compile Include="ThreadSafety.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
+    <Compile Include="TermInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Console.csproj">
