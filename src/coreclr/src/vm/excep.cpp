@@ -7707,7 +7707,6 @@ LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
     // already occured.
     //
 
-#ifndef FEATURE_PAL
     Thread *pThread;
 
     {
@@ -7737,13 +7736,14 @@ LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
     // 1.  pThread refers to *this* thread.
     // 2.  If another thread tries to hijack this thread, it will see we are not in managed
     //     code (and thus won't try to hijack us).
-#if defined(WIN64EXCEPTIONS)
+#if defined(WIN64EXCEPTIONS) && defined(FEATURE_HIJACK)
     if (pThread != NULL)
     {
         pThread->UnhijackThreadNoAlloc();
     }
-#endif // defined(WIN64EXCEPTIONS)
+#endif // defined(WIN64EXCEPTIONS) && defined(FEATURE_HIJACK)
 
+#ifndef FEATURE_PAL
     if (IsSOExceptionCode(pExceptionInfo->ExceptionRecord->ExceptionCode))
     {
         //
@@ -7764,7 +7764,7 @@ LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
     {
         DontCallDirectlyForceStackOverflow();
     }
-#endif
+#endif // FEATURE_STACK_PROBE
 
     // We can't probe here, because we won't return from the CLRVectoredExceptionHandlerPhase2
     // on WIN64
@@ -7783,15 +7783,6 @@ LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
     //
     return retVal;
 #else // !FEATURE_PAL
-
-#if defined(WIN64EXCEPTIONS) && defined(FEATURE_HIJACK)
-    Thread *pThread = GetThread();
-    if (pThread != NULL)
-    {
-        pThread->UnhijackThreadNoAlloc();
-    }
-#endif
-
     return CLRVectoredExceptionHandlerPhase2(pExceptionInfo);
 #endif // !FEATURE_PAL
 }
