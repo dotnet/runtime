@@ -3,24 +3,30 @@
 
 using System;
 using System.IO;
-using System.Threading;
 using System.Runtime.CompilerServices;
-using Xunit;
 using System.Runtime.InteropServices;
+using System.Threading;
+using Xunit;
 
 public static class Utility
 {
     // These pinvokes are used only for tests and not by the src
     [DllImport("Kernel32.dll", EntryPoint = "CreateSymbolicLinkW", SetLastError = true)]
     private static extern byte CreateSymbolicLink(string linkName, string targetFileName, int flags);
+
     [DllImport("libc", SetLastError = true)]
     private static extern int symlink(string oldPath, string newPath);
 
-    // events are reported asynchronously by the OS, so allow an amount of time for
-    // them to arrive before testing an assertion.
-    public const int Timeout = 500;
-    public const int WaitForCreationTimeoutInMs = 1000 * 30;
     private const int SYMBOLIC_LINK_FLAG_DIRECTORY = 0x1;
+
+    // Events are reported asynchronously by the OS, so allow an amount of time for
+    // them to arrive before testing an assertion.  If we expect an event to occur,
+    // we can wait for it for a relatively long time, as if it doesn't arrive, we're
+    // going to fail the test.  If we don't expect an event to occur, then we need
+    // to keep the timeout short, as in a successful run we'll end up waiting for
+    // the entire timeout specified.
+    public const int WaitForExpectedEventTimeout = 30000;
+    public const int WaitForUnexpectedEventTimeout = 500;
 
     public static TemporaryTestFile CreateTestFile([CallerMemberName] string path = null)
     {
@@ -97,15 +103,15 @@ public static class Utility
         return eventOccured;
     }
 
-    public static void ExpectEvent(WaitHandle eventOccured, string eventName, int timeout = Utility.Timeout)
+    public static void ExpectEvent(WaitHandle eventOccured, string eventName, int timeout = WaitForExpectedEventTimeout)
     {
         string message = String.Format("Didn't observe a {0} event within {1}ms", eventName, timeout);
         Assert.True(eventOccured.WaitOne(timeout), message);
     }
 
-    public static void ExpectNoEvent(WaitHandle eventOccured, string eventName, int timeout = Utility.Timeout)
+    public static void ExpectNoEvent(WaitHandle eventOccured, string eventName, int timeout = WaitForUnexpectedEventTimeout)
     {
-        string message = String.Format("Should not observe a {0} event", eventName);
+        string message = String.Format("Should not observe a {0} event within {1}ms", eventName, timeout);
         Assert.False(eventOccured.WaitOne(timeout), message);
     }
 
@@ -128,11 +134,11 @@ public static class Utility
 
             using (var firstDir = new TemporaryTestDirectory(Path.Combine(dir.Path, "dir1")))
             {
-                Utility.ExpectEvent(createdOccured, "dir1 created", WaitForCreationTimeoutInMs);
+                Utility.ExpectEvent(createdOccured, "dir1 created");
 
                 using (var nestedDir = new TemporaryTestDirectory(Path.Combine(firstDir.Path, "nested")))
                 {
-                    Utility.ExpectEvent(createdOccured, "nested created", WaitForCreationTimeoutInMs);
+                    Utility.ExpectEvent(createdOccured, "nested created");
 
                     action(eventOccured, nestedDir);
                 }
