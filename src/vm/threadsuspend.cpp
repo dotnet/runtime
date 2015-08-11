@@ -4966,15 +4966,18 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
             // us, because of inlined PInvoke which doesn't go through RareEnablePreemptiveGC.
 
 #ifdef DISABLE_THREADSUSPEND
-            // On platforms that do not support safe thread suspension we have
-            // to rely on the GCPOLL mechanism.
+            // On platforms that do not support safe thread suspension, we do one of two things:
+            //
+            //     - If we're on a Unix platform where hijacking is enabled, we attempt
+            //       to inject a GC suspension which will try to redirect or hijack the
+            //       thread to get it to a safe point.
+            //
+            //     - Otherwise, we rely on the GCPOLL mechanism enabled by 
+            //       TrapReturningThreads.
 
-            // When we do not suspend the target thread we rely on the GCPOLL
-            // mechanism enabled by TrapReturningThreads.  However when reading
-            // shared state we need to erect appropriate memory barriers. So
-            // the interlocked operation below ensures that any future reads on 
-            // this thread will happen after any earlier writes on a different 
-            // thread.
+            // When reading shared state we need to erect appropriate memory barriers.
+            // The interlocked operation below ensures that any future reads on this
+            // thread will happen after any earlier writes on a different thread.
             //
             // <TODO> Need more careful review of this </TODO>
             //
@@ -6878,16 +6881,11 @@ void Thread::HijackThread(VOID *pvHijackAddr, ExecutionState *esb)
     }
     CONTRACTL_END;
 
-#ifdef _DEBUG
-    static int  EnterCount = 0;
-#endif
-
     // Don't hijack if are in the first level of running a filter/finally/catch.
     // This is because they share ebp with their containing function further down the
     // stack and we will hijack their containing function incorrectly
     if (IsInFirstFrameOfHandler(this, esb->m_pJitManager, esb->m_MethodToken, esb->m_RelOffset))
     {
-        _ASSERTE(--EnterCount == 0);
         STRESS_LOG3(LF_SYNC, LL_INFO100, "Thread::HijackThread(%p to %p): Early out - IsInFirstFrameOfHandler. State=%x.\n", this, pvHijackAddr, (ThreadState)m_State);
         return;
     }
@@ -6896,7 +6894,6 @@ void Thread::HijackThread(VOID *pvHijackAddr, ExecutionState *esb)
     HijackLockHolder hijackLockHolder(this);
     if (!hijackLockHolder.Acquired())
     {
-        _ASSERTE(--EnterCount == 0);
         STRESS_LOG3(LF_SYNC, LL_INFO100, "Thread::HijackThread(%p to %p): Early out - !hijackLockHolder.Acquired. State=%x.\n", this, pvHijackAddr, (ThreadState)m_State);
         return;
     }
@@ -6928,10 +6925,6 @@ void Thread::HijackThread(VOID *pvHijackAddr, ExecutionState *esb)
     // Bash the stack to return to one of our stubs
     *esb->m_ppvRetAddrPtr = pvHijackAddr;
     FastInterlockOr((ULONG *) &m_State, TS_Hijacked);
-
-#ifdef _DEBUG
-    _ASSERTE(--EnterCount == 0);
-#endif
 }
 
 // If we are unhijacking another thread (not the current thread), then the caller is responsible for
@@ -7798,7 +7791,7 @@ BOOL Thread::HandledJITCase(BOOL ForTaskSwitchIn)
                 ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
                 // Mark that we are performing a stackwalker like operation on the current thread.
                 // This is necessary to allow the signature parsing functions to work without triggering any loads
-                ClrFlsValueSwitch _threadStackWalking(TlsIdx_StackWalkerWalkingThread, this);
+                ClrFlsValueSwitch threadStackWalking(TlsIdx_StackWalkerWalkingThread, this);
 
 #ifdef _TARGET_X86_
                 MetaSig msig(esb.m_pFD);
@@ -8294,7 +8287,7 @@ void PALAPI HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext)
     if (!codeInfo.IsValid())
         return;
 
-    DWORD addrOffset = ip - codeInfo.GetStartAddress();
+    DWORD addrOffset = codeInfo.GetRelOffset();
 
     ICodeManager *pEECM = codeInfo.GetCodeManager();
     _ASSERTE(pEECM != NULL);
@@ -8337,14 +8330,17 @@ void PALAPI HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext)
         if (action != SWA_ABORT || !executionState.m_IsJIT)
             return;
 
-        _ASSERTE(executionState.m_ppvRetAddrPtr != NULL);
         if (executionState.m_ppvRetAddrPtr == NULL)
             return;
 
+
+        // Calling this turns off the GC_TRIGGERS/THROWS/INJECT_FAULT contract in LoadTypeHandle.
+        // We should not trigger any loads for unresolved types.
         ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
+
         // Mark that we are performing a stackwalker like operation on the current thread.
         // This is necessary to allow the signature parsing functions to work without triggering any loads.
-        ClrFlsValueSwitch _threadStackWalking(TlsIdx_StackWalkerWalkingThread, pThread);
+        ClrFlsValueSwitch threadStackWalking(TlsIdx_StackWalkerWalkingThread, pThread);
 
         // Hijack the return address to point to the appropriate routine based on the method's return type.
         void *pvHijackAddr = OnHijackScalarTripThread;

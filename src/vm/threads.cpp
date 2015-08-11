@@ -12001,6 +12001,7 @@ HRESULT Thread::NeedsPriorityScheduling(BOOL *pbNeedsPriorityScheduling)
     return S_OK;
 }
 
+#ifdef FEATURE_INCLUDE_ALL_INTERFACES
 HRESULT Thread::YieldTask()
 {
 #undef Sleep
@@ -12171,7 +12172,7 @@ HRESULT Thread::YieldTask()
             break;
         }
 
-#if defined(FEATURE_HIJACK) && !defined(PLATFORM_UNIX)
+#ifdef FEATURE_HIJACK
 
 #ifdef _DEBUG
         if (pCurThread != NULL)
@@ -12205,7 +12206,7 @@ HRESULT Thread::YieldTask()
         }
 #endif //_DEBUG
 
-#endif // FEATURE_HIJACK && !PLATFORM_UNIX
+#endif // FEATURE_HIJACK
 
 Retry:
         ::ResumeThread(hThread);
@@ -12228,6 +12229,7 @@ Retry:
     return S_OK;
 #define Sleep(a) Dont_Use_Sleep(a)
 }
+#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 HRESULT Thread::LocksHeld(SIZE_T *pLockCount)
 {
