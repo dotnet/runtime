@@ -228,6 +228,14 @@ namespace System.Net.Http
                 {
                     response.Version = HttpVersion.Version10;
                 }
+                else
+                {
+                    response.Version = new Version(0, 0);
+                }
+            }
+            else
+            {
+                response.Version = new Version(0, 0);
             }
          
             // TODO: Parsing errors are treated as fatal. Find right behaviour
@@ -236,14 +244,15 @@ namespace System.Net.Http
 
             if (spaceIndex > -1)
             {
-                int codeStartIndex = spaceIndex + 1;
-                int codeEndIndex = codeStartIndex + StatusCodeLength;
+                int codeStartIndex = spaceIndex + 1;              
                 int statusCode = 0;
 
                 // Parse first 3 characters after a space as status code
                 if (TryParseStatusCode(responseHeader, codeStartIndex, out statusCode))
                 {
                     response.StatusCode = (HttpStatusCode)statusCode;
+
+                    int codeEndIndex = codeStartIndex + StatusCodeLength;
 
                     int reasonPhraseIndex = codeEndIndex + 1;
 
