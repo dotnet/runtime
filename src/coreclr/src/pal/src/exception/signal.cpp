@@ -615,6 +615,7 @@ Parameters :
 --*/
 void InjectActivationInternal(CorUnix::CPalThread* pThread, PAL_ActivationFunction activationFunction)
 {
+#if HAVE_PTHREAD_SIGQUEUE
     sigval value;
     value.sival_ptr = (void*)activationFunction;
     int status = pthread_sigqueue(pThread->GetPThreadSelf(), INJECT_ACTIVATION_SIGNAL, value);
@@ -625,6 +626,9 @@ void InjectActivationInternal(CorUnix::CPalThread* pThread, PAL_ActivationFuncti
         // if the thread doesn't exist anymore.
         abort();
     }
+#else
+    ASSERT("InjectActivationInternal not yet implemented on this platform!");
+#endif
 }
 
 /*++
