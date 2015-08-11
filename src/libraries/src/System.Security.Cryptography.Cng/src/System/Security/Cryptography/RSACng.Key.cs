@@ -32,7 +32,11 @@ namespace System.Security.Cryptography
                 // If we don't have a key yet, we need to generate a random one now.
                 if (_lazyKey == null)
                 {
-                    CngKeyCreationParameters creationParameters = new CngKeyCreationParameters();
+                    CngKeyCreationParameters creationParameters = new CngKeyCreationParameters()
+                    {
+                        ExportPolicy = CngExportPolicies.AllowPlaintextExport,
+                    };
+
                     CngProperty keySizeProperty = new CngProperty(KeyPropertyName.Length, BitConverter.GetBytes(KeySize), CngPropertyOptions.None);
                     creationParameters.Parameters.Add(keySizeProperty);
                     _lazyKey = CngKey.Create(CngAlgorithm.Rsa, null, creationParameters);
