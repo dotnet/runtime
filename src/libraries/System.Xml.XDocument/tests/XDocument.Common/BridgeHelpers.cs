@@ -77,7 +77,7 @@ namespace CoreXml.Test.XLinq
         //Reader helpers
         public XmlReader GetReader()
         {
-            string file = Path.Combine(@"TestData\XmlReader\API\", pGenericXml);
+            string file = Path.Combine("TestData", "XmlReader", "API", pGenericXml);
             using (XmlReader r = XmlReader.Create(FilePathUtil.getStream(file), _rsx))
             {
                 XDocument doc = XDocument.Load(r, LoadOptions.PreserveWhitespace);
@@ -138,7 +138,7 @@ namespace CoreXml.Test.XLinq
 
         public string GetTestFileName()
         {
-            return Path.Combine(@"TestData\XmlReader\API\", pGenericXml);
+            return Path.Combine("TestData", "XmlReader", "API", pGenericXml);
         }
 
         public bool CompareReader(XDocument doc, string expectedXml)
@@ -215,7 +215,7 @@ namespace CoreXml.Test.XLinq
         {
             if (fileName == null || fileName == string.Empty)
                 return fileName;
-            return Path.Combine(@"TestData\XmlWriter2\", fileName);
+            return Path.Combine("TestData", "XmlWriter2", fileName);
         }
 
         public static void EnsureSpace(ref byte[] buffer, int len)

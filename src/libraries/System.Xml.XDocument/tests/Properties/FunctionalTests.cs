@@ -243,8 +243,8 @@ namespace CoreXml.Test.XLinq
                 public override void AddChildren()
                 {
                     this.AddChild(new TestVariation(CastToInterface) { Attribute = new VariationAttribute("Cast to Interface") { Priority = 0 } });
-                    this.AddChild(new TestVariation(BaseUriInitial) { Attribute = new VariationAttribute("XDocument/XElement - BaseUri, Reader in Initial state") { Param = "TestData\\XLinq\\config.xml", Priority = 0 } });
-                    this.AddChild(new TestVariation(AllNodesTests) { Attribute = new VariationAttribute("XElement - BaseUri, Reader in Initial state, all nodes") { Param = "TestData\\XLinq\\IXmlLineInfoTests\\company-data.xml", Priority = 0 } });
+                    this.AddChild(new TestVariation(BaseUriInitial) { Attribute = new VariationAttribute("XDocument/XElement - BaseUri, Reader in Initial state") { Param = Path.Combine("TestData", "XLinq", "config.xml"), Priority = 0 } });
+                    this.AddChild(new TestVariation(AllNodesTests) { Attribute = new VariationAttribute("XElement - BaseUri, Reader in Initial state, all nodes") { Param = Path.Combine("TestData", "XLinq", "IXmlLineInfoTests", "company-data.xml"), Priority = 0 } });
                 }
             }
             public partial class NamespaceAccessors : XLinqTestCase

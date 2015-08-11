@@ -461,7 +461,7 @@ namespace CoreXml.Test.XLinq
                 public void LookupNamespace9()
                 {
                     string ns = "http://www.w3.org/1999/XMLSchema";
-                    string filename = @"TestData\XmlReader\Common\bug_57723.xml";
+                    string filename = Path.Combine("TestData", "XmlReader", "Common", "bug_57723.xml");
 
                     XmlReader DataReader = GetReader(filename);
 
@@ -1226,7 +1226,7 @@ namespace CoreXml.Test.XLinq
                 //[Variation("Call Skip in while read loop", Priority = 0)]
                 public void skip307543()
                 {
-                    XmlReader DataReader = GetReader(@"TestData\XmlReader\Common\skip307543.xml");
+                    XmlReader DataReader = GetReader(Path.Combine("TestData", "XmlReader", "Common", "skip307543.xml"));
                     while (DataReader.Read())
                         DataReader.Skip();
                 }
