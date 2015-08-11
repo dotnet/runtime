@@ -67,16 +67,14 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     Setup the key properties specified in the key creation parameters
         /// </summary>
-        private static void InitializeKeyProperties(SafeNCryptHandle keyHandle, CngKeyCreationParameters creationParameters)
+        private static void InitializeKeyProperties(SafeNCryptKeyHandle keyHandle, CngKeyCreationParameters creationParameters)
         {
             unsafe
             {
                 if (creationParameters.ExportPolicy.HasValue)
                 {
                     CngExportPolicies exportPolicy = creationParameters.ExportPolicy.Value;
-                    ErrorCode errorCode = Interop.NCrypt.NCryptSetProperty(keyHandle, KeyPropertyName.ExportPolicy, &exportPolicy, sizeof(CngExportPolicies), CngPropertyOptions.Persist);
-                    if (errorCode != ErrorCode.ERROR_SUCCESS)
-                        throw errorCode.ToCryptographicException();
+                    keyHandle.SetExportPolicy(exportPolicy);
                 }
 
                 if (creationParameters.KeyUsage.HasValue)
@@ -119,7 +117,7 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     Setup the UIPolicy key properties specified in the key creation parameters
         /// </summary>
-        private static void InitializeKeyUiPolicyProperties(SafeNCryptHandle keyHandle, CngUIPolicy uiPolicy)
+        private static void InitializeKeyUiPolicyProperties(SafeNCryptKeyHandle keyHandle, CngUIPolicy uiPolicy)
         {
             unsafe
             {

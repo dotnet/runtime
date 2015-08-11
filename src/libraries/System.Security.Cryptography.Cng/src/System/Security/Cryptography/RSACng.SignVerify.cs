@@ -65,12 +65,7 @@ namespace System.Security.Cryptography
                     {
                         SafeNCryptKeyHandle keyHandle = Key.Handle;
                         ErrorCode errorCode = Interop.NCrypt.NCryptVerifySignature(keyHandle, pPaddingInfo, hash, hash.Length, signature, signature.Length, paddingMode);
-                        if (errorCode == ErrorCode.ERROR_SUCCESS)
-                            verified = true;
-                        else if (errorCode == ErrorCode.NTE_BAD_SIGNATURE)
-                            verified = false;
-                        else
-                            throw errorCode.ToCryptographicException();
+                        verified = (errorCode == ErrorCode.ERROR_SUCCESS);  // For consistency with other RSA classes, return "false" for any error code rather than making the caller catch an exception.
                     }
                 );
                 return verified;

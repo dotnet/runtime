@@ -139,6 +139,19 @@ namespace Internal.Cryptography
                 return value;
             }
         }
+
+        /// <summary>
+        ///     Modify a CNG key's export policy.
+        /// </summary>
+        public static void SetExportPolicy(this SafeNCryptKeyHandle keyHandle, CngExportPolicies exportPolicy)
+        {
+            unsafe
+            {
+                ErrorCode errorCode = Interop.NCrypt.NCryptSetProperty(keyHandle, KeyPropertyName.ExportPolicy, &exportPolicy, sizeof(CngExportPolicies), CngPropertyOptions.Persist);
+                if (errorCode != ErrorCode.ERROR_SUCCESS)
+                    throw errorCode.ToCryptographicException();
+            }
+        }
     }
 }
 
