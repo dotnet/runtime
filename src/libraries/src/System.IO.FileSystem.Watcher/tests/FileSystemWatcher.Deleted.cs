@@ -102,17 +102,17 @@ public class DeletedTests
             using (var firstDir = new TemporaryTestDirectory(Path.Combine(dir.Path, "dir1")))
             {
                 // Wait for the created event
-                Utility.ExpectEvent(createOccured, "create", 1000 * 30);
+                Utility.ExpectEvent(createOccured, "create");
 
                 using (var secondDir = new TemporaryTestDirectory(Path.Combine(firstDir.Path, "dir2")))
                 {
                     // Wait for the created event
-                    Utility.ExpectEvent(createOccured, "create", 1000 * 30);
+                    Utility.ExpectEvent(createOccured, "create");
 
                     using (var nestedDir = new TemporaryTestDirectory(Path.Combine(secondDir.Path, "nested")))
                     {
                         // Wait for the created event
-                        Utility.ExpectEvent(createOccured, "create", 1000 * 30);
+                        Utility.ExpectEvent(createOccured, "create");
                     }
 
                     Utility.ExpectEvent(eventOccured, "deleted");
@@ -142,12 +142,12 @@ public class DeletedTests
             using (var firstDir = new TemporaryTestDirectory(Path.Combine(dir.Path, "dir1")))
             {
                 // Wait for the created event
-                Utility.ExpectEvent(createOccured, "create", 1000 * 30);
+                Utility.ExpectEvent(createOccured, "create");
 
                 using (var secondDir = new TemporaryTestDirectory(Path.Combine(dir.Path, "dir2")))
                 {
                     // Wait for the created event
-                    Utility.ExpectEvent(createOccured, "create", 1000 * 30);
+                    Utility.ExpectEvent(createOccured, "create");
 
                     using (var nestedDir = new TemporaryTestFile(Path.Combine(secondDir.Path, "nestedFile"))) { }
 
