@@ -3,6 +3,7 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using Xunit;
 
 public static class TimeZoneInfoTests
@@ -20,8 +21,8 @@ public static class TimeZoneInfoTests
     private static String s_strRussian = s_isWindows ? "Russian Standard Time" : "Europe/Moscow";
     private static String s_strLibya = s_isWindows ? "Libya Standard Time" : "Africa/Tripoli";
     private static String s_strCatamarca = s_isWindows ? "Argentina Standard Time" : "America/Catamarca";
-    private static String s_strLisbon = Interop.IsWindows ? "GMT Standard Time" : "Europe/Lisbon";
-    private static String s_strNewfoundland = Interop.IsWindows ? "Newfoundland Standard Time" : "America/St_Johns";
+    private static String s_strLisbon = s_isWindows ? "GMT Standard Time" : "Europe/Lisbon";
+    private static String s_strNewfoundland = s_isWindows ? "Newfoundland Standard Time" : "America/St_Johns";
 
     private static TimeZoneInfo s_myUtc = TimeZoneInfo.Utc;
     private static TimeZoneInfo s_myLocal = TimeZoneInfo.Local;
@@ -38,7 +39,7 @@ public static class TimeZoneInfoTests
     private static bool s_localSupportsDST = TimeZoneInfo.Local.SupportsDaylightSavingTime;
 
     // In 2006, Australia delayed ending DST by a week.  However, Windows says it still ended the last week of March.
-    private static readonly int s_sydneyOffsetLastWeekOfMarch2006 = Interop.IsWindows ? 10 : 11;
+    private static readonly int s_sydneyOffsetLastWeekOfMarch2006 = s_isWindows ? 10 : 11;
 
     [Fact]
     public static void TestKind()
@@ -340,7 +341,7 @@ public static class TimeZoneInfoTests
         DateTime utcMinValue = DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc);
         VerifyConvert(utcMinValue, s_strPacific, DateTime.MinValue);
 
-        if (Interop.IsWindows)
+        if (s_isWindows)
         {
             VerifyConvert(utcMinValue.AddHours(8), s_strPacific, DateTime.MinValue);
             VerifyConvert(utcMinValue.AddHours(8.5), s_strPacific, DateTime.MinValue.AddHours(0.5));
@@ -450,7 +451,7 @@ public static class TimeZoneInfoTests
 
         time1utc = new DateTime(2006, 12, 31, 15, 59, 59, DateTimeKind.Utc);
         time1 = new DateTime(2006, 12, 31, 15, 59, 59);
-        if (Interop.IsWindows)
+        if (s_isWindows)
         {
             // ambiguous time between rules
             // this is not ideal, but the way it works
