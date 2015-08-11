@@ -97,10 +97,9 @@ namespace System.IO.FileSystem.Tests
             });
         }
 
-        [OuterLoop]
         [Fact]
-        [ActiveIssue(1728, PlatformID.AnyUnix)]
-        public void FileDoesntExist_ReturnDefaultValues()
+        [PlatformSpecific(PlatformID.Windows)]
+        public void Windows_FileDoesntExist_ReturnDefaultValues()
         {
             string path = GetTestFilePath();
 
@@ -127,10 +126,9 @@ namespace System.IO.FileSystem.Tests
             }
         }
 
-        [OuterLoop]
         [Fact]
         [PlatformSpecific(PlatformID.AnyUnix)]
-        public void UnixFileDoesntExist_Throws()
+        public void Unix_FileDoesntExist_Throws_FileNotFoundException()
         {
             string path = GetTestFilePath();
 
