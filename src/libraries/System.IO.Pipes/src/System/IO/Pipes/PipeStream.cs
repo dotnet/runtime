@@ -142,7 +142,7 @@ namespace System.IO.Pipes
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (buffer == null)
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
             if (offset < 0)
                 throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
@@ -200,7 +200,7 @@ namespace System.IO.Pipes
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (buffer == null)
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
             if (offset < 0)
                 throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
