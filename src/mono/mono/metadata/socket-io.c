@@ -2189,19 +2189,18 @@ void ves_icall_System_Net_Sockets_Socket_Shutdown_internal(SOCKET sock,
 							   gint32 *error)
 {
 	int ret;
-	MONO_PREPARE_BLOCKING;
 
 	*error = 0;
 	
 	/* Currently, the values for how (recv=0, send=1, both=2) match
 	 * the BSD API
 	 */
+	MONO_PREPARE_BLOCKING;
 	ret = _wapi_shutdown (sock, how);
+	MONO_FINISH_BLOCKING;
 	if(ret==SOCKET_ERROR) {
 		*error = WSAGetLastError ();
 	}
-
-	MONO_FINISH_BLOCKING;
 }
 
 gint
@@ -2381,12 +2380,11 @@ MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, Mo
 	char *hostname = mono_string_to_utf8 (host);
 	int hint = get_addrinfo_family_hint ();
 
-	MONO_PREPARE_BLOCKING;
-
 	if (*hostname == '\0') {
 		add_local_ips = TRUE;
 		*h_name = host;
 	}
+	MONO_PREPARE_BLOCKING;
 	if (!add_local_ips && gethostname (this_hostname, sizeof (this_hostname)) != -1) {
 		if (!strcmp (hostname, this_hostname)) {
 			add_local_ips = TRUE;
@@ -2417,8 +2415,6 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *a
 	int hint = get_addrinfo_family_hint ();
 	gboolean add_info_ok;
 
-	MONO_PREPARE_BLOCKING;
-
 	address = mono_string_to_utf8 (addr);
 
 	if (inet_pton (AF_INET, address, &saddr.sin_addr ) <= 0) {
@@ -2437,6 +2433,8 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *a
 		saddr.sin_family = AF_INET;
 	}
 	g_free(address);
+
+	MONO_PREPARE_BLOCKING;
 
 	if(family == AF_INET) {
 #if HAVE_SOCKADDR_IN_SIN_LEN
