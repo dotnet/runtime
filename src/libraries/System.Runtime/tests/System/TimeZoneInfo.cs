@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -19,6 +20,9 @@ public static class TimeZoneInfoTests
     private static String s_strAmsterdam = s_isWindows ? "W. Europe Standard Time" : "Europe/Berlin";
     private static String s_strRussian = s_isWindows ? "Russian Standard Time" : "Europe/Moscow";
     private static String s_strLibya = s_isWindows ? "Libya Standard Time" : "Africa/Tripoli";
+    private static String s_strCatamarca = s_isWindows ? "Argentina Standard Time" : "America/Catamarca";
+    private static String s_strLisbon = s_isWindows ? "GMT Standard Time" : "Europe/Lisbon";
+    private static String s_strNewfoundland = s_isWindows ? "Newfoundland Standard Time" : "America/St_Johns";
 
     private static TimeZoneInfo s_myUtc = TimeZoneInfo.Utc;
     private static TimeZoneInfo s_myLocal = TimeZoneInfo.Local;
@@ -26,10 +30,16 @@ public static class TimeZoneInfoTests
     private static TimeZoneInfo s_GMTLondon = TimeZoneInfo.FindSystemTimeZoneById(s_strGMT);
     private static TimeZoneInfo s_nairobiTz = TimeZoneInfo.FindSystemTimeZoneById(s_strNairobi);
     private static TimeZoneInfo s_amsterdamTz = TimeZoneInfo.FindSystemTimeZoneById(s_strAmsterdam);
+    private static TimeZoneInfo s_catamarcaTz = TimeZoneInfo.FindSystemTimeZoneById(s_strCatamarca);
+    private static TimeZoneInfo s_LisbonTz = TimeZoneInfo.FindSystemTimeZoneById(s_strLisbon);
+    private static TimeZoneInfo s_NewfoundlandTz = TimeZoneInfo.FindSystemTimeZoneById(s_strNewfoundland);
 
     private static bool s_localIsPST = TimeZoneInfo.Local.Id == s_strPacific;
     private static bool s_regLocalSupportsDST = s_regLocal.SupportsDaylightSavingTime;
     private static bool s_localSupportsDST = TimeZoneInfo.Local.SupportsDaylightSavingTime;
+
+    // In 2006, Australia delayed ending DST by a week.  However, Windows says it still ended the last week of March.
+    private static readonly int s_sydneyOffsetLastWeekOfMarch2006 = s_isWindows ? 10 : 11;
 
     [Fact]
     public static void TestKind()
@@ -94,7 +104,6 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    [ActiveIssue(2465, PlatformID.AnyUnix)]
     public static void ValidateRussiaTimeZoneTest()
     {
         TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(s_strRussian);
@@ -158,16 +167,21 @@ public static class TimeZoneInfoTests
         VerifyConvert(new DateTimeOffset(DateTime.MinValue.AddHours(5), new TimeSpan(-3, 0, 0)), s_strPacific, new DateTimeOffset(DateTime.MinValue, new TimeSpan(-8, 0, 0)));
 
         VerifyConvert(DateTime.MaxValue, s_strPacific, s_strSydney, DateTime.MaxValue);
-        if (s_isWindows) // [ActiveIssue(2465, PlatformID.AnyUnix)]
-        {
-            VerifyConvert(DateTime.MaxValue.AddHours(-19), s_strPacific, s_strSydney, DateTime.MaxValue);
-        }
+        VerifyConvert(DateTime.MaxValue.AddHours(-19), s_strPacific, s_strSydney, DateTime.MaxValue);
         VerifyConvert(DateTime.MaxValue.AddHours(-19.5), s_strPacific, s_strSydney, DateTime.MaxValue.AddHours(-0.5));
+
         VerifyConvert(DateTime.MinValue, s_strSydney, s_strPacific, DateTime.MinValue);
-        if (s_isWindows) // [ActiveIssue(2465, PlatformID.AnyUnix)]
+        if (s_isWindows)
         {
             VerifyConvert(DateTime.MinValue.AddHours(19), s_strSydney, s_strPacific, DateTime.MinValue);
             VerifyConvert(DateTime.MinValue.AddHours(19.5), s_strSydney, s_strPacific, DateTime.MinValue.AddHours(0.5));
+        }
+        else
+        {
+            // for early times, IANA uses local mean time (LMT), which is based on the solar time.
+            // The Pacific Standard Time LMT is UTC-07:53.  For Sydney, LMT is UTC+10:04.
+            VerifyConvert(DateTime.MinValue.AddHours(17).AddMinutes(57), s_strSydney, s_strPacific, DateTime.MinValue);
+            VerifyConvert(DateTime.MinValue.AddHours(17.5).AddMinutes(57), s_strSydney, s_strPacific, DateTime.MinValue.AddHours(0.5));
         }
     }
 
@@ -315,7 +329,6 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void NearMinMaxDateTimeConvertTest()
     {
         DateTime time1 = new DateTime(2006, 5, 12);
@@ -327,13 +340,25 @@ public static class TimeZoneInfoTests
         VerifyConvert(utcMaxValue, s_strPacific, DateTime.MaxValue.AddHours(-8));
         DateTime utcMinValue = DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc);
         VerifyConvert(utcMinValue, s_strPacific, DateTime.MinValue);
-        VerifyConvert(utcMinValue.AddHours(8), s_strPacific, DateTime.MinValue);
-        VerifyConvert(utcMinValue.AddHours(8.5), s_strPacific, DateTime.MinValue.AddHours(0.5));
-        VerifyConvert(utcMinValue, s_strSydney, DateTime.MinValue.AddHours(11));
+
+        if (s_isWindows)
+        {
+            VerifyConvert(utcMinValue.AddHours(8), s_strPacific, DateTime.MinValue);
+            VerifyConvert(utcMinValue.AddHours(8.5), s_strPacific, DateTime.MinValue.AddHours(0.5));
+            VerifyConvert(utcMinValue, s_strSydney, DateTime.MinValue.AddHours(11));
+        }
+        else
+        {
+            // for early times, IANA uses local mean time (LMT), which is based on the solar time.
+            // The Pacific Standard Time LMT is UTC-07:53.
+            VerifyConvert(utcMinValue.AddHours(8).AddMinutes(-7), s_strPacific, DateTime.MinValue);
+            VerifyConvert(utcMinValue.AddHours(8.5).AddMinutes(-7), s_strPacific, DateTime.MinValue.AddHours(0.5));
+            // For Sydney, LMT is UTC+10:04.
+            VerifyConvert(utcMinValue, s_strSydney, DateTime.MinValue.AddHours(10).AddMinutes(4));
+        }
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void DateTimeVariousSystemTimeZonesTest()
     {
         var time1utc = new DateTime(2006, 5, 12, 5, 17, 42, DateTimeKind.Utc);
@@ -345,7 +370,7 @@ public static class TimeZoneInfoTests
         time1utc = new DateTime(2006, 3, 28, 9, 47, 12, DateTimeKind.Utc);
         time1 = new DateTime(2006, 3, 28, 9, 47, 12);
         VerifyConvert(time1utc, s_strPacific, time1.AddHours(-8));
-        VerifyConvert(time1utc, s_strSydney, time1.AddHours(10));
+        VerifyConvert(time1utc, s_strSydney, time1.AddHours(s_sydneyOffsetLastWeekOfMarch2006));
         time1utc = new DateTime(2006, 11, 5, 1, 3, 0, DateTimeKind.Utc);
         time1 = new DateTime(2006, 11, 5, 1, 3, 0);
         VerifyConvert(time1utc, s_strPacific, time1.AddHours(-8));
@@ -382,8 +407,8 @@ public static class TimeZoneInfoTests
         VerifyConvert(time1, s_strPacific, s_strSydney, time1.AddHours(17));
         VerifyConvert(time1, s_strSydney, s_strPacific, time1.AddHours(-17));
         time1 = new DateTime(2006, 3, 28, 9, 47, 12);
-        VerifyConvert(time1, s_strPacific, s_strSydney, time1.AddHours(18));
-        VerifyConvert(time1, s_strSydney, s_strPacific, time1.AddHours(-18));
+        VerifyConvert(time1, s_strPacific, s_strSydney, time1.AddHours(s_sydneyOffsetLastWeekOfMarch2006 + 8));
+        VerifyConvert(time1, s_strSydney, s_strPacific, time1.AddHours(-(s_sydneyOffsetLastWeekOfMarch2006 + 8)));
         time1 = new DateTime(2006, 11, 5, 1, 3, 0);
         VerifyConvert(time1, s_strPacific, s_strSydney, time1.AddHours(19));
         VerifyConvert(time1, s_strSydney, s_strPacific, time1.AddHours(-19));
@@ -393,7 +418,6 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void PerthRulesTest()
     {
         var time1utc = new DateTime(2005, 12, 31, 15, 59, 59, DateTimeKind.Utc);
@@ -424,11 +448,20 @@ public static class TimeZoneInfoTests
         time1utc = new DateTime(2006, 11, 30, 18, 0, 0, DateTimeKind.Utc);
         time1 = new DateTime(2006, 12, 1, 2, 0, 0);
         VerifyConvert(time1utc, s_strPerth, time1);
-        // ambiguous time between rules
-        // this is not ideal, but the way it works
+
         time1utc = new DateTime(2006, 12, 31, 15, 59, 59, DateTimeKind.Utc);
         time1 = new DateTime(2006, 12, 31, 15, 59, 59);
-        VerifyConvert(time1utc, s_strPerth, time1.AddHours(8));
+        if (s_isWindows)
+        {
+            // ambiguous time between rules
+            // this is not ideal, but the way it works
+            VerifyConvert(time1utc, s_strPerth, time1.AddHours(8));
+        }
+        else
+        {
+            // Linux has the correct rules for Perth for days from December 3, 2006 to the end of the year
+            VerifyConvert(time1utc, s_strPerth, time1.AddHours(9));
+        }
 
         // 2007 rule
         time1utc = new DateTime(2006, 12, 31, 20, 1, 2, DateTimeKind.Utc);
@@ -512,7 +545,6 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void LocalToSystemTest()
     {
         var time1 = new DateTime(2006, 5, 12, 5, 17, 42);
@@ -522,13 +554,16 @@ public static class TimeZoneInfoTests
         VerifyConvert(time1local, s_strSydney, time1.Subtract(localOffset).AddHours(10));
         VerifyConvert(time1, s_strPacific, time1.Subtract(localOffset).AddHours(-7));
         VerifyConvert(time1local, s_strPacific, time1.Subtract(localOffset).AddHours(-7));
+
         time1 = new DateTime(2006, 3, 28, 9, 47, 12);
         time1local = new DateTime(2006, 3, 28, 9, 47, 12, DateTimeKind.Local);
         localOffset = TimeZoneInfo.Local.GetUtcOffset(time1);
-        VerifyConvert(time1, s_strSydney, time1.Subtract(localOffset).AddHours(10));
-        VerifyConvert(time1local, s_strSydney, time1.Subtract(localOffset).AddHours(10));
+        VerifyConvert(time1, s_strSydney, time1.Subtract(localOffset).AddHours(s_sydneyOffsetLastWeekOfMarch2006));
+        VerifyConvert(time1local, s_strSydney, time1.Subtract(localOffset).AddHours(s_sydneyOffsetLastWeekOfMarch2006));
+
         VerifyConvert(time1, s_strPacific, time1.Subtract(localOffset).AddHours(-8));
         VerifyConvert(time1local, s_strPacific, time1.Subtract(localOffset).AddHours(-8));
+
         time1 = new DateTime(2006, 11, 5, 1, 3, 0);
         time1local = new DateTime(2006, 11, 5, 1, 3, 0, DateTimeKind.Local);
         localOffset = TimeZoneInfo.Local.GetUtcOffset(time1);
@@ -603,7 +638,6 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void LocalToLocalTest()
     {
         if (s_localIsPST)
@@ -662,7 +696,6 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void LocalToUtcTest()
     {
         var time1 = new DateTime(1964, 6, 19, 12, 45, 10);
@@ -1630,6 +1663,88 @@ public static class TimeZoneInfoTests
         VerifyInv(s_amsterdamTz, new DateTime(2006, 12, 15, 12, 15, 44), false);
     }
 
+    [Fact]
+    [PlatformSpecific(PlatformID.AnyUnix)]
+    public static void TestCatamarcaMultiYearDaylightSavings()
+    {
+        // America/Catamarca had DST from
+        //     1946-10-01T04:00:00.0000000Z {-03:00:00 DST=True}
+        //     1963-10-01T03:00:00.0000000Z {-04:00:00 DST=False}
+
+        VerifyDST(s_catamarcaTz, new DateTime(1946, 09, 30, 17, 00, 00, DateTimeKind.Utc), false);
+        VerifyDST(s_catamarcaTz, new DateTime(1946, 10, 01, 03, 00, 00, DateTimeKind.Utc), false);
+        VerifyDST(s_catamarcaTz, new DateTime(1946, 10, 01, 03, 59, 00, DateTimeKind.Utc), false);
+        VerifyDST(s_catamarcaTz, new DateTime(1946, 10, 01, 04, 00, 00, DateTimeKind.Utc), true);
+        VerifyDST(s_catamarcaTz, new DateTime(1950, 01, 01, 00, 00, 00, DateTimeKind.Utc), true);
+        VerifyDST(s_catamarcaTz, new DateTime(1953, 03, 01, 15, 00, 00, DateTimeKind.Utc), true);
+        VerifyDST(s_catamarcaTz, new DateTime(1955, 05, 01, 16, 00, 00, DateTimeKind.Utc), true);
+        VerifyDST(s_catamarcaTz, new DateTime(1957, 07, 01, 17, 00, 00, DateTimeKind.Utc), true);
+        VerifyDST(s_catamarcaTz, new DateTime(1959, 09, 01, 00, 00, 00, DateTimeKind.Utc), true);
+        VerifyDST(s_catamarcaTz, new DateTime(1961, 11, 01, 00, 00, 00, DateTimeKind.Utc), true);
+        VerifyDST(s_catamarcaTz, new DateTime(1963, 10, 01, 02, 00, 00, DateTimeKind.Utc), true);
+        VerifyDST(s_catamarcaTz, new DateTime(1963, 10, 01, 02, 59, 00, DateTimeKind.Utc), true);
+        VerifyDST(s_catamarcaTz, new DateTime(1963, 10, 01, 03, 00, 00, DateTimeKind.Utc), false);
+    }
+
+    [Theory]
+    [PlatformSpecific(PlatformID.AnyUnix)]
+    // in 1996 Europe/Lisbon changed from standard time to DST without changing the UTC offset
+    [InlineData("1995-09-30T17:00:00.0000000Z", false, "1:00:00")]
+    [InlineData("1996-03-31T00:59:59.0000000Z", false, "1:00:00")]
+    [InlineData("1996-03-31T01:00:00.0000000Z", true, "1:00:00")]
+    [InlineData("1996-03-31T01:00:01.0000000Z", true, "1:00:00")]
+    [InlineData("1996-03-31T11:00:01.0000000Z", true, "1:00:00")]
+    [InlineData("1996-08-31T11:00:00.0000000Z", true, "1:00:00")]
+    [InlineData("1996-10-27T00:00:00.0000000Z", true, "1:00:00")]
+    [InlineData("1996-10-27T00:59:59.0000000Z", true, "1:00:00")]
+    [InlineData("1996-10-27T01:00:00.0000000Z", false, "0:00:00")]
+    [InlineData("1996-10-28T01:00:00.0000000Z", false, "0:00:00")]
+    [InlineData("1997-03-30T00:59:59.0000000Z", false, "0:00:00")]
+    [InlineData("1997-03-30T01:00:00.0000000Z", true, "1:00:00")]
+    public static void TestLisbonDaylightSavingsWithNoOffsetChange(string dateTimeString, bool expectedDST, string expectedOffsetString)
+    {
+        DateTime dt = DateTime.ParseExact(dateTimeString, "o", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal);
+        VerifyDST(s_LisbonTz, dt, expectedDST);
+
+        TimeSpan offset = TimeSpan.Parse(expectedOffsetString, CultureInfo.InvariantCulture);
+        Assert.Equal(offset, s_LisbonTz.GetUtcOffset(dt));
+    }
+
+    [Theory]
+    // Newfoundland is UTC-3:30 standard and UTC-2:30 dst
+    // using non-UTC date times in this test to get some converage for non-UTC date times
+    [InlineData("2015-03-08T01:59:59", false, false, false, "-3:30:00", "-8:00:00")]
+    // since DST kicks in a 2AM, from 2AM - 3AM is Invalid
+    [InlineData("2015-03-08T02:00:00", false, true, false,"-3:30:00", "-8:00:00")]
+    [InlineData("2015-03-08T02:59:59", false, true, false,"-3:30:00", "-8:00:00")]
+    [InlineData("2015-03-08T03:00:00", true, false, false,"-2:30:00", "-8:00:00")]
+    [InlineData("2015-03-08T07:29:59", true, false, false,"-2:30:00", "-8:00:00")]
+    [InlineData("2015-03-08T07:30:00", true, false, false,"-2:30:00", "-7:00:00")]
+    [InlineData("2015-11-01T00:59:59", true, false, false, "-2:30:00", "-7:00:00")]
+    [InlineData("2015-11-01T01:00:00", false, false, true, "-3:30:00", "-7:00:00")]
+    [InlineData("2015-11-01T01:59:59", false, false, true, "-3:30:00", "-7:00:00")]
+    [InlineData("2015-11-01T02:00:00", false, false, false, "-3:30:00", "-7:00:00")]
+    [InlineData("2015-11-01T05:29:59", false, false, false, "-3:30:00", "-7:00:00")]
+    [InlineData("2015-11-01T05:30:00", false, false, false, "-3:30:00", "-8:00:00")]
+    public static void TestNewfoundlandTimeZone(string dateTimeString, bool expectedDST, bool isInvalidTime, bool isAmbiguousTime,
+        string expectedOffsetString, string pacificOffsetString)
+    {
+        DateTime dt = DateTime.ParseExact(dateTimeString, "s", CultureInfo.InvariantCulture);
+        VerifyInv(s_NewfoundlandTz, dt, isInvalidTime);
+
+        if (!isInvalidTime)
+        {
+            VerifyDST(s_NewfoundlandTz, dt, expectedDST);
+            VerifyAmbiguous(s_NewfoundlandTz, dt, isAmbiguousTime);
+
+            TimeSpan offset = TimeSpan.Parse(expectedOffsetString, CultureInfo.InvariantCulture);
+            Assert.Equal(offset, s_NewfoundlandTz.GetUtcOffset(dt));
+
+            TimeSpan pacificOffset = TimeSpan.Parse(pacificOffsetString, CultureInfo.InvariantCulture);
+            VerifyConvert(dt, s_strNewfoundland, s_strPacific, dt - (offset - pacificOffset));
+        }
+    }
+
     //
     //  Helper Methods
     //
@@ -1739,5 +1854,11 @@ public static class TimeZoneInfoTests
     {
         bool ret = tz.IsInvalidTime(dt);
         Assert.True(expectedInvalid == ret, String.Format("Test with the zone {0} and date {1} failed", tz.Id, dt));
+    }
+
+    private static void VerifyAmbiguous(TimeZoneInfo tz, DateTime dt, bool expectedAmbiguous)
+    {
+        bool ret = tz.IsAmbiguousTime(dt);
+        Assert.True(expectedAmbiguous == ret, String.Format("Test with the zone {0} and date {1} failed", tz.Id, dt));
     }
 }
