@@ -257,17 +257,6 @@
         "runtime": {
           "lib/DNXCore50/System.Threading.Thread.dll": {}
         }
-      },
-      "System.Threading.Timer/4.0.0-beta-23024": {
-        "dependencies": {
-          "System.Runtime": "4.0.0-beta-23024"
-        },
-        "compile": {
-          "ref/dotnet/System.Threading.Timer.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Threading.Timer.dll": {}
-        }
       }
     }
   },
@@ -789,34 +778,6 @@
         "ref/dotnet/zh-hant/System.Threading.Thread.xml",
         "ref/net46/System.Threading.Thread.dll"
       ]
-    },
-    "System.Threading.Timer/4.0.0-beta-23024": {
-      "sha512": "pW32g5FObA1DhI5rAEk9zb8zp3MdJ0iiWy3uE3bvBepDa9lwYVe5nK5RCom7vTmvXU0zPckYYUoGptpv2L+tpA==",
-      "files": [
-        "System.Threading.Timer.4.0.0-beta-23024.nupkg",
-        "System.Threading.Timer.4.0.0-beta-23024.nupkg.sha512",
-        "System.Threading.Timer.nuspec",
-        "lib/DNXCore50/System.Threading.Timer.dll",
-        "lib/net451/_._",
-        "lib/netcore50/System.Threading.Timer.dll",
-        "lib/win81/_._",
-        "ref/dotnet/System.Threading.Timer.dll",
-        "ref/dotnet/System.Threading.Timer.xml",
-        "ref/dotnet/de/System.Threading.Timer.xml",
-        "ref/dotnet/es/System.Threading.Timer.xml",
-        "ref/dotnet/fr/System.Threading.Timer.xml",
-        "ref/dotnet/it/System.Threading.Timer.xml",
-        "ref/dotnet/ja/System.Threading.Timer.xml",
-        "ref/dotnet/ko/System.Threading.Timer.xml",
-        "ref/dotnet/ru/System.Threading.Timer.xml",
-        "ref/dotnet/zh-hans/System.Threading.Timer.xml",
-        "ref/dotnet/zh-hant/System.Threading.Timer.xml",
-        "ref/net451/_._",
-        "ref/netcore50/System.Threading.Timer.dll",
-        "ref/netcore50/System.Threading.Timer.xml",
-        "ref/win81/_._",
-        "runtimes/win8-aot/lib/netcore50/System.Threading.Timer.dll"
-      ]
     }
   },
   "projectFileDependencyGroups": {
@@ -832,8 +793,7 @@
       "System.Runtime.InteropServices >= 4.0.20-beta-*",
       "System.Collections >= 4.0.10-beta-*",
       "System.Globalization.Calendars >= 4.0.0-beta-*",
-      "System.Globalization >= 4.0.10-beta-*",
-      "System.Threading.Timer >= 4.0.0-beta-*"
+      "System.Globalization >= 4.0.10-beta-*"
     ],
     "DNXCore,Version=v5.0": []
   }
