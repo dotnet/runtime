@@ -139,7 +139,9 @@ monoutils_sources = \
 	memfuncs.c \
 	memfuncs.h \
 	parse.c \
-	parse.h
+	parse.h	\
+	checked-build.c \
+	checked-build.h
 
 arch_sources = 
 

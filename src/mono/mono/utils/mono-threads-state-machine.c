@@ -5,6 +5,7 @@
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/atomic.h>
+#include <mono/utils/checked-build.h>
 
 #include <errno.h>
 
@@ -89,6 +90,8 @@ trace_state_change (const char *transition, MonoThreadInfo *info, int cur_raw_st
 		state_name (next_state),
 		get_thread_suspend_count (cur_raw_state),
 		get_thread_suspend_count (cur_raw_state) + suspend_count_delta);
+
+	CHECKED_BUILD_THREAD_TRANSITION (transition, info, get_thread_state (cur_raw_state), get_thread_suspend_count (cur_raw_state), next_state, suspend_count_delta);
 }
 
 /*

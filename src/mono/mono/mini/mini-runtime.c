@@ -59,6 +59,7 @@
 #include <mono/utils/dtrace.h>
 #include <mono/utils/mono-signal-handler.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/utils/checked-build.h>
 #include <mono/io-layer/io-layer.h>
 
 #include "mini.h"
@@ -2912,6 +2913,8 @@ mini_init (const char *filename, const char *runtime_version)
 	MonoThreadInfoRuntimeCallbacks ticallbacks;
 
 	MONO_VES_INIT_BEGIN ();
+
+	CHECKED_MONO_INIT ();
 
 #if defined(__linux__) && !defined(__native_client__)
 	if (access ("/proc/self/maps", F_OK) != 0) {
