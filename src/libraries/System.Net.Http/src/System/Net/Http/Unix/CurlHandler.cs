@@ -35,6 +35,7 @@ namespace System.Net.Http
         private readonly static string[] AuthenticationSchemes = { "Negotiate", "Digest", "Basic" }; // the order in which libcurl goes over authentication schemes
         private static readonly string[] s_headerDelimiters = new string[] { "\r\n" };
         private const int s_requestBufferSize = 16384; // Default used by libcurl
+        private const string NoTransferEncoding = HttpKnownHeaderNames.TransferEncoding + ":";
 
         #endregion
 
@@ -202,10 +203,17 @@ namespace System.Net.Http
             {
                 throw new ArgumentNullException("request", SR.net_http_handler_norequest);
             }
-            else if ((request.RequestUri.Scheme != UriSchemeHttp) && (request.RequestUri.Scheme != UriSchemeHttps))
+
+            if ((request.RequestUri.Scheme != UriSchemeHttp) && (request.RequestUri.Scheme != UriSchemeHttps))
             {
                 throw NotImplemented.ByDesignWithMessage(SR.net_http_client_http_baseaddress_required);
             }
+
+            if (request.Headers.TransferEncodingChunked.GetValueOrDefault() && (request.Content == null))
+            {
+                throw new InvalidOperationException(SR.net_http_chunked_not_allowed_with_empty_content);
+            }
+
             // TODO: Check that SendAsync is not being called again for same request object.
             //       Probably fix is needed in WinHttpHandler as well
 
@@ -612,6 +620,8 @@ namespace System.Net.Http
             HttpHeaders contentHeaders = null;
             if (request.Content != null)
             {
+                SetChunkedModeForSend(request);
+
                 // TODO: Content-Length header isn't getting correctly placed using ToString()
                 // This is a bug in HttpContentHeaders that needs to be fixed.
                 if (request.Content.Headers.ContentLength.HasValue)
@@ -632,7 +642,7 @@ namespace System.Net.Http
                 IntPtr rawHandle = IntPtr.Zero;
                 for (int i = 0; i < allHeaders.Length; i++)
                 {
-                    string header = allHeaders[i];
+                    string header = allHeaders[i].Trim();
                     if (header.Equals("{") || header.Equals("}"))
                     {
                         continue;
@@ -640,6 +650,15 @@ namespace System.Net.Http
                     rawHandle = Interop.libcurl.curl_slist_append(rawHandle, header);
                     retVal.SetHandle(rawHandle);
                 }
+
+                // Since libcurl always adds a Transfer-Encoding header, we need to explicitly block
+                // it if caller specifically does not want to set the header
+                if (request.Headers.TransferEncodingChunked.HasValue && !request.Headers.TransferEncodingChunked.Value)
+                {
+                    rawHandle = Interop.libcurl.curl_slist_append(rawHandle, NoTransferEncoding);
+                    retVal.SetHandle(rawHandle);
+                }
+
                 if (!retVal.IsInvalid)
                 {
                     SetCurlOption(handle, CURLoption.CURLOPT_HTTPHEADER, rawHandle);
@@ -654,6 +673,29 @@ namespace System.Net.Http
             }
 
             return retVal;
+        }
+
+        private static void SetChunkedModeForSend(HttpRequestMessage request)
+        {
+            bool chunkedMode = request.Headers.TransferEncodingChunked.GetValueOrDefault();
+            HttpContent requestContent = request.Content;
+            Debug.Assert(requestContent != null);
+
+            // Deal with conflict between 'Content-Length' vs. 'Transfer-Encoding: chunked' semantics.
+            // libcurl adds a Tranfer-Encoding header by default and the request fails if both are set.
+            if (requestContent.Headers.ContentLength.HasValue)
+            {
+                if (chunkedMode)
+                {
+                    // Same behaviour as WinHttpHandler
+                    requestContent.Headers.ContentLength = null;
+                }
+                else
+                {
+                    // Prevent libcurl from adding Transfer-Encoding header
+                    request.Headers.TransferEncodingChunked = false;
+                }
+            }
         }
 
         private void AddEasyHandle(RequestCompletionSource state)
