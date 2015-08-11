@@ -2,8 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 using size_t = System.UInt64;
@@ -19,6 +22,7 @@ using CurlPoll = Interop.libcurl.CurlPoll;
 using CurlSelect = Interop.libcurl.CurlSelect;
 using CURLAUTH = Interop.libcurl.CURLAUTH;
 using CURLoption = Interop.libcurl.CURLoption;
+using PollFlags = Interop.libc.PollFlags;
 
 namespace System.Net.Http
 {
@@ -58,7 +62,6 @@ namespace System.Net.Http
                     string responseHeader = Marshal.PtrToStringAnsi(ptr).Trim();
                     HttpResponseMessage response = state.ResponseMessage;
 
-                    // TODO: Understand scenarios where multiple sets of headers are received
                     if (!TryParseStatusLine(response, responseHeader, state))
                     {
                         int colonIndex = responseHeader.IndexOf(':');
@@ -71,7 +74,6 @@ namespace System.Net.Http
 
                             if (!response.Headers.TryAddWithoutValidation(headerName, headerValue))
                             {
-                                // TODO: Skip compression related headers
                                 response.Content.Headers.TryAddWithoutValidation(headerName, headerValue);
                             }
                         }
@@ -92,7 +94,13 @@ namespace System.Net.Http
             try
             {
                 // Set task completion after all headers have been received
-                // TODO: Fail if we find that task is already Canceled or Faulted
+                // Fail if we find that task is already Canceled or Faulted
+                if (state.Task.IsCanceled || state.Task.IsFaulted)
+                {
+                    // Returing a value other than size fails the callback and forces
+                    // request completion with an error
+                    return (size > 0) ? size - 1 : 1;
+                }
                 state.TrySetResult(state.ResponseMessage);
 
                 // Wait for a reader
@@ -123,8 +131,6 @@ namespace System.Net.Http
                 {
                     state.CancellationToken.ThrowIfCancellationRequested();
                     Stream contentStream = state.RequestContentStream;
-
-                    // TODO: Handle chunked-mode
 
                     byte[] byteBuffer = state.RequestContentBuffer;
                     int numBytes = contentStream.Read(state.RequestContentBuffer, 0, Math.Min(byteBuffer.Length, (int)totalSize));
@@ -304,6 +310,12 @@ namespace System.Net.Http
             return true;
         }
 
+        // This callback is invoked by libcurl to indicate interest in performing
+        // an action on the underlying socket of the easy handle. This can be
+        // invoked synchronously when curl_multi_socket_action is called from any
+        // code path and in such cases, the multi handle lock is already held. So
+        // ensure that the code path can never cause a deadlock or runs some
+        // blocking code
         private static int CurlSocketCallback(
             IntPtr handle,
             curl_socket_t socketFd,
@@ -313,14 +325,10 @@ namespace System.Net.Http
         {
             int retVal = CURLMcode.CURLM_OK;
 
-            if (CurlPoll.CURL_POLL_REMOVE == socketAction)
-            {
-                return retVal;
-            }
-
             bool isAdd = false;
             if (IntPtr.Zero == sockPtr)
             {
+                Debug.Assert(CurlPoll.CURL_POLL_REMOVE != socketAction);
                 int result = Interop.libcurl.curl_easy_getinfo(handle, CURLINFO.CURLINFO_PRIVATE, out sockPtr);
                 if (result != CURLcode.CURLE_OK)
                 {
@@ -341,6 +349,14 @@ namespace System.Net.Http
                 return retVal;
             }
 
+            if (CurlPoll.CURL_POLL_REMOVE == socketAction)
+            {
+                lock (state.SessionHandle)
+                {
+                    state.SessionHandle.SignalFdSetChange(socketFd, true);
+                }
+            }
+
             if (isAdd)
             {
                 lock (state.SessionHandle)
@@ -351,13 +367,11 @@ namespace System.Net.Http
                         throw new HttpRequestException(SR.net_http_client_execution_error,
                             GetCurlException(result, true));
                     }
+                    state.SessionHandle.SignalFdSetChange(socketFd, false);
                 }
             }
-            else
-            {
-                int eventMask = CurlSelect.CURL_CSELECT_IN | CurlSelect.CURL_CSELECT_OUT;
-                CheckForCompletedTransfers(state.SessionHandle, socketFd, eventMask, sockPtr);
-            }
+
+            CheckForCompletedTransfers(state.SessionHandle);
 
             return retVal;
         }
@@ -367,49 +381,51 @@ namespace System.Net.Http
             long timeoutInMilliseconds,
             IntPtr context)
         {
-            // TODO: Handle <=0 values for the timeout
-            Task.Delay((int)timeoutInMilliseconds).ContinueWithStandard(context, (t, c) => CurlTimerElapsed((IntPtr)c));
+            SafeCurlMultiHandle multiHandle;
+            try
+            {
+                GCHandle gch = GCHandle.FromIntPtr(context);
+                multiHandle = (SafeCurlMultiHandle)gch.Target;
+            }
+            catch
+            {
+                // CurlHandler was probably disposed
+                return CURLMcode.CURLM_OK;
+            }
+
+            lock (multiHandle)
+            {
+                multiHandle.Timer.Change((int)timeoutInMilliseconds, Timeout.Infinite);
+            }
 
             return CURLMcode.CURLM_OK;
         }
 
         private static void CurlTimerElapsed(
-            IntPtr context)
+            Object state)
         {
-            try
-            {
-                GCHandle gch = GCHandle.FromIntPtr(context);
-                SafeCurlMultiHandle multiHandle = (SafeCurlMultiHandle)gch.Target;
-                CheckForCompletedTransfers(multiHandle, -1, 0, IntPtr.Zero);
-            }
-            catch
-            {
-                // CurlHandler was probably disposed
-            }
-        }
+            SafeCurlMultiHandle multiHandle = (SafeCurlMultiHandle)state;
 
-        private static void CheckForCompletedTransfers(SafeCurlMultiHandle multiHandle, int socketFd, int eventBitMask, IntPtr statePtr)
-        {
-            int runningTransfers;
-            // TODO: Revisit the lock and see if serialization is really needed
-            lock (multiHandle)
-            {
-                int result = Interop.libcurl.curl_multi_socket_action(multiHandle, socketFd, eventBitMask,
-                    out runningTransfers);
-                if (result != CURLMcode.CURLM_OK)
-                {
-                    throw new HttpRequestException(SR.net_http_client_execution_error, GetCurlException(result, true));
-                }
-            }
-
-            // Let socket callback handle fd-specific message
-            if (IntPtr.Zero == statePtr)
+            if (multiHandle.IsInvalid)
             {
                 return;
             }
 
+            lock (multiHandle)
+            {
+                int runningTransfers;
+                Interop.libcurl.curl_multi_socket_action(multiHandle, -1, 0, out runningTransfers);
+                // ignore errors
+            }
+
+            CheckForCompletedTransfers(multiHandle);
+        }
+
+        private static void CheckForCompletedTransfers(SafeCurlMultiHandle multiHandle)
+        {
             int pendingMessages;
             IntPtr messagePtr;
+
             lock (multiHandle)
             {
                 messagePtr = Interop.libcurl.curl_multi_info_read(multiHandle, out pendingMessages);
@@ -419,11 +435,70 @@ namespace System.Net.Http
                 var message = Marshal.PtrToStructure<Interop.libcurl.CURLMsg>(messagePtr);
                 if (Interop.libcurl.CURLMSG.CURLMSG_DONE == message.msg)
                 {
-                    EndRequest(multiHandle, statePtr, message.result);
+                    IntPtr statePtr;
+                    int result = Interop.libcurl.curl_easy_getinfo(message.easy_handle, CURLINFO.CURLINFO_PRIVATE, out statePtr);
+                    if (result == CURLcode.CURLE_OK)
+                    {
+                        EndRequest(multiHandle, statePtr, message.result);
+                    }
                 }
                 lock (multiHandle)
                 {
                     messagePtr = Interop.libcurl.curl_multi_info_read(multiHandle, out pendingMessages);
+                }
+            }
+        }
+
+        private static void PollFunction(SafeCurlMultiHandle multiHandle)
+        {
+            List<Interop.libc.pollfd> fds = new List<Interop.libc.pollfd>();
+
+            while (true)
+            {
+                lock (multiHandle)
+                {
+                    if (0 == multiHandle.RequestCount)
+                    {
+                        multiHandle.PollCancelled = true;
+                        return;
+                    }
+                }
+
+                multiHandle.PollFds(fds);
+                if (0 == fds.Count)
+                {
+                    // No read/write activity on the sockets.. keep polling
+                    continue;
+                }
+
+                int result = -1;
+                for (int i = 0; i < fds.Count; i++)
+                {
+                    int eventBitMask = ((fds[i].revents & PollFlags.POLLIN) != 0) ? CurlSelect.CURL_CSELECT_IN : 0;
+                    eventBitMask |= ((fds[i].revents & PollFlags.POLLOUT) != 0) ? CurlSelect.CURL_CSELECT_OUT : 0;
+                    if (eventBitMask != 0)
+                    {
+                        lock (multiHandle)
+                        {
+                            int runningTransfers;
+                            if (CURLMcode.CURLM_OK ==
+                                Interop.libcurl.curl_multi_socket_action(multiHandle, fds[i].fd, eventBitMask,
+                                    out runningTransfers))
+                            {
+                                result = CURLMcode.CURLM_OK;
+                                if (0 == runningTransfers)
+                                {
+                                    multiHandle.Timer.Change(Timeout.Infinite, Timeout.Infinite);
+                                }
+                            }
+                            // Ignore errors
+                        }
+                    }
+                }
+
+                if (CURLMcode.CURLM_OK == result)
+                {
+                    CheckForCompletedTransfers(multiHandle);
                 }
             }
         }

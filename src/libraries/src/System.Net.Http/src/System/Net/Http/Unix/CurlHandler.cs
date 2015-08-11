@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
@@ -92,6 +93,7 @@ namespace System.Net.Http
             {
                 throw new HttpRequestException(SR.net_http_client_execution_error);
             }
+            _multiHandle.Timer = new Timer(CurlTimerElapsed, _multiHandle, Timeout.Infinite, Timeout.Infinite);
             SetCurlMultiOptions();
         }
 
@@ -326,11 +328,7 @@ namespace System.Net.Http
             }
 
             // Create RequestCompletionSource object and save current values of handler settings.
-            RequestCompletionSource state = new RequestCompletionSource(this)
-            {
-                CancellationToken = cancellationToken,
-                RequestMessage = request,
-            };
+            RequestCompletionSource state = new RequestCompletionSource(this, cancellationToken, request);
 
             BeginRequest(state);
             return state.Task;
@@ -490,8 +488,6 @@ namespace System.Net.Http
             SetCookieOption(requestHandle, state.RequestMessage.RequestUri);
 
             state.RequestHeaderHandle = SetRequestHeaders(requestHandle, state.RequestMessage);
-
-            // TODO: Handle other options
 
             return requestHandle;
         }
@@ -911,8 +907,16 @@ namespace System.Net.Http
                         throw new HttpRequestException(SR.net_http_client_execution_error,
                             GetCurlException(result, true));
                     }
+                    state.SessionHandle = _multiHandle;
+                    _multiHandle.RequestCount = _multiHandle.RequestCount + 1;
+                    if (_multiHandle.PollCancelled)
+                    {
+                        // TODO: Create single polling thread for all HttpClientHandler objects
+                        Task.Factory.StartNew(s => PollFunction(((CurlHandler)s)._multiHandle), this,
+                                CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+                        _multiHandle.PollCancelled = false;
+                    }
                 }
-                state.SessionHandle = _multiHandle;
                 // Note that we are deliberately not decreasing the ref counts of
                 // the multi and easy handles since that will be done in RemoveEasyHandle
                 // when the request is completed and the handles are used in an
@@ -940,6 +944,7 @@ namespace System.Net.Http
                 lock (multiHandle)
                 {
                     Interop.libcurl.curl_multi_remove_handle(multiHandle, requestHandle);
+                    multiHandle.RequestCount = multiHandle.RequestCount - 1;
                 }
                 state.SessionHandle = null;
                 requestHandle.DangerousRelease();
@@ -961,15 +966,23 @@ namespace System.Net.Http
         private sealed class RequestCompletionSource : TaskCompletionSource<HttpResponseMessage>
         {
             private readonly CurlHandler _handler;
+            private readonly CancellationToken _cancellationToken;
+            private readonly HttpRequestMessage _requestMessage;
 
-            public RequestCompletionSource(CurlHandler handler)
+
+            // TODO: The task completion can sometimes happen under a lock. So we need to ensure
+            //       that arbitrary blocking code cannot run when the task is marked for completion
+            //       So we are using RunContinuationsAsynchronously to force a diff. thread
+            public RequestCompletionSource(
+                    CurlHandler handler,
+                    CancellationToken cancellationToken,
+                    HttpRequestMessage request)
+                : base(TaskCreationOptions.RunContinuationsAsynchronously)
             {
                 this._handler = handler;
+                this._cancellationToken = cancellationToken;
+                this._requestMessage = request;
             }
-
-            public CancellationToken CancellationToken { get; set; }
-
-            public HttpRequestMessage RequestMessage { get; set; }
 
             public CurlResponseMessage ResponseMessage { get; set; }
 
@@ -990,6 +1003,22 @@ namespace System.Net.Http
                 get
                 {
                     return _handler;
+                }
+            }
+
+            public CancellationToken CancellationToken
+            {
+                get
+                {
+                    return _cancellationToken;
+                }
+            }
+
+            public HttpRequestMessage RequestMessage
+            {
+                get
+                {
+                    return _requestMessage;
                 }
             }
         }
