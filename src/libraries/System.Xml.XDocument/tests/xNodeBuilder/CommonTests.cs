@@ -1068,7 +1068,7 @@ namespace CoreXml.Test.XLinq
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
-                    XmlReader xr = CreateReader(Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlWriter2\XmlReader.xml"));
+                    XmlReader xr = CreateReader(Path.Combine(FilePathUtil.GetTestDataPath(), Path.Combine("XmlWriter2", "XmlReader.xml")));
                     while (xr.Read())
                     {
                         if (xr.LocalName == "name")
@@ -1091,7 +1091,7 @@ namespace CoreXml.Test.XLinq
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
-                    XmlReader xr = CreateReader(Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlWriter2\XmlReader.xml"));
+                    XmlReader xr = CreateReader(Path.Combine(FilePathUtil.GetTestDataPath(), Path.Combine("XmlWriter2", "XmlReader.xml")));
                     while (xr.Read())
                     {
                         if (xr.LocalName == "name")
@@ -1136,7 +1136,7 @@ namespace CoreXml.Test.XLinq
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
-                    XmlReader xr = CreateReader(Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlWriter2\XmlReader.xml"));
+                    XmlReader xr = CreateReader(Path.Combine(FilePathUtil.GetTestDataPath(), Path.Combine("XmlWriter2", "XmlReader.xml")));
                     while (xr.Read())
                     {
                         if (xr.LocalName == "AttributesGeneric")
@@ -1168,7 +1168,7 @@ namespace CoreXml.Test.XLinq
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
-                    XmlReader xr = CreateReader(Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlWriter2\XmlReader.xml"));
+                    XmlReader xr = CreateReader(Path.Combine(FilePathUtil.GetTestDataPath(), Path.Combine("XmlWriter2", "XmlReader.xml")));
                     while (xr.Read())
                     {
                         if (xr.LocalName == "AttributesGeneric")
@@ -1200,7 +1200,7 @@ namespace CoreXml.Test.XLinq
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
-                    XmlReader xr = CreateReader(Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlWriter2\XmlReader.xml"));
+                    XmlReader xr = CreateReader(Path.Combine(FilePathUtil.GetTestDataPath(), Path.Combine("XmlWriter2", "XmlReader.xml")));
                     while (xr.Read())
                     {
                         if (xr.LocalName == "AttributesGeneric")
@@ -1320,7 +1320,7 @@ namespace CoreXml.Test.XLinq
                 public void writeAttributes_12()
                 {
                     XDocument doc = new XDocument();
-                    XmlReader xr = CreateReader(Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlWriter2\XmlReader.xml"));
+                    XmlReader xr = CreateReader(Path.Combine(FilePathUtil.GetTestDataPath(), Path.Combine("XmlWriter2", "XmlReader.xml")));
                     while (xr.Read())
                     {
                         if (xr.LocalName == "OneHundredAttributes")
@@ -1442,7 +1442,7 @@ namespace CoreXml.Test.XLinq
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
-                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlWriter2\XmlReader.xml"));
+                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), Path.Combine("XmlWriter2", "XmlReader.xml")));
                     while (xr.Read())
                     {
                         if (xr.LocalName == "defattr")
@@ -1500,7 +1500,7 @@ namespace CoreXml.Test.XLinq
                 public void writeNode_XmlReader5()
                 {
                     XDocument doc = new XDocument();
-                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlWriter2\XmlReader.xml"));
+                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), Path.Combine("XmlWriter2", "XmlReader.xml")));
                     while (xr.Read())
                     {
                         if (xr.LocalName == "Middle")
@@ -1522,7 +1522,7 @@ namespace CoreXml.Test.XLinq
                 //[Variation(Id = 6, Desc = "WriteNode when reader state is EOF", Priority = 1)]
                 public void writeNode_XmlReader6()
                 {
-                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlWriter2\XmlReader.xml"));
+                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), Path.Combine("XmlWriter2", "XmlReader.xml")));
                     while (xr.Read()) { }
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
@@ -1537,7 +1537,7 @@ namespace CoreXml.Test.XLinq
                 //[Variation(Id = 7, Desc = "WriteNode when reader state is Closed", Priority = 1)]
                 public void writeNode_XmlReader7()
                 {
-                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlWriter2\XmlReader.xml"));
+                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), Path.Combine("XmlWriter2", "XmlReader.xml")));
                     while (xr.Read()) { }
                     xr.Dispose();
                     XDocument doc = new XDocument();
@@ -1552,7 +1552,7 @@ namespace CoreXml.Test.XLinq
                 //[Variation(Id = 8, Desc = "WriteNode with reader on empty element node", Priority = 1)]
                 public void writeNode_XmlReader8()
                 {
-                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlWriter2\XmlReader.xml"));
+                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), Path.Combine("XmlWriter2", "XmlReader.xml")));
                     while (xr.Read())
                     {
                         if (xr.LocalName == "EmptyElement")
@@ -1575,7 +1575,7 @@ namespace CoreXml.Test.XLinq
                 //[Variation(Id = 9, Desc = "WriteNode with reader on 100 Nodes", Priority = 1)]
                 public void writeNode_XmlReader9()
                 {
-                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlWriter2\XmlReader.xml"));
+                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), Path.Combine("XmlWriter2", "XmlReader.xml")));
                     while (xr.Read())
                     {
                         if (xr.LocalName == "OneHundredElements")
@@ -1595,7 +1595,7 @@ namespace CoreXml.Test.XLinq
                 //[Variation(Id = 10, Desc = "WriteNode with reader on node with mixed content", Priority = 1)]
                 public void writeNode_XmlReader10()
                 {
-                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlWriter2\XmlReader.xml"));
+                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), Path.Combine("XmlWriter2", "XmlReader.xml")));
                     while (xr.Read())
                     {
                         if (xr.LocalName == "MixedContent")
@@ -1618,7 +1618,7 @@ namespace CoreXml.Test.XLinq
                 //[Variation(Id = 11, Desc = "WriteNode with reader on node with declared namespace in parent", Priority = 1)]
                 public void writeNode_XmlReader11()
                 {
-                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlWriter2\XmlReader.xml"));
+                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), Path.Combine("XmlWriter2", "XmlReader.xml")));
                     while (xr.Read())
                     {
                         if (xr.LocalName == "NamespaceNoPrefix")
@@ -1639,7 +1639,7 @@ namespace CoreXml.Test.XLinq
                 //[Variation(Id = 14, Desc = "WriteNode with element that has different prefix", Priority = 1)]
                 public void writeNode_XmlReader14()
                 {
-                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlWriter2\XmlReader.xml"));
+                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), Path.Combine("XmlWriter2", "XmlReader.xml")));
                     while (xr.Read())
                     {
                         if (xr.LocalName == "DiffPrefix")
@@ -1663,7 +1663,7 @@ namespace CoreXml.Test.XLinq
                 //[Variation(Id = 15, Desc = "Call WriteNode with default attributes = true and DTD", Priority = 1)]
                 public void writeNode_XmlReader15()
                 {
-                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlWriter2\XmlReader.xml"));
+                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), Path.Combine("XmlWriter2", "XmlReader.xml")));
                     while (xr.Read())
                     {
                         if (xr.LocalName == "DefaultAttributesTrue")
@@ -1685,7 +1685,7 @@ namespace CoreXml.Test.XLinq
                 //[Variation(Id = 16, Desc = "Call WriteNode with default attributes = false and DTD", Priority = 1)]
                 public void writeNode_XmlReader16()
                 {
-                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlWriter2\XmlReader.xml"));
+                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), Path.Combine("XmlWriter2", "XmlReader.xml")));
                     while (xr.Read())
                     {
                         if (xr.LocalName == "DefaultAttributesTrue")
@@ -1707,7 +1707,7 @@ namespace CoreXml.Test.XLinq
                 //[Variation(Id = 17, Desc = "testcase: WriteNode with reader on empty element with attributes", Priority = 1)]
                 public void writeNode_XmlReader17()
                 {
-                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlWriter2\XmlReader.xml"));
+                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), Path.Combine("XmlWriter2", "XmlReader.xml")));
                     while (xr.Read())
                     {
                         if (xr.LocalName == "EmptyElementWithAttributes")
@@ -1768,7 +1768,7 @@ namespace CoreXml.Test.XLinq
                 public void writeNode_XmlReader22()
                 {
                     XDocument doc = new XDocument();
-                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlWriter2\XmlReader.xml"));
+                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), Path.Combine("XmlWriter2", "XmlReader.xml")));
                     while (xr.Read())
                     {
                         if (xr.LocalName == "OneHundredAttributes")
@@ -1787,7 +1787,7 @@ namespace CoreXml.Test.XLinq
                 public void writeNode_XmlReader23()
                 {
                     XDocument doc = new XDocument();
-                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlWriter2\XmlReader.xml"));
+                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), Path.Combine("XmlWriter2", "XmlReader.xml")));
                     while (xr.Read())
                     {
                         if (xr.LocalName == "Middle")
@@ -1816,7 +1816,7 @@ namespace CoreXml.Test.XLinq
                 public void writeNode_XmlReader24()
                 {
                     XDocument doc = new XDocument();
-                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlWriter2\XmlReader.xml"));
+                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), Path.Combine("XmlWriter2", "XmlReader.xml")));
                     while (xr.Read())
                     {
                         if (xr.LocalName == "CDataNode")
@@ -1845,7 +1845,7 @@ namespace CoreXml.Test.XLinq
                 public void writeNode_XmlReader25()
                 {
                     XDocument doc = new XDocument();
-                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlWriter2\XmlReader.xml"));
+                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), Path.Combine("XmlWriter2", "XmlReader.xml")));
                     while (xr.Read())
                     {
                         if (xr.LocalName == "PINode")
@@ -1873,7 +1873,7 @@ namespace CoreXml.Test.XLinq
                 public void writeNode_XmlReader26()
                 {
                     XDocument doc = new XDocument();
-                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlWriter2\XmlReader.xml"));
+                    XmlReader xr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), Path.Combine("XmlWriter2", "XmlReader.xml")));
                     while (xr.Read())
                     {
                         if (xr.LocalName == "CommentNode")
@@ -5586,7 +5586,7 @@ namespace CoreXml.Test.XLinq
                 //[Variation(Id = 5, Desc = "Veify XmlLang value when received through WriteAttributes", Priority = 1)]
                 public void XmlLang_5()
                 {
-                    XmlReader tr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlWriter2\XmlReader.xml"));
+                    XmlReader tr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), Path.Combine("XmlWriter2", "XmlReader.xml")));
 
                     while (tr.Read())
                     {
@@ -6146,7 +6146,7 @@ namespace CoreXml.Test.XLinq
                                     break;
                                 case "WriteAttributes":
                                     {
-                                        XmlReader reader = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlWriter2\XmlReader.xml"));
+                                        XmlReader reader = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), Path.Combine("XmlWriter2", "XmlReader.xml")));
                                         while (reader.Read())
                                         {
                                             if (reader.LocalName == "defattr")
@@ -6159,7 +6159,7 @@ namespace CoreXml.Test.XLinq
                                         break;
                                     }
                                 case "WriteNodeReader":
-                                    w.WriteNode(CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlWriter2\XmlReader.xml")), false);
+                                    w.WriteNode(CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), Path.Combine("XmlWriter2", "XmlReader.xml"))), false);
                                     break;
                                 case "Flush":
                                     w.Flush();
