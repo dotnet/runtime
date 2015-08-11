@@ -161,11 +161,11 @@ namespace ComplexTestSupport
         {
             if (double.IsInfinity(d1))
             {
-                return d1 == (d2 * 10);
+                return AreSameInfinity(d1, d2 * 10);
             }
             else if (double.IsInfinity(d2))
             {
-                return d2 == (d1 * 10);
+                return AreSameInfinity(d1 * 10, d2);
             }
             else
             {
@@ -174,6 +174,13 @@ namespace ComplexTestSupport
                 diffRatio = Math.Abs(diffRatio);
                 return (diffRatio < 1);
             }
+        }
+
+        private static bool AreSameInfinity(double d1, double d2)
+        {
+            return
+                double.IsNegativeInfinity(d1) == double.IsNegativeInfinity(d2) &&
+                double.IsPositiveInfinity(d1) == double.IsPositiveInfinity(d2);
         }
 
         public static void VerifyRealImaginaryProperties(Complex complex, double real, double imaginary, string message)
