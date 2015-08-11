@@ -993,7 +993,7 @@ namespace CoreXml.Test.XLinq
                 {
                     XmlReaderSettings settings = new XmlReaderSettings();
                     settings.DtdProcessing = DtdProcessing.Ignore;
-                    XmlReader r = XmlReader.Create(FilePathUtil.getStream(@"StandardTests\XML10\ms_xml\vs084.xml"), settings);
+                    XmlReader r = XmlReader.Create(FilePathUtil.getStream(Path.Combine("StandardTests", "XML10", "ms_xml", "vs084.xml")), settings);
                     XmlReader reader = GetReader(r);
                     reader.ReadToFollowing("a");
                     reader.MoveToNextAttribute();

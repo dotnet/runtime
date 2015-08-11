@@ -432,7 +432,7 @@ namespace CoreXml.Test.XLinq
                 //[Variation("WS:WireCompat:hex binary fails to send/return data after 1787 bytes going whIdbey to everett")]
                 public void TestTextReadBinHex_24()
                 {
-                    string filename = @"TestData\XmlReader\Common\Bug99148.xml";
+                    string filename = Path.Combine("TestData", "XmlReader", "Common", "Bug99148.xml");
                     XmlReader DataReader = GetReader(filename);
 
                     DataReader.MoveToContent();
@@ -852,7 +852,7 @@ namespace CoreXml.Test.XLinq
                 //[Variation("WS:WireCompat:hex binary fails to send/return data after 1787 bytes going whIdbey to everett")]
                 public void TestTextReadBinHex_24()
                 {
-                    string filename = @"TestData\XmlReader\Common\Bug99148.xml";
+                    string filename = Path.Combine("TestData", "XmlReader", "Common", "Bug99148.xml");
                     XmlReader DataReader = GetReader(filename);
 
                     DataReader.MoveToContent();
