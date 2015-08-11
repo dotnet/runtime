@@ -33,6 +33,7 @@
     <Compile Include="FileSystemEventArgs.unit.cs" />
     <Compile Include="FileSystemWatcher.unit.cs" />
     <Compile Include="RenamedEventArgs.unit.cs" />
+    <Compile Include="XunitAssemblyAttributes.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
