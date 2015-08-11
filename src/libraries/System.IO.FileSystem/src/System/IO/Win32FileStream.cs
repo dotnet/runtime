@@ -332,44 +332,33 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]  // auto-generated
         private unsafe void VerifyHandleIsSync()
         {
+            Debug.Assert(!_isAsync);
+
             // Do NOT use this method on pipes.  Reading or writing to a pipe may
             // cause an app to block incorrectly, introducing a deadlock (depending
             // on whether a write will wake up an already-blocked thread or this
             // Win32FileStream's thread).
+            Debug.Assert(Interop.mincore.GetFileType(_handle) != Interop.mincore.FileTypes.FILE_TYPE_PIPE);
 
-            // Do NOT change this to use a byte[] of length 0, or test test won't
-            // work.  Our ReadFile & WriteFile methods are special cased to return
-            // for arrays of length 0, since we'd get an IndexOutOfRangeException 
-            // while using C#'s fixed syntax.
-            byte[] bytes = new byte[1];
-            int errorCode = 0;
-            int r = 0;
+            byte* bytes = stackalloc byte[1];
+            int numBytesReadWritten;
+            int r = -1;
 
             // If the handle is a pipe, ReadFile will block until there
             // has been a write on the other end.  We'll just have to deal with it,
             // For the read end of a pipe, you can mess up and 
             // accidentally read synchronously from an async pipe.
             if (_canRead)
-            {
-#if USE_OVERLAPPED
-                r = ReadFileNative(_handle, bytes, 0, 0, null, out errorCode);
-#else
-                r = ReadFileNative(_handle, bytes, 0, 0, out errorCode);
-#endif
-            }
+                r = Interop.mincore.ReadFile(_handle, bytes, 0, out numBytesReadWritten, IntPtr.Zero);
             else if (_canWrite)
-            {
-#if USE_OVERLAPPED
-                r = WriteFileNative(_handle, bytes, 0, 0, null, out errorCode);
-#else
-                r = WriteFileNative(_handle, bytes, 0, 0, out errorCode);
-#endif
-            }
+                r = Interop.mincore.WriteFile(_handle, bytes, 0, out numBytesReadWritten, IntPtr.Zero);
 
-            if (errorCode == ERROR_INVALID_PARAMETER)
-                throw new ArgumentException(SR.Arg_HandleNotSync, "handle");
-            if (errorCode == Interop.mincore.Errors.ERROR_INVALID_HANDLE)
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode, "<OS handle>");
+            if (r == 0)
+            {
+                int errorCode = GetLastWin32ErrorAndDisposeHandleIfInvalid(throwIfInvalidHandle: true);
+                if (errorCode == ERROR_INVALID_PARAMETER)
+                    throw new ArgumentException(SR.Arg_HandleNotSync, "handle");
+            }
         }
 
 
@@ -901,32 +890,11 @@ namespace System.IO
         {
             Debug.Assert(!_handle.IsClosed && _canSeek, "!_handle.IsClosed && _parent.CanSeek");
             Debug.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End, "origin>=SeekOrigin.Begin && origin<=SeekOrigin.End");
-            int errorCode = 0;
             long ret = 0;
 
             if (!Interop.mincore.SetFilePointerEx(_handle, offset, out ret, (uint)origin))
             {
-                errorCode = Marshal.GetLastWin32Error();
-                // #errorInvalidHandle
-                // If ERROR_INVALID_HANDLE is returned, it doesn't suffice to set 
-                // the handle as invalid; the handle must also be closed.
-                // 
-                // Marking the handle as invalid but not closing the handle
-                // resulted in exceptions during finalization and locked column 
-                // values (due to invalid but unclosed handle) in SQL Win32FileStream 
-                // scenarios.
-                // 
-                // A more mainstream scenario involves accessing a file on a 
-                // network share. ERROR_INVALID_HANDLE may occur because the network 
-                // connection was dropped and the server closed the handle. However, 
-                // the client side handle is still open and even valid for certain 
-                // operations.
-                //
-                // Note that _parent.Dispose doesn't throw so we don't need to special case. 
-                // SetHandleAsInvalid only sets _closed field to true (without 
-                // actually closing handle) so we don't need to call that as well.
-                if (errorCode == Interop.mincore.Errors.ERROR_INVALID_HANDLE)
-                    _handle.Dispose();
+                int errorCode = GetLastWin32ErrorAndDisposeHandleIfInvalid();
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode);
             }
 
@@ -1587,26 +1555,14 @@ namespace System.IO
 
             if (r == 0)
             {
-                errorCode = Marshal.GetLastWin32Error();
-
-                if (errorCode == ERROR_BROKEN_PIPE || errorCode == Interop.mincore.Errors.ERROR_PIPE_NOT_CONNECTED)
-                {
-                    // This handle was a pipe, and it's done. Not an error, but EOF.
-                    // However, the OS will not call AsyncFSCallback!
-                    // Let the caller handle this, since ReadInternalCoreAsync & ReadCore 
-                    // need to do different things.
-                    return -1;
-                }
-
-                // See code:#errorInvalidHandle in "private long SeekCore(long offset, SeekOrigin origin)".
-                if (errorCode == Interop.mincore.Errors.ERROR_INVALID_HANDLE)
-                    _handle.Dispose();
-
+                errorCode = GetLastWin32ErrorAndDisposeHandleIfInvalid();
                 return -1;
             }
             else
+            {
                 errorCode = 0;
-            return numBytesRead;
+                return numBytesRead;
+            }
         }
 
         [System.Security.SecurityCritical]  // auto-generated
@@ -1655,25 +1611,47 @@ namespace System.IO
 
             if (r == 0)
             {
-                errorCode = Marshal.GetLastWin32Error();
-
-                if (errorCode == ERROR_NO_DATA)
-                {
-                    // This handle was a pipe, and the pipe is being closed on the 
-                    // other side.  Let the caller handle this, since Write
-                    // and WriteAsync need to do different things.
-                    return -1;
-                }
-
-                // See code:#errorInvalidHandle in "private long SeekCore(long offset, SeekOrigin origin)".
-                if (errorCode == Interop.mincore.Errors.ERROR_INVALID_HANDLE)
-                    _handle.Dispose();
-
+                errorCode = GetLastWin32ErrorAndDisposeHandleIfInvalid();
                 return -1;
             }
             else
+            {
                 errorCode = 0;
-            return numBytesWritten;
+                return numBytesWritten;
+            }
+        }
+
+        [System.Security.SecurityCritical]
+        private int GetLastWin32ErrorAndDisposeHandleIfInvalid(bool throwIfInvalidHandle = false)
+        {
+            int errorCode = Marshal.GetLastWin32Error();
+
+            // If ERROR_INVALID_HANDLE is returned, it doesn't suffice to set
+            // the handle as invalid; the handle must also be closed.
+            //
+            // Marking the handle as invalid but not closing the handle
+            // resulted in exceptions during finalization and locked column
+            // values (due to invalid but unclosed handle) in SQL Win32FileStream
+            // scenarios.
+            //
+            // A more mainstream scenario involves accessing a file on a
+            // network share. ERROR_INVALID_HANDLE may occur because the network
+            // connection was dropped and the server closed the handle. However,
+            // the client side handle is still open and even valid for certain
+            // operations.
+            //
+            // Note that _parent.Dispose doesn't throw so we don't need to special case.
+            // SetHandleAsInvalid only sets _closed field to true (without
+            // actually closing handle) so we don't need to call that as well.
+            if (errorCode == Interop.mincore.Errors.ERROR_INVALID_HANDLE)
+            {
+                _handle.Dispose();
+
+                if (throwIfInvalidHandle)
+                    throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+            }
+
+            return errorCode;
         }
 
         [System.Security.SecuritySafeCritical]
