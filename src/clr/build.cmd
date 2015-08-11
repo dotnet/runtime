@@ -219,7 +219,7 @@ echo Commencing build of tests for %__BuildOS%.%__BuildArch%.%__BuildType%
 echo.
 call %__ProjectDir%\tests\buildtest.cmd
 IF NOT ERRORLEVEL 1 goto SuccessfulBuild
-echo Test binaries build failed. Refer !__MScorlibBuildLog! for details.
+echo Test binaries build failed. Refer !__TestManagedBuildLog! for details.
 exit /b 1
 
 :SuccessfulBuild
