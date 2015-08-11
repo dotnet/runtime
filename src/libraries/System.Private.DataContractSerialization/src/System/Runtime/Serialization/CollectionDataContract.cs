@@ -258,11 +258,7 @@ namespace System.Runtime.Serialization
             [SecuritySafeCritical]
             get
             {
-#if !NET_NATIVE
                 return _itemContract ?? _helper.ItemContract;
-#else
-                return _itemContract ?? DataContract.GetDataContractFromGeneratedAssembly(this.ItemType);
-#endif
             }
             /// <SecurityNote>
             /// Critical - sets the critical itemContract property
@@ -744,7 +740,11 @@ namespace System.Runtime.Serialization
                         }
                         else
                         {
+#if NET_NATIVE
+                            _itemContract = DataContract.GetDataContractFromGeneratedAssembly(ItemType);
+#else
                             _itemContract = DataContract.GetDataContract(ItemType);
+#endif
                         }
                     }
                     return _itemContract;
