@@ -18,6 +18,8 @@ set(NATIVEGLOBALIZATION_SOURCES
     casing.cpp
     idna.cpp
     locale.cpp
+    localeNumberData.cpp
+    localeStringData.cpp
     normalization.cpp
 )
 
