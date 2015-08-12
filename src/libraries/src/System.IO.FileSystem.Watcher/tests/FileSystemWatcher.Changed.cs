@@ -146,6 +146,7 @@ public class ChangedTests
         }
     }
 
+    [ActiveIssue(2740)]
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
