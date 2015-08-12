@@ -1137,13 +1137,13 @@ STDAPI LoadLibraryShimInternal(LPCWSTR szDllName, LPCWSTR szVersion, LPVOID pvRe
     
     BEGIN_ENTRYPOINT_NOTHROW;
 
-    WCHAR szDllPath[_MAX_PATH+1];
+    WCHAR szDllPath[MAX_LONGPATH+1];
 
-    if (!PAL_GetPALDirectoryW(szDllPath, _MAX_PATH)) {
+    if (!PAL_GetPALDirectoryW(szDllPath, MAX_LONGPATH)) {
         IfFailGo(HRESULT_FROM_GetLastError());
     }
-    wcsncat_s(szDllPath, _MAX_PATH+1, szDllName, _MAX_PATH - wcslen(szDllPath));
-    
+    wcsncat_s(szDllPath, MAX_LONGPATH+1, szDllName, MAX_LONGPATH - wcslen(szDllPath));
+
     if ((*phModDll = WszLoadLibrary(szDllPath)) == NULL)
         IfFailGo(HRESULT_FROM_GetLastError());
 
@@ -1196,7 +1196,7 @@ ErrExit:
 #endif // CROSSGEN_COMPILE
 
 static DWORD g_dwSystemDirectory = 0;
-static WCHAR g_pSystemDirectory[_MAX_PATH + 1];
+static WCHAR g_pSystemDirectory[MAX_LONGPATH + 1];
 
 HRESULT GetInternalSystemDirectory(__out_ecount_part_opt(*pdwLength,*pdwLength) LPWSTR buffer, __inout DWORD* pdwLength)
 {

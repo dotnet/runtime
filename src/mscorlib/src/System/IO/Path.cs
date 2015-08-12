@@ -102,7 +102,12 @@ namespace System.IO {
         // Make this public sometime.
         // The max total path is 260, and the max individual component length is 255. 
         // For example, D:\<256 char file name> isn't legal, even though it's under 260 chars.
+#if !PLATFORM_UNIX
         internal static readonly int MaxPath = 260;
+#else
+        internal static readonly int MaxPath = 1024;
+#endif
+
         private static readonly int MaxDirectoryLength = 255;
 
         // Windows API definitions
@@ -214,7 +219,7 @@ namespace System.IO {
                     String dir = path.Substring(0, i);
 #if FEATURE_LEGACYNETCF
                     if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8) {                        
-                        if (dir.Length >= MAX_PATH - 1)
+                        if (dir.Length >= MaxPath - 1)
                             throw new PathTooLongException(Environment.GetResourceString("IO.PathTooLong"));
                     }                     
 #endif
@@ -249,7 +254,7 @@ namespace System.IO {
                 if (length >= 3 && (IsDirectorySeparator(path[2]))) i++;
             }
             return i;
-#else    
+#else
             if (length >= 1 && (IsDirectorySeparator(path[0]))) {
                 i = 1;
             }
@@ -893,8 +898,8 @@ namespace System.IO {
 #if !FEATURE_CORECLR
             new EnvironmentPermission(PermissionState.Unrestricted).Demand();
 #endif
-            StringBuilder sb = new StringBuilder(MAX_PATH);
-            uint r = Win32Native.GetTempPath(MAX_PATH, sb);
+            StringBuilder sb = new StringBuilder(MaxPath);
+            uint r = Win32Native.GetTempPath(MaxPath, sb);
             String path = sb.ToString();
             if (r==0) __Error.WinIOError();
             path = GetFullPathInternal(path);
@@ -991,7 +996,7 @@ namespace System.IO {
 #else
             new FileIOPermission(FileIOPermissionAccess.Write, path).Demand();
 #endif
-            StringBuilder sb = new StringBuilder(MAX_PATH);
+            StringBuilder sb = new StringBuilder(MaxPath);
             uint r = Win32Native.GetTempFileName(path, "tmp", 0, sb);
             if (r==0) __Error.WinIOError();
             return sb.ToString();

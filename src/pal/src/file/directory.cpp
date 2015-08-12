@@ -211,6 +211,7 @@ RemoveDirectoryA(
     mb_dir[MAX_PATH - 1] = '\0';
     if (strncpy_s (mb_dir, sizeof(mb_dir), lpPathName, MAX_PATH) != SAFECRT_SUCCESS)
     {
+        WARN("mb_dir is larger than MAX_PATH (%d)!\n", MAX_PATH);
         dwLastError = ERROR_FILENAME_EXCED_RANGE;
         goto done;
     }
