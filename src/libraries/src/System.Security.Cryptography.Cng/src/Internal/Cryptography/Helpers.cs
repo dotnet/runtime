@@ -77,13 +77,14 @@ namespace Internal.Cryptography
                 byte[] propertyValue = new byte[numBytesNeeded];
                 fixed (byte* pPropertyValue = propertyValue)
                 {
-                    errorCode = Interop.NCrypt.NCryptGetProperty(ncryptHandle, propertyName, pPropertyValue, numBytesNeeded, out numBytesNeeded, options);
+                    errorCode = Interop.NCrypt.NCryptGetProperty(ncryptHandle, propertyName, pPropertyValue, propertyValue.Length, out numBytesNeeded, options);
                 }
                 if (errorCode == ErrorCode.NTE_NOT_FOUND)
                     return null;
                 if (errorCode != ErrorCode.ERROR_SUCCESS)
                     throw errorCode.ToCryptographicException();
 
+                Array.Resize(ref propertyValue, numBytesNeeded);
                 return propertyValue;
             }
         } 
@@ -129,9 +130,9 @@ namespace Internal.Cryptography
         {
             unsafe
             {
-                int numBytesRequired;
+                int numBytesNeeded;
                 IntPtr value;
-                ErrorCode errorCode = Interop.NCrypt.NCryptGetProperty(ncryptHandle, propertyName, &value, IntPtr.Size, out numBytesRequired, options);
+                ErrorCode errorCode = Interop.NCrypt.NCryptGetProperty(ncryptHandle, propertyName, &value, IntPtr.Size, out numBytesNeeded, options);
                 if (errorCode == ErrorCode.NTE_NOT_FOUND)
                     return IntPtr.Zero;
                 if (errorCode != ErrorCode.ERROR_SUCCESS)
