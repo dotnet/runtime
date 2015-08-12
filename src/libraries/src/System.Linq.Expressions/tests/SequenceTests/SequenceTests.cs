@@ -2980,7 +2980,7 @@ namespace Tests
         }
 
         [Fact]
-        public static void InvokeLambda()      
+        public static void InvokeLambda()
         {
             Expression<Func<int, int>> f = x => x + 1;
             InvocationExpression ie = Expression.Invoke(f, Expression.Constant(5));
@@ -3002,7 +3002,7 @@ namespace Tests
         [Fact]
         public static void CallCompiledLambdaWithTypeMissing()
         {
-            Expression<Func<object, bool>> f = x => x == Type.Missing;  
+            Expression<Func<object, bool>> f = x => x == Type.Missing;
             var compiled = f.Compile();
             Expression<Func<object, bool>> lambda = x => compiled(x);
             Func<object, bool> d = lambda.Compile();
@@ -3427,7 +3427,8 @@ namespace Tests
 
 
         [Fact]
-        public void NewStructWithMemberListIntializer() {
+        public void NewStructWithMemberListIntializer()
+        {
             Expression<Func<int, StructX>> f =
                 v => new StructX { A = v, B = v + 1, Ys = { new ClassY { B = v + 2 } } };
             var d = f.Compile();
@@ -3439,7 +3440,8 @@ namespace Tests
         }
 
         [Fact]
-        public void NewStructWithStructMemberMemberIntializer() {
+        public void NewStructWithStructMemberMemberIntializer()
+        {
             Expression<Func<int, StructX>> f =
                 v => new StructX { A = v, B = v + 1, SY = new StructY { B = v + 2 } };
             var d = f.Compile();
@@ -3847,7 +3849,7 @@ namespace Tests
             Assert.Equal("default", f(null));
         }
 
-        [Fact]  
+        [Fact]
         public static void ObjectSwitch1()
         {
             var p = Expression.Parameter(typeof(object));
@@ -4280,7 +4282,7 @@ namespace Tests
             Expression<Func<int?, int>> f = x => x.Value;
             Func<int?, int> d = f.Compile();
             Assert.Equal(2, d(2));
-            Assert.Throws(typeof(InvalidOperationException), () => d(null));
+            Assert.Throws<InvalidOperationException>(() => d(null));
         }
 
         private static void TestNullableCall<T, U>(T arg, Func<T?, U> f, Expression<Func<T?, U>> e)
