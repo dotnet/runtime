@@ -74,6 +74,23 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void ExportWithPrivateKey()
+        {
+            using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable))
+            {
+                const string password = "NotVerySecret";
+
+                byte[] pkcs12 = cert.Export(X509ContentType.Pkcs12, password);
+
+                using (var certFromPfx = new X509Certificate2(pkcs12, password))
+                {
+                    Assert.True(certFromPfx.HasPrivateKey);
+                    Assert.Equal(cert, certFromPfx);
+                }
+            }
+        }
+
+        [Fact]
         [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestContentType()
         {

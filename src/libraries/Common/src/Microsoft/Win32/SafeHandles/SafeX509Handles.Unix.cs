@@ -10,6 +10,8 @@ namespace Microsoft.Win32.SafeHandles
     [SecurityCritical]
     internal sealed class SafeX509Handle : SafeHandle
     {
+        internal static readonly SafeX509Handle InvalidHandle = new SafeX509Handle();
+
         private SafeX509Handle() : 
             base(IntPtr.Zero, ownsHandle: true)
         {

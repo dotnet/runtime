@@ -4,6 +4,7 @@
 using System.Linq;
 using System.Collections;
 using System.IO;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -325,6 +326,21 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(2745, PlatformID.AnyUnix)]
+        public static void ImportMultiplePrivateKeysPfx()
+        {
+            var collection = new X509Certificate2Collection();
+            collection.Import(TestData.MultiPrivateKeyPfx);
+
+            Assert.Equal(2, collection.Count);
+
+            foreach (X509Certificate2 cert in collection)
+            {
+                Assert.True(cert.HasPrivateKey, "cert.HasPrivateKey");
+            }
+        }
+
+        [Fact]
         [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void ExportCert()
         {
@@ -358,6 +374,140 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             var cc = new X509CertificateCollection();
             Assert.NotNull(((ICollection)cc).SyncRoot);
             Assert.Same(((ICollection)cc).SyncRoot, ((ICollection)cc).SyncRoot);
+        }
+
+        [Fact]
+        public static void ExportEmpty_Cert()
+        {
+            var collection = new X509Certificate2Collection();
+            byte[] exported = collection.Export(X509ContentType.Cert);
+
+            Assert.Null(exported);
+        }
+
+        [Fact]
+        [ActiveIssue(2746, PlatformID.AnyUnix)]
+        public static void ExportEmpty_Pkcs12()
+        {
+            var collection = new X509Certificate2Collection();
+            byte[] exported = collection.Export(X509ContentType.Pkcs12);
+
+            // The empty PFX is legal, the answer won't be null.
+            Assert.NotNull(exported);
+        }
+
+        [Fact]
+        public static void ImportEmpty_Pkcs12()
+        {
+            var collection = new X509Certificate2Collection();
+
+            collection.Import(TestData.EmptyPfx);
+
+            Assert.Equal(0, collection.Count);
+        }
+
+        [Fact]
+        public static void ExportUnrelatedPfx()
+        {
+            // Export multiple certificates which are not part of any kind of certificate chain.
+            // Nothing in the PKCS12 structure requires they're related, but it might be an underlying
+            // assumption of the provider.
+            using (var cert1 = new X509Certificate2(TestData.MsCertificate))
+            using (var cert2 = new X509Certificate2(TestData.ComplexNameInfoCert))
+            using (var cert3 = new X509Certificate2(TestData.CertWithPolicies))
+            {
+                var collection = new X509Certificate2Collection
+                {
+                    cert1,
+                    cert2,
+                    cert3,
+                };
+
+                byte[] exported = collection.Export(X509ContentType.Pkcs12);
+
+                var importedCollection = new X509Certificate2Collection();
+                importedCollection.Import(exported);
+
+                // Verify that the two collections contain the same certificates,
+                // but the order isn't really a factor.
+                Assert.Equal(collection.Count, importedCollection.Count);
+
+                // Compare just the subject names first, because it's the easiest thing to read out of the failure message.
+                string[] subjects = new string[collection.Count];
+                string[] importedSubjects = new string[collection.Count];
+
+                for (int i = 0; i < collection.Count; i++)
+                {
+                    subjects[i] = collection[i].GetNameInfo(X509NameType.SimpleName, false);
+                    importedSubjects[i] = importedCollection[i].GetNameInfo(X509NameType.SimpleName, false);
+                }
+
+                Assert.Equal(subjects, importedSubjects);
+
+                // But, really, the collections should be equivalent
+                // (after being coerced to IEnumerable<X509Certificate2>)
+                Assert.Equal(collection.OfType<X509Certificate2>(), importedCollection.OfType<X509Certificate2>());
+            }
+        }
+
+        [Fact]
+        public static void MultipleImport()
+        {
+            var collection = new X509Certificate2Collection();
+
+            collection.Import(Path.Combine("TestData", "DummyTcpServer.pfx"), null, default(X509KeyStorageFlags));
+            collection.Import(TestData.PfxData, TestData.PfxDataPassword, default(X509KeyStorageFlags));
+
+            Assert.Equal(3, collection.Count);
+        }
+
+        [Fact]
+        [ActiveIssue(2743, PlatformID.AnyUnix)]
+        public static void ExportMultiplePrivateKeys()
+        {
+            var collection = new X509Certificate2Collection();
+
+            collection.Import(Path.Combine("TestData", "DummyTcpServer.pfx"), null, X509KeyStorageFlags.Exportable);
+            collection.Import(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable);
+
+            // Pre-condition, we have multiple private keys
+            int originalPrivateKeyCount = collection.OfType<X509Certificate2>().Count(c => c.HasPrivateKey);
+            Assert.Equal(2, originalPrivateKeyCount);
+
+            // Export, re-import.
+            byte[] exported;
+
+            try
+            {
+                exported = collection.Export(X509ContentType.Pkcs12);
+            }
+            catch (PlatformNotSupportedException)
+            {
+                // [ActiveIssue(2743, PlatformID.AnyUnix)]
+                // Our Unix builds can't export more than one private key in a single PFX, so this is
+                // their exit point.
+                //
+                // If Windows gets here, or any exception other than PlatformNotSupportedException is raised,
+                // let that fail the test.
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    throw;
+                }
+
+                return;
+            }
+
+            // As the other half of issue 2743, if we make it this far we better be Windows (or remove the catch
+            // above)
+            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "RuntimeInformation.IsOSPlatform(OSPlatform.Windows)");
+
+            var importedCollection = new X509Certificate2Collection();
+            importedCollection.Import(exported);
+
+            Assert.Equal(collection.Count, importedCollection.Count);
+
+            int importedPrivateKeyCount = importedCollection.OfType<X509Certificate2>().Count(c => c.HasPrivateKey);
+            Assert.Equal(originalPrivateKeyCount, importedPrivateKeyCount);
         }
 
         private static void TestExportSingleCert(X509ContentType ct)
