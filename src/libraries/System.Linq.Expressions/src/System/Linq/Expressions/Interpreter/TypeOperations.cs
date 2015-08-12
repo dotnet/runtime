@@ -1925,14 +1925,10 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                var obj = frame.Pop();
-                if (obj == null)
+                if (frame.Peek() == null)
                 {
+                    frame.Pop();
                     throw new InvalidOperationException();
-                }
-                else
-                {
-                    frame.Push(obj);
                 }
                 return +1;
             }
