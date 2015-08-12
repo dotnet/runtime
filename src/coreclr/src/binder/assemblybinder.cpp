@@ -175,8 +175,8 @@ namespace BINDER_SPACE
             else
             {
                 PathString fullAssemblyPath;
-                WCHAR *pwzFullAssemblyPath = fullAssemblyPath.OpenUnicodeBuffer(MAX_PATH);
-                DWORD dwCCFullAssemblyPath = MAX_PATH + 1; // SString allocates extra byte for null.
+                WCHAR *pwzFullAssemblyPath = fullAssemblyPath.OpenUnicodeBuffer(MAX_LONGPATH);
+                DWORD dwCCFullAssemblyPath = MAX_LONGPATH + 1; // SString allocates extra byte for null.
 
                 MutateUrlToPath(assemblyPath);
 
@@ -186,7 +186,7 @@ namespace BINDER_SPACE
                                                           NULL);
                 fullAssemblyPath.CloseBuffer(dwCCFullAssemblyPath);
 
-                if ((dwCCFullAssemblyPath == 0) || (dwCCFullAssemblyPath > (MAX_PATH + 1)))
+                if ((dwCCFullAssemblyPath == 0) || (dwCCFullAssemblyPath > (MAX_LONGPATH + 1)))
                 {
                     hr = HRESULT_FROM_GetLastError();
                 }

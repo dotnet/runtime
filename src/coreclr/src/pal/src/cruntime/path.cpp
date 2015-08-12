@@ -105,7 +105,7 @@ _wsplitpath(
     if( lstrlenW( dospath ) >= _MAX_PATH )
     {
         ERROR("Path length is > _MAX_PATH (%d)!\n", _MAX_PATH);
-	ON_ERROR;
+        ON_ERROR;
     }
 
 

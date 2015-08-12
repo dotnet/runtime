@@ -456,7 +456,7 @@ namespace System.Security.Util {
             }
 
             // ITEM 3 - If the path is greater than or equal (due to terminating NULL in windows) MAX_PATH, we throw.
-            if (modifiedUrl.Length >= Path.MAX_PATH)
+            if (modifiedUrl.Length >= Path.MaxPath)
             {
                 throw new PathTooLongException(Environment.GetResourceString("IO.PathTooLong"));
             }
