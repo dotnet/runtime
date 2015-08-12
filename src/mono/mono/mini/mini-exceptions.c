@@ -813,6 +813,10 @@ mono_walk_stack_with_state (MonoJitStackWalk func, MonoThreadUnwindState *state,
 
 	g_assert (state->valid);
 
+	if (!state->unwind_data [MONO_UNWIND_DATA_DOMAIN])
+		/* Not attached */
+		return;
+
 	mono_walk_stack_full (func,
 		&state->ctx, 
 		state->unwind_data [MONO_UNWIND_DATA_DOMAIN],
