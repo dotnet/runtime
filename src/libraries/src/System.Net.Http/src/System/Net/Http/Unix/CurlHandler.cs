@@ -24,6 +24,15 @@ using size_t = System.IntPtr;
 
 namespace System.Net.Http
 {
+    #region Enums
+    internal enum CookieUsePolicy
+    {
+        IgnoreCookies = 0,
+        UseSpecifiedCookieContainer = 1
+    }   
+
+    #endregion
+
     internal partial class CurlHandler : HttpMessageHandler
     {
         #region Constants
@@ -40,7 +49,7 @@ namespace System.Net.Http
         #endregion
 
         #region Fields
-
+  
         private volatile bool _anyOperationStarted;
         private volatile bool _disposed;
         private bool _automaticRedirection = true;
@@ -50,8 +59,10 @@ namespace System.Net.Http
         private DecompressionMethods _automaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
         private SafeCurlMultiHandle _multiHandle;
         private GCHandle _multiHandlePtr = new GCHandle();
+        private CookieContainer _cookieContainer = null;
+        private CookieUsePolicy _cookieUsePolicy = CookieUsePolicy.IgnoreCookies;
 
-        #endregion
+        #endregion        
 
         static CurlHandler()
         {
@@ -175,6 +186,40 @@ namespace System.Net.Http
             {
                 CheckDisposedOrStarted();
                 _automaticDecompression = value;
+            }
+        }
+
+        internal CookieUsePolicy CookieUsePolicy
+        {
+            get
+            {
+                return _cookieUsePolicy;
+            }
+
+            set
+            {
+                if (value != CookieUsePolicy.IgnoreCookies
+                    && value != CookieUsePolicy.UseSpecifiedCookieContainer)
+                {
+                    throw new ArgumentOutOfRangeException("value");
+                }
+
+                CheckDisposedOrStarted();
+                _cookieUsePolicy = value;
+            }
+        }
+
+        internal CookieContainer CookieContainer
+        {
+            get
+            {
+                return _cookieContainer;
+            }
+
+            set
+            {
+                CheckDisposedOrStarted();
+                _cookieContainer = value;
             }
         }
 
@@ -370,6 +415,8 @@ namespace System.Net.Http
 
             SetProxyOptions(requestHandle, state.RequestMessage.RequestUri);
 
+            SetCookieOption(requestHandle, state.RequestMessage.RequestUri);
+
             state.RequestHeaderHandle = SetRequestHeaders(requestHandle, state.RequestMessage);
 
             // TODO: Handle other options
@@ -439,6 +486,25 @@ namespace System.Net.Http
                 }
                 SetCurlOption(requestHandle, CURLoption.CURLOPT_PROXYUSERPWD, credentialText);
             }
+        }
+
+        private void SetCookieOption(SafeCurlHandle requestHandle, Uri requestUri)
+        {
+            if (_cookieUsePolicy != CookieUsePolicy.UseSpecifiedCookieContainer)
+            {
+                return;
+            }
+            else if (_cookieContainer == null)
+            {
+                throw new InvalidOperationException(SR.net_http_invalid_cookiecontainer);
+            }
+
+            string cookieValues = _cookieContainer.GetCookieHeader(requestUri);                    
+
+            if (cookieValues != null)
+            {
+                SetCurlOption(requestHandle, CURLoption.CURLOPT_COOKIE, cookieValues);
+            }           
         }
 
         private NetworkCredential GetCredentials(ICredentials proxyCredentials, Uri requestUri)
