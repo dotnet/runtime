@@ -84,6 +84,7 @@ namespace Internal.Cryptography
                 if (errorCode != ErrorCode.ERROR_SUCCESS)
                     throw errorCode.ToCryptographicException();
 
+                Array.Resize(ref propertyValue, numBytesNeeded);
                 return propertyValue;
             }
         } 

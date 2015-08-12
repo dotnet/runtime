@@ -32,10 +32,11 @@ namespace System.Security.Cryptography
                 throw errorCode.ToCryptographicException();
 
             byte[] buffer = new byte[numBytesRequired];
-            errorCode = Interop.NCrypt.NCryptExportKey(_keyHandle, IntPtr.Zero, format.Format, IntPtr.Zero, buffer, numBytesRequired, out numBytesRequired, 0);
+            errorCode = Interop.NCrypt.NCryptExportKey(_keyHandle, IntPtr.Zero, format.Format, IntPtr.Zero, buffer, buffer.Length, out numBytesRequired, 0);
             if (errorCode != ErrorCode.ERROR_SUCCESS)
                 throw errorCode.ToCryptographicException();
 
+            Array.Resize(ref buffer, numBytesRequired);
             return buffer;
         }
     }
