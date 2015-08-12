@@ -1238,7 +1238,7 @@ mono_remove_critical_edges (MonoCompile *cfg)
 void
 mono_optimize_branches (MonoCompile *cfg)
 {
-	int i, changed = FALSE;
+	int i, count = 0, changed = FALSE;
 	MonoBasicBlock *bb, *bbn;
 	guint32 niterations;
 	MonoInst *bbn_first_inst;
@@ -1261,6 +1261,11 @@ mono_optimize_branches (MonoCompile *cfg)
 
 		/* we skip the entry block (exit is handled specially instead ) */
 		for (previous_bb = cfg->bb_entry, bb = cfg->bb_entry->next_bb; bb; previous_bb = bb, bb = bb->next_bb) {
+			count ++;
+			if (count == 1000) {
+				MONO_SUSPEND_CHECK ();
+				count = 0;
+			}
 			/* dont touch code inside exception clauses */
 			if (bb->region != -1)
 				continue;
