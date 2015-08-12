@@ -1026,7 +1026,7 @@ namespace System.Linq.Expressions.Interpreter
                 if(TypeUtils.IsNullableType(node.Operand.Type) &&
                     node.Method.GetParametersCached()[0].ParameterType.Equals(TypeUtils.GetNonNullableType(node.Operand.Type)))
                 {
-                    _instructions.Emit(NullableMethodCallInstruction.Create("get_Value", 1));
+                    _instructions.Emit(NullableMethodCallInstruction.CreateGetValue());
                 }
 
                 _instructions.EmitCall(node.Method);
@@ -1073,7 +1073,7 @@ namespace System.Linq.Expressions.Interpreter
                 TypeUtils.GetNonNullableType(typeFrom).Equals(typeTo))
             {
                 // VT? -> vt, call get_Value
-                _instructions.Emit(NullableMethodCallInstruction.Create("get_Value", 1));
+                _instructions.Emit(NullableMethodCallInstruction.CreateGetValue());
                 return;
             }
 
@@ -2110,8 +2110,7 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             if (!node.Method.IsStatic &&
-                node.Object.Type.GetTypeInfo().IsGenericType &&
-                node.Object.Type.GetGenericTypeDefinition() == typeof(Nullable<>))
+                node.Object.Type.IsNullableType())
             {
                 // reflection doesn't let us call methods on Nullable<T> when the value
                 // is null...  so we get to special case those methods!
@@ -2393,7 +2392,19 @@ namespace System.Linq.Expressions.Interpreter
                     {
                         EmitThisForMethodCall(from);
                     }
-                    _instructions.EmitCall(method);
+
+                    if (!method.IsStatic &&
+                        from.Type.IsNullableType())
+                    {
+                        // reflection doesn't let us call methods on Nullable<T> when the value
+                        // is null...  so we get to special case those methods!
+                        _instructions.EmitNullableCall(method, Array.Empty<ParameterInfo>());
+                    }
+                    else
+                    {
+                        _instructions.EmitCall(method);
+                    }
+
                     return;
                 }
             }

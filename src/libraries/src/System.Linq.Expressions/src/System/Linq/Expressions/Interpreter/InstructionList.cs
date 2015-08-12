@@ -960,7 +960,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitNullableCall(MethodInfo method, ParameterInfo[] parameters)
         {
-            Emit(NullableMethodCallInstruction.Create(method.Name, parameters.Length));
+            Emit(NullableMethodCallInstruction.Create(method.Name, parameters.Length, method));
         }
 
         public void EmitNullCheck(int stackOffset)
