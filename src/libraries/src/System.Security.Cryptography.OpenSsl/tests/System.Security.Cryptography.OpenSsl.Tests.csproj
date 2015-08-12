@@ -35,9 +35,6 @@
     <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\RSA\ImportExport.cs">
       <Link>CommonTest\Cryptography\AlgorithmImplementations\RSA\ImportExport.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\RSA\ImportExportUnusual.cs">
-      <Link>CommonTest\Cryptography\AlgorithmImplementations\RSA\ImportExportUnusual.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\RSA\KeyGeneration.cs">
       <Link>CommonTest\Cryptography\AlgorithmImplementations\RSA\KeyGeneration.cs</Link>
     </Compile>
