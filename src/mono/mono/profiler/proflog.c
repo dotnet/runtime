@@ -198,8 +198,8 @@ typedef struct _LogBuffer LogBuffer;
  *
  * type GC format:
  * type: TYPE_GC
- * exinfo: one of TYPE_GC_EVENT, TYPE_GC_RESIZE, TYPE_GC_MOVE, TYPE_GC_HANDLE_CREATED,
- * TYPE_GC_HANDLE_DESTROYED
+ * exinfo: one of TYPE_GC_EVENT, TYPE_GC_RESIZE, TYPE_GC_MOVE, TYPE_GC_HANDLE_CREATED[_BT],
+ * TYPE_GC_HANDLE_DESTROYED[_BT]
  * [time diff: uleb128] nanoseconds since last timing
  * if exinfo == TYPE_GC_RESIZE
  *	[heap_size: uleb128] new heap size
@@ -211,15 +211,17 @@ typedef struct _LogBuffer LogBuffer;
  *	[objaddr: sleb128]+ num_objects object pointer differences from obj_base
  *	num is always an even number: the even items are the old
  *	addresses, the odd numbers are the respective new object addresses
- * if exinfo == TYPE_GC_HANDLE_CREATED
+ * if exinfo == TYPE_GC_HANDLE_CREATED[_BT]
  *	[handle_type: uleb128] GC handle type (System.Runtime.InteropServices.GCHandleType)
  *	upper bits reserved as flags
  *	[handle: uleb128] GC handle value
  *	[objaddr: sleb128] object pointer differences from obj_base
- * if exinfo == TYPE_GC_HANDLE_DESTROYED
+ * 	If exinfo == TYPE_GC_HANDLE_CREATED_BT, a backtrace follows.
+ * if exinfo == TYPE_GC_HANDLE_DESTROYED[_BT]
  *	[handle_type: uleb128] GC handle type (System.Runtime.InteropServices.GCHandleType)
  *	upper bits reserved as flags
  *	[handle: uleb128] GC handle value
+ * 	If exinfo == TYPE_GC_HANDLE_DESTROYED_BT, a backtrace follows.
  *
  * type metadata format:
  * type: TYPE_METADATA
@@ -1169,7 +1171,13 @@ gc_roots (MonoProfiler *prof, int num, void **objects, int *root_types, uintptr_
 static void
 gc_handle (MonoProfiler *prof, int op, int type, uintptr_t handle, MonoObject *obj)
 {
+	int do_bt = nocalls && InterlockedRead (&runtime_inited) && !notraces;
 	uint64_t now;
+	FrameData data;
+
+	if (do_bt)
+		collect_bt (&data);
+
 	LogBuffer *logbuffer = ensure_logbuf (
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* time */ +
@@ -1177,21 +1185,36 @@ gc_handle (MonoProfiler *prof, int op, int type, uintptr_t handle, MonoObject *o
 		LEB128_SIZE /* handle */ +
 		(op == MONO_PROFILER_GC_HANDLE_CREATED ? (
 			LEB128_SIZE /* obj */
+		) : 0) +
+		(do_bt ? (
+			LEB128_SIZE /* flags */ +
+			LEB128_SIZE /* count */ +
+			data.count * (
+				LEB128_SIZE /* method */
+			)
 		) : 0)
 	);
+
 	now = current_time ();
 	ENTER_LOG (logbuffer, "gchandle");
+
 	if (op == MONO_PROFILER_GC_HANDLE_CREATED)
-		emit_byte (logbuffer, TYPE_GC_HANDLE_CREATED | TYPE_GC);
+		emit_byte (logbuffer, (do_bt ? TYPE_GC_HANDLE_CREATED_BT : TYPE_GC_HANDLE_CREATED) | TYPE_GC);
 	else if (op == MONO_PROFILER_GC_HANDLE_DESTROYED)
-		emit_byte (logbuffer, TYPE_GC_HANDLE_DESTROYED | TYPE_GC);
+		emit_byte (logbuffer, (do_bt ? TYPE_GC_HANDLE_DESTROYED_BT : TYPE_GC_HANDLE_DESTROYED) | TYPE_GC);
 	else
-		return;
+		g_assert_not_reached ();
+
 	emit_time (logbuffer, now);
 	emit_value (logbuffer, type);
 	emit_value (logbuffer, handle);
+
 	if (op == MONO_PROFILER_GC_HANDLE_CREATED)
 		emit_obj (logbuffer, obj);
+
+	if (do_bt)
+		emit_bt (prof, logbuffer, &data);
+
 	EXIT_LOG (logbuffer);
 	process_requests (prof);
 }
