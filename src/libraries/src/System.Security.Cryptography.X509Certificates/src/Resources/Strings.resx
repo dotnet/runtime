@@ -189,6 +189,9 @@
   <data name="InvalidOperation_EnumNotStarted" xml:space="preserve">
     <value>Enumeration has not started.  Call MoveNext.</value>
   </data>
+  <data name="NotSupported_Export_MultiplePrivateCerts" xml:space="preserve">
+    <value>Only one certificate with a private key can be exported in a single PFX.</value>
+  </data>
   <data name="NotSupported_InvalidKeyImpl" xml:space="preserve">
     <value>Only asymmetric keys that implement ICspAsymmetricAlgorithm are supported.</value>
   </data>

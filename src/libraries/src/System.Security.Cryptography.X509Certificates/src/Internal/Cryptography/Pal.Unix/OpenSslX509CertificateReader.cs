@@ -300,6 +300,11 @@ namespace Internal.Cryptography.Pal
             _privateKey = privateKey;
         }
 
+        internal SafeEvpPkeyHandle PrivateKeyHandle
+        {
+            get { return _privateKey; }
+        }
+
         public RSA GetRSAPrivateKey()
         {
             if (_privateKey == null || _privateKey.IsInvalid)
@@ -362,6 +367,20 @@ namespace Internal.Cryptography.Pal
                 _cert.Dispose();
                 _cert = null;
             }
+        }
+
+        internal OpenSslX509CertificateReader DuplicateHandles()
+        {
+            SafeX509Handle certHandle = Interop.libcrypto.X509_dup(_cert);
+            OpenSslX509CertificateReader duplicate = new OpenSslX509CertificateReader(certHandle);
+
+            if (_privateKey != null)
+            {
+                SafeEvpPkeyHandle keyHandle = SafeEvpPkeyHandle.DuplicateHandle(_privateKey);
+                duplicate.SetPrivateKey(keyHandle);
+            }
+
+            return duplicate;
         }
 
         private static X500DistinguishedName LoadX500Name(IntPtr namePtr)

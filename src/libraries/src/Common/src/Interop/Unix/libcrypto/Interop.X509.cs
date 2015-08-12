@@ -26,6 +26,9 @@ internal static partial class Interop
         internal static extern SafeX509Handle X509_dup(IntPtr handle);
 
         [DllImport(Libraries.LibCrypto)]
+        internal static extern SafeX509Handle X509_dup(SafeX509Handle handle);
+
+        [DllImport(Libraries.LibCrypto)]
         internal static extern SafeX509Handle PEM_read_bio_X509_AUX(SafeBioHandle bio, IntPtr zero, IntPtr zero1, IntPtr zero2);
 
         [DllImport(Libraries.LibCrypto)]

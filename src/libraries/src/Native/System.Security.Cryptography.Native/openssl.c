@@ -848,3 +848,66 @@ int BioSeek(
 
     return BIO_seek(bio, ofs);
 }
+
+/*
+Function:
+NewX509Stack
+
+Used by System.Security.Cryptography.X509Certificates when needing to pass a collection
+of X509* to OpenSSL.
+
+Return values:
+A STACK_OF(X509*) with no comparator.
+*/
+STACK_OF(X509)*
+NewX509Stack()
+{
+    return sk_X509_new_null();
+}
+
+/*
+Function:
+PushX509StackField
+
+Used by System.Security.Cryptography.X509Certificates when needing to pass a collection
+of X509* to OpenSSL.
+
+Return values:
+1 on success
+0 on a NULL stack, or an error within sk_X509_push
+*/
+int
+PushX509StackField(
+    STACK_OF(X509)* stack,
+    X509* x509)
+{
+    if (!stack)
+    {
+        return 0;
+    }
+
+    return sk_X509_push(stack, x509);
+}
+
+/*
+Function:
+UpRefEvpPkey
+
+Used by System.Security.Cryptography.X509Certificates' OpenSslX509CertificateReader when
+duplicating a private key context as part of duplicating the Pal object
+
+Return values:
+The number (as of this call) of references to the EVP_PKEY. Anything less than
+2 is an error, because the key is already in the process of being freed.
+*/
+int
+UpRefEvpPkey(
+    EVP_PKEY* pkey)
+{
+    if (!pkey)
+    {
+        return 0;
+    }
+
+    return CRYPTO_add(&pkey->references, 1, CRYPTO_LOCK_EVP_PKEY);
+}
