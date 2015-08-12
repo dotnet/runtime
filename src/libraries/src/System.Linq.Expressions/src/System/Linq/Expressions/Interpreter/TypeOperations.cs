@@ -1899,7 +1899,7 @@ namespace System.Linq.Expressions.Interpreter
 
     internal abstract class NullableMethodCallInstruction : Instruction
     {
-        private static NullableMethodCallInstruction s_hasValue,s_value,s_equals,s_getHashCode,s_getValueOrDefault1,s_toString;
+        private static NullableMethodCallInstruction s_hasValue, s_value, s_equals, s_getHashCode, s_getValueOrDefault1, s_toString;
 
         public override int ConsumedStack { get { return 1; } }
         public override int ProducedStack { get { return 1; } }
@@ -1940,7 +1940,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private class GetValueOrDefault : NullableMethodCallInstruction
         {
-            private Type defaultValueType;
+            private readonly Type defaultValueType;
 
             public GetValueOrDefault(MethodInfo mi)
             {
@@ -1951,8 +1951,8 @@ namespace System.Linq.Expressions.Interpreter
             {
                 if (frame.Peek() == null)
                 {
-                        frame.Pop();
-                        frame.Push(Activator.CreateInstance(defaultValueType));
+                    frame.Pop();
+                    frame.Push(Activator.CreateInstance(defaultValueType));
                 }
                 return +1;
             }
