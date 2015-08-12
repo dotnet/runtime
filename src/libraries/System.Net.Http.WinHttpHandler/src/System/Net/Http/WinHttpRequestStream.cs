@@ -100,7 +100,7 @@ namespace System.Net.Http
                 throw new ArgumentOutOfRangeException("count");
             }
 
-            if (offset + count > buffer.Length)
+            if (count > buffer.Length - offset)
             {
                 throw new ArgumentException("buffer");
             }
