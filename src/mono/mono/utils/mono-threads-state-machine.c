@@ -691,3 +691,9 @@ mono_thread_info_current_state (MonoThreadInfo *info)
 {
 	return get_thread_state (info->thread_state);
 }
+
+const char*
+mono_thread_state_name (int state)
+{
+	return state_name (state);
+}
