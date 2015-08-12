@@ -243,12 +243,12 @@ namespace System.Security.Cryptography
                 string creationTitle;
                 unsafe
                 {
-                    int numBytesRequired;
-                    ErrorCode errorCode = Interop.NCrypt.NCryptGetProperty(_keyHandle, KeyPropertyName.UIPolicy, null, 0, out numBytesRequired, CngPropertyOptions.None);
+                    int numBytesNeeded;
+                    ErrorCode errorCode = Interop.NCrypt.NCryptGetProperty(_keyHandle, KeyPropertyName.UIPolicy, null, 0, out numBytesNeeded, CngPropertyOptions.None);
                     if (errorCode != ErrorCode.ERROR_SUCCESS && errorCode != ErrorCode.NTE_NOT_FOUND)
                         throw errorCode.ToCryptographicException();
 
-                    if (errorCode != ErrorCode.ERROR_SUCCESS || numBytesRequired == 0)
+                    if (errorCode != ErrorCode.ERROR_SUCCESS || numBytesNeeded == 0)
                     {
                         // No UI policy set. Our defined behavior is to return a non-null CngUIPolicy always, so set the UI policy components to the default values.
                         uiProtectionLevel = CngUIProtectionLevels.None;
@@ -261,14 +261,15 @@ namespace System.Security.Cryptography
                         // The returned property must be at least the size of NCRYPT_UI_POLICY (plus the extra size of the UI policy strings if any.)
                         // If by any chance, a rogue provider passed us something smaller, fail-fast now rather risk dereferencing "pointers" that were actually
                         // constructed from memory garbage.
-                        if (numBytesRequired < sizeof(NCRYPT_UI_POLICY))
+                        if (numBytesNeeded < sizeof(NCRYPT_UI_POLICY))
                             throw ErrorCode.E_FAIL.ToCryptographicException();
 
                         // ! We must keep this byte array pinned until NCryptGetProperty() has returned *and* we've marshaled all of the inner native strings into managed String
                         // ! objects. Otherwise, a badly timed GC will move the native strings in memory and invalidate the pointers to them before we dereference them. 
-                        fixed (byte* pNcryptUiPolicyAndStrings = new byte[numBytesRequired])
+                        byte[] ncryptUiPolicyAndStrings = new byte[numBytesNeeded];
+                        fixed (byte* pNcryptUiPolicyAndStrings = ncryptUiPolicyAndStrings)
                         {
-                            errorCode = Interop.NCrypt.NCryptGetProperty(_keyHandle, KeyPropertyName.UIPolicy, pNcryptUiPolicyAndStrings, numBytesRequired, out numBytesRequired, CngPropertyOptions.None);
+                            errorCode = Interop.NCrypt.NCryptGetProperty(_keyHandle, KeyPropertyName.UIPolicy, pNcryptUiPolicyAndStrings, ncryptUiPolicyAndStrings.Length, out numBytesNeeded, CngPropertyOptions.None);
                             if (errorCode != ErrorCode.ERROR_SUCCESS)
                                 throw errorCode.ToCryptographicException();
 
