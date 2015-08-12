@@ -57,7 +57,7 @@ namespace System.Threading
 #if PLATFORM_UNIX
                 throw new PlatformNotSupportedException(Environment.GetResourceString("PlatformNotSupported_NamedSynchronizationPrimitives"));
 #else
-                if (System.IO.Path.MAX_PATH < name.Length)
+                if (System.IO.Path.MaxPath < name.Length)
                 {
                     throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", name));
                 }
@@ -91,7 +91,7 @@ namespace System.Threading
 #if PLATFORM_UNIX
                 throw new PlatformNotSupportedException(Environment.GetResourceString("PlatformNotSupported_NamedSynchronizationPrimitives"));
 #else
-                if (System.IO.Path.MAX_PATH < name.Length)
+                if (System.IO.Path.MaxPath < name.Length)
                 {
                     throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", name));
                 }
@@ -347,7 +347,7 @@ namespace System.Threading
             {
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
             }
-            if(System.IO.Path.MAX_PATH < name.Length)
+            if(System.IO.Path.MaxPath < name.Length)
             {
                 throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong",name));
             }

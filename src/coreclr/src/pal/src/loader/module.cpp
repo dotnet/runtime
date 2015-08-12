@@ -92,7 +92,7 @@ CRITICAL_SECTION module_critsec;
 MODSTRUCT exe_module; 
 MODSTRUCT *pal_module = NULL;
 
-char g_szCoreCLRPath[MAX_PATH] = { 0 };
+char g_szCoreCLRPath[MAX_LONGPATH] = { 0 };
 
 /* static function declarations ***********************************************/
 
@@ -221,7 +221,7 @@ LoadLibraryExW(
         return NULL;
     }
     
-    CHAR lpstr[MAX_PATH];
+    CHAR lpstr[MAX_LONGPATH];
     INT name_length;
     HMODULE hModule = NULL;
 
@@ -247,13 +247,13 @@ LoadLibraryExW(
     /* do the Dos/Unix conversion on our own copy of the name */
 
     name_length = WideCharToMultiByte(CP_ACP, 0, lpLibFileName, -1, lpstr,
-                                      MAX_PATH, NULL, NULL);
+                                      MAX_LONGPATH, NULL, NULL);
     if (name_length == 0)
     {
         DWORD dwLastError = GetLastError();
         if (dwLastError == ERROR_INSUFFICIENT_BUFFER)
         {
-            ERROR("lpLibFileName is larger than MAX_PATH (%d)!\n", MAX_PATH);
+            ERROR("lpLibFileName is larger than MAX_LONGPATH (%d)!\n", MAX_LONGPATH);
         }
         else
         {
@@ -661,7 +661,7 @@ GetModuleFileNameW(
     name_length = lstrlenW(wide_name);
     if (name_length >= (INT)nSize)
     {
-        TRACE("Buffer too small to copy module's file name.\n");
+        TRACE("Buffer too small (%u) to copy module's file name (%u).\n", nSize, name_length);
         SetLastError(ERROR_INSUFFICIENT_BUFFER);
         goto done;
     }
@@ -743,7 +743,7 @@ PAL_RegisterLibraryW(
     IN LPCWSTR lpLibFileName)
 {
     HMODULE hModule = NULL;
-    CHAR    lpstr[MAX_PATH];
+    CHAR    lpstr[_MAX_FNAME];
     INT     cbMultiByteShortName = 0;
 
     static const char LIB_PREFIX[] = PAL_SHLIB_PREFIX;
@@ -767,7 +767,7 @@ PAL_RegisterLibraryW(
     // Second, copy the file name, converting to multibyte along the way
     cbMultiByteShortName = WideCharToMultiByte(CP_ACP, 0, lpLibFileName, -1, 
                                                lpstr + LIB_PREFIX_LENGTH, 
-                                               MAX_PATH - (LIB_PREFIX_LENGTH + LIB_SUFFIX_LENGTH),
+                                               _MAX_FNAME - (LIB_PREFIX_LENGTH + LIB_SUFFIX_LENGTH),
                                                NULL, NULL);
 
     if (cbMultiByteShortName == 0)
@@ -775,11 +775,11 @@ PAL_RegisterLibraryW(
         DWORD dwLastError = GetLastError();
         if (dwLastError == ERROR_INSUFFICIENT_BUFFER)
         {
-            if (lstrlenW(lpLibFileName) + LIB_PREFIX_LENGTH + LIB_SUFFIX_LENGTH < MAX_PATH)
+            if (lstrlenW(lpLibFileName) + LIB_PREFIX_LENGTH + LIB_SUFFIX_LENGTH < _MAX_FNAME)
             {
                 ASSERT("Insufficient buffer error returned incorrectly from WideCharToMultiByte!\n");
             }
-            ERROR("lpLibFileName is larger than MAX_PATH (%d)!\n", MAX_PATH);
+            ERROR("lpLibFileName is larger than _MAX_FNAME (%d)!\n", _MAX_FNAME);
         }
         else
         {
@@ -1312,7 +1312,7 @@ Return value :
 --*/
 static HMODULE LOADLoadLibrary(LPCSTR shortAsciiName, BOOL fDynamic)
 {
-    CHAR fullLibraryName[MAX_PATH];
+    CHAR fullLibraryName[MAX_LONGPATH];
     MODSTRUCT *module = NULL;
     void *dl_handle = NULL;
     DWORD dwError;
@@ -1360,7 +1360,7 @@ static HMODULE LOADLoadLibrary(LPCSTR shortAsciiName, BOOL fDynamic)
                continue;
            
             if (!dl_handle &&
-                snprintf(fullLibraryName, MAX_PATH, formatStrings[i], PAL_SHLIB_PREFIX, shortAsciiName, PAL_SHLIB_SUFFIX) < MAX_PATH &&
+                snprintf(fullLibraryName, MAX_LONGPATH, formatStrings[i], PAL_SHLIB_PREFIX, shortAsciiName, PAL_SHLIB_SUFFIX) < MAX_LONGPATH &&
                 ((dl_handle = dlopen(fullLibraryName, RTLD_LAZY | RTLD_NOLOAD)) || 
                  (dl_handle = dlopen(fullLibraryName, RTLD_LAZY))))
             {

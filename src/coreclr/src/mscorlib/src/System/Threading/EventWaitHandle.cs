@@ -48,12 +48,12 @@ namespace System.Threading
         [System.Security.SecurityCritical]  // auto-generated_required
         public EventWaitHandle(bool initialState, EventResetMode mode, string name)
         {
-            if (name != null)
+            if(name != null)
             {
 #if PLATFORM_UNIX
                 throw new PlatformNotSupportedException(Environment.GetResourceString("PlatformNotSupported_NamedSynchronizationPrimitives"));
 #else
-                if (System.IO.Path.MAX_PATH < name.Length)
+                if (System.IO.Path.MaxPath < name.Length)
                 {
                     throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", name));
                 }
@@ -97,12 +97,12 @@ namespace System.Threading
         [System.Security.SecurityCritical]  // auto-generated_required
         public unsafe EventWaitHandle(bool initialState, EventResetMode mode, string name, out bool createdNew, EventWaitHandleSecurity eventSecurity)
         {
-            if (name != null)
+            if(name != null)
             {
 #if PLATFORM_UNIX
                 throw new PlatformNotSupportedException(Environment.GetResourceString("PlatformNotSupported_NamedSynchronizationPrimitives"));
 #else
-                if (System.IO.Path.MAX_PATH < name.Length)
+                if (System.IO.Path.MaxPath < name.Length)
                 {
                     throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", name));
                 }
@@ -223,7 +223,7 @@ namespace System.Threading
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
             }
 
-            if(null != name && System.IO.Path.MAX_PATH < name.Length)
+            if(null != name && System.IO.Path.MaxPath < name.Length)
             {
                 throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong",name));
             }
