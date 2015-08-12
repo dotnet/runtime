@@ -84,18 +84,25 @@ namespace System.Security.Cryptography
         //
         // Now that the padding mode and information have been marshaled to their native counterparts, perform the encryption or decryption.
         //
-        private static unsafe byte[] EncryptOrDecrypt(SafeNCryptKeyHandle key, byte[] input, AsymmetricPaddingMode paddingMode, void* paddingInfo, EncryptOrDecryptAction encryptOrDecrypt)
+        private unsafe byte[] EncryptOrDecrypt(SafeNCryptKeyHandle key, byte[] input, AsymmetricPaddingMode paddingMode, void* paddingInfo, EncryptOrDecryptAction encryptOrDecrypt)
         {
+            int estimatedSize = KeySize / 8;
+#if DEBUG
+            estimatedSize = 2;  // Make sure the NTE_BUFFER_TOO_SMALL scenario gets exercised.
+#endif
+
+            byte[] output = new byte[estimatedSize];
             int numBytesNeeded;
-            ErrorCode errorCode = encryptOrDecrypt(key, input, input.Length, paddingInfo, null, 0, out numBytesNeeded, paddingMode);
+            ErrorCode errorCode = encryptOrDecrypt(key, input, input.Length, paddingInfo, output, output.Length, out numBytesNeeded, paddingMode);
+            if (errorCode == ErrorCode.NTE_BUFFER_TOO_SMALL)
+            {
+                output = new byte[numBytesNeeded];
+                errorCode = encryptOrDecrypt(key, input, input.Length, paddingInfo, output, output.Length, out numBytesNeeded, paddingMode);
+            }
             if (errorCode != ErrorCode.ERROR_SUCCESS)
                 throw errorCode.ToCryptographicException();
 
-            byte[] output = new byte[numBytesNeeded];
-            errorCode = encryptOrDecrypt(key, input, input.Length, paddingInfo, output, numBytesNeeded, out numBytesNeeded, paddingMode);
-            if (errorCode != ErrorCode.ERROR_SUCCESS)
-                throw errorCode.ToCryptographicException();
-
+            Array.Resize(ref output, numBytesNeeded);
             return output;
         }
 
