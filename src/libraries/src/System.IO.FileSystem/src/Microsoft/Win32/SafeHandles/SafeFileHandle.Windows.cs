@@ -39,9 +39,7 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-#if USE_OVERLAPPED
         internal ThreadPoolBoundHandle ThreadPoolBinding { get; set; }
-#endif
 
         [System.Security.SecurityCritical]
         override protected bool ReleaseHandle()

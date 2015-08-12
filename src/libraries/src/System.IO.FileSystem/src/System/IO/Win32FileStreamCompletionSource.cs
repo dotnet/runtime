@@ -11,7 +11,6 @@ namespace System.IO
 {
     internal partial class Win32FileStream
     {
-#if USE_OVERLAPPED
         // This is an internal object extending TaskCompletionSource with fields
         // for all of the relevant data necessary to complete the IO operation.
         // This is used by AsyncFSCallback and all of the async methods.
@@ -208,6 +207,5 @@ namespace System.IO
                 }
             }
         } 
-#endif
     }
 }
