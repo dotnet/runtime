@@ -275,7 +275,8 @@ namespace System.Diagnostics.ProcessTests
         [Fact]
         public void TestModules()
         {
-            foreach (ProcessModule pModule in _process.Modules)
+            ProcessModuleCollection moduleCollection = Process.GetCurrentProcess().Modules;
+            foreach (ProcessModule pModule in moduleCollection)
             {
                 // Validated that we can get a value for each of the following.
                 Assert.NotNull(pModule);
