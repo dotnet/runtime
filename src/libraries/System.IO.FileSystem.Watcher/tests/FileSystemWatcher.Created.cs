@@ -125,7 +125,7 @@ public class CreatedTests
         {
             using (var nestedFile = new TemporaryTestFile(Path.Combine(ttd.Path, "nestedFile")))
             {
-                Utility.ExpectEvent(are, "nested file created", 1000 * 30);
+                Utility.ExpectEvent(are, "nested file created");
             }
         });
     }
