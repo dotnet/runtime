@@ -12,7 +12,7 @@ namespace System.Diagnostics.ProcessTests
         [Fact]
         public void TestModuleCollectionBehavior()
         {
-            ProcessModule[] mArray = _process.Modules.Cast<ProcessModule>().ToArray();
+            ProcessModule[] mArray = Process.GetCurrentProcess().Modules.Cast<ProcessModule>().ToArray();
 
             // Constructor
             ProcessModuleCollection moduleCollection = new ProcessModuleCollection(mArray);
