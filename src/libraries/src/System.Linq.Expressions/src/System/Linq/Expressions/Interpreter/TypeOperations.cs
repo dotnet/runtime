@@ -1899,7 +1899,7 @@ namespace System.Linq.Expressions.Interpreter
 
     internal abstract class NullableMethodCallInstruction : Instruction
     {
-        private static NullableMethodCallInstruction s_hasValue,s_value,s_equals,s_getHashCode,s_getValueOrDefault,s_getValueOrDefault1,s_toString;
+        private static NullableMethodCallInstruction s_hasValue, s_value, s_equals, s_getHashCode, s_getValueOrDefault1, s_toString;
 
         public override int ConsumedStack { get { return 1; } }
         public override int ProducedStack { get { return 1; } }
@@ -1925,14 +1925,10 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                var obj = frame.Pop();
-                if (obj == null)
+                if (frame.Peek() == null)
                 {
+                    frame.Pop();
                     throw new InvalidOperationException();
-                }
-                else
-                {
-                    frame.Push(obj);
                 }
                 return +1;
             }
@@ -1940,9 +1936,20 @@ namespace System.Linq.Expressions.Interpreter
 
         private class GetValueOrDefault : NullableMethodCallInstruction
         {
+            private readonly Type defaultValueType;
+
+            public GetValueOrDefault(MethodInfo mi)
+            {
+                defaultValueType = mi.ReturnType;
+            }
+
             public override int Run(InterpretedFrame frame)
             {
-                // we're already unboxed in the interpreter, so this is a nop.
+                if (frame.Peek() == null)
+                {
+                    frame.Pop();
+                    frame.Push(Activator.CreateInstance(defaultValueType));
+                }
                 return +1;
             }
         }
@@ -2025,8 +2032,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-
-        public static Instruction Create(string method, int argCount)
+        public static Instruction Create(string method, int argCount, MethodInfo mi)
         {
             switch (method)
             {
@@ -2037,7 +2043,7 @@ namespace System.Linq.Expressions.Interpreter
                 case "GetValueOrDefault":
                     if (argCount == 0)
                     {
-                        return s_getValueOrDefault ?? (s_getValueOrDefault = new GetValueOrDefault());
+                        return new GetValueOrDefault(mi);
                     }
                     else
                     {
@@ -2048,6 +2054,11 @@ namespace System.Linq.Expressions.Interpreter
                     // System.Nullable doesn't have other instance methods 
                     throw Assert.Unreachable;
             }
+        }
+
+        public static Instruction CreateGetValue()
+        {
+            return s_value ?? (s_value = new GetValue());
         }
     }
 
