@@ -26,17 +26,17 @@ namespace System.Security.Cryptography
             if (format == null)
                 throw new ArgumentNullException("format");
 
-            int numBytesRequired;
-            ErrorCode errorCode = Interop.NCrypt.NCryptExportKey(_keyHandle, IntPtr.Zero, format.Format, IntPtr.Zero, null, 0, out numBytesRequired, 0);
+            int numBytesNeeded;
+            ErrorCode errorCode = Interop.NCrypt.NCryptExportKey(_keyHandle, IntPtr.Zero, format.Format, IntPtr.Zero, null, 0, out numBytesNeeded, 0);
             if (errorCode != ErrorCode.ERROR_SUCCESS)
                 throw errorCode.ToCryptographicException();
 
-            byte[] buffer = new byte[numBytesRequired];
-            errorCode = Interop.NCrypt.NCryptExportKey(_keyHandle, IntPtr.Zero, format.Format, IntPtr.Zero, buffer, buffer.Length, out numBytesRequired, 0);
+            byte[] buffer = new byte[numBytesNeeded];
+            errorCode = Interop.NCrypt.NCryptExportKey(_keyHandle, IntPtr.Zero, format.Format, IntPtr.Zero, buffer, buffer.Length, out numBytesNeeded, 0);
             if (errorCode != ErrorCode.ERROR_SUCCESS)
                 throw errorCode.ToCryptographicException();
 
-            Array.Resize(ref buffer, numBytesRequired);
+            Array.Resize(ref buffer, numBytesNeeded);
             return buffer;
         }
     }
