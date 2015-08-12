@@ -1242,17 +1242,34 @@ namespace System.Linq
         {
             if (source == null) throw Error.ArgumentNull("source");
             if (predicate == null) throw Error.ArgumentNull("predicate");
-            TSource result = default(TSource);
-            bool found = false;
-            foreach (TSource element in source)
+            IList<TSource> list = source as IList<TSource>;
+            if (list != null)
             {
-                if (predicate(element))
+                for (int i = list.Count - 1; i >= 0; --i)
                 {
-                    result = element;
-                    found = true;
+                    TSource result = list[i];
+                    if (predicate(result)) return result;
                 }
             }
-            if (found) return result;
+            else
+            {
+                using (IEnumerator<TSource> e = source.GetEnumerator())
+                {
+                    while (e.MoveNext())
+                    {
+                        TSource result = e.Current;
+                        if (predicate(result))
+                        {
+                            while (e.MoveNext())
+                            {
+                                TSource element = e.Current;
+                                if (predicate(element)) result = element;
+                            }
+                            return result;
+                        }
+                    }
+                }
+            }
             throw Error.NoMatch();
         }
 
@@ -1287,15 +1304,28 @@ namespace System.Linq
         {
             if (source == null) throw Error.ArgumentNull("source");
             if (predicate == null) throw Error.ArgumentNull("predicate");
-            TSource result = default(TSource);
-            foreach (TSource element in source)
+            IList<TSource> list = source as IList<TSource>;
+            if (list != null)
             {
-                if (predicate(element))
+                for (int i = list.Count - 1; i >= 0; --i)
                 {
-                    result = element;
+                    TSource element = list[i];
+                    if (predicate(element)) return element;
                 }
+                return default(TSource);
             }
-            return result;
+            else
+            {
+                TSource result = default(TSource);
+                foreach (TSource element in source)
+                {
+                    if (predicate(element))
+                    {
+                        result = element;
+                    }
+                }
+                return result;
+            }
         }
 
         public static TSource Single<TSource>(this IEnumerable<TSource> source)
@@ -1326,22 +1356,22 @@ namespace System.Linq
         {
             if (source == null) throw Error.ArgumentNull("source");
             if (predicate == null) throw Error.ArgumentNull("predicate");
-            TSource result = default(TSource);
-            long count = 0;
-            foreach (TSource element in source)
+            using (IEnumerator<TSource> e = source.GetEnumerator())
             {
-                if (predicate(element))
+                while (e.MoveNext())
                 {
-                    result = element;
-                    checked { count++; }
+                    TSource result = e.Current;
+                    if (predicate(result))
+                    {
+                        while (e.MoveNext())
+                        {
+                            if (predicate(e.Current)) throw Error.MoreThanOneMatch();
+                        }
+                        return result;
+                    }
                 }
             }
-            switch (count)
-            {
-                case 0: throw Error.NoMatch();
-                case 1: return result;
-            }
-            throw Error.MoreThanOneMatch();
+            throw Error.NoMatch();
         }
 
         public static TSource SingleOrDefault<TSource>(this IEnumerable<TSource> source)
@@ -1372,22 +1402,22 @@ namespace System.Linq
         {
             if (source == null) throw Error.ArgumentNull("source");
             if (predicate == null) throw Error.ArgumentNull("predicate");
-            TSource result = default(TSource);
-            long count = 0;
-            foreach (TSource element in source)
+            using (IEnumerator<TSource> e = source.GetEnumerator())
             {
-                if (predicate(element))
+                while (e.MoveNext())
                 {
-                    result = element;
-                    checked { count++; }
+                    TSource result = e.Current;
+                    if (predicate(result))
+                    {
+                        while (e.MoveNext())
+                        {
+                            if (predicate(e.Current)) throw Error.MoreThanOneMatch();
+                        }
+                        return result;
+                    }
                 }
             }
-            switch (count)
-            {
-                case 0: return default(TSource);
-                case 1: return result;
-            }
-            throw Error.MoreThanOneMatch();
+            return default(TSource);
         }
 
         public static TSource ElementAt<TSource>(this IEnumerable<TSource> source, int index)
@@ -1873,13 +1903,8 @@ namespace System.Linq
                     // ordering where NaN is smaller than every value, including
                     // negative infinity.
                     // Not testing for NaN therefore isn't an option, but since we
-                    // can't find a smaller value, we can short-circuit. But we consume
-                    // the rest for backwards-compatibility reasons.
-                    else if (float.IsNaN(x))
-                    {
-                        while (e.MoveNext()) {}
-                        return x;
-                    }
+                    // can't find a smaller value, we can short-circuit.
+                    else if (float.IsNaN(x)) return x;
                 }
             }
             return value;
@@ -1908,11 +1933,7 @@ namespace System.Linq
                             valueVal = x;
                             value = cur;
                         }
-                        else if (float.IsNaN(x))
-                        {
-                            while (e.MoveNext()) { }
-                            return cur;
-                        }
+                        else if (float.IsNaN(x)) return cur;
                     }
                 }
             }
@@ -1931,11 +1952,7 @@ namespace System.Linq
                 {
                     double x = e.Current;
                     if (x < value) value = x;
-                    else if (double.IsNaN(x))
-                    {
-                        while (e.MoveNext()) {}
-                        return x;
-                    }
+                    else if (double.IsNaN(x)) return x;
                 }
             }
             return value;
@@ -1964,11 +1981,7 @@ namespace System.Linq
                             valueVal = x;
                             value = cur;
                         }
-                        else if (double.IsNaN(x))
-                        {
-                            while (e.MoveNext()) {}
-                            return cur;
-                        }
+                        else if (double.IsNaN(x)) return cur;
                     }
                 }
             }
