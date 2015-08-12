@@ -101,7 +101,7 @@ namespace System.Runtime.InteropServices {
         public static String SystemConfigurationFile {
             [System.Security.SecuritySafeCritical]  // auto-generated
             get {
-                StringBuilder sb = new StringBuilder(Path.MAX_PATH);
+                StringBuilder sb = new StringBuilder(Path.MaxPath);
                 sb.Append(GetRuntimeDirectory());
                 sb.Append(AppDomainSetup.RuntimeConfigurationFile);
                 String path = sb.ToString();
