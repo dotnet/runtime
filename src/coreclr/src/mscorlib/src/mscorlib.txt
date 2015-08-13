@@ -2130,6 +2130,11 @@ event_SpinLock_FastPathFailed=SpinLock beginning to spin.
 event_SpinWait_NextSpinWillYield=Next spin will yield.
 event_Barrier_PhaseFinished=Barrier finishing phase {1}.
 
+#if PLATFORM_UNIX
+; Unix threading
+PlatformNotSupported_NamedSynchronizationPrimitives=Named synchronization primitives are not supported on this platform.
+#endif
+
 ;
 ; System.Threading.Tasks
 ;
