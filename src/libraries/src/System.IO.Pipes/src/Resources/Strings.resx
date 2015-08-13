@@ -177,9 +177,6 @@
   <data name="InvalidOperation_EndWriteCalledMultiple" xml:space="preserve">
     <value>EndWrite can only be called once for each asynchronous operation.</value>
   </data>
-  <data name="InvalidOperation_EndWaitForConnectionCalledMultiple" xml:space="preserve">
-    <value>EndWaitForConnection can only be called once for each asynchronous operation.</value>
-  </data>
   <data name="InvalidOperation_PipeNotYetConnected" xml:space="preserve">
     <value>Pipe hasn't been connected yet.</value>
   </data>
