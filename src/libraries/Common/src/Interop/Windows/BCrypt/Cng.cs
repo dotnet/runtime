@@ -77,58 +77,6 @@ namespace Internal.NativeCrypto
             return hAlgorithm;
         }
 
-        public static SafeHashHandle BCryptCreateHash(this SafeAlgorithmHandle hAlgorithm, byte[] pbSecret, int dwFlags)
-        {
-            SafeHashHandle hHash = null;
-            NTSTATUS ntStatus = Interop.BCryptCreateHash(hAlgorithm, out hHash, IntPtr.Zero, 0, pbSecret, pbSecret == null ? 0 : pbSecret.Length, dwFlags);
-            if (ntStatus != NTSTATUS.STATUS_SUCCESS)
-                throw CreateCryptographicException(ntStatus);
-            return hHash;
-        }
-
-        public static SafeHashHandle BCryptTryCreateReusableHash(this SafeAlgorithmHandle hAlgorithm, byte[] pbSecret)
-        {
-            const int BCRYPT_HASH_REUSABLE_FLAG = 0x00000020;
-
-            SafeHashHandle hHash = null;
-            NTSTATUS ntStatus = Interop.BCryptCreateHash(hAlgorithm, out hHash, IntPtr.Zero, 0, pbSecret, pbSecret == null ? 0 : pbSecret.Length, BCRYPT_HASH_REUSABLE_FLAG);
-            if (ntStatus == NTSTATUS.STATUS_INVALID_PARAMETER)
-                return null;  // Pre-Win8 OS's do not support BCRYPT_HASH_REUSABLE_FLAG.
-            if (ntStatus != NTSTATUS.STATUS_SUCCESS)
-                throw CreateCryptographicException(ntStatus);
-            return hHash;
-        }
-
-        public static unsafe void BCryptHashData(this SafeHashHandle hHash, byte* pbInput, int cbInput)
-        {
-            NTSTATUS ntStatus = Interop.BCryptHashData(hHash, pbInput, cbInput, 0);
-            if (ntStatus != NTSTATUS.STATUS_SUCCESS)
-                throw CreateCryptographicException(ntStatus);
-            return;
-        }
-
-        public static byte[] BCryptFinishHash(this SafeHashHandle hHash, int cbHashSize)
-        {
-            byte[] hash = new byte[cbHashSize];
-            NTSTATUS ntStatus = Interop.BCryptFinishHash(hHash, hash, cbHashSize, 0);
-            if (ntStatus != NTSTATUS.STATUS_SUCCESS)
-                throw CreateCryptographicException(ntStatus);
-            return hash;
-        }
-
-        public static int GetHashSizeInBytes(this SafeHashHandle hHash)
-        {
-            unsafe
-            {
-                int cbSizeOfHashSize;
-                int hashSize;
-                NTSTATUS ntStatus = Interop.BCryptGetProperty(hHash, BCryptGetPropertyStrings.BCRYPT_HASH_LENGTH, (byte*)&hashSize, 4, out cbSizeOfHashSize, 0);
-                if (ntStatus != NTSTATUS.STATUS_SUCCESS)
-                    throw CreateCryptographicException(ntStatus);
-                return hashSize;
-            }
-        }
-
         public static SafeKeyHandle BCryptImportKey(this SafeAlgorithmHandle hAlg, byte[] key)
         {
             unsafe
@@ -275,20 +223,7 @@ namespace Internal.NativeCrypto
             public static extern NTSTATUS BCryptOpenAlgorithmProvider(out SafeAlgorithmHandle phAlgorithm, String pszAlgId, String pszImplementation, int dwFlags);
 
             [DllImport(CngDll, CharSet = CharSet.Unicode)]
-            public static extern NTSTATUS BCryptCreateHash(SafeAlgorithmHandle hAlgorithm, out SafeHashHandle phHash, IntPtr pbHashObject, int cbHashObject, [In, Out] byte[] pbSecret, int cbSecret, int dwFlags);
-
-            [DllImport(CngDll, CharSet = CharSet.Unicode)]
-            public static extern unsafe NTSTATUS BCryptHashData(SafeHashHandle hHash, byte* pbInput, int cbInput, int dwFlags);
-
-            [DllImport(CngDll, CharSet = CharSet.Unicode)]
-            public static extern NTSTATUS BCryptFinishHash(SafeHashHandle hHash, [Out] byte[] pbOutput, int cbOutput, int dwFlags);
-
-            [DllImport(CngDll, CharSet = CharSet.Unicode)]
-            public static extern unsafe NTSTATUS BCryptGetProperty(SafeBCryptHandle hObject, String pszProperty, byte* pbOutput, int cbOutput, out int pcbResult, int dwFlags);
-
-            [DllImport(CngDll, CharSet = CharSet.Unicode)]
             public static extern unsafe NTSTATUS BCryptSetProperty(SafeAlgorithmHandle hObject, String pszProperty, String pbInput, int cbInput, int dwFlags);
-
             [DllImport(CngDll, CharSet = CharSet.Unicode)]
             public static extern NTSTATUS BCryptImportKey(SafeAlgorithmHandle hAlgorithm, IntPtr hImportKey, String pszBlobType, out SafeKeyHandle hKey, IntPtr pbKeyObject, int cbKeyObject, byte[] pbInput, int cbInput, int dwFlags);
 
@@ -365,6 +300,5 @@ namespace Internal.NativeCrypto
         [DllImport(Cng.CngDll)]
         private static extern uint BCryptDestroyKey(IntPtr hKey);
     }
-
 }
 
