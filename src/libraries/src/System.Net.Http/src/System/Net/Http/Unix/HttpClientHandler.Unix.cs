@@ -27,8 +27,15 @@ namespace System.Net.Http
 
         public bool UseCookies
         {
-            get { return (_curlHandler.CookieUsePolicy == CookieUsePolicy.UseSpecifiedCookieContainer); }
-            set { _curlHandler.CookieUsePolicy = value ? CookieUsePolicy.UseSpecifiedCookieContainer : CookieUsePolicy.IgnoreCookies; }
+            get
+            {
+                return _curlHandler.UseCookie;
+            }
+
+            set
+            {
+                _curlHandler.UseCookie = value;
+            }          
         }
 
         public CookieContainer CookieContainer
