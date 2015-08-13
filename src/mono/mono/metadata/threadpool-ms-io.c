@@ -391,20 +391,8 @@ selector_thread (gpointer data)
 							memset (update, 0, sizeof (ThreadPoolIOUpdate));
 					}
 
-					for (; list; list = mono_mlist_remove_item (list, list)) {
-						MonoSocketAsyncResult *sockares = (MonoSocketAsyncResult*) mono_mlist_get_data (list);
-
-						switch (sockares->operation) {
-						case AIO_OP_RECEIVE:
-							sockares->operation = AIO_OP_RECV_JUST_CALLBACK;
-							break;
-						case AIO_OP_SEND:
-							sockares->operation = AIO_OP_SEND_JUST_CALLBACK;
-							break;
-						}
-
-						mono_threadpool_ms_enqueue_work_item (mono_object_domain (sockares), (MonoObject*) sockares);
-					}
+					for (; list; list = mono_mlist_remove_item (list, list))
+						mono_threadpool_ms_enqueue_work_item (mono_object_domain (mono_mlist_get_data (list)), mono_mlist_get_data (list));
 
 					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_THREADPOOL, "io threadpool: del fd %3d", fd);
 					threadpool_io->backend.remove_fd (fd);
