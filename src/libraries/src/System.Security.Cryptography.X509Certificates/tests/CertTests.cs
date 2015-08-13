@@ -147,6 +147,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void X509Cert2CreateFromEmptyPfx()
+        {
+            Assert.Throws<CryptographicException>(() => new X509Certificate2(TestData.EmptyPfx));
+        }
+
+        [Fact]
         public static void X509Cert2CreateFromPfxFile()
         {
             using (X509Certificate2 cert2 = new X509Certificate2(Path.Combine("TestData", "DummyTcpServer.pfx")))
@@ -191,6 +197,27 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Throws<CryptographicException>(() => c.GetSerialNumber());
                 Assert.Throws<CryptographicException>(() => c.Issuer);
                 Assert.Throws<CryptographicException>(() => c.Subject);
+            }
+        }
+
+        [Fact]
+        public static void ExportPublicKeyAsPkcs12()
+        {
+            using (X509Certificate2 publicOnly = new X509Certificate2(TestData.MsCertificate))
+            {
+                // Pre-condition: There's no private key
+                Assert.False(publicOnly.HasPrivateKey);
+
+                // This won't throw.
+                byte[] pkcs12Bytes = publicOnly.Export(X509ContentType.Pkcs12);
+
+                // Read it back as a collection, there should be only one cert, and it should
+                // be equal to the one we started with.
+                X509Certificate2Collection fromPfx = new X509Certificate2Collection();
+                fromPfx.Import(pkcs12Bytes);
+
+                Assert.Equal(1, fromPfx.Count);
+                Assert.Equal(publicOnly, fromPfx[0]);
             }
         }
     }

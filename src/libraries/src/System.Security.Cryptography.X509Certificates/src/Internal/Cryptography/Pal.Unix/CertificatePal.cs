@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
 
@@ -70,6 +71,11 @@ namespace Internal.Cryptography.Pal
                         {
                             certPal.Dispose();
                         }
+                    }
+
+                    if (first == null)
+                    {
+                        throw new CryptographicException();
                     }
 
                     return first;

@@ -54,12 +54,14 @@ namespace Internal.Cryptography.Pal
 
         public static IStorePal FromCertificate(ICertificatePal cert)
         {
-            throw new NotImplementedException();
+            ICertificatePal duplicatedHandles = ((OpenSslX509CertificateReader)cert).DuplicateHandles();
+
+            return new CollectionBackedStoreProvider(new X509Certificate2(duplicatedHandles));
         }
 
         public static IStorePal LinkFromCertificateCollection(X509Certificate2Collection certificates)
         {
-            return new OpenSslX509StoreProvider(certificates);
+            return new CollectionBackedStoreProvider(certificates);
         }
 
         public static IStorePal FromSystemStore(string storeName, StoreLocation storeLocation, OpenFlags openFlags)
