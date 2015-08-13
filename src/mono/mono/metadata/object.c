@@ -2938,8 +2938,14 @@ mono_method_get_unmanaged_thunk (MonoMethod *method)
 	MONO_REQ_GC_NEUTRAL_MODE;
 	MONO_REQ_API_ENTRYPOINT;
 
+	gpointer res;
+
+	MONO_PREPARE_RESET_BLOCKING
 	method = mono_marshal_get_thunk_invoke_wrapper (method);
-	return mono_compile_method (method);
+	res = mono_compile_method (method);
+	MONO_FINISH_RESET_BLOCKING
+
+	return res;
 }
 
 void
