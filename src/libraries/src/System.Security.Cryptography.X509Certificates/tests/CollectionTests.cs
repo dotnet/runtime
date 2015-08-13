@@ -510,6 +510,56 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal(originalPrivateKeyCount, importedPrivateKeyCount);
         }
 
+        [Fact]
+        public static void X509CertificateCollectionCopyTo()
+        {
+            using (X509Certificate2 c1 = new X509Certificate2())
+            using (X509Certificate2 c2 = new X509Certificate2())
+            using (X509Certificate2 c3 = new X509Certificate2())
+            {
+                X509CertificateCollection cc = new X509CertificateCollection(new X509Certificate[] { c1, c2, c3 });
+
+                X509Certificate[] array1 = new X509Certificate[cc.Count];
+                cc.CopyTo(array1, 0);
+
+                Assert.Same(c1, array1[0]);
+                Assert.Same(c2, array1[1]);
+                Assert.Same(c3, array1[2]);
+
+                X509Certificate[] array2 = new X509Certificate[cc.Count];
+                ((ICollection)cc).CopyTo(array2, 0);
+
+                Assert.Same(c1, array2[0]);
+                Assert.Same(c2, array2[1]);
+                Assert.Same(c3, array2[2]);
+            }
+        }
+
+        [Fact]
+        public static void X509Certificate2CollectionCopyTo()
+        {
+            using (X509Certificate2 c1 = new X509Certificate2())
+            using (X509Certificate2 c2 = new X509Certificate2())
+            using (X509Certificate2 c3 = new X509Certificate2())
+            {
+                X509Certificate2Collection cc = new X509Certificate2Collection(new X509Certificate2[] { c1, c2, c3 });
+
+                X509Certificate2[] array1 = new X509Certificate2[cc.Count];
+                cc.CopyTo(array1, 0);
+
+                Assert.Same(c1, array1[0]);
+                Assert.Same(c2, array1[1]);
+                Assert.Same(c3, array1[2]);
+
+                X509Certificate2[] array2 = new X509Certificate2[cc.Count];
+                ((ICollection)cc).CopyTo(array2, 0);
+
+                Assert.Same(c1, array2[0]);
+                Assert.Same(c2, array2[1]);
+                Assert.Same(c3, array2[2]);
+            }
+        }
+
         private static void TestExportSingleCert(X509ContentType ct)
         {
             using (var msCer = new X509Certificate2(TestData.MsCertificate))
