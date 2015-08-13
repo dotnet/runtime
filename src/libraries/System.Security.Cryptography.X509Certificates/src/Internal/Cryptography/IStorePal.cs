@@ -9,9 +9,9 @@ namespace Internal.Cryptography.Pal
 {
     internal interface IStorePal : IDisposable
     {
-        IEnumerable<X509Certificate2> Find(X509FindType findType, Object findValue, bool validOnly);
+        void FindAndCopyTo(X509FindType findType, object findValue, bool validOnly, X509Certificate2Collection collection);
         byte[] Export(X509ContentType contentType, String password);
-        IEnumerable<X509Certificate2> Certificates { get; }
+        void CopyTo(X509Certificate2Collection collection);
         void Add(ICertificatePal cert);
         void Remove(ICertificatePal cert);
     }
