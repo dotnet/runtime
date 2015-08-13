@@ -66,7 +66,7 @@ Written in 2006, by:
   * [2.7 Are you making hidden assumptions about the order of memory writes?](#2.7)
   * [2.8 Is your code compatible with managed debugging?](#2.8)
   * [2.9 Does your code work on 64-bit?](#2.9)
-    * [2.9 Primitive Types](#2.9)
+    * [2.9.1 Primitive Types](#2.9.1)
   * [2.10 Does your function declare a CONTRACT?](#2.10)
     * [2.10.1 What can be said in a contract?](#2.10.1)
       * [2.10.1.1 THROWS/NOTHROW](#2.10.1.1)
