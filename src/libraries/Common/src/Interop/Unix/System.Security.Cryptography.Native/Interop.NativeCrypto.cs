@@ -61,6 +61,9 @@ internal static partial class Interop
         private static extern int GetAsn1StringBytes(IntPtr asn1, byte[] buf, int cBuf);
 
         [DllImport(Libraries.CryptoInterop)]
+        internal static extern SafeX509StackHandle NewX509Stack();
+
+        [DllImport(Libraries.CryptoInterop)]
         internal static extern int GetX509StackFieldCount(SafeX509StackHandle stack);
 
         /// <summary>
@@ -71,10 +74,17 @@ internal static partial class Interop
         internal static extern IntPtr GetX509StackField(SafeX509StackHandle stack, int loc);
 
         [DllImport(Libraries.CryptoInterop)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool PushX509StackField(SafeX509StackHandle stack, SafeX509Handle x509);
+
+        [DllImport(Libraries.CryptoInterop)]
         internal static extern void RecursiveFreeX509Stack(IntPtr stack);
 
         [DllImport(Libraries.CryptoInterop, CharSet = CharSet.Ansi)]
         internal static extern string GetX509RootStorePath();
+
+        [DllImport(Libraries.CryptoInterop)]
+        internal static extern int UpRefEvpPkey(SafeEvpPkeyHandle handle);
 
         [DllImport(Libraries.CryptoInterop)]
         private static extern int SetX509ChainVerifyTime(
