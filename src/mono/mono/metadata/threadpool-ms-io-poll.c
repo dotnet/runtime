@@ -1,5 +1,24 @@
 
-#define POLL_NEVENTS 1024
+#if defined(HAVE_POLL)
+
+#if defined(HAVE_POLL_H)
+#include <poll.h>
+#elif defined(HAVE_SYS_POLL_H)
+#include <sys/poll.h>
+#endif
+
+typedef struct pollfd mono_pollfd;
+
+#elif defined(HOST_WIN32)
+
+#include "mswsock.h"
+
+typedef WSAPOLLFD mono_pollfd;
+
+#else
+/* poll is not defined */
+#error
+#endif
 
 static mono_pollfd *poll_fds;
 static guint poll_fds_capacity;
@@ -16,15 +35,20 @@ POLL_INIT_FD (mono_pollfd *poll_fd, gint fd, gint events)
 static gboolean
 poll_init (gint wakeup_pipe_fd)
 {
-	guint i;
+	gint i;
 
-	poll_fds_size = 1;
-	poll_fds_capacity = POLL_NEVENTS;
+	poll_fds_size = wakeup_pipe_fd + 1;
+	poll_fds_capacity = 64;
+
+	while (wakeup_pipe_fd >= poll_fds_capacity)
+		poll_fds_capacity *= 4;
+
 	poll_fds = g_new0 (mono_pollfd, poll_fds_capacity);
 
-	POLL_INIT_FD (poll_fds, wakeup_pipe_fd, MONO_POLLIN);
-	for (i = 1; i < poll_fds_capacity; ++i)
-		POLL_INIT_FD (poll_fds + i, -1, 0);
+	for (i = 0; i < wakeup_pipe_fd; ++i)
+		POLL_INIT_FD (&poll_fds [i], -1, 0);
+
+	POLL_INIT_FD (&poll_fds [wakeup_pipe_fd], wakeup_pipe_fd, POLLIN);
 
 	return TRUE;
 }
@@ -35,91 +59,80 @@ poll_cleanup (void)
 	g_free (poll_fds);
 }
 
-static inline gint
-poll_mark_bad_fds (mono_pollfd *poll_fds, gint poll_fds_size)
-{
-	gint i;
-	gint ret;
-	gint ready = 0;
-	mono_pollfd *poll_fd;
-
-	for (i = 0; i < poll_fds_size; i++) {
-		poll_fd = poll_fds + i;
-		if (poll_fd->fd == -1)
-			continue;
-
-		ret = mono_poll (poll_fd, 1, 0);
-		if (ret == 1)
-			ready++;
-		if (ret == -1) {
-#if !defined(HOST_WIN32)
-			if (errno == EBADF)
-#else
-			if (WSAGetLastError () == WSAEBADF)
-#endif
-			{
-				poll_fd->revents |= MONO_POLLNVAL;
-				ready++;
-			}
-		}
-	}
-
-	return ready;
-}
-
 static void
 poll_register_fd (gint fd, gint events, gboolean is_new)
 {
-	gboolean found = FALSE;
-	gint j, k;
+	gint i;
+	mono_pollfd *poll_fd;
 
-	for (j = 1; j < poll_fds_size; ++j) {
-		mono_pollfd *poll_fd = poll_fds + j;
-		if (poll_fd->fd == fd) {
-			found = TRUE;
-			break;
-		}
-	}
+	g_assert (fd >= 0);
+	g_assert (poll_fds_size <= poll_fds_capacity);
 
-	if (events == 0) {
-		if (found)
-			POLL_INIT_FD (poll_fds + j, -1, 0);
-		return;
-	}
+	if (fd >= poll_fds_capacity) {
+		do {
+			poll_fds_capacity *= 4;
+		} while (fd >= poll_fds_capacity);
 
-	if (!found) {
-		for (j = 1; j < poll_fds_capacity; ++j) {
-			mono_pollfd *poll_fd = poll_fds + j;
-			if (poll_fd->fd == -1)
-				break;
-		}
-	}
-
-	if (j == poll_fds_capacity) {
-		poll_fds_capacity += POLL_NEVENTS;
 		poll_fds = g_renew (mono_pollfd, poll_fds, poll_fds_capacity);
-		for (k = j; k < poll_fds_capacity; ++k)
-			POLL_INIT_FD (poll_fds + k, -1, 0);
 	}
 
-	POLL_INIT_FD (poll_fds + j, fd, events);
+	if (fd >= poll_fds_size) {
+		for (i = poll_fds_size; i <= fd; ++i)
+			POLL_INIT_FD (&poll_fds [i], -1, 0);
 
-	if (j >= poll_fds_size)
-		poll_fds_size = j + 1;
+		poll_fds_size = fd + 1;
+	}
+
+	poll_fd = &poll_fds [fd];
+
+	if (poll_fd->fd != -1) {
+		g_assert (poll_fd->fd == fd);
+		g_assert (!is_new);
+	}
+
+	POLL_INIT_FD (poll_fd, fd, ((events & EVENT_IN) ? POLLIN : 0) | ((events & EVENT_OUT) ? POLLOUT : 0));
+}
+
+static void
+poll_remove_fd (gint fd)
+{
+	mono_pollfd *poll_fd;
+
+	g_assert (fd >= 0);
+
+	g_assert (fd < poll_fds_size);
+	poll_fd = &poll_fds [fd];
+
+	g_assert (poll_fd->fd == fd);
+	POLL_INIT_FD (poll_fd, -1, 0);
 }
 
 static gint
-poll_event_wait (void)
+poll_event_wait (void (*callback) (gint fd, gint events, gpointer user_data), gpointer user_data)
 {
-	gint ready;
+	gint i, ready;
 
-	ready = mono_poll (poll_fds, poll_fds_size, -1);
+	for (i = 0; i < poll_fds_size; ++i)
+		poll_fds [i].revents = 0;
+
+	mono_gc_set_skip_thread (TRUE);
+
+#if !defined(HOST_WIN32)
+	ready = poll (poll_fds, poll_fds_size, -1);
+#else
+	ready = WSAPOLLFD (poll_fds, poll_fds_size, -1);
+	if (ready == SOCKET_ERROR)
+		ready = -1;
+#endif
+
+	mono_gc_set_skip_thread (FALSE);
+
 	if (ready == -1) {
 		/*
 		 * Apart from EINTR, we only check EBADF, for the rest:
 		 *  EINVAL: mono_poll() 'protects' us from descriptor
 		 *      numbers above the limit if using select() by marking
-		 *      then as MONO_POLLERR.  If a system poll() is being
+		 *      then as POLLERR.  If a system poll() is being
 		 *      used, the number of descriptor we're passing will not
 		 *      be over sysconf(_SC_OPEN_MAX), as the error would have
 		 *      happened when opening.
@@ -139,53 +152,51 @@ poll_event_wait (void)
 #else
 		case WSAEINTR:
 #endif
+		{
 			mono_thread_internal_check_for_interruption_critical (mono_thread_internal_current ());
 			ready = 0;
 			break;
-#if !defined(HOST_WIN32)
-		case EBADF:
-#else
-		case WSAEBADF:
-#endif
-			ready = poll_mark_bad_fds (poll_fds, poll_fds_size);
-			break;
+		}
 		default:
 #if !defined(HOST_WIN32)
-			g_warning ("poll_event_wait: mono_poll () failed, error (%d) %s", errno, g_strerror (errno));
+			g_error ("poll_event_wait: mono_poll () failed, error (%d) %s", errno, g_strerror (errno));
 #else
-			g_warning ("poll_event_wait: mono_poll () failed, error (%d)\n", WSAGetLastError ());
+			g_error ("poll_event_wait: mono_poll () failed, error (%d)\n", WSAGetLastError ());
 #endif
 			break;
 		}
 	}
 
-	return ready;
-}
+	if (ready == -1)
+		return -1;
 
-static gint
-poll_event_get_fd_at (gint i, gint *events)
-{
-	g_assert (events);
+	for (i = 0; i < poll_fds_size; ++i) {
+		gint fd, events = 0;
 
-	*events = ((poll_fds [i].revents & (MONO_POLLIN | MONO_POLLERR | MONO_POLLHUP | MONO_POLLNVAL)) ? MONO_POLLIN : 0)
-	            | ((poll_fds [i].revents & (MONO_POLLOUT | MONO_POLLERR | MONO_POLLHUP | MONO_POLLNVAL)) ? MONO_POLLOUT : 0);
+		if (poll_fds [i].fd == -1)
+			continue;
+		if (poll_fds [i].revents == 0)
+			continue;
 
-	/* if nothing happened on the fd, then just return
-	 * an invalid fd number so it is discarded */
-	return poll_fds [i].revents == 0 ? -1 : poll_fds [i].fd;
-}
+		fd = poll_fds [i].fd;
+		if (poll_fds [i].revents & (POLLIN | POLLERR | POLLHUP | POLLNVAL))
+			events |= EVENT_IN;
+		if (poll_fds [i].revents & (POLLOUT | POLLERR | POLLHUP | POLLNVAL))
+			events |= EVENT_OUT;
 
-static gint
-poll_event_get_fd_max (void)
-{
-	return poll_fds_size;
+		callback (fd, events, user_data);
+
+		if (--ready == 0)
+			break;
+	}
+
+	return 0;
 }
 
 static ThreadPoolIOBackend backend_poll = {
 	.init = poll_init,
 	.cleanup = poll_cleanup,
 	.register_fd = poll_register_fd,
+	.remove_fd = poll_remove_fd,
 	.event_wait = poll_event_wait,
-	.event_get_fd_max = poll_event_get_fd_max,
-	.event_get_fd_at = poll_event_get_fd_at,
 };

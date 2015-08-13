@@ -57,37 +57,44 @@ epoll_cleanup (void)
 static void
 epoll_register_fd (gint fd, gint events, gboolean is_new)
 {
-	if (events == 0) {
-		if (!is_new && epoll_ctl (epoll_fd, EPOLL_CTL_DEL, fd, NULL) == -1)
-			g_error ("epoll_register_fd: epoll_ctl (EPOLL_CTL_DEL) failed, error (%d) %s", errno, g_strerror (errno));
-	} else {
-		struct epoll_event event;
+	struct epoll_event event;
 
 #ifndef EPOLLONESHOT
 /* it was only defined on android in May 2013 */
 #define EPOLLONESHOT 0x40000000
 #endif
 
-		event.data.fd = fd;
-		event.events = EPOLLONESHOT;
-		if ((events & MONO_POLLIN) != 0)
-			event.events |= EPOLLIN;
-		if ((events & MONO_POLLOUT) != 0)
-			event.events |= EPOLLOUT;
+	event.data.fd = fd;
+	event.events = EPOLLONESHOT;
+	if ((events & EVENT_IN) != 0)
+		event.events |= EPOLLIN;
+	if ((events & EVENT_OUT) != 0)
+		event.events |= EPOLLOUT;
 
-		if (epoll_ctl (epoll_fd, is_new ? EPOLL_CTL_ADD : EPOLL_CTL_MOD, event.data.fd, &event) == -1)
-			g_error ("epoll_register_fd: epoll_ctl(%s) failed, error (%d) %s", is_new ? "EPOLL_CTL_ADD" : "EPOLL_CTL_MOD", errno, g_strerror (errno));
-	}
+	if (epoll_ctl (epoll_fd, is_new ? EPOLL_CTL_ADD : EPOLL_CTL_MOD, event.data.fd, &event) == -1)
+		g_error ("epoll_register_fd: epoll_ctl(%s) failed, error (%d) %s", is_new ? "EPOLL_CTL_ADD" : "EPOLL_CTL_MOD", errno, g_strerror (errno));
+}
+
+static void
+epoll_remove_fd (gint fd)
+{
+	if (epoll_ctl (epoll_fd, EPOLL_CTL_DEL, fd, NULL) == -1)
+			g_error ("epoll_remove_fd: epoll_ctl (EPOLL_CTL_DEL) failed, error (%d) %s", errno, g_strerror (errno));
 }
 
 static gint
-epoll_event_wait (void)
+epoll_event_wait (void (*callback) (gint fd, gint events, gpointer user_data), gpointer user_data)
 {
-	gint ready;
+	gint i, ready;
 
 	memset (epoll_events, 0, sizeof (struct epoll_event) * EPOLL_NEVENTS);
 
+	mono_gc_set_skip_thread (TRUE);
+
 	ready = epoll_wait (epoll_fd, epoll_events, EPOLL_NEVENTS, -1);
+
+	mono_gc_set_skip_thread (FALSE);
+
 	if (ready == -1) {
 		switch (errno) {
 		case EINTR:
@@ -100,33 +107,30 @@ epoll_event_wait (void)
 		}
 	}
 
-	return ready;
-}
+	if (ready == -1)
+		return -1;
 
-static gint
-epoll_event_get_fd_max (void)
-{
-	return EPOLL_NEVENTS;
-}
+	for (i = 0; i < ready; ++i) {
+		gint fd, events = 0;
 
-static gint
-epoll_event_get_fd_at (gint i, gint *events)
-{
-	g_assert (events);
+		fd = epoll_events [i].data.fd;
+		if (epoll_events [i].events & (EPOLLIN | EPOLLERR | EPOLLHUP))
+			events |= EVENT_IN;
+		if (epoll_events [i].events & (EPOLLOUT | EPOLLERR | EPOLLHUP))
+			events |= EVENT_OUT;
 
-	*events = ((epoll_events [i].events & (EPOLLIN | EPOLLERR | EPOLLHUP)) ? MONO_POLLIN : 0)
-	            | ((epoll_events [i].events & (EPOLLOUT | EPOLLERR | EPOLLHUP)) ? MONO_POLLOUT : 0);
+		callback (fd, events, user_data);
+	}
 
-	return epoll_events [i].data.fd;
+	return 0;
 }
 
 static ThreadPoolIOBackend backend_epoll = {
 	.init = epoll_init,
 	.cleanup = epoll_cleanup,
 	.register_fd = epoll_register_fd,
+	.remove_fd = epoll_remove_fd,
 	.event_wait = epoll_event_wait,
-	.event_get_fd_max = epoll_event_get_fd_max,
-	.event_get_fd_at = epoll_event_get_fd_at,
 };
 
 #endif
