@@ -2871,6 +2871,11 @@ if test "x$host" != "x$target"; then
 		# Can't use tls, since it depends on the runtime detection of tls offsets
 		# in mono-compiler.h
 		with_tls=pthread
+		case "$target" in
+		armv7k-*)
+			AC_DEFINE(TARGET_WATCHOS, 1, [...])
+			;;
+		esac		
 		;;
    powerpc64-ps3-linux-gnu)
 		TARGET=POWERPC64
