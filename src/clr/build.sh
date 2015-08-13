@@ -196,6 +196,8 @@ for i in "$@"
         __ClangMajorVersion=3
         __ClangMinorVersion=7
         ;;
+        skipmscorlib)
+        ;;
         *)
         __UnprocessedBuildArgs="$__UnprocessedBuildArgs $i"
     esac
