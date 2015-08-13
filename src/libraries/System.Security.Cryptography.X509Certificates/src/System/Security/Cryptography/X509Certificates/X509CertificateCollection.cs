@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.X509Certificates
     {
         public X509CertificateCollection()
         {
-            _list = new LowLevelListWithIList<Object>();
+            _list = new List<Object>();
         }
 
         public X509CertificateCollection(X509Certificate[] value)
@@ -195,7 +195,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         void ICollection.CopyTo(Array array, int index)
         {
-            List.CopyTo(array, index);
+            ((ICollection)_list).CopyTo(array, index);
         }
 
         int IList.Add(Object value)
@@ -233,7 +233,7 @@ namespace System.Security.Cryptography.X509Certificates
             get { return this; }
         }
 
-        private LowLevelListWithIList<Object> _list;
+        private List<Object> _list;
         private Object _syncRoot;
     }
 }

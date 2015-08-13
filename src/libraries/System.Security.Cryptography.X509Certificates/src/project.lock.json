@@ -971,6 +971,7 @@
   },
   "projectFileDependencyGroups": {
     "": [
+      "System.Collections >= 4.0.10",
       "System.Diagnostics.Contracts >= 4.0.0",
       "System.Diagnostics.Debug >= 4.0.10",
       "System.Globalization.Calendars >= 4.0.0",
