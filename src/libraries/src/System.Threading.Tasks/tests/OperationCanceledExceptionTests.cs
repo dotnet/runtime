@@ -10,7 +10,7 @@ namespace System.Threading.Tasks.Tests
     public static class OperationCanceledExceptionTests
     {
         [Fact]
-        public static void OperationCanceledException_Basics()
+        public static void BasicConstructors()
         {
             CancellationToken ct1 = new CancellationTokenSource().Token;
             OperationCanceledException ex1 = new OperationCanceledException(ct1);

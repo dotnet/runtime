@@ -1,7 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -9,11 +8,9 @@
     <AssemblyName>System.Threading.Tasks.Tests</AssemblyName>
     <ProjectGuid>{B6C09633-D161-499A-8FE1-46B2D53A16E7}</ProjectGuid>
   </PropertyGroup>
-
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
-
   <ItemGroup>
     <!-- Compile tests against the System.Runtime contract, but copy our local-built implementation for testing -->
     <ProjectReference Include="..\src\System.Threading.Tasks.CoreCLR.csproj">
@@ -23,7 +20,6 @@
       <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
     </ProjectReference>
   </ItemGroup>
-
   <ItemGroup>
     <Compile Include="XunitAssemblyAttributes.cs" />
     <Compile Include="UnwrapTests.cs" />
@@ -31,8 +27,7 @@
     <Compile Include="OperationCanceledExceptionTests.cs" />
     <Compile Include="CancellationTokenTests.cs" />
     <Compile Include="MethodCoverage.cs" />
-    <Compile Include="CESchedulerPairTests_Yeti.cs" />
-
+    <Compile Include="CESchedulerPairTests.cs" />
     <!-- Task -->
     <Compile Include="Task\TPLTestException.cs" />
     <Compile Include="Task\TaskRunSyncTests.cs" />
@@ -43,7 +38,7 @@
     <Compile Include="Task\TaskContinueWithTests.cs" />
     <Compile Include="Task\TaskContinueWithAllAnyTests.cs" />
     <Compile Include="Task\TaskContinueWith_ContFuncAndActionWithArgsTests.cs" />
-    <Compile Include="Task\TaskContinueWith_ContFuncAndActionTests.cs" />    
+    <Compile Include="Task\TaskContinueWith_ContFuncAndActionTests.cs" />
     <Compile Include="Task\TaskContinueWhenAnyTests.cs" />
     <Compile Include="Task\TaskContinueWhenAllTests.cs" />
     <Compile Include="Task\TaskFromAsyncWork.cs" />
@@ -53,24 +48,18 @@
     <Compile Include="Task\TaskRtTests.cs" />
     <Compile Include="Task\TaskRtTests_Core.cs" />
     <Compile Include="Task\TaskAPMTest.cs" />
-
     <!-- TaskFactory -->
     <Compile Include="TaskFactory\TaskFactory_FromAsyncTests.cs" />
     <Compile Include="TaskFactory\TaskFactoryTests.cs" />
-
     <!-- TaskScheduler -->
     <Compile Include="TaskScheduler\TaskSchedulerTests.cs" />
-
     <!-- System.Runtime.CompilerServices -->
     <Compile Include="System.Runtime.CompilerServices\TaskAwaiterTests.cs" />
     <Compile Include="System.Runtime.CompilerServices\YieldAwaitableTests.cs" />
     <Compile Include="System.Runtime.CompilerServices\AsyncTaskMethodBuilderTests.cs" />
-
   </ItemGroup>
-
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
-
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
