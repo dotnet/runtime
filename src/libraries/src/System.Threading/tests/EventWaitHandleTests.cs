@@ -4,59 +4,72 @@
 using Xunit;
 using System;
 using System.Threading;
-using System.Threading.Tasks;
 
 public class EventWaitHandleTests
 {
-    [Fact]
-    public void Ctor()
+    [Theory]
+    [InlineData(false, EventResetMode.AutoReset)]
+    [InlineData(false, EventResetMode.ManualReset)]
+    [InlineData(true, EventResetMode.AutoReset)]
+    [InlineData(true, EventResetMode.ManualReset)]
+    public void Ctor_StateMode(bool initialState, EventResetMode mode)
     {
-        using (EventWaitHandle are = new EventWaitHandle(false, EventResetMode.AutoReset))
-            Assert.False(are.WaitOne(0));
-        using (EventWaitHandle are = new EventWaitHandle(true, EventResetMode.AutoReset))
-            Assert.True(are.WaitOne(0));
-        using (EventWaitHandle mre = new EventWaitHandle(false, EventResetMode.ManualReset))
-            Assert.False(mre.WaitOne(0));
-        using (EventWaitHandle mre = new EventWaitHandle(true, EventResetMode.ManualReset))
-            Assert.True(mre.WaitOne(0));
+        using (var ewh = new EventWaitHandle(initialState, mode))
+            Assert.Equal(initialState, ewh.WaitOne(0));
+    }
 
+    [Fact]
+    public void Ctor_InvalidMode()
+    {
         Assert.Throws<ArgumentException>(() => new EventWaitHandle(true, (EventResetMode)12345));
+    }
+
+    [PlatformSpecific(PlatformID.Windows)]
+    [Fact]
+    public void Ctor_InvalidNames()
+    {
         Assert.Throws<ArgumentException>(() => new EventWaitHandle(true, EventResetMode.AutoReset, new string('a', 1000)));
+    }
 
-        const string Name = "EventWaitHandleTestCtor";
-
-        using (EventWaitHandle are = new EventWaitHandle(false, EventResetMode.AutoReset, Name))
-            Assert.False(are.WaitOne(0));
-        using (EventWaitHandle are = new EventWaitHandle(true, EventResetMode.AutoReset, Name))
-            Assert.True(are.WaitOne(0));
-        using (EventWaitHandle mre = new EventWaitHandle(false, EventResetMode.ManualReset, Name))
-            Assert.False(mre.WaitOne(0));
-        using (EventWaitHandle mre = new EventWaitHandle(true, EventResetMode.ManualReset, Name))
-            Assert.True(mre.WaitOne(0));
-        
+    [ActiveIssue("https://github.com/dotnet/coreclr/issues/1237")]
+    [PlatformSpecific(PlatformID.AnyUnix)]
+    [Fact]
+    public void Ctor_NamesArentSupported_Unix()
+    {
+        Assert.Throws<PlatformNotSupportedException>(() => new EventWaitHandle(false, EventResetMode.AutoReset, "anything"));
         bool createdNew;
-        using (EventWaitHandle are = new EventWaitHandle(false, EventResetMode.AutoReset, Name, out createdNew))
-        {
-            Assert.True(createdNew);
-            using (EventWaitHandle are2 = new EventWaitHandle(false, EventResetMode.AutoReset, Name, out createdNew))
-            {
-                Assert.False(createdNew);
-            }
-        }
-        using (EventWaitHandle mre = new EventWaitHandle(false, EventResetMode.ManualReset, Name, out createdNew))
-        {
-            Assert.True(createdNew);
-            using (EventWaitHandle mre2 = new EventWaitHandle(false, EventResetMode.ManualReset, Name, out createdNew))
-            {
-                Assert.False(createdNew);
-            }
-        }
+        Assert.Throws<PlatformNotSupportedException>(() => new EventWaitHandle(false, EventResetMode.AutoReset, "anything", out createdNew));
+    }
 
-        using (Mutex m = new Mutex(false, Name))
+    [PlatformSpecific(PlatformID.Windows)]
+    [Theory]
+    [InlineData(false, EventResetMode.AutoReset)]
+    [InlineData(false, EventResetMode.ManualReset)]
+    [InlineData(true, EventResetMode.AutoReset)]
+    [InlineData(true, EventResetMode.ManualReset)]
+    public void Ctor_StateModeNameCreatedNew_Windows(bool initialState, EventResetMode mode)
+    {
+        string name = Guid.NewGuid().ToString("N");
+        bool createdNew;
+        using (var ewh = new EventWaitHandle(false, EventResetMode.AutoReset, name, out createdNew))
         {
-            Assert.Throws<WaitHandleCannotBeOpenedException>(() => new EventWaitHandle(false, EventResetMode.AutoReset, Name));
-            Assert.Throws<WaitHandleCannotBeOpenedException>(() => new EventWaitHandle(false, EventResetMode.ManualReset, Name));
+            Assert.True(createdNew);
+            using (new EventWaitHandle(false, EventResetMode.AutoReset, name, out createdNew))
+            {
+                Assert.False(createdNew);
+            }
         }
+    }
+
+    [PlatformSpecific(PlatformID.Windows)] // named semaphores aren't supported on Unix
+    [Theory]
+    [InlineData(EventResetMode.AutoReset)]
+    [InlineData(EventResetMode.ManualReset)]
+    public void Ctor_NameUsedByOtherSynchronizationPrimitive_Windows(EventResetMode mode)
+    {
+        string name = Guid.NewGuid().ToString("N");
+        using (Mutex m = new Mutex(false, name))
+            Assert.Throws<WaitHandleCannotBeOpenedException>(() => new EventWaitHandle(false, mode, name));
     }
 
     [Fact]
@@ -86,18 +99,19 @@ public class EventWaitHandleTests
         }
     }
 
+    [PlatformSpecific(PlatformID.Windows)]
     [Fact]
-    public void OpenExisting()
+    public void OpenExisting_Windows()
     {
-        const string Name = "EventWaitHandleTestOpenExisting";
+        string name = Guid.NewGuid().ToString("N");
 
         EventWaitHandle resultHandle;
-        Assert.False(EventWaitHandle.TryOpenExisting(Name, out resultHandle));
+        Assert.False(EventWaitHandle.TryOpenExisting(name, out resultHandle));
         Assert.Null(resultHandle);
 
-        using (EventWaitHandle are1 = new EventWaitHandle(false, EventResetMode.AutoReset, Name))
+        using (EventWaitHandle are1 = new EventWaitHandle(false, EventResetMode.AutoReset, name))
         {
-            using (EventWaitHandle are2 = EventWaitHandle.OpenExisting(Name))
+            using (EventWaitHandle are2 = EventWaitHandle.OpenExisting(name))
             {
                 are1.Set();
                 Assert.True(are2.WaitOne(0));
@@ -110,10 +124,20 @@ public class EventWaitHandleTests
                 Assert.False(are1.WaitOne(0));
             }
 
-            Assert.True(EventWaitHandle.TryOpenExisting(Name, out resultHandle));
+            Assert.True(EventWaitHandle.TryOpenExisting(name, out resultHandle));
             Assert.NotNull(resultHandle);
             resultHandle.Dispose();
         }
+    }
+
+    [ActiveIssue("https://github.com/dotnet/coreclr/issues/1237")]
+    [PlatformSpecific(PlatformID.AnyUnix)]
+    [Fact]
+    public void OpenExisting_NotSupported_Unix()
+    {
+        Assert.Throws<PlatformNotSupportedException>(() => EventWaitHandle.OpenExisting("anything"));
+        EventWaitHandle ewh;
+        Assert.Throws<PlatformNotSupportedException>(() => EventWaitHandle.TryOpenExisting("anything", out ewh));
     }
 
 }
