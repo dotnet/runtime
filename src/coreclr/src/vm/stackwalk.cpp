@@ -1659,6 +1659,7 @@ StackWalkAction StackFrameIterator::Filter(void)
         fSkippingFunclet = false;
         
 #if defined(WIN64EXCEPTIONS)
+        ExceptionTracker* pTracker = m_crawl.pThread->GetExceptionState()->GetCurrentExceptionTracker();
         fRecheckCurrentFrame = false;
         fSkipFuncletCallback = true;
         
@@ -1743,6 +1744,36 @@ ProcessFuncletsForGCReporting:
                     // Check if we are in the mode of enumerating GC references (or not)
                     if (m_flags & GC_FUNCLET_REFERENCE_REPORTING)
                     {
+#ifdef FEATURE_PAL
+                        // For interleaved exception handling on non-windows systems, we need to find out if the current frame
+                        // was a caller of an already executed exception handler based on the previous exception trackers.
+                        // The handler funclet frames are already gone from the stack, so the exception trackers are the
+                        // only source of evidence about it.
+                        // This is different from Windows where the full stack is preserved until an exception is fully handled
+                        // and so we can detect it just from walking the stack.
+                        if (!fSkippingFunclet && (pTracker != NULL))
+                        {
+                            ExceptionTracker* pCurrTracker = pTracker;
+                            // Scan all previous trackers and see if the current frame is a caller of any of
+                            // the handling frames. 
+                            while ((pCurrTracker = pCurrTracker->GetPreviousExceptionTracker()) != NULL)
+                            {
+                                StackFrame sfFuncletParent = pCurrTracker->GetCallerOfActualHandlingFrame();
+                                if (ExceptionTracker::IsUnwoundToTargetParentFrame(&m_crawl, sfFuncletParent))
+                                {
+                                    // We have found that the current frame is a caller of a handling frame.
+                                    // Set the members the same way we would set them on Windows when we
+                                    // would detect this just from stack walking.
+                                    m_sfParent = sfFuncletParent;
+                                    m_sfFuncletParent = sfFuncletParent;
+                                    m_fProcessNonFilterFunclet = true;
+                                    pTracker = pCurrTracker;
+
+                                    break;
+                                }
+                            }
+                        }
+#endif // FEATURE_PAL
                         // Do we already have a reference to a funclet parent?
                         if (!m_sfFuncletParent.IsNull())
                         {
@@ -1997,7 +2028,6 @@ ProcessFuncletsForGCReporting:
                                         STRESS_LOG0(LF_GCROOTS, LL_INFO100,
                                         "STACKWALK: Reached parent of funclet which didn't report GC roots, since funclet is already unwound.\n");
 
-                                        ExceptionTracker* pTracker = m_crawl.pThread->GetExceptionState()->GetCurrentExceptionTracker();
                                         if (pTracker->GetCallerOfActualHandlingFrame() == m_sfFuncletParent)
                                         {
                                             // we should not skip reporting for this parent frame
