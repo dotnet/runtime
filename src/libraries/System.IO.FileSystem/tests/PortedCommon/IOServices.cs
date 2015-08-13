@@ -95,7 +95,7 @@ internal class IOServices
 
     public static PathInfo GetPath(int characterCount, bool extended = false)
     {
-        string root = Path.GetPathRoot(Directory.GetCurrentDirectory());
+        string root = Path.GetTempPath();
         if (extended)
             root = IOInputs.ExtendedPrefix + root;
         return GetPath(root, characterCount);

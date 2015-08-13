@@ -238,7 +238,6 @@ namespace System.IO.FileSystem.Tests
             Assert.All(paths, (path) =>
             {
                 Assert.Throws<PathTooLongException>(() => Create(path));
-                Directory.Delete(Path.Combine(Path.GetPathRoot(Directory.GetCurrentDirectory()), path.Split(Path.DirectorySeparatorChar)[1]), true);
             });
         }
 
