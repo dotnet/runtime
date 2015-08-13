@@ -9,6 +9,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
 
 namespace System.Threading.Tasks.Tests
 {
@@ -425,83 +427,72 @@ namespace System.Threading.Tasks.Tests
                     Assert.True(tasks[i].Result == results[i], "TaskRtTests.RunFromResult:    > FAILED: Task " + i + " had the wrong result (ref)");
             }
 
-            // Uncomment if/when we want Task.FromException
-            //// Test FromException
-            //{
-            //    bool localPassed = true;
-            //
-            //    var exceptions = new Exception[] { new InvalidOperationException(), new OperationCanceledException(), new Exception(), new Exception() }; // includes duplicate values to ensure that tasks from these aren't the same object
-            //    var tasks = exceptions.Select(e => Task.FromException<int>(e)).ToArray();
-            //
-            //    // Make sure they've all completed
-            //    for (int i = 0; i < tasks.Length; i++)
-            //        localPassed &= Assert.True(tasks[i].IsCompleted, "    > FAILED: Task " + i + " should have already completed");
-            //
-            //    // Make sure they all completed with an error
-            //    for (int i = 0; i < tasks.Length; i++)
-            //        localPassed &= Assert.True(tasks[i].Status == TaskStatus.Faulted, "    > FAILED: Task " + i + " should have already faulted");
-            //
-            //    // Make sure no two are the same instance
-            //    for (int i = 0; i < tasks.Length; i++)
-            //    {
-            //        for (int j = i + 1; j < tasks.Length; j++)
-            //        {
-            //            localPassed &= Assert.True(tasks[i] != tasks[j], "    > FAILED: " + i + " and " + j + " created tasks should not be equal");
-            //        }
-            //    }
-            //
-            //    // Make sure they all have the correct exceptions
-            //    for (int i = 0; i < tasks.Length; i++)
-            //        localPassed &= Assert.True(
-            //            tasks[i].Exception != null && tasks[i].Exception.InnerExceptions.Count == 1 && tasks[i].Exception.InnerException == exceptions[i],
-            //            "    > FAILED: Task " + i + " has the wrong exception");
-            //
-            //    // Make sure we handle invalid exceptions correctly
-            //    localPassed &= Assert.EnsureExceptionThrown(() => { Task.FromException<int>(null); }, typeof(ArgumentNullException),
-            //        "    > FAILED to throw when null passed to FromException");
-            //
-            //    // Make sure we throw from waiting on a faulted task
-            //    localPassed &= Assert.EnsureExceptionThrown(() => { var ignored = Task.FromException<object>(new InvalidOperationException()).Result; }, typeof(AggregateException),
-            //        "    > FAILED to throw when waiting on a FromException task");
-            //
-            //    // Make sure faulted tasks are actually faulted.  We have little choice for this test but to use reflection,
-            //    // as the harness will crash by throwing from the unobserved event if a task goes unhandled (everywhere
-            //    // other than here it's a bad thing for an exception to go unobserved)
-            //    var faultedTask = Task.FromException<object>(new InvalidOperationException("uh oh"));
-            //    object holderObject = null;
-            //    FieldInfo isHandledField = null;
-            //    var contingentPropertiesField = typeof(Task).GetField("m_contingentProperties", BindingFlags.NonPublic | BindingFlags.Instance);
-            //    if (contingentPropertiesField != null)
-            //    {
-            //        var contingentProperties = contingentPropertiesField.GetValue(faultedTask);
-            //        if (contingentProperties != null)
-            //        {
-            //            var exceptionsHolderField = contingentProperties.GetType().GetField("m_exceptionsHolder", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            //            if (exceptionsHolderField != null)
-            //            {
-            //                holderObject = exceptionsHolderField.GetValue(contingentProperties);
-            //                if (holderObject != null)
-            //                {
-            //                    isHandledField = holderObject.GetType().GetField("m_isHandled", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            //                }
-            //            }
-            //        }
-            //    }
-            //    if (holderObject == null || isHandledField == null)
-            //    {
-            //        localPassed = false;
-            //        Debug.WriteLine("    > FAILED: Could not get exception handled information through reflection");
-            //    }
-            //    else
-            //    {
-            //        localPassed &= Assert.False((bool)isHandledField.GetValue(holderObject), "    > FAILED: Expected FromException task to be unobserved before accessing Exception");
-            //        var ignored = faultedTask.Exception;
-            //        localPassed &= Assert.True((bool)isHandledField.GetValue(holderObject), "    > FAILED: Expected FromException task to be observed after accessing Exception");
-            //    }
-            //
-            //    Debug.WriteLine("    > FromException {0}.", localPassed ? "Success" : "FAILED");
-            //     localPassed;
-            //}
+            // Test FromException
+            {
+                var exceptions = new Exception[] { new InvalidOperationException(), new OperationCanceledException(), new Exception(), new Exception() }; // includes duplicate values to ensure that tasks from these aren't the same object
+                var tasks = exceptions.Select(e => Task.FromException<int>(e)).ToArray();
+
+                // Make sure they've all completed
+                for (int i = 0; i < tasks.Length; i++)
+                    Assert.True(tasks[i].IsCompleted, "Task " + i + " should have already completed");
+
+                // Make sure they all completed with an error
+                for (int i = 0; i < tasks.Length; i++)
+                    Assert.True(tasks[i].Status == TaskStatus.Faulted, "    > FAILED: Task " + i + " should have already faulted");
+
+                // Make sure no two are the same instance
+                for (int i = 0; i < tasks.Length; i++)
+                {
+                    for (int j = i + 1; j < tasks.Length; j++)
+                    {
+                        Assert.True(tasks[i] != tasks[j], "    > FAILED: " + i + " and " + j + " created tasks should not be equal");
+                    }
+                }
+
+                // Make sure they all have the correct exceptions
+                for (int i = 0; i < tasks.Length; i++)
+                {
+                    Assert.NotNull(tasks[i].Exception);
+                    Assert.Equal(1, tasks[i].Exception.InnerExceptions.Count);
+                    Assert.Equal(exceptions[i], tasks[i].Exception.InnerException);
+                }
+
+                // Make sure we handle invalid exceptions correctly
+                Assert.Throws<ArgumentNullException>(() => { Task.FromException<int>(null); });
+
+                // Make sure we throw from waiting on a faulted task
+                Assert.Throws<AggregateException>(() => { var result = Task.FromException<object>(new InvalidOperationException()).Result; });
+
+                // Make sure faulted tasks are actually faulted.  We have little choice for this test but to use reflection,
+                // as the harness will crash by throwing from the unobserved event if a task goes unhandled (everywhere
+                // other than here it's a bad thing for an exception to go unobserved)
+                var faultedTask = Task.FromException<object>(new InvalidOperationException("uh oh"));
+                object holderObject = null;
+                FieldInfo isHandledField = null;
+                var contingentPropertiesField = typeof(Task).GetField("m_contingentProperties", BindingFlags.NonPublic | BindingFlags.Instance);
+                if (contingentPropertiesField != null)
+                {
+                    var contingentProperties = contingentPropertiesField.GetValue(faultedTask);
+                    if (contingentProperties != null)
+                    {
+                        var exceptionsHolderField = contingentProperties.GetType().GetField("m_exceptionsHolder", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                        if (exceptionsHolderField != null)
+                        {
+                            holderObject = exceptionsHolderField.GetValue(contingentProperties);
+                            if (holderObject != null)
+                            {
+                                isHandledField = holderObject.GetType().GetField("m_isHandled", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                            }
+                        }
+                    }
+                }
+                Assert.NotNull(holderObject);
+                Assert.NotNull(isHandledField);
+
+                Assert.False((bool)isHandledField.GetValue(holderObject), "Expected FromException task to be unobserved before accessing Exception");
+                var ignored = faultedTask.Exception;
+                Assert.True((bool)isHandledField.GetValue(holderObject), "Expected FromException task to be observed after accessing Exception");
+            }
         }
 
         [Fact]
