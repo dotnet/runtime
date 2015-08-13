@@ -75,8 +75,13 @@ namespace System.IO
             // This operation doesn't need to be atomic because the API will deal with a closed
             // handle appropriately. If we get here while asynchronously waiting on a change notification, 
             // closing the directory handle should cause ReadDirectoryChangesCallback be be called,
-            // cleaning up the operation.
+            // cleaning up the operation.  Note that it's critical to also null out the handle.  If the
+            // handle is currently in use in a P/Invoke, it will have its reference count temporarily
+            // increased, such that the disposal operation won't take effect and close the handle
+            // until that P/Invoke returns; if during that time the FSW is restarted, the IsHandleInvalid
+            // check will see a valid handle, unless we also null it out.
             _directoryHandle.Dispose();
+            _directoryHandle = null;
 
             // Set enabled to false
             _enabled = false;
