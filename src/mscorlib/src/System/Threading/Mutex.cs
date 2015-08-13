@@ -52,10 +52,17 @@ namespace System.Threading
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public unsafe Mutex(bool initiallyOwned, String name, out bool createdNew, MutexSecurity mutexSecurity)
         {
-            if(null != name && System.IO.Path.MAX_PATH < name.Length)
+            if (name != null)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong",name));
-            }            
+#if PLATFORM_UNIX
+                throw new PlatformNotSupportedException(Environment.GetResourceString("PlatformNotSupported_NamedSynchronizationPrimitives"));
+#else
+                if (System.IO.Path.MAX_PATH < name.Length)
+                {
+                    throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", name));
+                }
+#endif
+            }
             Contract.EndContractBlock();
             Win32Native.SECURITY_ATTRIBUTES secAttrs = null;
 #if FEATURE_MACL
@@ -79,9 +86,16 @@ namespace System.Threading
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         internal Mutex(bool initiallyOwned, String name, out bool createdNew, Win32Native.SECURITY_ATTRIBUTES secAttrs) 
         {
-            if (null != name && Path.MAX_PATH < name.Length) 
+            if (name != null)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", name));
+#if PLATFORM_UNIX
+                throw new PlatformNotSupportedException(Environment.GetResourceString("PlatformNotSupported_NamedSynchronizationPrimitives"));
+#else
+                if (System.IO.Path.MAX_PATH < name.Length)
+                {
+                    throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", name));
+                }
+#endif
             }
             Contract.EndContractBlock();
 
@@ -321,6 +335,9 @@ namespace System.Threading
         [System.Security.SecurityCritical]
         private static OpenExistingResult OpenExistingWorker(string name, MutexRights rights, out Mutex result)
         {
+#if PLATFORM_UNIX
+            throw new PlatformNotSupportedException(Environment.GetResourceString("PlatformNotSupported_NamedSynchronizationPrimitives"));
+#else
             if (name == null)
             {
                 throw new ArgumentNullException("name", Environment.GetResourceString("ArgumentNull_WithParamName"));
@@ -371,6 +388,7 @@ namespace System.Threading
 
             result = new Mutex(myHandle);
             return OpenExistingResult.Success;
+#endif
         }
 
         // Note: To call ReleaseMutex, you must have an ACL granting you
