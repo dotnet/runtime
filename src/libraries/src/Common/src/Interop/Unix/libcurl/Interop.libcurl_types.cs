@@ -31,6 +31,7 @@ internal static partial class Interop
             internal const int CURLOPT_UPLOAD = CurlOptionLongBase + 46;
             internal const int CURLOPT_FOLLOWLOCATION = CurlOptionLongBase + 52;
             internal const int CURLOPT_PROXYPORT = CurlOptionLongBase + 59;
+            internal const int CURLOPT_MAXREDIRS = CurlOptionLongBase + 68;
             internal const int CURLOPT_PROXYTYPE = CurlOptionLongBase + 101;
 
             internal const int CURLOPT_WRITEDATA = CurlOptionObjectPointBase + 1;
