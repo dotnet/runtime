@@ -27,14 +27,28 @@ namespace System.Net.Http
 
         public bool UseCookies
         {
-            get { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
-            set { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
+            get
+            {
+                return _curlHandler.UseCookie;
+            }
+
+            set
+            {
+                _curlHandler.UseCookie = value;
+            }          
         }
 
         public CookieContainer CookieContainer
         {
-            get { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
-            set { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
+            get
+            {
+                return _curlHandler.CookieContainer;
+            }
+
+            set
+            {
+                _curlHandler.CookieContainer = value;
+            }
         }
 
         public ClientCertificateOption ClientCertificateOptions
