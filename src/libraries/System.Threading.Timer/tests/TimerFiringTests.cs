@@ -27,20 +27,32 @@ public class TimerFiringTests
     [Fact]
     public void Timer_Fires_AndPassesStateThroughCallback()
     {
+        AutoResetEvent are = new AutoResetEvent(false);
+
         object state = new object();
         using (var t = new Timer(new TimerCallback((object s) =>
         {
             Assert.Same(s, state);
-        }), state, TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(Timeout.Infinite) /* not relevant */)) { }
+            are.Set();
+        }), state, TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(Timeout.Infinite) /* not relevant */))
+        {
+            Assert.True(are.WaitOne(TimeSpan.FromMilliseconds(MaxPositiveTimeoutInMs)));
+        }
     }
 
     [Fact]
     public void Timer_Fires_AndPassesNullStateThroughCallback()
     {
+        AutoResetEvent are = new AutoResetEvent(false);
+
         using (var t = new Timer(new TimerCallback((object s) =>
         {
             Assert.Null(s);
-        }), null, TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(Timeout.Infinite) /* not relevant */)) { }
+            are.Set();
+        }), null, TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(Timeout.Infinite) /* not relevant */))
+        {
+            Assert.True(are.WaitOne(TimeSpan.FromMilliseconds(MaxPositiveTimeoutInMs)));
+        }
     }
 
     [Fact]
@@ -51,8 +63,7 @@ public class TimerFiringTests
 
         using (var t = new Timer(new TimerCallback((object s) =>
         {
-            count++;
-            if (count >= 2)
+            if (Interlocked.Increment(ref count) >= 2)
             {
                 are.Set();
             }
@@ -70,8 +81,7 @@ public class TimerFiringTests
 
         using (var t = new Timer(new TimerCallback((object s) =>
         {
-            count++;
-            if (count >= 2)
+            if (Interlocked.Increment(ref count) >= 2)
             {
                 are.Set();
             }
@@ -91,8 +101,10 @@ public class TimerFiringTests
             t.Dispose();
             are.Set();
         });
-        t = new Timer(tc, null, 1, -1);
+        t = new Timer(tc, null, -1, -1);
+        t.Change(1, -1);
         Assert.True(are.WaitOne(MaxPositiveTimeoutInMs));
+        GC.KeepAlive(t);
     }
 
     [Fact]
@@ -151,6 +163,7 @@ public class TimerFiringTests
         t.Change(1, 50);
 
         Assert.True(b.SignalAndWait(MaxPositiveTimeoutInMs));
+        GC.KeepAlive(t);
     }
 
     [Fact]
