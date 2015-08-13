@@ -3424,10 +3424,11 @@ case "x$libgc" in
 		;;
 esac
 
-AC_ARG_WITH(profile4_x,[  --with-profile4=yes,no          If you want to install the 4.6 FX (defaults to yes)],                [], [with_profile4_x=yes])
-AC_ARG_WITH(monodroid, [  --with-monodroid=yes,no         If you want to build the MonoDroid assemblies (defaults to no)],     [], [with_monodroid=no])
-AC_ARG_WITH(monotouch, [  --with-monotouch=yes,no         If you want to build the Xamarin.iOS assemblies (defaults to no)],   [], [with_monotouch=no])
-AC_ARG_WITH(xammac,    [  --with-xammac=yes,no            If you want to build the Xamarin.Mac assemblies (defaults to no)],   [], [with_xammac=no])
+AC_ARG_WITH(profile4_x,      [  --with-profile4=yes,no          If you want to install the 4.6 FX (defaults to yes)],                 [], [with_profile4_x=yes])
+AC_ARG_WITH(monodroid,       [  --with-monodroid=yes,no         If you want to build the MonoDroid assemblies (defaults to no)],      [], [with_monodroid=no])
+AC_ARG_WITH(monotouch,       [  --with-monotouch=yes,no         If you want to build the Xamarin.iOS assemblies (defaults to no)],    [], [with_monotouch=no])
+AC_ARG_WITH(monotouch_watch, [  --with-monotouch_watch=yes,no   If you want to build the Xamarin.WatchOS assemblies (defaults to no)],[], [with_monotouch_watch=no])
+AC_ARG_WITH(xammac,          [  --with-xammac=yes,no            If you want to build the Xamarin.Mac assemblies (defaults to no)],    [], [with_xammac=no])
 
 OPROFILE=no
 AC_ARG_WITH(oprofile,[  --with-oprofile=no,<oprofile install dir>   Enable oprofile support (defaults to no)],[
@@ -3514,6 +3515,7 @@ if test x$cross_compiling = xyes -o x$enable_mcs_build = xno; then
    with_profile4_x=no
    with_monodroid=no
    with_monotouch=no
+   with_monotouch_watch=no
    with_xammac=no
 fi
 
@@ -3536,6 +3538,7 @@ libmono_ldflags="$libmono_ldflags $LIBS"
 AM_CONDITIONAL(INSTALL_4_x, [test "x$with_profile4_x" = xyes])
 AM_CONDITIONAL(INSTALL_MONODROID, [test "x$with_monodroid" != "xno"])
 AM_CONDITIONAL(INSTALL_MONOTOUCH, [test "x$with_monotouch" != "xno"])
+AM_CONDITIONAL(INSTALL_MONOTOUCH_WATCH, [test "x$with_monotouch_watch" != "xno"])
 AM_CONDITIONAL(INSTALL_XAMMAC, [test "x$with_xammac" != "xno"])
 
 AM_CONDITIONAL(MIPS_GCC, test ${TARGET}${ac_cv_prog_gcc} = MIPSyes)
@@ -3950,13 +3953,14 @@ echo "
 	LLVM Back End: $enable_llvm (dynamically loaded: $enable_loadedllvm)
 
    Libraries:
-	.NET 4.6:      $with_profile4_x
-	MonoDroid:     $with_monodroid
-	MonoTouch:     $with_monotouch
-	Xamarin.Mac:   $with_xammac
-	JNI support:   $jdk_headers_found
-	libgdiplus:    $libgdiplus_msg
-	zlib:          $zlib_msg
+	.NET 4.6:        $with_profile4_x
+	MonoDroid:       $with_monodroid
+	Xamarin.iOS:     $with_monotouch
+	Xamarin.WatchOS: $with_monotouch_watch
+	Xamarin.Mac:     $with_xammac
+	JNI support:     $jdk_headers_found
+	libgdiplus:      $libgdiplus_msg
+	zlib:            $zlib_msg
 	$disabled
 "
 if test x$with_static_mono = xno -a "x$host_win32" != "xyes"; then
