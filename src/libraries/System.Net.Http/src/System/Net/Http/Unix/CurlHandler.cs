@@ -23,7 +23,7 @@ using CURLProxyType = Interop.libcurl.curl_proxytype;
 using size_t = System.IntPtr;
 
 namespace System.Net.Http
-{
+{  
     internal partial class CurlHandler : HttpMessageHandler
     {
         #region Constants
@@ -40,7 +40,7 @@ namespace System.Net.Http
         #endregion
 
         #region Fields
-
+  
         private volatile bool _anyOperationStarted;
         private volatile bool _disposed;
         private bool _automaticRedirection = true;
@@ -50,8 +50,10 @@ namespace System.Net.Http
         private DecompressionMethods _automaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
         private SafeCurlMultiHandle _multiHandle;
         private GCHandle _multiHandlePtr = new GCHandle();
+        private CookieContainer _cookieContainer = null;
+        private bool _useCookie = false;
 
-        #endregion
+        #endregion        
 
         static CurlHandler()
         {
@@ -175,6 +177,34 @@ namespace System.Net.Http
             {
                 CheckDisposedOrStarted();
                 _automaticDecompression = value;
+            }
+        }
+
+        internal bool UseCookie
+        {
+            get
+            {
+                return _useCookie;
+            }
+
+            set
+            {               
+                CheckDisposedOrStarted();
+                _useCookie = value;
+            }
+        }
+
+        internal CookieContainer CookieContainer
+        {
+            get
+            {
+                return _cookieContainer;
+            }
+
+            set
+            {
+                CheckDisposedOrStarted();
+                _cookieContainer = value;
             }
         }
 
@@ -370,6 +400,8 @@ namespace System.Net.Http
 
             SetProxyOptions(requestHandle, state.RequestMessage.RequestUri);
 
+            SetCookieOption(requestHandle, state.RequestMessage.RequestUri);
+
             state.RequestHeaderHandle = SetRequestHeaders(requestHandle, state.RequestMessage);
 
             // TODO: Handle other options
@@ -439,6 +471,25 @@ namespace System.Net.Http
                 }
                 SetCurlOption(requestHandle, CURLoption.CURLOPT_PROXYUSERPWD, credentialText);
             }
+        }
+
+        private void SetCookieOption(SafeCurlHandle requestHandle, Uri requestUri)
+        {
+            if (!_useCookie)
+            {
+                return;
+            }
+            else if (_cookieContainer == null)
+            {
+                throw new InvalidOperationException(SR.net_http_invalid_cookiecontainer);
+            }
+
+            string cookieValues = _cookieContainer.GetCookieHeader(requestUri);                    
+
+            if (cookieValues != null)
+            {
+                SetCurlOption(requestHandle, CURLoption.CURLOPT_COOKIE, cookieValues);
+            }           
         }
 
         private NetworkCredential GetCredentials(ICredentials proxyCredentials, Uri requestUri)
