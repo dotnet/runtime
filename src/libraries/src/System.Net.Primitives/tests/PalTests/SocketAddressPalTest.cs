@@ -61,9 +61,19 @@ namespace System.Net.Primitives.PalTests
         }
 
         [Fact]
-        public void Port_Get_Set_Throws()
+        public void Port_Get_Set_Throws_IPv4()
         {
-            var buffer = new byte[1];
+            var buffer = new byte[2];
+            SocketAddressPal.SetAddressFamily(buffer, AddressFamily.InterNetwork);
+            Assert.ThrowsAny<Exception>(() => SocketAddressPal.SetPort(buffer, 0));
+            Assert.ThrowsAny<Exception>(() => SocketAddressPal.GetPort(buffer));
+        }
+
+        [Fact]
+        public void Port_Get_Set_Throws_IPv6()
+        {
+            var buffer = new byte[2];
+            SocketAddressPal.SetAddressFamily(buffer, AddressFamily.InterNetworkV6);
             Assert.ThrowsAny<Exception>(() => SocketAddressPal.SetPort(buffer, 0));
             Assert.ThrowsAny<Exception>(() => SocketAddressPal.GetPort(buffer));
         }
