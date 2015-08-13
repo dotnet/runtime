@@ -355,14 +355,14 @@ namespace System.IO
             {
                 case SearchTarget.Files:
                     return new FileSystemEnumerable<FileInfo>(fullPath, searchPattern, searchOption, searchTarget, (path, isDir) =>
-                        new FileInfo(path, new UnixFileSystemObject(path, isDir)));
+                        new FileInfo(path, null));
                 case SearchTarget.Directories:
                     return new FileSystemEnumerable<DirectoryInfo>(fullPath, searchPattern, searchOption, searchTarget, (path, isDir) =>
-                        new DirectoryInfo(path, new UnixFileSystemObject(path, isDir)));
+                        new DirectoryInfo(path, null));
                 default:
                     return new FileSystemEnumerable<FileSystemInfo>(fullPath, searchPattern, searchOption, searchTarget, (path, isDir) => isDir ?
-                        (FileSystemInfo)new DirectoryInfo(path, new UnixFileSystemObject(path, isDir)) :
-                        (FileSystemInfo)new FileInfo(path, new UnixFileSystemObject(path, isDir)));
+                        (FileSystemInfo)new DirectoryInfo(path, null) :
+                        (FileSystemInfo)new FileInfo(path, null));
             }
         }
 
@@ -582,47 +582,61 @@ namespace System.IO
 
         public override FileAttributes GetAttributes(string fullPath)
         {
-            return new UnixFileSystemObject(fullPath, false).Attributes;
+            return new FileInfo(fullPath, null).Attributes;
         }
 
         public override void SetAttributes(string fullPath, FileAttributes attributes)
         {
-            new UnixFileSystemObject(fullPath, false).Attributes = attributes;
+            new FileInfo(fullPath, null).Attributes = attributes;
         }
 
         public override DateTimeOffset GetCreationTime(string fullPath)
         {
-            return new UnixFileSystemObject(fullPath, false).CreationTime;
+            return new FileInfo(fullPath, null).CreationTime;
         }
 
         public override void SetCreationTime(string fullPath, DateTimeOffset time, bool asDirectory)
         {
-            new UnixFileSystemObject(fullPath, asDirectory).CreationTime = time;
+            IFileSystemObject info = asDirectory ?
+                (IFileSystemObject)new DirectoryInfo(fullPath, null) :
+                (IFileSystemObject)new FileInfo(fullPath, null);
+
+            info.CreationTime = time;
         }
 
         public override DateTimeOffset GetLastAccessTime(string fullPath)
         {
-            return new UnixFileSystemObject(fullPath, false).LastAccessTime;
+            return new FileInfo(fullPath, null).LastAccessTime;
         }
 
         public override void SetLastAccessTime(string fullPath, DateTimeOffset time, bool asDirectory)
         {
-            new UnixFileSystemObject(fullPath, asDirectory).LastAccessTime = time;
+            IFileSystemObject info = asDirectory ?
+                (IFileSystemObject)new DirectoryInfo(fullPath, null) :
+                (IFileSystemObject)new FileInfo(fullPath, null);
+
+            info.LastAccessTime = time;
         }
 
         public override DateTimeOffset GetLastWriteTime(string fullPath)
         {
-            return new UnixFileSystemObject(fullPath, false).LastWriteTime;
+            return new FileInfo(fullPath, null).LastWriteTime;
         }
 
         public override void SetLastWriteTime(string fullPath, DateTimeOffset time, bool asDirectory)
         {
-            new UnixFileSystemObject(fullPath, asDirectory).LastWriteTime = time;
+            IFileSystemObject info = asDirectory ?
+                (IFileSystemObject)new DirectoryInfo(fullPath, null) :
+                (IFileSystemObject)new FileInfo(fullPath, null);
+
+            info.LastWriteTime = time;
         }
 
         public override IFileSystemObject GetFileSystemInfo(string fullPath, bool asDirectory)
         {
-            return new UnixFileSystemObject(fullPath, asDirectory);
+            return asDirectory ?
+                (IFileSystemObject)new DirectoryInfo(fullPath, null) :
+                (IFileSystemObject)new FileInfo(fullPath, null);
         }
     }
 }
