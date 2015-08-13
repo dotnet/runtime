@@ -1,12 +1,30 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Hashing.Algorithms.Tests
 {
     public class HmacSha1Tests : Rfc2202HmacTests
     {
+        private static readonly byte[][] s_testKeys2202 =
+        {
+            null,
+            ByteUtils.RepeatByte(0x0b, 20),
+            ByteUtils.AsciiBytes("Jefe"),
+            ByteUtils.RepeatByte(0xaa, 20),
+            ByteUtils.HexToByteArray("0102030405060708090a0b0c0d0e0f10111213141516171819"),
+            ByteUtils.RepeatByte(0x0c, 20),
+            ByteUtils.RepeatByte(0xaa, 80),
+            ByteUtils.RepeatByte(0xaa, 80),
+        };
+
+        public HmacSha1Tests()
+            : base(s_testKeys2202)
+        {
+        }
+
         protected override HMAC Create()
         {
             return new HMACSHA1();
