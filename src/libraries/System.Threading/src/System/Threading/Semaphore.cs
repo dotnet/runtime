@@ -10,8 +10,6 @@ namespace System.Threading
 {
     public sealed partial class Semaphore : WaitHandle
     {
-        private const int MAX_PATH = 260;
-
         // creates a nameless semaphore object
         // Win32 only takes maximum count of Int32.MaxValue
         [SecuritySafeCritical]
@@ -35,10 +33,7 @@ namespace System.Threading
                 throw new ArgumentException(SR.Argument_SemaphoreInitialMaximum);
             }
 
-            if (null != name && MAX_PATH < name.Length)
-            {
-                throw new ArgumentException(SR.Argument_WaitHandleNameTooLong);
-            }
+            ValidateNewName(name);
 
             SafeWaitHandle myHandle = CreateSemaphone(initialCount, maximumCount, name);
 
@@ -72,10 +67,8 @@ namespace System.Threading
                 throw new ArgumentException(SR.Argument_SemaphoreInitialMaximum);
             }
 
-            if (null != name && MAX_PATH < name.Length)
-            {
-                throw new ArgumentException(SR.Argument_WaitHandleNameTooLong);
-            }
+            ValidateNewName(name);
+
             SafeWaitHandle myHandle;
 
             myHandle = CreateSemaphone(initialCount, maximumCount, name);
@@ -133,19 +126,8 @@ namespace System.Threading
         [SecurityCritical]
         private static OpenExistingResult OpenExistingWorker(string name, out Semaphore result)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException("name");
-            }
-            if (name.Length == 0)
-            {
-                throw new ArgumentException(SR.Format(SR.InvalidNullEmptyArgument, "name"));
-            }
-            if (null != name && MAX_PATH < name.Length)
-            {
-                throw new ArgumentException(SR.Argument_WaitHandleNameTooLong);
-            }
-
+            ValidateExistingName(name);
+            
             result = null;
 
             SafeWaitHandle myHandle = OpenSemaphore(name);
