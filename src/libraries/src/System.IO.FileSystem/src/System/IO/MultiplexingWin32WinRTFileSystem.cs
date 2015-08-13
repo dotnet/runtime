@@ -14,8 +14,8 @@ namespace System.IO
 
         internal static IFileSystemObject GetFileSystemObject(FileSystemInfo caller, string fullPath)
         {
-            return ShouldUseWinRT(sourceFullPath, isCreate: false) ?
-                (IFileSystemObject)new WinRTFileSystemObject(fullPath, asDirectory: caller is DirectoryInfo) :
+            return ShouldUseWinRT(fullPath, isCreate: false) ?
+                (IFileSystemObject)new WinRTFileSystem.WinRTFileSystemObject(fullPath, asDirectory: caller is DirectoryInfo) :
                 (IFileSystemObject)caller;
         }
 
