@@ -22,7 +22,9 @@
     <ProjectFile Include="apicompat\apicompat_buildtree.csproj" />
     <ProjectFile Include="apiconformance\apiconformance_ndpbuild.csproj" Condition="'$(BuildArchitecture)' != 'arm'" />
     <ProjectFile Include="asmrefrewriter\asmrefrewriter.csproj" />
-    <ProjectFile Include="binaryrewriting\dirs.proj" />
+    <ProjectFile Include="binaryrewriting\dirs.proj">
+        <ProductGroups>FX;PK</ProductGroups>
+    </ProjectFile>
     <ProjectFile Include="basealloc\basealloc.csproj" />
     <ProjectFile Include="bindingaddin\bindingaddin.csproj" />
     <ProjectFile Include="bindingdisplayinterop\bindingdisplayinterop.nativeproj" />
