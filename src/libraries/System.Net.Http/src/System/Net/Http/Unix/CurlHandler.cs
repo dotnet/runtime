@@ -23,16 +23,7 @@ using CURLProxyType = Interop.libcurl.curl_proxytype;
 using size_t = System.IntPtr;
 
 namespace System.Net.Http
-{
-    #region Enums
-    internal enum CookieUsePolicy
-    {
-        IgnoreCookies = 0,
-        UseSpecifiedCookieContainer = 1
-    }   
-
-    #endregion
-
+{  
     internal partial class CurlHandler : HttpMessageHandler
     {
         #region Constants
@@ -60,7 +51,7 @@ namespace System.Net.Http
         private SafeCurlMultiHandle _multiHandle;
         private GCHandle _multiHandlePtr = new GCHandle();
         private CookieContainer _cookieContainer = null;
-        private CookieUsePolicy _cookieUsePolicy = CookieUsePolicy.IgnoreCookies;
+        private bool _useCookie = false;
 
         #endregion        
 
@@ -189,23 +180,17 @@ namespace System.Net.Http
             }
         }
 
-        internal CookieUsePolicy CookieUsePolicy
+        internal bool UseCookie
         {
             get
             {
-                return _cookieUsePolicy;
+                return _useCookie;
             }
 
             set
-            {
-                if (value != CookieUsePolicy.IgnoreCookies
-                    && value != CookieUsePolicy.UseSpecifiedCookieContainer)
-                {
-                    throw new ArgumentOutOfRangeException("value");
-                }
-
+            {               
                 CheckDisposedOrStarted();
-                _cookieUsePolicy = value;
+                _useCookie = value;
             }
         }
 
@@ -490,7 +475,7 @@ namespace System.Net.Http
 
         private void SetCookieOption(SafeCurlHandle requestHandle, Uri requestUri)
         {
-            if (_cookieUsePolicy != CookieUsePolicy.UseSpecifiedCookieContainer)
+            if (!_useCookie)
             {
                 return;
             }
