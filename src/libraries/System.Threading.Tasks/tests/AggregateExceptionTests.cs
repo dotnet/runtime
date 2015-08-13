@@ -11,7 +11,7 @@ namespace System.Threading.Tasks.Tests
     public class AggregateExceptionTests
     {
         [Fact]
-        public static void RunAggregateException_Constructor()
+        public static void ConstructorBasic()
         {
             AggregateException ex = new AggregateException();
             Assert.Equal(ex.InnerExceptions.Count, 0);
@@ -27,7 +27,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
-        public static void RunAggregateException_Constructor_Exception()
+        public static void ConstructorInvalidArguments()
         {
             AggregateException ex = new AggregateException();
             Assert.Throws<ArgumentNullException>(
@@ -41,7 +41,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
-        public static void RunAggregateException_BaseException()
+        public static void BaseExceptions()
         {
             AggregateException ex = new AggregateException();
             Assert.Equal(ex.GetBaseException(), ex);
@@ -60,7 +60,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
-        public static void RunAggregateException_Handle()
+        public static void Handle()
         {
             AggregateException ex = new AggregateException();
             ex = new AggregateException(new[] { new ArgumentException(), new ArgumentException(), new ArgumentException() });
@@ -78,7 +78,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
-        public static void RunAggregateException_Handle_Negative()
+        public static void HandleInvalidCases()
         {
             AggregateException ex = new AggregateException();
             Assert.Throws<ArgumentNullException>(() => ex.Handle(null));
@@ -97,9 +97,9 @@ namespace System.Threading.Tasks.Tests
                }));
         }
 
-        // Validates that flattening (incl recursive) works.
+        // Validates that flattening (including recursive) works.
         [Fact]
-        public static void RunAggregateException_Flatten()
+        public static void Flatten()
         {
             Exception exceptionA = new Exception("A");
             Exception exceptionB = new Exception("B");
@@ -115,43 +115,16 @@ namespace System.Threading.Tasks.Tests
                 exceptionA, exceptionB, exceptionC
             };
 
-            if (expected1.Length != flattened1.InnerExceptions.Count)
-            {
-                Assert.True(false, string.Format("RunAggregateException_Flatten: > error: expected count {0} differs from actual {1}",
-                    expected1.Length, flattened1.InnerExceptions.Count));
-            }
-
-            for (int i = 0; i < flattened1.InnerExceptions.Count; i++)
-            {
-                if (expected1[i] != flattened1.InnerExceptions[i])
-                {
-                    Debug.WriteLine("RunAggregateException_Flatten: > error: inner exception #{0} isn't right:", i);
-                    Assert.True(false, string.Format("RunAggregateException_Flatten:      expected: {0}, found   : {1}", expected1[i], flattened1.InnerExceptions[i]));
-                }
-            }
+            Assert.Equal(expected1, flattened1.InnerExceptions);
 
             // Verify flattening one with another, accounting for recursion.
-            // > Flattening (with recursion)...
-
             AggregateException aggExceptionRecurse = new AggregateException(aggExceptionBase, aggExceptionBase);
             AggregateException flattened2 = aggExceptionRecurse.Flatten();
             Exception[] expected2 = new Exception[] {
                 exceptionA, exceptionB, exceptionC, exceptionA, exceptionB, exceptionC,
             };
 
-            if (expected2.Length != flattened2.InnerExceptions.Count)
-            {
-                Assert.True(false, string.Format("RunAggregateException_Flatten:  FAILED.  > error: expected count {0} differs from actual {1}",
-                    expected2.Length, flattened2.InnerExceptions.Count));
-            }
-
-            for (int i = 0; i < flattened2.InnerExceptions.Count; i++)
-            {
-                if (expected2[i] != flattened2.InnerExceptions[i])
-                {
-                    Assert.True(false, string.Format("RunAggregateException_Flatten:  FAILED.  > error: inner exception #{0} isn't right: expected - {1}, found - {2}", i, expected2[i], flattened2.InnerExceptions[i]));
-                }
-            }
+            Assert.Equal(expected2, flattened2.InnerExceptions);
         }
     }
 }

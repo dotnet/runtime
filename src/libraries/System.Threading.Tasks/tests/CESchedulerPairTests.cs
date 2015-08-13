@@ -81,6 +81,7 @@ namespace System.Threading.Tasks.Tests
         private readonly int _maxConcurrencyLevel;
         public override int MaximumConcurrencyLevel { get { return _maxConcurrencyLevel; } }
     }
+
     public class CESchedulerPairTests
     {
         #region Test cases
@@ -90,17 +91,11 @@ namespace System.Threading.Tasks.Tests
         /// and those parameters are respected when tasks are executed
         /// </summary>
         /// <remarks>maxItemsPerTask and which scheduler is used are verified in other testcases</remarks>
-        //EH 
-        [Fact]
-        public static void TestCreationOptions()
-        {
-            string[] input = new string[] { "default", "scheduler", "maxconcurrent", "all" };
-            foreach (string s in input)
-            {
-                Debug.WriteLine("***** Starting {0}", s);
-                TestCreationOptions(s);
-            }
-        }
+        [Theory]
+        [InlineData("default")]
+        [InlineData("scheduler")]
+        [InlineData("maxconcurrent")]
+        [InlineData("all")]
         public static void TestCreationOptions(String ctorType)
         {
             ConcurrentExclusiveSchedulerPair schedPair = null;
@@ -192,15 +187,11 @@ namespace System.Threading.Tasks.Tests
         /// is that each time ConcurrentExclusiveScheduler is called QueueTasK a counter (which acts as scheduler's Task id) is incremented.
         /// When a task executes, it observes the parent Task Id and if it matches the one its local cache, it increments its local counter (which tracks
         /// the items executed by a ConcurrentExclusiveScheduler Task). At any given time the Task's local counter cant exceed maxItemsPerTask</remarks>
-        [Fact]
-        [OuterLoop]
-        public static void TestMaxItemsPerTask()
-        {
-            TestMaxItemsPerTask(4, 1, true);
-            TestMaxItemsPerTask(1, 4, true);
-            TestMaxItemsPerTask(4, 1, false);
-            TestMaxItemsPerTask(1, 4, false);
-        }
+        [Theory]
+        [InlineData(4, 1, true)]
+        [InlineData(1, 4, true)]
+        [InlineData(4, 1, false)]
+        [InlineData(1, 4, false)]
         public static void TestMaxItemsPerTask(int maxConcurrency, int maxItemsPerTask, bool completeBeforeTaskWait)
         {
             //Create a custom TaskScheduler with specified max concurrency (TrackingTaskScheduler is defined in Common\tools\CommonUtils\TPLTestSchedulers.cs)
@@ -308,17 +299,9 @@ namespace System.Threading.Tasks.Tests
             Task.WaitAll(taskList.ToArray());
         }
 
-
-        /// <summary>
-        /// Test to ensure that when exclusive tasks are scheduled no concurrent tasks are run
-        /// </summary>
-        [Fact]
-        public static void TestConcurrentBlockage()
-        {
-            TestConcurrentBlockage(true);
-            TestConcurrentBlockage(false);
-        }
-
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
         public static void TestConcurrentBlockage(bool useReader)
         {
             ConcurrentExclusiveSchedulerPair schedPair = new ConcurrentExclusiveSchedulerPair();
@@ -351,20 +334,8 @@ namespace System.Threading.Tasks.Tests
             Task.WaitAll(taskList.ToArray());
         }
 
-        /// <summary>
-        /// Tests the various integration points, where the TaskScheduler from ConcurrentExclusiveSchedulerPair can be used
-        /// </summary>
-        /// <remarks>The objective of the test is to ensure that the ConcurrentScheduler and ExclusiveScheduler from the Concurrent
-        /// ExclusiveSchedulerPair can be used with the Parallel.* and Task Apis</remarks>
-        [Fact]
-        public static void TestIntegration()
-        {
-            foreach (var input in ApiType)
-            {
-                TestIntegration(input[0].ToString(), (bool)input[1]);
-            }
-        }
-
+        [Theory]
+        [MemberData("ApiType")]
         public static void TestIntegration(String apiType, bool useReader)
         {
             Debug.WriteLine(string.Format(" Running apiType:{0} useReader:{1}", apiType, useReader));
@@ -548,12 +519,9 @@ namespace System.Threading.Tasks.Tests
         /// Ensure that continuations and parent/children which hop between concurrent and exclusive work correctly.
         /// EH
         /// </summary>
-        [Fact]
-        public static void TestConcurrentExclusiveChain()
-        {
-            TestConcurrentExclusiveChain(true);
-            TestConcurrentExclusiveChain(false);
-        }
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
         public static void TestConcurrentExclusiveChain(bool syncContinuations)
         {
             var scheduler = new TrackingTaskScheduler(8);

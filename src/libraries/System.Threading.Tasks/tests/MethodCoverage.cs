@@ -109,7 +109,6 @@ namespace TaskCoverage
             Task<int> contTask = Task.WhenAll(whenAllTask).ContinueWith<int>(
                 (task) =>
                 {
-                    Console.WriteLine("In ContinueWith delegate");
                     // when task1 ends, the token will be cancelled
                     // move the continuation task in cancellation state
                     if (cts.IsCancellationRequested) { throw new OperationCanceledException(cts.Token); }
