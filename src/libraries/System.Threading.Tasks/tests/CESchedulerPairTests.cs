@@ -425,6 +425,7 @@ namespace System.Threading.Tasks.Tests
         /// it needs more investigations
         /// </summary
         [Fact]
+        [ActiveIssue(2797)]
         public static void TestSchedulerNesting()
         {
             // Create a hierarchical set of scheduler pairs
