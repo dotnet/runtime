@@ -11112,6 +11112,9 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
 	GHashTable *cache;
 	MonoMethod *res;
 	int i, param_count, sig_size, pos_leave;
+#ifdef USE_COOP_GC
+	int coop_gc_var;
+#endif
 
 	g_assert (method);
 
@@ -11165,10 +11168,22 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
 	if (!MONO_TYPE_IS_VOID (sig->ret))
 		mono_mb_add_local (mb, sig->ret);
 
+#ifdef USE_COOP_GC
+	/* local 4, the local to be used when calling the reset_blocking funcs */
+	/* tons of code hardcode 3 to be the return var */
+	coop_gc_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+#endif
+
 	/* clear exception arg */
 	mono_mb_emit_ldarg (mb, param_count - 1);
 	mono_mb_emit_byte (mb, CEE_LDNULL);
 	mono_mb_emit_byte (mb, CEE_STIND_REF);
+
+#ifdef USE_COOP_GC
+	/* FIXME this is technically wrong as the callback itself must be executed in gc unsafe context. */
+	mono_mb_emit_icall (mb, mono_threads_reset_blocking_start);
+	mono_mb_emit_stloc (mb, coop_gc_var);
+#endif
 
 	/* try */
 	clause = mono_image_alloc0 (image, sizeof (MonoExceptionClause));
@@ -11238,6 +11253,12 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
 		if (MONO_TYPE_ISSTRUCT (sig->ret))
 			mono_mb_emit_op (mb, CEE_BOX, mono_class_from_mono_type (sig->ret));
 	}
+
+#ifdef USE_COOP_GC
+	/* XXX merge reset_blocking_end with detach */
+	mono_mb_emit_ldloc (mb, coop_gc_var);
+	mono_mb_emit_icall (mb, mono_threads_reset_blocking_end);
+#endif
 
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
