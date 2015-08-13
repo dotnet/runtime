@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Linq;
+using System.Numerics;
 using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
@@ -38,6 +40,33 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        public static void PaddedExport()
+        {
+            // OpenSSL's numeric type for the storage of RSA key parts disregards zero-valued
+            // prefix bytes.
+            //
+            // The .NET 4.5 RSACryptoServiceProvider type verifies that all of the D breakdown
+            // values (P, DP, Q, DQ, InverseQ) are exactly half the size of D (which is itself
+            // the same size as Modulus).
+            //
+            // These two things, in combination, suggest that we ensure that all .NET
+            // implementations of RSA export their keys to the fixed array size suggested by their
+            // KeySize property.
+            RSAParameters diminishedDPParamaters = TestData.DiminishedDPParamaters;
+            RSAParameters exported;
+
+            using (RSA rsa = RSAFactory.Create())
+            {
+                rsa.ImportParameters(diminishedDPParamaters);
+                exported = rsa.ExportParameters(true);
+            }
+
+            // DP is the most likely to fail, the rest just otherwise ensure that Export
+            // isn't losing data.
+            AssertKeyEquals(ref diminishedDPParamaters, ref exported);
+        }
+
+        [Fact]
         public static void LargeKeyImportExport()
         {
             RSAParameters imported = TestData.RSA16384Params;
@@ -64,6 +93,30 @@ namespace System.Security.Cryptography.Rsa.Tests
 
                 AssertKeyEquals(ref imported, ref exported);
             }
+        }
+
+        [Fact]
+        public static void UnusualExponentImportExport()
+        {
+            // Most choices for the Exponent value in an RSA key use a Fermat prime.
+            // Since a Fermat prime is 2^(2^m) + 1, it always only has two bits set, and
+            // frequently has the form { 0x01, [some number of 0x00s], 0x01 }, which has the same
+            // representation in both big- and little-endian.
+            //
+            // The only real requirement for an Exponent value is that it be coprime to (p-1)(q-1).
+            // So here we'll use the (non-Fermat) prime value 433 (0x01B1) to ensure big-endian export.
+            RSAParameters unusualExponentParameters = TestData.UnusualExponentParameters;
+            RSAParameters exported;
+
+            using (RSA rsa = RSAFactory.Create())
+            {
+                rsa.ImportParameters(unusualExponentParameters);
+                exported = rsa.ExportParameters(true);
+            }
+
+            // Exponent is the most likely to fail, the rest just otherwise ensure that Export
+            // isn't losing data.
+            AssertKeyEquals(ref unusualExponentParameters, ref exported);
         }
 
         [Fact]
@@ -189,12 +242,28 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             Assert.Equal(expected.Modulus, actual.Modulus);
             Assert.Equal(expected.Exponent, actual.Exponent);
-            Assert.Equal(expected.D, actual.D);
+            
             Assert.Equal(expected.P, actual.P);
             Assert.Equal(expected.DP, actual.DP);
             Assert.Equal(expected.Q, actual.Q);
             Assert.Equal(expected.DQ, actual.DQ);
             Assert.Equal(expected.InverseQ, actual.InverseQ);
+
+            if (expected.D == null)
+            {
+                Assert.Null(actual.D);
+            }
+            else
+            {
+                Assert.NotNull(actual.D);
+
+                // If the value matched expected, take that as valid and shortcut the math.
+                // If it didn't, we'll test that the value is at least legal.
+                if (!expected.D.SequenceEqual(actual.D))
+                {
+                    VerifyDValue(ref actual);
+                }
+            }
         }
 
         internal static void ValidateParameters(ref RSAParameters rsaParams)
@@ -224,6 +293,56 @@ namespace System.Security.Cryptography.Rsa.Tests
                 Assert.NotNull(rsaParams.DQ);
                 Assert.NotNull(rsaParams.InverseQ);
             }
+        }
+
+        private static void VerifyDValue(ref RSAParameters rsaParams)
+        {
+            if (rsaParams.P == null)
+            {
+                return;
+            }
+
+            // Verify that the formula (D * E) % LCM(p - 1, q - 1) == 1
+            // is true.
+            //
+            // This is NOT the same as saying D = ModInv(E, LCM(p - 1, q - 1)),
+            // because D = ModInv(E, (p - 1) * (q - 1)) is a valid choice, but will
+            // still work through this formula.
+            BigInteger p = PositiveBigInteger(rsaParams.P);
+            BigInteger q = PositiveBigInteger(rsaParams.Q);
+            BigInteger e = PositiveBigInteger(rsaParams.Exponent);
+            BigInteger d = PositiveBigInteger(rsaParams.D);
+
+            BigInteger lambda = LeastCommonMultiple(p - 1, q - 1);
+
+            BigInteger modProduct = (d * e) % lambda;
+            Assert.Equal(BigInteger.One, modProduct);
+        }
+
+        private static BigInteger LeastCommonMultiple(BigInteger a, BigInteger b)
+        {
+            BigInteger gcd = BigInteger.GreatestCommonDivisor(a, b);
+            return BigInteger.Abs(a) / gcd * BigInteger.Abs(b);
+        }
+
+        private static BigInteger PositiveBigInteger(byte[] bigEndianBytes)
+        {
+            byte[] littleEndianBytes;
+
+            if (bigEndianBytes[0] >= 0x80)
+            {
+                // Insert a padding 00 byte so the number is treated as positive.
+                littleEndianBytes = new byte[bigEndianBytes.Length + 1];
+                Buffer.BlockCopy(bigEndianBytes, 0, littleEndianBytes, 1, bigEndianBytes.Length);
+            }
+            else
+            {
+                littleEndianBytes = (byte[])bigEndianBytes.Clone();
+
+            }
+
+            Array.Reverse(littleEndianBytes);
+            return new BigInteger(littleEndianBytes);
         }
     }
 }
