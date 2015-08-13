@@ -13,7 +13,7 @@ namespace System.IO
 {
     // Class for creating FileStream objects, and some basic file management
     // routines such as Delete, etc.
-    public sealed class FileInfo : FileSystemInfo
+    public sealed partial class FileInfo : FileSystemInfo
     {
         private String _name;
 
@@ -48,10 +48,10 @@ namespace System.IO
         }
 
         [System.Security.SecuritySafeCritical]
-        internal FileInfo(String fullPath, IFileSystemObject fileSystemObject) : base(fileSystemObject)
+        internal FileInfo(String fullPath, String originalPath)
         {
             Debug.Assert(Path.IsPathRooted(fullPath), "fullPath must be fully qualified!");
-            _name = Path.GetFileName(fullPath);
+            _name = originalPath ?? Path.GetFileName(fullPath);
             OriginalPath = _name;
             FullPath = fullPath;
             DisplayPath = _name;

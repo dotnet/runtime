@@ -30,7 +30,7 @@ internal partial class Interop
             internal uint fileSizeHigh;
             internal uint fileSizeLow;
 
-            internal void PopulateFrom(WIN32_FIND_DATA findData)
+            internal void PopulateFrom(ref WIN32_FIND_DATA findData)
             {
                 // Copy the information to data
                 fileAttributes = (int)findData.dwFileAttributes;
