@@ -27,6 +27,7 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-lazy-init.h>
+#include <mono/utils/mono-logger-internal.h>
 
 typedef struct {
 	gboolean (*init) (gint wakeup_pipe_fd);
@@ -116,17 +117,6 @@ static mono_lazy_init_t io_status = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
 static gboolean io_selector_running = FALSE;
 
 static ThreadPoolIO* threadpool_io;
-
-static void
-DEBUG (const gchar action[4], gint fd, gint events)
-{
-#if 0
-	if (events == -1)
-		printf ("IO selector: %3s fd %3d\n", action, fd);
-	else
-		printf ("IO selector: %3s fd %3d, events = %2s | %2s\n", action, fd, (events & EVENT_IN) ? "RD" : "..", (events & EVENT_OUT) ? "WR" : "..");
-#endif
-}
 
 static int
 get_events_from_sockares (MonoSocketAsyncResult *ares)
@@ -293,6 +283,7 @@ wait_callback (gint fd, gint events, gpointer user_data)
 		return;
 
 	if (fd == threadpool_io->wakeup_pipes [0]) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_THREADPOOL, "io threadpool: wke");
 		selector_thread_wakeup_drain_pipes ();
 	} else {
 		MonoGHashTable *states;
@@ -302,7 +293,8 @@ wait_callback (gint fd, gint events, gpointer user_data)
 		g_assert (user_data);
 		states = user_data;
 
-		DEBUG ("cal", fd, events);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_THREADPOOL, "io threadpool: cal fd %3d, events = %2s | %2s",
+			fd, (events & EVENT_IN) ? "RD" : "..", (events & EVENT_OUT) ? "WR" : "..");
 
 		if (!mono_g_hash_table_lookup_extended (states, GINT_TO_POINTER (fd), &k, (gpointer*) &list))
 			g_error ("wait_callback: fd %d not found in states table", fd);
@@ -322,7 +314,9 @@ wait_callback (gint fd, gint events, gpointer user_data)
 
 		events = get_events (list);
 
-		DEBUG ("mod", fd, events);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_THREADPOOL, "io threadpool: res fd %3d, events = %2s | %2s",
+			fd, (events & EVENT_IN) ? "RD" : "..", (events & EVENT_OUT) ? "WR" : "..");
+
 		threadpool_io->backend.register_fd (fd, events, FALSE);
 	}
 }
@@ -355,6 +349,7 @@ selector_thread (gpointer data)
 				break;
 			case UPDATE_ADD: {
 				gint fd;
+				gint events;
 				gpointer k;
 				gboolean exists;
 				MonoMList *list = NULL;
@@ -370,8 +365,12 @@ selector_thread (gpointer data)
 				list = mono_mlist_append (list, (MonoObject*) sockares);
 				mono_g_hash_table_replace (states, sockares->handle, list);
 
-				DEBUG (exists ? "mod" : "add", fd, get_events (list));
-				threadpool_io->backend.register_fd (fd, get_events (list), !exists);
+				events = get_events (list);
+
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_THREADPOOL, "io threadpool: %3s fd %3d, events = %2s | %2s",
+					exists ? "mod" : "add", fd, (events & EVENT_IN) ? "RD" : "..", (events & EVENT_OUT) ? "WR" : "..");
+
+				threadpool_io->backend.register_fd (fd, events, !exists);
 
 				break;
 			}
@@ -407,7 +406,7 @@ selector_thread (gpointer data)
 						mono_threadpool_ms_enqueue_work_item (mono_object_domain (sockares), (MonoObject*) sockares);
 					}
 
-					DEBUG ("del", fd, -1);
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_THREADPOOL, "io threadpool: del fd %3d", fd);
 					threadpool_io->backend.remove_fd (fd);
 				}
 
@@ -443,6 +442,8 @@ selector_thread (gpointer data)
 		}
 
 		mono_mutex_unlock (&threadpool_io->updates_lock);
+
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_THREADPOOL, "io threadpool: wai");
 
 		res = threadpool_io->backend.event_wait (wait_callback, states);
 
