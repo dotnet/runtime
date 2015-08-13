@@ -57,6 +57,7 @@ namespace System.Net.Http
             {
                 return _curlHandler.ClientCertificateOptions;
             }
+
             set
             {
                 _curlHandler.ClientCertificateOptions = value;
@@ -105,6 +106,7 @@ namespace System.Net.Http
             {
                 return _curlHandler.AutomaticRedirection;
             }
+
             set
             {
                 _curlHandler.AutomaticRedirection = value;
@@ -113,8 +115,15 @@ namespace System.Net.Http
 
         public int MaxAutomaticRedirections
         {
-            get { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
-            set { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
+            get
+            {
+                return _curlHandler.MaxAutomaticRedirections;
+            }
+
+            set
+            {
+                _curlHandler.MaxAutomaticRedirections = value;
+            }
         }
 
         public long MaxRequestContentBufferSize
