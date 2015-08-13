@@ -473,15 +473,14 @@ initialize (void)
 	threadpool_io->updates_size = 0;
 	threadpool_io->updates_capacity = 0;
 
-#if defined(HAVE_EPOLL)
-	threadpool_io->backend = backend_epoll;
-#elif defined(HAVE_KQUEUE)
-	threadpool_io->backend = backend_kqueue;
-#else
 	threadpool_io->backend = backend_poll;
+	if (g_getenv ("MONO_ENABLE_AIO") != NULL) {
+#if defined(HAVE_EPOLL)
+		threadpool_io->backend = backend_epoll;
+#elif defined(HAVE_KQUEUE)
+		threadpool_io->backend = backend_kqueue;
 #endif
-	if (g_getenv ("MONO_DISABLE_AIO") != NULL)
-		threadpool_io->backend = backend_poll;
+	}
 
 	wakeup_pipes_init ();
 
