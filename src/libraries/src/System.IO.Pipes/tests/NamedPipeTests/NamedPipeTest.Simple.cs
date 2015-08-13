@@ -227,11 +227,53 @@ namespace System.IO.Pipes.Tests
                 {
                     Task serverWaitTimeout = server.WaitForConnectionAsync(ctx.Token);
                     ctx.Cancel();
-                    await Assert.ThrowsAsync<OperationCanceledException>(() => serverWaitTimeout);
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => serverWaitTimeout);
                 }
 
                 ctx.Cancel();
                 Assert.True(server.WaitForConnectionAsync(ctx.Token).IsCanceled);
+            }
+        }
+
+        [DllImport("api-ms-win-core-io-l1-1-0.dll", SetLastError = true)]
+        private static unsafe extern bool CancelIoEx(SafeHandle handle, NativeOverlapped* lpOverlapped);
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        // [ActiveIssue(2640)]
+        public async Task CancelTokenOff_ServerWaitForConnectionAsyncWithOuterCancellation_Throws_OperationCanceledException()
+        {
+            using (NamedPipePair pair = CreateNamedPipePair())
+            {
+                NamedPipeServerStream server = pair.serverStream;
+                Task waitForConnectionTask = server.WaitForConnectionAsync(CancellationToken.None);
+                unsafe
+                {
+                    Assert.True(CancelIoEx(server.SafePipeHandle, null), "Outer cancellation failed");
+                }
+
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waitForConnectionTask);
+                Assert.True(waitForConnectionTask.IsCanceled);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        // [ActiveIssue(2640)]
+        public async Task CancelTokenOn_ServerWaitForConnectionAsyncWithOuterCancellation_Throws_IOException()
+        {
+            using (NamedPipePair pair = CreateNamedPipePair())
+            {
+                var cts = new CancellationTokenSource();
+                NamedPipeServerStream server = pair.serverStream;
+                Task waitForConnectionTask = server.WaitForConnectionAsync(cts.Token);
+                unsafe
+                {
+                    Assert.True(CancelIoEx(server.SafePipeHandle, null), "Outer cancellation failed");
+                }
+
+                await Assert.ThrowsAsync<IOException>(() => waitForConnectionTask);
+                Assert.False(waitForConnectionTask.IsCanceled);
             }
         }
 
