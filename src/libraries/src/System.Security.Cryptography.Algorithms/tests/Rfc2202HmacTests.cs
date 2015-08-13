@@ -7,18 +7,6 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
 {
     public abstract class Rfc2202HmacTests : HmacTests
     {
-        private static readonly byte[][] s_testKeys2202 =
-        {
-            null,
-            ByteUtils.RepeatByte(0x0b, 20),
-            ByteUtils.AsciiBytes("Jefe"),
-            ByteUtils.RepeatByte(0xaa, 20),
-            ByteUtils.HexToByteArray("0102030405060708090a0b0c0d0e0f10111213141516171819"),
-            ByteUtils.HexToByteArray("0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c"),
-            ByteUtils.RepeatByte(0xaa, 80),
-            ByteUtils.RepeatByte(0xaa, 80),
-        };
-
         private static readonly byte[][] s_testData2202 =
         {
             null,
@@ -31,8 +19,11 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
             ByteUtils.AsciiBytes("Test Using Larger Than Block-Size Key and Larger Than One Block-Size Data"),
         };
 
-        protected Rfc2202HmacTests() :
-            base(s_testKeys2202, s_testData2202)
+        // The keys for test cases 1, 3, and 5 for RFC2202 are sized to match the
+        // algorithm (16 bytes for MD5, 20 for SHA-1), so they need to be provided by
+        // the more derived type.
+        protected Rfc2202HmacTests(byte[][] testKeys) :
+            base(testKeys, s_testData2202)
         {
         }
     }
