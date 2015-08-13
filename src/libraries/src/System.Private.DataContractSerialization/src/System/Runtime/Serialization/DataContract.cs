@@ -41,35 +41,9 @@ namespace System.Runtime.Serialization
 
 #if NET_NATIVE
         // this the global dictionary for data contracts introduced for multi-file.
-        private static Func<Dictionary<Type, DataContract>> s_dataContractsInitializer;
-        private static Lazy<Dictionary<Type, DataContract>> s_dataContracts = new Lazy<Dictionary<Type, DataContract>>(InitDataContracts);
+        private static Dictionary<Type, DataContract> s_dataContracts = new Dictionary<Type, DataContract>();
 
-        public static Func<Dictionary<Type, DataContract>> DataContractsInitializer
-        {
-            get
-            {
-                return s_dataContractsInitializer;
-            }
-            set
-            {
-                Fx.Assert(s_dataContractsInitializer == null, "s_dataContractsInitializer is already initialized.");
-                s_dataContractsInitializer = value;
-            }
-        }
-
-        private static Dictionary<Type, DataContract> InitDataContracts()
-        {
-            if (DataContractsInitializer != null)
-            {
-                return DataContractsInitializer();
-            }
-            else
-            {
-                return new Dictionary<Type, DataContract>();
-            }
-        }
-
-        public static Lazy<Dictionary<Type, DataContract>> GetDataContracts()
+        public static Dictionary<Type, DataContract> GetDataContracts()
         {
             return s_dataContracts;
         }
@@ -101,7 +75,7 @@ namespace System.Runtime.Serialization
             // this method used to be rewritten by an IL transfrom
             // with the restructuring for multi-file, it has become a regular method
             DataContract result;
-            return s_dataContracts.Value.TryGetValue(type, out result) ? result : null;
+            return s_dataContracts.TryGetValue(type, out result) ? result : null;
         }
 
         internal static bool TryGetDataContractFromGeneratedAssembly(Type type, out DataContract dataContract)
