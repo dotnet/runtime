@@ -9,7 +9,7 @@ namespace Internal.Cryptography
     //
     // This abstract class represents a reusable hash object and can wrap a CNG or WinRT hash object.
     //
-    internal abstract class HashProvider
+    internal abstract class HashProvider : IDisposable
     {
         // Adds new data to be hashed. This can be called repeatedly in order to hash data from incontiguous sources.
         public void AppendHashData(byte[] data, int offset, int count)
@@ -40,6 +40,13 @@ namespace Internal.Cryptography
 
         // Returns the length of the byte array returned by FinalizeHashAndReset.
         public abstract int HashSizeInBytes { get; }
+
+        // Releases any native resources and keys used by the HashProvider.
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
 
         // Releases any native resources and keys used by the HashProvider.
         public abstract void Dispose(bool disposing);
