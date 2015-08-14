@@ -219,4 +219,7 @@
   <data name="UnknownError_Num" xml:space="preserve">
     <value>Unknown error '{0}'.</value>
   </data>
+  <data name="WaitHandle_NamesNotSupported" xml:space="preserve">
+    <value>Named synchronization primitives are not supported on this platform.</value>
+  </data>
 </root>
