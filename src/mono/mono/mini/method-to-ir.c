@@ -10804,11 +10804,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ensure_method_is_allowed_to_access_field (cfg, method, field);
 			*/
 
+			ftype = mono_field_get_type (field);
+
 			/*
 			 * LDFLD etc. is usable on static fields as well, so convert those cases to
 			 * the static case.
 			 */
-			if (is_instance && field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
+			if (is_instance && ftype->attrs & FIELD_ATTRIBUTE_STATIC) {
 				switch (op) {
 				case CEE_LDFLD:
 					op = CEE_LDSFLD;
@@ -10992,8 +10994,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			/* STATIC CASE */
 			context_used = mini_class_check_context_used (cfg, klass);
-
-			ftype = mono_field_get_type (field);
 
 			if (ftype->attrs & FIELD_ATTRIBUTE_LITERAL)
 				UNVERIFIED;
