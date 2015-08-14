@@ -1,10 +1,10 @@
 {
   "dependencies": {
     "System.Globalization": "4.0.10",
-    "System.Linq" :  "4.0.0-beta-*",
-    "System.Runtime": "4.0.20-beta-*",
-    "System.Threading.Tasks": "4.0.10-beta-*",
-    "System.Threading.Timer": "4.0.0-beta-*",
+    "System.Linq" :  "4.0.0",
+    "System.Runtime": "4.0.20",
+    "System.Threading.Tasks": "4.0.10",
+    "System.Threading.Timer": "4.0.0",
     "xunit": "2.1.0-beta3-*",
     "xunit.netcore.extensions": "1.0.0-prerelease-*"
   },
