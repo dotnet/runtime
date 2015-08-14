@@ -53,7 +53,7 @@ int __cdecl main(int argc, char *argv[])
 
     DateSize = 0;
 
-    /*retrive the buffer size*/
+    /*retrieve the buffer size*/
     DateSize = GetDateFormatW(
                 DefaultLocale, /*system default locale*/
                 dwFlags,       /*function option*/

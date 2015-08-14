@@ -31,7 +31,7 @@
 
 #endif // FEATURE_IMPLICIT_TLS
 
-// Pointer to a function that retrives the TLS data for a specific index.
+// Pointer to a function that retrieves the TLS data for a specific index.
 typedef LPVOID (*POPTIMIZEDTLSGETTER)();
 
 //---------------------------------------------------------------------------

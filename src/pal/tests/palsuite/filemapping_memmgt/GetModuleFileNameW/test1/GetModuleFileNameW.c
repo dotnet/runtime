@@ -7,7 +7,7 @@
 **
 ** Source: getmodulefilenamew.c
 **
-** Purpose: Test the GetModuleFileNameW to retrive the specified module
+** Purpose: Test the GetModuleFileNameW to retrieve the specified module
 **          full path and file name in UNICODE.
 **
 **
@@ -63,7 +63,7 @@ int __cdecl main(int argc, char *argv[])
     }
 
 
-    //retrive the specified module full path and file name
+    //retrieve the specified module full path and file name
     ModuleNameLength = GetModuleFileName(
                 ModuleHandle,//specified module handle
                 ModuleFileNameBuf,//buffer for module file name

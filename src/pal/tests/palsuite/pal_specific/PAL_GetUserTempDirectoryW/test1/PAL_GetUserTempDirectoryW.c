@@ -32,7 +32,7 @@ int __cdecl main(int argc, char *argv[])
         ExitProcess(FAIL);
     }
 
-    //retrive the user temp directory
+    //retrieve the user temp directory
     err = PAL_GetUserTempDirectory(ddtInstallationDependentDirectory, wDirectoryName, &cch);
 
     if(0 == err || 0 == strlen(convertC(wDirectoryName)))
@@ -41,11 +41,11 @@ int __cdecl main(int argc, char *argv[])
     }
 
 
-    //retrive the attributes of a file or directory
+    //retrieve the attributes of a file or directory
     dwFileAttribute = GetFileAttributesW(wDirectoryName);
 
 
-    //check if the retrived attribute indicates a directory
+    //check if the retrieved attribute indicates a directory
     if( FILE_ATTRIBUTE_DIRECTORY != (FILE_ATTRIBUTE_DIRECTORY & dwFileAttribute))
     {
         Fail("PAL_GetUserTempDirectoryW API returned a non-directory name!\n");

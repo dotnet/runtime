@@ -433,7 +433,7 @@ namespace System.Reflection
 
             // We cannot do simple object identity comparisons for generic methods.
             // Equals will be called in CerHashTable when RuntimeType+RuntimeTypeCache.GetGenericMethodInfo()
-            // retrive items from and insert items into s_methodInstantiations which is a CerHashtable.
+            // retrieve items from and insert items into s_methodInstantiations which is a CerHashtable.
 
             RuntimeMethodInfo mi = obj as RuntimeMethodInfo;
 

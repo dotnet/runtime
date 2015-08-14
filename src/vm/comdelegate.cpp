@@ -3278,7 +3278,7 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     // 1, 4     - MulticastDelegate.ctor1 (simply assign _target and _methodPtr)
     // 5        - MulticastDelegate.ctor2 (see table, takes 3 args)
     // 2, 6     - MulticastDelegate.ctor3 (take shuffle thunk)
-    // 3        - MulticastDelegate.ctor4 (take shuffle thunk, retrive MethodDesc) ???
+    // 3        - MulticastDelegate.ctor4 (take shuffle thunk, retrieve MethodDesc) ???
     //
     // 7 - Needs special handling
     //

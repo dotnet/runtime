@@ -684,7 +684,7 @@ FCIMPLEND
 
 ////////////////////////////////////////////////////////////////////////
 //
-// Call the Win32 GetLocaleInfo() using the specified lcid to retrive
+// Call the Win32 GetLocaleInfo() using the specified lcid to retrieve
 // the native digits, probably from the registry override. The return
 // indicates whether the call was successful.
 //

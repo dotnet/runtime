@@ -797,7 +797,7 @@ PAL_towlower( wchar_16 c )
     
     if (!GetUnicodeData(c, &dataRec))
     {
-        TRACE( "Unable to retrive unicode data for the character %c.\n", c );
+        TRACE( "Unable to retrieve unicode data for the character %c.\n", c );
         LOGEXIT("towlower returns int %d\n", c );
         PERF_EXIT(towlower);
         return c;
@@ -856,7 +856,7 @@ PAL_towupper( wchar_16 c )
 
     if (!GetUnicodeData(c, &dataRec))
     {
-        TRACE( "Unable to retrive unicode data for the character %c.\n", c );
+        TRACE( "Unable to retrieve unicode data for the character %c.\n", c );
         LOGEXIT("towupper returns int %d\n", c );
         PERF_EXIT(towupper);
         return c;
@@ -908,7 +908,7 @@ PAL_iswupper( wchar_16 c )
 
     if (!GetUnicodeData(c, &dataRec))
     {
-        TRACE( "Unable to retrive unicode data for the character %c.\n", c );
+        TRACE( "Unable to retrieve unicode data for the character %c.\n", c );
         goto exit;
     }
     
@@ -954,7 +954,7 @@ PAL_iswlower( wchar_16 c )
     
     if (!GetUnicodeData(c, &dataRec))
     {
-        TRACE( "Unable to retrive unicode data for the character %c.\n", c );
+        TRACE( "Unable to retrieve unicode data for the character %c.\n", c );
         goto exit;
     }
     
