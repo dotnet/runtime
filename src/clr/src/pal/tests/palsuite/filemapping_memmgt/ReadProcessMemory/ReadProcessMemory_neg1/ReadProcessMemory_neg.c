@@ -34,10 +34,10 @@ int __cdecl main(int argc, char *argv[])
         return FAIL;
     }
     
-    /*retrive the current process ID*/    
+    /*retrieve the current process ID*/    
     ProcessID = GetCurrentProcessId();
 
-    /*retrive the current process handle*/
+    /*retrieve the current process handle*/
     ProcessHandle = OpenProcess(
                 PROCESS_ALL_ACCESS,
                 FALSE,          /*not inherited*/
@@ -45,7 +45,7 @@ int __cdecl main(int argc, char *argv[])
     
     if(NULL == ProcessHandle)
     {
-        Fail("\nFailed to call OpenProcess API to retrive "
+        Fail("\nFailed to call OpenProcess API to retrieve "
                 "current process handle error code=%u\n",
                 GetLastError());
     }
