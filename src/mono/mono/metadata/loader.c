@@ -600,8 +600,11 @@ mono_field_from_token_checked (MonoImage *image, guint32 token, MonoClass **retk
 		}
 	}
 
-	if (field && field->parent && !field->parent->generic_class && !field->parent->generic_container)
+	if (field && field->parent && !field->parent->generic_class && !field->parent->generic_container) {
+		mono_image_lock (image);
 		mono_conc_hashtable_insert (image->field_cache, GUINT_TO_POINTER (token), field);
+		mono_image_unlock (image);
+	}
 
 	mono_loader_assert_no_error ();
 	return field;

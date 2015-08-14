@@ -679,7 +679,7 @@ mono_image_init (MonoImage *image)
 				       g_direct_hash,
 				       class_key_extract,
 				       class_next_value);
-	image->field_cache = mono_conc_hashtable_new (&image->lock, NULL, NULL);
+	image->field_cache = mono_conc_hashtable_new (NULL, NULL);
 
 	image->typespec_cache = g_hash_table_new (NULL, NULL);
 	image->memberref_signatures = g_hash_table_new (NULL, NULL);
