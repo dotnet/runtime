@@ -470,7 +470,7 @@ _GetSpecificCpuTypeAsm@0 PROC public
         push    ecx
         popfd               ; Save the updated flags.
         pushfd
-        pop     ecx         ; Retrive the updated flags
+        pop     ecx         ; Retrieve the updated flags
         xor     ecx, eax    ; Test if it actually changed (bit set means yes)
         push    eax
         popfd               ; Restore the flags
@@ -512,7 +512,7 @@ _GetSpecificCpuFeaturesAsm@4 PROC public
         push    ecx
         popfd               ; Save the updated flags.
         pushfd
-        pop     ecx         ; Retrive the updated flags
+        pop     ecx         ; Retrieve the updated flags
         xor     ecx, eax    ; Test if it actually changed (bit set means yes)
         push    eax
         popfd               ; Restore the flags

@@ -5656,7 +5656,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionFromTokenAndTypeArgs(ModuleID moduleID
 }
 
 //*****************************************************************************
-// Retrive information about a given application domain, which is like a
+// Retrieve information about a given application domain, which is like a
 // sub-process.
 //*****************************************************************************
 HRESULT ProfToEEInterfaceImpl::GetAppDomainInfo(AppDomainID appDomainId,
