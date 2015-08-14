@@ -420,12 +420,8 @@ namespace System.Threading.Tasks.Tests
 
         /// <summary>
         /// Ensure that CESPs can be layered on other CESPs.
-        /// There is and assert in src\Threading\System\Threading\Tasks\ConcurrentExclusiveSchedulerPair.cs
-        /// line 355 - the scheduler enters in exclusive processing mode when  should not
-        /// it needs more investigations
         /// </summary
         [Fact]
-        [ActiveIssue(2797)]
         public static void TestSchedulerNesting()
         {
             // Create a hierarchical set of scheduler pairs
@@ -490,30 +486,13 @@ namespace System.Threading.Tasks.Tests
                 }
             }
 
-            // Once all tasks have completed, complete the schedulers
-            Task.Factory.StartNew(() =>
+            // Wait for all tasks to complete, then complete the schedulers
+            Task.WaitAll(tasks.ToArray());
+            foreach (var cesp in cesps)
             {
-                Debug.WriteLine(string.Format("Waiting for all tasks", tasks.Count));
-                Task.WaitAll(tasks.ToArray());
-                foreach (var cesp in cesps) cesp.Complete();
-            }, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
-
-            // In the meantime, wait for all schedulers to complete
-            Debug.WriteLine("Waiting for all csps");
-            foreach (var cesp in cesps) cesp.Completion.Wait();
-
-            Debug.WriteLine("Done waiting");
-            // All tasks should now be done for the schedulers to have completed
-            foreach (var task in tasks)
-            {
-                if (task.Status != TaskStatus.RanToCompletion)
-                {
-                    Debug.WriteLine("Task didn't run to completion");
-                }
+                cesp.Complete();
+                cesp.Completion.Wait();
             }
-
-            // All tasks should now be done for the schedulers to have completed
-            foreach (var task in tasks) Assert.True(task.Status == TaskStatus.RanToCompletion, "All tasks should now be complete");
         }
 
         /// <summary>
