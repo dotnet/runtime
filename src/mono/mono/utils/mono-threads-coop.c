@@ -1,4 +1,4 @@
-/*
+ /*
  * mono-threads.c: Coop threading
  *
  * Author:
@@ -16,15 +16,19 @@
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-time.h>
+#include <mono/utils/mono-counters.h>
 
 #ifdef USE_COOP_BACKEND
 
 volatile size_t mono_polling_required;
 
+static int coop_reset_blocking_count, coop_try_blocking_count, coop_do_blocking_count, coop_do_polling_count, coop_save_count;
+
 void
 mono_threads_state_poll (void)
 {
 	MonoThreadInfo *info;
+	++coop_do_polling_count;
 
 	info = mono_thread_info_current_unchecked ();
 	if (!info)
@@ -35,6 +39,7 @@ mono_threads_state_poll (void)
 	if (!(info->thread_state & (STATE_ASYNC_SUSPEND_REQUESTED | STATE_SELF_SUSPEND_REQUESTED)))
 		return;
 
+	++coop_save_count;
 	mono_threads_get_runtime_callbacks ()->thread_state_init (&info->thread_saved_state [SELF_SUSPEND_STATE_INDEX]);
 
 	/* commit the saved state and notify others if needed */
@@ -55,6 +60,7 @@ void*
 mono_threads_prepare_blocking (void)
 {
 	MonoThreadInfo *info;
+	++coop_do_blocking_count;
 
 	info = mono_thread_info_current_unchecked ();
 	/* If the thread is not attached, it doesn't make sense prepare for suspend. */
@@ -64,6 +70,7 @@ mono_threads_prepare_blocking (void)
 	}
 
 retry:
+	++coop_save_count;
 	mono_threads_get_runtime_callbacks ()->thread_state_init (&info->thread_saved_state [SELF_SUSPEND_STATE_INDEX]);
 
 	switch (mono_threads_transition_do_blocking (info)) {
@@ -113,6 +120,7 @@ void*
 mono_threads_reset_blocking_start (void)
 {
 	MonoThreadInfo *info = mono_thread_info_current_unchecked ();
+	++coop_reset_blocking_count;
 
 	/* If the thread is not attached, it doesn't make sense prepare for suspend. */
 	if (!info || !mono_thread_info_is_live (info))
@@ -152,6 +160,7 @@ void*
 mono_threads_try_prepare_blocking (void)
 {
 	MonoThreadInfo *info;
+	++coop_try_blocking_count;
 
 	info = mono_thread_info_current_unchecked ();
 	/* If the thread is not attached, it doesn't make sense prepare for suspend. */
@@ -161,6 +170,7 @@ mono_threads_try_prepare_blocking (void)
 	}
 
 retry:
+	++coop_save_count;
 	mono_threads_get_runtime_callbacks ()->thread_state_init (&info->thread_saved_state [SELF_SUSPEND_STATE_INDEX]);
 
 	switch (mono_threads_transition_do_blocking (info)) {
@@ -227,6 +237,11 @@ mono_threads_core_needs_abort_syscall (void)
 void
 mono_threads_init_platform (void)
 {
+	mono_counters_register ("Coop Reset Blocking", MONO_COUNTER_GC | MONO_COUNTER_INT, &coop_reset_blocking_count);
+	mono_counters_register ("Coop Try Blocking", MONO_COUNTER_GC | MONO_COUNTER_INT, &coop_try_blocking_count);
+	mono_counters_register ("Coop Do Blocking", MONO_COUNTER_GC | MONO_COUNTER_INT, &coop_do_blocking_count);
+	mono_counters_register ("Coop Do Polling", MONO_COUNTER_GC | MONO_COUNTER_INT, &coop_do_polling_count);
+	mono_counters_register ("Coop Save Count", MONO_COUNTER_GC | MONO_COUNTER_INT, &coop_save_count);
 	//See the above for what's wrong here.
 }
 
