@@ -206,7 +206,7 @@ static void suspend_thread_internal (MonoInternalThread *thread, gboolean interr
 static void self_suspend_internal (MonoInternalThread *thread);
 static gboolean resume_thread_internal (MonoInternalThread *thread);
 
-static MonoException* mono_thread_execute_interruption (MonoInternalThread *thread);
+static MonoException* mono_thread_execute_interruption ();
 static void ref_stack_destroy (gpointer rs);
 
 /* Spin lock for InterlockedXXX 64 bit functions */
@@ -1184,7 +1184,7 @@ ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
 		mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 
 		if (res == WAIT_IO_COMPLETION) { /* we might have been interrupted */
-			MonoException* exc = mono_thread_execute_interruption (thread);
+			MonoException* exc = mono_thread_execute_interruption ();
 			if (exc) {
 				mono_raise_exception (exc);
 			} else {
@@ -1433,7 +1433,7 @@ mono_wait_uninterrupted (MonoInternalThread *thread, gboolean multiple, guint32 
 		if (ret != WAIT_IO_COMPLETION)
 			break;
 
-		exc = mono_thread_execute_interruption (thread);
+		exc = mono_thread_execute_interruption ();
 		if (exc)
 			mono_raise_exception (exc);
 
@@ -2901,7 +2901,7 @@ mono_threads_set_shutting_down (void)
 		    (current_thread->state & ThreadState_AbortRequested) ||
 		    (current_thread->state & ThreadState_StopRequested)) {
 			UNLOCK_THREAD (current_thread);
-			mono_thread_execute_interruption (current_thread);
+			mono_thread_execute_interruption ();
 		} else {
 			current_thread->state |= ThreadState_Stopped;
 			UNLOCK_THREAD (current_thread);
@@ -2969,7 +2969,7 @@ void mono_thread_manage (void)
 	if (!mono_runtime_try_shutdown ()) {
 		/*FIXME mono_thread_suspend probably should call mono_thread_execute_interruption when self interrupting. */
 		mono_thread_suspend (mono_thread_internal_current ());
-		mono_thread_execute_interruption (mono_thread_internal_current ());
+		mono_thread_execute_interruption ();
 	}
 
 	/* 
@@ -4004,8 +4004,10 @@ static void CALLBACK dummy_apc (ULONG_PTR param)
  * suspend or stop)
  */
 static MonoException*
-mono_thread_execute_interruption (MonoInternalThread *thread)
+mono_thread_execute_interruption (void)
 {
+	MonoInternalThread *thread = mono_thread_internal_current ();
+
 	LOCK_THREAD (thread);
 
 	/* MonoThread::interruption_requested can only be changed with atomics */
@@ -4112,7 +4114,7 @@ mono_thread_request_interruption (gboolean running_managed)
 		return NULL;
 	}
 	else {
-		return mono_thread_execute_interruption (thread);
+		return mono_thread_execute_interruption ();
 	}
 }
 
@@ -4142,7 +4144,7 @@ mono_thread_resume_interruption (void)
 
 	mono_thread_info_self_interrupt ();
 
-	return mono_thread_execute_interruption (thread);
+	return mono_thread_execute_interruption ();
 }
 
 gboolean mono_thread_interruption_requested ()
@@ -4166,7 +4168,7 @@ mono_thread_interruption_checkpoint_request (gboolean bypass_abort_protection)
 		return NULL;
 
 	if (thread->interruption_requested && (bypass_abort_protection || !is_running_protected_wrapper ())) {
-		MonoException* exc = mono_thread_execute_interruption (thread);
+		MonoException* exc = mono_thread_execute_interruption ();
 		if (exc)
 			return exc;
 	}
@@ -4223,7 +4225,7 @@ mono_thread_get_and_clear_pending_exception (void)
 		return NULL;
 
 	if (thread->interruption_requested && !is_running_protected_wrapper ()) {
-		return mono_thread_execute_interruption (thread);
+		return mono_thread_execute_interruption ();
 	}
 	
 	if (thread->pending_exception) {
@@ -4352,7 +4354,7 @@ static void
 self_interrupt_thread (void *_unused)
 {
 	MonoThreadInfo *info = mono_thread_info_current ();
-	MonoException *exc = mono_thread_execute_interruption (mono_thread_internal_current ()); 
+	MonoException *exc = mono_thread_execute_interruption ();
 	if (exc) /*We must use _with_context since we didn't trampoline into the runtime*/
 		mono_raise_exception_with_context (exc, &info->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX].ctx); /* FIXME using thread_saved_state [ASYNC_SUSPEND_STATE_INDEX] can race with another suspend coming in. */
 	g_assert_not_reached (); /*this MUST not happen since we can't resume from an async call*/
