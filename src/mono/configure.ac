@@ -2821,6 +2821,14 @@ case "$host" in
 			;;
 		esac
 		;;
+	armv7k-*-darwin*)
+		TARGET=ARM;
+		TARGET_SYS=WATCHOS
+		arch_target=arm;
+		ACCESS_UNALIGNED="no"
+		CPPFLAGS="$CPPFLAGS -D__ARM_EABI__"
+		;;
+
 	arm*-darwin*)
 		TARGET=ARM;
 		arch_target=arm;
@@ -3088,7 +3096,12 @@ if test x$GCC = "xyes"; then
 fi
 
 if test "x$target_mach" = "xyes"; then
-   if test "x$TARGET" = "xARM" -o "x$TARGET" = "xARM64"; then
+
+   if test "x$TARGET_SYS" = "xWATCHOS"; then
+	  AC_DEFINE(TARGET_WATCHOS,1,[The JIT/AOT targets WatchOS])
+	  CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DTARGET_WATCHOS"
+	  CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -DTARGET_WATCHOS"
+   elif test "x$TARGET" = "xARM" -o "x$TARGET" = "xARM64"; then
    	  AC_DEFINE(TARGET_IOS,1,[The JIT/AOT targets iOS])
 	  CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DTARGET_IOS"
 	  CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -DTARGET_IOS"
