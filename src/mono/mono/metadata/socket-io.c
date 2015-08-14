@@ -925,8 +925,9 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 		mono_field_set_value (sockaddr_obj, domain->sockaddr_data_field, data);
 
 		return(sockaddr_obj);
+	}
 #ifdef HAVE_SYS_UN_H
-	} else if (saddr->sa_family == AF_UNIX) {
+	else if (saddr->sa_family == AF_UNIX) {
 		int i;
 
 		for (i = 0; i < sa_size; i++) {
@@ -936,8 +937,9 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 		mono_field_set_value (sockaddr_obj, domain->sockaddr_data_field, data);
 
 		return sockaddr_obj;
+	}
 #endif
-	} else {
+	else {
 		*error = WSAEAFNOSUPPORT;
 		return(NULL);
 	}
@@ -953,11 +955,12 @@ get_sockaddr_size (int family)
 		size = sizeof (struct sockaddr_in);
 	} else if (family == AF_INET6) {
 		size = sizeof (struct sockaddr_in6);
-#ifdef HAVE_SYS_UN_H
-	} else if (family == AF_UNIX) {
-		size = sizeof (struct sockaddr_un);
-#endif
 	}
+#ifdef HAVE_SYS_UN_H
+	else if (family == AF_UNIX) {
+		size = sizeof (struct sockaddr_un);
+	}
+#endif
 	return size;
 }
 
@@ -1108,8 +1111,9 @@ static struct sockaddr *create_sockaddr_from_object(MonoObject *saddr_obj,
 
 		*sa_size = sizeof(struct sockaddr_in6);
 		return((struct sockaddr *)sa);
+	}
 #ifdef HAVE_SYS_UN_H
-	} else if (family == AF_UNIX) {
+	else if (family == AF_UNIX) {
 		struct sockaddr_un *sock_un;
 		int i;
 
@@ -1131,8 +1135,9 @@ static struct sockaddr *create_sockaddr_from_object(MonoObject *saddr_obj,
 		*sa_size = len;
 
 		return (struct sockaddr *)sock_un;
+	}
 #endif
-	} else {
+	else {
 		*error = WSAEAFNOSUPPORT;
 		return(0);
 	}
