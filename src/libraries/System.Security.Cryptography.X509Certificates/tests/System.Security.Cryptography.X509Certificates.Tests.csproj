@@ -42,6 +42,7 @@
     <Compile Include="PropsTests.cs" />
     <Compile Include="PublicKeyTests.cs" />
     <Compile Include="TestData.cs" />
+    <Compile Include="X509StoreTests.cs" />
     <Compile Include="$(CommonTestPath)\Cryptography\ByteUtils.cs">
       <Link>CommonTest\Cryptography\ByteUtils.cs</Link>
     </Compile>
