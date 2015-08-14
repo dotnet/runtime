@@ -270,6 +270,30 @@ namespace System.IO.FileSystem.Tests
             }
         }
 
+        [Fact]
+        public async void WriteAsyncInternalBufferOverflow()
+        {
+            // Overflow into next buffer
+            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.Write, FileShare.None, 2))
+            {
+                // Fill existing buffer
+                await fs.WriteAsync(TestBuffer, 0, 2);
+                Assert.True(fs.Length == 2);
+
+                // Overflow into next buffer
+                await fs.WriteAsync(TestBuffer, 0, 1);
+                Assert.True(fs.Length == 3);
+
+                // Overflow bufferSize * 2
+                await fs.WriteAsync(TestBuffer, 0, 5);
+                Assert.True(fs.Length == 8);
+
+                // Overflow bufferSize * 2 with empty buffer
+                await fs.WriteAsync(TestBuffer, 0, 5);
+                Assert.True(fs.Length == 13);
+            }
+        }
+
         [Fact, OuterLoop]
         public async Task WriteAsyncMiniStress()
         {
