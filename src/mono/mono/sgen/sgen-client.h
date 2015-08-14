@@ -272,8 +272,6 @@ void sgen_client_describe_invalid_pointer (GCObject *ptr);
 #define BEGIN_PROTOCOL_ENTRY_HEAVY6(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5,t6,f6) \
 	void sgen_client_ ## method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5, t6 f6);
 
-#define FLUSH()
-
 #define DEFAULT_PRINT()
 #define CUSTOM_PRINT(_)
 
@@ -282,6 +280,7 @@ void sgen_client_describe_invalid_pointer (GCObject *ptr);
 #define IS_VTABLE_MATCH(_)
 
 #define END_PROTOCOL_ENTRY
+#define END_PROTOCOL_ENTRY_FLUSH
 #define END_PROTOCOL_ENTRY_HEAVY
 
 #include "sgen-protocol-def.h"

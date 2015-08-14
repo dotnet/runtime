@@ -55,8 +55,6 @@ enum {
 #define BEGIN_PROTOCOL_ENTRY_HEAVY5(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5) PROTOCOL_ID(method),
 #define BEGIN_PROTOCOL_ENTRY_HEAVY6(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5,t6,f6) PROTOCOL_ID(method),
 
-#define FLUSH()
-
 #define DEFAULT_PRINT()
 #define CUSTOM_PRINT(_)
 
@@ -65,6 +63,7 @@ enum {
 #define IS_VTABLE_MATCH(_)
 
 #define END_PROTOCOL_ENTRY
+#define END_PROTOCOL_ENTRY_FLUSH
 #define END_PROTOCOL_ENTRY_HEAVY
 
 #include "sgen-protocol-def.h"
@@ -126,8 +125,6 @@ enum {
 #define BEGIN_PROTOCOL_ENTRY_HEAVY6(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5,t6,f6) \
 	BEGIN_PROTOCOL_ENTRY6 (method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5,t6,f6)
 
-#define FLUSH()
-
 #define DEFAULT_PRINT()
 #define CUSTOM_PRINT(_)
 
@@ -136,6 +133,7 @@ enum {
 #define IS_VTABLE_MATCH(_)
 
 #define END_PROTOCOL_ENTRY
+#define END_PROTOCOL_ENTRY_FLUSH
 #define END_PROTOCOL_ENTRY_HEAVY
 
 #include "sgen-protocol-def.h"
@@ -198,8 +196,6 @@ void binary_protocol_flush_buffers (gboolean force);
 	static inline void method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5, t6 f6) {}
 #endif
 
-#define FLUSH()
-
 #define DEFAULT_PRINT()
 #define CUSTOM_PRINT(_)
 
@@ -208,6 +204,7 @@ void binary_protocol_flush_buffers (gboolean force);
 #define IS_VTABLE_MATCH(_)
 
 #define END_PROTOCOL_ENTRY
+#define END_PROTOCOL_ENTRY_FLUSH
 #define END_PROTOCOL_ENTRY_HEAVY
 
 #include "sgen-protocol-def.h"
