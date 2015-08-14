@@ -91,6 +91,10 @@ if(WIN32)
     ntdll.lib
   )
 else(WIN32)
+  add_definitions(-DPAL_STDCPP_COMPAT=1)
+  add_compile_options(-Wno-null-arithmetic)
+  add_compile_options(-Wno-format)
+
   include_directories(../lldbplugin/inc)
   include_directories(BEFORE ${VM_DIR})
   include_directories(${CLR_DIR}/src/debug/shim)

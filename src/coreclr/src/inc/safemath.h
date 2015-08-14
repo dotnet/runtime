@@ -35,9 +35,9 @@
 
 #ifdef PAL_STDCPP_COMPAT
 #include <type_traits>
-#else  // PAL_STDCPP_COMPAT
+#else
 #include "clr_std/type_traits"
-#endif // PAL_STDCPP_COMPAT
+#endif
 
 //==================================================================
 // Semantics: if val can be represented as the exact same value

@@ -80,7 +80,7 @@ HRESULT CheckEEDll ();
 
 void DisasmAndClean (DWORD_PTR &IP, __out_ecount_opt(length) char *line, ULONG length);
 
-INT_PTR GetValueFromExpr(__in __in_z char *ptr, INT_PTR &value);
+INT_PTR GetValueFromExpr(___in __in_z char *ptr, INT_PTR &value);
 
 void NextTerm (__deref_inout_z char *& ptr);
 
