@@ -2200,6 +2200,44 @@ get_module_name (gpointer process, gpointer module,
 	return 0;
 }
 
+static guint32
+get_module_filename (gpointer process, gpointer module,
+					 gunichar2 *basename, guint32 size)
+{
+	int pid, len;
+	gsize bytes;
+	char *path;
+	gunichar2 *proc_path;
+	
+	pid = GetProcessId (process);
+
+	path = wapi_process_get_path (pid);
+	if (path == NULL)
+		return 0;
+
+	proc_path = mono_unicode_from_external (path, &bytes);
+	if (proc_path == NULL)
+		return 0;
+
+	len = (bytes / 2);
+	
+	/* Add the terminator */
+	bytes += 2;
+
+	if (size < bytes) {
+		DEBUG ("%s: Size %d smaller than needed (%ld); truncating", __func__, size, bytes);
+
+		memcpy (basename, proc_path, size);
+	} else {
+		DEBUG ("%s: Size %d larger than needed (%ld)",
+			   __func__, size, bytes);
+
+		memcpy (basename, proc_path, bytes);
+	}
+
+	return len;
+}
+
 guint32
 GetModuleBaseName (gpointer process, gpointer module,
 				   gunichar2 *basename, guint32 size)
@@ -2211,7 +2249,7 @@ guint32
 GetModuleFileNameEx (gpointer process, gpointer module,
 					 gunichar2 *filename, guint32 size)
 {
-	return get_module_name (process, module, filename, size, FALSE);
+	return get_module_filename (process, module, filename, size);
 }
 
 gboolean
