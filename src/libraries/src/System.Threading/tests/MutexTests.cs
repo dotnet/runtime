@@ -31,7 +31,6 @@ public class MutexTests
         }
     }
 
-    [ActiveIssue("https://github.com/dotnet/coreclr/issues/1237")]
     [PlatformSpecific(PlatformID.AnyUnix)]
     [Fact]
     public void Ctor_NamesNotSupported_Unix()
