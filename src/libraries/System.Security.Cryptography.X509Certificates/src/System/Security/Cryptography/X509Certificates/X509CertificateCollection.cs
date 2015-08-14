@@ -1,27 +1,18 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.IO;
-using System.Text;
 using System.Collections;
-using System.Diagnostics;
-using System.Globalization;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Threading;
-
-using Interlocked = System.Threading.Interlocked;
-
-using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
 {
     public partial class X509CertificateCollection : ICollection, IEnumerable, IList
     {
+        private readonly List<object> _list;
+
         public X509CertificateCollection()
         {
-            _list = new List<Object>();
+            _list = new List<object>();
         }
 
         public X509CertificateCollection(X509Certificate[] value)
@@ -46,16 +37,9 @@ namespace System.Security.Cryptography.X509Certificates
             get { return false; }
         }
 
-        Object ICollection.SyncRoot
+        object ICollection.SyncRoot
         {
-            get
-            {
-                if (_syncRoot == null)
-                {
-                    Interlocked.CompareExchange(ref _syncRoot, new object(), null);
-                }
-                return _syncRoot;
-            }
+            get { return ((ICollection)_list).SyncRoot; }
         }
 
         bool IList.IsFixedSize
@@ -68,26 +52,20 @@ namespace System.Security.Cryptography.X509Certificates
             get { return false; }
         }
 
-        Object IList.this[int index]
+        object IList.this[int index]
         {
             get
             {
-                if (index < 0 || index >= Count)
-                    throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_Index);
-
                 return _list[index];
             }
             set
             {
-                if (index < 0 || index >= Count)
-                    throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_Index);
                 if (value == null)
                     throw new ArgumentNullException("value");
 
                 _list[index] = value;
             }
         }
-
 
         public X509Certificate this[int index]
         {
@@ -136,14 +114,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public bool Contains(X509Certificate value)
         {
-            foreach (X509Certificate cert in List)
-            {
-                if (cert.Equals(value))
-                {
-                    return true;
-                }
-            }
-            return false;
+            return _list.Contains(value);
         }
 
         public void CopyTo(X509Certificate[] array, int index)
@@ -153,18 +124,18 @@ namespace System.Security.Cryptography.X509Certificates
 
         public X509CertificateEnumerator GetEnumerator()
         {
-            return new X509CertificateEnumerator(((IList<Object>)_list).GetEnumerator());
+            return new X509CertificateEnumerator(this);
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return new X509CertificateEnumerator(((IList<Object>)_list).GetEnumerator());
+            return GetEnumerator();
         }
 
         public override int GetHashCode()
         {
             int hashCode = 0;
-            foreach (X509Certificate cert in this)
+            foreach (X509Certificate cert in _list)
             {
                 hashCode += cert.GetHashCode();
             }
@@ -188,8 +159,6 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void RemoveAt(int index)
         {
-            if (index < 0 || index >= Count)
-                throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_Index);
             _list.RemoveAt(index);
         }
 
@@ -198,7 +167,7 @@ namespace System.Security.Cryptography.X509Certificates
             ((ICollection)_list).CopyTo(array, index);
         }
 
-        int IList.Add(Object value)
+        int IList.Add(object value)
         {
             if (value == null)
                 throw new ArgumentNullException("value");
@@ -208,23 +177,29 @@ namespace System.Security.Cryptography.X509Certificates
             return index;
         }
 
-        bool IList.Contains(Object value)
+        bool IList.Contains(object value)
         {
             return _list.Contains(value);
         }
 
-        int IList.IndexOf(Object value)
+        int IList.IndexOf(object value)
         {
             return _list.IndexOf(value);
         }
 
-        void IList.Insert(int index, Object value)
+        void IList.Insert(int index, object value)
         {
+            if (value == null)
+                throw new ArgumentNullException("value");
+
             _list.Insert(index, value);
         }
 
-        void IList.Remove(Object value)
+        void IList.Remove(object value)
         {
+            if (value == null)
+                throw new ArgumentNullException("value");
+
             _list.Remove(value);
         }
 
@@ -233,8 +208,9 @@ namespace System.Security.Cryptography.X509Certificates
             get { return this; }
         }
 
-        private List<Object> _list;
-        private Object _syncRoot;
+        internal void GetEnumerator(out List<object>.Enumerator enumerator)
+        {
+            enumerator = _list.GetEnumerator();
+        }
     }
 }
-

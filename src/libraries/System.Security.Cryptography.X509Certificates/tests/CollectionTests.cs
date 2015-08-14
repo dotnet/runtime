@@ -22,26 +22,31 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 X509Certificate2Enumerator e = cc.GetEnumerator();
                 object ignored;
 
-                // Not started
-                Assert.Throws<InvalidOperationException>(() => ignored = e.Current);
+                for (int i = 0; i < 2; i++)
+                {
+                    // Not started
+                    Assert.Throws<InvalidOperationException>(() => ignored = e.Current);
 
-                Assert.True(e.MoveNext());
-                Assert.Same(c1, e.Current);
+                    Assert.True(e.MoveNext());
+                    Assert.Same(c1, e.Current);
 
-                Assert.True(e.MoveNext());
-                Assert.Same(c2, e.Current);
+                    Assert.True(e.MoveNext());
+                    Assert.Same(c2, e.Current);
 
-                Assert.True(e.MoveNext());
-                Assert.Same(c3, e.Current);
+                    Assert.True(e.MoveNext());
+                    Assert.Same(c3, e.Current);
 
-                Assert.False(e.MoveNext());
-                Assert.False(e.MoveNext());
-                Assert.False(e.MoveNext());
-                Assert.False(e.MoveNext());
-                Assert.False(e.MoveNext());
+                    Assert.False(e.MoveNext());
+                    Assert.False(e.MoveNext());
+                    Assert.False(e.MoveNext());
+                    Assert.False(e.MoveNext());
+                    Assert.False(e.MoveNext());
 
-                // ended.
-                Assert.Throws<InvalidOperationException>(() => ignored = e.Current);
+                    // ended.
+                    Assert.Throws<InvalidOperationException>(() => ignored = e.Current);
+
+                    e.Reset();
+                }
             }
         }
 
@@ -56,26 +61,167 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 X509CertificateCollection.X509CertificateEnumerator e = cc.GetEnumerator();
                 object ignored;
 
-                // Not started
-                Assert.Throws<InvalidOperationException>(() => ignored = e.Current);
+                for (int i = 0; i < 2; i++)
+                {
+                    // Not started
+                    Assert.Throws<InvalidOperationException>(() => ignored = e.Current);
 
-                Assert.True(e.MoveNext());
-                Assert.Same(c1, e.Current);
+                    Assert.True(e.MoveNext());
+                    Assert.Same(c1, e.Current);
 
-                Assert.True(e.MoveNext());
-                Assert.Same(c2, e.Current);
+                    Assert.True(e.MoveNext());
+                    Assert.Same(c2, e.Current);
 
-                Assert.True(e.MoveNext());
-                Assert.Same(c3, e.Current);
+                    Assert.True(e.MoveNext());
+                    Assert.Same(c3, e.Current);
 
-                Assert.False(e.MoveNext());
-                Assert.False(e.MoveNext());
-                Assert.False(e.MoveNext());
-                Assert.False(e.MoveNext());
-                Assert.False(e.MoveNext());
+                    Assert.False(e.MoveNext());
+                    Assert.False(e.MoveNext());
+                    Assert.False(e.MoveNext());
+                    Assert.False(e.MoveNext());
+                    Assert.False(e.MoveNext());
 
-                // ended.
-                Assert.Throws<InvalidOperationException>(() => ignored = e.Current);
+                    // ended.
+                    Assert.Throws<InvalidOperationException>(() => ignored = e.Current);
+
+                    e.Reset();
+                }
+            }
+        }
+
+        [Fact]
+        public static void X509CertificateCollectionThrowsArgumentNullException()
+        {
+            using (X509Certificate certificate = new X509Certificate())
+            {
+                X509CertificateCollection collection = new X509CertificateCollection { certificate };
+
+                Assert.Throws<ArgumentNullException>(() => collection[0] = null);
+                Assert.Throws<ArgumentNullException>(() => collection.Add(null));
+                Assert.Throws<ArgumentNullException>(() => collection.AddRange((X509Certificate[])null));
+                Assert.Throws<ArgumentNullException>(() => collection.AddRange((X509CertificateCollection)null));
+                Assert.Throws<ArgumentNullException>(() => collection.CopyTo(null, 0));
+                Assert.Throws<ArgumentNullException>(() => collection.Insert(0, null));
+                Assert.Throws<ArgumentNullException>(() => collection.Remove(null));
+
+                IList ilist = (IList)collection;
+                Assert.Throws<ArgumentNullException>(() => ilist[0] = null);
+                Assert.Throws<ArgumentNullException>(() => ilist.Add(null));
+                Assert.Throws<ArgumentNullException>(() => ilist.CopyTo(null, 0));
+                Assert.Throws<ArgumentNullException>(() => ilist.Insert(0, null));
+                Assert.Throws<ArgumentNullException>(() => ilist.Remove(null));
+            }
+        }
+
+        [Fact]
+        public static void X509Certificate2CollectionThrowsArgumentNullException()
+        {
+            using (X509Certificate2 certificate = new X509Certificate2())
+            {
+                X509Certificate2Collection collection = new X509Certificate2Collection { certificate };
+
+                Assert.Throws<ArgumentNullException>(() => collection[0] = null);
+                Assert.Throws<ArgumentNullException>(() => collection.Add((X509Certificate)null));
+                Assert.Throws<ArgumentNullException>(() => collection.Add((X509Certificate2)null));
+                Assert.Throws<ArgumentNullException>(() => collection.AddRange((X509Certificate[])null));
+                Assert.Throws<ArgumentNullException>(() => collection.AddRange((X509CertificateCollection)null));
+                Assert.Throws<ArgumentNullException>(() => collection.AddRange((X509Certificate2[])null));
+                Assert.Throws<ArgumentNullException>(() => collection.AddRange((X509Certificate2Collection)null));
+
+                // Note: X509CertificateCollection.Contains does not throw, but X509Certificate2Collection.Contains does throw.
+                Assert.Throws<ArgumentNullException>(() => collection.Contains((X509Certificate2)null));
+
+                Assert.Throws<ArgumentNullException>(() => collection.CopyTo(null, 0));
+                Assert.Throws<ArgumentNullException>(() => collection.Insert(0, (X509Certificate)null));
+                Assert.Throws<ArgumentNullException>(() => collection.Insert(0, (X509Certificate2)null));
+                Assert.Throws<ArgumentNullException>(() => collection.Remove((X509Certificate)null));
+                Assert.Throws<ArgumentNullException>(() => collection.Remove((X509Certificate2)null));
+                Assert.Throws<ArgumentNullException>(() => collection.RemoveRange((X509Certificate2[])null));
+                Assert.Throws<ArgumentNullException>(() => collection.RemoveRange((X509Certificate2Collection)null));
+
+                Assert.Throws<ArgumentNullException>(() => collection.Import((byte[])null));
+                Assert.Throws<ArgumentNullException>(() => collection.Import((string)null));
+
+                IList ilist = (IList)collection;
+                Assert.Throws<ArgumentNullException>(() => ilist[0] = null);
+                Assert.Throws<ArgumentNullException>(() => ilist.Add(null));
+                Assert.Throws<ArgumentNullException>(() => ilist.CopyTo(null, 0));
+                Assert.Throws<ArgumentNullException>(() => ilist.Insert(0, null));
+                Assert.Throws<ArgumentNullException>(() => ilist.Remove(null));
+            }
+        }
+
+        [Fact]
+        public static void X509CertificateCollectionThrowsArgumentOutOfRangeException()
+        {
+            using (X509Certificate certificate = new X509Certificate())
+            {
+                X509CertificateCollection collection = new X509CertificateCollection { certificate };
+
+                Assert.Throws<ArgumentOutOfRangeException>(() => collection[-1]);
+                Assert.Throws<ArgumentOutOfRangeException>(() => collection[collection.Count]);
+                Assert.Throws<ArgumentOutOfRangeException>(() => collection[-1] = certificate);
+                Assert.Throws<ArgumentOutOfRangeException>(() => collection[collection.Count] = certificate);
+                Assert.Throws<ArgumentOutOfRangeException>(() => collection.Insert(-1, certificate));
+                Assert.Throws<ArgumentOutOfRangeException>(() => collection.Insert(collection.Count + 1, certificate));
+                Assert.Throws<ArgumentOutOfRangeException>(() => collection.RemoveAt(-1));
+                Assert.Throws<ArgumentOutOfRangeException>(() => collection.RemoveAt(collection.Count));
+
+                IList ilist = (IList)collection;
+                Assert.Throws<ArgumentOutOfRangeException>(() => ilist[-1]);
+                Assert.Throws<ArgumentOutOfRangeException>(() => ilist[collection.Count]);
+                Assert.Throws<ArgumentOutOfRangeException>(() => ilist[-1] = certificate);
+                Assert.Throws<ArgumentOutOfRangeException>(() => ilist[collection.Count] = certificate);
+                Assert.Throws<ArgumentOutOfRangeException>(() => ilist.Insert(-1, certificate));
+                Assert.Throws<ArgumentOutOfRangeException>(() => ilist.Insert(collection.Count + 1, certificate));
+                Assert.Throws<ArgumentOutOfRangeException>(() => ilist.RemoveAt(-1));
+                Assert.Throws<ArgumentOutOfRangeException>(() => ilist.RemoveAt(collection.Count));
+            }
+        }
+
+        [Fact]
+        public static void X509Certificate2CollectionThrowsArgumentOutOfRangeException()
+        {
+            using (X509Certificate2 certificate = new X509Certificate2())
+            {
+                X509Certificate2Collection collection = new X509Certificate2Collection { certificate };
+
+                Assert.Throws<ArgumentOutOfRangeException>(() => collection[-1]);
+                Assert.Throws<ArgumentOutOfRangeException>(() => collection[collection.Count]);
+                Assert.Throws<ArgumentOutOfRangeException>(() => collection[-1] = certificate);
+                Assert.Throws<ArgumentOutOfRangeException>(() => collection[collection.Count] = certificate);
+                Assert.Throws<ArgumentOutOfRangeException>(() => collection.Insert(-1, certificate));
+                Assert.Throws<ArgumentOutOfRangeException>(() => collection.Insert(collection.Count + 1, certificate));
+                Assert.Throws<ArgumentOutOfRangeException>(() => collection.RemoveAt(-1));
+                Assert.Throws<ArgumentOutOfRangeException>(() => collection.RemoveAt(collection.Count));
+
+                IList ilist = (IList)collection;
+                Assert.Throws<ArgumentOutOfRangeException>(() => ilist[-1]);
+                Assert.Throws<ArgumentOutOfRangeException>(() => ilist[collection.Count]);
+                Assert.Throws<ArgumentOutOfRangeException>(() => ilist[-1] = certificate);
+                Assert.Throws<ArgumentOutOfRangeException>(() => ilist[collection.Count] = certificate);
+                Assert.Throws<ArgumentOutOfRangeException>(() => ilist.Insert(-1, certificate));
+                Assert.Throws<ArgumentOutOfRangeException>(() => ilist.Insert(collection.Count + 1, certificate));
+                Assert.Throws<ArgumentOutOfRangeException>(() => ilist.RemoveAt(-1));
+                Assert.Throws<ArgumentOutOfRangeException>(() => ilist.RemoveAt(collection.Count));
+            }
+        }
+
+        [Fact]
+        public static void X509CertificateCollectionEnumeratorModification()
+        {
+            using (X509Certificate c1 = new X509Certificate())
+            using (X509Certificate c2 = new X509Certificate())
+            using (X509Certificate c3 = new X509Certificate())
+            {
+                X509CertificateCollection cc = new X509CertificateCollection(new X509Certificate[] { c1, c2, c3 });
+                X509CertificateCollection.X509CertificateEnumerator e = cc.GetEnumerator();
+
+                cc.Add(c1);
+
+                // Collection changed.
+                Assert.Throws<InvalidOperationException>(() => e.MoveNext());
+                Assert.Throws<InvalidOperationException>(() => e.Reset());
             }
         }
 
@@ -86,13 +232,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (X509Certificate2 c2 = new X509Certificate2())
             using (X509Certificate2 c3 = new X509Certificate2())
             {
-                X509CertificateCollection cc = new X509CertificateCollection(new X509Certificate[] { c1, c2, c3 });
-                X509Certificate2Collection.X509CertificateEnumerator e = cc.GetEnumerator();
+                X509Certificate2Collection cc = new X509Certificate2Collection(new X509Certificate2[] { c1, c2, c3 });
+                X509Certificate2Enumerator e = cc.GetEnumerator();
 
                 cc.Add(c1);
 
                 // Collection changed.
                 Assert.Throws<InvalidOperationException>(() => e.MoveNext());
+                Assert.Throws<InvalidOperationException>(() => e.Reset());
             }
         }
 
