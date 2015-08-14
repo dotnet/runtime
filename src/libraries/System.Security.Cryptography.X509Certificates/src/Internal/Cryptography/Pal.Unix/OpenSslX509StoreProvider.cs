@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Security.Cryptography.X509Certificates;
 
 namespace Internal.Cryptography.Pal
@@ -20,9 +21,8 @@ namespace Internal.Cryptography.Pal
         {
         }
 
-        public IEnumerable<X509Certificate2> Find(X509FindType findType, object findValue, bool validOnly)
+        public void FindAndCopyTo(X509FindType findType, object findValue, bool validOnly, X509Certificate2Collection collection)
         {
-            return Array.Empty<X509Certificate2>();
         }
 
         public byte[] Export(X509ContentType contentType, string password)
@@ -30,15 +30,11 @@ namespace Internal.Cryptography.Pal
             throw new NotImplementedException();
         }
 
-        public IEnumerable<X509Certificate2> Certificates
+        public void CopyTo(X509Certificate2Collection collection)
         {
-            get
-            {
-                foreach (X509Certificate2 cert in _certs)
-                {
-                    yield return cert;
-                }
-            }
+            Debug.Assert(collection != null);
+
+            collection.AddRange(_certs);
         }
 
         public void Add(ICertificatePal cert)
