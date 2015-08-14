@@ -48,8 +48,8 @@ namespace System.Net.Http
 
         #region Fields
 
-        private static bool _supportsAutomaticDecompression;
-        private static bool _supportsSSL;
+        private static readonly bool _supportsAutomaticDecompression;
+        private static readonly bool _supportsSSL;
         private volatile bool _anyOperationStarted;
         private volatile bool _disposed;
         private IWebProxy _proxy = null;
