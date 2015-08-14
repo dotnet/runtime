@@ -680,7 +680,7 @@ EXTERN_C const IID IID_ISOSDacInterface;
         virtual HRESULT STDMETHODCALLTYPE GetAppDomainName( 
             CLRDATA_ADDRESS addr,
             unsigned int count,
-            wchar_t *name,
+            WCHAR *name,
             unsigned int *pNeeded) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE GetDomainFromContext( 
@@ -701,7 +701,7 @@ EXTERN_C const IID IID_ISOSDacInterface;
         virtual HRESULT STDMETHODCALLTYPE GetAssemblyName( 
             CLRDATA_ADDRESS assembly,
             unsigned int count,
-            wchar_t *name,
+            WCHAR *name,
             unsigned int *pNeeded) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE GetModule( 
@@ -758,7 +758,7 @@ EXTERN_C const IID IID_ISOSDacInterface;
         virtual HRESULT STDMETHODCALLTYPE GetMethodDescName( 
             CLRDATA_ADDRESS methodDesc,
             unsigned int count,
-            wchar_t *name,
+            WCHAR *name,
             unsigned int *pNeeded) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE GetMethodDescPtrFromFrame( 
@@ -812,19 +812,19 @@ EXTERN_C const IID IID_ISOSDacInterface;
         virtual HRESULT STDMETHODCALLTYPE GetObjectStringData( 
             CLRDATA_ADDRESS obj,
             unsigned int count,
-            wchar_t *stringData,
+            WCHAR *stringData,
             unsigned int *pNeeded) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE GetObjectClassName( 
             CLRDATA_ADDRESS obj,
             unsigned int count,
-            wchar_t *className,
+            WCHAR *className,
             unsigned int *pNeeded) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE GetMethodTableName( 
             CLRDATA_ADDRESS mt,
             unsigned int count,
-            wchar_t *mtName,
+            WCHAR *mtName,
             unsigned int *pNeeded) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE GetMethodTableData( 
@@ -855,7 +855,7 @@ EXTERN_C const IID IID_ISOSDacInterface;
         virtual HRESULT STDMETHODCALLTYPE GetFrameName( 
             CLRDATA_ADDRESS vtable,
             unsigned int count,
-            wchar_t *frameName,
+            WCHAR *frameName,
             unsigned int *pNeeded) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE GetPEFileBase( 
@@ -865,7 +865,7 @@ EXTERN_C const IID IID_ISOSDacInterface;
         virtual HRESULT STDMETHODCALLTYPE GetPEFileName( 
             CLRDATA_ADDRESS addr,
             unsigned int count,
-            wchar_t *fileName,
+            WCHAR *fileName,
             unsigned int *pNeeded) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE GetGCHeapData( 
@@ -1012,7 +1012,7 @@ EXTERN_C const IID IID_ISOSDacInterface;
         virtual HRESULT STDMETHODCALLTYPE GetRegisterName( 
             /* [in] */ int regName,
             /* [in] */ unsigned int count,
-            /* [out] */ wchar_t *buffer,
+            /* [out] */ WCHAR *buffer,
             /* [out] */ unsigned int *pNeeded) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE GetThreadAllocData( 
@@ -1033,25 +1033,25 @@ EXTERN_C const IID IID_ISOSDacInterface;
         virtual HRESULT STDMETHODCALLTYPE GetPrivateBinPaths( 
             CLRDATA_ADDRESS appDomain,
             int count,
-            wchar_t *paths,
+            WCHAR *paths,
             unsigned int *pNeeded) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE GetAssemblyLocation( 
             CLRDATA_ADDRESS assembly,
             int count,
-            wchar_t *location,
+            WCHAR *location,
             unsigned int *pNeeded) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE GetAppDomainConfigFile( 
             CLRDATA_ADDRESS appDomain,
             int count,
-            wchar_t *configFile,
+            WCHAR *configFile,
             unsigned int *pNeeded) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE GetApplicationBase( 
             CLRDATA_ADDRESS appDomain,
             int count,
-            wchar_t *base,
+            WCHAR *base,
             unsigned int *pNeeded) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE GetFailedAssemblyData( 
@@ -1062,13 +1062,13 @@ EXTERN_C const IID IID_ISOSDacInterface;
         virtual HRESULT STDMETHODCALLTYPE GetFailedAssemblyLocation( 
             CLRDATA_ADDRESS assesmbly,
             unsigned int count,
-            wchar_t *location,
+            WCHAR *location,
             unsigned int *pNeeded) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE GetFailedAssemblyDisplayName( 
             CLRDATA_ADDRESS assembly,
             unsigned int count,
-            wchar_t *name,
+            WCHAR *name,
             unsigned int *pNeeded) = 0;
         
     };
@@ -1115,7 +1115,7 @@ EXTERN_C const IID IID_ISOSDacInterface;
             ISOSDacInterface * This,
             CLRDATA_ADDRESS addr,
             unsigned int count,
-            wchar_t *name,
+            WCHAR *name,
             unsigned int *pNeeded);
         
         HRESULT ( STDMETHODCALLTYPE *GetDomainFromContext )( 
@@ -1140,7 +1140,7 @@ EXTERN_C const IID IID_ISOSDacInterface;
             ISOSDacInterface * This,
             CLRDATA_ADDRESS assembly,
             unsigned int count,
-            wchar_t *name,
+            WCHAR *name,
             unsigned int *pNeeded);
         
         HRESULT ( STDMETHODCALLTYPE *GetModule )( 
@@ -1208,7 +1208,7 @@ EXTERN_C const IID IID_ISOSDacInterface;
             ISOSDacInterface * This,
             CLRDATA_ADDRESS methodDesc,
             unsigned int count,
-            wchar_t *name,
+            WCHAR *name,
             unsigned int *pNeeded);
         
         HRESULT ( STDMETHODCALLTYPE *GetMethodDescPtrFromFrame )( 
@@ -1274,21 +1274,21 @@ EXTERN_C const IID IID_ISOSDacInterface;
             ISOSDacInterface * This,
             CLRDATA_ADDRESS obj,
             unsigned int count,
-            wchar_t *stringData,
+            WCHAR *stringData,
             unsigned int *pNeeded);
         
         HRESULT ( STDMETHODCALLTYPE *GetObjectClassName )( 
             ISOSDacInterface * This,
             CLRDATA_ADDRESS obj,
             unsigned int count,
-            wchar_t *className,
+            WCHAR *className,
             unsigned int *pNeeded);
         
         HRESULT ( STDMETHODCALLTYPE *GetMethodTableName )( 
             ISOSDacInterface * This,
             CLRDATA_ADDRESS mt,
             unsigned int count,
-            wchar_t *mtName,
+            WCHAR *mtName,
             unsigned int *pNeeded);
         
         HRESULT ( STDMETHODCALLTYPE *GetMethodTableData )( 
@@ -1326,7 +1326,7 @@ EXTERN_C const IID IID_ISOSDacInterface;
             ISOSDacInterface * This,
             CLRDATA_ADDRESS vtable,
             unsigned int count,
-            wchar_t *frameName,
+            WCHAR *frameName,
             unsigned int *pNeeded);
         
         HRESULT ( STDMETHODCALLTYPE *GetPEFileBase )( 
@@ -1338,7 +1338,7 @@ EXTERN_C const IID IID_ISOSDacInterface;
             ISOSDacInterface * This,
             CLRDATA_ADDRESS addr,
             unsigned int count,
-            wchar_t *fileName,
+            WCHAR *fileName,
             unsigned int *pNeeded);
         
         HRESULT ( STDMETHODCALLTYPE *GetGCHeapData )( 
@@ -1520,7 +1520,7 @@ EXTERN_C const IID IID_ISOSDacInterface;
             ISOSDacInterface * This,
             /* [in] */ int regName,
             /* [in] */ unsigned int count,
-            /* [out] */ wchar_t *buffer,
+            /* [out] */ WCHAR *buffer,
             /* [out] */ unsigned int *pNeeded);
         
         HRESULT ( STDMETHODCALLTYPE *GetThreadAllocData )( 
@@ -1545,28 +1545,28 @@ EXTERN_C const IID IID_ISOSDacInterface;
             ISOSDacInterface * This,
             CLRDATA_ADDRESS appDomain,
             int count,
-            wchar_t *paths,
+            WCHAR *paths,
             unsigned int *pNeeded);
         
         HRESULT ( STDMETHODCALLTYPE *GetAssemblyLocation )( 
             ISOSDacInterface * This,
             CLRDATA_ADDRESS assembly,
             int count,
-            wchar_t *location,
+            WCHAR *location,
             unsigned int *pNeeded);
         
         HRESULT ( STDMETHODCALLTYPE *GetAppDomainConfigFile )( 
             ISOSDacInterface * This,
             CLRDATA_ADDRESS appDomain,
             int count,
-            wchar_t *configFile,
+            WCHAR *configFile,
             unsigned int *pNeeded);
         
         HRESULT ( STDMETHODCALLTYPE *GetApplicationBase )( 
             ISOSDacInterface * This,
             CLRDATA_ADDRESS appDomain,
             int count,
-            wchar_t *base,
+            WCHAR *base,
             unsigned int *pNeeded);
         
         HRESULT ( STDMETHODCALLTYPE *GetFailedAssemblyData )( 
@@ -1579,14 +1579,14 @@ EXTERN_C const IID IID_ISOSDacInterface;
             ISOSDacInterface * This,
             CLRDATA_ADDRESS assesmbly,
             unsigned int count,
-            wchar_t *location,
+            WCHAR *location,
             unsigned int *pNeeded);
         
         HRESULT ( STDMETHODCALLTYPE *GetFailedAssemblyDisplayName )( 
             ISOSDacInterface * This,
             CLRDATA_ADDRESS assembly,
             unsigned int count,
-            wchar_t *name,
+            WCHAR *name,
             unsigned int *pNeeded);
         
         END_INTERFACE

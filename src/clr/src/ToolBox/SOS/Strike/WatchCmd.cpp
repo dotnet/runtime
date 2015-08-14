@@ -112,7 +112,7 @@ HRESULT WatchCmd::Print(int expansionIndex, __in_z WCHAR* expansionPath, __in_z 
         pFilterList = pPersistListHead;
         while(pFilterList != NULL)
         {
-            if(wcscmp(pFilterList->pName, pFilterName)==0)
+            if(_wcscmp(pFilterList->pName, pFilterName)==0)
                 break;
             pFilterList = pFilterList->pNext;
         }
@@ -135,7 +135,7 @@ HRESULT WatchCmd::Print(int expansionIndex, __in_z WCHAR* expansionPath, __in_z 
             PersistWatchExpression* pCurFilterExpr = pHeadFilterExpr;
             while(pCurFilterExpr != NULL)
             {
-                if(wcscmp(pCurFilterExpr->pExpression, pResult->GetAbsoluteExpression())==0)
+                if(_wcscmp(pCurFilterExpr->pExpression, pResult->GetAbsoluteExpression())==0)
                     break;
                 pCurFilterExpr = pCurFilterExpr->pNext;
             }
@@ -146,7 +146,7 @@ HRESULT WatchCmd::Print(int expansionIndex, __in_z WCHAR* expansionPath, __in_z 
             {
                 WCHAR pCurPersistResult[MAX_EXPRESSION];
                 FormatPersistResult(pCurPersistResult, MAX_EXPRESSION, pResult);
-                if(wcscmp(pCurPersistResult, pCurFilterExpr->pPersistResult)==0)
+                if(_wcscmp(pCurPersistResult, pCurFilterExpr->pPersistResult)==0)
                 {
                     print = FALSE;
                 }
@@ -178,7 +178,7 @@ HRESULT WatchCmd::RemoveList(__in_z WCHAR* pListName)
     PersistList** ppList = &pPersistListHead;
     while(*ppList != NULL)
     {
-        if(wcscmp((*ppList)->pName, pListName) == 0)
+        if(_wcscmp((*ppList)->pName, pListName) == 0)
         {
             PersistList* toDelete = *ppList;
             *ppList = (*ppList)->pNext;
@@ -193,12 +193,12 @@ HRESULT WatchCmd::RemoveList(__in_z WCHAR* pListName)
 // Renames a previously saved persisted watch list
 HRESULT WatchCmd::RenameList(__in_z WCHAR* pOldName, __in_z WCHAR* pNewName)
 {
-    if(wcscmp(pOldName, pNewName)==0)
+    if(_wcscmp(pOldName, pNewName)==0)
         return S_OK;
     PersistList** ppList = &pPersistListHead;
     while(*ppList != NULL)
     {
-        if(wcscmp((*ppList)->pName, pOldName) == 0)
+        if(_wcscmp((*ppList)->pName, pOldName) == 0)
         {
             PersistList* pListToChangeName = *ppList;
             RemoveList(pNewName);
@@ -300,9 +300,9 @@ VOID WatchCmd::EvalPrintCallback(ExpressionNode* pExpressionNode, int depth, VOI
     {
         // names can have '<' and '>' in them, need to escape
         WCHAR pEscapedTypeName[MAX_EXPRESSION];
-        DmlEscape(pExpressionNode->GetTypeName(), (int)wcslen(pExpressionNode->GetTypeName()), pEscapedTypeName, MAX_EXPRESSION);
+        DmlEscape(pExpressionNode->GetTypeName(), (int)_wcslen(pExpressionNode->GetTypeName()), pEscapedTypeName, MAX_EXPRESSION);
         WCHAR pRelativeExpression[MAX_EXPRESSION];
-        DmlEscape(pExpressionNode->GetRelativeExpression(), (int)wcslen(pExpressionNode->GetRelativeExpression()), pRelativeExpression, MAX_EXPRESSION);
+        DmlEscape(pExpressionNode->GetRelativeExpression(), (int)_wcslen(pExpressionNode->GetRelativeExpression()), pRelativeExpression, MAX_EXPRESSION);
         DMLOut("%S <exec cmd=\"%S (%S)%S\">%S</exec> %S\n", pEscapedTypeName, pData->pCommand, pEscapedTypeName, pExpressionNode->GetAbsoluteExpression(), pRelativeExpression, pExpressionNode->GetTextValue());
     }
 }

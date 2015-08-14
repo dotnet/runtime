@@ -515,7 +515,7 @@ void NextTerm (__deref_inout_z char *& ptr)
 // Parses something like 6e24d310, 0x6e24d310, or 6e24d310h.  
 // On 64-bit, also parses things like 000006fb`f9b70f50 and 
 // 000006fbf9b70f50 (as well as their 0x-prefix, -h suffix variations).
-INT_PTR ParseHexNumber (__in_z char *ptr, __out char **endptr)
+INT_PTR ParseHexNumber (__in_z char *ptr, ___out char **endptr)
 {
     char *endptr1;
     INT_PTR value1 = strtoul(ptr, &endptr1, 16);
@@ -705,7 +705,7 @@ const char * HelperFuncName (size_t IP)
 // Note:
 //   The return is a pointer to a global buffer, therefore this value must
 //   be consumed as soon as possible after a call to this function.
-LPCWSTR EHTypedClauseTypeName(__in const DACEHInfo* pEHInfo)
+LPCWSTR EHTypedClauseTypeName(___in const DACEHInfo* pEHInfo)
 {
     _ASSERTE(pEHInfo != NULL);
     if ((pEHInfo->clauseType == EHTyped) && pEHInfo->isCatchAllHandler)

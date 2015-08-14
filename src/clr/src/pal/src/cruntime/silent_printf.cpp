@@ -26,6 +26,7 @@ Revision History:
 #include "pal/palinternal.h"
 #include "pal/cruntime.h"
 #include "pal/locale.h"
+#include "pal/printfcpp.hpp"
 
 /* clip strings (%s, %S) at this number of characters */
 #define MAX_STR_LEN 300

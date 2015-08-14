@@ -26,6 +26,7 @@
  *          we use a unordered_set.  Similarly to keep track of MethodTable data we use a unordered_map to track the
  *          mt -> mtinfo mapping.
  */ 
+
 #include "sos.h"
 #include "disasm.h"
 
@@ -100,8 +101,6 @@ bool LinearReadCache::MoveToPage(TADDR addr, unsigned int size)
     return true;
 }
 
-
-#ifndef FEATURE_PAL
 
 static const char *NameForHandle(unsigned int type)
 {
@@ -402,7 +401,7 @@ void GCRootImpl::ReportSizeInfo(const SOSHandleData &handle, TADDR obj)
     TADDR mt = ReadPointer(obj);
     MTInfo *mtInfo = GetMTInfo(mt);
 
-    const wchar_t *type = mtInfo ? mtInfo->GetTypeName() : W("unknown type");
+    const WCHAR *type = mtInfo ? mtInfo->GetTypeName() : W("unknown type");
 
     size_t size = mSizes[obj];
     ExtOut("Handle (%s): %p -> %p: %d (0x%x) bytes (%S)\n", NameForHandle(handle.Type), SOS_PTR(handle.Handle),
@@ -423,7 +422,7 @@ void GCRootImpl::ReportSizeInfo(DWORD thread, const SOSStackRefData &stackRef, T
 
     TADDR mt = ReadPointer(obj);
     MTInfo *mtInfo = GetMTInfo(mt);
-    const wchar_t *type = mtInfo ? mtInfo->GetTypeName() : W("unknown type");
+    const WCHAR *type = mtInfo ? mtInfo->GetTypeName() : W("unknown type");
     
     size_t size = mSizes[obj];
     ExtOut("Thread %x (%S): %S: %d (0x%x) bytes (%S)\n", thread, frame.c_str(), regOutput.c_str(), size, size, type);
@@ -1311,7 +1310,6 @@ void PrintNotReachableInRange(TADDR rngStart, TADDR rngEnd, BOOL bExcludeReadyFo
         ExtOut("\n");
 }
 
-#endif // FEATURE_PAL
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -1621,7 +1619,6 @@ BOOL VerifyObject(const DacpGcHeapDetails &heap, const DacpHeapSegmentData &seg,
         return FALSE;
     }
 
-#ifndef FEATURE_PAL
     // If we requested to verify the object's members, the GC may be in a state where that's not possible.
     // Here we check to see if the object in question needs to have its members updated.  If so, we turn off
     // verification for the object.
@@ -1631,7 +1628,6 @@ BOOL VerifyObject(const DacpGcHeapDetails &heap, const DacpHeapSegmentData &seg,
         should_check_bgc_mark(heap, seg, &consider_bgc_mark, &check_current_sweep, &check_saved_sweep);
         bVerifyMember = fgc_should_consider_object(heap, objAddr, seg, consider_bgc_mark, check_current_sweep, check_saved_sweep);
     }
-#endif // !defined(FEATURE_PAL)
 
     return bVerifyMember ? VerifyObjectMember(heap, objAddr) : TRUE;
 }
@@ -1683,8 +1679,6 @@ BOOL VerifyObject(const DacpGcHeapDetails &heap, DWORD_PTR objAddr, DWORD_PTR MT
 
     return VerifyObject(heap, seg, objAddr, MTAddr, objSize, bVerifyMember);
 }
-
-#ifndef FEATURE_PAL
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -1827,9 +1821,7 @@ BOOL HeapTraverser::Initialize()
         return FALSE;
     }
 
-#ifndef FEATURE_PAL
     GCRootImpl::GetDependentHandleMap(mDependentHandleMap);
-#endif
 
     size_t startID = 1;
     TypeTree::setTypeIDs(m_pTypeTree, &startID);
@@ -1910,10 +1902,10 @@ size_t HeapTraverser::getID(size_t mTable)
 }
 
 #ifndef FEATURE_PAL
-void replace(std::wstring &str, const wchar_t *toReplace, const wchar_t *replaceWith)
+void replace(std::wstring &str, const WCHAR *toReplace, const WCHAR *replaceWith)
 {
-    const size_t replaceLen = wcslen(toReplace);
-    const size_t replaceWithLen = wcslen(replaceWith);
+    const size_t replaceLen = _wcslen(toReplace);
+    const size_t replaceWithLen = _wcslen(replaceWith);
     
     size_t i = str.find(toReplace);
     while (i != std::wstring::npos)
@@ -1928,7 +1920,6 @@ void HeapTraverser::PrintType(size_t ID,LPCWSTR name)
 {
     if (m_format==FORMAT_XML)
     {
-
 #ifndef FEATURE_PAL
         // Sanitize name based on XML spec.
         std::wstring wname = name;
@@ -2216,7 +2207,6 @@ void HeapTraverser::PrintRefs(size_t obj, size_t methodTable, size_t size)
             PrintObjectMember(*itr, false);
     }
     
-#ifndef FEATURE_PAL
     std::unordered_map<TADDR, std::list<TADDR>>::iterator itr = mDependentHandleMap.find((TADDR)obj);
     if (itr != mDependentHandleMap.end())
     {
@@ -2225,10 +2215,8 @@ void HeapTraverser::PrintRefs(size_t obj, size_t methodTable, size_t size)
             PrintObjectMember(*litr, true);
         }
     }
-#endif
 }
 
-#endif // FEATURE_PAL
 
 void sos::ObjectIterator::BuildError(char *out, size_t count, const char *format, ...) const
 {
@@ -2489,7 +2477,6 @@ bool sos::ObjectIterator::Verify(char *reason, size_t count) const
         
         BOOL bVerifyMember = TRUE;
 
-#ifndef FEATURE_PAL
         // If we requested to verify the object's members, the GC may be in a state where that's not possible.
         // Here we check to see if the object in question needs to have its members updated.  If so, we turn off
         // verification for the object.
@@ -2497,7 +2484,6 @@ bool sos::ObjectIterator::Verify(char *reason, size_t count) const
         should_check_bgc_mark(mHeaps[mCurrHeap], mSegment, &consider_bgc_mark, &check_current_sweep, &check_saved_sweep);
         bVerifyMember = fgc_should_consider_object(mHeaps[mCurrHeap], mCurrObj.GetAddress(), mSegment,
                                                    consider_bgc_mark, check_current_sweep, check_saved_sweep);
-#endif // !defined(FEATURE_PAL)
 
         if (bVerifyMember)
             return VerifyObjectMembers(reason, count);

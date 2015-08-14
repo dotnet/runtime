@@ -30,7 +30,12 @@
 #include "winnls.h"
 #include "check.h"
 #include "safemath.h"
+
+#ifdef PAL_STDCPP_COMPAT
+#include <type_traits>
+#else
 #include "clr_std/type_traits"
+#endif
 
 #include "contract.h"
 #include "entrypoints.h"
