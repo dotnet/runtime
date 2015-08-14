@@ -347,6 +347,18 @@
           "lib/DNXCore50/System.Runtime.InteropServices.dll": {}
         }
       },
+      "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23213": {
+        "dependencies": {
+          "System.Runtime": "4.0.20",
+          "System.Resources.ResourceManager": "4.0.0"
+        },
+        "compile": {
+          "ref/dotnet/System.Runtime.InteropServices.RuntimeInformation.dll": {}
+        },
+        "runtime": {
+          "lib/dotnet/System.Runtime.InteropServices.RuntimeInformation.dll": {}
+        }
+      },
       "System.Runtime.Numerics/4.0.0": {
         "dependencies": {
           "System.Runtime": "4.0.20",
@@ -653,7 +665,7 @@
           "lib/dnxcore50/xunit.execution.dnx.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00076": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00077": {
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
           "System.IO": "4.0.10",
@@ -664,6 +676,7 @@
           "System.Runtime.Extensions": "4.0.10",
           "System.Runtime.Handles": "4.0.0",
           "System.Runtime.InteropServices": "4.0.20",
+          "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-beta-23213",
           "System.Text.Encoding": "4.0.10",
           "System.Threading": "4.0.10",
           "System.Threading.Tasks": "4.0.10",
@@ -1466,6 +1479,25 @@
         "runtimes/win8-aot/lib/netcore50/System.Runtime.InteropServices.dll"
       ]
     },
+    "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23213": {
+      "serviceable": true,
+      "sha512": "yzVJM7dF6XqnGTkv2IRufKs8AiqDpfdfBvMT5sVgY2fCtUXdkcjxiIWzaVIau8IYrJUlQDmSpeQ8NV6l1vz0Lg==",
+      "files": [
+        "System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23213.nupkg",
+        "System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23213.nupkg.sha512",
+        "System.Runtime.InteropServices.RuntimeInformation.nuspec",
+        "lib/dotnet/System.Runtime.InteropServices.RuntimeInformation.dll",
+        "lib/MonoAndroid10/_._",
+        "lib/MonoTouch10/_._",
+        "lib/xamarinios10/_._",
+        "lib/xamarinmac20/_._",
+        "ref/dotnet/System.Runtime.InteropServices.RuntimeInformation.dll",
+        "ref/MonoAndroid10/_._",
+        "ref/MonoTouch10/_._",
+        "ref/xamarinios10/_._",
+        "ref/xamarinmac20/_._"
+      ]
+    },
     "System.Runtime.Numerics/4.0.0": {
       "serviceable": true,
       "sha512": "aAYGEOE01nabQLufQ4YO8WuSyZzOqGcksi8m1BRW8ppkmssR7en8TqiXcBkB2gTkCnKG/Ai2NQY8CgdmgZw/fw==",
@@ -2053,12 +2085,12 @@
         "lib/Xamarin.iOS/xunit.execution.iOS-Universal.xml"
       ]
     },
-    "xunit.netcore.extensions/1.0.0-prerelease-00076": {
+    "xunit.netcore.extensions/1.0.0-prerelease-00077": {
       "serviceable": true,
-      "sha512": "ZvIYfS99LOnI4c8SzGretg6K2hIQlu84/jwt8n2VUSzONyK6ZkUjTCg+O3XWAjT9550+uYfwHrQlMgSerS2cvA==",
+      "sha512": "oP5LBz8bPVMDShN/l6lDznMZbYEkX3BNGuFkwE0ncjnAIMa7T5n84iTL2sAzya/Re0cfgYyihtnuuI5kvahPAw==",
       "files": [
-        "xunit.netcore.extensions.1.0.0-prerelease-00076.nupkg",
-        "xunit.netcore.extensions.1.0.0-prerelease-00076.nupkg.sha512",
+        "xunit.netcore.extensions.1.0.0-prerelease-00077.nupkg",
+        "xunit.netcore.extensions.1.0.0-prerelease-00077.nupkg.sha512",
         "xunit.netcore.extensions.nuspec",
         "lib/dotnet/Xunit.NetCore.Extensions.dll"
       ]

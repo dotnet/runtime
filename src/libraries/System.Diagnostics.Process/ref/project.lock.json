@@ -26,9 +26,9 @@
           "ref/dotnet/System.Runtime.Handles.dll": {}
         }
       },
-      "System.Security.SecureString/4.0.0-beta-23127": {
+      "System.Security.SecureString/4.0.0-beta-23213": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-23127"
+          "System.Runtime": "4.0.0"
         },
         "compile": {
           "ref/dotnet/System.Security.SecureString.dll": {}
@@ -180,12 +180,12 @@
         "runtimes/win8-aot/lib/netcore50/System.Runtime.Handles.dll"
       ]
     },
-    "System.Security.SecureString/4.0.0-beta-23127": {
+    "System.Security.SecureString/4.0.0-beta-23213": {
       "serviceable": true,
-      "sha512": "4gotwKWDrZBpSzxqxSg1iuY44LvyMAcqX3Lb3owSLXi9feEj23cY6QznxVJZEYqPs31jNF4a2G8yEKTC7Jh1CA==",
+      "sha512": "CFqRzPegvjf6SLmU+/7iay8+NZ0PrKuuHiZNCTDKW2z7UIFVG8PnU6mks8+GyQoEuK4ANZg9efboMKwTDM93sw==",
       "files": [
-        "System.Security.SecureString.4.0.0-beta-23127.nupkg",
-        "System.Security.SecureString.4.0.0-beta-23127.nupkg.sha512",
+        "System.Security.SecureString.4.0.0-beta-23213.nupkg",
+        "System.Security.SecureString.4.0.0-beta-23213.nupkg.sha512",
         "System.Security.SecureString.nuspec",
         "lib/DNXCore50/System.Security.SecureString.dll",
         "lib/MonoAndroid10/_._",

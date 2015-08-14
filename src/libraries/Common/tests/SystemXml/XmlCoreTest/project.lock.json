@@ -14,17 +14,17 @@
           "lib/DNXCore50/System.Collections.dll": {}
         }
       },
-      "System.Console/4.0.0-beta-23127": {
+      "System.Console/4.0.0-beta-23213": {
         "dependencies": {
-          "System.Runtime": "4.0.20-beta-23127",
-          "System.Runtime.InteropServices": "4.0.20-beta-23127",
-          "System.Resources.ResourceManager": "4.0.0-beta-23127",
-          "System.IO.FileSystem.Primitives": "4.0.0-beta-23127",
-          "System.IO": "4.0.10-beta-23127",
-          "System.Threading.Tasks": "4.0.10-beta-23127",
-          "System.Text.Encoding": "4.0.10-beta-23127",
-          "System.Threading": "4.0.10-beta-23127",
-          "System.Text.Encoding.Extensions": "4.0.10-beta-23127"
+          "System.Runtime": "4.0.20",
+          "System.Runtime.InteropServices": "4.0.20",
+          "System.Resources.ResourceManager": "4.0.0",
+          "System.IO.FileSystem.Primitives": "4.0.0",
+          "System.IO": "4.0.10",
+          "System.Threading.Tasks": "4.0.10",
+          "System.Text.Encoding": "4.0.10",
+          "System.Threading": "4.0.10",
+          "System.Text.Encoding.Extensions": "4.0.10"
         },
         "compile": {
           "ref/dotnet/System.Console.dll": {}
@@ -337,12 +337,12 @@
         "runtimes/win8-aot/lib/netcore50/System.Collections.dll"
       ]
     },
-    "System.Console/4.0.0-beta-23127": {
+    "System.Console/4.0.0-beta-23213": {
       "serviceable": true,
-      "sha512": "J207OFVXbTmAKQBwRuJL398Qisxqu4ajRG4eKgV3g3CkCP2laSyxziLVIc0mQuzNyX4UMfUkUKM1gMyeHaikBA==",
+      "sha512": "JMXpqaP1+67/fISmYRXlRm6tGQHXu6seqgY56pAuSLMxpsK5FOYqUXx7RnUIG0SmIJO25ivTfTXLDVv2wTXYAg==",
       "files": [
-        "System.Console.4.0.0-beta-23127.nupkg",
-        "System.Console.4.0.0-beta-23127.nupkg.sha512",
+        "System.Console.4.0.0-beta-23213.nupkg",
+        "System.Console.4.0.0-beta-23213.nupkg.sha512",
         "System.Console.nuspec",
         "lib/DNXCore50/System.Console.dll",
         "lib/MonoAndroid10/_._",

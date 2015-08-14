@@ -18,16 +18,16 @@
           "ref/dotnet/System.Runtime.dll": {}
         }
       },
-      "System.Security.Cryptography.Encryption/4.0.0-beta-23127": {
+      "System.Security.Cryptography.Encryption/4.0.0-beta-23213": {
         "dependencies": {
-          "System.Security.Cryptography.Primitives": "4.0.0-beta-23127"
+          "System.Security.Cryptography.Primitives": "4.0.0-beta-23213"
         }
       },
-      "System.Security.Cryptography.Primitives/4.0.0-beta-23127": {
+      "System.Security.Cryptography.Primitives/4.0.0-beta-23213": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-23127",
-          "System.IO": "4.0.0-beta-23127",
-          "System.Threading.Tasks": "4.0.0-beta-23127"
+          "System.Runtime": "4.0.0",
+          "System.IO": "4.0.0",
+          "System.Threading.Tasks": "4.0.0"
         },
         "compile": {
           "ref/dotnet/System.Security.Cryptography.Primitives.dll": {}
@@ -146,22 +146,22 @@
         "ref/xamarinmac20/_._"
       ]
     },
-    "System.Security.Cryptography.Encryption/4.0.0-beta-23127": {
+    "System.Security.Cryptography.Encryption/4.0.0-beta-23213": {
       "serviceable": true,
-      "sha512": "B4kpZnSzNOYE/xbrFmuXm0VRYuJ08JwLrxlG1Hc1NZdSLGxMAU7lXH1C+jm8UECk2ETLifV/zukKYkMVtgBFwQ==",
+      "sha512": "72ZGRRxOdcmGsKVfix1iBm+MmwWMpB5y/QKVw1XBZyqUzobvjHdbPXF/zouhND7B3pnfYh/UnWy2hw6smlIGTA==",
       "files": [
-        "System.Security.Cryptography.Encryption.4.0.0-beta-23127.nupkg",
-        "System.Security.Cryptography.Encryption.4.0.0-beta-23127.nupkg.sha512",
+        "System.Security.Cryptography.Encryption.4.0.0-beta-23213.nupkg",
+        "System.Security.Cryptography.Encryption.4.0.0-beta-23213.nupkg.sha512",
         "System.Security.Cryptography.Encryption.nuspec",
         "lib/DNXCore50/System.Security.Cryptography.Encryption.dll"
       ]
     },
-    "System.Security.Cryptography.Primitives/4.0.0-beta-23127": {
+    "System.Security.Cryptography.Primitives/4.0.0-beta-23213": {
       "serviceable": true,
-      "sha512": "DfVrthXW+V8VnNhbiil7gfVysbkqZD5oRCLL8JiUypE8nuHvQxfFvyxi/PagTTOBin8no8in9Z+Oth66FLWb/w==",
+      "sha512": "/ynAVo8PbJEm6EoB6HJanBJDMbgzraf1/lZpPNEPNXr9rv3tP3KIrBtFm+zQ5n2rMJkvNhpeMcFsRUPCJ9Wv7Q==",
       "files": [
-        "System.Security.Cryptography.Primitives.4.0.0-beta-23127.nupkg",
-        "System.Security.Cryptography.Primitives.4.0.0-beta-23127.nupkg.sha512",
+        "System.Security.Cryptography.Primitives.4.0.0-beta-23213.nupkg",
+        "System.Security.Cryptography.Primitives.4.0.0-beta-23213.nupkg.sha512",
         "System.Security.Cryptography.Primitives.nuspec",
         "lib/DNXCore50/System.Security.Cryptography.Primitives.dll",
         "lib/MonoAndroid10/_._",
