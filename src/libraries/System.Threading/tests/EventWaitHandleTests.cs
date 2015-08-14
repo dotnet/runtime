@@ -31,7 +31,6 @@ public class EventWaitHandleTests
         Assert.Throws<ArgumentException>(() => new EventWaitHandle(true, EventResetMode.AutoReset, new string('a', 1000)));
     }
 
-    [ActiveIssue("https://github.com/dotnet/coreclr/issues/1237")]
     [PlatformSpecific(PlatformID.AnyUnix)]
     [Fact]
     public void Ctor_NamesArentSupported_Unix()
@@ -130,7 +129,6 @@ public class EventWaitHandleTests
         }
     }
 
-    [ActiveIssue("https://github.com/dotnet/coreclr/issues/1237")]
     [PlatformSpecific(PlatformID.AnyUnix)]
     [Fact]
     public void OpenExisting_NotSupported_Unix()

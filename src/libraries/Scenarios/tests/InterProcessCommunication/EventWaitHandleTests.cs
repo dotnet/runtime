@@ -10,7 +10,7 @@ namespace InterProcessCommunication.Tests
 {
     public class EventWaitHandleTests : RemoteExecutorTestBase
     {
-        [ActiveIssue("https://github.com/dotnet/coreclr/issues/1237", PlatformID.AnyUnix)]
+        [PlatformSpecific(PlatformID.Windows)] // names aren't supported on Unix
         [Theory]
         [InlineData(EventResetMode.ManualReset)]
         [InlineData(EventResetMode.AutoReset)]
