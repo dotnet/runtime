@@ -153,6 +153,9 @@
   <data name="ArgumentOutOfRange_Index" xml:space="preserve">
     <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
   </data>
+  <data name="Chain_NoPolicyMatch" xml:space="preserve">
+    <value>The certificate has invalid policy.</value>
+  </data>
   <data name="Cryptography_InvalidContextHandle" xml:space="preserve">
     <value>The chain context handle is invalid.</value>
   </data>
@@ -183,8 +186,17 @@
   <data name="Cryptography_X509_KeyMismatch" xml:space="preserve">
     <value>The public key of the certificate does not match the value specified.</value>
   </data>
+  <data name="Cryptography_X509_StoreNoFileAvailable" xml:space="preserve">
+    <value>The X509 certificate could not be added to the store because all candidate file names were in use.</value>
+  </data>
+  <data name="Cryptography_X509_StoreNotFound" xml:space="preserve">
+    <value>The specified X509 certificate store does not exist.</value>
+  </data>
   <data name="Cryptography_X509_StoreNotOpen" xml:space="preserve">
     <value>The X509 certificate store has not been opened.</value>
+  </data>
+  <data name="Cryptography_X509_StoreReadOnly" xml:space="preserve">
+    <value>The X509 certificate store is read-only.</value>
   </data>
   <data name="InvalidOperation_EnumNotStarted" xml:space="preserve">
     <value>Enumeration has not started.  Call MoveNext.</value>
@@ -198,6 +210,9 @@
   <data name="NotSupported_KeyAlgorithm" xml:space="preserve">
     <value>The certificate key algorithm is not supported.</value>
   </data>
+  <data name="PersistedFiles_NoHomeDirectory" xml:space="preserve">
+    <value>The home directory of the current user could not be determined.</value>
+  </data>
   <data name="Security_InvalidValue" xml:space="preserve">
     <value>The {0} value was invalid.</value>
   </data>
@@ -206,8 +221,5 @@
   </data>
   <data name="WorkInProgress" xml:space="preserve">
     <value>WorkInProgress.</value>
-  </data>
-  <data name="Chain_NoPolicyMatch" xml:space="preserve">
-    <value>The certificate has invalid policy.</value>
   </data>
 </root>
