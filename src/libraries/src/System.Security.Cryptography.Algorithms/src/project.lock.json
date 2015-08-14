@@ -129,10 +129,10 @@
           "ref/dotnet/System.Text.Encoding.dll": {}
         }
       },
-      "System.Text.Encoding.Extensions/4.0.0-beta-23127": {
+      "System.Text.Encoding.Extensions/4.0.0": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-23127",
-          "System.Text.Encoding": "4.0.0-beta-23127"
+          "System.Runtime": "4.0.0",
+          "System.Text.Encoding": "4.0.0"
         },
         "compile": {
           "ref/dotnet/System.Text.Encoding.Extensions.dll": {}
@@ -567,12 +567,12 @@
         "ref/xamarinmac20/_._"
       ]
     },
-    "System.Text.Encoding.Extensions/4.0.0-beta-23127": {
-      "sha512": "XUx3egAOs5sd6GaO2ShAQpIoIoBqXwn3pdq4I17Xb1L7nJQ7De9t148f6J9zLKNX8829CB2+HQM0/vmnuS1Gvw==",
+    "System.Text.Encoding.Extensions/4.0.0": {
+      "sha512": "FktA77+2DC0S5oRhgM569pbzFrcA45iQpYiI7+YKl68B6TfI2N5TQbXqSWlh2YXKoFXHi2RFwPMha2lxiFJZ6A==",
       "files": [
         "License.rtf",
-        "System.Text.Encoding.Extensions.4.0.0-beta-23127.nupkg",
-        "System.Text.Encoding.Extensions.4.0.0-beta-23127.nupkg.sha512",
+        "System.Text.Encoding.Extensions.4.0.0.nupkg",
+        "System.Text.Encoding.Extensions.4.0.0.nupkg.sha512",
         "System.Text.Encoding.Extensions.nuspec",
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -670,7 +670,7 @@
       "System.Resources.ResourceManager >= 4.0.0",
       "System.Runtime >= 4.0.20",
       "System.Runtime.InteropServices >= 4.0.20",
-      "System.Text.Encoding.Extensions >= 4.0.00-beta-*"
+      "System.Text.Encoding.Extensions >= 4.0.0"
     ],
     "DNXCore,Version=v5.0": []
   }
