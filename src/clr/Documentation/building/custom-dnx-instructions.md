@@ -80,7 +80,7 @@ You need to restore dependent nuget packages with the dnu tool (comes with DNX).
 
 You can now run the app, with dnx.
 
-	C:\coreclr-demo>dnx . run
+	C:\coreclr-demo>dnx run
 
 Switching to CoreCLR
 ====================
@@ -101,7 +101,7 @@ You should now have two runtimes installed. The CoreCLR one will be the default.
 You will need to repeat the steps above to run your app on CoreCLR (CoreCLR requires more NuGet packages).
 
 	C:\coreclr-demo>dnu restore
-	C:\coreclr-demo>dnx . run
+	C:\coreclr-demo>dnx run
 
 Creating a Custom DNX
 =====================
@@ -139,7 +139,7 @@ You now need to select the custom DNX as the use to 'use'. You can see the new D
 
 Try running the app again to validate that you have a working installation with the custom DNX.
 
-	C:\coreclr-demo>dnx . run
+	C:\coreclr-demo>dnx run
 
 Injecting a Custom CoreCLR into your Custom DNX
 ===============================================
@@ -159,4 +159,4 @@ You should re-generate crossgen images for your DNX to provide the best performa
 
 You should now have a working custom CoreCLR x64 DNX. Give it a try.
 
-	C:\coreclr-demo>dnx . run
+	C:\coreclr-demo>dnx run

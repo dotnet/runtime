@@ -53,19 +53,19 @@ You first need to acquire the Mono DNX. It doesn't include Mono, but is needed t
 
 	dnvm upgrade -u
 
-Next, acquire the .NET Core DNX SDK.
+Next, acquire the latest .NET Core DNX SDK.
 
 	dnvm install latest -r coreclr -u
 
-You can see the currently installed DNX versions with `dnvm list`.
+You can see the currently installed DNX versions with `dnvm list` (your display may vary as new versions of the DNX are published):
 
 	dnvm list
 
 ```
 Active Version              Runtime Arch Location             Alias
 ------ -------              ------- ---- --------             -----
-  *    1.0.0-beta5-11649    coreclr x64  ~/.dnx/runtimes
-       1.0.0-beta5-11649    mono         ~/.dnx/runtimes      default
+  *    1.0.0-beta7-12364    coreclr x64  ~/.dnx/runtimes
+       1.0.0-beta7-12364    mono         ~/.dnx/runtimes      default
 ```
 
 Write your App
@@ -111,13 +111,13 @@ Run your App
 
 You need to restore packages for your app, based on your project.json, with `dnu restore`. You will need to run this command under the Mono DNX. Make sure that you are using that one.
 
-	dnvm use 1.0.0-beta5-11649 -r mono
+	dnvm use 1.0.0-beta7-12364 -r mono
 	dnu restore
 
 You can run your app with .NET Core, although make sure to switch to that DNX.
 
-    dnvm use 1.0.0-beta5-11649 -r coreclr
-	dnx . run
+    dnvm use 1.0.0-beta7-12364 -r coreclr
+	dnx run
 
 	Hello, Linux
 	Love from CoreCLR.
