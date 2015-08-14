@@ -16,7 +16,7 @@
     <WarningsNotAsErrors>42025</WarningsNotAsErrors>
     <DefineConstants>$(DefineConstants),LATEBINDING=True</DefineConstants>
     <AssemblyName>Microsoft.VisualBasic</AssemblyName>
-    <AssemblyVersion>10.0.0.0</AssemblyVersion>
+    <AssemblyVersion>10.0.1.0</AssemblyVersion>
     <NoStdLib>true</NoStdLib>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->

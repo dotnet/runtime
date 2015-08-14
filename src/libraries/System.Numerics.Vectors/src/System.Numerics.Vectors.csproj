@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>System.Numerics</RootNamespace>
     <AssemblyName>System.Numerics.Vectors</AssemblyName>
-    <AssemblyVersion>4.1.0.0</AssemblyVersion>
+    <AssemblyVersion>4.1.1.0</AssemblyVersion>
     <FileAlignment>512</FileAlignment>
     <DocumentationFile>$(OutputPath)System.Numerics.Vectors.xml</DocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

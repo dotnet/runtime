@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Linq.Expressions</AssemblyName>
     <RootNamespace>System.Linq.Expressions</RootNamespace>
-    <AssemblyVersion>4.0.10.0</AssemblyVersion>
+    <AssemblyVersion>4.0.11.0</AssemblyVersion>
     <DefineConstants Condition=" '$(IsInterpreting)' != 'true' ">$(DefineConstants);FEATURE_CORECLR</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
@@ -69,14 +69,11 @@
       <Link>Common\System\Runtime\CompilerServices\TrueReadOnlyCollection.cs</Link>
     </Compile>
     <Compile Include="System\Dynamic\Utils\CollectionExtensions.cs" />
-
     <Compile Include="System\Dynamic\Utils\TypeExtensions.cs" />
     <Compile Include="System\Dynamic\Utils\TypeUtils.cs" />
-
     <Compile Include="System\Linq\Expressions\BinaryExpression.cs" />
     <Compile Include="System\Linq\Expressions\BlockExpression.cs" />
     <Compile Include="System\Linq\Expressions\CatchBlock.cs" />
-
     <Compile Include="System\Linq\Expressions\ConditionalExpression.cs" />
     <Compile Include="System\Linq\Expressions\ConstantExpression.cs" />
     <Compile Include="System\Linq\Expressions\DebugInfoExpression.cs" />
@@ -119,11 +116,9 @@
     <Compile Include="System\Linq\Expressions\TypeBinaryExpression.cs" />
     <Compile Include="System\Linq\Expressions\UnaryExpression.cs" />
     <Compile Include="System\Linq\IQueryable.cs" />
-
     <Compile Include="System\Runtime\CompilerServices\IRuntimeVariables.cs" />
-    <None Include="project.json"/>
+    <None Include="project.json" />
   </ItemGroup>
-
   <ItemGroup Condition=" '$(IsInterpreting)' != 'true' ">
     <Compile Include="$(CommonPath)\System\Dynamic\Utils\CollectionExtensions.AddFirst.cs">
       <Link>Common\System\Dynamic\Utils\CollectionExtensions.AddFirst.cs</Link>
@@ -134,10 +129,8 @@
     <Compile Include="$(CommonPath)\System\Linq\Expressions\Compiler\AssemblyGen.cs">
       <Link>Common\System\Linq\Expressions\Compiler\AssemblyGen.cs</Link>
     </Compile>
-
     <Compile Include="System\Dynamic\Utils\Helpers.cs" />
     <Compile Include="System\Dynamic\Utils\ReferenceEqualityComparer.cs" />
-
     <Compile Include="System\Linq\Expressions\Compiler\AnalyzedTree.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\BoundConstants.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\CompilerScope.cs" />
@@ -163,20 +156,15 @@
     <Compile Include="System\Linq\Expressions\Compiler\StackSpiller.Generated.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\StackSpiller.Temps.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\VariableBinder.cs" />
-
     <Compile Include="System\Runtime\CompilerServices\Closure.cs" />
-
     <Compile Include="System\Runtime\CompilerServices\RuntimeOps.ExpressionQuoter.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeOps.RuntimeVariableList.cs" />
   </ItemGroup>
-
   <ItemGroup Condition=" '$(IsInterpreting)' == 'true' ">
     <Compile Include="$(CommonPath)\System\Dynamic\Utils\DelegateHelpers.cs">
       <Link>Common\System\Dynamic\Utils\DelegateHelpers.cs</Link>
     </Compile>
-
     <Compile Include="System\Linq\Expressions\Compiler\DelegateHelpers.Generated.cs" />
-
     <Compile Include="System\Linq\Expressions\Interpreter\AddInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\ArrayOperations.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\BranchLabel.cs" />
@@ -210,6 +198,5 @@
     <Compile Include="System\Linq\Expressions\Interpreter\TypeOperations.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\Utilities.cs" />
   </ItemGroup>
-
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

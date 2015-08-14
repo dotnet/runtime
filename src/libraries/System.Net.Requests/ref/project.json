@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "System.IO": "4.0.0",
+    "System.Net.Primitives": "4.0.10",
+    "System.Net.WebHeaderCollection": "4.0.0",
+    "System.Runtime": "4.0.0",
+    "System.Threading.Tasks": "4.0.0"
+  },
+  "frameworks": {
+    "dotnet": {}
+  }
+}

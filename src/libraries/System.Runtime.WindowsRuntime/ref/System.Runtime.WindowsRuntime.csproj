@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <UseECMAKey>true</UseECMAKey>
+    <!-- 
+         NOTE: Suppress false positive warning for the special case where we're building System.Runtime.WindowsRuntime itself
+               at a version other than 4.0.0.0, which is referenced indirectly via the mscorlib.dll design-time facade, which
+               in turn is a required compile-time-only reference when building anything with a reference to a WinMD.
+      
+         error CS1698: Warning as Error: Circular assembly reference 'System.Runtime.WindowsRuntime, 
+                       Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089' does not 
+                       match the output assembly name 'System.Runtime.WindowsRuntime, Version=4.0.10.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'. 
+     -->
+    <NoWarn>1698</NoWarn>
+    <AssemblyVersion>4.0.11.0</AssemblyVersion>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System.Runtime.WindowsRuntime.cs" />
+    <Compile Include="System.Runtime.WindowsRuntime.Manual.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ReferencePath Include="$(ExternalAPIsPath)\NetFX\Contracts\DesignTimeFacades\mscorlib.dll" />
+    <ReferencePath Include="$(ExternalAPIsPath)\Windows\8.0\ref\Windows.winmd" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "System.IO": "4.0.0",
+    "System.Net.Primitives": "4.0.10",
+    "System.Runtime": "4.0.0",
+    "System.Runtime.Handles": "4.0.0",
+    "System.Security.Cryptography.X509Certificates": "4.0.0-beta-*",
+    "System.Security.SecureString": "4.0.0-beta-*",
+    "System.Threading.Tasks": "4.0.0"
+  },
+  "frameworks": {
+    "dotnet": {}
+  }
+}

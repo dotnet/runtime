@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "System.Net.Primitives": "4.0.10",
+    "System.Net.Security": "4.0.0-beta-*",
+    "System.Runtime": "4.0.0",
+    "System.Security.Cryptography.X509Certificates": "4.0.0-beta-*"
+  },
+  "frameworks": {
+    "dotnet": {}
+  }
+}

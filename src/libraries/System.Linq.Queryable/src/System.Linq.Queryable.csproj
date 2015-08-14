@@ -7,7 +7,7 @@
     <ProjectGuid>{BE12B753-C130-4B68-86E3-877F1AEE52C0}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Linq.Queryable</AssemblyName>
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <RootNamespace>System.Linq.Queryable</RootNamespace>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
