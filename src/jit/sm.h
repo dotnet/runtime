@@ -59,7 +59,7 @@ public :
         NativeSize += StateWeights[stateID];
     }
 
-    // Given an SM opcode retrive the weight for this single opcode state.
+    // Given an SM opcode retrieve the weight for this single opcode state.
     // For example, ID for single opcode state SM_NOSHOW is 2.
     inline short        GetWeightForOpcode(SM_OPCODE opcode)
     {

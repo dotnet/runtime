@@ -1891,7 +1891,7 @@ public:
 
     virtual PCODE GetReturnAddress();
 
-    // Retrives pointer to the lowest-addressed argument on
+    // Retrieves pointer to the lowest-addressed argument on
     // the stack. Depending on the calling convention, this
     // may or may not be the first argument.
     TADDR GetPointerToArguments()

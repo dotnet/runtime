@@ -1766,7 +1766,7 @@ namespace System.Reflection.Emit
 
                     // In memory this module is not the manifest module and has a valid file token
                     // On disk it will be the manifest module so lets clean the file token
-                    // We should not retrive FileToken after the assembly has been saved
+                    // We should not retrieve FileToken after the assembly has been saved
                     // If that is absolutely necessary, we need two separate fields on ModuleBuilderData:
                     // the in memory file token and the on disk file token.
                     assemblyModule.m_moduleData.FileToken = 0;
