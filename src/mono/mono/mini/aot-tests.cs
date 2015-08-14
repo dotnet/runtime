@@ -202,6 +202,23 @@ class Tests
 		return 0;
 	}
 
+	class Foo6 {
+		public T reg_stack_split_inner<T> (int i, int j, T l) {
+			return l;
+		}
+	}
+
+	[Category("DYNCALL")]
+	static int test_0_arm_dyncall_reg_stack_split () {
+		var m = typeof (Foo6).GetMethod ("reg_stack_split_inner").MakeGenericMethod (new Type[] { typeof (long) });
+		var o = new Foo6 ();
+		if ((long)m.Invoke (o, new object [] { 1, 2, 3 }) != 3)
+			return 1;
+		if ((long)m.Invoke (o, new object [] { 1, 2, Int64.MaxValue }) != Int64.MaxValue)
+			return 2;
+		return 0;
+	}
+
 	static int test_0_partial_sharing_regress_30204 () {
 		var t = typeof (System.Collections.Generic.Comparer<System.Collections.Generic.KeyValuePair<string, string>>);
 		var d = new SortedDictionary<string, string> ();

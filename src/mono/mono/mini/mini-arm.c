@@ -2810,8 +2810,8 @@ dyn_call_supported (CallInfo *cinfo, MonoMethodSignature *sig)
 
 		switch (ainfo->storage) {
 		case RegTypeGeneral:
-			break;
 		case RegTypeIRegPair:
+		case RegTypeBaseGen:
 			break;
 		case RegTypeBase:
 			if (ainfo->offset >= (DYN_CALL_STACK_ARGS * sizeof (gpointer)))
@@ -2926,12 +2926,16 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 		ArgInfo *ainfo = &dinfo->cinfo->args [i + sig->hasthis];
 		int slot = -1;
 
-		if (ainfo->storage == RegTypeGeneral || ainfo->storage == RegTypeIRegPair || ainfo->storage == RegTypeStructByVal)
+		if (ainfo->storage == RegTypeGeneral || ainfo->storage == RegTypeIRegPair || ainfo->storage == RegTypeStructByVal) {
 			slot = ainfo->reg;
-		else if (ainfo->storage == RegTypeBase)
+		} else if (ainfo->storage == RegTypeBase) {
 			slot = PARAM_REGS + (ainfo->offset / 4);
-		else
+		} else if (ainfo->storage == RegTypeBaseGen) {
+			/* slot + 1 is the first stack slot, so the code below will work */
+			slot = 3;
+		} else {
 			g_assert_not_reached ();
+		}
 
 		if (t->byref) {
 			p->regs [slot] = (mgreg_t)*arg;
