@@ -11725,7 +11725,7 @@ BOOL CEHelper::CanMethodHandleException(CorruptionSeverity severity, PTR_MethodD
     }
 
     // If we have been asked to use the last active corruption severity (e.g. in cases of Reflection
-    // or COM interop), then retrive it.
+    // or COM interop), then retrieve it.
     if (severity == UseLast)
     {
         LOG((LF_EH, LL_INFO100, "CEHelper::CanMethodHandleException - Using LastActiveExceptionCorruptionSeverity.\n"));

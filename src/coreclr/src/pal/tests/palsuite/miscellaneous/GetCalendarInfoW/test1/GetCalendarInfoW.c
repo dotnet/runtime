@@ -8,7 +8,7 @@
 ** Source: GetCalendarInfoW.c
 **
 ** Purpose: Positive test the GetCalendarInfoW API.
-**          Call GetCalendarInfoW to retrive the information of a 
+**          Call GetCalendarInfoW to retrieve the information of a 
 **          calendar
 **
 **
@@ -33,7 +33,7 @@ int __cdecl main(int argc, char *argv[])
     err = GetCalendarInfoW(Locale,/*locale idendifier*/
                             CAL_GREGORIAN, /*calendar identifier*/
                             CalType,  /*calendar tyope*/
-                            NULL,     /*buffer to store the retrive info*/
+                            NULL,     /*buffer to store the retrieve info*/
                             0,        /*alwayse zero*/
                             &dwValue);/*to store the requrest data*/               
     if (0 == err)
@@ -44,7 +44,7 @@ int __cdecl main(int argc, char *argv[])
     err = GetCalendarInfoW(Locale,/*locale idendifier*/
                             CAL_GREGORIAN_US, /*calendar identifier*/
                             CalType,  /*calendar tyope*/
-                            NULL,     /*buffer to store the retrive info*/
+                            NULL,     /*buffer to store the retreive info*/
                             0,        /*alwayse zero*/
                             &dwValue);/*to store the requrest data*/               
     if (0 == err)
