@@ -5,7 +5,7 @@
   </PropertyGroup>
     
   <Target Name="GenerateSplitStringResources"
-          Inputs="$(MSBuildThisFileFullPath);$(MSBuildProjectFile)"
+          Inputs="$(MSBuildThisFileFullPath);$(MSBuildProjectFile);$(BclSourcesRoot)\mscorlib.txt"
           Outputs="@(SplitTextStringResource->'$(IntermediateOutputPath)%(Filename).resources')">
          
     <ItemGroup>
