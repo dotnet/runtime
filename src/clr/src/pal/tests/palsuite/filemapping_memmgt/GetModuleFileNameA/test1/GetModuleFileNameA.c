@@ -8,7 +8,7 @@
 ** Source: getmodulefilenamea.c
 **
 ** Purpose: Positive test the GetModuleFileName API.
-**          Call GetModuleFileName to retrive the specified
+**          Call GetModuleFileName to retrieve the specified
 **          module full path and file name
 **
 **
@@ -53,7 +53,7 @@ int __cdecl main(int argc, char *argv[])
     }
 
 
-    //retrive the specified module full path and file name
+    //retrieve the specified module full path and file name
     ModuleNameLength = GetModuleFileName(
                 ModuleHandle,//specified module handle
                 ModuleFileNameBuf,//buffer for module file name

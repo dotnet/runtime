@@ -8,7 +8,7 @@
 ** Source:  getprocheap.c
 **
 ** Purpose: Positive test the GetProcessHeap API.
-**          Call GetProcessHeap to retrive the handle of 
+**          Call GetProcessHeap to retrieve the handle of 
 **          calling process heap
 **
 **
@@ -27,7 +27,7 @@ int __cdecl main(int argc, char *argv[])
         ExitProcess(FAIL);
     }
 
-    //Retrive the calling process heap handle 
+    //Retrieve the calling process heap handle 
     ProcessHeapHandle = GetProcessHeap();
      
     if(!ProcessHeapHandle)

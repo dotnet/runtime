@@ -1598,7 +1598,7 @@ HRESULT ZapInfo::getBBProfileData (
     _ASSERTE(foundEntry->md == md); 
 
     //
-    // We found the md. Let's retrive the profile data.
+    // We found the md. Let's retrieve the profile data.
     //
     _ASSERTE(foundEntry->pos > 0);                                   // The target position cannot be 0.
     _ASSERTE(foundEntry->size >= sizeof(CORBBTPROF_METHOD_HEADER));   // The size must at least this
