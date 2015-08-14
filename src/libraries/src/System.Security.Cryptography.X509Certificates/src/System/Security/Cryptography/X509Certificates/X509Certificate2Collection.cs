@@ -1,14 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.IO;
-using System.Text;
-using System.Diagnostics;
-using System.Globalization;
-using System.Runtime.InteropServices;
-
-using Internal.Cryptography;
 using Internal.Cryptography.Pal;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -44,6 +36,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 if (value == null)
                     throw new ArgumentNullException("value");
+
                 List[index] = value;
             }
         }
@@ -87,10 +80,9 @@ namespace System.Security.Cryptography.X509Certificates
             int i = 0;
             try
             {
-                foreach (X509Certificate2 certificate in certificates)
+                for (; i < certificates.Count; i++)
                 {
-                    Add(certificate);
-                    i++;
+                    Add(certificates[i]);
                 }
             }
             catch
@@ -116,7 +108,7 @@ namespace System.Security.Cryptography.X509Certificates
             return Export(contentType, password: null);
         }
 
-        public byte[] Export(X509ContentType contentType, String password)
+        public byte[] Export(X509ContentType contentType, string password)
         {
             using (IStorePal storePal = StorePal.LinkFromCertificateCollection(this))
             {
@@ -124,7 +116,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public X509Certificate2Collection Find(X509FindType findType, Object findValue, bool validOnly)
+        public X509Certificate2Collection Find(X509FindType findType, object findValue, bool validOnly)
         {
             if (findValue == null)
                 throw new ArgumentNullException("findValue");
@@ -139,8 +131,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public new X509Certificate2Enumerator GetEnumerator()
         {
-            X509CertificateEnumerator baseEnumerator = base.GetEnumerator();
-            return new X509Certificate2Enumerator(baseEnumerator);
+            return new X509Certificate2Enumerator(this);
         }
 
         public void Import(byte[] rawData)
@@ -148,7 +139,7 @@ namespace System.Security.Cryptography.X509Certificates
             Import(rawData, password: null, keyStorageFlags: X509KeyStorageFlags.DefaultKeySet);
         }
 
-        public void Import(byte[] rawData, String password, X509KeyStorageFlags keyStorageFlags)
+        public void Import(byte[] rawData, string password, X509KeyStorageFlags keyStorageFlags)
         {
             if (rawData == null)
                 throw new ArgumentNullException("rawData");
@@ -159,12 +150,12 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public void Import(String fileName)
+        public void Import(string fileName)
         {
             Import(fileName, password: null, keyStorageFlags: X509KeyStorageFlags.DefaultKeySet);
         }
 
-        public void Import(String fileName, String password, X509KeyStorageFlags keyStorageFlags)
+        public void Import(string fileName, string password, X509KeyStorageFlags keyStorageFlags)
         {
             if (fileName == null)
                 throw new ArgumentNullException("fileName");
@@ -222,10 +213,9 @@ namespace System.Security.Cryptography.X509Certificates
             int i = 0;
             try
             {
-                foreach (X509Certificate2 certificate in certificates)
+                for (; i < certificates.Count; i++)
                 {
-                    Remove(certificate);
-                    i++;
+                    Remove(certificates[i]);
                 }
             }
             catch
@@ -239,4 +229,3 @@ namespace System.Security.Cryptography.X509Certificates
         }
     }
 }
-
