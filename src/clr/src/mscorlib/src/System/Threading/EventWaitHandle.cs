@@ -48,9 +48,16 @@ namespace System.Threading
         [System.Security.SecurityCritical]  // auto-generated_required
         public EventWaitHandle(bool initialState, EventResetMode mode, string name)
         {
-            if(null != name && System.IO.Path.MAX_PATH < name.Length)
+            if (name != null)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong",name));
+#if PLATFORM_UNIX
+                throw new PlatformNotSupportedException(Environment.GetResourceString("PlatformNotSupported_NamedSynchronizationPrimitives"));
+#else
+                if (System.IO.Path.MAX_PATH < name.Length)
+                {
+                    throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", name));
+                }
+#endif
             }
             Contract.EndContractBlock();
             
@@ -90,9 +97,16 @@ namespace System.Threading
         [System.Security.SecurityCritical]  // auto-generated_required
         public unsafe EventWaitHandle(bool initialState, EventResetMode mode, string name, out bool createdNew, EventWaitHandleSecurity eventSecurity)
         {
-            if(null != name && System.IO.Path.MAX_PATH < name.Length)
+            if (name != null)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong",name));
+#if PLATFORM_UNIX
+                throw new PlatformNotSupportedException(Environment.GetResourceString("PlatformNotSupported_NamedSynchronizationPrimitives"));
+#else
+                if (System.IO.Path.MAX_PATH < name.Length)
+                {
+                    throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", name));
+                }
+#endif
             }
             Contract.EndContractBlock();
             Win32Native.SECURITY_ATTRIBUTES secAttrs = null;
@@ -196,6 +210,9 @@ namespace System.Threading
         [System.Security.SecurityCritical]  // auto-generated_required
         private static OpenExistingResult OpenExistingWorker(string name, EventWaitHandleRights rights, out EventWaitHandle result)
         {
+#if PLATFORM_UNIX
+            throw new PlatformNotSupportedException(Environment.GetResourceString("PlatformNotSupported_NamedSynchronizationPrimitives"));
+#else
             if (name == null)
             {
                 throw new ArgumentNullException("name", Environment.GetResourceString("ArgumentNull_WithParamName"));
@@ -236,6 +253,7 @@ namespace System.Threading
             }
             result = new EventWaitHandle(myHandle);
             return OpenExistingResult.Success;
+#endif
         }
         [System.Security.SecuritySafeCritical]  // auto-generated
         public bool Reset()
