@@ -143,7 +143,7 @@ namespace sos
         return TO_TADDR(objData.ElementTypeHandle);
     }
 
-    const wchar_t *Object::GetTypeName() const
+    const WCHAR *Object::GetTypeName() const
     {
         if (mTypeName == NULL)
             mTypeName = CreateMethodTableName(GetMT(), GetComponentMT());
@@ -293,7 +293,7 @@ namespace sos
     {
         // Zombie objects are objects that reside in an unloaded AppDomain.
         MethodTable mt = addr;
-        return wcscmp(mt.GetName(), W("<Unloaded Type>")) == 0;
+        return _wcscmp(mt.GetName(), W("<Unloaded Type>")) == 0;
     }
     
     void MethodTable::Clear()
@@ -305,7 +305,7 @@ namespace sos
         }
     }
     
-    const wchar_t *MethodTable::GetName() const
+    const WCHAR *MethodTable::GetName() const
     {
         if (mName == NULL)
             mName = CreateMethodTableName(mMT);
@@ -356,7 +356,7 @@ namespace sos
         return out.ThreadId != 0 && out.ThreadPtr != NULL;
     }
     
-    bool Object::GetStringData(__out_ecount(size) wchar_t *buffer, size_t size) const
+    bool Object::GetStringData(__out_ecount(size) WCHAR *buffer, size_t size) const
     {
         SOS_Assert(IsString());
         SOS_Assert(buffer);
@@ -849,7 +849,7 @@ namespace sos
         return TO_TADDR(mData.appDomainPtr);
     }
     
-    void BuildTypeWithExtraInfo(TADDR addr, unsigned int size, __inout_ecount(size) wchar_t *buffer)
+    void BuildTypeWithExtraInfo(TADDR addr, unsigned int size, __inout_ecount(size) WCHAR *buffer)
     {
         try
         {
@@ -866,7 +866,7 @@ namespace sos
             }
             else if (isString)
             {
-                wchar_t str[32];
+                WCHAR str[32];
                 obj.GetStringData(str, _countof(str));
                 
                 _snwprintf_s(buffer, size, _TRUNCATE, W("%s: \"%s\""), mt.GetName(), str);
@@ -880,10 +880,10 @@ namespace sos
         {
             int len = MultiByteToWideChar(CP_ACP, 0, e.what(), -1, NULL, 0);
             
-            ArrayHolder<wchar_t> tmp = new wchar_t[len];
-            MultiByteToWideChar(CP_ACP, 0, e.what(), -1, (wchar_t*)tmp, len);
+            ArrayHolder<WCHAR> tmp = new WCHAR[len];
+            MultiByteToWideChar(CP_ACP, 0, e.what(), -1, (WCHAR*)tmp, len);
             
-            swprintf_s(buffer, size, W("<invalid object: '%s'>"), (wchar_t*)tmp);
+            swprintf_s(buffer, size, W("<invalid object: '%s'>"), (WCHAR*)tmp);
         }
     }
 }

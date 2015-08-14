@@ -31,8 +31,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include <malloc.h>
 #include <stddef.h>
 
 // We need to define the target address type.  This will be used in the 

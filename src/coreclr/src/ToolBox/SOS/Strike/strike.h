@@ -15,7 +15,6 @@
 #define _countof(x) (sizeof(x)/sizeof(x[0]))
 #endif
 
-
 #if defined(_MSC_VER)
 #pragma warning(disable:4245)   // signed/unsigned mismatch
 #pragma warning(disable:4100)   // unreferenced formal parameter
@@ -23,6 +22,34 @@
 #pragma warning(disable:4127)   // conditional expression is constant
 #pragma warning(disable:6255)   // Prefast: alloca indicates failure by raising a stack overflow exception
 #endif
+
+#ifdef PAL_STDCPP_COMPAT
+#define _iswprint   PAL_iswprint
+#define _wcslen     PAL_wcslen
+#define _wcsncmp    PAL_wcsncmp
+#define _wcsrchr    PAL_wcsrchr
+#define _wcscmp     PAL_wcscmp
+#define _wcschr     PAL_wcschr
+#define _wcscspn    PAL_wcscspn
+#define _wcscat     PAL_wcscat
+#define _wcsstr     PAL_wcsstr
+#else // PAL_STDCPP_COMPAT
+#define _iswprint   iswprint
+#define _wcslen     wcslen
+#define _wcsncmp    wcsncmp
+#define _wcsrchr    wcsrchr
+#define _wcscmp     wcscmp
+#define _wcschr     wcschr
+#define _wcscspn    wcscspn
+#define _wcscat     wcscat
+#define _wcsstr     wcsstr
+#endif // !PAL_STDCPP_COMPAT
+
+#define ___in       _SAL1_Source_(__in, (), _In_)
+#define ___out      _SAL1_Source_(__out, (), _Out_)
+
+#define _max(a, b) (((a) > (b)) ? (a) : (b))
+#define _min(a, b) (((a) < (b)) ? (a) : (b))
 
 #include <winternl.h>
 #include <winver.h>
@@ -46,7 +73,9 @@
 #include <string.h>
 
 
+#ifndef PAL_STDCPP_COMPAT
 #include <malloc.h>
+#endif
 #include <stddef.h>
 
 #ifndef FEATURE_PAL

@@ -222,14 +222,14 @@ namespace sos
          * valid through the lifetime of the MethodTable object and should not be
          * freed.
          */
-        const wchar_t *GetName() const;
+        const WCHAR *GetName() const;
 
     private:
         void Clear();
 
     private:
         TADDR mMT;
-        mutable wchar_t *mName;
+        mutable WCHAR *mName;
     };
 
     /* This represents an object on the GC heap in the target process.  This class
@@ -416,7 +416,7 @@ namespace sos
          *   True if the string data was successfully requested and placed in
          *   buffer, false otherwise.
          */
-        bool GetStringData(__out_ecount(size) wchar_t *buffer, size_t size) const;
+        bool GetStringData(__out_ecount(size) WCHAR *buffer, size_t size) const;
 
         /* Returns the name of the type of this object.  E.g. System.String.
          * Throws:
@@ -424,7 +424,7 @@ namespace sos
          * Returns:
          *    A string containing the type of the object.
          */
-        const wchar_t *GetTypeName() const;
+        const WCHAR *GetTypeName() const;
 
     private:
         void FillMTData() const;
@@ -442,7 +442,7 @@ namespace sos
         mutable size_t mSize;
         mutable bool mPointers;
         mutable DacpMethodTableData *mMTData;
-        mutable wchar_t *mTypeName;
+        mutable WCHAR *mTypeName;
     };
 
     /* Enumerates all the GC references (objects) contained in an object.  This uses the GCDesc
@@ -789,5 +789,5 @@ namespace sos
     }
     
     
-    void BuildTypeWithExtraInfo(TADDR addr, unsigned int size, __inout_ecount(size) wchar_t *buffer);
+    void BuildTypeWithExtraInfo(TADDR addr, unsigned int size, __inout_ecount(size) WCHAR *buffer);
 }

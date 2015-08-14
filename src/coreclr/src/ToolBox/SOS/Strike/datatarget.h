@@ -16,8 +16,8 @@ public:
     // IUnknown.
     STDMETHOD(QueryInterface)(
         THIS_
-        __in REFIID InterfaceId,
-        __out PVOID* Interface
+        ___in REFIID InterfaceId,
+        ___out PVOID* Interface
         );
     STDMETHOD_(ULONG, AddRef)(
         THIS

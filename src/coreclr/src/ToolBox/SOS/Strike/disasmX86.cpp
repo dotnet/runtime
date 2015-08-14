@@ -50,7 +50,7 @@ struct Register
 };
 
 // Find the index for a register name
-inline RegIndex FindReg (__in __in_z char *ptr, __out_opt int *plen = NULL, __out_opt int *psize = NULL)
+inline RegIndex FindReg (___in __in_z char *ptr, __out_opt int *plen = NULL, __out_opt int *psize = NULL)
 {
     struct RegName
     {
@@ -169,7 +169,7 @@ inline RegIndex FindReg (__in __in_z char *ptr, __out_opt int *plen = NULL, __ou
 }
 
 // Find the value of an expression.
-inline BOOL FindSrc (__in_z char *ptr, __in Register *reg, INT_PTR &value, BOOL &bDigit)
+inline BOOL FindSrc (__in_z char *ptr, ___in Register *reg, INT_PTR &value, BOOL &bDigit)
 {
     if (GetValueFromExpr (ptr, value))
     {
@@ -220,7 +220,7 @@ struct InstData
     INT_PTR value;
 };
 
-void FindMainReg (__in __in_z char *ptr, RegState &reg)
+void FindMainReg (___in __in_z char *ptr, RegState &reg)
 {
     int size = 0;
 
@@ -229,7 +229,7 @@ void FindMainReg (__in __in_z char *ptr, RegState &reg)
     reg.bFullReg = (reg.reg!=NONE && sizeof(void*)==size) ? TRUE : FALSE;
 }
 
-static void DecodeAddressIndirect (__in __in_z char *term, InstData& arg)
+static void DecodeAddressIndirect (___in __in_z char *term, InstData& arg)
 {
     arg.mode = BAD;
     arg.value = 0;
@@ -308,7 +308,7 @@ static void DecodeAddressIndirect (__in __in_z char *term, InstData& arg)
     }
 }
 
-void DecodeAddressTerm (__in __in_z char *term, InstData& arg)
+void DecodeAddressTerm (___in __in_z char *term, InstData& arg)
 {
     arg.mode = BAD;
     arg.reg[0].scale = 0;
@@ -1133,7 +1133,7 @@ void
 ///
 /// This is dead code, not called from anywhere, not linked in the final product.
 ///
-static BOOL DecodeLine (__in __in_z char *line, __in __in_z const char *const inst, InstData& arg1, InstData& arg2)
+static BOOL DecodeLine (___in __in_z char *line, ___in __in_z const char *const inst, InstData& arg1, InstData& arg2)
 {
     char *ptr = line;
     if (inst[0] == '*' || !strncmp (ptr, inst, strlen (inst)))
