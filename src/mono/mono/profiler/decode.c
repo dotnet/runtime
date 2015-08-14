@@ -1845,6 +1845,7 @@ typedef struct {
 	uint64_t live;
 	uint64_t max_live;
 	TraceDesc traces;
+	TraceDesc destroy_traces;
 } HandleInfo;
 static HandleInfo handle_info [4];
 
@@ -1991,12 +1992,18 @@ tracked_creation (uintptr_t obj, ClassDesc *cd, uint64_t size, BackTrace *bt, ui
 }
 
 static void
-track_handle (uintptr_t obj, int htype, uint32_t handle)
+track_handle (uintptr_t obj, int htype, uint32_t handle, BackTrace *bt, uint64_t timestamp)
 {
 	int i;
 	for (i = 0; i < num_tracked_objects; ++i) {
-		if (tracked_objects [i] == obj)
-			fprintf (outfile, "Object %p referenced from handle %u\n", (void*)obj, handle);
+		if (tracked_objects [i] != obj)
+			continue;
+		fprintf (outfile, "Object %p referenced from handle %u at %.3f secs.\n", (void*)obj, handle, (timestamp - startup_time) / 1000000000.0);
+		if (bt && bt->count) {
+			int k;
+			for (k = 0; k < bt->count; ++k)
+				fprintf (outfile, "\t%s\n", bt->methods [k]->name);
+		}
 	}
 }
 
@@ -2274,31 +2281,72 @@ decode_buffer (ProfContext *ctx)
 						fprintf (outfile, "moved obj %p to %p\n", (void*)OBJ_ADDR (obj1diff), (void*)OBJ_ADDR (obj2diff));
 					}
 				}
-			} else if (subtype == TYPE_GC_HANDLE_CREATED) {
+			} else if (subtype == TYPE_GC_HANDLE_CREATED || subtype == TYPE_GC_HANDLE_CREATED_BT) {
+				int has_bt = subtype == TYPE_GC_HANDLE_CREATED_BT;
+				int num_bt = 0;
+				MethodDesc *sframes [8];
+				MethodDesc **frames = sframes;
 				int htype = decode_uleb128 (p, &p);
 				uint32_t handle = decode_uleb128 (p, &p);
 				intptr_t objdiff = decode_sleb128 (p, &p);
+				if (has_bt) {
+					num_bt = 8;
+					frames = decode_bt (sframes, &num_bt, p, &p, ptr_base);
+					if (!frames) {
+						fprintf (outfile, "Cannot load backtrace\n");
+						return 0;
+					}
+				}
 				if (htype > 3)
 					return 0;
-				handle_info [htype].created++;
-				handle_info [htype].live++;
-				add_trace_thread (thread, &handle_info [htype].traces, 1);
-				/* FIXME: we don't take into account timing here */
-				if (handle_info [htype].live > handle_info [htype].max_live)
-					handle_info [htype].max_live = handle_info [htype].live;
-				if (num_tracked_objects)
-					track_handle (OBJ_ADDR (objdiff), htype, handle);
+				if ((thread_filter && thread_filter == thread->thread_id) || (time_base >= time_from && time_base < time_to)) {
+					handle_info [htype].created++;
+					handle_info [htype].live++;
+					if (handle_info [htype].live > handle_info [htype].max_live)
+						handle_info [htype].max_live = handle_info [htype].live;
+					BackTrace *bt;
+					if (has_bt)
+						bt = add_trace_methods (frames, num_bt, &handle_info [htype].traces, 1);
+					else
+						bt = add_trace_thread (thread, &handle_info [htype].traces, 1);
+					if (num_tracked_objects)
+						track_handle (OBJ_ADDR (objdiff), htype, handle, bt, time_base);
+				}
 				if (debug)
 					fprintf (outfile, "handle (%s) %u created for object %p\n", get_handle_name (htype), handle, (void*)OBJ_ADDR (objdiff));
-			} else if (subtype == TYPE_GC_HANDLE_DESTROYED) {
+				if (frames != sframes)
+					free (frames);
+			} else if (subtype == TYPE_GC_HANDLE_DESTROYED || subtype == TYPE_GC_HANDLE_DESTROYED_BT) {
+				int has_bt = subtype == TYPE_GC_HANDLE_DESTROYED_BT;
+				int num_bt = 0;
+				MethodDesc *sframes [8];
+				MethodDesc **frames = sframes;
 				int htype = decode_uleb128 (p, &p);
 				uint32_t handle = decode_uleb128 (p, &p);
+				if (has_bt) {
+					num_bt = 8;
+					frames = decode_bt (sframes, &num_bt, p, &p, ptr_base);
+					if (!frames) {
+						fprintf (outfile, "Cannot load backtrace\n");
+						return 0;
+					}
+				}
 				if (htype > 3)
 					return 0;
-				handle_info [htype].destroyed ++;
-				handle_info [htype].live--;
+				if ((thread_filter && thread_filter == thread->thread_id) || (time_base >= time_from && time_base < time_to)) {
+					handle_info [htype].destroyed ++;
+					handle_info [htype].live--;
+					BackTrace *bt;
+					if (has_bt)
+						bt = add_trace_methods (frames, num_bt, &handle_info [htype].destroy_traces, 1);
+					else
+						bt = add_trace_thread (thread, &handle_info [htype].destroy_traces, 1);
+					/* TODO: track_handle_free () - would need to record and keep track of the associated object address... */
+				}
 				if (debug)
 					fprintf (outfile, "handle (%s) %u destroyed\n", get_handle_name (htype), handle);
+				if (frames != sframes)
+					free (frames);
 			}
 			break;
 		}
@@ -3178,6 +3226,7 @@ dump_gcs (void)
 			(unsigned long long) (handle_info [i].destroyed),
 			(unsigned long long) (handle_info [i].max_live));
 		dump_traces (&handle_info [i].traces, "created");
+		dump_traces (&handle_info [i].destroy_traces, "destroyed");
 	}
 }
 

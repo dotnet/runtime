@@ -24,6 +24,7 @@
                    load/unload for contexts
                    load/unload/name for assemblies
                removed TYPE_LOAD_ERR flag (profiler never generated it, now removed from the format itself)
+               added TYPE_GC_HANDLE_{CREATED,DESTROYED}_BT
  */
 
 enum {
@@ -56,8 +57,10 @@ enum {
 	TYPE_GC_EVENT  = 1 << 4,
 	TYPE_GC_RESIZE = 2 << 4,
 	TYPE_GC_MOVE   = 3 << 4,
-	TYPE_GC_HANDLE_CREATED   = 4 << 4,
-	TYPE_GC_HANDLE_DESTROYED = 5 << 4,
+	TYPE_GC_HANDLE_CREATED      = 4 << 4,
+	TYPE_GC_HANDLE_DESTROYED    = 5 << 4,
+	TYPE_GC_HANDLE_CREATED_BT   = 6 << 4,
+	TYPE_GC_HANDLE_DESTROYED_BT = 7 << 4,
 	/* extended type for TYPE_METHOD */
 	TYPE_LEAVE     = 1 << 4,
 	TYPE_ENTER     = 2 << 4,
