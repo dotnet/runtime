@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -273,5 +274,21 @@ class Tests
 	public static int test_0_enum_comparer () {
 		var c = Comparer<AnEnum>.Default;
 		return c.Compare (AnEnum.A, AnEnum.A);
+	}
+
+	private static Dictionary<long, TValue> ConvertDictionary<TValue>(Dictionary<long, IList<TValue>> source) {
+		return source.ToDictionary(pair => pair.Key, pair => pair.Value[0]);
+	}
+
+	[Category ("GSHAREDVT")]
+	public static int test_0_gsharedvt_non_variable_arg () {
+		Dictionary<long, IList<int>> data = new Dictionary<long, IList<int>>
+            {
+				{123L, new List<int> {2}}
+            };
+		Dictionary<long, int> newDict = ConvertDictionary(data);
+		if (newDict.Count != 1)
+			return 1;
+		return 0;
 	}
 }
