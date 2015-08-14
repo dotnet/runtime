@@ -5561,7 +5561,7 @@ STRSAFEAPI StringVPrintfWorkerA(char* pszDest, size_t cchDest, const char* pszFo
         // leave the last space for the null terminator
         cchMax = cchDest - 1;
 
-        iRet = PAL__vsnprintf(pszDest, cchMax, pszFormat, argList);
+        iRet = _vsnprintf(pszDest, cchMax, pszFormat, argList);
         // ASSERT((iRet < 0) || (((size_t)iRet) <= cchMax));
 
         if ((iRet < 0) || (((size_t)iRet) > cchMax))
@@ -5687,7 +5687,7 @@ STRSAFEAPI StringVPrintfExWorkerA(char* pszDest, size_t cchDest, size_t cbDest, 
                 // leave the last space for the null terminator
                 cchMax = cchDest - 1;
 
-                iRet = PAL__vsnprintf(pszDest, cchMax, pszFormat, argList);
+                iRet = _vsnprintf(pszDest, cchMax, pszFormat, argList);
                 // ASSERT((iRet < 0) || (((size_t)iRet) <= cchMax));
 
                 if ((iRet < 0) || (((size_t)iRet) > cchMax))

@@ -45,6 +45,16 @@ Abstract:
 #ifndef __PAL_H__
 #define __PAL_H__
 
+#ifdef PAL_STDCPP_COMPAT
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <string.h>
+#include <errno.h>
+#include <ctype.h>
+#endif
+
 #ifdef  __cplusplus
 extern "C" {
 #endif
@@ -207,6 +217,8 @@ extern "C" {
 #endif
 #endif
 
+#ifndef PAL_STDCPP_COMPAT
+
 #ifdef _M_ALPHA
 
 typedef struct {
@@ -314,6 +326,8 @@ typedef char * va_list;
 
 #endif // __GNUC__
 
+#endif // !PAL_STDCPP_COMPAT
+
 /******************* PAL-Specific Entrypoints *****************************/
 
 #define IsDebuggerPresent PAL_IsDebuggerPresent
@@ -366,6 +380,10 @@ PAL_IsDebuggerPresent();
 #define _UI32_MAX UINT_MAX
 #define _UI32_MIN UINT_MIN
 
+#ifdef PAL_STDCPP_COMPAT
+#undef NULL
+#endif
+
 #ifndef NULL
 #if defined(__cplusplus)
 #define NULL    0
@@ -386,8 +404,8 @@ typedef __int64 time_t;
 #else
 typedef long time_t;
 #endif
-#endif // !PAL_STDCPP_COMPAT
 #define _TIME_T_DEFINED
+#endif // !PAL_STDCPP_COMPAT
 
 #if ENABLE_DOWNLEVEL_FOR_NLS
 #define MAKELCID(lgid, srtid)  ((DWORD)((((DWORD)((WORD  )(srtid))) << 16) |  \
@@ -5623,10 +5641,11 @@ ReportEventW (
 
 /******************* C Runtime Entrypoints *******************************/
 
-#if defined(PLATFORM_UNIX) && !defined(PAL_STDCPP_COMPAT)
 /* Some C runtime functions needs to be reimplemented by the PAL.
    To avoid name collisions, those functions have been renamed using
    defines */
+#ifdef PLATFORM_UNIX
+#ifndef PAL_STDCPP_COMPAT
 #define exit          PAL_exit
 #define atexit        PAL_atexit
 #define printf        PAL_printf
@@ -5645,17 +5664,17 @@ ReportEventW (
 #define wcsncmp       PAL_wcsncmp
 #define wcschr        PAL_wcschr
 #define wcsrchr       PAL_wcsrchr
+#define wcsstr        PAL_wcsstr
 #define swscanf       PAL_swscanf
 #define wcspbrk       PAL_wcspbrk
-#define wcsstr        PAL_wcsstr
 #define wcscmp        PAL_wcscmp
 #define wcsncat       PAL_wcsncat
 #define wcsncpy       PAL_wcsncpy
 #define wcstok        PAL_wcstok
 #define wcscspn       PAL_wcscspn
+#define iswprint      PAL_iswprint
 #define iswalpha      PAL_iswalpha
 #define iswdigit      PAL_iswdigit
-#define iswprint      PAL_iswprint
 #define iswspace      PAL_iswspace
 #define iswupper      PAL_iswupper
 #define iswxdigit     PAL_iswxdigit
@@ -5724,13 +5743,8 @@ ReportEventW (
 #define _mm_setcsr    PAL__mm_setcsr
 #endif // _AMD64_
 
-#endif /* PLATFORM_UNIX */
-
-#ifdef PLATFORM_UNIX
-   /* Note the TWO underscores. */
-#define _vsnprintf    PAL__vsnprintf
-#define _vsnwprintf   PAL__wvsnprintf
-#endif /* PLATFORM_UNIX */
+#endif // !PAL_STDCPP_COMPAT
+#endif // PLATFORM_UNIX
 
 #ifndef _CONST_RETURN
 #ifdef  __cplusplus
@@ -5748,13 +5762,8 @@ ReportEventW (
 
 typedef int errno_t;
 
-#ifdef PAL_STDCPP_COMPAT
-#include <string.h>
+#ifndef PAL_STDCPP_COMPAT
 
-PALIMPORT int __cdecl PAL__vsnprintf(char *, size_t, const char *, va_list);
-PALIMPORT errno_t __cdecl memcpy_s(void *, size_t, const void *, size_t);
-PALIMPORT errno_t __cdecl memmove_s(void *, size_t, const void *, size_t);
-#else // PAL_STDCPP_COMPAT
 typedef struct {
     int quot;
     int rem;
@@ -5763,17 +5772,14 @@ typedef struct {
 PALIMPORT div_t div(int numer, int denom);
 
 PALIMPORT void * __cdecl memcpy(void *, const void *, size_t);
-PALIMPORT errno_t __cdecl memcpy_s(void *, size_t, const void *, size_t);
 PALIMPORT int    __cdecl memcmp(const void *, const void *, size_t);
 PALIMPORT void * __cdecl memset(void *, int, size_t);
 PALIMPORT void * __cdecl memmove(void *, const void *, size_t);
-PALIMPORT errno_t __cdecl memmove_s(void *, size_t, const void *, size_t);
 PALIMPORT void * __cdecl memchr(const void *, int, size_t);
 
 PALIMPORT size_t __cdecl strlen(const char *);
 PALIMPORT int __cdecl strcmp(const char*, const char *);
 PALIMPORT int __cdecl strncmp(const char*, const char *, size_t);
-PALIMPORT int __cdecl _stricmp(const char *, const char *);
 PALIMPORT int __cdecl _strnicmp(const char *, const char *, size_t);
 PALIMPORT char * __cdecl strcat(char *, const char *);
 PALIMPORT char * __cdecl strncat(char *, const char *, size_t);
@@ -5788,8 +5794,6 @@ PALIMPORT size_t __cdecl strspn(const char *, const char *);
 PALIMPORT size_t  __cdecl strcspn(const char *, const char *);
 PALIMPORT int __cdecl sprintf(char *, const char *, ...);
 PALIMPORT int __cdecl vsprintf(char *, const char *, va_list);
-PALIMPORT int __cdecl _snprintf(char *, size_t, const char *, ...);
-PALIMPORT int __cdecl _vsnprintf(char *, size_t, const char *, va_list);
 PALIMPORT int __cdecl sscanf(const char *, const char *, ...);
 PALIMPORT int __cdecl atoi(const char *);
 PALIMPORT LONG __cdecl atol(const char *);
@@ -5809,7 +5813,11 @@ PALIMPORT int __cdecl toupper(int);
 
 #endif // PAL_STDCPP_COMPAT
 
+PALIMPORT errno_t __cdecl memcpy_s(void *, size_t, const void *, size_t);
+PALIMPORT errno_t __cdecl memmove_s(void *, size_t, const void *, size_t);
 PALIMPORT char * __cdecl _strlwr(char *);
+PALIMPORT int __cdecl _stricmp(const char *, const char *);
+PALIMPORT int __cdecl _snprintf(char *, size_t, const char *, ...);
 PALIMPORT char * __cdecl _gcvt_s(char *, int, double, int);
 PALIMPORT char * __cdecl _ecvt(double, int, int *, int *);
 PALIMPORT int __cdecl __iscsym(int);
@@ -5819,6 +5827,7 @@ PALIMPORT unsigned char * __cdecl _mbsninc(const unsigned char *, size_t);
 PALIMPORT unsigned char * __cdecl _mbsdec(const unsigned char *, const unsigned char *);
 PALIMPORT int __cdecl _wcsicmp(const WCHAR *, const WCHAR*);
 PALIMPORT int __cdecl _wcsnicmp(const WCHAR *, const WCHAR *, size_t);
+PALIMPORT int __cdecl _vsnprintf(char *, size_t, const char *, va_list);
 PALIMPORT int __cdecl _vsnwprintf(WCHAR *, size_t, const WCHAR *, va_list);
 PALIMPORT WCHAR * __cdecl _itow(int, WCHAR *, int);
 
@@ -5882,6 +5891,7 @@ PALIMPORT int __cdecl abs(int);
 PALIMPORT double __cdecl fabs(double); 
 #ifndef PAL_STDCPP_COMPAT
 PALIMPORT LONG __cdecl labs(LONG);
+PALIMPORT double __cdecl fabs(double);
 #endif // !PAL_STDCPP_COMPAT
 // clang complains if this is declared with __int64
 PALIMPORT long long __cdecl llabs(long long);
@@ -5905,7 +5915,6 @@ PALIMPORT double __cdecl fmod(double, double);
 PALIMPORT float __cdecl fmodf(float, float);
 PALIMPORT double __cdecl floor(double);
 PALIMPORT double __cdecl ceil(double);
-PALIMPORT double __cdecl fabs(double);
 PALIMPORT float __cdecl fabsf(float);
 PALIMPORT double __cdecl modf(double, double *);
 PALIMPORT float __cdecl modff(float, float *);
@@ -5914,14 +5923,15 @@ PALIMPORT int __cdecl _finite(double);
 PALIMPORT int __cdecl _isnan(double);
 PALIMPORT double __cdecl _copysign(double, double);
 
+#ifndef PAL_STDCPP_COMPAT
+
 #ifdef __cplusplus
 extern "C++" {
 
-#if !defined(PAL_STDCPP_COMPAT)
 inline __int64 abs(__int64 _X) {
     return llabs(_X);
 }
-#endif // !defined(PAL_STDCPP_COMPAT)
+
 }
 #endif
 
@@ -5949,9 +5959,9 @@ PALIMPORT char * __cdecl _strdup(const char *);
 #define alloca  __builtin_alloca
 #endif // __GNUC__
 
-#ifndef PAL_STDCPP_COMPAT
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 #define min(a, b) (((a) < (b)) ? (a) : (b))
+
 #endif // !PAL_STDCPP_COMPAT
 
 PALIMPORT PAL_NORETURN void __cdecl exit(int);
@@ -5991,7 +6001,6 @@ PALIMPORT char * __cdecl ctime(const time_t *);
 
 PALIMPORT int __cdecl _open_osfhandle(INT_PTR, int);
 PALIMPORT int __cdecl _close(int);
-
 PALIMPORT int __cdecl _flushall();
 
 #ifdef PAL_STDCPP_COMPAT
@@ -6004,8 +6013,6 @@ typedef struct _PAL_FILE PAL_FILE;
 struct _FILE;
 typedef struct _FILE FILE;
 typedef struct _FILE PAL_FILE;
-#endif // PAL_STDCPP_COMPAT
-
 
 #define SEEK_SET    0
 #define SEEK_CUR    1
@@ -6022,6 +6029,8 @@ typedef struct _FILE PAL_FILE;
 #define _IOFBF  0       /* setvbuf should set fully buffered */
 #define _IOLBF  1       /* setvbuf should set line buffered */
 #define _IONBF  2       /* setvbuf should set unbuffered */
+
+#endif // PAL_STDCPP_COMPAT
 
 PALIMPORT int __cdecl PAL_fclose(PAL_FILE *);
 PALIMPORT void __cdecl PAL_setbuf(PAL_FILE *, char*);
@@ -6058,10 +6067,12 @@ PALIMPORT PAL_FILE * __cdecl _wfsopen(const WCHAR *, const WCHAR *, int);
 
 /* Maximum value that can be returned by the rand function. */
 
+#ifndef PAL_STDCPP_COMPAT
 #define RAND_MAX 0x7fff
+#endif // !PAL_STDCPP_COMPAT
 
-PALIMPORT int    __cdecl rand(void);
-PALIMPORT void   __cdecl srand(unsigned int);
+PALIMPORT int __cdecl rand(void);
+PALIMPORT void __cdecl srand(unsigned int);
 
 PALIMPORT int __cdecl printf(const char *, ...);
 PALIMPORT int __cdecl vprintf(const char *, va_list);
@@ -6086,7 +6097,7 @@ PALIMPORT int * __cdecl PAL_errno(int caller);
 #define stdout (PAL_get_stdout(PAL_get_caller))
 #define stdin  (PAL_get_stdin(PAL_get_caller))
 #define stderr (PAL_get_stderr(PAL_get_caller))
-#define errno   (*PAL_errno(PAL_get_caller))
+#define errno  (*PAL_errno(PAL_get_caller))
 #endif // PAL_STDCPP_COMPAT
 
 PALIMPORT char * __cdecl getenv(const char *);

@@ -1,0 +1,1646 @@
+Commencing CoreCLR Repo build
+
+Checking pre-requisites...
+
+Commencing build of native components for Windows_NT.x64.Debug
+
+-- Configuring done
+-- Generating done
+-- Build files have been written to: C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug
+Build started 8/17/2015 12:08:11 PM.
+     1>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\install.vcxproj" on node 1 (default targets).
+     1>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\install.vcxproj" (1) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) on node 1 (default targets).
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ZERO_CHECK.vcxproj" (6) on node 19 (default targets).
+     6>InitializeBuildStatus:
+         Creating "x64\Debug\ZERO_CHECK\ZERO_CHECK.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+       CustomBuild:
+         All outputs are up-to-date.
+       FinalizeBuildStatus:
+         Deleting file "x64\Debug\ZERO_CHECK\ZERO_CHECK.tlog\unsuccessfulbuild".
+         Touching "x64\Debug\ZERO_CHECK\ZERO_CHECK.tlog\ZERO_CHECK.lastbuildstate".
+     6>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ZERO_CHECK.vcxproj" (default targets).
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\vm\crossgen\cee_crossgen.vcxproj" (25) on node 17 (default targets).
+    25>InitializeBuildStatus:
+         Creating "cee_crossgen.dir\Debug\cee_crossgen.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\tools\crossgen\crossgen.vcxproj" (16) on node 3 (default targets).
+    16>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\tools\crossgen\crossgen.vcxproj" (16) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\winmd\crossgen\mdwinmd_crossgen.vcxproj" (53) on node 13 (default targets).
+    53>InitializeBuildStatus:
+         Creating "mdwinmd_crossgen.dir\Debug\mdwinmd_crossgen.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\classlibnative\cryptography\comcrypt_wks.vcxproj" (63) on node 24 (default targets).
+    63>InitializeBuildStatus:
+         Creating "comcrypt_wks.dir\Debug\comcrypt_wks.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscoree\coreclr\coreclr.vcxproj" (20) on node 6 (default targets).
+    20>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscoree\coreclr\coreclr.vcxproj" (20) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\enc\wks\mdruntimerw_wks.vcxproj" (56) on node 22 (default targets).
+    56>InitializeBuildStatus:
+         Creating "mdruntimerw_wks.dir\Debug\mdruntimerw_wks.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\compiler\crossgen\mdcompiler_crossgen.vcxproj" (40) on node 2 (default targets).
+    40>InitializeBuildStatus:
+         Creating "mdcompiler_crossgen.dir\Debug\mdcompil.3A393107.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscorrc\full\mscorrc.debug.vcxproj" (67) on node 11 (default targets).
+    67>InitializeBuildStatus:
+         Creating "mscorrc.debug.dir\Debug\mscorrc.debug.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    16>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\tools\crossgen\crossgen.vcxproj" (16) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\utilcode\crossgen\utilcode_crossgen.vcxproj" (72) on node 23 (default targets).
+    72>InitializeBuildStatus:
+         Creating "utilcode_crossgen.dir\Debug\utilcode.B9718DD5.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    25>CustomBuild:
+         All outputs are up-to-date.
+    53>CustomBuild:
+         All outputs are up-to-date.
+    72>CustomBuild:
+         All outputs are up-to-date.
+    40>CustomBuild:
+         All outputs are up-to-date.
+    63>CustomBuild:
+         All outputs are up-to-date.
+    67>CustomBuild:
+         All outputs are up-to-date.
+    56>CustomBuild:
+         All outputs are up-to-date.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\unwinder\dac\unwinder_dac.vcxproj" (73) on node 16 (default targets).
+    73>InitializeBuildStatus:
+         Creating "unwinder_dac.dir\Debug\unwinder_dac.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\runtime\dac\mdruntime_dac.vcxproj" (55) on node 12 (default targets).
+    55>InitializeBuildStatus:
+         Creating "mdruntime_dac.dir\Debug\mdruntime_dac.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\compiler\wks\mdcompiler_wks.vcxproj" (41) on node 14 (default targets).
+    41>InitializeBuildStatus:
+         Creating "mdcompiler_wks.dir\Debug\mdcompiler_wks.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    16>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\tools\crossgen\crossgen.vcxproj" (16) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\runtime\crossgen\mdruntime_crossgen.vcxproj" (50) on node 3 (default targets).
+    50>InitializeBuildStatus:
+         Creating "mdruntime_crossgen.dir\Debug\mdruntim.CE340F8D.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    53>ClCompile:
+         All outputs are up-to-date.
+    67>ResourceCompile:
+         All outputs are up-to-date.
+    50>CustomBuild:
+         All outputs are up-to-date.
+    55>CustomBuild:
+         All outputs are up-to-date.
+    73>CustomBuild:
+         All outputs are up-to-date.
+    41>CustomBuild:
+         All outputs are up-to-date.
+    53>ClCompile:
+         All outputs are up-to-date.
+    20>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscoree\coreclr\coreclr.vcxproj" (20) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscoree\coreclr\coreclr_exports.vcxproj" (46) on node 6 (default targets).
+    46>InitializeBuildStatus:
+         Creating "x64\Debug\coreclr_exports\coreclr_exports.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    56>ClCompile:
+         All outputs are up-to-date.
+    20>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscoree\coreclr\coreclr.vcxproj" (20) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\utilcode\dyncrt\utilcode.vcxproj" (68) on node 4 (default targets).
+    68>InitializeBuildStatus:
+         Creating "utilcode.dir\Debug\utilcode.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\hotdata\crossgen\mdhotdata_crossgen.vcxproj" (44) on node 5 (default targets).
+    44>InitializeBuildStatus:
+         Creating "mdhotdata_crossgen.dir\Debug\mdhotdat.AE9DD455.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    16>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\tools\crossgen\crossgen.vcxproj" (16) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\binder\v3binder_crossgen\v3binder_crossgen.vcxproj" (60) on node 21 (default targets).
+    60>InitializeBuildStatus:
+         Creating "v3binder_crossgen.dir\Debug\v3binder.5915B88A.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    46>CustomBuild:
+         All outputs are up-to-date.
+    16>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\tools\crossgen\crossgen.vcxproj" (16) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\strongname\api\crossgen\strongname_crossgen.vcxproj" (58) on node 10 (default targets).
+    58>InitializeBuildStatus:
+         Creating "strongname_crossgen.dir\Debug\strongna.53BAF8C9.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscorrc\small\mscorrc.vcxproj" (65) on node 18 (default targets).
+    65>InitializeBuildStatus:
+         Creating "mscorrc.dir\Debug\mscorrc.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    72>ClCompile:
+         All outputs are up-to-date.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\compiler\dbi\mdcompiler-dbi.vcxproj" (39) on node 8 (default targets).
+    39>InitializeBuildStatus:
+         Creating "mdcompiler-dbi.dir\Debug\mdcompiler-dbi.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    68>CustomBuild:
+         All outputs are up-to-date.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\winmd\dbi\mdwinmd_dbi.vcxproj" (66) on node 7 (default targets).
+    66>InitializeBuildStatus:
+         Creating "mdwinmd_dbi.dir\Debug\mdwinmd_dbi.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\hotdata\full-staticcrt\mdhotdata-staticcrt.vcxproj" (36) on node 20 (default targets).
+    36>InitializeBuildStatus:
+         Creating "mdhotdata-staticcrt.dir\Debug\mdhotdat.5F707255.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    56>ClCompile:
+         All outputs are up-to-date.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\vm\wks\cee_wks.vcxproj" (34) on node 15 (default targets).
+    34>InitializeBuildStatus:
+         Creating "cee_wks.dir\Debug\cee_wks.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\dbgshim\dbgshim.vcxproj" (4) on node 1 (default targets).
+     4>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\dbgshim\dbgshim.vcxproj" (4) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\debug\shim\debugshim.vcxproj" (26) on node 1 (default targets).
+    26>InitializeBuildStatus:
+         Creating "debugshim.dir\Debug\debugshim.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\strongname\api\dac\strongname_dac.vcxproj" (70) on node 9 (default targets).
+    70>InitializeBuildStatus:
+         Creating "strongname_dac.dir\Debug\strongname_dac.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    46>FinalizeBuildStatus:
+         Deleting file "x64\Debug\coreclr_exports\coreclr_exports.tlog\unsuccessfulbuild".
+         Touching "x64\Debug\coreclr_exports\coreclr_exports.tlog\coreclr_exports.lastbuildstate".
+    44>CustomBuild:
+         All outputs are up-to-date.
+    46>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscoree\coreclr\coreclr_exports.vcxproj" (default targets).
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\gcinfo\lib\gcinfo.vcxproj" (28) on node 13 (default targets).
+    28>InitializeBuildStatus:
+         Creating "gcinfo.dir\Debug\gcinfo.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    20>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscoree\coreclr\coreclr.vcxproj" (20) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\strongname\api\wks\strongname_wks.vcxproj" (49) on node 11 (default targets).
+    49>InitializeBuildStatus:
+         Creating "strongname_wks.dir\Debug\strongname_wks.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    34>PreBuildEvent:
+         setlocal
+         C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass "& ""C:/ssd/coreclr/src/vm/h2inc.ps1""" """C:/ssd/coreclr/src/vm/amd64/asmconstants.h""" >"C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/vm/wks/AsmConstants.tmp"
+         if %errorlevel% neq 0 goto :cmEnd
+         "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64\cl.exe" -DDEBUG -D_DEBUG -D_DBG -DURTBLDENV_FRIENDLY=Checked -DBUILDENV_CHECKED=1 -DWRITE_BARRIER_CHECK=1     -DFEATURE_EVENT_TRACE=1 -D_CRT_STDIO_ARBITRARY_WIDE_SPECIFIERS -DDEV10 -DWIN32 -DDEVL=1 -D_WIN32_WINNT=0x0602 -D_WIN32_IE=0x0900 -DWINNT=1 -DNT_INST=0 -DCONDITION_HANDLING=1 -DNTDDI_VERSION=NTDDI_WIN8 -DDBG_TARGET_AMD64 -D_TARGET_AMD64_=1 -D_CRT_SECURE_NO_WARNINGS -DNTMAKEENV -D_BLD_CLR -DWINVER=0x0602 -DWIN32_LEAN_AND_MEAN=1 -DDEBUGGING_SUPPORTED -DEnC_SUPPORTED -DFEATURE_APPDOMAIN_RESOURCE_MONITORING -DFEATURE_ARRAYSTUB_AS_IL -DFEATURE_ASYNC_IO -DFEATURE_BCL_FORMATTING -DFEATURE_COLLECTIBLE_TYPES -DFEATURE_CLASSIC_COMINTEROP -DFEATURE_APPX -DFEATURE_COMINTEROP -DFEATURE_COMINTEROP_APARTMENT_SUPPORT -DFEATURE_COMINTEROP_UNMANAGED_ACTIVATION -DFEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION -DFEATURE_ICASTABLE -DFEATURE_CORECLR -DFEATURE_CORESYSTEM -DFEATURE_CORRUPTING_EXCEPTIONS -DFEATURE_CRYPTO -DFEATURE_EXCEPTIONDISPATCHINFO -DFEATURE_FRAMEWORK_INTERNAL -DFEATURE_HIJACK -DFEATURE_HOST_ASSEMBLY_RESOLVER -DFEATURE_HOSTED_BINDER -DFEATURE_ISOSTORE -DFEATURE_ISOSTORE_LIGHT -DFEATURE_ISYM_READER -DFEATURE_LEGACYNETCF -DFEATURE_LEGACYNETCFCRYPTO -DFEATURE_LEGACYNETCF_DBG_HOST_CONTROL -DFEATURE_LEGACYNETCFFAS -DFEATURE_LEGACYSURFACE -DFEATURE_LOADER_OPTIMIZATION -DFEATURE_MANAGED_ETW -DFEATURE_MANAGED_ETW_CHANNELS -DFEATURE_MAIN_CLR_MODULE_USES_CORE_NAME -DFEATURE_MERGE_CULTURE_SUPPORT_AND_ENGINE -DFEATURE_MERGE_JIT_AND_ENGINE -DFEATURE_NORM_IDNA_ONLY -DFEATURE_PREJIT -DFEATURE_RANDOMIZED_STRING_HASHING -DFEATURE_READYTORUN -DFEATURE_STANDALONE_SN -DFEATURE_STRONGNAME_DELAY_SIGNING_ALLOWED -DFEATURE_STRONGNAME_MIGRATION -DFEATURE_STRONGNAME_TESTKEY_ALLOWED -DFEATURE_SVR_GC -DFEATURE_SYNTHETIC_CULTURES -DFEATURE_VERSIONING -DFEATURE_VERSIONING_LOG -DFEATURE_WIN32_REGISTRY -DFEATURE_WINDOWSPHONE -DFEATURE_WINMD_RESILIENT -DFEATURE_X509 -DFEATURE_X509_SECURESTRINGS -DPROFILING_SUPPORTED -DFEATURE_MULTICOREJIT -DFEATURE_USE_ASM_GC_WRITE_BARRIERS -DFEATURE_SYMDIFF -D_AMD64_ -D_AMD64_SIMULATOR_ -D_AMD64_SIMULATOR_PERF_ -D_AMD64_WORKAROUND_ -D_WIN64 -DAMD64 -D_SKIP_IF_SIMULATOR_ -D_SECURE_SCL=0 -D_NEW_SDK=1 -DOFFICIAL_BUILD=0 -DBETA=0 -DFX_BRANCH_SYNC_COUNTER_VALUE=0 -DUNICODE -D_UNICODE -D_TARGET_AMD64_=1 -DDBG_TARGET_64BIT=1 -DDBG_TARGET_AMD64=1 -DDBG_TARGET_WIN64=1 -DFEATURE_LEAVE_RUNTIME_HOLDER=1 -DUNICODE -D_UNICODE -DFEATURE_MERGE_JIT_AND_ENGINE /EP C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/vm/wks/AsmConstants.tmp >"C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/vm/wks/AsmConstants.inc"
+         if %errorlevel% neq 0 goto :cmEnd
+         :cmEnd
+         endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+         :cmErrorLevel
+         exit /b %1
+         :cmDone
+         if %errorlevel% neq 0 goto :VCEnd
+         :VCEnd
+    58>CustomBuild:
+         All outputs are up-to-date.
+    60>CustomBuild:
+         All outputs are up-to-date.
+    39>CustomBuild:
+         All outputs are up-to-date.
+    65>CustomBuild:
+         All outputs are up-to-date.
+    40>ClCompile:
+         All outputs are up-to-date.
+    28>CustomBuild:
+         All outputs are up-to-date.
+    49>CustomBuild:
+         All outputs are up-to-date.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\winmd\dac\mdwinmd_dac.vcxproj" (62) on node 6 (default targets).
+    62>InitializeBuildStatus:
+         Creating "mdwinmd_dac.dir\Debug\mdwinmd_dac.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    66>CustomBuild:
+         All outputs are up-to-date.
+    36>CustomBuild:
+         All outputs are up-to-date.
+    26>CustomBuild:
+         All outputs are up-to-date.
+    70>CustomBuild:
+         All outputs are up-to-date.
+    65>ResourceCompile:
+         All outputs are up-to-date.
+    56>Lib:
+         All outputs are up-to-date.
+    55>ClCompile:
+         All outputs are up-to-date.
+    56>Lib:
+         mdruntimerw_wks.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\enc\wks\Debug\mdruntimerw_wks.lib
+    50>ClCompile:
+         All outputs are up-to-date.
+    62>CustomBuild:
+         All outputs are up-to-date.
+    41>ClCompile:
+         All outputs are up-to-date.
+    20>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscoree\coreclr\coreclr.vcxproj" (20) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscordac\mscordaccore.vcxproj" (47) on node 8 (default targets).
+    47>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscordac\mscordaccore.vcxproj" (47) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscordac\mscordaccore_def.vcxproj" (74) on node 22 (default targets).
+    74>InitializeBuildStatus:
+         Creating "x64\Debug\mscordaccore_def\mscordaccore_def.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    26>ClCompile:
+         All outputs are up-to-date.
+    28>ClCompile:
+         All outputs are up-to-date.
+    55>ClCompile:
+         All outputs are up-to-date.
+    44>ClCompile:
+         All outputs are up-to-date.
+    65>Link:
+         All outputs are up-to-date.
+    26>Lib:
+         All outputs are up-to-date.
+    50>ClCompile:
+         All outputs are up-to-date.
+    26>Lib:
+         debugshim.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\debug\shim\Debug\debugshim.lib
+    68>ClCompile:
+         All outputs are up-to-date.
+    65>Link:
+         mscorrc.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscorrc\small\Debug\mscorrc.dll
+    40>ClCompile:
+         All outputs are up-to-date.
+    36>ClCompile:
+         All outputs are up-to-date.
+    26>FinalizeBuildStatus:
+         Deleting file "debugshim.dir\Debug\debugshim.tlog\unsuccessfulbuild".
+    28>Lib:
+         All outputs are up-to-date.
+    26>FinalizeBuildStatus:
+         Touching "debugshim.dir\Debug\debugshim.tlog\debugshim.lastbuildstate".
+    65>FinalizeBuildStatus:
+         Deleting file "mscorrc.dir\Debug\mscorrc.tlog\unsuccessfulbuild".
+    26>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\debug\shim\debugshim.vcxproj" (default targets).
+    65>FinalizeBuildStatus:
+         Touching "mscorrc.dir\Debug\mscorrc.tlog\mscorrc.lastbuildstate".
+    28>Lib:
+         gcinfo.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\gcinfo\lib\Debug\gcinfo.lib
+    65>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscorrc\small\mscorrc.vcxproj" (default targets).
+    28>FinalizeBuildStatus:
+         Deleting file "gcinfo.dir\Debug\gcinfo.tlog\unsuccessfulbuild".
+    55>Lib:
+         All outputs are up-to-date.
+    50>Lib:
+         All outputs are up-to-date.
+    55>Lib:
+         mdruntime_dac.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\runtime\dac\Debug\mdruntime_dac.lib
+    28>FinalizeBuildStatus:
+         Touching "gcinfo.dir\Debug\gcinfo.tlog\gcinfo.lastbuildstate".
+    50>Lib:
+         mdruntime_crossgen.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\runtime\crossgen\Debug\mdruntime_crossgen.lib
+    16>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\tools\crossgen\crossgen.vcxproj" (16) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\enc\crossgen\mdruntimerw_crossgen.vcxproj" (42) on node 1 (default targets).
+    42>InitializeBuildStatus:
+         Creating "mdruntimerw_crossgen.dir\Debug\mdruntim.AFC3F5D9.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    28>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\gcinfo\lib\gcinfo.vcxproj" (default targets).
+    20>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscoree\coreclr\coreclr.vcxproj" (20) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\runtime\wks\mdruntime_wks.vcxproj" (48) on node 18 (default targets).
+    48>InitializeBuildStatus:
+         Creating "mdruntime_wks.dir\Debug\mdruntime_wks.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    55>FinalizeBuildStatus:
+         Deleting file "mdruntime_dac.dir\Debug\mdruntime_dac.tlog\unsuccessfulbuild".
+    50>FinalizeBuildStatus:
+         Deleting file "mdruntime_crossgen.dir\Debug\mdruntim.CE340F8D.tlog\unsuccessfulbuild".
+    55>FinalizeBuildStatus:
+         Touching "mdruntime_dac.dir\Debug\mdruntime_dac.tlog\mdruntime_dac.lastbuildstate".
+    50>FinalizeBuildStatus:
+         Touching "mdruntime_crossgen.dir\Debug\mdruntim.CE340F8D.tlog\mdruntime_crossgen.lastbuildstate".
+    40>Lib:
+         All outputs are up-to-date.
+    55>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\runtime\dac\mdruntime_dac.vcxproj" (default targets).
+    42>CustomBuild:
+         All outputs are up-to-date.
+    41>ClCompile:
+         All outputs are up-to-date.
+    50>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\runtime\crossgen\mdruntime_crossgen.vcxproj" (default targets).
+    40>Lib:
+         mdcompiler_crossgen.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\compiler\crossgen\Debug\mdcompiler_crossgen.lib
+    53>Lib:
+         All outputs are up-to-date.
+    36>ClCompile:
+         All outputs are up-to-date.
+    48>CustomBuild:
+         All outputs are up-to-date.
+    53>Lib:
+         mdwinmd_crossgen.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\winmd\crossgen\Debug\mdwinmd_crossgen.lib
+    66>ClCompile:
+         All outputs are up-to-date.
+    39>ClCompile:
+         All outputs are up-to-date.
+    40>FinalizeBuildStatus:
+         Deleting file "mdcompiler_crossgen.dir\Debug\mdcompil.3A393107.tlog\unsuccessfulbuild".
+     4>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\dbgshim\dbgshim.vcxproj" (4) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\utilcode\staticnohost\utilcodestaticnohost.vcxproj" (43) on node 12 (default targets).
+    43>InitializeBuildStatus:
+         Creating "utilcodestaticnohost.dir\Debug\utilcode.F8854E0D.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    53>FinalizeBuildStatus:
+         Deleting file "mdwinmd_crossgen.dir\Debug\mdwinmd_crossgen.tlog\unsuccessfulbuild".
+    40>FinalizeBuildStatus:
+         Touching "mdcompiler_crossgen.dir\Debug\mdcompil.3A393107.tlog\mdcompiler_crossgen.lastbuildstate".
+    53>FinalizeBuildStatus:
+         Touching "mdwinmd_crossgen.dir\Debug\mdwinmd_crossgen.tlog\mdwinmd_crossgen.lastbuildstate".
+    40>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\compiler\crossgen\mdcompiler_crossgen.vcxproj" (default targets).
+    53>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\winmd\crossgen\mdwinmd_crossgen.vcxproj" (default targets).
+    44>ClCompile:
+         All outputs are up-to-date.
+    62>ClCompile:
+         All outputs are up-to-date.
+    43>CustomBuild:
+         All outputs are up-to-date.
+    66>ClCompile:
+         All outputs are up-to-date.
+    36>Lib:
+         All outputs are up-to-date.
+    41>Lib:
+         All outputs are up-to-date.
+    74>FinalizeBuildStatus:
+         Deleting file "x64\Debug\mscordaccore_def\mscordaccore_def.tlog\unsuccessfulbuild".
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\debug\daccess\daccess.vcxproj" (21) on node 2 (default targets).
+    21>InitializeBuildStatus:
+         Creating "daccess.dir\Debug\daccess.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    74>FinalizeBuildStatus:
+         Touching "x64\Debug\mscordaccore_def\mscordaccore_def.tlog\mscordaccore_def.lastbuildstate".
+    36>Lib:
+         mdhotdata-staticcrt.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\hotdata\full-staticcrt\Debug\mdhotdata-staticcrt.lib
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\clretwrc\clretwrc.vcxproj" (19) on node 13 (default targets).
+    19>InitializeBuildStatus:
+         Creating "clretwrc.dir\Debug\clretwrc.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    41>Lib:
+         mdcompiler_wks.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\compiler\wks\Debug\mdcompiler_wks.lib
+    74>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscordac\mscordaccore_def.vcxproj" (default targets).
+    44>Lib:
+         All outputs are up-to-date.
+    19>PreBuildEvent:
+         Description: MessageCompile C:/ssd/coreclr/src/vm/ClrEtwAll.man
+    56>FinalizeBuildStatus:
+         Deleting file "mdruntimerw_wks.dir\Debug\mdruntimerw_wks.tlog\unsuccessfulbuild".
+    19>PreBuildEvent:
+         setlocal
+         mc -h C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/dlls/clretwrc -r C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/dlls/clretwrc -b -co -um -p FireEtw C:/ssd/coreclr/src/vm/ClrEtwAll.man
+         if %errorlevel% neq 0 goto :cmEnd
+         :cmEnd
+         endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+         :cmErrorLevel
+         exit /b %1
+         :cmDone
+         if %errorlevel% neq 0 goto :VCEnd
+         :VCEnd
+    44>Lib:
+         mdhotdata_crossgen.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\hotdata\crossgen\Debug\mdhotdata_crossgen.lib
+    56>FinalizeBuildStatus:
+         Touching "mdruntimerw_wks.dir\Debug\mdruntimerw_wks.tlog\mdruntimerw_wks.lastbuildstate".
+    36>FinalizeBuildStatus:
+         Deleting file "mdhotdata-staticcrt.dir\Debug\mdhotdat.5F707255.tlog\unsuccessfulbuild".
+    41>FinalizeBuildStatus:
+         Deleting file "mdcompiler_wks.dir\Debug\mdcompiler_wks.tlog\unsuccessfulbuild".
+    36>FinalizeBuildStatus:
+         Touching "mdhotdata-staticcrt.dir\Debug\mdhotdat.5F707255.tlog\mdhotdata-staticcrt.lastbuildstate".
+    56>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\enc\wks\mdruntimerw_wks.vcxproj" (default targets).
+    62>ClCompile:
+         All outputs are up-to-date.
+    66>Lib:
+         All outputs are up-to-date.
+    21>CustomBuild:
+         All outputs are up-to-date.
+    41>FinalizeBuildStatus:
+         Touching "mdcompiler_wks.dir\Debug\mdcompiler_wks.tlog\mdcompiler_wks.lastbuildstate".
+    36>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\hotdata\full-staticcrt\mdhotdata-staticcrt.vcxproj" (default targets).
+    41>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\compiler\wks\mdcompiler_wks.vcxproj" (default targets).
+    44>FinalizeBuildStatus:
+         Deleting file "mdhotdata_crossgen.dir\Debug\mdhotdat.AE9DD455.tlog\unsuccessfulbuild".
+         Touching "mdhotdata_crossgen.dir\Debug\mdhotdat.AE9DD455.tlog\mdhotdata_crossgen.lastbuildstate".
+    63>ClCompile:
+         All outputs are up-to-date.
+    44>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\hotdata\crossgen\mdhotdata_crossgen.vcxproj" (default targets).
+    66>Lib:
+         mdwinmd_dbi.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\winmd\dbi\Debug\mdwinmd_dbi.lib
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\enc\dac\mdruntimerw_dac.vcxproj" (69) on node 20 (default targets).
+    69>InitializeBuildStatus:
+         Creating "mdruntimerw_dac.dir\Debug\mdruntimerw_dac.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\coreclr\hosts\corerun\CoreRun.vcxproj" (31) on node 22 (default targets).
+    31>InitializeBuildStatus:
+         Creating "CoreRun.dir\Debug\CoreRun.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\utilcode\dac\utilcode_dac.vcxproj" (75) on node 14 (default targets).
+    75>InitializeBuildStatus:
+         Creating "utilcode_dac.dir\Debug\utilcode_dac.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    66>FinalizeBuildStatus:
+         Deleting file "mdwinmd_dbi.dir\Debug\mdwinmd_dbi.tlog\unsuccessfulbuild".
+    62>Lib:
+         All outputs are up-to-date.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\enc\dbi\mdruntimerw-dbi.vcxproj" (57) on node 5 (default targets).
+    57>InitializeBuildStatus:
+         Creating "mdruntimerw-dbi.dir\Debug\mdruntimerw-dbi.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    73>ClCompile:
+         All outputs are up-to-date.
+    62>Lib:
+         mdwinmd_dac.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\winmd\dac\Debug\mdwinmd_dac.lib
+    66>FinalizeBuildStatus:
+         Touching "mdwinmd_dbi.dir\Debug\mdwinmd_dbi.tlog\mdwinmd_dbi.lastbuildstate".
+    66>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\winmd\dbi\mdwinmd_dbi.vcxproj" (default targets).
+    63>Lib:
+         All outputs are up-to-date.
+    39>ClCompile:
+         All outputs are up-to-date.
+    63>Lib:
+         comcrypt_wks.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\classlibnative\cryptography\Debug\comcrypt_wks.lib
+    43>ClCompile:
+         All outputs are up-to-date.
+    62>FinalizeBuildStatus:
+         Deleting file "mdwinmd_dac.dir\Debug\mdwinmd_dac.tlog\unsuccessfulbuild".
+    31>CustomBuild:
+         All outputs are up-to-date.
+    69>CustomBuild:
+         All outputs are up-to-date.
+    75>CustomBuild:
+         All outputs are up-to-date.
+    62>FinalizeBuildStatus:
+         Touching "mdwinmd_dac.dir\Debug\mdwinmd_dac.tlog\mdwinmd_dac.lastbuildstate".
+    62>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\winmd\dac\mdwinmd_dac.vcxproj" (default targets).
+    57>CustomBuild:
+         All outputs are up-to-date.
+    63>FinalizeBuildStatus:
+         Deleting file "comcrypt_wks.dir\Debug\comcrypt_wks.tlog\unsuccessfulbuild".
+    73>Lib:
+         All outputs are up-to-date.
+    63>FinalizeBuildStatus:
+         Touching "comcrypt_wks.dir\Debug\comcrypt_wks.tlog\comcrypt_wks.lastbuildstate".
+    73>Lib:
+         unwinder_dac.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\unwinder\dac\Debug\unwinder_dac.lib
+    42>ClCompile:
+         All outputs are up-to-date.
+    63>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\classlibnative\cryptography\comcrypt_wks.vcxproj" (default targets).
+    20>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscoree\coreclr\coreclr.vcxproj" (20) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\hotdata\full\mdhotdata_full.vcxproj" (45) on node 7 (default targets).
+    45>InitializeBuildStatus:
+         Creating "mdhotdata_full.dir\Debug\mdhotdata_full.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    48>ClCompile:
+         All outputs are up-to-date.
+    73>FinalizeBuildStatus:
+         Deleting file "unwinder_dac.dir\Debug\unwinder_dac.tlog\unsuccessfulbuild".
+         Touching "unwinder_dac.dir\Debug\unwinder_dac.tlog\unwinder_dac.lastbuildstate".
+    72>ClCompile:
+         All outputs are up-to-date.
+    45>CustomBuild:
+         All outputs are up-to-date.
+    73>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\unwinder\dac\unwinder_dac.vcxproj" (default targets).
+    39>Lib:
+         All outputs are up-to-date.
+    31>ClCompile:
+         All outputs are up-to-date.
+    39>Lib:
+         mdcompiler-dbi.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\compiler\dbi\Debug\mdcompiler-dbi.lib
+       FinalizeBuildStatus:
+         Deleting file "mdcompiler-dbi.dir\Debug\mdcompiler-dbi.tlog\unsuccessfulbuild".
+         Touching "mdcompiler-dbi.dir\Debug\mdcompiler-dbi.tlog\mdcompiler-dbi.lastbuildstate".
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\hotdata\dac\mdhotdata_dac.vcxproj" (54) on node 16 (default targets).
+    54>InitializeBuildStatus:
+         Creating "mdhotdata_dac.dir\Debug\mdhotdata_dac.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    25>ClCompile:
+         All outputs are up-to-date.
+    31>ResourceCompile:
+         All outputs are up-to-date.
+    39>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\compiler\dbi\mdcompiler-dbi.vcxproj" (default targets).
+    48>ClCompile:
+         All outputs are up-to-date.
+    42>ClCompile:
+         All outputs are up-to-date.
+    58>ClCompile:
+         All outputs are up-to-date.
+    75>ClCompile:
+         All outputs are up-to-date.
+    54>CustomBuild:
+         All outputs are up-to-date.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\debug\ee\dac\cordbee_dac.vcxproj" (7) on node 8 (default targets).
+     7>InitializeBuildStatus:
+         Creating "cordbee_dac.dir\Debug\cordbee_dac.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    48>Lib:
+         All outputs are up-to-date.
+    42>Lib:
+         All outputs are up-to-date.
+     7>CustomBuild:
+         All outputs are up-to-date.
+    49>ClCompile:
+         All outputs are up-to-date.
+    48>Lib:
+         mdruntime_wks.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\runtime\wks\Debug\mdruntime_wks.lib
+    42>Lib:
+         mdruntimerw_crossgen.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\enc\crossgen\Debug\mdruntimerw_crossgen.lib
+    31>Link:
+         All outputs are up-to-date.
+    58>Lib:
+         All outputs are up-to-date.
+    45>ClCompile:
+         All outputs are up-to-date.
+    58>Lib:
+         strongname_crossgen.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\strongname\api\crossgen\Debug\strongname_crossgen.lib
+    42>FinalizeBuildStatus:
+         Deleting file "mdruntimerw_crossgen.dir\Debug\mdruntim.AFC3F5D9.tlog\unsuccessfulbuild".
+    31>Link:
+         CoreRun.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\coreclr\hosts\corerun\Debug\CoreRun.exe
+    69>ClCompile:
+         All outputs are up-to-date.
+    42>FinalizeBuildStatus:
+         Touching "mdruntimerw_crossgen.dir\Debug\mdruntim.AFC3F5D9.tlog\mdruntimerw_crossgen.lastbuildstate".
+    70>ClCompile:
+         All outputs are up-to-date.
+    42>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\enc\crossgen\mdruntimerw_crossgen.vcxproj" (default targets).
+    57>ClCompile:
+         All outputs are up-to-date.
+    60>ClCompile:
+         All outputs are up-to-date.
+    58>FinalizeBuildStatus:
+         Deleting file "strongname_crossgen.dir\Debug\strongna.53BAF8C9.tlog\unsuccessfulbuild".
+    48>FinalizeBuildStatus:
+         Deleting file "mdruntime_wks.dir\Debug\mdruntime_wks.tlog\unsuccessfulbuild".
+    58>FinalizeBuildStatus:
+         Touching "strongname_crossgen.dir\Debug\strongna.53BAF8C9.tlog\strongname_crossgen.lastbuildstate".
+    48>FinalizeBuildStatus:
+         Touching "mdruntime_wks.dir\Debug\mdruntime_wks.tlog\mdruntime_wks.lastbuildstate".
+    31>FinalizeBuildStatus:
+         Deleting file "CoreRun.dir\Debug\CoreRun.tlog\unsuccessfulbuild".
+    72>Lib:
+         All outputs are up-to-date.
+    49>Lib:
+         All outputs are up-to-date.
+    68>ClCompile:
+         All outputs are up-to-date.
+    49>Lib:
+         strongname_wks.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\strongname\api\wks\Debug\strongname_wks.lib
+    31>FinalizeBuildStatus:
+         Touching "CoreRun.dir\Debug\CoreRun.tlog\CoreRun.lastbuildstate".
+    58>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\strongname\api\crossgen\strongname_crossgen.vcxproj" (default targets).
+    48>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\runtime\wks\mdruntime_wks.vcxproj" (default targets).
+    31>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\coreclr\hosts\corerun\CoreRun.vcxproj" (default targets).
+    54>ClCompile:
+         All outputs are up-to-date.
+    70>Lib:
+         All outputs are up-to-date.
+    20>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscoree\coreclr\coreclr.vcxproj" (20) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\binder\v3binder\v3binder.vcxproj" (61) on node 1 (default targets).
+    61>InitializeBuildStatus:
+         Creating "v3binder.dir\Debug\v3binder.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    70>Lib:
+         strongname_dac.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\strongname\api\dac\Debug\strongname_dac.lib
+    45>ClCompile:
+         All outputs are up-to-date.
+    49>FinalizeBuildStatus:
+         Deleting file "strongname_wks.dir\Debug\strongname_wks.tlog\unsuccessfulbuild".
+         Touching "strongname_wks.dir\Debug\strongname_wks.tlog\strongname_wks.lastbuildstate".
+    72>Lib:
+         utilcode_crossgen.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\utilcode\crossgen\Debug\utilcode_crossgen.lib
+    49>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\strongname\api\wks\strongname_wks.vcxproj" (default targets).
+    69>ClCompile:
+         All outputs are up-to-date.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\jit\crossgen\jit_crossgen.vcxproj" (32) on node 10 (default targets).
+    32>InitializeBuildStatus:
+         Creating "jit_crossgen.dir\Debug\jit_crossgen.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\debug\ildbsymlib\ildbsymlib.vcxproj" (29) on node 18 (default targets).
+    29>InitializeBuildStatus:
+         Creating "ildbsymlib.dir\Debug\ildbsymlib.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    57>ClCompile:
+         All outputs are up-to-date.
+    70>FinalizeBuildStatus:
+         Deleting file "strongname_dac.dir\Debug\strongname_dac.tlog\unsuccessfulbuild".
+         Touching "strongname_dac.dir\Debug\strongname_dac.tlog\strongname_dac.lastbuildstate".
+    61>CustomBuild:
+         All outputs are up-to-date.
+    70>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\strongname\api\dac\strongname_dac.vcxproj" (default targets).
+    60>Lib:
+         All outputs are up-to-date.
+         v3binder_crossgen.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\binder\v3binder_crossgen\Debug\v3binder_crossgen.lib
+    45>Lib:
+         All outputs are up-to-date.
+    72>FinalizeBuildStatus:
+         Deleting file "utilcode_crossgen.dir\Debug\utilcode.B9718DD5.tlog\unsuccessfulbuild".
+    32>CustomBuild:
+         All outputs are up-to-date.
+    29>CustomBuild:
+         All outputs are up-to-date.
+    72>FinalizeBuildStatus:
+         Touching "utilcode_crossgen.dir\Debug\utilcode.B9718DD5.tlog\utilcode_crossgen.lastbuildstate".
+    45>Lib:
+         mdhotdata_full.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\hotdata\full\Debug\mdhotdata_full.lib
+    54>ClCompile:
+         All outputs are up-to-date.
+    72>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\utilcode\crossgen\utilcode_crossgen.vcxproj" (default targets).
+    69>Lib:
+         All outputs are up-to-date.
+    60>FinalizeBuildStatus:
+         Deleting file "v3binder_crossgen.dir\Debug\v3binder.5915B88A.tlog\unsuccessfulbuild".
+    20>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscoree\coreclr\coreclr.vcxproj" (20) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\winmd\wks\mdwinmd_wks.vcxproj" (52) on node 9 (default targets).
+    52>InitializeBuildStatus:
+         Creating "mdwinmd_wks.dir\Debug\mdwinmd_wks.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    69>Lib:
+         mdruntimerw_dac.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\enc\dac\Debug\mdruntimerw_dac.lib
+    60>FinalizeBuildStatus:
+         Touching "v3binder_crossgen.dir\Debug\v3binder.5915B88A.tlog\v3binder_crossgen.lastbuildstate".
+    60>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\binder\v3binder_crossgen\v3binder_crossgen.vcxproj" (default targets).
+    45>FinalizeBuildStatus:
+         Deleting file "mdhotdata_full.dir\Debug\mdhotdata_full.tlog\unsuccessfulbuild".
+    67>Link:
+         All outputs are up-to-date.
+    45>FinalizeBuildStatus:
+         Touching "mdhotdata_full.dir\Debug\mdhotdata_full.tlog\mdhotdata_full.lastbuildstate".
+    67>Link:
+         mscorrc.debug.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscorrc\full\Debug\mscorrc.debug.dll
+    45>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\hotdata\full\mdhotdata_full.vcxproj" (default targets).
+    57>Lib:
+         All outputs are up-to-date.
+    69>FinalizeBuildStatus:
+         Deleting file "mdruntimerw_dac.dir\Debug\mdruntimerw_dac.tlog\unsuccessfulbuild".
+    52>CustomBuild:
+         All outputs are up-to-date.
+    67>FinalizeBuildStatus:
+         Deleting file "mscorrc.debug.dir\Debug\mscorrc.debug.tlog\unsuccessfulbuild".
+    69>FinalizeBuildStatus:
+         Touching "mdruntimerw_dac.dir\Debug\mdruntimerw_dac.tlog\mdruntimerw_dac.lastbuildstate".
+    57>Lib:
+         mdruntimerw-dbi.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\enc\dbi\Debug\mdruntimerw-dbi.lib
+    54>Lib:
+         All outputs are up-to-date.
+    69>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\enc\dac\mdruntimerw_dac.vcxproj" (default targets).
+    67>FinalizeBuildStatus:
+         Touching "mscorrc.debug.dir\Debug\mscorrc.debug.tlog\mscorrc.debug.lastbuildstate".
+    67>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscorrc\full\mscorrc.debug.vcxproj" (default targets).
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ipcman\ipcman-staticcrt\ipcmanager-staticcrt.vcxproj" (33) on node 21 (default targets).
+    33>InitializeBuildStatus:
+         Creating "ipcmanager-staticcrt.dir\Debug\ipcmanag.6BB38EC3.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    54>Lib:
+         mdhotdata_dac.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\hotdata\dac\Debug\mdhotdata_dac.lib
+    57>FinalizeBuildStatus:
+         Deleting file "mdruntimerw-dbi.dir\Debug\mdruntimerw-dbi.tlog\unsuccessfulbuild".
+         Touching "mdruntimerw-dbi.dir\Debug\mdruntimerw-dbi.tlog\mdruntimerw-dbi.lastbuildstate".
+    43>ClCompile:
+         All outputs are up-to-date.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\diasdk\dialib.vcxproj" (27) on node 7 (default targets).
+    27>InitializeBuildStatus:
+         Creating "x64\Debug\dialib\dialib.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    57>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\enc\dbi\mdruntimerw-dbi.vcxproj" (default targets).
+    68>Lib:
+         All outputs are up-to-date.
+    54>FinalizeBuildStatus:
+         Deleting file "mdhotdata_dac.dir\Debug\mdhotdata_dac.tlog\unsuccessfulbuild".
+         Touching "mdhotdata_dac.dir\Debug\mdhotdata_dac.tlog\mdhotdata_dac.lastbuildstate".
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\tools\InjectResource\InjectResource.vcxproj" (8) on node 20 (default targets).
+     8>InitializeBuildStatus:
+         Creating "InjectResource.dir\Debug\InjectResource.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    33>CustomBuild:
+         All outputs are up-to-date.
+    54>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\hotdata\dac\mdhotdata_dac.vcxproj" (default targets).
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\gcinfo\crossgen\gcinfo_crossgen.vcxproj" (30) on node 11 (default targets).
+    30>InitializeBuildStatus:
+         Creating "gcinfo_crossgen.dir\Debug\gcinfo_crossgen.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    68>Lib:
+         utilcode.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\utilcode\dyncrt\Debug\utilcode.lib
+    29>ClCompile:
+         All outputs are up-to-date.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\inc\corguids.vcxproj" (18) on node 5 (default targets).
+    18>InitializeBuildStatus:
+         Creating "corguids.dir\Debug\corguids.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    68>FinalizeBuildStatus:
+         Deleting file "utilcode.dir\Debug\utilcode.tlog\unsuccessfulbuild".
+     8>CustomBuild:
+         All outputs are up-to-date.
+    30>CustomBuild:
+         All outputs are up-to-date.
+    68>FinalizeBuildStatus:
+         Touching "utilcode.dir\Debug\utilcode.tlog\utilcode.lastbuildstate".
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\vm\dac\cee_dac.vcxproj" (24) on node 16 (default targets).
+    24>InitializeBuildStatus:
+         Creating "cee_dac.dir\Debug\cee_dac.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    68>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\utilcode\dyncrt\utilcode.vcxproj" (default targets).
+    21>ClCompile:
+         All outputs are up-to-date.
+    29>Lib:
+         All outputs are up-to-date.
+         ildbsymlib.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\debug\ildbsymlib\Debug\ildbsymlib.lib
+    24>CustomBuild:
+         All outputs are up-to-date.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\compiler\dac\mdcompiler_dac.vcxproj" (37) on node 4 (default targets).
+    37>InitializeBuildStatus:
+         Creating "mdcompiler_dac.dir\Debug\mdcompiler_dac.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    27>CustomBuild:
+         dia2.idl
+     8>ClCompile:
+         All outputs are up-to-date.
+    29>FinalizeBuildStatus:
+         Deleting file "ildbsymlib.dir\Debug\ildbsymlib.tlog\unsuccessfulbuild".
+    18>CustomBuild:
+         All outputs are up-to-date.
+    29>FinalizeBuildStatus:
+         Touching "ildbsymlib.dir\Debug\ildbsymlib.tlog\ildbsymlib.lastbuildstate".
+    27>CustomBuild:
+         Microsoft (R) 32b/64b MIDL Compiler Version 8.00.0603 
+         Copyright (c) Microsoft Corporation. All rights reserved.
+    29>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\debug\ildbsymlib\ildbsymlib.vcxproj" (default targets).
+    75>ClCompile:
+         All outputs are up-to-date.
+    37>CustomBuild:
+         All outputs are up-to-date.
+    27>CustomBuild:
+         Processing C:\Program Files (x86)\Microsoft Visual Studio 12.0\DIA SDK\idl\dia2.idl
+    52>ClCompile:
+         All outputs are up-to-date.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\classlibnative\bcltype\bcltype.vcxproj" (12) on node 18 (default targets).
+    12>InitializeBuildStatus:
+         Creating "bcltype.dir\Debug\bcltype.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    43>Lib:
+         All outputs are up-to-date.
+     8>Link:
+         All outputs are up-to-date.
+    30>ClCompile:
+         All outputs are up-to-date.
+     8>Link:
+         InjectResource.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\tools\InjectResource\Debug\InjectResource.exe
+    43>Lib:
+         utilcodestaticnohost.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\utilcode\staticnohost\Debug\utilcodestaticnohost.lib
+    12>CustomBuild:
+         All outputs are up-to-date.
+    21>ClCompile:
+         All outputs are up-to-date.
+    52>ClCompile:
+         All outputs are up-to-date.
+     8>FinalizeBuildStatus:
+         Deleting file "InjectResource.dir\Debug\InjectResource.tlog\unsuccessfulbuild".
+    43>FinalizeBuildStatus:
+         Deleting file "utilcodestaticnohost.dir\Debug\utilcode.F8854E0D.tlog\unsuccessfulbuild".
+     8>FinalizeBuildStatus:
+         Touching "InjectResource.dir\Debug\InjectResource.tlog\InjectResource.lastbuildstate".
+    43>FinalizeBuildStatus:
+         Touching "utilcodestaticnohost.dir\Debug\utilcode.F8854E0D.tlog\utilcodestaticnohost.lastbuildstate".
+    33>ClCompile:
+         All outputs are up-to-date.
+     8>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\tools\InjectResource\InjectResource.vcxproj" (default targets).
+    43>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\utilcode\staticnohost\utilcodestaticnohost.vcxproj" (default targets).
+     7>ClCompile:
+         All outputs are up-to-date.
+    30>Lib:
+         All outputs are up-to-date.
+         gcinfo_crossgen.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\gcinfo\crossgen\Debug\gcinfo_crossgen.lib
+    25>ClCompile:
+         All outputs are up-to-date.
+    52>Lib:
+         All outputs are up-to-date.
+         mdwinmd_wks.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\winmd\wks\Debug\mdwinmd_wks.lib
+    18>ClCompile:
+         All outputs are up-to-date.
+    21>Lib:
+         All outputs are up-to-date.
+    30>FinalizeBuildStatus:
+         Deleting file "gcinfo_crossgen.dir\Debug\gcinfo_crossgen.tlog\unsuccessfulbuild".
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\coreclr\hosts\coreconsole\CoreConsole.vcxproj" (9) on node 12 (default targets).
+     9>InitializeBuildStatus:
+         Creating "CoreConsole.dir\Debug\CoreConsole.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    30>FinalizeBuildStatus:
+         Touching "gcinfo_crossgen.dir\Debug\gcinfo_crossgen.tlog\gcinfo_crossgen.lastbuildstate".
+    21>Lib:
+         daccess.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\debug\daccess\Debug\daccess.lib
+    30>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\gcinfo\crossgen\gcinfo_crossgen.vcxproj" (default targets).
+    33>ClCompile:
+         All outputs are up-to-date.
+    75>Lib:
+         All outputs are up-to-date.
+    52>FinalizeBuildStatus:
+         Deleting file "mdwinmd_wks.dir\Debug\mdwinmd_wks.tlog\unsuccessfulbuild".
+         Touching "mdwinmd_wks.dir\Debug\mdwinmd_wks.tlog\mdwinmd_wks.lastbuildstate".
+    75>Lib:
+         utilcode_dac.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\utilcode\dac\Debug\utilcode_dac.lib
+    21>FinalizeBuildStatus:
+         Deleting file "daccess.dir\Debug\daccess.tlog\unsuccessfulbuild".
+     7>ClCompile:
+         All outputs are up-to-date.
+    52>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\winmd\wks\mdwinmd_wks.vcxproj" (default targets).
+     9>CustomBuild:
+         All outputs are up-to-date.
+    21>FinalizeBuildStatus:
+         Touching "daccess.dir\Debug\daccess.tlog\daccess.lastbuildstate".
+    19>CustomBuild:
+         All outputs are up-to-date.
+    21>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\debug\daccess\daccess.vcxproj" (default targets).
+    75>FinalizeBuildStatus:
+         Deleting file "utilcode_dac.dir\Debug\utilcode_dac.tlog\unsuccessfulbuild".
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\classlibnative\float\comfloat_wks.vcxproj" (11) on node 11 (default targets).
+    11>InitializeBuildStatus:
+         Creating "comfloat_wks.dir\Debug\comfloat_wks.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    75>FinalizeBuildStatus:
+         Touching "utilcode_dac.dir\Debug\utilcode_dac.tlog\utilcode_dac.lastbuildstate".
+    75>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\utilcode\dac\utilcode_dac.vcxproj" (default targets).
+    33>Lib:
+         All outputs are up-to-date.
+         ipcmanager-staticcrt.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ipcman\ipcman-staticcrt\Debug\ipcmanager-staticcrt.lib
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\datasource\dbi\mddatasource_dbi.vcxproj" (38) on node 9 (default targets).
+    38>InitializeBuildStatus:
+         Creating "mddatasource_dbi.dir\Debug\mddatasource_dbi.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    18>Lib:
+         All outputs are up-to-date.
+    37>ClCompile:
+         All outputs are up-to-date.
+     7>Lib:
+         All outputs are up-to-date.
+    18>Lib:
+         corguids.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\inc\Debug\corguids.lib
+    11>CustomBuild:
+         All outputs are up-to-date.
+    33>FinalizeBuildStatus:
+         Deleting file "ipcmanager-staticcrt.dir\Debug\ipcmanag.6BB38EC3.tlog\unsuccessfulbuild".
+     7>Lib:
+         cordbee_dac.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\debug\ee\dac\Debug\cordbee_dac.lib
+     9>ClCompile:
+         All outputs are up-to-date.
+    33>FinalizeBuildStatus:
+         Touching "ipcmanager-staticcrt.dir\Debug\ipcmanag.6BB38EC3.tlog\ipcmanager-staticcrt.lastbuildstate".
+    33>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ipcman\ipcman-staticcrt\ipcmanager-staticcrt.vcxproj" (default targets).
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\ceefilegen\ceefgen.vcxproj" (15) on node 14 (default targets).
+    15>InitializeBuildStatus:
+         Creating "ceefgen.dir\Debug\ceefgen.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    19>ResourceCompile:
+         C:\Program Files (x86)\Windows Kits\8.1\bin\x86\rc.exe /D DEBUG /D _DEBUG /D _DBG /D URTBLDENV_FRIENDLY=Checked /D BUILDENV_CHECKED=1 /D WRITE_BARRIER_CHECK=1 /D FEATURE_EVENT_TRACE=1 /D _CRT_STDIO_ARBITRARY_WIDE_SPECIFIERS /D DEV10 /D WIN32 /D DEVL=1 /D _WIN32_WINNT=0x0602 /D _WIN32_IE=0x0900 /D WINNT=1 /D NT_INST=0 /D CONDITION_HANDLING=1 /D NTDDI_VERSION=NTDDI_WIN8 /D DBG_TARGET_AMD64 /D _TARGET_AMD64_=1 /D _CRT_SECURE_NO_WARNINGS /D NTMAKEENV /D _BLD_CLR /D WINVER=0x0602 /D WIN32_LEAN_AND_MEAN=1 /D DEBUGGING_SUPPORTED /D EnC_SUPPORTED /D FEATURE_APPDOMAIN_RESOURCE_MONITORING /D FEATURE_ARRAYSTUB_AS_IL /D FEATURE_ASYNC_IO /D FEATURE_BCL_FORMATTING /D FEATURE_COLLECTIBLE_TYPES /D FEATURE_CLASSIC_COMINTEROP /D FEATURE_APPX /D FEATURE_COMINTEROP /D FEATURE_COMINTEROP_APARTMENT_SUPPORT /D FEATURE_COMINTEROP_UNMANAGED_ACTIVATION /D FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION /D FEATURE_ICASTABLE /D FEATURE_CORECLR /D FEATURE_CORESYSTEM /D FEATURE_CORRUPTING_EXCEPTIONS /D FEATURE_CRYPTO /D FEATURE_EXCEPTIONDISPATCHINFO /D FEATURE_FRAMEWORK_INTERNAL /D FEATURE_HIJACK /D FEATURE_HOST_ASSEMBLY_RESOLVER /D FEATURE_HOSTED_BINDER /D FEATURE_ISOSTORE /D FEATURE_ISOSTORE_LIGHT /D FEATURE_ISYM_READER /D FEATURE_LEGACYNETCF /D FEATURE_LEGACYNETCFCRYPTO /D FEATURE_LEGACYNETCF_DBG_HOST_CONTROL /D FEATURE_LEGACYNETCFFAS /D FEATURE_LEGACYSURFACE /D FEATURE_LOADER_OPTIMIZATION /D FEATURE_MANAGED_ETW /D FEATURE_MANAGED_ETW_CHANNELS /D FEATURE_MAIN_CLR_MODULE_USES_CORE_NAME /D FEATURE_MERGE_CULTURE_SUPPORT_AND_ENGINE /D FEATURE_MERGE_JIT_AND_ENGINE /D FEATURE_NORM_IDNA_ONLY /D FEATURE_PREJIT /D FEATURE_RANDOMIZED_STRING_HASHING /D FEATURE_READYTORUN /D FEATURE_STANDALONE_SN /D FEATURE_STRONGNAME_DELAY_SIGNING_ALLOWED /D FEATURE_STRONGNAME_MIGRATION /D FEATURE_STRONGNAME_TESTKEY_ALLOWED /D FEATURE_SVR_GC /D FEATURE_SYNTHETIC_CULTURES /D FEATURE_VERSIONING /D FEATURE_VERSIONING_LOG /D FEATURE_WIN32_REGISTRY /D FEATURE_WINDOWSPHONE /D FEATURE_WINMD_RESILIENT /D FEATURE_X509 /D FEATURE_X509_SECURESTRINGS /D PROFILING_SUPPORTED /D FEATURE_MULTICOREJIT /D FEATURE_USE_ASM_GC_WRITE_BARRIERS /D FEATURE_SYMDIFF /D _AMD64_ /D _AMD64_SIMULATOR_ /D _AMD64_SIMULATOR_PERF_ /D _AMD64_WORKAROUND_ /D _WIN64 /D AMD64 /D _SKIP_IF_SIMULATOR_ /D _SECURE_SCL=0 /D _NEW_SDK=1 /D OFFICIAL_BUILD=0 /D BETA=0 /D FX_BRANCH_SYNC_COUNTER_VALUE=0 /D UNICODE /D _UNICODE /D FX_VER_INTERNALNAME_STR=clretwrc.dll /D "CMAKE_INTDIR=\\\"Debug\\\"" /D clretwrc_EXPORTS /D _UNICODE /D UNICODE /l"0x0409" /IC:\ssd\coreclr\src\pal\prebuilt\inc /IC:\ssd\coreclr\src\inc /IC:\ssd\coreclr\src\strongname\inc /IC:\ssd\coreclr\src\inc\winrt /IC:\ssd\coreclr\src\debug\inc /IC:\ssd\coreclr\src\debug\inc\amd64 /IC:\ssd\coreclr\src\debug\inc\dump /IC:\ssd\coreclr\src\md\inc /IC:\ssd\coreclr\src\classlibnative\bcltype /IC:\ssd\coreclr\src\classlibnative\cryptography /IC:\ssd\coreclr\src\classlibnative\inc /IC:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\clretwrc /nologo /fo"clretwrc.dir\Debug\clretwrc.res" C:\ssd\coreclr\src\dlls\clretwrc\clretwrc.rc 
+    18>FinalizeBuildStatus:
+         Deleting file "corguids.dir\Debug\corguids.tlog\unsuccessfulbuild".
+    38>CustomBuild:
+         All outputs are up-to-date.
+     7>FinalizeBuildStatus:
+         Deleting file "cordbee_dac.dir\Debug\cordbee_dac.tlog\unsuccessfulbuild".
+    18>FinalizeBuildStatus:
+         Touching "corguids.dir\Debug\corguids.tlog\corguids.lastbuildstate".
+     7>FinalizeBuildStatus:
+         Touching "cordbee_dac.dir\Debug\cordbee_dac.tlog\cordbee_dac.lastbuildstate".
+    18>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\inc\corguids.vcxproj" (default targets).
+     7>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\debug\ee\dac\cordbee_dac.vcxproj" (default targets).
+     9>ResourceCompile:
+         All outputs are up-to-date.
+    15>CustomBuild:
+         All outputs are up-to-date.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\tools\GenClrDebugResource\GenClrDebugResource.vcxproj" (22) on node 21 (default targets).
+    22>InitializeBuildStatus:
+         Creating "GenClrDebugResource.dir\Debug\GenClrDe.9F55F0BD.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+       CustomBuild:
+         All outputs are up-to-date.
+    27>CustomBuild:
+         dia2.idl
+         Processing C:\Program Files (x86)\Windows Kits\8.1\Include\um\objidl.idl
+     9>Link:
+         All outputs are up-to-date.
+         CoreConsole.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\coreclr\hosts\coreconsole\Debug\CoreConsole.exe
+    22>ClCompile:
+         All outputs are up-to-date.
+    27>CustomBuild:
+         objidl.idl
+     9>FinalizeBuildStatus:
+         Deleting file "CoreConsole.dir\Debug\CoreConsole.tlog\unsuccessfulbuild".
+         Touching "CoreConsole.dir\Debug\CoreConsole.tlog\CoreConsole.lastbuildstate".
+     9>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\coreclr\hosts\coreconsole\CoreConsole.vcxproj" (default targets).
+    37>ClCompile:
+         All outputs are up-to-date.
+    61>ClCompile:
+         All outputs are up-to-date.
+    27>CustomBuild:
+         Processing C:\Program Files (x86)\Windows Kits\8.1\Include\um\unknwn.idl
+    32>ClCompile:
+         All outputs are up-to-date.
+    22>Link:
+         All outputs are up-to-date.
+    27>CustomBuild:
+         unknwn.idl
+    22>Link:
+         GenClrDebugResource.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\tools\GenClrDebugResource\Debug\GenClrDebugResource.exe
+    38>ClCompile:
+         All outputs are up-to-date.
+    22>FinalizeBuildStatus:
+         Deleting file "GenClrDebugResource.dir\Debug\GenClrDe.9F55F0BD.tlog\unsuccessfulbuild".
+         Touching "GenClrDebugResource.dir\Debug\GenClrDe.9F55F0BD.tlog\GenClrDebugResource.lastbuildstate".
+    22>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\tools\GenClrDebugResource\GenClrDebugResource.vcxproj" (default targets).
+    61>Lib:
+         All outputs are up-to-date.
+    37>Lib:
+         All outputs are up-to-date.
+    61>Lib:
+         v3binder.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\binder\v3binder\Debug\v3binder.lib
+    15>ClCompile:
+         All outputs are up-to-date.
+    37>Lib:
+         mdcompiler_dac.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\compiler\dac\Debug\mdcompiler_dac.lib
+    61>FinalizeBuildStatus:
+         Deleting file "v3binder.dir\Debug\v3binder.tlog\unsuccessfulbuild".
+         Touching "v3binder.dir\Debug\v3binder.tlog\v3binder.lastbuildstate".
+    38>ClCompile:
+         All outputs are up-to-date.
+    61>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\binder\v3binder\v3binder.vcxproj" (default targets).
+    37>FinalizeBuildStatus:
+         Deleting file "mdcompiler_dac.dir\Debug\mdcompiler_dac.tlog\unsuccessfulbuild".
+         Touching "mdcompiler_dac.dir\Debug\mdcompiler_dac.tlog\mdcompiler_dac.lastbuildstate".
+    27>CustomBuild:
+         Processing C:\Program Files (x86)\Windows Kits\8.1\Include\shared\wtypes.idl
+    37>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\compiler\dac\mdcompiler_dac.vcxproj" (default targets).
+    15>ClCompile:
+         All outputs are up-to-date.
+    27>CustomBuild:
+         wtypes.idl
+     4>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\dbgshim\dbgshim.vcxproj" (4) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\debug\debug-pal\debug-pal.vcxproj" (10) on node 1 (default targets).
+    10>InitializeBuildStatus:
+         Creating "debug-pal.dir\Debug\debug-pal.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    38>Lib:
+         All outputs are up-to-date.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\zap\crossgen\corzap_crossgen.vcxproj" (23) on node 4 (default targets).
+    23>InitializeBuildStatus:
+         Creating "corzap_crossgen.dir\Debug\corzap_crossgen.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    38>Lib:
+         mddatasource_dbi.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\datasource\dbi\Debug\mddatasource_dbi.lib
+    32>Lib:
+         All outputs are up-to-date.
+         jit_crossgen.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\jit\crossgen\Debug\jit_crossgen.lib
+    19>Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:QUEUE /OUT:"C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\clretwrc\Debug\clretwrc.dll" /INCREMENTAL:NO /NOLOGO /MANIFEST:NO /DEBUG /PDB:"C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/dlls/clretwrc/Debug/clretwrc.pdb" /SUBSYSTEM:CONSOLE /LARGEADDRESSAWARE /OPT:REF /OPT:ICF /TLBID:1 /NOENTRY /RELEASE /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/dlls/clretwrc/Debug/clretwrc.lib" /MACHINE:X64  /machine:x64 /SUBSYSTEM:WINDOWS,6.00 /DEBUGTYPE:cv,fixup /PDBCOMPRESS /IGNORE:4197,4013,4254,4070,4221 /NOVCFEATURE /DLL clretwrc.dir\Debug\clretwrc.res
+    10>CustomBuild:
+         All outputs are up-to-date.
+    15>Lib:
+         All outputs are up-to-date.
+    38>FinalizeBuildStatus:
+         Deleting file "mddatasource_dbi.dir\Debug\mddatasource_dbi.tlog\unsuccessfulbuild".
+         Touching "mddatasource_dbi.dir\Debug\mddatasource_dbi.tlog\mddatasource_dbi.lastbuildstate".
+    23>CustomBuild:
+         All outputs are up-to-date.
+    32>FinalizeBuildStatus:
+         Deleting file "jit_crossgen.dir\Debug\jit_crossgen.tlog\unsuccessfulbuild".
+    38>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\datasource\dbi\mddatasource_dbi.vcxproj" (default targets).
+    32>FinalizeBuildStatus:
+         Touching "jit_crossgen.dir\Debug\jit_crossgen.tlog\jit_crossgen.lastbuildstate".
+    27>CustomBuild:
+         Processing C:\Program Files (x86)\Windows Kits\8.1\Include\shared\wtypesbase.idl
+    32>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\jit\crossgen\jit_crossgen.vcxproj" (default targets).
+    15>Lib:
+         ceefgen.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\ceefilegen\Debug\ceefgen.lib
+    10>ClCompile:
+         All outputs are up-to-date.
+    24>ClCompile:
+         All outputs are up-to-date.
+    27>CustomBuild:
+         wtypesbase.idl
+    15>FinalizeBuildStatus:
+         Deleting file "ceefgen.dir\Debug\ceefgen.tlog\unsuccessfulbuild".
+         Touching "ceefgen.dir\Debug\ceefgen.tlog\ceefgen.lastbuildstate".
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\debug\di\cordbdi.vcxproj" (14) on node 9 (default targets).
+    14>InitializeBuildStatus:
+         Creating "cordbdi.dir\Debug\cordbdi.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    15>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\ceefilegen\ceefgen.vcxproj" (default targets).
+    34>PreBuildEvent:
+         Microsoft (R) C/C++ Optimizing Compiler Version 18.00.40629 for x64
+         Copyright (C) Microsoft Corporation.  All rights reserved.
+         
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\classlibnative\nls\comnls_wks.vcxproj" (17) on node 10 (default targets).
+    17>InitializeBuildStatus:
+         Creating "comnls_wks.dir\Debug\comnls_wks.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    34>PreBuildEvent:
+         AsmConstants.tmp
+    10>Lib:
+         All outputs are up-to-date.
+         debug-pal.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\debug\debug-pal\Debug\debug-pal.lib
+       FinalizeBuildStatus:
+         Deleting file "debug-pal.dir\Debug\debug-pal.tlog\unsuccessfulbuild".
+    25>ClCompile:
+         All outputs are up-to-date.
+    10>FinalizeBuildStatus:
+         Touching "debug-pal.dir\Debug\debug-pal.tlog\debug-pal.lastbuildstate".
+    10>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\debug\debug-pal\debug-pal.vcxproj" (default targets).
+    27>CustomBuild:
+         Processing C:\Program Files (x86)\Windows Kits\8.1\Include\shared\basetsd.h
+    12>ClCompile:
+         All outputs are up-to-date.
+    11>ClCompile:
+         All outputs are up-to-date.
+    27>CustomBuild:
+         basetsd.h
+     4>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\dbgshim\dbgshim.vcxproj" (4) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\debug\dbgutil\dbgutil.vcxproj" (5) on node 1 (default targets).
+     5>InitializeBuildStatus:
+         Creating "dbgutil.dir\Debug\dbgutil.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    23>ClCompile:
+         All outputs are up-to-date.
+    34>CustomBuild:
+         All outputs are up-to-date.
+       _MASM:
+       Skipping target "_MASM" because all output files are up-to-date with respect to the input files.
+       _MASM:
+       Skipping target "_MASM" because all output files are up-to-date with respect to the input files.
+       _MASM:
+       Skipping target "_MASM" because all output files are up-to-date with respect to the input files.
+       _MASM:
+       Skipping target "_MASM" because all output files are up-to-date with respect to the input files.
+       _MASM:
+       Skipping target "_MASM" because all output files are up-to-date with respect to the input files.
+     5>CustomBuild:
+         All outputs are up-to-date.
+    34>_MASM:
+       Skipping target "_MASM" because all output files are up-to-date with respect to the input files.
+    27>CustomBuild:
+         Processing C:\Program Files (x86)\Windows Kits\8.1\Include\shared\guiddef.h
+    34>_MASM:
+       Skipping target "_MASM" because all output files are up-to-date with respect to the input files.
+    25>Lib:
+         All outputs are up-to-date.
+    34>_MASM:
+       Skipping target "_MASM" because all output files are up-to-date with respect to the input files.
+       _MASM:
+       Skipping target "_MASM" because all output files are up-to-date with respect to the input files.
+    12>Lib:
+         All outputs are up-to-date.
+    34>_MASM:
+       Skipping target "_MASM" because all output files are up-to-date with respect to the input files.
+    25>Lib:
+         cee_crossgen.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\vm\crossgen\Debug\cee_crossgen.lib
+    11>Lib:
+         All outputs are up-to-date.
+    12>Lib:
+         bcltype.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\classlibnative\bcltype\Debug\bcltype.lib
+    34>_MASM:
+       Skipping target "_MASM" because all output files are up-to-date with respect to the input files.
+       _MASM:
+       Skipping target "_MASM" because all output files are up-to-date with respect to the input files.
+    17>CustomBuild:
+         All outputs are up-to-date.
+    11>Lib:
+         comfloat_wks.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\classlibnative\float\Debug\comfloat_wks.lib
+    23>ClCompile:
+         All outputs are up-to-date.
+     5>ClCompile:
+         All outputs are up-to-date.
+    27>CustomBuild:
+         guiddef.h
+    25>FinalizeBuildStatus:
+         Deleting file "cee_crossgen.dir\Debug\cee_crossgen.tlog\unsuccessfulbuild".
+    12>FinalizeBuildStatus:
+         Deleting file "bcltype.dir\Debug\bcltype.tlog\unsuccessfulbuild".
+    11>FinalizeBuildStatus:
+         Deleting file "comfloat_wks.dir\Debug\comfloat_wks.tlog\unsuccessfulbuild".
+    12>FinalizeBuildStatus:
+         Touching "bcltype.dir\Debug\bcltype.tlog\bcltype.lastbuildstate".
+    25>FinalizeBuildStatus:
+         Touching "cee_crossgen.dir\Debug\cee_crossgen.tlog\cee_crossgen.lastbuildstate".
+    14>CustomBuild:
+         All outputs are up-to-date.
+    34>_MASM:
+       Skipping target "_MASM" because all output files are up-to-date with respect to the input files.
+    11>FinalizeBuildStatus:
+         Touching "comfloat_wks.dir\Debug\comfloat_wks.tlog\comfloat_wks.lastbuildstate".
+    12>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\classlibnative\bcltype\bcltype.vcxproj" (default targets).
+    34>_MASM:
+       Skipping target "_MASM" because all output files are up-to-date with respect to the input files.
+    25>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\vm\crossgen\cee_crossgen.vcxproj" (default targets).
+    11>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\classlibnative\float\comfloat_wks.vcxproj" (default targets).
+    34>_MASM:
+       Skipping target "_MASM" because all output files are up-to-date with respect to the input files.
+    14>_MASM:
+       Skipping target "_MASM" because all output files are up-to-date with respect to the input files.
+    34>_MASM:
+       Skipping target "_MASM" because all output files are up-to-date with respect to the input files.
+       _MASM:
+       Skipping target "_MASM" because all output files are up-to-date with respect to the input files.
+     5>Lib:
+         All outputs are up-to-date.
+    34>_MASM:
+       Skipping target "_MASM" because all output files are up-to-date with respect to the input files.
+    24>ClCompile:
+         All outputs are up-to-date.
+    34>_MASM:
+       Skipping target "_MASM" because all output files are up-to-date with respect to the input files.
+    23>Lib:
+         All outputs are up-to-date.
+    34>_MASM:
+       Skipping target "_MASM" because all output files are up-to-date with respect to the input files.
+     5>Lib:
+         dbgutil.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\debug\dbgutil\Debug\dbgutil.lib
+    16>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\tools\crossgen\crossgen.vcxproj" (16) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\vm\crossgen_mscorlib\mscorlib_crossgen.vcxproj" (59) on node 17 (default targets).
+    59>InitializeBuildStatus:
+         Creating "mscorlib_crossgen.dir\Debug\mscorlib.2ECF530A.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    23>Lib:
+         corzap_crossgen.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\zap\crossgen\Debug\corzap_crossgen.lib
+     5>FinalizeBuildStatus:
+         Deleting file "dbgutil.dir\Debug\dbgutil.tlog\unsuccessfulbuild".
+         Touching "dbgutil.dir\Debug\dbgutil.tlog\dbgutil.lastbuildstate".
+     5>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\debug\dbgutil\dbgutil.vcxproj" (default targets).
+    59>CustomBuild:
+         All outputs are up-to-date.
+    23>FinalizeBuildStatus:
+         Deleting file "corzap_crossgen.dir\Debug\corzap_crossgen.tlog\unsuccessfulbuild".
+         Touching "corzap_crossgen.dir\Debug\corzap_crossgen.tlog\corzap_crossgen.lastbuildstate".
+    23>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\zap\crossgen\corzap_crossgen.vcxproj" (default targets).
+    27>CustomBuild:
+         Processing C:\Program Files (x86)\Windows Kits\8.1\Include\um\oaidl.idl
+    59>ClCompile:
+         All outputs are up-to-date.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\jit\dll\ClrJit.vcxproj" (3) on node 1 (default targets).
+     3>InitializeBuildStatus:
+         Creating "ClrJit.dir\Debug\ClrJit.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    27>CustomBuild:
+         oaidl.idl
+    14>ClCompile:
+         All outputs are up-to-date.
+     3>CustomBuild:
+         All outputs are up-to-date.
+    59>Lib:
+         All outputs are up-to-date.
+         mscorlib_crossgen.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\vm\crossgen_mscorlib\Debug\mscorlib_crossgen.lib
+       FinalizeBuildStatus:
+         Deleting file "mscorlib_crossgen.dir\Debug\mscorlib.2ECF530A.tlog\unsuccessfulbuild".
+         Touching "mscorlib_crossgen.dir\Debug\mscorlib.2ECF530A.tlog\mscorlib_crossgen.lastbuildstate".
+    59>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\vm\crossgen_mscorlib\mscorlib_crossgen.vcxproj" (default targets).
+    17>ClCompile:
+         All outputs are up-to-date.
+    14>ClCompile:
+         All outputs are up-to-date.
+    24>Lib:
+         All outputs are up-to-date.
+         cee_dac.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\vm\dac\Debug\cee_dac.lib
+    17>Lib:
+         All outputs are up-to-date.
+         comnls_wks.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\classlibnative\nls\Debug\comnls_wks.lib
+    27>CustomBuild:
+         Processing C:\Program Files (x86)\Windows Kits\8.1\Include\um\propidl.idl
+    24>FinalizeBuildStatus:
+         Deleting file "cee_dac.dir\Debug\cee_dac.tlog\unsuccessfulbuild".
+         Touching "cee_dac.dir\Debug\cee_dac.tlog\cee_dac.lastbuildstate".
+    24>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\vm\dac\cee_dac.vcxproj" (default targets).
+    17>FinalizeBuildStatus:
+         Deleting file "comnls_wks.dir\Debug\comnls_wks.tlog\unsuccessfulbuild".
+         Touching "comnls_wks.dir\Debug\comnls_wks.tlog\comnls_wks.lastbuildstate".
+    17>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\classlibnative\nls\comnls_wks.vcxproj" (default targets).
+    14>Lib:
+         All outputs are up-to-date.
+    27>CustomBuild:
+         propidl.idl
+    14>Lib:
+         cordbdi.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\debug\di\Debug\cordbdi.lib
+       FinalizeBuildStatus:
+         Deleting file "cordbdi.dir\Debug\cordbdi.tlog\unsuccessfulbuild".
+         Touching "cordbdi.dir\Debug\cordbdi.tlog\cordbdi.lastbuildstate".
+    14>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\debug\di\cordbdi.vcxproj" (default targets).
+    27>CustomBuild:
+         Processing C:/Program Files (x86)/Microsoft Visual Studio 12.0/DIA SDK/include\cvconst.h
+         cvconst.h
+         Processing C:\Program Files (x86)\Windows Kits\8.1\Include\um\oaidl.acf
+         oaidl.acf
+     3>ClCompile:
+         All outputs are up-to-date.
+    34>ClCompile:
+         All outputs are up-to-date.
+    19>Link:
+         clretwrc.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\clretwrc\Debug\clretwrc.dll
+     3>Lib:
+         All outputs are up-to-date.
+         ClrJit.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\jit\dll\Debug\ClrJit.lib
+    19>FinalizeBuildStatus:
+         Deleting file "clretwrc.dir\Debug\clretwrc.tlog\unsuccessfulbuild".
+         Touching "clretwrc.dir\Debug\clretwrc.tlog\clretwrc.lastbuildstate".
+    19>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\clretwrc\clretwrc.vcxproj" (default targets).
+     3>FinalizeBuildStatus:
+         Deleting file "ClrJit.dir\Debug\ClrJit.tlog\unsuccessfulbuild".
+         Touching "ClrJit.dir\Debug\ClrJit.tlog\ClrJit.lastbuildstate".
+     3>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\jit\dll\ClrJit.vcxproj" (default targets).
+    47>InitializeBuildStatus:
+         Creating "mscordaccore.dir\Debug\mscordaccore.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    16>InitializeBuildStatus:
+         Creating "crossgen.dir\Debug\crossgen.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    47>CustomBuild:
+         All outputs are up-to-date.
+     4>InitializeBuildStatus:
+         Creating "dbgshim.dir\Debug\dbgshim.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    16>CustomBuild:
+         All outputs are up-to-date.
+    47>ClCompile:
+         All outputs are up-to-date.
+     4>CustomBuild:
+         All outputs are up-to-date.
+    47>ResourceCompile:
+         All outputs are up-to-date.
+    16>ClCompile:
+         All outputs are up-to-date.
+       ResourceCompile:
+         All outputs are up-to-date.
+     4>ClCompile:
+         All outputs are up-to-date.
+       ResourceCompile:
+         All outputs are up-to-date.
+    47>PreLinkEvent:
+         Description: Generating mscordaccore.exp export file
+         setlocal
+         lib.exe /OUT:"C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/dlls/mscordac/Debug/mscordaccore.lib" /DEF:"C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/dlls/mscordac/mscordac.def" C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/debug/daccess/Debug/daccess.lib  C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/dlls/mscordac/mscordaccore.dir/Debug/mscordac.obj
+         if %errorlevel% neq 0 goto :cmEnd
+         :cmEnd
+         endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+         :cmErrorLevel
+         exit /b %1
+         :cmDone
+         if %errorlevel% neq 0 goto :VCEnd
+         :VCEnd
+     4>Link:
+         All outputs are up-to-date.
+         dbgshim.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\dbgshim\Debug\dbgshim.dll
+    34>ClCompile:
+         All outputs are up-to-date.
+    16>Link:
+         All outputs are up-to-date.
+         crossgen.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\tools\crossgen\Debug\crossgen.exe
+     4>FinalizeBuildStatus:
+         Deleting file "dbgshim.dir\Debug\dbgshim.tlog\unsuccessfulbuild".
+         Touching "dbgshim.dir\Debug\dbgshim.tlog\dbgshim.lastbuildstate".
+     4>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\dbgshim\dbgshim.vcxproj" (default targets).
+    47>PreLinkEvent:
+         Microsoft (R) Library Manager Version 12.00.40629.0
+         Copyright (C) Microsoft Corporation.  All rights reserved.
+         
+    16>FinalizeBuildStatus:
+         Deleting file "crossgen.dir\Debug\crossgen.tlog\unsuccessfulbuild".
+         Touching "crossgen.dir\Debug\crossgen.tlog\crossgen.lastbuildstate".
+    16>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\tools\crossgen\crossgen.vcxproj" (default targets).
+    47>PreLinkEvent:
+            Creating library C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/dlls/mscordac/Debug/mscordaccore.lib and object C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/dlls/mscordac/Debug/mscordaccore.exp
+       Link:
+         All outputs are up-to-date.
+         mscordaccore.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscordac\Debug\mscordaccore.dll
+       FinalizeBuildStatus:
+         Deleting file "mscordaccore.dir\Debug\mscordaccore.tlog\unsuccessfulbuild".
+         Touching "mscordaccore.dir\Debug\mscordaccore.tlog\mscordaccore.lastbuildstate".
+    47>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscordac\mscordaccore.vcxproj" (default targets).
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj" (71) on node 3 (default targets).
+    71>InitializeBuildStatus:
+         Touching "sos.dir\Debug\sos.tlog\unsuccessfulbuild".
+       CustomBuild:
+         All outputs are up-to-date.
+    34>ClCompile:
+         All outputs are up-to-date.
+         All outputs are up-to-date.
+    71>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64\CL.exe /c /IC:\ssd\coreclr\src\vm /IC:\ssd\coreclr\src\pal\prebuilt\inc /IC:\ssd\coreclr\src\inc /IC:\ssd\coreclr\src\strongname\inc /IC:\ssd\coreclr\src\inc\winrt /IC:\ssd\coreclr\src\debug\inc /IC:\ssd\coreclr\src\debug\inc\amd64 /IC:\ssd\coreclr\src\debug\inc\dump /IC:\ssd\coreclr\src\md\inc /IC:\ssd\coreclr\src\classlibnative\bcltype /IC:\ssd\coreclr\src\classlibnative\cryptography /IC:\ssd\coreclr\src\classlibnative\inc /IC:\ssd\coreclr\src\ToolBox\SOS\Strike\inc /IC:\ssd\coreclr\src\gcdump /IC:\ssd\coreclr\src\debug\shim /I"C:\Program Files (x86)\Microsoft Visual Studio 12.0\DIA SDK\include" /Zi /nologo /W3 /WX /MP /O1 /Oi /Oy- /D DEBUG /D _DEBUG /D _DBG /D URTBLDENV_FRIENDLY=Checked /D BUILDENV_CHECKED=1 /D WRITE_BARRIER_CHECK=1 /D FEATURE_EVENT_TRACE=1 /D _CRT_STDIO_ARBITRARY_WIDE_SPECIFIERS /D DEV10 /D WIN32 /D DEVL=1 /D _WIN32_WINNT=0x0602 /D _WIN32_IE=0x0900 /D WINNT=1 /D NT_INST=0 /D CONDITION_HANDLING=1 /D NTDDI_VERSION=NTDDI_WIN8 /D DBG_TARGET_AMD64 /D _TARGET_AMD64_=1 /D _CRT_SECURE_NO_WARNINGS /D NTMAKEENV /D _BLD_CLR /D WINVER=0x0602 /D WIN32_LEAN_AND_MEAN=1 /D DEBUGGING_SUPPORTED /D EnC_SUPPORTED /D FEATURE_APPDOMAIN_RESOURCE_MONITORING /D FEATURE_ARRAYSTUB_AS_IL /D FEATURE_ASYNC_IO /D FEATURE_BCL_FORMATTING /D FEATURE_COLLECTIBLE_TYPES /D FEATURE_CLASSIC_COMINTEROP /D FEATURE_APPX /D FEATURE_COMINTEROP /D FEATURE_COMINTEROP_APARTMENT_SUPPORT /D FEATURE_COMINTEROP_UNMANAGED_ACTIVATION /D FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION /D FEATURE_ICASTABLE /D FEATURE_CORECLR /D FEATURE_CORESYSTEM /D FEATURE_CORRUPTING_EXCEPTIONS /D FEATURE_CRYPTO /D FEATURE_EXCEPTIONDISPATCHINFO /D FEATURE_FRAMEWORK_INTERNAL /D FEATURE_HIJACK /D FEATURE_HOST_ASSEMBLY_RESOLVER /D FEATURE_HOSTED_BINDER /D FEATURE_ISOSTORE /D FEATURE_ISOSTORE_LIGHT /D FEATURE_ISYM_READER /D FEATURE_LEGACYNETCF /D FEATURE_LEGACYNETCFCRYPTO /D FEATURE_LEGACYNETCF_DBG_HOST_CONTROL /D FEATURE_LEGACYNETCFFAS /D FEATURE_LEGACYSURFACE /D FEATURE_LOADER_OPTIMIZATION /D FEATURE_MANAGED_ETW /D FEATURE_MANAGED_ETW_CHANNELS /D FEATURE_MAIN_CLR_MODULE_USES_CORE_NAME /D FEATURE_MERGE_CULTURE_SUPPORT_AND_ENGINE /D FEATURE_MERGE_JIT_AND_ENGINE /D FEATURE_NORM_IDNA_ONLY /D FEATURE_PREJIT /D FEATURE_RANDOMIZED_STRING_HASHING /D FEATURE_READYTORUN /D FEATURE_STANDALONE_SN /D FEATURE_STRONGNAME_DELAY_SIGNING_ALLOWED /D FEATURE_STRONGNAME_MIGRATION /D FEATURE_STRONGNAME_TESTKEY_ALLOWED /D FEATURE_SVR_GC /D FEATURE_SYNTHETIC_CULTURES /D FEATURE_VERSIONING /D FEATURE_VERSIONING_LOG /D FEATURE_WIN32_REGISTRY /D FEATURE_WINDOWSPHONE /D FEATURE_WINMD_RESILIENT /D FEATURE_X509 /D FEATURE_X509_SECURESTRINGS /D PROFILING_SUPPORTED /D FEATURE_MULTICOREJIT /D FEATURE_USE_ASM_GC_WRITE_BARRIERS /D FEATURE_SYMDIFF /D _AMD64_ /D _AMD64_SIMULATOR_ /D _AMD64_SIMULATOR_PERF_ /D _AMD64_WORKAROUND_ /D _WIN64 /D AMD64 /D _SKIP_IF_SIMULATOR_ /D _SECURE_SCL=0 /D _NEW_SDK=1 /D OFFICIAL_BUILD=0 /D BETA=0 /D FX_BRANCH_SYNC_COUNTER_VALUE=0 /D SOS_TARGET_AMD64=1 /D _TARGET_WIN64_=1 /D DBG_TARGET_64BIT /D DBG_TARGET_WIN64=1 /D STRIKE /D USE_STL /D FX_VER_INTERNALNAME_STR=SOS.dll /D "CMAKE_INTDIR=\"Debug\"" /D sos_EXPORTS /D _WINDLL /D _MBCS /U_MT /GF /Gm- /EHa /MT /Zp8 /GS /Gy /fp:precise /Zc:wchar_t- /Zc:forScope /GR- /Fo"sos.dir\Debug\\" /Fd"sos.dir\Debug\vc120.pdb" /Gd /TP /wd4960 /wd4961 /wd4603 /wd4627 /wd4838 /wd4456 /wd4457 /wd4458 /wd4459 /wd4091 /FIWarningControl.h /FC /Zl /errorReport:queue /we4640  /d2Zi+ /Zm200 /homeparams C:\ssd\coreclr\src\ToolBox\SOS\Strike\disasm.cpp C:\ssd\coreclr\src\ToolBox\SOS\Strike\dllsext.cpp C:\ssd\coreclr\src\ToolBox\SOS\Strike\eeheap.cpp C:\ssd\coreclr\src\ToolBox\SOS\Strike\EventCallbacks.cpp C:\ssd\coreclr\src\ToolBox\SOS\Strike\ExpressionNode.cpp C:\ssd\coreclr\src\ToolBox\SOS\Strike\exts.cpp C:\ssd\coreclr\src\ToolBox\SOS\Strike\gchist.cpp C:\ssd\coreclr\src\ToolBox\SOS\Strike\gcroot.cpp C:\ssd\coreclr\src\ToolBox\SOS\Strike\metadata.cpp C:\ssd\coreclr\src\ToolBox\SOS\Strike\sildasm.cpp C:\ssd\coreclr\src\ToolBox\SOS\Strike\sos.cpp C:\ssd\coreclr\src\ToolBox\SOS\Strike\stressLogDump.cpp C:\ssd\coreclr\src\ToolBox\SOS\Strike\strike.cpp C:\ssd\coreclr\src\ToolBox\SOS\Strike\util.cpp C:\ssd\coreclr\src\ToolBox\SOS\Strike\vm.cpp C:\ssd\coreclr\src\ToolBox\SOS\Strike\WatchCmd.cpp C:\ssd\coreclr\src\ToolBox\SOS\Strike\disasmX86.cpp
+    34>Lib:
+         All outputs are up-to-date.
+         cee_wks.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\vm\wks\Debug\cee_wks.lib
+    27>FinalizeBuildStatus:
+         Deleting file "x64\Debug\dialib\dialib.tlog\unsuccessfulbuild".
+         Touching "x64\Debug\dialib\dialib.tlog\dialib.lastbuildstate".
+    27>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\diasdk\dialib.vcxproj" (default targets).
+    34>FinalizeBuildStatus:
+         Deleting file "cee_wks.dir\Debug\cee_wks.tlog\unsuccessfulbuild".
+         Touching "cee_wks.dir\Debug\cee_wks.tlog\cee_wks.lastbuildstate".
+    34>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\vm\wks\cee_wks.vcxproj" (default targets).
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\debug\ee\wks\cordbee_wks.vcxproj" (13) on node 7 (default targets).
+    13>InitializeBuildStatus:
+         Creating "cordbee_wks.dir\Debug\cordbee_wks.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+       CustomBuild:
+         All outputs are up-to-date.
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\runtime\dbi\mdruntime-dbi.vcxproj" (64) on node 15 (default targets).
+    64>InitializeBuildStatus:
+         Creating "mdruntime-dbi.dir\Debug\mdruntime-dbi.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    71>ClCompile:
+         disasm.cpp
+         dllsext.cpp
+    64>CustomBuild:
+         All outputs are up-to-date.
+    71>ClCompile:
+         eeheap.cpp
+         EventCallbacks.cpp
+         ExpressionNode.cpp
+    64>ClCompile:
+         All outputs are up-to-date.
+    13>ClCompile:
+         All outputs are up-to-date.
+    71>ClCompile:
+         exts.cpp
+         gchist.cpp
+         gcroot.cpp
+         metadata.cpp
+         sildasm.cpp
+         sos.cpp
+         stressLogDump.cpp
+         strike.cpp
+         util.cpp
+         vm.cpp
+         WatchCmd.cpp
+         disasmX86.cpp
+    64>ClCompile:
+         All outputs are up-to-date.
+    13>ClCompile:
+         All outputs are up-to-date.
+    64>Lib:
+         All outputs are up-to-date.
+         mdruntime-dbi.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\runtime\dbi\Debug\mdruntime-dbi.lib
+    13>Lib:
+         All outputs are up-to-date.
+         cordbee_wks.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\debug\ee\wks\Debug\cordbee_wks.lib
+    64>FinalizeBuildStatus:
+         Deleting file "mdruntime-dbi.dir\Debug\mdruntime-dbi.tlog\unsuccessfulbuild".
+         Touching "mdruntime-dbi.dir\Debug\mdruntime-dbi.tlog\mdruntime-dbi.lastbuildstate".
+    64>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\md\runtime\dbi\mdruntime-dbi.vcxproj" (default targets).
+    13>FinalizeBuildStatus:
+         Deleting file "cordbee_wks.dir\Debug\cordbee_wks.tlog\unsuccessfulbuild".
+         Touching "cordbee_wks.dir\Debug\cordbee_wks.tlog\cordbee_wks.lastbuildstate".
+    13>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\debug\ee\wks\cordbee_wks.vcxproj" (default targets).
+     2>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (2) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\DacTableGen\dactablegen.vcxproj" (35) on node 23 (default targets).
+    35>InitializeBuildStatus:
+         Creating "x64\Debug\dactablegen\dactablegen.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+    20>Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscoree\coreclr\coreclr.vcxproj" (20) is building "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscordbi\mscordbi.vcxproj" (51) on node 2 (default targets).
+    51>InitializeBuildStatus:
+         Creating "mscordbi.dir\Debug\mscordbi.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+       CustomBuild:
+         All outputs are up-to-date.
+       ClCompile:
+         All outputs are up-to-date.
+         All outputs are up-to-date.
+       ResourceCompile:
+         All outputs are up-to-date.
+       Link:
+         All outputs are up-to-date.
+         mscordbi.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscordbi\Debug\mscordbi.dll
+       FinalizeBuildStatus:
+         Deleting file "mscordbi.dir\Debug\mscordbi.tlog\unsuccessfulbuild".
+         Touching "mscordbi.dir\Debug\mscordbi.tlog\mscordbi.lastbuildstate".
+    51>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscordbi\mscordbi.vcxproj" (default targets).
+    35>CustomBuild:
+         Microsoft (R) Visual C# Compiler version 12.0.40629.0
+         
+         for C# 5
+         Copyright (C) Microsoft Corporation. All rights reserved.
+         
+       FinalizeBuildStatus:
+         Deleting file "x64\Debug\dactablegen\dactablegen.tlog\unsuccessfulbuild".
+         Touching "x64\Debug\dactablegen\dactablegen.tlog\dactablegen.lastbuildstate".
+    35>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\DacTableGen\dactablegen.vcxproj" (default targets).
+    20>InitializeBuildStatus:
+         Creating "coreclr.dir\Debug\coreclr.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+       CustomBuild:
+         All outputs are up-to-date.
+       ClCompile:
+         All outputs are up-to-date.
+       ResourceCompile:
+         All outputs are up-to-date.
+       Link:
+         All outputs are up-to-date.
+         coreclr.vcxproj -> C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscoree\coreclr\Debug\coreclr.dll
+       PostBuildEvent:
+         Description: coreclr
+         setlocal
+         "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64\cl.exe" /P /EP /TP -DDEBUG -D_DEBUG -D_DBG -DURTBLDENV_FRIENDLY=Checked -DBUILDENV_CHECKED=1 -DWRITE_BARRIER_CHECK=1     -DFEATURE_EVENT_TRACE=1 -D_CRT_STDIO_ARBITRARY_WIDE_SPECIFIERS -DDEV10 -DWIN32 -DDEVL=1 -D_WIN32_WINNT=0x0602 -D_WIN32_IE=0x0900 -DWINNT=1 -DNT_INST=0 -DCONDITION_HANDLING=1 -DNTDDI_VERSION=NTDDI_WIN8 -DDBG_TARGET_AMD64 -D_TARGET_AMD64_=1 -D_CRT_SECURE_NO_WARNINGS -DNTMAKEENV -D_BLD_CLR -DWINVER=0x0602 -DWIN32_LEAN_AND_MEAN=1 -DDEBUGGING_SUPPORTED -DEnC_SUPPORTED -DFEATURE_APPDOMAIN_RESOURCE_MONITORING -DFEATURE_ARRAYSTUB_AS_IL -DFEATURE_ASYNC_IO -DFEATURE_BCL_FORMATTING -DFEATURE_COLLECTIBLE_TYPES -DFEATURE_CLASSIC_COMINTEROP -DFEATURE_APPX -DFEATURE_COMINTEROP -DFEATURE_COMINTEROP_APARTMENT_SUPPORT -DFEATURE_COMINTEROP_UNMANAGED_ACTIVATION -DFEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION -DFEATURE_ICASTABLE -DFEATURE_CORECLR -DFEATURE_CORESYSTEM -DFEATURE_CORRUPTING_EXCEPTIONS -DFEATURE_CRYPTO -DFEATURE_EXCEPTIONDISPATCHINFO -DFEATURE_FRAMEWORK_INTERNAL -DFEATURE_HIJACK -DFEATURE_HOST_ASSEMBLY_RESOLVER -DFEATURE_HOSTED_BINDER -DFEATURE_ISOSTORE -DFEATURE_ISOSTORE_LIGHT -DFEATURE_ISYM_READER -DFEATURE_LEGACYNETCF -DFEATURE_LEGACYNETCFCRYPTO -DFEATURE_LEGACYNETCF_DBG_HOST_CONTROL -DFEATURE_LEGACYNETCFFAS -DFEATURE_LEGACYSURFACE -DFEATURE_LOADER_OPTIMIZATION -DFEATURE_MANAGED_ETW -DFEATURE_MANAGED_ETW_CHANNELS -DFEATURE_MAIN_CLR_MODULE_USES_CORE_NAME -DFEATURE_MERGE_CULTURE_SUPPORT_AND_ENGINE -DFEATURE_MERGE_JIT_AND_ENGINE -DFEATURE_NORM_IDNA_ONLY -DFEATURE_PREJIT -DFEATURE_RANDOMIZED_STRING_HASHING -DFEATURE_READYTORUN -DFEATURE_STANDALONE_SN -DFEATURE_STRONGNAME_DELAY_SIGNING_ALLOWED -DFEATURE_STRONGNAME_MIGRATION -DFEATURE_STRONGNAME_TESTKEY_ALLOWED -DFEATURE_SVR_GC -DFEATURE_SYNTHETIC_CULTURES -DFEATURE_VERSIONING -DFEATURE_VERSIONING_LOG -DFEATURE_WIN32_REGISTRY -DFEATURE_WINDOWSPHONE -DFEATURE_WINMD_RESILIENT -DFEATURE_X509 -DFEATURE_X509_SECURESTRINGS -DPROFILING_SUPPORTED -DFEATURE_MULTICOREJIT -DFEATURE_USE_ASM_GC_WRITE_BARRIERS -DFEATURE_SYMDIFF -D_AMD64_ -D_AMD64_SIMULATOR_ -D_AMD64_SIMULATOR_PERF_ -D_AMD64_WORKAROUND_ -D_WIN64 -DAMD64 -D_SKIP_IF_SIMULATOR_ -D_SECURE_SCL=0 -D_NEW_SDK=1 -DOFFICIAL_BUILD=0 -DBETA=0 -DFX_BRANCH_SYNC_COUNTER_VALUE=0 -DUNICODE -D_UNICODE -DFX_VER_INTERNALNAME_STR=CoreCLR.dll -DDACCESS_COMPILE -DDBG_TARGET_64BIT=1 -DDBG_TARGET_WIN64=1 -DDBG_TARGET_AMD64=1 -IC:/ssd/coreclr/src/pal/prebuilt/inc -IC:/ssd/coreclr/src/inc -IC:/ssd/coreclr/src/strongname/inc -IC:/ssd/coreclr/src/inc/winrt -IC:/ssd/coreclr/src/debug/inc -IC:/ssd/coreclr/src/debug/inc/amd64 -IC:/ssd/coreclr/src/debug/inc/dump -IC:/ssd/coreclr/src/md/inc -IC:/ssd/coreclr/src/classlibnative/bcltype -IC:/ssd/coreclr/src/classlibnative/cryptography -IC:/ssd/coreclr/src/classlibnative/inc -IC:/ssd/coreclr/src/dlls/mscoree/../../inc -IC:/ssd/coreclr/src/vm -IC:/ssd/coreclr/src/vm/amd64 -IC:/ssd/coreclr/src/debug/ee -IC:/ssd/coreclr/src/gc /FiC:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/dlls/mscoree/coreclr/daccess.i C:/ssd/coreclr/src/debug/daccess/daccess.cpp
+         if %errorlevel% neq 0 goto :cmEnd
+         ..\..\..\ToolBox\SOS\DacTableGen\dactablegen.exe /dac:C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/dlls/mscoree/coreclr/daccess.i /pdb:C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/dlls/mscoree/coreclr/Debug/coreclr.pdb /dll:C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/dlls/mscoree/coreclr/Debug/coreclr.dll /bin:C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/dlls/mscoree/coreclr/wks.bin
+         if %errorlevel% neq 0 goto :cmEnd
+         ..\..\..\tools\InjectResource\Debug\InjectResource.exe /bin:C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/dlls/mscoree/coreclr/wks.bin /dll:C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/dlls/mscoree/coreclr/Debug/coreclr.dll
+         if %errorlevel% neq 0 goto :cmEnd
+         ..\..\..\tools\GenClrDebugResource\Debug\GenClrDebugResource.exe /dac:C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/dlls/mscordac/Debug/mscordaccore.dll /dbi:C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/dlls/mscordbi/Debug/mscordbi.dll /sku:onecoreclr /out:C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/dlls/mscoree/coreclr/clrDebugResource.bin
+         if %errorlevel% neq 0 goto :cmEnd
+         ..\..\..\tools\InjectResource\Debug\InjectResource.exe /bin:C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/dlls/mscoree/coreclr/clrDebugResource.bin /dll:C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/dlls/mscoree/coreclr/Debug/coreclr.dll /name:CLRDEBUGINFO
+         if %errorlevel% neq 0 goto :cmEnd
+         :cmEnd
+         endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+         :cmErrorLevel
+         exit /b %1
+         :cmDone
+         if %errorlevel% neq 0 goto :VCEnd
+         :VCEnd
+         Microsoft (R) C/C++ Optimizing Compiler Version 18.00.40629 for x64
+         Copyright (C) Microsoft Corporation.  All rights reserved.
+         
+         daccess.cpp
+    71>c:\ssd\coreclr\src\toolbox\sos\strike\expressionnode.cpp(487): error C3861: 'wscncmp': identifier not found [C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj]
+    71>c:\ssd\coreclr\src\toolbox\sos\strike\expressionnode.cpp(561): error C3861: 'wscncmp': identifier not found [C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj]
+    71>c:\ssd\coreclr\src\toolbox\sos\strike\expressionnode.cpp(563): error C3861: 'wscncmp': identifier not found [C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj]
+    71>c:\ssd\coreclr\src\toolbox\sos\strike\expressionnode.cpp(645): error C3861: 'wscncmp': identifier not found [C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj]
+    71>c:\ssd\coreclr\src\toolbox\sos\strike\expressionnode.cpp(715): error C3861: 'wscncmp': identifier not found [C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj]
+    71>c:\ssd\coreclr\src\toolbox\sos\strike\util.cpp(4380): error C3861: 'wscncmp': identifier not found [C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj]
+    71>c:\ssd\coreclr\src\toolbox\sos\strike\strike.cpp(9934): error C3861: 'wscncmp': identifier not found [C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj]
+    71>c:\ssd\coreclr\src\toolbox\sos\strike\strike.cpp(10033): error C3861: 'wscncmp': identifier not found [C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj]
+    71>c:\ssd\coreclr\src\toolbox\sos\strike\strike.cpp(10525): error C3861: 'wscncmp': identifier not found [C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj]
+    71>c:\ssd\coreclr\src\toolbox\sos\strike\strike.cpp(10544): error C3861: 'wscncmp': identifier not found [C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj]
+    71>c:\ssd\coreclr\src\toolbox\sos\strike\strike.cpp(11295): error C3861: 'wscncmp': identifier not found [C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj]
+    71>c:\ssd\coreclr\src\toolbox\sos\strike\strike.cpp(11297): error C3861: 'wscncmp': identifier not found [C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj]
+    71>c:\ssd\coreclr\src\toolbox\sos\strike\strike.cpp(13096): error C3861: 'wscncmp': identifier not found [C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj]
+    71>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj" (default targets) -- FAILED.
+    20>PostBuildEvent:
+         Microsoft (R) CLR External Data Access Data Table Generator Version 0.3
+         Copyright (C) Microsoft Corp.  All rights reserved.
+         
+         Processing DLL with PDB timestamp: Monday, August 17, 2015 11:33:31 AM
+         Loaded PDB file: C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscoree\coreclr\Debug\coreclr.pdb
+         
+             0xfef8f8, // ExecutionManager::m_CodeRangeList
+             0xfef8d0, // ExecutionManager::m_pDefaultCodeMan
+             0xfef900, // ExecutionManager::m_dwReaderCount
+             0xfef904, // ExecutionManager::m_dwWriterLock
+             0xfef8d8, // ExecutionManager::m_pEEJitManager
+             0xfef8e0, // ExecutionManager::m_pNativeImageJitManager
+             0xfef8e8, // ExecutionManager::m_pReadyToRunJitManager
+             0xceb720, // hlpFuncTable
+             0xfd2710, // hlpDynamicFuncTable
+             0xfeef08, // StubManager::g_pFirstManager
+             0xfeeed0, // PrecodeStubManager::g_pManager
+             0xfeeed8, // StubLinkStubManager::g_pManager
+             0xfeeee0, // ThunkHeapStubManager::g_pManager
+             0xfeeee8, // JumpStubStubManager::g_pManager
+             0xfeeef0, // RangeSectionStubManager::g_pManager
+             0xfeeef8, // DelegateInvokeStubManager::g_pManager
+             0xff1dc0, // VirtualCallStubManagerManager::g_pManager
+             0xfeed58, // ThreadStore::s_pThreadStore
+             0xff9184, // ThreadpoolMgr::cpuUtilization
+             0xff90f8, // ThreadpoolMgr::WorkerCounter
+             0xff90c8, // ThreadpoolMgr::MinLimitTotalWorkerThreads
+             0xff90cc, // ThreadpoolMgr::MaxLimitTotalWorkerThreads
+             0xff90e0, // ThreadpoolMgr::WorkRequestHead
+             0xff90e8, // ThreadpoolMgr::WorkRequestTail
+             0xff9170, // ThreadpoolMgr::CPThreadCounter
+             0xff917c, // ThreadpoolMgr::MaxFreeCPThreads
+             0xfd3894, // ThreadpoolMgr::MaxLimitTotalCPThreads
+             0xff9178, // ThreadpoolMgr::MinLimitTotalCPThreads
+             0xff9138, // ThreadpoolMgr::TimerQueue
+             0xffc6f0, // HillClimbingLog
+             0xffd690, // HillClimbingLogFirstIndex
+             0xffd694, // HillClimbingLogSize
+             0xfda108, // g_pFinalizerThread
+             0xfda110, // g_pSuspensionThread
+             0xff2358, // GCHeap::gcHeapType
+             0xff73b0, // WKS::gc_heap::alloc_allocated
+             0xff4c10, // WKS::gc_heap::ephemeral_heap_segment
+             0xff4248, // WKS::gc_heap::finalize_queue
+             0xff7a34, // SVR::gc_heap::n_heaps
+             0xff7a38, // SVR::gc_heap::g_heaps
+             0xff4250, // WKS::gc_heap::oom_info
+             0xfefa68, // SystemDomain::m_pSystemDomain
+             0xfefa80, // SystemDomain::m_appDomainIndexList
+             0xfefb24, // SystemDomain::s_fForceDebug
+             0xfefb28, // SystemDomain::s_fForceProfiling
+             0xfefb2c, // SystemDomain::s_fForceInstrument
+             0xfefb48, // SharedDomain::m_pSharedDomain
+             0xfd04f4, // CExecutionEngine::TlsIndex
+             0xfd3358, // CNameSpace::m_GcStructuresInvalidCnt
+             0xfd9c8c, // CCLRErrorReportingManager::g_ECustomDumpFlavor
+             0xfd9260, // SString::s_Empty
+             0xfd9ac8, // g_fAppX
+             0xfd01e8, // SString::s_IsANSIMultibyte
+             0xfda258, // ArrayBase::s_arrayBoundsZero
+             0xfea5b8, // StackwalkCache::s_Enabled
+             0xfd9b48, // g_pNotificationTable
+             0xfd9b50, // g_dacNotificationFlags
+             0xfd9b58, // g_pGcNotificationTable
+             0xfd1518, // gThreadTLSIndex
+             0xfd151c, // gAppDomainTLSIndex
+             0xfd9fa0, // g_pConfig
+             0xfef020, // g_Mscorlib
+             0xfda1a8, // g_profControlBlock
+             0xff73c0, // generation_table
+             0xff2338, // g_card_table
+             0xff2328, // g_lowest_address
+             0xff2330, // g_highest_address
+             0xff2320, // g_pGCHeap
+             0xfd9e68, // g_pThinLockThreadIdDispenser
+             0xfd9e70, // g_pModuleIndexDispenser
+             0xfd9fa8, // g_pObjectClass
+             0xfd9fb0, // g_pRuntimeTypeClass
+             0xfd9fb8, // g_pCanonMethodTableClass
+             0xfd9fc0, // g_pStringClass
+             0xfd9fc8, // g_pArrayClass
+             0xfd9fd0, // g_pSZArrayHelperClass
+             0xfd9fd8, // g_pNullableClass
+             0xfd9fe0, // g_pExceptionClass
+             0xfd9fe8, // g_pThreadAbortExceptionClass
+             0xfd9ff0, // g_pOutOfMemoryExceptionClass
+             0xfd9ff8, // g_pStackOverflowExceptionClass
+             0xfda000, // g_pExecutionEngineExceptionClass
+             0xfda008, // g_pDelegateClass
+             0xfda010, // g_pMulticastDelegateClass
+             0xfda018, // g_pFreeObjectMethodTable
+             0xfda048, // g_pOverlappedDataClass
+             0xfda020, // g_pValueTypeClass
+             0xfda028, // g_pEnumClass
+             0xfda030, // g_pThreadClass
+             0xfda038, // g_pCriticalFinalizerObjectClass
+             0xfda040, // g_pAsyncFileStream_AsyncResultClass
+             0xfd9e80, // g_pPredefinedArrayTypes
+             0xfda050, // g_ArgumentHandleMT
+             0xfda058, // g_ArgIteratorMT
+             0xfda060, // g_TypedReferenceMT
+             0xfda068, // g_pBaseCOMObject
+             0xfda070, // g_pBaseRuntimeClass
+             0xfda078, // g_pICastableInterface
+             0xfda080, // g_pPrepareConstrainedRegionsMethod
+             0xfda088, // g_pExecuteBackoutCodeHelperMethod
+             0xfda090, // g_pObjectCtorMD
+             0xfda098, // g_pObjectFinalizerMD
+             0xfd9e07, // g_fProcessDetach
+             0xfd9e60, // g_fEEShutDown
+             0xfd9c70, // g_fHostConfig
+             0xfda130, // g_CORDebuggerControlFlags
+             0x1001778, // g_pDebugger
+             0xfda128, // g_pDebugInterface
+             0xfda138, // g_pEEDbgInterfaceImpl
+             0x1001c50, // g_pEEInterface
+             0xfd5aa8, // Debugger::s_fCanChangeNgenFlags
+             0x10021b0, // DebuggerController::g_patches
+             0x10021b8, // DebuggerController::g_patchTableValid
+             0xfd2b90, // gLowestFCall
+             0xff16e8, // gHighestFCall
+             0xff16f0, // gFCallMethods
+             0xfda118, // g_pSyncTable
+             0xfda120, // g_pRCWCleanupList
+             0xfd2bd0, // RCWWalker::s_bIsGlobalPeggingOn
+             0xfd9e40, // g_runtimeLoadedBaseAddress
+             0xfd9e48, // g_runtimeVirtualSize
+             0xfea2d0, // SyncBlockCache::s_pSyncBlockCache
+             0xfea238, // g_HandleTableMap
+             0xfd0578, // g_pStressLog
+             0xc95908, // s_gsCookie
+             0xfd2b98, // g_FCDynamicallyAssignedImplementations
+             0xff4610, // WKS::gc_heap::internal_root_array
+             0xff4618, // WKS::gc_heap::internal_root_array_index
+             0xfd33d8, // WKS::gc_heap::heap_analyze_success
+             0xff4a90, // WKS::gc_heap::mark_array
+             0xfd33f0, // WKS::gc_heap::current_c_gc_state
+             0xff4238, // WKS::gc_heap::next_sweep_obj
+             0xff72c0, // WKS::gc_heap::saved_sweep_ephemeral_seg
+             0xff72c8, // WKS::gc_heap::saved_sweep_ephemeral_start
+             0xff72d0, // WKS::gc_heap::background_saved_lowest_address
+             0xff72d8, // WKS::gc_heap::background_saved_highest_address
+             0x1001c58, // g_hContinueStartupEvent
+             0xfd04f0, // CorHost2::m_dwStartupFlags
+             0xfd91e8, // g_hrFatalError
+             0xfee638, // PEFile::s_NGENDebugFlags
+             0xff3640, // g_MiniMetaDataBuffMaxSize
+             0xff3648, // g_MiniMetaDataBuffAddress
+             0x6ee05c, // ThreadpoolMgr::AsyncTimerCallbackCompletion
+             0x2d1740, // DACNotifyCompilationFinished
+             0x56a600, // ThePreStub
+             0x56a6a5, // ThePreStubPatchLabel
+             0x3e3540, // PrecodeFixupThunk
+             0x74da80, // StubDispatchFixupStub
+             0x74db2b, // StubDispatchFixupPatchLabel
+             0x469248, // Unknown_AddRef
+             0x454c7c, // Unknown_AddRefSpecial
+             0x45498c, // Unknown_AddRefInner
+             0xcd4e10, // vtable Thread
+             0xd06090, // vtable EEJitManager
+             0xd061f8, // vtable NativeImageJitManager
+             0xd062a0, // vtable ReadyToRunJitManager
+             0xd05f20, // vtable EECodeManager
+             0xe6ce38, // vtable RangeList
+             0xcddb08, // vtable LockedRangeList
+             0xd73f90, // vtable EditAndContinueModule
+             0xcfdb30, // vtable Module
+             0xcfdcf8, // vtable ReflectionModule
+             0xd0ef28, // vtable AppDomain
+             0xd0f378, // vtable SharedDomain
+             0xd0f1c8, // vtable SystemDomain
+             0xd679a8, // vtable DomainAssembly
+             0xcddb20, // vtable PrecodeStubManager
+             0xcddb60, // vtable StubLinkStubManager
+             0xd039e8, // vtable ThePreStubManager
+             0xcddba0, // vtable ThunkHeapStubManager
+             0xd22a40, // vtable VirtualCallStubManager
+             0xd22b48, // vtable VirtualCallStubManagerManager
+             0xcddbe0, // vtable JumpStubStubManager
+             0xcddc20, // vtable RangeSectionStubManager
+             0xcddc60, // vtable ILStubManager
+             0xcddcb8, // vtable InteropDispatchStubManager
+             0xcddd00, // vtable DelegateInvokeStubManager
+             0xcddd48, // vtable TailCallStubManager
+             0xcb7580, // vtable PEFile
+             0xcb75b8, // vtable PEAssembly
+             0xd757c8, // vtable PEImageLayout
+             0xd757d0, // vtable RawImageLayout
+             0xd757d8, // vtable ConvertedImageLayout
+             0xd757e0, // vtable MappedImageLayout
+             0xd757f0, // vtable LoadedImageLayout
+             0xd75848, // vtable FlatImageLayout
+             0xcc9488, // vtable ComMethodFrame
+             0xd15bd0, // vtable ComPlusMethodFrame
+             0xd160a8, // vtable ComPrestubMethodFrame
+             0xc94460, // vtable ContextTransitionFrame
+             0xd0f4d0, // vtable DebuggerClassInitMarkFrame
+             0xcefaf0, // vtable DebuggerSecurityCodeMarkFrame
+             0xcefb98, // vtable DebuggerExitFrame
+             0xcd50c8, // vtable DebuggerU2MCatchHandlerFrame
+             0xca8d48, // vtable FaultingExceptionFrame
+             0xd15a78, // vtable FuncEvalFrame
+             0xd16158, // vtable GCFrame
+             0xcb1a78, // vtable HelperMethodFrame
+             0xcb1bb8, // vtable HelperMethodFrame_1OBJ
+             0xcb1c60, // vtable HelperMethodFrame_2OBJ
+             0xd15b28, // vtable HelperMethodFrame_PROTECTOBJ
+             0xcda170, // vtable HijackFrame
+             0xcb43f0, // vtable InlinedCallFrame
+             0xcab760, // vtable SecureDelegateFrame
+             0xd16400, // vtable SecurityContextFrame
+             0xcab810, // vtable MulticastFrame
+             0xd15c80, // vtable PInvokeCalliFrame
+             0xd15d30, // vtable PrestubMethodFrame
+             0xd16208, // vtable ProtectByRefsFrame
+             0xd162b0, // vtable ProtectValueClassFrame
+             0xcb4298, // vtable ResumableFrame
+             0xcb4340, // vtable RedirectedThreadFrame
+             0xd15de0, // vtable StubDispatchFrame
+             0xd15e90, // vtable ExternalMethodFrame
+             0xd15f40, // vtable DynamicHelperFrame
+             0xd15ff0, // vtable StubHelperFrame
+             0xcefc40, // vtable TailCallFrame
+             0xd16358, // vtable ExceptionFilterFrame
+             0xcefce8, // vtable AssumeByrefFromJITStack
+             0xe73178, // vtable Debugger
+             0xc91478, // vtable EEDbgInterfaceImpl
+             0xe82510, // vtable DebuggerController
+             0xe7fd88, // vtable DebuggerMethodInfoTable
+             0xe823a8, // vtable DebuggerPatchTable
+             0xd05fd8, // vtable LoaderCodeHeap
+             0xd9d1f8, // vtable HostCodeHeap
+             0xd0ecc8, // vtable GlobalLoaderAllocator
+             0xd0ecf8, // vtable AppDomainLoaderAllocator
+             0xd2e278, // vtable AssemblyLoaderAllocator
+             0xdbbf38, // vtable AssemblySecurityDescriptor
+             0xdadfc0, // vtable ApplicationSecurityDescriptor
+         Updated C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/dlls/mscoree/coreclr/Debug/coreclr.dll
+         ..\..\..\tools\GenClrDebugResource\Debug\GenClrDebugResource.exe: Reading data from DAC: C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/dlls/mscordac/Debug/mscordaccore.dll
+         ..\..\..\tools\GenClrDebugResource\Debug\GenClrDebugResource.exe: DAC timeStamp = 0x55d228cf sizeOfImage = 0x257000
+         ..\..\..\tools\GenClrDebugResource\Debug\GenClrDebugResource.exe: Reading data from DBI: C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/dlls/mscordbi/Debug/mscordbi.dll
+         ..\..\..\tools\GenClrDebugResource\Debug\GenClrDebugResource.exe: DBI timeStamp = 0x55d2287c sizeOfImage = 0x351000
+         ..\..\..\tools\GenClrDebugResource\Debug\GenClrDebugResource.exe: Writing binary resource file: C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/dlls/mscoree/coreclr/clrDebugResource.bin
+         ..\..\..\tools\GenClrDebugResource\Debug\GenClrDebugResource.exe: Success. Returning 0
+         Updated C:/ssd/coreclr/bin/obj/Windows_NT.x64.Debug/src/dlls/mscoree/coreclr/Debug/coreclr.dll
+       FinalizeBuildStatus:
+         Deleting file "coreclr.dir\Debug\coreclr.tlog\unsuccessfulbuild".
+         Touching "coreclr.dir\Debug\coreclr.tlog\coreclr.lastbuildstate".
+    20>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\dlls\mscoree\coreclr\coreclr.vcxproj" (default targets).
+     2>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (default targets) -- FAILED.
+     1>Done Building Project "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\install.vcxproj" (default targets) -- FAILED.
+
+Build FAILED.
+
+       "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\install.vcxproj" (default target) (1) ->
+       "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\ALL_BUILD.vcxproj" (default target) (2) ->
+       "C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj" (default target) (71) ->
+       (ClCompile target) -> 
+         c:\ssd\coreclr\src\toolbox\sos\strike\expressionnode.cpp(487): error C3861: 'wscncmp': identifier not found [C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj]
+         c:\ssd\coreclr\src\toolbox\sos\strike\expressionnode.cpp(561): error C3861: 'wscncmp': identifier not found [C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj]
+         c:\ssd\coreclr\src\toolbox\sos\strike\expressionnode.cpp(563): error C3861: 'wscncmp': identifier not found [C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj]
+         c:\ssd\coreclr\src\toolbox\sos\strike\expressionnode.cpp(645): error C3861: 'wscncmp': identifier not found [C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj]
+         c:\ssd\coreclr\src\toolbox\sos\strike\expressionnode.cpp(715): error C3861: 'wscncmp': identifier not found [C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj]
+         c:\ssd\coreclr\src\toolbox\sos\strike\util.cpp(4380): error C3861: 'wscncmp': identifier not found [C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj]
+         c:\ssd\coreclr\src\toolbox\sos\strike\strike.cpp(9934): error C3861: 'wscncmp': identifier not found [C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj]
+         c:\ssd\coreclr\src\toolbox\sos\strike\strike.cpp(10033): error C3861: 'wscncmp': identifier not found [C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj]
+         c:\ssd\coreclr\src\toolbox\sos\strike\strike.cpp(10525): error C3861: 'wscncmp': identifier not found [C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj]
+         c:\ssd\coreclr\src\toolbox\sos\strike\strike.cpp(10544): error C3861: 'wscncmp': identifier not found [C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj]
+         c:\ssd\coreclr\src\toolbox\sos\strike\strike.cpp(11295): error C3861: 'wscncmp': identifier not found [C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj]
+         c:\ssd\coreclr\src\toolbox\sos\strike\strike.cpp(11297): error C3861: 'wscncmp': identifier not found [C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj]
+         c:\ssd\coreclr\src\toolbox\sos\strike\strike.cpp(13096): error C3861: 'wscncmp': identifier not found [C:\ssd\coreclr\bin\obj\Windows_NT.x64.Debug\src\ToolBox\SOS\Strike\sos.vcxproj]
+
+    0 Warning(s)
+    13 Error(s)
+
+Time Elapsed 00:00:12.65
+Native component build failed. Refer C:\ssd\coreclr\bin\Logs\CoreCLR_Windows_NT__x64__Debug.log for details.

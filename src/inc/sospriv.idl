@@ -186,13 +186,13 @@ interface ISOSDacInterface : IUnknown
     HRESULT GetAppDomainStoreData(struct DacpAppDomainStoreData *data);
     HRESULT GetAppDomainList(unsigned int count, CLRDATA_ADDRESS values[], unsigned int *pNeeded);
     HRESULT GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *data);
-    HRESULT GetAppDomainName(CLRDATA_ADDRESS addr, unsigned int count, wchar_t *name, unsigned int *pNeeded);
+    HRESULT GetAppDomainName(CLRDATA_ADDRESS addr, unsigned int count, WCHAR *name, unsigned int *pNeeded);
     HRESULT GetDomainFromContext(CLRDATA_ADDRESS context, CLRDATA_ADDRESS *domain);
     
     // Assemblies
     HRESULT GetAssemblyList(CLRDATA_ADDRESS appDomain, int count, CLRDATA_ADDRESS values[], int *pNeeded);
     HRESULT GetAssemblyData(CLRDATA_ADDRESS baseDomainPtr, CLRDATA_ADDRESS assembly, struct DacpAssemblyData *data);
-    HRESULT GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, wchar_t *name, unsigned int *pNeeded);
+    HRESULT GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, WCHAR *name, unsigned int *pNeeded);
     
     // Modules
     HRESULT GetModule(CLRDATA_ADDRESS addr, IXCLRDataModule **mod);
@@ -209,7 +209,7 @@ interface ISOSDacInterface : IUnknown
     // MethodDescs
     HRESULT GetMethodDescData(CLRDATA_ADDRESS methodDesc, CLRDATA_ADDRESS ip, struct DacpMethodDescData *data, ULONG cRevertedRejitVersions, struct DacpReJitData * rgRevertedRejitData, ULONG * pcNeededRevertedRejitData);
     HRESULT GetMethodDescPtrFromIP(CLRDATA_ADDRESS ip, CLRDATA_ADDRESS * ppMD);
-    HRESULT GetMethodDescName(CLRDATA_ADDRESS methodDesc, unsigned int count, wchar_t *name, unsigned int *pNeeded);
+    HRESULT GetMethodDescName(CLRDATA_ADDRESS methodDesc, unsigned int count, WCHAR *name, unsigned int *pNeeded);
     HRESULT GetMethodDescPtrFromFrame(CLRDATA_ADDRESS frameAddr, CLRDATA_ADDRESS * ppMD);
     HRESULT GetMethodDescFromToken(CLRDATA_ADDRESS moduleAddr, mdToken token, CLRDATA_ADDRESS *methodDesc);
     HRESULT GetMethodDescTransparencyData(CLRDATA_ADDRESS methodDesc, struct DacpMethodDescTransparencyData *data);
@@ -227,11 +227,11 @@ interface ISOSDacInterface : IUnknown
 
     // Objects
     HRESULT GetObjectData(CLRDATA_ADDRESS objAddr, struct DacpObjectData *data);
-    HRESULT GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, wchar_t *stringData, unsigned int *pNeeded);
-    HRESULT GetObjectClassName(CLRDATA_ADDRESS obj, unsigned int count, wchar_t *className, unsigned int *pNeeded);
+    HRESULT GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, WCHAR *stringData, unsigned int *pNeeded);
+    HRESULT GetObjectClassName(CLRDATA_ADDRESS obj, unsigned int count, WCHAR *className, unsigned int *pNeeded);
     
     // MethodTable
-    HRESULT GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, wchar_t *mtName, unsigned int *pNeeded);
+    HRESULT GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, WCHAR *mtName, unsigned int *pNeeded);
     HRESULT GetMethodTableData(CLRDATA_ADDRESS mt, struct DacpMethodTableData *data);
     HRESULT GetMethodTableSlot(CLRDATA_ADDRESS mt, unsigned int slot, CLRDATA_ADDRESS *value);
     HRESULT GetMethodTableFieldData(CLRDATA_ADDRESS mt, struct DacpMethodTableFieldData *data);
@@ -244,12 +244,12 @@ interface ISOSDacInterface : IUnknown
     HRESULT GetFieldDescData(CLRDATA_ADDRESS fieldDesc, struct DacpFieldDescData *data);
 
     // Frames
-    HRESULT GetFrameName(CLRDATA_ADDRESS vtable, unsigned int count, wchar_t *frameName, unsigned int *pNeeded);
+    HRESULT GetFrameName(CLRDATA_ADDRESS vtable, unsigned int count, WCHAR *frameName, unsigned int *pNeeded);
 
 
     // PEFiles
     HRESULT GetPEFileBase(CLRDATA_ADDRESS addr, CLRDATA_ADDRESS *base);
-    HRESULT GetPEFileName(CLRDATA_ADDRESS addr, unsigned int count, wchar_t *fileName, unsigned int *pNeeded);
+    HRESULT GetPEFileName(CLRDATA_ADDRESS addr, unsigned int count, WCHAR *fileName, unsigned int *pNeeded);
 
     // GC
     HRESULT GetGCHeapData(struct DacpGcHeapData *data);
@@ -310,20 +310,20 @@ interface ISOSDacInterface : IUnknown
      * Enumerates all references on a given callstack.
      */
     HRESULT GetStackReferences([in] DWORD osThreadID, [out] ISOSStackRefEnum **ppEnum);
-    HRESULT GetRegisterName([in] int regName, [in] unsigned int count, [out] wchar_t *buffer, [out] unsigned int *pNeeded);
+    HRESULT GetRegisterName([in] int regName, [in] unsigned int count, [out] WCHAR *buffer, [out] unsigned int *pNeeded);
 
     HRESULT GetThreadAllocData(CLRDATA_ADDRESS thread, struct DacpAllocData *data);
     HRESULT GetHeapAllocData(unsigned int count, struct DacpGenerationAllocData *data, unsigned int *pNeeded);
     
     // For BindingDisplay plugin
     HRESULT GetFailedAssemblyList(CLRDATA_ADDRESS appDomain, int count, CLRDATA_ADDRESS values[], unsigned int *pNeeded);
-    HRESULT GetPrivateBinPaths(CLRDATA_ADDRESS appDomain, int count, wchar_t *paths, unsigned int *pNeeded);
-    HRESULT GetAssemblyLocation(CLRDATA_ADDRESS assembly, int count, wchar_t *location, unsigned int *pNeeded);
-    HRESULT GetAppDomainConfigFile(CLRDATA_ADDRESS appDomain, int count, wchar_t *configFile, unsigned int *pNeeded);
-    HRESULT GetApplicationBase(CLRDATA_ADDRESS appDomain, int count, wchar_t *base, unsigned int *pNeeded);
+    HRESULT GetPrivateBinPaths(CLRDATA_ADDRESS appDomain, int count, WCHAR *paths, unsigned int *pNeeded);
+    HRESULT GetAssemblyLocation(CLRDATA_ADDRESS assembly, int count, WCHAR *location, unsigned int *pNeeded);
+    HRESULT GetAppDomainConfigFile(CLRDATA_ADDRESS appDomain, int count, WCHAR *configFile, unsigned int *pNeeded);
+    HRESULT GetApplicationBase(CLRDATA_ADDRESS appDomain, int count, WCHAR *base, unsigned int *pNeeded);
     HRESULT GetFailedAssemblyData(CLRDATA_ADDRESS assembly, unsigned int *pContext, HRESULT *pResult);
-    HRESULT GetFailedAssemblyLocation(CLRDATA_ADDRESS assesmbly, unsigned int count, wchar_t *location, unsigned int *pNeeded);
-    HRESULT GetFailedAssemblyDisplayName(CLRDATA_ADDRESS assembly, unsigned int count, wchar_t *name, unsigned int *pNeeded);
+    HRESULT GetFailedAssemblyLocation(CLRDATA_ADDRESS assesmbly, unsigned int count, WCHAR *location, unsigned int *pNeeded);
+    HRESULT GetFailedAssemblyDisplayName(CLRDATA_ADDRESS assembly, unsigned int count, WCHAR *name, unsigned int *pNeeded);
 };
 
 [
