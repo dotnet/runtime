@@ -434,6 +434,7 @@ namespace System.Threading.Tasks.Tests
             test.RealRun();
         }
         [Fact]
+        [OuterLoop]
         public static void TaskRunSyncTest3()
         {
             TestParameters_RunSync parameters = new TestParameters_RunSync(PreTaskStatus.Completed, PostRunSyncAction.Wait, WorkloadType.CreateChildTask, TaskCreationOptions.None, TaskSchedulerType.CustomWithInlineExecution);
