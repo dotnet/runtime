@@ -311,9 +311,12 @@ cleanup (void)
 {
 	guint i;
 
+	MONO_PREPARE_BLOCKING;
+
 	/* we make the assumption along the code that we are
 	 * cleaning up only if the runtime is shutting down */
 	g_assert (mono_runtime_is_shutting_down ());
+
 
 	while (monitor_status != MONITOR_STATUS_NOT_RUNNING)
 		g_usleep (1000);
@@ -329,6 +332,8 @@ cleanup (void)
 		worker_unpark ((ThreadPoolParkedThread*) g_ptr_array_index (threadpool->parked_threads, i));
 
 	mono_mutex_unlock (&threadpool->active_threads_lock);
+
+	MONO_FINISH_BLOCKING;
 }
 
 void
@@ -525,6 +530,8 @@ worker_try_unpark (void)
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] try unpark worker", GetCurrentThreadId ());
 
+	MONO_PREPARE_BLOCKING;
+
 	mono_mutex_lock (&threadpool->active_threads_lock);
 	len = threadpool->parked_threads->len;
 	if (len > 0) {
@@ -533,6 +540,8 @@ worker_try_unpark (void)
 		res = TRUE;
 	}
 	mono_mutex_unlock (&threadpool->active_threads_lock);
+
+	MONO_FINISH_BLOCKING;
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] try unpark worker, success? %s", GetCurrentThreadId (), res ? "yes" : "no");
 
@@ -571,9 +580,11 @@ worker_thread (gpointer data)
 
 	mono_thread_set_name_internal (thread, mono_string_new (mono_domain_get (), "Threadpool worker"), FALSE);
 
+	MONO_PREPARE_BLOCKING;
 	mono_mutex_lock (&threadpool->active_threads_lock);
 	g_ptr_array_add (threadpool->working_threads, thread);
 	mono_mutex_unlock (&threadpool->active_threads_lock);
+	MONO_FINISH_BLOCKING;
 
 	previous_tpdomain = NULL;
 
