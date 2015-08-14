@@ -21,19 +21,15 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed partial class StorePal : IDisposable, IStorePal
     {
-        public IEnumerable<X509Certificate2> Certificates
+        public void CopyTo(X509Certificate2Collection collection)
         {
-            get
-            {
-                LowLevelListWithIList<X509Certificate2> certificates = new LowLevelListWithIList<X509Certificate2>();
+            Debug.Assert(collection != null);
 
-                SafeCertContextHandle pCertContext = null;
-                while (Interop.crypt32.CertEnumCertificatesInStore(_certStore, ref pCertContext))
-                {
-                    X509Certificate2 cert = new X509Certificate2(pCertContext.DangerousGetHandle());
-                    certificates.Add(cert);
-                }
-                return certificates;
+            SafeCertContextHandle pCertContext = null;
+            while (Interop.crypt32.CertEnumCertificatesInStore(_certStore, ref pCertContext))
+            {
+                X509Certificate2 cert = new X509Certificate2(pCertContext.DangerousGetHandle());
+                collection.Add(cert);
             }
         }
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
@@ -9,35 +10,25 @@ namespace Internal.Cryptography.Pal
 {
     internal class CollectionBackedStoreProvider : IStorePal
     {
-        private readonly ReadOnlyCollection<X509Certificate2> _certs;
+        private readonly X509Certificate2[] _certs;
 
         internal CollectionBackedStoreProvider(X509Certificate2 cert)
         {
-            _certs = new List<X509Certificate2>(1)
-            {
-                cert
-            }.AsReadOnly();
+            _certs = new X509Certificate2[] { cert };
         }
 
         internal CollectionBackedStoreProvider(X509Certificate2Collection certs)
         {
-            var list = new List<X509Certificate2>(certs.Count);
-
-            foreach (X509Certificate2 cert in certs)
-            {
-                list.Add(cert);
-            }
-
-            _certs = list.AsReadOnly();
+            _certs = new X509Certificate2[certs.Count];
+            certs.CopyTo(_certs, 0);
         }
 
         public void Dispose()
         {
         }
 
-        public IEnumerable<X509Certificate2> Find(X509FindType findType, object findValue, bool validOnly)
+        public void FindAndCopyTo(X509FindType findType, object findValue, bool validOnly, X509Certificate2Collection collection)
         {
-            return Array.Empty<X509Certificate2>();
         }
 
         public byte[] Export(X509ContentType contentType, string password)
@@ -60,7 +51,7 @@ namespace Internal.Cryptography.Pal
             // so anything past _certs[0] is ignored, and an empty collection is
             // null (not an Exception)
 
-            if (_certs.Count == 0)
+            if (_certs.Length == 0)
             {
                 return null;
             }
@@ -76,7 +67,7 @@ namespace Internal.Cryptography.Pal
 
                 // Walk the collection backwards, because we're pushing onto a stack.
                 // This will cause the read order later to be the same as it was now.
-                for (int i = _certs.Count - 1; i >= 0; --i)
+                for (int i = _certs.Length - 1; i >= 0; --i)
                 {
                     X509Certificate2 cert = _certs[i];
 
@@ -150,9 +141,11 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        public IEnumerable<X509Certificate2> Certificates
+        public void CopyTo(X509Certificate2Collection collection)
         {
-            get { return _certs; }
+            Debug.Assert(collection != null);
+
+            collection.AddRange(_certs);
         }
 
         public void Add(ICertificatePal cert)
