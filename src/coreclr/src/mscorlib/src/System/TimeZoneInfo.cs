@@ -3620,14 +3620,26 @@ namespace System {
             Byte[] typeOfLocalTime, TZifType[] transitionTypes, Boolean[] StandardTime, Boolean[] GmtTime, string futureTransitionsPosixFormat)
         {
             // To generate AdjustmentRules, use the following approach:
-            // 1. The first AdjustmentRule goes from DateTime.Min to the first transition and uses the first standard transitionType
-            // (or the first transitionType if none of them are standard)
+            // The first AdjustmentRule will go from DateTime.MinValue to the first transition time greater than DateTime.MinValue.
+            // Each middle AdjustmentRule wil go from dts[index-1] to dts[index].
+            // The last AdjustmentRule will go from dts[dts.Length-1] to Datetime.MaxValue.
+
+            // 0. Skip any DateTime.MinValue transition times. In newer versions of the tzfile, there
+            // is a "big bang" transition time, which is before the year 0001. Since any times before year 0001
+            // cannot be represented by DateTime, there is no reason to make AdjustmentRules for these unrepresentable time periods.
+            // 1. If there are no DateTime.MinValue times, the first AdjustmentRule goes from DateTime.MinValue
+            // to the first transition and uses the first standard transitionType (or the first transitionType if none of them are standard)
             // 2. Create an AdjustmentRule for each transition, i.e. from dts[index - 1] to dts[index].
             // This rule uses the transitionType[index - 1] and the whole AdjustmentRule only describes a single offset - either
             // all daylight savings, or all stanard time.
             // 3. After all the transitions are filled out, the last AdjustmentRule is created from either:
             //   a. a POSIX-style timezone description ("futureTransitionsPosixFormat"), if there is one or
             //   b. continue the last transition offset until DateTime.Max
+
+            while (index < dts.Length && dts[index] == DateTime.MinValue)
+            {
+                index++;
+            }
 
             if (index == 0)
             {
@@ -4127,6 +4139,21 @@ namespace System {
             }
         }
 
+        private static DateTime TZif_UnixTimeToDateTime(long unixTime)
+        {
+            if (unixTime < DateTimeOffset.UnixMinSeconds)
+            {
+                return DateTime.MinValue;
+            }
+
+            if (unixTime > DateTimeOffset.UnixMaxSeconds)
+            {
+                return DateTime.MaxValue;
+            }
+
+            return DateTimeOffset.FromUnixTimeSeconds(unixTime).UtcDateTime;
+        }
+
         static private void TZif_ParseRaw(Byte[] data, out TZifHead t, out DateTime[] dts, out Byte[] typeOfLocalTime, out TZifType[] transitionType,
                                           out String zoneAbbreviations, out Boolean[] StandardTime, out Boolean[] GmtTime, out string futureTransitionsPosixFormat)
         {
@@ -4169,7 +4196,7 @@ namespace System {
             //
             for (int i = 0; i < t.TimeCount; i++) {
                 long unixTime = TZif_ToUnixTime(data, index, t.Version);
-                dts[i] = DateTimeOffset.FromUnixTimeSeconds(unixTime).UtcDateTime;
+                dts[i] = TZif_UnixTimeToDateTime(unixTime);
                 index += timeValuesLength;
             }
 
