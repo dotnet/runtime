@@ -8,7 +8,7 @@
 ** Source:  getmodulefilenamea.c
 **
 ** Purpose: Positive test the GetModuleFileNameA API.
-**          Call GetModuleFileName to retrive current process 
+**          Call GetModuleFileName to retrieve current process 
 **          full path and file name by passing a NULL module handle
 **
 **
@@ -33,7 +33,7 @@ int __cdecl main(int argc, char *argv[])
     }
 
 
-    //retrive the current process full path and file name
+    //retrieve the current process full path and file name
     //by passing a NULL module handle
     ModuleNameLength = GetModuleFileName(
                 NULL,             //a NULL handle

@@ -5513,7 +5513,7 @@ void TypeLibExporter::GetWellKnownInterface(
     
     CLSIDFromString(wzGuid, &guidTlb);
 
-    // Retrive the major and minor version number.
+    // Retrieve the major and minor version number.
     USHORT wMajor;
     USHORT wMinor;
     Assembly *pAssembly = pMT->GetAssembly();

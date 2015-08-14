@@ -694,7 +694,7 @@ HRESULT GetITypeLibForAssembly(Assembly *pAssembly, ITypeLib **ppTLB, int bAutoC
         goto ErrExit;       
     }
 
-    // Retrive the major and minor version number.
+    // Retrieve the major and minor version number.
     IfFailGo(GetTypeLibVersionForAssembly(pAssembly, &wMajor, &wMinor));
 
     // Maybe the module was imported from COM, and we can get the libid of the existing typelib.
