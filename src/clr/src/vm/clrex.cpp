@@ -1226,7 +1226,7 @@ OBJECTREF EEException::CreateThrowable()
 #endif
 }
 
-RuntimeExceptionKind EEException::GetKindFromHR(HRESULT hr, bool fIsWinRtMode /*= false*/)
+RuntimeExceptionKind EEException::GetKindFromHR(HRESULT hr, bool fIsWinRtMode)
 {
     LIMITED_METHOD_CONTRACT;
 
