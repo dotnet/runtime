@@ -7483,17 +7483,16 @@ mono_image_init_name_cache (MonoImage *image)
 	if (image->name_cache)
 		return;
 
-	mono_image_lock (image);
-
-	if (image->name_cache) {
-		mono_image_unlock (image);
-		return;
-	}
-
 	the_name_cache = g_hash_table_new (g_str_hash, g_str_equal);
 
 	if (image_is_dynamic (image)) {
-		mono_atomic_store_release (&image->name_cache, the_name_cache);
+		mono_image_lock (image);
+		if (image->name_cache) {
+			/* Somebody initialized it before us */
+			g_hash_table_destroy (the_name_cache);
+		} else {
+			mono_atomic_store_release (&image->name_cache, the_name_cache);
+		}
 		mono_image_unlock (image);
 		return;
 	}
@@ -7548,7 +7547,12 @@ mono_image_init_name_cache (MonoImage *image)
 	}
 
 	g_hash_table_destroy (name_cache2);
-	mono_atomic_store_release (&image->name_cache, the_name_cache);
+	if (image->name_cache) {
+		/* Somebody initialized it before us */
+		g_hash_table_destroy (the_name_cache);
+	} else {
+		mono_atomic_store_release (&image->name_cache, the_name_cache);
+	}
 	mono_image_unlock (image);
 }
 
