@@ -300,20 +300,20 @@ ves_icall_System_IO_MonoIO_RemoveDirectory (MonoString *path, gint32 *error)
 }
 
 static gchar *
-get_search_dir (MonoString *pattern)
+get_search_dir (const gunichar2 *pattern)
 {
 	gchar *p;
 	gchar *result;
 
-	p = mono_string_to_utf8 (pattern);
+	p = g_utf16_to_utf8 (pattern, -1, NULL, NULL, NULL);
 	result = g_path_get_dirname (p);
 	g_free (p);
 	return result;
 }
 
 static GPtrArray *
-get_filesystem_entries (MonoString *path,
-						 MonoString *path_with_pattern,
+get_filesystem_entries (const gunichar2 *path,
+						 const gunichar2 *path_with_pattern,
 						 gint attrs, gint mask,
 						 gint32 *error)
 {
@@ -325,7 +325,7 @@ get_filesystem_entries (MonoString *path,
 	gint32 attributes;
 
 	mask = convert_attrs (mask);
-	attributes = get_file_attributes (mono_string_chars (path));
+	attributes = get_file_attributes (path);
 	if (attributes != -1) {
 		if ((attributes & FILE_ATTRIBUTE_DIRECTORY) == 0) {
 			*error = ERROR_INVALID_NAME;
@@ -336,7 +336,7 @@ get_filesystem_entries (MonoString *path,
 		goto fail;
 	}
 	
-	find_handle = FindFirstFile (mono_string_chars (path_with_pattern), &data);
+	find_handle = FindFirstFile (path_with_pattern, &data);
 	if (find_handle == INVALID_HANDLE_VALUE) {
 		gint32 find_error = GetLastError ();
 		
@@ -403,7 +403,7 @@ ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *path,
 	*error = ERROR_SUCCESS;
 
 	MONO_PREPARE_BLOCKING;
-	names = get_filesystem_entries (path, path_with_pattern, attrs, mask, error);
+	names = get_filesystem_entries (mono_string_chars (path), mono_string_chars (path_with_pattern), attrs, mask, error);
 	MONO_FINISH_BLOCKING;
 
 	if (!names) {
