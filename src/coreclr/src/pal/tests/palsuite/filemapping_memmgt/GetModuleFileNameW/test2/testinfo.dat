@@ -9,5 +9,5 @@ Name = Positive test for GetModuleFileNameW API
 TYPE = DEFAULT
 EXE1 = getmodulefilenamew
 Description
-=Test the GetModuleFileNameW to retrive current process full
+=Test the GetModuleFileNameW to retrieve current process full
 =full path and file name by passing a NULL module handle in UNICODE

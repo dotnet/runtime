@@ -30,7 +30,7 @@ int __cdecl main(int argc, char *argv[])
         return FAIL;
     }
 
-    /* Retrive the calling process heap handle */
+    /* Retrieve the calling process heap handle */
     ProcessHeapHandle = GetProcessHeap();
      
     if(!ProcessHeapHandle)

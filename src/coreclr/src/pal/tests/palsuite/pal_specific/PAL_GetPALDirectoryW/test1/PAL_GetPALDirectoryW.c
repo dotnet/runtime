@@ -70,7 +70,7 @@ int __cdecl main(int argc, char *argv[])
     if(FILE_ATTRIBUTE_DIRECTORY != 
             (dwFileAttribute & FILE_ATTRIBUTE_DIRECTORY))
     {
-        Fail("The retrived directory name is not a valid directory!\n");
+        Fail("The retrieved directory name is not a valid directory!\n");
     }
 
     PAL_Terminate();

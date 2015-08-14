@@ -5,8 +5,8 @@
 Version = 1.0
 Section = Filemapping_memmgt
 Function = GetProcessHeap
-Name = Positive test for GetProcessHeap API retrive the handle of calling process heap
+Name = Positive test for GetProcessHeap API retrieve the handle of calling process heap
 TYPE = DEFAULT
 EXE1 = getprocessheap
 Description
-=Test the GetProcessHeap to retrive the handle of the calling process heap
+=Test the GetProcessHeap to retrieve the handle of the calling process heap

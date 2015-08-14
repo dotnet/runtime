@@ -187,7 +187,7 @@ int __cdecl main(int argc, char *argv[])
 
         if(NULL == readProcessHandle)
         {
-            Fail("\nFailed to call OpenProcess API to retrive "
+            Fail("\nFailed to call OpenProcess API to retrieve "
                     "current process handle error code=%u\n",
                     GetLastError());
         }

@@ -1090,7 +1090,7 @@ MemberLoader::FindMethod(
         MODE_ANY;
     } CONTRACT_END;
 
-    // Retrive the right comparition function to use.
+    // Retrieve the right comparition function to use.
     UTF8StringCompareFuncPtr StrCompFunc = FM_GetStrCompFunc(flags);
 
     SString targetName(SString::Utf8Literal, pszName);
@@ -1487,7 +1487,7 @@ MemberLoader::FindField(MethodTable * pMT, LPCUTF8 pszName, PCCOR_SIGNATURE pSig
     
     CONSISTENCY_CHECK(pMT->CheckLoadLevel(CLASS_LOAD_APPROXPARENTS));
     
-    // Retrive the right comparition function to use.
+    // Retrieve the right comparition function to use.
     UTF8StringCompareFuncPtr StrCompFunc = bCaseSensitive ? strcmp : stricmpUTF8;
     
     // The following assert is very important, but we need to special case it enough

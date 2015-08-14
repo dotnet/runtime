@@ -9,5 +9,5 @@ Name = Positive test for GetModuleFileNameA API
 TYPE = DEFAULT
 EXE1 = getmodulefilenamea
 Description
-=Test the GetModuleFileNameA to retrive the specified module
+=Test the GetModuleFileNameA to retrieve the specified module
 =full path and file name
