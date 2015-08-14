@@ -3,9 +3,9 @@
   "version": -9996,
   "targets": {
     ".NETPlatform,Version=v5.0": {
-      "System.Diagnostics.TraceSource/4.0.0-beta-23127": {
+      "System.Diagnostics.TraceSource/4.0.0-beta-23213": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-23127"
+          "System.Runtime": "4.0.0"
         },
         "compile": {
           "ref/dotnet/System.Diagnostics.TraceSource.dll": {}
@@ -45,12 +45,12 @@
     }
   },
   "libraries": {
-    "System.Diagnostics.TraceSource/4.0.0-beta-23127": {
+    "System.Diagnostics.TraceSource/4.0.0-beta-23213": {
       "serviceable": true,
-      "sha512": "0a7Kvgb6dkj9ZfXmvHMJQszRYsJsh0yunhzX8K6YTn+IKs+dyWWABa06NcS0dWWHf4eZGWYmGAeuUGgBfO4DsQ==",
+      "sha512": "h43/Nb4tZmjPbOTw06u3NQbEEQihDZW1h8rOQpzM6e+ruwcFYyhlNV6YsZI8p/vKKiWVY7UGEU25TOv9BJ6Hmw==",
       "files": [
-        "System.Diagnostics.TraceSource.4.0.0-beta-23127.nupkg",
-        "System.Diagnostics.TraceSource.4.0.0-beta-23127.nupkg.sha512",
+        "System.Diagnostics.TraceSource.4.0.0-beta-23213.nupkg",
+        "System.Diagnostics.TraceSource.4.0.0-beta-23213.nupkg.sha512",
         "System.Diagnostics.TraceSource.nuspec",
         "lib/DNXCore50/System.Diagnostics.TraceSource.dll",
         "lib/MonoAndroid10/_._",
