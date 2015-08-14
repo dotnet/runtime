@@ -140,5 +140,8 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.LibCurl)]
         public static extern void curl_slist_free_all(
             IntPtr curl_slist);
+
+        [DllImport(Interop.Libraries.LibCurl)]
+        public static extern IntPtr curl_version_info(int curlVersionStamp);
     }
 }
