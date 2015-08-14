@@ -1130,9 +1130,7 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public static void RunTaskWaitAnyTests()
         {
-            //int numCores = Environment.ProcessorCount;]
-            // We are just selecting a number since Environment exists in a .dll that is not part of the contracts.
-            int numCores = 4;
+            int numCores = Environment.ProcessorCount;
 
             // Basic tests w/ <64 tasks
             CoreWaitAnyTest(0, new bool[] { }, -1);
@@ -1591,10 +1589,7 @@ namespace System.Threading.Tasks.Tests
             // This is computed such that this number of long-running tasks will result in a back-up
             // without some assistance from TaskScheduler.RunBlocking() or TaskCreationOptions.LongRunning.
 
-            // We are selecting some number because Environment exists in a .dll that is not
-            // part of the contracts we are testing.
-            //int ntasks = Environment.ProcessorCount * 2;
-            int ntasks = 8;
+            int ntasks = Environment.ProcessorCount * 2;
 
             Task[] tasks = new Task[ntasks];
             ManualResetEvent mre = new ManualResetEvent(false); // could just use a bool?
