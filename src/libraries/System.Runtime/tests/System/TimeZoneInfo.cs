@@ -105,6 +105,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
+    [ActiveIssue(2821)]
     public static void ValidateRussiaTimeZoneTest()
     {
         TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(s_strRussian);
@@ -147,6 +148,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
+    [ActiveIssue(2821)]
     public static void NearMinMaxDateTimeOffsetConvertTest()
     {
         VerifyConvert(DateTimeOffset.MaxValue, TimeZoneInfo.Utc.Id, DateTimeOffset.MaxValue);
@@ -330,6 +332,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
+    [ActiveIssue(2821)]
     public static void NearMinMaxDateTimeConvertTest()
     {
         DateTime time1 = new DateTime(2006, 5, 12);
@@ -419,6 +422,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
+    [ActiveIssue(2821)]
     public static void PerthRulesTest()
     {
         var time1utc = new DateTime(2005, 12, 31, 15, 59, 59, DateTimeKind.Utc);
