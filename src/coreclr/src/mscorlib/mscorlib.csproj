@@ -148,7 +148,6 @@
   <ItemGroup>
     <!-- We want the sources to show up nicely in VS-->
     <Compile Include="@(MscorlibSources)">
-      <Link>$([MSBuild]::MakeRelative($(BclSourcesRoot), %(Identity))</Link>
     </Compile>
   </ItemGroup>
   
