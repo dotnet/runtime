@@ -36,9 +36,7 @@ namespace System.Threading.Tasks.Tests
 
             // Create many tasks blocked on the MRE.
 
-            // WE are specifying a fixed number rather than using environment.processorcount because it uses a .dll that is not
-            // in the contracts.
-            int processorCount = 8;
+            int processorCount = Environment.ProcessorCount;
             Task[] tasks = new Task[processorCount];
             for (int i = 0; i < tasks.Length; i++)
             {

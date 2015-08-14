@@ -27,7 +27,7 @@ namespace TaskCoverage
         [OuterLoop]
         public static void TaskContinuation()
         {
-            int taskCount = 4;
+            int taskCount = Environment.ProcessorCount;
             int maxDOP = Int32.MaxValue;
             int maxNumberExecutionsPerTask = 1;
             int data = 0;
