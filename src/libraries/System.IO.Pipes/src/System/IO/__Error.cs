@@ -56,12 +56,6 @@ namespace System.IO
             return new ArgumentException(SR.InvalidOperation_EndWriteCalledMultiple);
         }
 
-        internal static Exception GetEndWaitForConnectionCalledTwice()
-        {
-            // Should ideally be InvalidOperationExc but we can't maintain parity with Stream and FileStream without some work
-            return new ArgumentException(SR.InvalidOperation_EndWaitForConnectionCalledMultiple);
-        }
-
         internal static Exception GetWriteNotSupported()
         {
             return new NotSupportedException(SR.NotSupported_UnwritableStream);
