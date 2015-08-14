@@ -102,6 +102,6 @@ You need to restore packages for your app, based on your project.json, with `dnu
 
 You can run your app with the DNX command.
 
-	C:\coreclr-demo> dnx . run
+	C:\coreclr-demo> dnx run
 	Hello, Windows
 	Love from CoreCLR.
