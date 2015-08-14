@@ -163,13 +163,16 @@ internal static partial class Interop
             internal int result;
         }
 
-        // Curl Version Information
-        [StructLayout(LayoutKind.Explicit)]
+        // NOTE: The definition of this structure in Curl/curl.h is larger than
+        // than what is defined below. This definition is only valid for use with
+        // Marshal.PtrToStructure and not for general use in P/Invoke signatures.
+        [StructLayout(LayoutKind.Sequential)]
         internal struct curl_version_info_data
         {
-            [FieldOffset(0)]
             internal int age;
-            [FieldOffset(32)]
+            private unsafe char *version;
+            private int versionNum;
+            private unsafe char *host;
             internal int features;
         }
 
