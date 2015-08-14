@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "System.Runtime": "4.0.20",
+    "System.IO": "4.0.0",
+    "System.Reflection.Primitives": "4.0.0"
+  },
+  "frameworks": {
+    "dotnet": {}
+  }
+}
