@@ -175,11 +175,11 @@ mono_save_seq_point_info (MonoCompile *cfg)
 
 	// FIXME: dynamic methods
 	if (!cfg->compile_aot) {
-		mono_loader_lock ();
+		mono_domain_lock (domain);
 		// FIXME: How can the lookup succeed ?
 		if (!g_hash_table_lookup (domain_jit_info (domain)->seq_points, cfg->method_to_register))
 			g_hash_table_insert (domain_jit_info (domain)->seq_points, cfg->method_to_register, cfg->seq_point_info);
-		mono_loader_unlock ();
+		mono_domain_unlock (domain);
 	}
 
 	g_ptr_array_free (cfg->seq_points, TRUE);

@@ -4269,6 +4269,9 @@ remove_breakpoint (BreakpointInstance *inst)
 #endif
 }	
 
+/*
+ * This doesn't take any locks.
+ */
 static inline gboolean
 bp_matches_method (MonoBreakpoint *bp, MonoMethod *method)
 {
@@ -4342,10 +4345,11 @@ add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji)
 				declaring = mono_method_get_declaring_generic_method (jmethod);
 
 			jmethod = jinfo_get_method (ji);
-			/* seq_points is protected by the loader lock */
+			mono_domain_lock (domain);
 			seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, jmethod);
 			if (!seq_points && declaring)
 				seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, declaring);
+			mono_domain_unlock (domain);
 			if (!seq_points)
 				/* Could be AOT code */
 				continue;
@@ -4401,6 +4405,10 @@ set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, MonoError
 	MonoDomain *domain;
 	MonoMethod *m;
 	MonoSeqPointInfo *seq_points;
+	GPtrArray *methods;
+	GPtrArray *method_domains;
+	GPtrArray *method_seq_points;
+	int i;
 
 	if (error)
 		mono_error_init (error);
@@ -4419,19 +4427,37 @@ set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, MonoError
 
 	DEBUG_PRINTF (1, "[dbg] Setting %sbreakpoint at %s:0x%x.\n", (req->event_kind == EVENT_KIND_STEP) ? "single step " : "", method ? mono_method_full_name (method, TRUE) : "<all>", (int)il_offset);
 
-	mono_loader_lock ();
+	methods = g_ptr_array_new ();
+	method_domains = g_ptr_array_new ();
+	method_seq_points = g_ptr_array_new ();
 
+	mono_loader_lock ();
 	g_hash_table_iter_init (&iter, domains);
 	while (g_hash_table_iter_next (&iter, (void**)&domain, NULL)) {
-		/* seq_points is protected by the loader lock */
+		mono_domain_lock (domain);
 		g_hash_table_iter_init (&iter2, domain_jit_info (domain)->seq_points);
 		while (g_hash_table_iter_next (&iter2, (void**)&m, (void**)&seq_points)) {
-			if (bp_matches_method (bp, m))
-				set_bp_in_method (domain, m, seq_points, bp, error);
+			if (bp_matches_method (bp, m)) {
+				/* Save the info locally to simplify the code inside the domain lock */
+				g_ptr_array_add (methods, m);
+				g_ptr_array_add (method_domains, domain);
+				g_ptr_array_add (method_seq_points, seq_points);
+			}
 		}
+		mono_domain_unlock (domain);
 	}
 
+	for (i = 0; i < methods->len; ++i) {
+		m = g_ptr_array_index (methods, i);
+		domain = g_ptr_array_index (method_domains, i);
+		seq_points = g_ptr_array_index (method_seq_points, i);
+		set_bp_in_method (domain, m, seq_points, bp, error);
+	}
 	mono_loader_unlock ();
+
+	g_ptr_array_free (methods, TRUE);
+	g_ptr_array_free (method_domains, TRUE);
+	g_ptr_array_free (method_seq_points, TRUE);
 
 	mono_loader_lock ();
 	g_ptr_array_add (breakpoints, bp);

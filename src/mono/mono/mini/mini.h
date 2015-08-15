@@ -310,7 +310,7 @@ typedef struct
 	/* Maps methods to a RuntimeInvokeInfo structure */
 	MonoConcurrentHashTable *runtime_invoke_hash;
 	/* Maps MonoMethod to a GPtrArray containing sequence point locations */
-	/* Protected by the loader lock */
+	/* Protected by the domain lock */
 	GHashTable *seq_points;
 	/* Debugger agent data */
 	gpointer agent_info;
