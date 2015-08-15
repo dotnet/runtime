@@ -7,7 +7,7 @@
     <ProjectGuid>{96AA2060-C846-4E56-9509-E8CB9C114C8F}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Collections.Concurrent</AssemblyName>
-    <AssemblyVersion>4.0.10.0</AssemblyVersion>
+    <AssemblyVersion>4.0.11.0</AssemblyVersion>
     <RootNamespace>System.Collections.Concurrent</RootNamespace>
     <DefineConstants>FEATURE_TRACING</DefineConstants>
   </PropertyGroup>

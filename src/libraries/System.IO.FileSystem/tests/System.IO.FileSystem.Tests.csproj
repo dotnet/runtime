@@ -31,10 +31,18 @@
 
     <!-- 
       Until an updated packages is published, temporarily copy the locally built System.Runtime.Extensions library
-      but still reference the contract from the package for compiling. 
+      but still reference the contract from the package for compiling.  
       Issue https://github.com/dotnet/corefx/issues/2519 is tracking the removal of this ProjectReference
+      We also must reference System.Diagnostics.Debug due to this project reference and issue
+      https://github.com/dotnet/corefx/issues/2817.
     -->
     <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.CoreCLR.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

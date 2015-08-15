@@ -8,8 +8,8 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Dynamic.Runtime</AssemblyName>
     <RootNamespace>System.Dynamic.Runtime</RootNamespace>
-    <AssemblyVersion>4.0.10.0</AssemblyVersion>
-    <DefineConstants Condition=" '$(IsInterpreting)' != 'true' " >$(DefineConstants);FEATURE_CORECLR</DefineConstants>
+    <AssemblyVersion>4.0.11.0</AssemblyVersion>
+    <DefineConstants Condition=" '$(IsInterpreting)' != 'true' ">$(DefineConstants);FEATURE_CORECLR</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -120,7 +120,6 @@
     <Compile Include="$(CommonPath)\System\Linq\Expressions\Compiler\AssemblyGen.cs">
       <Link>Common\System\Linq\Expressions\Compiler\AssemblyGen.cs</Link>
     </Compile>
-
     <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>System.Threading.Tasks.Dataflow</RootNamespace>
     <AssemblyName>System.Threading.Tasks.Dataflow</AssemblyName>
-    <AssemblyVersion>4.5.25.0</AssemblyVersion>
+    <AssemblyVersion>4.5.26.0</AssemblyVersion>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>

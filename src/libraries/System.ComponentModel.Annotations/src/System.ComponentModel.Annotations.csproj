@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>System.ComponentModel.Annotations</RootNamespace>
     <AssemblyName>System.ComponentModel.Annotations</AssemblyName>
-    <AssemblyVersion>4.0.10.0</AssemblyVersion>
+    <AssemblyVersion>4.0.11.0</AssemblyVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
