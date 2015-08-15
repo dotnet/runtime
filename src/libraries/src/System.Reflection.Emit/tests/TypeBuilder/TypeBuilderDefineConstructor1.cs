@@ -18,7 +18,7 @@ namespace System.Reflection.Emit.Tests
         private const string DynamicFieldName = "m_testDynamicFieldA";
         private const string DynamicMethodName = "TestDynamicMethodA";
 
-        public TypeBuilder RetriveTestTypeBuilder(TypeAttributes typeAtt)
+        public TypeBuilder RetrieveTestTypeBuilder(TypeAttributes typeAtt)
         {
             AssemblyName asmName = new AssemblyName();
             asmName.Name = DynamicAssemblyName;
@@ -125,7 +125,7 @@ namespace System.Reflection.Emit.Tests
             ILGenerator ctorIL;
             ConstructorInfo actualCtor;
 
-            testTypeBuilder = RetriveTestTypeBuilder(typeAttr);
+            testTypeBuilder = RetrieveTestTypeBuilder(typeAttr);
 
             fieldBuilderA = testTypeBuilder.DefineField(DynamicFieldName,
                                                                        typeof(int),
@@ -168,7 +168,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder testTypeBuilder;
 
-            testTypeBuilder = RetriveTestTypeBuilder(TypeAttributes.Public);
+            testTypeBuilder = RetrieveTestTypeBuilder(TypeAttributes.Public);
             testTypeBuilder.CreateTypeInfo().AsType();
             Assert.Throws<InvalidOperationException>(() =>
             {
@@ -181,7 +181,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder testTypeBuilder;
 
-            testTypeBuilder = RetriveTestTypeBuilder(TypeAttributes.Public |
+            testTypeBuilder = RetrieveTestTypeBuilder(TypeAttributes.Public |
                                                                              TypeAttributes.Interface |
                                                                              TypeAttributes.Abstract);
             Assert.Throws<InvalidOperationException>(() =>
