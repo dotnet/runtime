@@ -2128,8 +2128,10 @@ typedef struct {
 
 typedef struct {
 	/* Maps runtime structure -> Id */
+	/* Protected by the dbg lock */
 	GHashTable *val_to_id [ID_NUM];
 	/* Classes whose class load event has been sent */
+	/* Protected by the loader lock */
 	GHashTable *loaded_classes;
 	/* Maps MonoClass->GPtrArray of file names */
 	GHashTable *source_files;
@@ -2255,23 +2257,18 @@ get_id (MonoDomain *domain, IdType type, gpointer val)
 	if (val == NULL)
 		return 0;
 
-	mono_loader_lock ();
-
-	mono_domain_lock (domain);
-
 	info = get_agent_domain_info (domain);
+
+	dbg_lock ();
 
 	if (info->val_to_id [type] == NULL)
 		info->val_to_id [type] = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 	id = g_hash_table_lookup (info->val_to_id [type], val);
 	if (id) {
-		mono_domain_unlock (domain);
-		mono_loader_unlock ();
+		dbg_unlock ();
 		return id->id;
 	}
-
-	dbg_lock ();
 
 	id = g_new0 (Id, 1);
 	/* Reserve id 0 */
@@ -2283,10 +2280,6 @@ get_id (MonoDomain *domain, IdType type, gpointer val)
 	g_ptr_array_add (ids [type], id);
 
 	dbg_unlock ();
-
-	mono_domain_unlock (domain);
-
-	mono_loader_unlock ();
 
 	return id->id;
 }
@@ -4048,18 +4041,17 @@ send_type_load (MonoClass *klass)
 	MonoDomain *domain = mono_domain_get ();
 	AgentDomainInfo *info = NULL;
 
-	mono_loader_lock ();
-	mono_domain_lock (domain);
-
 	info = get_agent_domain_info (domain);
+
+	mono_loader_lock ();
 
 	if (!g_hash_table_lookup (info->loaded_classes, klass)) {
 		type_load = TRUE;
 		g_hash_table_insert (info->loaded_classes, klass, klass);
 	}
 
-	mono_domain_unlock (domain);
 	mono_loader_unlock ();
+
 	if (type_load)
 		emit_type_load (klass, klass, NULL);
 }
@@ -4073,13 +4065,12 @@ static void
 send_types_for_domain (MonoDomain *domain, void *user_data)
 {
 	AgentDomainInfo *info = NULL;
+
+	info = get_agent_domain_info (domain);
+	g_assert (info);
 	
 	mono_loader_lock ();
-	mono_domain_lock (domain);
-	info =  get_agent_domain_info (domain);
-	g_assert (info);
 	g_hash_table_foreach (info->loaded_classes, emit_type_load, NULL);
-	mono_domain_unlock (domain);
 	mono_loader_unlock ();
 }
 
@@ -4345,11 +4336,16 @@ add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji)
 		}
 
 		if (!found) {
+			MonoMethod *declaring = NULL;
+
+			if (jmethod->is_inflated)
+				declaring = mono_method_get_declaring_generic_method (jmethod);
+
 			jmethod = jinfo_get_method (ji);
 			mono_domain_lock (domain);
 			seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, jmethod);
-			if (!seq_points && jmethod->is_inflated)
-				seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, mono_method_get_declaring_generic_method (jmethod));
+			if (!seq_points && declaring)
+				seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, declaring);
 			mono_domain_unlock (domain);
 			if (!seq_points)
 				/* Could be AOT code */
@@ -6482,8 +6478,9 @@ clear_types_for_assembly (MonoAssembly *assembly)
 		/* Can happen during shutdown */
 		return;
 
-	mono_loader_lock ();
 	info = get_agent_domain_info (domain);
+
+	mono_loader_lock ();
 	g_hash_table_foreach_remove (info->loaded_classes, type_comes_from_assembly, assembly);
 	mono_loader_unlock ();
 }
