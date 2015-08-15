@@ -175,11 +175,11 @@ mono_save_seq_point_info (MonoCompile *cfg)
 
 	// FIXME: dynamic methods
 	if (!cfg->compile_aot) {
-		mono_domain_lock (domain);
+		mono_loader_lock ();
 		// FIXME: How can the lookup succeed ?
 		if (!g_hash_table_lookup (domain_jit_info (domain)->seq_points, cfg->method_to_register))
 			g_hash_table_insert (domain_jit_info (domain)->seq_points, cfg->method_to_register, cfg->seq_point_info);
-		mono_domain_unlock (domain);
+		mono_loader_unlock ();
 	}
 
 	g_ptr_array_free (cfg->seq_points, TRUE);
@@ -197,7 +197,7 @@ mono_get_seq_points (MonoDomain *domain, MonoMethod *method)
 		shared_method = mini_get_shared_method (method);
 	}
 
-	mono_domain_lock (domain);
+	mono_loader_lock ();
 	seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, method);
 	if (!seq_points && method->is_inflated) {
 		/* generic sharing + aot */
@@ -205,7 +205,7 @@ mono_get_seq_points (MonoDomain *domain, MonoMethod *method)
 		if (!seq_points)
 			seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, shared_method);
 	}
-	mono_domain_unlock (domain);
+	mono_loader_unlock ();
 
 	return seq_points;
 }

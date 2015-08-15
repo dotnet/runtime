@@ -4342,11 +4342,10 @@ add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji)
 				declaring = mono_method_get_declaring_generic_method (jmethod);
 
 			jmethod = jinfo_get_method (ji);
-			mono_domain_lock (domain);
+			/* seq_points is protected by the loader lock */
 			seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, jmethod);
 			if (!seq_points && declaring)
 				seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, declaring);
-			mono_domain_unlock (domain);
 			if (!seq_points)
 				/* Could be AOT code */
 				continue;
@@ -4424,15 +4423,12 @@ set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, MonoError
 
 	g_hash_table_iter_init (&iter, domains);
 	while (g_hash_table_iter_next (&iter, (void**)&domain, NULL)) {
-		mono_domain_lock (domain);
-
+		/* seq_points is protected by the loader lock */
 		g_hash_table_iter_init (&iter2, domain_jit_info (domain)->seq_points);
 		while (g_hash_table_iter_next (&iter2, (void**)&m, (void**)&seq_points)) {
 			if (bp_matches_method (bp, m))
 				set_bp_in_method (domain, m, seq_points, bp, error);
 		}
-
-		mono_domain_unlock (domain);
 	}
 
 	mono_loader_unlock ();
