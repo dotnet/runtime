@@ -655,12 +655,15 @@ static MonoNativeTlsKey debugger_tls_id;
 static gboolean vm_start_event_sent, vm_death_event_sent, disconnected;
 
 /* Maps MonoInternalThread -> DebuggerTlsData */
+/* Protected by the loader lock */
 static MonoGHashTable *thread_to_tls;
 
 /* Maps tid -> MonoInternalThread */
+/* Protected by the loader lock */
 static MonoGHashTable *tid_to_thread;
 
 /* Maps tid -> MonoThread (not MonoInternalThread) */
+/* Protected by the loader lock */
 static MonoGHashTable *tid_to_thread_obj;
 
 static gsize debugger_thread_id;
@@ -704,6 +707,7 @@ static int major_version, minor_version;
 static gboolean protocol_version_set;
 
 /* A hash table containing all active domains */
+/* Protected by the loader lock */
 static GHashTable *domains;
 
 /* The number of times the runtime is suspended */
@@ -1913,7 +1917,9 @@ typedef struct {
 } ObjRef;
 
 /* Maps objid -> ObjRef */
+/* Protected by the loader lock */
 static GHashTable *objrefs;
+/* Protected by the loader lock */
 static GHashTable *obj_to_objref;
 /* Protected by the dbg lock */
 static MonoGHashTable *suspended_objs;
@@ -4143,6 +4149,7 @@ typedef struct {
 } MonoBreakpoint;
 
 /* List of breakpoints */
+/* Protected by the loader lock */
 static GPtrArray *breakpoints;
 /* Maps breakpoint locations to the number of breakpoints at that location */
 static GHashTable *bp_locs;
