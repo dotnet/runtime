@@ -4453,15 +4453,13 @@ set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, MonoError
 		seq_points = g_ptr_array_index (method_seq_points, i);
 		set_bp_in_method (domain, m, seq_points, bp, error);
 	}
+
+	g_ptr_array_add (breakpoints, bp);
 	mono_loader_unlock ();
 
 	g_ptr_array_free (methods, TRUE);
 	g_ptr_array_free (method_domains, TRUE);
 	g_ptr_array_free (method_seq_points, TRUE);
-
-	mono_loader_lock ();
-	g_ptr_array_add (breakpoints, bp);
-	mono_loader_unlock ();
 
 	if (error && !mono_error_ok (error)) {
 		clear_breakpoint (bp);
