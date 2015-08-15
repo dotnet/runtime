@@ -173,20 +173,23 @@ namespace Test
         {
             string name = Guid.NewGuid().ToString("N");
             const int NumItems = 5;
+            var b = new Barrier(2);
             Task.WaitAll(
                 Task.Factory.StartNew(() =>
                 {
-                    using (Semaphore s = new Semaphore(0, Int32.MaxValue, name))
+                    using (var s = new Semaphore(0, int.MaxValue, name))
                     {
+                        Assert.True(b.SignalAndWait(FailedWaitTimeout));
                         for (int i = 0; i < NumItems; i++)
-                            Assert.True(s.WaitOne(1000));
+                            Assert.True(s.WaitOne(FailedWaitTimeout));
                         Assert.False(s.WaitOne(0));
                     }
                 }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default),
                 Task.Factory.StartNew(() =>
                 {
-                    using (Semaphore s = new Semaphore(0, Int32.MaxValue, name))
+                    using (var s = new Semaphore(0, int.MaxValue, name))
                     {
+                        Assert.True(b.SignalAndWait(FailedWaitTimeout));
                         for (int i = 0; i < NumItems; i++)
                             s.Release();
                     }
