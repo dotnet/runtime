@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Runtime.InteropServices;
+using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -89,7 +90,7 @@ namespace System.IO.Pipes.Tests
 
             using (NamedPipeServerStream server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Message))
             {
-                using (NamedPipeClientStream client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.None, Security.Principal.TokenImpersonationLevel.Identification))
+                using (NamedPipeClientStream client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.None, TokenImpersonationLevel.Impersonation))
                 {
                     server.ReadMode = PipeTransmissionMode.Message;
                     Assert.Equal(PipeTransmissionMode.Message, server.ReadMode);
