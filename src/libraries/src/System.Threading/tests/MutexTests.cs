@@ -8,24 +8,26 @@ using System.Threading.Tasks;
 
 public class MutexTests
 {
+    private const int FailedWaitTimeout = 30000;
+
     [Fact]
     public void Ctor_ConstructWaitRelease()
     {
         using (Mutex m = new Mutex())
         {
-            Assert.True(m.WaitOne());
+            Assert.True(m.WaitOne(FailedWaitTimeout));
             m.ReleaseMutex();
         }
 
         using (Mutex m = new Mutex(false))
         {
-            Assert.True(m.WaitOne());
+            Assert.True(m.WaitOne(FailedWaitTimeout));
             m.ReleaseMutex();
         }
 
         using (Mutex m = new Mutex(true))
         {
-            Assert.True(m.WaitOne());
+            Assert.True(m.WaitOne(FailedWaitTimeout));
             m.ReleaseMutex();
             m.ReleaseMutex();
         }
@@ -86,11 +88,11 @@ public class MutexTests
         {
             using (Mutex m2 = Mutex.OpenExisting(name))
             {
-                Assert.True(m1.WaitOne());
+                Assert.True(m1.WaitOne(FailedWaitTimeout));
                 Assert.False(Task.Factory.StartNew(() => m2.WaitOne(0), CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).Result);
                 m1.ReleaseMutex();
 
-                Assert.True(m2.WaitOne());
+                Assert.True(m2.WaitOne(FailedWaitTimeout));
                 Assert.False(Task.Factory.StartNew(() => m1.WaitOne(0), CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).Result);
                 m2.ReleaseMutex();
             }
@@ -106,14 +108,23 @@ public class MutexTests
     {
         using (Mutex m = new Mutex())
         {
-            Task.Factory.StartNew(() => m.WaitOne(), CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).Wait();
-            Assert.Throws<AbandonedMutexException>(() => m.WaitOne());
+            Task t = Task.Factory.StartNew(() =>
+            {
+                Assert.True(m.WaitOne(FailedWaitTimeout));
+                // don't release the mutex; abandon it on this thread
+            }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            t.Wait();
+            Assert.Throws<AbandonedMutexException>(() => m.WaitOne(FailedWaitTimeout));
         }
 
         using (Mutex m = new Mutex())
         {
-            Task.Factory.StartNew(() => m.WaitOne(), CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).Wait();
-            AbandonedMutexException ame = Assert.Throws<AbandonedMutexException>(() => WaitHandle.WaitAny(new[] { m }));
+            Task t = Task.Factory.StartNew(() =>
+            {
+                Assert.True(m.WaitOne(FailedWaitTimeout));
+            }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            t.Wait();
+            AbandonedMutexException ame = Assert.Throws<AbandonedMutexException>(() => WaitHandle.WaitAny(new[] { m }, FailedWaitTimeout));
             Assert.Equal(0, ame.MutexIndex);
         }
     }
