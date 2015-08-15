@@ -295,6 +295,39 @@ namespace System.ComponentModel.EventBasedAsync.Tests
             bw.Dispose();
         }
 
+        [Fact]
+        public void TestFinalization()
+        {
+            // BackgroundWorker has a finalizer that exists purely for backwards compatibility
+            // with existing code that may override Dispose to clean up native resources.
+            // https://github.com/dotnet/corefx/pull/752
+
+            ManualResetEventSlim mres = SetEventWhenFinalizedBackgroundWorker.CreateAndThrowAway();
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.True(mres.Wait(10000));
+        }
+
+        private sealed class SetEventWhenFinalizedBackgroundWorker : BackgroundWorker
+        {
+            private ManualResetEventSlim _setWhenFinalized;
+
+            internal static ManualResetEventSlim CreateAndThrowAway()
+            {
+                var mres = new ManualResetEventSlim();
+                new SetEventWhenFinalizedBackgroundWorker() { _setWhenFinalized = mres };
+                return mres;
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                _setWhenFinalized.Set();
+            }
+        }
+
         private static void Wait(int milliseconds)
         {
             Task.Delay(milliseconds).Wait();
