@@ -129,10 +129,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Throws<ArgumentNullException>(() => collection.AddRange((X509CertificateCollection)null));
                 Assert.Throws<ArgumentNullException>(() => collection.AddRange((X509Certificate2[])null));
                 Assert.Throws<ArgumentNullException>(() => collection.AddRange((X509Certificate2Collection)null));
-
-                // Note: X509CertificateCollection.Contains does not throw, but X509Certificate2Collection.Contains does throw.
-                Assert.Throws<ArgumentNullException>(() => collection.Contains((X509Certificate2)null));
-
                 Assert.Throws<ArgumentNullException>(() => collection.CopyTo(null, 0));
                 Assert.Throws<ArgumentNullException>(() => collection.Insert(0, (X509Certificate)null));
                 Assert.Throws<ArgumentNullException>(() => collection.Insert(0, (X509Certificate2)null));
@@ -206,6 +202,57 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Throws<ArgumentOutOfRangeException>(() => ilist.Insert(collection.Count + 1, certificate));
                 Assert.Throws<ArgumentOutOfRangeException>(() => ilist.RemoveAt(-1));
                 Assert.Throws<ArgumentOutOfRangeException>(() => ilist.RemoveAt(collection.Count));
+            }
+        }
+
+        [Fact]
+        public static void X509CertificateCollectionContains()
+        {
+            using (X509Certificate c1 = new X509Certificate())
+            using (X509Certificate c2 = new X509Certificate())
+            using (X509Certificate c3 = new X509Certificate())
+            {
+                X509CertificateCollection collection = new X509CertificateCollection(new X509Certificate[] { c1, c2, c3 });
+
+                Assert.True(collection.Contains(c1));
+                Assert.True(collection.Contains(c2));
+                Assert.True(collection.Contains(c3));
+                Assert.False(collection.Contains(null));
+
+                IList ilist = (IList)collection;
+                Assert.True(ilist.Contains(c1));
+                Assert.True(ilist.Contains(c2));
+                Assert.True(ilist.Contains(c3));
+                Assert.False(ilist.Contains(null));
+                Assert.False(ilist.Contains("Bogus"));
+            }
+        }
+
+        [Fact]
+        public static void X509Certificate2CollectionContains()
+        {
+            using (X509Certificate2 c1 = new X509Certificate2())
+            using (X509Certificate2 c2 = new X509Certificate2())
+            using (X509Certificate2 c3 = new X509Certificate2())
+            {
+                X509Certificate2Collection collection = new X509Certificate2Collection(new X509Certificate2[] { c1, c2, c3 });
+
+                Assert.True(collection.Contains(c1));
+                Assert.True(collection.Contains(c2));
+                Assert.True(collection.Contains(c3));
+
+                // Note: X509Certificate2Collection.Contains used to throw ArgumentNullException, but it
+                // has been deliberately changed to no longer throw to match the behavior of
+                // X509CertificateCollection.Contains and the IList.Contains implementation, which do not
+                // throw.
+                Assert.False(collection.Contains(null));
+
+                IList ilist = (IList)collection;
+                Assert.True(ilist.Contains(c1));
+                Assert.True(ilist.Contains(c2));
+                Assert.True(ilist.Contains(c3));
+                Assert.False(ilist.Contains(null));
+                Assert.False(ilist.Contains("Bogus"));
             }
         }
 
