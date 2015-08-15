@@ -2116,8 +2116,6 @@ void      mono_cprop_local                  (MonoCompile *cfg, MonoBasicBlock *b
 MonoInst* mono_compile_create_var           (MonoCompile *cfg, MonoType *type, int opcode);
 MonoInst* mono_compile_create_var_for_vreg  (MonoCompile *cfg, MonoType *type, int opcode, int vreg);
 void      mono_compile_make_var_load        (MonoCompile *cfg, MonoInst *dest, gssize var_index);
-MonoInst* mono_compile_create_var_load      (MonoCompile *cfg, gssize var_index);
-MonoInst* mono_compile_create_var_store     (MonoCompile *cfg, gssize var_index, MonoInst *value);
 MonoInst* mini_get_int_to_float_spill_area  (MonoCompile *cfg);
 MonoType* mono_type_from_stack_type         (MonoInst *ins);
 guint32   mono_alloc_ireg                   (MonoCompile *cfg) MONO_LLVM_INTERNAL;

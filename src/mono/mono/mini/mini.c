@@ -532,17 +532,6 @@ mono_type_to_load_membase (MonoCompile *cfg, MonoType *type)
 	return -1;
 }
 
-static guint
-mini_type_to_ldind (MonoCompile* cfg, MonoType *type)
-{
-	type = mini_get_underlying_type (type);
-	if (cfg->gshared && !type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
-		g_assert (mini_type_var_is_vt (type));
-		return CEE_LDOBJ;
-	}
-	return mono_type_to_ldind (type);
-}
-
 #ifndef DISABLE_JIT
 
 guint
@@ -848,19 +837,6 @@ mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode)
 	return mono_compile_create_var_for_vreg (cfg, type, opcode, dreg);
 }
 
-/*
- * Transform a MonoInst into a load from the variable of index var_index.
- */
-void
-mono_compile_make_var_load (MonoCompile *cfg, MonoInst *dest, gssize var_index)
-{
-	memset (dest, 0, sizeof (MonoInst));
-	dest->inst_i0 = cfg->varinfo [var_index];
-	dest->opcode = mini_type_to_ldind (cfg, dest->inst_i0->inst_vtype);
-	type_to_eval_stack_type (cfg, dest->inst_i0->inst_vtype, dest);
-	dest->klass = dest->inst_i0->klass;
-}
-
 MonoInst*
 mini_get_int_to_float_spill_area (MonoCompile *cfg)
 {
@@ -910,7 +886,8 @@ mono_mark_vreg_as_mp (MonoCompile *cfg, int vreg)
 }	
 
 static MonoType*
-type_from_stack_type (MonoInst *ins) {
+type_from_stack_type (MonoInst *ins)
+{
 	switch (ins->type) {
 	case STACK_I4: return &mono_defaults.int32_class->byval_arg;
 	case STACK_I8: return &mono_defaults.int64_class->byval_arg;
@@ -941,7 +918,8 @@ type_from_stack_type (MonoInst *ins) {
 }
 
 MonoType*
-mono_type_from_stack_type (MonoInst *ins) {
+mono_type_from_stack_type (MonoInst *ins)
+{
 	return type_from_stack_type (ins);
 }
 
