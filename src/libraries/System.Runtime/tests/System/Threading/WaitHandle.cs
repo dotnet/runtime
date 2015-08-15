@@ -62,7 +62,7 @@ public static class WaitHandleTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/coreclr/issues/630", PlatformID.AnyUnix)]
+    [PlatformSpecific(PlatformID.Windows)] // names aren't supported on Unix
     public static void WaitAllSameNames()
     {
         Mutex[] wh = new Mutex[2];
@@ -70,19 +70,6 @@ public static class WaitHandleTests
         wh[1] = new Mutex(false, "test");
 
         Assert.Throws<ArgumentException>(() => WaitHandle.WaitAll(wh));
-    }
-
-    [Fact]
-    public static void DisposeTest()
-    {
-        var name = "MyCrazyMutexName" + Guid.NewGuid();
-        var handle = new Mutex(true, name);
-
-        handle.Dispose();
-
-        Assert.False(Mutex.TryOpenExisting(name, out handle));
-        // TODO: Better exceptions on .NET Native
-        //Assert.Throws<ObjectDisposedException>(() => handle.WaitOne(0));
     }
 
     [Fact]
