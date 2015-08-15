@@ -364,7 +364,7 @@ namespace System.Diagnostics.ProcessTests
             Assert.InRange(processorTimeAtHalfSpin, processorTimeBeforeSpin, Process.GetCurrentProcess().TotalProcessorTime.TotalSeconds);
         }
 
-        [Fact, ActiveIssue("https://github.com/dotnet/corefx/issues/2613", PlatformID.Linux)]
+        [Fact]
         public void TestProcessStartTime()
         {
             DateTime timeBeforeCreatingProcess = DateTime.UtcNow;
@@ -378,18 +378,19 @@ namespace System.Diagnostics.ProcessTests
                 // Time in unix, is measured in jiffies, which is incremented by one for every timer interrupt since the boot time.
                 // Thus, because there are HZ timer interrupts in a second, there are HZ jiffies in a second. Hence 1\HZ, will
                 // be the resolution of system timer. The lowest value of HZ on unix is 100, hence the timer resolution is 10 ms.
-                // Allowing for error in 10 ms.
-                long tenMSTicks = new TimeSpan(0, 0, 0, 0, 10).Ticks;
-                long beforeTicks = timeBeforeCreatingProcess.Ticks - tenMSTicks;
+                // On Windows, timer resolution is 15 ms from MSDN DateTime.Now. Hence, allowing error in 15ms [max(10,15)].
+
+                long intervalTicks = new TimeSpan(0, 0, 0, 0, 15).Ticks;
+                long beforeTicks = timeBeforeCreatingProcess.Ticks - intervalTicks;
 
                 try
                 {
                     // Ensure the process has started, p.id throws InvalidOperationException, if the process has not yet started.
                     Assert.Equal(p.Id, Process.GetProcessById(p.Id).Id);
-
-                long afterTicks = DateTime.UtcNow.Ticks + tenMSTicks;
-                Assert.InRange(p.StartTime.ToUniversalTime().Ticks, beforeTicks, afterTicks);
-            }
+                    long startTicks = p.StartTime.ToUniversalTime().Ticks;
+                    long afterTicks = DateTime.UtcNow.Ticks + intervalTicks;
+                    Assert.InRange(startTicks, beforeTicks, afterTicks);
+                }
                 catch (InvalidOperationException)
                 {
                     Assert.True(p.StartTime.ToUniversalTime().Ticks > beforeTicks);
