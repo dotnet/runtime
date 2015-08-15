@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 
 public class AutoResetEventTests
 {
+    private const int FailedWaitTimeout = 30000;
+
     [Fact]
     public void Ctor()
     {
@@ -40,7 +42,7 @@ public class AutoResetEventTests
         for (int i = 0; i < handles.Length; i++)
             handles[i] = new AutoResetEvent(false);
 
-        Task<bool> t = Task.Run(() => WaitHandle.WaitAll(handles));
+        Task<bool> t = Task.Run(() => WaitHandle.WaitAll(handles, FailedWaitTimeout));
         for (int i = 0; i < handles.Length; i++)
         {
             Assert.False(t.IsCompleted);
@@ -58,7 +60,7 @@ public class AutoResetEventTests
         for (int i = 0; i < handles.Length; i++)
             handles[i] = new AutoResetEvent(false);
 
-        Task<int> t = Task.Run(() => WaitHandle.WaitAny(handles));
+        Task<int> t = Task.Run(() => WaitHandle.WaitAny(handles, FailedWaitTimeout));
         handles[5].Set();
         Assert.Equal(5, t.Result);
 
@@ -76,7 +78,7 @@ public class AutoResetEventTests
                 {
                     for (int i = 0; i < Iters; i++)
                     {
-                        Assert.True(are1.WaitOne());
+                        Assert.True(are1.WaitOne(FailedWaitTimeout));
                         are2.Set();
                     }
                 }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default),
@@ -84,7 +86,7 @@ public class AutoResetEventTests
                 {
                     for (int i = 0; i < Iters; i++)
                     {
-                        Assert.True(are2.WaitOne());
+                        Assert.True(are2.WaitOne(FailedWaitTimeout));
                         are1.Set();
                     }
                 }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default));
