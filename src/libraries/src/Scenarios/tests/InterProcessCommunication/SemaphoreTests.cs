@@ -10,7 +10,7 @@ namespace InterProcessCommunication.Tests
 {
     public class SemaphoreTests : RemoteExecutorTestBase
     {
-        [ActiveIssue("https://github.com/dotnet/coreclr/issues/1237", PlatformID.AnyUnix)]
+        [PlatformSpecific(PlatformID.Windows)] // names aren't supported on Unix
         [Fact]
         public void PingPong()
         {
