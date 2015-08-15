@@ -4,7 +4,7 @@
   <PropertyGroup>
     <AssemblyName>System.Xml.XmlSerializer</AssemblyName>
     <RootNamespace>System.Xml.XmlSerializer</RootNamespace>
-    <AssemblyVersion>4.0.10.0</AssemblyVersion>
+    <AssemblyVersion>4.0.11.0</AssemblyVersion>
     <OutputType>Library</OutputType>
     <NoWarn>649;414</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

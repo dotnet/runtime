@@ -6,7 +6,6 @@
     "System.Globalization": "4.0.10",
     "System.IO": "4.0.10",
     "System.IO.Compression": "4.0.0",
-    "System.IO.Compression.clrcompression-x64": "1.0.0-prerelease",
     "System.IO.Compression.TestData": "1.0.0-prerelease",
     "System.IO.FileSystem": "4.0.0",
     "System.IO.FileSystem.Primitives": "4.0.0",
@@ -25,5 +24,8 @@
   },
   "frameworks": {
     "dnxcore50": {}
+  },
+  "runtimes": {
+    "win7-x64": {}
   }
 }

@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "System.Runtime": "4.0.0",
+    "System.Dynamic.Runtime": "4.0.0",
+    "System.Linq.Expressions": "4.0.0"
+  },
+  "frameworks": {
+    "dotnet": {}
+  }
+}

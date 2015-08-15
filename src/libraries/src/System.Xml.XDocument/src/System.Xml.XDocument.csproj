@@ -7,7 +7,7 @@
     <ProjectGuid>{442C5A88-29C2-4B00-B1DF-730D646D3861}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.XDocument</AssemblyName>
-    <AssemblyVersion>4.0.10.0</AssemblyVersion>
+    <AssemblyVersion>4.0.11.0</AssemblyVersion>
     <RootNamespace>System.Xml</RootNamespace>
     <DefineConstants>$(DefineConstants);SILVERLIGHT</DefineConstants>
   </PropertyGroup>

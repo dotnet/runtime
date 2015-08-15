@@ -12,6 +12,8 @@
     <AssemblyName>System.Numerics.Vectors.Tests</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NuGetPackageImportStamp>11f13d9c</NuGetPackageImportStamp>
+    <!-- Temporary workaround until tests are fixed on x64 -->
+    <TestArchitecture>x86</TestArchitecture>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

@@ -1,0 +1,12 @@
+{
+  "locked": true,
+  "version": -9996,
+  "targets": {
+    ".NETPlatform,Version=v5.0": {}
+  },
+  "libraries": {},
+  "projectFileDependencyGroups": {
+    "": [],
+    ".NETPlatform,Version=v5.0": []
+  }
+}

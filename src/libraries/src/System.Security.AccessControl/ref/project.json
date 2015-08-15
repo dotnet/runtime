@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "System.Runtime": "4.0.0",
+    "System.Runtime.Handles": "4.0.0",
+    "System.Runtime.InteropServices": "4.0.20",
+    "System.Security.Principal.Windows": "4.0.0-beta-*"
+  },
+  "frameworks": {
+    "dotnet": {}
+  }
+}

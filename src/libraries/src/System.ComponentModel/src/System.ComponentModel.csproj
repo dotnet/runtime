@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>System.ComponentModel</RootNamespace>
     <AssemblyName>System.ComponentModel</AssemblyName>
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
