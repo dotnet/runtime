@@ -30,14 +30,11 @@ namespace System.Security.Cryptography.X509Certificates
         {
             get
             {
-                return (X509Certificate2)(List[index]);
+                return (X509Certificate2)(base[index]);
             }
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException("value");
-
-                List[index] = value;
+                base[index] = value;
             }
         }
 
@@ -46,7 +43,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (certificate == null)
                 throw new ArgumentNullException("certificate");
 
-            return List.Add(certificate);
+            return base.Add(certificate);
         }
 
         public void AddRange(X509Certificate2[] certificates)
@@ -100,7 +97,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (certificate == null)
                 throw new ArgumentNullException("certificate");
 
-            return List.Contains(certificate);
+            return base.Contains(certificate);
         }
 
         public byte[] Export(X509ContentType contentType)
@@ -171,7 +168,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (certificate == null)
                 throw new ArgumentNullException("certificate");
 
-            List.Insert(index, certificate);
+            base.Insert(index, certificate);
         }
 
         public void Remove(X509Certificate2 certificate)
@@ -179,7 +176,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (certificate == null)
                 throw new ArgumentNullException("certificate");
 
-            List.Remove(certificate);
+            base.Remove(certificate);
         }
 
         public void RemoveRange(X509Certificate2[] certificates)

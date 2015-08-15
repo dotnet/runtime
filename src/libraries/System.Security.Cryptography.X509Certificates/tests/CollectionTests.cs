@@ -111,6 +111,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Throws<ArgumentNullException>(() => ilist.Insert(0, null));
                 Assert.Throws<ArgumentNullException>(() => ilist.Remove(null));
             }
+
+            Assert.Throws<ArgumentNullException>(() => new X509CertificateCollection.X509CertificateEnumerator(null));
         }
 
         [Fact]
@@ -273,11 +275,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 IList il = cc;
                 Assert.Throws<ArgumentNullException>(() => il[0] = null);
 
-                il[0] = "Bogus";
-                Assert.Equal("Bogus", il[0]);
-
-                object ignored;
-                Assert.Throws<InvalidCastException>(() => ignored = cc[0]);
+                string bogus = "Bogus";
+                Assert.Throws<ArgumentException>(() => il[0] = bogus);
+                Assert.Throws<ArgumentException>(() => il.Add(bogus));
+                Assert.Throws<ArgumentException>(() => il.Insert(0, bogus));
             }
         }
 

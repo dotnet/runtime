@@ -8,11 +8,11 @@ namespace System.Security.Cryptography.X509Certificates
 {
     public partial class X509CertificateCollection : ICollection, IEnumerable, IList
     {
-        private readonly List<object> _list;
+        private readonly List<X509Certificate> _list;
 
         public X509CertificateCollection()
         {
-            _list = new List<object>();
+            _list = new List<X509Certificate>();
         }
 
         public X509CertificateCollection(X509Certificate[] value)
@@ -39,7 +39,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         object ICollection.SyncRoot
         {
-            get { return ((ICollection)_list).SyncRoot; }
+            get { return NonGenericList.SyncRoot; }
         }
 
         bool IList.IsFixedSize
@@ -56,6 +56,21 @@ namespace System.Security.Cryptography.X509Certificates
         {
             get
             {
+                return NonGenericList[index];
+            }
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException("value");
+
+                NonGenericList[index] = value;
+            }
+        }
+
+        public X509Certificate this[int index]
+        {
+            get
+            {
                 return _list[index];
             }
             set
@@ -67,22 +82,14 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public X509Certificate this[int index]
-        {
-            get
-            {
-                // Note: If a non-X509Certificate was inserted at this position, the result InvalidCastException is the defined behavior.
-                return (X509Certificate)(List[index]);
-            }
-            set
-            {
-                List[index] = value;
-            }
-        }
-
         public int Add(X509Certificate value)
         {
-            return List.Add(value);
+            if (value == null)
+                throw new ArgumentNullException("value");
+
+            int index = _list.Count;
+            _list.Add(value);
+            return index;
         }
 
         public void AddRange(X509Certificate[] value)
@@ -119,7 +126,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void CopyTo(X509Certificate[] array, int index)
         {
-            List.CopyTo(array, index);
+            _list.CopyTo(array, index);
         }
 
         public X509CertificateEnumerator GetEnumerator()
@@ -144,17 +151,23 @@ namespace System.Security.Cryptography.X509Certificates
 
         public int IndexOf(X509Certificate value)
         {
-            return List.IndexOf(value);
+            return _list.IndexOf(value);
         }
 
         public void Insert(int index, X509Certificate value)
         {
-            List.Insert(index, value);
+            if (value == null)
+                throw new ArgumentNullException("value");
+
+            _list.Insert(index, value);
         }
 
         public void Remove(X509Certificate value)
         {
-            List.Remove(value);
+            if (value == null)
+                throw new ArgumentNullException("value");
+
+            _list.Remove(value);
         }
 
         public void RemoveAt(int index)
@@ -164,7 +177,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         void ICollection.CopyTo(Array array, int index)
         {
-            ((ICollection)_list).CopyTo(array, index);
+            NonGenericList.CopyTo(array, index);
         }
 
         int IList.Add(object value)
@@ -172,19 +185,17 @@ namespace System.Security.Cryptography.X509Certificates
             if (value == null)
                 throw new ArgumentNullException("value");
 
-            int index = _list.Count;
-            _list.Add(value);
-            return index;
+            return NonGenericList.Add(value);
         }
 
         bool IList.Contains(object value)
         {
-            return _list.Contains(value);
+            return NonGenericList.Contains(value);
         }
 
         int IList.IndexOf(object value)
         {
-            return _list.IndexOf(value);
+            return NonGenericList.IndexOf(value);
         }
 
         void IList.Insert(int index, object value)
@@ -192,7 +203,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (value == null)
                 throw new ArgumentNullException("value");
 
-            _list.Insert(index, value);
+            NonGenericList.Insert(index, value);
         }
 
         void IList.Remove(object value)
@@ -200,15 +211,15 @@ namespace System.Security.Cryptography.X509Certificates
             if (value == null)
                 throw new ArgumentNullException("value");
 
-            _list.Remove(value);
+            NonGenericList.Remove(value);
         }
 
-        internal IList List
+        private IList NonGenericList
         {
-            get { return this; }
+            get { return _list; }
         }
 
-        internal void GetEnumerator(out List<object>.Enumerator enumerator)
+        internal void GetEnumerator(out List<X509Certificate>.Enumerator enumerator)
         {
             enumerator = _list.GetEnumerator();
         }
