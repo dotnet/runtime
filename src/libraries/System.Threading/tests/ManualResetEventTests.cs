@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 
 public class ManualResetEventTests
 {
+    private const int FailedWaitTimeout = 30000;
+
     [Fact]
     public void Ctor()
     {
@@ -41,7 +43,7 @@ public class ManualResetEventTests
         for (int i = 0; i < handles.Length; i++)
             handles[i] = new ManualResetEvent(false);
 
-        Task<bool> t = Task.Run(() => WaitHandle.WaitAll(handles));
+        Task<bool> t = Task.Run(() => WaitHandle.WaitAll(handles, FailedWaitTimeout));
         for (int i = 0; i < handles.Length; i++)
         {
             Assert.False(t.IsCompleted);
@@ -59,7 +61,7 @@ public class ManualResetEventTests
         for (int i = 0; i < handles.Length; i++)
             handles[i] = new ManualResetEvent(false);
 
-        Task<int> t = Task.Run(() => WaitHandle.WaitAny(handles));
+        Task<int> t = Task.Run(() => WaitHandle.WaitAny(handles, FailedWaitTimeout));
         handles[5].Set();
         Assert.Equal(5, t.Result);
 
@@ -77,7 +79,7 @@ public class ManualResetEventTests
                 {
                     for (int i = 0; i < Iters; i++)
                     {
-                        Assert.True(mre1.WaitOne());
+                        Assert.True(mre1.WaitOne(FailedWaitTimeout));
                         mre1.Reset();
                         mre2.Set();
                     }
@@ -86,7 +88,7 @@ public class ManualResetEventTests
                 {
                     for (int i = 0; i < Iters; i++)
                     {
-                        Assert.True(mre2.WaitOne());
+                        Assert.True(mre2.WaitOne(FailedWaitTimeout));
                         mre2.Reset();
                         mre1.Set();
                     }
