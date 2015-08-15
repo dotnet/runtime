@@ -19,8 +19,11 @@ using CURLMoption = Interop.libcurl.CURLMoption;
 using CURLcode = Interop.libcurl.CURLcode;
 using CURLMcode = Interop.libcurl.CURLMcode;
 using CURLINFO = Interop.libcurl.CURLINFO;
+using CurlVersionInfoData = Interop.libcurl.curl_version_info_data;
+using CurlFeatures = Interop.libcurl.CURL_VERSION_Features;
 using CURLProxyType = Interop.libcurl.curl_proxytype;
 using size_t = System.IntPtr;
+
 
 namespace System.Net.Http
 {  
@@ -34,13 +37,19 @@ namespace System.Net.Http
         private const string EncodingNameDeflate = "deflate";
         private readonly static string[] AuthenticationSchemes = { "Negotiate", "Digest", "Basic" }; // the order in which libcurl goes over authentication schemes
         private static readonly string[] s_headerDelimiters = new string[] { "\r\n" };
+
         private const int s_requestBufferSize = 16384; // Default used by libcurl
         private const string NoTransferEncoding = HttpKnownHeaderNames.TransferEncoding + ":";
+        private readonly static CurlVersionInfoData curlVersionInfoData;
+        private const int CurlAge = 5;
+        private const int MinCurlAge = 3;
 
         #endregion
 
         #region Fields
-  
+
+        private static readonly bool _supportsAutomaticDecompression;
+        private static readonly bool _supportsSSL;
         private volatile bool _anyOperationStarted;
         private volatile bool _disposed;
         private IWebProxy _proxy = null;
@@ -63,6 +72,13 @@ namespace System.Net.Http
             {
                 throw new InvalidOperationException("Cannot use libcurl in this process");
             }
+            curlVersionInfoData = Marshal.PtrToStructure<CurlVersionInfoData>(Interop.libcurl.curl_version_info(CurlAge));
+            if (curlVersionInfoData.age < MinCurlAge)
+            {
+                throw new InvalidOperationException(SR.net_http_unix_https_libcurl_too_old);
+            }
+            _supportsSSL = (CurlFeatures.CURL_VERSION_SSL & curlVersionInfoData.features) != 0;
+            _supportsAutomaticDecompression = (CurlFeatures.CURL_VERSION_LIBZ & curlVersionInfoData.features) != 0;
         }
 
         internal CurlHandler()
@@ -168,7 +184,7 @@ namespace System.Net.Http
         {
             get
             {
-                return true;
+                return _supportsAutomaticDecompression;
             }
         }
 
@@ -265,6 +281,11 @@ namespace System.Net.Http
             if ((request.RequestUri.Scheme != UriSchemeHttp) && (request.RequestUri.Scheme != UriSchemeHttps))
             {
                 throw NotImplemented.ByDesignWithMessage(SR.net_http_client_http_baseaddress_required);
+            }
+
+            if (request.RequestUri.Scheme == UriSchemeHttps && !_supportsSSL)
+            {
+                throw new PlatformNotSupportedException(SR.net_http_unix_https_support_unavailable_libcurl);
             }
 
             if (request.Headers.TransferEncodingChunked.GetValueOrDefault() && (request.Content == null))
@@ -427,7 +448,10 @@ namespace System.Net.Http
 
             SetCurlCallbacks(requestHandle, state.RequestMessage, statePtr);
 
-            SetRequestHandleDecompressionOptions(requestHandle);
+            if (_supportsAutomaticDecompression)
+            {
+                SetRequestHandleDecompressionOptions(requestHandle);
+            }
 
             SetProxyOptions(requestHandle, state.RequestMessage.RequestUri);
 

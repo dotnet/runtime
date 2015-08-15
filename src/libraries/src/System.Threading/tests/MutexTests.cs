@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 public class MutexTests
 {
     [Fact]
-    public void Ctor()
+    public void Ctor_ConstructWaitRelease()
     {
         using (Mutex m = new Mutex())
         {
@@ -29,37 +29,62 @@ public class MutexTests
             m.ReleaseMutex();
             m.ReleaseMutex();
         }
+    }
 
+    [ActiveIssue("https://github.com/dotnet/coreclr/issues/1237")]
+    [PlatformSpecific(PlatformID.AnyUnix)]
+    [Fact]
+    public void Ctor_NamesNotSupported_Unix()
+    {
+        Assert.Throws<PlatformNotSupportedException>(() => new Mutex(false, "anyname"));
+    }
+
+    [PlatformSpecific(PlatformID.Windows)]
+    [Fact]
+    public void Ctor_InvalidName()
+    {
         Assert.Throws<ArgumentException>(() => new Mutex(false, new string('a', 1000)));
+    }
 
-        const string Name = "MutexTestsCtor";
+    [PlatformSpecific(PlatformID.Windows)]
+    [Fact]
+    public void Ctor_ValidName_Windows()
+    {
+        string name = Guid.NewGuid().ToString("N");
         bool createdNew;
-        using (Mutex m1 = new Mutex(false, Name, out createdNew))
+        using (Mutex m1 = new Mutex(false, name, out createdNew))
         {
             Assert.True(createdNew);
-            using (Mutex m2 = new Mutex(false, Name, out createdNew))
+            using (Mutex m2 = new Mutex(false, name, out createdNew))
             {
                 Assert.False(createdNew);
             }
         }
+    }
 
-        using (Semaphore s = new Semaphore(1, 1, Name))
+    [PlatformSpecific(PlatformID.Windows)]
+    [Fact]
+    public void Ctor_NameUsedByOtherSynchronizationPrimitive_Windows()
+    {
+        string name = Guid.NewGuid().ToString("N");
+        using (Semaphore s = new Semaphore(1, 1, name))
         {
-            Assert.Throws<WaitHandleCannotBeOpenedException>(() => new Mutex(false, Name));
+            Assert.Throws<WaitHandleCannotBeOpenedException>(() => new Mutex(false, name));
         }
     }
 
+    [PlatformSpecific(PlatformID.Windows)]
     [Fact]
-    public void OpenExisting()
+    public void OpenExisting_Windows()
     {
-        const string Name = "MutexTestsOpenExisting";
+        string name = Guid.NewGuid().ToString("N");
 
         Mutex resultHandle;
-        Assert.False(Mutex.TryOpenExisting(Name, out resultHandle));
+        Assert.False(Mutex.TryOpenExisting(name, out resultHandle));
 
-        using (Mutex m1 = new Mutex(false, Name))
+        using (Mutex m1 = new Mutex(false, name))
         {
-            using (Mutex m2 = Mutex.OpenExisting(Name))
+            using (Mutex m2 = Mutex.OpenExisting(name))
             {
                 Assert.True(m1.WaitOne());
                 Assert.False(Task.Factory.StartNew(() => m2.WaitOne(0), CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).Result);
@@ -70,7 +95,7 @@ public class MutexTests
                 m2.ReleaseMutex();
             }
 
-            Assert.True(Mutex.TryOpenExisting(Name, out resultHandle));
+            Assert.True(Mutex.TryOpenExisting(name, out resultHandle));
             Assert.NotNull(resultHandle);
             resultHandle.Dispose();
         }

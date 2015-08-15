@@ -132,10 +132,7 @@ namespace System.Security.Cryptography.X509Certificates
             X509Certificate2Collection collection = new X509Certificate2Collection();
             using (IStorePal storePal = StorePal.LinkFromCertificateCollection(this))
             {
-                foreach (X509Certificate2 certificate in storePal.Find(findType, findValue, validOnly))
-                {
-                    collection.Add(certificate);
-                }
+                storePal.FindAndCopyTo(findType, findValue, validOnly, collection);
             }
             return collection;
         }
@@ -158,12 +155,8 @@ namespace System.Security.Cryptography.X509Certificates
 
             using (IStorePal storePal = StorePal.FromBlob(rawData, password, keyStorageFlags))
             {
-                foreach (X509Certificate2 cert in storePal.Certificates)
-                {
-                    Add(cert);
-                }
+                storePal.CopyTo(this);
             }
-            return;
         }
 
         public void Import(String fileName)
@@ -178,12 +171,8 @@ namespace System.Security.Cryptography.X509Certificates
 
             using (IStorePal storePal = StorePal.FromFile(fileName, password, keyStorageFlags))
             {
-                foreach (X509Certificate2 cert in storePal.Certificates)
-                {
-                    Add(cert);
-                }
+                storePal.CopyTo(this);
             }
-            return;
         }
 
         public void Insert(int index, X509Certificate2 certificate)

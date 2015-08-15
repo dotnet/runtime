@@ -18,6 +18,10 @@ namespace System
     // e.g. for reading/writing /dev/stdin, /dev/stdout, and /dev/stderr,
     // for getting environment variables for accessing charset information for encodings, 
     // and terminfo databases / strings for manipulating the terminal.
+    // NOTE: The test class reflects over this class to run the tests due to limitations in
+    //       the test infrastructure that prevent OS-specific builds of test binaries. If you
+    //       change any of the class / struct / function names, parameters, etc then you need
+    //       to also change the test class.
     internal static class ConsolePal
     {
         public static Stream OpenStandardInput()
@@ -251,26 +255,27 @@ namespace System
             /// <summary>The cached instance.</summary>
             public static TerminalColorInfo Instance { get { return _instance.Value; } }
 
+            private TerminalColorInfo(TermInfo.Database db)
+            {
+                ForegroundFormat = db != null ? db.GetString(TermInfo.Database.SetAnsiForegroundIndex) : string.Empty;
+                BackgroundFormat = db != null ? db.GetString(TermInfo.Database.SetAnsiBackgroundIndex) : string.Empty;
+                ResetFormat = db != null ?
+                    db.GetString(TermInfo.Database.OrigPairsIndex) ??
+                    db.GetString(TermInfo.Database.OrigColorsIndex)
+                    : string.Empty;
+
+                int maxColors = db != null ? db.GetNumber(TermInfo.Database.MaxColorsIndex) : 0;
+                MaxColors = // normalize to either the full range of all ANSI colors, just the dark ones, or none
+                    maxColors >= 16 ? 16 :
+                    maxColors >= 8 ? 8 :
+                    0;
+            }
+
             /// <summary>Lazy initialization of the terminal color information.</summary>
             private static Lazy<TerminalColorInfo> _instance = new Lazy<TerminalColorInfo>(() =>
             {
-                TermInfo.Database db = TermInfo.Database.Instance;
-                TerminalColorInfo tci = new TerminalColorInfo();
-                if (db != null)
-                {
-                    tci.ForegroundFormat = db.GetString(TermInfo.Database.SetAnsiForegroundIndex);
-                    tci.BackgroundFormat = db.GetString(TermInfo.Database.SetAnsiBackgroundIndex);
-                    tci.ResetFormat =
-                        db.GetString(TermInfo.Database.OrigPairsIndex) ??
-                        db.GetString(TermInfo.Database.OrigColorsIndex);
-
-                    int maxColors = db.GetNumber(TermInfo.Database.MaxColorsIndex);
-                    tci.MaxColors = // normalize to either the full range of all ANSI colors, just the dark ones, or none
-                        maxColors >= 16 ? 16 :
-                        maxColors >= 8 ? 8 :
-                        0;
-                }
-                return tci;
+                TermInfo.Database db = TermInfo.Database.Instance; // Could be null if TERM is set to a file that doesn't exist
+                return new TerminalColorInfo(db);
             }, isThreadSafe: true);
         }
 
@@ -902,10 +907,16 @@ namespace System
                                     ~value);
                                 break;
 
-                            // Augment first two parameters by 1
+                                // Some terminfo files appear to have a fairly liberal interpretation of %i. The spec states that %i increments the first two arguments, 
+                                // but some uses occur when there's only a single argument. To make sure we accomodate these files, we increment the values 
+                                // of up to (but not requiring) two arguments.
                             case 'i':
-                                args[0] = 1 + args[0].Int32;
-                                args[1] = 1 + args[1].Int32;
+                                if (args.Length > 0)
+                                {
+                                    args[0] = 1 + args[0].Int32;
+                                    if (args.Length > 1)
+                                        args[1] = 1 + args[1].Int32;
+                                }
                                 break;
 
                             // Conditional of the form %? if-part %t then-part %e else-part %;
