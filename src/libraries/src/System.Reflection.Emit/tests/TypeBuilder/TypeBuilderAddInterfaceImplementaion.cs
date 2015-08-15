@@ -19,7 +19,7 @@ namespace System.Reflection.Emit.Tests
         private const string DynamicInterfaceName = "TestDynamicInterface";
         private const string DynamicMethodName = "TestDynamicMethodA";
 
-        public TypeBuilder RetriveTestTypeBuilder(TypeAttributes typeAtt)
+        public TypeBuilder RetrieveTestTypeBuilder(TypeAttributes typeAtt)
         {
             AssemblyName asmName = new AssemblyName();
             asmName.Name = DynamicAssemblyName;
@@ -32,7 +32,7 @@ namespace System.Reflection.Emit.Tests
             return typeBuilder;
         }
 
-        public TypeBuilder RetriveTestInterfaceBuilder()
+        public TypeBuilder RetrieveTestInterfaceBuilder()
         {
             AssemblyName asmName = new AssemblyName();
             asmName.Name = DynamicAssemblyName;
@@ -57,7 +57,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder testTypeBuilder;
             TypeBuilder testInterfaceBuilder;
 
-            testInterfaceBuilder = RetriveTestInterfaceBuilder();
+            testInterfaceBuilder = RetrieveTestInterfaceBuilder();
             testInterfaceBuilder.DefineMethod(DynamicMethodName,
                                                             MethodAttributes.Abstract |
                                                             MethodAttributes.Virtual |
@@ -66,7 +66,7 @@ namespace System.Reflection.Emit.Tests
                                                             new Type[] { typeof(int), typeof(int) });
             Type testInterface = testInterfaceBuilder.CreateTypeInfo().AsType();
 
-            testTypeBuilder = RetriveTestTypeBuilder(TypeAttributes.Abstract |
+            testTypeBuilder = RetrieveTestTypeBuilder(TypeAttributes.Abstract |
                                                                              TypeAttributes.Class |
                                                                              TypeAttributes.Public);
             testTypeBuilder.AddInterfaceImplementation(testInterface);
@@ -85,7 +85,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder testTypeBuilder;
             TypeBuilder testInterfaceBuilder;
 
-            testInterfaceBuilder = RetriveTestInterfaceBuilder();
+            testInterfaceBuilder = RetrieveTestInterfaceBuilder();
             testInterfaceBuilder.DefineMethod(DynamicMethodName,
                                                             MethodAttributes.Abstract |
                                                             MethodAttributes.Virtual |
@@ -96,7 +96,7 @@ namespace System.Reflection.Emit.Tests
 
             Type testInterface = testInterfaceBuilder.CreateTypeInfo().AsType();
 
-            testTypeBuilder = RetriveTestTypeBuilder(TypeAttributes.Class | TypeAttributes.Public);
+            testTypeBuilder = RetrieveTestTypeBuilder(TypeAttributes.Class | TypeAttributes.Public);
 
             testTypeBuilder.AddInterfaceImplementation(testInterface);
             MethodBuilder methodBuilder = testTypeBuilder.DefineMethod(testInterface.Name,
@@ -132,7 +132,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder testTypeBuilder;
             TypeBuilder testInterfaceBuilder;
 
-            testInterfaceBuilder = RetriveTestInterfaceBuilder();
+            testInterfaceBuilder = RetrieveTestInterfaceBuilder();
             testInterfaceBuilder.DefineMethod(DynamicMethodName,
                                                             MethodAttributes.Abstract |
                                                             MethodAttributes.Virtual |
@@ -141,7 +141,7 @@ namespace System.Reflection.Emit.Tests
                                                             new Type[] { typeof(int), typeof(int) });
             Type testInterface = testInterfaceBuilder.CreateTypeInfo().AsType();
 
-            testTypeBuilder = RetriveTestTypeBuilder(TypeAttributes.Abstract |
+            testTypeBuilder = RetrieveTestTypeBuilder(TypeAttributes.Abstract |
                                                                              TypeAttributes.Interface |
                                                                              TypeAttributes.Public);
             testTypeBuilder.AddInterfaceImplementation(testInterface);
@@ -157,7 +157,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder testTypeBuilder;
 
-            testTypeBuilder = RetriveTestTypeBuilder(TypeAttributes.Public);
+            testTypeBuilder = RetrieveTestTypeBuilder(TypeAttributes.Public);
             Assert.Throws<ArgumentNullException>(() => { testTypeBuilder.AddInterfaceImplementation(null); });
         }
 
@@ -167,10 +167,10 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder testTypeBuilder;
             TypeBuilder testInterfaceBuilder;
 
-            testTypeBuilder = RetriveTestTypeBuilder(TypeAttributes.Public);
+            testTypeBuilder = RetrieveTestTypeBuilder(TypeAttributes.Public);
             testTypeBuilder.CreateTypeInfo().AsType();
 
-            testInterfaceBuilder = RetriveTestInterfaceBuilder();
+            testInterfaceBuilder = RetrieveTestInterfaceBuilder();
             testInterfaceBuilder.DefineMethod(DynamicMethodName,
                                                             MethodAttributes.Abstract |
                                                             MethodAttributes.Virtual |

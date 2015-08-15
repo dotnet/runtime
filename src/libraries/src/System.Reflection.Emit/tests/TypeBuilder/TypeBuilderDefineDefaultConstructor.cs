@@ -19,7 +19,7 @@ namespace System.Reflection.Emit.Tests
         private const string DynamicBaseFieldName = "m_baseTestDynamicFieldA";
         private const string DynamicMethodName = "TestDynamicMethodA";
 
-        public TypeBuilder RetriveTestTypeBuilder(string typeName, TypeAttributes typeAtt)
+        public TypeBuilder RetrieveTestTypeBuilder(string typeName, TypeAttributes typeAtt)
         {
             AssemblyName asmName = new AssemblyName();
             asmName.Name = DynamicAssemblyName;
@@ -32,7 +32,7 @@ namespace System.Reflection.Emit.Tests
             return typeBuilder;
         }
 
-        public TypeBuilder RetriveTestTypeBuilder(TypeAttributes typeAtt)
+        public TypeBuilder RetrieveTestTypeBuilder(TypeAttributes typeAtt)
         {
             AssemblyName asmName = new AssemblyName();
             asmName.Name = DynamicAssemblyName;
@@ -135,7 +135,7 @@ namespace System.Reflection.Emit.Tests
             ConstructorBuilder ctorBuilder;
             ConstructorInfo actualCtor;
 
-            testTypeBuilder = RetriveTestTypeBuilder(typeAttr);
+            testTypeBuilder = RetrieveTestTypeBuilder(typeAttr);
 
             ctorBuilder = testTypeBuilder.DefineDefaultConstructor(ctorAttr);
 
@@ -151,7 +151,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder testTypeBuilder;
 
-            testTypeBuilder = RetriveTestTypeBuilder(TypeAttributes.Public);
+            testTypeBuilder = RetrieveTestTypeBuilder(TypeAttributes.Public);
             testTypeBuilder.CreateTypeInfo().AsType();
             Assert.Throws<InvalidOperationException>(() => { testTypeBuilder.DefineDefaultConstructor(MethodAttributes.Public); });
         }
@@ -161,7 +161,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder testTypeBuilder;
 
-            testTypeBuilder = RetriveTestTypeBuilder("negtest2", TypeAttributes.Public |
+            testTypeBuilder = RetrieveTestTypeBuilder("negtest2", TypeAttributes.Public |
                                                                              TypeAttributes.Interface |
                                                                              TypeAttributes.Abstract);
 
@@ -175,7 +175,7 @@ namespace System.Reflection.Emit.Tests
             ConstructorBuilder baseCtorBuilder;
             FieldBuilder baseFieldBuilderA;
 
-            baseTestTypeBuilder = RetriveTestTypeBuilder(DynamicBaseTypeName,
+            baseTestTypeBuilder = RetrieveTestTypeBuilder(DynamicBaseTypeName,
                                                                              TypeAttributes.Public | TypeAttributes.Class);
 
             baseFieldBuilderA = baseTestTypeBuilder.DefineField(DynamicBaseFieldName,
@@ -199,7 +199,7 @@ namespace System.Reflection.Emit.Tests
 
             Type baseTestType = baseTestTypeBuilder.CreateTypeInfo().AsType();
 
-            testTypeBuilder = RetriveTestTypeBuilder(TypeAttributes.Public | TypeAttributes.Class);
+            testTypeBuilder = RetrieveTestTypeBuilder(TypeAttributes.Public | TypeAttributes.Class);
             testTypeBuilder.SetParent(baseTestType);
             Assert.Throws<NotSupportedException>(() => { testTypeBuilder.DefineDefaultConstructor(MethodAttributes.Public); });
         }
@@ -210,7 +210,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder baseTestTypeBuilder, testTypeBuilder;
             ConstructorBuilder baseCtorBuilder;
 
-            baseTestTypeBuilder = RetriveTestTypeBuilder(DynamicBaseTypeName,
+            baseTestTypeBuilder = RetrieveTestTypeBuilder(DynamicBaseTypeName,
                                                                              TypeAttributes.Public | TypeAttributes.Class);
 
             baseCtorBuilder = baseTestTypeBuilder.DefineConstructor(MethodAttributes.Private,
@@ -223,7 +223,7 @@ namespace System.Reflection.Emit.Tests
 
             Type baseTestType = baseTestTypeBuilder.CreateTypeInfo().AsType();
 
-            testTypeBuilder = RetriveTestTypeBuilder(TypeAttributes.Public | TypeAttributes.Class);
+            testTypeBuilder = RetrieveTestTypeBuilder(TypeAttributes.Public | TypeAttributes.Class);
             testTypeBuilder.SetParent(baseTestType);
             Assert.Throws<NotSupportedException>(() => { testTypeBuilder.DefineDefaultConstructor(MethodAttributes.Public); });
         }
@@ -234,7 +234,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder baseTestTypeBuilder, testTypeBuilder;
             ConstructorBuilder baseCtorBuilder;
 
-            baseTestTypeBuilder = RetriveTestTypeBuilder(DynamicBaseTypeName,
+            baseTestTypeBuilder = RetrieveTestTypeBuilder(DynamicBaseTypeName,
                                                                              TypeAttributes.Public | TypeAttributes.Class);
 
             baseCtorBuilder = baseTestTypeBuilder.DefineConstructor(MethodAttributes.PrivateScope,
@@ -247,7 +247,7 @@ namespace System.Reflection.Emit.Tests
 
             Type baseTestType = baseTestTypeBuilder.CreateTypeInfo().AsType();
 
-            testTypeBuilder = RetriveTestTypeBuilder(TypeAttributes.Public | TypeAttributes.Class);
+            testTypeBuilder = RetrieveTestTypeBuilder(TypeAttributes.Public | TypeAttributes.Class);
             testTypeBuilder.SetParent(baseTestType);
             Assert.Throws<NotSupportedException>(() => { testTypeBuilder.DefineDefaultConstructor(MethodAttributes.Public); });
         }
