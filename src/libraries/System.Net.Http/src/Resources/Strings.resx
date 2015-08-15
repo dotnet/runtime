@@ -288,4 +288,10 @@
   <data name="net_http_unix_invalid_client_cert_option" xml:space="preserve">
     <value>libcurl supports only manual client certificate selection</value>
   </data>
+  <data name="net_http_unix_https_libcurl_too_old" xml:space="preserve">
+    <value>libcurl library available is too old</value>
+  </data>
+  <data name="net_http_unix_https_support_unavailable_libcurl" xml:space="preserve">
+    <value>libcurl library available on the system does not support https</value>
+  </data>
 </root>

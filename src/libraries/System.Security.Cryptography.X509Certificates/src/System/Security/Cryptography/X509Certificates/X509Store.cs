@@ -88,10 +88,7 @@ namespace System.Security.Cryptography.X509Certificates
                 X509Certificate2Collection certificates = new X509Certificate2Collection();
                 if (_storePal != null)
                 {
-                    foreach (X509Certificate2 certificate in _storePal.Certificates)
-                    {
-                        certificates.Add(certificate);
-                    }
+                    _storePal.CopyTo(certificates);
                 }
                 return certificates;
             }

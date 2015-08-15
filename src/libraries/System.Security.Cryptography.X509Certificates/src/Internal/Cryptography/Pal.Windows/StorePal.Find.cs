@@ -23,10 +23,12 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed partial class StorePal : IDisposable, IStorePal
     {
-        public IEnumerable<X509Certificate2> Find(X509FindType findType, Object findValue, bool validOnly)
+        public void FindAndCopyTo(X509FindType findType, object findValue, bool validOnly, X509Certificate2Collection collection)
         {
+            Debug.Assert(collection != null);
+
             StorePal findResults = CreatedLinkedStoreWithFindResults(findType, findValue, validOnly);
-            return findResults.Certificates;
+            findResults.CopyTo(collection);
         }
 
         private StorePal CreatedLinkedStoreWithFindResults(X509FindType findType, Object findValue, bool validOnly)

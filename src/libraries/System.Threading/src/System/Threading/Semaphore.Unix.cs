@@ -8,26 +8,30 @@ namespace System.Threading
 {
     public sealed partial class Semaphore : WaitHandle
     {
+        private static void ValidateNewName(string name)
+        {
+            if (name != null)
+                throw new PlatformNotSupportedException(SR.WaitHandle_NamesNotSupported);
+        }
+
+        private static void ValidateExistingName(string name)
+        {
+            throw new PlatformNotSupportedException(SR.WaitHandle_NamesNotSupported);
+        }
+
         private static SafeWaitHandle CreateSemaphone(int initialCount, int maximumCount, string name)
         {
             Debug.Assert(initialCount >= 0);
             Debug.Assert(maximumCount >= 1);
             Debug.Assert(initialCount <= maximumCount);
-            Debug.Assert(name == null || name.Length <= MAX_PATH);
 
             return Interop.libcoreclr.CreateSemaphore(null, initialCount, maximumCount, name);
         }
 
         private static SafeWaitHandle OpenSemaphore(string name)
         {
-            Debug.Assert(name != null);
-            Debug.Assert(name.Length <= MAX_PATH);
-
-            const int SYNCHRONIZE = 0x00100000;
-            const int SEMAPHORE_MODIFY_STATE = 0x00000002;
-
-            //Pass false to OpenSemaphore to prevent inheritedHandles
-            return Interop.libcoreclr.OpenSemaphore(SEMAPHORE_MODIFY_STATE | SYNCHRONIZE, false, name);
+            Debug.Fail("This function should never be called.");
+            throw new PlatformNotSupportedException(SR.WaitHandle_NamesNotSupported);
         }
 
         private static bool ReleaseSemaphore(SafeWaitHandle handle, int releaseCount, out int previousCount)
@@ -45,4 +49,3 @@ namespace System.Threading
         // -----------------------------
     }
 }
-

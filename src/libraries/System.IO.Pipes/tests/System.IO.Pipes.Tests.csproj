@@ -10,6 +10,7 @@
     <AssemblyName>System.IO.Pipes.Tests</AssemblyName>
     <ProjectGuid>{142469EC-D665-4FE2-845A-FDA69F9CC557}</ProjectGuid>
     <NuGetPackageImportStamp>d2615b94</NuGetPackageImportStamp>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Temporary workaround until tests are fixed on x64 -->
     <TestArchitecture>x86</TestArchitecture>
   </PropertyGroup>

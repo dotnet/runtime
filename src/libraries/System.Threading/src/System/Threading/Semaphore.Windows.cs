@@ -8,6 +8,24 @@ namespace System.Threading
 {
     public sealed partial class Semaphore : WaitHandle
     {
+        const int MAX_PATH = 260;
+
+        private static void ValidateNewName(string name)
+        {
+            if (name != null && name.Length > MAX_PATH)
+                throw new ArgumentException(SR.Argument_WaitHandleNameTooLong);
+        }
+
+        private static void ValidateExistingName(string name)
+        {
+            if (name == null)
+                throw new ArgumentNullException("name");
+            if (name.Length == 0)
+                throw new ArgumentException(SR.Format(SR.InvalidNullEmptyArgument, "name"));
+            if (name.Length > MAX_PATH)
+                throw new ArgumentException(SR.Argument_WaitHandleNameTooLong);
+        }
+
         private static SafeWaitHandle CreateSemaphone(int initialCount, int maximumCount, string name)
         {
             Debug.Assert(initialCount >= 0);

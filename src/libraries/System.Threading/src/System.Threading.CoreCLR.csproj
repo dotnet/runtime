@@ -61,9 +61,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.CreateSemaphore.cs">
       <Link>Common\Interop\Interop.CreateSemaphore.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.OpenSemaphore.cs">
-      <Link>Common\Interop\Interop.OpenSemaphore.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.ReleaseSemaphore.cs">
       <Link>Common\Interop\Interop.ReleaseSemaphore.cs</Link>
     </Compile>
