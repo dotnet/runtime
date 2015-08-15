@@ -978,6 +978,7 @@ namespace System {
             return cachedData.m_readOnlySystemTimeZones;
         }
 
+        [SecuritySafeCritical]
         private static void PopulateAllSystemTimeZones(CachedData cachedData)
         {
 #if FEATURE_WIN32_REGISTRY
