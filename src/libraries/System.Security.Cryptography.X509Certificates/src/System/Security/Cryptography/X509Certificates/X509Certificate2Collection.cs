@@ -94,8 +94,9 @@ namespace System.Security.Cryptography.X509Certificates
 
         public bool Contains(X509Certificate2 certificate)
         {
-            if (certificate == null)
-                throw new ArgumentNullException("certificate");
+            // This method used to throw ArgumentNullException, but it has been deliberately changed
+            // to no longer throw to match the behavior of X509CertificateCollection.Contains and the
+            // IList.Contains implementation, which do not throw.
 
             return base.Contains(certificate);
         }
