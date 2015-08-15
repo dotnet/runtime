@@ -434,22 +434,16 @@ namespace System.Threading.Tasks.Tests
                 cts.Cancel();
                 b.SignalAndWait(); // release task to complete
 
-                // A TCS task
-                var tcs = new TaskCompletionSource<int>();
-                tcs.SetCanceled();
-                Task t2 = tcs.Task;
-
-                EventHandler<UnobservedTaskExceptionEventArgs> handler = (s, e) =>
-                {
-                    Assert.True(false, string.Format("     > OCE shouldn't have resulted in unobserved event firing with " + e.Exception.ToString()));
-                };
+                // This test may be run concurrently with other tests in the suite, 
+                // which can be problematic as TaskScheduler.UnobservedTaskException
+                // is global state.  The handler is carefully written to be non-problematic
+                // if it happens to be set during the execution of another test that has 
+                // an unobserved exception.
+                EventHandler<UnobservedTaskExceptionEventArgs> handler = 
+                    (s, e) => Assert.DoesNotContain(oce, e.Exception.InnerExceptions);
                 TaskScheduler.UnobservedTaskException += handler;
-
                 ((IAsyncResult)t1).AsyncWaitHandle.WaitOne();
-                ((IAsyncResult)t2).AsyncWaitHandle.WaitOne();
                 t1 = null;
-                t2 = null;
-
                 for (int i = 0; i < 10; i++)
                 {
                     GC.Collect();
