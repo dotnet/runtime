@@ -96,7 +96,7 @@ namespace System.Diagnostics
                     // arbitrary other processes.
                 };
             }
-            catch (FileNotFoundException)
+            catch (IOException)
             {
                 // Between the time that we get an ID and the time that we try to read the associated stat
                 // file(s), the process could be gone.
@@ -128,8 +128,7 @@ namespace System.Diagnostics
                     }
                 }
             }
-            catch (FileNotFoundException) { } // process and/or threads may go away by the time we try to read from them
-            catch (DirectoryNotFoundException) { }
+            catch (IOException) { } // process and/or threads may go away by the time we try to read from them
 
             // Finally return what we've built up
             return pi;
