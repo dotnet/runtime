@@ -11,10 +11,13 @@ namespace System.Security.Cryptography.X509Certificates
         public class X509CertificateEnumerator : IEnumerator
         {
             // This is a mutable struct enumerator, so don't mark it as readonly.
-            private List<object>.Enumerator _enumerator;
+            private List<X509Certificate>.Enumerator _enumerator;
 
             public X509CertificateEnumerator(X509CertificateCollection mappings)
             {
+                if (mappings == null)
+                    throw new ArgumentNullException("mappings");
+
                 mappings.GetEnumerator(out _enumerator);
             }
 

@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.X509Certificates
     public sealed class X509Certificate2Enumerator : IEnumerator
     {
         // This is a mutable struct enumerator, so don't mark it as readonly.
-        private List<object>.Enumerator _enumerator;
+        private List<X509Certificate>.Enumerator _enumerator;
 
         internal X509Certificate2Enumerator(X509Certificate2Collection collection)
         {
