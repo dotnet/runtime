@@ -3492,8 +3492,6 @@ mini_cleanup (MonoDomain *domain)
 
 	mono_mutex_destroy (&jit_mutex);
 
-	mono_mutex_destroy (&mono_delegate_section);
-
 	mono_code_manager_cleanup ();
 
 #ifdef USE_JUMP_TABLES

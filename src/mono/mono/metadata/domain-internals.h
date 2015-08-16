@@ -16,9 +16,6 @@
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/mempool-internals.h>
 
-
-extern mono_mutex_t mono_delegate_section;
-
 /*
  * If this is set, the memory belonging to appdomains is not freed when a domain is
  * unloaded, and assemblies loaded by the appdomain are not unloaded either. This
