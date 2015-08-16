@@ -43,6 +43,7 @@
 #include <mono/metadata/mono-ptr-array.h>
 #include <mono/utils/mono-string.h>
 #include <mono/utils/mono-error-internals.h>
+#include <mono/utils/checked-build.h>
 
 static gboolean is_usertype (MonoReflectionType *ref);
 static MonoReflectionType *mono_reflection_type_resolve_user_types (MonoReflectionType *type);
@@ -223,7 +224,9 @@ mono_reflection_init (void)
 static inline void
 dynamic_image_lock (MonoDynamicImage *image)
 {
+	MONO_TRY_BLOCKING;
 	mono_image_lock ((MonoImage*)image);
+	MONO_FINISH_TRY_BLOCKING;
 }
 
 static inline void
@@ -235,6 +238,8 @@ dynamic_image_unlock (MonoDynamicImage *image)
 static void
 register_dyn_token (MonoDynamicImage *assembly, guint32 token, MonoObject *obj)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	dynamic_image_lock (assembly);
 	mono_g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token), obj);
 	dynamic_image_unlock (assembly);
@@ -243,6 +248,8 @@ register_dyn_token (MonoDynamicImage *assembly, guint32 token, MonoObject *obj)
 static MonoObject*
 lookup_dyn_token (MonoDynamicImage *assembly, guint32 token)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoObject *obj;
 
 	dynamic_image_lock (assembly);
@@ -255,6 +262,8 @@ lookup_dyn_token (MonoDynamicImage *assembly, guint32 token)
 static void
 sigbuffer_init (SigBuffer *buf, int size)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	buf->buf = g_malloc (size);
 	buf->p = buf->buf;
 	buf->end = buf->buf + size;
@@ -263,6 +272,8 @@ sigbuffer_init (SigBuffer *buf, int size)
 static void
 sigbuffer_make_room (SigBuffer *buf, int size)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	if (buf->end - buf->p < size) {
 		int new_size = buf->end - buf->buf + size + 32;
 		char *p = g_realloc (buf->buf, new_size);
@@ -276,6 +287,8 @@ sigbuffer_make_room (SigBuffer *buf, int size)
 static void
 sigbuffer_add_value (SigBuffer *buf, guint32 val)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	sigbuffer_make_room (buf, 6);
 	mono_metadata_encode_value (val, buf->p, &buf->p);
 }
@@ -283,6 +296,8 @@ sigbuffer_add_value (SigBuffer *buf, guint32 val)
 static void
 sigbuffer_add_byte (SigBuffer *buf, guint8 val)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	sigbuffer_make_room (buf, 1);
 	buf->p [0] = val;
 	buf->p++;
@@ -291,6 +306,8 @@ sigbuffer_add_byte (SigBuffer *buf, guint8 val)
 static void
 sigbuffer_add_mem (SigBuffer *buf, char *p, guint32 size)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	sigbuffer_make_room (buf, size);
 	memcpy (buf->p, p, size);
 	buf->p += size;
@@ -299,6 +316,8 @@ sigbuffer_add_mem (SigBuffer *buf, char *p, guint32 size)
 static void
 sigbuffer_free (SigBuffer *buf)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	g_free (buf->buf);
 }
 
@@ -312,6 +331,8 @@ sigbuffer_free (SigBuffer *buf)
 static gpointer
 image_g_malloc (MonoImage *image, guint size)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	if (image)
 		return mono_image_alloc (image, size);
 	else
@@ -328,6 +349,8 @@ image_g_malloc (MonoImage *image, guint size)
 static gpointer
 image_g_malloc0 (MonoImage *image, guint size)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	if (image)
 		return mono_image_alloc0 (image, size);
 	else
@@ -338,6 +361,8 @@ image_g_malloc0 (MonoImage *image, guint size)
 static char*
 image_strdup (MonoImage *image, const char *s)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	if (image)
 		return mono_image_strdup (image, s);
 	else
@@ -355,6 +380,8 @@ image_strdup (MonoImage *image, const char *s)
 static void
 alloc_table (MonoDynamicTable *table, guint nrows)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	table->rows = nrows;
 	g_assert (table->columns);
 	if (nrows + 1 >= table->alloc_rows) {
@@ -372,6 +399,8 @@ alloc_table (MonoDynamicTable *table, guint nrows)
 static void
 make_room_in_stream (MonoDynamicStream *stream, int size)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	if (size <= stream->alloc_size)
 		return;
 	
@@ -388,6 +417,8 @@ make_room_in_stream (MonoDynamicStream *stream, int size)
 static guint32
 string_heap_insert (MonoDynamicStream *sh, const char *str)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	guint32 idx;
 	guint32 len;
 	gpointer oldkey, oldval;
@@ -414,6 +445,8 @@ string_heap_insert (MonoDynamicStream *sh, const char *str)
 static guint32
 string_heap_insert_mstring (MonoDynamicStream *sh, MonoString *str)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	char *name = mono_string_to_utf8 (str);
 	guint32 idx;
 	idx = string_heap_insert (sh, name);
@@ -425,6 +458,8 @@ string_heap_insert_mstring (MonoDynamicStream *sh, MonoString *str)
 static void
 string_heap_init (MonoDynamicStream *sh)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	sh->index = 0;
 	sh->alloc_size = 4096;
 	sh->data = g_malloc (4096);
@@ -436,6 +471,8 @@ string_heap_init (MonoDynamicStream *sh)
 static guint32
 mono_image_add_stream_data (MonoDynamicStream *stream, const char *data, guint32 len)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	guint32 idx;
 	
 	make_room_in_stream (stream, stream->index + len);
@@ -452,6 +489,8 @@ mono_image_add_stream_data (MonoDynamicStream *stream, const char *data, guint32
 static guint32
 mono_image_add_stream_zero (MonoDynamicStream *stream, guint32 len)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	guint32 idx;
 	
 	make_room_in_stream (stream, stream->index + len);
@@ -464,6 +503,8 @@ mono_image_add_stream_zero (MonoDynamicStream *stream, guint32 len)
 static void
 stream_data_align (MonoDynamicStream *stream)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	char buf [4] = {0};
 	guint32 count = stream->index % 4;
 
@@ -476,6 +517,8 @@ stream_data_align (MonoDynamicStream *stream)
 static int
 mono_blob_entry_hash (const char* str)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	guint len, h;
 	const char *end;
 	len = mono_metadata_decode_blob_size (str, &str);
@@ -492,6 +535,8 @@ mono_blob_entry_hash (const char* str)
 
 static gboolean
 mono_blob_entry_equal (const char *str1, const char *str2) {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	int len, len2;
 	const char *end1;
 	const char *end2;
@@ -505,6 +550,8 @@ mono_blob_entry_equal (const char *str1, const char *str2) {
 static guint32
 add_to_blob_cached (MonoDynamicImage *assembly, char *b1, int s1, char *b2, int s2)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	guint32 idx;
 	char *copy;
 	gpointer oldkey, oldval;
@@ -526,6 +573,8 @@ add_to_blob_cached (MonoDynamicImage *assembly, char *b1, int s1, char *b2, int 
 static guint32
 sigbuffer_add_to_blob_cached (MonoDynamicImage *assembly, SigBuffer *buf)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	char blob_size [8];
 	char *b = blob_size;
 	guint32 size = buf->p - buf->buf;
@@ -541,6 +590,7 @@ sigbuffer_add_to_blob_cached (MonoDynamicImage *assembly, SigBuffer *buf)
  */
 static void
 swap_with_size (char *dest, const char* val, int len, int nelem) {
+	MONO_REQ_GC_NEUTRAL_MODE;
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
 	int elem;
 
@@ -583,6 +633,8 @@ swap_with_size (char *dest, const char* val, int len, int nelem) {
 static guint32
 add_mono_string_to_blob_cached (MonoDynamicImage *assembly, MonoString *str)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+	
 	char blob_size [64];
 	char *b = blob_size;
 	guint32 idx = 0, len;
@@ -608,6 +660,8 @@ add_mono_string_to_blob_cached (MonoDynamicImage *assembly, MonoString *str)
 static MonoClass *
 default_class_from_mono_type (MonoType *type)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	switch (type->type) {
 	case MONO_TYPE_OBJECT:
 		return mono_defaults.object_class;
@@ -660,6 +714,8 @@ default_class_from_mono_type (MonoType *type)
 gpointer
 mono_class_get_ref_info (MonoClass *klass)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	if (klass->ref_info_handle == 0)
 		return NULL;
 	else
@@ -669,6 +725,8 @@ mono_class_get_ref_info (MonoClass *klass)
 void
 mono_class_set_ref_info (MonoClass *klass, gpointer obj)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	klass->ref_info_handle = mono_gchandle_new ((MonoObject*)obj, FALSE);
 	g_assert (klass->ref_info_handle != 0);
 }
@@ -676,6 +734,8 @@ mono_class_set_ref_info (MonoClass *klass, gpointer obj)
 void
 mono_class_free_ref_info (MonoClass *klass)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	if (klass->ref_info_handle) {
 		mono_gchandle_free (klass->ref_info_handle);
 		klass->ref_info_handle = 0;
@@ -685,6 +745,8 @@ mono_class_free_ref_info (MonoClass *klass)
 static void
 encode_generic_class (MonoDynamicImage *assembly, MonoGenericClass *gclass, SigBuffer *buf)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	int i;
 	MonoGenericInst *class_inst;
 	MonoClass *klass;
@@ -707,6 +769,8 @@ encode_generic_class (MonoDynamicImage *assembly, MonoGenericClass *gclass, SigB
 static void
 encode_type (MonoDynamicImage *assembly, MonoType *type, SigBuffer *buf)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	if (!type) {
 		g_assert_not_reached ();
 		return;
@@ -788,6 +852,8 @@ encode_type (MonoDynamicImage *assembly, MonoType *type, SigBuffer *buf)
 static void
 encode_reflection_type (MonoDynamicImage *assembly, MonoReflectionType *type, SigBuffer *buf)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	if (!type) {
 		sigbuffer_add_value (buf, MONO_TYPE_VOID);
 		return;
@@ -799,6 +865,8 @@ encode_reflection_type (MonoDynamicImage *assembly, MonoReflectionType *type, Si
 static void
 encode_custom_modifiers (MonoDynamicImage *assembly, MonoArray *modreq, MonoArray *modopt, SigBuffer *buf)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	int i;
 
 	if (modreq) {
@@ -821,6 +889,8 @@ encode_custom_modifiers (MonoDynamicImage *assembly, MonoArray *modreq, MonoArra
 static guint32
 method_encode_signature (MonoDynamicImage *assembly, MonoMethodSignature *sig)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	SigBuffer buf;
 	int i;
 	guint32 nparams =  sig->param_count;
@@ -857,6 +927,8 @@ method_encode_signature (MonoDynamicImage *assembly, MonoMethodSignature *sig)
 static guint32
 method_builder_encode_signature (MonoDynamicImage *assembly, ReflectionMethodBuilder *mb)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	/*
 	 * FIXME: reuse code from method_encode_signature().
 	 */
@@ -912,6 +984,8 @@ method_builder_encode_signature (MonoDynamicImage *assembly, ReflectionMethodBui
 static guint32
 encode_locals (MonoDynamicImage *assembly, MonoReflectionILGen *ilgen)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoDynamicTable *table;
 	guint32 *values;
 	guint32 idx, sig_idx;
@@ -955,6 +1029,8 @@ encode_locals (MonoDynamicImage *assembly, MonoReflectionILGen *ilgen)
 static guint32
 method_count_clauses (MonoReflectionILGen *ilgen)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	guint32 num_clauses = 0;
 	int i;
 
@@ -974,6 +1050,8 @@ method_count_clauses (MonoReflectionILGen *ilgen)
 static MonoExceptionClause*
 method_encode_clauses (MonoImage *image, MonoDynamicImage *assembly, MonoReflectionILGen *ilgen, guint32 num_clauses)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoExceptionClause *clauses;
 	MonoExceptionClause *clause;
 	MonoILExceptionInfo *ex_info;
@@ -1023,6 +1101,8 @@ method_encode_clauses (MonoImage *image, MonoDynamicImage *assembly, MonoReflect
 static guint32
 method_encode_code (MonoDynamicImage *assembly, ReflectionMethodBuilder *mb)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	char flags = 0;
 	guint32 idx;
 	guint32 code_size;
@@ -1178,6 +1258,8 @@ fat_header:
 static guint32
 find_index_in_table (MonoDynamicImage *assembly, int table_idx, int col, guint32 token)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	int i;
 	MonoDynamicTable *table;
 	guint32 *values;
@@ -1201,6 +1283,8 @@ find_index_in_table (MonoDynamicImage *assembly, int table_idx, int col, guint32
 static MonoCustomAttrInfo*
 lookup_custom_attr (MonoImage *image, gpointer member)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	MonoCustomAttrInfo* res;
 
 	res = mono_image_property_lookup (image, member, MONO_PROP_DYNAMIC_CATTR);
@@ -1216,6 +1300,8 @@ lookup_custom_attr (MonoImage *image, gpointer member)
 static gboolean
 custom_attr_visible (MonoImage *image, MonoReflectionCustomAttr *cattr)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	/* FIXME: Need to do more checks */
 	if (cattr->ctor->method && (cattr->ctor->method->klass->image != image)) {
 		int visibility = cattr->ctor->method->klass->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK;
@@ -1230,6 +1316,8 @@ custom_attr_visible (MonoImage *image, MonoReflectionCustomAttr *cattr)
 static MonoCustomAttrInfo*
 mono_custom_attrs_from_builders (MonoImage *alloc_img, MonoImage *image, MonoArray *cattrs)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	int i, index, count, not_visible;
 	MonoCustomAttrInfo *ainfo;
 	MonoReflectionCustomAttr *cattr;
@@ -1278,6 +1366,8 @@ mono_custom_attrs_from_builders (MonoImage *alloc_img, MonoImage *image, MonoArr
 static void
 mono_save_custom_attrs (MonoImage *image, void *obj, MonoArray *cattrs)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoCustomAttrInfo *ainfo, *tmp;
 
 	if (!cattrs || !mono_array_length (cattrs))
@@ -1298,6 +1388,8 @@ mono_save_custom_attrs (MonoImage *image, void *obj, MonoArray *cattrs)
 void
 mono_custom_attrs_free (MonoCustomAttrInfo *ainfo)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	if (!ainfo->cached)
 		g_free (ainfo);
 }
@@ -1309,6 +1401,8 @@ mono_custom_attrs_free (MonoCustomAttrInfo *ainfo)
 static void
 mono_image_add_cattrs (MonoDynamicImage *assembly, guint32 idx, guint32 type, MonoArray *cattrs)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoDynamicTable *table;
 	MonoReflectionCustomAttr *cattr;
 	guint32 *values;
@@ -1361,6 +1455,8 @@ mono_image_add_cattrs (MonoDynamicImage *assembly, guint32 idx, guint32 type, Mo
 static void
 mono_image_add_decl_security (MonoDynamicImage *assembly, guint32 parent_token, MonoArray *permissions)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoDynamicTable *table;
 	guint32 *values;
 	guint32 count, i, idx;
@@ -1410,6 +1506,8 @@ mono_image_add_decl_security (MonoDynamicImage *assembly, guint32 parent_token, 
 static void
 mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicImage *assembly)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoDynamicTable *table;
 	guint32 *values;
 	guint i, count;
@@ -1485,6 +1583,8 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicImage *assembly
 static void
 reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb, MonoReflectionMethodBuilder *mb)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	memset (rmb, 0, sizeof (ReflectionMethodBuilder));
 
 	rmb->ilgen = mb->ilgen;
@@ -1524,6 +1624,8 @@ reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb, Mono
 static void
 reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, MonoReflectionCtorBuilder *mb)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	const char *name = mb->attrs & METHOD_ATTRIBUTE_STATIC ? ".cctor": ".ctor";
 
 	memset (rmb, 0, sizeof (ReflectionMethodBuilder));
@@ -1557,6 +1659,8 @@ reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, MonoRe
 static void
 reflection_methodbuilder_from_dynamic_method (ReflectionMethodBuilder *rmb, MonoReflectionDynamicMethod *mb)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	memset (rmb, 0, sizeof (ReflectionMethodBuilder));
 
 	rmb->ilgen = mb->ilgen;
@@ -1589,6 +1693,8 @@ reflection_methodbuilder_from_dynamic_method (ReflectionMethodBuilder *rmb, Mono
 static void
 mono_image_add_methodimpl (MonoDynamicImage *assembly, MonoReflectionMethodBuilder *mb)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)mb->type;
 	MonoDynamicTable *table;
 	guint32 *values;
@@ -1628,6 +1734,8 @@ mono_image_add_methodimpl (MonoDynamicImage *assembly, MonoReflectionMethodBuild
 static void
 mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicImage *assembly)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoDynamicTable *table;
 	guint32 *values;
 	ReflectionMethodBuilder rmb;
@@ -1681,6 +1789,8 @@ mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicImage *a
 static void
 mono_image_get_ctor_info (MonoDomain *domain, MonoReflectionCtorBuilder *mb, MonoDynamicImage *assembly)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	ReflectionMethodBuilder rmb;
 
 	reflection_methodbuilder_from_ctor_builder (&rmb, mb);
@@ -1693,11 +1803,16 @@ mono_image_get_ctor_info (MonoDomain *domain, MonoReflectionCtorBuilder *mb, Mon
 static char*
 type_get_fully_qualified_name (MonoType *type)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	return mono_type_get_name_full (type, MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED);
 }
 
 static char*
-type_get_qualified_name (MonoType *type, MonoAssembly *ass) {
+type_get_qualified_name (MonoType *type, MonoAssembly *ass)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoClass *klass;
 	MonoAssembly *ta;
 
@@ -1721,6 +1836,8 @@ type_get_qualified_name (MonoType *type, MonoAssembly *ass) {
 static guint32
 fieldref_encode_signature (MonoDynamicImage *assembly, MonoImage *field_image, MonoType *type)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	SigBuffer buf;
 	guint32 idx, i, token;
 
@@ -1761,6 +1878,8 @@ fieldref_encode_signature (MonoDynamicImage *assembly, MonoImage *field_image, M
 static guint32
 field_encode_signature (MonoDynamicImage *assembly, MonoReflectionFieldBuilder *fb)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	SigBuffer buf;
 	guint32 idx;
 	guint32 typespec = 0;
@@ -1794,7 +1913,10 @@ field_encode_signature (MonoDynamicImage *assembly, MonoReflectionFieldBuilder *
 }
 
 static guint32
-encode_constant (MonoDynamicImage *assembly, MonoObject *val, guint32 *ret_type) {
+encode_constant (MonoDynamicImage *assembly, MonoObject *val, guint32 *ret_type)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	char blob_size [64];
 	char *b = blob_size;
 	char *box_val;
@@ -1891,7 +2013,10 @@ handle_enum:
 }
 
 static guint32
-encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMarshal *minfo) {
+encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMarshal *minfo)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	char *str;
 	SigBuffer buf;
 	guint32 idx, len;
@@ -1968,6 +2093,8 @@ encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMarshal *minfo) {
 static void
 mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicImage *assembly)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoDynamicTable *table;
 	guint32 *values;
 
@@ -2032,6 +2159,8 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicImage *ass
 static guint32
 property_encode_signature (MonoDynamicImage *assembly, MonoReflectionPropertyBuilder *fb)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	SigBuffer buf;
 	guint32 nparams = 0;
 	MonoReflectionMethodBuilder *mb = fb->get_method;
@@ -2073,6 +2202,8 @@ property_encode_signature (MonoDynamicImage *assembly, MonoReflectionPropertyBui
 static void
 mono_image_get_property_info (MonoReflectionPropertyBuilder *pb, MonoDynamicImage *assembly)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoDynamicTable *table;
 	guint32 *values;
 	guint num_methods = 0;
@@ -2131,6 +2262,8 @@ mono_image_get_property_info (MonoReflectionPropertyBuilder *pb, MonoDynamicImag
 static void
 mono_image_get_event_info (MonoReflectionEventBuilder *eb, MonoDynamicImage *assembly)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoDynamicTable *table;
 	guint32 *values;
 	guint num_methods = 0;
@@ -2187,6 +2320,8 @@ mono_image_get_event_info (MonoReflectionEventBuilder *eb, MonoDynamicImage *ass
 static void
 encode_constraints (MonoReflectionGenericParam *gparam, guint32 owner, MonoDynamicImage *assembly)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoDynamicTable *table;
 	guint32 num_constraints, i;
 	guint32 *values;
@@ -2225,6 +2360,8 @@ encode_constraints (MonoReflectionGenericParam *gparam, guint32 owner, MonoDynam
 static void
 mono_image_get_generic_param_info (MonoReflectionGenericParam *gparam, guint32 owner, MonoDynamicImage *assembly)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	GenericParamTableEntry *entry;
 
 	/*
@@ -2246,6 +2383,8 @@ mono_image_get_generic_param_info (MonoReflectionGenericParam *gparam, guint32 o
 static void
 write_generic_param_entry (MonoDynamicImage *assembly, GenericParamTableEntry *entry)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoDynamicTable *table;
 	MonoGenericParam *param;
 	guint32 *values;
@@ -2270,6 +2409,8 @@ write_generic_param_entry (MonoDynamicImage *assembly, GenericParamTableEntry *e
 static guint32
 resolution_scope_from_image (MonoDynamicImage *assembly, MonoImage *image)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoDynamicTable *table;
 	guint32 token;
 	guint32 *values;
@@ -2340,6 +2481,8 @@ resolution_scope_from_image (MonoDynamicImage *assembly, MonoImage *image)
 static guint32
 create_typespec (MonoDynamicImage *assembly, MonoType *type)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	MonoDynamicTable *table;
 	guint32 *values;
 	guint32 token;
@@ -2392,6 +2535,8 @@ create_typespec (MonoDynamicImage *assembly, MonoType *type)
 static guint32
 mono_image_typedef_or_ref_full (MonoDynamicImage *assembly, MonoType *type, gboolean try_typespec)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoDynamicTable *table;
 	guint32 *values;
 	guint32 token, scope, enclosing;
@@ -2454,6 +2599,8 @@ mono_image_typedef_or_ref (MonoDynamicImage *assembly, MonoType *type)
 static guint32
 mono_image_add_memberef_row (MonoDynamicImage *assembly, guint32 parent, const char *name, guint32 sig)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	MonoDynamicTable *table;
 	guint32 *values;
 	guint32 token, pclass;
@@ -2500,6 +2647,8 @@ mono_image_add_memberef_row (MonoDynamicImage *assembly, guint32 parent, const c
 static guint32
 mono_image_get_memberref_token (MonoDynamicImage *assembly, MonoType *type, const char *name, guint32 sig)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	guint32 parent = mono_image_typedef_or_ref (assembly, type);
 	return mono_image_add_memberef_row (assembly, parent, name, sig);
 }
@@ -2508,6 +2657,8 @@ mono_image_get_memberref_token (MonoDynamicImage *assembly, MonoType *type, cons
 static guint32
 mono_image_get_methodref_token (MonoDynamicImage *assembly, MonoMethod *method, gboolean create_typespec)
 {
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	guint32 token;
 	MonoMethodSignature *sig;
 	
