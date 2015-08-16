@@ -307,7 +307,7 @@ typedef struct
 	/* maps MonoMethod -> MonoJitDynamicMethodInfo */
 	GHashTable *dynamic_code_hash;
 	GHashTable *method_code_hash;
-	/* Maps methods to a RuntimeInvokeInfo structure */
+	/* Maps methods to a RuntimeInvokeInfo structure, protected by the associated MonoDomain lock */
 	MonoConcurrentHashTable *runtime_invoke_hash;
 	/* Maps MonoMethod to a GPtrArray containing sequence point locations */
 	/* Protected by the domain lock */

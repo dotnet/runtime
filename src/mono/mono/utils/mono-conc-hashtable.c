@@ -30,7 +30,6 @@ struct _MonoConcurrentHashTable {
 	volatile conc_table *table; /* goes to HP0 */
 	GHashFunc hash_func;
 	GEqualFunc equal_func;
-	mono_mutex_t *mutex;
 	int element_count;
 	int overflow_count;
 	GDestroyNotify key_destroy_func;
@@ -111,10 +110,9 @@ expand_table (MonoConcurrentHashTable *hash_table)
 
 
 MonoConcurrentHashTable*
-mono_conc_hashtable_new (mono_mutex_t *mutex, GHashFunc hash_func, GEqualFunc key_equal_func)
+mono_conc_hashtable_new (GHashFunc hash_func, GEqualFunc key_equal_func)
 {
 	MonoConcurrentHashTable *res = g_new0 (MonoConcurrentHashTable, 1);
-	res->mutex = mutex;
 	res->hash_func = hash_func ? hash_func : g_direct_hash;
 	res->equal_func = key_equal_func ? key_equal_func : g_direct_equal;
 	// res->equal_func = g_direct_equal;
@@ -125,9 +123,9 @@ mono_conc_hashtable_new (mono_mutex_t *mutex, GHashFunc hash_func, GEqualFunc ke
 }
 
 MonoConcurrentHashTable*
-mono_conc_hashtable_new_full (mono_mutex_t *mutex, GHashFunc hash_func, GEqualFunc key_equal_func, GDestroyNotify key_destroy_func, GDestroyNotify value_destroy_func)
+mono_conc_hashtable_new_full (GHashFunc hash_func, GEqualFunc key_equal_func, GDestroyNotify key_destroy_func, GDestroyNotify value_destroy_func)
 {
-	MonoConcurrentHashTable *res = mono_conc_hashtable_new (mutex, hash_func, key_equal_func);
+	MonoConcurrentHashTable *res = mono_conc_hashtable_new (hash_func, key_equal_func);
 	res->key_destroy_func = key_destroy_func;
 	res->value_destroy_func = value_destroy_func;
 	return res;
@@ -215,7 +213,9 @@ retry:
 }
 
 /**
- * mono_conc_hashtable_remove
+ * mono_conc_hashtable_remove:
+ *
+ * Remove a value from the hashtable. Requires external locking
  *
  * @Returns the old value if key is already present or null
  */
@@ -229,7 +229,6 @@ mono_conc_hashtable_remove (MonoConcurrentHashTable *hash_table, gpointer key)
 	g_assert (key != NULL && key != TOMBSTONE);
 
 	hash = mix_hash (hash_table->hash_func (key));
-	mono_mutex_lock (hash_table->mutex);
 
 	table = (conc_table*)hash_table->table;
 	kvs = table->kvs;
@@ -239,7 +238,6 @@ mono_conc_hashtable_remove (MonoConcurrentHashTable *hash_table, gpointer key)
 	if (!hash_table->equal_func) {
 		for (;;) {
 			if (!kvs [i].key) {
-				mono_mutex_unlock (hash_table->mutex);
 				return NULL; /*key not found*/
 			}
 
@@ -249,7 +247,6 @@ mono_conc_hashtable_remove (MonoConcurrentHashTable *hash_table, gpointer key)
 				mono_memory_barrier ();
 				kvs [i].key = TOMBSTONE;
 
-				mono_mutex_unlock (hash_table->mutex);
 				if (hash_table->key_destroy_func != NULL)
 					(*hash_table->key_destroy_func) (key);
 				if (hash_table->value_destroy_func != NULL)
@@ -263,7 +260,6 @@ mono_conc_hashtable_remove (MonoConcurrentHashTable *hash_table, gpointer key)
 		GEqualFunc equal = hash_table->equal_func;
 		for (;;) {
 			if (!kvs [i].key) {
-				mono_mutex_unlock (hash_table->mutex);
 				return NULL; /*key not found*/
 			}
 
@@ -274,7 +270,6 @@ mono_conc_hashtable_remove (MonoConcurrentHashTable *hash_table, gpointer key)
 				mono_memory_barrier ();
 				kvs [i].key = TOMBSTONE;
 
-				mono_mutex_unlock (hash_table->mutex);
 				if (hash_table->key_destroy_func != NULL)
 					(*hash_table->key_destroy_func) (old_key);
 				if (hash_table->value_destroy_func != NULL)
@@ -287,8 +282,9 @@ mono_conc_hashtable_remove (MonoConcurrentHashTable *hash_table, gpointer key)
 	}
 }
 /**
- * mono_conc_hashtable_insert
- *
+ * mono_conc_hashtable_insert:
+ * 
+ * Insert a value into the hashtable. Requires external locking.
  * @Returns the old value if key is already present or null
  */
 gpointer
@@ -302,7 +298,6 @@ mono_conc_hashtable_insert (MonoConcurrentHashTable *hash_table, gpointer key, g
 	g_assert (value != NULL);
 
 	hash = mix_hash (hash_table->hash_func (key));
-	mono_mutex_lock (hash_table->mutex);
 
 	if (hash_table->element_count >= hash_table->overflow_count)
 		expand_table (hash_table);
@@ -320,12 +315,10 @@ mono_conc_hashtable_insert (MonoConcurrentHashTable *hash_table, gpointer key, g
 				mono_memory_barrier ();
 				kvs [i].key = key;
 				++hash_table->element_count;
-				mono_mutex_unlock (hash_table->mutex);
 				return NULL;
 			}
 			if (key == kvs [i].key) {
 				gpointer value = kvs [i].value;
-				mono_mutex_unlock (hash_table->mutex);
 				return value;
 			}
 			i = (i + 1) & table_mask;
@@ -339,12 +332,10 @@ mono_conc_hashtable_insert (MonoConcurrentHashTable *hash_table, gpointer key, g
 				mono_memory_barrier ();
 				kvs [i].key = key;
 				++hash_table->element_count;
-				mono_mutex_unlock (hash_table->mutex);
 				return NULL;
 			}
 			if (equal (key, kvs [i].key)) {
 				gpointer value = kvs [i].value;
-				mono_mutex_unlock (hash_table->mutex);
 				return value;
 			}
 			i = (i + 1) & table_mask;
@@ -352,6 +343,11 @@ mono_conc_hashtable_insert (MonoConcurrentHashTable *hash_table, gpointer key, g
 	}
 }
 
+/**
+ * mono_conc_hashtable_foreach:
+ *
+ * Calls @func for each value in the hashtable. Requires external locking.
+ */
 void
 mono_conc_hashtable_foreach (MonoConcurrentHashTable *hash_table, GHFunc func, gpointer userdata)
 {
@@ -359,11 +355,9 @@ mono_conc_hashtable_foreach (MonoConcurrentHashTable *hash_table, GHFunc func, g
 	conc_table *table = (conc_table*)hash_table->table;
 	key_value_pair *kvs = table->kvs;
 
-  mono_mutex_lock (hash_table->mutex);
 	for (i = 0; i < table->table_size; ++i) {
 		if (kvs [i].key && kvs [i].key != TOMBSTONE) {
 			func (kvs [i].key, kvs [i].value, userdata);
 		}
 	}
-	mono_mutex_unlock (hash_table->mutex);
 }
