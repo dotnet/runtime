@@ -19,6 +19,7 @@ using CURLMoption = Interop.libcurl.CURLMoption;
 using CURLcode = Interop.libcurl.CURLcode;
 using CURLMcode = Interop.libcurl.CURLMcode;
 using CURLINFO = Interop.libcurl.CURLINFO;
+using CURLAUTH = Interop.libcurl.CURLAUTH;
 using CurlVersionInfoData = Interop.libcurl.curl_version_info_data;
 using CurlFeatures = Interop.libcurl.CURL_VERSION_Features;
 using CURLProxyType = Interop.libcurl.curl_proxytype;
@@ -36,6 +37,7 @@ namespace System.Net.Http
         private const string EncodingNameGzip = "gzip";
         private const string EncodingNameDeflate = "deflate";
         private readonly static string[] AuthenticationSchemes = { "Negotiate", "Digest", "Basic" }; // the order in which libcurl goes over authentication schemes
+        private readonly static ulong[]  AuthSchemePriorityOrder = { CURLAUTH.Negotiate, CURLAUTH.Digest, CURLAUTH.Basic };
         private static readonly string[] s_headerDelimiters = new string[] { "\r\n" };
 
         private const int s_requestBufferSize = 16384; // Default used by libcurl
@@ -58,6 +60,8 @@ namespace System.Net.Http
         private DecompressionMethods _automaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
         private SafeCurlMultiHandle _multiHandle;
         private GCHandle _multiHandlePtr = new GCHandle();
+        private bool _preAuthenticate = false;
+        private CredentialCache _credentialCache = null;
         private CookieContainer _cookieContainer = null;
         private bool _useCookie = false;
         private bool _automaticRedirection = true;
@@ -159,7 +163,6 @@ namespace System.Net.Http
 
             set
             {
-                CheckDisposedOrStarted();
                 _serverCredentials = value;
             }
         }
@@ -199,6 +202,23 @@ namespace System.Net.Http
             {
                 CheckDisposedOrStarted();
                 _automaticDecompression = value;
+            }
+        }
+
+        internal bool PreAuthenticate
+        {
+            get
+            {
+                return _preAuthenticate;
+            }
+            set
+            {
+                CheckDisposedOrStarted();
+                _preAuthenticate = value;
+                if (value)
+                {
+                    _credentialCache = new CredentialCache();
+                }
             }
         }
 
@@ -306,14 +326,13 @@ namespace System.Net.Http
             }
 
             // Create RequestCompletionSource object and save current values of handler settings.
-            RequestCompletionSource state = new RequestCompletionSource
+            RequestCompletionSource state = new RequestCompletionSource(this)
             {
                 CancellationToken = cancellationToken,
                 RequestMessage = request,
             };
 
             BeginRequest(state);
-
             return state.Task;
         }
 
@@ -398,6 +417,17 @@ namespace System.Net.Http
                     state.TrySetException(new HttpRequestException(SR.net_http_client_execution_error,
                         GetCurlException(result)));
                 }
+
+                if (state.ResponseMessage.StatusCode != HttpStatusCode.Unauthorized && state.Handler.PreAuthenticate)
+                {
+                    ulong availedAuth;
+                    if (Interop.libcurl.curl_easy_getinfo(state.RequestHandle, CURLINFO.CURLINFO_HTTPAUTH_AVAIL, out availedAuth) == CURLcode.CURLE_OK)
+                    {
+                        state.Handler.AddCredentialToCache(state.RequestMessage.RequestUri, availedAuth, state.NetworkCredential);
+                    }
+                    // ignoring the exception in this case.
+                    // There is no point in killing the request for the sake of putting the credentials into the cache
+                }
             }
             catch (Exception ex)
             {
@@ -454,6 +484,8 @@ namespace System.Net.Http
             }
 
             SetProxyOptions(requestHandle, state.RequestMessage.RequestUri);
+
+            SetRequestHandleCredentialsOptions(requestHandle, state);
 
             SetCookieOption(requestHandle, state.RequestMessage.RequestUri);
 
@@ -528,6 +560,44 @@ namespace System.Net.Http
             }
         }
 
+        private void SetRequestHandleCredentialsOptions(SafeCurlHandle requestHandle, RequestCompletionSource state)
+        {
+            NetworkCredential credentials = GetNetworkCredentials(state.Handler._serverCredentials, state.RequestMessage.RequestUri);
+            if (credentials != null)
+            {
+                string userName = string.IsNullOrEmpty(credentials.Domain) ?
+                    credentials.UserName :
+                    string.Format("{0}\\{1}", credentials.Domain, credentials.UserName);
+
+                SetCurlOption(requestHandle, CURLoption.CURLOPT_USERNAME, userName);
+                SetCurlOption(requestHandle, CURLoption.CURLOPT_HTTPAUTH, CURLAUTH.AuthAny);
+                if (credentials.Password != null)
+                {
+                    SetCurlOption(requestHandle, CURLoption.CURLOPT_PASSWORD, credentials.Password);
+                }
+
+                state.NetworkCredential = credentials;
+            }
+        }
+
+        private NetworkCredential GetNetworkCredentials(ICredentials credentials, Uri requestUri)
+        {
+            if (_preAuthenticate)
+            {
+                NetworkCredential nc = null;
+                lock (_multiHandle)
+                {
+                    nc = GetCredentials(_credentialCache, requestUri);
+                }
+                if (nc != null)
+                {
+                    return nc;
+                }
+            }
+
+            return GetCredentials(credentials, requestUri);
+        }
+
         private void SetCookieOption(SafeCurlHandle requestHandle, Uri requestUri)
         {
             if (!_useCookie)
@@ -547,22 +617,35 @@ namespace System.Net.Http
             }           
         }
 
-        private NetworkCredential GetCredentials(ICredentials proxyCredentials, Uri requestUri)
+        private void AddCredentialToCache(Uri serverUri, ulong authAvail, NetworkCredential nc)
         {
-            if (proxyCredentials == null)
+            lock (_multiHandle)
+            {
+                for (int i=0; i < AuthSchemePriorityOrder.Length; i++)
+                {
+                    if ((authAvail & AuthSchemePriorityOrder[i]) != 0 )
+                    {
+                        _credentialCache.Add(serverUri, AuthenticationSchemes[i], nc);
+                    }
+                }
+            }
+        }
+
+		private static NetworkCredential GetCredentials(ICredentials credentials, Uri requestUri)
+        {
+            if (credentials == null)
             {
                 return null;
             }
 
             foreach (var authScheme in AuthenticationSchemes)
             {
-                NetworkCredential proxyCreds = proxyCredentials.GetCredential(requestUri, authScheme);
-                if (proxyCreds != null)
+                NetworkCredential networkCredential = credentials.GetCredential(requestUri, authScheme);
+                if (networkCredential != null)
                 {
-                    return proxyCreds;
+                    return networkCredential;
                 }
             }
-
             return null;
         }
 
@@ -652,6 +735,15 @@ namespace System.Net.Http
         }
 
         private void SetCurlOption(SafeCurlHandle handle, int option, long value)
+        {
+            int result = Interop.libcurl.curl_easy_setopt(handle, option, value);
+            if (result != CURLcode.CURLE_OK)
+            {
+                throw new HttpRequestException(SR.net_http_client_execution_error, GetCurlException(result));
+            }
+        }
+
+        private void SetCurlOption(SafeCurlHandle handle, int option, ulong value)
         {
             int result = Interop.libcurl.curl_easy_setopt(handle, option, value);
             if (result != CURLcode.CURLE_OK)
@@ -868,6 +960,13 @@ namespace System.Net.Http
 
         private sealed class RequestCompletionSource : TaskCompletionSource<HttpResponseMessage>
         {
+            private readonly CurlHandler _handler;
+
+            public RequestCompletionSource(CurlHandler handler)
+            {
+                this._handler = handler;
+            }
+
             public CancellationToken CancellationToken { get; set; }
 
             public HttpRequestMessage RequestMessage { get; set; }
@@ -883,6 +982,16 @@ namespace System.Net.Http
             public Stream RequestContentStream { get; set; }
 
             public byte[] RequestContentBuffer { get; set; }
+
+            public NetworkCredential NetworkCredential {get; set;}
+
+            public CurlHandler Handler
+            {
+                get
+                {
+                    return _handler;
+                }
+            }
         }
 
         private enum ProxyUsePolicy
