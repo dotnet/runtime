@@ -624,9 +624,9 @@ ves_icall_System_AppDomain_GetData (MonoAppDomain *ad, MonoString *name)
 
 	MONO_CHECK_ARG_NULL (name, NULL);
 
-	g_assert (ad != NULL);
+	g_assert (ad);
 	add = ad->data;
-	g_assert (add != NULL);
+	g_assert (add);
 
 	str = mono_string_to_utf8 (name);
 
@@ -669,9 +669,9 @@ ves_icall_System_AppDomain_SetData (MonoAppDomain *ad, MonoString *name, MonoObj
 
 	MONO_CHECK_ARG_NULL (name,);
 
-	g_assert (ad != NULL);
+	g_assert (ad);
 	add = ad->data;
-	g_assert (add != NULL);
+	g_assert (add);
 
 	mono_domain_lock (add);
 
@@ -683,8 +683,8 @@ ves_icall_System_AppDomain_SetData (MonoAppDomain *ad, MonoString *name, MonoObj
 MonoAppDomainSetup *
 ves_icall_System_AppDomain_getSetup (MonoAppDomain *ad)
 {
-	g_assert (ad != NULL);
-	g_assert (ad->data != NULL);
+	g_assert (ad);
+	g_assert (ad->data);
 
 	return ad->data->setup;
 }
@@ -692,8 +692,8 @@ ves_icall_System_AppDomain_getSetup (MonoAppDomain *ad)
 MonoString *
 ves_icall_System_AppDomain_getFriendlyName (MonoAppDomain *ad)
 {
-	g_assert (ad != NULL);
-	g_assert (ad->data != NULL);
+	g_assert (ad);
+	g_assert (ad->data);
 
 	return mono_string_new (ad->data, ad->data->friendly_name);
 }
@@ -1962,7 +1962,7 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoString *assRef,
 	gchar *name;
 	gboolean parsed;
 
-	g_assert (assRef != NULL);
+	g_assert (assRef);
 
 	name = mono_string_to_utf8 (assRef);
 	parsed = mono_assembly_name_parse (name, &aname);
