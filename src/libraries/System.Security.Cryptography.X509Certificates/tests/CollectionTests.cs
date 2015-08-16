@@ -12,6 +12,74 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     public static class CollectionTests
     {
         [Fact]
+        public static void X509CertificateCollectionsProperties()
+        {
+            IList ilist = new X509CertificateCollection();
+            Assert.False(ilist.IsSynchronized);
+            Assert.False(ilist.IsFixedSize);
+            Assert.False(ilist.IsReadOnly);
+
+            ilist = new X509Certificate2Collection();
+            Assert.False(ilist.IsSynchronized);
+            Assert.False(ilist.IsFixedSize);
+            Assert.False(ilist.IsReadOnly);
+        }
+
+        [Fact]
+        public static void X509CertificateCollectionConstructors()
+        {
+            using (X509Certificate c1 = new X509Certificate())
+            using (X509Certificate c2 = new X509Certificate())
+            using (X509Certificate c3 = new X509Certificate())
+            {
+                X509CertificateCollection cc = new X509CertificateCollection(new X509Certificate[] { c1, c2, c3 });
+                Assert.Equal(3, cc.Count);
+                Assert.Same(c1, cc[0]);
+                Assert.Same(c2, cc[1]);
+                Assert.Same(c3, cc[2]);
+
+                X509CertificateCollection cc2 = new X509CertificateCollection(cc);
+                Assert.Equal(3, cc2.Count);
+                Assert.Same(c1, cc2[0]);
+                Assert.Same(c2, cc2[1]);
+                Assert.Same(c3, cc2[2]);
+
+                Assert.Throws<ArgumentNullException>(() => new X509CertificateCollection(new X509Certificate[] { c1, c2, null, c3 }));
+            }
+        }
+
+        [Fact]
+        public static void X509Certificate2CollectionConstructors()
+        {
+            using (X509Certificate2 c1 = new X509Certificate2())
+            using (X509Certificate2 c2 = new X509Certificate2())
+            using (X509Certificate2 c3 = new X509Certificate2())
+            {
+                X509Certificate2Collection cc = new X509Certificate2Collection(new X509Certificate2[] { c1, c2, c3 });
+                Assert.Equal(3, cc.Count);
+                Assert.Same(c1, cc[0]);
+                Assert.Same(c2, cc[1]);
+                Assert.Same(c3, cc[2]);
+
+                X509Certificate2Collection cc2 = new X509Certificate2Collection(cc);
+                Assert.Equal(3, cc2.Count);
+                Assert.Same(c1, cc2[0]);
+                Assert.Same(c2, cc2[1]);
+                Assert.Same(c3, cc2[2]);
+
+                Assert.Throws<ArgumentNullException>(() => new X509Certificate2Collection(new X509Certificate2[] { c1, c2, null, c3 }));
+
+                using (X509Certificate c4 = new X509Certificate())
+                {
+                    X509Certificate2Collection collection = new X509Certificate2Collection { c1, c2, c3 };
+                    ((IList)collection).Add(c4); // Add non-X509Certificate2 object
+
+                    Assert.Throws<InvalidCastException>(() => new X509Certificate2Collection(collection));
+                }
+            }
+        }
+
+        [Fact]
         public static void X509Certificate2CollectionEnumerator()
         {
             using (X509Certificate2 c1 = new X509Certificate2())
@@ -19,9 +87,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (X509Certificate2 c3 = new X509Certificate2())
             {
                 X509Certificate2Collection cc = new X509Certificate2Collection(new X509Certificate2[] { c1, c2, c3 });
-                X509Certificate2Enumerator e = cc.GetEnumerator();
                 object ignored;
 
+                X509Certificate2Enumerator e = cc.GetEnumerator();
                 for (int i = 0; i < 2; i++)
                 {
                     // Not started
@@ -42,11 +110,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     Assert.False(e.MoveNext());
                     Assert.False(e.MoveNext());
 
-                    // ended.
+                    // Ended
                     Assert.Throws<InvalidOperationException>(() => ignored = e.Current);
 
                     e.Reset();
                 }
+
+                IEnumerator e2 = cc.GetEnumerator();
+                TestNonGenericEnumerator(e2, c1, c2, c3);
+
+                IEnumerator e3 = ((IEnumerable)cc).GetEnumerator();
+                TestNonGenericEnumerator(e3, c1, c2, c3);
             }
         }
 
@@ -58,9 +132,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (X509Certificate2 c3 = new X509Certificate2())
             {
                 X509CertificateCollection cc = new X509CertificateCollection(new X509Certificate[] { c1, c2, c3 });
-                X509CertificateCollection.X509CertificateEnumerator e = cc.GetEnumerator();
                 object ignored;
 
+                X509CertificateCollection.X509CertificateEnumerator e = cc.GetEnumerator();
                 for (int i = 0; i < 2; i++)
                 {
                     // Not started
@@ -81,11 +155,48 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     Assert.False(e.MoveNext());
                     Assert.False(e.MoveNext());
 
-                    // ended.
+                    // Ended
                     Assert.Throws<InvalidOperationException>(() => ignored = e.Current);
 
                     e.Reset();
                 }
+
+                IEnumerator e2 = cc.GetEnumerator();
+                TestNonGenericEnumerator(e2, c1, c2, c3);
+
+                IEnumerator e3 = ((IEnumerable)cc).GetEnumerator();
+                TestNonGenericEnumerator(e3, c1, c2, c3);
+            }
+        }
+
+        private static void TestNonGenericEnumerator(IEnumerator e, object c1, object c2, object c3)
+        {
+            object ignored;
+
+            for (int i = 0; i < 2; i++)
+            {
+                // Not started
+                Assert.Throws<InvalidOperationException>(() => ignored = e.Current);
+
+                Assert.True(e.MoveNext());
+                Assert.Same(c1, e.Current);
+
+                Assert.True(e.MoveNext());
+                Assert.Same(c2, e.Current);
+
+                Assert.True(e.MoveNext());
+                Assert.Same(c3, e.Current);
+
+                Assert.False(e.MoveNext());
+                Assert.False(e.MoveNext());
+                Assert.False(e.MoveNext());
+                Assert.False(e.MoveNext());
+                Assert.False(e.MoveNext());
+
+                // Ended
+                Assert.Throws<InvalidOperationException>(() => ignored = e.Current);
+
+                e.Reset();
             }
         }
 
@@ -94,6 +205,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             using (X509Certificate certificate = new X509Certificate())
             {
+                Assert.Throws<ArgumentNullException>(() => new X509CertificateCollection((X509Certificate[])null));
+                Assert.Throws<ArgumentNullException>(() => new X509CertificateCollection((X509CertificateCollection)null));
+
                 X509CertificateCollection collection = new X509CertificateCollection { certificate };
 
                 Assert.Throws<ArgumentNullException>(() => collection[0] = null);
@@ -120,6 +234,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             using (X509Certificate2 certificate = new X509Certificate2())
             {
+                Assert.Throws<ArgumentNullException>(() => new X509Certificate2Collection((X509Certificate2[])null));
+                Assert.Throws<ArgumentNullException>(() => new X509Certificate2Collection((X509Certificate2Collection)null));
+
                 X509Certificate2Collection collection = new X509Certificate2Collection { certificate };
 
                 Assert.Throws<ArgumentNullException>(() => collection[0] = null);
@@ -301,11 +418,25 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 X509CertificateCollection cc = new X509CertificateCollection();
                 int idx = cc.Add(c1);
                 Assert.Equal(0, idx);
+                Assert.Same(c1, cc[0]);
 
                 idx = cc.Add(c2);
                 Assert.Equal(1, idx);
+                Assert.Same(c2, cc[1]);
 
                 Assert.Throws<ArgumentNullException>(() => cc.Add(null));
+
+
+                IList il = new X509CertificateCollection();
+                idx = il.Add(c1);
+                Assert.Equal(0, idx);
+                Assert.Same(c1, il[0]);
+
+                idx = il.Add(c2);
+                Assert.Equal(1, idx);
+                Assert.Same(c2, il[1]);
+
+                Assert.Throws<ArgumentNullException>(() => il.Add(null));
             }
         }
 
@@ -315,11 +446,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (X509Certificate2 c1 = new X509Certificate2())
             using (X509Certificate2 c2 = new X509Certificate2())
             {
-                X509CertificateCollection cc = new X509CertificateCollection();
-                cc.Add(c1);
-                cc.Add(c2);
+                IList il = new X509CertificateCollection();
+                il.Add(c1);
+                il.Add(c2);
 
-                IList il = cc;
                 Assert.Throws<ArgumentNullException>(() => il[0] = null);
 
                 string bogus = "Bogus";
@@ -708,9 +838,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void X509CertificateCollectionCopyTo()
         {
-            using (X509Certificate2 c1 = new X509Certificate2())
-            using (X509Certificate2 c2 = new X509Certificate2())
-            using (X509Certificate2 c3 = new X509Certificate2())
+            using (X509Certificate c1 = new X509Certificate())
+            using (X509Certificate c2 = new X509Certificate())
+            using (X509Certificate c3 = new X509Certificate())
             {
                 X509CertificateCollection cc = new X509CertificateCollection(new X509Certificate[] { c1, c2, c3 });
 
@@ -727,6 +857,298 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Same(c1, array2[0]);
                 Assert.Same(c2, array2[1]);
                 Assert.Same(c3, array2[2]);
+            }
+        }
+
+        [Fact]
+        public static void X509CertificateCollectionIndexOf()
+        {
+            using (X509Certificate2 c1 = new X509Certificate2())
+            using (X509Certificate2 c2 = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
+            {
+                X509CertificateCollection cc = new X509CertificateCollection(new X509Certificate[] { c1, c2 });
+                Assert.Equal(0, cc.IndexOf(c1));
+                Assert.Equal(1, cc.IndexOf(c2));
+
+                IList il = cc;
+                Assert.Equal(0, il.IndexOf(c1));
+                Assert.Equal(1, il.IndexOf(c2));
+            }
+        }
+
+        [Fact]
+        public static void X509CertificateCollectionRemove()
+        {
+            using (X509Certificate2 c1 = new X509Certificate2())
+            using (X509Certificate2 c2 = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
+            {
+                X509CertificateCollection cc = new X509CertificateCollection(new X509Certificate[] { c1, c2 });
+
+                cc.Remove(c1);
+                Assert.Equal(1, cc.Count);
+                Assert.Same(c2, cc[0]);
+
+                cc.Remove(c2);
+                Assert.Equal(0, cc.Count);
+
+
+                IList il = new X509CertificateCollection(new X509Certificate[] { c1, c2 });
+
+                il.Remove(c1);
+                Assert.Equal(1, il.Count);
+                Assert.Same(c2, il[0]);
+
+                il.Remove(c2);
+                Assert.Equal(0, il.Count);
+            }
+        }
+
+        [Fact]
+        public static void X509CertificateCollectionRemoveAt()
+        {
+            using (X509Certificate c1 = new X509Certificate())
+            using (X509Certificate c2 = new X509Certificate())
+            using (X509Certificate c3 = new X509Certificate())
+            {
+                X509CertificateCollection cc = new X509CertificateCollection(new X509Certificate[] { c1, c2, c3 });
+
+                cc.RemoveAt(0);
+                Assert.Equal(2, cc.Count);
+                Assert.Same(c2, cc[0]);
+                Assert.Same(c3, cc[1]);
+
+                cc.RemoveAt(1);
+                Assert.Equal(1, cc.Count);
+                Assert.Same(c2, cc[0]);
+
+                cc.RemoveAt(0);
+                Assert.Equal(0, cc.Count);
+
+
+                IList il = new X509CertificateCollection(new X509Certificate[] { c1, c2, c3 });
+
+                il.RemoveAt(0);
+                Assert.Equal(2, il.Count);
+                Assert.Same(c2, il[0]);
+                Assert.Same(c3, il[1]);
+
+                il.RemoveAt(1);
+                Assert.Equal(1, il.Count);
+                Assert.Same(c2, il[0]);
+
+                il.RemoveAt(0);
+                Assert.Equal(0, il.Count);
+            }
+        }
+
+        [Fact]
+        public static void X509Certificate2CollectionRemoveRangeArray()
+        {
+            using (X509Certificate2 c1 = new X509Certificate2())
+            using (X509Certificate2 c2 = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
+            {
+                X509Certificate2[] array = new X509Certificate2[] { c1, c2 };
+
+                X509Certificate2Collection cc = new X509Certificate2Collection(array);
+                cc.RemoveRange(array);
+                Assert.Equal(0, cc.Count);
+
+                cc = new X509Certificate2Collection(array);
+                cc.RemoveRange(new X509Certificate2[] { c2, c1 });
+                Assert.Equal(0, cc.Count);
+
+                cc = new X509Certificate2Collection(array);
+                cc.RemoveRange(new X509Certificate2[] { c1 });
+                Assert.Equal(1, cc.Count);
+                Assert.Same(c2, cc[0]);
+
+                cc = new X509Certificate2Collection(array);
+                Assert.Throws<ArgumentNullException>(() => cc.RemoveRange(new X509Certificate2[] { c1, c2, null }));
+                Assert.Equal(2, cc.Count);
+                Assert.Same(c1, cc[0]);
+                Assert.Same(c2, cc[1]);
+
+                cc = new X509Certificate2Collection(array);
+                Assert.Throws<ArgumentNullException>(() => cc.RemoveRange(new X509Certificate2[] { c1, null, c2 }));
+                Assert.Equal(2, cc.Count);
+                Assert.Same(c2, cc[0]);
+                Assert.Same(c1, cc[1]);
+            }
+        }
+
+        [Fact]
+        public static void X509Certificate2CollectionRemoveRangeCollection()
+        {
+            using (X509Certificate2 c1 = new X509Certificate2())
+            using (X509Certificate2 c2 = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
+            using (X509Certificate c3 = new X509Certificate())
+            {
+                X509Certificate2[] array = new X509Certificate2[] { c1, c2 };
+
+                X509Certificate2Collection cc = new X509Certificate2Collection(array);
+                cc.RemoveRange(new X509Certificate2Collection { c1, c2 });
+                Assert.Equal(0, cc.Count);
+
+                cc = new X509Certificate2Collection(array);
+                cc.RemoveRange(new X509Certificate2Collection { c2, c1 });
+                Assert.Equal(0, cc.Count);
+
+                cc = new X509Certificate2Collection(array);
+                cc.RemoveRange(new X509Certificate2Collection { c1 });
+                Assert.Equal(1, cc.Count);
+                Assert.Same(c2, cc[0]);
+
+                cc = new X509Certificate2Collection(array);
+                X509Certificate2Collection collection = new X509Certificate2Collection();
+                collection.Add(c1);
+                collection.Add(c2);
+                ((IList)collection).Add(c3); // Add non-X509Certificate2 object
+                Assert.Throws<InvalidCastException>(() => cc.RemoveRange(collection));
+                Assert.Equal(2, cc.Count);
+                Assert.Same(c1, cc[0]);
+                Assert.Same(c2, cc[1]);
+
+                cc = new X509Certificate2Collection(array);
+                collection = new X509Certificate2Collection();
+                collection.Add(c1);
+                ((IList)collection).Add(c3); // Add non-X509Certificate2 object
+                collection.Add(c2);
+                Assert.Throws<InvalidCastException>(() => cc.RemoveRange(collection));
+                Assert.Equal(2, cc.Count);
+                Assert.Same(c2, cc[0]);
+                Assert.Same(c1, cc[1]);
+            }
+        }
+
+        [Fact]
+        public static void X509CertificateCollectionIndexer()
+        {
+            using (X509Certificate c1 = new X509Certificate())
+            using (X509Certificate c2 = new X509Certificate())
+            using (X509Certificate c3 = new X509Certificate())
+            {
+                X509CertificateCollection cc = new X509CertificateCollection(new X509Certificate[] { c1, c2, c3 });
+                cc[0] = c3;
+                cc[1] = c2;
+                cc[2] = c1;
+                Assert.Same(c3, cc[0]);
+                Assert.Same(c2, cc[1]);
+                Assert.Same(c1, cc[2]);
+
+                IList il = cc;
+                il[0] = c1;
+                il[1] = c2;
+                il[2] = c3;
+                Assert.Same(c1, il[0]);
+                Assert.Same(c2, il[1]);
+                Assert.Same(c3, il[2]);
+            }
+        }
+
+        [Fact]
+        public static void X509Certificate2CollectionIndexer()
+        {
+            using (X509Certificate2 c1 = new X509Certificate2())
+            using (X509Certificate2 c2 = new X509Certificate2())
+            using (X509Certificate2 c3 = new X509Certificate2())
+            {
+                X509Certificate2Collection cc = new X509Certificate2Collection(new X509Certificate2[] { c1, c2, c3 });
+                cc[0] = c3;
+                cc[1] = c2;
+                cc[2] = c1;
+                Assert.Same(c3, cc[0]);
+                Assert.Same(c2, cc[1]);
+                Assert.Same(c1, cc[2]);
+
+                IList il = cc;
+                il[0] = c1;
+                il[1] = c2;
+                il[2] = c3;
+                Assert.Same(c1, il[0]);
+                Assert.Same(c2, il[1]);
+                Assert.Same(c3, il[2]);
+            }
+        }
+
+        [Fact]
+        public static void X509CertificateCollectionInsertAndClear()
+        {
+            using (X509Certificate c1 = new X509Certificate())
+            using (X509Certificate c2 = new X509Certificate())
+            using (X509Certificate c3 = new X509Certificate())
+            {
+                X509CertificateCollection cc = new X509CertificateCollection();
+                cc.Insert(0, c1);
+                cc.Insert(1, c2);
+                cc.Insert(2, c3);
+                Assert.Equal(3, cc.Count);
+                Assert.Same(c1, cc[0]);
+                Assert.Same(c2, cc[1]);
+                Assert.Same(c3, cc[2]);
+
+                cc.Clear();
+                Assert.Equal(0, cc.Count);
+
+                cc.Add(c1);
+                cc.Add(c3);
+                Assert.Equal(2, cc.Count);
+                Assert.Same(c1, cc[0]);
+                Assert.Same(c3, cc[1]);
+
+                cc.Insert(1, c2);
+                Assert.Equal(3, cc.Count);
+                Assert.Same(c1, cc[0]);
+                Assert.Same(c2, cc[1]);
+                Assert.Same(c3, cc[2]);
+
+                cc.Clear();
+                Assert.Equal(0, cc.Count);
+
+                IList il = cc;
+                il.Insert(0, c1);
+                il.Insert(1, c2);
+                il.Insert(2, c3);
+                Assert.Equal(3, il.Count);
+                Assert.Same(c1, il[0]);
+                Assert.Same(c2, il[1]);
+                Assert.Same(c3, il[2]);
+
+                il.Clear();
+                Assert.Equal(0, il.Count);
+
+                il.Add(c1);
+                il.Add(c3);
+                Assert.Equal(2, il.Count);
+                Assert.Same(c1, il[0]);
+                Assert.Same(c3, il[1]);
+
+                il.Insert(1, c2);
+                Assert.Equal(3, il.Count);
+                Assert.Same(c1, il[0]);
+                Assert.Same(c2, il[1]);
+                Assert.Same(c3, il[2]);
+
+                il.Clear();
+                Assert.Equal(0, il.Count);
+            }
+        }
+
+        [Fact]
+        public static void X509Certificate2CollectionInsert()
+        {
+            using (X509Certificate2 c1 = new X509Certificate2())
+            using (X509Certificate2 c2 = new X509Certificate2())
+            using (X509Certificate2 c3 = new X509Certificate2())
+            {
+                X509Certificate2Collection cc = new X509Certificate2Collection();
+                cc.Insert(0, c3);
+                cc.Insert(0, c2);
+                cc.Insert(0, c1);
+
+                Assert.Equal(3, cc.Count);
+                Assert.Same(c1, cc[0]);
+                Assert.Same(c2, cc[1]);
+                Assert.Same(c3, cc[2]);
             }
         }
 
@@ -752,6 +1174,34 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Same(c1, array2[0]);
                 Assert.Same(c2, array2[1]);
                 Assert.Same(c3, array2[2]);
+            }
+        }
+
+        [Fact]
+        public static void X509CertificateCollectionGetHashCode()
+        {
+            using (X509Certificate c1 = new X509Certificate())
+            using (X509Certificate c2 = new X509Certificate())
+            using (X509Certificate c3 = new X509Certificate())
+            {
+                X509CertificateCollection cc = new X509CertificateCollection(new X509Certificate[] { c1, c2, c3 });
+
+                int expected = c1.GetHashCode() + c2.GetHashCode() + c3.GetHashCode();
+                Assert.Equal(expected, cc.GetHashCode());
+            }
+        }
+
+        [Fact]
+        public static void X509Certificate2CollectionGetHashCode()
+        {
+            using (X509Certificate2 c1 = new X509Certificate2())
+            using (X509Certificate2 c2 = new X509Certificate2())
+            using (X509Certificate2 c3 = new X509Certificate2())
+            {
+                X509Certificate2Collection cc = new X509Certificate2Collection(new X509Certificate2[] { c1, c2, c3 });
+
+                int expected = c1.GetHashCode() + c2.GetHashCode() + c3.GetHashCode();
+                Assert.Equal(expected, cc.GetHashCode());
             }
         }
 
