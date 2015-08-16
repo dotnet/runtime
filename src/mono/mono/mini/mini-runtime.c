@@ -604,25 +604,11 @@ mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
 	MonoDomain *domain = mono_get_root_domain ();
 	gboolean check_exc = TRUE;
 
-	if (callinfo->wrapper) {
+	if (callinfo->wrapper)
 		return callinfo->wrapper;
-	}
 
 	if (callinfo->trampoline)
 		return callinfo->trampoline;
-
-	/*
-	 * We use the lock on the root domain instead of the JIT lock to protect
-	 * callinfo->trampoline, since we do a lot of stuff inside the critical section.
-	 */
-	mono_loader_lock (); /*FIXME mono_compile_method requires the loader lock, by large.*/
-	mono_domain_lock (domain);
-
-	if (callinfo->trampoline) {
-		mono_domain_unlock (domain);
-		mono_loader_unlock ();
-		return callinfo->trampoline;
-	}
 
 	if (!strcmp (callinfo->name, "mono_thread_interruption_checkpoint"))
 		/* This icall is used to check for exceptions, so don't check in the wrapper */
@@ -636,11 +622,12 @@ mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
 		trampoline = mono_compile_method (wrapper);
 	else
 		trampoline = mono_create_ftnptr (domain, mono_create_jit_trampoline_in_domain (domain, wrapper));
-	mono_register_jit_icall_wrapper (callinfo, trampoline);
 
-	callinfo->trampoline = trampoline;
-
-	mono_domain_unlock (domain);
+	mono_loader_lock ();
+	if (!callinfo->trampoline) {
+		mono_register_jit_icall_wrapper (callinfo, trampoline);
+		callinfo->trampoline = trampoline;
+	}
 	mono_loader_unlock ();
 
 	return callinfo->trampoline;
