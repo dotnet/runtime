@@ -58,7 +58,7 @@ namespace System.Linq.Expressions
         /// </returns>
         public static DefaultExpression Empty()
         {
-            return new DefaultExpression(typeof(void));
+            return new DefaultExpression(typeof(void)); // Create new object each time for different identity 
         }
 
         /// <summary>
@@ -71,10 +71,6 @@ namespace System.Linq.Expressions
         /// </returns>
         public static DefaultExpression Default(Type type)
         {
-            if (type == typeof(void))
-            {
-                return Empty();
-            }
             return new DefaultExpression(type);
         }
     }
