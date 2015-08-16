@@ -311,16 +311,16 @@ cleanup (void)
 {
 	guint i;
 
-	MONO_PREPARE_BLOCKING;
-
 	/* we make the assumption along the code that we are
 	 * cleaning up only if the runtime is shutting down */
 	g_assert (mono_runtime_is_shutting_down ());
 
-
+	MONO_PREPARE_BLOCKING;
 	while (monitor_status != MONITOR_STATUS_NOT_RUNNING)
 		g_usleep (1000);
+	MONO_FINISH_BLOCKING;
 
+	MONO_PREPARE_BLOCKING;
 	mono_mutex_lock (&threadpool->active_threads_lock);
 
 	/* stop all threadpool->working_threads */
@@ -332,7 +332,6 @@ cleanup (void)
 		worker_unpark ((ThreadPoolParkedThread*) g_ptr_array_index (threadpool->parked_threads, i));
 
 	mono_mutex_unlock (&threadpool->active_threads_lock);
-
 	MONO_FINISH_BLOCKING;
 }
 
@@ -668,9 +667,11 @@ worker_thread (gpointer data)
 
 	mono_mutex_unlock (&threadpool->domains_lock);
 
+	MONO_PREPARE_BLOCKING;
 	mono_mutex_lock (&threadpool->active_threads_lock);
 	g_ptr_array_remove_fast (threadpool->working_threads, thread);
 	mono_mutex_unlock (&threadpool->active_threads_lock);
+	MONO_FINISH_BLOCKING;
 
 	COUNTER_ATOMIC (counter, {
 		counter._.working--;
@@ -863,6 +864,7 @@ monitor_thread (void)
 		if (mono_runtime_is_shutting_down () || !domain_any_has_request ())
 			continue;
 
+		MONO_PREPARE_BLOCKING;
 		mono_mutex_lock (&threadpool->active_threads_lock);
 		for (i = 0; i < threadpool->working_threads->len; ++i) {
 			thread = g_ptr_array_index (threadpool->working_threads, i);
@@ -872,6 +874,7 @@ monitor_thread (void)
 			}
 		}
 		mono_mutex_unlock (&threadpool->active_threads_lock);
+		MONO_FINISH_BLOCKING;
 
 		if (all_waitsleepjoin) {
 			ThreadPoolCounter counter;
