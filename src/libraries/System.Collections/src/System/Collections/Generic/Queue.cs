@@ -213,7 +213,7 @@ namespace System.Collections.Generic
             }
 
             _array[_tail] = item;
-            _tail = (_tail + 1) % _array.Length;
+            MoveNext(ref _tail);
             _size++;
             _version++;
         }
@@ -249,7 +249,7 @@ namespace System.Collections.Generic
 
             T removed = _array[_head];
             _array[_head] = default(T);
-            _head = (_head + 1) % _array.Length;
+            MoveNext(ref _head);
             _size--;
             _version++;
             return removed;
@@ -289,13 +289,13 @@ namespace System.Collections.Generic
                 {
                     return true;
                 }
-                index = (index + 1) % _array.Length;
+                MoveNext(ref index);
             }
 
             return false;
         }
 
-        internal T GetElement(int i)
+        private T GetElement(int i)
         {
             return _array[(_head + i) % _array.Length];
         }
@@ -324,7 +324,6 @@ namespace System.Collections.Generic
             return arr;
         }
 
-
         // PRIVATE Grows or shrinks the buffer to hold capacity objects. Capacity
         // must be >= _size.
         private void SetCapacity(int capacity)
@@ -347,6 +346,15 @@ namespace System.Collections.Generic
             _head = 0;
             _tail = (_size == capacity) ? 0 : _size;
             _version++;
+        }
+
+        // Increments the index wrapping it if necessary.
+        private void MoveNext(ref int index)
+        {
+            // It is tempting to use the remainder operator here but it is actually much slower 
+            // than a simple comparison and a rarely taken branch.   
+            int tmp = index + 1;
+            index = (tmp == _array.Length) ? 0 : tmp;
         }
 
         public void TrimExcess()
