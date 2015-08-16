@@ -68,8 +68,7 @@ namespace Internal.Cryptography.Pal
         {
             if (storeLocation != StoreLocation.LocalMachine)
             {
-                // TODO (#2206): Support CurrentUser persisted stores.
-                throw new NotImplementedException();
+                return new DirectoryBasedStoreProvider(storeName, openFlags);
             }
 
             if (openFlags.HasFlag(OpenFlags.ReadWrite))
