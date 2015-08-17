@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using Xunit;
 
 public static unsafe class StringTests
@@ -702,6 +703,13 @@ public static unsafe class StringTests
     {
         String s;
 
+        // String Array
+        s = String.Join("$$", new String[] { null }, 0, 1);
+        Assert.True(s == "");
+
+        s = String.Join("$$", new String[] { null, "Bar", null }, 0, 3);
+        Assert.True(s == "$$Bar$$");
+
         s = String.Join("$$", new String[] { "Foo", "Bar", "Baz" }, 0, 3);
         Assert.True(s == "Foo$$Bar$$Baz");
 
@@ -711,13 +719,66 @@ public static unsafe class StringTests
         s = String.Join("$$", new String[] { "Foo", "Bar", "Baz" }, 1, 1);
         Assert.True(s == "Bar");
 
-        Object[] o = { "Red", "Green", "Blue" };
-        s = String.Join("@@", o);
+        s = String.Join("$$", new String[] { "Red", "Green", "Blue" });
+        Assert.True(s == "Red$$Green$$Blue");
+
+        Assert.Throws<ArgumentNullException>(() => s = String.Join("$$", (String[])null));
+        Assert.Throws<ArgumentNullException>(() => s = String.Join("$$", (String[])null, 0, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => s = String.Join("$$", new String[] { "Foo" }, -1, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => s = String.Join("$$", new String[] { "Foo" }, 0, -1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => s = String.Join("$$", new String[] { "Foo" }, 0, 2));
+        Assert.Throws<ArgumentOutOfRangeException>(() => s = String.Join("$$", new String[] { "Foo" }, 2, 1));
+
+        // Object Array
+        s = String.Join("@@", new object[] { "Red" });
+        Assert.True(s == "Red");
+
+        s = String.Join("@@", new object[] { "Red", "Green", "Blue" });
         Assert.True(s == "Red@@Green@@Blue");
 
-        String[] ss = { "Red", "Green", "Blue" };
-        s = String.Join("@@", ss);
-        Assert.True(s == "Red@@Green@@Blue");
+        s = String.Join("@@", new object[] { null, "Green", "Blue" }); // Feature of object[] overload to exit if [0] is null
+        Assert.True(s == "");
+
+        s = String.Join("@@", new object[] { "Red", null, "Blue" });
+        Assert.True(s == "Red@@@@Blue");
+
+        Assert.Throws<ArgumentNullException>(() => s = String.Join("@@", (Object[])null));
+
+        // IEnumerable<String>
+        s = String.Join("|", new List<string>() { });
+        Assert.True(s == "");
+
+        s = String.Join("|", new List<string>() { null });
+        Assert.True(s == "");
+
+        s = String.Join("|", new List<string>() { "Red" });
+        Assert.True(s == "Red");
+
+        s = String.Join("|", new List<string>() { "Red", "Green", "Blue" });
+        Assert.True(s == "Red|Green|Blue");
+
+        s = String.Join("|", new List<string>() { null, "Green", null });
+        Assert.True(s == "|Green|");
+
+        Assert.Throws<ArgumentNullException>(() => s = String.Join("|", (IEnumerable<String>)null));
+
+        // IEnumerable<Object>
+        s = String.Join("--", new List<Object>() { });
+        Assert.True(s == "");
+
+        s = String.Join("--", new List<Object>() { null });
+        Assert.True(s == "");
+
+        s = String.Join("--", new List<Object>() { "Red" });
+        Assert.True(s == "Red");
+
+        s = String.Join("--", new List<Object>() { "Red", "Green", "Blue" });
+        Assert.True(s == "Red--Green--Blue");
+
+        s = String.Join("--", new List<Object>() { null, "Green", null });
+        Assert.True(s == "--Green--");
+
+        Assert.Throws<ArgumentNullException>(() => s = String.Join("--", (IEnumerable<Object>)null));
     }
 
     [Fact]
