@@ -92,5 +92,18 @@ namespace System.Linq.Tests
                 Assert.NotSame(enum1, enum2);
             }
         }
+
+        [Fact]
+        public void Range_ToInt32MaxValue()
+        {
+            int from = Int32.MaxValue - 3;
+            int count = 4;
+            var rangeEnumerable = Enumerable.Range(from, count);
+
+            Assert.Equal(count, rangeEnumerable.Count());
+
+            int[] expected = { Int32.MaxValue - 3, Int32.MaxValue - 2, Int32.MaxValue - 1, Int32.MaxValue };
+            Assert.Equal(expected, rangeEnumerable);
+        }
     }
 }
