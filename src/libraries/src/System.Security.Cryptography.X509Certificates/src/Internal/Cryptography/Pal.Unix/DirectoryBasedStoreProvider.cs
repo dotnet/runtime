@@ -190,6 +190,12 @@ namespace Internal.Cryptography.Pal
 
         public void Add(ICertificatePal certPal)
         {
+            if (_readOnly)
+            {
+                // Windows compatibility: Remove only throws when it needs to do work, add throws always.
+                throw new CryptographicException(SR.Cryptography_X509_StoreReadOnly);
+            }
+
             // Save the collection to a local so it's consistent for the whole method
             List<X509Certificate2> certificates = _certificates;
             OpenSslX509CertificateReader cert = (OpenSslX509CertificateReader)certPal;
@@ -265,13 +271,6 @@ namespace Internal.Cryptography.Pal
                         _certificates = null;
                         return;
                     }
-                }
-
-                if (_readOnly)
-                {
-                    // Windows compatibility: Don't throw until it has been established that
-                    // the certificate is not present, and we need to modify the filesystem.
-                    throw new CryptographicException(SR.Cryptography_X509_StoreReadOnly);
                 }
 
                 string destinationFilename;
