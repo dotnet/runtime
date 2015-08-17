@@ -3,6 +3,7 @@
 #cmakedefine01 HAVE_STAT64
 #cmakedefine01 HAVE_STAT_BIRTHTIME
 #cmakedefine01 HAVE_GNU_STRERROR_R
+#cmakedefine01 HAVE_DIRENT_NAME_LEN
 
 // Mac OS X has stat64, but it is deprecated since plain stat now
 // provides the same 64-bit aware struct when targeting OS X > 10.5

@@ -50,6 +50,18 @@ static_assert(PAL_S_IFDIR == S_IFDIR, "");
 static_assert(PAL_S_IFREG == S_IFREG, "");
 static_assert(PAL_S_IFLNK == S_IFLNK, "");
 
+// Validate that our enum for inode types is the same as what is 
+// declared by the dirent.h header on the local system.
+static_assert((int)NodeType::PAL_DT_UNKNOWN == DT_UNKNOWN, "");
+static_assert((int)NodeType::PAL_DT_FIFO == DT_FIFO, "");
+static_assert((int)NodeType::PAL_DT_CHR == DT_CHR, "");
+static_assert((int)NodeType::PAL_DT_DIR == DT_DIR, "");
+static_assert((int)NodeType::PAL_DT_BLK == DT_BLK, "");
+static_assert((int)NodeType::PAL_DT_REG == DT_REG, "");
+static_assert((int)NodeType::PAL_DT_LNK == DT_LNK, "");
+static_assert((int)NodeType::PAL_DT_SOCK == DT_SOCK, "");
+static_assert((int)NodeType::PAL_DT_WHT == DT_WHT, "");
+
 static
 void ConvertFileStatus(const struct stat_& src, FileStatus* dst)
 {
@@ -201,4 +213,93 @@ extern "C"
 int32_t ShmUnlink(const char* name)
 {
     return shm_unlink(name);
+}
+
+
+static
+void ConvertDirent(const dirent& entry, DirectoryEntry* outputEntry)
+{
+    // We use Marshal.PtrToStringAnsi on the managed side, which takes a pointer to
+    // the start of the unmanaged string. Give the caller back a pointer to the 
+    // location of the start of the string that exists in their own byte buffer.
+    outputEntry->Name = entry.d_name;
+    outputEntry->InodeType = (NodeType)entry.d_type;
+
+#if HAVE_DIRENT_NAME_LEN
+    outputEntry->NameLength = entry.d_namlen;
+#else
+    outputEntry->NameLength = -1; // sentinel value to mean we have to walk to find the first \0
+#endif
+}
+
+extern "C" 
+int32_t GetDirentSize()
+{
+    // dirent should be under 2k in size
+    static_assert(sizeof(dirent) < 2048, "");
+    return static_cast<int32_t>(sizeof(dirent));
+}
+
+// To reduce the number of string copies, this function calling pattern works as follows:
+// 1) The managed code calls GetDirentSize() to get the platform-specific 
+//    size of the dirent struct.
+// 2) The managed code creates a byte[] buffer of the size of the native dirent
+//    and passes a pointer to this buffer to this function. 
+// 3) This function passes input byte[] buffer to the OS to fill with dirent data
+//    which makes the 1st strcpy.
+// 4) The ConvertDirent function will set a pointer to the start of the inode name
+//    in the byte[] buffer so the managed code and find it and copy it out of the 
+//    buffer into a managed string that the caller of the framework can use, making
+//    the 2nd and final strcpy. 
+extern "C" 
+int32_t ReadDirR(DIR* dir, void* buffer, int32_t bufferSize, DirectoryEntry* outputEntry)
+{
+    assert(buffer != nullptr);
+    assert(dir != nullptr);
+    assert(outputEntry != nullptr);
+
+    if (bufferSize < sizeof(dirent))
+    {
+        assert(!"Buffer size too small; use GetDirentSize to get required buffer size");
+        return ERANGE;
+    }
+
+    // On successful cal to readdir_r, result and &entry should point to the same
+    // data; a NULL temp pointer but return of 0 means that we reached the end of the 
+    // directory stream; finally, a NULL temp pointer with a positive return value
+    // means an error occurred.
+    dirent* result = nullptr;
+    dirent* entry = (dirent*)buffer;
+    int ret = readdir_r(dir, entry, &result);
+    if (ret == 0)
+    {
+        if (result != nullptr)
+        {
+            assert(result == entry);
+            ConvertDirent(*entry, outputEntry);
+        }
+        else
+        {
+            ret = -1; // errno values are positive so signal the end-of-stream with a non-error value
+            *outputEntry = { };
+        }
+    }
+    else
+    {
+        *outputEntry = { };
+    }
+
+    return ret;
+}
+
+extern "C" 
+DIR* OpenDir(const char* path)
+{
+    return opendir(path);
+}
+
+extern "C" 
+int32_t CloseDir(DIR* directory)
+{
+    return closedir(directory);
 }
