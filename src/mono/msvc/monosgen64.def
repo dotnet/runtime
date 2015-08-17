@@ -304,8 +304,6 @@ mono_g_hash_table_foreach_remove
 mono_g_hash_table_insert
 mono_g_hash_table_lookup
 mono_g_hash_table_lookup_extended
-mono_g_hash_table_new
-mono_g_hash_table_new_full
 mono_g_hash_table_new_type
 mono_g_hash_table_print_stats
 mono_g_hash_table_remove
