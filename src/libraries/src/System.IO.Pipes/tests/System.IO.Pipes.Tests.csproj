@@ -25,6 +25,7 @@
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.Read.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.Specific.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.Write.cs" />
+    <Compile Include="Interop.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.CreateServer.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.CreateClient.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTestBase.cs" />
