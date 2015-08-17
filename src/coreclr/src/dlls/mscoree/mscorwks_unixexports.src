@@ -50,8 +50,6 @@ GetCurrentThreadId
 GetEnvironmentStringsW
 GetEnvironmentVariableW
 GetFileAttributesExW
-GetFileInformationFromFd
-GetFileInformationFromPath
 GetFileSize
 GetFileType
 GetFullPathNameW
