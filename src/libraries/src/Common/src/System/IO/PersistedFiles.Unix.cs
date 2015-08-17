@@ -7,7 +7,25 @@ namespace System.IO
 {
     internal static partial class PersistedFiles
     {
+        private static string s_tempProductDirectory;
         private static string s_userProductDirectory;
+
+        /// <summary>
+        /// Get the location of where to store temporary files for a particular aspect of the framework,
+        /// such as "maps".
+        /// </summary>
+        /// <param name="featureName">The directory name for the feature</param>
+        /// <returns>A path within the temp directory for storing temporary files related to the feature.</returns>
+        internal static string GetTempFeatureDirectory(string featureName)
+        {
+            string path = s_tempProductDirectory;
+            if (path == null)
+            {
+                s_tempProductDirectory = path = Path.Combine(Path.GetTempPath(), TopLevelHiddenDirectory, SecondLevelDirectory);
+            }
+
+            return Path.Combine(path, featureName);
+        }
 
         /// <summary>
         /// Get the location of where to persist information for a particular aspect of the framework,

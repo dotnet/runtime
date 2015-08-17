@@ -38,10 +38,6 @@ namespace System.IO.MemoryMappedFiles
         // ---- PAL layer ends here ----
         // -----------------------------
 
-        private static readonly string s_tempMapsDirectory = Path.Combine(
-            Path.GetTempPath(),
-            PersistedFiles.TopLevelHiddenDirectory,
-            PersistedFiles.SecondLevelDirectory,
-            "maps");
+        private static readonly string s_tempMapsDirectory = PersistedFiles.GetTempFeatureDirectory("maps");
     }
 }
