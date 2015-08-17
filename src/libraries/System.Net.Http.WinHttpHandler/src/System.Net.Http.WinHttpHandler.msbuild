@@ -13,6 +13,7 @@
     <CompileItem Include="$(CommonPath)\Interop\Windows\winhttp\Interop.winhttp_types.cs" />
     <CompileItem Include="$(CommonPath)\Interop\Windows\winhttp\Interop.winhttp.cs" />
     <CompileItem Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs" />
+    <CompileItem Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs" />
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\CertificateHelper.cs" />
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpChannelBinding.cs" />
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpException.cs" />

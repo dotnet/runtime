@@ -55,13 +55,13 @@ namespace System.Net.Http
         private IWebProxy _proxy = null;
         private ICredentials _serverCredentials = null;
         private ProxyUsePolicy _proxyPolicy = ProxyUsePolicy.UseDefaultProxy;
-        private DecompressionMethods _automaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+        private DecompressionMethods _automaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
         private SafeCurlMultiHandle _multiHandle;
         private GCHandle _multiHandlePtr = new GCHandle();
         private CookieContainer _cookieContainer = null;
         private bool _useCookie = false;
-        private bool _automaticRedirection = true;
-        private int _maxAutomaticRedirections = 50;
+        private bool _automaticRedirection = HttpHandlerDefaults.DefaultAutomaticRedirection;
+        private int _maxAutomaticRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
 
         #endregion        
 
