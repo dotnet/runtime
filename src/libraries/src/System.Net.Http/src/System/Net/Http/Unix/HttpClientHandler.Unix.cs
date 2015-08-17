@@ -84,8 +84,8 @@ namespace System.Net.Http
 
         public bool PreAuthenticate
         {
-            get { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
-            set { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
+            get { return _curlHandler.PreAuthenticate; }
+            set { _curlHandler.PreAuthenticate = value;} 
         }
 
         public bool UseDefaultCredentials

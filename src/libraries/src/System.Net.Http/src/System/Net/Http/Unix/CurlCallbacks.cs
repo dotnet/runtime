@@ -17,6 +17,8 @@ using CURLMcode = Interop.libcurl.CURLMcode;
 using curl_socket_t = System.Int32;
 using CurlPoll = Interop.libcurl.CurlPoll;
 using CurlSelect = Interop.libcurl.CurlSelect;
+using CURLAUTH = Interop.libcurl.CURLAUTH;
+using CURLoption = Interop.libcurl.CURLoption;
 
 namespace System.Net.Http
 {
@@ -57,7 +59,7 @@ namespace System.Net.Http
                     HttpResponseMessage response = state.ResponseMessage;
 
                     // TODO: Understand scenarios where multiple sets of headers are received
-                    if (!TryParseStatusLine(response, responseHeader))
+                    if (!TryParseStatusLine(response, responseHeader, state))
                     {
                         int colonIndex = responseHeader.IndexOf(':');
 
@@ -198,7 +200,7 @@ namespace System.Net.Http
             }
         }
 
-        private static bool TryParseStatusLine(HttpResponseMessage response, string responseHeader)
+        private static bool TryParseStatusLine(HttpResponseMessage response, string responseHeader, RequestCompletionSource state)
         {
             if (!responseHeader.StartsWith(s_httpPrefix, StringComparison.OrdinalIgnoreCase))
             {
@@ -249,6 +251,17 @@ namespace System.Net.Http
                 if (TryParseStatusCode(responseHeader, codeStartIndex, out statusCode))
                 {
                     response.StatusCode = (HttpStatusCode)statusCode;
+
+                    // For security reasons, we drop the server credential if it is a
+                    // NetworkCredential.  But we allow credentials in a CredentialCache
+                    // since they are specifically tied to URI's.
+                    if ((response.StatusCode == HttpStatusCode.Redirect) && !(state.Handler.Credentials is CredentialCache))
+                    {
+                        state.Handler.SetCurlOption(state.RequestHandle, CURLoption.CURLOPT_HTTPAUTH, CURLAUTH.None);
+                        state.Handler.SetCurlOption(state.RequestHandle, CURLoption.CURLOPT_USERNAME, IntPtr.Zero );
+                        state.Handler.SetCurlOption(state.RequestHandle, CURLoption.CURLOPT_PASSWORD, IntPtr.Zero);
+                        state.NetworkCredential = null;
+                    }
 
                     int codeEndIndex = codeStartIndex + StatusCodeLength;
 
