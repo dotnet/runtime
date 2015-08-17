@@ -20,8 +20,6 @@ namespace System.IO.Pipes
         // Windows, but can't assume a valid handle on Unix.
         internal const bool CheckOperationsRequiresSetHandle = false;
 
-        private static readonly string PipeDirectoryPath = Path.Combine(Path.GetTempPath(), "corefxnamedpipes");
-
         internal static string GetPipePath(string serverName, string pipeName)
         {
             if (serverName != "." && serverName != Interop.libc.gethostname())
@@ -38,35 +36,8 @@ namespace System.IO.Pipes
                 throw new PlatformNotSupportedException();
             }
 
-            // Make sure we have the directory in which to put the pipe paths
-            while (true)
-            {
-                int result = Interop.libc.mkdir(PipeDirectoryPath, (int)Interop.libc.Permissions.S_IRWXU);
-                if (result >= 0)
-                {
-                    // directory created
-                    break;
-                }
-
-                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                if (errorInfo.Error == Interop.Error.EINTR)
-                {
-                    // I/O was interrupted, try again
-                    continue;
-                }
-                else if (errorInfo.Error == Interop.Error.EEXIST)
-                {
-                    // directory already exists
-                    break;
-                }
-                else
-                {
-                    throw Interop.GetExceptionForIoErrno(errorInfo, PipeDirectoryPath, isDirectory: true);
-                }
-            }
-
             // Return the pipe path
-            return Path.Combine(PipeDirectoryPath, pipeName);
+            return Path.Combine(GetPipeDirectoryPath(), pipeName);
         }
 
         /// <summary>Throws an exception if the supplied handle does not represent a valid pipe.</summary>
@@ -254,6 +225,59 @@ namespace System.IO.Pipes
         // -----------------------------
         // ---- PAL layer ends here ----
         // -----------------------------
+
+        private static string s_pipeDirectoryPath;
+
+        private static string GetPipeDirectoryPath()
+        {
+            string path = s_pipeDirectoryPath;
+            if (path == null)
+            {
+                // Create the pipes temporary directory, e.g. "/tmp/.dotnet/corefx/pipes".
+                // We don't have access to Directory.CreateDirectory (which handles creating
+                // all levels of the directory full path specified), so we create each nested
+                // level individually (though we assume that the temp path already exists).
+
+                path = Path.GetTempPath();
+
+                path = Path.Combine(path, PersistedFiles.TopLevelHiddenDirectory);
+                CreateDirectory(path);
+
+                path = Path.Combine(path, PersistedFiles.SecondLevelDirectory);
+                CreateDirectory(path);
+
+                const string PipesFeatureName = "pipes";
+                path = Path.Combine(path, PipesFeatureName);
+                CreateDirectory(path);
+
+                s_pipeDirectoryPath = path;
+            }
+            return path;
+        }
+
+        private static void CreateDirectory(string directoryPath)
+        {
+            while (true)
+            {
+                int result = Interop.libc.mkdir(directoryPath, (int)Interop.libc.Permissions.S_IRWXU);
+
+                // If successful created, we're done.
+                if (result >= 0)
+                    return;
+
+                // If the directory already exists, consider it a success.
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                if (errorInfo.Error == Interop.Error.EEXIST)
+                    return;
+
+                // If the I/O was interrupted, try again.
+                if (errorInfo.Error == Interop.Error.EINTR)
+                    continue;
+
+                // Otherwise, fail.
+                throw Interop.GetExceptionForIoErrno(errorInfo, directoryPath, isDirectory: true);
+            }
+        }
 
         internal static Interop.libc.OpenFlags TranslateFlags(PipeDirection direction, PipeOptions options, HandleInheritability inheritability)
         {
