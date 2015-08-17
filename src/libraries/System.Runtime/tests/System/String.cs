@@ -704,11 +704,17 @@ public static unsafe class StringTests
         String s;
 
         // String Array
+        s = String.Join("$$", new String[] { }, 0, 0);
+        Assert.Equal("", s);
+
         s = String.Join("$$", new String[] { null }, 0, 1);
         Assert.Equal("", s);
 
         s = String.Join("$$", new String[] { null, "Bar", null }, 0, 3);
         Assert.Equal("$$Bar$$", s);
+
+        s = String.Join(null, new String[] { "Foo", "Bar", "Baz" }, 0, 3);
+        Assert.Equal("FooBarBaz", s);
 
         s = String.Join("$$", new String[] { "Foo", "Bar", "Baz" }, 0, 3);
         Assert.Equal("Foo$$Bar$$Baz", s);
@@ -730,11 +736,17 @@ public static unsafe class StringTests
         Assert.Throws<ArgumentOutOfRangeException>(() => s = String.Join("$$", new String[] { "Foo" }, 2, 1));
 
         // Object Array
+        s = String.Join("@@", new object[] { });
+        Assert.Equal("", s);
+
         s = String.Join("@@", new object[] { "Red" });
         Assert.Equal("Red", s);
 
         s = String.Join("@@", new object[] { "Red", "Green", "Blue" });
         Assert.Equal("Red@@Green@@Blue", s);
+
+        s = String.Join(null, new object[] { "Red", "Green", "Blue" });
+        Assert.Equal("RedGreenBlue", s);
 
         s = String.Join("@@", new object[] { null, "Green", "Blue" }); // Feature of object[] overload to exit if [0] is null
         Assert.Equal("", s);
@@ -754,6 +766,9 @@ public static unsafe class StringTests
         s = String.Join("|", new List<string>() { "Red" });
         Assert.Equal("Red", s);
 
+        s = String.Join(null, new List<string>() { "Red", "Green", "Blue" });
+        Assert.Equal("RedGreenBlue", s);
+
         s = String.Join("|", new List<string>() { "Red", "Green", "Blue" });
         Assert.Equal("Red|Green|Blue", s);
 
@@ -771,6 +786,9 @@ public static unsafe class StringTests
 
         s = String.Join("--", new List<Object>() { "Red" });
         Assert.Equal("Red", s);
+
+        s = String.Join(null, new List<Object>() { "Red", "Green", "Blue" });
+        Assert.Equal("RedGreenBlue", s);
 
         s = String.Join("--", new List<Object>() { "Red", "Green", "Blue" });
         Assert.Equal("Red--Green--Blue", s);
