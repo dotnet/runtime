@@ -268,9 +268,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Close.cs">
       <Link>Common\Interop\Unix\Interop.Close.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.closedir.cs">
-      <Link>Common\Interop\Unix\Interop.closedir.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.flock.cs">
       <Link>Common\Interop\Unix\Interop.flock.cs</Link>
     </Compile>
@@ -291,9 +288,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Open.cs">
       <Link>Common\Interop\Unix\Interop.Open.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.opendir.cs">
-      <Link>Common\Interop\Unix\Interop.opendir.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.OpenFlags.cs">
       <Link>Common\Interop\Unix\Interop.OpenFlags.cs</Link>
@@ -343,15 +337,18 @@
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Unix.cs">
       <Link>Common\System\IO\PathInternal.Unix.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.readdir.cs">
+      <Link>Common\Interop\Unix\Interop.readdir.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeDirectoryHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeDirectoryHandle.Unix.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- FreeBSD -->
   <ItemGroup Condition="'$(TargetsFreeBSD)' == 'true'">
     <Compile Include="System\IO\UnixFileStream.posix_fadvise.cs" />
     <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseSensitive.cs">
       <Link>Common\System\IO\PathInternal.CaseSensitive.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\FreeBSD\libc\Interop.dirent.cs">
-      <Link>Common\Interop\FreeBSD\Interop.dirent.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\FreeBSD\libc\Interop.PathConfNames.cs">
       <Link>Common\Interop\FreeBSD\Interop.PathConfNames.cs</Link>
@@ -369,9 +366,6 @@
     <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseSensitive.cs">
       <Link>Common\System\IO\PathInternal.CaseSensitive.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.readdir.cs">
-      <Link>Common\Interop\Linux\Interop.readdir.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.PathConfNames.cs">
       <Link>Common\Interop\Linux\Interop.PathConfNames.cs</Link>
     </Compile>
@@ -384,19 +378,11 @@
     <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseInsensitive.cs">
       <Link>Common\System\IO\PathInternal.CaseInsensitive.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.dirent.cs">
-      <Link>Common\Interop\OSX\Interop.dirent.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.PathConfNames.cs">
       <Link>Common\Interop\OSX\Interop.PathConfNames.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
       <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsBSD)' == 'true'">
-    <Compile Include="$(CommonPath)\Interop\BSD\libc\Interop.readdir.cs">
-      <Link>Common\Interop\BSD\Interop.readdir.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

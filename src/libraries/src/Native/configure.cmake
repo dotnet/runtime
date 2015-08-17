@@ -12,6 +12,12 @@ check_struct_has_member(
     "sys/types.h;sys/stat.h"
     HAVE_STAT_BIRTHTIME)
 
+check_struct_has_member(
+    "struct dirent"
+    d_namlen
+    "dirent.h"
+    HAVE_DIRENT_NAME_LEN)
+
 check_cxx_source_compiles(
     "
     #include <string.h>
