@@ -8,10 +8,12 @@ using System.Threading.Tasks;
 
 namespace System.IO
 {
+    /* SyncTextReader intentionally locks on itself rather than a private lock object.
+     * This is done to synchronize different console readers(Issue#2855).
+     */
     internal sealed class SyncTextReader : TextReader
     {
         private readonly TextReader _in;
-        private readonly object _methodLock = new object();
 
         public static SyncTextReader GetSynchronizedTextReader(TextReader reader)
         {
@@ -29,7 +31,7 @@ namespace System.IO
         {
             if (disposing)
             {
-                lock (_methodLock)
+                lock (this)
                 {
                     _in.Dispose();
                 }
@@ -38,7 +40,7 @@ namespace System.IO
 
         public override int Peek()
         {
-            lock (_methodLock)
+            lock (this)
             {
                 return _in.Peek();
             }
@@ -46,7 +48,7 @@ namespace System.IO
 
         public override int Read()
         {
-            lock (_methodLock)
+            lock (this)
             {
                 return _in.Read();
             }
@@ -54,7 +56,7 @@ namespace System.IO
 
         public override int Read([In, Out] char[] buffer, int index, int count)
         {
-            lock (_methodLock)
+            lock (this)
             {
                 return _in.Read(buffer, index, count);
             }
@@ -62,7 +64,7 @@ namespace System.IO
 
         public override int ReadBlock([In, Out] char[] buffer, int index, int count)
         {
-            lock (_methodLock)
+            lock (this)
             {
                 return _in.ReadBlock(buffer, index, count);
             }
@@ -70,7 +72,7 @@ namespace System.IO
 
         public override String ReadLine()
         {
-            lock (_methodLock)
+            lock (this)
             {
                 return _in.ReadLine();
             }
@@ -78,7 +80,7 @@ namespace System.IO
 
         public override String ReadToEnd()
         {
-            lock (_methodLock)
+            lock (this)
             {
                 return _in.ReadToEnd();
             }
