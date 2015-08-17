@@ -8,15 +8,8 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_GetValueNames : TestSubKey
+    public class RegistryKey_GetValueNames : RegistryTestsBase
     {
-        private const string TestKey = "BCL_TEST_8";
-
-        public RegistryKey_GetValueNames()
-            : base(TestKey)
-        {
-        }
-
         [Fact]
         public void ShoudThrowIfDisposed()
         {
@@ -30,7 +23,7 @@ namespace Microsoft.Win32.RegistryTests
         [Fact]
         public void ShouldThrowIfRegistryKeyDeleted()
         {
-            Registry.CurrentUser.DeleteSubKeyTree(TestKey);
+            Registry.CurrentUser.DeleteSubKeyTree(_testRegistryKeyName);
             Assert.Throws<IOException>(() => _testRegistryKey.GetValueNames());
         }
 
@@ -40,7 +33,7 @@ namespace Microsoft.Win32.RegistryTests
             // [] Add several values and get the values then check the names
             Assert.Equal(expected: 0, actual: _testRegistryKey.GetValueNames().Length);
 
-            string[] expected = { TestKey };
+            string[] expected = { _testRegistryKeyName };
             foreach (string valueName in expected)
             {
                 _testRegistryKey.SetValue(valueName, 5);
@@ -48,7 +41,7 @@ namespace Microsoft.Win32.RegistryTests
 
             Assert.Equal(expected, _testRegistryKey.GetValueNames());
             
-            _testRegistryKey.DeleteValue(TestKey);
+            _testRegistryKey.DeleteValue(_testRegistryKeyName);
             Assert.Equal(expected: 0, actual: _testRegistryKey.GetValueNames().Length);
         }
 

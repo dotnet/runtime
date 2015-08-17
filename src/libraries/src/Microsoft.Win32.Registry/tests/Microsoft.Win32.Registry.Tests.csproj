@@ -11,11 +11,13 @@
     <UnsupportedPlatforms>Linux;OSX</UnsupportedPlatforms>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
+    <Compile Include="Helpers.cs" />
+    <Compile Include="Registry\Registry_Getvalue_str_str_obj.cs" />
+    <Compile Include="Registry\Registry_SetValue_str_str_obj.cs" />
+    <Compile Include="Registry\Registry_SetValue_str_str_obj_valuekind.cs" />
     <Compile Include="RegistryKey\RegistryKey_CreateSubKey_str.cs" />
     <Compile Include="RegistryKey\RegistryKey_CreateSubKey_str_rkpc.cs" />
     <Compile Include="RegistryKey\RegistryKey_DeleteSubKeyTree.cs" />
@@ -41,11 +43,7 @@
     <Compile Include="RegistryKey\RegistryKey_SetValueKind_str_obj_valueKind.cs" />
     <Compile Include="RegistryKey\RegistryKey_SetValue_str_obj.cs" />
     <Compile Include="RegistryKey\SafeRegistryHandle.cs" />
-    <Compile Include="Registry\Registry_Getvalue_str_str_obj.cs" />
-    <Compile Include="Registry\Registry_SetValue_str_str_obj.cs" />
-    <Compile Include="Registry\Registry_SetValue_str_str_obj_valuekind.cs" />
-    <Compile Include="Helpers.cs" />
-    <Compile Include="TestSubKey.cs" />
+    <Compile Include="RegistryTestsBase.cs" />
     <Compile Include="TestData.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
   </ItemGroup>

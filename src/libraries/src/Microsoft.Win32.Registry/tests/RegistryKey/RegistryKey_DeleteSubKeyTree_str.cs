@@ -8,15 +8,8 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_DeleteSubKeyTree_str : TestSubKey
+    public class RegistryKey_DeleteSubKeyTree_str : RegistryTestsBase
     {
-        private const string TestKey = "REG_TEST_5";
-
-        public RegistryKey_DeleteSubKeyTree_str()
-            : base(TestKey)
-        {
-        }
-
         [Fact]
         public void NegativeTests()
         {
@@ -48,24 +41,24 @@ namespace Microsoft.Win32.RegistryTests
         [Fact]
         public void SelfDeleteTest()
         {
-            using (var rk = _testRegistryKey.CreateSubKey(TestKey))
+            using (var rk = _testRegistryKey.CreateSubKey(_testRegistryKeyName))
             {
-                rk.CreateSubKey(TestKey);
+                rk.CreateSubKey(_testRegistryKeyName);
                 rk.DeleteSubKeyTree("");
             }
 
-            Assert.Null(_testRegistryKey.OpenSubKey(TestKey));
+            Assert.Null(_testRegistryKey.OpenSubKey(_testRegistryKeyName));
         }
 
         [Fact]
         public void DeleteSubKeyTreeTest()
         {
             // Creating new SubKey and deleting it
-            _testRegistryKey.CreateSubKey(TestKey);
-            Assert.NotNull(_testRegistryKey.OpenSubKey(TestKey));
+            _testRegistryKey.CreateSubKey(_testRegistryKeyName);
+            Assert.NotNull(_testRegistryKey.OpenSubKey(_testRegistryKeyName));
 
-            _testRegistryKey.DeleteSubKeyTree(TestKey);
-            Assert.Null(_testRegistryKey.OpenSubKey(TestKey));
+            _testRegistryKey.DeleteSubKeyTree(_testRegistryKeyName);
+            Assert.Null(_testRegistryKey.OpenSubKey(_testRegistryKeyName));
         }
 
         [Fact]
@@ -74,7 +67,7 @@ namespace Microsoft.Win32.RegistryTests
             // [] Add in multiple subkeys and then delete the root key
             string[] subKeyNames = Enumerable.Range(1, 9).Select(x => "BLAH_" + x.ToString()).ToArray();
 
-            using (var rk = _testRegistryKey.CreateSubKey(TestKey))
+            using (var rk = _testRegistryKey.CreateSubKey(_testRegistryKeyName))
             {
                 foreach (var subKeyName in subKeyNames)
                 {
@@ -86,8 +79,8 @@ namespace Microsoft.Win32.RegistryTests
                 Assert.Equal(subKeyNames, rk.GetSubKeyNames());
             }
 
-            _testRegistryKey.DeleteSubKeyTree(TestKey);
-            Assert.Null(_testRegistryKey.OpenSubKey(TestKey));
+            _testRegistryKey.DeleteSubKeyTree(_testRegistryKeyName);
+            Assert.Null(_testRegistryKey.OpenSubKey(_testRegistryKeyName));
         }
     }
 }

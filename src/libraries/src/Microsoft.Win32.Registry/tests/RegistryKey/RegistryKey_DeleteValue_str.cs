@@ -7,15 +7,8 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_DeleteValue_str : TestSubKey
+    public class RegistryKey_DeleteValue_str : RegistryTestsBase
     {
-        private const string TestKey = "BCL_TEST";
-
-        public RegistryKey_DeleteValue_str()
-            : base(TestKey)
-        {
-        }
-
         [Fact]
         public void NegativeTests()
         {
@@ -30,7 +23,7 @@ namespace Microsoft.Win32.RegistryTests
             _testRegistryKey.SetValue(valueName, 42);
 
             // Should throw because RegistryKey is readonly
-            using (var rk = Registry.CurrentUser.OpenSubKey(TestKey, false))
+            using (var rk = Registry.CurrentUser.OpenSubKey(_testRegistryKeyName, false))
             {
                 Assert.Throws<UnauthorizedAccessException>(() => rk.DeleteValue(valueName));
             }
@@ -47,11 +40,10 @@ namespace Microsoft.Win32.RegistryTests
         public void DeleteValueTest()
         {
             // [] Vanilla case, deleting a value
-            const string valueName = TestKey;
             Assert.Equal(expected: 0, actual: _testRegistryKey.ValueCount);
-            _testRegistryKey.SetValue(valueName, 5);
+            _testRegistryKey.SetValue(_testRegistryKeyName, 5);
             Assert.Equal(expected: 1, actual: _testRegistryKey.ValueCount);
-            _testRegistryKey.DeleteValue(valueName);
+            _testRegistryKey.DeleteValue(_testRegistryKeyName);
             Assert.Equal(expected: 0, actual: _testRegistryKey.ValueCount);
         }
 

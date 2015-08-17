@@ -6,15 +6,8 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_GetValueCount : TestSubKey
+    public class RegistryKey_GetValueCount : RegistryTestsBase
     {
-        private const string TestKey = "REG_TEST_10";
-
-        public RegistryKey_GetValueCount()
-            : base(TestKey)
-        {
-        }
-
         [Fact]
         public void NegativeTests()
         {
@@ -30,10 +23,10 @@ namespace Microsoft.Win32.RegistryTests
         {
             Assert.Equal(expected: 0, actual: _testRegistryKey.ValueCount);
 
-            _testRegistryKey.SetValue(TestKey, 5);
+            _testRegistryKey.SetValue(_testRegistryKeyName, 5);
             Assert.Equal(expected: 1, actual: _testRegistryKey.ValueCount);
 
-            _testRegistryKey.DeleteValue(TestKey);
+            _testRegistryKey.DeleteValue(_testRegistryKeyName);
             Assert.Equal(expected: 0, actual: _testRegistryKey.ValueCount);
         }
 

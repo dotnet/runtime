@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_Flush : TestSubKey
+    public class RegistryKey_Flush : RegistryTestsBase
     {
         // [] Flush is called if the state of the registry key is dirty - modifiable operation has occured in the key - and the 
         // registry key is still a valid handle. From the MSDN
@@ -19,13 +19,6 @@ namespace Microsoft.Win32.RegistryTests
 
         In general, RegFlushKey rarely, if ever, need be used. Windows 95/98: No registry subkey or value name may exceed 255 characters. 
         **/
-        private const string TestKey = "TEST_1";
-
-        public RegistryKey_Flush()
-            : base(TestKey)
-        {
-            
-        }
 
         [Fact]
         public void FlushNewlyOpenedKey()
@@ -54,7 +47,7 @@ namespace Microsoft.Win32.RegistryTests
         [Fact]
         public void FlushDeletedRegistryKey()
         {
-            Registry.CurrentUser.DeleteSubKeyTree(TestKey);
+            Registry.CurrentUser.DeleteSubKeyTree(_testRegistryKeyName);
             _testRegistryKey.Flush();
         }
     }

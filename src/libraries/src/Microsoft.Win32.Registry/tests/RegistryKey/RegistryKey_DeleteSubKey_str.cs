@@ -6,15 +6,8 @@ using System;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_DeleteSubKey_str : TestSubKey
+    public class RegistryKey_DeleteSubKey_str : RegistryTestsBase
     {
-        private const string TestKey = "REG_TEST_3";
-
-        public RegistryKey_DeleteSubKey_str()
-            : base(TestKey)
-        {
-        }
-
         [Fact]
         public void NegativeTests()
         {
@@ -51,11 +44,11 @@ namespace Microsoft.Win32.RegistryTests
         public void DeleteSubKeyTest()
         {
             Assert.Equal(expected: 0, actual: _testRegistryKey.SubKeyCount);
-            Assert.NotNull(_testRegistryKey.CreateSubKey(TestKey));
+            Assert.NotNull(_testRegistryKey.CreateSubKey(_testRegistryKeyName));
             Assert.Equal(expected: 1, actual: _testRegistryKey.SubKeyCount);
 
-            _testRegistryKey.DeleteSubKey(TestKey);
-            Assert.Null(_testRegistryKey.OpenSubKey(TestKey));
+            _testRegistryKey.DeleteSubKey(_testRegistryKeyName);
+            Assert.Null(_testRegistryKey.OpenSubKey(_testRegistryKeyName));
             Assert.Equal(expected: 0, actual: _testRegistryKey.SubKeyCount);
         }
     }

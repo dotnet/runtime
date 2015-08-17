@@ -6,15 +6,8 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_OpenSubKey_str_b : TestSubKey
+    public class RegistryKey_OpenSubKey_str_b : RegistryTestsBase
     {
-        private const string TestKey = "BCL_TEST_9";
-
-        public RegistryKey_OpenSubKey_str_b()
-            : base(TestKey)
-        {
-        }
-
         [Fact]
         public void NegativeTests()
         {
@@ -28,7 +21,7 @@ namespace Microsoft.Win32.RegistryTests
             const string name = "FooBar";
             _testRegistryKey.SetValue(name, 42);
             _testRegistryKey.CreateSubKey(name);
-            using (var rk = Registry.CurrentUser.OpenSubKey(name: TestKey, writable: false))
+            using (var rk = Registry.CurrentUser.OpenSubKey(name: _testRegistryKeyName, writable: false))
             {
                 Assert.Throws<UnauthorizedAccessException>(() => rk.CreateSubKey(name));
                 Assert.Throws<UnauthorizedAccessException>(() => rk.SetValue(name, "String"));
@@ -41,7 +34,7 @@ namespace Microsoft.Win32.RegistryTests
             Assert.Throws<ObjectDisposedException>(() =>
             {
                 _testRegistryKey.Dispose();
-                _testRegistryKey.OpenSubKey(TestKey, true);
+                _testRegistryKey.OpenSubKey(_testRegistryKeyName, true);
             });
         }
 
@@ -52,11 +45,11 @@ namespace Microsoft.Win32.RegistryTests
             const int testValue = 32;
             using (var rk = _testRegistryKey.OpenSubKey("", true))
             {
-                rk.CreateSubKey(TestKey);
-                rk.SetValue(TestKey, testValue);
+                rk.CreateSubKey(_testRegistryKeyName);
+                rk.SetValue(_testRegistryKeyName, testValue);
 
-                Assert.NotNull(rk.OpenSubKey(TestKey));
-                Assert.Equal(testValue, (int)rk.GetValue(TestKey));
+                Assert.NotNull(rk.OpenSubKey(_testRegistryKeyName));
+                Assert.Equal(testValue, (int)rk.GetValue(_testRegistryKeyName));
             }
         }
     }
