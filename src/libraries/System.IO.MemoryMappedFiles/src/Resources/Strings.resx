@@ -216,4 +216,7 @@
   <data name="PlatformNotSupported_NamedMaps" xml:space="preserve">
     <value>Named maps are not supported.</value>
   </data>
+  <data name="PersistedFiles_NoHomeDirectory" xml:space="preserve">
+    <value>The home directory of the current user could not be determined.</value>
+  </data>
 </root>
