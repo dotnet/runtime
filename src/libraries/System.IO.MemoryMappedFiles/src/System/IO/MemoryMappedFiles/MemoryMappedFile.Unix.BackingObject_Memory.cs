@@ -11,7 +11,7 @@ namespace System.IO.MemoryMappedFiles
             Interop.libc.MemoryMappedProtections protections, long capacity)
         {
             // The POSIX shared memory object name must begin with '/'.  After that we just want something short and unique.
-            string mapName = "/" + MemoryMapObjectFilePrefix + Guid.NewGuid().ToString("N");
+            string mapName = "/corefx_map_" + Guid.NewGuid().ToString("N");
 
             // Determine the flags to use when creating the shared memory object
             Interop.libc.OpenFlags flags = (protections & Interop.libc.MemoryMappedProtections.PROT_WRITE) != 0 ?
