@@ -150,14 +150,14 @@ namespace System.Data.Common
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return ADP.CreatedTaskWithCancellation<int>();
+                return Task.FromCanceled<int>(cancellationToken);
             }
             else
             {
                 CancellationTokenRegistration registration = new CancellationTokenRegistration();
                 if (cancellationToken.CanBeCanceled)
                 {
-                    registration = cancellationToken.Register(CancelIgnoreFailure);
+                    registration = cancellationToken.Register(s => ((DbCommand)s).CancelIgnoreFailure(), this);
                 }
 
                 try
@@ -166,8 +166,11 @@ namespace System.Data.Common
                 }
                 catch (Exception e)
                 {
+                    return Task.FromException<int>(e);
+                }
+                finally
+                {
                     registration.Dispose();
-                    return ADP.CreatedTaskWithException<int>(e);
                 }
             }
         }
@@ -196,14 +199,14 @@ namespace System.Data.Common
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return ADP.CreatedTaskWithCancellation<DbDataReader>();
+                return Task.FromCanceled<DbDataReader>(cancellationToken);
             }
             else
             {
                 CancellationTokenRegistration registration = new CancellationTokenRegistration();
                 if (cancellationToken.CanBeCanceled)
                 {
-                    registration = cancellationToken.Register(CancelIgnoreFailure);
+                    registration = cancellationToken.Register(s => ((DbCommand)s).CancelIgnoreFailure(), this);
                 }
 
                 try
@@ -212,8 +215,11 @@ namespace System.Data.Common
                 }
                 catch (Exception e)
                 {
+                    return Task.FromException<DbDataReader>(e);
+                }
+                finally
+                {
                     registration.Dispose();
-                    return ADP.CreatedTaskWithException<DbDataReader>(e);
                 }
             }
         }
@@ -227,14 +233,14 @@ namespace System.Data.Common
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return ADP.CreatedTaskWithCancellation<object>();
+                return Task.FromCanceled<object>(cancellationToken);
             }
             else
             {
                 CancellationTokenRegistration registration = new CancellationTokenRegistration();
                 if (cancellationToken.CanBeCanceled)
                 {
-                    registration = cancellationToken.Register(CancelIgnoreFailure);
+                    registration = cancellationToken.Register(s => ((DbCommand)s).CancelIgnoreFailure(), this);
                 }
 
                 try
@@ -243,8 +249,11 @@ namespace System.Data.Common
                 }
                 catch (Exception e)
                 {
+                    return Task.FromException<object>(e);
+                }
+                finally
+                {
                     registration.Dispose();
-                    return ADP.CreatedTaskWithException<object>(e);
                 }
             }
         }
