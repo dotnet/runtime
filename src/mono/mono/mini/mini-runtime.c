@@ -119,12 +119,14 @@ static void register_icalls (void);
 gboolean
 mono_running_on_valgrind (void)
 {
+#ifndef HOST_WIN32
 	if (RUNNING_ON_VALGRIND){
 #ifdef VALGRIND_JIT_REGISTER_MAP
 		valgrind_register = TRUE;
 #endif
 		return TRUE;
 	} else
+#endif
 		return FALSE;
 }
 

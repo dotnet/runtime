@@ -148,6 +148,11 @@ mono_arch_get_llvm_imt_trampoline (MonoDomain *domain, MonoMethod *m, int vt_off
 	return start;
 }
 
+#ifdef _WIN64
+// Workaround lack of Valgrind support for 64-bit Windows
+#define VALGRIND_DISCARD_TRANSLATIONS(...)
+#endif
+
 /*
  * mono_arch_patch_callsite:
  *

@@ -451,7 +451,7 @@ typedef
 
 #if defined(PLAT_amd64_win64) && !defined(__GNUC__)
 
-#error Unsupported compiler.
+//#error Unsupported compiler.
 
 #endif /* PLAT_amd64_win64 */
 

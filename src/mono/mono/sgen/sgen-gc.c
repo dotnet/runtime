@@ -822,7 +822,7 @@ sgen_conservatively_pin_objects_from (void **start, void **end, void *start_nurs
 {
 	int count = 0;
 
-#ifdef VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE
+#if defined(VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE) && !defined(_WIN64)
 	VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE (start, (char*)end - (char*)start);
 #endif
 
