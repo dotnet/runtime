@@ -75,11 +75,11 @@ namespace System.IO.Pipes
         {
             SysCall(safePipeHandle, (fd, _, __) =>
             {
-                Interop.libcoreclr.fileinfo buf;
-                int result = Interop.libcoreclr.GetFileInformationFromFd(fd, out buf);
+                Interop.Sys.FileStatus status;
+                int result = Interop.Sys.FStat(fd, out status);
                 if (result == 0)
                 {
-                    if ((buf.mode & Interop.libcoreclr.FileTypes.S_IFMT) != Interop.libcoreclr.FileTypes.S_IFIFO)
+                    if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFIFO)
                     {
                         throw new IOException(SR.IO_InvalidPipeHandle);
                     }
