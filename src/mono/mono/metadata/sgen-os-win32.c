@@ -61,25 +61,25 @@ sgen_suspend_thread (SgenThreadInfo *info)
 #ifdef USE_MONO_CTX
 	memset (&info->client_info.ctx, 0, sizeof (MonoContext));
 #ifdef TARGET_AMD64
-	info->client_info.ctx.rip = context.Rip;
-	info->client_info.ctx.rax = context.Rax;
-	info->client_info.ctx.rcx = context.Rcx;
-	info->client_info.ctx.rdx = context.Rdx;
-	info->client_info.ctx.rbx = context.Rbx;
-	info->client_info.ctx.rsp = context.Rsp;
-	info->client_info.ctx.rbp = context.Rbp;
-	info->client_info.ctx.rsi = context.Rsi;
-	info->client_info.ctx.rdi = context.Rdi;
-	info->client_info.ctx.r8 = context.R8;
-	info->client_info.ctx.r9 = context.R9;
-	info->client_info.ctx.r10 = context.R10;
-	info->client_info.ctx.r11 = context.R11;
-	info->client_info.ctx.r12 = context.R12;
-	info->client_info.ctx.r13 = context.R13;
-	info->client_info.ctx.r14 = context.R14;
-	info->client_info.ctx.r15 = context.R15;
-	info->client_info.stopped_ip = info->client_info.ctx.rip;
-	info->client_info.stack_start = (char*)info->client_info.ctx.rsp - REDZONE_SIZE;
+    info->client_info.ctx.gregs[AMD64_RIP] = context.Rip;
+    info->client_info.ctx.gregs[AMD64_RAX] = context.Rax;
+    info->client_info.ctx.gregs[AMD64_RCX] = context.Rcx;
+    info->client_info.ctx.gregs[AMD64_RDX] = context.Rdx;
+    info->client_info.ctx.gregs[AMD64_RBX] = context.Rbx;
+    info->client_info.ctx.gregs[AMD64_RSP] = context.Rsp;
+    info->client_info.ctx.gregs[AMD64_RBP] = context.Rbp;
+    info->client_info.ctx.gregs[AMD64_RSI] = context.Rsi;
+    info->client_info.ctx.gregs[AMD64_RDI] = context.Rdi;
+    info->client_info.ctx.gregs[AMD64_R8] = context.R8;
+    info->client_info.ctx.gregs[AMD64_R9] = context.R9;
+    info->client_info.ctx.gregs[AMD64_R10] = context.R10;
+    info->client_info.ctx.gregs[AMD64_R11] = context.R11;
+    info->client_info.ctx.gregs[AMD64_R12] = context.R12;
+    info->client_info.ctx.gregs[AMD64_R13] = context.R13;
+    info->client_info.ctx.gregs[AMD64_R14] = context.R14;
+    info->client_info.ctx.gregs[AMD64_R15] = context.R15;
+    info->client_info.stopped_ip = info->client_info.ctx.gregs[AMD64_RIP];
+    info->client_info.stack_start = (char*)info->client_info.ctx.gregs[AMD64_RSP] - REDZONE_SIZE;
 #else
 	info->client_info.ctx.edi = context.Edi;
 	info->client_info.ctx.esi = context.Esi;
