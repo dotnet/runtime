@@ -263,7 +263,7 @@ get_type_init_exception_for_vtable (MonoVTable *vtable)
 void
 mono_runtime_class_init (MonoVTable *vtable)
 {
-	MONO_REQ_GC_NEUTRAL_MODE;
+	MONO_REQ_GC_UNSAFE_MODE;
 
 	mono_runtime_class_init_full (vtable, TRUE);
 }
