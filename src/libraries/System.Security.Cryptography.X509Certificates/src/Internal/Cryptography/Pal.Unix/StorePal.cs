@@ -145,7 +145,7 @@ namespace Internal.Cryptography.Pal
 
             try
             {
-                directoryInfo = new DirectoryInfo(Interop.NativeCrypto.GetX509RootStorePath());
+                directoryInfo = new DirectoryInfo(Interop.Crypto.GetX509RootStorePath());
             }
             catch (ArgumentException)
             {

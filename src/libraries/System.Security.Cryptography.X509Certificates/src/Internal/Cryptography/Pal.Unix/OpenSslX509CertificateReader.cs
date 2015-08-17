@@ -39,7 +39,7 @@ namespace Internal.Cryptography.Pal
         internal static ICertificatePal FromBio(SafeBioHandle bio, string password)
         {
             // Try reading the value as: PEM-X509, DER-X509, DER-PKCS12.
-            int bioPosition = Interop.NativeCrypto.BioTell(bio);
+            int bioPosition = Interop.Crypto.BioTell(bio);
 
             Debug.Assert(bioPosition >= 0);
 
@@ -51,8 +51,8 @@ namespace Internal.Cryptography.Pal
             }
 
             // Rewind, try again.
-            Interop.NativeCrypto.BioSeek(bio, bioPosition);
-            cert = Interop.NativeCrypto.ReadX509AsDerFromBio(bio);
+            Interop.Crypto.BioSeek(bio, bioPosition);
+            cert = Interop.Crypto.ReadX509AsDerFromBio(bio);
 
             if (cert != null && !cert.IsInvalid)
             {
@@ -60,7 +60,7 @@ namespace Internal.Cryptography.Pal
             }
 
             // Rewind, try again.
-            Interop.NativeCrypto.BioSeek(bio, bioPosition);
+            Interop.Crypto.BioSeek(bio, bioPosition);
 
             OpenSslPkcs12Reader pfx;
 
@@ -97,7 +97,7 @@ namespace Internal.Cryptography.Pal
             // OpenSSL error in case the last BioSeek would change it.
             Exception openSslException = Interop.libcrypto.CreateOpenSslCryptographicException();
 
-            Interop.NativeCrypto.BioSeek(bio, bioPosition);
+            Interop.Crypto.BioSeek(bio, bioPosition);
 
             throw openSslException;
         }
@@ -131,7 +131,7 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                return Interop.NativeCrypto.GetX509Thumbprint(_cert);
+                return Interop.Crypto.GetX509Thumbprint(_cert);
             }
         }
 
@@ -139,7 +139,7 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                IntPtr oidPtr = Interop.NativeCrypto.GetX509PublicKeyAlgorithm(_cert);
+                IntPtr oidPtr = Interop.Crypto.GetX509PublicKeyAlgorithm(_cert);
                 return Interop.libcrypto.OBJ_obj2txt_helper(oidPtr);
             }
         }
@@ -148,7 +148,7 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                return Interop.NativeCrypto.GetX509PublicKeyParameterBytes(_cert);
+                return Interop.Crypto.GetX509PublicKeyParameterBytes(_cert);
             }
         }
 
@@ -156,8 +156,8 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                IntPtr keyBytesPtr = Interop.NativeCrypto.GetX509PublicKeyBytes(_cert);
-                return Interop.NativeCrypto.GetAsn1StringBytes(keyBytesPtr);
+                IntPtr keyBytesPtr = Interop.Crypto.GetX509PublicKeyBytes(_cert);
+                return Interop.Crypto.GetAsn1StringBytes(keyBytesPtr);
             }
         }
 
@@ -166,7 +166,7 @@ namespace Internal.Cryptography.Pal
             get
             {
                 IntPtr serialNumberPtr = Interop.libcrypto.X509_get_serialNumber(_cert);
-                byte[] serial = Interop.NativeCrypto.GetAsn1StringBytes(serialNumberPtr);
+                byte[] serial = Interop.Crypto.GetAsn1StringBytes(serialNumberPtr);
 
                 // Windows returns this in BigInteger Little-Endian,
                 // OpenSSL returns this in BigInteger Big-Endian.
@@ -179,7 +179,7 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                IntPtr oidPtr = Interop.NativeCrypto.GetX509SignatureAlgorithm(_cert);
+                IntPtr oidPtr = Interop.Crypto.GetX509SignatureAlgorithm(_cert);
                 return Interop.libcrypto.OBJ_obj2txt_helper(oidPtr);
             }
         }
@@ -188,7 +188,7 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                return ExtractValidityDateTime(Interop.NativeCrypto.GetX509NotAfter(_cert));
+                return ExtractValidityDateTime(Interop.Crypto.GetX509NotAfter(_cert));
             }
         }
 
@@ -196,7 +196,7 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                return ExtractValidityDateTime(Interop.NativeCrypto.GetX509NotBefore(_cert));
+                return ExtractValidityDateTime(Interop.Crypto.GetX509NotBefore(_cert));
             }
         }
 
@@ -209,7 +209,7 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                int version = Interop.NativeCrypto.GetX509Version(_cert);
+                int version = Interop.Crypto.GetX509Version(_cert);
 
                 if (version < 0)
                 {
@@ -284,7 +284,7 @@ namespace Internal.Cryptography.Pal
 
                     Interop.libcrypto.CheckValidOpenSslHandle(dataPtr);
 
-                    byte[] extData = Interop.NativeCrypto.GetAsn1StringBytes(dataPtr);
+                    byte[] extData = Interop.Crypto.GetAsn1StringBytes(dataPtr);
                     bool critical = Interop.libcrypto.X509_EXTENSION_get_critical(ext);
                     X509Extension extension = new X509Extension(oid, extData, critical);
 
@@ -320,7 +320,7 @@ namespace Internal.Cryptography.Pal
 
         public string GetNameInfo(X509NameType nameType, bool forIssuer)
         {
-            using (SafeBioHandle bioHandle = Interop.NativeCrypto.GetX509NameInfo(_cert, (int)nameType, forIssuer))
+            using (SafeBioHandle bioHandle = Interop.Crypto.GetX509NameInfo(_cert, (int)nameType, forIssuer))
             {
                 if (bioHandle.IsInvalid)
                 {
@@ -387,13 +387,13 @@ namespace Internal.Cryptography.Pal
         {
             Interop.libcrypto.CheckValidOpenSslHandle(namePtr);
 
-            byte[] buf = Interop.NativeCrypto.GetX509NameRawBytes(namePtr);
+            byte[] buf = Interop.Crypto.GetX509NameRawBytes(namePtr);
             return new X500DistinguishedName(buf);
         }
 
         private static DateTime ExtractValidityDateTime(IntPtr validityDatePtr)
         {
-            byte[] bytes = Interop.NativeCrypto.GetAsn1StringBytes(validityDatePtr);
+            byte[] bytes = Interop.Crypto.GetAsn1StringBytes(validityDatePtr);
 
             // RFC 5280 (X509v3 - https://tools.ietf.org/html/rfc5280)
             // states that the validity times are either UTCTime:YYMMDDHHMMSSZ (13 bytes)
