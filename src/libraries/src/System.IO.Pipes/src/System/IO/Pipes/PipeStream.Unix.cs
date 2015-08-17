@@ -20,8 +20,6 @@ namespace System.IO.Pipes
         // Windows, but can't assume a valid handle on Unix.
         internal const bool CheckOperationsRequiresSetHandle = false;
 
-        private static readonly string PipeDirectoryPath = Path.Combine(Path.GetTempPath(), "corefxnamedpipes");
-
         internal static string GetPipePath(string serverName, string pipeName)
         {
             if (serverName != "." && serverName != Interop.libc.gethostname())
@@ -38,35 +36,8 @@ namespace System.IO.Pipes
                 throw new PlatformNotSupportedException();
             }
 
-            // Make sure we have the directory in which to put the pipe paths
-            while (true)
-            {
-                int result = Interop.libc.mkdir(PipeDirectoryPath, (int)Interop.libc.Permissions.S_IRWXU);
-                if (result >= 0)
-                {
-                    // directory created
-                    break;
-                }
-
-                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                if (errorInfo.Error == Interop.Error.EINTR)
-                {
-                    // I/O was interrupted, try again
-                    continue;
-                }
-                else if (errorInfo.Error == Interop.Error.EEXIST)
-                {
-                    // directory already exists
-                    break;
-                }
-                else
-                {
-                    throw Interop.GetExceptionForIoErrno(errorInfo, PipeDirectoryPath, isDirectory: true);
-                }
-            }
-
             // Return the pipe path
-            return Path.Combine(PipeDirectoryPath, pipeName);
+            return Path.Combine(EnsurePipeDirectoryPath(), pipeName);
         }
 
         /// <summary>Throws an exception if the supplied handle does not represent a valid pipe.</summary>
@@ -254,6 +225,85 @@ namespace System.IO.Pipes
         // -----------------------------
         // ---- PAL layer ends here ----
         // -----------------------------
+
+        private static string s_pipeDirectoryPath;
+
+        private static string EnsurePipeDirectoryPath()
+        {
+            const string PipesFeatureName = "pipes";
+
+            // Ideally this would simply use PersistedFiles.GetTempFeatureDirectory(PipesFeatureName) and then
+            // Directory.CreateDirectory to ensure it exists.  But this assembly doesn't reference System.IO.FileSystem.
+            // As such, we'd be calling GetTempFeatureDirectory, only to then need to parse it in order
+            // to create each of the individual directories as part of the path.  We instead access the named portions 
+            // of the path directly and do the building of the path and directory structure manually.
+
+            // First ensure we know what the full path should be, e.g. /tmp/.dotnet/corefx/pipes/
+            string fullPath = s_pipeDirectoryPath;
+            string tempPath = null;
+            if (fullPath == null)
+            {
+                tempPath = Path.GetTempPath();
+                fullPath = Path.Combine(tempPath, PersistedFiles.TopLevelHiddenDirectory, PersistedFiles.SecondLevelDirectory, PipesFeatureName);
+                s_pipeDirectoryPath = fullPath;
+            }
+
+            // Then create the directory if it doesn't already exist.  If we get any error back from stat,
+            // just proceed to build up the directory, failing in the CreateDirectory calls if there's some
+            // problem.  Similarly, it's possible stat succeeds but the path is a file rather than directory; we'll
+            // call that success for now and let this fail later when the code tries to create a file in this "directory"
+            // (we don't want to overwrite/delete whatever that unknown file may be, and this is similar to other cases
+            // we can't control where the file system is manipulated concurrently with and separately from this code).
+            Interop.Sys.FileStatus ignored;
+            bool pathExists = Interop.Sys.Stat(fullPath, out ignored) == 0;
+            if (!pathExists)
+            {
+                // We need to build up the directory manually.  Ensure we have the temp directory in which
+                // we'll create the structure, e.g. /tmp/
+                if (tempPath == null)
+                {
+                    tempPath = Path.GetTempPath();
+                }
+                Debug.Assert(Interop.Sys.Stat(tempPath, out ignored) == 0, "Path.GetTempPath() directory could not be accessed");
+
+                // Create /tmp/.dotnet/ if it doesn't exist.
+                string partialPath = Path.Combine(tempPath, PersistedFiles.TopLevelHiddenDirectory);
+                CreateDirectory(partialPath);
+
+                // Create /tmp/.dotnet/corefx/ if it doesn't exist
+                partialPath = Path.Combine(partialPath, PersistedFiles.SecondLevelDirectory);
+                CreateDirectory(partialPath);
+
+                // Create /tmp/.dotnet/corefx/pipes/ if it doesn't exist
+                CreateDirectory(fullPath);
+            }
+
+            return fullPath;
+        }
+
+        private static void CreateDirectory(string directoryPath)
+        {
+            while (true)
+            {
+                int result = Interop.libc.mkdir(directoryPath, (int)Interop.libc.Permissions.S_IRWXU);
+
+                // If successful created, we're done.
+                if (result >= 0)
+                    return;
+
+                // If the directory already exists, consider it a success.
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                if (errorInfo.Error == Interop.Error.EEXIST)
+                    return;
+
+                // If the I/O was interrupted, try again.
+                if (errorInfo.Error == Interop.Error.EINTR)
+                    continue;
+
+                // Otherwise, fail.
+                throw Interop.GetExceptionForIoErrno(errorInfo, directoryPath, isDirectory: true);
+            }
+        }
 
         internal static Interop.libc.OpenFlags TranslateFlags(PipeDirection direction, PipeOptions options, HandleInheritability inheritability)
         {

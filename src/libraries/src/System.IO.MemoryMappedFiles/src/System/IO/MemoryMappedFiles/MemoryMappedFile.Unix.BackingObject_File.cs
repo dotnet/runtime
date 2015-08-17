@@ -9,8 +9,9 @@ namespace System.IO.MemoryMappedFiles
     {
         private static FileStream CreateSharedBackingObject(Interop.libc.MemoryMappedProtections protections, long capacity)
         {
-            string path = TmpPathPrefix + Guid.NewGuid().ToString("N") + ".tmp";
-
+            Directory.CreateDirectory(s_tempMapsDirectory);
+            string path = Path.Combine(s_tempMapsDirectory, Guid.NewGuid().ToString("N"));
+            
             FileAccess access =
                 (protections & (Interop.libc.MemoryMappedProtections.PROT_READ | Interop.libc.MemoryMappedProtections.PROT_WRITE)) != 0 ? FileAccess.ReadWrite :
                 (protections & (Interop.libc.MemoryMappedProtections.PROT_WRITE)) != 0 ? FileAccess.Write :
@@ -37,6 +38,6 @@ namespace System.IO.MemoryMappedFiles
         // ---- PAL layer ends here ----
         // -----------------------------
 
-        private static readonly string TmpPathPrefix = Path.Combine(Path.GetTempPath(), MemoryMapObjectFilePrefix);
+        private static readonly string s_tempMapsDirectory = PersistedFiles.GetTempFeatureDirectory("maps");
     }
 }

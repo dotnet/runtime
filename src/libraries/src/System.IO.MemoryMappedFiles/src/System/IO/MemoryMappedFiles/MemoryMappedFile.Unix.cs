@@ -122,9 +122,7 @@ namespace System.IO.MemoryMappedFiles
         {
             return new PlatformNotSupportedException(SR.PlatformNotSupported_NamedMaps);
         }
-
-        private const string MemoryMapObjectFilePrefix = "corefx_mmf_";
-
+        
         private static FileAccess TranslateProtectionsToFileAccess(Interop.libc.MemoryMappedProtections protections)
         {
             return
