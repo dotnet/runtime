@@ -616,6 +616,10 @@ mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
 		/* This icall is used to check for exceptions, so don't check in the wrapper */
 		check_exc = FALSE;
 
+	if (!strcmp (callinfo->name, "mono_threads_state_poll"))
+		/* Checking exceptions could lead to infinite recursion with mono_thread_interruption_checkpoint () */
+		check_exc = FALSE;
+
 	name = g_strdup_printf ("__icall_wrapper_%s", callinfo->name);
 	wrapper = mono_marshal_get_icall_wrapper (callinfo->sig, name, callinfo->func, check_exc);
 	g_free (name);
