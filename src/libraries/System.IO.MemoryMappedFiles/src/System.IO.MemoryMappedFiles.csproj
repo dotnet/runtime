@@ -198,6 +198,9 @@
     <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.SysConfNames.cs">
       <Link>Common\Interop\OSX\Interop.SysConfNames.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\IO\PersistedFiles.Names.Unix.cs">
+      <Link>Common\System\IO\PersistedFiles.Names.Unix.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- Resource files -->
   <ItemGroup>

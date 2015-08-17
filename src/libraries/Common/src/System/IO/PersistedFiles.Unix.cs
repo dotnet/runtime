@@ -5,14 +5,8 @@ using System.Diagnostics;
 
 namespace System.IO
 {
-    internal static class PersistedFiles
+    internal static partial class PersistedFiles
     {
-        // If we ever need system persisted data, /etc/dotnet/corefx/
-        private const string TopLevelDirectory = "dotnet";
-        // User persisted data, ~/.dotnet/corefx/
-        private const string TopLevelUserDirectory = "." + TopLevelDirectory;
-        private const string SecondLevelDirectory = "corefx";
-
         private static string s_userProductDirectory;
 
         /// <summary>
@@ -79,7 +73,7 @@ namespace System.IO
 
             s_userProductDirectory = Path.Combine(
                 userHomeDirectory,
-                TopLevelUserDirectory,
+                TopLevelHiddenDirectory,
                 SecondLevelDirectory);
         }
     }
