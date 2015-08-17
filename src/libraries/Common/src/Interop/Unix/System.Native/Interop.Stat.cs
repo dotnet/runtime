@@ -41,7 +41,7 @@ internal static partial class Interop
         internal enum FileStatusFlags
         {
             None = 0,
-            HasCreationTime = 1,
+            HasBirthTime = 1,
         }
 
         [DllImport(Libraries.SystemNative, SetLastError = true)]

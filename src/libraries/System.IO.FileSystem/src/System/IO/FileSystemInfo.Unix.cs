@@ -8,15 +8,15 @@ namespace System.IO
     partial class FileSystemInfo : IFileSystemObject
     {
         /// <summary>The last cached stat information about the file.</summary>
-        private Interop.libcoreclr.fileinfo _fileinfo;
+        private Interop.Sys.FileStatus _fileStatus;
 
         /// <summary>
         /// Whether we've successfully cached a stat structure.
-        /// -1 if we need to refresh _fileinfo, 0 if we've successfully cached one,
+        /// -1 if we need to refresh _fileStatus, 0 if we've successfully cached one,
         /// or any other value that serves as an errno error code from the
-        /// last time we tried and failed to refresh _fileinfo.
+        /// last time we tried and failed to refresh _fileStatus.
         /// </summary>
-        private int _fileinfoInitialized = -1;
+        private int _fileStatusInitialized = -1;
 
         internal IFileSystemObject FileSystemObject
         {
@@ -25,7 +25,7 @@ namespace System.IO
 
         internal void Invalidate()
         {
-            _fileinfoInitialized = -1;
+            _fileStatusInitialized = -1;
         }
 
         FileAttributes IFileSystemObject.Attributes
@@ -77,7 +77,7 @@ namespace System.IO
                 // just changing its permissions accordingly.
                 EnsureStatInitialized();
                 IsReadOnlyAssumesInitialized = (value & FileAttributes.ReadOnly) != 0;
-                _fileinfoInitialized = -1;
+                _fileStatusInitialized = -1;
             }
         }
 
@@ -86,7 +86,7 @@ namespace System.IO
         {
             get
             {
-                return (_fileinfo.mode & Interop.libcoreclr.FileTypes.S_IFMT) == Interop.libcoreclr.FileTypes.S_IFDIR;
+                return (_fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
             }
         }
 
@@ -94,7 +94,7 @@ namespace System.IO
         {
             get
             {
-                return (_fileinfo.mode & Interop.libcoreclr.FileTypes.S_IFMT) == Interop.libcoreclr.FileTypes.S_IFLNK;
+                return (_fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK;
             }
         }
 
@@ -107,12 +107,12 @@ namespace System.IO
             get
             {
                 Interop.libc.Permissions readBit, writeBit;
-                if (_fileinfo.uid == Interop.libc.geteuid())      // does the user effectively own the file?
+                if (_fileStatus.Uid == Interop.libc.geteuid())      // does the user effectively own the file?
                 {
                     readBit  = Interop.libc.Permissions.S_IRUSR;
                     writeBit = Interop.libc.Permissions.S_IWUSR;
                 }
-                else if (_fileinfo.gid == Interop.libc.getegid()) // does the user belong to a group that effectively owns the file?
+                else if (_fileStatus.Gid == Interop.libc.getegid()) // does the user belong to a group that effectively owns the file?
                 {
                     readBit  = Interop.libc.Permissions.S_IRGRP;
                     writeBit = Interop.libc.Permissions.S_IWGRP;
@@ -124,12 +124,12 @@ namespace System.IO
                 }
 
                 return
-                    (_fileinfo.mode & (int)readBit) != 0 && // has read permission
-                    (_fileinfo.mode & (int)writeBit) == 0;  // but not write permission
+                    (_fileStatus.Mode & (int)readBit) != 0 && // has read permission
+                    (_fileStatus.Mode & (int)writeBit) == 0;  // but not write permission
             }
             set
             {
-                int newMode = _fileinfo.mode;
+                int newMode = _fileStatus.Mode;
                 if (value) // true if going from writable to readable, false if going from readable to writable
                 {
                     // Take away all write permissions from user/group/everyone
@@ -142,7 +142,7 @@ namespace System.IO
                 }
 
                 // Change the permissions on the file
-                if (newMode != _fileinfo.mode)
+                if (newMode != _fileStatus.Mode)
                 {
                     bool isDirectory = this is DirectoryInfo;
                     while (Interop.CheckIo(Interop.libc.chmod(FullPath, newMode), FullPath, isDirectory)) ;
@@ -154,12 +154,12 @@ namespace System.IO
         {
             get
             {
-                if (_fileinfoInitialized == -1)
+                if (_fileStatusInitialized == -1)
                 {
                     Refresh();
                 }
                 return
-                    _fileinfoInitialized == 0 && // avoid throwing if Refresh failed; instead just return false
+                    _fileStatusInitialized == 0 && // avoid throwing if Refresh failed; instead just return false
                     (this is DirectoryInfo) == IsDirectoryAssumesInitialized;
             }
         }
@@ -169,8 +169,8 @@ namespace System.IO
             get
             {
                 EnsureStatInitialized();
-                return (_fileinfo.flags & (uint)Interop.libcoreclr.FileInformationFlags.HasBTime) != 0 ?
-                    DateTimeOffset.FromUnixTimeSeconds(_fileinfo.btime) :
+                return (_fileStatus.Flags & Interop.Sys.FileStatusFlags.HasBirthTime) != 0 ?
+                    DateTimeOffset.FromUnixTimeSeconds(_fileStatus.BirthTime) :
                     default(DateTimeOffset);
             }
             set
@@ -188,7 +188,7 @@ namespace System.IO
             get
             {
                 EnsureStatInitialized();
-                return DateTimeOffset.FromUnixTimeSeconds(_fileinfo.atime).ToLocalTime();
+                return DateTimeOffset.FromUnixTimeSeconds(_fileStatus.ATime).ToLocalTime();
             }
             set { SetAccessWriteTimes((IntPtr)value.ToUnixTimeSeconds(), null); }
         }
@@ -198,21 +198,21 @@ namespace System.IO
             get
             {
                 EnsureStatInitialized();
-                return DateTimeOffset.FromUnixTimeSeconds(_fileinfo.mtime).ToLocalTime();
+                return DateTimeOffset.FromUnixTimeSeconds(_fileStatus.MTime).ToLocalTime();
             }
             set { SetAccessWriteTimes(null, (IntPtr)value.ToUnixTimeSeconds()); }
         }
 
         private void SetAccessWriteTimes(IntPtr? accessTime, IntPtr? writeTime)
         {
-            _fileinfoInitialized = -1; // force a refresh so that we have an up-to-date times for values not being overwritten
+            _fileStatusInitialized = -1; // force a refresh so that we have an up-to-date times for values not being overwritten
             EnsureStatInitialized();
             Interop.libc.utimbuf buf;
-            buf.actime = accessTime ?? new IntPtr(_fileinfo.atime);
-            buf.modtime = writeTime ?? new IntPtr(_fileinfo.mtime);
+            buf.actime = accessTime ?? new IntPtr(_fileStatus.ATime);
+            buf.modtime = writeTime ?? new IntPtr(_fileStatus.MTime);
             bool isDirectory = this is DirectoryInfo;
             while (Interop.CheckIo(Interop.libc.utime(FullPath, ref buf), FullPath, isDirectory)) ;
-            _fileinfoInitialized = -1;
+            _fileStatusInitialized = -1;
         }
 
         long IFileSystemObject.Length
@@ -220,7 +220,7 @@ namespace System.IO
             get
             {
                 EnsureStatInitialized();
-                return _fileinfo.size;
+                return _fileStatus.Size;
             }
         }
 
@@ -231,10 +231,10 @@ namespace System.IO
             int result;
             while (true)
             {
-                result = Interop.libcoreclr.GetFileInformationFromPath(FullPath, out _fileinfo);
+                result = Interop.Sys.Stat(FullPath, out _fileStatus);
                 if (result >= 0)
                 {
-                    _fileinfoInitialized = 0;
+                    _fileStatusInitialized = 0;
                 }
                 else
                 {
@@ -243,7 +243,7 @@ namespace System.IO
                     {
                         continue;
                     }
-                    _fileinfoInitialized = errorInfo.RawErrno;
+                    _fileStatusInitialized = errorInfo.RawErrno;
                 }
                 break;
             }
@@ -251,15 +251,15 @@ namespace System.IO
 
         private void EnsureStatInitialized()
         {
-            if (_fileinfoInitialized == -1)
+            if (_fileStatusInitialized == -1)
             {
                 Refresh();
             }
 
-            if (_fileinfoInitialized != 0)
+            if (_fileStatusInitialized != 0)
             {
-                int errno = _fileinfoInitialized;
-                _fileinfoInitialized = -1;
+                int errno = _fileStatusInitialized;
+                _fileStatusInitialized = -1;
                 var errorInfo =  new Interop.ErrorInfo(errno);
 
                 // Windows distinguishes between whether the directory or the file isn't found,

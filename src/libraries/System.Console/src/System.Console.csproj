@@ -132,9 +132,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.snprintf.cs">
       <Link>Common\Interop\Unix\Interop.snprintf.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.GetFileInformation.cs">
-      <Link>Common\Interop\Unix\Interop.GetFileInformation.cs"</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Stat.cs">
       <Link>Common\Interop\Unix\Interop.Stat.cs</Link>
     </Compile>

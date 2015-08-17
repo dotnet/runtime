@@ -51,13 +51,13 @@ namespace Microsoft.Win32.SafeHandles
 
                 // Make sure it's not a directory; we do this after opening it once we have a file descriptor 
                 // to avoid race conditions.
-                Interop.libcoreclr.fileinfo buf;
-                if (Interop.libcoreclr.GetFileInformationFromFd(fd, out buf) != 0)
+                Interop.Sys.FileStatus status;
+                if (Interop.Sys.FStat(fd, out status) != 0)
                 {
                     handle.Dispose();
                     throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), path);
                 }
-                if ((buf.mode & Interop.libcoreclr.FileTypes.S_IFMT) == Interop.libcoreclr.FileTypes.S_IFDIR)
+                if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
                 {
                     handle.Dispose();
                     throw Interop.GetExceptionForIoErrno(Interop.Error.EACCES.Info(), path, isDirectory: true);
