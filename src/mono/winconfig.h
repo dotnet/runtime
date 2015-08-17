@@ -16,6 +16,10 @@
 #error Unknown architecture
 #endif
 
+#define WINVER 0x0A00
+
+#include <SDKDDKVer.h>
+
 #if _WIN32_WINNT < 0x0600
 #error "Mono requires Windows Vista or later"
 #endif /* _WIN32_WINNT < 0x0600 */

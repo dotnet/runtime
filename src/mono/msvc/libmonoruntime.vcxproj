@@ -308,38 +308,38 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>$(Platform)\lib\</OutDir>
+    <OutDir>$(Platform)\lib\$(Configuration)\</OutDir>
     <IntDir>$(Platform)\obj\$(ProjectName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_SGen|Win32'">
-    <OutDir>$(Platform)\lib\</OutDir>
+    <OutDir>$(Platform)\lib\$(Configuration)\</OutDir>
     <IntDir>$(Platform)\obj\$(ProjectName)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)sgen</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(Platform)\lib\</OutDir>
+    <OutDir>$(Platform)\lib\$(Configuration)\</OutDir>
     <IntDir>$(Platform)\obj\$(ProjectName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_SGen|x64'">
-    <OutDir>$(Platform)\lib\</OutDir>
+    <OutDir>$(Platform)\lib\$(Configuration)\</OutDir>
     <IntDir>$(Platform)\obj\$(ProjectName)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)sgen</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>$(Platform)\lib\</OutDir>
+    <OutDir>$(Platform)\lib\$(Configuration)\</OutDir>
     <IntDir>$(Platform)\obj\$(ProjectName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_SGen|Win32'">
-    <OutDir>$(Platform)\lib\</OutDir>
+    <OutDir>$(Platform)\lib\$(Configuration)\</OutDir>
     <IntDir>$(Platform)\obj\$(ProjectName)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)sgen</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(Platform)\lib\</OutDir>
+    <OutDir>$(Platform)\lib\$(Configuration)\</OutDir>
     <IntDir>$(Platform)\obj\$(ProjectName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_SGen|x64'">
-    <OutDir>$(Platform)\lib\</OutDir>
+    <OutDir>$(Platform)\lib\$(Configuration)\</OutDir>
     <IntDir>$(Platform)\obj\$(ProjectName)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)sgen</TargetName>
   </PropertyGroup>
@@ -351,6 +351,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;$(BOEHM_DEFINES);_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(top_srcdir);$(top_srcdir)/mono;$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
