@@ -61,7 +61,7 @@ namespace Internal.Cryptography.Pal
 
         private byte[] ExportPfx(string password)
         {
-            using (SafeX509StackHandle publicCerts = Interop.NativeCrypto.NewX509Stack())
+            using (SafeX509StackHandle publicCerts = Interop.Crypto.NewX509Stack())
             {
                 X509Certificate2 privateCert = null;
 
@@ -88,7 +88,7 @@ namespace Internal.Cryptography.Pal
                     {
                         using (SafeX509Handle certHandle = Interop.libcrypto.X509_dup(cert.Handle))
                         {
-                            if (!Interop.NativeCrypto.PushX509StackField(publicCerts, certHandle))
+                            if (!Interop.Crypto.PushX509StackField(publicCerts, certHandle))
                             {
                                 throw Interop.libcrypto.CreateOpenSslCryptographicException();
                             }

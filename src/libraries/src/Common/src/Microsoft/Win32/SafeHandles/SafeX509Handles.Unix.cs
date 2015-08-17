@@ -82,7 +82,7 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            Interop.NativeCrypto.RecursiveFreeX509Stack(handle);
+            Interop.Crypto.RecursiveFreeX509Stack(handle);
             SetHandle(IntPtr.Zero);
             return true;
         }
