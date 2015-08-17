@@ -884,7 +884,10 @@ mono_thread_info_safe_suspend_and_run (MonoNativeThreadId id, gboolean interrupt
 	/*FIXME: unify this with self-suspend*/
 	g_assert (id != mono_native_thread_id_get ());
 
+	/* This can block during stw */
+	MONO_PREPARE_BLOCKING;
 	mono_thread_info_suspend_lock ();
+	MONO_FINISH_BLOCKING;
 	mono_threads_begin_global_suspend ();
 
 	info = suspend_sync_nolock (id, interrupt_kernel);
