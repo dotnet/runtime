@@ -43,9 +43,9 @@ namespace System.IO
             }
 
             // Now copy over relevant read/write/execute permissions from the source to the destination
-            Interop.libcoreclr.fileinfo fileinfo;
-            while (Interop.CheckIo(Interop.libcoreclr.GetFileInformationFromPath(sourceFullPath, out fileinfo), sourceFullPath)) ;
-            int newMode = fileinfo.mode & (int)Interop.libc.Permissions.Mask;
+            Interop.Sys.FileStatus status;
+            while (Interop.CheckIo(Interop.Sys.Stat(sourceFullPath, out status), sourceFullPath)) ;
+            int newMode = status.Mode & (int)Interop.libc.Permissions.Mask;
             while (Interop.CheckIo(Interop.libc.chmod(destFullPath, newMode), destFullPath)) ;
         }
 
@@ -315,22 +315,22 @@ namespace System.IO
 
         private static bool DirectoryExists(string fullPath, out Interop.ErrorInfo errorInfo)
         {
-            return FileExists(fullPath, Interop.libcoreclr.FileTypes.S_IFDIR, out errorInfo);
+            return FileExists(fullPath, Interop.Sys.FileTypes.S_IFDIR, out errorInfo);
         }
 
         public override bool FileExists(string fullPath)
         {
             Interop.ErrorInfo ignored;
-            return FileExists(fullPath, Interop.libcoreclr.FileTypes.S_IFREG, out ignored);
+            return FileExists(fullPath, Interop.Sys.FileTypes.S_IFREG, out ignored);
         }
 
         private static bool FileExists(string fullPath, int fileType, out Interop.ErrorInfo errorInfo)
         {
-            Interop.libcoreclr.fileinfo fileinfo;
+            Interop.Sys.FileStatus fileinfo;
             while (true)
             {
                 errorInfo = default(Interop.ErrorInfo);
-                int result = Interop.libcoreclr.GetFileInformationFromPath(fullPath, out fileinfo);
+                int result = Interop.Sys.Stat(fullPath, out fileinfo);
                 if (result < 0)
                 {
                     errorInfo = Interop.Sys.GetLastErrorInfo();
@@ -340,7 +340,7 @@ namespace System.IO
                     }
                     return false;
                 }
-                return (fileinfo.mode & Interop.libcoreclr.FileTypes.S_IFMT) == fileType;
+                return (fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == fileType;
             }
         }
 
