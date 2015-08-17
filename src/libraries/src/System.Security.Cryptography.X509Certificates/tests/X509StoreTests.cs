@@ -60,7 +60,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Fact]
         [ActiveIssue(2820, PlatformID.AnyUnix)]
-        public static void AddReadOnlyDoesntThrowWhenCertificateExists()
+        public static void AddReadOnlyThrowsWhenCertificateExists()
         {
             using (X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
             {
@@ -82,8 +82,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 if (toAdd != null)
                 {
-                    // This shouldn't throw, the cert is already present.
-                    store.Add(toAdd);
+                    Assert.Throws<CryptographicException>(() => store.Add(toAdd));
                 }
             }
         }
