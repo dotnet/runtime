@@ -7,15 +7,8 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class Registry_SetValue_str_str_obj_valueKind : TestSubKey
+    public class Registry_SetValue_str_str_obj_valueKind : RegistryTestsBase
     {
-        private const string TestKey = "CM3001_TEST";
-
-        public Registry_SetValue_str_str_obj_valueKind()
-            : base(TestKey)
-        {
-        }
-
         public static IEnumerable<object[]> TestObjects { get { return TestData.TestObjects; } }
 
         [Theory]

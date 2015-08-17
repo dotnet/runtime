@@ -8,15 +8,8 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_CreateSubKey_str : TestSubKey
+    public class RegistryKey_CreateSubKey_str : RegistryTestsBase
     {
-        private const string TestKey = "REG_TEST_1";
-
-        public RegistryKey_CreateSubKey_str()
-            : base(TestKey)
-        {
-        }
-
         [Fact]
         public void NegativeTests()
         {
@@ -35,7 +28,7 @@ namespace Microsoft.Win32.RegistryTests
             // Should throw if RegistryKey is readonly
             const string name = "FooBar";
             _testRegistryKey.SetValue(name, 42);
-            using (var rk = Registry.CurrentUser.CreateSubKey(TestKey, writable: false))
+            using (var rk = Registry.CurrentUser.CreateSubKey(_testRegistryKeyName, writable: false))
             {
                 Assert.Throws<UnauthorizedAccessException>(() => rk.CreateSubKey(name));
                 Assert.Throws<UnauthorizedAccessException>(() => rk.SetValue(name, "String"));
@@ -48,7 +41,7 @@ namespace Microsoft.Win32.RegistryTests
             Assert.Throws<ObjectDisposedException>(() =>
             {
                 _testRegistryKey.Dispose();
-                _testRegistryKey.CreateSubKey(TestKey);
+                _testRegistryKey.CreateSubKey(_testRegistryKeyName);
             });
         }
 
@@ -64,8 +57,8 @@ namespace Microsoft.Win32.RegistryTests
         [Fact]
         public void CreateSubKeyAndCheckThatItExists()
         {
-            _testRegistryKey.CreateSubKey(TestKey);
-            Assert.NotNull(_testRegistryKey.OpenSubKey(TestKey));
+            _testRegistryKey.CreateSubKey(_testRegistryKeyName);
+            Assert.NotNull(_testRegistryKey.OpenSubKey(_testRegistryKeyName));
             Assert.Equal(expected: 1, actual:_testRegistryKey.SubKeyCount);
         }
 
@@ -73,9 +66,9 @@ namespace Microsoft.Win32.RegistryTests
         public void CreateSubKeyShouldOpenExisting()
         {
             // CreateSubKey should open subkey if it already exists
-            Assert.NotNull(_testRegistryKey.CreateSubKey(TestKey));
-            Assert.NotNull(_testRegistryKey.OpenSubKey(TestKey));
-            Assert.NotNull(_testRegistryKey.CreateSubKey(TestKey));
+            Assert.NotNull(_testRegistryKey.CreateSubKey(_testRegistryKeyName));
+            Assert.NotNull(_testRegistryKey.OpenSubKey(_testRegistryKeyName));
+            Assert.NotNull(_testRegistryKey.CreateSubKey(_testRegistryKeyName));
         }
 
         [Theory]

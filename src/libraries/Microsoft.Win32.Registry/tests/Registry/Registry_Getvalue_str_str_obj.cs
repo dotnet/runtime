@@ -8,15 +8,8 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class Registry_GetValue_str_str_obj : TestSubKey
+    public class Registry_GetValue_str_str_obj : RegistryTestsBase
     {
-        private const string TestKey = "CM1001_TEST";
-
-        public Registry_GetValue_str_str_obj()
-            : base(TestKey)
-        {
-        }
-
         [Fact]
         public static void NegativeTests()
         {

@@ -8,15 +8,8 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_GetSubKeyNames : TestSubKey
+    public class RegistryKey_GetSubKeyNames : RegistryTestsBase
     {
-        private const string TestKey = "REG_TEST_8";
-
-        public RegistryKey_GetSubKeyNames()
-            : base(TestKey)
-        {
-        }
-
         [Fact]
         public void ShoudThrowIfDisposed()
         {
@@ -30,7 +23,7 @@ namespace Microsoft.Win32.RegistryTests
         [Fact]
         public void ShouldThrowIfRegistryKeyDeleted()
         {
-            Registry.CurrentUser.DeleteSubKeyTree(TestKey);
+            Registry.CurrentUser.DeleteSubKeyTree(_testRegistryKeyName);
             Assert.Throws<IOException>(() => _testRegistryKey.GetSubKeyNames());
         }
 

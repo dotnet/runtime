@@ -7,15 +7,8 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_GetValueKind_str : TestSubKey
+    public class RegistryKey_GetValueKind_str : RegistryTestsBase
     {
-        private const string TestKey = "Test2";
-
-        public RegistryKey_GetValueKind_str()
-            : base(TestKey)
-        {
-        }
-
         [Fact]
         public void NegativeTests()
         {
@@ -50,7 +43,7 @@ namespace Microsoft.Win32.RegistryTests
             const RegistryValueKind expectedValueKind = RegistryValueKind.QWord;
             _testRegistryKey.SetValue(valueName, expectedValue, expectedValueKind);
 
-            using (RegistryKey rk = Registry.CurrentUser.OpenSubKey(TestKey, false))
+            using (RegistryKey rk = Registry.CurrentUser.OpenSubKey(_testRegistryKeyName, false))
             {
                 Assert.Equal(expectedValue.ToString(), rk.GetValue(valueName).ToString());
                 Assert.Equal(expectedValueKind, rk.GetValueKind(valueName));

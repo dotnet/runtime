@@ -7,15 +7,8 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_SetValueKind_str_obj_valueKind : TestSubKey
+    public class RegistryKey_SetValueKind_str_obj_valueKind : RegistryTestsBase
     {
-        private const string TestKey = "TEST_KEY";
-
-        public RegistryKey_SetValueKind_str_obj_valueKind()
-            : base(TestKey)
-        {
-        }
-
         public static IEnumerable<object[]> TestObjects { get { return TestData.TestObjects; } }
 
         [Theory]
@@ -199,7 +192,7 @@ namespace Microsoft.Win32.RegistryTests
             Assert.Throws<ArgumentException>(() => _testRegistryKey.SetValue(valueName, objTemp, RegistryValueKind.Unknown));
 
             // Should throw because RegistryKey is readonly
-            using (var rk = Registry.CurrentUser.OpenSubKey(TestKey, false))
+            using (var rk = Registry.CurrentUser.OpenSubKey(_testRegistryKeyName, false))
             {
                 Assert.Throws<UnauthorizedAccessException>(() => rk.SetValue(valueName, int.MaxValue, RegistryValueKind.DWord));
             }

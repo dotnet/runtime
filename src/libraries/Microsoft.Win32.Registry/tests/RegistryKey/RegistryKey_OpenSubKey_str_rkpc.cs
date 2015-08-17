@@ -7,15 +7,8 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_OpenSubKey_str_rkpc : TestSubKey
+    public class RegistryKey_OpenSubKey_str_rkpc : RegistryTestsBase
     {
-        private const string TestKey = "REG_TEST_12";
-
-        public RegistryKey_OpenSubKey_str_rkpc()
-            : base(TestKey)
-        {
-        }
-
         [Fact]
         public void NegativeTests()
         {
@@ -29,7 +22,7 @@ namespace Microsoft.Win32.RegistryTests
             const string name = "FooBar";
             _testRegistryKey.SetValue(name, 42);
             _testRegistryKey.CreateSubKey(name);
-            using (var rk = Registry.CurrentUser.OpenSubKey(name: TestKey, rights: RegistryRights.ReadKey))
+            using (var rk = Registry.CurrentUser.OpenSubKey(name: _testRegistryKeyName, rights: RegistryRights.ReadKey))
             {
                 Assert.Throws<UnauthorizedAccessException>(() => rk.CreateSubKey(name));
                 Assert.Throws<UnauthorizedAccessException>(() => rk.SetValue(name, "String"));
@@ -42,7 +35,7 @@ namespace Microsoft.Win32.RegistryTests
             Assert.Throws<ObjectDisposedException>(() =>
             {
                 _testRegistryKey.Dispose();
-                _testRegistryKey.OpenSubKey(TestKey, RegistryRights.Delete);
+                _testRegistryKey.OpenSubKey(_testRegistryKeyName, RegistryRights.Delete);
             });
         }
 

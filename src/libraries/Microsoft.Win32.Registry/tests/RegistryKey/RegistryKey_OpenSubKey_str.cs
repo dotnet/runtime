@@ -7,15 +7,8 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_OpenSubKey_str : TestSubKey
+    public class RegistryKey_OpenSubKey_str : RegistryTestsBase
     {
-        private const string TestKey = "REG_TEST_11";
-
-        public RegistryKey_OpenSubKey_str()
-            : base(TestKey)
-        {
-        }
-
         [Fact]
         public void NegativeTests()
         {
@@ -28,7 +21,7 @@ namespace Microsoft.Win32.RegistryTests
             // OpenSubKey should be read only by default
             const string name = "FooBar";
             _testRegistryKey.SetValue(name, 42);
-            using (var rk = Registry.CurrentUser.OpenSubKey(TestKey))
+            using (var rk = Registry.CurrentUser.OpenSubKey(_testRegistryKeyName))
             {
                 Assert.Throws<UnauthorizedAccessException>(() => rk.CreateSubKey(name));
                 Assert.Throws<UnauthorizedAccessException>(() => rk.SetValue(name, "String"));
@@ -41,19 +34,19 @@ namespace Microsoft.Win32.RegistryTests
             Assert.Throws<ObjectDisposedException>(() =>
             {
                 _testRegistryKey.Dispose();
-                _testRegistryKey.OpenSubKey(TestKey);
+                _testRegistryKey.OpenSubKey(_testRegistryKeyName);
             });
         }
 
         [Fact]
         public void OpenSubKeyTest()
         {
-            _testRegistryKey.CreateSubKey(TestKey);
-            Assert.NotNull(_testRegistryKey.OpenSubKey(TestKey));
+            _testRegistryKey.CreateSubKey(_testRegistryKeyName);
+            Assert.NotNull(_testRegistryKey.OpenSubKey(_testRegistryKeyName));
             Assert.Equal(expected: 1, actual: _testRegistryKey.SubKeyCount);
 
-            _testRegistryKey.DeleteSubKey(TestKey);
-            Assert.Null(_testRegistryKey.OpenSubKey(TestKey));
+            _testRegistryKey.DeleteSubKey(_testRegistryKeyName);
+            Assert.Null(_testRegistryKey.OpenSubKey(_testRegistryKeyName));
             Assert.Equal(expected: 0, actual: _testRegistryKey.SubKeyCount);
         }
 

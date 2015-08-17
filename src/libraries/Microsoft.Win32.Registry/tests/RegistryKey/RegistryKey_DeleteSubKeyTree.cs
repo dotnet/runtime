@@ -6,15 +6,8 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_DeleteSubKeyTree : TestSubKey
+    public class RegistryKey_DeleteSubKeyTree : RegistryTestsBase
     {
-        private const string TestKey = "BCL_TEST_42";
-
-        public RegistryKey_DeleteSubKeyTree()
-            : base(TestKey)
-        {
-        }
-
         [Fact]
         public void NegativeTests()
         {

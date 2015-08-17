@@ -8,15 +8,8 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class SafeRegistryHandleTests : TestSubKey
+    public class SafeRegistryHandleTests : RegistryTestsBase
     {
-        private const string TestKey = "BCL_TEST_44";
-
-        public SafeRegistryHandleTests()
-            : base(TestKey)
-        {
-        }
-
         [Fact]
         public void NegativeTests()
         {

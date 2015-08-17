@@ -8,15 +8,8 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_CreateSubKey_str_rkpc : TestSubKey
+    public class RegistryKey_CreateSubKey_str_rkpc : RegistryTestsBase
     {
-        private const string TestKey = "REG_TEST_2";
-
-        public RegistryKey_CreateSubKey_str_rkpc()
-            : base(TestKey)
-        {
-        }
-
         [Fact]
         public void CreateWriteableSubkeyAndWrite()
         {
@@ -26,7 +19,7 @@ namespace Microsoft.Win32.RegistryTests
             const string testStringValue = "Hello World!†þ";
             const int testValue = 42;
 
-            using (var rk = _testRegistryKey.CreateSubKey(TestKey, writable: true))
+            using (var rk = _testRegistryKey.CreateSubKey(_testRegistryKeyName, writable: true))
             {
                 Assert.NotNull(rk);
 
@@ -48,8 +41,8 @@ namespace Microsoft.Win32.RegistryTests
             Assert.Throws<ArgumentNullException>(() => _testRegistryKey.CreateSubKey(null, true));
 
             // Should throw if passed option is invalid
-            Assert.Throws<ArgumentException>(() => _testRegistryKey.CreateSubKey(TestKey, true, options: (RegistryOptions)(-1)));
-            Assert.Throws<ArgumentException>(() => _testRegistryKey.CreateSubKey(TestKey, true, options: (RegistryOptions)3));
+            Assert.Throws<ArgumentException>(() => _testRegistryKey.CreateSubKey(_testRegistryKeyName, true, options: (RegistryOptions)(-1)));
+            Assert.Throws<ArgumentException>(() => _testRegistryKey.CreateSubKey(_testRegistryKeyName, true, options: (RegistryOptions)3));
 
             // Should throw if key length above 255 characters
             const int maxValueNameLength = 255;
@@ -63,7 +56,7 @@ namespace Microsoft.Win32.RegistryTests
             // Should throw if RegistryKey is readonly
             const string name = "FooBar";
             _testRegistryKey.SetValue(name, 42);
-            using (var rk = Registry.CurrentUser.CreateSubKey(TestKey, writable: false, options: RegistryOptions.None))
+            using (var rk = Registry.CurrentUser.CreateSubKey(_testRegistryKeyName, writable: false, options: RegistryOptions.None))
             {
                 Assert.Throws<UnauthorizedAccessException>(() => rk.CreateSubKey(name));
                 Assert.Throws<UnauthorizedAccessException>(() => rk.SetValue(name, "String"));
@@ -76,7 +69,7 @@ namespace Microsoft.Win32.RegistryTests
             Assert.Throws<ObjectDisposedException>(() =>
             {
                 _testRegistryKey.Dispose();
-                _testRegistryKey.CreateSubKey(TestKey, true);
+                _testRegistryKey.CreateSubKey(_testRegistryKeyName, true);
             });
         }
 
