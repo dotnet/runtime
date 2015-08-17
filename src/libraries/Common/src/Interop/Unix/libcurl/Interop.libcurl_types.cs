@@ -33,6 +33,7 @@ internal static partial class Interop
             internal const int CURLOPT_PROXYPORT = CurlOptionLongBase + 59;
             internal const int CURLOPT_MAXREDIRS = CurlOptionLongBase + 68;
             internal const int CURLOPT_PROXYTYPE = CurlOptionLongBase + 101;
+            internal const int CURLOPT_HTTPAUTH = CurlOptionLongBase + 107;
 
             internal const int CURLOPT_WRITEDATA = CurlOptionObjectPointBase + 1;
             internal const int CURLOPT_URL = CurlOptionObjectPointBase + 2;
@@ -45,6 +46,8 @@ internal static partial class Interop
             internal const int CURLOPT_ACCEPTENCODING = CurlOptionObjectPointBase + 102;
             internal const int CURLOPT_PRIVATE = CurlOptionObjectPointBase + 103;
             internal const int CURLOPT_IOCTLDATA = CurlOptionObjectPointBase + 131;
+            internal const int CURLOPT_USERNAME = CurlOptionObjectPointBase + 173;
+            internal const int CURLOPT_PASSWORD = CurlOptionObjectPointBase + 174;
 
             internal const int CURLOPT_WRITEFUNCTION = CurlOptionFunctionPointBase + 11;
             internal const int CURLOPT_READFUNCTION = CurlOptionFunctionPointBase + 12;
@@ -70,8 +73,10 @@ internal static partial class Interop
         {
             // Curl info are of the format <type base> + <n>
             private const int CurlInfoStringBase = 0x100000;
+            private const int CurlInfoLongBase   = 0x200000;
 
             internal const int CURLINFO_PRIVATE = CurlInfoStringBase + 21;
+            internal const int CURLINFO_HTTPAUTH_AVAIL = CurlInfoLongBase + 23;
         }
 
         // Class for constants defined for the enum curl_proxytype in curl.h
@@ -123,6 +128,17 @@ internal static partial class Interop
         internal static partial class CURLMSG
         {
             internal const int CURLMSG_DONE = 1;
+        }
+
+        // AUTH related constants
+        internal static partial class CURLAUTH
+        {
+            internal const ulong None = 0;
+            internal const ulong Basic = 1 << 0;
+            internal const ulong Digest = 1 << 1;
+            internal const ulong Negotiate = 1 << 2;
+            internal const ulong DigestIE = 1 << 4;
+            internal const ulong AuthAny = ~DigestIE;
         }
 
         internal static partial class CURL_VERSION_Features
