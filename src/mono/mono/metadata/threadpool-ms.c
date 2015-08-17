@@ -322,6 +322,7 @@ cleanup (void)
 
 	MONO_PREPARE_BLOCKING;
 	mono_mutex_lock (&threadpool->active_threads_lock);
+	MONO_FINISH_BLOCKING;
 
 	/* stop all threadpool->working_threads */
 	for (i = 0; i < threadpool->working_threads->len; ++i)
@@ -332,7 +333,6 @@ cleanup (void)
 		worker_unpark ((ThreadPoolParkedThread*) g_ptr_array_index (threadpool->parked_threads, i));
 
 	mono_mutex_unlock (&threadpool->active_threads_lock);
-	MONO_FINISH_BLOCKING;
 }
 
 void
