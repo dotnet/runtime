@@ -1726,19 +1726,6 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 	SGEN_LOG (6, "Collecting pinned addresses");
 	pin_from_roots ((void*)lowest_heap_address, (void*)highest_heap_address, ctx);
 
-	if (mode != COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT) {
-		if (major_collector.is_concurrent) {
-			/*
-			 * The concurrent major collector cannot evict
-			 * yet, so we need to pin cemented objects to
-			 * not break some asserts.
-			 *
-			 * FIXME: We could evict now!
-			 */
-			sgen_pin_cemented_objects ();
-		}
-	}
-
 	sgen_optimize_pin_queue ();
 
 	sgen_client_collecting_major_1 ();
@@ -1885,7 +1872,8 @@ major_start_collection (gboolean concurrent, size_t *old_next_pin_slot)
 
 	g_assert (sgen_section_gray_queue_is_empty (sgen_workers_get_distribute_section_gray_queue ()));
 
-	sgen_cement_reset ();
+	if (!concurrent)
+		sgen_cement_reset ();
 
 	if (concurrent) {
 		g_assert (major_collector.is_concurrent);
@@ -2177,6 +2165,7 @@ major_finish_concurrent_collection (gboolean forced)
 		sgen_check_mod_union_consistency ();
 
 	current_collection_generation = GENERATION_OLD;
+	sgen_cement_reset ();
 	major_finish_collection ("finishing", -1, forced);
 
 	if (whole_heap_check_before_collection)
@@ -2942,9 +2931,6 @@ sgen_gc_init (void)
 
 	sgen_nursery_size = DEFAULT_NURSERY_SIZE;
 
-	if (major_collector.is_concurrent)
-		cement_enabled = FALSE;
-
 	if (opts) {
 		gboolean usage_printed = FALSE;
 
@@ -3100,11 +3086,6 @@ sgen_gc_init (void)
 		g_free (minor_collector_opt);
 
 	alloc_nursery ();
-
-	if (major_collector.is_concurrent && cement_enabled) {
-		sgen_env_var_error (MONO_GC_PARAMS_NAME, "Ignoring.", "`cementing` is not supported on concurrent major collectors.");
-		cement_enabled = FALSE;
-	}
 
 	sgen_cement_init (cement_enabled);
 
