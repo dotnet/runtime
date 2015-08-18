@@ -51,6 +51,10 @@
      <Compile Include="System\Security\Cryptography\CngProvider.cs" />
      <Compile Include="System\Security\Cryptography\CngUIPolicy.cs" />
      <Compile Include="System\Security\Cryptography\CngUIProtectionLevels.cs" />
+     <Compile Include="System\Security\Cryptography\ECDsaCng.cs" />
+     <Compile Include="System\Security\Cryptography\ECDsaCng.HashData.cs" />
+     <Compile Include="System\Security\Cryptography\ECDsaCng.Key.cs" />
+     <Compile Include="System\Security\Cryptography\ECDsaCng.SignVerify.cs" />
      <Compile Include="System\Security\Cryptography\RSACng.cs" />
      <Compile Include="System\Security\Cryptography\RSACng.EncryptDecrypt.cs" />
      <Compile Include="System\Security\Cryptography\RSACng.HashData.cs" />
@@ -60,6 +64,7 @@
 
      <Compile Include="Microsoft\Win32\SafeHandles\NCryptSafeHandles.cs" />
 
+     <Compile Include="Internal\Cryptography\CngAsymmetricAlgorithmCore.cs" />
      <Compile Include="Internal\Cryptography\Helpers.cs" />
      <Compile Include="Internal\Cryptography\KeyPropertyName.cs" />
      <Compile Include="Internal\Cryptography\ProviderPropertyName.cs" />

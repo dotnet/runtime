@@ -30,6 +30,33 @@ namespace System.Security.Cryptography.Cng.Tests
 
         public static RSAParameters TestRsaKeyPair;
 
+
+        public static readonly CngKey s_ECDsa256Key =
+            CngKey.Import(
+                ("454353322000000096e476f7473cb17c5b38684daae437277ae1efadceb380fad3d7072be2ffe5f0b54a94c2d6951f073bfc"
+              + "25e7b81ac2a4c41317904929d167c3dfc99122175a9438e5fb3e7625493138d4149c9438f91a2fecc7f48f804a92b6363776"
+              + "892ee134").HexToByteArray(), CngKeyBlobFormat.GenericPrivateBlob);
+
+        public static readonly CngKey s_ECDsa384Key =
+            CngKey.Import(
+                ("45435334300000009dc6bb9cdc8dac31e3db6e6b5f58f8e3a304e5c08e632705ca9a236f1134646dca526b89f7ea98653962"
+               + "f4a781f2fc9bf479a2d627561b1269548050e6d2c388018b837f4ceba8ee7fe2eefea67c8418ad1e84f60c1309385e573ea5"
+               + "183e9ae8b6d5308a78da207c6e556af2053983321a5f8ac057b787089ee783c99093b9f2afb2f9a1e9a560ad3095b9667aa6"
+               + "99fa").HexToByteArray(), CngKeyBlobFormat.GenericPrivateBlob);
+
+        public static readonly CngKey s_ECDsa521Key =
+            CngKey.Import(
+                ("454353364200000001f9f06ea4e00fd3fecc1753af7983b43cb9b692941ee6364616c9c4168845fce804beca7aa23d0a5049"
+               + "910db45dfb61112f4cb02e93ff62af1be203ad248dd70952015ddc31d1ad7411ca5996b8b76a40ea65f286c665225114bec8"
+               + "557365aa4bc79358f8c68b873cb76a1c86a5a394185d8eeb9602b8b968db1e4ac49b7cc51f83c7170055ad9b0b2d0d5d2306"
+               + "a66bf87a256a3739696121eb131e64ae61991ea23db99b397c32df95efb0cb284147a929c65e9f671073ca3c7a084cb9211d"
+               + "ceb06c987277").HexToByteArray(), CngKeyBlobFormat.GenericPrivateBlob);
+
+        public static readonly byte[] s_hashSha1 = ("77dbd8b3ef3084e1cc475c8bf955a972214b5f36").HexToByteArray();
+        public static readonly byte[] s_hashSha512 = 
+            ("a232cec7be26319e53db0d48470232d37793b06b99e8ed82fac1996b3d1596449087769927d64af657cce62d853c4cf7ff4c"
+           + "d069eda230d1c524d225756ffbaf").HexToByteArray();
+
         static TestData()
         {
             RSAParameters rp = new RSAParameters();
