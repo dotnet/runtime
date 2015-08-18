@@ -26,16 +26,18 @@
 
 /*
 Function:
-_MakeTimeT
+MakeTimeT
 
 Used to convert the constituent elements of a struct tm into a time_t. As time_t does not have
-a guaranteed blitting size, this should never be p/invoked. It is here merely as a utility.
+a guaranteed blitting size, this function is static and cannot be p/invoked. It is here merely
+as a utility.
 
 Return values:
 A time_t representation of the input date. See also man mktime(3).
 */
+static
 time_t
-_MakeTimeT(
+MakeTimeT(
     int year,
     int month,
     int day,
@@ -734,7 +736,7 @@ SetX509ChainVerifyTime(
         return 0;
     }
 
-    time_t verifyTime = _MakeTimeT(year, month, day, hour, minute, second, isDst);
+    time_t verifyTime = MakeTimeT(year, month, day, hour, minute, second, isDst);
 
     if (verifyTime == (time_t)-1)
     {
