@@ -22,43 +22,18 @@ namespace System.Security.Cryptography
         {
             get
             {
-                // If our key size was changed from the key we're using, we need to generate a new key.
-                if (_lazyKey != null && _lazyKey.KeySize != KeySize)
-                {
-                    _lazyKey.Dispose();
-                    _lazyKey = null;
-                }
-
-                // If we don't have a key yet, we need to generate a random one now.
-                if (_lazyKey == null)
-                {
-                    CngKeyCreationParameters creationParameters = new CngKeyCreationParameters()
-                    {
-                        ExportPolicy = CngExportPolicies.AllowPlaintextExport,
-                    };
-
-                    CngProperty keySizeProperty = new CngProperty(KeyPropertyName.Length, BitConverter.GetBytes(KeySize), CngPropertyOptions.None);
-                    creationParameters.Parameters.Add(keySizeProperty);
-                    _lazyKey = CngKey.Create(CngAlgorithm.Rsa, null, creationParameters);
-                }
-
-                return _lazyKey;
+                CngKey key = _core.GetOrGenerateKey(KeySize, CngAlgorithm.Rsa);
+                return key;
             }
 
             private set
             {
-                Debug.Assert(value != null, "value != null");
-                if (value.AlgorithmGroup != CngAlgorithmGroup.Rsa)
+                CngKey key = value;
+                Debug.Assert(key != null, "key != null");
+                if (key.AlgorithmGroup != CngAlgorithmGroup.Rsa)
                     throw new ArgumentException(SR.Cryptography_ArgRSAaRequiresRSAKey, "value");
-
-                // If we already have a key, clear it out.
-                if (_lazyKey != null)
-                {
-                    _lazyKey.Dispose();
-                }
-
-                _lazyKey = value;
-                KeySize = _lazyKey.KeySize;
+                _core.SetKey(key);
+                KeySize = key.KeySize;
             }
         }
     }

@@ -32,23 +32,7 @@ namespace System.Security.Cryptography
                     delegate (AsymmetricPaddingMode paddingMode, void* pPaddingInfo)
                     {
                         int estimatedSize = KeySize / 8;
-#if DEBUG
-                        estimatedSize = 2;  // Make sure the NTE_BUFFER_TOO_SMALL scenario gets exercised.
-#endif
-                        SafeNCryptKeyHandle keyHandle = Key.Handle;
-
-                        signature = new byte[estimatedSize];
-                        int numBytesNeeded;
-                        ErrorCode errorCode = Interop.NCrypt.NCryptSignHash(keyHandle, pPaddingInfo, hash, hash.Length, signature, signature.Length, out numBytesNeeded, paddingMode);
-                        if (errorCode == ErrorCode.NTE_BUFFER_TOO_SMALL)
-                        {
-                            signature = new byte[numBytesNeeded];
-                            errorCode = Interop.NCrypt.NCryptSignHash(keyHandle, pPaddingInfo, hash, hash.Length, signature, signature.Length, out numBytesNeeded, paddingMode);
-                        }
-                        if (errorCode != ErrorCode.ERROR_SUCCESS)
-                            throw errorCode.ToCryptographicException();
-
-                        Array.Resize(ref signature, numBytesNeeded);
+                        signature = CngAsymmetricAlgorithmCore.SignHash(Key, hash, paddingMode, pPaddingInfo, estimatedSize);
                     }
                 );
                 return signature;
@@ -71,9 +55,7 @@ namespace System.Security.Cryptography
                 SignOrVerify(padding, hashAlgorithm, hash,
                     delegate (AsymmetricPaddingMode paddingMode, void* pPaddingInfo)
                     {
-                        SafeNCryptKeyHandle keyHandle = Key.Handle;
-                        ErrorCode errorCode = Interop.NCrypt.NCryptVerifySignature(keyHandle, pPaddingInfo, hash, hash.Length, signature, signature.Length, paddingMode);
-                        verified = (errorCode == ErrorCode.ERROR_SUCCESS);  // For consistency with other RSA classes, return "false" for any error code rather than making the caller catch an exception.
+                        verified = CngAsymmetricAlgorithmCore.VerifyHash(Key, hash, signature, paddingMode, pPaddingInfo);
                     }
                 );
                 return verified;

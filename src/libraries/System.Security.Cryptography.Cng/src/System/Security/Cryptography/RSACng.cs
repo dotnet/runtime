@@ -4,6 +4,8 @@
 using System;
 using System.Diagnostics;
 
+using Internal.Cryptography;
+
 namespace System.Security.Cryptography
 {
     public sealed partial class RSACng : RSA
@@ -47,19 +49,15 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Cryptography_ArgRSAaRequiresRSAKey, "key");
 
             _legalKeySizesValue = s_legalKeySizes;
-            Key = CngKey.Open(key.Handle, key.IsEphemeral ? CngKeyHandleOpenOptions.EphemeralKey : CngKeyHandleOpenOptions.None);
+            Key = CngAsymmetricAlgorithmCore.Duplicate(key);
         }
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && _lazyKey != null)
-            {
-                _lazyKey.Dispose();
-            }
+            _core.Dispose();
         }
 
-        // Key handle
-        private CngKey _lazyKey;
+        private CngAsymmetricAlgorithmCore _core;
 
         // See https://msdn.microsoft.com/en-us/library/windows/desktop/bb931354(v=vs.85).aspx
         private static readonly KeySizes[] s_legalKeySizes = 

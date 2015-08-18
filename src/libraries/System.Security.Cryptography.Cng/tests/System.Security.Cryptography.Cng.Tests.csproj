@@ -31,6 +31,7 @@
     <Compile Include="ImportExportTests.cs" />
     <Compile Include="PropertyTests.cs" />
     <Compile Include="RSACngTests.cs" />
+    <Compile Include="ECDsaCngTests.cs" />
     <Compile Include="TestData.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -58,6 +59,17 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\Streams\PositionValueStream.cs">
       <Link>CommonTest\Streams\PositionValueStream.cs</Link>
+    </Compile>
+
+    <Compile Include="ECDsaCngProvider.cs" />
+    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\ECDsa\ECDsaFactory.cs">
+      <Link>CommonTest\Cryptography\AlgorithmImplementations\ECDsa\ECDsaFactory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\ECDsa\ECDsaTests.cs">
+      <Link>CommonTest\Cryptography\AlgorithmImplementations\ECDsa\ECDsaTests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\ECDsa\ECDsaStub.cs">
+      <Link>CommonTest\Cryptography\AlgorithmImplementations\ECDsa\ECDsaStub.cs</Link>
     </Compile>
   </ItemGroup>
 
