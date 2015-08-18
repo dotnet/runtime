@@ -88,8 +88,8 @@
 	} while (0)
 
 /* MS_BLOCK_SIZE must be a multiple of the system pagesize, which for some
-   archs is 64k.  */
-#if defined(TARGET_POWERPC64) && _CALL_ELF == 2
+   architectures is 64k.  */
+#if defined(TARGET_POWERPC64)
 #define ARCH_MIN_MS_BLOCK_SIZE	(64*1024)
 #define ARCH_MIN_MS_BLOCK_SIZE_SHIFT	16
 #endif
