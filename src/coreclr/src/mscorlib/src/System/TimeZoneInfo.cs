@@ -1435,7 +1435,7 @@ namespace System {
             else
             {
                 // if the rule's DateStart is Unspecified, then use the whole-date portion
-                isAfterStart = dateTime >= rule.DateStart;
+                isAfterStart = dateOnly >= rule.DateStart;
             }
 
             if (!isAfterStart)
@@ -1461,7 +1461,7 @@ namespace System {
             else
             {
                 // if the rule's DateEnd is Unspecified, then use the whole-date portion
-                isBeforeEnd = dateTime <= rule.DateEnd;
+                isBeforeEnd = dateOnly <= rule.DateEnd;
             }
 
             return isBeforeEnd;
