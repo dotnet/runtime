@@ -31,6 +31,7 @@
 #include <glib.h>
 #include "mono-hash.h"
 #include "metadata/gc-internal.h"
+#include <mono/utils/checked-build.h>
 
 #ifdef HAVE_BOEHM_GC
 #define mg_new0(type,n)  ((type *) GC_MALLOC(sizeof(type) * (n)))
@@ -207,6 +208,8 @@ do_rehash (void *_data)
 static void
 rehash (MonoGHashTable *hash)
 {
+	MONO_REQ_GC_UNSAFE_MODE; //we must run in unsafe mode to make rehash safe
+
 	int diff = ABS (hash->last_rehash - hash->in_use);
 	RehashData data;
 	void *old_table G_GNUC_UNUSED; /* unused on Boehm */
