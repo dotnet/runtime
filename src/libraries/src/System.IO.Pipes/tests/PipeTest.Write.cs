@@ -133,6 +133,21 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        public async Task WriteZeroLengthBuffer_Nop()
+        {
+            using (ServerClientPair pair = CreateServerClientPair())
+            {
+                PipeStream pipe = pair.writeablePipe;
+
+                // Shouldn't throw
+                pipe.Write(Array.Empty<byte>(), 0, 0);
+
+                Task writeTask = pipe.WriteAsync(Array.Empty<byte>(), 0, 0);
+                await writeTask;
+            }
+        }
+
+        [Fact]
         public void WritePipeUnsupportedMembers_Throws_NotSupportedException()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -166,6 +181,7 @@ namespace System.IO.Pipes.Tests
                 Assert.Throws<ObjectDisposedException>(() => { pipe.WriteAsync(buffer, 0, buffer.Length); });
                 Assert.Throws<ObjectDisposedException>(() => pipe.Flush());
                 Assert.Throws<ObjectDisposedException>(() => pipe.IsMessageComplete);
+                Assert.Throws<ObjectDisposedException>(() => pipe.ReadMode);
             }
         }
 

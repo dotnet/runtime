@@ -3,8 +3,10 @@
 
 using System.Runtime.InteropServices;
 using System.Security.Principal;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.IO.Pipes.Tests
@@ -77,20 +79,25 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(PipeOptions.None)]
+        [InlineData(PipeOptions.Asynchronous)]
         [PlatformSpecific(PlatformID.Windows)]
-        public void Windows_MessagePipeTransissionMode()
+        public async Task Windows_MessagePipeTransissionMode(PipeOptions serverOptions)
         {
             byte[] msg1 = new byte[] { 5, 7, 9, 10 };
             byte[] msg2 = new byte[] { 2, 4 };
             byte[] received1 = new byte[] { 0, 0, 0, 0 };
             byte[] received2 = new byte[] { 0, 0 };
-            byte[] received3 = new byte[] { 0, 0, 0, 0 }; ;
+            byte[] received3 = new byte[] { 0, 0, 0, 0 };
+            byte[] received4 = new byte[] { 0, 0, 0, 0 };
+            byte[] received5 = new byte[] { 0, 0 };
+            byte[] received6 = new byte[] { 0, 0, 0, 0 };
             string pipeName = GetUniquePipeName();
 
-            using (NamedPipeServerStream server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Message))
+            using (var server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Message, serverOptions))
             {
-                using (NamedPipeClientStream client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.None, TokenImpersonationLevel.Impersonation))
+                using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.None, TokenImpersonationLevel.Impersonation))
                 {
                     server.ReadMode = PipeTransmissionMode.Message;
                     Assert.Equal(PipeTransmissionMode.Message, server.ReadMode);
@@ -103,11 +110,16 @@ namespace System.IO.Pipes.Tests
                         client.Write(msg2, 0, msg2.Length);
                         client.Write(msg1, 0, msg1.Length);
 
+                        client.Write(msg1, 0, msg1.Length);
+                        client.Write(msg2, 0, msg2.Length);
+                        client.Write(msg1, 0, msg1.Length);
+
                         int serverCount = client.NumberOfServerInstances;
                         Assert.Equal(1, serverCount);
                     });
 
                     server.WaitForConnection();
+
                     int len1 = server.Read(received1, 0, msg1.Length);
                     Assert.True(server.IsMessageComplete);
                     Assert.Equal(msg1.Length, len1);
@@ -118,16 +130,86 @@ namespace System.IO.Pipes.Tests
                     Assert.Equal(msg2.Length, len2);
                     Assert.Equal(msg2, received2);
 
-                    int len3 = server.Read(received3, 0, msg1.Length - 1);  // read one less than message
+                    int expectedRead = msg1.Length - 1;
+                    int len3 = server.Read(received3, 0, expectedRead);  // read one less than message
                     Assert.False(server.IsMessageComplete);
-                    Assert.Equal(msg1.Length - 1, len3);
+                    Assert.Equal(expectedRead, len3);
+                    for (int i = 0; i < expectedRead; ++i)
+                    {
+                        Assert.Equal(msg1[i], received3[i]);
+                    }
 
-                    int len4 = server.Read(received3, len3, received3.Length - len3);
+                    expectedRead = msg1.Length - expectedRead;
+                    Assert.Equal(expectedRead, server.Read(received3, len3, expectedRead));
                     Assert.True(server.IsMessageComplete);
-                    Assert.Equal(msg1.Length, len3 + len4);
                     Assert.Equal(msg1, received3);
 
-                    string userName = server.GetImpersonationUserName();    // not sure what to test here that will work in all cases
+                    Assert.Equal(msg1.Length, await server.ReadAsync(received4, 0, msg1.Length));
+                    Assert.True(server.IsMessageComplete);
+                    Assert.Equal(msg1, received4);
+
+                    Assert.Equal(msg2.Length, await server.ReadAsync(received5, 0, msg2.Length));
+                    Assert.True(server.IsMessageComplete);
+                    Assert.Equal(msg2, received5);
+
+                    expectedRead = msg1.Length - 1;
+                    Assert.Equal(expectedRead, await server.ReadAsync(received6, 0, expectedRead));  // read one less than message
+                    Assert.False(server.IsMessageComplete);
+                    for (int i = 0; i < expectedRead; ++i)
+                    {
+                        Assert.Equal(msg1[i], received6[i]);
+                    }
+
+                    expectedRead = msg1.Length - expectedRead;
+                    Assert.Equal(expectedRead, await server.ReadAsync(received6, msg1.Length - expectedRead, expectedRead));
+                    Assert.True(server.IsMessageComplete);
+                    Assert.Equal(msg1, received6);
+
+                    await clientTask;
+                }
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public async Task Windows_Get_NumberOfServerInstances_Succeed()
+        {
+            string pipeName = GetUniquePipeName();
+
+            using (var server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 3))
+            {
+                using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.None, TokenImpersonationLevel.Impersonation))
+                {
+                    int expectedNumberOfServerInstances;
+                    Task serverTask = server.WaitForConnectionAsync();
+
+                    client.Connect();
+                    await serverTask;
+
+                    Assert.True(Interop.TryGetNumberOfServerInstances(client.SafePipeHandle, out expectedNumberOfServerInstances), "GetNamedPipeHandleState failed");
+                    Assert.Equal(expectedNumberOfServerInstances, client.NumberOfServerInstances);
+                }
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public async Task Windows_GetImpersonationUserName_Succeed()
+        {
+            string pipeName = GetUniquePipeName();
+
+            using (var server = new NamedPipeServerStream(pipeName))
+            {
+                using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.None, TokenImpersonationLevel.Impersonation))
+                {
+                    string expectedUserName;
+                    Task serverTask = server.WaitForConnectionAsync();
+
+                    client.Connect();
+                    await serverTask;
+
+                    Assert.True(Interop.TryGetImpersonationUserName(server.SafePipeHandle, out expectedUserName), "GetNamedPipeHandleState failed");
+                    Assert.Equal(expectedUserName, server.GetImpersonationUserName());
                 }
             }
         }

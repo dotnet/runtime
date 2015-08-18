@@ -51,6 +51,33 @@ namespace System.IO.Pipes.Tests
         }
 
         [Theory]
+        [InlineData(PipeDirection.In)]
+        [InlineData(PipeDirection.InOut)]
+        [InlineData(PipeDirection.Out)]
+        [PlatformSpecific(PlatformID.Windows)]
+        public static void ReservedPipeName_Throws_ArgumentOutOfRangeException(PipeDirection direction)
+        {
+            const string serverName = ".";
+            const string reservedName = "anonymous";
+            Assert.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeClientStream(reservedName));
+            Assert.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeClientStream(serverName, reservedName));
+            Assert.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeClientStream(serverName, reservedName, direction));
+            Assert.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeClientStream(serverName, reservedName, direction, PipeOptions.None));
+            Assert.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeClientStream(serverName, reservedName, direction, PipeOptions.None, TokenImpersonationLevel.Impersonation));
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public static void NotSupportedPipePath_Throws_PlatformNotSupportedException()
+        {
+            string hostName;
+            Assert.True(Interop.TryGetHostName(out hostName));
+
+            Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeClientStream("foobar" + hostName, "foobar"));
+            Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeClientStream(hostName, "foobar" + Path.GetInvalidFileNameChars()[0]));
+        }
+
+        [Theory]
         [InlineData((PipeDirection)123)]
         public static void InvalidPipeDirection_Throws_ArgumentOutOfRangeException(PipeDirection direction)
         {
