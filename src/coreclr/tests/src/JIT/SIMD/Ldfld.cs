@@ -1,0 +1,46 @@
+using System;
+using System.Collections.Generic;
+using Point = System.Numerics.Vector4;
+
+namespace VectorMathTests
+{
+    class Program
+    {
+
+        static float Do(Point p)
+        {
+            return p.X;
+        }
+
+        struct S
+        {
+            public Point p;
+        }
+
+        class C
+        {
+            public Point p;
+        }
+
+
+        static int Main(string[] args)
+        {
+            Point p = new Point(1, 2, 3, 4);
+
+            S s = new S();
+            C c = new C();
+            s.p.X = 1;
+            c.p.Y = 2;
+            if (Do(s.p) != 1)
+            {
+                return 0;
+            }
+            if (c.p.X != 0 || c.p.Y != 2)
+            {
+                return 0;
+            }
+
+            return 100;
+        }
+    }
+}
