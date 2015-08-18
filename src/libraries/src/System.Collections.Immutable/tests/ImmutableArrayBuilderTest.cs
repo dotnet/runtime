@@ -133,7 +133,7 @@ namespace System.Collections.Immutable.Test
             Assert.Throws<ArgumentNullException>(() => builder1.AddRange((int[])null));
             Assert.Throws<ArgumentNullException>(() => builder1.AddRange(null, 42));
             Assert.Throws<ArgumentOutOfRangeException>(() => builder1.AddRange(new int[0], -1));
-            Assert.Throws<IndexOutOfRangeException>(() => builder1.AddRange(new int[0], 42));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder1.AddRange(new int[0], 42));
 
             Assert.Throws<ArgumentNullException>(() => builder1.AddRange((ImmutableArray<int>.Builder)null));
             Assert.Throws<ArgumentNullException>(() => builder1.AddRange((IEnumerable<int>)null));
