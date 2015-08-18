@@ -61,7 +61,6 @@ internal static partial class Interop
         ENETUNREACH      = 0x10028,           // Network unreachable.
         ENFILE           = 0x10029,           // Too many files open in system.
         ENOBUFS          = 0x1002A,           // No buffer space available.
-        ENODATA          = 0x1002B,           // No message is available on the STREAM head read queue.
         ENODEV           = 0x1002C,           // No such device.
         ENOENT           = 0x1002D,           // No such file or directory.
         ENOEXEC          = 0x1002E,           // Executable file format error.
@@ -71,8 +70,6 @@ internal static partial class Interop
         ENOMSG           = 0x10032,           // No message of the desired type.
         ENOPROTOOPT      = 0x10033,           // Protocol not available.
         ENOSPC           = 0x10034,           // No space left on device.
-        ENOSR            = 0x10035,           // No STREAM resources.
-        ENOSTR           = 0x10036,           // Not a STREAM.
         ENOSYS           = 0x10037,           // Function not supported.
         ENOTCONN         = 0x10038,           // The socket is not connected.
         ENOTDIR          = 0x10039,           // Not a directory or a symbolic link to a directory.
@@ -94,7 +91,6 @@ internal static partial class Interop
         ESPIPE           = 0x10049,           // Invalid seek.
         ESRCH            = 0x1004A,           // No such process.
         ESTALE           = 0x1004B,           // Reserved.
-        ETIME            = 0x1004C,           // Stream ioctl() timeout.
         ETIMEDOUT        = 0x1004D,           // Connection timed out.
         ETXTBSY          = 0x1004E,           // Text file busy.
         EXDEV            = 0x1004F,           // Cross-device link.
