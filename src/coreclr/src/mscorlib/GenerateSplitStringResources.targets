@@ -1,6 +1,7 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <ResGenCommand Condition="'$(ResGenCommand)'==''">$(SDK40ToolsPath)ResGen.exe</ResGenCommand>
+    <ResGenCommand Condition="'$(ResGenCommand)'=='' and '$(OsEnvironment)'=='Windows_NT'">$(SDK40ToolsPath)ResGen.exe</ResGenCommand>
+    <ResGenCommand Condition="'$(ResGenCommand)'=='' and '$(OsEnvironment)'=='Unix'">resgen</ResGenCommand>
     <PrepareResourcesDependsOn>GenerateSplitStringResources;$(PrepareResourcesDependsOn)</PrepareResourcesDependsOn>
   </PropertyGroup>
     
@@ -8,12 +9,14 @@
           Inputs="$(MSBuildThisFileFullPath);$(MSBuildProjectFile);$(BclSourcesRoot)\mscorlib.txt"
           Outputs="@(SplitTextStringResource->'$(IntermediateOutputPath)%(Filename).resources')">
          
-    <ItemGroup>
+    <ItemGroup Condition="'$(OsEnvironment)'=='Windows_NT'">
       <Internal_ResGenDefines Remove="" />
+      <Internal_ResGenDefines Include="INCLUDE_DEBUG" />
+      <Internal_ResGenDefines Include="INCLUDE_RUNTIME" />
       <Internal_ResGenDefines Include="%(SplitTextStringResource.ResGenDefines)" />
     </ItemGroup>    
 
-    <Exec Command="&quot;$(ResGenCommand)&quot; &quot;%(SplitTextStringResource.Identity)&quot; &quot;$(IntermediateOutputPath)%(SplitTextStringResource.Filename).resources&quot; /D:INCLUDE_DEBUG /D:INCLUDE_RUNTIME @(Internal_ResGenDefines->'/D:%(Identity)', ' ')" />
+    <Exec Command="&quot;$(ResGenCommand)&quot; &quot;%(SplitTextStringResource.Identity)&quot; &quot;$(IntermediateOutputPath)%(SplitTextStringResource.Filename).resources&quot; @(Internal_ResGenDefines->'/D:%(Identity)', ' ')" />
 
     <ItemGroup>
       <EmbeddedResource Include="@(SplitTextStringResource->'$(IntermediateOutputPath)%(Filename).resources')">
