@@ -778,41 +778,13 @@ namespace System.Linq.Tests.LegacyTests
 
         public class Average3f
         {
-            // Type: long, OverflowException is thrown by param sum
-            public static int Test3f()
-            {
-                long[] source = { Int64.MaxValue, Int64.MaxValue };
-                Console.WriteLine("111");
-                try
-                {
-                    var actual = source.Average();
-                    Console.WriteLine("222");
-                    return 1;
-                }
-                catch (OverflowException)
-                {
-                    Console.WriteLine("333");
-                    return 0;
-                }
-
-                catch (Exception e)
-                {
-                    Console.WriteLine("4444");
-                    Console.WriteLine(e);
-                    return 0;
-                }
-            }
-
-
-            public static int Main()
-            {
-                return Test3f();
-            }
-
             [Fact]
+            // Type: long, OverflowException is thrown by param sum
             public void Test()
             {
-                Assert.Equal(0, Main());
+                long[] source = { Int64.MaxValue, Int64.MaxValue };
+
+                Assert.Throws<OverflowException>(() => source.Average());
             }
         }
 
