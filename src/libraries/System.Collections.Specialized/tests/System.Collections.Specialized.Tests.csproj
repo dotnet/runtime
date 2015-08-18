@@ -18,24 +18,7 @@
     <Compile Include="$(CommonTestPath)\System\Collections\CollectionAsserts.cs">
       <Link>Common\System\Collections\CollectionAsserts.cs</Link>
     </Compile>
-    <Compile Include="BitVector32\CreateMaskIntTests.cs" />
-    <Compile Include="BitVector32\CreateMaskTests.cs" />
-    <Compile Include="BitVector32\CreateSectionShortSectionTests.cs" />
-    <Compile Include="BitVector32\CreateSectionShortTests.cs" />
-    <Compile Include="BitVector32\CtorBitvector32Tests.cs" />
-    <Compile Include="BitVector32\CtorIntTests.cs" />
-    <Compile Include="BitVector32\CtorTests.cs" />
-    <Compile Include="BitVector32\EqualsObjTests.cs" />
-    <Compile Include="BitVector32\GetDataTests.cs" />
-    <Compile Include="BitVector32\GetHashCodeTests.cs" />
-    <Compile Include="BitVector32\GetItemIntTests.cs" />
-    <Compile Include="BitVector32\GetItemSectionTests.cs" />
-    <Compile Include="BitVector32\SectionEqualsObjTests.cs" />
-    <Compile Include="BitVector32\SectionGetHashCodeTests.cs" />
-    <Compile Include="BitVector32\SetItemIntBoolTests.cs" />
-    <Compile Include="BitVector32\SetItemSectionIntTests.cs" />
-    <Compile Include="BitVector32\ToStringBvTests.cs" />
-    <Compile Include="BitVector32\ToStringTests.cs" />
+    <Compile Include="BitVector32Tests.cs" />
     <Compile Include="Common\GenStrings.cs" />
     <Compile Include="HybridDictionary\AddObjObjTests.cs" />
     <Compile Include="HybridDictionary\ClearTests.cs" />
