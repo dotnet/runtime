@@ -90,15 +90,41 @@ namespace System.IO.Pipes.Tests
         }
 
         [Theory]
+        [InlineData(0)]
+        [InlineData(-2)]
+        public static void InvalidServerInstances_Throws_ArgumentOutOfRangeException(int numberOfServerInstances)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("maxNumberOfServerInstances", () => new NamedPipeServerStream("temp3", PipeDirection.In, numberOfServerInstances));
+            Assert.Throws<ArgumentOutOfRangeException>("maxNumberOfServerInstances", () => new NamedPipeServerStream("temp3", PipeDirection.In, numberOfServerInstances, PipeTransmissionMode.Byte));
+            Assert.Throws<ArgumentOutOfRangeException>("maxNumberOfServerInstances", () => new NamedPipeServerStream("temp3", PipeDirection.In, numberOfServerInstances, PipeTransmissionMode.Byte, PipeOptions.None));
+            Assert.Throws<ArgumentOutOfRangeException>("maxNumberOfServerInstances", () => new NamedPipeServerStream("temp3", PipeDirection.In, numberOfServerInstances, PipeTransmissionMode.Byte, PipeOptions.None, 0, 0));
+        }
+
+        [Theory]
         [InlineData(PipeDirection.In)]
         [InlineData(PipeDirection.InOut)]
         [InlineData(PipeDirection.Out)]
-        public static void InvalidServerInstances_Throws_ArgumentOutOfRangeException(PipeDirection direction)
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public static void Unix_ServerInstancesOver254_Allowed(PipeDirection direction)
         {
-            Assert.Throws<ArgumentOutOfRangeException>("maxNumberOfServerInstances", () => new NamedPipeServerStream("temp3", direction, 0));
-            Assert.Throws<ArgumentOutOfRangeException>("maxNumberOfServerInstances", () => new NamedPipeServerStream("temp3", direction, 0, PipeTransmissionMode.Byte));
-            Assert.Throws<ArgumentOutOfRangeException>("maxNumberOfServerInstances", () => new NamedPipeServerStream("temp3", direction, 0, PipeTransmissionMode.Byte, PipeOptions.None));
-            Assert.Throws<ArgumentOutOfRangeException>("maxNumberOfServerInstances", () => new NamedPipeServerStream("temp3", direction, 0, PipeTransmissionMode.Byte, PipeOptions.None, 0, 0));
+            // MaxNumberOfServerInstances has functionality on Unix and as such is not upper bound.
+            new NamedPipeServerStream(GetUniquePipeName(), direction, 255).Dispose();
+            new NamedPipeServerStream(GetUniquePipeName(), direction, 255, PipeTransmissionMode.Byte).Dispose();
+            new NamedPipeServerStream(GetUniquePipeName(), direction, 255, PipeTransmissionMode.Byte, PipeOptions.None).Dispose();
+            new NamedPipeServerStream(GetUniquePipeName(), direction, 255, PipeTransmissionMode.Byte, PipeOptions.None, 0, 0).Dispose();
+        }
+
+        [Theory]
+        [InlineData(PipeDirection.In)]
+        [InlineData(PipeDirection.InOut)]
+        [InlineData(PipeDirection.Out)]
+        [PlatformSpecific(PlatformID.Windows)]
+        public static void Windows_ServerInstancesOver254_Throws_ArgumentOutOfRangeException(PipeDirection direction)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("maxNumberOfServerInstances", () => new NamedPipeServerStream("temp3", direction, 255));
+            Assert.Throws<ArgumentOutOfRangeException>("maxNumberOfServerInstances", () => new NamedPipeServerStream("temp3", direction, 255, PipeTransmissionMode.Byte));
+            Assert.Throws<ArgumentOutOfRangeException>("maxNumberOfServerInstances", () => new NamedPipeServerStream("temp3", direction, 255, PipeTransmissionMode.Byte, PipeOptions.None));
+            Assert.Throws<ArgumentOutOfRangeException>("maxNumberOfServerInstances", () => new NamedPipeServerStream("temp3", direction, 255, PipeTransmissionMode.Byte, PipeOptions.None, 0, 0));
         }
 
         [Theory]
