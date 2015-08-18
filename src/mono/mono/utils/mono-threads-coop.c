@@ -18,6 +18,10 @@
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-counters.h>
 
+#ifdef TARGET_OSX
+#include <mono/utils/mach-support.h>
+#endif
+
 #ifdef USE_COOP_BACKEND
 
 volatile size_t mono_polling_required;
@@ -248,12 +252,20 @@ mono_threads_init_platform (void)
 void
 mono_threads_platform_free (MonoThreadInfo *info)
 {
+#ifdef TARGET_OSX
+	mach_port_deallocate (current_task (), info->native_handle);
+#endif
+
 	//See the above for what's wrong here.
 }
 
 void
 mono_threads_platform_register (MonoThreadInfo *info)
 {
+#ifdef TARGET_OSX
+	info->native_handle = mach_thread_self ();
+#endif
+
 	//See the above for what's wrong here.
 }
 
