@@ -23,36 +23,23 @@ namespace System.Threading.Tasks.Tests
             string check;
             object stateObject = new object();
 
-
             // Exercise void overload that takes IAsyncResult instead of StartMethod
             t = Task.Factory.FromAsync(fac.StartWrite("", 0, 0, null, null), delegate (IAsyncResult iar) { });
             t.Wait();
             check = fac.ToString();
-            if (check.Length != 0)
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED on Write1 -- expected empty fac."));
-            }
+            Assert.Equal(0, check.Length);
 
             //CreationOption overload
             t = Task.Factory.FromAsync(fac.StartWrite("", 0, 0, null, null), delegate (IAsyncResult iar) { }, TaskCreationOptions.None);
             t.Wait();
             check = fac.ToString();
-            if (check.Length != 0)
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED on Write2 -- expected empty fac."));
-            }
+            Assert.Equal(0, check.Length);
 
             // Exercise 0-arg void option
             t = Task.Factory.FromAsync(fac.StartWrite, fac.EndWrite, stateObject);
             t.Wait();
-            if (check.Length != 0)
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED on Write3 -- expected empty fac."));
-            }
-            else if (((IAsyncResult)t).AsyncState != stateObject)
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED on Write3 -- state object not stored correctly."));
-            }
+            Assert.Equal(0, check.Length);
+            Assert.Equal(stateObject, ((IAsyncResult)t).AsyncState);
 
             // Exercise 1-arg void option
             Task.Factory.FromAsync(
@@ -60,14 +47,8 @@ namespace System.Threading.Tasks.Tests
                 fac.EndWrite,
                 "1234", stateObject).Wait();
             check = fac.ToString();
-            if (!check.Equals("1234"))
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED @ Write4.  Expected fac \"1234\" after wait, got {0}.", check));
-            }
-            else if (((IAsyncResult)t).AsyncState != stateObject)
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED on Write4 -- state object not stored correctly."));
-            }
+            Assert.Equal("1234", check);
+            Assert.Equal(stateObject, ((IAsyncResult)t).AsyncState);
 
             // Exercise 2-arg void option
             Task.Factory.FromAsync(
@@ -76,14 +57,8 @@ namespace System.Threading.Tasks.Tests
                 "aaaabcdef",
                 4, stateObject).Wait();
             check = fac.ToString();
-            if (!check.Equals("1234aaaa"))
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED @ Write5.  Expected fac \"1234aaaa\" after wait, got {0}.", check));
-            }
-            else if (((IAsyncResult)t).AsyncState != stateObject)
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED on Write5 -- state object not stored correctly."));
-            }
+            Assert.Equal("1234aaaa", check);
+            Assert.Equal(stateObject, ((IAsyncResult)t).AsyncState);
 
             // Exercise 3-arg void option
             Task.Factory.FromAsync(
@@ -94,14 +69,8 @@ namespace System.Threading.Tasks.Tests
                 4,
                 stateObject).Wait();
             check = fac.ToString();
-            if (!check.Equals("1234aaaazzzz"))
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED @ Write6.  Expected fac \"1234aaaazzzz\" after wait, got {0}.", check));
-            }
-            else if (((IAsyncResult)t).AsyncState != stateObject)
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED on Write6 -- state object not stored correctly."));
-            }
+            Assert.Equal("1234aaaazzzz", check);
+            Assert.Equal(stateObject, ((IAsyncResult)t).AsyncState);
 
             // Read side, exercises getting return values from EndMethod
             char[] carray = new char[100];
@@ -115,18 +84,9 @@ namespace System.Threading.Tasks.Tests
                 0,
                 stateObject);
             string s = f.Result;
-            if (!s.Equals("1234"))
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED @ Read1.  Expected Result = \"1234\", got {0}.", s));
-            }
-            else if (carray[0] != '1')
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED @ Read1.  Expected carray[0] = '1', got {0}.", carray[0]));
-            }
-            else if (((IAsyncResult)f).AsyncState != stateObject)
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED on Read1 -- state object not stored correctly."));
-            }
+            Assert.Equal("1234", s);
+            Assert.Equal('1', carray[0]);
+            Assert.Equal(stateObject, ((IAsyncResult)f).AsyncState);
 
             // Exercise 2-arg value option
             f = Task<string>.Factory.FromAsync(
@@ -136,18 +96,9 @@ namespace System.Threading.Tasks.Tests
                 carray,
                 stateObject);
             s = f.Result;
-            if (!s.Equals("aaaa"))
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED @ Read2.  Expected Result = \"aaaa\", got {0}.", s));
-            }
-            else if (carray[0] != 'a')
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED @ Read2.  Expected carray[0] = 'a', got {0}.", carray[0]));
-            }
-            else if (((IAsyncResult)f).AsyncState != stateObject)
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED on Read2 -- state object not stored correctly."));
-            }
+            Assert.Equal("aaaa", s);
+            Assert.Equal('a', carray[0]);
+            Assert.Equal(stateObject, ((IAsyncResult)f).AsyncState);
 
             // Exercise 1-arg value option
             f = Task<string>.Factory.FromAsync(
@@ -156,14 +107,8 @@ namespace System.Threading.Tasks.Tests
                 1,
                 stateObject);
             s = f.Result;
-            if (!s.Equals("z"))
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED @ Read3.  Expected Result = \"z\", got {0}.", s));
-            }
-            else if (((IAsyncResult)f).AsyncState != stateObject)
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED on Read3 -- state object not stored correctly."));
-            }
+            Assert.Equal("z", s);
+            Assert.Equal(stateObject, ((IAsyncResult)f).AsyncState);
 
             // Exercise 0-arg value option
             f = Task<string>.Factory.FromAsync(
@@ -171,14 +116,8 @@ namespace System.Threading.Tasks.Tests
                 fac.EndRead,
                 stateObject);
             s = f.Result;
-            if (!s.Equals("zzz"))
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED @ Read4.  Expected Result = \"zzz\", got {0}.", s));
-            }
-            else if (((IAsyncResult)f).AsyncState != stateObject)
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED on Read4 -- state object not stored correctly."));
-            }
+            Assert.Equal("zzz", s);
+            Assert.Equal(stateObject, ((IAsyncResult)f).AsyncState);
 
             //
             // Do all of the read tests again, except with Task.Factory.FromAsync<string>(), instead of Task<string>.Factory.FromAsync().
@@ -196,18 +135,9 @@ namespace System.Threading.Tasks.Tests
                 stateObject);
 
             s = f.Result;
-            if (!s.Equals("1234"))
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED @ Read1a.  Expected Result = \"1234\", got {0}.", s));
-            }
-            else if (carray[0] != '1')
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED @ Read1a.  Expected carray[0] = '1', got {0}.", carray[0]));
-            }
-            else if (((IAsyncResult)f).AsyncState != stateObject)
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED on Read1a -- state object not stored correctly."));
-            }
+            Assert.Equal("1234", s);
+            Assert.Equal('1', carray[0]);
+            Assert.Equal(stateObject, ((IAsyncResult)f).AsyncState);
 
             // one more with the creationOptions overload
             f = Task.Factory.FromAsync<int, char[], int, string>(
@@ -221,19 +151,9 @@ namespace System.Threading.Tasks.Tests
               TaskCreationOptions.None);
 
             s = f.Result;
-            if (!s.Equals("5678"))
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED @ Read1b.  Expected Result = \"1234\", got {0}.", s));
-            }
-            else if (carray[0] != '5')
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED @ Read1b.  Expected carray[0] = '1', got {0}.", carray[0]));
-            }
-            else if (((IAsyncResult)f).AsyncState != stateObject)
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED on Read1b -- state object not stored correctly."));
-            }
-
+            Assert.Equal("5678", s);
+            Assert.Equal('5', carray[0]);
+            Assert.Equal(stateObject, ((IAsyncResult)f).AsyncState);
 
             // Exercise 2-arg value option
             f = Task.Factory.FromAsync<int, char[], string>(
@@ -243,18 +163,9 @@ namespace System.Threading.Tasks.Tests
                 carray,
                 stateObject);
             s = f.Result;
-            if (!s.Equals("aaaa"))
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED @ Read2a.  Expected Result = \"aaaa\", got {0}.", s));
-            }
-            else if (carray[0] != 'a')
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED @ Read2a.  Expected carray[0] = 'a', got {0}.", carray[0]));
-            }
-            else if (((IAsyncResult)f).AsyncState != stateObject)
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED on Read2a -- state object not stored correctly."));
-            }
+            Assert.Equal("aaaa", s);
+            Assert.Equal('a', carray[0]);
+            Assert.Equal(stateObject, ((IAsyncResult)f).AsyncState);
 
             //one more with the creation option overload
             f = Task.Factory.FromAsync<int, char[], string>(
@@ -265,18 +176,9 @@ namespace System.Threading.Tasks.Tests
                stateObject,
                TaskCreationOptions.None);
             s = f.Result;
-            if (!s.Equals("AAAA"))
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED @ Read2b.  Expected Result = \"aaaa\", got {0}.", s));
-            }
-            else if (carray[0] != 'A')
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED @ Read2b.  Expected carray[0] = 'a', got {0}.", carray[0]));
-            }
-            else if (((IAsyncResult)f).AsyncState != stateObject)
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED on Read2b -- state object not stored correctly."));
-            }
+            Assert.Equal("AAAA", s);
+            Assert.Equal('A', carray[0]);
+            Assert.Equal(stateObject, ((IAsyncResult)f).AsyncState);
 
             // Exercise 1-arg value option
             f = Task.Factory.FromAsync<int, string>(
@@ -285,14 +187,8 @@ namespace System.Threading.Tasks.Tests
                 1,
                 stateObject);
             s = f.Result;
-            if (!s.Equals("z"))
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED @ Read3a.  Expected Result = \"z\", got {0}.", s));
-            }
-            else if (((IAsyncResult)f).AsyncState != stateObject)
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED on Read3a -- state object not stored correctly."));
-            }
+            Assert.Equal("z", s);
+            Assert.Equal(stateObject, ((IAsyncResult)f).AsyncState);
 
             // one more with creation option overload
             f = Task.Factory.FromAsync<int, string>(
@@ -302,14 +198,8 @@ namespace System.Threading.Tasks.Tests
              stateObject,
              TaskCreationOptions.None);
             s = f.Result;
-            if (!s.Equals("z"))
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED @ Read3b.  Expected Result = \"z\", got {0}.", s));
-            }
-            else if (((IAsyncResult)f).AsyncState != stateObject)
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED on Read3b -- state object not stored correctly."));
-            }
+            Assert.Equal("z", s);
+            Assert.Equal(stateObject, ((IAsyncResult)f).AsyncState);
 
             // Exercise 0-arg value option
             f = Task.Factory.FromAsync<string>(
@@ -317,14 +207,8 @@ namespace System.Threading.Tasks.Tests
                 fac.EndRead,
                 stateObject);
             s = f.Result;
-            if (!s.Equals("zz"))
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED @ Read4a.  Expected Result = \"zz\", got {0}.", s));
-            }
-            else if (((IAsyncResult)f).AsyncState != stateObject)
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED on Read4a -- state object not stored correctly."));
-            }
+            Assert.Equal("zz", s);
+            Assert.Equal(stateObject, ((IAsyncResult)f).AsyncState);
 
             //one more with Creation options overload
             f = Task.Factory.FromAsync<string>(
@@ -333,14 +217,8 @@ namespace System.Threading.Tasks.Tests
                stateObject,
                TaskCreationOptions.None);
             s = f.Result;
-            if (!s.Equals(""))
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED @ Read4b.  Expected Result = \"\", got {0}.", s));
-            }
-            else if (((IAsyncResult)f).AsyncState != stateObject)
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED on Read4b -- state object not stored correctly."));
-            }
+            Assert.Equal(string.Empty, s);
+            Assert.Equal(stateObject, ((IAsyncResult)f).AsyncState);
 
             // Inject a few more characters into the buffer
             fac.EndWrite(fac.StartWrite("0123456789", null, null));
@@ -351,19 +229,13 @@ namespace System.Threading.Tasks.Tests
                 fac.StartRead(4, null, null),
                 fac.EndRead);
             s = f.Result;
-            if (!s.Equals("0123"))
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED @ Read5.  Expected Result = \"0123\", got {0}.", s));
-            }
+            Assert.Equal("0123", s);
 
             f = Task.Factory.FromAsync<string>(
                 fac.StartRead(4, null, null),
                 fac.EndRead);
             s = f.Result;
-            if (!s.Equals("4567"))
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED @ Read5a.  Expected Result = \"4567\", got {0}.", s));
-            }
+            Assert.Equal("4567", s);
 
             // Test Exception handling from beginMethod
             Assert.ThrowsAsync<NullReferenceException>(() =>
@@ -392,84 +264,53 @@ namespace System.Threading.Tasks.Tests
             Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
               Task.Factory.FromAsync(fac.StartWrite, fac.EndWrite, null, TaskCreationOptions.PreferFairness));
 
-            // 
-            // Test that parent cancellation flows correctly through FromAsync()
-            //
-
-            // Allow some time for whatever happened above to sort itself out.
-            //Thread.Sleep(200);
-
             // Empty the buffer, then inject a few more characters into the buffer
             fac.ResetStateTo("0123456789");
 
             Task asyncTask = null;
-
-            // Now check to see that the cancellation behaved like we thought it would -- even though the tasks were canceled,
-            // the operations still took place.
-            //
-            // I'm commenting this one out because it has some timing problems -- if some things above get delayed,
-            // then the final chars in the buffer might not read like this.
-            //
-            //s = Task<string>.Factory.FromAsync(fac.StartRead(200, null, null), fac.EndRead).Result;
-            //if (!s.Equals("89abcdef"))
-            //{
-            //    Assert.True(false, string.Format("    > FAILED.  Unexpected result after cancellations: Expected \"89abcdef\", got \"{0}\"", s));
-            //    passed = false;
-            //}
 
             //
             // Now check that the endMethod throwing an OCE correctly results in a canceled task.
             //
 
             // Test IAsyncResult overload that returns Task
-            asyncTask = null;
             asyncTask = Task.Factory.FromAsync(
                 fac.StartWrite("abc", null, null),
                 delegate (IAsyncResult iar) { throw new OperationCanceledException("FromAsync"); });
-            try
+
+            AggregateException ae = Assert.Throws<AggregateException>(() =>
             {
                 asyncTask.Wait();
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED! Expected exception on FAS(iar,endMethod) throwing OCE"));
-            }
-            catch (Exception) { }
-            if (asyncTask.Status != TaskStatus.Canceled)
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED! Expected Canceled status on FAS(iar,endMethod) OCE, got {0}", asyncTask.Status));
-            }
+            });
+            Assert.Equal(typeof(TaskCanceledException), ae.InnerException.GetType());
+            Assert.Equal(TaskStatus.Canceled, asyncTask.Status);
 
             // Test beginMethod overload that returns Task
-            asyncTask = null;
             asyncTask = Task.Factory.FromAsync(
                 fac.StartWrite,
                 delegate (IAsyncResult iar) { throw new OperationCanceledException("FromAsync"); },
                 "abc",
                 null);
-            try
+
+            ae = Assert.Throws<AggregateException>(() =>
             {
                 asyncTask.Wait();
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED! Expected exception on FAS(beginMethod,endMethod) throwing OCE"));
-            }
-            catch (Exception) { }
-            if (asyncTask.Status != TaskStatus.Canceled)
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED! Expected Canceled status on FAS(beginMethod,endMethod) OCE, got {0}", asyncTask.Status));
-            }
+            });
+            Assert.Equal(typeof(TaskCanceledException), ae.InnerException.GetType());
+            Assert.Equal(TaskStatus.Canceled, asyncTask.Status);
 
             // Test IAsyncResult overload that returns Task<string>
             Task<string> asyncFuture = null;
             asyncFuture = Task<string>.Factory.FromAsync(
                 fac.StartRead(3, null, null),
                 delegate (IAsyncResult iar) { throw new OperationCanceledException("FromAsync"); });
-            try
+
+            ae = Assert.Throws<AggregateException>(() =>
             {
-                asyncFuture.Wait();
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED! Expected exception on FAS<string>(iar,endMethod) throwing OCE"));
-            }
-            catch (Exception) { }
-            if (asyncFuture.Status != TaskStatus.Canceled)
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED! Expected Canceled status on FAS<string>(iar,endMethod) OCE, got {0}", asyncFuture.Status));
-            }
+                asyncTask.Wait();
+            });
+            Assert.Equal(typeof(TaskCanceledException), ae.InnerException.GetType());
+            Assert.Equal(TaskStatus.Canceled, asyncTask.Status);
 
             // Test beginMethod overload that returns Task<string>
             asyncFuture = null;
@@ -477,17 +318,13 @@ namespace System.Threading.Tasks.Tests
                 fac.StartRead,
                 delegate (IAsyncResult iar) { throw new OperationCanceledException("FromAsync"); },
                 3, null);
-            try
+
+            ae = Assert.Throws<AggregateException>(() =>
             {
                 asyncFuture.Wait();
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED! Expected exception on FAS<string>(beginMethod,endMethod) throwing OCE"));
-            }
-            catch (Exception) { }
-            if (asyncFuture.Status != TaskStatus.Canceled)
-            {
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED! Expected Canceled status on FAS<string>(beginMethod,endMethod) OCE, got {0}", asyncFuture.Status));
-            }
-
+            });
+            Assert.Equal(typeof(TaskCanceledException), ae.InnerException.GetType());
+            Assert.Equal(TaskStatus.Canceled, asyncFuture.Status);
 
             //
             // Make sure that tasks aren't left hanging if StartXYZ() throws an exception
@@ -506,12 +343,11 @@ namespace System.Threading.Tasks.Tests
             });
 
             Debug.WriteLine("RunAPMFactoryTests: Waiting on task w/ faulted FromAsync() calls.  If we hang, there is a problem");
-            try
+
+            Assert.Throws<AggregateException>(() =>
             {
                 foo.Wait();
-                Assert.True(false, string.Format("RunAPMFactoryTests:    > FAILED!  Expected an exception."));
-            }
-            catch (Exception) { }
+            });
         }
 
         // This class is used in testing APM Factory tests.
