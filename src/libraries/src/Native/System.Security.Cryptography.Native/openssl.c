@@ -3,8 +3,12 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
+#include <assert.h>
+#include <pthread.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 #include <openssl/asn1.h>
 #include <openssl/bio.h>
 #include <openssl/evp.h>
@@ -912,4 +916,115 @@ UpRefEvpPkey(
     }
 
     return CRYPTO_add(&pkey->references, 1, CRYPTO_LOCK_EVP_PKEY);
+}
+
+// Lock used to make sure EnsureopenSslInitialized itself is thread safe
+static pthread_mutex_t g_initLock = PTHREAD_MUTEX_INITIALIZER;
+
+// Set of locks initialized for OpenSSL
+static pthread_mutex_t* g_locks = NULL;
+
+/*
+Function:
+LockingCallback
+
+Called back by OpenSSL to lock or unlock.
+*/
+static
+void
+LockingCallback(int mode, int n, const char* file, int line)
+{
+    int result;
+    if (mode & CRYPTO_LOCK)
+    {
+        result = pthread_mutex_lock(&g_locks[n]);
+    }
+    else
+    {
+        result = pthread_mutex_unlock(&g_locks[n]);
+    }
+
+    if (result != 0)
+    {
+        assert(!"LockingCallback failed.");
+    }
+}
+
+/*
+Function:
+EnsureOpenSslInitialized
+
+Initializes OpenSSL with a locking callback to ensure thread safety.
+
+Return values:
+0 on success
+non-zero on failure
+*/
+int
+EnsureOpenSslInitialized()
+{
+    int ret = 0;
+    int numLocks = 0;
+    int locksInitialized = 0;
+
+    pthread_mutex_lock(&g_initLock);
+
+    if (g_locks != NULL)
+    {
+        // Already initialized; nothing more to do.
+        goto done;
+    }
+
+    // Determine how many locks are needed
+    numLocks = CRYPTO_num_locks();
+    if (numLocks <= 0)
+    {
+        assert(!"CRYPTO_num_locks returned invalid value.");
+        ret = 1;
+        goto done;
+    }
+
+    // Create the locks array
+    g_locks = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t) * numLocks);
+    if (g_locks == NULL)
+    {
+        assert(!"malloc failed.");
+        ret = 2;
+        goto done;
+    }
+
+    // Initialize each of the locks
+    for (locksInitialized = 0; locksInitialized < numLocks; locksInitialized++)
+    {
+        if (pthread_mutex_init(&g_locks[locksInitialized], NULL) != 0)
+        {
+            assert(!"pthread_mutex_init failed.");
+            ret = 3;
+            goto done;
+        }
+    }
+
+    // Initialize the callback
+    CRYPTO_set_locking_callback(LockingCallback);
+
+done:
+    if (ret != 0)
+    {
+        // Cleanup on failure
+        if (g_locks != NULL)
+        {
+            for (int i = locksInitialized - 1; i >= 0; i--)
+            {
+                if (pthread_mutex_destroy(&g_locks[i]) != 0)
+                {
+                    assert(!"Unable to pthread_mutex_destroy while cleaning up.");
+                }
+            }
+            free(g_locks);
+            g_locks = NULL;
+        }
+    }
+
+    pthread_mutex_unlock(&g_initLock);
+    return ret;
 }

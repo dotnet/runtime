@@ -11,9 +11,6 @@ internal static partial class Interop
     internal static partial class libcrypto
     {
         [DllImport(Libraries.LibCrypto)]
-        private static extern void ERR_load_crypto_strings();
-
-        [DllImport(Libraries.LibCrypto)]
         private static extern uint ERR_get_error();
 
         [DllImport(Libraries.LibCrypto, CharSet = CharSet.Ansi)]
