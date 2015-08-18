@@ -8,7 +8,7 @@ using System.Text;
 
 internal static partial class Interop
 {
-    internal static partial class libcoreclr
+    internal static partial class Sys
     {
         internal static unsafe int ForkAndExecProcess(
             string filename, string[] argv, string[] envp, string cwd,
@@ -32,7 +32,7 @@ internal static partial class Interop
             }
         }
 
-        [DllImport(Libraries.LibCoreClr, SetLastError = true)]
+        [DllImport(Libraries.SystemNative, SetLastError = true)]
         private static extern unsafe int ForkAndExecProcess(
             string filename, byte** argv, byte** envp, string cwd,
             int redirectStdin, int redirectStdout, int redirectStderr,
