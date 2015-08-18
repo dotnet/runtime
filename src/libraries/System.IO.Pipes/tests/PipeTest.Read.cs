@@ -184,6 +184,7 @@ namespace System.IO.Pipes.Tests
                 Assert.Throws<ObjectDisposedException>(() => pipe.ReadByte());
                 Assert.Throws<ObjectDisposedException>(() => { pipe.ReadAsync(buffer, 0, buffer.Length); });
                 Assert.Throws<ObjectDisposedException>(() => pipe.IsMessageComplete);
+                Assert.Throws<ObjectDisposedException>(() => pipe.ReadMode);
             }
         }
 
