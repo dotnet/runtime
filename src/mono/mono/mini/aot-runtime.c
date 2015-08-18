@@ -4743,8 +4743,10 @@ mono_aot_get_trampoline_full (const char *name, MonoTrampInfo **out_tinfo)
 {
 	MonoAotModule *amodule = get_mscorlib_aot_module ();
 
-	if (mono_llvm_only && REALLY_LLVMONLY)
+	if (mono_llvm_only && REALLY_LLVMONLY) {
+		*out_tinfo = NULL;
 		return no_trampolines;
+	}
 
 	return mono_create_ftnptr_malloc (load_function_full (amodule, name, out_tinfo));
 }

@@ -682,6 +682,9 @@ register_icall (gpointer func, const char *name, const char *sigstr, gboolean av
 {
 	MonoMethodSignature *sig;
 
+	if (REALLY_LLVMONLY)
+		avoid_wrapper = TRUE;
+
 	if (sigstr)
 		sig = mono_create_icall_signature (sigstr);
 	else
