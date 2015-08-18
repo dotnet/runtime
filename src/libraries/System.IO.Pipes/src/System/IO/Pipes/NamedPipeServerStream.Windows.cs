@@ -146,7 +146,7 @@ namespace System.IO.Pipes
             if (!Interop.mincore.GetNamedPipeHandleState(InternalHandle, IntPtr.Zero, IntPtr.Zero,
                 IntPtr.Zero, IntPtr.Zero, userName, userName.Capacity))
             {
-                WinIOError(Marshal.GetLastWin32Error());
+                throw WinIOError(Marshal.GetLastWin32Error());
             }
 
             return userName.ToString();
