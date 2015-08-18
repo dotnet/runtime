@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 
 namespace System.IO.Pipes
 {
-    // TODO: consolidate logic between PipeStreamCompletionSource and ConnectionCompletionSource
+    // TODO: consolidate logic between PipeIOCompletionSource and ConnectionCompletionSource
     internal sealed unsafe class PipeStreamCompletionSource : TaskCompletionSource<int>
     {
         private const int NoResult = 0;
@@ -18,12 +18,12 @@ namespace System.IO.Pipes
         private const int RegisteringCancellation = 4;
         private const int CompletedCallback = 8;
 
+        private readonly CancellationToken _cancellationToken;
         private readonly bool _isWrite;
         private readonly PipeStream _pipeStream;
         private readonly ThreadPoolBoundHandle _threadPoolBinding;
 
         private CancellationTokenRegistration _cancellationRegistration;
-        private CancellationToken _cancellationToken;
         private int _errorCode;
         private bool _isMessageComplete;
         private int _numBytes; // number of buffer read OR written
@@ -134,7 +134,6 @@ namespace System.IO.Pipes
                     case Interop.mincore.Errors.ERROR_PIPE_NOT_CONNECTED:
                     case Interop.mincore.Errors.ERROR_NO_DATA:
                         errorCode = 0;
-                        numBytes = 0;
                         break;
                 }
             }
@@ -170,11 +169,8 @@ namespace System.IO.Pipes
 
         private void Cancel()
         {
-            // Storing to locals to avoid data races
             SafeHandle handle = _threadPoolBinding.Handle;
             NativeOverlapped* overlapped = Overlapped;
-
-            Debug.Assert(overlapped != null && !Task.IsCompleted, "IO should not have completed yet");
 
             // If the handle is still valid, attempt to cancel the IO
             if (!handle.IsInvalid)
