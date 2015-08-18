@@ -33,29 +33,33 @@ namespace Internal.Cryptography
 
             _hAlgorithm = Interop.BCrypt.BCryptAlgorithmCache.GetCachedBCryptAlgorithmHandle(hashAlgId, dwFlags);
 
-            SafeBCryptHashHandle hHash = null;
-            NTSTATUS ntStatus = Interop.BCrypt.BCryptCreateHash(_hAlgorithm, out hHash, IntPtr.Zero, 0, key, key == null ? 0 : key.Length, BCryptCreateHashFlags.BCRYPT_HASH_REUSABLE_FLAG);
-            if (ntStatus == NTSTATUS.STATUS_INVALID_PARAMETER)
+            // Win7 won't set hHash, Win8+ will; and both will set _hHash.
+            // So keep hHash trapped in this scope to prevent (mis-)use of it.
             {
-                // If we got here, we're running on a downlevel OS (pre-Win8) that doesn't support reusable CNG hash objects. Fall back to creating a 
-                // new HASH object each time.
-                ResetHashObject();
-            }
-            else if (ntStatus != NTSTATUS.STATUS_SUCCESS)
-            {
-                throw Interop.BCrypt.CreateCryptographicException(ntStatus);
-            }
-            else
-            {
-                _hHash = hHash;
-                _reusable = true;
+                SafeBCryptHashHandle hHash = null;
+                NTSTATUS ntStatus = Interop.BCrypt.BCryptCreateHash(_hAlgorithm, out hHash, IntPtr.Zero, 0, key, key == null ? 0 : key.Length, BCryptCreateHashFlags.BCRYPT_HASH_REUSABLE_FLAG);
+                if (ntStatus == NTSTATUS.STATUS_INVALID_PARAMETER)
+                {
+                    // If we got here, we're running on a downlevel OS (pre-Win8) that doesn't support reusable CNG hash objects. Fall back to creating a 
+                    // new HASH object each time.
+                    ResetHashObject();
+                }
+                else if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+                {
+                    throw Interop.BCrypt.CreateCryptographicException(ntStatus);
+                }
+                else
+                {
+                    _hHash = hHash;
+                    _reusable = true;
+                }
             }
 
             unsafe
             {
                 int cbSizeOfHashSize;
                 int hashSize;
-                ntStatus = Interop.BCrypt.BCryptGetProperty(hHash, Interop.BCrypt.BCryptPropertyStrings.BCRYPT_HASH_LENGTH, &hashSize, sizeof(int), out cbSizeOfHashSize, 0);
+                NTSTATUS ntStatus = Interop.BCrypt.BCryptGetProperty(_hHash, Interop.BCrypt.BCryptPropertyStrings.BCRYPT_HASH_LENGTH, &hashSize, sizeof(int), out cbSizeOfHashSize, 0);
                 if (ntStatus != NTSTATUS.STATUS_SUCCESS)
                     throw Interop.BCrypt.CreateCryptographicException(ntStatus);
                 _hashSize = hashSize;
