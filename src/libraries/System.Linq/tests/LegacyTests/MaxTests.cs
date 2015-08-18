@@ -1304,9 +1304,6 @@ namespace System.Linq.Tests.LegacyTests
 
                 var actual = source.Max();
 
-                Console.WriteLine("actual {0}", actual);
-                Console.WriteLine("expected  {0}", expected);
-
                 return ((expected == actual) ? 0 : 1);
             }
 

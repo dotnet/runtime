@@ -12,7 +12,7 @@ namespace System.Linq.Tests.LegacyTests
         public class Helper
         {
             // Helper Method for Test15 and Test16
-            public static int GenericTest<T>(object o, T[] expected)
+            public static void GenericTest<T>(object o)
             {
                 byte? i = 10;
                 Object[] source = { -1, 0, o, i };
@@ -20,75 +20,34 @@ namespace System.Linq.Tests.LegacyTests
                 IEnumerable<int?> source1 = source.Cast<int?>();
                 IEnumerable<T> actual = source1.Cast<T>();
 
-                return Verification.Allequal(expected, actual);
+                Assert.Throws<InvalidCastException>(() => actual.ToList());
             }
         }
 
         public class Cast019
         {
-            private static int Cast001()
-            {
-                try
-                {
-                    var q = from x in new[] { 9999, 0, 888, -1, 66, -777, 1, 2, -12345 }
-                            where x > Int32.MinValue
-                            select x;
-
-                    var rst1 = q.Cast<long>();
-                    var rst2 = q.Cast<long>();
-
-                    Verification.Allequal(rst1, rst2);
-                }
-                catch (InvalidCastException)
-                {
-                    return 0;
-                }
-                catch (Exception) { return 1; }
-                return 1;
-            }
-
-            private static int Cast002()
-            {
-                try
-                {
-                    var q = from x in new byte[] { 0, 255, 127, 128, 1, 33, 99 }
-                            select x;
-
-                    var rst1 = q.Cast<ushort>();
-                    var rst2 = q.Cast<ushort>();
-                    Verification.Allequal(rst1, rst2);
-                }
-                catch (InvalidCastException)
-                {
-                    return 0;
-                }
-                catch (Exception) { return 1; }
-                return 1;
-            }
-
-            public static int Main()
-            {
-                int ret = RunTest(Cast001) + RunTest(Cast002);
-                if (0 != ret)
-                    Console.Write(s_errorMessage);
-
-                return ret;
-            }
-
-            private static string s_errorMessage = String.Empty;
-            private delegate int D();
-
-            private static int RunTest(D m)
-            {
-                int n = m();
-                if (0 != n)
-                    s_errorMessage += m.ToString() + " - FAILED!\r\n";
-                return n;
-            }
             [Fact]
-            public void Test()
+            public void Cast001()
             {
-                Assert.Equal(0, Main());
+                var q = from x in new[] { 9999, 0, 888, -1, 66, -777, 1, 2, -12345 }
+                        where x > Int32.MinValue
+                        select x;
+
+                var rst1 = q.Cast<long>();
+                var rst2 = q.Cast<long>();
+
+                Assert.Throws<InvalidCastException>(() => { foreach (var t in rst1) ; });
+            }
+
+            [Fact]
+            public void Cast002()
+            {
+                var q = from x in new byte[] { 0, 255, 127, 128, 1, 33, 99 }
+                        select x;
+
+                var rst1 = q.Cast<ushort>();
+                var rst2 = q.Cast<ushort>();
+                Assert.Throws<InvalidCastException>(() => { foreach (var t in rst1) ; });
             }
         }
 
@@ -105,7 +64,6 @@ namespace System.Linq.Tests.LegacyTests
                 return Verification.Allequal(expected, actual);
             }
 
-
             public static int Main()
             {
                 return Test1();
@@ -120,75 +78,33 @@ namespace System.Linq.Tests.LegacyTests
 
         public class Cast10
         {
+            [Fact]
             // source of type int? to object and IEnumerable<int?> Cast to type long
             // DDB: 137558
-            public static int Test10()
+            public void Test10()
             {
                 int? i = 10;
                 Object[] source = { -4, 1, 2, 3, 9, i };
 
-                long[] expected = { -4L, 1L, 2L, 3L, 9L, (long)i };
-
-                try
-                {
-                    IEnumerable<int?> source1 = source.Cast<int?>();
-                    IEnumerable<long> actual = source1.Cast<long>();
-                    Verification.Allequal(expected, actual);
-                    return 1;
-                }
-                catch (InvalidCastException)
-                {
-                    return 0;
-                }
-            }
-
-
-            public static int Main()
-            {
-                return Test10();
-            }
-
-            [Fact]
-            public void Test()
-            {
-                Assert.Equal(0, Main());
+                IEnumerable<int?> source1 = source.Cast<int?>();
+                IEnumerable<long> actual = source1.Cast<long>();
+                Assert.Throws<InvalidCastException>(() => actual.ToList());
             }
         }
 
         public class Cast11
         {
+            [Fact]
             // source of type int? to object and IEnumerable<int?> Cast to type long?
             // DDB: 137558
-            public static int Test11()
+            public void Test11()
             {
-                try
-                {
-                    int? i = 10;
-                    Object[] source = { -4, 1, 2, 3, 9, null, i };
-                    long?[] expected = { -4L, 1L, 2L, 3L, 9L, null, (long?)i };
+                int? i = 10;
+                Object[] source = { -4, 1, 2, 3, 9, null, i };
 
-                    IEnumerable<int?> source1 = source.Cast<int?>();
-                    IEnumerable<long?> actual = source1.Cast<long?>();
-                    Verification.Allequal(actual, expected);
-                }
-                catch (InvalidCastException)
-                {
-                    return 0;
-                }
-                catch (Exception) { return 1; }
-                return 1;
-            }
-
-
-            public static int Main()
-            {
-                return Test11();
-            }
-
-            [Fact]
-            public void Test()
-            {
-                Assert.Equal(0, Main());
+                IEnumerable<int?> source1 = source.Cast<int?>();
+                IEnumerable<long?> actual = source1.Cast<long?>();
+                Assert.Throws<InvalidCastException>(() => actual.ToList());
             }
         }
 
@@ -222,136 +138,52 @@ namespace System.Linq.Tests.LegacyTests
 
         public class Cast13
         {
+            [Fact]
             // source of type object cast to IEnumerable<int> 
             // DDB: 137558
-            public static int Test13()
-            {
-                Object[] source = { -4, 1, 2, 3, 9, "45" };
-                int[] expected = { -4, 1, 2, 3, 9, 45 };
-
-                try
-                {
-                    IEnumerable<int> actual = source.Cast<int>();
-                    Verification.Allequal(expected, actual);
-                    return 1;
-                }
-                catch (InvalidCastException)
-                {
-                    return 0;
-                }
-            }
-
-
-            public static int Main()
-            {
-                return Test13();
-            }
-
-            [Fact]
             public void Test()
             {
-                Assert.Equal(0, Main());
+                Object[] source = { -4, 1, 2, 3, 9, "45" };
+
+                IEnumerable<int> actual = source.Cast<int>();
+                Assert.Throws<InvalidCastException>(() => actual.ToList());
             }
         }
 
         public class Cast14
         {
+            [Fact]
             // source of type int Cast to type double
             // DDB: 137558
-            public static int Test14()
-            {
-                try
-                {
-                    int[] source = new int[] { -4, 1, 2, 9 };
-                    double[] expected = { -4.0, 1.0, 2.0, 9.0 };
-
-                    IEnumerable<double> actual = source.Cast<double>();
-                    Verification.Allequal(actual, expected);
-                }
-                catch (InvalidCastException)
-                {
-                    return 0;
-                }
-                catch (Exception) { return 1; }
-                return 1;
-            }
-
-
-            public static int Main()
-            {
-                return Test14();
-            }
-
-            [Fact]
             public void Test()
             {
-                Assert.Equal(0, Main());
+                int[] source = new int[] { -4, 1, 2, 9 };
+
+                IEnumerable<double> actual = source.Cast<double>();
+                Assert.Throws<InvalidCastException>(() => actual.ToList());
             }
         }
 
         public class Cast15
         {
+            [Fact]
             // Cast involving Generic types
             // DDB: 137558
-            public static int Test15()
-            {
-                try
-                {
-                    long?[] expected = { -1L, 0L, null, 10L };
-
-                    var x = Helper.GenericTest<long?>(null, expected);
-                }
-                catch (InvalidCastException)
-                {
-                    return 0;
-                }
-                catch (Exception)
-                { return 1; }
-                return 1;
-            }
-
-            public static int Main()
-            {
-                return Test15();
-            }
-
-            [Fact]
             public void Test()
             {
-                Assert.Equal(0, Main());
+                Helper.GenericTest<long?>(null);
             }
+
         }
 
         public class Cast16
         {
+            [Fact]
             // Cast involving Generic types
             // DDB: 137558
-            public static int Test16()
-            {
-                try
-                {
-                    long[] expected = { -1L, 0L, 9L, 10L };
-
-                    var x = Helper.GenericTest<long>(9L, expected);
-                }
-                catch (InvalidCastException)
-                {
-                    return 0;
-                }
-                catch (Exception) { return 1; }
-                return 1;
-            }
-
-
-            public static int Main()
-            {
-                return Test16();
-            }
-
-            [Fact]
             public void Test()
             {
-                Assert.Equal(0, Main());
+                Helper.GenericTest<long>(9L);
             }
         }
 
@@ -384,98 +216,38 @@ namespace System.Linq.Tests.LegacyTests
 
         public class Cast18
         {
+            [Fact]
             //testing array conversion using .Cast()
             // From Silverlight testing
-            public static int Test18()
-            {
-                try
-                {
-                    var actual = new[] { -4 }.Cast<long>().ToList();
-                    if (actual[0] == -4)
-                        return 1;
-                    return 1;
-                }
-                catch (InvalidCastException)
-                {
-                    return 0;
-                }
-            }
-
-            public static int Main()
-            {
-                return Test18();
-            }
-
-            [Fact]
             public void Test()
             {
-                Assert.Equal(0, Main());
+                Assert.Throws<InvalidCastException>(() => new[] { -4 }.Cast<long>().ToList());
             }
         }
 
         public class Cast2
         {
-            // first element cannot be cast to type int: Test for InvalidCastException
-            public static int Test2()
-            {
-                Object[] source = { "Test", 3, 5, 10 };
-                int[] expected = { 3, 5, 10 };
-
-                try
-                {
-                    IEnumerable<int> actual = source.Cast<int>();
-                    Verification.Allequal(expected, actual);
-                    return 1;
-                }
-                catch (InvalidCastException)
-                {
-                    return 0;
-                }
-            }
-
-
-            public static int Main()
-            {
-                return Test2();
-            }
-
             [Fact]
+            // first element cannot be cast to type int: Test for InvalidCastException
             public void Test()
             {
-                Assert.Equal(0, Main());
+                Object[] source = { "Test", 3, 5, 10 };
+
+                IEnumerable<int> actual = source.Cast<int>();
+                Assert.Throws<InvalidCastException>(() => actual.ToList());
             }
         }
 
         public class Cast3
         {
-            // last element cannot be cast to type int: Test for InvalidCastException
-            public static int Test3()
-            {
-                Object[] source = { -5, 9, 0, 5, 9, "Test" };
-                int[] expected = { -5, 9, 0, 5, 9, 10 };
-
-                try
-                {
-                    IEnumerable<int> actual = source.Cast<int>();
-                    Verification.Allequal(expected, actual);
-                    return 1;
-                }
-                catch (InvalidCastException)
-                {
-                    return 0;
-                }
-            }
-
-
-            public static int Main()
-            {
-                return Test3();
-            }
-
             [Fact]
+            // last element cannot be cast to type int: Test for InvalidCastException
             public void Test()
             {
-                Assert.Equal(0, Main());
+                Object[] source = { -5, 9, 0, 5, 9, "Test" };
+
+                IEnumerable<int> actual = source.Cast<int>();
+                Assert.Throws<InvalidCastException>(() => actual.ToList());
             }
         }
 
@@ -507,106 +279,43 @@ namespace System.Linq.Tests.LegacyTests
 
         public class Cast5
         {
+            [Fact]
             // source of type int Cast to type long
             // DDB: 137558
-            public static int Test5()
-            {
-                try
-                {
-                    int[] source = new int[] { -4, 1, 2, 3, 9 };
-                    long[] expected = { -4L, 1L, 2L, 3L, 9L };
-
-                    IEnumerable<long> actual = source.Cast<long>();
-                    Verification.Allequal(expected, actual);
-                }
-                catch (InvalidCastException)
-                {
-                    return 0;
-                }
-                catch (Exception) { return 1; }
-                return 1;
-            }
-
-
-            public static int Main()
-            {
-                return Test5();
-            }
-
-            [Fact]
             public void Test()
             {
-                Assert.Equal(0, Main());
+                int[] source = new int[] { -4, 1, 2, 3, 9 };
+
+                IEnumerable<long> actual = source.Cast<long>();
+                Assert.Throws<InvalidCastException>(() => actual.ToList());
             }
         }
 
         public class Cast6
         {
+            [Fact]
             // source of type int Cast to type long?
             // DDB: 137558
-            public static int Test6()
-            {
-                try
-                {
-                    int[] source = new int[] { -4, 1, 2, 3, 9 };
-                    long?[] expected = { -4L, 1L, 2L, 3L, 9L };
-
-                    IEnumerable<long?> actual = source.Cast<long?>();
-                    Verification.Allequal(expected, actual);
-                }
-                catch (InvalidCastException)
-                {
-                    return 0;
-                }
-                catch (Exception) { return 1; }
-                return 1;
-            }
-
-
-            public static int Main()
-            {
-                return Test6();
-            }
-
-            [Fact]
             public void Test()
             {
-                Assert.Equal(0, Main());
+                int[] source = new int[] { -4, 1, 2, 3, 9 };
+
+                IEnumerable<long?> actual = source.Cast<long?>();
+                Assert.Throws<InvalidCastException>(() => actual.ToList());
             }
         }
 
         public class Cast7
         {
+            [Fact]
             // source of type int? Cast to type long
             // DDB: 137558
-            public static int Test7()
+            public static void Test()
             {
-                try
-                {
-                    int?[] source = new int?[] { -4, 1, 2, 3, 9 };
-                    long[] expected = { -4L, 1L, 2L, 3L, 9L };
+                int?[] source = new int?[] { -4, 1, 2, 3, 9 };
 
-                    IEnumerable<long> actual = source.Cast<long>();
-                    Verification.Allequal(expected, actual);
-                }
-                catch (InvalidCastException)
-                {
-                    return 0;
-                }
-                catch (Exception) { return 1; }
-                return 1;
-            }
-
-
-            public static int Main()
-            {
-                return Test7();
-            }
-
-            [Fact]
-            public void Test()
-            {
-                Assert.Equal(0, Main());
+                IEnumerable<long> actual = source.Cast<long>();
+                Assert.Throws<InvalidCastException>(() => actual.ToList());
             }
         }
 
@@ -614,68 +323,26 @@ namespace System.Linq.Tests.LegacyTests
         {
             // source of type int? Cast to type long with null value
             // DDB: 137558
-            public static int Test8()
-            {
-                int?[] source = new int?[] { -4, 1, 2, 3, 9 };
-                long[] expected = { -4L, 1L, 2L, 3L, 9L };
-
-                try
-                {
-                    IEnumerable<long> actual = source.Cast<long>();
-                    Verification.Allequal(expected, actual);
-                    return 1;
-                }
-                catch (InvalidCastException)
-                {
-                    return 0;
-                }
-            }
-
-
-            public static int Main()
-            {
-                return Test8();
-            }
-
-            [Fact]
             public void Test()
             {
-                Assert.Equal(0, Main());
+                int?[] source = new int?[] { -4, 1, 2, 3, 9 };
+
+                IEnumerable<long> actual = source.Cast<long>();
+                Assert.Throws<InvalidCastException>(() => actual.ToList());
             }
         }
 
         public class Cast9
         {
+            [Fact]
             // source of type int? Cast to type long?
             // DDB: 137558
-            public static int Test9()
-            {
-                try
-                {
-                    int?[] source = new int?[] { -4, 1, 2, 3, 9, null };
-                    long?[] expected = { -4L, 1L, 2L, 3L, 9L, null };
-
-                    IEnumerable<long?> actual = source.Cast<long?>();
-                    Verification.Allequal(expected, actual);
-                }
-                catch (InvalidCastException)
-                {
-                    return 0;
-                }
-                catch (Exception) { return 1; }
-                return 1;
-            }
-
-
-            public static int Main()
-            {
-                return Test9();
-            }
-
-            [Fact]
             public void Test()
             {
-                Assert.Equal(0, Main());
+                int?[] source = new int?[] { -4, 1, 2, 3, 9, null };
+
+                IEnumerable<long?> actual = source.Cast<long?>();
+                Assert.Throws<InvalidCastException>(() => actual.ToList());
             }
         }
     }
