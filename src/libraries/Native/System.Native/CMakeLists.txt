@@ -3,7 +3,7 @@ project(System.Native)
 set(NATIVE_SOURCES
     pal_errno.cpp
     pal_exec.cpp
-    pal_stat.cpp
+    pal_io.cpp
     pal_uid.cpp
 )
 
