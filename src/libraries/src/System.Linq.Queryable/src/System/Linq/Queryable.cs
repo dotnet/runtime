@@ -14,17 +14,15 @@ namespace System.Linq
         {
             if (source == null)
                 throw Error.ArgumentNull("source");
-            if (source is IQueryable<TElement>)
-                return (IQueryable<TElement>)source;
-            return new EnumerableQuery<TElement>(source);
+            return source as IQueryable<TElement> ?? new EnumerableQuery<TElement>(source);
         }
 
         public static IQueryable AsQueryable(this IEnumerable source)
         {
             if (source == null)
                 throw Error.ArgumentNull("source");
-            if (source is IQueryable)
-                return (IQueryable)source;
+            IQueryable queryable = source as IQueryable;
+            if (queryable != null) return queryable;
             Type enumType = TypeHelper.FindGenericType(typeof(IEnumerable<>), source.GetType());
             if (enumType == null)
                 throw Error.ArgumentNotIEnumerableGeneric("source");
