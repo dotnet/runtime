@@ -68,6 +68,7 @@
   </PropertyGroup>
 
   <Target Name="GenerateVersionHeader"
+          Condition="'$(GenerateNativeVersionInfo)'=='true'"
           Inputs="$(MSBuildProjectFile)"
           Outputs="$(NativeVersionHeaderFile)">
 
@@ -96,12 +97,18 @@
   </Target>
 
   
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(GenerateNativeVersionInfo)'=='true'">
     <WindowsSdkDir Condition="'$(WindowsSdkDir)'==''">$(registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\Windows\v8.1@InstallationFolder)</WindowsSdkDir>
     <RCPath Condition="'$(RCPath)' == ''">$(WindowsSdkDir)bin\x86\rc.exe</RCPath>
   </PropertyGroup>
   
-  <Target Name="NativeResourceCompile" DependsOnTargets="GenerateVersionHeader" Inputs="$(MsBuildThisFileDirectory)NativeVersion.rc" Outputs="$(Win32Resource)">
-    <Exec Command="&quot;$(RCPath)&quot; /nologo /x /i &quot;$(IntermediateOutputPath.TrimEnd('\'))&quot; /i &quot;$(WindowsSdkDir)Include\$(WindowsSDKVersion)um&quot; /i &quot;$(WindowsSdkDir)Include\$(WindowsSDKVersion)shared&quot; /D _UNICODE /D UNICODE /l&quot;0x0409&quot; /r /fo &quot;$(Win32Resource)&quot; &quot;$(MsBuildThisFileDirectory)NativeVersion.rc&quot;" />
+  <Target Name="NativeResourceCompile"
+          Condition="'$(GenerateNativeVersionInfo)'=='true'"
+          DependsOnTargets="GenerateVersionHeader"
+          Inputs="$(MsBuildThisFileDirectory)NativeVersion.rc"
+          Outputs="$(Win32Resource)">
+
+    <Exec Command="&quot;$(RCPath)&quot; /nologo /x /i &quot;$(IntermediateOutputPath.TrimEnd('\'))&quot; /i &quot;$(WindowsSdkDir)Include\$(WindowsSDKVersion)um&quot; /i &quot;$(WindowsSdkDir)Include\$(WindowsSDKVersion)\shared&quot; /D _UNICODE /D UNICODE /l&quot;0x0409&quot; /r /fo &quot;$(Win32Resource)&quot; &quot;$(MsBuildThisFileDirectory)NativeVersion.rc&quot;" />
+
   </Target>
 </Project>
