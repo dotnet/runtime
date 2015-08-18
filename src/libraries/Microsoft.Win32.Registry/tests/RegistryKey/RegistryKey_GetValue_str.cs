@@ -7,31 +7,24 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_GetValue_str : TestSubKey
+    public class RegistryKey_GetValue_str : RegistryTestsBase
     {
-        private const string TestKey = "REG_TEST_9";
-
-        public RegistryKey_GetValue_str()
-            : base(TestKey)
-        {
-        }
-
         [Fact]
         public void NegativeTests()
         {
             Assert.Throws<ObjectDisposedException>(() =>
             {
-                _testRegistryKey.Dispose();
-                _testRegistryKey.GetValue(null);
+                TestRegistryKey.Dispose();
+                TestRegistryKey.GetValue(null);
             });
         }
 
         [Fact]
         public void GetDefaultValueTest()
         {
-            Assert.True(_testRegistryKey.SetDefaultValue(TestData.DefaultValue));
-            Assert.Equal(TestData.DefaultValue, _testRegistryKey.GetValue(null));
-            Assert.Equal(TestData.DefaultValue, _testRegistryKey.GetValue(string.Empty));
+            Assert.True(TestRegistryKey.SetDefaultValue(TestData.DefaultValue));
+            Assert.Equal(TestData.DefaultValue, TestRegistryKey.GetValue(null));
+            Assert.Equal(TestData.DefaultValue, TestRegistryKey.GetValue(string.Empty));
         }
 
         [Fact]
@@ -40,9 +33,9 @@ namespace Microsoft.Win32.RegistryTests
             const string valueName = "Test";
             string[] expected = { "", "Hello", "", "World", "" };
 
-            _testRegistryKey.SetValue(valueName, expected);
-            Assert.Equal(expected, (string[])_testRegistryKey.GetValue(valueName));
-            _testRegistryKey.DeleteValue(valueName);
+            TestRegistryKey.SetValue(valueName, expected);
+            Assert.Equal(expected, (string[])TestRegistryKey.GetValue(valueName));
+            TestRegistryKey.DeleteValue(valueName);
         }
 
         public static IEnumerable<object[]> TestValueTypes { get { return TestData.TestValueTypes; } }
@@ -51,9 +44,9 @@ namespace Microsoft.Win32.RegistryTests
         [MemberData("TestValueTypes")]
         public void TestGetValueWithValueTypes(string valueName, object testValue)
         {
-            _testRegistryKey.SetValue(valueName, testValue);
-            Assert.Equal(testValue.ToString(), _testRegistryKey.GetValue(valueName).ToString());
-            _testRegistryKey.DeleteValue(valueName);
+            TestRegistryKey.SetValue(valueName, testValue);
+            Assert.Equal(testValue.ToString(), TestRegistryKey.GetValue(valueName).ToString());
+            TestRegistryKey.DeleteValue(valueName);
         }
 
         [Fact]
@@ -62,9 +55,9 @@ namespace Microsoft.Win32.RegistryTests
             const string valueName = "Test";
             const string expected = "Here is a little test string";
 
-            _testRegistryKey.SetValue(valueName, expected);
-            Assert.Equal(expected, _testRegistryKey.GetValue(valueName).ToString());
-            _testRegistryKey.DeleteValue(valueName);
+            TestRegistryKey.SetValue(valueName, expected);
+            Assert.Equal(expected, TestRegistryKey.GetValue(valueName).ToString());
+            TestRegistryKey.DeleteValue(valueName);
         }
 
         [Fact]
@@ -73,9 +66,9 @@ namespace Microsoft.Win32.RegistryTests
             const string valueName = "UBArr";
             byte[] expected = { 1, 2, 3 };
 
-            _testRegistryKey.SetValue(valueName, expected);
-            Assert.Equal(expected, (byte[])_testRegistryKey.GetValue(valueName));
-            _testRegistryKey.DeleteValue(valueName);
+            TestRegistryKey.SetValue(valueName, expected);
+            Assert.Equal(expected, (byte[])TestRegistryKey.GetValue(valueName));
+            TestRegistryKey.DeleteValue(valueName);
         }
 
         [Fact]
@@ -89,9 +82,9 @@ namespace Microsoft.Win32.RegistryTests
                 "lot of things. one of which"
             };
 
-            _testRegistryKey.SetValue(valueName, expected);
-            Assert.Equal(expected, (string[])_testRegistryKey.GetValue(valueName));
-            _testRegistryKey.DeleteValue(valueName);
+            TestRegistryKey.SetValue(valueName, expected);
+            Assert.Equal(expected, (string[])TestRegistryKey.GetValue(valueName));
+            TestRegistryKey.DeleteValue(valueName);
         }
     }
 }

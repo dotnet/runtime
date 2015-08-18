@@ -6,35 +6,28 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_GetValueCount : TestSubKey
+    public class RegistryKey_GetValueCount : RegistryTestsBase
     {
-        private const string TestKey = "REG_TEST_10";
-
-        public RegistryKey_GetValueCount()
-            : base(TestKey)
-        {
-        }
-
         [Fact]
         public void NegativeTests()
         {
             Assert.Throws<ObjectDisposedException>(() =>
             {
-                _testRegistryKey.Dispose();
-                return _testRegistryKey.ValueCount;
+                TestRegistryKey.Dispose();
+                return TestRegistryKey.ValueCount;
             });
         }
 
         [Fact]
         public void TestValueCount()
         {
-            Assert.Equal(expected: 0, actual: _testRegistryKey.ValueCount);
+            Assert.Equal(expected: 0, actual: TestRegistryKey.ValueCount);
 
-            _testRegistryKey.SetValue(TestKey, 5);
-            Assert.Equal(expected: 1, actual: _testRegistryKey.ValueCount);
+            TestRegistryKey.SetValue(TestRegistryKeyName, 5);
+            Assert.Equal(expected: 1, actual: TestRegistryKey.ValueCount);
 
-            _testRegistryKey.DeleteValue(TestKey);
-            Assert.Equal(expected: 0, actual: _testRegistryKey.ValueCount);
+            TestRegistryKey.DeleteValue(TestRegistryKeyName);
+            Assert.Equal(expected: 0, actual: TestRegistryKey.ValueCount);
         }
 
         [Fact]
@@ -43,11 +36,11 @@ namespace Microsoft.Win32.RegistryTests
             int expectedCount = 0;
             foreach (var testCase in TestData.TestValueTypes)
             {
-                _testRegistryKey.SetValue(testCase[0].ToString(), testCase[1]);
+                TestRegistryKey.SetValue(testCase[0].ToString(), testCase[1]);
                 ++expectedCount;
             }
 
-            Assert.Equal(expectedCount, _testRegistryKey.ValueCount);
+            Assert.Equal(expectedCount, TestRegistryKey.ValueCount);
         }
     }
 }

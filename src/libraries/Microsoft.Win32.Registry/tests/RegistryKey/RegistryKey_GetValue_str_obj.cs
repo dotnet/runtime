@@ -7,43 +7,36 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_GetValue_str_obj : TestSubKey
+    public class RegistryKey_GetValue_str_obj : RegistryTestsBase
     {
-        private const string TestKey = "BCL_TEST_4";
-
-        public RegistryKey_GetValue_str_obj()
-            : base(TestKey)
-        {
-        }
-
         [Fact]
         public void NegativeTests()
         {
             Assert.Throws<ObjectDisposedException>(() =>
             {
-                _testRegistryKey.Dispose();
-                _testRegistryKey.GetValue(null, TestData.DefaultValue);
+                TestRegistryKey.Dispose();
+                TestRegistryKey.GetValue(null, TestData.DefaultValue);
             });
         }
 
         [Fact]
         public void GetDefaultValueTest()
         {
-            if (!_testRegistryKey.IsDefaultValueSet())
+            if (!TestRegistryKey.IsDefaultValueSet())
             {
-                Assert.Equal(TestData.DefaultValue, _testRegistryKey.GetValue(null, TestData.DefaultValue));
-                Assert.Equal(TestData.DefaultValue, _testRegistryKey.GetValue(string.Empty, TestData.DefaultValue));
+                Assert.Equal(TestData.DefaultValue, TestRegistryKey.GetValue(null, TestData.DefaultValue));
+                Assert.Equal(TestData.DefaultValue, TestRegistryKey.GetValue(string.Empty, TestData.DefaultValue));
             }
 
-            Assert.True(_testRegistryKey.SetDefaultValue(TestData.DefaultValue));
-            Assert.Equal(TestData.DefaultValue, _testRegistryKey.GetValue(null, null));
-            Assert.Equal(TestData.DefaultValue, _testRegistryKey.GetValue(string.Empty, null));
+            Assert.True(TestRegistryKey.SetDefaultValue(TestData.DefaultValue));
+            Assert.Equal(TestData.DefaultValue, TestRegistryKey.GetValue(null, null));
+            Assert.Equal(TestData.DefaultValue, TestRegistryKey.GetValue(string.Empty, null));
         }
 
         [Fact]
         public void ShouldAcceptNullAsDefaultValue()
         {
-            Assert.Null(_testRegistryKey.GetValue("tt", defaultValue: null));
+            Assert.Null(TestRegistryKey.GetValue("tt", defaultValue: null));
         }
 
         public static IEnumerable<object[]> TestValueTypes { get { return TestData.TestValueTypes; } }
@@ -52,9 +45,9 @@ namespace Microsoft.Win32.RegistryTests
         [MemberData("TestValueTypes")]
         public void TestGetValueWithValueTypes(string valueName, object testValue)
         {
-            _testRegistryKey.SetValue(valueName, testValue);
-            Assert.Equal(testValue.ToString(), _testRegistryKey.GetValue(valueName, null).ToString());
-            _testRegistryKey.DeleteValue(valueName);
+            TestRegistryKey.SetValue(valueName, testValue);
+            Assert.Equal(testValue.ToString(), TestRegistryKey.GetValue(valueName, null).ToString());
+            TestRegistryKey.DeleteValue(valueName);
         }
     }
 }

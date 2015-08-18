@@ -7,47 +7,40 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_SetValue_str_obj : TestSubKey
+    public class RegistryKey_SetValue_str_obj : RegistryTestsBase
     {
-        private const string TestKey = "REG_TEST_13";
-
-        public RegistryKey_SetValue_str_obj()
-            : base(TestKey)
-        {
-        }
-
         [Fact]
         public void Test01()
         {
             // [] Passing in null should throw ArgumentNullException
             //UPDATE: This sets the default value. We should move this test to a newly defined reg key so as not to screw up the system
             const string expected = "This is a test";
-            _testRegistryKey.SetValue(null, expected);
-            Assert.Equal(expected, _testRegistryKey.GetValue(null));
+            TestRegistryKey.SetValue(null, expected);
+            Assert.Equal(expected, TestRegistryKey.GetValue(null));
         }
 
         [Fact]
         public void NegativeTests()
         {
             // Should throw if passed value is null
-            Assert.Throws<ArgumentNullException>(() => _testRegistryKey.SetValue("test", null));
+            Assert.Throws<ArgumentNullException>(() => TestRegistryKey.SetValue("test", null));
 
             // Should throw if key length above 255 characters but prior to V4, the limit is 16383
             const int maxValueNameLength = 16383;
-            Assert.Throws<ArgumentException>(() => _testRegistryKey.SetValue(new string('a', maxValueNameLength + 1), 5));
+            Assert.Throws<ArgumentException>(() => TestRegistryKey.SetValue(new string('a', maxValueNameLength + 1), 5));
 
             // Should throw if passed value is array with uninitialized elements
-            Assert.Throws<ArgumentException>(() => _testRegistryKey.SetValue("StringArr", value: new string[1]));
+            Assert.Throws<ArgumentException>(() => TestRegistryKey.SetValue("StringArr", value: new string[1]));
 
             // Should throw because only String[] (REG_MULTI_SZ) and byte[] (REG_BINARY) are supported.
             // RegistryKey.SetValue does not support arrays of type UInt32[].
-            Assert.Throws<ArgumentException>(() => _testRegistryKey.SetValue("IntArray", value: new[] { 1, 2, 3 }));
+            Assert.Throws<ArgumentException>(() => TestRegistryKey.SetValue("IntArray", value: new[] { 1, 2, 3 }));
 
             // Should throw if RegistryKey closed
             Assert.Throws<ObjectDisposedException>(() =>
             {
-                _testRegistryKey.Dispose();
-                _testRegistryKey.SetValue("TestValue", 42);
+                TestRegistryKey.Dispose();
+                TestRegistryKey.SetValue("TestValue", 42);
             });
         }
 
@@ -57,9 +50,9 @@ namespace Microsoft.Win32.RegistryTests
         [MemberData("TestValueTypes")]
         public void SetValueWithValueTypes(string valueName, object testValue)
         {
-            _testRegistryKey.SetValue(valueName, testValue);
-            Assert.Equal(testValue.ToString(), _testRegistryKey.GetValue(valueName).ToString());
-            _testRegistryKey.DeleteValue(valueName);
+            TestRegistryKey.SetValue(valueName, testValue);
+            Assert.Equal(testValue.ToString(), TestRegistryKey.GetValue(valueName).ToString());
+            TestRegistryKey.DeleteValue(valueName);
         }
 
         [Fact]
@@ -68,9 +61,9 @@ namespace Microsoft.Win32.RegistryTests
             const string testValueName = "Int32";
             const int expected = -5;
 
-            _testRegistryKey.SetValue(testValueName, expected);
-            Assert.Equal(expected, (int)_testRegistryKey.GetValue(testValueName));
-            _testRegistryKey.DeleteValue(testValueName);
+            TestRegistryKey.SetValue(testValueName, expected);
+            Assert.Equal(expected, (int)TestRegistryKey.GetValue(testValueName));
+            TestRegistryKey.DeleteValue(testValueName);
         }
 
         [Fact]
@@ -80,9 +73,9 @@ namespace Microsoft.Win32.RegistryTests
             const string testValueName = "UInt64";
             const ulong expected = ulong.MaxValue;
 
-            _testRegistryKey.SetValue(testValueName, expected);
-            Assert.Equal(expected, Convert.ToUInt64(_testRegistryKey.GetValue(testValueName)));
-            _testRegistryKey.DeleteValue(testValueName);
+            TestRegistryKey.SetValue(testValueName, expected);
+            Assert.Equal(expected, Convert.ToUInt64(TestRegistryKey.GetValue(testValueName)));
+            TestRegistryKey.DeleteValue(testValueName);
         }
 
         [Fact]
@@ -92,9 +85,9 @@ namespace Microsoft.Win32.RegistryTests
             const string testValueName = "UBArr";
             byte[] expected = { 1, 2, 3 };
 
-            _testRegistryKey.SetValue(testValueName, expected);
-            Assert.Equal(expected, (byte[])_testRegistryKey.GetValue(testValueName));
-            _testRegistryKey.DeleteValue(testValueName);
+            TestRegistryKey.SetValue(testValueName, expected);
+            Assert.Equal(expected, (byte[])TestRegistryKey.GetValue(testValueName));
+            TestRegistryKey.DeleteValue(testValueName);
         }
 
         [Fact]
@@ -109,9 +102,9 @@ namespace Microsoft.Win32.RegistryTests
                 "lot of things. one of which"
             };
 
-            _testRegistryKey.SetValue(testValueName, expected);
-            Assert.Equal(expected, (string[])_testRegistryKey.GetValue(testValueName));
-            _testRegistryKey.DeleteValue(testValueName);
+            TestRegistryKey.SetValue(testValueName, expected);
+            Assert.Equal(expected, (string[])TestRegistryKey.GetValue(testValueName));
+            TestRegistryKey.DeleteValue(testValueName);
         }
 
         public static IEnumerable<object[]> TestEnvironment { get { return TestData.TestEnvironment; } }
@@ -121,12 +114,12 @@ namespace Microsoft.Win32.RegistryTests
         public void SetValueWithEnvironmentVariable(string valueName, string envVariableName, string expectedVariableValue)
         {
             string value = "%" + envVariableName + "%";
-            _testRegistryKey.SetValue(valueName, value);
+            TestRegistryKey.SetValue(valueName, value);
 
-            string result = (string)_testRegistryKey.GetValue(valueName);
+            string result = (string)TestRegistryKey.GetValue(valueName);
             //we don't expand for the user, REG_SZ_EXPAND not supported
             Assert.Equal(expectedVariableValue, Environment.ExpandEnvironmentVariables(result));
-            _testRegistryKey.DeleteValue(valueName);
+            TestRegistryKey.DeleteValue(valueName);
         }
 
         [Fact]
@@ -136,9 +129,9 @@ namespace Microsoft.Win32.RegistryTests
             const string testValueName = "test_122018";
             string expected = string.Empty;
 
-            _testRegistryKey.SetValue(testValueName, expected);
-            Assert.Equal(expected, (string)_testRegistryKey.GetValue(testValueName));
-            _testRegistryKey.DeleteValue(testValueName);
+            TestRegistryKey.SetValue(testValueName, expected);
+            Assert.Equal(expected, (string)TestRegistryKey.GetValue(testValueName));
+            TestRegistryKey.DeleteValue(testValueName);
         }
     }
 }
