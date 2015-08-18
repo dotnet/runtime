@@ -251,5 +251,43 @@ namespace System.IO.Pipes.Tests
                 Assert.Equal(123, pair.readablePipe.ReadByte());
             }
         }
+
+        [Theory]
+        [InlineData(5000, 1, 1)]       // very small buffers
+        [InlineData(500, 21, 18)]      // lots of iterations, with read buffer smaller than write buffer
+        [InlineData(500, 18, 21)]      // lots of iterations, with write buffer smaller than read buffer
+        [InlineData(5, 128000, 64000)] // very large buffers
+        public async Task AsyncReadWriteChain(int iterations, int writeBufferSize, int readBufferSize)
+        {
+            var writeBuffer = new byte[writeBufferSize];
+            var readBuffer = new byte[readBufferSize];
+            var rand = new Random();
+
+            using (ServerClientPair pair = CreateServerClientPair())
+            {
+                // Repeatedly and asynchronously write to the writeable pipe and read from the readable pipe,
+                // verifying that the correct data made it through.
+                for (int iter = 0; iter < iterations; iter++)
+                {
+                    rand.NextBytes(writeBuffer);
+                    Task writerTask = pair.writeablePipe.WriteAsync(writeBuffer, 0, writeBuffer.Length);
+
+                    int totalRead = 0;
+                    while (totalRead < writeBuffer.Length)
+                    {
+                        int numRead = await pair.readablePipe.ReadAsync(readBuffer, 0, readBuffer.Length);
+                        Assert.True(numRead > 0);
+                        Assert.Equal<byte>(
+                            new ArraySegment<byte>(writeBuffer, totalRead, numRead),
+                            new ArraySegment<byte>(readBuffer, 0, numRead));
+                        totalRead += numRead;
+                    }
+                    Assert.Equal(writeBuffer.Length, totalRead);
+
+                    await writerTask;
+                }
+            }
+        }
+
     }
 }
