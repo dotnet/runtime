@@ -17,10 +17,10 @@ namespace Microsoft.Win32.RegistryTests
         {
             string valueName = "Testing_" + testIndex.ToString();
 
-            _testRegistryKey.SetValue(valueName, testValue, RegistryValueKind.Unknown);
-            Assert.Equal(testValue.ToString(), _testRegistryKey.GetValue(valueName).ToString());
-            Assert.Equal(expectedValueKind, _testRegistryKey.GetValueKind(valueName));
-            _testRegistryKey.DeleteValue(valueName);
+            TestRegistryKey.SetValue(valueName, testValue, RegistryValueKind.Unknown);
+            Assert.Equal(testValue.ToString(), TestRegistryKey.GetValue(valueName).ToString());
+            Assert.Equal(expectedValueKind, TestRegistryKey.GetValueKind(valueName));
+            TestRegistryKey.DeleteValue(valueName);
         }
 
         [Theory]
@@ -30,10 +30,10 @@ namespace Microsoft.Win32.RegistryTests
             string valueName = "Testing_" + testIndex.ToString();
             expectedValueKind = RegistryValueKind.String;
 
-            _testRegistryKey.SetValue(valueName, testValue, expectedValueKind);
-            Assert.Equal(testValue.ToString(), _testRegistryKey.GetValue(valueName).ToString());
-            Assert.Equal(expectedValueKind, _testRegistryKey.GetValueKind(valueName));
-            _testRegistryKey.DeleteValue(valueName);
+            TestRegistryKey.SetValue(valueName, testValue, expectedValueKind);
+            Assert.Equal(testValue.ToString(), TestRegistryKey.GetValue(valueName).ToString());
+            Assert.Equal(expectedValueKind, TestRegistryKey.GetValueKind(valueName));
+            TestRegistryKey.DeleteValue(valueName);
         }
 
         [Theory]
@@ -43,10 +43,10 @@ namespace Microsoft.Win32.RegistryTests
             string valueName = "Testing_" + testIndex.ToString();
             expectedValueKind = RegistryValueKind.ExpandString;
 
-            _testRegistryKey.SetValue(valueName, testValue, expectedValueKind);
-            Assert.Equal(testValue.ToString(), _testRegistryKey.GetValue(valueName).ToString());
-            Assert.Equal(expectedValueKind, _testRegistryKey.GetValueKind(valueName));
-            _testRegistryKey.DeleteValue(valueName);
+            TestRegistryKey.SetValue(valueName, testValue, expectedValueKind);
+            Assert.Equal(testValue.ToString(), TestRegistryKey.GetValue(valueName).ToString());
+            Assert.Equal(expectedValueKind, TestRegistryKey.GetValueKind(valueName));
+            TestRegistryKey.DeleteValue(valueName);
         }
 
         [Theory]
@@ -58,10 +58,10 @@ namespace Microsoft.Win32.RegistryTests
                 string valueName = "Testing_" + testIndex.ToString();
                 expectedValueKind = RegistryValueKind.MultiString;
 
-                _testRegistryKey.SetValue(valueName, testValue, expectedValueKind);
-                Assert.Equal(testValue.ToString(), _testRegistryKey.GetValue(valueName).ToString());
-                Assert.Equal(expectedValueKind, _testRegistryKey.GetValueKind(valueName));
-                _testRegistryKey.DeleteValue(valueName);
+                TestRegistryKey.SetValue(valueName, testValue, expectedValueKind);
+                Assert.Equal(testValue.ToString(), TestRegistryKey.GetValue(valueName).ToString());
+                Assert.Equal(expectedValueKind, TestRegistryKey.GetValueKind(valueName));
+                TestRegistryKey.DeleteValue(valueName);
             }
             catch (ArgumentException)
             {
@@ -78,10 +78,10 @@ namespace Microsoft.Win32.RegistryTests
                 string valueName = "Testing_" + testIndex.ToString();
                 expectedValueKind = RegistryValueKind.Binary;
 
-                _testRegistryKey.SetValue(valueName, testValue, expectedValueKind);
-                Assert.Equal(testValue.ToString(), _testRegistryKey.GetValue(valueName).ToString());
-                Assert.Equal(expectedValueKind, _testRegistryKey.GetValueKind(valueName));
-                _testRegistryKey.DeleteValue(valueName);
+                TestRegistryKey.SetValue(valueName, testValue, expectedValueKind);
+                Assert.Equal(testValue.ToString(), TestRegistryKey.GetValue(valueName).ToString());
+                Assert.Equal(expectedValueKind, TestRegistryKey.GetValueKind(valueName));
+                TestRegistryKey.DeleteValue(valueName);
             }
             catch (ArgumentException)
             {
@@ -98,11 +98,11 @@ namespace Microsoft.Win32.RegistryTests
                 string valueName = "Testing_" + testIndex.ToString();
                 expectedValueKind = RegistryValueKind.DWord;
 
-                _testRegistryKey.SetValue(valueName, testValue, expectedValueKind);
-                Assert.Equal(Convert.ToInt32(testValue).ToString(), _testRegistryKey.GetValue(valueName).ToString());
-                Assert.Equal(expectedValueKind, _testRegistryKey.GetValueKind(valueName));
+                TestRegistryKey.SetValue(valueName, testValue, expectedValueKind);
+                Assert.Equal(Convert.ToInt32(testValue).ToString(), TestRegistryKey.GetValue(valueName).ToString());
+                Assert.Equal(expectedValueKind, TestRegistryKey.GetValueKind(valueName));
                 Assert.True(testIndex <= 15);
-                _testRegistryKey.DeleteValue(valueName);
+                TestRegistryKey.DeleteValue(valueName);
             }
             catch (ArgumentException ioe)
             {
@@ -119,11 +119,11 @@ namespace Microsoft.Win32.RegistryTests
                 string valueName = "Testing_" + testIndex.ToString();
                 expectedValueKind = RegistryValueKind.QWord;
 
-                _testRegistryKey.SetValue(valueName, testValue, expectedValueKind);
-                Assert.Equal(Convert.ToInt64(testValue).ToString(), _testRegistryKey.GetValue(valueName).ToString());
-                Assert.Equal(expectedValueKind, _testRegistryKey.GetValueKind(valueName));
+                TestRegistryKey.SetValue(valueName, testValue, expectedValueKind);
+                Assert.Equal(Convert.ToInt64(testValue).ToString(), TestRegistryKey.GetValue(valueName).ToString());
+                Assert.Equal(expectedValueKind, TestRegistryKey.GetValueKind(valueName));
                 Assert.True(testIndex <= 25);
-                _testRegistryKey.DeleteValue(valueName);
+                TestRegistryKey.DeleteValue(valueName);
             }
             catch (ArgumentException ioe)
             {
@@ -140,15 +140,15 @@ namespace Microsoft.Win32.RegistryTests
             const RegistryValueKind expectedValueKind1 = RegistryValueKind.DWord;
             const RegistryValueKind expectedValueKind2 = RegistryValueKind.QWord;
 
-            Assert.True(_testRegistryKey.GetValue(valueName) == null, "Registry key already exists");
-            _testRegistryKey.SetValue(valueName, expectedValue1, expectedValueKind1);
-            Assert.True(_testRegistryKey.GetValue(valueName) != null, "Registry key doesn't exists");
-            Assert.Equal(expectedValue1, (int)_testRegistryKey.GetValue(valueName));
-            Assert.Equal(expectedValueKind1, _testRegistryKey.GetValueKind(valueName));
+            Assert.True(TestRegistryKey.GetValue(valueName) == null, "Registry key already exists");
+            TestRegistryKey.SetValue(valueName, expectedValue1, expectedValueKind1);
+            Assert.True(TestRegistryKey.GetValue(valueName) != null, "Registry key doesn't exists");
+            Assert.Equal(expectedValue1, (int)TestRegistryKey.GetValue(valueName));
+            Assert.Equal(expectedValueKind1, TestRegistryKey.GetValueKind(valueName));
 
-            _testRegistryKey.SetValue(valueName, expectedValue2, expectedValueKind2);
-            Assert.Equal(expectedValue2, (long)_testRegistryKey.GetValue(valueName));
-            Assert.Equal(expectedValueKind2, _testRegistryKey.GetValueKind(valueName));
+            TestRegistryKey.SetValue(valueName, expectedValue2, expectedValueKind2);
+            Assert.Equal(expectedValue2, (long)TestRegistryKey.GetValue(valueName));
+            Assert.Equal(expectedValueKind2, TestRegistryKey.GetValueKind(valueName));
         }
 
         public static IEnumerable<object[]> TestValueNames { get { return TestData.TestValueNames; } }
@@ -160,9 +160,9 @@ namespace Microsoft.Win32.RegistryTests
             const long expectedValue = long.MaxValue;
             const RegistryValueKind expectedValueKind = RegistryValueKind.QWord;
 
-            _testRegistryKey.SetValue(valueName, expectedValue, expectedValueKind);
-            Assert.Equal(expectedValue, (long)_testRegistryKey.GetValue(valueName));
-            Assert.Equal(expectedValueKind, _testRegistryKey.GetValueKind(valueName));
+            TestRegistryKey.SetValue(valueName, expectedValue, expectedValueKind);
+            Assert.Equal(expectedValue, (long)TestRegistryKey.GetValue(valueName));
+            Assert.Equal(expectedValueKind, TestRegistryKey.GetValueKind(valueName));
         }
 
         [Fact]
@@ -171,28 +171,28 @@ namespace Microsoft.Win32.RegistryTests
             // Should throw if key length above 255 characters but prior to V4 the limit is 16383
             const int maxValueNameLength = 16383;
             string tooLongValueName = new string('a', maxValueNameLength + 1);
-            Assert.Throws<ArgumentException>(() => _testRegistryKey.SetValue(tooLongValueName, ulong.MaxValue, RegistryValueKind.String));
+            Assert.Throws<ArgumentException>(() => TestRegistryKey.SetValue(tooLongValueName, ulong.MaxValue, RegistryValueKind.String));
 
             const string valueName = "FooBar";
             // Should throw if passed value is null
-            Assert.Throws<ArgumentNullException>(() => _testRegistryKey.SetValue(valueName, null, RegistryValueKind.QWord));
+            Assert.Throws<ArgumentNullException>(() => TestRegistryKey.SetValue(valueName, null, RegistryValueKind.QWord));
 
             // Should throw because valueKind is equal to -2 which is not an acceptable value
-            Assert.Throws<ArgumentException>(() => _testRegistryKey.SetValue(valueName, int.MinValue, (RegistryValueKind)(-2)));
+            Assert.Throws<ArgumentException>(() => TestRegistryKey.SetValue(valueName, int.MinValue, (RegistryValueKind)(-2)));
 
             // Should throw because passed array contains null
             string[] strArr = { "one", "two", null, "three" };
-            Assert.Throws<ArgumentException>(() => _testRegistryKey.SetValue(valueName, strArr, RegistryValueKind.MultiString));
+            Assert.Throws<ArgumentException>(() => TestRegistryKey.SetValue(valueName, strArr, RegistryValueKind.MultiString));
 
             // Should throw because passed array has wrong type
-            Assert.Throws<ArgumentException>(() => _testRegistryKey.SetValue(valueName, new[] { new object() }, RegistryValueKind.MultiString));
+            Assert.Throws<ArgumentException>(() => TestRegistryKey.SetValue(valueName, new[] { new object() }, RegistryValueKind.MultiString));
 
             // Should throw because passed array has wrong type
             object[] objTemp = { "my string", "your string", "Any once string" };
-            Assert.Throws<ArgumentException>(() => _testRegistryKey.SetValue(valueName, objTemp, RegistryValueKind.Unknown));
+            Assert.Throws<ArgumentException>(() => TestRegistryKey.SetValue(valueName, objTemp, RegistryValueKind.Unknown));
 
             // Should throw because RegistryKey is readonly
-            using (var rk = Registry.CurrentUser.OpenSubKey(_testRegistryKeyName, false))
+            using (var rk = Registry.CurrentUser.OpenSubKey(TestRegistryKeyName, false))
             {
                 Assert.Throws<UnauthorizedAccessException>(() => rk.SetValue(valueName, int.MaxValue, RegistryValueKind.DWord));
             }
@@ -200,8 +200,8 @@ namespace Microsoft.Win32.RegistryTests
             // Should throw if RegistryKey is closed
             Assert.Throws<ObjectDisposedException>(() =>
             {
-                _testRegistryKey.Dispose();
-                _testRegistryKey.SetValue(valueName, int.MinValue, RegistryValueKind.DWord);
+                TestRegistryKey.Dispose();
+                TestRegistryKey.SetValue(valueName, int.MinValue, RegistryValueKind.DWord);
             });
         }
     }

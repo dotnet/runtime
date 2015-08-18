@@ -13,13 +13,13 @@ namespace Microsoft.Win32.RegistryTests
         public void NegativeTests()
         {
             // Registry Key does not exist
-            Assert.Throws<IOException>(() => _testRegistryKey.GetValueKind("DoesNotExist"));
+            Assert.Throws<IOException>(() => TestRegistryKey.GetValueKind("DoesNotExist"));
 
             // RegistryKey is closed
             Assert.Throws<ObjectDisposedException>(() =>
             {
-                _testRegistryKey.Dispose();
-                _testRegistryKey.GetValueKind("FooBar");
+                TestRegistryKey.Dispose();
+                TestRegistryKey.GetValueKind("FooBar");
             });
 
         }
@@ -28,10 +28,10 @@ namespace Microsoft.Win32.RegistryTests
         public void GetValueKindForDefaultvalue()
         {
             const RegistryValueKind expectedValueKind = RegistryValueKind.QWord;
-            _testRegistryKey.SetValue(null, 42, expectedValueKind);
+            TestRegistryKey.SetValue(null, 42, expectedValueKind);
 
-            Assert.Equal(expectedValueKind, _testRegistryKey.GetValueKind(null));
-            Assert.Equal(expectedValueKind, _testRegistryKey.GetValueKind(string.Empty));
+            Assert.Equal(expectedValueKind, TestRegistryKey.GetValueKind(null));
+            Assert.Equal(expectedValueKind, TestRegistryKey.GetValueKind(string.Empty));
         }
 
         [Fact]
@@ -41,9 +41,9 @@ namespace Microsoft.Win32.RegistryTests
             const string valueName = null;
             const long expectedValue = long.MaxValue;
             const RegistryValueKind expectedValueKind = RegistryValueKind.QWord;
-            _testRegistryKey.SetValue(valueName, expectedValue, expectedValueKind);
+            TestRegistryKey.SetValue(valueName, expectedValue, expectedValueKind);
 
-            using (RegistryKey rk = Registry.CurrentUser.OpenSubKey(_testRegistryKeyName, false))
+            using (RegistryKey rk = Registry.CurrentUser.OpenSubKey(TestRegistryKeyName, false))
             {
                 Assert.Equal(expectedValue.ToString(), rk.GetValue(valueName).ToString());
                 Assert.Equal(expectedValueKind, rk.GetValueKind(valueName));
@@ -56,8 +56,8 @@ namespace Microsoft.Win32.RegistryTests
             const string valueName = "NoneKind";
             const RegistryValueKind expectedValueKind = RegistryValueKind.None;
             
-            _testRegistryKey.SetValue(valueName, new byte[] { 23, 32 }, RegistryValueKind.None);
-            Assert.Equal(expectedValueKind, _testRegistryKey.GetValueKind(valueName));
+            TestRegistryKey.SetValue(valueName, new byte[] { 23, 32 }, RegistryValueKind.None);
+            Assert.Equal(expectedValueKind, TestRegistryKey.GetValueKind(valueName));
         }
     }
 }
