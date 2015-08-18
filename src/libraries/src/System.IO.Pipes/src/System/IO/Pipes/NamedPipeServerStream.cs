@@ -61,8 +61,8 @@ namespace System.IO.Pipes
         /// Win32 note: this gets OR'd into dwOpenMode to CreateNamedPipe
         /// </param>
         /// <param name="maxNumberOfServerInstances">Maximum number of server instances. Specify a fixed value between 
-        /// 1 and 254, or use NamedPipeServerStream.MaxAllowedServerInstances to use the maximum amount allowed by 
-        /// system resources.</param>
+        /// 1 and 254 (Windows)/greater than 1 (Unix), or use NamedPipeServerStream.MaxAllowedServerInstances to use the 
+        /// maximum amount allowed by system resources.</param>
         /// <param name="transmissionMode">Byte mode or message mode.
         /// Win32 note: this gets used for dwPipeMode. CreateNamedPipe allows you to specify PIPE_TYPE_BYTE/MESSAGE
         /// and PIPE_READMODE_BYTE/MESSAGE independently, but this sets type and readmode to match.
@@ -102,12 +102,7 @@ namespace System.IO.Pipes
             {
                 throw new ArgumentOutOfRangeException("inBufferSize", SR.ArgumentOutOfRange_NeedNonNegNum);
             }
-            // win32 allows fixed values of 1-254 or 255 to mean max allowed by system. We expose 255 as -1 (unlimited)
-            // through the MaxAllowedServerInstances constant. This is consistent e.g. with -1 as infinite timeout, etc
-            if ((maxNumberOfServerInstances < 1 || maxNumberOfServerInstances > 254) && (maxNumberOfServerInstances != MaxAllowedServerInstances))
-            {
-                throw new ArgumentOutOfRangeException("maxNumberOfServerInstances", SR.ArgumentOutOfRange_MaxNumServerInstances);
-            }
+            ValidateMaxNumberOfServerInstances(maxNumberOfServerInstances);
             // inheritability will always be None since this private constructor is only called from other constructors from which
             // inheritability is always set to None. Desktop has a public constructor to allow setting it to something else, but Core
             // doesnt.
