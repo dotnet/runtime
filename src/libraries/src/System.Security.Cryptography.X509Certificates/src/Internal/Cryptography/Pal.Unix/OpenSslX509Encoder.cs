@@ -90,7 +90,7 @@ namespace Internal.Cryptography.Pal
             {
                 Interop.libcrypto.CheckValidOpenSslHandle(bitString);
 
-                byte[] decoded = Interop.NativeCrypto.GetAsn1StringBytes(bitString.DangerousGetHandle());
+                byte[] decoded = Interop.Crypto.GetAsn1StringBytes(bitString.DangerousGetHandle());
 
                 // Only 9 bits are defined.
                 if (decoded.Length > 2)
@@ -193,11 +193,11 @@ namespace Internal.Cryptography.Pal
             {
                 Interop.libcrypto.CheckValidOpenSslHandle(eku);
 
-                int count = Interop.NativeCrypto.GetX509EkuFieldCount(eku);
+                int count = Interop.Crypto.GetX509EkuFieldCount(eku);
 
                 for (int i = 0; i < count; i++)
                 {
-                    IntPtr oidPtr = Interop.NativeCrypto.GetX509EkuField(eku, i);
+                    IntPtr oidPtr = Interop.Crypto.GetX509EkuField(eku, i);
 
                     if (oidPtr == IntPtr.Zero)
                     {
@@ -224,7 +224,7 @@ namespace Internal.Cryptography.Pal
             {
                 Interop.libcrypto.CheckValidOpenSslHandle(octetString);
 
-                subjectKeyIdentifier = Interop.NativeCrypto.GetAsn1StringBytes(octetString.DangerousGetHandle());
+                subjectKeyIdentifier = Interop.Crypto.GetAsn1StringBytes(octetString.DangerousGetHandle());
             }
         }
 

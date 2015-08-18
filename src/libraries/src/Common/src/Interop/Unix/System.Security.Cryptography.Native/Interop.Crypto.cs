@@ -8,85 +8,85 @@ using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
-    internal static partial class NativeCrypto
+    internal static partial class Crypto
     {
         private delegate int NegativeSizeReadMethod<in THandle>(THandle handle, byte[] buf, int cBuf);
 
-        [DllImport(Libraries.CryptoInterop)]
+        [DllImport(Libraries.CryptoNative)]
         internal static extern int BioTell(SafeBioHandle bio);
 
-        [DllImport(Libraries.CryptoInterop)]
+        [DllImport(Libraries.CryptoNative)]
         internal static extern int BioSeek(SafeBioHandle bio, int pos);
 
-        [DllImport(Libraries.CryptoInterop)]
+        [DllImport(Libraries.CryptoNative)]
         private static extern int GetX509Thumbprint(SafeX509Handle x509, byte[] buf, int cBuf);
 
-        [DllImport(Libraries.CryptoInterop)]
+        [DllImport(Libraries.CryptoNative)]
         private static extern int GetX509NameRawBytes(IntPtr x509Name, byte[] buf, int cBuf);
 
-        [DllImport(Libraries.CryptoInterop)]
+        [DllImport(Libraries.CryptoNative)]
         internal static extern SafeX509Handle ReadX509AsDerFromBio(SafeBioHandle bio);
 
-        [DllImport(Libraries.CryptoInterop)]
+        [DllImport(Libraries.CryptoNative)]
         internal static extern IntPtr GetX509NotBefore(SafeX509Handle x509);
 
-        [DllImport(Libraries.CryptoInterop)]
+        [DllImport(Libraries.CryptoNative)]
         internal static extern IntPtr GetX509NotAfter(SafeX509Handle x509);
 
-        [DllImport(Libraries.CryptoInterop)]
+        [DllImport(Libraries.CryptoNative)]
         internal static extern int GetX509Version(SafeX509Handle x509);
 
-        [DllImport(Libraries.CryptoInterop)]
+        [DllImport(Libraries.CryptoNative)]
         internal static extern IntPtr GetX509SignatureAlgorithm(SafeX509Handle x509);
 
-        [DllImport(Libraries.CryptoInterop)]
+        [DllImport(Libraries.CryptoNative)]
         internal static extern IntPtr GetX509PublicKeyAlgorithm(SafeX509Handle x509);
 
-        [DllImport(Libraries.CryptoInterop)]
+        [DllImport(Libraries.CryptoNative)]
         private static extern int GetX509PublicKeyParameterBytes(SafeX509Handle x509, byte[] buf, int cBuf);
 
-        [DllImport(Libraries.CryptoInterop)]
+        [DllImport(Libraries.CryptoNative)]
         internal static extern IntPtr GetX509PublicKeyBytes(SafeX509Handle x509);
 
-        [DllImport(Libraries.CryptoInterop)]
+        [DllImport(Libraries.CryptoNative)]
         internal static extern int GetX509EkuFieldCount(SafeEkuExtensionHandle eku);
 
-        [DllImport(Libraries.CryptoInterop)]
+        [DllImport(Libraries.CryptoNative)]
         internal static extern IntPtr GetX509EkuField(SafeEkuExtensionHandle eku, int loc);
 
-        [DllImport(Libraries.CryptoInterop)]
+        [DllImport(Libraries.CryptoNative)]
         internal static extern SafeBioHandle GetX509NameInfo(SafeX509Handle x509, int nameType, [MarshalAs(UnmanagedType.Bool)] bool forIssuer);
 
-        [DllImport(Libraries.CryptoInterop)]
+        [DllImport(Libraries.CryptoNative)]
         private static extern int GetAsn1StringBytes(IntPtr asn1, byte[] buf, int cBuf);
 
-        [DllImport(Libraries.CryptoInterop)]
+        [DllImport(Libraries.CryptoNative)]
         internal static extern SafeX509StackHandle NewX509Stack();
 
-        [DllImport(Libraries.CryptoInterop)]
+        [DllImport(Libraries.CryptoNative)]
         internal static extern int GetX509StackFieldCount(SafeX509StackHandle stack);
 
         /// <summary>
         /// Gets a pointer to a certificate within a STACK_OF(X509). This pointer will later
         /// be freed, so it should be cloned via new X509Certificate2(IntPtr)
         /// </summary>
-        [DllImport(Libraries.CryptoInterop)]
+        [DllImport(Libraries.CryptoNative)]
         internal static extern IntPtr GetX509StackField(SafeX509StackHandle stack, int loc);
 
-        [DllImport(Libraries.CryptoInterop)]
+        [DllImport(Libraries.CryptoNative)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool PushX509StackField(SafeX509StackHandle stack, SafeX509Handle x509);
 
-        [DllImport(Libraries.CryptoInterop)]
+        [DllImport(Libraries.CryptoNative)]
         internal static extern void RecursiveFreeX509Stack(IntPtr stack);
 
-        [DllImport(Libraries.CryptoInterop, CharSet = CharSet.Ansi)]
+        [DllImport(Libraries.CryptoNative, CharSet = CharSet.Ansi)]
         internal static extern string GetX509RootStorePath();
 
-        [DllImport(Libraries.CryptoInterop)]
+        [DllImport(Libraries.CryptoNative)]
         internal static extern int UpRefEvpPkey(SafeEvpPkeyHandle handle);
 
-        [DllImport(Libraries.CryptoInterop)]
+        [DllImport(Libraries.CryptoNative)]
         private static extern int SetX509ChainVerifyTime(
             SafeX509StoreCtxHandle ctx,
             int year,

@@ -98,11 +98,11 @@ namespace Internal.Cryptography.Pal
 
             if (_caStackHandle != null && !_caStackHandle.IsInvalid)
             {
-                int caCertCount = Interop.NativeCrypto.GetX509StackFieldCount(_caStackHandle);
+                int caCertCount = Interop.Crypto.GetX509StackFieldCount(_caStackHandle);
 
                 for (int i = 0; i < caCertCount; i++)
                 {
-                    IntPtr certPtr = Interop.NativeCrypto.GetX509StackField(_caStackHandle, i);
+                    IntPtr certPtr = Interop.Crypto.GetX509StackField(_caStackHandle, i);
 
                     if (certPtr != IntPtr.Zero)
                     {

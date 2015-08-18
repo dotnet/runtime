@@ -76,7 +76,7 @@ namespace Internal.Cryptography.Pal
                     throw Interop.libcrypto.CreateOpenSslCryptographicException();
                 }
 
-                Interop.NativeCrypto.SetX509ChainVerifyTime(storeCtx, verificationTime);
+                Interop.Crypto.SetX509ChainVerifyTime(storeCtx, verificationTime);
 
                 int verify = Interop.libcrypto.X509_verify_cert(storeCtx);
 
@@ -87,7 +87,7 @@ namespace Internal.Cryptography.Pal
 
                 using (SafeX509StackHandle chainStack = Interop.libcrypto.X509_STORE_CTX_get1_chain(storeCtx))
                 {
-                    int chainSize = Interop.NativeCrypto.GetX509StackFieldCount(chainStack);
+                    int chainSize = Interop.Crypto.GetX509StackFieldCount(chainStack);
                     int errorDepth = -1;
                     Interop.libcrypto.X509VerifyStatusCode errorCode = 0;
                     string errorMsg = null;
@@ -117,7 +117,7 @@ namespace Internal.Cryptography.Pal
                             AddUniqueStatus(overallStatus, ref chainStatus);
                         }
 
-                        IntPtr elementCertPtr = Interop.NativeCrypto.GetX509StackField(chainStack, i);
+                        IntPtr elementCertPtr = Interop.Crypto.GetX509StackField(chainStack, i);
 
                         if (elementCertPtr == IntPtr.Zero)
                         {
