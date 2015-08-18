@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #include "../config.h"
-#include "pal_stat.h"
+#include "pal_io.h"
 #include <sys/stat.h>
 
 #if HAVE_STAT64
