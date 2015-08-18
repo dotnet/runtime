@@ -206,13 +206,13 @@ namespace System.Diagnostics
             string[] envp = CreateEnvp(startInfo);
             string cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
 
-            // Invoke the runtime's fork/execve routine.  It will create pipes for all requested
+            // Invoke the shim fork/execve routine.  It will create pipes for all requested
             // redirects, fork a child process, map the pipe ends onto the appropriate stdin/stdout/stderr
-            // descriptors, and execve to execute the requested process.  The runtime's implementation
+            // descriptors, and execve to execute the requested process.  The shim implementation
             // is used to fork/execve as executing managed code in a forked process is not safe (only
             // the calling thread will transfer, thread IDs aren't stable across the fork, etc.)
             int childPid, stdinFd, stdoutFd, stderrFd;
-            if (Interop.libcoreclr.ForkAndExecProcess(
+            if (Interop.Sys.ForkAndExecProcess(
                 filename, argv, envp, cwd,
                 startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
                 out childPid, 
