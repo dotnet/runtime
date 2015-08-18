@@ -14,9 +14,12 @@ namespace System.Linq
         {
             if (source == null) throw Error.ArgumentNull("source");
             if (predicate == null) throw Error.ArgumentNull("predicate");
-            if (source is Iterator<TSource>) return ((Iterator<TSource>)source).Where(predicate);
-            if (source is TSource[]) return new WhereArrayIterator<TSource>((TSource[])source, predicate);
-            if (source is List<TSource>) return new WhereListIterator<TSource>((List<TSource>)source, predicate);
+            Iterator<TSource> iterator = source as Iterator<TSource>;
+            if (iterator != null) return iterator.Where(predicate);
+            TSource[] array = source as TSource[];
+            if (array != null) return new WhereArrayIterator<TSource>(array, predicate);
+            List<TSource> list = source as List<TSource>;
+            if (list != null) return new WhereListIterator<TSource>(list, predicate);
             return new WhereEnumerableIterator<TSource>(source, predicate);
         }
 
@@ -41,9 +44,12 @@ namespace System.Linq
         {
             if (source == null) throw Error.ArgumentNull("source");
             if (selector == null) throw Error.ArgumentNull("selector");
-            if (source is Iterator<TSource>) return ((Iterator<TSource>)source).Select(selector);
-            if (source is TSource[]) return new WhereSelectArrayIterator<TSource, TResult>((TSource[])source, null, selector);
-            if (source is List<TSource>) return new WhereSelectListIterator<TSource, TResult>((List<TSource>)source, null, selector);
+            Iterator<TSource> iterator = source as Iterator<TSource>;
+            if (iterator != null) return iterator.Select(selector);
+            TSource[] array = source as TSource[];
+            if (array != null) return new WhereSelectArrayIterator<TSource, TResult>(array, null, selector);
+            List<TSource> list = source as List<TSource>;
+            if (list != null) return new WhereSelectListIterator<TSource, TResult>(list, null, selector);
             return new WhereSelectEnumerableIterator<TSource, TResult>(source, null, selector);
         }
 
@@ -119,14 +125,14 @@ namespace System.Linq
                 //
                 // This is a workaround implementation that does the "virtual dispatch" manually.
 
-                if (this is WhereEnumerableIterator<TSource>)
-                    return ((WhereEnumerableIterator<TSource>)this).SelectImpl<TResult>(selector);
+                WhereEnumerableIterator<TSource> wei = this as WhereEnumerableIterator<TSource>;
+                if (wei != null) return wei.SelectImpl<TResult>(selector);
 
-                if (this is WhereArrayIterator<TSource>)
-                    return ((WhereArrayIterator<TSource>)this).SelectImpl<TResult>(selector);
+                WhereArrayIterator<TSource> wai = this as WhereArrayIterator<TSource>;
+                if (wai != null) return wai.SelectImpl<TResult>(selector);
 
-                if (this is WhereListIterator<TSource>)
-                    return ((WhereListIterator<TSource>)this).SelectImpl<TResult>(selector);
+                WhereListIterator<TSource> wli = this as WhereListIterator<TSource>;
+                if (wli != null) return wli.SelectImpl<TResult>(selector);
 
                 // If we got here, then "this" is one of these types:
                 //

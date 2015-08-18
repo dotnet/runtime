@@ -2229,17 +2229,19 @@ namespace System.Linq.Expressions.Interpreter
                         _instructions.EmitStoreLocal(memberTemp.Value.Index);
                     }
 
-                    if (member.Member is FieldInfo)
+                    FieldInfo field = member.Member as FieldInfo;
+                    if (field != null)
                     {
-                        _instructions.EmitLoadField((FieldInfo)member.Member);
-                        return new FieldByRefUpdater(memberTemp, (FieldInfo)member.Member, index);
+                        _instructions.EmitLoadField(field);
+                        return new FieldByRefUpdater(memberTemp, field, index);
                     }
-                    else if (member.Member is PropertyInfo)
+                    PropertyInfo property = member.Member as PropertyInfo;
+                    if (property != null)
                     {
-                        _instructions.EmitCall(((PropertyInfo)member.Member).GetGetMethod(true));
-                        if (((PropertyInfo)member.Member).CanWrite)
+                        _instructions.EmitCall(property.GetGetMethod(true));
+                        if (property.CanWrite)
                         {
-                            return new PropertyByRefUpdater(memberTemp, (PropertyInfo)member.Member, index);
+                            return new PropertyByRefUpdater(memberTemp, property, index);
                         }
                         return null;
                     }
