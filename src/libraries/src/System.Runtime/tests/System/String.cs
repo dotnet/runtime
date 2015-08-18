@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using Xunit;
 
 public static unsafe class StringTests
@@ -19,7 +20,7 @@ public static unsafe class StringTests
     {
         string s = "Dill Guv Dill Guv Dill";
         int lastIndex = s.LastIndexOf("", StringComparison.OrdinalIgnoreCase);
-        Assert.True(lastIndex == s.Length - 1);
+        Assert.Equal(s.Length - 1, lastIndex);
     }
 
     [Fact]
@@ -41,11 +42,11 @@ public static unsafe class StringTests
         fixed (char* pc = c)
         {
             String s = new String(pc);
-            Assert.True(s == "abcdefgh");
+            Assert.Equal("abcdefgh", s);
         }
 
         String e = new String((char*)null);
-        Assert.True(e == String.Empty);
+        Assert.Equal(String.Empty, e);
     }
 
     [Fact]
@@ -56,10 +57,10 @@ public static unsafe class StringTests
         fixed (char* pc = c)
         {
             s = new String(pc, 2, 3);
-            Assert.True(s == "cde");
+            Assert.Equal("cde", s);
 
             s = new String(pc, 0, 8);
-            Assert.True(s == "abcdefgh");
+            Assert.Equal("abcdefgh", s);
 
             try
             {
@@ -71,7 +72,7 @@ public static unsafe class StringTests
         }
 
         String e = new String((char*)null, 0, 0);
-        Assert.True(e == String.Empty);
+        Assert.Equal(String.Empty, e);
 
         try
         {
@@ -92,34 +93,34 @@ public static unsafe class StringTests
         // Implementation unrolls copy 4 times.
 
         s = new String('a', 0);
-        Assert.True(s == String.Empty);
+        Assert.Equal(String.Empty, s);
 
         s = new String('a', 1);
-        Assert.True(s == "a");
+        Assert.Equal("a", s);
 
         s = new String('a', 2);
-        Assert.True(s == "aa");
+        Assert.Equal("aa", s);
 
         s = new String('a', 3);
-        Assert.True(s == "aaa");
+        Assert.Equal("aaa", s);
 
         s = new String('a', 4);
-        Assert.True(s == "aaaa");
+        Assert.Equal("aaaa", s);
 
         s = new String('a', 5);
-        Assert.True(s == "aaaaa");
+        Assert.Equal("aaaaa", s);
 
         s = new String('a', 6);
-        Assert.True(s == "aaaaaa");
+        Assert.Equal("aaaaaa", s);
 
         s = new String('a', 7);
-        Assert.True(s == "aaaaaaa");
+        Assert.Equal("aaaaaaa", s);
 
         s = new String('a', 8);
-        Assert.True(s == "aaaaaaaa");
+        Assert.Equal("aaaaaaaa", s);
 
         s = new String('a', 9);
-        Assert.True(s == "aaaaaaaaa");
+        Assert.Equal("aaaaaaaaa", s);
 
         Assert.Throws<ArgumentOutOfRangeException>(() => s = new String('a', -1));
     }
@@ -131,10 +132,10 @@ public static unsafe class StringTests
 
         char[] c = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' };
         s = new String(c);
-        Assert.True(s == "abcdefgh");
+        Assert.Equal("abcdefgh", s);
 
         s = new String((char[])null);
-        Assert.True(s == String.Empty);
+        Assert.Equal(String.Empty, s);
     }
 
     [Fact]
@@ -144,13 +145,13 @@ public static unsafe class StringTests
 
         char[] c = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' };
         s = new String(c, 2, 3);
-        Assert.True(s == "cde");
+        Assert.Equal("cde", s);
 
         s = new String(c, 0, 8);
-        Assert.True(s == "abcdefgh");
+        Assert.Equal("abcdefgh", s);
 
         s = new String(c, 0, 0);
-        Assert.True(s == "");
+        Assert.Equal("", s);
 
         Assert.Throws<ArgumentOutOfRangeException>(() => s = new String(c, 0, 9));
 
@@ -170,7 +171,7 @@ public static unsafe class StringTests
 
         int len = s.Length;
 
-        Assert.True(len == 3);
+        Assert.Equal(3, len);
     }
 
     [Fact]
@@ -182,28 +183,28 @@ public static unsafe class StringTests
         String s;
 
         s = String.Concat(nullAsObj);
-        Assert.True(s == String.Empty);
+        Assert.Equal(String.Empty, s);
 
         s = String.Concat(one);
-        Assert.True(s == "1");
+        Assert.Equal("1", s);
 
         s = String.Concat(nullAsObj, nullAsObj);
-        Assert.True(s == String.Empty);
+        Assert.Equal(String.Empty, s);
 
         s = String.Concat(one, two);
-        Assert.True(s == "12");
+        Assert.Equal("12", s);
 
         s = String.Concat(nullAsObj, nullAsObj, nullAsObj);
-        Assert.True(s == String.Empty);
+        Assert.Equal(String.Empty, s);
 
         s = String.Concat(one, two, one);
-        Assert.True(s == "121");
+        Assert.Equal("121", s);
 
         s = String.Concat(nullAsObj, nullAsObj, nullAsObj, nullAsObj);
-        Assert.True(s == String.Empty);
+        Assert.Equal(String.Empty, s);
 
         s = String.Concat(one, two, one, one);
-        Assert.True(s == "1211");
+        Assert.Equal("1211", s);
     }
 
     [Fact]
@@ -215,28 +216,28 @@ public static unsafe class StringTests
         String s;
 
         s = String.Concat(nullAsString);
-        Assert.True(s == String.Empty);
+        Assert.Equal(String.Empty, s);
 
         s = String.Concat(one);
-        Assert.True(s == "1");
+        Assert.Equal("1", s);
 
         s = String.Concat(nullAsString, nullAsString);
-        Assert.True(s == String.Empty);
+        Assert.Equal(String.Empty, s);
 
         s = String.Concat(one, two);
-        Assert.True(s == "12");
+        Assert.Equal("12", s);
 
         s = String.Concat(nullAsString, nullAsString, nullAsString);
-        Assert.True(s == String.Empty);
+        Assert.Equal(String.Empty, s);
 
         s = String.Concat(one, two, one);
-        Assert.True(s == "121");
+        Assert.Equal("121", s);
 
         s = String.Concat(nullAsString, nullAsString, nullAsString, nullAsString);
-        Assert.True(s == String.Empty);
+        Assert.Equal(String.Empty, s);
 
         s = String.Concat(one, two, one, one);
-        Assert.True(s == "1211");
+        Assert.Equal("1211", s);
     }
 
     [Fact]
@@ -245,16 +246,16 @@ public static unsafe class StringTests
         String s = "Hello";
         char[] dst = new char[10];
         s.CopyTo(1, dst, 5, 3);
-        Assert.True(dst[0] == 0);
-        Assert.True(dst[1] == 0);
-        Assert.True(dst[2] == 0);
-        Assert.True(dst[3] == 0);
-        Assert.True(dst[4] == 0);
-        Assert.True(dst[5] == 'e');
-        Assert.True(dst[6] == 'l');
-        Assert.True(dst[7] == 'l');
-        Assert.True(dst[8] == 0);
-        Assert.True(dst[9] == 0);
+        Assert.Equal(0, dst[0]);
+        Assert.Equal(0, dst[1]);
+        Assert.Equal(0, dst[2]);
+        Assert.Equal(0, dst[3]);
+        Assert.Equal(0, dst[4]);
+        Assert.Equal('e', dst[5]);
+        Assert.Equal('l', dst[6]);
+        Assert.Equal('l', dst[7]);
+        Assert.Equal(0, dst[8]);
+        Assert.Equal(0, dst[9]);
 
         Assert.Throws<ArgumentNullException>(() => s.CopyTo(0, null, 0, 0));
 
@@ -294,7 +295,7 @@ public static unsafe class StringTests
         Assert.True(i > 0);
 
         i = String.Compare("Hello", 2, "HELLO", 2, 3, StringComparison.OrdinalIgnoreCase);
-        Assert.True(i == 0);
+        Assert.Equal(0, i);
 
         i = String.Compare("Hello", 2, "Goodbye", 2, 3, StringComparison.OrdinalIgnoreCase);
         Assert.True(i < 0);
@@ -306,7 +307,7 @@ public static unsafe class StringTests
         Assert.True(i <= 0);
 
         i = String.Compare("Hello", 2, "HELLO", 2, 3, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == 0);
+        Assert.Equal(0, i);
 
         i = String.Compare("Hello", 2, "Goodbye", 2, 3, StringComparison.CurrentCultureIgnoreCase);
         Assert.True(i < 0);
@@ -318,7 +319,7 @@ public static unsafe class StringTests
         Assert.True(i < 0);
 
         i = String.Compare("Hello", 2, "HELLO", 2, 3, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == 0);
+        Assert.Equal(0, i);
 
         i = String.Compare("Hello", 2, "Goodbye", 2, 3, StringComparison.CurrentCultureIgnoreCase);
         Assert.True(i < 0);
@@ -330,13 +331,13 @@ public static unsafe class StringTests
         char[] c = { 'H', 'e', 'l', 'l', 'o' };
         int i;
         i = String.CompareOrdinal(new String(c), new String(c));
-        Assert.True(i == 0);
+        Assert.Equal(0, i);
 
         i = String.CompareOrdinal("Hello", "Goodbye");
         Assert.True(i > 0);
 
         i = String.CompareOrdinal(new String(c), 2, new String(c), 2, 3);
-        Assert.True(i == 0);
+        Assert.Equal(0, i);
 
         i = String.CompareOrdinal("Hello", 2, "Goodbye", 2, 3);
         Assert.True(i < 0);
@@ -348,7 +349,7 @@ public static unsafe class StringTests
         int i;
         String s = "Hello";
         i = s.CompareTo("Hello");
-        Assert.True(i == 0);
+        Assert.Equal(0, i);
         i = s.CompareTo("Goodbye");
         Assert.True(i > 0);
     }
@@ -418,17 +419,17 @@ public static unsafe class StringTests
         b = e.MoveNext();
         Assert.True(b);
         c = (char)e.Current;
-        Assert.True(c == 'a');
+        Assert.Equal('a', c);
 
         b = e.MoveNext();
         Assert.True(b);
         c = (char)e.Current;
-        Assert.True(c == 'b');
+        Assert.Equal('b', c);
 
         b = e.MoveNext();
         Assert.True(b);
         c = (char)e.Current;
-        Assert.True(c == 'c');
+        Assert.Equal('c', c);
 
         b = e.MoveNext();
         Assert.False(b);
@@ -521,11 +522,11 @@ public static unsafe class StringTests
     {
         String s;
         s = String.Format(null, "0 = {0} 1 = {1} 2 = {2} 3 = {3} 4 = {4}", "zero", "one", "two", "three", "four");
-        Assert.True(s == "0 = zero 1 = one 2 = two 3 = three 4 = four");
+        Assert.Equal("0 = zero 1 = one 2 = two 3 = three 4 = four", s);
 
         TestFormatter testFormatter = new TestFormatter();
         s = String.Format(testFormatter, "0 = {0} 1 = {1} 2 = {2} 3 = {3} 4 = {4}", "zero", "one", "two", "three", "four");
-        Assert.True(s == "0 = Test: : zero 1 = Test: : one 2 = Test: : two 3 = Test: : three 4 = Test: : four");
+        Assert.Equal("0 = Test: : zero 1 = Test: : one 2 = Test: : two 3 = Test: : three 4 = Test: : four", s);
 
         Assert.Throws<ArgumentNullException>(
             delegate ()
@@ -560,7 +561,7 @@ public static unsafe class StringTests
     {
         int h1 = "Hello".GetHashCode();
         int h2 = (new String(new char[] { 'H', 'e', 'l', 'l', 'o' })).GetHashCode();
-        Assert.True(h1 == h2);
+        Assert.Equal(h1, h2);
     }
 
     [Fact]
@@ -635,10 +636,10 @@ public static unsafe class StringTests
         int i;
 
         i = "Hello".IndexOfAny(new char[] { 'd', 'e', 'f' }, 0, 3);
-        Assert.True(i == 1);
+        Assert.Equal(1, i);
 
         i = "Hello".IndexOfAny(new char[] { 'a', 'b', 'c' }, 0, 3);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
     }
 
     [Fact]
@@ -647,19 +648,19 @@ public static unsafe class StringTests
         String s;
 
         s = "Hello".Insert(0, "!$%");
-        Assert.True(s == "!$%Hello");
+        Assert.Equal("!$%Hello", s);
 
         s = "Hello".Insert(1, "!$%");
-        Assert.True(s == "H!$%ello");
+        Assert.Equal("H!$%ello", s);
 
         s = "Hello".Insert(3, "!$%");
-        Assert.True(s == "Hel!$%lo");
+        Assert.Equal("Hel!$%lo", s);
 
         s = "Hello".Insert(5, "!$%");
-        Assert.True(s == "Hello!$%");
+        Assert.Equal("Hello!$%", s);
 
         s = "Hello".Insert(3, "");
-        Assert.True(s == "Hello");
+        Assert.Equal("Hello", s);
 
         Assert.Throws<ArgumentNullException>(() => s = "Hello".Insert(Int32.MaxValue, null));
 
@@ -702,22 +703,100 @@ public static unsafe class StringTests
     {
         String s;
 
+        // String Array
+        s = String.Join("$$", new String[] { }, 0, 0);
+        Assert.Equal("", s);
+
+        s = String.Join("$$", new String[] { null }, 0, 1);
+        Assert.Equal("", s);
+
+        s = String.Join("$$", new String[] { null, "Bar", null }, 0, 3);
+        Assert.Equal("$$Bar$$", s);
+
+        s = String.Join(null, new String[] { "Foo", "Bar", "Baz" }, 0, 3);
+        Assert.Equal("FooBarBaz", s);
+
         s = String.Join("$$", new String[] { "Foo", "Bar", "Baz" }, 0, 3);
-        Assert.True(s == "Foo$$Bar$$Baz");
+        Assert.Equal("Foo$$Bar$$Baz", s);
 
         s = String.Join("$$", new String[] { "Foo", "Bar", "Baz" }, 3, 0);
-        Assert.True(s == "");
+        Assert.Equal("", s);
 
         s = String.Join("$$", new String[] { "Foo", "Bar", "Baz" }, 1, 1);
-        Assert.True(s == "Bar");
+        Assert.Equal("Bar", s);
 
-        Object[] o = { "Red", "Green", "Blue" };
-        s = String.Join("@@", o);
-        Assert.True(s == "Red@@Green@@Blue");
+        s = String.Join("$$", new String[] { "Red", "Green", "Blue" });
+        Assert.Equal("Red$$Green$$Blue", s);
 
-        String[] ss = { "Red", "Green", "Blue" };
-        s = String.Join("@@", ss);
-        Assert.True(s == "Red@@Green@@Blue");
+        Assert.Throws<ArgumentNullException>(() => s = String.Join("$$", (String[])null));
+        Assert.Throws<ArgumentNullException>(() => s = String.Join("$$", (String[])null, 0, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => s = String.Join("$$", new String[] { "Foo" }, -1, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => s = String.Join("$$", new String[] { "Foo" }, 0, -1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => s = String.Join("$$", new String[] { "Foo" }, 0, 2));
+        Assert.Throws<ArgumentOutOfRangeException>(() => s = String.Join("$$", new String[] { "Foo" }, 2, 1));
+
+        // Object Array
+        s = String.Join("@@", new object[] { });
+        Assert.Equal("", s);
+
+        s = String.Join("@@", new object[] { "Red" });
+        Assert.Equal("Red", s);
+
+        s = String.Join("@@", new object[] { "Red", "Green", "Blue" });
+        Assert.Equal("Red@@Green@@Blue", s);
+
+        s = String.Join(null, new object[] { "Red", "Green", "Blue" });
+        Assert.Equal("RedGreenBlue", s);
+
+        s = String.Join("@@", new object[] { null, "Green", "Blue" }); // Feature of object[] overload to exit if [0] is null
+        Assert.Equal("", s);
+
+        s = String.Join("@@", new object[] { "Red", null, "Blue" });
+        Assert.Equal("Red@@@@Blue", s);
+
+        Assert.Throws<ArgumentNullException>(() => s = String.Join("@@", (Object[])null));
+
+        // IEnumerable<String>
+        s = String.Join("|", new List<string>() { });
+        Assert.Equal("", s);
+
+        s = String.Join("|", new List<string>() { null });
+        Assert.Equal("", s);
+
+        s = String.Join("|", new List<string>() { "Red" });
+        Assert.Equal("Red", s);
+
+        s = String.Join(null, new List<string>() { "Red", "Green", "Blue" });
+        Assert.Equal("RedGreenBlue", s);
+
+        s = String.Join("|", new List<string>() { "Red", "Green", "Blue" });
+        Assert.Equal("Red|Green|Blue", s);
+
+        s = String.Join("|", new List<string>() { null, "Green", null });
+        Assert.Equal("|Green|", s);
+
+        Assert.Throws<ArgumentNullException>(() => s = String.Join("|", (IEnumerable<String>)null));
+
+        // IEnumerable<Object>
+        s = String.Join("--", new List<Object>() { });
+        Assert.Equal("", s);
+
+        s = String.Join("--", new List<Object>() { null });
+        Assert.Equal("", s);
+
+        s = String.Join("--", new List<Object>() { "Red" });
+        Assert.Equal("Red", s);
+
+        s = String.Join(null, new List<Object>() { "Red", "Green", "Blue" });
+        Assert.Equal("RedGreenBlue", s);
+
+        s = String.Join("--", new List<Object>() { "Red", "Green", "Blue" });
+        Assert.Equal("Red--Green--Blue", s);
+
+        s = String.Join("--", new List<Object>() { null, "Green", null });
+        Assert.Equal("--Green--", s);
+
+        Assert.Throws<ArgumentNullException>(() => s = String.Join("--", (IEnumerable<Object>)null));
     }
 
     [Fact]
@@ -725,121 +804,121 @@ public static unsafe class StringTests
     {
         int i;
         i = "Hello".LastIndexOf('l');
-        Assert.True(i == 3);
+        Assert.Equal(3, i);
         i = "Hello".LastIndexOf('x');
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
 
         i = "Hello".LastIndexOf('l', 3);
-        Assert.True(i == 3);
+        Assert.Equal(3, i);
         i = "Hello".LastIndexOf('l', 1);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
         i = "Hello".LastIndexOf('l', 0);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
         i = "Hello".LastIndexOf('x', 3);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
 
         i = "Hello".LastIndexOf('l', 3, 4);
-        Assert.True(i == 3);
+        Assert.Equal(3, i);
         i = "Hello".LastIndexOf('l', 1, 2);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
         i = "Hello".LastIndexOf('l', 1, 0);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
         i = "Hello".LastIndexOf('l', 4, 2);
-        Assert.True(i == 3);
+        Assert.Equal(3, i);
         i = "Hello".LastIndexOf('l', 4, 3);
-        Assert.True(i == 3);
+        Assert.Equal(3, i);
         i = "Hello".LastIndexOf('l', 0, 1);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
         i = "Hello".LastIndexOf('x', 3, 4);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
 
         i = "Hello".LastIndexOf("llo");
-        Assert.True(i == 2);
+        Assert.Equal(2, i);
 
         i = "Hello".LastIndexOf("LLO");
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
 
         i = "Hello".LastIndexOf("LLO", StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == 2);
+        Assert.Equal(2, i);
 
         i = "Hello".LastIndexOf("NoWay", StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
 
         i = "Hello".LastIndexOf("l", 3);
-        Assert.True(i == 3);
+        Assert.Equal(3, i);
         i = "Hello".LastIndexOf("l", 0);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
         i = "Hello".LastIndexOf("l", 0);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
         i = "Hello".LastIndexOf("x", 3);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
 
         i = "Hello".LastIndexOf("l", 3, 4);
-        Assert.True(i == 3);
+        Assert.Equal(3, i);
         i = "Hello".LastIndexOf("l", 1, 2);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
         i = "Hello".LastIndexOf("l", 1, 0);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
         i = "Hello".LastIndexOf("l", 4, 2);
-        Assert.True(i == 3);
+        Assert.Equal(3, i);
         i = "Hello".LastIndexOf("l", 4, 3);
-        Assert.True(i == 3);
+        Assert.Equal(3, i);
         i = "Hello".LastIndexOf("l", 0, 1);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
         i = "Hello".LastIndexOf("x", 3, 4);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
 
         i = "Hello".LastIndexOf("l", 3, StringComparison.CurrentCulture);
-        Assert.True(i == 3);
+        Assert.Equal(3, i);
         i = "Hello".LastIndexOf("l", 1, StringComparison.CurrentCulture);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
         i = "Hello".LastIndexOf("l", 0, StringComparison.CurrentCulture);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
         i = "Hello".LastIndexOf("L", 3, StringComparison.CurrentCulture);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
 
         i = "Hello".LastIndexOf("l", 3, 4, StringComparison.CurrentCulture);
-        Assert.True(i == 3);
+        Assert.Equal(3, i);
         i = "Hello".LastIndexOf("l", 1, 2, StringComparison.CurrentCulture);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
         i = "Hello".LastIndexOf("l", 1, 0, StringComparison.CurrentCulture);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
         i = "Hello".LastIndexOf("l", 4, 2, StringComparison.CurrentCulture);
-        Assert.True(i == 3);
+        Assert.Equal(3, i);
         i = "Hello".LastIndexOf("l", 4, 3, StringComparison.CurrentCulture);
-        Assert.True(i == 3);
+        Assert.Equal(3, i);
         i = "Hello".LastIndexOf("l", 0, 1, StringComparison.CurrentCulture);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
         i = "Hello".LastIndexOf("L", 3, 4, StringComparison.CurrentCulture);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
 
         i = "Hello".LastIndexOf("l", 3, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == 3);
+        Assert.Equal(3, i);
         i = "Hello".LastIndexOf("l", 1, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
         i = "Hello".LastIndexOf("l", 0, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
         i = "Hello".LastIndexOf("L", 3, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == 3);
+        Assert.Equal(3, i);
         i = "Hello".LastIndexOf("X", 3, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
 
         i = "Hello".LastIndexOf("l", 3, 4, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == 3);
+        Assert.Equal(3, i);
         i = "Hello".LastIndexOf("l", 1, 2, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
         i = "Hello".LastIndexOf("l", 1, 0, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
         i = "Hello".LastIndexOf("l", 4, 2, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == 3);
+        Assert.Equal(3, i);
         i = "Hello".LastIndexOf("l", 4, 3, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == 3);
+        Assert.Equal(3, i);
         i = "Hello".LastIndexOf("l", 0, 1, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
         i = "Hello".LastIndexOf("X", 3, 4, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
         i = "Hello".LastIndexOf("", 3, 4, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == 3);
+        Assert.Equal(3, i);
     }
 
     [Fact]
@@ -848,10 +927,10 @@ public static unsafe class StringTests
         int i;
 
         i = "Hello".LastIndexOfAny(new char[] { 'd', 'e', 'f' }, 2, 3);
-        Assert.True(i == 1);
+        Assert.Equal(1, i);
 
         i = "Hello".LastIndexOfAny(new char[] { 'a', 'b', 'c' }, 2, 3);
-        Assert.True(i == -1);
+        Assert.Equal(-1, i);
     }
 
     [Fact]
@@ -882,30 +961,30 @@ public static unsafe class StringTests
         String s;
 
         s = "Hello".PadLeft(5);
-        Assert.True(s == "Hello");
+        Assert.Equal("Hello", s);
 
         s = "Hello".PadLeft(7);
-        Assert.True(s == "  Hello");
+        Assert.Equal("  Hello", s);
 
         s = "Hello".PadLeft(7, '.');
-        Assert.True(s == "..Hello");
+        Assert.Equal("..Hello", s);
 
         s = "".PadLeft(0, 'X');
-        Assert.True(s == "");
+        Assert.Equal("", s);
 
         Assert.Throws<ArgumentOutOfRangeException>(() => s = "".PadLeft(-1, '.'));
 
         s = "Hello".PadRight(5);
-        Assert.True(s == "Hello");
+        Assert.Equal("Hello", s);
 
         s = "Hello".PadRight(7);
-        Assert.True(s == "Hello  ");
+        Assert.Equal("Hello  ", s);
 
         s = "Hello".PadRight(7, '.');
-        Assert.True(s == "Hello..");
+        Assert.Equal("Hello..", s);
 
         s = "".PadRight(0, 'X');
-        Assert.True(s == "");
+        Assert.Equal("", s);
 
         Assert.Throws<ArgumentOutOfRangeException>(() => s = "".PadRight(-1, '.'));
 
@@ -918,19 +997,19 @@ public static unsafe class StringTests
         String s;
 
         s = "Hello".Remove(2);
-        Assert.True(s == "He");
+        Assert.Equal("He", s);
 
         s = "Hello".Remove(1, 2);
-        Assert.True(s == "Hlo");
+        Assert.Equal("Hlo", s);
 
         s = "Hello".Remove(0, 5);
-        Assert.True(s == "");
+        Assert.Equal("", s);
 
         s = "Hello".Remove(5, 0);
-        Assert.True(s == "Hello");
+        Assert.Equal("Hello", s);
 
         s = "".Remove(0, 0);
-        Assert.True(s == "");
+        Assert.Equal("", s);
 
         Assert.Throws<ArgumentOutOfRangeException>(() => s = "Hello".Remove(0, Int32.MaxValue));
 
@@ -948,8 +1027,8 @@ public static unsafe class StringTests
     {
         String s = "Hello";
         String s1 = s.Replace('l', '!');
-        Assert.Equal(s1.Length, 5);
-        Assert.Equal(s1, "He!!o");
+        Assert.Equal(5, s1.Length);
+        Assert.Equal("He!!o", s1);
     }
 
     [Fact]
@@ -957,36 +1036,36 @@ public static unsafe class StringTests
     {
         String s = "Hello";
         String s1 = s.Replace("ll", "!!!!");
-        Assert.Equal(s1.Length, 7);
-        Assert.Equal(s1, "He!!!!o");
+        Assert.Equal(7, s1.Length);
+        Assert.Equal("He!!!!o", s1);
 
         s = "11111";
         s1 = s.Replace("1", "23");
-        Assert.Equal(s1, "2323232323");
+        Assert.Equal("2323232323", s1);
 
         s = "111111";
         s1 = s.Replace("111", "23");
-        Assert.Equal(s1, "2323");
+        Assert.Equal("2323", s1);
 
         s = "1111111";
         s1 = s.Replace("111", "23");
-        Assert.Equal(s1, "23231");
+        Assert.Equal("23231", s1);
 
         s = "11111111";
         s1 = s.Replace("111", "23");
-        Assert.Equal(s1, "232311");
+        Assert.Equal("232311", s1);
 
         s = "111111111";
         s1 = s.Replace("111", "23");
-        Assert.Equal(s1, "232323");
+        Assert.Equal("232323", s1);
 
         s = "A1B1C1D1E1F";
         s1 = s.Replace("1", "23");
-        Assert.Equal(s1, "A23B23C23D23E23F");
+        Assert.Equal("A23B23C23D23E23F", s1);
 
         s = "Aa1Bbb1Cccc1Ddddd1Eeeeee1Fffffff";
         s1 = s.Replace("1", "23");
-        Assert.Equal(s1, "Aa23Bbb23Cccc23Ddddd23Eeeeee23Fffffff");
+        Assert.Equal("Aa23Bbb23Cccc23Ddddd23Eeeeee23Fffffff", s1);
 
         // (Perf test: If nothing is replaced, don't waste an allocation on a new string.)
         s = "XYZ";
@@ -1001,16 +1080,16 @@ public static unsafe class StringTests
         // Make sure it can handle the maximum possible # of matches.
         s = "11111111111111111111111";
         s1 = s.Replace("1", "11");
-        Assert.Equal(s1, "1111111111111111111111111111111111111111111111");
+        Assert.Equal("1111111111111111111111111111111111111111111111", s1);
 
         // Make sure it can handle the maximum possible # of matches.
         s = "11111111111111111111111";
         s1 = s.Replace("1", "");
-        Assert.Equal(s1, "");
+        Assert.Equal("", s1);
 
         s = "abcdefghijkl";
         s1 = s.Replace("cdef", "12345");
-        Assert.Equal(s1, "ab12345ghijkl");
+        Assert.Equal("ab12345ghijkl", s1);
 
         // Cannot pass null for "oldValue"
         s = "Hello";
@@ -1023,7 +1102,7 @@ public static unsafe class StringTests
         // null is a "valid" input for newValue (equivalent to "")
         s = "Hello";
         s1 = s.Replace("l", null);
-        Assert.Equal(s1, "Heo");
+        Assert.Equal("Heo", s1);
 
         return;
     }
@@ -1072,25 +1151,25 @@ public static unsafe class StringTests
         String s;
 
         s = "Hello".Substring(2);
-        Assert.True(s == "llo");
+        Assert.Equal("llo", s);
 
         s = "Hello".Substring(0);
-        Assert.True(s == "Hello");
+        Assert.Equal("Hello", s);
 
         s = "Hello".Substring(5);
-        Assert.True(s == "");
+        Assert.Equal("", s);
 
         s = "Hello".Substring(2, 3);
-        Assert.True(s == "llo");
+        Assert.Equal("llo", s);
 
         s = "Hello".Substring(0, 3);
-        Assert.True(s == "Hel");
+        Assert.Equal("Hel", s);
 
         s = "Hello".Substring(0, 5);
-        Assert.True(s == "Hello");
+        Assert.Equal("Hello", s);
 
         s = "Hello".Substring(5, 0);
-        Assert.True(s == "");
+        Assert.Equal("", s);
     }
 
     [Fact]
@@ -1099,31 +1178,31 @@ public static unsafe class StringTests
         char[] c;
 
         c = "Hello".ToCharArray();
-        Assert.True(c.Length == 5);
-        Assert.True(c[0] == 'H');
-        Assert.True(c[1] == 'e');
-        Assert.True(c[2] == 'l');
-        Assert.True(c[3] == 'l');
-        Assert.True(c[4] == 'o');
+        Assert.Equal(5, c.Length);
+        Assert.Equal('H', c[0]);
+        Assert.Equal('e', c[1]);
+        Assert.Equal('l', c[2]);
+        Assert.Equal('l', c[3]);
+        Assert.Equal('o', c[4]);
 
         c = "".ToCharArray();
-        Assert.True(c.Length == 0);
+        Assert.Equal(0, c.Length);
 
         c = "Hello".ToCharArray(2, 3);
-        Assert.True(c.Length == 3);
-        Assert.True(c[0] == 'l');
-        Assert.True(c[1] == 'l');
-        Assert.True(c[2] == 'o');
+        Assert.Equal(3, c.Length);
+        Assert.Equal('l', c[0]);
+        Assert.Equal('l', c[1]);
+        Assert.Equal('o', c[2]);
 
         c = "Hello".ToCharArray(0, 5);
-        Assert.True(c[0] == 'H');
-        Assert.True(c[1] == 'e');
-        Assert.True(c[2] == 'l');
-        Assert.True(c[3] == 'l');
-        Assert.True(c[4] == 'o');
+        Assert.Equal('H', c[0]);
+        Assert.Equal('e', c[1]);
+        Assert.Equal('l', c[2]);
+        Assert.Equal('l', c[3]);
+        Assert.Equal('o', c[4]);
 
         c = "Hello".ToCharArray(5, 0);
-        Assert.True(c.Length == 0);
+        Assert.Equal(0, c.Length);
     }
 
     [Fact]
@@ -1135,16 +1214,16 @@ public static unsafe class StringTests
         String s;
 
         s = "HELLO".ToLower();
-        Assert.True(s == "hello");
+        Assert.Equal("hello", s);
 
         s = "HELLO".ToLowerInvariant();
-        Assert.True(s == "hello");
+        Assert.Equal("hello", s);
 
         s = "hello".ToUpper();
-        Assert.True(s == "HELLO");
+        Assert.Equal("HELLO", s);
 
         s = "hello".ToUpperInvariant();
-        Assert.True(s == "HELLO");
+        Assert.Equal("HELLO", s);
 
         return;
     }
@@ -1155,22 +1234,22 @@ public static unsafe class StringTests
         String s;
 
         s = "  Foo  ".Trim();
-        Assert.True(s == "Foo");
+        Assert.Equal("Foo", s);
 
         s = ". Foo .".Trim('.');
-        Assert.True(s == " Foo ");
+        Assert.Equal(" Foo ", s);
 
         s = "  Foo  ".TrimStart();
-        Assert.True(s == "Foo  ");
+        Assert.Equal("Foo  ", s);
 
         s = ". Foo .".TrimStart('.');
-        Assert.True(s == " Foo .");
+        Assert.Equal(" Foo .", s);
 
         s = "  Foo  ".TrimEnd();
-        Assert.True(s == "  Foo");
+        Assert.Equal("  Foo", s);
 
         s = ". Foo .".TrimEnd('.');
-        Assert.True(s == ". Foo ");
+        Assert.Equal(". Foo ", s);
     }
 
     [Fact]
