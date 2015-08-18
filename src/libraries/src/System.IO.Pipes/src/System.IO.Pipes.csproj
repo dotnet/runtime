@@ -131,6 +131,7 @@
     <Compile Include="System\IO\Pipes\ConnectionCompletionSource.cs" />
     <Compile Include="System\IO\Pipes\NamedPipeClientStream.Windows.cs" />
     <Compile Include="System\IO\Pipes\NamedPipeServerStream.Windows.cs" />
+    <Compile Include="System\IO\Pipes\PipeCompletionSource.cs" />
     <Compile Include="System\IO\Pipes\PipeIOCompletionSource.cs" />
     <Compile Include="System\IO\Pipes\PipeStream.Windows.cs" />
   </ItemGroup>
