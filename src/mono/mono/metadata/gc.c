@@ -623,7 +623,12 @@ static HandleData gc_handles [] = {
 	{NULL, NULL, 0, HANDLE_PINNED, 0}
 };
 
-#define lock_handles(handles) mono_mutex_lock (&handle_section)
+#define lock_handles(handles) do {	\
+	MONO_TRY_BLOCKING;	\
+	mono_mutex_lock (&handle_section);	\
+	MONO_FINISH_TRY_BLOCKING;	\
+} while (0)
+
 #define unlock_handles(handles) mono_mutex_unlock (&handle_section)
 
 static int
