@@ -1,33 +1,11 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.Serialization;
 using Xunit;
 
 public static unsafe class UriTests
 {
-    // Bug 740420
-    [Fact]
-    public static void TestAppxName()
-    {
-        if (TestRunner.TestRunner.OnCoreCLR)
-            return;
-
-        bool ret = true;
-        try
-        {
-            Uri _uri = new Uri("ms-app://s-1-15-2-3682223341-1746277572-4098775175-2728279147-2871887747-149063373-1758401009/");
-        }
-        catch (Exception)
-        {
-            ret = false;
-        }
-        Assert.True(ret);
-    }
-
     [Fact]
     public static void TestCtor_String()
     {

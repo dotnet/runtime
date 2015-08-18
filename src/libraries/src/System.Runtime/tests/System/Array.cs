@@ -94,6 +94,7 @@ public static unsafe class ArrayTests
         Assert.Equal(a.Rank, 1);
         IList il = (IList)a;
         Assert.Equal(il.Count, 3);
+        Assert.Equal(il.SyncRoot, a);
         Assert.False(il.IsSynchronized);
         Assert.True(il.IsFixedSize);
         Assert.False(il.IsReadOnly);
@@ -252,10 +253,10 @@ public static unsafe class ArrayTests
         idx = Array.BinarySearch((Array)ia, 6, comparer);
         Assert.True(idx == 2 || idx == 3); // Duplicates are allowed but no promises on which one 
 
-        idx = Array.BinarySearch<int>(ia, 0, 8, 6, icomparer);
+        idx = Array.BinarySearch((Array)ia, 0, 8, 6, comparer);
         Assert.True(idx == 2 || idx == 3); // Duplicates are allowed but no promises on which one 
 
-        idx = Array.BinarySearch((Array)ia, 6, comparer);
+        idx = Array.BinarySearch<int>(ia, 6, icomparer);
         Assert.True(idx == 2 || idx == 3); // Duplicates are allowed but no promises on which one 
 
         idx = Array.BinarySearch<int>(ia, 0, 8, 6, icomparer);
@@ -293,6 +294,73 @@ public static unsafe class ArrayTests
         Assert.Equal(idx, 0);
 
         idx = Array.BinarySearch<String>(sa, 0, 7, null, scomparer);
+        Assert.Equal(idx, 0);
+    }
+
+    [Fact]
+    public static void TestBinarySearch_NoIComparer()
+    {
+        int idx;
+        int[] ia = { 1, 3, 6, 6, 8, 10, 12, 16 };
+        idx = Array.BinarySearch((Array)ia, 8);
+        Assert.Equal(idx, 4);
+
+        //Return value semantics: Quoted from MSDN without comment.
+        //
+        //The index of the specified value in the specified array, 
+        //if value is found. If value is not found and value is 
+        //less than one or more elements in array, a negative 
+        //number which is the bitwise complement of the index of 
+        //the first element that is larger than value. 
+        //If value is not found and value is greater than any 
+        //of the elements in array, a negative number which is the bitwise complement of (the index of the last element plus 1).
+        idx = Array.BinarySearch((Array)ia, 99);
+        Assert.Equal(idx, ~(ia.Length));
+
+        idx = Array.BinarySearch<int>(ia, 0, 8, 99);
+        Assert.Equal(idx, ~(ia.Length));
+
+        idx = Array.BinarySearch((Array)ia, 6);
+        Assert.True(idx == 2 || idx == 3); // Duplicates are allowed but no promises on which one 
+
+        idx = Array.BinarySearch((Array)ia, 0, 8, 6);
+        Assert.True(idx == 2 || idx == 3); // Duplicates are allowed but no promises on which one 
+
+        idx = Array.BinarySearch<int>(ia, 6);
+        Assert.True(idx == 2 || idx == 3); // Duplicates are allowed but no promises on which one 
+
+        idx = Array.BinarySearch<int>(ia, 0, 8, 6);
+        Assert.True(idx == 2 || idx == 3); // Duplicates are allowed but no promises on which one
+
+        String[] sa = { null, "aa", "bb", "bb", "cc", "dd", "ee" };
+        idx = Array.BinarySearch((Array)sa, "bb");
+        Assert.Equal(idx, 3);
+
+        idx = Array.BinarySearch<String>(sa, 0, sa.Length, "bb");
+        Assert.Equal(idx, 3);
+
+        idx = Array.BinarySearch((Array)sa, 3, 4, "bb");
+        Assert.Equal(idx, 3);
+
+        idx = Array.BinarySearch<String>(sa, 3, 4, "bb");
+        Assert.Equal(idx, 3);
+
+        idx = Array.BinarySearch((Array)sa, 4, 3, "bb");
+        Assert.Equal(idx, -5);
+
+        idx = Array.BinarySearch<String>(sa, 4, 3, "bb");
+        Assert.Equal(idx, -5);
+
+        idx = Array.BinarySearch((Array)sa, 4, 0, "bb");
+        Assert.Equal(idx, -5);
+
+        idx = Array.BinarySearch<String>(sa, 4, 0, "bb");
+        Assert.Equal(idx, -5);
+
+        idx = Array.BinarySearch((Array)sa, 0, 7, null);
+        Assert.Equal(idx, 0);
+
+        idx = Array.BinarySearch<String>(sa, 0, 7, null);
         Assert.Equal(idx, 0);
     }
 
