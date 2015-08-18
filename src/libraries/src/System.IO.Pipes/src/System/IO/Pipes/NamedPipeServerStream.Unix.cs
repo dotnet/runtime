@@ -31,7 +31,7 @@ namespace System.IO.Pipes
             Debug.Assert(direction >= PipeDirection.In && direction <= PipeDirection.InOut, "invalid pipe direction");
             Debug.Assert(inBufferSize >= 0, "inBufferSize is negative");
             Debug.Assert(outBufferSize >= 0, "outBufferSize is negative");
-            Debug.Assert((maxNumberOfServerInstances >= 1 && maxNumberOfServerInstances <= 254) || (maxNumberOfServerInstances == MaxAllowedServerInstances), "maxNumberOfServerInstances is invalid");
+            Debug.Assert((maxNumberOfServerInstances >= 1) || (maxNumberOfServerInstances == MaxAllowedServerInstances), "maxNumberOfServerInstances is invalid");
             Debug.Assert(transmissionMode >= PipeTransmissionMode.Byte && transmissionMode <= PipeTransmissionMode.Message, "transmissionMode is out of range");
 
             if (transmissionMode == PipeTransmissionMode.Message)
@@ -130,6 +130,16 @@ namespace System.IO.Pipes
         {
             CheckWriteOperations();
             throw new PlatformNotSupportedException();
+        }
+
+        private void ValidateMaxNumberOfServerInstances(int maxNumberOfServerInstances)
+        {
+            // Since Unix has no notion of Max allowed Server Instances per named pipe, we don't enforce an
+            // upper bound on maxNumberOfServerInstances.
+            if ((maxNumberOfServerInstances < 1) && (maxNumberOfServerInstances != MaxAllowedServerInstances))
+            {
+                throw new ArgumentOutOfRangeException("maxNumberOfServerInstances", SR.ArgumentOutOfRange_MaxNumServerInstances);
+            }
         }
 
         // -----------------------------

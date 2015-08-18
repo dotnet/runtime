@@ -298,5 +298,15 @@ namespace System.IO.Pipes
             }
             CheckConnectOperationsServer();
         }
+
+        private void ValidateMaxNumberOfServerInstances(int maxNumberOfServerInstances)
+        {
+            // win32 allows fixed values of 1-254 or 255 to mean max allowed by system. We expose 255 as -1 (unlimited)
+            // through the MaxAllowedServerInstances constant. This is consistent e.g. with -1 as infinite timeout, etc
+            if ((maxNumberOfServerInstances < 1 || maxNumberOfServerInstances > 254) && (maxNumberOfServerInstances != MaxAllowedServerInstances))
+            {
+                throw new ArgumentOutOfRangeException("maxNumberOfServerInstances", SR.ArgumentOutOfRange_MaxNumServerInstances);
+            }
+        }
     }
 }
