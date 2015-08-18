@@ -179,9 +179,7 @@ namespace System.Net
             return DefaultMaxDumpSize;
         }
 
-        /// <devdoc>
-        ///    <para>Sets up internal config settings for logging. (MUST be called under critsec) </para>
-        /// </devdoc>
+        // Sets up internal config settings for logging.
         private static void InitializeLogging()
         {
             lock (InternalSyncObject)
@@ -248,9 +246,7 @@ namespace System.Net
             }
         }
 
-        /// <devdoc>
-        ///    <para>Confirms logging is enabled, given current logging settings</para>
-        /// </devdoc>
+        // Confirms logging is enabled, given current logging settings
         private static bool ValidateSettings(TraceSource traceSource, TraceEventType traceLevel)
         {
             if (!s_LoggingEnabled)
@@ -268,12 +264,9 @@ namespace System.Net
             return true;
         }
 
-        /// <devdoc>
-        ///    <para>Converts an object to a normalized string that can be printed
-        ///         takes System.Net.ObjectNamedFoo and coverts to ObjectNamedFoo, 
-        ///         except IPAddress, IPEndPoint, and Uri, which return ToString()
-        ///         </para>
-        /// </devdoc>
+        // Converts an object to a normalized string that can be printed
+        // takes System.Net.ObjectNamedFoo and coverts to ObjectNamedFoo, 
+        // except IPAddress, IPEndPoint, and Uri, which return ToString().
         private static string GetObjectName(object obj)
         {
             if (obj is Uri || obj is System.Net.IPAddress || obj is System.Net.IPEndPoint)
@@ -292,9 +285,6 @@ namespace System.Net
             traceSource.TraceEvent(eventType, id, logHeader + msg);
         }
 
-        /// <devdoc>
-        ///    <para>Indicates that two objects are getting used with one another</para>
-        /// </devdoc>
         internal static void Associate(TraceSource traceSource, object objA, object objB)
         {
             if (!ValidateSettings(traceSource, TraceEventType.Information))
@@ -308,9 +298,6 @@ namespace System.Net
             PrintLine(traceSource, TraceEventType.Information, 0, "Associating " + lineA + " with " + lineB);
         }
 
-        /// <devdoc>
-        ///    <para>Logs entrance to a function</para>
-        /// </devdoc>
         internal static void Enter(TraceSource traceSource, object obj, string method, string param)
         {
             if (!ValidateSettings(traceSource, TraceEventType.Information))
@@ -320,9 +307,6 @@ namespace System.Net
             Enter(traceSource, GetObjectName(obj) + "#" + Logging.HashString(obj), method, param);
         }
 
-        /// <devdoc>
-        ///    <para>Logs entrance to a function</para>
-        /// </devdoc>
         internal static void Enter(TraceSource traceSource, object obj, string method, object paramObject)
         {
             if (!ValidateSettings(traceSource, TraceEventType.Information))
@@ -332,9 +316,6 @@ namespace System.Net
             Enter(traceSource, GetObjectName(obj) + "#" + Logging.HashString(obj), method, paramObject);
         }
 
-        /// <devdoc>
-        ///    <para>Logs entrance to a function</para>
-        /// </devdoc>
         internal static void Enter(TraceSource traceSource, string obj, string method, string param)
         {
             if (!ValidateSettings(traceSource, TraceEventType.Information))
@@ -344,9 +325,6 @@ namespace System.Net
             Enter(traceSource, obj + "::" + method + "(" + param + ")");
         }
 
-        /// <devdoc>
-        ///    <para>Logs entrance to a function</para>
-        /// </devdoc>
         internal static void Enter(TraceSource traceSource, string obj, string method, object paramObject)
         {
             if (!ValidateSettings(traceSource, TraceEventType.Information))
@@ -361,9 +339,6 @@ namespace System.Net
             Enter(traceSource, obj + "::" + method + "(" + paramObjectValue + ")");
         }
 
-        /// <devdoc>
-        ///    <para>Logs entrance to a function, indents and points that out</para>
-        /// </devdoc>
         internal static void Enter(TraceSource traceSource, string method, string parameters)
         {
             if (!ValidateSettings(traceSource, TraceEventType.Information))
@@ -373,9 +348,6 @@ namespace System.Net
             Enter(traceSource, method + "(" + parameters + ")");
         }
 
-        /// <devdoc>
-        ///    <para>Logs entrance to a function, indents and points that out</para>
-        /// </devdoc>
         internal static void Enter(TraceSource traceSource, string msg)
         {
             if (!ValidateSettings(traceSource, TraceEventType.Information))
@@ -386,9 +358,6 @@ namespace System.Net
             PrintLine(traceSource, TraceEventType.Verbose, 0, msg);
         }
 
-        /// <devdoc>
-        ///    <para>Logs exit from a function</para>
-        /// </devdoc>
         internal static void Exit(TraceSource traceSource, object obj, string method, object retObject)
         {
             if (!ValidateSettings(traceSource, TraceEventType.Information))
@@ -403,9 +372,6 @@ namespace System.Net
             Exit(traceSource, obj, method, retValue);
         }
 
-        /// <devdoc>
-        ///    <para>Logs exit from a function</para>
-        /// </devdoc>
         internal static void Exit(TraceSource traceSource, string obj, string method, object retObject)
         {
             if (!ValidateSettings(traceSource, TraceEventType.Information))
@@ -420,10 +386,6 @@ namespace System.Net
             Exit(traceSource, obj, method, retValue);
         }
 
-
-        /// <devdoc>
-        ///    <para>Logs exit from a function</para>
-        /// </devdoc>
         internal static void Exit(TraceSource traceSource, object obj, string method, string retValue)
         {
             if (!ValidateSettings(traceSource, TraceEventType.Information))
@@ -433,9 +395,6 @@ namespace System.Net
             Exit(traceSource, GetObjectName(obj) + "#" + Logging.HashString(obj), method, retValue);
         }
 
-        /// <devdoc>
-        ///    <para>Logs exit from a function</para>
-        /// </devdoc>
         internal static void Exit(TraceSource traceSource, string obj, string method, string retValue)
         {
             if (!ValidateSettings(traceSource, TraceEventType.Information))
@@ -449,9 +408,6 @@ namespace System.Net
             Exit(traceSource, obj + "::" + method + "() " + retValue);
         }
 
-        /// <devdoc>
-        ///    <para>Logs exit from a function</para>
-        /// </devdoc>
         internal static void Exit(TraceSource traceSource, string method, string parameters)
         {
             if (!ValidateSettings(traceSource, TraceEventType.Information))
@@ -461,9 +417,6 @@ namespace System.Net
             Exit(traceSource, method + "() " + parameters);
         }
 
-        /// <devdoc>
-        ///    <para>Logs exit from a function</para>
-        /// </devdoc>
         internal static void Exit(TraceSource traceSource, string msg)
         {
             if (!ValidateSettings(traceSource, TraceEventType.Information))
@@ -474,9 +427,6 @@ namespace System.Net
             // Trace.CorrelationManager.StopLogicalOperation();
         }
 
-        /// <devdoc>
-        ///    <para>Logs Exception, restores indenting</para>
-        /// </devdoc>
         internal static void Exception(TraceSource traceSource, object obj, string method, Exception e)
         {
             if (!ValidateSettings(traceSource, TraceEventType.Error))
@@ -492,9 +442,6 @@ namespace System.Net
             PrintLine(traceSource, TraceEventType.Error, 0, infoLine);
         }
 
-        /// <devdoc>
-        ///    <para>Logs an Info line</para>
-        /// </devdoc>
         internal static void PrintInfo(TraceSource traceSource, string msg)
         {
             if (!ValidateSettings(traceSource, TraceEventType.Information))
@@ -504,9 +451,6 @@ namespace System.Net
             PrintLine(traceSource, TraceEventType.Information, 0, msg);
         }
 
-        /// <devdoc>
-        ///    <para>Logs an Info line</para>
-        /// </devdoc>
         internal static void PrintInfo(TraceSource traceSource, object obj, string msg)
         {
             if (!ValidateSettings(traceSource, TraceEventType.Information))
@@ -518,9 +462,6 @@ namespace System.Net
                                    + " - " + msg);
         }
 
-        /// <devdoc>
-        ///    <para>Logs an Info line</para>
-        /// </devdoc>
         internal static void PrintInfo(TraceSource traceSource, object obj, string method, string param)
         {
             if (!ValidateSettings(traceSource, TraceEventType.Information))
@@ -532,9 +473,6 @@ namespace System.Net
                                    + "::" + method + "(" + param + ")");
         }
 
-        /// <devdoc>
-        ///    <para>Logs a Warning line</para>
-        /// </devdoc>
         internal static void PrintWarning(TraceSource traceSource, string msg)
         {
             if (!ValidateSettings(traceSource, TraceEventType.Warning))
@@ -544,9 +482,6 @@ namespace System.Net
             PrintLine(traceSource, TraceEventType.Warning, 0, msg);
         }
 
-        /// <devdoc>
-        ///    <para>Logs a Warning line</para>
-        /// </devdoc>
         internal static void PrintWarning(TraceSource traceSource, object obj, string method, string msg)
         {
             if (!ValidateSettings(traceSource, TraceEventType.Warning))
@@ -558,9 +493,6 @@ namespace System.Net
                                    + "::" + method + "() - " + msg);
         }
 
-        /// <devdoc>
-        ///    <para>Logs an Error line</para>
-        /// </devdoc>
         internal static void PrintError(TraceSource traceSource, string msg)
         {
             if (!ValidateSettings(traceSource, TraceEventType.Error))
@@ -570,9 +502,6 @@ namespace System.Net
             PrintLine(traceSource, TraceEventType.Error, 0, msg);
         }
 
-        /// <devdoc>
-        ///    <para>Logs an Error line</para>
-        /// </devdoc>
         internal static void PrintError(TraceSource traceSource, object obj, string method, string msg)
         {
             if (!ValidateSettings(traceSource, TraceEventType.Error))
@@ -589,9 +518,6 @@ namespace System.Net
             return GetObjectName(obj) + "#" + Logging.HashString(obj);
         }
 
-        /// <devdoc>
-        ///    <para>Marshals a buffer ptr to an array and then dumps the byte array to the log</para>
-        /// </devdoc>
         internal static void Dump(TraceSource traceSource, object obj, string method, IntPtr bufferPtr, int length)
         {
             if (!ValidateSettings(traceSource, TraceEventType.Verbose) || bufferPtr == IntPtr.Zero || length < 0)
@@ -603,10 +529,6 @@ namespace System.Net
             Dump(traceSource, obj, method, buffer, 0, length);
         }
 
-
-        /// <devdoc>
-        ///    <para>Dumps a byte array to the log</para>
-        /// </devdoc>
         internal static void Dump(TraceSource traceSource, object obj, string method, byte[] buffer, int offset, int length)
         {
             if (!ValidateSettings(traceSource, TraceEventType.Verbose))
