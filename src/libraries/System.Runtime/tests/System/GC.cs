@@ -226,4 +226,85 @@ public class GCTests
             }
         }
     }
+
+    [Fact]
+    public static void ReRegisterForFinalize()
+    {
+        ReRegisterForFinalizeTest.Run();
+    }
+
+    private class ReRegisterForFinalizeTest
+    {
+        public static void Run()
+        {
+            TestObject.Finalized = false;
+            CreateObject();
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            Assert.True(TestObject.Finalized);
+        }
+
+        private static void CreateObject()
+        {
+            using (var obj = new TestObject())
+            {
+                GC.SuppressFinalize(obj);
+            }
+        }
+
+        private class TestObject : IDisposable
+        {
+            public static bool Finalized { get; set; }
+
+            ~TestObject()
+            {
+                Finalized = true;
+            }
+
+            public void Dispose()
+            {
+                GC.ReRegisterForFinalize(this);
+            }
+        }
+    }
+
+    [Fact]
+    public static void GetTotalMemoryTest_ForceCollection()
+    {
+        long garbageSize = MakeSomeGarbage(1024 * 1024);
+        long garbageCollected = GC.GetTotalMemory(false) - GC.GetTotalMemory(true);
+        Assert.True(garbageCollected >= garbageSize - 10000); // 10000 bytes threshold to stabilize the test
+    }
+
+    [Fact]
+    public static void GetTotalMemoryTest_NoForceCollection()
+    {
+        long garbageSize = MakeSomeGarbage(1024 * 1024);
+        long before = GC.GetTotalMemory(false);
+        GC.Collect();
+        long garbageCollected = before - GC.GetTotalMemory(false);
+        Assert.True(garbageCollected >= garbageSize - 10000); // 10000 bytes threshold to stabilize the test
+    }
+
+    [Fact]
+    public static void GetGenerationTest()
+    {
+        GC.Collect();
+        Version obj = new Version(1, 2);
+
+        for (int i = 0; i <= GC.MaxGeneration; i++)
+        {
+            Assert.Equal(i, GC.GetGeneration(obj));
+            GC.Collect();
+        }
+    }
+
+    private static long MakeSomeGarbage(int size)
+    {
+        byte[] bytes = new byte[size];
+        GC.Collect();
+        return bytes.Length;
+    }
 }

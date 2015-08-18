@@ -79,6 +79,8 @@ public static unsafe class BufferTests
 
         i = Buffer.ByteLength(new double[33]);
         Assert.Equal(i, 33 * sizeof(double));
+
+        Assert.Throws<ArgumentException>(() => Buffer.ByteLength(new DateTime[10]));
     }
 
     [Fact]
