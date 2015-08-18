@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   
@@ -29,7 +29,7 @@
     <HighEntropyVA>true</HighEntropyVA>
     <ErrorReport>prompt</ErrorReport>
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
-    <GenerateNativeVersionInfo>true</GenerateNativeVersionInfo>
+    <GenerateNativeVersionInfo Condition="'$(OsEnvironment)'=='Windows_NT'">true</GenerateNativeVersionInfo>
     <CLSCompliant>true</CLSCompliant>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
@@ -76,6 +76,12 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>pdbOnly</DebugType>
     <DefineConstants>TRACE;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+
+  <!-- Roslyn does not support writing PDBs on Unix -->
+  <PropertyGroup Condition="'$(OsEnvironment)' == 'Unix'">
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>none</DebugType>
   </PropertyGroup>
 
   <!-- Assembly attributes -->

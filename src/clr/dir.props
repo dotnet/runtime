@@ -10,7 +10,7 @@
   <!-- Build Tools Versions -->
   <PropertyGroup>
     <BuildToolsVersion>1.0.25-prerelease-00056</BuildToolsVersion>
-    <BuildToolsCoreCLRVersion>1.0.2-prerelease</BuildToolsCoreCLRVersion>
+    <BuildToolsCoreCLRVersion>1.0.3-prerelease</BuildToolsCoreCLRVersion>
     <DnxVersion Condition="'$(OsEnvironment)'!='Unix'">1.0.0-beta5-12101</DnxVersion>
     <DnxVersion Condition="'$(OsEnvironment)'=='Unix'">1.0.0-beta5-12101</DnxVersion>
     <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'!='Unix'">dnx-coreclr-win-x86.$(DnxVersion)</DnxPackageName>
@@ -111,6 +111,14 @@
     <NuSpecs Condition="'$(Configuration)'=='Release'" Include="$(PackagesBinDir)\Microsoft.DotNet.CoreCLR.Development.nuspec" />
     <NuSpecs Condition="'$(Configuration)'=='Debug'" Include="$(PackagesBinDir)\Microsoft.DotNet.CoreCLR.Debug.Development.nuspec" />
   </ItemGroup>
+
+  <!--
+    Set up Roslyn predefines
+  -->
+  <PropertyGroup>
+    <RoslynPackageDir>$(PackagesDir)/$(RoslynPackageName).$(RoslynVersion)/</RoslynPackageDir>
+    <RoslynPropsFile>$(RoslynPackageDir)build/Microsoft.Net.ToolsetCompilers.props</RoslynPropsFile>
+  </PropertyGroup>
 
   <!-- Setup common target properties that we use to conditionally include sources -->
   <PropertyGroup>
