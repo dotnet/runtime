@@ -9,7 +9,7 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    public sealed partial class RSACng : RSA
+    public sealed partial class ECDsaCng : ECDsa
     {
         protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
         {
