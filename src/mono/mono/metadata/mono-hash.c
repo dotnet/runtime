@@ -224,12 +224,7 @@ rehash (MonoGHashTable *hash)
 	data.new_size = g_spaced_primes_closest (hash->in_use);
 	data.table = mg_new0 (Slot *, data.new_size);
 
-#ifdef USE_COOP_GC
-	/* We cannot be preempted */
-	old_table = do_rehash (&data);
-#else
 	old_table = mono_gc_invoke_with_gc_lock (do_rehash, &data);
-#endif
 	mg_free (old_table);
 }
 
