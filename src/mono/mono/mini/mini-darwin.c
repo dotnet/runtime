@@ -282,6 +282,7 @@ mono_gdb_render_native_backtraces (pid_t crashed_pid)
 	} else {
 		fprintf (commands, "attach %ld\n", (long) crashed_pid);
 		fprintf (commands, "info threads\n");
+		fprintf (commands, " t a a info thread\n");
 		fprintf (commands, "thread apply all bt\n");
 		argv [1] = "-batch";
 		argv [2] = "-x";
