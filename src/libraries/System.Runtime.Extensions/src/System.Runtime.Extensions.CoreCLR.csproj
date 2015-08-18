@@ -118,17 +118,11 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gnu_get_libc_version.cs">
       <Link>Common\Interop\Unix\libc\Interop.gnu_get_libc_version.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.EnsureOpenSslInitialized.cs">
-      <Link>Common\Interop\Unix\libcoreclr\Interop.EnsureOpenSslInitialized.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.QueryPerformanceCounter.cs">
       <Link>Common\Interop\Unix\libcoreclr\Interop.QueryPerformanceCounter.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.ERR.cs">
-      <Link>Common\Interop\Unix\libcrypto\Interop.ERR.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.Initialization.cs">
-      <Link>Common\Interop\Unix\libcrypto\Interop.Initialization.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.RAND.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.RAND.cs</Link>

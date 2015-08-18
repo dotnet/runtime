@@ -36,7 +36,7 @@ namespace Microsoft.Win32.SafeHandles
             // that we don't lose a tracked reference in low-memory situations.
             SafeEvpPkeyHandle safeHandle = new SafeEvpPkeyHandle();
 
-            int newRefCount = Interop.NativeCrypto.UpRefEvpPkey(handle);
+            int newRefCount = Interop.Crypto.UpRefEvpPkey(handle);
 
             // UpRefEvpPkey returns the number of references to this key, if it's less than 2
             // (the incoming handle, and this one) then someone has already Disposed() this key
