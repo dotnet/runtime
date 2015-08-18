@@ -120,9 +120,6 @@
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non negative number is required.</value>
   </data>
-  <data name="Argument_WrongAsyncResult" xml:space="preserve">
-    <value>IAsyncResult object did not come from the corresponding async method on this type.</value>
-  </data>
   <data name="Argument_InvalidOffLen" xml:space="preserve">
     <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
   </data>
@@ -170,12 +167,6 @@
   </data>
   <data name="ArgumentOutOfRange_MaxNumServerInstances" xml:space="preserve">
     <value>maxNumberOfServerInstances must either be a value between 1 and 254, or NamedPipeServerStream.MaxAllowedServerInstances (to obtain the maximum number allowed by system resources).</value>
-  </data>
-  <data name="InvalidOperation_EndReadCalledMultiple" xml:space="preserve">
-    <value>EndRead can only be called once for each asynchronous operation.</value>
-  </data>
-  <data name="InvalidOperation_EndWriteCalledMultiple" xml:space="preserve">
-    <value>EndWrite can only be called once for each asynchronous operation.</value>
   </data>
   <data name="InvalidOperation_PipeNotYetConnected" xml:space="preserve">
     <value>Pipe hasn't been connected yet.</value>
@@ -258,9 +249,6 @@
   <data name="NotSupported_AnonymousPipeMessagesNotSupported" xml:space="preserve">
     <value>Anonymous pipes do not support PipeTransmissionMode.Message ReadMode.</value>
   </data>
-  <data name="ObjectDisposed_FileClosed" xml:space="preserve">
-    <value>Cannot access a closed file.</value>
-  </data>
   <data name="ObjectDisposed_PipeClosed" xml:space="preserve">
     <value>Cannot access a closed pipe.</value>
   </data>
@@ -269,15 +257,6 @@
   </data>
   <data name="UnauthorizedAccess_IODenied_NoPathName" xml:space="preserve">
     <value>Access to the path is denied.</value>
-  </data>
-  <data name="ObjectDisposed_StreamIsClosed" xml:space="preserve">
-    <value>Cannot access a closed Stream.</value>
-  </data>
-  <data name="InvalidOperation_WrongAsyncResultOrEndReadCalledMultiple" xml:space="preserve">
-    <value>Either the IAsyncResult object did not come from the corresponding async method on this type, or EndRead was called multiple times with the same IAsyncResult.</value>
-  </data>
-  <data name="InvalidOperation_WrongAsyncResultOrEndWriteCalledMultiple" xml:space="preserve">
-    <value>Either the IAsyncResult object did not come from the corresponding async method on this type, or EndWrite was called multiple times with the same IAsyncResult.</value>
   </data>
   <data name="UnknownError_Num" xml:space="preserve">
     <value>Unknown error '{0}'.</value>
