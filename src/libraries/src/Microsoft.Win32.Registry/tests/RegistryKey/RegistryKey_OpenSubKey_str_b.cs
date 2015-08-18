@@ -6,29 +6,22 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_OpenSubKey_str_b : TestSubKey
+    public class RegistryKey_OpenSubKey_str_b : RegistryTestsBase
     {
-        private const string TestKey = "BCL_TEST_9";
-
-        public RegistryKey_OpenSubKey_str_b()
-            : base(TestKey)
-        {
-        }
-
         [Fact]
         public void NegativeTests()
         {
             // Should throw if passed subkey name is null
-            Assert.Throws<ArgumentNullException>(() => _testRegistryKey.OpenSubKey(name: null, writable: false));
+            Assert.Throws<ArgumentNullException>(() => TestRegistryKey.OpenSubKey(name: null, writable: false));
 
             // Should throw if subkey name greater than 255 chars
-            Assert.Throws<ArgumentException>(() => _testRegistryKey.OpenSubKey(new string('a', 256), true));
+            Assert.Throws<ArgumentException>(() => TestRegistryKey.OpenSubKey(new string('a', 256), true));
 
             // OpenSubKey should be read only
             const string name = "FooBar";
-            _testRegistryKey.SetValue(name, 42);
-            _testRegistryKey.CreateSubKey(name);
-            using (var rk = Registry.CurrentUser.OpenSubKey(name: TestKey, writable: false))
+            TestRegistryKey.SetValue(name, 42);
+            TestRegistryKey.CreateSubKey(name);
+            using (var rk = Registry.CurrentUser.OpenSubKey(name: TestRegistryKeyName, writable: false))
             {
                 Assert.Throws<UnauthorizedAccessException>(() => rk.CreateSubKey(name));
                 Assert.Throws<UnauthorizedAccessException>(() => rk.SetValue(name, "String"));
@@ -40,8 +33,8 @@ namespace Microsoft.Win32.RegistryTests
             // Should throw if RegistryKey closed
             Assert.Throws<ObjectDisposedException>(() =>
             {
-                _testRegistryKey.Dispose();
-                _testRegistryKey.OpenSubKey(TestKey, true);
+                TestRegistryKey.Dispose();
+                TestRegistryKey.OpenSubKey(TestRegistryKeyName, true);
             });
         }
 
@@ -50,13 +43,13 @@ namespace Microsoft.Win32.RegistryTests
         {
             // [] Should have write rights when true is passed
             const int testValue = 32;
-            using (var rk = _testRegistryKey.OpenSubKey("", true))
+            using (var rk = TestRegistryKey.OpenSubKey("", true))
             {
-                rk.CreateSubKey(TestKey);
-                rk.SetValue(TestKey, testValue);
+                rk.CreateSubKey(TestRegistryKeyName);
+                rk.SetValue(TestRegistryKeyName, testValue);
 
-                Assert.NotNull(rk.OpenSubKey(TestKey));
-                Assert.Equal(testValue, (int)rk.GetValue(TestKey));
+                Assert.NotNull(rk.OpenSubKey(TestRegistryKeyName));
+                Assert.Equal(testValue, (int)rk.GetValue(TestRegistryKeyName));
             }
         }
     }

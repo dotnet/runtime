@@ -6,35 +6,28 @@ using System;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_DeleteSubKey_str : TestSubKey
+    public class RegistryKey_DeleteSubKey_str : RegistryTestsBase
     {
-        private const string TestKey = "REG_TEST_3";
-
-        public RegistryKey_DeleteSubKey_str()
-            : base(TestKey)
-        {
-        }
-
         [Fact]
         public void NegativeTests()
         {
             const string name = "Test";
 
             // Should throw if passed subkey name is null
-            Assert.Throws<ArgumentNullException>(() => _testRegistryKey.DeleteSubKey(null));
+            Assert.Throws<ArgumentNullException>(() => TestRegistryKey.DeleteSubKey(null));
 
             // Should throw because subkey doesn't exists
-            Assert.Throws<ArgumentException>(() => _testRegistryKey.DeleteSubKey(name));
+            Assert.Throws<ArgumentException>(() => TestRegistryKey.DeleteSubKey(name));
 
             // Should throw if subkey has child subkeys
-            using (var rk = _testRegistryKey.CreateSubKey(name))
+            using (var rk = TestRegistryKey.CreateSubKey(name))
             {
                 rk.CreateSubKey(name);
-                Assert.Throws<InvalidOperationException>(() => _testRegistryKey.DeleteSubKey(name));
+                Assert.Throws<InvalidOperationException>(() => TestRegistryKey.DeleteSubKey(name));
             }
 
             // Should throw because RegistryKey is readonly
-            using (var rk = _testRegistryKey.OpenSubKey(string.Empty, false))
+            using (var rk = TestRegistryKey.OpenSubKey(string.Empty, false))
             {
                 Assert.Throws<UnauthorizedAccessException>(() => rk.DeleteSubKey(name));
             }
@@ -42,21 +35,21 @@ namespace Microsoft.Win32.RegistryTests
             // Should throw if RegistryKey is closed
             Assert.Throws<ObjectDisposedException>(() =>
             {
-                _testRegistryKey.Dispose();
-                _testRegistryKey.DeleteSubKey(name);
+                TestRegistryKey.Dispose();
+                TestRegistryKey.DeleteSubKey(name);
             });
         }
 
         [Fact]
         public void DeleteSubKeyTest()
         {
-            Assert.Equal(expected: 0, actual: _testRegistryKey.SubKeyCount);
-            Assert.NotNull(_testRegistryKey.CreateSubKey(TestKey));
-            Assert.Equal(expected: 1, actual: _testRegistryKey.SubKeyCount);
+            Assert.Equal(expected: 0, actual: TestRegistryKey.SubKeyCount);
+            Assert.NotNull(TestRegistryKey.CreateSubKey(TestRegistryKeyName));
+            Assert.Equal(expected: 1, actual: TestRegistryKey.SubKeyCount);
 
-            _testRegistryKey.DeleteSubKey(TestKey);
-            Assert.Null(_testRegistryKey.OpenSubKey(TestKey));
-            Assert.Equal(expected: 0, actual: _testRegistryKey.SubKeyCount);
+            TestRegistryKey.DeleteSubKey(TestRegistryKeyName);
+            Assert.Null(TestRegistryKey.OpenSubKey(TestRegistryKeyName));
+            Assert.Equal(expected: 0, actual: TestRegistryKey.SubKeyCount);
         }
     }
 }

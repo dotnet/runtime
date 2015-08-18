@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_Flush : TestSubKey
+    public class RegistryKey_Flush : RegistryTestsBase
     {
         // [] Flush is called if the state of the registry key is dirty - modifiable operation has occured in the key - and the 
         // registry key is still a valid handle. From the MSDN
@@ -19,25 +19,18 @@ namespace Microsoft.Win32.RegistryTests
 
         In general, RegFlushKey rarely, if ever, need be used. Windows 95/98: No registry subkey or value name may exceed 255 characters. 
         **/
-        private const string TestKey = "TEST_1";
-
-        public RegistryKey_Flush()
-            : base(TestKey)
-        {
-            
-        }
 
         [Fact]
         public void FlushNewlyOpenedKey()
         {
-            _testRegistryKey.Flush();
+            TestRegistryKey.Flush();
         }
 
         [Fact]
         public void FlushRegistryKeyAfterClosing()
         {
-            _testRegistryKey.Dispose();
-            _testRegistryKey.Flush();
+            TestRegistryKey.Dispose();
+            TestRegistryKey.Flush();
         }
 
         [Fact]
@@ -45,17 +38,17 @@ namespace Microsoft.Win32.RegistryTests
         {
             const string valueName = "Key";
             const string expectedValue = "Value";
-            _testRegistryKey.SetValue(valueName, expectedValue);
+            TestRegistryKey.SetValue(valueName, expectedValue);
             //Now we call Flush but this is really redundant 
-            _testRegistryKey.Flush();
-            Assert.Equal(expectedValue, _testRegistryKey.GetValue(valueName));
+            TestRegistryKey.Flush();
+            Assert.Equal(expectedValue, TestRegistryKey.GetValue(valueName));
         }
 
         [Fact]
         public void FlushDeletedRegistryKey()
         {
-            Registry.CurrentUser.DeleteSubKeyTree(TestKey);
-            _testRegistryKey.Flush();
+            Registry.CurrentUser.DeleteSubKeyTree(TestRegistryKeyName);
+            TestRegistryKey.Flush();
         }
     }
 }

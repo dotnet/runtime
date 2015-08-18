@@ -7,30 +7,23 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_DeleteValue_str : TestSubKey
+    public class RegistryKey_DeleteValue_str : RegistryTestsBase
     {
-        private const string TestKey = "BCL_TEST";
-
-        public RegistryKey_DeleteValue_str()
-            : base(TestKey)
-        {
-        }
-
         [Fact]
         public void NegativeTests()
         {
             const string valueName = "TestValue";
 
             // Should throw if passed subkey name is null
-            Assert.Throws<ArgumentException>(() => _testRegistryKey.DeleteValue(null));
+            Assert.Throws<ArgumentException>(() => TestRegistryKey.DeleteValue(null));
 
             // Should throw because value doesn't exists
-            Assert.Throws<ArgumentException>(() => _testRegistryKey.DeleteValue(valueName));
+            Assert.Throws<ArgumentException>(() => TestRegistryKey.DeleteValue(valueName));
 
-            _testRegistryKey.SetValue(valueName, 42);
+            TestRegistryKey.SetValue(valueName, 42);
 
             // Should throw because RegistryKey is readonly
-            using (var rk = Registry.CurrentUser.OpenSubKey(TestKey, false))
+            using (var rk = Registry.CurrentUser.OpenSubKey(TestRegistryKeyName, false))
             {
                 Assert.Throws<UnauthorizedAccessException>(() => rk.DeleteValue(valueName));
             }
@@ -38,8 +31,8 @@ namespace Microsoft.Win32.RegistryTests
             // Should throw if RegistryKey is closed
             Assert.Throws<ObjectDisposedException>(() =>
             {
-                _testRegistryKey.Dispose();
-                _testRegistryKey.DeleteValue(valueName);
+                TestRegistryKey.Dispose();
+                TestRegistryKey.DeleteValue(valueName);
             });
         }
 
@@ -47,12 +40,11 @@ namespace Microsoft.Win32.RegistryTests
         public void DeleteValueTest()
         {
             // [] Vanilla case, deleting a value
-            const string valueName = TestKey;
-            Assert.Equal(expected: 0, actual: _testRegistryKey.ValueCount);
-            _testRegistryKey.SetValue(valueName, 5);
-            Assert.Equal(expected: 1, actual: _testRegistryKey.ValueCount);
-            _testRegistryKey.DeleteValue(valueName);
-            Assert.Equal(expected: 0, actual: _testRegistryKey.ValueCount);
+            Assert.Equal(expected: 0, actual: TestRegistryKey.ValueCount);
+            TestRegistryKey.SetValue(TestRegistryKeyName, 5);
+            Assert.Equal(expected: 1, actual: TestRegistryKey.ValueCount);
+            TestRegistryKey.DeleteValue(TestRegistryKeyName);
+            Assert.Equal(expected: 0, actual: TestRegistryKey.ValueCount);
         }
 
         [Fact]
@@ -62,17 +54,17 @@ namespace Microsoft.Win32.RegistryTests
             object[][] testCases = TestData.TestValueTypes.ToArray();
             foreach (var testCase in testCases)
             {
-                _testRegistryKey.SetValue(testCase[0].ToString(), testCase[1]);
+                TestRegistryKey.SetValue(testCase[0].ToString(), testCase[1]);
             }
 
-            Assert.Equal(expected: testCases.Length, actual: _testRegistryKey.ValueCount);
+            Assert.Equal(expected: testCases.Length, actual: TestRegistryKey.ValueCount);
 
             foreach (var testCase in testCases)
             {
-                _testRegistryKey.DeleteValue(testCase[0].ToString());
+                TestRegistryKey.DeleteValue(testCase[0].ToString());
             }
 
-            Assert.Equal(expected: 0, actual: _testRegistryKey.ValueCount);
+            Assert.Equal(expected: 0, actual: TestRegistryKey.ValueCount);
         }
     }
 }

@@ -8,30 +8,23 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_GetSubKeyNames : TestSubKey
+    public class RegistryKey_GetSubKeyNames : RegistryTestsBase
     {
-        private const string TestKey = "REG_TEST_8";
-
-        public RegistryKey_GetSubKeyNames()
-            : base(TestKey)
-        {
-        }
-
         [Fact]
         public void ShoudThrowIfDisposed()
         {
             Assert.Throws<ObjectDisposedException>(() =>
             {
-                _testRegistryKey.Dispose();
-                _testRegistryKey.GetSubKeyNames();
+                TestRegistryKey.Dispose();
+                TestRegistryKey.GetSubKeyNames();
             });
         }
 
         [Fact]
         public void ShouldThrowIfRegistryKeyDeleted()
         {
-            Registry.CurrentUser.DeleteSubKeyTree(TestKey);
-            Assert.Throws<IOException>(() => _testRegistryKey.GetSubKeyNames());
+            Registry.CurrentUser.DeleteSubKeyTree(TestRegistryKeyName);
+            Assert.Throws<IOException>(() => TestRegistryKey.GetSubKeyNames());
         }
 
         [Fact]
@@ -41,17 +34,17 @@ namespace Microsoft.Win32.RegistryTests
             string[] expectedSubKeyNames = Enumerable.Range(1, 9).Select(x => "BLAH_" + x.ToString()).ToArray();
             foreach (var subKeyName in expectedSubKeyNames)
             {
-                _testRegistryKey.CreateSubKey(subKeyName);
+                TestRegistryKey.CreateSubKey(subKeyName);
             }
 
-            Assert.Equal(expectedSubKeyNames, _testRegistryKey.GetSubKeyNames());
+            Assert.Equal(expectedSubKeyNames, TestRegistryKey.GetSubKeyNames());
         }
 
         [Fact]
         public void GetSubKeyNamesTest2()
         {
             // [] Check that zero length array is returned for no subkeys
-            Assert.Empty(_testRegistryKey.GetSubKeyNames());
+            Assert.Empty(TestRegistryKey.GetSubKeyNames());
         }
     }
 }

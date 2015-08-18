@@ -8,15 +8,8 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class Registry_GetValue_str_str_obj : TestSubKey
+    public class Registry_GetValue_str_str_obj : RegistryTestsBase
     {
-        private const string TestKey = "CM1001_TEST";
-
-        public Registry_GetValue_str_str_obj()
-            : base(TestKey)
-        {
-        }
-
         [Fact]
         public static void NegativeTests()
         {
@@ -35,10 +28,10 @@ namespace Microsoft.Win32.RegistryTests
         public void ShouldReturnNull()
         {
             // Passing null object as default object to return shouldn't throw
-            Assert.Null(Registry.GetValue(_testRegistryKey.Name, "xzy", defaultValue: null));
+            Assert.Null(Registry.GetValue(TestRegistryKey.Name, "xzy", defaultValue: null));
 
             // If the key does not exists, then the method should return null all time
-            Assert.Null(Registry.GetValue(_testRegistryKey.Name + "\\XYZ", null, -1));
+            Assert.Null(Registry.GetValue(TestRegistryKey.Name + "\\XYZ", null, -1));
         }
 
         public static IEnumerable<object[]> TestValueTypes { get { return TestData.TestValueTypes; } }
@@ -47,9 +40,9 @@ namespace Microsoft.Win32.RegistryTests
         [MemberData("TestValueTypes")]
         public void TestGetValueWithValueTypes(string valueName, object testValue)
         {
-            _testRegistryKey.SetValue(valueName, testValue);
-            Assert.Equal(testValue.ToString(), Registry.GetValue(_testRegistryKey.Name, valueName, null).ToString());
-            _testRegistryKey.DeleteValue(valueName);
+            TestRegistryKey.SetValue(valueName, testValue);
+            Assert.Equal(testValue.ToString(), Registry.GetValue(TestRegistryKey.Name, valueName, null).ToString());
+            TestRegistryKey.DeleteValue(valueName);
         }
 
         public static IEnumerable<object[]> TestRegistryKeys
