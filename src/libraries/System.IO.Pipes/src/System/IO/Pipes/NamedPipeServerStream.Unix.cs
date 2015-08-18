@@ -15,7 +15,6 @@ namespace System.IO.Pipes
     /// </summary>
     public sealed partial class NamedPipeServerStream : PipeStream
     {
-        private bool _createdFifo;
         private string _path;
         private PipeDirection _direction;
         private PipeOptions _options;
@@ -50,7 +49,9 @@ namespace System.IO.Pipes
                 int result = Interop.libc.mkfifo(_path, (int)Interop.libc.Permissions.S_IRWXU);
                 if (result == 0)
                 {
-                    _createdFifo = true;
+                    // The FIFO was successfully created - note that although we create the FIFO here, we don't
+                    // ever delete it. If we remove the FIFO we could invalidate other servers that also use it. 
+                    // See #2764 for further discussion.
                     break;
                 }
 
@@ -119,17 +120,6 @@ namespace System.IO.Pipes
             State = PipeState.Disconnected;
             InternalHandle.Dispose();
             InitializeHandle(null, false, false);
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            // If we created the FIFO object, be a good citizen and clean it up.
-            // If this doesn't happen, worst case is we leave a temp file around.
-            if (_createdFifo && _path != null)
-            {
-                Interop.libc.unlink(_path); // ignore any errors
-            }
-            base.Dispose(disposing);
         }
 
         // Gets the username of the connected client.  Not that we will not have access to the client's 
