@@ -112,7 +112,7 @@ namespace System.IO.Pipes
                 if (!Interop.mincore.GetNamedPipeHandleState(InternalHandle, IntPtr.Zero, out numInstances,
                     IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, 0))
                 {
-                    WinIOError(Marshal.GetLastWin32Error());
+                    throw WinIOError(Marshal.GetLastWin32Error());
                 }
 
                 return numInstances;
