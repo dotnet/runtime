@@ -70,7 +70,6 @@ enum class Error : int32_t
     PAL_ENETUNREACH      = 0x10028,           // Network unreachable.
     PAL_ENFILE           = 0x10029,           // Too many files open in system.
     PAL_ENOBUFS          = 0x1002A,           // No buffer space available.
-    PAL_ENODATA          = 0x1002B,           // No message is available on the STREAM head read queue.
     PAL_ENODEV           = 0x1002C,           // No such device.
     PAL_ENOENT           = 0x1002D,           // No such file or directory.
     PAL_ENOEXEC          = 0x1002E,           // Executable file format error.
@@ -80,8 +79,6 @@ enum class Error : int32_t
     PAL_ENOMSG           = 0x10032,           // No message of the desired type.
     PAL_ENOPROTOOPT      = 0x10033,           // Protocol not available.
     PAL_ENOSPC           = 0x10034,           // No space left on device.
-    PAL_ENOSR            = 0x10035,           // No STREAM resources.
-    PAL_ENOSTR           = 0x10036,           // Not a STREAM.
     PAL_ENOSYS           = 0x10037,           // Function not supported.
     PAL_ENOTCONN         = 0x10038,           // The socket is not connected.
     PAL_ENOTDIR          = 0x10039,           // Not a directory or a symbolic link to a directory.
@@ -103,7 +100,6 @@ enum class Error : int32_t
     PAL_ESPIPE           = 0x10049,           // Invalid seek.
     PAL_ESRCH            = 0x1004A,           // No such process.
     PAL_ESTALE           = 0x1004B,           // Reserved.
-    PAL_ETIME            = 0x1004C,           // Stream ioctl() timeout.
     PAL_ETIMEDOUT        = 0x1004D,           // Connection timed out.
     PAL_ETXTBSY          = 0x1004E,           // Text file busy.
     PAL_EXDEV            = 0x1004F,           // Cross-device link.

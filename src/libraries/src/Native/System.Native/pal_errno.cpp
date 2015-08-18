@@ -56,7 +56,6 @@ Error ConvertErrorPlatformToPal(int32_t platformErrno)
         case ENETUNREACH:      return Error::PAL_ENETUNREACH;
         case ENFILE:           return Error::PAL_ENFILE;
         case ENOBUFS:          return Error::PAL_ENOBUFS;
-        case ENODATA:          return Error::PAL_ENODATA;
         case ENODEV:           return Error::PAL_ENODEV;
         case ENOENT:           return Error::PAL_ENOENT;
         case ENOEXEC:          return Error::PAL_ENOEXEC;
@@ -66,8 +65,6 @@ Error ConvertErrorPlatformToPal(int32_t platformErrno)
         case ENOMSG:           return Error::PAL_ENOMSG;
         case ENOPROTOOPT:      return Error::PAL_ENOPROTOOPT;
         case ENOSPC:           return Error::PAL_ENOSPC;
-        case ENOSR:            return Error::PAL_ENOSR;
-        case ENOSTR:           return Error::PAL_ENOSTR;
         case ENOSYS:           return Error::PAL_ENOSYS;
         case ENOTCONN:         return Error::PAL_ENOTCONN;
         case ENOTDIR:          return Error::PAL_ENOTDIR;
@@ -89,7 +86,6 @@ Error ConvertErrorPlatformToPal(int32_t platformErrno)
         case ESPIPE:           return Error::PAL_ESPIPE;
         case ESRCH:            return Error::PAL_ESRCH;
         case ESTALE:           return Error::PAL_ESTALE;
-        case ETIME:            return Error::PAL_ETIME;
         case ETIMEDOUT:        return Error::PAL_ETIMEDOUT;
         case ETXTBSY:          return Error::PAL_ETXTBSY;
         case EXDEV:            return Error::PAL_EXDEV;
@@ -155,7 +151,6 @@ int32_t ConvertErrorPalToPlatform(Error error)
         case Error::PAL_ENETUNREACH:      return ENETUNREACH;
         case Error::PAL_ENFILE:           return ENFILE;
         case Error::PAL_ENOBUFS:          return ENOBUFS;
-        case Error::PAL_ENODATA:          return ENODATA;
         case Error::PAL_ENODEV:           return ENODEV;
         case Error::PAL_ENOENT:           return ENOENT;
         case Error::PAL_ENOEXEC:          return ENOEXEC;
@@ -165,8 +160,6 @@ int32_t ConvertErrorPalToPlatform(Error error)
         case Error::PAL_ENOMSG:           return ENOMSG;
         case Error::PAL_ENOPROTOOPT:      return ENOPROTOOPT;
         case Error::PAL_ENOSPC:           return ENOSPC;
-        case Error::PAL_ENOSR:            return ENOSR;
-        case Error::PAL_ENOSTR:           return ENOSTR;
         case Error::PAL_ENOSYS:           return ENOSYS;
         case Error::PAL_ENOTCONN:         return ENOTCONN;
         case Error::PAL_ENOTDIR:          return ENOTDIR;
@@ -188,7 +181,6 @@ int32_t ConvertErrorPalToPlatform(Error error)
         case Error::PAL_ESPIPE:           return ESPIPE;
         case Error::PAL_ESRCH:            return ESRCH;
         case Error::PAL_ESTALE:           return ESTALE;
-        case Error::PAL_ETIME:            return ETIME;
         case Error::PAL_ETIMEDOUT:        return ETIMEDOUT;
         case Error::PAL_ETXTBSY:          return ETXTBSY;
         case Error::PAL_EXDEV:            return EXDEV;
