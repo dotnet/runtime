@@ -13,21 +13,21 @@ namespace Microsoft.Win32.RegistryTests
         {
             Assert.Throws<ObjectDisposedException>(() =>
             {
-                _testRegistryKey.Dispose();
-                return _testRegistryKey.ValueCount;
+                TestRegistryKey.Dispose();
+                return TestRegistryKey.ValueCount;
             });
         }
 
         [Fact]
         public void TestValueCount()
         {
-            Assert.Equal(expected: 0, actual: _testRegistryKey.ValueCount);
+            Assert.Equal(expected: 0, actual: TestRegistryKey.ValueCount);
 
-            _testRegistryKey.SetValue(_testRegistryKeyName, 5);
-            Assert.Equal(expected: 1, actual: _testRegistryKey.ValueCount);
+            TestRegistryKey.SetValue(TestRegistryKeyName, 5);
+            Assert.Equal(expected: 1, actual: TestRegistryKey.ValueCount);
 
-            _testRegistryKey.DeleteValue(_testRegistryKeyName);
-            Assert.Equal(expected: 0, actual: _testRegistryKey.ValueCount);
+            TestRegistryKey.DeleteValue(TestRegistryKeyName);
+            Assert.Equal(expected: 0, actual: TestRegistryKey.ValueCount);
         }
 
         [Fact]
@@ -36,11 +36,11 @@ namespace Microsoft.Win32.RegistryTests
             int expectedCount = 0;
             foreach (var testCase in TestData.TestValueTypes)
             {
-                _testRegistryKey.SetValue(testCase[0].ToString(), testCase[1]);
+                TestRegistryKey.SetValue(testCase[0].ToString(), testCase[1]);
                 ++expectedCount;
             }
 
-            Assert.Equal(expectedCount, _testRegistryKey.ValueCount);
+            Assert.Equal(expectedCount, TestRegistryKey.ValueCount);
         }
     }
 }

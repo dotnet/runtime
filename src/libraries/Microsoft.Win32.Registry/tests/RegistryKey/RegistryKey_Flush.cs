@@ -23,14 +23,14 @@ namespace Microsoft.Win32.RegistryTests
         [Fact]
         public void FlushNewlyOpenedKey()
         {
-            _testRegistryKey.Flush();
+            TestRegistryKey.Flush();
         }
 
         [Fact]
         public void FlushRegistryKeyAfterClosing()
         {
-            _testRegistryKey.Dispose();
-            _testRegistryKey.Flush();
+            TestRegistryKey.Dispose();
+            TestRegistryKey.Flush();
         }
 
         [Fact]
@@ -38,17 +38,17 @@ namespace Microsoft.Win32.RegistryTests
         {
             const string valueName = "Key";
             const string expectedValue = "Value";
-            _testRegistryKey.SetValue(valueName, expectedValue);
+            TestRegistryKey.SetValue(valueName, expectedValue);
             //Now we call Flush but this is really redundant 
-            _testRegistryKey.Flush();
-            Assert.Equal(expectedValue, _testRegistryKey.GetValue(valueName));
+            TestRegistryKey.Flush();
+            Assert.Equal(expectedValue, TestRegistryKey.GetValue(valueName));
         }
 
         [Fact]
         public void FlushDeletedRegistryKey()
         {
-            Registry.CurrentUser.DeleteSubKeyTree(_testRegistryKeyName);
-            _testRegistryKey.Flush();
+            Registry.CurrentUser.DeleteSubKeyTree(TestRegistryKeyName);
+            TestRegistryKey.Flush();
         }
     }
 }

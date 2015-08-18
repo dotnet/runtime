@@ -8,29 +8,29 @@ namespace Microsoft.Win32.RegistryTests
 {
     public abstract class RegistryTestsBase : IDisposable
     {
-        protected readonly string _testRegistryKeyName;
-        protected readonly RegistryKey _testRegistryKey;
+        protected string TestRegistryKeyName { get; private set; }
+        protected RegistryKey TestRegistryKey { get; private set; }
 
         protected RegistryTestsBase()
         {
             // Create a unique name for this test class
-            _testRegistryKeyName = CreateUniqueKeyName();
+            TestRegistryKeyName = CreateUniqueKeyName();
 
             // Cleanup the key in case a previous run of this test crashed and left
             // the key behind.  The key name is specific enough to corefx that we don't
             // need to worry about it being a real key on the user's system used
             // for another purpose.
-            RemoveKeyIfExists(_testRegistryKeyName);
+            RemoveKeyIfExists(TestRegistryKeyName);
 
             // Then create the key.
-            _testRegistryKey = Registry.CurrentUser.CreateSubKey(_testRegistryKeyName);
-            Assert.NotNull(_testRegistryKey);
+            TestRegistryKey = Registry.CurrentUser.CreateSubKey(TestRegistryKeyName);
+            Assert.NotNull(TestRegistryKey);
         }
 
         public void Dispose()
         {
-            _testRegistryKey.Dispose();
-            RemoveKeyIfExists(_testRegistryKeyName);
+            TestRegistryKey.Dispose();
+            RemoveKeyIfExists(TestRegistryKeyName);
         }
 
         private static void RemoveKeyIfExists(string keyName)

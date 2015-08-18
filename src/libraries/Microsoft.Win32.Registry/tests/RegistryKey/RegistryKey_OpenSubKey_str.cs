@@ -13,15 +13,15 @@ namespace Microsoft.Win32.RegistryTests
         public void NegativeTests()
         {
             // Should throw if passed subkey name is null
-            Assert.Throws<ArgumentNullException>(() => _testRegistryKey.OpenSubKey(name: null));
+            Assert.Throws<ArgumentNullException>(() => TestRegistryKey.OpenSubKey(name: null));
 
             // Should throw if subkey name greater than 255 chars
-            Assert.Throws<ArgumentException>(() => _testRegistryKey.OpenSubKey(new string('a', 256)));
+            Assert.Throws<ArgumentException>(() => TestRegistryKey.OpenSubKey(new string('a', 256)));
 
             // OpenSubKey should be read only by default
             const string name = "FooBar";
-            _testRegistryKey.SetValue(name, 42);
-            using (var rk = Registry.CurrentUser.OpenSubKey(_testRegistryKeyName))
+            TestRegistryKey.SetValue(name, 42);
+            using (var rk = Registry.CurrentUser.OpenSubKey(TestRegistryKeyName))
             {
                 Assert.Throws<UnauthorizedAccessException>(() => rk.CreateSubKey(name));
                 Assert.Throws<UnauthorizedAccessException>(() => rk.SetValue(name, "String"));
@@ -33,21 +33,21 @@ namespace Microsoft.Win32.RegistryTests
             // Should throw if RegistryKey closed
             Assert.Throws<ObjectDisposedException>(() =>
             {
-                _testRegistryKey.Dispose();
-                _testRegistryKey.OpenSubKey(_testRegistryKeyName);
+                TestRegistryKey.Dispose();
+                TestRegistryKey.OpenSubKey(TestRegistryKeyName);
             });
         }
 
         [Fact]
         public void OpenSubKeyTest()
         {
-            _testRegistryKey.CreateSubKey(_testRegistryKeyName);
-            Assert.NotNull(_testRegistryKey.OpenSubKey(_testRegistryKeyName));
-            Assert.Equal(expected: 1, actual: _testRegistryKey.SubKeyCount);
+            TestRegistryKey.CreateSubKey(TestRegistryKeyName);
+            Assert.NotNull(TestRegistryKey.OpenSubKey(TestRegistryKeyName));
+            Assert.Equal(expected: 1, actual: TestRegistryKey.SubKeyCount);
 
-            _testRegistryKey.DeleteSubKey(_testRegistryKeyName);
-            Assert.Null(_testRegistryKey.OpenSubKey(_testRegistryKeyName));
-            Assert.Equal(expected: 0, actual: _testRegistryKey.SubKeyCount);
+            TestRegistryKey.DeleteSubKey(TestRegistryKeyName);
+            Assert.Null(TestRegistryKey.OpenSubKey(TestRegistryKeyName));
+            Assert.Equal(expected: 0, actual: TestRegistryKey.SubKeyCount);
         }
 
         [Fact]
@@ -56,11 +56,11 @@ namespace Microsoft.Win32.RegistryTests
             string[] subKeyNames = Enumerable.Range(1, 9).Select(x => "BLAH_" + x.ToString()).ToArray();
             foreach (var subKeyName in subKeyNames)
             {
-                _testRegistryKey.CreateSubKey(subKeyName);
+                TestRegistryKey.CreateSubKey(subKeyName);
             }
             
-            Assert.Equal(subKeyNames.Length, _testRegistryKey.SubKeyCount);
-            Assert.Equal(subKeyNames, _testRegistryKey.GetSubKeyNames());
+            Assert.Equal(subKeyNames.Length, TestRegistryKey.SubKeyCount);
+            Assert.Equal(subKeyNames, TestRegistryKey.GetSubKeyNames());
         }
     }
 }

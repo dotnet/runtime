@@ -15,34 +15,34 @@ namespace Microsoft.Win32.RegistryTests
         {
             Assert.Throws<ObjectDisposedException>(() =>
             {
-                _testRegistryKey.Dispose();
-                _testRegistryKey.GetValueNames();
+                TestRegistryKey.Dispose();
+                TestRegistryKey.GetValueNames();
             });
         }
 
         [Fact]
         public void ShouldThrowIfRegistryKeyDeleted()
         {
-            Registry.CurrentUser.DeleteSubKeyTree(_testRegistryKeyName);
-            Assert.Throws<IOException>(() => _testRegistryKey.GetValueNames());
+            Registry.CurrentUser.DeleteSubKeyTree(TestRegistryKeyName);
+            Assert.Throws<IOException>(() => TestRegistryKey.GetValueNames());
         }
 
         [Fact]
         public void TestGetValueNames()
         {
             // [] Add several values and get the values then check the names
-            Assert.Equal(expected: 0, actual: _testRegistryKey.GetValueNames().Length);
+            Assert.Equal(expected: 0, actual: TestRegistryKey.GetValueNames().Length);
 
-            string[] expected = { _testRegistryKeyName };
+            string[] expected = { TestRegistryKeyName };
             foreach (string valueName in expected)
             {
-                _testRegistryKey.SetValue(valueName, 5);
+                TestRegistryKey.SetValue(valueName, 5);
             }
 
-            Assert.Equal(expected, _testRegistryKey.GetValueNames());
+            Assert.Equal(expected, TestRegistryKey.GetValueNames());
             
-            _testRegistryKey.DeleteValue(_testRegistryKeyName);
-            Assert.Equal(expected: 0, actual: _testRegistryKey.GetValueNames().Length);
+            TestRegistryKey.DeleteValue(TestRegistryKeyName);
+            Assert.Equal(expected: 0, actual: TestRegistryKey.GetValueNames().Length);
         }
 
         [Fact]
@@ -50,11 +50,11 @@ namespace Microsoft.Win32.RegistryTests
         {
             foreach (var testCase in TestData.TestValueTypes)
             {
-                _testRegistryKey.SetValue(testCase[0].ToString(), testCase[1]);
+                TestRegistryKey.SetValue(testCase[0].ToString(), testCase[1]);
             }
 
             string[] expected = TestData.TestValueTypes.Select(x => x[0].ToString()).ToArray();
-            Assert.Equal(expected, _testRegistryKey.GetValueNames());
+            Assert.Equal(expected, TestRegistryKey.GetValueNames());
         }
 
         [Fact]

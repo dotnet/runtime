@@ -15,8 +15,8 @@ namespace Microsoft.Win32.RegistryTests
         {
             Assert.Throws<ObjectDisposedException>(() =>
             {
-                _testRegistryKey.Dispose();
-                return _testRegistryKey.ToString();
+                TestRegistryKey.Dispose();
+                return TestRegistryKey.ToString();
             });
         }
 
@@ -29,8 +29,8 @@ namespace Microsoft.Win32.RegistryTests
         [Fact]
         public void TestToString()
         {
-            string expectedName = string.Format("HKEY_CURRENT_USER\\{0}", _testRegistryKeyName);
-            Assert.Equal(expectedName, _testRegistryKey.ToString());
+            string expectedName = string.Format("HKEY_CURRENT_USER\\{0}", TestRegistryKeyName);
+            Assert.Equal(expectedName, TestRegistryKey.ToString());
         }
     }
 }
