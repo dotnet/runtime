@@ -12,6 +12,7 @@ internal static partial class Interop
         internal enum PollFlags : short
         {
             POLLIN      = 0x0001,       /* any readable data available */
+            POLLOUT     = 0x0004,       /* data can be written without blocking */
             POLLERR     = 0x0008,       /* some poll error occurred */
             POLLHUP     = 0x0010,       /* file descriptor was "hung up" */
             POLLNVAL    = 0x0020,       /* requested events "invalid" */
@@ -36,7 +37,7 @@ internal static partial class Interop
         /// descriptors were ready, or -1 on error.
         /// </returns>
         [DllImport(Libraries.Libc, SetLastError = true)]
-        private static unsafe extern int poll(pollfd* fds, uint count, int timeout);
+        internal static unsafe extern int poll(pollfd* fds, uint count, int timeout);
 
         /// <summary>
         /// Polls a File Descriptor for the passed in flags.

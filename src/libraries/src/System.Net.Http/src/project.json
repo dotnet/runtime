@@ -16,7 +16,8 @@
     "System.Security.Principal": "4.0.0",
     "System.Text.Encoding": "4.0.10",
     "System.Threading": "4.0.0",
-    "System.Threading.Tasks": "4.0.10"
+    "System.Threading.Tasks": "4.0.10",
+    "System.Threading.Timer": "4.0.0",
   },
   "frameworks": {
     "dnxcore50": {}
