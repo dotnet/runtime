@@ -30,10 +30,8 @@ DWORD SleepTimes[] =
     3200000
 };
 
-/* Milliseconds of error which are acceptable Function execution time, etc.
-   FreeBSD has a "standard" resolution of 10ms for waiting operations, so we 
-   must take that into account as well */
-DWORD AcceptableTimeError = 150; 
+/* Milliseconds of error which are acceptable Function execution time, etc. */
+DWORD AcceptableTimeError = 150;
 
 int __cdecl main( int argc, char **argv ) 
 {
