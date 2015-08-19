@@ -1924,6 +1924,11 @@ typedef struct {
 	 */
 	gboolean gen_sdb_seq_points;
 	gboolean gen_seq_points_compact_data;
+	/*
+	 * Setting single_imm_size should guarantee that each time managed code is compiled
+	 * the same instructions and registers are used, regardless of the size of used values.
+	 */
+	gboolean single_imm_size;
 	gboolean explicit_null_checks;
 	/*
 	 * Fill stack frames with 0x2a in method prologs. This helps with the
