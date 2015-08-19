@@ -180,6 +180,12 @@
   <!-- OSX -->
   <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFile.Unix.BackingObject_File.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEUid.cs">
+      <Link>Common\Interop\Unix\Interop.GetEUid.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPwUid.cs">
+      <Link>Common\Interop\Unix\Interop.GetPwUid.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.unlink.cs">
       <Link>Common\Interop\Unix\Interop.unlink.cs</Link>
     </Compile>

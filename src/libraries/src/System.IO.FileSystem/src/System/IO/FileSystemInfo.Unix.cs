@@ -107,12 +107,12 @@ namespace System.IO
             get
             {
                 Interop.libc.Permissions readBit, writeBit;
-                if (_fileStatus.Uid == Interop.libc.geteuid())      // does the user effectively own the file?
+                if (_fileStatus.Uid == Interop.Sys.GetEUid())      // does the user effectively own the file?
                 {
                     readBit  = Interop.libc.Permissions.S_IRUSR;
                     writeBit = Interop.libc.Permissions.S_IWUSR;
                 }
-                else if (_fileStatus.Gid == Interop.libc.getegid()) // does the user belong to a group that effectively owns the file?
+                else if (_fileStatus.Gid == Interop.Sys.GetEGid()) // does the user belong to a group that effectively owns the file?
                 {
                     readBit  = Interop.libc.Permissions.S_IRGRP;
                     writeBit = Interop.libc.Permissions.S_IWGRP;

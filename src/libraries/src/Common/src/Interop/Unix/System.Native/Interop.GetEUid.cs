@@ -6,9 +6,9 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class libc
+    internal static partial class Sys
     {
-        [DllImport(Libraries.Libc)]
-        internal static extern int getegid();
+        [DllImport(Libraries.SystemNative)]
+        internal static extern int GetEUid();
     }
 }

@@ -490,7 +490,7 @@ namespace System
                     }
 
                     // Then try in the user's home directory.
-                    string home = Environment.GetEnvironmentVariable("HOME");
+                    string home = PersistedFiles.GetHomeDirectory();
                     if (!string.IsNullOrWhiteSpace(home) && (db = ReadDatabase(term, home + "/.terminfo")) != null)
                     {
                         return db;
