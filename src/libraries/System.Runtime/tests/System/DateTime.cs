@@ -298,8 +298,9 @@ public static unsafe class DateTimeTests
     [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void TestGetDateTimeFormats()
     {
-        // Running in the new thread so that we do not interfere with the Main thread's culture
-        Task.Run(() =>
+        var savedCulture = CultureInfo.CurrentCulture;
+
+        try
         {
             CultureInfo.CurrentCulture = new CultureInfo("en-US");
             DateTime july28 = new DateTime(2009, 7, 28, 5, 23, 15);
@@ -307,15 +308,20 @@ public static unsafe class DateTimeTests
             List<string> actualJuly28Formats = july28.GetDateTimeFormats().ToList();
 
             Assert.Equal(expectedJuly28Formats.OrderBy(t => t), actualJuly28Formats.OrderBy(t => t));
-        }).Wait();
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = savedCulture;
+        }
     }
 
     [Fact]
     [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void TestGetDateTimeFormats_FormatSpecifier()
     {
-        // Running in the new thread so that we do not interfere with the Main thread's culture
-        Task.Run(() =>
+        var savedCulture = CultureInfo.CurrentCulture;
+
+        try
         {
             char[] allStandardFormats =
             {
@@ -334,7 +340,11 @@ public static unsafe class DateTimeTests
             }
 
             Assert.Equal(expectedJuly28Formats.OrderBy(t => t), actualJuly28Formats.OrderBy(t => t));
-        }).Wait();
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = savedCulture;
+        }
     }
 
     [Fact]
