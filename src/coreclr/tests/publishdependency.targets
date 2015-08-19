@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-  <UsingTask TaskName="ResolveNuGetPackageAssets" AssemblyFile="$(ToolsDir)Microsoft.DotNet.Build.Tasks.dll"/>
-  
+  <UsingTask TaskName="PrereleaseResolveNuGetPackageAssets" AssemblyFile="$(ToolsDir)Microsoft.DotNet.Build.Tasks.dll"/>
+
   <ItemGroup>
     <TestTargetFramework Include="DNXCore,Version=v5.0">
       <Folder>dnxcore50</Folder>
     </TestTargetFramework>
   </ItemGroup>
-  
+
   <ItemGroup>
     <AllProjectJsonLockFiles Include="$(SourceDir)**\*\project.lock.json"/>
   </ItemGroup>
@@ -28,20 +28,19 @@
       <ProjectLockJsonFiles Include="@(AllProjectJsonLockFiles)"  Exclude="@(ProjectJsonLockFileExclude)"/>
     </ItemGroup>
     
-    <!-- This will use the overridden ResolveNuGetPackageAssets, which outputs copy local items
+    <!-- This will use the overridden PrereleaseResolveNuGetPackageAssets, which outputs copy local items
          for the xunit wrapper projects -->
-    <ResolveNuGetPackageAssets  Architecture="$(PlatformTarget)"
-                                Configuration="$(Configuration)"
-                                Language="$(Language)"
-                                PackageRoot="$(PackagesDir)"
-                                ProjectLockFile="%(ProjectLockJsonFiles.Identity)"
-                                TargetFrameworkMonikers="@(TestTargetFramework)"
-                                TargetPlatformMonikers="$(TargetPlatformMoniker)">
-
+    <PrereleaseResolveNuGetPackageAssets AllowFallbackOnTargetSelection="true"
+                                         IncludeFrameworkReferences="false"
+                                         NuGetPackagesDirectory="$(PackagesDir)"
+                                         RuntimeIdentifier="dotnet"
+                                         ProjectLanguage="$(Language)"
+                                         ProjectLockFile="%(ProjectLockJsonFiles.Identity)"
+                                         TargetMonikers="@(TestTargetFramework)">
       <Output TaskParameter="ResolvedAnalyzers" ItemName="Analyzer" />
       <Output TaskParameter="ResolvedReferences" ItemName="Reference" />
       <Output TaskParameter="ResolvedCopyLocalItems" ItemName="RunTimeCopyLocal" />
-    </ResolveNuGetPackageAssets>
+    </PrereleaseResolveNuGetPackageAssets>
 
     <ItemGroup>
       <RunTimeDependecyExclude Include="$(CORE_ROOT)\**\*.*"  />
