@@ -18,32 +18,37 @@ namespace System.Threading.Tasks.Tests
         public static void VoidMethodBuilder_TrackedContext()
         {
             SynchronizationContext previousContext = SynchronizationContext.Current;
-            var trackedContext = new TrackOperationsSynchronizationContext();
-            SynchronizationContext.SetSynchronizationContext(trackedContext);
+            try
+            {
+                var trackedContext = new TrackOperationsSynchronizationContext();
+                SynchronizationContext.SetSynchronizationContext(trackedContext);
 
-            // TrackedCount should increase as Create() is called, and decrease as SetResult() is called.
+                // TrackedCount should increase as Create() is called, and decrease as SetResult() is called.
 
-            // Completing in opposite order as created.
-            var avmb1 = AsyncVoidMethodBuilder.Create();
-            Assert.Equal(1, trackedContext.TrackedCount);
-            var avmb2 = AsyncVoidMethodBuilder.Create();
-            Assert.Equal(2, trackedContext.TrackedCount);
-            avmb2.SetResult();
-            Assert.Equal(1, trackedContext.TrackedCount);
-            avmb1.SetResult();
-            Assert.Equal(0, trackedContext.TrackedCount);
+                // Completing in opposite order as created.
+                var avmb1 = AsyncVoidMethodBuilder.Create();
+                Assert.Equal(1, trackedContext.TrackedCount);
+                var avmb2 = AsyncVoidMethodBuilder.Create();
+                Assert.Equal(2, trackedContext.TrackedCount);
+                avmb2.SetResult();
+                Assert.Equal(1, trackedContext.TrackedCount);
+                avmb1.SetResult();
+                Assert.Equal(0, trackedContext.TrackedCount);
 
-            // Completing in same order as created
-            avmb1 = AsyncVoidMethodBuilder.Create();
-            Assert.Equal(1, trackedContext.TrackedCount);
-            avmb2 = AsyncVoidMethodBuilder.Create();
-            Assert.Equal(2, trackedContext.TrackedCount);
-            avmb1.SetResult();
-            Assert.Equal(1, trackedContext.TrackedCount);
-            avmb2.SetResult();
-            Assert.Equal(0, trackedContext.TrackedCount);
-
-            SynchronizationContext.SetSynchronizationContext(previousContext);
+                // Completing in same order as created
+                avmb1 = AsyncVoidMethodBuilder.Create();
+                Assert.Equal(1, trackedContext.TrackedCount);
+                avmb2 = AsyncVoidMethodBuilder.Create();
+                Assert.Equal(2, trackedContext.TrackedCount);
+                avmb1.SetResult();
+                Assert.Equal(1, trackedContext.TrackedCount);
+                avmb2.SetResult();
+                Assert.Equal(0, trackedContext.TrackedCount);
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(previousContext);
+            }
         }
 
         // Test not having a sync context with successful completion (SetResult)
@@ -83,14 +88,20 @@ namespace System.Threading.Tasks.Tests
         {
             // Verify that AsyncTaskMethodBuilder is not touching sync context
             SynchronizationContext previousContext = SynchronizationContext.Current;
-            var trackedContext = new TrackOperationsSynchronizationContext();
-            SynchronizationContext.SetSynchronizationContext(trackedContext);
+            try
+            {
+                var trackedContext = new TrackOperationsSynchronizationContext();
+                SynchronizationContext.SetSynchronizationContext(trackedContext);
 
-            var atmb = AsyncTaskMethodBuilder.Create();
-            Assert.Equal(0, trackedContext.TrackedCount);
-            atmb.SetResult();
-            Assert.Equal(0, trackedContext.TrackedCount);
-            SynchronizationContext.SetSynchronizationContext(previousContext);
+                var atmb = AsyncTaskMethodBuilder.Create();
+                Assert.Equal(0, trackedContext.TrackedCount);
+                atmb.SetResult();
+                Assert.Equal(0, trackedContext.TrackedCount);
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(previousContext);
+            }
         }
 
         // AsyncTaskMethodBuilder<T>
@@ -112,20 +123,24 @@ namespace System.Threading.Tasks.Tests
         {
             // Verify that AsyncTaskMethodBuilder<T> is not touching sync context
             SynchronizationContext previousContext = SynchronizationContext.Current;
-            var trackedContext = new TrackOperationsSynchronizationContext();
-            SynchronizationContext.SetSynchronizationContext(trackedContext);
+            try
+            {
+                var trackedContext = new TrackOperationsSynchronizationContext();
+                SynchronizationContext.SetSynchronizationContext(trackedContext);
 
-            var atmb = AsyncTaskMethodBuilder<string>.Create();
-            Assert.Equal(0, trackedContext.TrackedCount);
-            atmb.SetResult("async");
-            Assert.Equal(0, trackedContext.TrackedCount);
-
-            SynchronizationContext.SetSynchronizationContext(previousContext);
+                var atmb = AsyncTaskMethodBuilder<string>.Create();
+                Assert.Equal(0, trackedContext.TrackedCount);
+                atmb.SetResult("async");
+                Assert.Equal(0, trackedContext.TrackedCount);
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(previousContext);
+            }
         }
 
         // Incorrect usage for AsyncTaskMethodBuilder
         [Fact]
-        [ActiveIssue("Hangs")]
         public static void TaskMethodBuilder_IncorrectUsage()
         {
             var atmb = new AsyncTaskMethodBuilder();
@@ -134,11 +149,11 @@ namespace System.Threading.Tasks.Tests
 
         // Incorrect usage for AsyncVoidMethodBuilder
         [Fact]
-        [ActiveIssue("Hangs")]
         public static void VoidMethodBuilder_IncorrectUsage()
         {
             var avmb = AsyncVoidMethodBuilder.Create();
             Assert.Throws<ArgumentNullException>(() => { avmb.SetException(null); });
+            avmb.SetResult();
         }
 
         // Creating a task builder, building it, completing it successfully, and making sure it can't be reset
@@ -221,39 +236,43 @@ namespace System.Threading.Tasks.Tests
             // Test captured sync context with exceptional completion
 
             SynchronizationContext previousContext = SynchronizationContext.Current;
+            try
+            {
+                var trackedContext = new TrackOperationsSynchronizationContext();
+                SynchronizationContext.SetSynchronizationContext(trackedContext);
 
-            var trackedContext = new TrackOperationsSynchronizationContext();
-            SynchronizationContext.SetSynchronizationContext(trackedContext);
+                // Completing in opposite order as created
+                var avmb1 = AsyncVoidMethodBuilder.Create();
+                Assert.Equal(1, trackedContext.TrackedCount);
+                var avmb2 = AsyncVoidMethodBuilder.Create();
+                Assert.Equal(2, trackedContext.TrackedCount);
+                avmb2.SetException(new InvalidOperationException("uh oh 1"));
+                Assert.Equal(1, trackedContext.TrackedCount);
+                avmb1.SetException(new InvalidCastException("uh oh 2"));
+                Assert.Equal(0, trackedContext.TrackedCount);
 
-            // Completing in opposite order as created
-            var avmb1 = AsyncVoidMethodBuilder.Create();
-            Assert.Equal(1, trackedContext.TrackedCount);
-            var avmb2 = AsyncVoidMethodBuilder.Create();
-            Assert.Equal(2, trackedContext.TrackedCount);
-            avmb2.SetException(new InvalidOperationException("uh oh 1"));
-            Assert.Equal(1, trackedContext.TrackedCount);
-            avmb1.SetException(new InvalidCastException("uh oh 2"));
-            Assert.Equal(0, trackedContext.TrackedCount);
+                Assert.Equal(2, trackedContext.PostExceptions.Count);
+                Assert.IsType<InvalidOperationException>(trackedContext.PostExceptions[0]);
+                Assert.IsType<InvalidCastException>(trackedContext.PostExceptions[1]);
 
-            Assert.Equal(2, trackedContext.PostExceptions.Count);
-            Assert.IsType<InvalidOperationException>(trackedContext.PostExceptions[0]);
-            Assert.IsType<InvalidCastException>(trackedContext.PostExceptions[1]);
+                // Completing in same order as created
+                var avmb3 = AsyncVoidMethodBuilder.Create();
+                Assert.Equal(1, trackedContext.TrackedCount);
+                var avmb4 = AsyncVoidMethodBuilder.Create();
+                Assert.Equal(2, trackedContext.TrackedCount);
+                avmb3.SetException(new InvalidOperationException("uh oh 3"));
+                Assert.Equal(1, trackedContext.TrackedCount);
+                avmb4.SetException(new InvalidCastException("uh oh 4"));
+                Assert.Equal(0, trackedContext.TrackedCount);
 
-            // Completing in same order as created
-            var avmb3 = AsyncVoidMethodBuilder.Create();
-            Assert.Equal(1, trackedContext.TrackedCount);
-            var avmb4 = AsyncVoidMethodBuilder.Create();
-            Assert.Equal(2, trackedContext.TrackedCount);
-            avmb3.SetException(new InvalidOperationException("uh oh 3"));
-            Assert.Equal(1, trackedContext.TrackedCount);
-            avmb4.SetException(new InvalidCastException("uh oh 4"));
-            Assert.Equal(0, trackedContext.TrackedCount);
-
-            Assert.Equal(4, trackedContext.PostExceptions.Count);
-            Assert.IsType<InvalidOperationException>(trackedContext.PostExceptions[2]);
-            Assert.IsType<InvalidCastException>(trackedContext.PostExceptions[3]);
-
-            SynchronizationContext.SetSynchronizationContext(previousContext);
+                Assert.Equal(4, trackedContext.PostExceptions.Count);
+                Assert.IsType<InvalidOperationException>(trackedContext.PostExceptions[2]);
+                Assert.IsType<InvalidCastException>(trackedContext.PostExceptions[3]);
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(previousContext);
+            }
         }
 
         // Creating a task builder, building it, completing it faulted, and making sure it can't be reset
@@ -325,6 +344,53 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
+        public static void TaskMethodBuilder_UsesCompletedCache()
+        {
+            var atmb1 = new AsyncTaskMethodBuilder();
+            var atmb2 = new AsyncTaskMethodBuilder();
+            atmb1.SetResult();
+            atmb2.SetResult();
+            Assert.Same(atmb1.Task, atmb2.Task);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void TaskMethodBuilderBoolean_UsesCompletedCache(bool result)
+        {
+            TaskMethodBuilderT_UsesCompletedCache(result, true);
+        }
+
+        [Theory]
+        [InlineData(0, true)]
+        [InlineData(5, true)]
+        [InlineData(-5, false)]
+        [InlineData(42, false)]
+        public static void TaskMethodBuilderInt32_UsesCompletedCache(int result, bool shouldBeCached)
+        {
+            TaskMethodBuilderT_UsesCompletedCache(result, shouldBeCached);
+        }
+
+        [Theory]
+        [InlineData((string)null, true)]
+        [InlineData("test", false)]
+        public static void TaskMethodBuilderRef_UsesCompletedCache(string result, bool shouldBeCached)
+        {
+            TaskMethodBuilderT_UsesCompletedCache(result, shouldBeCached);
+        }
+
+        private static void TaskMethodBuilderT_UsesCompletedCache<T>(T result, bool shouldBeCached)
+        {
+            var atmb1 = new AsyncTaskMethodBuilder<T>();
+            var atmb2 = new AsyncTaskMethodBuilder<T>();
+
+            atmb1.SetResult(result);
+            atmb2.SetResult(result);
+
+            Assert.Equal(shouldBeCached, object.ReferenceEquals(atmb1.Task, atmb2.Task));
+        }
+
+        [Fact]
         public static void Tcs_ValidateFaultedTask()
         {
             var tcs = new TaskCompletionSource<int>();
@@ -355,14 +421,20 @@ namespace System.Threading.Tasks.Tests
         public static void TrackedSyncContext_ValidateException()
         {
             SynchronizationContext previousContext = SynchronizationContext.Current;
-            var tosc = new TrackOperationsSynchronizationContext();
-            SynchronizationContext.SetSynchronizationContext(tosc);
-            var avmb = AsyncVoidMethodBuilder.Create();
-            try { throw new InvalidOperationException(); }
-            catch (Exception exc) { avmb.SetException(exc); }
-            Assert.NotEmpty(tosc.PostExceptions);
-            ValidateException(tosc.PostExceptions[0]);
-            SynchronizationContext.SetSynchronizationContext(previousContext);
+            try
+            {
+                var tosc = new TrackOperationsSynchronizationContext();
+                SynchronizationContext.SetSynchronizationContext(tosc);
+                var avmb = AsyncVoidMethodBuilder.Create();
+                try { throw new InvalidOperationException(); }
+                catch (Exception exc) { avmb.SetException(exc); }
+                Assert.NotEmpty(tosc.PostExceptions);
+                ValidateException(tosc.PostExceptions[0]);
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(previousContext);
+            }
         }
 
         // Running tasks with exceptions.
