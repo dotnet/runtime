@@ -295,56 +295,35 @@ public static unsafe class DateTimeTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void TestGetDateTimeFormats()
-    {
-        var savedCulture = CultureInfo.CurrentCulture;
-
-        try
+    {        
+        char[] allStandardFormats =
         {
-            CultureInfo.CurrentCulture = new CultureInfo("en-US");
-            DateTime july28 = new DateTime(2009, 7, 28, 5, 23, 15);
+            'd', 'D', 'f', 'F', 'g', 'G',
+            'm', 'M', 'o', 'O', 'r', 'R',
+            's', 't', 'T', 'u', 'U', 'y', 'Y',
+        };
 
-            List<string> actualJuly28Formats = july28.GetDateTimeFormats().ToList();
+        DateTime july28 = new DateTime(2009, 7, 28, 5, 23, 15);
+        List<string> july28Formats = new List<string>();
 
-            Assert.Equal(expectedJuly28Formats.OrderBy(t => t), actualJuly28Formats.OrderBy(t => t));
-        }
-        finally
+        foreach (char format in allStandardFormats)
         {
-            CultureInfo.CurrentCulture = savedCulture;
+            string[] dates = july28.GetDateTimeFormats(format);
+
+            Assert.True(dates.Length > 0);
+
+            DateTime parsedDate;
+            Assert.True(DateTime.TryParseExact(dates[0], format.ToString(), CultureInfo.CurrentCulture, DateTimeStyles.None, out parsedDate));
+
+            july28Formats.AddRange(dates);
         }
-    }
 
-    [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
-    public static void TestGetDateTimeFormats_FormatSpecifier()
-    {
-        var savedCulture = CultureInfo.CurrentCulture;
+        List<string> actualJuly28Formats = july28.GetDateTimeFormats().ToList();
+        Assert.Equal(july28Formats.OrderBy(t => t), actualJuly28Formats.OrderBy(t => t));
 
-        try
-        {
-            char[] allStandardFormats =
-            {
-                'd', 'D', 'f', 'F', 'g', 'G',
-                'm', 'M', 'o', 'O', 'r', 'R',
-                's', 't', 'T', 'u', 'U', 'y', 'Y',
-            };
-
-            CultureInfo.CurrentCulture = new CultureInfo("en-US");
-            DateTime july28 = new DateTime(2009, 7, 28, 5, 23, 15);
-
-            List<string> actualJuly28Formats = new List<string>();
-            foreach (char format in allStandardFormats)
-            {
-                actualJuly28Formats.AddRange(july28.GetDateTimeFormats(format));
-            }
-
-            Assert.Equal(expectedJuly28Formats.OrderBy(t => t), actualJuly28Formats.OrderBy(t => t));
-        }
-        finally
-        {
-            CultureInfo.CurrentCulture = savedCulture;
-        }
+        actualJuly28Formats = july28.GetDateTimeFormats(CultureInfo.CurrentCulture).ToList();
+        Assert.Equal(july28Formats.OrderBy(t => t), actualJuly28Formats.OrderBy(t => t));
     }
 
     [Fact]
@@ -353,17 +332,6 @@ public static unsafe class DateTimeTests
         DateTime july28 = new DateTime(2009, 7, 28, 5, 23, 15);
 
         Assert.Throws<FormatException>(() => july28.GetDateTimeFormats('x'));
-    }
-
-    [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
-    public static void TestGetDateTimeFormats_FormatProvider()
-    {
-        DateTime july28 = new DateTime(2009, 7, 28, 5, 23, 15);
-
-        List<string> actualJuly28Formats = july28.GetDateTimeFormats(new CultureInfo("en-US")).ToList();
-
-        Assert.Equal(expectedJuly28Formats.OrderBy(t => t), actualJuly28Formats.OrderBy(t => t));
     }
 
     internal static void ValidateYearMonthDay(DateTime dt, int year, int month, int day)
@@ -386,143 +354,5 @@ public static unsafe class DateTimeTests
         ValidateYearMonthDay(dt, year, month, day, hour, minute, second);
         Assert.Equal(dt.Millisecond, millisecond);
     }
-
-
-    private static List<string> expectedJuly28Formats = new List<string>
-    {
-        "7/28/2009",
-        "7/28/09",
-        "07/28/09",
-        "07/28/2009",
-        "09/07/28",
-        "2009-07-28",
-        "28-Jul-09",
-        "Tuesday, July 28, 2009",
-        "July 28, 2009",
-        "Tuesday, 28 July, 2009",
-        "28 July, 2009",
-        "Tuesday, July 28, 2009 5:23 AM",
-        "Tuesday, July 28, 2009 05:23 AM",
-        "Tuesday, July 28, 2009 5:23",
-        "Tuesday, July 28, 2009 05:23",
-        "July 28, 2009 5:23 AM",
-        "July 28, 2009 05:23 AM",
-        "July 28, 2009 5:23",
-        "July 28, 2009 05:23",
-        "Tuesday, 28 July, 2009 5:23 AM",
-        "Tuesday, 28 July, 2009 05:23 AM",
-        "Tuesday, 28 July, 2009 5:23",
-        "Tuesday, 28 July, 2009 05:23",
-        "28 July, 2009 5:23 AM",
-        "28 July, 2009 05:23 AM",
-        "28 July, 2009 5:23",
-        "28 July, 2009 05:23",
-        "Tuesday, July 28, 2009 5:23:15 AM",
-        "Tuesday, July 28, 2009 05:23:15 AM",
-        "Tuesday, July 28, 2009 5:23:15",
-        "Tuesday, July 28, 2009 05:23:15",
-        "July 28, 2009 5:23:15 AM",
-        "July 28, 2009 05:23:15 AM",
-        "July 28, 2009 5:23:15",
-        "July 28, 2009 05:23:15",
-        "Tuesday, 28 July, 2009 5:23:15 AM",
-        "Tuesday, 28 July, 2009 05:23:15 AM",
-        "Tuesday, 28 July, 2009 5:23:15",
-        "Tuesday, 28 July, 2009 05:23:15",
-        "28 July, 2009 5:23:15 AM",
-        "28 July, 2009 05:23:15 AM",
-        "28 July, 2009 5:23:15",
-        "28 July, 2009 05:23:15",
-        "7/28/2009 5:23 AM",
-        "7/28/2009 05:23 AM",
-        "7/28/2009 5:23",
-        "7/28/2009 05:23",
-        "7/28/09 5:23 AM",
-        "7/28/09 05:23 AM",
-        "7/28/09 5:23",
-        "7/28/09 05:23",
-        "07/28/09 5:23 AM",
-        "07/28/09 05:23 AM",
-        "07/28/09 5:23",
-        "07/28/09 05:23",
-        "07/28/2009 5:23 AM",
-        "07/28/2009 05:23 AM",
-        "07/28/2009 5:23",
-        "07/28/2009 05:23",
-        "09/07/28 5:23 AM",
-        "09/07/28 05:23 AM",
-        "09/07/28 5:23",
-        "09/07/28 05:23",
-        "2009-07-28 5:23 AM",
-        "2009-07-28 05:23 AM",
-        "2009-07-28 5:23",
-        "2009-07-28 05:23",
-        "28-Jul-09 5:23 AM",
-        "28-Jul-09 05:23 AM",
-        "28-Jul-09 5:23",
-        "28-Jul-09 05:23",
-        "7/28/2009 5:23:15 AM",
-        "7/28/2009 05:23:15 AM",
-        "7/28/2009 5:23:15",
-        "7/28/2009 05:23:15",
-        "7/28/09 5:23:15 AM",
-        "7/28/09 05:23:15 AM",
-        "7/28/09 5:23:15",
-        "7/28/09 05:23:15",
-        "07/28/09 5:23:15 AM",
-        "07/28/09 05:23:15 AM",
-        "07/28/09 5:23:15",
-        "07/28/09 05:23:15",
-        "07/28/2009 5:23:15 AM",
-        "07/28/2009 05:23:15 AM",
-        "07/28/2009 5:23:15",
-        "07/28/2009 05:23:15",
-        "09/07/28 5:23:15 AM",
-        "09/07/28 05:23:15 AM",
-        "09/07/28 5:23:15",
-        "09/07/28 05:23:15",
-        "2009-07-28 5:23:15 AM",
-        "2009-07-28 05:23:15 AM",
-        "2009-07-28 5:23:15",
-        "2009-07-28 05:23:15",
-        "28-Jul-09 5:23:15 AM",
-        "28-Jul-09 05:23:15 AM",
-        "28-Jul-09 5:23:15",
-        "28-Jul-09 05:23:15",
-        "July 28",
-        "July 28",
-        "2009-07-28T05:23:15.0000000",
-        "2009-07-28T05:23:15.0000000",
-        "Tue, 28 Jul 2009 05:23:15 GMT",
-        "Tue, 28 Jul 2009 05:23:15 GMT",
-        "2009-07-28T05:23:15",
-        "5:23 AM",
-        "05:23 AM",
-        "5:23",
-        "05:23",
-        "5:23:15 AM",
-        "05:23:15 AM",
-        "5:23:15",
-        "05:23:15",
-        "2009-07-28 05:23:15Z",
-        "Tuesday, July 28, 2009 12:23:15 PM",
-        "Tuesday, July 28, 2009 12:23:15 PM",
-        "Tuesday, July 28, 2009 12:23:15",
-        "Tuesday, July 28, 2009 12:23:15",
-        "July 28, 2009 12:23:15 PM",
-        "July 28, 2009 12:23:15 PM",
-        "July 28, 2009 12:23:15",
-        "July 28, 2009 12:23:15",
-        "Tuesday, 28 July, 2009 12:23:15 PM",
-        "Tuesday, 28 July, 2009 12:23:15 PM",
-        "Tuesday, 28 July, 2009 12:23:15",
-        "Tuesday, 28 July, 2009 12:23:15",
-        "28 July, 2009 12:23:15 PM",
-        "28 July, 2009 12:23:15 PM",
-        "28 July, 2009 12:23:15",
-        "28 July, 2009 12:23:15",
-        "July 2009",
-        "July 2009",
-    };
 }
 
