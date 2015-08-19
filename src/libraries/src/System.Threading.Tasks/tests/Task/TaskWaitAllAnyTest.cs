@@ -294,7 +294,8 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
                 if (taskInfo.Task.Status == TaskStatus.Running)
                 {
                     taskInfo.CancellationTokenSource.Cancel();
-                    taskInfo.Task.Wait();
+                    try { taskInfo.Task.GetAwaiter().GetResult(); }
+                    catch (OperationCanceledException) { }
                 }
             }
         }
