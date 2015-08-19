@@ -2539,20 +2539,16 @@ mono_thread_state_init_from_sigctx (MonoThreadUnwindState *ctx, void *sigctx)
 		return FALSE;
 	}
 
-	if (sigctx)
+	if (sigctx) {
 		mono_sigctx_to_monoctx (sigctx, &ctx->ctx);
-	else
-#if defined(MONO_CROSS_COMPILE)
-		ctx->valid = FALSE; //A cross compiler doesn't need to suspend.
-#elif MONO_ARCH_HAS_MONO_CONTEXT
-		MONO_CONTEXT_GET_CURRENT (ctx->ctx);
-#else
-		g_error ("Use a null sigctx requires a working mono-context");
-#endif
 
-	ctx->unwind_data [MONO_UNWIND_DATA_DOMAIN] = mono_domain_get ();
-	ctx->unwind_data [MONO_UNWIND_DATA_LMF] = mono_get_lmf ();
-	ctx->unwind_data [MONO_UNWIND_DATA_JIT_TLS] = thread->jit_data;
+		ctx->unwind_data [MONO_UNWIND_DATA_DOMAIN] = mono_domain_get ();
+		ctx->unwind_data [MONO_UNWIND_DATA_LMF] = mono_get_lmf ();
+		ctx->unwind_data [MONO_UNWIND_DATA_JIT_TLS] = thread->jit_data;
+	}
+	else {
+		mono_thread_state_init (ctx);
+	}
 
 	if (!ctx->unwind_data [MONO_UNWIND_DATA_DOMAIN] || !ctx->unwind_data [MONO_UNWIND_DATA_LMF])
 		return FALSE;
