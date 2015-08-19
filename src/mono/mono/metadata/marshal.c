@@ -244,8 +244,8 @@ mono_marshal_init (void)
 #ifdef USE_COOP_GC
 		register_icall (mono_threads_prepare_blocking, "mono_threads_prepare_blocking", "int", FALSE);
 		register_icall (mono_threads_finish_blocking, "mono_threads_finish_blocking", "void int", FALSE);
-		register_icall (mono_threads_reset_blocking_start, "mono_threads_reset_blocking_start","int", FALSE);
-		register_icall (mono_threads_reset_blocking_end, "mono_threads_reset_blocking_end","void int", FALSE);
+		register_icall (mono_threads_reset_blocking_start, "mono_threads_reset_blocking_start","int", TRUE);
+		register_icall (mono_threads_reset_blocking_end, "mono_threads_reset_blocking_end","void int", TRUE);
 #endif
 	}
 }

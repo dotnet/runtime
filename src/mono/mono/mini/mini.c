@@ -3121,6 +3121,11 @@ mono_insert_safepoints (MonoCompile *cfg)
 		}
 	}
 
+	if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+		if (cfg->verbose_level > 1)
+			printf ("SKIPPING SAFEPOINTS for native-to-managed wrappers.\n");
+		return;
+	}
 
 	if (cfg->verbose_level > 1)
 		printf ("INSERTING SAFEPOINTS\n");
