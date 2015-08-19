@@ -312,7 +312,7 @@ namespace System.IO.Pipes
             }
             else
             {
-                var completionSource = new PipeStreamCompletionSource(this, buffer, cancellationToken, isWrite: true);
+                var completionSource = new ReadWriteCompletionSource(this, buffer, cancellationToken, isWrite: true);
                 int errorCode = 0;
 
                 // Queue an async WriteFile operation and pass in a packed overlapped
@@ -462,7 +462,7 @@ namespace System.IO.Pipes
             }
             else
             {
-                var completionSource = new PipeStreamCompletionSource(this, buffer, cancellationToken, isWrite: false);
+                var completionSource = new ReadWriteCompletionSource(this, buffer, cancellationToken, isWrite: false);
 
                 // Queue an async ReadFile operation and pass in a packed overlapped
                 int errorCode = 0;
