@@ -198,4 +198,7 @@
   <data name="PlatformNotSupported_GettingColor" xml:space="preserve">
     <value>This platform does not support getting the current color.</value>
   </data>
+  <data name="PersistedFiles_NoHomeDirectory" xml:space="preserve">
+    <value>The home directory of the current user could not be determined.</value>
+  </data>
 </root>
