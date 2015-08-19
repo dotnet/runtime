@@ -27,19 +27,17 @@ testCase testCases[] =
     {50, FALSE},
     {100, FALSE},
     {500, FALSE},
-    {1000, FALSE},
+    {2000, FALSE},
 
     {0, TRUE},
     {50, TRUE},
     {100, TRUE},
     {500, TRUE},
-    {1000, TRUE},
+    {2000, TRUE},
 };
 
-/* Milliseconds of error which are acceptable Function execution time, etc.
-   FreeBSD has a "standard" resolution of 10ms for waiting operations, so we 
-   must take that into account as well */
-DWORD AcceptableTimeError = 15; 
+/* Milliseconds of error which are acceptable Function execution time, etc. */
+DWORD AcceptableTimeError = 150;
 
 int __cdecl main( int argc, char **argv ) 
 {
