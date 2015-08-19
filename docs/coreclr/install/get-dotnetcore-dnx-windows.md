@@ -25,35 +25,39 @@ You can see the currently installed DNX versions with `dnvm list`, which will di
 Installing a .NET Core DNX
 ==========================
 
-It's easy to install the latest .NET Core-based DNX, using the `dnvm install` command.
+It's easy to install the latest .NET Core-based DNX, using the `dnvm install` command. The `-u` (or `-Unstable`) parameter installs latest unstable version.
 
 	C:\coreclr-demo> dnvm install -r coreclr latest -u
 
-This will install the 32-bit version of .NET Core. If you want the 64-bit version, you can specify processor architecture.
+This will install the 32-bit version of .NET Core. If you want the 64-bit version, you can specify processor architecture:
 
 	C:\coreclr-demo> dnvm install -r coreclr -arch x64 latest -u
 
-You can see the currently installed DNX versions with `dnvm list`.
+You can see the currently installed DNX versions with `dnvm list` (your display may vary as new versions of the DNX are published):
 
 	C:\coreclr-demo>dnvm list
 
-	Active Version           Runtime Architecture Location
-	------ -------           ------- ------------ --------
-	  *    1.0.0-beta5-11649 coreclr x64          C:\Users\rlander\.dnx\runtimes
-	       1.0.0-beta5-11649 coreclr x86          C:\Users\rlander\.dnx\runtimes
+```
+Active Version           Runtime Architecture Location                       Alias
+------ -------           ------- ------------ --------                       -----
+        1.0.0-beta7-12364 coreclr x86          C:\Users\rlander\.dnx\runtimes
+        1.0.0-beta7-12364 coreclr x64          C:\Users\rlander\.dnx\runtimes
+```
 
 You can choose which of these DNXs you want to use with `dnvm use`, with similar arguments.
 
-	C:\coreclr-demo>dnvm use -r coreclr -arch x86 1.0.0-beta5-11649
-	Adding C:\Users\rlander\.dnx\runtimes\dnx-coreclr-win-x86.1.0.0-beta5-11649\bin
-	to process PATH
+```
+C:\coreclr-demo>dnvm use -r coreclr -arch x86 1.0.0-beta7-12364
+Adding C:\Users\rlander\.dnx\runtimes\dnx-coreclr-win-x86.1.0.0-beta7-12364\bin
+to process PATH
 
-	C:\coreclr-demo>dnvm list
+C:\coreclr-demo>dnvm list
 
-	Active Version           Runtime Architecture Location
-	------ -------           ------- ------------ --------
-	       1.0.0-beta5-11649 coreclr x64          C:\Users\rlander\.dnx\runtimes
-	  *    1.0.0-beta5-11649 coreclr x86          C:\Users\rlander\.dnx\runtimes
+Active Version           Runtime Architecture Location                       Alias
+------ -------           ------- ------------ --------                       -----
+   *    1.0.0-beta7-12364 coreclr x86          C:\Users\rlander\.dnx\runtimes
+        1.0.0-beta7-12364 coreclr x64          C:\Users\rlander\.dnx\runtimes
+```
 
 Write your App
 ==============
