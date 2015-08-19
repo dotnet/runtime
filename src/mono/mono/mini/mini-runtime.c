@@ -2659,6 +2659,8 @@ mini_parse_debug_options (void)
 			debug_options.gen_sdb_seq_points = TRUE;
 		else if (!strcmp (arg, "gen-compact-seq-points"))
 			debug_options.gen_seq_points_compact_data = TRUE;
+		else if (!strcmp (arg, "single-imm-size"))
+			debug_options.single_imm_size = TRUE;
 		else if (!strcmp (arg, "init-stacks"))
 			debug_options.init_stacks = TRUE;
 		else if (!strcmp (arg, "casts"))
