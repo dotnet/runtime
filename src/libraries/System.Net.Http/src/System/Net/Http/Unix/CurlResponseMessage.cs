@@ -158,6 +158,9 @@ namespace System.Net.Http
                         continue;
                     }
 
+                    // Since this is under lock, make sure the Read is non-blocking
+                    Debug.Assert((_innerStream is MemoryStream) || (_innerStream is UnmanagedMemoryStream));
+
                     int bytesRead = _innerStream.Read(buffer, offset, (int)Math.Min((long)count, _innerStream.Length));
                     if (_innerStream.Position == _innerStream.Length)
                     {
