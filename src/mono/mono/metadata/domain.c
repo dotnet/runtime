@@ -93,7 +93,12 @@ static gboolean debug_domain_unload;
 
 gboolean mono_dont_free_domains;
 
-#define mono_appdomains_lock() mono_mutex_lock (&appdomains_mutex)
+#define mono_appdomains_lock() do {	\
+	MONO_TRY_BLOCKING;	\
+	mono_mutex_lock (&appdomains_mutex); \
+	MONO_FINISH_TRY_BLOCKING;	\
+} while (0);
+
 #define mono_appdomains_unlock() mono_mutex_unlock (&appdomains_mutex)
 static mono_mutex_t appdomains_mutex;
 
