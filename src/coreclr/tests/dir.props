@@ -9,7 +9,7 @@
   
   <!-- Build Tools Versions -->
   <PropertyGroup>
-    <BuildToolsVersion>1.0.25-prerelease-00056</BuildToolsVersion>
+    <BuildToolsVersion>1.0.25-prerelease-00079</BuildToolsVersion>
     <BuildToolsCoreCLRVersion>1.0.2-prerelease</BuildToolsCoreCLRVersion>
     <DnxVersion Condition="'$(OsEnvironment)'!='Unix'">1.0.0-beta5-12101</DnxVersion>
     <DnxVersion Condition="'$(OsEnvironment)'=='Unix'">1.0.0-beta5-12101</DnxVersion>
