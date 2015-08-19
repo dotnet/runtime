@@ -13,7 +13,7 @@ public static class SecureStringTest
     // number of pages worth of memory will likely result in OOMs unless in a privileged process.
     private static readonly bool s_isWindowsOrPrivilegedUnix = 
         RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || 
-        Interop.libc.geteuid() == 0;
+        Interop.Sys.GetEUid() == 0;
 
     private static void VerifyString(SecureString ss, string exString)
     {

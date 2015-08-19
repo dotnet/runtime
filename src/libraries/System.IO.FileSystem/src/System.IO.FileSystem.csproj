@@ -283,12 +283,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.ftruncate.cs">
       <Link>Common\Interop\Unix\Interop.ftruncate.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getegid.cs">
-      <Link>Common\Interop\Unix\Interop.getegid.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.geteuid.cs">
-      <Link>Common\Interop\Unix\Interop.geteuid.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gnu_get_libc_version.cs">
       <Link>Common\Interop\Unix\Interop.gnu_get_libc_version.cs</Link>
     </Compile>
@@ -333,6 +327,12 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.unlink.cs">
       <Link>Common\Interop\Unix\Interop.unlink.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEGid.cs">
+      <Link>Common\Interop\Unix\Interop.GetEGid.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEUid.cs">
+      <Link>Common\Interop\Unix\Interop.GetEUid.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Stat.cs">
       <Link>Common\Interop\Unix\Interop.Stat.cs</Link>
