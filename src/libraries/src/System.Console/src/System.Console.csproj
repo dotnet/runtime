@@ -96,6 +96,12 @@
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\IO\PersistedFiles.Unix.cs">
+      <Link>Common\System\IO\PersistedFiles.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\PersistedFiles.Names.Unix.cs">
+      <Link>Common\System\IO\PersistedFiles.Names.Unix.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
       <Link>Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>
@@ -131,6 +137,12 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.snprintf.cs">
       <Link>Common\Interop\Unix\Interop.snprintf.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEUid.cs">
+      <Link>Common\Interop\Unix\Interop.GetEUid.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPwUid.cs">
+      <Link>Common\Interop\Unix\Interop.GetPwUid.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Stat.cs">
       <Link>Common\Interop\Unix\Interop.Stat.cs</Link>

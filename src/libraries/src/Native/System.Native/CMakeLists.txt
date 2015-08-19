@@ -4,6 +4,7 @@ set(NATIVE_SOURCES
     pal_errno.cpp
     pal_exec.cpp
     pal_stat.cpp
+    pal_uid.cpp
 )
 
 add_library(System.Native

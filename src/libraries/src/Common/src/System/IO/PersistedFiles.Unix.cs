@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.IO
 {
@@ -81,8 +82,7 @@ namespace System.IO
 
         private static void EnsureUserDirectories()
         {
-            // TODO (2820): Use getpwuid_r(geteuid(), ...) instead of the HOME environment variable
-            string userHomeDirectory = Environment.GetEnvironmentVariable("HOME");
+            string userHomeDirectory = GetHomeDirectory();
 
             if (string.IsNullOrEmpty(userHomeDirectory))
             {
@@ -94,5 +94,95 @@ namespace System.IO
                 TopLevelHiddenDirectory,
                 SecondLevelDirectory);
         }
+
+        /// <summary>Gets the current user's home directory.</summary>
+        /// <returns>The path to the home directory, or null if it could not be determined.</returns>
+        internal static string GetHomeDirectory()
+        {
+            // First try to get the user's home directory from the HOME environment variable.
+            // This should work in most cases.
+            string userHomeDirectory = Environment.GetEnvironmentVariable("HOME");
+            if (!string.IsNullOrEmpty(userHomeDirectory))
+                return userHomeDirectory;
+
+            // In initialization conditions, however, the "HOME" enviroment variable may 
+            // not yet be set. For such cases, consult with the password entry.
+            unsafe
+            {
+                // First try with a buffer that should suffice for 99% of cases.
+                // Note that, theoretically, userHomeDirectory may be null in the success case 
+                // if we simply couldn't find a home directory for the current user.
+                // In that case, we pass back the null value and let the caller decide
+                // what to do.
+                const int BufLen = 1024;
+                byte* stackBuf = stackalloc byte[BufLen];
+                if (TryGetHomeDirectoryFromPasswd(stackBuf, BufLen, out userHomeDirectory))
+                    return userHomeDirectory;
+
+                // Fallback to heap allocations if necessary, growing the buffer until
+                // we succeed.  TryGetHomeDirectory will throw if there's an unexpected error.
+                int lastBufLen = BufLen;
+                while (true)
+                {
+                    lastBufLen *= 2;
+                    byte[] heapBuf = new byte[lastBufLen];
+                    fixed (byte* buf = heapBuf)
+                    {
+                        if (TryGetHomeDirectoryFromPasswd(buf, heapBuf.Length, out userHomeDirectory))
+                            return userHomeDirectory;
+                    }
+                }
+            }
+        }
+
+        /// <summary>Wrapper for getpwuid_r.</summary>
+        /// <param name="buf">The scratch buffer to pass into getpwuid_r.</param>
+        /// <param name="bufLen">The length of <paramref name="buf"/>.</param>
+        /// <param name="path">The resulting path; null if the user didn't have an entry.</param>
+        /// <returns>true if the call was successful (path may still be null); false is a larger buffer is needed.</returns>
+        private static unsafe bool TryGetHomeDirectoryFromPasswd(byte* buf, int bufLen, out string path)
+        {
+            while (true)
+            {
+                // Call getpwuid_r to get the passwd struct
+                Interop.Sys.Passwd passwd;
+                IntPtr result;
+                int rv = Interop.Sys.GetPwUid(Interop.Sys.GetEUid(), out passwd, buf, bufLen, out result);
+
+                // If the call succeeds, give back the home directory path retrieved
+                if (rv == 0)
+                {
+                    if (result == IntPtr.Zero)
+                    {
+                        // Current user's entry could not be found
+                        path = null; // we'll still return true, as false indicates the buffer was too small
+                    }
+                    else
+                    {
+                        Debug.Assert(result == (IntPtr)(&passwd));
+                        Debug.Assert(passwd.HomeDirectory != null);
+                        path = Marshal.PtrToStringAnsi((IntPtr)passwd.HomeDirectory);
+                    }
+                    return true;
+                }
+
+                // If the call failed because it was interrupted, try again.
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                if (errorInfo.Error == Interop.Error.EINTR)
+                    continue;
+
+                // If the call failed because the buffer was too small, return false to 
+                // indicate the caller should try again with a larger buffer.
+                if (errorInfo.Error == Interop.Error.ERANGE)
+                {
+                    path = null;
+                    return false;
+                }
+
+                // Otherwise, fail.
+                throw new IOException(errorInfo.GetErrorMessage(), errorInfo.RawErrno);
+            }
+        }
+
     }
 }
