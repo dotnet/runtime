@@ -38,9 +38,9 @@ namespace System.Threading.Tasks.Tests
         private const int IntInput = 1000;
 
         /// <summary>
-        /// The constant that defines the amount time to spinwait (to simulate work) in the LongTask class
+        /// The constant that defines the number of milliseconds to spinwait (to simulate work) in the LongTask class
         /// </summary>
-        private const int LongTaskMilliseconds = 1000;
+        private const int LongTaskMilliseconds = 100;
 
         [Theory]
         [OuterLoop]
