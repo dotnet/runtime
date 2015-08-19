@@ -15,7 +15,6 @@ namespace System.Reflection.Compatibility.UnitTests
     {
         // Positive Test 1: add Event handler to the not static event
         [Fact]
-        [ActiveIssue(2619, PlatformID.Linux)]
         public void PosTest1()
         {
             TestClass1 tc1 = new TestClass1();
@@ -23,12 +22,11 @@ namespace System.Reflection.Compatibility.UnitTests
             EventInfo eventinfo = tpA.GetEvent("Event1");
             eventinfo.AddEventHandler(tc1, new TestForEvent1(tc1.method1));
             tc1.method();
-            Assert.Equal(1, TestClass1.m_StaticVariable);
+            Assert.Equal(1, TestClass1.StaticVariable1);
         }
 
         // Positive Test 2:add to Event handler to the static event and the target is null
         [Fact]
-        [ActiveIssue(2619, PlatformID.Linux)]
         public void PosTest2()
         {
             TestClass1 tc1 = new TestClass1();
@@ -36,12 +34,11 @@ namespace System.Reflection.Compatibility.UnitTests
             EventInfo eventinfo = tpA.GetEvent("Event2");
             eventinfo.AddEventHandler(null, new TestForEvent1(tc1.method2));
             tc1.method();
-            Assert.Equal(0, TestClass1.m_StaticVariable);
+            Assert.Equal(-1, TestClass1.StaticVariable2);
         }
 
         // Positive Test 3:add to Event handler to the static event and the target is not null
         [Fact]
-        [ActiveIssue(2619, PlatformID.Linux)]
         public void PosTest3()
         {
             TestClass1 tc1 = new TestClass1();
@@ -49,7 +46,7 @@ namespace System.Reflection.Compatibility.UnitTests
             EventInfo eventinfo = tpA.GetEvent("Event2");
             eventinfo.AddEventHandler(tc1, new TestForEvent1(tc1.method3));
             tc1.method();
-            Assert.Equal(0, TestClass1.m_StaticVariable);
+            Assert.Equal(1, TestClass1.StaticVariable3);
         }
 
         // Negative Test 1:add to Event handler to the not static event and the target is null
@@ -112,7 +109,10 @@ namespace System.Reflection.Compatibility.UnitTests
 
     public class TestClass1
     {
-        public static int m_StaticVariable = 0;
+        public static int StaticVariable1 = 0; // Incremented by method1
+        public static int StaticVariable2 = 0; // Decremented by method2
+        public static int StaticVariable3 = 0; // Incremented by method3
+
         public readonly int m_ConstVariable = 0;
         public event TestForEvent1 Event1;
         public static event TestForEvent1 Event2;
@@ -135,15 +135,15 @@ namespace System.Reflection.Compatibility.UnitTests
         }
         public void method1()
         {
-            m_StaticVariable++;
+            StaticVariable1++;
         }
         protected internal void method2()
         {
-            m_StaticVariable--;
+            StaticVariable2--;
         }
         public void method3()
         {
-            m_StaticVariable++;
+            StaticVariable3++;
         }
     }
     public class TestClass2
