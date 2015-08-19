@@ -4348,10 +4348,10 @@ add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji)
 		if (!found) {
 			MonoMethod *declaring = NULL;
 
+			jmethod = jinfo_get_method (ji);
 			if (jmethod->is_inflated)
 				declaring = mono_method_get_declaring_generic_method (jmethod);
 
-			jmethod = jinfo_get_method (ji);
 			mono_domain_lock (domain);
 			seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, jmethod);
 			if (!seq_points && declaring)
