@@ -120,6 +120,9 @@ mono_gc_run_finalize (void *obj, void *data)
 	MonoDomain *domain;
 	RuntimeInvokeFunction runtime_invoke;
 
+	// This function is called from the innards of the GC, so our best alternative for now is to do polling here
+	MONO_SUSPEND_CHECK ();
+
 	o = (MonoObject*)((char*)obj + GPOINTER_TO_UINT (data));
 
 	if (log_finalizers)
@@ -317,8 +320,11 @@ object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*))
 	 * end up running them while or after the domain is being cleared, so
 	 * the objects will not be valid anymore.
 	 */
-	if (!mono_domain_is_unloading (domain))
+	if (!mono_domain_is_unloading (domain)) {
+		MONO_TRY_BLOCKING;
 		mono_gc_register_for_finalization (obj, callback);
+		MONO_FINISH_TRY_BLOCKING;
+	}
 #endif
 }
 
