@@ -17,10 +17,6 @@ CoreDllMain
 DllMain
 GetCLRRuntimeHost
 
-; Functions used by CoreFX
-EnsureOpenSslInitialized
-ForkAndExecProcess
-
 ; Win32 API and other PAL functions used by the mscorlib
 CloseHandle
 CoCreateGuid
