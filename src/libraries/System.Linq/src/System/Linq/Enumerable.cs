@@ -118,35 +118,7 @@ namespace System.Linq
 
             public abstract bool MoveNext();
 
-            public IEnumerable<TResult> Select<TResult>(Func<TSource, TResult> selector)
-            {
-                // This method is a generic virtual (actually abstract) in the original desktop source.
-                // Once we have generic virtual's supported in the toolset, we can make this back into an abstract.
-                //
-                // This is a workaround implementation that does the "virtual dispatch" manually.
-
-                WhereEnumerableIterator<TSource> wei = this as WhereEnumerableIterator<TSource>;
-                if (wei != null) return wei.SelectImpl<TResult>(selector);
-
-                WhereArrayIterator<TSource> wai = this as WhereArrayIterator<TSource>;
-                if (wai != null) return wai.SelectImpl<TResult>(selector);
-
-                WhereListIterator<TSource> wli = this as WhereListIterator<TSource>;
-                if (wli != null) return wli.SelectImpl<TResult>(selector);
-
-                // If we got here, then "this" is one of these types:
-                //
-                //    WhereSelectEnumerableIterator<TSource, some completely random type>
-                //    WhereSelectArrayIterator<TSource, some completely random type>
-                //    WhereSelectListIterator<TSource, some completely random type>
-                //
-                // Normally, this happens when you chain two consecutive Select<,>. There may be
-                // some clever way to handle that second generic parameter within the limitations of the
-                // static type system but it's a lot simpler just to break the chain by inserting
-                // a dummy Where(x => y) in the middle.
-                //
-                return new WhereEnumerableIterator<TSource>(this, x => true).SelectImpl<TResult>(selector);
-            }
+            public abstract IEnumerable<TResult> Select<TResult>(Func<TSource, TResult> selector);
 
             public abstract IEnumerable<TSource> Where(Func<TSource, bool> predicate);
 
@@ -222,8 +194,7 @@ namespace System.Linq
                 return false;
             }
 
-            // Once we have generic virtual support back, rename this back to Select and turn it into an override of the parent's abstract Select() method.
-            public IEnumerable<TResult> SelectImpl<TResult>(Func<TSource, TResult> selector)
+            public override IEnumerable<TResult> Select<TResult>(Func<TSource, TResult> selector)
             {
                 return new WhereSelectEnumerableIterator<TSource, TResult>(_source, _predicate, selector);
             }
@@ -270,8 +241,7 @@ namespace System.Linq
                 return false;
             }
 
-            // Once we have generic virtual support back, rename this back to Select and turn it into an override of the parent's abstract Select() method.
-            public IEnumerable<TResult> SelectImpl<TResult>(Func<TSource, TResult> selector)
+            public override IEnumerable<TResult> Select<TResult>(Func<TSource, TResult> selector)
             {
                 return new WhereSelectArrayIterator<TSource, TResult>(_source, _predicate, selector);
             }
@@ -323,8 +293,7 @@ namespace System.Linq
                 return false;
             }
 
-            // Once we have generic virtual support back, rename this back to Select and turn it into an override of the parent's abstract Select() method.
-            public IEnumerable<TResult> SelectImpl<TResult>(Func<TSource, TResult> selector)
+            public override IEnumerable<TResult> Select<TResult>(Func<TSource, TResult> selector)
             {
                 return new WhereSelectListIterator<TSource, TResult>(_source, _predicate, selector);
             }
@@ -388,8 +357,7 @@ namespace System.Linq
                 return false;
             }
 
-            // Once we have generic virtual support back, rename this back to Select and turn it into an override of the parent's abstract Select() method.
-            public IEnumerable<TResult2> SelectImpl<TResult2>(Func<TResult, TResult2> selector)
+            public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector)
             {
                 return new WhereSelectEnumerableIterator<TSource, TResult2>(_source, _predicate, CombineSelectors(_selector, selector));
             }
@@ -438,8 +406,7 @@ namespace System.Linq
                 return false;
             }
 
-            // Once we have generic virtual support back, rename this back to Select and turn it into an override of the parent's abstract Select() method.
-            public IEnumerable<TResult2> SelectImpl<TResult2>(Func<TResult, TResult2> selector)
+            public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector)
             {
                 return new WhereSelectArrayIterator<TSource, TResult2>(_source, _predicate, CombineSelectors(_selector, selector));
             }
@@ -508,8 +475,7 @@ namespace System.Linq
                 return false;
             }
 
-            // Once we have generic virtual support back, rename this back to Select and turn it into an override of the parent's abstract Select() method.
-            public IEnumerable<TResult2> SelectImpl<TResult2>(Func<TResult, TResult2> selector)
+            public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector)
             {
                 return new WhereSelectListIterator<TSource, TResult2>(_source, _predicate, CombineSelectors(_selector, selector));
             }
