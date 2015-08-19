@@ -132,7 +132,6 @@ set(SOURCES
   map/virtual.cpp
   memory/heap.cpp
   memory/local.cpp
-  misc/corefx.cpp
   misc/dbgmsg.cpp
   misc/environ.cpp
   misc/error.cpp
