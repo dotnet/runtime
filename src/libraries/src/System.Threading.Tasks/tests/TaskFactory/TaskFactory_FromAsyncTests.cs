@@ -39,7 +39,7 @@ namespace System.Threading.Tasks.Tests
             t = Task.Factory.FromAsync(fac.StartWrite, fac.EndWrite, stateObject);
             t.Wait();
             Assert.Equal(0, check.Length);
-            Assert.Equal(stateObject, ((IAsyncResult)t).AsyncState);
+            Assert.Same(stateObject, ((IAsyncResult)t).AsyncState);
 
             // Exercise 1-arg void option
             Task.Factory.FromAsync(
@@ -48,7 +48,7 @@ namespace System.Threading.Tasks.Tests
                 "1234", stateObject).Wait();
             check = fac.ToString();
             Assert.Equal("1234", check);
-            Assert.Equal(stateObject, ((IAsyncResult)t).AsyncState);
+            Assert.Same(stateObject, ((IAsyncResult)t).AsyncState);
 
             // Exercise 2-arg void option
             Task.Factory.FromAsync(
@@ -58,7 +58,7 @@ namespace System.Threading.Tasks.Tests
                 4, stateObject).Wait();
             check = fac.ToString();
             Assert.Equal("1234aaaa", check);
-            Assert.Equal(stateObject, ((IAsyncResult)t).AsyncState);
+            Assert.Same(stateObject, ((IAsyncResult)t).AsyncState);
 
             // Exercise 3-arg void option
             Task.Factory.FromAsync(
@@ -70,7 +70,7 @@ namespace System.Threading.Tasks.Tests
                 stateObject).Wait();
             check = fac.ToString();
             Assert.Equal("1234aaaazzzz", check);
-            Assert.Equal(stateObject, ((IAsyncResult)t).AsyncState);
+            Assert.Same(stateObject, ((IAsyncResult)t).AsyncState);
 
             // Read side, exercises getting return values from EndMethod
             char[] carray = new char[100];
@@ -86,7 +86,7 @@ namespace System.Threading.Tasks.Tests
             string s = f.Result;
             Assert.Equal("1234", s);
             Assert.Equal('1', carray[0]);
-            Assert.Equal(stateObject, ((IAsyncResult)f).AsyncState);
+            Assert.Same(stateObject, ((IAsyncResult)f).AsyncState);
 
             // Exercise 2-arg value option
             f = Task<string>.Factory.FromAsync(
@@ -98,7 +98,7 @@ namespace System.Threading.Tasks.Tests
             s = f.Result;
             Assert.Equal("aaaa", s);
             Assert.Equal('a', carray[0]);
-            Assert.Equal(stateObject, ((IAsyncResult)f).AsyncState);
+            Assert.Same(stateObject, ((IAsyncResult)f).AsyncState);
 
             // Exercise 1-arg value option
             f = Task<string>.Factory.FromAsync(
@@ -108,7 +108,7 @@ namespace System.Threading.Tasks.Tests
                 stateObject);
             s = f.Result;
             Assert.Equal("z", s);
-            Assert.Equal(stateObject, ((IAsyncResult)f).AsyncState);
+            Assert.Same(stateObject, ((IAsyncResult)f).AsyncState);
 
             // Exercise 0-arg value option
             f = Task<string>.Factory.FromAsync(
@@ -117,7 +117,7 @@ namespace System.Threading.Tasks.Tests
                 stateObject);
             s = f.Result;
             Assert.Equal("zzz", s);
-            Assert.Equal(stateObject, ((IAsyncResult)f).AsyncState);
+            Assert.Same(stateObject, ((IAsyncResult)f).AsyncState);
 
             //
             // Do all of the read tests again, except with Task.Factory.FromAsync<string>(), instead of Task<string>.Factory.FromAsync().
@@ -137,7 +137,7 @@ namespace System.Threading.Tasks.Tests
             s = f.Result;
             Assert.Equal("1234", s);
             Assert.Equal('1', carray[0]);
-            Assert.Equal(stateObject, ((IAsyncResult)f).AsyncState);
+            Assert.Same(stateObject, ((IAsyncResult)f).AsyncState);
 
             // one more with the creationOptions overload
             f = Task.Factory.FromAsync<int, char[], int, string>(
@@ -153,7 +153,7 @@ namespace System.Threading.Tasks.Tests
             s = f.Result;
             Assert.Equal("5678", s);
             Assert.Equal('5', carray[0]);
-            Assert.Equal(stateObject, ((IAsyncResult)f).AsyncState);
+            Assert.Same(stateObject, ((IAsyncResult)f).AsyncState);
 
             // Exercise 2-arg value option
             f = Task.Factory.FromAsync<int, char[], string>(
@@ -165,7 +165,7 @@ namespace System.Threading.Tasks.Tests
             s = f.Result;
             Assert.Equal("aaaa", s);
             Assert.Equal('a', carray[0]);
-            Assert.Equal(stateObject, ((IAsyncResult)f).AsyncState);
+            Assert.Same(stateObject, ((IAsyncResult)f).AsyncState);
 
             //one more with the creation option overload
             f = Task.Factory.FromAsync<int, char[], string>(
@@ -178,7 +178,7 @@ namespace System.Threading.Tasks.Tests
             s = f.Result;
             Assert.Equal("AAAA", s);
             Assert.Equal('A', carray[0]);
-            Assert.Equal(stateObject, ((IAsyncResult)f).AsyncState);
+            Assert.Same(stateObject, ((IAsyncResult)f).AsyncState);
 
             // Exercise 1-arg value option
             f = Task.Factory.FromAsync<int, string>(
@@ -188,7 +188,7 @@ namespace System.Threading.Tasks.Tests
                 stateObject);
             s = f.Result;
             Assert.Equal("z", s);
-            Assert.Equal(stateObject, ((IAsyncResult)f).AsyncState);
+            Assert.Same(stateObject, ((IAsyncResult)f).AsyncState);
 
             // one more with creation option overload
             f = Task.Factory.FromAsync<int, string>(
@@ -199,7 +199,7 @@ namespace System.Threading.Tasks.Tests
              TaskCreationOptions.None);
             s = f.Result;
             Assert.Equal("z", s);
-            Assert.Equal(stateObject, ((IAsyncResult)f).AsyncState);
+            Assert.Same(stateObject, ((IAsyncResult)f).AsyncState);
 
             // Exercise 0-arg value option
             f = Task.Factory.FromAsync<string>(
@@ -208,7 +208,7 @@ namespace System.Threading.Tasks.Tests
                 stateObject);
             s = f.Result;
             Assert.Equal("zz", s);
-            Assert.Equal(stateObject, ((IAsyncResult)f).AsyncState);
+            Assert.Same(stateObject, ((IAsyncResult)f).AsyncState);
 
             //one more with Creation options overload
             f = Task.Factory.FromAsync<string>(
@@ -218,7 +218,7 @@ namespace System.Threading.Tasks.Tests
                TaskCreationOptions.None);
             s = f.Result;
             Assert.Equal(string.Empty, s);
-            Assert.Equal(stateObject, ((IAsyncResult)f).AsyncState);
+            Assert.Same(stateObject, ((IAsyncResult)f).AsyncState);
 
             // Inject a few more characters into the buffer
             fac.EndWrite(fac.StartWrite("0123456789", null, null));
