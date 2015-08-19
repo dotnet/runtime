@@ -1478,7 +1478,7 @@ namespace System.Linq
 
         private static IEnumerable<int> RangeIterator(int start, int count)
         {
-            for (int i = 0; i < count; i++) yield return start + i;
+            for (int end = start + count; start != end; start++) yield return start;
         }
 
         public static IEnumerable<TResult> Repeat<TResult>(TResult element, int count)
