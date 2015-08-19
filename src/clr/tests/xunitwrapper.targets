@@ -4,20 +4,20 @@
      to the core_root directory -->
 
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Target Name="ResolveNuGetPackages" Condition="'$(ResolveNuGetPackages)'=='true'">
-    
-    <ResolveNuGetPackageAssets Condition="Exists($(ProjectLockJson))"
-                               Architecture="$(PlatformTarget)"
-                               Configuration="$(Configuration)"
-                               Language="$(Language)"
-                               PackageRoot="$(PackagesDir)"
-                               ProjectLockFile="$(ProjectLockJson)"
-                               TargetFrameworkMonikers="$(NugetTargetFrameworkMoniker)"
-                               TargetPlatformMonikers="$(TargetPlatformMoniker)">
+  <Target Name="ResolveNuGetPackages">
+
+    <PrereleaseResolveNuGetPackageAssets Condition="Exists($(ProjectLockJson))"
+                                         AllowFallbackOnTargetSelection="true"
+                                         IncludeFrameworkReferences="false"
+                                         NuGetPackagesDirectory="$(PackagesDir)"
+                                         RuntimeIdentifier="dotnet"
+                                         ProjectLanguage="$(Language)"
+                                         ProjectLockFile="$(ProjectLockJson)"
+                                         TargetMonikers="$(NugetTargetFrameworkMoniker)">
       <Output TaskParameter="ResolvedAnalyzers" ItemName="Analyzer" />
       <Output TaskParameter="ResolvedReferences" ItemName="Reference" />
       <Output TaskParameter="ResolvedCopyLocalItems" ItemName="CopyLocal" />
-    </ResolveNuGetPackageAssets>
+    </PrereleaseResolveNuGetPackageAssets>
 
     <!-- We may have an indirect package reference that we want to replace with a project reference -->
     <ItemGroup>
