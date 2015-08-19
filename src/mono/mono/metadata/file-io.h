@@ -238,9 +238,6 @@ ves_icall_System_IO_MonoIO_get_PathSeparator (void);
 extern MonoArray *
 ves_icall_System_IO_MonoIO_get_InvalidPathChars (void);
 
-extern gint32
-ves_icall_System_IO_MonoIO_GetTempPath (MonoString **mono_name);
-
 extern void ves_icall_System_IO_MonoIO_Lock (HANDLE handle, gint64 position,
 					     gint64 length, gint32 *error);
 extern void ves_icall_System_IO_MonoIO_Unlock (HANDLE handle, gint64 position,

@@ -3420,48 +3420,6 @@ gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
 	return(TRUE);
 }
 
-guint32 GetTempPath (guint32 len, gunichar2 *buf)
-{
-	gchar *tmpdir=g_strdup (g_get_tmp_dir ());
-	gunichar2 *tmpdir16=NULL;
-	glong dirlen;
-	gsize bytes;
-	guint32 ret;
-	
-	if(tmpdir[strlen (tmpdir)]!='/') {
-		g_free (tmpdir);
-		tmpdir=g_strdup_printf ("%s/", g_get_tmp_dir ());
-	}
-	
-	tmpdir16=mono_unicode_from_external (tmpdir, &bytes);
-	if(tmpdir16==NULL) {
-		g_free (tmpdir);
-		return(0);
-	} else {
-		dirlen=(bytes/2);
-		
-		if(dirlen+1>len) {
-			DEBUG ("%s: Size %d smaller than needed (%ld)",
-				   __func__, len, dirlen+1);
-		
-			ret=dirlen+1;
-		} else {
-			/* Add the terminator */
-			memset (buf, '\0', bytes+2);
-			memcpy (buf, tmpdir16, bytes);
-		
-			ret=dirlen;
-		}
-	}
-
-	if(tmpdir16!=NULL) {
-		g_free (tmpdir16);
-	}
-	g_free (tmpdir);
-	
-	return(ret);
-}
-
 #ifdef HAVE_GETFSSTAT
 /* Darwin has getfsstat */
 gint32 GetLogicalDriveStrings (guint32 len, gunichar2 *buf)

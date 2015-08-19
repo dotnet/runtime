@@ -338,7 +338,6 @@ ICALL(MONOIO_10, "GetFileSystemEntries", ves_icall_System_IO_MonoIO_GetFileSyste
 ICALL(MONOIO_11, "GetFileType(intptr,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_GetFileType)
 ICALL(MONOIO_12, "GetLength(intptr,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_GetLength)
 #ifndef PLATFORM_RO_FS
-ICALL(MONOIO_13, "GetTempPath(string&)", ves_icall_System_IO_MonoIO_GetTempPath)
 ICALL(MONOIO_14, "Lock(intptr,long,long,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_Lock)
 ICALL(MONOIO_15, "MoveFile(string,string,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_MoveFile)
 #endif /* !PLATFORM_RO_FS */

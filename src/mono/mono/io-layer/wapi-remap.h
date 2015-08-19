@@ -50,7 +50,6 @@
 #define GetCurrentDirectory wapi_GetCurrentDirectory 
 #define SetCurrentDirectory wapi_SetCurrentDirectory 
 #define CreatePipe wapi_CreatePipe 
-#define GetTempPath wapi_GetTempPath 
 #define GetLogicalDriveStrings wapi_GetLogicalDriveStrings 
 #define GetDiskFreeSpaceEx wapi_GetDiskFreeSpaceEx
 #define GetDriveType wapi_GetDriveType
