@@ -6,7 +6,7 @@ using System.Threading;
 
 namespace System.IO.Pipes
 {
-    internal sealed class PipeIOCompletionSource : PipeCompletionSource<int>
+    internal sealed class ReadWriteCompletionSource : PipeCompletionSource<int>
     {
         private readonly bool _isWrite;
         private readonly PipeStream _pipeStream;
@@ -14,7 +14,7 @@ namespace System.IO.Pipes
         private bool _isMessageComplete;
         private int _numBytes; // number of buffer read OR written
 
-        internal PipeIOCompletionSource(PipeStream stream, byte[] buffer, CancellationToken cancellationToken, bool isWrite)
+        internal ReadWriteCompletionSource(PipeStream stream, byte[] buffer, CancellationToken cancellationToken, bool isWrite)
             : base(stream._threadPoolBinding, cancellationToken, pinData: buffer)
         {
             Debug.Assert(buffer != null, "buffer is null");
@@ -22,7 +22,6 @@ namespace System.IO.Pipes
             _pipeStream = stream;
             _isWrite = isWrite;
             _isMessageComplete = true;
-            _numBytes = 0;
         }
 
         internal override void SetCompletedSynchronously()
@@ -66,9 +65,9 @@ namespace System.IO.Pipes
             base.AsyncCallback(errorCode, numBytes);
         }
 
-        protected override void HandleError()
+        protected override void HandleError(int errorCode)
         {
-            TrySetException(_pipeStream.WinIOError(ErrorCode));
+            TrySetException(_pipeStream.WinIOError(errorCode));
         }
     }
 }
