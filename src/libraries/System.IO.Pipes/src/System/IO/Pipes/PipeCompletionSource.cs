@@ -21,6 +21,7 @@ namespace System.IO.Pipes
         private readonly ThreadPoolBoundHandle _threadPoolBinding;
 
         private CancellationTokenRegistration _cancellationRegistration;
+        private int _errorCode;
         private NativeOverlapped* _overlapped;
         private int _state;
 
@@ -52,8 +53,6 @@ namespace System.IO.Pipes
             [SecurityCritical]get { return _overlapped; }
         }
 
-        protected int ErrorCode { get; private set; }
-
         internal void RegisterForCancellation()
         {
 #if DEBUG
@@ -83,7 +82,7 @@ namespace System.IO.Pipes
 
                 // If we have the result state of completed IO call CompleteCallback(result).
                 // Otherwise IO not completed.
-                if (state == ResultSuccess || state == ResultError)
+                if ((state & (ResultSuccess | ResultError)) != 0)
                 {
                     CompleteCallback(state);
                 }
@@ -107,9 +106,16 @@ namespace System.IO.Pipes
 
         protected virtual void AsyncCallback(uint errorCode, uint numBytes)
         {
-            ErrorCode = (int)errorCode;
-
-            int resultState = errorCode == 0 ? ResultSuccess : ResultError;
+            int resultState;
+            if (errorCode == 0)
+            {
+                resultState = ResultSuccess;
+            }
+            else
+            {
+                resultState = ResultError;
+                _errorCode = (int)errorCode;
+            }
 
             // Store the result so that other threads can observe it
             // and if no other thread is registering cancellation, continue.
@@ -125,7 +131,7 @@ namespace System.IO.Pipes
             }
         }
 
-        protected abstract void HandleError();
+        protected abstract void HandleError(int errorCode);
 
         private void Cancel()
         {
@@ -133,16 +139,13 @@ namespace System.IO.Pipes
             NativeOverlapped* overlapped = Overlapped;
 
             // If the handle is still valid, attempt to cancel the IO
-            if (!handle.IsInvalid)
+            if (!handle.IsInvalid && !Interop.mincore.CancelIoEx(handle, overlapped))
             {
-                if (!Interop.mincore.CancelIoEx(handle, overlapped))
-                {
-                    // This case should not have any consequences although
-                    // it will be easier to debug if there exists any special case
-                    // we are not aware of.
-                    int errorCode = Marshal.GetLastWin32Error();
-                    Debug.WriteLine("CancelIoEx finished with error code {0}.", errorCode);
-                }
+                // This case should not have any consequences although
+                // it will be easier to debug if there exists any special case
+                // we are not aware of.
+                int errorCode = Marshal.GetLastWin32Error();
+                Debug.WriteLine("CancelIoEx finished with error code {0}.", errorCode);
             }
         }
 
@@ -154,7 +157,7 @@ namespace System.IO.Pipes
 
             if (resultState == ResultError)
             {
-                if (ErrorCode == Interop.mincore.Errors.ERROR_OPERATION_ABORTED)
+                if (_errorCode == Interop.mincore.Errors.ERROR_OPERATION_ABORTED)
                 {
                     if (_cancellationToken.CanBeCanceled && !_cancellationToken.IsCancellationRequested)
                     {
@@ -169,7 +172,7 @@ namespace System.IO.Pipes
                 }
                 else
                 {
-                    HandleError();
+                    HandleError(_errorCode);
                 }
             }
             else

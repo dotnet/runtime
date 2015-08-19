@@ -33,9 +33,9 @@ namespace System.IO.Pipes
             base.AsyncCallback(errorCode, numBytes);
         }
 
-        protected override void HandleError()
+        protected override void HandleError(int errorCode)
         {
-            TrySetException(Win32Marshal.GetExceptionForWin32Error(ErrorCode));
+            TrySetException(Win32Marshal.GetExceptionForWin32Error(errorCode));
         }
     }
 
