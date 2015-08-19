@@ -8361,6 +8361,10 @@ void PALAPI HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext)
 
 bool Thread::InjectGcSuspension()
 {
+    static ConfigDWORD injectionEnabled;
+    if (injectionEnabled.val(CLRConfig::INTERNAL_ThreadSuspendInjection) == 0)
+        return false;
+
     Volatile<HANDLE> hThread;
     hThread = GetThreadHandle();
     if (hThread != INVALID_HANDLE_VALUE && hThread != SWITCHOUT_HANDLE_VALUE)
