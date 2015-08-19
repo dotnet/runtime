@@ -271,21 +271,27 @@ public class GCTests
     }
 
     [Fact]
-    public static void GetTotalMemoryTest_ForceCollection()
+    public static void GetTotalMemoryTest_NoForceCollection()
     {
-        long garbageSize = MakeSomeGarbage(1024 * 1024);
-        long garbageCollected = GC.GetTotalMemory(false) - GC.GetTotalMemory(true);
-        Assert.True(garbageCollected >= garbageSize - 10000); // 10000 bytes threshold to stabilize the test
+        GC.Collect();
+
+        byte[] bytes = new byte[50000];
+        int genBefore = GC.GetGeneration(bytes);
+
+        Assert.True(GC.GetTotalMemory(false) >= bytes.Length);
+        Assert.True(GC.GetGeneration(bytes) == genBefore);
     }
 
     [Fact]
-    public static void GetTotalMemoryTest_NoForceCollection()
+    public static void GetTotalMemoryTest_ForceCollection()
     {
-        long garbageSize = MakeSomeGarbage(1024 * 1024);
-        long before = GC.GetTotalMemory(false);
         GC.Collect();
-        long garbageCollected = before - GC.GetTotalMemory(false);
-        Assert.True(garbageCollected >= garbageSize - 10000); // 10000 bytes threshold to stabilize the test
+
+        byte[] bytes = new byte[50000];
+        int genBeforeGC = GC.GetGeneration(bytes);
+
+        Assert.True(GC.GetTotalMemory(true) >= bytes.Length);
+        Assert.True(GC.GetGeneration(bytes) > genBeforeGC);
     }
 
     [Fact]
@@ -299,12 +305,5 @@ public class GCTests
             Assert.Equal(i, GC.GetGeneration(obj));
             GC.Collect();
         }
-    }
-
-    private static long MakeSomeGarbage(int size)
-    {
-        byte[] bytes = new byte[size];
-        GC.Collect();
-        return bytes.Length;
     }
 }
