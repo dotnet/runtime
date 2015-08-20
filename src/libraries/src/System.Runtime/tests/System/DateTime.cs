@@ -2,7 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 public static unsafe class DateTimeTests
@@ -289,6 +292,46 @@ public static unsafe class DateTimeTests
         Assert.True(b);
         String actual = in_1.ToString("g");
         Assert.Equal(s, actual);
+    }
+
+    [Fact]
+    public static void TestGetDateTimeFormats()
+    {        
+        char[] allStandardFormats =
+        {
+            'd', 'D', 'f', 'F', 'g', 'G',
+            'm', 'M', 'o', 'O', 'r', 'R',
+            's', 't', 'T', 'u', 'U', 'y', 'Y',
+        };
+
+        DateTime july28 = new DateTime(2009, 7, 28, 5, 23, 15);
+        List<string> july28Formats = new List<string>();
+
+        foreach (char format in allStandardFormats)
+        {
+            string[] dates = july28.GetDateTimeFormats(format);
+
+            Assert.True(dates.Length > 0);
+
+            DateTime parsedDate;
+            Assert.True(DateTime.TryParseExact(dates[0], format.ToString(), CultureInfo.CurrentCulture, DateTimeStyles.None, out parsedDate));
+
+            july28Formats.AddRange(dates);
+        }
+
+        List<string> actualJuly28Formats = july28.GetDateTimeFormats().ToList();
+        Assert.Equal(july28Formats.OrderBy(t => t), actualJuly28Formats.OrderBy(t => t));
+
+        actualJuly28Formats = july28.GetDateTimeFormats(CultureInfo.CurrentCulture).ToList();
+        Assert.Equal(july28Formats.OrderBy(t => t), actualJuly28Formats.OrderBy(t => t));
+    }
+
+    [Fact]
+    public static void TestGetDateTimeFormats_FormatSpecifier_InvalidFormat()
+    {
+        DateTime july28 = new DateTime(2009, 7, 28, 5, 23, 15);
+
+        Assert.Throws<FormatException>(() => july28.GetDateTimeFormats('x'));
     }
 
     internal static void ValidateYearMonthDay(DateTime dt, int year, int month, int day)

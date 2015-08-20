@@ -94,6 +94,7 @@ public static unsafe class ArrayTests
         Assert.Equal(a.Rank, 1);
         IList il = (IList)a;
         Assert.Equal(il.Count, 3);
+        Assert.Equal(il.SyncRoot, a);
         Assert.False(il.IsSynchronized);
         Assert.True(il.IsFixedSize);
         Assert.False(il.IsReadOnly);
@@ -222,78 +223,85 @@ public static unsafe class ArrayTests
         Assert.Throws<RankException>(() => il4.IndexOf(0));
     }
 
-    [Fact]
-    public static void TestBinarySearch()
+    public static IEnumerable<object[]> BinarySearchTestData
     {
-        //@todo: Must pass in a non-null comparer for now (due to incomplete support in underlying Compare class)
-        //
-        IComparer comparer = new IntegerComparer();
-        IComparer<int> icomparer = new IntegerComparer();
-        int idx;
-        int[] ia = { 1, 3, 6, 6, 8, 10, 12, 16 };
-        idx = Array.BinarySearch((Array)ia, 8, comparer);
-        Assert.Equal(idx, 4);
+        get
+        {
+            int[] intArray = { 1, 3, 6, 6, 8, 10, 12, 16 };
+            IComparer intComparer = new IntegerComparer();
+            IComparer<int> intGenericComparer = new IntegerComparer();
 
-        //Return value semantics: Quoted from MSDN without comment.
-        //
-        //The index of the specified value in the specified array, 
-        //if value is found. If value is not found and value is 
-        //less than one or more elements in array, a negative 
-        //number which is the bitwise complement of the index of 
-        //the first element that is larger than value. 
-        //If value is not found and value is greater than any 
-        //of the elements in array, a negative number which is the bitwise complement of (the index of the last element plus 1).
-        idx = Array.BinarySearch((Array)ia, 99, comparer);
-        Assert.Equal(idx, ~(ia.Length));
+            string[] strArray = { null, "aa", "bb", "bb", "cc", "dd", "ee" };
+            IComparer strComparer = new StringComparer();
+            IComparer<string> strGenericComparer = new StringComparer();
 
-        idx = Array.BinarySearch<int>(ia, 0, 8, 99, icomparer);
-        Assert.Equal(idx, ~(ia.Length));
+            return new[]
+            {
+               new object[] { intArray, 8, intComparer, intGenericComparer, new Func<int, bool>(i => i == 4) },
+               new object[] { intArray, 99, intComparer, intGenericComparer, new Func<int, bool>(i => i == ~(intArray.Length))  },
+               new object[] { intArray, 6, intComparer, intGenericComparer, new Func<int, bool>(i => i == 2 || i == 3)  },
+               new object[] { strArray, "bb", strComparer, strGenericComparer, new Func<int, bool>(i => i == 2 || i == 3)  },
+               new object[] { strArray, null, strComparer, null, new Func<int, bool>(i => i == 0)  },
+           };
+        }
+    }
 
-        idx = Array.BinarySearch((Array)ia, 6, comparer);
-        Assert.True(idx == 2 || idx == 3); // Duplicates are allowed but no promises on which one 
+    [Theory, MemberData("BinarySearchTestData")]
+    public static void TestBinarySearch<T>(T[] array, T value, IComparer comparer, IComparer<T> genericComparer, Func<int, bool> verifier)
+    {
+        int idx = Array.BinarySearch((Array)array, value, comparer);
+        Assert.True(verifier(idx));
 
-        idx = Array.BinarySearch<int>(ia, 0, 8, 6, icomparer);
-        Assert.True(idx == 2 || idx == 3); // Duplicates are allowed but no promises on which one 
+        idx = Array.BinarySearch<T>(array, value, genericComparer);
+        Assert.True(verifier(idx));
 
-        idx = Array.BinarySearch((Array)ia, 6, comparer);
-        Assert.True(idx == 2 || idx == 3); // Duplicates are allowed but no promises on which one 
+        idx = Array.BinarySearch((Array)array, value);
+        Assert.True(verifier(idx));
 
-        idx = Array.BinarySearch<int>(ia, 0, 8, 6, icomparer);
-        Assert.True(idx == 2 || idx == 3); // Duplicates are allowed but no promises on which one
+        idx = Array.BinarySearch<T>(array, value);
+        Assert.True(verifier(idx));
+    }
 
-        comparer = new StringComparer();
-        IComparer<String> scomparer = new StringComparer();
+    public static IEnumerable<object[]> BinarySearchTestDataInRange
+    {
+        get
+        {
+            int[] intArray = { 1, 3, 6, 6, 8, 10, 12, 16 };
+            IComparer intComparer = new IntegerComparer();
+            IComparer<int> intGenericComparer = new IntegerComparer();
 
-        String[] sa = { null, "aa", "bb", "bb", "cc", "dd", "ee" };
-        idx = Array.BinarySearch((Array)sa, "bb", comparer);
-        Assert.Equal(idx, 3);
+            string[] strArray = { null, "aa", "bb", "bb", "cc", "dd", "ee" };
+            IComparer strComparer = new StringComparer();
+            IComparer<string> strGenericComparer = new StringComparer();
 
-        idx = Array.BinarySearch<String>(sa, 0, sa.Length, "bb", scomparer);
-        Assert.Equal(idx, 3);
+            return new[]
+            {
+               new object[] { intArray, 0, 8, 99, intComparer, intGenericComparer, new Func<int, bool>(i => i == ~(intArray.Length))  },
+               new object[] { intArray, 0, 8, 6, intComparer, intGenericComparer, new Func<int, bool>(i => i == 2 || i == 3)  },
+               new object[] { intArray, 1, 5, 16, intComparer, intGenericComparer, new Func<int, bool>(i => i == -7)  },
+               new object[] { strArray, 0, strArray.Length, "bb", strComparer, strGenericComparer, new Func<int, bool>(i => i == 2 || i == 3)  },
+               new object[] { strArray, 3, 4, "bb", strComparer, strGenericComparer, new Func<int, bool>(i => i == 3)  },
+               new object[] { strArray, 4, 3, "bb", strComparer, strGenericComparer, new Func<int, bool>(i => i == -5)  },
+               new object[] { strArray, 4, 0, "bb", strComparer, strGenericComparer, new Func<int, bool>(i => i == -5)  },
+               new object[] { strArray, 0, 7, null, strComparer, null, new Func<int, bool>(i => i == 0)  },
+           };
+        }
+    }
 
-        idx = Array.BinarySearch((Array)sa, 3, 4, "bb", comparer);
-        Assert.Equal(idx, 3);
+    [Theory, MemberData("BinarySearchTestDataInRange")]
+    public static void TestBinarySearchInRange<T>(T[] array, int index, int length, T value, IComparer comparer, IComparer<T> genericComparer, Func<int, bool> verifier)
+    {
+        int idx = Array.BinarySearch((Array)array, index, length, value, comparer);
+        Assert.True(verifier(idx));
 
-        idx = Array.BinarySearch<String>(sa, 3, 4, "bb", scomparer);
-        Assert.Equal(idx, 3);
+        idx = Array.BinarySearch<T>(array, index, length, value, genericComparer);
+        Assert.True(verifier(idx));
 
-        idx = Array.BinarySearch((Array)sa, 4, 3, "bb", comparer);
-        Assert.Equal(idx, -5);
+        idx = Array.BinarySearch((Array)array, index, length, value);
+        Assert.True(verifier(idx));
 
-        idx = Array.BinarySearch<String>(sa, 4, 3, "bb", scomparer);
-        Assert.Equal(idx, -5);
-
-        idx = Array.BinarySearch((Array)sa, 4, 0, "bb", comparer);
-        Assert.Equal(idx, -5);
-
-        idx = Array.BinarySearch<String>(sa, 4, 0, "bb", scomparer);
-        Assert.Equal(idx, -5);
-
-        idx = Array.BinarySearch((Array)sa, 0, 7, null, comparer);
-        Assert.Equal(idx, 0);
-
-        idx = Array.BinarySearch<String>(sa, 0, 7, null, scomparer);
-        Assert.Equal(idx, 0);
+        idx = Array.BinarySearch<T>(array, index, length, value);
+        Assert.True(verifier(idx));
     }
 
     [Fact]

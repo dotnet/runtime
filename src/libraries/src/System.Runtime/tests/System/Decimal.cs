@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Xunit;
 
@@ -751,10 +752,41 @@ public static class DecimalTests
         Assert.Equal(Int32.MinValue, Decimal.ToInt32((Decimal)Int32.MinValue));
     }
 
-    [Fact]
-    public static void TestGetBits()
+    public static IEnumerable<object[]> DecimalTestData
     {
-        // Int32[] Decimal.GetBits(Decimal)
+        get
+        {
+            return new[]
+            {
+                new object[] {1M, new int[] { 0x00000001, 0x00000000, 0x00000000, 0x00000000 } },
+                new object[] {100000000000000M, new int[] { 0x107A4000, 0x00005AF3, 0x00000000, 0x00000000 } },
+                new object[] {100000000000000.00000000000000M, new int[] { 0x10000000, 0x3E250261, 0x204FCE5E, 0x000E0000 } },
+                new object[] {1.0000000000000000000000000000M, new int[] { 0x10000000, 0x3E250261, 0x204FCE5E, 0x001C0000 } },
+                new object[] {123456789M, new int[] { 0x075BCD15, 0x00000000, 0x00000000, 0x00000000 } },
+                new object[] {0.123456789M, new int[] { 0x075BCD15, 0x00000000, 0x00000000, 0x00090000 } },
+                new object[] {0.000000000123456789M, new int[] { 0x075BCD15, 0x00000000, 0x00000000, 0x00120000 } },
+                new object[] {0.000000000000000000123456789M, new int[] { 0x075BCD15, 0x00000000, 0x00000000, 0x001B0000 } },
+                new object[] {4294967295M, new int[] { unchecked((int)0xFFFFFFFF), 0x00000000, 0x00000000, 0x00000000 } },
+                new object[] {18446744073709551615M, new int[] { unchecked((int)0xFFFFFFFF), unchecked((int)0xFFFFFFFF), 0x00000000, 0x00000000 } },
+                new object[] {Decimal.MaxValue, new int[] { unchecked((int)0xFFFFFFFF), unchecked((int)0xFFFFFFFF), unchecked((int)0xFFFFFFFF), 0x00000000 } },
+                new object[] {Decimal.MinValue, new int[] { unchecked((int)0xFFFFFFFF), unchecked((int)0xFFFFFFFF), unchecked((int)0xFFFFFFFF), unchecked((int)0x80000000) } },
+                new object[] {-7.9228162514264337593543950335M, new int[] { unchecked((int)0xFFFFFFFF), unchecked((int)0xFFFFFFFF), unchecked((int)0xFFFFFFFF), unchecked((int)0x801C0000) } }
+            };
+        }
+    }
+
+    [Theory, MemberData("DecimalTestData")]
+    public static void TestGetBits(Decimal input, int[] expectedBits)
+    {
+        int[] actualsBits = Decimal.GetBits(input);
+
+        Assert.Equal(expectedBits, actualsBits);
+
+        bool sign = (actualsBits[3] & 0x80000000) != 0;
+        byte scale = (byte)((actualsBits[3] >> 16) & 0x7F);
+        Decimal newValue = new Decimal(actualsBits[0], actualsBits[1], actualsBits[2], sign, scale);
+
+        Assert.Equal(input, newValue);
     }
 
     [Fact]
