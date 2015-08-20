@@ -24,7 +24,6 @@
     "System.Console": "4.0.0-beta-*",
     "Microsoft.Win32.Primitives": "4.0.0",
     "Microsoft.Win32.Registry": "4.0.0-beta-*",
-    "System.Security.SecureString": "4.0.0-beta-*"
   },
   "frameworks": {
     "dnxcore50": {}

@@ -245,7 +245,7 @@ namespace System.Diagnostics.ProcessTests
 
             p.StartInfo.LoadUserProfile = true;
             p.StartInfo.UserName = username;
-            p.StartInfo.Password = GetSecureString(password);
+            p.StartInfo.PasswordInClearText = password;
 
             SafeProcessHandle handle = null;
             try
@@ -286,7 +286,7 @@ namespace System.Diagnostics.ProcessTests
         {
             Assert.Throws<PlatformNotSupportedException>(() => _process.StartInfo.Domain);
             Assert.Throws<PlatformNotSupportedException>(() => _process.StartInfo.UserName);
-            Assert.Throws<PlatformNotSupportedException>(() => _process.StartInfo.Password);
+            Assert.Throws<PlatformNotSupportedException>(() => _process.StartInfo.PasswordInClearText);
             Assert.Throws<PlatformNotSupportedException>(() => _process.StartInfo.LoadUserProfile);
         }
 
@@ -311,12 +311,6 @@ namespace System.Diagnostics.ProcessTests
 
                 Assert.True(p.WaitForExit(WaitInMS));
             }
-        }
-
-        private unsafe SecureString GetSecureString(string password)
-        {
-            fixed (char* p = password)
-                return new SecureString(p, password.Length);
         }
 
         private static List<string> GetNamesOfUserProfiles()

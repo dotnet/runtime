@@ -9,7 +9,7 @@ namespace System.Diagnostics
     {
         private string _userName;
         private string _domain;
-        private SecureString _password;
+        private string _passwordInClearText;
         private bool _loadUserProfile;
 
         private const bool CaseSensitiveEnvironmentVariables = false;
@@ -20,10 +20,10 @@ namespace System.Diagnostics
             set { _userName = value; }
         }
 
-        public SecureString Password
+        public string PasswordInClearText
         {
-            get { return _password; }
-            set { _password = value; }
+            get { return _passwordInClearText; }
+            set { _passwordInClearText = value; }
         }
 
         public string Domain

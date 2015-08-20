@@ -242,36 +242,6 @@
           "lib/DNXCore50/System.Runtime.InteropServices.dll": {}
         }
       },
-      "System.Security.Cryptography.Primitives/4.0.0-beta-23213": {
-        "dependencies": {
-          "System.Runtime": "4.0.20",
-          "System.Resources.ResourceManager": "4.0.0",
-          "System.Globalization": "4.0.0",
-          "System.IO": "4.0.10"
-        },
-        "compile": {
-          "ref/dotnet/System.Security.Cryptography.Primitives.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Security.Cryptography.Primitives.dll": {}
-        }
-      },
-      "System.Security.SecureString/4.0.0-beta-23213": {
-        "dependencies": {
-          "System.Runtime": "4.0.20",
-          "System.Runtime.InteropServices": "4.0.20",
-          "System.Resources.ResourceManager": "4.0.0",
-          "System.Runtime.Handles": "4.0.0",
-          "System.Security.Cryptography.Primitives": "4.0.0-beta-23213",
-          "System.Threading": "4.0.10"
-        },
-        "compile": {
-          "ref/dotnet/System.Security.SecureString.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Security.SecureString.dll": {}
-        }
-      },
       "System.Text.Encoding/4.0.10": {
         "dependencies": {
           "System.Runtime": "4.0.0"
@@ -965,58 +935,6 @@
         "runtimes/win8-aot/lib/netcore50/System.Runtime.InteropServices.dll"
       ]
     },
-    "System.Security.Cryptography.Primitives/4.0.0-beta-23213": {
-      "serviceable": true,
-      "sha512": "/ynAVo8PbJEm6EoB6HJanBJDMbgzraf1/lZpPNEPNXr9rv3tP3KIrBtFm+zQ5n2rMJkvNhpeMcFsRUPCJ9Wv7Q==",
-      "files": [
-        "System.Security.Cryptography.Primitives.4.0.0-beta-23213.nupkg",
-        "System.Security.Cryptography.Primitives.4.0.0-beta-23213.nupkg.sha512",
-        "System.Security.Cryptography.Primitives.nuspec",
-        "lib/DNXCore50/System.Security.Cryptography.Primitives.dll",
-        "lib/MonoAndroid10/_._",
-        "lib/MonoTouch10/_._",
-        "lib/net46/System.Security.Cryptography.Primitives.dll",
-        "lib/xamarinios10/_._",
-        "lib/xamarinmac20/_._",
-        "ref/dotnet/System.Security.Cryptography.Primitives.dll",
-        "ref/MonoAndroid10/_._",
-        "ref/MonoTouch10/_._",
-        "ref/net46/System.Security.Cryptography.Primitives.dll",
-        "ref/xamarinios10/_._",
-        "ref/xamarinmac20/_._"
-      ]
-    },
-    "System.Security.SecureString/4.0.0-beta-23213": {
-      "serviceable": true,
-      "sha512": "CFqRzPegvjf6SLmU+/7iay8+NZ0PrKuuHiZNCTDKW2z7UIFVG8PnU6mks8+GyQoEuK4ANZg9efboMKwTDM93sw==",
-      "files": [
-        "System.Security.SecureString.4.0.0-beta-23213.nupkg",
-        "System.Security.SecureString.4.0.0-beta-23213.nupkg.sha512",
-        "System.Security.SecureString.nuspec",
-        "lib/DNXCore50/System.Security.SecureString.dll",
-        "lib/MonoAndroid10/_._",
-        "lib/MonoTouch10/_._",
-        "lib/net46/System.Security.SecureString.dll",
-        "lib/xamarinios10/_._",
-        "lib/xamarinmac20/_._",
-        "ref/dotnet/System.Security.SecureString.dll",
-        "ref/dotnet/System.Security.SecureString.xml",
-        "ref/dotnet/de/System.Security.SecureString.xml",
-        "ref/dotnet/es/System.Security.SecureString.xml",
-        "ref/dotnet/fr/System.Security.SecureString.xml",
-        "ref/dotnet/it/System.Security.SecureString.xml",
-        "ref/dotnet/ja/System.Security.SecureString.xml",
-        "ref/dotnet/ko/System.Security.SecureString.xml",
-        "ref/dotnet/ru/System.Security.SecureString.xml",
-        "ref/dotnet/zh-hans/System.Security.SecureString.xml",
-        "ref/dotnet/zh-hant/System.Security.SecureString.xml",
-        "ref/MonoAndroid10/_._",
-        "ref/MonoTouch10/_._",
-        "ref/net46/System.Security.SecureString.dll",
-        "ref/xamarinios10/_._",
-        "ref/xamarinmac20/_._"
-      ]
-    },
     "System.Text.Encoding/4.0.10": {
       "sha512": "fNlSFgy4OuDlJrP9SFFxMlaLazq6ipv15sU5TiEgg9UCVnA/OgoVUfymFp4AOk1jOkW5SVxWbeeIUptcM+m/Vw==",
       "files": [
@@ -1286,8 +1204,7 @@
       "System.Collections >= 4.0.10",
       "System.Console >= 4.0.0-beta-*",
       "Microsoft.Win32.Primitives >= 4.0.0",
-      "Microsoft.Win32.Registry >= 4.0.0-beta-*",
-      "System.Security.SecureString >= 4.0.0-beta-*"
+      "Microsoft.Win32.Registry >= 4.0.0-beta-*"
     ],
     "DNXCore,Version=v5.0": []
   }
