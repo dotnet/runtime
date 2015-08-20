@@ -602,6 +602,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_COUNT,
 };
 
+#define CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE 0x40000000
+
 //This describes the signature for a helper method.
 enum CorInfoHelpSig
 {
@@ -1111,6 +1113,7 @@ enum CORINFO_ACCESS_FLAGS
     CORINFO_ACCESS_SET        = 0x0200, // Field set (stfld)
     CORINFO_ACCESS_ADDRESS    = 0x0400, // Field address (ldflda)
     CORINFO_ACCESS_INIT_ARRAY = 0x0800, // Field use for InitializeArray
+    CORINFO_ACCESS_ATYPICAL_CALLSITE = 0x4000, // Atypical callsite that cannot be disassembled by delay loading helper
     CORINFO_ACCESS_INLINECHECK= 0x8000, // Return fieldFlags and fieldAccessor only. Used by JIT64 during inlining.
 };
 
