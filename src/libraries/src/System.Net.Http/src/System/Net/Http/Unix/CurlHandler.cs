@@ -39,7 +39,6 @@ namespace System.Net.Http
         private const string EncodingNameDeflate = "deflate";
         private readonly static string[] AuthenticationSchemes = { "Negotiate", "Digest", "Basic" }; // the order in which libcurl goes over authentication schemes
         private readonly static ulong[]  AuthSchemePriorityOrder = { CURLAUTH.Negotiate, CURLAUTH.Digest, CURLAUTH.Basic };
-        private static readonly string[] s_headerDelimiters = new string[] { "\r\n" };
 
         private const int s_requestBufferSize = 16384; // Default used by libcurl
         private const string NoTransferEncoding = HttpKnownHeaderNames.TransferEncoding + ":";
@@ -837,22 +836,22 @@ namespace System.Net.Http
                 contentHeaders = request.Content.Headers;
             }
 
-            string[] allHeaders = HeaderUtilities.DumpHeaders(request.Headers, contentHeaders)
-                .Split(s_headerDelimiters, StringSplitOptions.RemoveEmptyEntries);
             bool gotReference = false;
             try
             {
                 retVal.DangerousAddRef(ref gotReference);
                 IntPtr rawHandle = IntPtr.Zero;
-                for (int i = 0; i < allHeaders.Length; i++)
+
+                if (request.Headers != null)
                 {
-                    string header = allHeaders[i].Trim();
-                    if (header.Equals("{") || header.Equals("}"))
-                    {
-                        continue;
-                    }
-                    rawHandle = Interop.libcurl.curl_slist_append(rawHandle, header);
-                    retVal.SetHandle(rawHandle);
+                    // Add request headers
+                    AddRequestHeaders(request.Headers, retVal, ref rawHandle);
+                }
+
+                if (contentHeaders != null)
+                {
+                    // Add content request headers
+                    AddRequestHeaders(contentHeaders, retVal, ref rawHandle);
                 }
 
                 // Since libcurl always adds a Transfer-Encoding header, we need to explicitly block
@@ -860,6 +859,12 @@ namespace System.Net.Http
                 if (request.Headers.TransferEncodingChunked.HasValue && !request.Headers.TransferEncodingChunked.Value)
                 {
                     rawHandle = Interop.libcurl.curl_slist_append(rawHandle, NoTransferEncoding);
+
+                    if (rawHandle == null)
+                    {
+                        throw new HttpRequestException(SR.net_http_client_execution_error);
+                    }
+
                     retVal.SetHandle(rawHandle);
                 }
 
@@ -877,6 +882,28 @@ namespace System.Net.Http
             }
 
             return retVal;
+        }
+
+        /// <summary>
+        /// Add request headers to curl API
+        /// </summary>
+        /// <param name="headers"></param>
+        /// <param name="handle"></param>
+        /// <param name="rawHandle"></param>
+        private static void AddRequestHeaders(HttpHeaders headers, SafeCurlSlistHandle handle, ref IntPtr rawHandle)
+        {
+            foreach (KeyValuePair<string, IEnumerable<string>> header in headers)
+            {
+                string headerStr = header.Key + ": " + headers.GetHeaderString(header.Key);
+                rawHandle = Interop.libcurl.curl_slist_append(rawHandle, headerStr);
+
+                if (rawHandle == null)
+                {
+                    throw new HttpRequestException(SR.net_http_client_execution_error);
+                }
+
+                handle.SetHandle(rawHandle);
+            }
         }
 
         private static void SetChunkedModeForSend(HttpRequestMessage request)
