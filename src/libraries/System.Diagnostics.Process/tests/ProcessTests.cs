@@ -74,40 +74,35 @@ namespace System.Diagnostics.ProcessTests
             }
         }
 
-        [Fact]
-        public void TestEnableRaiseEvents()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [InlineData(null)]
+        public void TestEnableRaiseEvents(bool? enable)
         {
-            {
-                bool isExitedInvoked = false;
+            bool exitedInvoked = false;
 
-                // Test behavior when EnableRaisingEvent = true;
-                // Ensure event is called.
-                Process p = CreateProcessInfinite();
-                p.EnableRaisingEvents = true;
-                p.Exited += delegate { isExitedInvoked = true; };
-                StartSleepKillWait(p);
-                Assert.True(isExitedInvoked, String.Format("TestCanRaiseEvents0001: {0}", "isExited Event not called when EnableRaisingEvent is set to true."));
+            Process p = CreateProcessInfinite();
+            if (enable.HasValue)
+            {
+                p.EnableRaisingEvents = enable.Value;
             }
+            p.Exited += delegate { exitedInvoked = true; };
+            StartSleepKillWait(p);
 
+            if (enable.GetValueOrDefault())
             {
-                bool isExitedInvoked = false;
-
-                // Check with the default settings (false, events will not be raised)
-                Process p = CreateProcessInfinite();
-                p.Exited += delegate { isExitedInvoked = true; };
-                StartSleepKillWait(p);
-                Assert.False(isExitedInvoked, String.Format("TestCanRaiseEvents0002: {0}", "isExited Event called with the default settings for EnableRaiseEvents"));
+                // There's no guarantee that the Exited callback will be invoked by
+                // the time Process.WaitForExit completes, though it's extremely likely.
+                // There could be a race condition where WaitForExit is returning from
+                // its wait and sees that the callback is already running asynchronously,
+                // at which point it returns to the caller even if the callback hasn't
+                // entirely completed. As such, we spin until the value is set.
+                Assert.True(SpinWait.SpinUntil(() => exitedInvoked, WaitInMS));
             }
-
+            else
             {
-                bool isExitedInvoked = false;
-
-                // Same test, this time explicitly set the property to false
-                Process p = CreateProcessInfinite();
-                p.EnableRaisingEvents = false;
-                p.Exited += delegate { isExitedInvoked = true; }; ;
-                StartSleepKillWait(p);
-                Assert.False(isExitedInvoked, String.Format("TestCanRaiseEvents0003: {0}", "isExited Event called with the EnableRaiseEvents = false"));
+                Assert.False(exitedInvoked);
             }
         }
 
