@@ -616,7 +616,6 @@ HRESULT DumpStackObjectsRaw(size_t nArg, __in_z LPSTR exprBottom, __in_z LPSTR e
         return E_FAIL;
     }
 
-#ifndef FEATURE_PAL
     // We can use the gc snapshot to eliminate object addresses that are
     // not on the gc heap. 
     if (!g_snapshot.Build())
@@ -624,7 +623,6 @@ HRESULT DumpStackObjectsRaw(size_t nArg, __in_z LPSTR exprBottom, __in_z LPSTR e
         ExtOut("Unable to determine bounds of gc heap\n");
         return E_FAIL;
     }   
-#endif // !FEATURE_PAL
 
     // Print thread ID.
     ULONG id = 0;
@@ -3186,8 +3184,6 @@ void DisplayInvalidStructuresMessage()
     ExtOut("consistency errors.\n");
 }
 
-#ifndef FEATURE_PAL
-
 /**********************************************************************\
 * Routine Description:                                                 *
 *                                                                      *
@@ -3399,6 +3395,8 @@ void PrintGCStat(HeapStat *inStat, const char* label=NULL)
     }
 }
 
+#ifndef FEATURE_PAL
+
 DECLARE_API(TraverseHeap)
 {
     INIT_API();
@@ -3475,6 +3473,8 @@ DECLARE_API(TraverseHeap)
     
     return Status;
 }
+
+#endif // FEATURE_PAL
 
 struct PrintRuntimeTypeArgs
 {
@@ -3598,8 +3598,6 @@ namespace sos
         TADDR mNextMT;
     };
 }
-
-#endif // FEATURE_PAL
 
 class DumpHeapImpl
 {
@@ -4324,8 +4322,6 @@ DECLARE_API(VerifyObj)
     INIT_API();    
     MINIDUMP_NOT_SUPPORTED();
 
-#ifndef FEATURE_PAL
-
     TADDR  taddrObj = 0;
     TADDR  taddrMT;
     size_t objSize;
@@ -4373,13 +4369,6 @@ Exit:
     }
 
     return Status;
-
-#else
-
-    _ASSERTE(false);
-    return E_FAIL;
-
-#endif // FEATURE_PAL
 }
 
 void LNODisplayOutput(LPCWSTR tag, TADDR pMT, TADDR currentObj, size_t size) 
@@ -7656,6 +7645,8 @@ DECLARE_API(COMState)
 }
 #endif // FEATURE_COMINTEROP
 
+#endif // FEATURE_PAL
+
 BOOL traverseEh(UINT clauseIndex,UINT totalClauses,DACEHInfo *pEHInfo,LPVOID token)
 {
     size_t methodStart = (size_t) token;
@@ -7733,7 +7724,6 @@ BOOL traverseEh(UINT clauseIndex,UINT totalClauses,DACEHInfo *pEHInfo,LPVOID tok
     return TRUE;
 }
 
-
 DECLARE_API(EHInfo)
 {
     INIT_API();
@@ -7807,7 +7797,6 @@ DECLARE_API(EHInfo)
     
     return Status;
 }
-
 
 /**********************************************************************\
 * Routine Description:                                                 *
@@ -8052,6 +8041,7 @@ BOOL gatherEh(UINT clauseIndex,UINT totalClauses,DACEHInfo *pEHInfo,LPVOID token
     return TRUE;
 }
 
+#ifndef FEATURE_PAL
 
 /**********************************************************************\
 * Routine Description:                                                 *
