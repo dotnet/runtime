@@ -29,14 +29,7 @@ namespace System.Threading.Tasks.Tests
             CancellationTokenSource cancellationSrc = new CancellationTokenSource();
             tf = new TaskFactory(cancellationSrc.Token);
             var task = tf.StartNew(() => { });
-            try
-            {
-                task.Wait();
-            }
-            catch (Exception ex)
-            {
-                Assert.True(false, string.Format("RunTaskFactoryTests: > Task.Wait threw un expected exception when a non cancelled token passed to the factory, exception msg: {0}", ex));
-            }
+            task.Wait();
 
             // Exercising TF(scheduler)
             tf = new TaskFactory(tm);
@@ -62,14 +55,7 @@ namespace System.Threading.Tasks.Tests
             cancellationSrc = new CancellationTokenSource();
             tfi = new TaskFactory<int>(cancellationSrc.Token);
             task = tfi.StartNew(() => 0);
-            try
-            {
-                task.Wait();
-            }
-            catch (Exception ex)
-            {
-                Assert.True(false, string.Format("RunTaskFactoryTests:  > Task.Wait threw un expected exception when a non cancelled token passed to the factory, exception msg: {0}", ex));
-            }
+            task.Wait();
 
             // Exercising TF<int>(scheduler)
             tfi = new TaskFactory<int>(tm);
@@ -94,17 +80,13 @@ namespace System.Threading.Tasks.Tests
             cancellationSrc.Cancel();
             TaskFactory tf = new TaskFactory(cancellationSrc.Token);
             var cancelledTask = tf.StartNew(() => { });
-            EnsureTaskCanceledExceptionThrown(
-               () => cancelledTask.Wait(),
-               "RunTaskFactoryTests:    > TaskFactory.ctor(CancellationToken) failed, the created task is not cancelled when a cancelled token passed.");
+            EnsureTaskCanceledExceptionThrown(() => cancelledTask.Wait());
 
             // Exercising TF<int>(cancellationToken) with a cancelled token
             cancellationSrc.Cancel();
             TaskFactory<int> tfi = new TaskFactory<int>(cancellationSrc.Token);
             cancelledTask = tfi.StartNew(() => 0);
-            EnsureTaskCanceledExceptionThrown(
-               () => cancelledTask.Wait(),
-               "RunTaskFactoryTests: > TaskFactory<int>.ctor(CancellationToken) failed, the created task is not cancelled when a cancelled token passed");
+            EnsureTaskCanceledExceptionThrown(() => cancelledTask.Wait());
         }
 
         [Fact]
@@ -270,21 +252,6 @@ namespace System.Threading.Tasks.Tests
             //
             // Helper delegates to make the code below a lot shorter
             //
-            Action<TaskCreationOptions, TaskCreationOptions, string> TCOchecker = delegate (TaskCreationOptions val1, TaskCreationOptions val2, string failMsg)
-            {
-                if (val1 != val2)
-                {
-                    Assert.True(false, string.Format(failMsg));
-                }
-            };
-
-            Action<object, object, string> checker = delegate (object val1, object val2, string failMsg)
-            {
-                if (val1 != val2)
-                {
-                    Assert.True(false, string.Format(failMsg));
-                }
-            };
 
             Action init = delegate { tmObserved = null; };
 
@@ -308,19 +275,13 @@ namespace System.Threading.Tasks.Tests
             };
 
             //check Factory properties
-            TCOchecker(tf.CreationOptions, tcoDefault, "ExerciseTaskFactory:      > TaskFactory.Scheduler returned wrong CreationOptions");
-            if (tf.Scheduler != null && tmDefault != tf.Scheduler)
+            Assert.Equal(tf.CreationOptions, tcoDefault);
+            if (tf.Scheduler != null)
             {
-                Assert.True(false, string.Format("ExerciseTaskFactory: > TaskFactory.Scheduler is not null and returned wrong scheduler"));
+                Assert.Equal(tmDefault, tf.Scheduler);
             }
-            if (tokenDefault != tf.CancellationToken)
-            {
-                Assert.True(false, string.Format("ExerciseTaskFactory: > TaskFactory.CancellationToken returned wrong token"));
-            }
-            if (continuationDefault != tf.ContinuationOptions)
-            {
-                Assert.True(false, string.Format("ExerciseTaskFactory: > TaskFactory.ContinuationOptions returned wrong value"));
-            }
+            Assert.Equal(tokenDefault, tf.CancellationToken);
+            Assert.Equal(continuationDefault, tf.ContinuationOptions);
 
 
             //
@@ -329,8 +290,8 @@ namespace System.Threading.Tasks.Tests
             init();
             t = tf.StartNew(void_delegate);
             t.Wait();
-            checker(tmObserved, tmDefault, "ExerciseTaskFactory:      > FAILED StartNew(action).  Did not see expected TaskScheduler.");
-            TCOchecker(t.CreationOptions, tcoDefault, "      > FAILED StartNew(action).  Did not see expected TaskCreationOptions.");
+            Assert.Equal(tmObserved, tmDefault);
+            Assert.Equal(t.CreationOptions, tcoDefault);
 
             //
             // StartNew(action, TCO)
@@ -338,8 +299,8 @@ namespace System.Threading.Tasks.Tests
             init();
             t = tf.StartNew(void_delegate, myTCO);
             t.Wait();
-            checker(tmObserved, tmDefault, "ExerciseTaskFactory:      > FAILED StartNew(action, TCO).  Did not see expected TaskScheduler.");
-            TCOchecker(t.CreationOptions, myTCO, "ExerciseTaskFactory:      > FAILED StartNew(action, TCO).  Did not see expected TaskCreationOptions.");
+            Assert.Equal(tmObserved, tmDefault);
+            Assert.Equal(t.CreationOptions, myTCO);
 
             //
             // StartNew(action, CT, TCO, scheduler)
@@ -347,8 +308,8 @@ namespace System.Threading.Tasks.Tests
             init();
             t = tf.StartNew(void_delegate, CancellationToken.None, myTCO, myTM);
             t.Wait();
-            checker(tmObserved, myTM, "ExerciseTaskFactory:      > FAILED StartNew(action, TCO, scheduler).  Did not see expected TaskScheduler.");
-            TCOchecker(t.CreationOptions, myTCO, "ExerciseTaskFactory:      > FAILED StartNew(action, TCO, scheduler).  Did not see expected TaskCreationOptions.");
+            Assert.Equal(tmObserved, myTM);
+            Assert.Equal(t.CreationOptions, myTCO);
 
             //
             // StartNew(action<object>, object)
@@ -356,8 +317,8 @@ namespace System.Threading.Tasks.Tests
             init();
             t = tf.StartNew(voidState_delegate, 100);
             t.Wait();
-            checker(tmObserved, tmDefault, "ExerciseTaskFactory:      > FAILED StartNew(action<object>, object).  Did not see expected TaskScheduler.");
-            TCOchecker(t.CreationOptions, tcoDefault, "ExerciseTaskFactory:      > FAILED StartNew(action<object>, object).  Did not see expected TaskCreationOptions.");
+            Assert.Equal(tmObserved, tmDefault);
+            Assert.Equal(t.CreationOptions, tcoDefault);
 
             //
             // StartNew(action<object>, object, TCO)
@@ -365,8 +326,8 @@ namespace System.Threading.Tasks.Tests
             init();
             t = tf.StartNew(voidState_delegate, 100, myTCO);
             t.Wait();
-            checker(tmObserved, tmDefault, "ExerciseTaskFactory:      > FAILED StartNew(action<object>, object, TCO).  Did not see expected TaskScheduler.");
-            TCOchecker(t.CreationOptions, myTCO, "ExerciseTaskFactory:      > FAILED StartNew(action<object>, object, TCO).  Did not see expected TaskCreationOptions.");
+            Assert.Equal(tmObserved, tmDefault);
+            Assert.Equal(t.CreationOptions, myTCO);
 
             //
             // StartNew(action<object>, object, CT, TCO, scheduler)
@@ -374,8 +335,8 @@ namespace System.Threading.Tasks.Tests
             init();
             t = tf.StartNew(voidState_delegate, 100, CancellationToken.None, myTCO, myTM);
             t.Wait();
-            checker(tmObserved, myTM, "ExerciseTaskFactory:      > FAILED StartNew(action<object>, object, TCO, scheduler).  Did not see expected TaskScheduler.");
-            TCOchecker(t.CreationOptions, myTCO, "ExerciseTaskFactory:      > FAILED StartNew(action<object>, object, TCO, scheduler).  Did not see expected TaskCreationOptions.");
+            Assert.Equal(tmObserved, myTM);
+            Assert.Equal(t.CreationOptions, myTCO);
 
             //
             // StartNew(func)
@@ -383,8 +344,8 @@ namespace System.Threading.Tasks.Tests
             init();
             f = tf.StartNew(int_delegate);
             f.Wait();
-            checker(tmObserved, tmDefault, "ExerciseTaskFactory:      > FAILED StartNew(func).  Did not see expected TaskScheduler.");
-            TCOchecker(f.CreationOptions, tcoDefault, "ExerciseTaskFactory:      > FAILED StartNew(func).  Did not see expected TaskCreationOptions.");
+            Assert.Equal(tmObserved, tmDefault);
+            Assert.Equal(f.CreationOptions, tcoDefault);
 
             //
             // StartNew(func, token)
@@ -392,8 +353,8 @@ namespace System.Threading.Tasks.Tests
             init();
             f = tf.StartNew(int_delegate, tokenDefault);
             f.Wait();
-            checker(tmObserved, tmDefault, "ExerciseTaskFactory:      > FAILED StartNew(func, token).  Did not see expected TaskScheduler.");
-            TCOchecker(f.CreationOptions, tcoDefault, "      > FAILED StartNew(func, token).  Did not see expected TaskCreationOptions.");
+            Assert.Equal(tmObserved, tmDefault);
+            Assert.Equal(f.CreationOptions, tcoDefault);
 
             //
             // StartNew(func, options)
@@ -401,8 +362,8 @@ namespace System.Threading.Tasks.Tests
             init();
             f = tf.StartNew(int_delegate, myTCO);
             f.Wait();
-            checker(tmObserved, tmDefault, "ExerciseTaskFactory:      > FAILED StartNew(func, options).  Did not see expected TaskScheduler.");
-            TCOchecker(f.CreationOptions, myTCO, "ExerciseTaskFactory:      > FAILED StartNew(func, options).  Did not see expected TaskCreationOptions.");
+            Assert.Equal(tmObserved, tmDefault);
+            Assert.Equal(f.CreationOptions, myTCO);
 
             //
             // StartNew(func, CT, options, scheduler)
@@ -410,8 +371,8 @@ namespace System.Threading.Tasks.Tests
             init();
             f = tf.StartNew(int_delegate, CancellationToken.None, myTCO, myTM);
             f.Wait();
-            checker(tmObserved, myTM, "ExerciseTaskFactory:      > FAILED StartNew(func, options, scheduler).  Did not see expected TaskScheduler.");
-            TCOchecker(f.CreationOptions, myTCO, "ExerciseTaskFactory:      > FAILED StartNew(func, options, scheduler).  Did not see expected TaskCreationOptions.");
+            Assert.Equal(tmObserved, myTM);
+            Assert.Equal(f.CreationOptions, myTCO);
 
             //
             // StartNew(func<object>, object)
@@ -419,8 +380,8 @@ namespace System.Threading.Tasks.Tests
             init();
             f = tf.StartNew(intState_delegate, 100);
             f.Wait();
-            checker(tmObserved, tmDefault, "ExerciseTaskFactory:      > FAILED StartNew(func<object>, object).  Did not see expected TaskScheduler.");
-            TCOchecker(f.CreationOptions, tcoDefault, "ExerciseTaskFactory:      > FAILED StartNew(func<object>, object).  Did not see expected TaskCreationOptions.");
+            Assert.Equal(tmObserved, tmDefault);
+            Assert.Equal(f.CreationOptions, tcoDefault);
 
             //
             // StartNew(func<object>, object, token)
@@ -428,8 +389,8 @@ namespace System.Threading.Tasks.Tests
             init();
             f = tf.StartNew(intState_delegate, 100, tokenDefault);
             f.Wait();
-            checker(tmObserved, tmDefault, "ExerciseTaskFactory:      > FAILED StartNew(func<object>, object, token).  Did not see expected TaskScheduler.");
-            TCOchecker(f.CreationOptions, tcoDefault, "ExerciseTaskFactory:      > FAILED StartNew(func<object>, object, token).  Did not see expected TaskCreationOptions.");
+            Assert.Equal(tmObserved, tmDefault);
+            Assert.Equal(f.CreationOptions, tcoDefault);
 
             //
             // StartNew(func<object>, object, options)
@@ -437,8 +398,8 @@ namespace System.Threading.Tasks.Tests
             init();
             f = tf.StartNew(intState_delegate, 100, myTCO);
             f.Wait();
-            checker(tmObserved, tmDefault, "ExerciseTaskFactory:      > FAILED StartNew(func<object>, object, options).  Did not see expected TaskScheduler.");
-            TCOchecker(f.CreationOptions, myTCO, "ExerciseTaskFactory:      > FAILED StartNew(func<object>, object, options).  Did not see expected TaskCreationOptions.");
+            Assert.Equal(tmObserved, tmDefault);
+            Assert.Equal(f.CreationOptions, myTCO);
 
             //
             // StartNew(func<object>, object, CT, options, scheduler)
@@ -446,8 +407,8 @@ namespace System.Threading.Tasks.Tests
             init();
             f = tf.StartNew(intState_delegate, 100, CancellationToken.None, myTCO, myTM);
             f.Wait();
-            checker(tmObserved, myTM, "ExerciseTaskFactory:      > FAILED StartNew(func<object>, object, options, scheduler).  Did not see expected TaskScheduler.");
-            TCOchecker(f.CreationOptions, myTCO, "ExerciseTaskFactory:      > FAILED StartNew(func<object>, object, options, scheduler).  Did not see expected TaskCreationOptions.");
+            Assert.Equal(tmObserved, myTM);
+            Assert.Equal(f.CreationOptions, myTCO);
         }
 
         // Utility method for RunTaskFactoryTests().
@@ -458,24 +419,7 @@ namespace System.Threading.Tasks.Tests
             TaskScheduler tmObserved = null;
             Task<int> f;
 
-            //
             // Helper delegates to make the code shorter.
-            //
-            Action<TaskCreationOptions, TaskCreationOptions, string> TCOchecker = delegate (TaskCreationOptions val1, TaskCreationOptions val2, string failMsg)
-            {
-                if (val1 != val2)
-                {
-                    Assert.True(false, string.Format(failMsg));
-                }
-            };
-
-            Action<object, object, string> checker = delegate (object val1, object val2, string failMsg)
-            {
-                if (val1 != val2)
-                {
-                    Assert.True(false, string.Format(failMsg));
-                }
-            };
 
             Action init = delegate { tmObserved = null; };
 
@@ -491,19 +435,13 @@ namespace System.Threading.Tasks.Tests
             };
 
             //check Factory properties
-            TCOchecker(tf.CreationOptions, tcoDefault, "ExerciseTaskFactoryInt:      > TaskFactory.Scheduler returned wrong CreationOptions");
-            if (tf.Scheduler != null && tmDefault != tf.Scheduler)
+            Assert.Equal(tf.CreationOptions, tcoDefault);
+            if (tf.Scheduler != null)
             {
-                Assert.True(false, string.Format("ExerciseTaskFactoryInt: > TaskFactory.Scheduler is not null and returned wrong scheduler"));
+                Assert.Equal(tmDefault, tf.Scheduler);
             }
-            if (tokenDefault != tf.CancellationToken)
-            {
-                Assert.True(false, string.Format("ExerciseTaskFactoryInt: > TaskFactory.CancellationToken returned wrong token"));
-            }
-            if (continuationDefault != tf.ContinuationOptions)
-            {
-                Assert.True(false, string.Format("ExerciseTaskFactoryInt: > TaskFactory.ContinuationOptions returned wrong value"));
-            }
+            Assert.Equal(tokenDefault, tf.CancellationToken);
+            Assert.Equal(continuationDefault, tf.ContinuationOptions);
 
             //
             // StartNew(func)
@@ -511,8 +449,8 @@ namespace System.Threading.Tasks.Tests
             init();
             f = tf.StartNew(int_delegate);
             f.Wait();
-            checker(tmObserved, tmDefault, "ExerciseTaskFactoryInt:      > FAILED StartNew(func).  Did not see expected TaskScheduler.");
-            TCOchecker(f.CreationOptions, tcoDefault, "ExerciseTaskFactoryInt:      > FAILED StartNew(func).  Did not see expected TaskCreationOptions.");
+            Assert.Equal(tmObserved, tmDefault);
+            Assert.Equal(f.CreationOptions, tcoDefault);
 
             //
             // StartNew(func, options)
@@ -520,8 +458,8 @@ namespace System.Threading.Tasks.Tests
             init();
             f = tf.StartNew(int_delegate, myTCO);
             f.Wait();
-            checker(tmObserved, tmDefault, "ExerciseTaskFactoryInt:      > FAILED StartNew(func, options).  Did not see expected TaskScheduler.");
-            TCOchecker(f.CreationOptions, myTCO, "ExerciseTaskFactoryInt:      > FAILED StartNew(func, options).  Did not see expected TaskCreationOptions.");
+            Assert.Equal(tmObserved, tmDefault);
+            Assert.Equal(f.CreationOptions, myTCO);
 
             //
             // StartNew(func, CT, options, scheduler)
@@ -529,8 +467,8 @@ namespace System.Threading.Tasks.Tests
             init();
             f = tf.StartNew(int_delegate, CancellationToken.None, myTCO, myTM);
             f.Wait();
-            checker(tmObserved, myTM, "ExerciseTaskFactoryInt:      > FAILED StartNew(func, options, scheduler).  Did not see expected TaskScheduler.");
-            TCOchecker(f.CreationOptions, myTCO, "ExerciseTaskFactoryInt:      > FAILED StartNew(func, options, scheduler).  Did not see expected TaskCreationOptions.");
+            Assert.Equal(tmObserved, myTM);
+            Assert.Equal(f.CreationOptions, myTCO);
 
             //
             // StartNew(func<object>, object)
@@ -538,8 +476,8 @@ namespace System.Threading.Tasks.Tests
             init();
             f = tf.StartNew(intState_delegate, 100);
             f.Wait();
-            checker(tmObserved, tmDefault, "ExerciseTaskFactoryInt:      > FAILED StartNew(func<object>, object).  Did not see expected TaskScheduler.");
-            TCOchecker(f.CreationOptions, tcoDefault, "ExerciseTaskFactoryInt:      > FAILED StartNew(func<object>, object).  Did not see expected TaskCreationOptions.");
+            Assert.Equal(tmObserved, tmDefault);
+            Assert.Equal(f.CreationOptions, tcoDefault);
 
             //
             // StartNew(func<object>, object, token)
@@ -547,8 +485,8 @@ namespace System.Threading.Tasks.Tests
             init();
             f = tf.StartNew(intState_delegate, 100, tokenDefault);
             f.Wait();
-            checker(tmObserved, tmDefault, "ExerciseTaskFactoryInt:      > FAILED StartNew(func<object>, object, token).  Did not see expected TaskScheduler.");
-            TCOchecker(f.CreationOptions, tcoDefault, "ExerciseTaskFactoryInt:      > FAILED StartNew(func<object>, object, token).  Did not see expected TaskCreationOptions.");
+            Assert.Equal(tmObserved, tmDefault);
+            Assert.Equal(f.CreationOptions, tcoDefault);
 
             //
             // StartNew(func<object>, object, options)
@@ -556,8 +494,8 @@ namespace System.Threading.Tasks.Tests
             init();
             f = tf.StartNew(intState_delegate, 100, myTCO);
             f.Wait();
-            checker(tmObserved, tmDefault, "ExerciseTaskFactoryInt:      > FAILED StartNew(func<object>, object, options).  Did not see expected TaskScheduler.");
-            TCOchecker(f.CreationOptions, myTCO, "ExerciseTaskFactoryInt:      > FAILED StartNew(func<object>, object, options).  Did not see expected TaskCreationOptions.");
+            Assert.Equal(tmObserved, tmDefault);
+            Assert.Equal(f.CreationOptions, myTCO);
 
             //
             // StartNew(func<object>, object, CT, options, scheduler)
@@ -565,36 +503,16 @@ namespace System.Threading.Tasks.Tests
             init();
             f = tf.StartNew(intState_delegate, 100, CancellationToken.None, myTCO, myTM);
             f.Wait();
-            checker(tmObserved, myTM, "ExerciseTaskFactoryInt:      > FAILED StartNew(func<object>, object, options, scheduler).  Did not see expected TaskScheduler.");
-            TCOchecker(f.CreationOptions, myTCO, "ExerciseTaskFactoryInt:      > FAILED StartNew(func<object>, object, options, scheduler).  Did not see expected TaskCreationOptions.");
+            Assert.Equal(tmObserved, myTM);
+            Assert.Equal(f.CreationOptions, myTCO);
         }
 
         // Ensures that the specified action throws a AggregateException wrapping a TaskCanceledException
-        private static void EnsureTaskCanceledExceptionThrown(Action action, string message)
+        private static void EnsureTaskCanceledExceptionThrown(Action action)
         {
-            Exception exception = null;
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                exception = ex;
-            }
+            AggregateException ae = Assert.Throws<AggregateException>(action);
 
-            if (exception == null)
-            {
-                Assert.True(false, string.Format(message + " (no exception thrown)")); ;
-            }
-            else if (exception.GetType() != typeof(AggregateException))
-            {
-                Assert.True(false, string.Format(message + " (didn't throw aggregate exception)"));
-            }
-            else if (((AggregateException)exception).InnerException.GetType() != typeof(TaskCanceledException))
-            {
-                exception = ((AggregateException)exception).InnerException;
-                Assert.True(false, string.Format(message + " (threw " + exception.GetType().Name + " instead of TaskCanceledException)"));
-            }
+            Assert.Equal(typeof(TaskCanceledException), ae.InnerException.GetType());
         }
 
         // This class is used in testing Factory tests.
@@ -637,7 +555,6 @@ namespace System.Threading.Tasks.Tests
 
                 Task t = Task.Factory.StartNew(delegate
                 {
-                    //Thread.Sleep(100);
                     try
                     {
                         lock (_list)
@@ -684,7 +601,6 @@ namespace System.Threading.Tasks.Tests
 
                 Task t = Task.Factory.StartNew(delegate
                 {
-                    //Thread.Sleep(100);
                     StringBuilder sb = new StringBuilder();
                     int bytesRead = 0;
                     try
