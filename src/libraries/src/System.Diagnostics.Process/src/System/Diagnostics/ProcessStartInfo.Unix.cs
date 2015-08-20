@@ -16,7 +16,7 @@ namespace System.Diagnostics
             set { throw new PlatformNotSupportedException(); }
         }
 
-        public SecureString Password
+        public string PasswordInClearText
         {
             get { throw new PlatformNotSupportedException(); }
             set { throw new PlatformNotSupportedException(); }

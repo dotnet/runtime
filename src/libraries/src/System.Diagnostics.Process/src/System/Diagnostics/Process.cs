@@ -1114,24 +1114,6 @@ namespace System.Diagnostics
             return EncodingHelper.GetSupportedConsoleEncoding(codePage);
         }
 
-        public static Process Start(string fileName, string userName, SecureString password, string domain)
-        {
-            ProcessStartInfo startInfo = new ProcessStartInfo(fileName);
-            startInfo.UserName = userName;
-            startInfo.Password = password;
-            startInfo.Domain = domain;
-            return Start(startInfo);
-        }
-
-        public static Process Start(string fileName, string arguments, string userName, SecureString password, string domain)
-        {
-            ProcessStartInfo startInfo = new ProcessStartInfo(fileName, arguments);
-            startInfo.UserName = userName;
-            startInfo.Password = password;
-            startInfo.Domain = domain;
-            return Start(startInfo);
-        }
-
         /// <devdoc>
         ///    <para>
         ///       Starts a process resource by specifying the name of a

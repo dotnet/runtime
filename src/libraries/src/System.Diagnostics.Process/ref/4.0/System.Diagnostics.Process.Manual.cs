@@ -27,10 +27,6 @@ namespace System.Diagnostics
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
         public System.Collections.IEnumerator GetEnumerator() { return default(System.Collections.IEnumerator); }
     }
-    public sealed partial class ProcessStartInfo
-    {
-        public string PasswordInClearText { get { return default(string); } set { } }
-    }
 }
 namespace Microsoft.Win32.SafeHandles
 {

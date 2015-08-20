@@ -530,55 +530,36 @@ namespace System.Diagnostics
                             logonFlags = Interop.mincore.LogonFlags.LOGON_WITH_PROFILE;
                         }
 
-                        IntPtr password = IntPtr.Zero;
-                        try
-                        {
-                            if (startInfo.Password == null)
-                            {
-                                password = Marshal.StringToCoTaskMemUni(String.Empty);
-                            }
-                            else
-                            {
-                                password = SecureStringMarshal.SecureStringToCoTaskMemUnicode(startInfo.Password);
-                            }
 
-                            try { }
-                            finally
-                            {
-                                retVal = Interop.mincore.CreateProcessWithLogonW(
-                                        startInfo.UserName,
-                                        startInfo.Domain,
-                                        password,
-                                        logonFlags,
-                                        null,            // we don't need this since all the info is in commandLine
-                                        commandLine,
-                                        creationFlags,
-                                        environmentPtr,
-                                        workingDirectory,
-                                        startupInfo,        // pointer to STARTUPINFO
-                                        processInfo         // pointer to PROCESS_INFORMATION
-                                    );
-                                if (!retVal)
-                                    errorCode = Marshal.GetLastWin32Error();
-                                if (processInfo.hProcess != IntPtr.Zero && processInfo.hProcess != (IntPtr)INVALID_HANDLE_VALUE)
-                                    procSH.InitialSetHandle(processInfo.hProcess);
-                                if (processInfo.hThread != IntPtr.Zero && processInfo.hThread != (IntPtr)INVALID_HANDLE_VALUE)
-                                    threadSH.InitialSetHandle(processInfo.hThread);
-                            }
-                            if (!retVal)
-                            {
-                                if (errorCode == Interop.mincore.Errors.ERROR_BAD_EXE_FORMAT || errorCode == Interop.mincore.Errors.ERROR_EXE_MACHINE_TYPE_MISMATCH)
-                                    throw new Win32Exception(errorCode, SR.InvalidApplication);
-
-                                throw new Win32Exception(errorCode);
-                            }
-                        }
+                        try { }
                         finally
                         {
-                            if (password != IntPtr.Zero)
-                            {
-                                Marshal.ZeroFreeCoTaskMemUnicode(password);
-                            }
+                            retVal = Interop.mincore.CreateProcessWithLogonW(
+                                    startInfo.UserName,
+                                    startInfo.Domain,
+                                    startInfo.PasswordInClearText,
+                                    logonFlags,
+                                    null,            // we don't need this since all the info is in commandLine
+                                    commandLine,
+                                    creationFlags,
+                                    environmentPtr,
+                                    workingDirectory,
+                                    startupInfo,        // pointer to STARTUPINFO
+                                    processInfo         // pointer to PROCESS_INFORMATION
+                                );
+                            if (!retVal)
+                                errorCode = Marshal.GetLastWin32Error();
+                            if (processInfo.hProcess != IntPtr.Zero && processInfo.hProcess != (IntPtr)INVALID_HANDLE_VALUE)
+                                procSH.InitialSetHandle(processInfo.hProcess);
+                            if (processInfo.hThread != IntPtr.Zero && processInfo.hThread != (IntPtr)INVALID_HANDLE_VALUE)
+                                threadSH.InitialSetHandle(processInfo.hThread);
+                        }
+                        if (!retVal)
+                        {
+                            if (errorCode == Interop.mincore.Errors.ERROR_BAD_EXE_FORMAT || errorCode == Interop.mincore.Errors.ERROR_EXE_MACHINE_TYPE_MISMATCH)
+                                throw new Win32Exception(errorCode, SR.InvalidApplication);
+
+                            throw new Win32Exception(errorCode);
                         }
                     }
                     else
