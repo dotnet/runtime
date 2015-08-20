@@ -434,8 +434,6 @@ size_t AlignLarge(size_t nbytes)
     return (nbytes + ALIGNCONSTLARGE) & ~ALIGNCONSTLARGE;
 }
 
-#ifndef FEATURE_PAL
-
 /**********************************************************************\
 * Routine Description:                                                 *
 *                                                                      *
@@ -850,8 +848,6 @@ BOOL GCHeapUsageStats(const DacpGcHeapDetails& heap, BOOL bIncUnreachable, HeapU
 
     return TRUE;
 }
-
-#endif // FEATURE_PAL
 
 DWORD GetNumComponents(TADDR obj)
 {
@@ -1576,7 +1572,6 @@ int GCHeapSnapshot::GetGeneration(CLRDATA_ADDRESS objectPointer)
     return 2;
 }
 
-#ifndef FEATURE_PAL
 
 DWORD_PTR g_trav_totalSize = 0;
 DWORD_PTR g_trav_wastedSize = 0;
@@ -1720,6 +1715,7 @@ DWORD_PTR JitHeapInfo()
 
     return totalSize;
 }
+
 
 /**********************************************************************\
 * Routine Description:                                                 *
@@ -1915,5 +1911,3 @@ DWORD_PTR PrintModuleHeapInfo(__out_ecount(count) DWORD_PTR *moduleList, int cou
 
     return toReturn;
 }
-
-#endif // !FEATURE_PAL

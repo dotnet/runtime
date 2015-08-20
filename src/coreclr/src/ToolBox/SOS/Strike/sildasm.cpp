@@ -106,7 +106,7 @@ void DisassembleToken(IMetaDataImport *i,
             hr = i->GetTypeDefProps(token, szName, 49, &cLen, NULL, NULL);
 
             if (FAILED(hr))
-                StringCchCopyW(szName, COUNTOF(szName), L"<unknown type def>");
+                StringCchCopyW(szName, COUNTOF(szName), W("<unknown type def>"));
 
             printf("%S", szName);
         }
@@ -120,7 +120,7 @@ void DisassembleToken(IMetaDataImport *i,
             hr = i->GetTypeRefProps(token, NULL, szName, 49, &cLen);
 
             if (FAILED(hr))
-                StringCchCopyW(szName, COUNTOF(szName), L"<unknown type ref>");
+                StringCchCopyW(szName, COUNTOF(szName), W("<unknown type ref>"));
 
             printf("%S", szName);
         }
@@ -137,13 +137,13 @@ void DisassembleToken(IMetaDataImport *i,
                                   NULL, NULL, NULL, NULL, NULL, NULL);
 
             if (FAILED(hr))
-                StringCchCopyW(szFieldName, COUNTOF(szFieldName), L"<unknown field def>");
+                StringCchCopyW(szFieldName, COUNTOF(szFieldName), W("<unknown field def>"));
 
             hr = i->GetTypeDefProps(mdClass, szClassName, 49, &cLen,
                                     NULL, NULL);
 
             if (FAILED(hr))
-                StringCchCopyW(szClassName, COUNTOF(szClassName), L"<unknown type def>");
+                StringCchCopyW(szClassName, COUNTOF(szClassName), W("<unknown type def>"));
 
             printf("%S::%S", szClassName, szFieldName);
         }
@@ -160,13 +160,13 @@ void DisassembleToken(IMetaDataImport *i,
                                    NULL, NULL, NULL, NULL, NULL);
 
             if (FAILED(hr))
-                StringCchCopyW(szFieldName, COUNTOF(szFieldName), L"<unknown method def>");
+                StringCchCopyW(szFieldName, COUNTOF(szFieldName), W("<unknown method def>"));
 
             hr = i->GetTypeDefProps(mdClass, szClassName, 49, &cLen,
                                     NULL, NULL);
 
             if (FAILED(hr))
-                StringCchCopyW(szClassName, COUNTOF(szClassName), L"<unknown type def>");
+                StringCchCopyW(szClassName, COUNTOF(szClassName), W("<unknown type def>"));
 
             printf("%S::%S", szClassName, szFieldName);
         }
@@ -175,7 +175,7 @@ void DisassembleToken(IMetaDataImport *i,
     case mdtMemberRef:
         {
             mdTypeRef cr = mdTypeRefNil;
-            LPWSTR pMemberName;
+            LPCWSTR pMemberName;
             WCHAR memberName[50];
             ULONG memberNameLen;
 
@@ -184,7 +184,7 @@ void DisassembleToken(IMetaDataImport *i,
 
             if (FAILED(hr))
             {
-                pMemberName = L"<unknown member ref>";
+                pMemberName = W("<unknown member ref>");
             }
             else
                 pMemberName = memberName;
@@ -196,7 +196,7 @@ void DisassembleToken(IMetaDataImport *i,
             {
                 if (FAILED(i->GetTypeRefProps(cr, NULL, szName, 50, &cLen)))
                 {
-                    StringCchCopyW(szName, COUNTOF(szName), L"<unknown type ref>");
+                    StringCchCopyW(szName, COUNTOF(szName), W("<unknown type ref>"));
                 }
             }
             else if(TypeFromToken(cr) == mdtTypeDef)
@@ -204,7 +204,7 @@ void DisassembleToken(IMetaDataImport *i,
                 if (FAILED(i->GetTypeDefProps(cr, szName, 49, &cLen,
                                               NULL, NULL)))
                 {
-                    StringCchCopyW(szName, COUNTOF(szName), L"<unknown type def>");
+                    StringCchCopyW(szName, COUNTOF(szName), W("<unknown type def>"));
                 }
             }
             else if(TypeFromToken(cr) == mdtTypeSpec)
@@ -217,7 +217,7 @@ void DisassembleToken(IMetaDataImport *i,
                     PCCOR_SIGNATURE sig;
                     if (FAILED(pIMDI->GetSigFromToken(cr, &cSig, &sig)))
                     {
-                        StringCchCopyW(szName, COUNTOF(szName), L"<Invalid record>");
+                        StringCchCopyW(szName, COUNTOF(szName), W("<Invalid record>"));
                     }
                     else
                     {
@@ -229,12 +229,12 @@ void DisassembleToken(IMetaDataImport *i,
                 }
                 else
                 {
-                    StringCchCopyW(szName, COUNTOF(szName), L"<unknown type spec>");
+                    StringCchCopyW(szName, COUNTOF(szName), W("<unknown type spec>"));
                 }
             }
             else
             {
-                StringCchCopyW(szName, COUNTOF(szName), L"<unknown type token>");
+                StringCchCopyW(szName, COUNTOF(szName), W("<unknown type token>"));
             }
             
             printf("%S::%S ", szName, pMemberName);
@@ -395,7 +395,7 @@ void DecodeIL(IMetaDataImport *pImport, BYTE *buffer, ULONG bufSize)
             {
                 if (numChars < 80)
                     str[numChars] = 0;
-                wcscpy_s(&str[79], 4, L"...");
+                wcscpy_s(&str[79], 4, W("..."));
                 WCHAR* ptr = str;
                 while(*ptr != 0) {
                     if (*ptr < 0x20 || * ptr >= 0x80) {
@@ -475,7 +475,7 @@ void DisassembleToken(DacpObjectData& tokenArray,
             DWORD_PTR runtimeType = NULL;
             MOVE(runtimeType, runtimeTypeHandle + sizeof(DWORD_PTR));
 
-            int offset = GetObjFieldOffset(runtimeType, L"m_handle");
+            int offset = GetObjFieldOffset(runtimeType, W("m_handle"));
 
             DWORD_PTR methodTable = NULL;
             MOVE(methodTable, runtimeType + offset);
@@ -507,12 +507,12 @@ void DisassembleToken(DacpObjectData& tokenArray,
     case mdtMethodDef:
         {
             CLRDATA_ADDRESS runtimeMethodHandle = GetObj(tokenArray, RidFromToken(token));            
-            int offset = GetObjFieldOffset(runtimeMethodHandle, L"m_value");
+            int offset = GetObjFieldOffset(runtimeMethodHandle, W("m_value"));
 
             TADDR runtimeMethodInfo = NULL;
             MOVE(runtimeMethodInfo, runtimeMethodHandle+offset);
 
-            offset = GetObjFieldOffset(runtimeMethodInfo, L"m_handle");
+            offset = GetObjFieldOffset(runtimeMethodInfo, W("m_handle"));
 
             TADDR methodDesc = NULL;
             MOVE(methodDesc, runtimeMethodInfo+offset);
@@ -624,7 +624,7 @@ void DecodeDynamicIL(BYTE *data, ULONG Size, DacpObjectData& tokenArray)
 
 /******************************************************************************/
 // CQuickBytes utilities
-char* asString(CQuickBytes *out) {
+static char* asString(CQuickBytes *out) {
     SIZE_T oldSize = out->Size();
     out->ReSize(oldSize + 1);
     char* cur = &((char*) out->Ptr())[oldSize]; 
@@ -633,7 +633,7 @@ char* asString(CQuickBytes *out) {
     return((char*) out->Ptr()); 
 }
 
-void appendStr(CQuickBytes *out, const char* str, unsigned len=-1) {
+static void appendStr(CQuickBytes *out, const char* str, unsigned len=-1) {
     if(len == (unsigned)(-1)) len = (unsigned)strlen(str); 
     SIZE_T oldSize = out->Size();
     out->ReSize(oldSize + len);
@@ -642,14 +642,14 @@ void appendStr(CQuickBytes *out, const char* str, unsigned len=-1) {
         // Note no trailing null!   
 }
 
-void appendChar(CQuickBytes *out, char chr) {
+static void appendChar(CQuickBytes *out, char chr) {
     SIZE_T oldSize = out->Size();
     out->ReSize(oldSize + 1); 
     ((char*) out->Ptr())[oldSize] = chr; 
         // Note no trailing null!   
 }
 
-void insertStr(CQuickBytes *out, const char* str) {
+static void insertStr(CQuickBytes *out, const char* str) {
     unsigned len = (unsigned)strlen(str); 
     SIZE_T oldSize = out->Size();
     out->ReSize(oldSize + len); 
@@ -924,7 +924,7 @@ const char* PrettyPrintClass(
                 
                 if (TypeFromToken(tk) == mdtTypeRef)
                 {
-                    if ((formatFlags & FormatAssembly) && FAILED(pIMDI->GetResolutionScopeOfTypeRef(tk, &tkEncloser)) || 
+                    if (((formatFlags & FormatAssembly) && FAILED(pIMDI->GetResolutionScopeOfTypeRef(tk, &tkEncloser))) || 
                         FAILED(pIMDI->GetNameOfTypeRef(tk, &nameSpace, &name)))
                     {
                         char str[1024];
@@ -1073,7 +1073,7 @@ void PrettyPrintClassFromToken(
     DWORD formatFlags /*= FormatCSharp*/)
 {
     // set the default value
-    swprintf_s(mdName, cbName, L"token_0x%8.8X", tok);
+    swprintf_s(mdName, cbName, W("token_0x%8.8X"), tok);
 
     DacpModuleData dmd;
     if (dmd.Request(g_sos, TO_CDADDR(moduleAddr)) != S_OK)
