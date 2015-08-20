@@ -41,8 +41,10 @@
     <Compile Include="System\IO\Compression\GZipUtils.cs" />
     <Compile Include="System\IO\Compression\HuffmanTree.cs" />
     <Compile Include="System\IO\Compression\IDeflater.cs" />
-    <Compile Include="System\IO\Compression\Inflater.cs" />
+    <Compile Include="System\IO\Compression\IInflater.cs" />
+    <Compile Include="System\IO\Compression\InflaterManaged.cs" />
     <Compile Include="System\IO\Compression\InflaterState.cs" />
+    <Compile Include="System\IO\Compression\InflaterZlib.cs" />
     <Compile Include="System\IO\Compression\InputBuffer.cs" />
     <Compile Include="System\IO\Compression\Match.cs" />
     <Compile Include="System\IO\Compression\MatchState.cs" />
