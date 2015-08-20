@@ -25,7 +25,7 @@ You will likely need to register the dnvm command:
 Installing the .NET Core DNX SDK
 ================================
 
-You first need to acquire the Mono DNX. It includes a specfic version of Mono, and is needed to use the DNX tools that are not yet supported on .NET Core. Mono is the default DNX, so you can acquire it via `dnvnm upgrade`.
+You first need to acquire the Mono DNX. It includes a specfic version of Mono, and is needed to use the DNX tools that are not yet supported on .NET Core. Mono is the default DNX, so you can acquire it via `dnvm upgrade`.
 
 	dnvm upgrade -u
 
