@@ -1,15 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.IO;
-using System.Text;
 using System.Collections;
-using System.Diagnostics;
-using System.Globalization;
-using System.Runtime.InteropServices;
-
-using Internal.Cryptography;
+using System.Collections.Generic;
 
 namespace System.Security.Cryptography.X509Certificates
 {
@@ -17,48 +10,71 @@ namespace System.Security.Cryptography.X509Certificates
     {
         public class X509CertificateEnumerator : IEnumerator
         {
+            // This is a mutable struct enumerator, so don't mark it as readonly.
+            private List<X509Certificate>.Enumerator _enumerator;
+
             public X509CertificateEnumerator(X509CertificateCollection mappings)
             {
-                _baseEnumerator = mappings.GetEnumerator();
+                if (mappings == null)
+                    throw new ArgumentNullException("mappings");
+
+                mappings.GetEnumerator(out _enumerator);
             }
 
             public X509Certificate Current
             {
-                get { return (X509Certificate)(_baseEnumerator.Current); }
+                // Call the struct enumerator's IEnumerator.Current implementation, which has the
+                // behavior we want of throwing InvalidOperationException when the enumerator
+                // hasn't been started or has ended, without boxing.
+                get { return (X509Certificate)(EnumeratorHelper.GetCurrent(ref _enumerator)); }
             }
 
-            Object System.Collections.IEnumerator.Current
+            object IEnumerator.Current
             {
-                get { return _baseEnumerator.Current; }
+                get { return Current; }
             }
 
             public bool MoveNext()
             {
-                return _baseEnumerator.MoveNext();
+                return _enumerator.MoveNext();
             }
 
             bool IEnumerator.MoveNext()
             {
-                return _baseEnumerator.MoveNext();
+                return MoveNext();
             }
 
             public void Reset()
             {
-                _baseEnumerator.Reset();
+                // Call Reset on the struct enumerator without boxing.
+                EnumeratorHelper.Reset(ref _enumerator);
             }
 
             void IEnumerator.Reset()
             {
-                _baseEnumerator.Reset();
+                Reset();
             }
+        }
+    }
 
-            internal X509CertificateEnumerator(IEnumerator baseEnumerator)
-            {
-                _baseEnumerator = baseEnumerator;
-            }
+    internal static class EnumeratorHelper
+    {
+        /// <summary>
+        /// Allows calling List<T>.Enumerator's explicit implementation of IEnumerator.Current without boxing.
+        /// We call the non-generic IEnumerator.Current implementation because it handles throwing InvalidOperationException
+        /// when the enumerator hasn't been started or has ended, which is the behavior we want.
+        /// </summary>
+        internal static object GetCurrent<TEnumerator>(ref TEnumerator enumerator) where TEnumerator : IEnumerator
+        {
+            return enumerator.Current;
+        }
 
-            private IEnumerator _baseEnumerator;
+        /// <summary>
+        /// Allows calling List<T>.Enumerator's explicit implementation of IEnumerator.Reset without boxing.
+        /// </summary>
+        internal static void Reset<TEnumerator>(ref TEnumerator enumerator) where TEnumerator : IEnumerator
+        {
+            enumerator.Reset();
         }
     }
 }
-
