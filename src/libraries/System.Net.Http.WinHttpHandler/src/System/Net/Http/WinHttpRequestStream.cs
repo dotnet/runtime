@@ -77,10 +77,6 @@ namespace System.Net.Http
 
         public override void Flush()
         {
-            if (_chunkedMode)
-            {
-                WriteData(s_endChunk, 0, s_endChunk.Length);
-            }
         }
 
         public override void Write(byte[] buffer, int offset, int count)
@@ -128,6 +124,14 @@ namespace System.Net.Http
             throw new NotSupportedException();
         }
 
+        internal void EndUpload()
+        {
+            if (_chunkedMode)
+            {
+                WriteData(s_endChunk, 0, s_endChunk.Length);
+            }
+        }
+        
         protected override void Dispose(bool disposing)
         {
             if (disposing && !_disposed)

@@ -1190,7 +1190,7 @@ namespace System.Net.Http
                         await state.RequestMessage.Content.CopyToAsync(
                             requestStream,
                             state.TransportContext).ConfigureAwait(false);
-                        requestStream.Flush();
+                        requestStream.EndUpload();
                     }
 
                     state.CancellationToken.ThrowIfCancellationRequested();
