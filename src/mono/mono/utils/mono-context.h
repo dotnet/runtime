@@ -350,8 +350,8 @@ typedef struct {
 		: "x30", "memory"			\
 	);								\
 	__asm__ __volatile__( \
-		"adr %0, L0\n" \
-		"L0:\n"	\
+		"adr %0, L0%=\n" \
+		"L0%=:\n"	\
 		: "=r" (ctx.pc)		\
 		:					\
 		: "memory"			 \
