@@ -2451,11 +2451,9 @@ BOOL IsStringObject (size_t obj)
 
 void DumpStackObjectsOutput(const char *location, DWORD_PTR objAddr, BOOL verifyFields)
 {
-#ifndef FEATURE_PAL
     // rule out pointers that are outside of the gc heap.
     if (g_snapshot.GetHeap(objAddr) == NULL)
         return;
-#endif // FEATURE_PAL
 
     DacpObjectData objectData;
     if (objectData.Request(g_sos, TO_CDADDR(objAddr)) != S_OK)
@@ -3535,9 +3533,6 @@ void ReloadSymbolWithLineInfo()
 #endif
 }
 
-
-#ifndef FEATURE_PAL
-
 // Return 1 if the function is our stub
 // Return MethodDesc if the function is managed
 // Otherwise return 0
@@ -3587,6 +3582,7 @@ size_t FunctionType (size_t EIP)
     return (size_t) pMD;
 }
 
+#ifndef FEATURE_PAL
 
 //
 // Gets version info for the CLR in the debuggee process.
