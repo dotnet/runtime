@@ -191,7 +191,9 @@ update_add (gint fd, MonoSocketAsyncResult *sockares)
 
 	selector_thread_wakeup ();
 
+	MONO_PREPARE_BLOCKING;
 	mono_cond_wait (&threadpool_io->updates_signal, &threadpool_io->lock);
+	MONO_FINISH_BLOCKING;
 
 	mono_mutex_unlock (&threadpool_io->lock);
 }
