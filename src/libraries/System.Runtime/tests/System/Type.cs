@@ -428,4 +428,62 @@ public class TypeTests
         String s2 = t3.ToString();
         Assert.Equal<String>(s2, s1 + "&");
     }
+
+    [Theory, MemberData("GetTypeByNameTestData")]
+    public static void TestGetTypeByName(string typeName, Type expectedType)
+    {
+        var actualType = Type.GetType(typeName, throwOnError: false, ignoreCase: false);
+        Assert.Equal(expectedType, actualType);
+
+        actualType = Type.GetType(typeName.ToLower(), throwOnError: false, ignoreCase: true);
+        Assert.Equal(expectedType, actualType);
+    }
+
+    [Theory, MemberData("GetTypeByNameTestData_Error")]
+    public static void TestGetTypeByName_ThrowOnError(string typeName, Type expectedException, bool alwaysThrowsException)
+    {
+        if (!alwaysThrowsException)
+        {
+            var actualType = Type.GetType(typeName, throwOnError: false, ignoreCase: false);
+            Assert.Null(actualType);
+        }
+
+        Assert.Throws(expectedException, () => Type.GetType(typeName, throwOnError: true, ignoreCase: false));
+    }
+
+    public static IEnumerable<object[]> GetTypeByNameTestData
+    {
+        get
+        {
+            return new[]
+            {
+                new object[] { "System.Nullable`1[System.Int32]", typeof(int?) },
+                new object[] { "System.Int32*", typeof(int*) },
+                new object[] { "System.Int32**", typeof(int**) },
+                new object[] { "Outside`1", typeof(Outside<>) },
+                new object[] { "Outside`1+Inside`1", typeof(Outside<>.Inside<>) },
+                new object[] { "Outside[]", typeof(Outside[]) },
+                new object[] { "Outside[,,]", typeof(Outside[,,]) },
+                new object[] { "Outside[][]", typeof(Outside[][]) },
+                new object[] { "Outside`1[System.Nullable`1[System.Boolean]]", typeof(Outside<bool?>) },
+            };
+        }
+    }
+
+    public static IEnumerable<object[]> GetTypeByNameTestData_Error
+    {
+        get
+        {
+            return new[]
+            {
+                new object[] { "System.Nullable`1[System.Int32]".ToLower(), typeof(TypeLoadException), false },
+                new object[] { "System.NonExistingType", typeof(TypeLoadException), false },
+                new object[] { "", typeof(TypeLoadException), false },
+                new object[] { "System.Int32[,*,]", typeof(ArgumentException), false },
+                new object[] { "Outside`2", typeof(TypeLoadException), false },
+                new object[] { "Outside`1[System.Boolean, System.Int32]", typeof(ArgumentException), true },
+            };
+        }
+    }
 }
+
