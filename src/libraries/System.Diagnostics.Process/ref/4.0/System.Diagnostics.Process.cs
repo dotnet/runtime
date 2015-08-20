@@ -4,7 +4,6 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-
 namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeProcessHandle : System.Runtime.InteropServices.SafeHandle
@@ -121,17 +120,14 @@ namespace System.Diagnostics
         public ProcessStartInfo(string fileName, string arguments) { }
         public string Arguments { get { return default(string); } set { } }
         public bool CreateNoWindow { get { return default(bool); } set { } }
-        public string Domain { get { return default(string); } set { } }
         [System.ComponentModel.DefaultValueAttribute(null)]
         public System.Collections.Generic.IDictionary<string, string> Environment { get { return default(System.Collections.Generic.IDictionary<string, string>); } }
         public string FileName { get { return default(string); } set { } }
-        public bool LoadUserProfile { get { return default(bool); } set { } }
         public bool RedirectStandardError { get { return default(bool); } set { } }
         public bool RedirectStandardInput { get { return default(bool); } set { } }
         public bool RedirectStandardOutput { get { return default(bool); } set { } }
         public System.Text.Encoding StandardErrorEncoding { get { return default(System.Text.Encoding); } set { } }
         public System.Text.Encoding StandardOutputEncoding { get { return default(System.Text.Encoding); } set { } }
-        public string UserName { get { return default(string); } set { } }
         public bool UseShellExecute { get { return default(bool); } set { } }
         public string WorkingDirectory { get { return default(string); } set { } }
     }
