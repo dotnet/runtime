@@ -7,6 +7,7 @@
     <ProjectGuid>{1D422B1D-D7C4-41B9-862D-EB3D98DF37DE}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Net.Http</AssemblyName>
+    <AssemblyVersion>4.0.1.0</AssemblyVersion>
   </PropertyGroup>
   
   <!-- Help VS understand available configurations -->
