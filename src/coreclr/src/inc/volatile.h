@@ -176,6 +176,19 @@ void VolatileStore(T* pt, T val)
 #endif
 }
 
+template<typename T>
+inline
+void VolatileStoreWithoutBarrier(T* pt, T val)
+{
+    STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
+
+#ifndef DACCESS_COMPILE
+    *(T volatile *)pt = val;
+#else
+    *pt = val;
+#endif
+}
+
 //
 // Volatile<T> implements accesses with our volatile semantics over a variable of type T.
 // Wherever you would have used a "volatile Foo" or, equivalently, "Foo volatile", use Volatile<Foo> 
