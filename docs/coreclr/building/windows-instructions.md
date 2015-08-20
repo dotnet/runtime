@@ -72,8 +72,6 @@ To build CoreCLR, run `build.cmd` from the root of the coreclr repository. This 
 	Product binaries are available at C:\git\coreclr\bin\Product\Windows_NT.x64.debug
 	Test binaries are available at C:\git\coreclr\bin\tests\Windows_NT.x64.debug
 
-**Note:** for building using Visual Studio 2015 the parameter `vs2015` should be added to the `build` command.
-
 **Note:** To avoid building the tests, pass the 'skiptestbuild' option to build.
 
 **build /?** will list supported parameters.
