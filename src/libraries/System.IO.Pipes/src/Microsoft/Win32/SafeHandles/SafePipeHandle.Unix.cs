@@ -17,7 +17,7 @@ namespace Microsoft.Win32.SafeHandles
         /// <param name="flags">The flags with which to open the file.</param>
         /// <param name="mode">The mode for opening the file.</param>
         /// <returns>A SafeFileHandle for the opened file.</returns>
-        internal static SafePipeHandle Open(string path, Interop.libc.OpenFlags flags, int mode)
+        internal static SafePipeHandle Open(string path, Interop.Sys.OpenFlags flags, int mode)
         {
             // SafePipeHandle wraps a file descriptor rather than a pointer, and a file descriptor is always 4 bytes
             // rather than being pointer sized, which means we can't utilize the runtime's ability to marshal safe handles.
@@ -30,7 +30,7 @@ namespace Microsoft.Win32.SafeHandles
             finally
             {
                 int fd;
-                while (Interop.CheckIo(fd = Interop.libc.open(path, flags, mode))) ;
+                while (Interop.CheckIo(fd = Interop.Sys.Open(path, flags, mode))) ;
                 Debug.Assert(fd >= 0);
                 handle.SetHandle((IntPtr)fd);
             }
@@ -44,7 +44,7 @@ namespace Microsoft.Win32.SafeHandles
             // be in use elsewhere in the process.  Instead, we simply check whether the call was successful.
             int fd = (int)handle;
             Debug.Assert(fd >= 0);
-            return Interop.libc.close(fd) == 0;
+            return Interop.Sys.Close(fd) == 0;
         }
 
         public override bool IsInvalid

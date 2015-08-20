@@ -77,7 +77,7 @@ namespace System.Diagnostics
                     int bufCount;
                     int i = 0;
 
-                    using (SafeFileHandle fileHandle = SafeFileHandle.Open(filePath, Interop.libc.OpenFlags.O_WRONLY, 0))
+                    using (SafeFileHandle fileHandle = SafeFileHandle.Open(filePath, Interop.Sys.OpenFlags.O_WRONLY, 0))
                     {
                         while (i < message.Length)
                         {

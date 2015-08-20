@@ -3,7 +3,14 @@
 
 #include "../config.h"
 #include "pal_io.h"
+
+#include <assert.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #if HAVE_STAT64
 #    define stat_ stat64
@@ -43,7 +50,8 @@ static_assert(PAL_S_IFDIR == S_IFDIR, "");
 static_assert(PAL_S_IFREG == S_IFREG, "");
 static_assert(PAL_S_IFLNK == S_IFLNK, "");
 
-static void ConvertFileStatus(const struct stat_& src, FileStatus* dst)
+static
+void ConvertFileStatus(const struct stat_& src, FileStatus* dst)
 {
     dst->Flags  = FILESTATUS_FLAGS_NONE;
     dst->Mode   = src.st_mode;
@@ -102,4 +110,95 @@ int32_t LStat(const char* path, FileStatus* output)
     }
 
     return ret;
+}
+
+static 
+int32_t ConvertOpenFlags(int32_t flags)
+{
+    int32_t ret;
+    switch (flags & PAL_O_ACCESS_MODE_MASK)
+    {
+        case PAL_O_RDONLY: 
+            ret = O_RDONLY;
+            break;
+        case PAL_O_RDWR:
+            ret = O_RDWR;
+            break;
+        case PAL_O_WRONLY: 
+            ret = O_WRONLY;
+            break;
+        default:
+            assert(!"Unknown access mode.");
+            return -1;
+    }
+    
+    if (flags 
+        & ~(PAL_O_ACCESS_MODE_MASK
+          | PAL_O_CLOEXEC 
+          | PAL_O_CREAT 
+          | PAL_O_EXCL 
+          | PAL_O_TRUNC 
+          | PAL_O_SYNC
+          ))
+    {
+        assert(!"Unknown flag.");
+        return -1;
+    }
+ 
+    if (flags & PAL_O_CLOEXEC)
+        ret |= O_CLOEXEC;
+    if (flags & PAL_O_CREAT)
+        ret |= O_CREAT;
+    if (flags & PAL_O_EXCL)
+        ret |= O_EXCL;
+    if (flags & PAL_O_TRUNC)
+        ret |= O_TRUNC;
+    if (flags & PAL_O_SYNC)
+        ret |= O_SYNC;
+ 
+    return ret;
+}
+
+extern "C"
+int32_t Open(const char* path, int32_t flags, int32_t mode)
+{
+    flags = ConvertOpenFlags(flags);
+    if (flags < 0)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+    
+    return open(path, flags, mode);
+}
+
+extern "C"
+int32_t Close(int32_t fileDescriptor)
+{
+    return close(fileDescriptor);
+}
+
+extern "C"
+int32_t Unlink(const char* path)
+{
+    return unlink(path);
+}
+
+extern "C"
+int32_t ShmOpen(const char* name, int32_t flags, int32_t mode)
+{
+    flags = ConvertOpenFlags(flags);
+    if (flags < 0)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+    
+    return shm_open(name, flags, mode);
+}
+
+extern "C"
+int32_t ShmUnlink(const char* name)
+{
+    return shm_unlink(name);
 }
