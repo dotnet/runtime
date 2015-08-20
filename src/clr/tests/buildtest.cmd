@@ -11,6 +11,12 @@ set "__PackagesDir=%__ProjectDir%\packages"
 set "__RootBinDir=%__ProjectDir%\bin"
 set "__LogsDir=%__RootBinDir%\Logs"
 
+:: Default to highest Visual Studio version available
+set __VSVersion=vs2015
+
+if defined VS120COMNTOOLS set __VSVersion=vs2013
+if defined VS140COMNTOOLS set __VSVersion=vs2015
+
 :Arg_Loop
 if "%1" == "" goto ArgsDone
 if /i "%1" == "x64"    (set __BuildArch=x64&shift&goto Arg_Loop)
@@ -20,8 +26,8 @@ if /i "%1" == "release"   (set __BuildType=Release&shift&goto Arg_Loop)
 
 if /i "%1" == "clean"   (set __CleanBuild=1&shift&goto Arg_Loop)
 
-if /i "%1" == "vs2013"   (set __VSVersion=%1&set __VSProductVersion=120&shift&goto Arg_Loop)
-if /i "%1" == "vs2015"   (set __VSVersion=%1&set __VSProductVersion=140&shift&goto Arg_Loop)
+if /i "%1" == "vs2013"   (set __VSVersion=%1&shift&goto Arg_Loop)
+if /i "%1" == "vs2015"   (set __VSVersion=%1&shift&goto Arg_Loop)
 
 goto Usage
 
@@ -32,9 +38,6 @@ goto Usage
 if not defined __BuildArch set __BuildArch=x64
 if not defined __BuildType set __BuildType=Debug
 if not defined __BuildOS set __BuildOS=Windows_NT
-:: Default to VS2013
-if not defined __VSVersion set __VSVersion=vs2013
-if not defined __VSProductVersion set __VSProductVersion=120
 
 set "__TestBinDir=%__RootBinDir%\tests\%__BuildOS%.%__BuildArch%.%__BuildType%"
 :: We have different managed and native intermediate dirs because the managed bits will include
@@ -79,14 +82,12 @@ echo.
 :: Eval the output from probe-win1.ps1
 for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "& ""%__SourceDir%\pal\tools\probe-win.ps1"""') do %%a
 
-:: Check presence of VS
-if defined VS%__VSProductVersion%COMNTOOLS goto CheckVSExistence
-echo Visual Studio 2013+ (Community is free) is a pre-requisite to build this repository.
-exit /b 1
+set __VSProductVersion=
+if /i "%__VSVersion%" == "vs2013" set __VSProductVersion=120
+if /i "%__VSVersion%" == "vs2015" set __VSProductVersion=140
 
-:CheckVSExistence
-:: Does VS 2013 or VS 2015 really exist?
-if exist "!VS%__VSProductVersion%COMNTOOLS!\..\IDE\devenv.exe" goto CheckMSBuild
+:: Check presence of VS
+if defined VS%__VSProductVersion%COMNTOOLS goto CheckMSBuild
 echo Visual Studio 2013+ (Community is free) is a pre-requisite to build this repository.
 exit /b 1
 
@@ -94,8 +95,12 @@ exit /b 1
 if /i "%__VSVersion%" =="vs2015" goto MSBuild14
 set _msbuildexe="%ProgramFiles(x86)%\MSBuild\12.0\Bin\MSBuild.exe"
 if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles%\MSBuild\12.0\Bin\MSBuild.exe"
-:MSBuild14
 if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
+goto :CheckMSBuild14
+:MSBuild14
+set _msbuildexe="%ProgramFiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
+set UseRoslynCompiler=true
+:CheckMSBuild14
 if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles%\MSBuild\14.0\Bin\MSBuild.exe"
 if not exist %_msbuildexe% echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions. && exit /b 1
 
@@ -177,5 +182,5 @@ echo.
 echo BuildArch can be: x64
 echo BuildType can be: Debug, Release
 echo Clean - optional argument to force a clean build.
-echo VSVersion - optional argument to use VS2013 or VS2015  (default VS2013)
+echo VSVersion - optional argument to use VS2013 or VS2015  (default VS2015)
 exit /b 1

@@ -2,9 +2,11 @@
 setlocal EnableDelayedExpansion
 set __ProjectFilesDir=%~dp0
 
-:: Default to VS2013
-set __VSVersion=VS2013
-set __VSProductVersion=120
+:: Default to highest Visual Studio version available
+set __VSVersion=vs2015
+
+if defined VS120COMNTOOLS set __VSVersion=vs2013
+if defined VS140COMNTOOLS set __VSVersion=vs2015
 
 :: Default __Exclude to issues.targets
 set __Exclude=%~dp0\issues.targets
@@ -20,8 +22,8 @@ if /i "%1" == "SkipWrapperGeneration" (set __SkipWrapperGeneration=true&shift&go
 if /i "%1" == "Exclude" (set __Exclude=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "TestEnv" (set __TestEnv=%2&shift&shift&goto Arg_Loop)
 
-if /i "%1" == "vs2013"   (set __VSVersion=%1&set __VSProductVersion=120&shift&goto Arg_Loop)
-if /i "%1" == "vs2015"   (set __VSVersion=%1&set __VSProductVersion=140&shift&goto Arg_Loop)
+if /i "%1" == "vs2013" (set __VSVersion=%1&shift&goto Arg_Loop)
+if /i "%1" == "vs2015" (set __VSVersion=%1&shift&goto Arg_Loop)
 
 if /i "%1" == "/?"      (goto Usage)
 
@@ -29,6 +31,10 @@ set Core_Root=%1
 shift 
 :ArgsDone
 :: Check prerequisites
+
+set __VSProductVersion=
+if /i "%__VSVersion%" == "vs2013" set __VSProductVersion=120
+if /i "%__VSVersion%" == "vs2015" set __VSProductVersion=140
 
 :: Check presence of VS
 if defined VS%__VSProductVersion%COMNTOOLS goto CheckMSbuild
@@ -150,7 +156,7 @@ echo BuildType can be: Debug, Release
 echo SkipWrapperGeneration- Optional parameter - this will run the same set of tests as the last time it was run
 echo Exclude- Optional parameter - this will exclude individual tests from running, specified by ExcludeList ItemGroup in an .targets file.
 echo TestEnv- Optional parameter - this will run a custom script to set custom test envirommnent settings.
-echo VSVersion- optional argument to use VS2013 or VS2015  (default VS2013)
+echo VSVersion- optional argument to use VS2013 or VS2015  (default VS2015)
 echo CORE_ROOT The path to the runtime  
 exit /b 1
 
