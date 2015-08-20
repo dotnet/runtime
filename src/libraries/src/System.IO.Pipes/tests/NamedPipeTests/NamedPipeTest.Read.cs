@@ -65,12 +65,12 @@ namespace System.IO.Pipes.Tests
 
         // InOut pipes can be written/read from either direction
         public override void WriteToReadOnlyPipe_Throws_NotSupportedException() { }
-        public override void ReadFromPipeWithClosedPartner_ReadNoBytes()
+        public override async Task ReadFromPipeWithClosedPartner_ReadNoBytes()
         {
             // On Unix a read from an InOut pipe with a closed partner will wait indefinitely
             // for bytes to be sent.
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                base.ReadFromPipeWithClosedPartner_ReadNoBytes();
+                await base.ReadFromPipeWithClosedPartner_ReadNoBytes();
         }
     }
 }
