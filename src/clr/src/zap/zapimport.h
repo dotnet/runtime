@@ -437,7 +437,7 @@ public:
     ZapImport * GetDynamicHelperCell(CORCOMPILE_FIXUP_BLOB_KIND kind, CORINFO_FIELD_HANDLE handle, CORINFO_RESOLVED_TOKEN * pResolvedToken);
 
 #ifdef FEATURE_READYTORUN_COMPILER
-    ZapNode * GetPlacedIndirectHelperThunk(ReadyToRunHelper helperNum, PVOID pArg = NULL);
+    ZapNode * GetPlacedIndirectHelperThunk(ReadyToRunHelper helperNum, PVOID pArg = NULL, ZapNode * pCell = NULL);
     ZapNode * GetIndirectHelperThunk(ReadyToRunHelper helperNum, PVOID pArg = NULL);
     void PlaceIndirectHelperThunk(ZapNode * pImport);
 
