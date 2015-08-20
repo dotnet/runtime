@@ -12,4 +12,8 @@ add_library(System.Native
     ${NATIVE_SOURCES}
 )
 
+if (CMAKE_SYSTEM_NAME STREQUAL Linux)
+    target_link_libraries(System.Native rt)
+endif ()
+
 install (TARGETS System.Native DESTINATION .)

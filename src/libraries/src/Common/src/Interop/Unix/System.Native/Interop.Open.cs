@@ -5,9 +5,9 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class libc
+    internal static partial class Sys
     {
-        [DllImport(Libraries.Libc, SetLastError = true)]
-        internal static extern int close(int fd);
+        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        internal static extern int Open(string filename, OpenFlags flags, int mode);
     }
 }
