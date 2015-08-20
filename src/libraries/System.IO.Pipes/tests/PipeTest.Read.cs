@@ -189,16 +189,21 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        public virtual void ReadFromPipeWithClosedPartner_ReadNoBytes()
+        public virtual async Task ReadFromPipeWithClosedPartner_ReadNoBytes()
         {
             using (ServerClientPair pair = CreateServerClientPair())
             {
                 pair.writeablePipe.Dispose();
                 byte[] buffer = new byte[] { 0, 0, 0, 0 };
 
-                int length = pair.readablePipe.Read(buffer, 0, buffer.Length);
-                Assert.Equal(0, length);
-                pair.readablePipe.ReadByte();
+                // The pipe won't be marked as Broken until the first read, so prime it
+                // to test both the case where it's not yet marked as "Broken" and then 
+                // where it is.
+                Assert.Equal(0, pair.readablePipe.Read(buffer, 0, buffer.Length));
+
+                Assert.Equal(0, pair.readablePipe.Read(buffer, 0, buffer.Length));
+                Assert.Equal(-1, pair.readablePipe.ReadByte());
+                Assert.Equal(0, await pair.readablePipe.ReadAsync(buffer, 0, buffer.Length));
             }
         }
 
