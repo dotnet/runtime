@@ -4,6 +4,7 @@
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
 // Test class that verifies the integration with APM (Task => APM) section 2.5.11 in the TPL spec
+// "Asynchronous Programming Model", or the "Begin/End" pattern
 // 
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
@@ -18,101 +19,120 @@ namespace System.Threading.Tasks.Tests
     /// <summary>
     /// A class that implements the APM pattern to ensure that TPL can support APM patttern
     /// </summary>
-    public sealed class TaskAPMTest
+    public sealed class TaskAPMTests : IDisposable
     {
         /// <summary>
         /// Used to indicate whether to test TPL's Task or Future functionality for the APM pattern
         /// </summary>
-        private readonly bool _hasReturnType;
+        private bool _hasReturnType;
 
         /// <summary>
         /// Used to synchornize between Main thread and async thread, by blocking the main thread until
         /// the thread that invokes the TaskCompleted method via AsyncCallback finishes
         /// </summary>
-        private ManualResetEvent _mre;
-
-        private const int INTINPUT = 1000;     // the input to the LongTask<int>.DoTask/BeginDoTask
-        /// <summary>
-        /// The constant that defines the amount time to spinwait (to simulate work) in the LongTask class
-        /// </summary>
-        private const int LongTaskSeconds = 5;
+        private ManualResetEvent _mre = new ManualResetEvent(false);
 
         /// <summary>
-        /// Ctor that reads the XML testcase and sets the boolean to indicate whether to test Task or Future
-        /// functionality
+        /// The input value to LongTask<int>.DoTask/BeginDoTask
         /// </summary>
-        /// <param name="hasReturnType"></param>
-        public TaskAPMTest(bool hasReturnType)
+        private const int IntInput = 1000;
+
+        /// <summary>
+        /// The constant that defines the number of milliseconds to spinwait (to simulate work) in the LongTask class
+        /// </summary>
+        private const int LongTaskMilliseconds = 100;
+
+        [Theory]
+        [OuterLoop]
+        [InlineData(true)]
+        [InlineData(false)]        
+        public void WaitUntilCompleteTechnique(bool hasReturnType)
         {
             _hasReturnType = hasReturnType;
-            _mre = new ManualResetEvent(false);
+
+            LongTask longTask;
+            if (_hasReturnType)
+                longTask = new LongTask<int>(LongTaskMilliseconds);
+            else
+                longTask = new LongTask(LongTaskMilliseconds);
+
+            // Prove that the Wait-until-done technique works
+            IAsyncResult asyncResult = longTask.BeginDoTask(null, null);
+            longTask.EndDoTask(asyncResult);
+
+            AssertTaskCompleted(asyncResult);
+            Assert.False(asyncResult.CompletedSynchronously, "Should not have completed synchronously.");
         }
 
-        /// <summary>
-        /// Method that tests that the four APM patterns works
-        /// </summary>
-        /// <returns></returns>
-        internal void RealRun()
+        [Theory]
+        [OuterLoop]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void PollUntilCompleteTechnique(bool hasReturnType)
         {
-            IAsyncResult ar;
+            _hasReturnType = hasReturnType;
 
-            LongTask lt = null;
+            LongTask longTask;
             if (_hasReturnType)
-                lt = new LongTask<int>(LongTaskSeconds);
+                longTask = new LongTask<int>(LongTaskMilliseconds);
             else
-                lt = new LongTask(LongTaskSeconds);
+                longTask = new LongTask(LongTaskMilliseconds);
 
-            //1. Prove that the Wait-until-done technique works
-            ar = lt.BeginDoTask(null, null);
-            lt.EndDoTask(ar);
-            // verify task completed
-            if (!VerifyTaskCompleted(ar))
-                Assert.True(false, string.Format("Wait-until-done: Task is not completed"));
-
-            Debug.WriteLine("Wait-until-Done -- Task completed");
-
-            //2. Prove that the Polling technique works
-            ar = lt.BeginDoTask(null, null);
-            while (!ar.IsCompleted)
+            IAsyncResult asyncResult = longTask.BeginDoTask(null, null);
+            while (!asyncResult.IsCompleted)
             {
-                Task delay = Task.Delay(1000);
-                delay.Wait();
-                //Thread.Sleep(1000);
+                Task.Delay(300).Wait();
             }
-            // verify task completed
-            if (!VerifyTaskCompleted(ar))
-                Assert.True(false, string.Format("Polling: Task is not completed"));
 
-            Debug.WriteLine("Polling -- Task completed");
+            AssertTaskCompleted(asyncResult);
+            Assert.False(asyncResult.CompletedSynchronously, "Should not have completed synchronously.");
+        }
 
-            //3. Prove the AsyncWaitHandle works
-            ar = lt.BeginDoTask(null, null);
-            ar.AsyncWaitHandle.WaitOne();
-            // verify task completed
-            if (!VerifyTaskCompleted(ar))
-                Assert.True(false, string.Format("wait via AsyncWaitHandle: Task is not completed"));
+        [Theory]
+        [OuterLoop]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void WaitOnAsyncWaitHandleTechnique(bool hasReturnType)
+        {
+            _hasReturnType = hasReturnType;
 
-            Debug.WriteLine("Wait on AsyncWaitHandle -- Task completed");
-
-            //4. Prove that the Callback technique works
+            LongTask longTask;
             if (_hasReturnType)
-                ar = ((LongTask<int>)lt).BeginDoTask(INTINPUT, TaskCompleted, lt);
+                longTask = new LongTask<int>(LongTaskMilliseconds);
             else
-                ar = lt.BeginDoTask(TaskCompleted, lt);
+                longTask = new LongTask(LongTaskMilliseconds);
+
+            IAsyncResult asyncResult = longTask.BeginDoTask(null, null);
+            asyncResult.AsyncWaitHandle.WaitOne();
+
+            AssertTaskCompleted(asyncResult);
+            Assert.False(asyncResult.CompletedSynchronously, "Should not have completed synchronously.");
+        }
+
+        [Theory]
+        [OuterLoop]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void CallbackTechnique(bool hasReturnType)
+        {
+            _hasReturnType = hasReturnType;
+
+            LongTask longTask;
+            if (_hasReturnType)
+                longTask = new LongTask<int>(LongTaskMilliseconds);
+            else
+                longTask = new LongTask(LongTaskMilliseconds);
+
+            IAsyncResult asyncResult;
+            if (_hasReturnType)
+                asyncResult = ((LongTask<int>)longTask).BeginDoTask(IntInput, TaskCompleted, longTask);
+            else
+                asyncResult = longTask.BeginDoTask(TaskCompleted, longTask);
 
             _mre.WaitOne(); //Block the main thread until async thread finishes executing the call back
-            // verify task completed
-            if (!VerifyTaskCompleted(ar))
-                Assert.True(false, string.Format("Callback: Task is not completed"));
 
-            Debug.WriteLine("Callback -- Task completed");
-            //reaching this point means that the test didnt encounter any crashes or hangs.
-            //So set the test as passed by returning true
-            Assert.False(ar.CompletedSynchronously, "Should not have completed synchronously.");
-
-
-            // Cleanup
-            _mre.Dispose();
+            AssertTaskCompleted(asyncResult);
+            Assert.False(asyncResult.CompletedSynchronously, "Should not have completed synchronously.");
         }
 
         /// <summary>
@@ -125,8 +145,8 @@ namespace System.Threading.Tasks.Tests
             {
                 LongTask<int> lt = (LongTask<int>)ar.AsyncState;
                 int retValue = lt.EndDoTask(ar);
-                if (retValue != INTINPUT)
-                    Assert.True(false, string.Format("Mismatch: Return = {0} vs Expect = {1}", retValue, INTINPUT));
+                if (retValue != IntInput)
+                    Assert.True(false, string.Format("Mismatch: Return = {0} vs Expect = {1}", retValue, IntInput));
             }
             else
             {
@@ -138,33 +158,17 @@ namespace System.Threading.Tasks.Tests
         }
 
         /// <summary>
-        /// Verify the IAsyncResult represent a completed Task
+        /// Assert that the IAsyncResult represent a completed Task
         /// </summary>
-        /// <param name="ar"></param>
-        /// <returns></returns>
-        private bool VerifyTaskCompleted(IAsyncResult ar)
+        private void AssertTaskCompleted(IAsyncResult ar)
         {
-            return ar.IsCompleted &&
-                ((Task)ar).Status == TaskStatus.RanToCompletion; // assume no exception thrown           
-        }
-    }
-
-    public static class TaskAPMTestCases
-    {
-        [Fact]
-        [OuterLoop]
-        public static void TaskAPMTest0()
-        {
-            TaskAPMTest test = new TaskAPMTest(false);
-            test.RealRun();
+            Assert.True(ar.IsCompleted);
+            Assert.Equal(TaskStatus.RanToCompletion, ((Task)ar).Status);
         }
 
-        [Fact]
-        [OuterLoop]
-        public static void TaskAPMTest1()
+        public void Dispose()
         {
-            TaskAPMTest test = new TaskAPMTest(true);
-            test.RealRun();
+            _mre.Dispose();
         }
     }
 
@@ -173,20 +177,19 @@ namespace System.Threading.Tasks.Tests
     /// </summary>
     public class LongTask
     {
-        //Used to store the amount time to perform spinWait
-        protected readonly Int32 _ms;  // Milliseconds;
+        // Amount of time to SpinWait, in milliseconds.
+        protected readonly Int32 _msWaitDuration;
 
-        public LongTask(Int32 seconds)
+        public LongTask(Int32 milliseconds)
         {
-            _ms = seconds * 1000;
+            _msWaitDuration = milliseconds;
         }
 
         // Synchronous version of time-consuming method
         public void DoTask()
         {
             // Simulate time-consuming task
-            SpinWait.SpinUntil(() => false, _ms);
-            //Thread.SpinWait(_ms); 
+            SpinWait.SpinUntil(() => false, _msWaitDuration);
         }
 
         // Asynchronous version of time-consuming method (Begin part)
@@ -208,7 +211,7 @@ namespace System.Threading.Tasks.Tests
                 });
             }
 
-            return task;  // Return the IAsyncResult to the caller
+            return task; // Return the IAsyncResult to the caller
         }
 
         // Asynchronous version of time-consuming method (End part)
@@ -226,16 +229,16 @@ namespace System.Threading.Tasks.Tests
     /// </summary>
     public sealed class LongTask<T> : LongTask
     {
-        public LongTask(Int32 seconds)
-            : base(seconds)
+        public LongTask(Int32 milliseconds)
+            : base(milliseconds)
         {
         }
 
         // Synchronous version of time-consuming method
         public T DoTask(T input)
         {
-            SpinWait.SpinUntil(() => false, _ms); // Simulate time-consuming task
-            return input;           // Return some result, for now, just return the input
+            SpinWait.SpinUntil(() => false, _msWaitDuration); // Simulate time-consuming task
+            return input; // Return some result, for now, just return the input
         }
 
         public IAsyncResult BeginDoTask(T input, AsyncCallback callback, Object state)
@@ -253,7 +256,7 @@ namespace System.Threading.Tasks.Tests
                 callback(task);
             });
 
-            return task;  // Return the IAsyncResult to the caller
+            return task; // Return the IAsyncResult to the caller
         }
 
         // Asynchronous version of time-consuming method (End part)
