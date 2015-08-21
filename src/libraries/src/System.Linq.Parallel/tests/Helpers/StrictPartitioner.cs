@@ -1,13 +1,11 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 
-namespace Test
+namespace System.Linq.Parallel.Tests
 {
     // This class is meant to be used with partitioners that do load balancing, but _not_ buffering.
     // Feeding it a buffering partitioner will result in incorrect results!
