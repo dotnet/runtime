@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Windows_Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <OutputType>Library</OutputType>
+    <ProjectGuid>{F6D1C093-081D-46DE-B5A8-516533375FDD}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <StringResourcesPath>..\..\src\Resources\Strings.resx</StringResourcesPath>
+  </PropertyGroup>
+  
+  <!-- Help VS understand available configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
+  
+  <ItemGroup>
+    <CompileItem Include="NameResolutionPalTests.cs" />
+    <CompileItem Include="Fakes\GlobalLog.cs" />
+    <CompileItem Include="Fakes\Logging.cs" />
+
+    <Compile Include="..\..\src\System\Net\IPHostEntry.cs" >
+      <Link>ProductionCode\System\Net\IPHostEntry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\NameResolutionUtilities.cs" >
+      <Link>ProductionCode\System\Net\NameResolutionUtilities.cs</Link>
+    </Compile>
+
+    <Compile Include="$(CommonPath)\System\Net\IPEndPointStatics.cs">
+      <Link>Common\System\Net\IPEndPointStatics.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+    <Compile Include="..\..\src\System\Net\NameResolutionPal.Windows.cs">
+      <Link>ProductionCode\System\Net\NameResolutionPal.Windows.cs</Link>
+    </Compile>
+
+    <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
+      <Link>Common\System\Net\InternalException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\IntPtrHelper.cs">
+      <Link>Common\System\Net\IntPtrHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\SocketProtocolSupportPal.Windows.cs">
+      <Link>System\Net\SocketProtocolSupportPal.Windows</Link>
+    </Compile>
+
+    <!-- Debug only --> 
+    <Compile Include="$(CommonPath)\System\Net\DebugSafeHandle.cs">
+      <Link>Common\System\Net\DebugSafeHandle.cs</Link>
+    </Compile>
+
+    <!-- Common -->
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs</Link>
+    </Compile>
+
+    <!-- System.Net.Internals -->
+    <Compile Include="$(CommonPath)\System\Net\Internals\IPAddressExtensions.cs">
+      <Link>Common\System\Net\Internals\IPAddressExtensions.cs</Link>
+    </Compile>
+
+    <!-- Interop -->
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\AddressInfo.cs">
+      <Link>Interop\Windows\Winsock\AddressInfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\AddressInfoHints.cs">
+      <Link>Interop\Windows\Winsock\AddressInfoHints.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\hostent.cs">
+      <Link>Interop\Windows\Winsock\hostent.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.closesocket.cs">
+      <Link>Interop\Windows\Winsock\Interop.closesocket.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.gethostbyaddr.cs">
+      <Link>Interop\Windows\Winsock\Interop.gethostbyaddr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.gethostbyname.cs">
+      <Link>Interop\Windows\Winsock\Interop.gethostbyname.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.gethostname.cs">
+      <Link>Interop\Windows\Winsock\Interop.gethostname.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.GetNameInfoW.cs">
+      <Link>Interop\Windows\Winsock\Interop.GetNameInfoW.cs</Link>
+    </Compile>    
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.GetAddrInfoW.cs">
+      <Link>Interop\Windows\Winsock\Interop.GetAddrInfoW.cs</Link>
+    </Compile>    
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.freeaddrinfo.cs">
+      <Link>Interop\Windows\Winsock\Interop.freeaddinfo.cs</Link>
+    </Compile>    
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSAStartup.cs">
+      <Link>Interop\Windows\Winsock\Interop.WSAStartup.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSASocketW.cs">
+      <Link>Interop\Windows\Winsock\Interop.WSASocketW.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\ProtocolFamily.cs">
+      <Link>Interop\Windows\Winsock\ProtocolFamily.cs</Link>
+    </Compile>    
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\SocketType.cs">
+      <Link>Interop\Windows\Winsock\SocketType.cs</Link>
+    </Compile>    
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\SafeFreeAddrInfo.cs">
+      <Link>Interop\Windows\Winsock\SafeFreeAddrInfo.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <Compile Include="$(CommonPath)\System\Net\Internals\SocketException.Unix.cs">
+      <Link>ProductionCode\Common\System\Net\Internals\SocketException.Unix.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\NameResolutionPal.Unix.cs">
+      <Link>ProductionCode\System\Net\NameResolutionPal.Unix.cs</Link>
+    </Compile>
+
+    <Compile Include="$(CommonPath)\System\Net\SocketProtocolSupportPal.Unix.cs">
+      <Link>System\Net\SocketProtocolSupportPal.Unix.cs</Link>
+    </Compile>
+
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
+      <Link>Interop\Unix\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.close.cs">
+      <Link>Interop\Unix\libc\Interop.close.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.freeaddrinfo.cs">
+      <Link>Interop\Unix\libc\Interop.freeaddrinfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getaddrinfo.cs">
+      <Link>Interop\Unix\libc\Interop.getaddrinfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gethostname.cs">
+      <Link>Interop\Unix\libc\Interop.gethostname.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getnameinfo.cs">
+      <Link>Interop\Unix\libc\Interop.getnameinfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.hostent.cs">
+      <Link>Interop\Unix\libc\Interop.hostent.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.socket.cs">
+      <Link>Interop\Unix\libc\Interop.socket.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
+    <Compile Include="..\..\src\System\Net\NameResolutionPal.Linux.cs">
+      <Link>ProductionCode\System\Net\NameResolutionPal.Linux.cs</Link>
+    </Compile>
+
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.gethostbyaddr_r.cs">
+      <Link>Interop\Linux\libc\Interop.gethostbyaddr_r.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.gethostbyname_r.cs">
+      <Link>Interop\Linux\libc\Interop.gethostbyname_r.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.addrinfo.cs">
+      <Link>Interop\Unix\libc\Interop.addrinfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.sockaddr.cs">
+      <Link>Interop\Unix\libc\Interop.sockaddr.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
+    <Compile Include="..\..\src\System\Net\NameResolutionPal.OSX.cs">
+      <Link>ProductionCode\System\Net\NameResolutionPal.OSX.cs</Link>
+    </Compile>
+
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Errors.cs">
+      <Link>Interop\OSX\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.addrinfo.cs">
+      <Link>Interop\OSX\libc\Interop.addrinfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.gethostbyaddr.cs">
+      <Link>Interop\OSX\libc\Interop.gethostbyaddr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.gethostbyname.cs">
+      <Link>Interop\OSX\libc\Interop.gethostbyname.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.sockaddr.cs">
+      <Link>Interop\OSX\libc\Interop.sockaddr.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+</Project>

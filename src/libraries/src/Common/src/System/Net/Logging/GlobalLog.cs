@@ -133,7 +133,6 @@ namespace System.Net
 
             if (ThreadKindStack.Peek() != source)
             {
-                // SQL can fail to clean up the stack, leaving the default Other at the bottom.  Replace it.
                 EventSourceLogging.Log.WarningMessage("The stack has been corrupted.");
                 ThreadKinds last = ThreadKindStack.Pop() & ThreadKinds.SourceMask;
                 Assert(last == source || last == ThreadKinds.Other, "Thread source changed.|Was:({0}) Now:({1})", last, source);
