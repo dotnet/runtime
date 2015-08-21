@@ -4,13 +4,11 @@
 using System;
 using System.Runtime.InteropServices;
 
-using mode_t  = System.Int32;
-
 internal static partial class Interop
 {
-    internal static partial class libc
+    internal static partial class Sys
     {
-        [DllImport(Libraries.Libc, SetLastError = true)]
-        internal static extern int open(string filename, OpenFlags flags, mode_t mode);
+        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        internal static extern int Unlink(string pathname);
     }
 }

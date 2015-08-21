@@ -23,7 +23,7 @@ namespace Microsoft.Win32.SafeHandles
         /// <param name="flags">The flags with which to open the file.</param>
         /// <param name="mode">The mode for opening the file.</param>
         /// <returns>A SafeFileHandle for the opened file.</returns>
-        internal static SafeFileHandle Open(string path, Interop.libc.OpenFlags flags, int mode)
+        internal static SafeFileHandle Open(string path, Interop.Sys.OpenFlags flags, int mode)
         {
             Debug.Assert(path != null);
 
@@ -39,11 +39,11 @@ namespace Microsoft.Win32.SafeHandles
                 // If we fail to open the file due to a path not existing, we need to know whether to blame
                 // the file itself or its directory.  If we're creating the file, then we blame the directory,
                 // otherwise we blame the file.
-                bool enoentDueToDirectory = (flags & Interop.libc.OpenFlags.O_CREAT) != 0;
+                bool enoentDueToDirectory = (flags & Interop.Sys.OpenFlags.O_CREAT) != 0;
 
                 // Open the file.
                 int fd;
-                while (Interop.CheckIo(fd = Interop.libc.open(path, flags, mode), path, isDirectory: enoentDueToDirectory,
+                while (Interop.CheckIo(fd = Interop.Sys.Open(path, flags, mode), path, isDirectory: enoentDueToDirectory,
                     errorRewriter: e => (e.Error == Interop.Error.EISDIR) ? Interop.Error.EACCES.Info() : e)) ;
                 Debug.Assert(fd >= 0);
                 handle.SetHandle((IntPtr)fd);
@@ -74,7 +74,7 @@ namespace Microsoft.Win32.SafeHandles
             // be in use elsewhere in the process.  Instead, we simply check whether the call was successful.
             int fd = (int)handle;
             Debug.Assert(fd >= 0);
-            return Interop.libc.close(fd) == 0;
+            return Interop.Sys.Close(fd) == 0;
         }
 
         public override bool IsInvalid

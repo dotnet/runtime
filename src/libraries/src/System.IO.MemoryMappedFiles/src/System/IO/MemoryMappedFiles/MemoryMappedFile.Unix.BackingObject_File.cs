@@ -23,7 +23,7 @@ namespace System.IO.MemoryMappedFiles
             var fs = new FileStream(path, FileMode.CreateNew, TranslateProtectionsToFileAccess(protections), FileShare.ReadWrite, DefaultBufferSize);
             try
             {
-                Interop.CheckIo(Interop.libc.unlink(path));
+                Interop.CheckIo(Interop.Sys.Unlink(path));
                 fs.SetLength(capacity);
             }
             catch

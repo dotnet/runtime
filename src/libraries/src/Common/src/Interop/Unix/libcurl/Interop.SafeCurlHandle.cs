@@ -213,8 +213,8 @@ internal static partial class Interop
                 Debug.Assert(0 == _requestCount);
                 Debug.Assert(_pollCancelled);
 
-                libc.close(_specialFds[libc.ReadEndOfPipe]);
-                libc.close(_specialFds[libc.WriteEndOfPipe]);
+                Interop.Sys.Close(_specialFds[libc.ReadEndOfPipe]);
+                Interop.Sys.Close(_specialFds[libc.WriteEndOfPipe]);
                 libcurl.curl_multi_cleanup(this.handle);
 
                 return true;
