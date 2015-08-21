@@ -2195,7 +2195,8 @@ HRESULT Debugger::StartupPhase2(Thread * pThread)
 
     // After returning from debugger startup we assume that the runtime might start using the NGEN flags to make
     // binding decisions. From now on the debugger can not influence NGEN binding policy
-    s_fCanChangeNgenFlags = FALSE;
+    // Use volatile store to guarantee make the value visible to the DAC (the store can be optimized out otherwise)
+    VolatileStoreWithoutBarrier(&s_fCanChangeNgenFlags, FALSE);
 
     // Must release the lock (which would be done at the end of this method anyways) so that
     // the helper thread can do the jit-attach.
