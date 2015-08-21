@@ -1766,8 +1766,12 @@ void ZapImportSectionSignatures::PlaceDynamicHelperCell(ZapImport * pImport)
     }
 
     // Create the delay load helper
-    ReadyToRunHelper helperNum = GetDelayLoadHelperForDynamicHelper(pCell->GetKind());
-    ZapNode * pDelayLoadHelper = m_pImage->GetImportTable()->GetPlacedIndirectHelperThunk(helperNum, (PVOID)m_dwIndex);
+    ReadyToRunHelper helperNum = GetDelayLoadHelperForDynamicHelper(
+        (CORCOMPILE_FIXUP_BLOB_KIND)(pCell->GetKind() & ~CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE));
+
+    ZapNode * pDelayLoadHelper = m_pImage->GetImportTable()->GetPlacedIndirectHelperThunk(helperNum, (PVOID)m_dwIndex, 
+        (pCell->GetKind() & CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE) ? pCell : NULL);
+
     pCell->SetDelayLoadHelper(pDelayLoadHelper);
 
     // Add entry to both the the cell and data sections
@@ -1784,7 +1788,7 @@ ZapImport * ZapImportTable::GetDynamicHelperCell(CORCOMPILE_FIXUP_BLOB_KIND kind
     {
         SigBuilder sigBuilder;
 
-        sigBuilder.AppendData(kind);
+        sigBuilder.AppendData(kind & ~CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE);
 
         GetCompileInfo()->EncodeClass(m_pImage->GetModuleHandle(), handle, &sigBuilder, NULL, NULL);
 
@@ -1798,7 +1802,8 @@ ZapImport * ZapImportTable::GetDynamicHelperCell(CORCOMPILE_FIXUP_BLOB_KIND kind
 {
     SigBuilder sigBuilder;
 
-    EncodeMethod(kind, handle, &sigBuilder, pResolvedToken);
+    EncodeMethod((CORCOMPILE_FIXUP_BLOB_KIND)(kind & ~CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE),
+        handle, &sigBuilder, pResolvedToken);
 
     return GetImportForSignature<ZapDynamicHelperCell, ZapNodeType_DynamicHelperCell>((void *)kind, &sigBuilder);
 }
@@ -1807,7 +1812,8 @@ ZapImport * ZapImportTable::GetDynamicHelperCell(CORCOMPILE_FIXUP_BLOB_KIND kind
 {
     SigBuilder sigBuilder;
 
-    EncodeField(kind, handle, &sigBuilder, pResolvedToken);
+    EncodeField((CORCOMPILE_FIXUP_BLOB_KIND)(kind & ~CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE),
+        handle, &sigBuilder, pResolvedToken);
 
     return GetImportForSignature<ZapDynamicHelperCell, ZapNodeType_DynamicHelperCell>((void *)kind, &sigBuilder);
 }
@@ -1816,7 +1822,14 @@ class ZapIndirectHelperThunk : public ZapImport
 {
     DWORD SaveWorker(ZapWriter * pZapWriter);
 
+    ZapNode * m_pCell;
+
 public:
+    void SetCell(ZapNode * pCell)
+    {
+        m_pCell = pCell;
+    }
+
     ReadyToRunHelper GetReadyToRunHelper()
     {
         return (ReadyToRunHelper)((DWORD)GetHandle() & ~READYTORUN_HELPER_FLAG_VSD);
@@ -1934,6 +1947,17 @@ DWORD ZapIndirectHelperThunk::SaveWorker(ZapWriter * pZapWriter)
 #elif defined(_TARGET_AMD64_)
     if (IsDelayLoadHelper())
     {
+        if (m_pCell != NULL)
+        {
+            // lea rax, [pCell]
+            *p++ = 0x48;
+            *p++ = 0x8D;
+            *p++ = 0x05;
+            if (pImage != NULL)
+                pImage->WriteReloc(buffer, (int)(p - buffer), m_pCell, 0, IMAGE_REL_BASED_REL32);
+            p += 4;
+        }
+        else
         if (IsVSD())
         {
             // mov rax, r11
@@ -2087,9 +2111,21 @@ ZapNode * ZapImportTable::GetIndirectHelperThunk(ReadyToRunHelper helperNum, PVO
     return pImport;
 }
 
-ZapNode * ZapImportTable::GetPlacedIndirectHelperThunk(ReadyToRunHelper helperNum, PVOID pArg)
+ZapNode * ZapImportTable::GetPlacedIndirectHelperThunk(ReadyToRunHelper helperNum, PVOID pArg, ZapNode * pCell)
 {
-    ZapNode * pImport = GetImport<ZapIndirectHelperThunk, ZapNodeType_IndirectHelperThunk>((void *)helperNum, pArg);
+    ZapNode * pImport;
+    if (pCell != NULL)
+    {
+        ZapIndirectHelperThunk * pIndirectHelperThunk = new (m_pImage->GetHeap()) ZapIndirectHelperThunk();
+        pIndirectHelperThunk->SetHandle((void *)helperNum);
+        pIndirectHelperThunk->SetHandle2(pArg);
+        pIndirectHelperThunk->SetCell(pCell);
+        pImport = pIndirectHelperThunk;
+    }
+    else
+    {
+        pImport = GetImport<ZapIndirectHelperThunk, ZapNodeType_IndirectHelperThunk>((void *)helperNum, pArg);
+    }
     if (!pImport->IsPlaced())
         PlaceIndirectHelperThunk(pImport);
 #if defined(_TARGET_ARM_) && !defined(BINDER)
