@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 
-namespace Test
+namespace System.Linq.Parallel.Tests
 {
     internal static class KeyValuePair
     {
