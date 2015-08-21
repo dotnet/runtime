@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Composition.Convention;
+using Microsoft.Internal;
 
 namespace System.Composition.TypedParts.Util
 {
@@ -16,7 +17,7 @@ namespace System.Composition.TypedParts.Util
             if (member == null) throw new ArgumentNullException("member");
 
             if (!(member is TypeInfo) && member.DeclaringType != reflectedType)
-                return new Attribute[0];
+                return EmptyArray<Attribute>.Value;
 
             return member.GetCustomAttributes(false);
         }

@@ -6,7 +6,6 @@
     <ProjectGuid>{E6592FAD-10B5-4B56-9287-D72DD136992F}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>System.Composition.Convention</RootNamespace>
     <AssemblyName>System.Composition.Convention</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFrameworkProfile>Profile259</TargetFrameworkProfile>
@@ -21,21 +20,35 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(CommonPath)\Microsoft\Internal\Assumes.cs">
+      <Link>Microsoft\Internal\Assumes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Internal\Assumes.InternalErrorException.cs">
+      <Link>Microsoft\Internal\Assumes.InternalErrorException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Internal\CommonStrings.Designer.cs">
+      <Link>Microsoft\Internal\CommonStrings.Designer.cs</Link>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>CommonStrings.resx</DependentUpon>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Internal\EmptyArray.cs">
+      <Link>Microsoft\Internal\EmptyArray.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Internal\Requires.cs">
+      <Link>Microsoft\Internal\Requires.cs</Link>
+    </Compile>
     <Compile Include="Microsoft\Composition\Diagnostics\CompositionTrace.cs" />
     <Compile Include="Microsoft\Composition\Diagnostics\CompositionTraceId.cs" />
     <Compile Include="Microsoft\Composition\Diagnostics\CompositionTraceSource.cs" />
-    <Compile Include="Microsoft\Composition\Diagnostics\SilverlightTraceWriter.cs" />
+    <Compile Include="Microsoft\Composition\Diagnostics\DebuggerTraceWriter.cs" />
     <Compile Include="Microsoft\Composition\Diagnostics\TraceSourceTraceWriter.cs" />
     <Compile Include="Microsoft\Composition\Diagnostics\TraceWriter.cs" />
-    <Compile Include="Microsoft\Internal\Assumes.cs" />
-    <Compile Include="Microsoft\Internal\Assumes.InternalErrorException.cs" />
     <Compile Include="Microsoft\Internal\AttributeServices.cs" />
     <Compile Include="Microsoft\Internal\Lock.cs" />
     <Compile Include="Microsoft\Internal\Lock.Reader.cs" />
     <Compile Include="Microsoft\Internal\Lock.Writer.cs" />
     <Compile Include="Microsoft\Internal\ReflectionServices.cs" />
-    <Compile Include="Microsoft\Internal\Requires.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Strings.Designer.cs" />
     <Compile Include="System\Composition\Convention\ConventionBuilder.cs" />
     <Compile Include="System\Composition\Convention\ExportConventionBuilder.cs" />
@@ -46,6 +59,12 @@
     <Compile Include="System\Composition\ExceptionBuilder.cs" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="$(CommonPath)\Microsoft\Internal\CommonStrings.resx">
+      <Link>Microsoft\Internal\CommonStrings.resx</Link>
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>CommonStrings.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>Microsoft.Internal</CustomToolNamespace>
+    </EmbeddedResource>
     <EmbeddedResource Include="Strings.resx" />
   </ItemGroup>
   <ItemGroup>
@@ -56,6 +75,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Microsoft\Diagnostics\" />
+    <Folder Include="Properties\" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -65,7 +65,9 @@ namespace CompositionThroughput
         [Export]
         private class WebServer
         {
+#pragma warning disable 3016
             [Import, SharingBoundary(Web.Boundaries.Web)]
+#pragma warning restore 3016
             public ExportFactory<Web.OperationRoot> WebScopeFactory { get; set; }
         }
 

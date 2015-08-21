@@ -50,9 +50,6 @@
     <Compile Include="MetadataViewGenerationTests.cs" />
     <Compile Include="OpenGenericsTests.cs" />
     <Compile Include="OptionalImportTests.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs">
-      <SharedSource>false</SharedSource>
-    </Compile>
     <Compile Include="PropertyExportTests.cs" />
     <Compile Include="RegistrationBuilderCompatibilityTests.cs" />
     <Compile Include="SharingTests.cs" />
@@ -90,6 +87,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Properties\" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

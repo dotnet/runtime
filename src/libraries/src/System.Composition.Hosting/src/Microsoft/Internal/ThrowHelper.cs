@@ -17,13 +17,6 @@ namespace Microsoft.Internal
             return e;
         }
 
-        static public ArgumentNullException ArgumentNullException(string argument)
-        {
-            var e = new ArgumentNullException(argument);
-            LogException(e);
-            return e;
-        }
-
         static public ArgumentException ArgumentException(string message)
         {
             var e = new ArgumentException(message);

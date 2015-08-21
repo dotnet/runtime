@@ -15,7 +15,7 @@ namespace Microsoft.Internal
         private sealed class InternalErrorException : Exception
         {
             public InternalErrorException(string message)
-                : base(string.Format(CultureInfo.CurrentCulture, Strings.InternalExceptionMessage, message))
+                : base(string.Format(CultureInfo.CurrentCulture, CommonStrings.Diagnostic_InternalExceptionMessage, message))
             {
             }
         }

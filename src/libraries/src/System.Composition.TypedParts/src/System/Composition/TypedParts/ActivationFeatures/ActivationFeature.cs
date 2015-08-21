@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Microsoft.Internal;
 using System;
 using System.Collections.Generic;
 using System.Composition.Hosting.Core;
@@ -16,7 +17,7 @@ namespace System.Composition.TypedParts.ActivationFeatures
         /// <summary>
         /// A constant shared for subclass use.
         /// </summary>
-        protected static readonly CompositionDependency[] NoDependencies = new CompositionDependency[0];
+        protected static readonly CompositionDependency[] NoDependencies = EmptyArray<CompositionDependency>.Value;
 
         /// <summary>
         /// Participate in the activator creation process.

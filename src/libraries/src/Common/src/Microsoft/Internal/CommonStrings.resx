@@ -117,62 +117,10 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="CompositionOperation_SharingLockRequired" xml:space="preserve">
-    <value>Sharing lock is required</value>
+  <data name="ArgumentException_EmptyString" xml:space="preserve">
+    <value>'{0}' cannot be an empty string ("").</value>
   </data>
-  <data name="Dependency_ExportNotFound" xml:space="preserve">
-    <value>No export was found for the contract '{0}'</value>
-  </data>
-  <data name="Dependency_QuoteParameter" xml:space="preserve">
-    <value>'{0}'</value>
-  </data>
-  <data name="Dependency_TooManyExports" xml:space="preserve">
-    <value>Only one export for the contract '{0}' is allowed, but the following parts: {1} export it.</value>
-    <comment>Parameter {1} is a list of items</comment>
-  </data>
-  <data name="Dependency_ToStringFormat" xml:space="preserve">
-    <value>'{0}' on contract '{1}' supplied by {2}</value>
-  </data>
-  <data name="ExportDescriptorNull" xml:space="preserve">
-    <value>Export descriptor fulfillment function returned null.</value>
-  </data>
-  <data name="ExportDescriptor_ToStringFormat" xml:space="preserve">
-    <value>{0} supplied by {1}</value>
-  </data>
-  <data name="Formatter_None" xml:space="preserve">
-    <value>&lt;none&gt;</value>
-  </data>
-  <data name="NotImplemented_MetadataCycles" xml:space="preserve">
-    <value>Metadata value circularity not possible, use lazy initialization.</value>
-  </data>
-  <data name="CardinalityMismatch_TooManyExports" xml:space="preserve">
-    <value>"Only one export for the contract '{0}' is allowed, multiple implementations were found."</value>
-  </data>
-  <data name="Diagnostic_ThrowingException" xml:space="preserve">
-    <value>Exception Thrown: {0}\r\n</value>
-  </data>
-  <data name="ExportDescriptor_DependencyErrorContract" xml:space="preserve">
-    <value> -&gt; required by initial request for contract '{0}'</value>
-  </data>
-  <data name="ExportDescriptor_DependencyErrorLine" xml:space="preserve">
-    <value> -&gt; required by import '{0}' of part '{1}'</value>
-  </data>
-  <data name="ExportDescriptor_UnsupportedCycle" xml:space="preserve">
-    <value>Detected an unsupported cycle for part '{0}'. To construct a valid cycle, at least one part in the cycle must be shared, and at least one import in the cycle must be non-prerequisite (e.g. a property).</value>
-  </data>
-  <data name="Component_NotCreatableOutsideSharingBoundary" xml:space="preserve">
-    <value>The component (unknown) cannot be created outside the {0} sharing boundary.</value>
-  </data>
-  <data name="Keyword_MetadataViewProvider" xml:space="preserve">
-    <value>Metadata View Provider</value>
-  </data>
-  <data name="MetadataViewProvider_InvalidViewImplementation" xml:space="preserve">
-    <value>The type '{0}' cannot be used as a metadata view. A metadata view must be a concrete class with a parameterless or dictionary constructor.</value>
-  </data>
-  <data name="MetadataViewProvider_MissingMetadata" xml:space="preserve">
-    <value>Export metadata for '{0}' is missing and no default value was supplied.</value>
-  </data>
-  <data name="Formatter_ListSeparatorWithSpace" xml:space="preserve">
-    <value>, </value>
+  <data name="Diagnostic_InternalExceptionMessage" xml:space="preserve">
+    <value>Internal error occurred. Additional information: '{0}'.</value>
   </data>
 </root>

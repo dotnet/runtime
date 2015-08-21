@@ -19,7 +19,7 @@ namespace System.Composition.Convention
     /// </summary>
     public class PartConventionBuilder
     {
-        private readonly Type[] _emptyTypeArray = new Type[0];
+        private readonly Type[] _emptyTypeArray = EmptyArray<Type>.Value;
         private static List<Attribute> s_onImportsSatisfiedAttributeList;
         private readonly static List<Attribute> s_importingConstructorList = new List<Attribute>() { new ImportingConstructorAttribute() };
         private readonly static Type s_exportAttributeType = typeof(ExportAttribute);
