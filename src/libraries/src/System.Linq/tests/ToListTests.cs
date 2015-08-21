@@ -135,5 +135,96 @@ namespace System.Linq.Tests
             Assert.Equal(3, resultList[0]);
             Assert.Equal(4, resultList[0]);
         }
+        
+        [Fact]
+        public void SameResultsRepeatCallsFromWhereOnIntQuery()
+        {
+            var q = from x in new[] { 9999, 0, 888, -1, 66, -777, 1, 2, -12345 }
+                    where x > Int32.MinValue
+                    select x;
+
+            Assert.Equal(q.ToList(), q.ToList());
+        }
+        
+        [Fact]
+        public void SameResultsRepeatCallsFromWhereOnStringQuery()
+        {
+            var q = from x in new[] { "!@#$%^", "C", "AAA", "", "Calling Twice", "SoS", String.Empty }
+                        where !String.IsNullOrEmpty(x)
+                        select x;
+
+            Assert.Equal(q.ToList(), q.ToList());
+        }
+
+        [Fact]
+        public void SourceIsEmptyICollectionT()
+        {
+            int[] source = { };
+            int[] expected = { };
+
+            ICollection<int> collection = source as ICollection<int>;
+
+            Assert.Equal(expected, source.ToList());
+            Assert.Equal(expected, collection.ToList());
+        }
+
+        [Fact]
+        public void SourceIsICollectionTWithFewElements()
+        {
+            int?[] source = { -5, null, 0, 10, 3, -1, null, 4, 9 };
+            int?[] expected = { -5, null, 0, 10, 3, -1, null, 4, 9 };
+
+            ICollection<int?> collection = source as ICollection<int?>;
+
+            Assert.Equal(expected, source.ToList());
+            Assert.Equal(expected, collection.ToList());
+        }
+
+        // Essentially Enumerable.Range(), but guaranteed not to become a collection
+        // type due to any changes in the future.
+        private static IEnumerable<int> NumList(int start, int count)
+        {
+            for (int i = 0; i < count; i++)
+                yield return start + i;
+        }
+
+        private static IEnumerable<int?> NullSeq(long num)
+        {
+            for (long i = 0; i < num; i++)
+                yield return null;
+        }
+
+        [Fact]
+        public void SourceNotICollectionAndIsEmpty()
+        {
+            IEnumerable<int> source = NumList(-4, 0);
+            int[] expected = { };
+            
+            Assert.Null(source as ICollection<int>);
+
+            Assert.Equal(expected, source.ToList());
+        }
+
+        [Fact]
+        public void SourceNotICollectionAndHasElements()
+        {
+            IEnumerable<int> source = NumList(-4, 10);
+            int[] expected = { -4, -3, -2, -1, 0, 1, 2, 3, 4, 5 };
+
+            Assert.Null(source as ICollection<int>);
+
+            Assert.Equal(expected, source.ToList());
+        }
+
+        [Fact]
+        public void SourceNotICollectionAndAllNull()
+        {
+            IEnumerable<int?> source = NullSeq(5);
+            int?[] expected = { null, null, null, null, null };
+
+            Assert.Null(source as ICollection<int>);
+    
+            Assert.Equal(expected, source.ToList());
+        }
     }
 }

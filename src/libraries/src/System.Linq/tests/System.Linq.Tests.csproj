@@ -57,7 +57,6 @@
     <Compile Include="LegacyTests\DistinctTests.cs" />
     <Compile Include="LegacyTests\ElementAtOrDefaultTests.cs" />
     <Compile Include="LegacyTests\ElementAtTests.cs" />
-    <Compile Include="LegacyTests\EmptyTests.cs" />
     <Compile Include="LegacyTests\EqualAllTests.cs" />
     <Compile Include="LegacyTests\ExceptTests.cs" />
     <Compile Include="LegacyTests\FirstOrDefaultTests.cs" />
@@ -89,9 +88,7 @@
     <Compile Include="LegacyTests\TakeWhileTests.cs" />
     <Compile Include="LegacyTests\ThenByDescendingTests.cs" />
     <Compile Include="LegacyTests\ThenByTests.cs" />
-    <Compile Include="LegacyTests\ToArrayTests.cs" />
     <Compile Include="LegacyTests\ToDictionaryTests.cs" />
-    <Compile Include="LegacyTests\ToListTests.cs" />
     <Compile Include="LegacyTests\ToLookupTests.cs" />
     <Compile Include="LegacyTests\ToSequenceTests.cs" />
     <Compile Include="LegacyTests\UnionTests.cs" />
