@@ -101,8 +101,7 @@ namespace System.Net
                 nativePointer = Marshal.ReadIntPtr(currentArrayElement);
             }
 
-            HostEntry.AddressList = new IPAddress[TempIPAddressList.Count];
-            TempIPAddressList.CopyTo(HostEntry.AddressList, 0);
+            HostEntry.AddressList = TempIPAddressList.ToArray();
 
             //
             // Now do the same thing for the aliases.
@@ -289,8 +288,7 @@ namespace System.Net
 
             hostinfo.HostName = canonicalname != null ? canonicalname : name;
             hostinfo.Aliases = Array.Empty<string>();
-            hostinfo.AddressList = new IPAddress[addresses.Count];
-            addresses.CopyTo(hostinfo.AddressList);
+            hostinfo.AddressList = addresses.ToArray();
 
             return SocketError.Success;
         }
