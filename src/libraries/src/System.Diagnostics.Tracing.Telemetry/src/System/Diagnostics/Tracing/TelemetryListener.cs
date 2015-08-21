@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System;
 using System.Threading;
 using System.Collections.Generic;
@@ -47,7 +50,7 @@ namespace System.Diagnostics.Tracing
                     s_allListenersCallback = (Action<TelemetryListener>)Delegate.Combine(s_allListenersCallback, value);
 
                     // Call back for each existing listener on the new callback.  
-                    for (TelemetryListener cur = s_allListeners; cur != null; cur = cur.m_next)
+                    for (TelemetryListener cur = s_allListeners; cur != null; cur = cur._next)
                         value(cur);
                 }
             }
@@ -65,12 +68,12 @@ namespace System.Diagnostics.Tracing
         virtual public IDisposable Subscribe(IObserver<KeyValuePair<string, object>> observer, Predicate<string> isEnabled)
         {
             // If we have been disposed, we silently ingore any subscriptions.  
-            if (m_disposed)
+            if (_disposed)
                 return new Subscription() { Owner = this };
 
-            Subscription newSubscription = new Subscription() { Observer = observer, IsEnabled = isEnabled, Owner = this, Next = m_subscriptions };
-            while (Interlocked.CompareExchange(ref m_subscriptions, newSubscription, newSubscription.Next) != newSubscription.Next)
-                newSubscription.Next = m_subscriptions;
+            Subscription newSubscription = new Subscription() { Observer = observer, IsEnabled = isEnabled, Owner = this, Next = _subscriptions };
+            while (Interlocked.CompareExchange(ref _subscriptions, newSubscription, newSubscription.Next) != newSubscription.Next)
+                newSubscription.Next = _subscriptions;
             return newSubscription;
         }
         /// <summary>
@@ -106,7 +109,7 @@ namespace System.Diagnostics.Tracing
                     callback(this);
 
                 // And add it to the list of all past listeners.  
-                m_next = s_allListeners;
+                _next = s_allListeners;
                 s_allListeners = this;
             }
         }
@@ -122,28 +125,28 @@ namespace System.Diagnostics.Tracing
             // Remove myself from the list if all listeners.  
             lock (DefaultListener)
             {
-                m_disposed = true;
+                _disposed = true;
                 if (s_allListeners == this)
-                    s_allListeners = s_allListeners.m_next;
+                    s_allListeners = s_allListeners._next;
                 else
                 {
                     var cur = s_allListeners;
                     while (cur != null)
                     {
-                        if (cur.m_next == this)
+                        if (cur._next == this)
                         {
-                            cur.m_next = this.m_next;
+                            cur._next = _next;
                             break;
                         }
-                        cur = cur.m_next;
+                        cur = cur._next;
                     }
                 }
-                m_next = null;
+                _next = null;
             }
 
             // Indicate completion to all subscribers.  
             Subscription subscriber = null;
-            Interlocked.Exchange(ref subscriber, m_subscriptions);
+            Interlocked.Exchange(ref subscriber, _subscriptions);
             while (subscriber != null)
             {
                 subscriber.Observer.OnCompleted();
@@ -169,7 +172,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public override bool IsEnabled(string telemetryName)
         {
-            for (var curSubscription = m_subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
+            for (var curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
             {
                 if (curSubscription.IsEnabled == null || curSubscription.IsEnabled(telemetryName))
                     return true;
@@ -182,7 +185,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public override void WriteTelemetry(string telemetryName, object parameters)
         {
-            for (var curSubscription = m_subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
+            for (var curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
                 curSubscription.Observer.OnNext(new KeyValuePair<string, object>(telemetryName, parameters));
         }
 
@@ -197,13 +200,13 @@ namespace System.Diagnostics.Tracing
             public void Dispose()
             {
                 // TO keep this lock free and easy to analyze, the linked list is READ ONLY.   Thus we copy
-                for (;;)
+                for (; ;)
                 {
-                    Subscription subscriptions = Owner.m_subscriptions;
+                    Subscription subscriptions = Owner._subscriptions;
                     Subscription newSubscriptions = Remove(subscriptions, this);    // Make a new list, with myself removed.  
 
                     // try to update, but if someone beat us to it, then retry.  
-                    if (Interlocked.CompareExchange(ref Owner.m_subscriptions, newSubscriptions, subscriptions) == subscriptions)
+                    if (Interlocked.CompareExchange(ref Owner._subscriptions, newSubscriptions, subscriptions) == subscriptions)
                     {
 #if DEBUG
                         var cur = subscriptions;
@@ -238,18 +241,18 @@ namespace System.Diagnostics.Tracing
                 for (int i = 0; i < 100; i++)
                     GC.KeepAlive("");
 #endif 
-                return new Subscription() { Observer = subscriptions.Observer, Owner = subscriptions.Owner, IsEnabled = subscriptions.IsEnabled,  Next = Remove(subscriptions.Next, subscription) };
+                return new Subscription() { Observer = subscriptions.Observer, Owner = subscriptions.Owner, IsEnabled = subscriptions.IsEnabled, Next = Remove(subscriptions.Next, subscription) };
             }
         }
 
-        Subscription m_subscriptions;
-        TelemetryListener m_next;               // We keep a linked list of all NotificationListeners (s_allListeners)
-        bool m_disposed;                        // Has Dispose been called?
+        private Subscription _subscriptions;
+        private TelemetryListener _next;               // We keep a linked list of all NotificationListeners (s_allListeners)
+        private bool _disposed;                        // Has Dispose been called?
 
-        static Action<TelemetryListener> s_allListenersCallback;    // The list of clients to call back when a new TelemetryListener is created.  
-        static TelemetryListener s_allListeners;                    // As a service, we keep track of all instances of NotificationListeners.  
-        static TelemetryListener s_default = new TelemetryListener("TelemetryListener.Default");
+        private static Action<TelemetryListener> s_allListenersCallback;    // The list of clients to call back when a new TelemetryListener is created.  
+        private static TelemetryListener s_allListeners;                    // As a service, we keep track of all instances of NotificationListeners.  
+        private static TelemetryListener s_default = new TelemetryListener("TelemetryListener.Default");
 
-#endregion
+        #endregion
     }
 }

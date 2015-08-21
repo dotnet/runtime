@@ -78,7 +78,7 @@ namespace System.Diagnostics.Tracing.Telemetry.Tests
             listener.Dispose();
             Assert.True(observer.Completed);
 
-            // We can unsubscribe without blowing up 
+            // confirm that we can unsubscribe without crashing 
             subscription.Dispose();
 
             // If we resubscribe after dispose, but it does not do anything.  
@@ -110,7 +110,6 @@ namespace System.Diagnostics.Tracing.Telemetry.Tests
 
             using (TelemetryListener.DefaultListener.Subscribe(new ObserverToList<TelemData>(result), predicate))
             {
-
                 Assert.False(TelemetrySource.DefaultSource.IsEnabled("Uninteresting"));
                 Assert.True(TelemetrySource.DefaultSource.IsEnabled("StructPayload"));
 
@@ -310,8 +309,8 @@ namespace System.Diagnostics.Tracing.Telemetry.Tests
                         Predicate<string> predicate = (name) => name == taskName;
                         Predicate<KeyValuePair<string, object>> filter = (keyValue) => keyValue.Key == taskName;
 
-                    // set up the observer to only see events set with the task name as the telemetry nname.  
-                    var observer = new ObserverToList<TelemData>(result, filter, taskName);
+                        // set up the observer to only see events set with the task name as the telemetry nname.  
+                        var observer = new ObserverToList<TelemData>(result, filter, taskName);
                         using (TelemetryListener.DefaultListener.Subscribe(observer, predicate))
                         {
                             TelemetrySource.DefaultSource.WriteTelemetry(taskName, taskNum);
@@ -320,16 +319,15 @@ namespace System.Diagnostics.Tracing.Telemetry.Tests
                             Assert.Equal(taskName, result[0].Key);
                             Assert.Equal(taskNum, result[0].Value);
 
-                        // Spin a bit randomly.  This mixes of the lifetimes of the subscriptions and makes it 
-                        // more stressfull 
-                        var cnt = random.Next(10, 100) * 1000;
+                            // Spin a bit randomly.  This mixes of the lifetimes of the subscriptions and makes it 
+                            // more stressfull 
+                            var cnt = random.Next(10, 100) * 1000;
                             while (0 < --cnt)
                                 GC.KeepAlive("");
-
                         }   // Unsubscribe
 
-                    // Send the telemetry again, to see if it now does NOT come through (count remains unchanged). 
-                    TelemetrySource.DefaultSource.WriteTelemetry(taskName, -1);
+                        // Send the telemetry again, to see if it now does NOT come through (count remains unchanged). 
+                        TelemetrySource.DefaultSource.WriteTelemetry(taskName, -1);
                         Assert.Equal(1, result.Count);
                     }, i);
                 }
@@ -444,22 +442,22 @@ namespace System.Diagnostics.Tracing.Telemetry.Tests
             {
                 tasks[i] = (factory.StartNew(delegate ()
                 {
-            // Create a lset of TelemetryListeners (which add themselves to the AllListeners list. 
-            var listeners = new List<TelemetryListener>();
+                    // Create a lset of TelemetryListeners (which add themselves to the AllListeners list. 
+                    var listeners = new List<TelemetryListener>();
                     for (int j = 0; j < 200; j++)
                         listeners.Insert(0, (new TelemetryListener("Task " + i + " TestListener" + j)));
 
-            // They are all in the list
-            list = GetActiveNonDefaultListeners();
+                    // They are all in the list
+                    list = GetActiveNonDefaultListeners();
                     foreach (var listener in listeners)
                         Assert.Contains(listener, list);
 
-            // Dispose them all 
-            foreach (var listener in listeners)
+                    // Dispose them all 
+                    foreach (var listener in listeners)
                         listener.Dispose();
 
-            // And now they are not in the list.  
-            list = GetActiveNonDefaultListeners();
+                    // And now they are not in the list.  
+                    list = GetActiveNonDefaultListeners();
                     foreach (var listener in listeners)
                         Assert.DoesNotContain(listener, list);
                 }));
@@ -477,7 +475,7 @@ namespace System.Diagnostics.Tracing.Telemetry.Tests
         /// Returns the list of active Telelemtry listeners.  
         /// </summary>
         /// <returns></returns>
-        static List<TelemetryListener> GetActiveNonDefaultListeners()
+        private static List<TelemetryListener> GetActiveNonDefaultListeners()
         {
             var ret = new List<TelemetryListener>();
             var seenDefault = false;
@@ -505,14 +503,14 @@ namespace System.Diagnostics.Tracing.Telemetry.Tests
     // Takes an IObserver and returns a List<T> that are the elements obsverved.
     // Will assert on error and 'Completed' is set if the 'OnCompleted' callback
     // is issued.  
-    class ObserverToList<T> : IObserver<T>
+    internal class ObserverToList<T> : IObserver<T>
     {
         public ObserverToList(List<T> output, Predicate<T> filter = null, string name = null)
         {
-            m_output = output;
-            m_output.Clear();
-            m_filter = filter;
-            m_name = name;
+            _output = output;
+            _output.Clear();
+            _filter = filter;
+            _name = name;
         }
 
         public bool Completed { get; private set; }
@@ -532,20 +530,20 @@ namespace System.Diagnostics.Tracing.Telemetry.Tests
         public void OnNext(T value)
         {
             Assert.False(Completed);
-            if (m_filter == null || m_filter(value))
-                m_output.Add(value);
+            if (_filter == null || _filter(value))
+                _output.Add(value);
         }
 
-        List<T> m_output;
-        Predicate<T> m_filter;
-        string m_name;  // for debugging 
+        private List<T> _output;
+        private Predicate<T> _filter;
+        private string _name;  // for debugging 
         #endregion
     }
 
     /// <summary>
     /// Trivial class used for payloads.  (Usuallly anonymous types are used.  
     /// </summary>
-    class Payload
+    internal class Payload
     {
         public string Name { get; set; }
         public int Id { get; set; }
