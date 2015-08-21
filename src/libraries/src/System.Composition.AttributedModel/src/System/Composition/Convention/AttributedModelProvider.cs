@@ -1,0 +1,33 @@
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace System.Composition.Convention
+{
+    /// <summary>
+    /// Provider of augmented reflection data in support of conventions.
+    /// </summary>
+    public abstract class AttributedModelProvider
+    {
+        /// <summary>
+        /// Provide the list of attributes applied to the specified member.
+        /// </summary>
+        /// <param name="reflectedType">The reflectedType the type used to retrieve the memberInfo.</param>
+        /// <param name="member">The member to supply attributes for.</param>
+        /// <returns>The list of applied attributes.</returns>
+        public abstract IEnumerable<Attribute> GetCustomAttributes(System.Type reflectedType, MemberInfo member);
+
+        /// <summary>
+        /// <param name="reflectedType">The reflectedType the type used to retrieve the parameterInfo.</param>
+        /// <param name="parameter">The member to supply attributes for.</param>
+        /// <returns>The list of applied attributes.</returns>
+        /// </summary>
+        public abstract IEnumerable<Attribute> GetCustomAttributes(System.Type reflectedType, ParameterInfo parameter);
+    }
+}
