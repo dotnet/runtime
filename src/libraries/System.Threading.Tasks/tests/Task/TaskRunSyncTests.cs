@@ -71,12 +71,11 @@ namespace System.Threading.Tasks.Tests
             AbleToExecuteInline = ableToExecuteInline;
 
             /*need at least two threads since we might schedule two tasks (parent-child)*/
-            const int minThreads = 2;
-            int numberOfThreads = Environment.ProcessorCount > minThreads ? Environment.ProcessorCount : minThreads;
+            int numberOfThreads = Math.Max(Environment.ProcessorCount, 2);
             _threads = new Task[numberOfThreads];
             for (int i = 0; i < numberOfThreads; i++)
             {
-                Task t = new Task(() =>
+                _threads[i] = Task.Run(() =>
                 {
                     foreach (var task in _tasks.GetConsumingEnumerable())
                     {
@@ -86,9 +85,6 @@ namespace System.Threading.Tasks.Tests
                         }
                     }
                 });
-
-                t.Start();
-                _threads[i] = t;
             }
         }
 
@@ -374,7 +370,7 @@ namespace System.Threading.Tasks.Tests
 
                     case WorkloadType.RunWithUserScheduler:
                         TaskScheduler ts = new TaskRunSyncTaskScheduler(true);
-                        Task.Factory.StartNew(() => { }, _cts.Token, TaskCreationOptions.AttachedToParent, ts).ContinueWith((task) => DisposeScheduler(ts));
+                        Task.Factory.StartNew(() => { }, _cts.Token, TaskCreationOptions.AttachedToParent, ts).ContinueWith((task) => DisposeScheduler(ts), TaskScheduler.Default);
                         break;
 
                     case WorkloadType.ThrowException:
