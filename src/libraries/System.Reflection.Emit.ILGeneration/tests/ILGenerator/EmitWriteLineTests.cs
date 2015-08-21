@@ -12,7 +12,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
     public class ILGeneratorEmitWriteLine
     {
         [Fact]
-        public void PosTest1()
+        public void EmitWriteLineTests()
         {
             string name = "Assembly1";
             AssemblyName asmname = new AssemblyName(name);
@@ -39,7 +39,10 @@ namespace System.Reflection.Emit.ILGeneration.Tests
 
             // generate code for the method which will be invoking the first method
             ILGenerator ilgen2 = mbuild2.GetILGenerator();
+            LocalBuilder lbuild = ilgen2.DeclareLocal(typeof(bool));
             ilgen2.EmitWriteLine(fi);
+            ilgen2.EmitWriteLine("emitWriteLine");
+            ilgen2.EmitWriteLine(lbuild);
             ilgen2.Emit(OpCodes.Ldc_I4_1);
             ilgen2.Emit(OpCodes.Ret);
 
