@@ -663,6 +663,7 @@ HRESULT DacFreeVirtual(TADDR mem, ULONG32 size, ULONG32 typeFlags,
 PVOID   DacInstantiateTypeByAddress(TADDR addr, ULONG32 size, bool throwEx);
 PVOID   DacInstantiateTypeByAddressNoReport(TADDR addr, ULONG32 size, bool throwEx);
 PVOID   DacInstantiateClassByVTable(TADDR addr, ULONG32 minSize, bool throwEx);
+HRESULT DacGetPid(DWORD *pid);
 
 // Copy a null-terminated ascii or unicode string from the target to the host.
 // Note that most of the work here is to find the null terminator.  If you know the exact length,
