@@ -63,8 +63,8 @@
     <Compile Include="FileInfo\GetSetAttributes.cs" />
     <Compile Include="FileInfo\Length.cs" />
     <Compile Include="FileInfo\Open.cs" />
-    <Compile Include="FileStream\Flush.Sharing.cs" />
-    <Compile Include="FileStream\Flush_toDisk.cs" />
+    <Compile Include="FileStream\FlushAsync.cs" />
+    <Compile Include="FileStream\Pipes.cs" />
     <Compile Include="FileStream\SafeFileHandle.cs" />
     <Compile Include="FileStream\IsAsync.cs" />
     <Compile Include="FileStream\CanTimeout.cs" />
