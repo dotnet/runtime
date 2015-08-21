@@ -414,7 +414,8 @@ BOOL ThreadpoolMgr::Initialize()
     // initialize CP thread settings
     MinLimitTotalCPThreads = NumberOfProcessors;
 
-    MaxFreeCPThreads = NumberOfProcessors*MaxFreeCPThreadsPerCPU;
+    // Use volatile store to guarantee make the value visible to the DAC (the store can be optimized out otherwise)
+    VolatileStoreWithoutBarrier<LONG>(&MaxFreeCPThreads, NumberOfProcessors*MaxFreeCPThreadsPerCPU);
 
     counts.NumActive = 0;
     counts.NumWorking = 0;
