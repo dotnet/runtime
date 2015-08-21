@@ -16,7 +16,7 @@ namespace System.Composition.Hosting.Core
         private readonly ExportDescriptorProvider[] _exportDescriptorProviders;
         private readonly IDictionary<CompositionContract, UpdateResult> _updateResults = new Dictionary<CompositionContract, UpdateResult>();
 
-        private static readonly CompositionDependency[] s_noDependenciesValue = new CompositionDependency[0];
+        private static readonly CompositionDependency[] s_noDependenciesValue = EmptyArray<CompositionDependency>.Value;
         private static readonly Func<CompositionDependency[]> s_noDependencies = () => s_noDependenciesValue;
 
         private bool _updateFinished;

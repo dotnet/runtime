@@ -26,7 +26,6 @@
     <Compile Include="Suite.cs" />
     <Compile Include="WebBenchmarks.cs" />
     <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="WebBenchmarkScenario.cs" />
     <Compile Include="ThroughputHarness.cs" />
   </ItemGroup>
@@ -55,6 +54,9 @@
       <Project>{b4b5e15c-e6b9-48ea-94c2-f067484d4d3e}</Project>
       <Name>System.Composition.TypedParts</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Properties\" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

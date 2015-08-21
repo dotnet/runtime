@@ -24,8 +24,6 @@ namespace System.Composition
     {
         private readonly string[] _sharingBoundaryNames;
 
-        private const string SharingBoundaryImportMetadataConstraintName = "SharingBoundaryNames";
-
         /// <summary>
         /// Construct a <see cref="SharingBoundaryAttribute"/> for the specified boundary names.
         /// </summary>

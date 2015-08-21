@@ -21,13 +21,13 @@ namespace System.Composition.Hosting
     /// </summary>
     public sealed class CompositionHost : CompositionContext, IDisposable
     {
-        private static readonly string[] s_noBoundaries = new string[0];
+        private static readonly string[] s_noBoundaries = EmptyArray<string>.Value;
 
         private readonly LifetimeContext _rootLifetimeContext;
 
         private CompositionHost(LifetimeContext rootLifetimeContext)
         {
-            Requires.ArgumentNotNull(rootLifetimeContext, "rootLifetimeContext");
+            Requires.NotNull(rootLifetimeContext, "rootLifetimeContext");
 
             _rootLifetimeContext = rootLifetimeContext;
         }
@@ -47,7 +47,7 @@ namespace System.Composition.Hosting
         /// <returns>The container as an <see cref="CompositionHost"/>.</returns>
         public static CompositionHost CreateCompositionHost(IEnumerable<ExportDescriptorProvider> providers)
         {
-            Requires.ArgumentNotNull(providers, "providers");
+            Requires.NotNull(providers, "providers");
 
             var allProviders = new ExportDescriptorProvider[] {
                 new LazyExportDescriptorProvider(),

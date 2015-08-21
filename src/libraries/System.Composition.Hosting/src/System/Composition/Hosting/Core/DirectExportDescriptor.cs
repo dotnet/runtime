@@ -13,8 +13,8 @@ namespace System.Composition.Hosting.Core
 
         public DirectExportDescriptor(CompositeActivator activator, IDictionary<string, object> metadata)
         {
-            Requires.ArgumentNotNull(activator, "activator");
-            Requires.ArgumentNotNull(metadata, "metadata");
+            Requires.NotNull(activator, "activator");
+            Requires.NotNull(metadata, "metadata");
 
             _activator = activator;
             _metadata = metadata;

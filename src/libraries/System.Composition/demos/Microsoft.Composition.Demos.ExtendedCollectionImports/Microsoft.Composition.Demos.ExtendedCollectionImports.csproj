@@ -24,7 +24,6 @@
     <Compile Include="OrderedImportManyAttribute.cs" />
     <Compile Include="OrderedCollections\OrderedImportManyExportDescriptorProvider.cs" />
     <Compile Include="KeyByMetadataAttribute.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\System.Composition.AttributedModel\src\System.Composition.AttributedModel.csproj">
@@ -39,6 +38,9 @@
       <Project>{2711dfd2-8541-4628-bc53-eb784a14cdcf}</Project>
       <Name>System.Composition.Runtime</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Properties\" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
