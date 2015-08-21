@@ -10,7 +10,13 @@
 #include "common.h"
 #include "gmscpu.h"
 
-
+#if defined(DACCESS_COMPILE)
+static BOOL DacReadAllAdapter(SIZE_T address, SIZE_T *value)
+{
+    HRESULT hr = DacReadAll((TADDR)address, (PVOID)value, sizeof(*value), false);
+    return SUCCEEDED(hr);
+}
+#endif //DACCESS_COMPILE
 
 void LazyMachState::unwindLazyState(LazyMachState* baseState,
                                     MachState* unwoundState,
@@ -56,7 +62,25 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
 #ifndef FEATURE_PAL
         pvControlPc = Thread::VirtualUnwindCallFrame(&ctx, &nonVolRegPtrs);
 #else // !FEATURE_PAL
+        
+#if defined(DACCESS_COMPILE)
+        DWORD pid;
+        HRESULT hr = DacGetPid(&pid);
+        if (SUCCEEDED(hr))
+        {
+            if (!PAL_VirtualUnwindOutOfProc(&ctx, &nonVolRegPtrs, pid, DacReadAllAdapter))
+            {
+                DacError(E_FAIL);   
+            }
+        } 
+        else 
+        {
+            DacError(hr);
+        }
+#else
         PAL_VirtualUnwind(&ctx, &nonVolRegPtrs);
+#endif  // DACCESS_COMPILE    
+
         pvControlPc = GetIP(&ctx);
 #endif // !FEATURE_PAL
 

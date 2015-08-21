@@ -207,6 +207,13 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
   if(PAL_CMAKE_PLATFORM_ARCH_ARM)
     target_link_libraries(coreclrpal
       gcc_s
+      unwind-arm
+    )
+  endif()
+
+  if(PAL_CMAKE_PLATFORM_ARCH_AMD64)
+    target_link_libraries(coreclrpal
+      unwind-x86_64
     )
   endif()
     
@@ -215,6 +222,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     rt
     dl
     unwind
+    unwind-ptrace
+    unwind-generic
   )
 endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
 
