@@ -106,7 +106,7 @@ namespace System.Text.RegularExpressions
             Debug.Assert(stringlist != null, "stringlist cannot be null.");
 
             _codes = codes;
-            _strings = new String[stringlist.Count];
+            _strings = stringlist.ToArray();
             _trackcount = trackcount;
             _caps = caps;
             _capsize = capsize;
@@ -114,7 +114,6 @@ namespace System.Text.RegularExpressions
             _fcPrefix = fcPrefix;
             _anchors = anchors;
             _rightToLeft = rightToLeft;
-            stringlist.CopyTo(0, _strings, 0, stringlist.Count);
         }
 
         internal static bool OpcodeBacktracks(int Op)

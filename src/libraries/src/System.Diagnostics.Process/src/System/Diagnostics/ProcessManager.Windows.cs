@@ -466,9 +466,8 @@ namespace System.Diagnostics
                     //
                     if (firstModuleOnly) { break; }
                 }
-                ModuleInfo[] temp = new ModuleInfo[moduleInfos.Count];
-                moduleInfos.CopyTo(temp, 0);
-                return temp;
+
+                return moduleInfos.ToArray();
             }
             finally
             {
@@ -583,8 +582,9 @@ namespace System.Diagnostics
                         counterList.Add(counter);
                         counterPtr = (IntPtr)((long)counterPtr + counter.ByteLength);
                     }
-                    Interop.mincore.PERF_COUNTER_DEFINITION[] counters = new Interop.mincore.PERF_COUNTER_DEFINITION[counterList.Count];
-                    counterList.CopyTo(counters, 0);
+
+                    Interop.mincore.PERF_COUNTER_DEFINITION[] counters = counterList.ToArray();
+
                     for (int j = 0; j < type.NumInstances; j++)
                     {
                         Marshal.PtrToStructure(instancePtr, instance);
