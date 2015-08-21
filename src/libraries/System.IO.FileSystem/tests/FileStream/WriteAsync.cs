@@ -2,8 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -273,25 +275,155 @@ namespace System.IO.FileSystem.Tests
         [Fact]
         public async void WriteAsyncInternalBufferOverflow()
         {
-            // Overflow into next buffer
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.Write, FileShare.None, 2))
+            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.Write, FileShare.None, 3, useAsync: true))
             {
-                // Fill existing buffer
-                await fs.WriteAsync(TestBuffer, 0, 2);
-                Assert.True(fs.Length == 2);
-
-                // Overflow into next buffer
-                await fs.WriteAsync(TestBuffer, 0, 1);
+                // Fill buffer; should trigger flush of full buffer, no additional I/O
+                await fs.WriteAsync(TestBuffer, 0, 3);
                 Assert.True(fs.Length == 3);
 
-                // Overflow bufferSize * 2
-                await fs.WriteAsync(TestBuffer, 0, 5);
+                // Add to next buffer
+                await fs.WriteAsync(TestBuffer, 0, 1);
+                Assert.True(fs.Length == 4);
+
+                // Complete that buffer; should trigger flush of full buffer, no additional I/O
+                await fs.WriteAsync(TestBuffer, 0, 2);
+                Assert.True(fs.Length == 6);
+
+                // Add to next buffer
+                await fs.WriteAsync(TestBuffer, 0, 2);
                 Assert.True(fs.Length == 8);
 
-                // Overflow bufferSize * 2 with empty buffer
-                await fs.WriteAsync(TestBuffer, 0, 5);
-                Assert.True(fs.Length == 13);
+                // Overflow buffer with amount that could fit in a buffer; should trigger a flush, with additional I/O
+                await fs.WriteAsync(TestBuffer, 0, 2);
+                Assert.True(fs.Length == 10);
+
+                // Overflow buffer with amount that couldn't fit in a buffer; shouldn't be anything to flush, just an additional I/O
+                await fs.WriteAsync(TestBuffer, 0, 4);
+                Assert.True(fs.Length == 14);
             }
+        }
+
+        public static IEnumerable<object[]> MemberData_FileStreamAsyncWriting()
+        {
+            foreach (bool useAsync in new[] { true, false })
+            {
+                if (useAsync && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    // [ActiveIssue(812, PlatformID.AnyUnix)]
+                    // We don't have a special async I/O implementation in FileStream on Unix.
+                    continue;
+                }
+
+                foreach (bool preSize in new[] { true, false })
+                {
+                    foreach (bool cancelable in new[] { true, false })
+                    {
+                        yield return new object[] { useAsync, preSize, false, cancelable, 0x1000, 0x100, 100 };
+                        yield return new object[] { useAsync, preSize, false, cancelable, 0x1, 0x1, 1000 };
+                        yield return new object[] { useAsync, preSize, true, cancelable, 0x2, 0x100, 100 };
+                        yield return new object[] { useAsync, preSize, false, cancelable, 0x4000, 0x10, 100 };
+                        yield return new object[] { useAsync, preSize, true, cancelable, 0x1000, 99999, 10 };
+                    }
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData("MemberData_FileStreamAsyncWriting")]
+        public async Task ManyConcurrentWriteAsyncs(
+            bool useAsync, bool presize, bool exposeHandle, bool cancelable, int bufferSize, int writeSize, int numWrites)
+        {
+            long totalLength = writeSize * numWrites;
+            var expectedData = new byte[totalLength];
+            new Random(42).NextBytes(expectedData);
+            CancellationToken cancellationToken = cancelable ? new CancellationTokenSource().Token : CancellationToken.None;
+
+            string path = GetTestFilePath();
+            using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None, bufferSize, useAsync))
+            {
+                if (presize)
+                {
+                    fs.SetLength(totalLength);
+                }
+                if (exposeHandle)
+                {
+                    var ignored = fs.SafeFileHandle;
+                }
+
+                Task[] writes = new Task[numWrites];
+                for (int i = 0; i < numWrites; i++)
+                {
+                    writes[i] = fs.WriteAsync(expectedData, i * writeSize, writeSize, cancellationToken);
+                    Assert.Null(writes[i].Exception);
+                    if (useAsync)
+                    {
+                        Assert.Equal((i + 1) * writeSize, fs.Position);
+                    }
+                }
+
+                await Task.WhenAll(writes);
+            }
+
+            byte[] actualData = File.ReadAllBytes(path);
+            Assert.Equal(expectedData.Length, actualData.Length);
+            Assert.Equal<byte>(expectedData, actualData);
+        }
+
+        [Theory]
+        [MemberData("MemberData_FileStreamAsyncWriting")]
+        public async Task CopyToAsyncBetweenFileStreams(
+            bool useAsync, bool preSize, bool exposeHandle, bool cancelable, int bufferSize, int writeSize, int numWrites)
+        {
+            long totalLength = writeSize * numWrites;
+            var expectedData = new byte[totalLength];
+            new Random(42).NextBytes(expectedData);
+
+            string srcPath = GetTestFilePath();
+            File.WriteAllBytes(srcPath, expectedData);
+
+            string dstPath = GetTestFilePath();
+            using (FileStream src = new FileStream(srcPath, FileMode.Open, FileAccess.Read, FileShare.None, bufferSize, useAsync))
+            using (FileStream dst = new FileStream(dstPath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, useAsync))
+            {
+                await src.CopyToAsync(dst, writeSize, cancelable ? new CancellationTokenSource().Token : CancellationToken.None);
+            }
+
+            byte[] actualData = File.ReadAllBytes(dstPath);
+            Assert.Equal(expectedData.Length, actualData.Length);
+            Assert.Equal<byte>(expectedData, actualData);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task BufferCorrectlyMaintaindWhenReadAndWrite(bool useAsync)
+        {
+            string path = GetTestFilePath();
+            File.WriteAllBytes(path, TestBuffer);
+
+            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None, 2, useAsync))
+            {
+                Assert.Equal(TestBuffer[0], await ReadByteAsync(fs));
+                Assert.Equal(TestBuffer[1], await ReadByteAsync(fs));
+                Assert.Equal(TestBuffer[2], await ReadByteAsync(fs));
+                await fs.WriteAsync(TestBuffer, 0, TestBuffer.Length);
+
+                fs.Position = 0;
+                Assert.Equal(TestBuffer[0], await ReadByteAsync(fs));
+                Assert.Equal(TestBuffer[1], await ReadByteAsync(fs));
+                Assert.Equal(TestBuffer[2], await ReadByteAsync(fs));
+                for (int i = 0; i < TestBuffer.Length; i++)
+                {
+                    Assert.Equal(TestBuffer[i], await ReadByteAsync(fs));
+                }
+            }
+        }
+
+        private static async Task<byte> ReadByteAsync(FileStream fs)
+        {
+            byte[] oneByte = new byte[1];
+            Assert.Equal(1, await fs.ReadAsync(oneByte, 0, 1));
+            return oneByte[0];
         }
 
         [Fact, OuterLoop]
