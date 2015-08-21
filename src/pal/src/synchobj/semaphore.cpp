@@ -113,7 +113,6 @@ CreateSemaphoreA(
          IN LPCSTR lpName)
 {
     HANDLE hSemaphore = NULL;
-    WCHAR pwName[c_cchMaxSemaphore];
     CPalThread *pthr = NULL;
     PAL_ERROR palError;
 
@@ -124,28 +123,10 @@ CreateSemaphoreA(
 
     pthr = InternalGetCurrentThread();
     
-    if (lpName != NULL)
+    if (lpName != nullptr)
     {
-        palError = InternalWszNameFromSzName(
-            pthr,
-            lpName,
-            pwName,
-            sizeof(pwName) / sizeof(pwName[0])
-            );
-
-        if (NO_ERROR != palError)
-        {
-            goto CreateSemaphoreAExit;
-        }
-
-        palError = InternalCreateSemaphore(
-            pthr,
-            lpSemaphoreAttributes,
-            lInitialCount,
-            lMaximumCount,
-            pwName,
-            &hSemaphore
-            );
+        ASSERT("lpName: Cross-process named objects are not supported in PAL");
+        palError = ERROR_NOT_SUPPORTED;
     }
     else
     {
@@ -159,8 +140,6 @@ CreateSemaphoreA(
             );
     }
 
-CreateSemaphoreAExit:
-    
     //
     // We always need to set last error, even on success:
     // we need to protect ourselves from the situation
@@ -311,6 +290,13 @@ CorUnix::InternalCreateSemaphore(
         lpName,
         phSemaphore
         );
+
+    if (lpName != nullptr)
+    {
+        ASSERT("lpName: Cross-process named objects are not supported in PAL");
+        palError = ERROR_NOT_SUPPORTED;
+        goto InternalCreateSemaphoreExit;
+    }
 
     if (lMaximumCount <= 0)
     {
@@ -565,6 +551,7 @@ InternalReleaseSemaphoreExit:
     return palError;
 }
 
+// TODO: Implementation of OpenSemaphoreA() doesn't exist, do we need it? More generally, do we need the A versions at all?
 
 /*++
 Function:
@@ -596,22 +583,16 @@ OpenSemaphoreW(
     pthr = InternalGetCurrentThread();
 
     /* validate parameters */
-    if (lpName == NULL)
+    if (lpName == nullptr)
     {
         ERROR("lpName is NULL\n");
         palError = ERROR_INVALID_PARAMETER;
-        goto OpenSemaphoreWExit;            
     }
-
-    palError = InternalOpenSemaphore(
-        pthr,
-        dwDesiredAccess,
-        bInheritHandle,
-        lpName,
-        &hSemaphore
-        );
-
-OpenSemaphoreWExit:
+    else
+    {
+        ASSERT("lpName: Cross-process named objects are not supported in PAL");
+        palError = ERROR_NOT_SUPPORTED;
+    }
 
     if (NO_ERROR != palError)
     {

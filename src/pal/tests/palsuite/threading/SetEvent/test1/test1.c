@@ -24,11 +24,10 @@ BOOL SetEventTest()
     LPSECURITY_ATTRIBUTES lpEventAttributes = 0;
     BOOL bManualReset = TRUE; 
     BOOL bInitialState = FALSE;
-    LPCTSTR lpName = "Event #3";
 
     /* Create an event which we can use with SetEvent */
     HANDLE hEvent = CreateEvent( lpEventAttributes, 
-                                 bManualReset, bInitialState, lpName); 
+                                 bManualReset, bInitialState, NULL); 
  
     if (hEvent != INVALID_HANDLE_VALUE)
     {
@@ -36,8 +35,7 @@ BOOL SetEventTest()
 
         if (dwRet != WAIT_TIMEOUT)
         {
-            Trace("SetEventTest:WaitForSingleObject %s "
-                   "failed (%x)\n",lpName,GetLastError());
+            Trace("SetEventTest:WaitForSingleObject failed (%x)\n", GetLastError());
         }
         else
         {
@@ -48,8 +46,7 @@ BOOL SetEventTest()
             
             if (!bRet)
             {
-                Trace("SetEventTest:SetEvent %s "
-                       "failed (%x)\n",lpName,GetLastError());
+                Trace("SetEventTest:SetEvent failed (%x)\n", GetLastError());
             }
             else
             {
@@ -57,8 +54,7 @@ BOOL SetEventTest()
 
                 if (dwRet != WAIT_OBJECT_0)
                 {
-                    Trace("SetEventTest:WaitForSingleObject %s "
-                           "failed (%x)\n",lpName,GetLastError());
+                    Trace("SetEventTest:WaitForSingleObject failed (%x)\n", GetLastError());
                 }
                 else
                 {
@@ -66,8 +62,7 @@ BOOL SetEventTest()
 
                     if (!dwRet)
                     {
-                        Trace("SetEventTest:CloseHandle %s "
-                               "failed (%x)\n",lpName,GetLastError());
+                        Trace("SetEventTest:CloseHandle failed (%x)\n", GetLastError());
                     }
                 }
             }
@@ -75,8 +70,7 @@ BOOL SetEventTest()
     }
     else
     {
-        Trace("SetEventTest:CreateEvent %s "
-               "failed (%x)\n",lpName,GetLastError());
+        Trace("SetEventTest:CreateEvent failed (%x)\n", GetLastError());
     }
 
     return bRet;

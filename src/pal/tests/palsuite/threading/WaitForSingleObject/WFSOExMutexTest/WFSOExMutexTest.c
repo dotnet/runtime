@@ -60,9 +60,9 @@ int __cdecl main( int argc, char **argv )
 	*/
 	
 	/* Create a mutex that is not in the signalled state */
-    hMutex = CreateMutex( NULL, 			//No security attributes
-    						TRUE,			//Iniitally owned
-    						"SomeMutex");	//Name of mutex
+    hMutex = CreateMutex(NULL,      //No security attributes
+                         TRUE,      //Iniitally owned
+                         NULL);     //Name of mutex
 
     if (hMutex == NULL)
     {
