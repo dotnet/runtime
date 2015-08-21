@@ -410,61 +410,67 @@ namespace System.Diagnostics
                     if (moduleCount <= moduleHandles.Length) break;
                     moduleHandles = new IntPtr[moduleHandles.Length * 2];
                 }
-                List<ModuleInfo> moduleInfos = new List<ModuleInfo>();
 
-                int ret;
+                List<ModuleInfo> moduleInfos = new List<ModuleInfo>(firstModuleOnly ? 1 : moduleCount);
+                StringBuilder baseName = new StringBuilder(1024);
+                StringBuilder fileName = new StringBuilder(1024);
+
                 for (int i = 0; i < moduleCount; i++)
                 {
-                    try
+                    if (i > 0)
                     {
-                        ModuleInfo moduleInfo = new ModuleInfo();
-                        IntPtr moduleHandle = moduleHandles[i];
-                        Interop.mincore.NtModuleInfo ntModuleInfo = new Interop.mincore.NtModuleInfo();
-                        if (!Interop.mincore.GetModuleInformation(processHandle, moduleHandle, ntModuleInfo, Marshal.SizeOf(ntModuleInfo)))
-                            throw new Win32Exception();
-                        moduleInfo._sizeOfImage = ntModuleInfo.SizeOfImage;
-                        moduleInfo._entryPoint = ntModuleInfo.EntryPoint;
-                        moduleInfo._baseOfDll = ntModuleInfo.BaseOfDll;
-
-                        StringBuilder baseName = new StringBuilder(1024);
-                        ret = Interop.mincore.GetModuleBaseName(processHandle, moduleHandle, baseName, baseName.Capacity * 2);
-                        if (ret == 0) throw new Win32Exception();
-                        moduleInfo._baseName = baseName.ToString();
-
-                        StringBuilder fileName = new StringBuilder(1024);
-                        ret = Interop.mincore.GetModuleFileNameEx(processHandle, moduleHandle, fileName, fileName.Capacity * 2);
-                        if (ret == 0) throw new Win32Exception();
-                        moduleInfo._fileName = fileName.ToString();
-
-                        if (moduleInfo._fileName != null
-                            && moduleInfo._fileName.Length >= 4
-                            && moduleInfo._fileName.StartsWith(@"\\?\", StringComparison.Ordinal))
+                        // If the user is only interested in the main module, break now.
+                        // This avoid some waste of time. In addition, if the application unloads a DLL
+                        // we will not get an exception. 
+                        if (firstModuleOnly)
                         {
-                            moduleInfo._fileName = moduleInfo._fileName.Substring(4);
+                            break;
                         }
 
-                        moduleInfos.Add(moduleInfo);
-                    }
-                    catch (Win32Exception e)
-                    {
-                        if (e.NativeErrorCode == Interop.mincore.Errors.ERROR_INVALID_HANDLE || e.NativeErrorCode == Interop.mincore.Errors.ERROR_PARTIAL_COPY)
-                        {
-                            // It's possible that another thread casued this module to become
-                            // unloaded (e.g FreeLibrary was called on the module).  Ignore it and
-                            // move on.
-                        }
-                        else
-                        {
-                            throw;
-                        }
+                        baseName.Clear();
+                        fileName.Clear();
                     }
 
-                    //
-                    // If the user is only interested in the main module, break now.
-                    // This avoid some waste of time. In addition, if the application unloads a DLL                     
-                    // we will not get an exception. 
-                    //
-                    if (firstModuleOnly) { break; }
+                    IntPtr moduleHandle = moduleHandles[i];
+                    Interop.mincore.NtModuleInfo ntModuleInfo = new Interop.mincore.NtModuleInfo();
+                    if (!Interop.mincore.GetModuleInformation(processHandle, moduleHandle, ntModuleInfo, Marshal.SizeOf(ntModuleInfo)))
+                    {
+                        HandleError();
+                        continue;
+                    }
+
+                    ModuleInfo moduleInfo = new ModuleInfo
+                    {
+                        _sizeOfImage = ntModuleInfo.SizeOfImage,
+                        _entryPoint = ntModuleInfo.EntryPoint,
+                        _baseOfDll = ntModuleInfo.BaseOfDll
+                    };
+
+                    int ret = Interop.mincore.GetModuleBaseName(processHandle, moduleHandle, baseName, baseName.Capacity);
+                    if (ret == 0)
+                    {
+                        HandleError();
+                        continue;
+                    }
+
+                    moduleInfo._baseName = baseName.ToString();
+
+                    ret = Interop.mincore.GetModuleFileNameEx(processHandle, moduleHandle, fileName, fileName.Capacity);
+                    if (ret == 0)
+                    {
+                        HandleError();
+                        continue;
+                    }
+
+                    moduleInfo._fileName = fileName.ToString();
+
+                    if (moduleInfo._fileName != null && moduleInfo._fileName.Length >= 4
+                        && moduleInfo._fileName.StartsWith(@"\\?\", StringComparison.Ordinal))
+                    {
+                        moduleInfo._fileName = fileName.ToString(4, fileName.Length - 4);
+                    }
+
+                    moduleInfos.Add(moduleInfo);
                 }
 
                 return moduleInfos.ToArray();
@@ -478,6 +484,22 @@ namespace System.Diagnostics
                 {
                     processHandle.Dispose();
                 }
+            }
+        }
+
+        private static void HandleError()
+        {
+            int lastError = Marshal.GetLastWin32Error();
+            switch (lastError)
+            {
+                case Interop.mincore.Errors.ERROR_INVALID_HANDLE:
+                case Interop.mincore.Errors.ERROR_PARTIAL_COPY:
+                    // It's possible that another thread casued this module to become
+                    // unloaded (e.g FreeLibrary was called on the module).  Ignore it and
+                    // move on.
+                    break;
+                default:
+                    throw new Win32Exception(lastError);
             }
         }
 
