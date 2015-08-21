@@ -832,6 +832,12 @@ namespace System.Xml
                 {
                     if (_node.NodeType != XmlNodeType.Text && _node.NodeType != XmlNodeType.CDATA)
                         break;
+
+                    if (_trailByteCount > 0)
+                    {
+                        break;
+                    }
+
                     if (_value == null)
                     {
                         if (!_node.Value.IsWhitespace())
