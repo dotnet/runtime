@@ -1,0 +1,351 @@
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Reflection;
+
+using Microsoft.Internal;
+
+namespace System.Composition.Convention
+{
+    /// <summary>
+    /// Entry point for defining rules that configure plain-old-CLR-objects as MEF parts.
+    /// </summary>
+    public class ConventionBuilder : AttributedModelProvider
+    {
+        private static readonly List<object> s_emptyList = new List<object>();
+
+        private readonly Lock _lock = new Lock();
+        private readonly List<PartConventionBuilder> _conventions = new List<PartConventionBuilder>();
+
+        private readonly Dictionary<MemberInfo, List<Attribute>> _memberInfos = new Dictionary<MemberInfo, List<Attribute>>();
+        private readonly Dictionary<ParameterInfo, List<Attribute>> _parameters = new Dictionary<ParameterInfo, List<Attribute>>();
+
+        /// <summary>
+        /// Construct a new <see cref="ConventionBuilder"/>.
+        /// </summary>
+        public ConventionBuilder()
+        {
+        }
+
+        /// <summary>
+        /// Define a rule that will apply to all types that
+        /// derive from (or implement) the specified type.
+        /// </summary>
+        /// <typeparam name="T">The type from which matching types derive.</typeparam>
+        /// <returns>A <see cref="PartConventionBuilder{T}"/> that must be used to specify the rule.</returns>
+        public PartConventionBuilder<T> ForTypesDerivedFrom<T>()
+        {
+            var partBuilder = new PartConventionBuilder<T>((t) => IsDescendentOf(t, typeof(T)));
+            _conventions.Add(partBuilder);
+            return partBuilder;
+        }
+
+        /// <summary>
+        /// Define a rule that will apply to all types that
+        /// derive from (or implement) the specified type.
+        /// </summary>
+        /// <param name="type">The type from which matching types derive.</param>
+        /// <returns>A <see cref="PartConventionBuilder"/> that must be used to specify the rule.</returns>
+        public PartConventionBuilder ForTypesDerivedFrom(Type type)
+        {
+            Requires.NotNull(type, "type");
+
+            var partBuilder = new PartConventionBuilder((t) => IsDescendentOf(t, type));
+            _conventions.Add(partBuilder);
+            return partBuilder;
+        }
+
+        /// <summary>
+        /// Define a rule that will apply to the types <typeparamref name="T"/>.
+        /// </summary>
+        /// <typeparam name="T">The type to which the rule applies.</typeparam>
+        /// <returns>A <see cref="PartConventionBuilder{T}"/> that must be used to specify the rule.</returns>
+        public PartConventionBuilder<T> ForType<T>()
+        {
+            var partBuilder = new PartConventionBuilder<T>((t) => t == typeof(T));
+            _conventions.Add(partBuilder);
+            return partBuilder;
+        }
+
+        /// <summary>
+        /// Define a rule that will apply to the types <paramref name="type"/>.
+        /// </summary>
+        /// <param name="type">The type to which the rule applies.</param>
+        /// <returns>A <see cref="PartConventionBuilder"/> that must be used to specify the rule.</returns>
+        public PartConventionBuilder ForType(Type type)
+        {
+            Requires.NotNull(type, "type");
+
+            var partBuilder = new PartConventionBuilder((t) => t == type);
+            _conventions.Add(partBuilder);
+            return partBuilder;
+        }
+
+        /// <summary>
+        /// Define a rule that will apply to types assignable to <typeparamref name="T"/> that
+        /// match the supplied predicate.
+        /// </summary>
+        /// <param name="typeFilter">A predicate that selects matching types.</param>
+        /// <typeparam name="T">The type to which the rule applies.</typeparam>
+        /// <returns>A <see cref="PartConventionBuilder{T}"/> that must be used to specify the rule.</returns>
+        public PartConventionBuilder<T> ForTypesMatching<T>(Predicate<Type> typeFilter)
+        {
+            Requires.NotNull(typeFilter, "typeFilter");
+
+            var partBuilder = new PartConventionBuilder<T>(typeFilter);
+            _conventions.Add(partBuilder);
+            return partBuilder;
+        }
+
+        /// <summary>
+        /// Define a rule that will apply to types that
+        /// match the supplied predicate.
+        /// </summary>
+        /// <param name="typeFilter">A predicate that selects matching types.</param>
+        /// <returns>A <see cref="PartConventionBuilder{T}"/> that must be used to specify the rule.</returns>
+        public PartConventionBuilder ForTypesMatching(Predicate<Type> typeFilter)
+        {
+            Requires.NotNull(typeFilter, "typeFilter");
+
+            var partBuilder = new PartConventionBuilder(typeFilter);
+            _conventions.Add(partBuilder);
+            return partBuilder;
+        }
+
+        private IEnumerable<Tuple<object, List<Attribute>>> EvaluateThisTypeInfoAgainstTheConvention(TypeInfo typeInfo)
+        {
+            List<Tuple<object, List<Attribute>>> results = new List<Tuple<object, List<Attribute>>>();
+            List<Attribute> attributes = new List<Attribute>();
+            var configuredMembers = new List<Tuple<object, List<Attribute>>>();
+            bool specifiedConstructor = false;
+            bool matchedConvention = false;
+            var type = typeInfo.AsType();
+
+            foreach (var builder in _conventions.Where(c => c.SelectType(type)))
+            {
+                attributes.AddRange(builder.BuildTypeAttributes(type));
+
+                specifiedConstructor |= builder.BuildConstructorAttributes(type, ref configuredMembers);
+                builder.BuildPropertyAttributes(type, ref configuredMembers);
+                builder.BuildOnImportsSatisfiedNotification(type, ref configuredMembers);
+
+                matchedConvention = true;
+            }
+            if (matchedConvention && !specifiedConstructor)
+            {
+                // DefaultConstructor
+                PartConventionBuilder.BuildDefaultConstructorAttributes(type, ref configuredMembers);
+            }
+            configuredMembers.Add(Tuple.Create((object)type.GetTypeInfo(), attributes));
+            return configuredMembers;
+        }
+
+        /// <summary>
+        /// Provide the list of attributes applied to the specified member.
+        /// </summary>
+        /// <param name="reflectedType">The reflectedType the type used to retrieve the memberInfo.</param>
+        /// <param name="member">The member to supply attributes for.</param>
+        /// <returns>The list of applied attributes.</returns>
+        public override IEnumerable<Attribute> GetCustomAttributes(Type reflectedType, System.Reflection.MemberInfo member)
+        {
+            Requires.NotNull(member, "member");
+
+            // Now edit the attributes returned from the base type
+            List<Attribute> cachedAttributes = null;
+            var typeInfo = member as TypeInfo;
+            if (typeInfo != null)
+            {
+                var memberInfo = typeInfo as MemberInfo;
+                using (new ReadLock(_lock))
+                {
+                    _memberInfos.TryGetValue(memberInfo, out cachedAttributes);
+                }
+                if (cachedAttributes == null)
+                {
+                    using (new WriteLock(_lock))
+                    {
+                        //Double check locking another thread may have inserted one while we were away.
+                        if (!_memberInfos.TryGetValue(memberInfo, out cachedAttributes))
+                        {
+                            List<Attribute> attributeList;
+                            foreach (var element in EvaluateThisTypeInfoAgainstTheConvention(typeInfo))
+                            {
+                                attributeList = element.Item2;
+                                if (attributeList != null)
+                                {
+                                    var mi = element.Item1 as MemberInfo;
+                                    if (mi != null)
+                                    {
+                                        List<Attribute> memberAttributes;
+
+                                        if (mi != null && (mi.IsMemberInfoForConstructor() || mi.IsMemberInfoForType() || mi.IsMemberInfoForProperty() || mi.IsMemberInfoForMethod()))
+                                        {
+                                            if (!_memberInfos.TryGetValue(mi, out memberAttributes))
+                                            {
+                                                _memberInfos.Add(mi, element.Item2);
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        var pi = element.Item1 as ParameterInfo;
+                                        Assumes.NotNull(pi);
+                                        List<Attribute> parameterAttributes;
+
+                                        // Item contains as Constructor parameter to configure
+                                        if (!_parameters.TryGetValue(pi, out parameterAttributes))
+                                        {
+                                            _parameters.Add(pi, element.Item2);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // We will have updated all of the MemberInfos by now so lets reload cachedAttributes wiuth the current store
+                        _memberInfos.TryGetValue(memberInfo, out cachedAttributes);
+                    }
+                }
+            }
+            else if (member.IsMemberInfoForProperty() || member.IsMemberInfoForConstructor() || member.IsMemberInfoForMethod())
+            {
+                cachedAttributes = ReadMemberCustomAttributes(reflectedType, member);
+            }
+
+            IEnumerable<Attribute> appliedAttributes;
+            if (!(member is TypeInfo) && member.DeclaringType != reflectedType)
+                appliedAttributes = Enumerable.Empty<Attribute>();
+            else
+                appliedAttributes = member.GetCustomAttributes<Attribute>(false);
+
+            return cachedAttributes == null ? appliedAttributes : appliedAttributes.Concat(cachedAttributes);
+        }
+
+        private List<Attribute> ReadMemberCustomAttributes(Type reflectedType, System.Reflection.MemberInfo member)
+        {
+            List<Attribute> cachedAttributes = null;
+            bool getMemberAttributes = false;
+
+            // Now edit the attributes returned from the base type
+            using (new ReadLock(_lock))
+            {
+                if (!_memberInfos.TryGetValue(member, out cachedAttributes))
+                {
+                    // If there is nothing for this member Cache any attributes for the DeclaringType
+                    if (reflectedType != null
+                        && !_memberInfos.TryGetValue(member.DeclaringType.GetTypeInfo() as MemberInfo, out cachedAttributes))
+                    {
+                        // If there is nothing for this parameter look to see if the declaring Member has been cached yet?
+                        // need to do it outside of the lock, so set the flag we'll check it in a bit
+                        getMemberAttributes = true;
+                    }
+                    cachedAttributes = null;
+                }
+            }
+
+            if (getMemberAttributes)
+            {
+                GetCustomAttributes(null, reflectedType.GetTypeInfo() as MemberInfo);
+
+                // We should have run the rules for the enclosing parameter so we can again
+                using (new ReadLock(_lock))
+                {
+                    _memberInfos.TryGetValue(member, out cachedAttributes);
+                }
+            }
+
+            return cachedAttributes;
+        }
+
+        /// <summary>
+        /// Provide the list of attributes applied to the specified parameter.
+        /// </summary>
+        /// <param name="reflectedType">The reflectedType the type used to retrieve the parameterInfo.</param>
+        /// <param name="parameter">The parameter to supply attributes for.</param>
+        /// <returns>The list of applied attributes.</returns>
+        public override IEnumerable<Attribute> GetCustomAttributes(Type reflectedType, System.Reflection.ParameterInfo parameter)
+        {
+            Requires.NotNull(parameter, "reflectedType");
+            Requires.NotNull(parameter, "parameter");
+            var attributes = parameter.GetCustomAttributes<Attribute>(false);
+            List<Attribute> cachedAttributes = ReadParameterCustomAttributes(reflectedType, parameter);
+            return cachedAttributes == null ? attributes : attributes.Concat(cachedAttributes);
+        }
+
+        private List<Attribute> ReadParameterCustomAttributes(Type reflectedType, System.Reflection.ParameterInfo parameter)
+        {
+            List<Attribute> cachedAttributes = null;
+            bool getMemberAttributes = false;
+
+            // Now edit the attributes returned from the base type
+            using (new ReadLock(_lock))
+            {
+                if (!_parameters.TryGetValue(parameter, out cachedAttributes))
+                {
+                    // If there is nothing for this parameter Cache any attributes for the DeclaringType
+                    if (reflectedType != null
+                     && !_memberInfos.TryGetValue(reflectedType.GetTypeInfo() as MemberInfo, out cachedAttributes))
+                    {
+                        // If there is nothing for this parameter look to see if the declaring Member has been cached yet?
+                        // need to do it outside of the lock, so set the flag we'll check it in a bit
+                        getMemberAttributes = true;
+                    }
+                    cachedAttributes = null;
+                }
+            }
+
+            if (getMemberAttributes)
+            {
+                GetCustomAttributes(null, reflectedType.GetTypeInfo() as MemberInfo);
+
+                // We should have run the rules for the enclosing parameter so we can again
+                using (new ReadLock(_lock))
+                {
+                    _parameters.TryGetValue(parameter, out cachedAttributes);
+                }
+            }
+
+            return cachedAttributes;
+        }
+
+        private static bool IsGenericDescendentOf(TypeInfo openType, TypeInfo baseType)
+        {
+            if (openType.BaseType == null)
+                return false;
+
+            if (openType.BaseType == baseType.AsType())
+                return true;
+
+            foreach (var iface in openType.ImplementedInterfaces)
+            {
+                if (iface.IsConstructedGenericType &&
+                    iface.GetGenericTypeDefinition() == baseType.AsType())
+                    return true;
+            }
+
+            return IsGenericDescendentOf(openType.BaseType.GetTypeInfo(), baseType);
+        }
+
+        private static bool IsDescendentOf(Type type, Type baseType)
+        {
+            if (type == baseType || type == typeof(object) || type == null)
+            {
+                return false;
+            }
+
+            var ti = type.GetTypeInfo();
+            var bti = baseType.GetTypeInfo();
+
+            if (ti.IsGenericTypeDefinition)
+            {
+                return IsGenericDescendentOf(ti, bti);
+            }
+
+            return bti.IsAssignableFrom(ti);
+        }
+    }
+}
