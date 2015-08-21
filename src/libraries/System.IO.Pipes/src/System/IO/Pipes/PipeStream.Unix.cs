@@ -305,24 +305,24 @@ namespace System.IO.Pipes
             }
         }
 
-        internal static Interop.libc.OpenFlags TranslateFlags(PipeDirection direction, PipeOptions options, HandleInheritability inheritability)
+        internal static Interop.Sys.OpenFlags TranslateFlags(PipeDirection direction, PipeOptions options, HandleInheritability inheritability)
         {
             // Translate direction
-            Interop.libc.OpenFlags flags =
-                direction == PipeDirection.InOut ? Interop.libc.OpenFlags.O_RDWR :
-                direction == PipeDirection.Out ? Interop.libc.OpenFlags.O_WRONLY :
-                Interop.libc.OpenFlags.O_RDONLY;
+            Interop.Sys.OpenFlags flags =
+                direction == PipeDirection.InOut ? Interop.Sys.OpenFlags.O_RDWR :
+                direction == PipeDirection.Out ? Interop.Sys.OpenFlags.O_WRONLY :
+                Interop.Sys.OpenFlags.O_RDONLY;
 
             // Translate options
             if ((options & PipeOptions.WriteThrough) != 0)
             {
-                flags |= Interop.libc.OpenFlags.O_SYNC;
+                flags |= Interop.Sys.OpenFlags.O_SYNC;
             }
 
             // Translate inheritability.
             if ((inheritability & HandleInheritability.Inheritable) == 0)
             {
-                flags |= Interop.libc.OpenFlags.O_CLOEXEC;
+                flags |= Interop.Sys.OpenFlags.O_CLOEXEC;
             }
             
             // PipeOptions.Asynchronous is ignored, at least for now.  Asynchronous processing

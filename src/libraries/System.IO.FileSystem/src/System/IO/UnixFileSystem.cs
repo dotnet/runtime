@@ -88,7 +88,7 @@ namespace System.IO
 
         public override void DeleteFile(string fullPath)
         {
-            while (Interop.libc.unlink(fullPath) < 0)
+            while (Interop.Sys.Unlink(fullPath) < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 if (errorInfo.Error == Interop.Error.EINTR) // interrupted; try again

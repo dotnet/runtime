@@ -14,10 +14,10 @@ namespace System.IO.MemoryMappedFiles
             string mapName = "/corefx_map_" + Guid.NewGuid().ToString("N");
 
             // Determine the flags to use when creating the shared memory object
-            Interop.libc.OpenFlags flags = (protections & Interop.libc.MemoryMappedProtections.PROT_WRITE) != 0 ?
-                Interop.libc.OpenFlags.O_RDWR :
-                Interop.libc.OpenFlags.O_RDONLY;
-            flags |= Interop.libc.OpenFlags.O_CREAT | Interop.libc.OpenFlags.O_EXCL; // CreateNew
+            Interop.Sys.OpenFlags flags = (protections & Interop.libc.MemoryMappedProtections.PROT_WRITE) != 0 ?
+                Interop.Sys.OpenFlags.O_RDWR :
+                Interop.Sys.OpenFlags.O_RDONLY;
+            flags |= Interop.Sys.OpenFlags.O_CREAT | Interop.Sys.OpenFlags.O_EXCL; // CreateNew
 
             // Determine the permissions with which to create the file
             Interop.libc.Permissions perms = default(Interop.libc.Permissions);
@@ -30,14 +30,14 @@ namespace System.IO.MemoryMappedFiles
 
             // Create the shared memory object.
             int fd;
-            Interop.CheckIo(fd = Interop.libc.shm_open(mapName, flags, (int)perms), mapName);
+            Interop.CheckIo(fd = Interop.Sys.ShmOpen(mapName, flags, (int)perms), mapName);
             SafeFileHandle fileHandle = new SafeFileHandle((IntPtr)fd, ownsHandle: true);
             try
             {
                 // Unlink the shared memory object immediatley so that it'll go away once all handles 
                 // to it are closed (as with opened then unlinked files, it'll remain usable via
                 // the open handles even though it's unlinked and can't be opened anew via its name).
-                Interop.CheckIo(Interop.libc.shm_unlink(mapName));
+                Interop.CheckIo(Interop.Sys.ShmUnlink(mapName));
 
                 // Give it the right capacity.  We do this directly with ftruncate rather
                 // than via FileStream.SetLength after the FileStream is created because, on some systems,

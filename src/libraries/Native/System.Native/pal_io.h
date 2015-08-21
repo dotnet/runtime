@@ -59,6 +59,34 @@ enum
 };
 
 /**
+ * Constants for interpreting the flags passed to Open or ShmOpen.
+ * There are several other values defined by POSIX but not implemented
+ * everywhere. The set below is restricted to the current needs of
+ * COREFX, which increases portability and speeds up conversion. We
+ * can add more as needed.
+ */
+enum
+{
+    // Access modes (mutually exclusive).
+    PAL_O_RDONLY           = 0x0000, // Open for read-only
+    PAL_O_WRONLY           = 0x0001, // Open for write-only
+    PAL_O_RDWR             = 0x0002, // Open for read-write
+
+    // Mask to get just the access mode. Some room is left for more.
+    // POSIX also defines O_SEARCH and O_EXEC that are not available
+    // everywhere.
+    PAL_O_ACCESS_MODE_MASK = 0x000F,
+
+    // Flags (combineable)
+    // These numeric values are not defined by POSIX and vary across targets.
+    PAL_O_CLOEXEC          = 0x0010, // Close-on-exec
+    PAL_O_CREAT            = 0x0020, // Create file if it doesn't already exist
+    PAL_O_EXCL             = 0x0040, // When combined with CREAT, fails if file already exists
+    PAL_O_TRUNC            = 0x0080, // Truncate file to length 0 if it already exists
+    PAL_O_SYNC             = 0x0100, // Block writes call will block until physically written
+};
+
+/**
  * Constants for interpreting FileStatus.Flags.
  */
 enum
@@ -96,3 +124,52 @@ extern "C"
 int32_t LStat(
     const char* path, 
     FileStatus* output);
+
+/**
+ * Open or create a file or device. Implemented as shim to open(2).
+ *
+ * Returns file descriptor or -1 for failure. Sets errno on failure.
+ */
+extern "C"
+int32_t Open(
+    const char* path,
+    int32_t oflag,
+    int32_t mode);
+
+/**
+ * Close a file descriptor. Implemented as shim to open(2).
+ *
+ * Returns 0 for success, -1 for failure. Sets errno on failure.
+ */
+extern "C"
+int32_t Close(
+    int32_t fileDescriptor);
+    
+/**
+ * Delete an entry from the file system. Implemented as shim to unlink(2).
+ *
+ * Returns 0 for success, -1 for failure. Sets errno on failure.
+ */
+extern "C"
+int32_t Unlink(
+    const char* path);
+    
+/**
+ * Open or create a shared memory object. Implemented as shim to shm_open(3).
+ *
+ * Returns file descriptor or -1 on fiailure. Sets errno on failure.
+ */
+extern "C"
+int32_t ShmOpen(
+     const char* name,
+     int32_t oflag,
+     int32_t mode);
+     
+/**
+ * Unlink a shared memory object. Implemented as shim to shm_unlink(3).
+ *
+ * Returns 0 for success, -1 for failure. Sets errno on failure.
+ */
+extern "C"
+int32_t ShmUnlink(
+     const char* name);
