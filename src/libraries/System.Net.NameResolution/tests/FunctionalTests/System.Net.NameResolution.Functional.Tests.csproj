@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{4FE5ECEE-ACC5-4558-A946-573426599B73}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <UnsupportedPlatforms>Linux;OSX;FreeBSD</UnsupportedPlatforms>
+  </PropertyGroup>
+  
+  <!-- Help VS understand available configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
+
+  <ItemGroup>
+    <Compile Include="DnsTests.cs" />
+    <Compile Include="TestSettings.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Net.NameResolution.csproj">
+      <Project>{1714448C-211E-48C1-8B7E-4EE667D336A1}</Project>
+      <Name>System.Net.NameResolution</Name>
+    </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
