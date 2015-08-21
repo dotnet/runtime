@@ -68,7 +68,6 @@ Given that the performance and tracing tool space on Linux is quite fragmented, 
 
 #### Cons
 
-- No hardware counter support (CPU samples, context switches, etc.)
 - No built-in callstack collection.
 
 ### SystemTap
