@@ -446,7 +446,7 @@ namespace System.Diagnostics
                         _baseOfDll = ntModuleInfo.BaseOfDll
                     };
 
-                    int ret = Interop.mincore.GetModuleBaseName(processHandle, moduleHandle, baseName, baseName.Capacity * 2);
+                    int ret = Interop.mincore.GetModuleBaseName(processHandle, moduleHandle, baseName, baseName.Capacity);
                     if (ret == 0)
                     {
                         HandleError();
@@ -454,7 +454,8 @@ namespace System.Diagnostics
                     }
 
                     moduleInfo._baseName = baseName.ToString();
-                    ret = Interop.mincore.GetModuleFileNameEx(processHandle, moduleHandle, fileName, fileName.Capacity * 2);
+
+                    ret = Interop.mincore.GetModuleFileNameEx(processHandle, moduleHandle, fileName, fileName.Capacity);
                     if (ret == 0)
                     {
                         HandleError();
