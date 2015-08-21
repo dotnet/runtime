@@ -176,14 +176,6 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
     }
     else
     {
-        // BindByWhereRef is supported only for the default (TPA) Binder in CoreCLR.
-        _ASSERTE(pBinder == pTPABinder);
-        if (pBinder != pTPABinder)
-        {
-            // Fail with an exception for better diagnosis.
-            COMPlusThrowHR(COR_E_INVALIDOPERATION);
-        }
-        
         hr = pTPABinder->Bind(assemblyDisplayName,
                            m_wszCodeBase,
                            GetParentAssembly()? GetParentAssembly()->GetFile():NULL,
