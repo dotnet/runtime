@@ -24,16 +24,14 @@ BOOL CreateEventTest()
     LPSECURITY_ATTRIBUTES lpEventAttributes = 0;
     BOOL bManualReset = TRUE; 
     BOOL bInitialState = FALSE;
-    WCHAR TheName[] = {'E','v','e','n','t','\0'};
-    LPWSTR lpName = TheName;
   
 
     /* Create an event with the Initial State set to FALSE */
 
-    HANDLE hEvent = CreateEvent( lpEventAttributes, 
+    HANDLE hEvent = CreateEventW(lpEventAttributes, 
                                  bManualReset, 
                                  bInitialState, 
-                                 lpName); 
+                                 NULL); 
  
     if (hEvent != NULL)
     {
@@ -45,8 +43,7 @@ BOOL CreateEventTest()
 
         if (dwRet != WAIT_TIMEOUT)
         {
-            Trace("CloseEventTest:WaitForSingleObject %s "
-                   "failed (%x)\n",lpName,GetLastError());
+            Trace("CloseEventTest:WaitForSingleObject failed (%x)\n", GetLastError());
         }
         else
         {
@@ -59,15 +56,13 @@ BOOL CreateEventTest()
 
             if (!bRet)
             {
-                Trace("CloseEventTest:CloseHandle %s failed "
-                       " (%x)\n",lpName,GetLastError());
+                Trace("CloseEventTest:CloseHandle failed (%x)\n", GetLastError());
             }
         }
     }
     else
     {
-        Trace("CloseEventTest:CreateEvent %s "
-               "failed (%x)\n",lpName,GetLastError());
+        Trace("CloseEventTest:CreateEvent failed (%x)\n", GetLastError());
     }
     
     return bRet;

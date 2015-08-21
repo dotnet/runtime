@@ -71,13 +71,12 @@ Parameters:
 
 HANDLE
 PALAPI
-CreateMutexA (
+CreateMutexA(
     IN LPSECURITY_ATTRIBUTES lpMutexAttributes,
     IN BOOL bInitialOwner,
     IN LPCSTR lpName)
 {
     HANDLE hMutex = NULL;
-    WCHAR pwName[c_cchMaxMutex];
     CPalThread *pthr = NULL;
     PAL_ERROR palError;
     
@@ -87,27 +86,10 @@ CreateMutexA (
 
     pthr = InternalGetCurrentThread();
     
-    if (lpName != NULL)
+    if (lpName != nullptr)
     {
-        palError = InternalWszNameFromSzName(
-            pthr,
-            lpName,
-            pwName,
-            sizeof(pwName) / sizeof(pwName[0])
-            );
-
-        if (NO_ERROR != palError)
-        {
-            goto CreateMutexAExit;
-        }
-
-        palError = InternalCreateMutex(
-            pthr,
-            lpMutexAttributes,
-            bInitialOwner,
-            pwName,
-            &hMutex
-            );
+        ASSERT("lpName: Cross-process named objects are not supported in PAL");
+        palError = ERROR_NOT_SUPPORTED;
     }
     else
     {
@@ -120,8 +102,6 @@ CreateMutexA (
             );
     }
 
-CreateMutexAExit:
-    
     //
     // We always need to set last error, even on success:
     // we need to protect ourselves from the situation
@@ -231,6 +211,13 @@ CorUnix::InternalCreateMutex(
         lpName,
         phMutex
         );
+
+    if (lpName != nullptr)
+    {
+        ASSERT("lpName: Cross-process named objects are not supported in PAL");
+        palError = ERROR_NOT_SUPPORTED;
+        goto InternalCreateMutexExit;
+    }
 
     palError = g_pObjectManager->AllocateObject(
         pthr,
@@ -434,7 +421,6 @@ OpenMutexA (
        IN LPCSTR lpName)
 {
     HANDLE hMutex = NULL;
-    WCHAR pwName[c_cchMaxMutex];
     CPalThread *pthr = NULL;
     PAL_ERROR palError;
     
@@ -445,34 +431,16 @@ OpenMutexA (
     pthr = InternalGetCurrentThread();
 
     /* validate parameters */
-    if (lpName == NULL)
+    if (lpName == nullptr)
     {
         ERROR("name is NULL\n");
         palError = ERROR_INVALID_PARAMETER;
-        goto OpenMutexAExit;            
     }
-    
-    palError = InternalWszNameFromSzName(
-        pthr,
-        lpName,
-        pwName,
-        sizeof(pwName) / sizeof(pwName[0])
-        );
-
-    if (NO_ERROR != palError)
+    else
     {
-        goto OpenMutexAExit;
+        ASSERT("lpName: Cross-process named objects are not supported in PAL");
+        palError = ERROR_NOT_SUPPORTED;
     }
-
-    palError = InternalOpenMutex(
-        pthr,
-        dwDesiredAccess,
-        bInheritHandle,
-        pwName,
-        &hMutex
-        );
-
-OpenMutexAExit:
 
     if (NO_ERROR != palError)
     {
@@ -513,22 +481,16 @@ OpenMutexW(
     pthr = InternalGetCurrentThread();
 
     /* validate parameters */
-    if (lpName == NULL)
+    if (lpName == nullptr)
     {
         ERROR("name is NULL\n");
         palError = ERROR_INVALID_PARAMETER;
-        goto OpenMutexWExit;            
     }
-
-    palError = InternalOpenMutex(
-        pthr,
-        dwDesiredAccess,
-        bInheritHandle,
-        lpName,
-        &hMutex
-        );
-
-OpenMutexWExit:
+    else
+    {
+        ASSERT("lpName: Cross-process named objects are not supported in PAL");
+        palError = ERROR_NOT_SUPPORTED;
+    }
 
     if (NO_ERROR != palError)
     {

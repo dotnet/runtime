@@ -29,23 +29,18 @@ BOOL WaitForMultipleObjectsTest()
     LPSECURITY_ATTRIBUTES lpEventAttributes = NULL;
     BOOL bManualReset = TRUE; 
     BOOL bInitialState = TRUE;
-    LPTSTR lpName[MAX_EVENTS];
 
     HANDLE hEvent[MAX_EVENTS];
 
     /* Run through this for loop and create 4 events */ 
     for (i = 0; i < MAX_EVENTS; i++)
     {
-        lpName[i] = (TCHAR*)malloc(MAX_PATH);
-        sprintf(lpName[i],"Event #%d",i);
-
         hEvent[i] = CreateEvent( lpEventAttributes, 
-                                 bManualReset, bInitialState, lpName[i]);  
+                                 bManualReset, bInitialState, NULL);  
 
         if (hEvent[i] == INVALID_HANDLE_VALUE)
         {
-            Trace("WaitForMultipleObjectsTest:CreateEvent "
-                   "%s failed (%x)\n",lpName[i],GetLastError());
+            Trace("WaitForMultipleObjectsTest:CreateEvent %u failed (%x)\n", i, GetLastError());
             bRet = FALSE;
             break;
         }
@@ -55,8 +50,7 @@ BOOL WaitForMultipleObjectsTest()
 
         if (!bRet)
         {
-            Trace("WaitForMultipleObjectsTest:SetEvent %s "
-                   "failed (%x)\n",lpName[i],GetLastError());
+            Trace("WaitForMultipleObjectsTest:SetEvent %u failed (%x)\n", i, GetLastError());
             bRet = FALSE;
             break;
         }
@@ -66,8 +60,7 @@ BOOL WaitForMultipleObjectsTest()
 
         if (dwRet != WAIT_OBJECT_0)
         {
-            Trace("WaitForMultipleObjectsTest:WaitForSingleObject "
-                   "%s failed (%x)\n",lpName[i],GetLastError());
+            Trace("WaitForMultipleObjectsTest:WaitForSingleObject %u failed (%x)\n", i, GetLastError());
             bRet = FALSE;
             break;
         }
@@ -79,8 +72,7 @@ BOOL WaitForMultipleObjectsTest()
 
         if (!bRet)
         {
-            Trace("WaitForMultipleObjectsTest:ResetEvent %s "
-                   "failed (%x)\n",lpName[i],GetLastError());
+            Trace("WaitForMultipleObjectsTest:ResetEvent %u failed (%x)\n", i, GetLastError());
             bRet = FALSE;
             break;
         }
@@ -89,8 +81,7 @@ BOOL WaitForMultipleObjectsTest()
 
         if (dwRet != WAIT_TIMEOUT)
         {
-            Trace("WaitForMultipleObjectsTest:WaitForSingleObject "
-                   "%s failed (%x)\n",lpName[i],GetLastError());
+            Trace("WaitForMultipleObjectsTest:WaitForSingleObject %u failed (%x)\n", i, GetLastError());
             bRet = FALSE;
             break;
         }
@@ -117,8 +108,7 @@ BOOL WaitForMultipleObjectsTest()
 
         if (dwRet != WAIT_TIMEOUT)
         {
-            Trace("WaitForMultipleObjectsTest:WaitForMultipleObjects "
-                   "%s failed (%x)\n",lpName[0],GetLastError());
+            Trace("WaitForMultipleObjectsTest:WaitForMultipleObjects failed (%x)\n", GetLastError());
         }
         else
         {
@@ -137,9 +127,7 @@ BOOL WaitForMultipleObjectsTest()
                         
                         if (!bRet)
                         {
-                            Trace("WaitForMultipleObjectsTest:SetEvent "
-                                   "%s failed (%x)\n",
-                                   lpName[j],GetLastError());
+                            Trace("WaitForMultipleObjectsTest:SetEvent %u failed (%x)\n", j, GetLastError());
                             break;
                         }
                     }
@@ -149,9 +137,7 @@ BOOL WaitForMultipleObjectsTest()
                         
                         if (!bRet)
                         {
-                            Trace("WaitForMultipleObjectsTest:ResetEvent "
-                                   "%s failed (%x)\n",
-                                   lpName[j],GetLastError());
+                            Trace("WaitForMultipleObjectsTest:ResetEvent %u failed (%x)\n", j, GetLastError());
                         }
                     }
                 }
@@ -164,8 +150,7 @@ BOOL WaitForMultipleObjectsTest()
                 
                 if (dwRet != WAIT_OBJECT_0+i)
                 {
-                    Trace("WaitForMultipleObjectsTest:WaitForMultipleObjects"
-                           " %s failed (%x)\n",lpName[0],GetLastError());
+                    Trace("WaitForMultipleObjectsTest:WaitForMultipleObjects failed (%x)\n", GetLastError());
                     bRet = FALSE;
                     break;
                 }
@@ -178,11 +163,8 @@ BOOL WaitForMultipleObjectsTest()
             
             if (!bRet)
             {
-                Trace("WaitForMultipleObjectsTest:CloseHandle %s "
-                       "failed (%x)\n",lpName[i],GetLastError());
+                Trace("WaitForMultipleObjectsTest:CloseHandle %u failed (%x)\n", i, GetLastError());
             }
-            
-            free((void*)lpName[i]);
         }
     }
     
