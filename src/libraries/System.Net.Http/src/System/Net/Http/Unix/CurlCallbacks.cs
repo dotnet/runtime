@@ -371,8 +371,6 @@ namespace System.Net.Http
                 }
             }
 
-            CheckForCompletedTransfers(state.SessionHandle);
-
             return retVal;
         }
 
