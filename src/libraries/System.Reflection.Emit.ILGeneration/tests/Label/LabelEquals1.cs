@@ -77,5 +77,15 @@ namespace System.Refleciton.Emit.ILGeneration.Tests
             Label label = new Label();
             Assert.False(label.Equals(ob));
         }
+
+        [Fact]
+        public void TestLabelEqualityOperators()
+        {
+            Label lb1 = new Label();
+            Label lb2 = new Label();
+
+            Assert.True(lb1 == lb2);
+            Assert.False(lb1 != lb2);
+        }
     }
 }
