@@ -25,13 +25,13 @@ internal static partial class Interop
         public static extern void curl_multi_cleanup(
             IntPtr handle);
 
-        [DllImport(Interop.Libraries.LibCurl, CharSet = CharSet.Ansi)]
+        [DllImport(Interop.Libraries.LibCurl)]
         public static extern int curl_multi_setopt(
             SafeCurlMultiHandle multi_handle,
             int option,
             curl_socket_callback value);
 
-        [DllImport(Interop.Libraries.LibCurl, CharSet = CharSet.Ansi)]
+        [DllImport(Interop.Libraries.LibCurl)]
         public static extern int curl_multi_setopt(
             SafeCurlMultiHandle multi_handle,
             int option,
@@ -155,5 +155,5 @@ internal static partial class Interop
 
         [DllImport(Interop.Libraries.LibCurl)]
         public static extern IntPtr curl_version_info(int curlVersionStamp);
-    }
+ }
 }
