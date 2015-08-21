@@ -81,7 +81,7 @@ namespace System.Net
             {
                 if (socket != -1)
                 {
-                    Interop.libc.close(socket);
+                    Interop.Sys.Close(socket);
                 }
             }
         }

@@ -155,8 +155,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.close.cs">
-      <Link>Interop\Unix\libc\Interop.close.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Close.cs">
+      <Link>Interop\Unix\System.Native\Interop.Close.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.freeaddrinfo.cs">
       <Link>Interop\Unix\libc\Interop.freeaddrinfo.cs</Link>
