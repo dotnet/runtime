@@ -37,6 +37,9 @@
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs">
+      <Link>Common\System\Net\Http\HttpHandlerDefaults.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\System\Net\Http\CertificateHelper.cs">
       <Link>ProductionCode\CertificateHelper.cs</Link>
     </Compile>
