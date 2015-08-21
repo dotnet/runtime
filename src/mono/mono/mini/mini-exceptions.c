@@ -1158,9 +1158,6 @@ setup_stack_trace (MonoException *mono_ex, GSList *dynamic_methods, MonoArray *i
 		*trace_ips = g_list_reverse (*trace_ips);
 		MONO_OBJECT_SETREF (mono_ex, trace_ips, glist_to_array (*trace_ips, mono_defaults.int_class));
 		MONO_OBJECT_SETREF (mono_ex, native_trace_ips, build_native_trace ());
-		if (FALSE && dynamic_methods)
-			/* These methods could go away anytime, so compute the stack trace now */
-			MONO_OBJECT_SETREF (mono_ex, stack_trace, ves_icall_System_Exception_get_trace (mono_ex));
 		if (dynamic_methods) {
 			/* These methods could go away anytime, so save a reference to them in the exception object */
 			GSList *l;
