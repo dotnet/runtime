@@ -117,7 +117,7 @@ internal static partial class Interop
                     // Whenever an fd is added/removed in _fdSet, a write happens to the
                     // write end of the pipe thus causing the poll to return.
                     pollFds[0].fd = _specialFds[libc.ReadEndOfPipe];
-                    pollFds[0].events = PollFlags.POLLIN | PollFlags.POLLOUT;
+                    pollFds[0].events = PollFlags.POLLIN;
                     int i = 1;
                     foreach (int fd in _fdSet)
                     {
@@ -176,7 +176,6 @@ internal static partial class Interop
             internal void SignalFdSetChange(int fd, bool isRemove)
             {
                 Debug.Assert(Monitor.IsEntered(this));
-
                 bool changed = isRemove ? _fdSet.Remove(fd) : _fdSet.Add(fd);
                 if (!changed)
                 {
@@ -227,6 +226,7 @@ internal static partial class Interop
                 {
                     return -1;
                 }
+                Debug.Assert((revents & PollFlags.POLLIN) != 0);
                 int pipeReadFd = _specialFds[libc.ReadEndOfPipe];
                 int bytesRead = 0;
                 unsafe
