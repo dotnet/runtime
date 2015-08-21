@@ -620,50 +620,6 @@ mono_exception_walk_trace (MonoException *ex, MonoExceptionFrameWalk func, gpoin
 	return len > 0;
 }
 
-MonoString *
-ves_icall_System_Exception_get_trace (MonoException *ex)
-{
-	MonoDomain *domain = mono_domain_get ();
-	MonoString *res;
-	MonoArray *ta = ex->trace_ips;
-	int i, len;
-	GString *trace_str;
-
-	if (ta == NULL)
-		/* Exception is not thrown yet */
-		return NULL;
-
-	len = mono_array_length (ta) >> 1;
-	trace_str = g_string_new ("");
-	for (i = 0; i < len; i++) {
-		MonoJitInfo *ji;
-		gpointer ip = mono_array_get (ta, gpointer, i * 2 + 0);
-		gpointer generic_info = mono_array_get (ta, gpointer, i * 2 + 1);
-
-		ji = mono_jit_info_table_find_internal (domain, ip, TRUE, TRUE);
-		if (ji == NULL) {
-			/* Unmanaged frame */
-			g_string_append_printf (trace_str, "in (unmanaged) %p\n", ip);
-		} else if (!ji->is_trampoline) {
-			gchar *location;
-			gint32 address;
-			MonoMethod *method = get_method_from_stack_frame (ji, generic_info);
-
-			address = (char *)ip - (char *)ji->code_start;
-			location = mono_debug_print_stack_frame (
-				method, address, ex->object.vtable->domain);
-
-			g_string_append_printf (trace_str, "%s\n", location);
-			g_free (location);
-		}
-	}
-
-	res = mono_string_new (ex->object.vtable->domain, trace_str->str);
-	g_string_free (trace_str, TRUE);
-
-	return res;
-}
-
 MonoArray *
 ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info)
 {
@@ -1199,9 +1155,6 @@ build_native_trace (void)
 		trace_ips = g_list_reverse (trace_ips);	\
 		MONO_OBJECT_SETREF (mono_ex, trace_ips, glist_to_array (trace_ips, mono_defaults.int_class));	\
 		MONO_OBJECT_SETREF (mono_ex, native_trace_ips, build_native_trace ());	\
-		if (has_dynamic_methods)	\
-			/* These methods could go away anytime, so compute the stack trace now */	\
-			MONO_OBJECT_SETREF (mono_ex, stack_trace, ves_icall_System_Exception_get_trace (mono_ex));	\
 	}	\
 	g_list_free (trace_ips);	\
 	trace_ips = NULL;	\
