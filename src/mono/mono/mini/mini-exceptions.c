@@ -53,6 +53,7 @@
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/environment.h>
+#include <mono/metadata/mono-mlist.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-logger-internal.h>
 
@@ -1150,15 +1151,45 @@ build_native_trace (void)
 #endif
 }
 
-#define setup_managed_stacktrace_information() do {	\
-	if (mono_ex && !initial_trace_ips) {	\
-		trace_ips = g_list_reverse (trace_ips);	\
-		MONO_OBJECT_SETREF (mono_ex, trace_ips, glist_to_array (trace_ips, mono_defaults.int_class));	\
-		MONO_OBJECT_SETREF (mono_ex, native_trace_ips, build_native_trace ());	\
-	}	\
-	g_list_free (trace_ips);	\
-	trace_ips = NULL;	\
-} while (0)
+static void
+setup_stack_trace (MonoException *mono_ex, GSList *dynamic_methods, MonoArray *initial_trace_ips, GList **trace_ips)
+{
+	if (mono_ex && !initial_trace_ips) {
+		*trace_ips = g_list_reverse (*trace_ips);
+		MONO_OBJECT_SETREF (mono_ex, trace_ips, glist_to_array (*trace_ips, mono_defaults.int_class));
+		MONO_OBJECT_SETREF (mono_ex, native_trace_ips, build_native_trace ());
+		if (FALSE && dynamic_methods)
+			/* These methods could go away anytime, so compute the stack trace now */
+			MONO_OBJECT_SETREF (mono_ex, stack_trace, ves_icall_System_Exception_get_trace (mono_ex));
+		if (dynamic_methods) {
+			/* These methods could go away anytime, so save a reference to them in the exception object */
+			GSList *l;
+			MonoMList *list = NULL;
+
+			for (l = dynamic_methods; l; l = l->next) {
+				gpointer *dis_link;
+				MonoDomain *domain = mono_domain_get ();
+
+				if (domain->method_to_dyn_method) {
+					mono_domain_lock (domain);
+					dis_link = g_hash_table_lookup (domain->method_to_dyn_method, l->data);
+					mono_domain_unlock (domain);
+					if (dis_link) {
+						MonoObject *o = mono_gc_weak_link_get (dis_link);
+						if (o) {
+							list = mono_mlist_prepend (list, o);
+						}
+					}
+				}
+			}
+
+			MONO_OBJECT_SETREF (mono_ex, dynamic_methods, list);
+		}
+	}
+	g_list_free (*trace_ips);
+	*trace_ips = NULL;
+}
+
 /*
  * mono_handle_exception_internal_first_pass:
  *
@@ -1176,12 +1207,12 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, gpointer obj, gint3
 	MonoLMF *lmf = mono_get_lmf ();
 	MonoArray *initial_trace_ips = NULL;
 	GList *trace_ips = NULL;
+	GSList *dynamic_methods = NULL;
 	MonoException *mono_ex;
 	gboolean stack_overflow = FALSE;
 	MonoContext initial_ctx;
 	MonoMethod *method;
 	int frame_count = 0;
-	gboolean has_dynamic_methods = FALSE;
 	gint32 filter_idx;
 	int i;
 	MonoObject *ex_obj;
@@ -1240,7 +1271,8 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, gpointer obj, gint3
 		}
 
 		if (!unwind_res) {
-			setup_managed_stacktrace_information ();
+			setup_stack_trace (mono_ex, dynamic_methods, initial_trace_ips, &trace_ips);
+			g_slist_free (dynamic_methods);
 			return FALSE;
 		}
 
@@ -1268,7 +1300,7 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, gpointer obj, gint3
 		}
 
 		if (method->dynamic)
-			has_dynamic_methods = TRUE;
+			dynamic_methods = g_slist_prepend (dynamic_methods, method);
 
 		if (stack_overflow) {
 			if (DOES_STACK_GROWS_UP)
@@ -1315,7 +1347,7 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, gpointer obj, gint3
 					FIXME Not 100% sure if it's a good idea even with user clauses.
 					*/
 					if (is_user_frame)
-						setup_managed_stacktrace_information ();
+						setup_stack_trace (mono_ex, dynamic_methods, initial_trace_ips, &trace_ips);
 
 #ifdef MONO_CONTEXT_SET_LLVM_EXC_REG
 					if (ji->from_llvm)
@@ -1351,7 +1383,8 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, gpointer obj, gint3
 
 					if (filtered) {
 						if (!is_user_frame)
-							setup_managed_stacktrace_information ();
+							setup_stack_trace (mono_ex, dynamic_methods, initial_trace_ips, &trace_ips);
+						g_slist_free (dynamic_methods);
 						/* mono_debugger_agent_handle_exception () needs this */
 						MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 						return TRUE;
@@ -1359,7 +1392,8 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, gpointer obj, gint3
 				}
 
 				if (ei->flags == MONO_EXCEPTION_CLAUSE_NONE && mono_object_isinst (ex_obj, catch_class)) {
-					setup_managed_stacktrace_information ();
+					setup_stack_trace (mono_ex, dynamic_methods, initial_trace_ips, &trace_ips);
+					g_slist_free (dynamic_methods);
 
 					if (out_ji)
 						*out_ji = ji;

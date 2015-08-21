@@ -11889,8 +11889,19 @@ static void
 free_dynamic_method (void *dynamic_method)
 {
 	DynamicMethodReleaseData *data = dynamic_method;
+	MonoDomain *domain = data->domain;
+	MonoMethod *method = data->handle;
+	gpointer *dis_link;
 
-	mono_runtime_free_method (data->domain, data->handle);
+	mono_domain_lock (domain);
+	dis_link = g_hash_table_lookup (domain->method_to_dyn_method, method);
+	g_hash_table_remove (domain->method_to_dyn_method, method);
+	mono_domain_unlock (domain);
+	g_assert (dis_link);
+	mono_gc_weak_link_remove (dis_link, TRUE);
+	g_free (dis_link);
+
+	mono_runtime_free_method (domain, method);
 	g_free (data);
 }
 
@@ -11903,7 +11914,9 @@ mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb)
 	ReflectionMethodBuilder rmb;
 	MonoMethodSignature *sig;
 	MonoClass *klass;
+	MonoDomain *domain;
 	GSList *l;
+	void *dis_link;
 	int i;
 
 	if (mono_runtime_is_shutting_down ())
@@ -12000,6 +12013,15 @@ mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb)
 
 	/* ilgen is no longer needed */
 	mb->ilgen = NULL;
+
+	domain = mono_domain_get ();
+	mono_domain_lock (domain);
+	if (!domain->method_to_dyn_method)
+		domain->method_to_dyn_method = g_hash_table_new (NULL, NULL);
+	dis_link = g_new0 (gpointer, 1);
+	mono_gc_weak_link_add (dis_link, (MonoObject*)mb, TRUE);
+	g_hash_table_insert (domain->method_to_dyn_method, handle, dis_link);
+	mono_domain_unlock (domain);
 }
 
 #endif /* DISABLE_REFLECTION_EMIT */

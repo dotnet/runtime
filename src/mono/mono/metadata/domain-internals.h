@@ -400,6 +400,9 @@ struct _MonoDomain {
 	/* that require wrappers */
 	GHashTable *ftnptrs_hash;
 
+	/* Maps MonoMethod* to weak links to DynamicMethod objects */
+	GHashTable *method_to_dyn_method;
+
 	guint32 execution_context_field_offset;
 };
 

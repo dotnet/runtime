@@ -1288,6 +1288,10 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		g_hash_table_destroy (domain->ftnptrs_hash);
 		domain->ftnptrs_hash = NULL;
 	}
+	if (domain->method_to_dyn_method) {
+		g_hash_table_destroy (domain->method_to_dyn_method);
+		domain->method_to_dyn_method = NULL;
+	}
 
 	mono_mutex_destroy (&domain->finalizable_objects_hash_lock);
 	mono_mutex_destroy (&domain->assemblies_lock);
