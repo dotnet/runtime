@@ -133,7 +133,9 @@ void ShimProcess::SetProcess(ICorDebugProcess * pProcess)
     if (pProcess != NULL)
     {
         // Verify that DataTarget + new process have the same pid?
-        _ASSERTE(m_pProcess->GetPid() == m_pLiveDataTarget->GetPid());
+        DWORD pid = 0;
+        _ASSERTE(SUCCEEDED(m_pLiveDataTarget->GetPid(&pid)));
+        _ASSERTE(m_pProcess->GetPid() == pid);
     }
 }
 
@@ -738,7 +740,11 @@ HRESULT ShimProcess::HandleWin32DebugEvent(const DEBUG_EVENT * pEvent)
             // This assert could be our only warning of various catastrophic failures in the left-side.
             if (!dwFirstChance && (pRecord->ExceptionCode == STATUS_BREAKPOINT) && !m_fIsInteropDebugging)
             {            
-                DWORD pid = (m_pLiveDataTarget == NULL) ? 0 : m_pLiveDataTarget->GetPid();
+                DWORD pid = 0;
+                if (m_pLiveDataTarget != NULL) 
+                {
+                    m_pLiveDataTarget->GetPid(&pid);
+                }
                 CONSISTENCY_CHECK_MSGF(false, 
                     ("Unhandled breakpoint exception in debuggee (pid=%d (0x%x)) on thread %d(0x%x)\n"
                     "This may mean there was an assert in the debuggee on that thread.\n"
@@ -1742,7 +1748,11 @@ void ShimProcess::PreDispatchEvent(bool fRealCreateProcessEvent /*= false*/)
 CORDB_ADDRESS ShimProcess::GetCLRInstanceBaseAddress()
 {
     CORDB_ADDRESS baseAddress = CORDB_ADDRESS(NULL);
-    DWORD dwPid = m_pLiveDataTarget->GetPid();
+    DWORD dwPid = 0;
+    if (FAILED(m_pLiveDataTarget->GetPid(&dwPid)))
+    {
+        return baseAddress;
+    }
 #if defined(FEATURE_CORESYSTEM)
     // Debugger attaching to CoreCLR via CoreCLRCreateCordbObject should have already specified CLR module address.
     // Code that help to find it now lives in dbgshim.

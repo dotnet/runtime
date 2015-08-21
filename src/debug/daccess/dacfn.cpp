@@ -218,6 +218,25 @@ DacWriteAll(TADDR addr, PVOID buffer, ULONG32 size, bool throwEx)
     return S_OK;
 }
 
+HRESULT 
+DacGetPid(DWORD *pid)
+{
+    if (!g_dacImpl)
+    {
+        DacError(E_UNEXPECTED);
+        UNREACHABLE();
+    }
+
+    ReleaseHolder<ICorDebugDataTarget4> dt;
+    HRESULT hr = g_dacImpl->m_pTarget->QueryInterface(IID_ICorDebugDataTarget4, (void **)&dt);
+    if (SUCCEEDED(hr))
+    {
+        hr = dt->GetPid(pid);
+    }
+
+    return hr;
+}
+
 // DacAllocVirtual - Allocate memory from the target process
 // Note: this is only available to clients supporting the legacy
 // ICLRDataTarget2 interface.  It's currently used by SOS for notification tables.
