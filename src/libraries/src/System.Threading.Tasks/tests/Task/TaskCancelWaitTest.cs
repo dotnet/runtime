@@ -368,7 +368,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
                     double maxLimit = 1.65;
 
                     if (ti.Result < minLimit || ti.Result > maxLimit)
-                        Assert.True(ti.Task.IsCanceled,
+                        Assert.True(ti.Task.IsCanceled || ti.Task.IsFaulted,
                             string.Format(
                                 "Expected Result to lie between {0} and {1} for completed task. Actual Result {2}. Using n={3} IsCanceled={4}",
                                 minLimit,
