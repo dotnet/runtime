@@ -1284,102 +1284,107 @@ namespace System.IO
             if (!_parent.CanWrite) throw __Error.GetWriteNotSupported();
 
             Debug.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen), "We're either reading or writing, but not both.");
+            Debug.Assert(!_isPipe || (_readPos == 0 && _readLen == 0), "Win32FileStream must not have buffered data here!  Pipes should be unidirectional.");
 
-            if (_isPipe)
+            bool writeDataStoredInBuffer = false;
+            if (!_isPipe) // avoid async buffering with pipes, as doing so can lead to deadlocks (see comments in ReadInternalAsyncCore)
             {
-                // Pipes are tricky, at least when you have 2 different pipes
-                // that you want to use simultaneously.  When redirecting stdout
-                // & stderr with the Process class, it's easy to deadlock your
-                // parent & child processes when doing writes 4K at a time.  The
-                // OS appears to use a 4K buffer internally.  If you write to a
-                // pipe that is full, you will block until someone read from 
-                // that pipe.  If you try reading from an empty pipe and 
-                // Win32FileStream's ReadAsync blocks waiting for data to fill it's 
-                // internal buffer, you will be blocked.  In a case where a child
-                // process writes to stdout & stderr while a parent process tries
-                // reading from both, you can easily get into a deadlock here.
-                // To avoid this deadlock, don't buffer when doing async IO on
-                // pipes.   
-                Debug.Assert(_readPos == 0 && _readLen == 0, "Win32FileStream must not have buffered data here!  Pipes should be unidirectional.");
+                // Ensure the buffer is clear for writing
+                if (_writePos == 0)
+                {
+                    if (_readPos < _readLen)
+                    {
+                        FlushRead();
+                    }
+                    _readPos = 0;
+                    _readLen = 0;
+                }
 
-                // If there's data in the write buffer, flush it before starting a new write
-                if (_writePos > 0)
-                    FlushWriteAsync(cancellationToken);
+                // Determine how much space remains in the buffer
+                int remainingBuffer = _bufferSize - _writePos;
+                Debug.Assert(remainingBuffer >= 0);
 
-                return WriteInternalCoreAsync(array, offset, numBytes, cancellationToken);
+                // Simple/common case:
+                // - The write is smaller than our buffer, such that it's worth considering buffering it.
+                // - There's no active flush operation, such that we don't have to worry about the existing buffer being in use.
+                // - And the data we're trying to write fits in the buffer, meaning it wasn't already filled by previous writes.
+                // In that case, just store it in the buffer.
+                if (numBytes < _bufferSize && !HasActiveBufferOperation && numBytes <= remainingBuffer)
+                {
+                    if (_buffer == null)
+                        _buffer = new byte[_bufferSize];
+
+                    Buffer.BlockCopy(array, offset, _buffer, _writePos, numBytes);
+                    _writePos += numBytes;
+                    writeDataStoredInBuffer = true;
+
+                    // There is one special-but-common case, common because devs often use
+                    // byte[] sizes that are powers of 2 and thus fit nicely into our buffer, which is
+                    // also a power of 2. If after our write the buffer still has remaining space,
+                    // then we're done and can return a completed task now.  But if we filled the buffer
+                    // completely, we want to do the asynchronous flush/write as part of this operation 
+                    // rather than waiting until the next write that fills the buffer.
+                    if (numBytes != remainingBuffer)
+                        return Task.CompletedTask;
+
+                    Debug.Assert(_writePos == _bufferSize);
+                }
             }
 
-            // Ensure the buffer is clear for writing
-            if (_writePos == 0)
-            {
-                if (_readPos < _readLen) FlushRead();
-                _readPos = 0;
-                _readLen = 0;
-            }
-
-            // There are a few different cases to handle when performing the write operation
-            // surrounding the internal buffer. Buffer flush operations can be issued asynchronously
-            // so the state of any async operation that touches the internal buffer must be tracked
-            // to ensure there are no data races at play.
+            // At this point, at least one of the following is true:
+            // 1. There was an active flush operation (it could have completed by now, though).
+            // 2. The data doesn't fit in the remaining buffer (or it's a pipe and we chose not to try).
+            // 3. We wrote all of the data to the buffer, filling it.
             //
-            //   1. No active async buffer op and numBytes fits in existing buffer:
-            //       Simply perform a memory copy operation and return synchronously.
+            // If there's an active operation, we can't touch the current buffer because it's in use.
+            // That gives us a choice: we can either allocate a new buffer, or we can skip the buffer
+            // entirely (even if the data would otherwise fit in it).  For now, for simplicity, we do
+            // the latter; it could also have performance wins due to OS-level optimizations, and we could
+            // potentially add support for PreAllocatedOverlapped due to having a single buffer. (We can
+            // switch to allocating a new buffer, potentially experimenting with buffer pooling, should
+            // performance data suggest it's appropriate.)
             //
-            //   2. Active async buffer op and numBytes <= _bufferSize
-            //       Since there's an active buffer operation, a new buffer needs to be allocated
-            //       to write to in order to ensure the existing buffer isn't modified mid-write.
-            //       The incoming write can then be copied into the new buffer.
+            // If the data doesn't fit in the remaining buffer, it could be because it's so large
+            // it's greater than the entire buffer size, in which case we'd always skip the buffer,
+            // or it could be because there's more data than just the space remaining.  For the latter
+            // case, we need to issue an asynchronous write to flush that data, which then turns this into
+            // the first case above with an active operation.
             //
-            //   3. No active async buffer and numBytes too large for buffer
-            //       If there's buffered data, issue a flush operation. Then, regardless, issue the
-            //       incoming write since it can't be buffered.
+            // If we already stored the data, then we have nothing additional to write beyond what
+            // we need to flush.
             //
-            //   4. Active async buffer op and numBytes too large for buffer
-            //       If there's buffered data, attach it to the existing async operation using Task.WhenAll
-            //       and then directly issue the incoming write.
-            //
-            //       Note: since _writePos is reset synchronously when calling FlushWriteAsync, it can be
-            //       assumed that if _writePos > 0 and there's an active async flush operation, the buffer
-            //       was reallocated since that operation was initiated.
+            // In any of these cases, we have the same outcome:
+            // - If there's data in the buffer, flush it by writing it out asynchronously.
+            // - Then, if there's any data to be written, issue a write for it concurrently.
+            // We return a Task that represents one or both.
 
-            // Case 1 - no active buffer op & fits in remaining size
-            int remainingBuffer = _bufferSize - _writePos;
-            if (!HasActiveBufferOperation && numBytes < remainingBuffer)
-            {
-                if (_buffer == null) _buffer = new byte[_bufferSize];
-
-                Buffer.BlockCopy(array, offset, _buffer, _writePos, numBytes);
-                _writePos += numBytes;
-                return Task.CompletedTask;
-            }
-
-            // Case 2 - active buffer op & fits in new buffer
-            if (HasActiveBufferOperation && numBytes < _bufferSize)
-            {
-                _buffer = new byte[_bufferSize];
-
-                Buffer.BlockCopy(array, offset, _buffer, 0, numBytes);
-                _writePos = numBytes;
-                return Task.CompletedTask;
-            }
-
-            // Case 3 - Incoming write can't be buffered and there's existing data in the buffer
+            // Flush the buffer asynchronously if there's anything to flush
+            Task flushTask = null;
             if (_writePos > 0)
             {
-                Task flushTask = FlushWriteAsync(cancellationToken);
+                flushTask = FlushWriteAsync(cancellationToken);
 
-                // If the task has already completed and was unsuccessful, avoid issuing the write.
-                if (flushTask.IsCanceled || flushTask.IsFaulted) return flushTask;
-
-                // Return both the flush and write operations. It's not necessary that they complete in a
-                // specific order since the internal position is updated synchronously when crafting the
-                // tasks, but consumers will want to know if either fails so the health of the stream is known.
-                return Task.WhenAll(flushTask, WriteInternalCoreAsync(array, offset, numBytes, cancellationToken));
+                // If we already copied all of the data into the buffer,
+                // simply return the flush task here.  Same goes for if the task has 
+                // already completed and was unsuccessful.
+                if (writeDataStoredInBuffer ||
+                    flushTask.IsFaulted ||
+                    flushTask.IsCanceled)
+                {
+                    return flushTask;
+                }
             }
-                
-            // Case 4 - Incoming write can't be buffered and there's no existing buffered data, so just
-            // issue the OS write directly.
-            return WriteInternalCoreAsync(array, offset, numBytes, cancellationToken);
+
+            Debug.Assert(!writeDataStoredInBuffer);
+            Debug.Assert(_writePos == 0);
+
+            // Finally, issue the write asynchronously, and return a Task that logically
+            // represents the write operation, including any flushing done.
+            Task writeTask = WriteInternalCoreAsync(array, offset, numBytes, cancellationToken);
+            return
+                (flushTask == null || flushTask.Status == TaskStatus.RanToCompletion) ? writeTask :
+                (writeTask.Status == TaskStatus.RanToCompletion) ? flushTask :
+                Task.WhenAll(flushTask, writeTask);
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
@@ -1470,7 +1475,7 @@ namespace System.IO
                         throw Win32Marshal.GetExceptionForWin32Error(errorCode);
                     }
                 }
-                else
+                else // ERROR_IO_PENDING
                 {
                     // Only once the IO is pending do we register for cancellation
                     completionSource.RegisterForCancellation();
