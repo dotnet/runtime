@@ -916,9 +916,7 @@ namespace System.Diagnostics
                 }
             }
 
-            Process[] temp = new Process[list.Count];
-            list.CopyTo(temp, 0);
-            return temp;
+            return list.ToArray();
         }
 
         /// <devdoc>

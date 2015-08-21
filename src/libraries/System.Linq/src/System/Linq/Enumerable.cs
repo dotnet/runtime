@@ -3476,8 +3476,8 @@ namespace System.Linq
                 {
                     throw new SystemCore_EnumerableDebugViewEmptyException();
                 }
-                _cachedCollection = new T[_count];
-                tempList.CopyTo(_cachedCollection, 0);
+
+                _cachedCollection = tempList.ToArray();
                 return _cachedCollection;
             }
         }
