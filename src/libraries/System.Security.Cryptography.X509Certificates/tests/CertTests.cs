@@ -173,6 +173,32 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(2635)]
+        public static void X509Certificate2FromPkcs7DerFile()
+        {
+            Assert.Throws<CryptographicException>(() => new X509Certificate2(Path.Combine("TestData", "singlecert.p7b")));
+        }
+
+        [Fact]
+        [ActiveIssue(2635)]
+        public static void X509Certificate2FromPkcs7PemFile()
+        {
+            Assert.Throws<CryptographicException>(() => new X509Certificate2(Path.Combine("TestData", "singlecert.p7c")));
+        }
+
+        [Fact]
+        public static void X509Certificate2FromPkcs7DerBlob()
+        {
+            Assert.Throws<CryptographicException>(() => new X509Certificate2(TestData.Pkcs7SingleDerBytes));
+        }
+
+        [Fact]
+        public static void X509Certificate2FromPkcs7PemBlob()
+        {
+            Assert.Throws<CryptographicException>(() => new X509Certificate2(TestData.Pkcs7SinglePemBytes));
+        }
+
+        [Fact]
         public static void UseAfterDispose()
         {
             using (X509Certificate2 c = new X509Certificate2(TestData.MsCertificate))
