@@ -54,10 +54,9 @@ int __cdecl main(int argc, char **argv)
 		    }
 
    //Create Mutex
-		hMutex = CreateMutex( 
-		    NULL,                       // no security attributes
-		    FALSE,                      // initially not owned
-		    "MutexToProtectGlobalCounter");  // name of mutex
+		hMutex = CreateMutex(NULL,      // no security attributes
+                             FALSE,     // initially not owned
+                             NULL);     // name of mutex
 
    //Check for Mutex Creation
 
