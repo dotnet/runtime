@@ -96,7 +96,7 @@
     <Compile Include="LegacyTests\ToSequenceTests.cs" />
     <Compile Include="LegacyTests\UnionTests.cs" />
     <Compile Include="LegacyTests\WhereTests.cs" />
-    <Compile Include="LegacyTests\ZipTests.cs" />
+    <Compile Include="ZipTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Linq.csproj">
