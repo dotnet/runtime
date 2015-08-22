@@ -18,6 +18,8 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AllTests.cs" />
+    <Compile Include="AnyTests.cs" />
     <Compile Include="CachedEnumerator.cs" />
     <Compile Include="EnumerableTests.cs" />
     <Compile Include="EmptyEnumerable.cs" />
@@ -46,8 +48,6 @@
     <Compile Include="ToListTests.cs" />
     <Compile Include="SelectTests.cs" />
     <Compile Include="LegacyTests\AggregateTests.cs" />
-    <Compile Include="LegacyTests\AllTests.cs" />
-    <Compile Include="LegacyTests\AnyTests.cs" />
     <Compile Include="LegacyTests\AverageTests.cs" />
     <Compile Include="LegacyTests\CastTests.cs" />
     <Compile Include="LegacyTests\ConcatTests.cs" />
