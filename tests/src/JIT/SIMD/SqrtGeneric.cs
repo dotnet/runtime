@@ -6,11 +6,9 @@ namespace VectorMathTests
 {
     class Program
     {
-
-
-
         static int Main(string[] args)
         {
+            Random random = new Random(13);
             var a = new System.Numerics.Vector<short>(25);
             a = System.Numerics.Vector.SquareRoot(a);
             if (a[0] != 5)
@@ -29,16 +27,15 @@ namespace VectorMathTests
             {
                 return 0;
             }
-
             var d = new System.Numerics.Vector<double>(100.0);
             d = System.Numerics.Vector.SquareRoot(d);
-            if (d[0] != 10)
+            if (((int)d[0]) != 10)
             {
                 return 0;
             }
             var e = new System.Numerics.Vector<float>(64);
             e = System.Numerics.Vector.SquareRoot(e);
-            if (e[3] != 8)
+            if (((int)e[3]) != 8)
             {
                 return 0;
             }
@@ -54,7 +51,6 @@ namespace VectorMathTests
             {
                 return 0;
             }
-
             return 100;
         }
     }
