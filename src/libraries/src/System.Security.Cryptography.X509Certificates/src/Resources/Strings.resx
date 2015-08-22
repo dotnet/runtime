@@ -186,6 +186,9 @@
   <data name="Cryptography_X509_KeyMismatch" xml:space="preserve">
     <value>The public key of the certificate does not match the value specified.</value>
   </data>
+  <data name="Cryptography_X509_PKCS7_NoSigner" xml:space="preserve">
+    <value>Cannot find the original signer.</value>
+  </data>
   <data name="Cryptography_X509_StoreNoFileAvailable" xml:space="preserve">
     <value>The X509 certificate could not be added to the store because all candidate file names were in use.</value>
   </data>

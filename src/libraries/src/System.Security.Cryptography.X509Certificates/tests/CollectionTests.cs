@@ -472,72 +472,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        public static void ImportNull()
-        {
-            X509Certificate2Collection cc2 = new X509Certificate2Collection();
-            Assert.Throws<ArgumentNullException>(() => cc2.Import((byte[])null));
-            Assert.Throws<ArgumentNullException>(() => cc2.Import((String)null));
-        }
-
-        [Fact]
-        public static void ImportPfx()
-        {
-            using (var pfxCer = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
-            {
-                X509Certificate2Collection cc2 = new X509Certificate2Collection();
-                cc2.Import(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.DefaultKeySet);
-                int count = cc2.Count;
-                Assert.Equal(1, count);
-
-                using (X509Certificate2 c = cc2[0])
-                {
-                    // pfxCer was loaded directly, cc2[0] was Imported, two distinct copies.
-                    Assert.NotSame(pfxCer, c);
-
-                    Assert.Equal(pfxCer, c);
-                    Assert.Equal(pfxCer.Thumbprint, c.Thumbprint);
-                }
-            }
-        }
-
-        [Fact]
-        public static void ImportFullChainPfx()
-        {
-            X509Certificate2Collection certs = new X509Certificate2Collection();
-            certs.Import(Path.Combine("TestData", "test.pfx"), "test", X509KeyStorageFlags.DefaultKeySet);
-            int count = certs.Count;
-            Assert.Equal(3, count);
-
-            // Verify that the read ordering is consistent across the platforms
-            string[] expectedSubjects =
-            {
-                "MS Passport Test Sub CA",
-                "MS Passport Test Root CA",
-                "test.local",
-            };
-
-            string[] actualSubjects = certs.OfType<X509Certificate2>().
-                Select(cert => cert.GetNameInfo(X509NameType.SimpleName, false)).
-                ToArray();
-
-            Assert.Equal(expectedSubjects, actualSubjects);
-            
-            // And verify that we have private keys when we expect them
-            bool[] expectedHasPrivateKeys =
-            {
-                false,
-                false,
-                true,
-            };
-
-            bool[] actualHasPrivateKeys = certs.OfType<X509Certificate2>().
-                Select(cert => cert.HasPrivateKey).
-                ToArray();
-
-            Assert.Equal(expectedHasPrivateKeys, actualHasPrivateKeys);
-        }
-
-        [Fact]
         [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void ImportStoreSavedAsCerData()
         {
@@ -719,16 +653,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             // The empty PFX is legal, the answer won't be null.
             Assert.NotNull(exported);
-        }
-
-        [Fact]
-        public static void ImportEmpty_Pkcs12()
-        {
-            var collection = new X509Certificate2Collection();
-
-            collection.Import(TestData.EmptyPfx);
-
-            Assert.Equal(0, collection.Count);
         }
 
         [Fact]

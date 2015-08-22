@@ -30,6 +30,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CertTests.cs" />
+    <Compile Include="CollectionImportTests.cs" />
     <Compile Include="CollectionTests.cs" />
     <Compile Include="CtorTests.cs" />
     <Compile Include="ExportTests.cs" />

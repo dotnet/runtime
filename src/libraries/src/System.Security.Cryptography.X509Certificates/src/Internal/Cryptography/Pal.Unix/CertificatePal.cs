@@ -19,67 +19,23 @@ namespace Internal.Cryptography.Pal
             return new OpenSslX509CertificateReader(Interop.libcrypto.X509_dup(handle));
         }
 
-        public static unsafe ICertificatePal FromBlob(byte[] rawData, string password, X509KeyStorageFlags keyStorageFlags)
+        public static ICertificatePal FromBlob(byte[] rawData, string password, X509KeyStorageFlags keyStorageFlags)
         {
-            // If we can see a hyphen, assume it's PEM.  Otherwise try DER-X509, then fall back to DER-PKCS12.
-            SafeX509Handle cert;
+            ICertificatePal cert;
 
-            // PEM
-            if (rawData[0] == '-')
+            if (TryReadX509Der(rawData, out cert) ||
+                TryReadX509Pem(rawData, out cert) ||
+                PkcsFormatReader.TryReadPkcs7Der(rawData, out cert) ||
+                PkcsFormatReader.TryReadPkcs7Pem(rawData, out cert) ||
+                PkcsFormatReader.TryReadPkcs12(rawData, password, out cert))
             {
-                using (SafeBioHandle bio = Interop.libcrypto.BIO_new(Interop.libcrypto.BIO_s_mem()))
+                if (cert == null)
                 {
-                    Interop.libcrypto.CheckValidOpenSslHandle(bio);
-
-                    Interop.libcrypto.BIO_write(bio, rawData, rawData.Length);
-                    cert = Interop.libcrypto.PEM_read_bio_X509_AUX(bio, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+                    // Empty collection, most likely.
+                    throw new CryptographicException();
                 }
 
-                Interop.libcrypto.CheckValidOpenSslHandle(cert);
-
-                return new OpenSslX509CertificateReader(cert);
-            }
-
-            // DER-X509
-            cert = Interop.libcrypto.OpenSslD2I((ptr, b, i) => Interop.libcrypto.d2i_X509(ptr, b, i), rawData, checkHandle: false);
-
-            if (!cert.IsInvalid)
-            {
-                return new OpenSslX509CertificateReader(cert);
-            }
-
-            // DER-PKCS12
-            OpenSslPkcs12Reader pfx;
-
-            if (OpenSslPkcs12Reader.TryRead(rawData, out pfx))
-            {
-                using (pfx)
-                {
-                    pfx.Decrypt(password);
-
-                    ICertificatePal first = null;
-
-                    foreach (OpenSslX509CertificateReader certPal in pfx.ReadCertificates())
-                    {
-                        // When requesting an X509Certificate2 from a PFX only the first entry is
-                        // returned.  Other entries should be disposed.
-                        if (first == null)
-                        {
-                            first = certPal;
-                        }
-                        else
-                        {
-                            certPal.Dispose();
-                        }
-                    }
-
-                    if (first == null)
-                    {
-                        throw new CryptographicException();
-                    }
-
-                    return first;
-                }
+                return cert;
             }
 
             // Unsupported
@@ -93,8 +49,142 @@ namespace Internal.Cryptography.Pal
             {
                 Interop.libcrypto.CheckValidOpenSslHandle(fileBio);
 
-                return OpenSslX509CertificateReader.FromBio(fileBio, password);
+                return FromBio(fileBio, password);
             }
+        }
+
+        private static ICertificatePal FromBio(SafeBioHandle bio, string password)
+        {
+            int bioPosition = Interop.Crypto.BioTell(bio);
+
+            Debug.Assert(bioPosition >= 0);
+
+            ICertificatePal certPal;
+            if (TryReadX509Pem(bio, out certPal))
+            {
+                return certPal;
+            }
+
+            // Rewind, try again.
+            RewindBio(bio, bioPosition);
+
+            if (TryReadX509Der(bio, out certPal))
+            {
+                return certPal;
+            }
+
+            // Rewind, try again.
+            RewindBio(bio, bioPosition);
+
+            if (PkcsFormatReader.TryReadPkcs7Pem(bio, out certPal))
+            {
+                return certPal;
+            }
+
+            // Rewind, try again.
+            RewindBio(bio, bioPosition);
+
+            if (PkcsFormatReader.TryReadPkcs7Der(bio, out certPal))
+            {
+                return certPal;
+            }
+
+            // Rewind, try again.
+            RewindBio(bio, bioPosition);
+
+            if (PkcsFormatReader.TryReadPkcs12(bio, password, out certPal))
+            {
+                return certPal;
+            }
+
+            // Since we aren't going to finish reading, leaving the buffer where it was when we got
+            // it seems better than leaving it in some arbitrary other position.
+            // 
+            // But, before seeking back to start, save the Exception representing the last reported
+            // OpenSSL error in case the last BioSeek would change it.
+            Exception openSslException = Interop.libcrypto.CreateOpenSslCryptographicException();
+
+            // Use BioSeek directly for the last seek attempt, because any failure here should instead
+            // report the already created (but not yet thrown) exception.
+            Interop.Crypto.BioSeek(bio, bioPosition);
+
+            throw openSslException;
+        }
+
+        internal static void RewindBio(SafeBioHandle bio, int bioPosition)
+        {
+            int ret = Interop.Crypto.BioSeek(bio, bioPosition);
+
+            if (ret < 0)
+            {
+                throw Interop.libcrypto.CreateOpenSslCryptographicException();
+            }
+        }
+
+        internal static unsafe bool TryReadX509Der(byte[] rawData, out ICertificatePal certPal)
+        {
+            SafeX509Handle certHandle = Interop.libcrypto.OpenSslD2I(
+                (ptr, b, i) => Interop.libcrypto.d2i_X509(ptr, b, i),
+                rawData,
+                checkHandle: false);
+
+            if (certHandle.IsInvalid)
+            {
+                certPal = null;
+                return false;
+            }
+
+            certPal = new OpenSslX509CertificateReader(certHandle);
+            return true;
+        }
+
+        internal static bool TryReadX509Pem(SafeBioHandle bio, out ICertificatePal certPal)
+        {
+            SafeX509Handle cert = Interop.libcrypto.PEM_read_bio_X509_AUX(bio, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+
+            if (cert.IsInvalid)
+            {
+                certPal = null;
+                return false;
+            }
+
+            certPal = new OpenSslX509CertificateReader(cert);
+            return true;
+        }
+
+        internal static bool TryReadX509Pem(byte[] rawData, out ICertificatePal certPal)
+        {
+            SafeX509Handle certHandle;
+            using (SafeBioHandle bio = Interop.libcrypto.BIO_new(Interop.libcrypto.BIO_s_mem()))
+            {
+                Interop.libcrypto.CheckValidOpenSslHandle(bio);
+
+                Interop.libcrypto.BIO_write(bio, rawData, rawData.Length);
+                certHandle = Interop.libcrypto.PEM_read_bio_X509_AUX(bio, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+            }
+
+            if (certHandle.IsInvalid)
+            {
+                certPal = null;
+                return false;
+            }
+
+            certPal = new OpenSslX509CertificateReader(certHandle);
+            return true;
+        }
+
+        internal static bool TryReadX509Der(SafeBioHandle bio, out ICertificatePal fromBio)
+        {
+            SafeX509Handle cert = Interop.Crypto.ReadX509AsDerFromBio(bio);
+
+            if (cert.IsInvalid)
+            {
+                fromBio = null;
+                return false;
+            }
+
+            fromBio = new OpenSslX509CertificateReader(cert);
+            return true;
         }
     }
 }

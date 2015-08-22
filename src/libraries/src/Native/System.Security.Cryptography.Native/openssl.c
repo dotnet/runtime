@@ -918,6 +918,41 @@ UpRefEvpPkey(
     return CRYPTO_add(&pkey->references, 1, CRYPTO_LOCK_EVP_PKEY);
 }
 
+/*
+Function:
+GetPkcs7Certificates
+
+Used by System.Security.Cryptography.X509Certificates' CertificatePal when
+reading the contents of a PKCS#7 file or blob.
+
+Return values:
+0 on NULL inputs, or a PKCS#7 file whose layout is not understood
+1 when the file format is understood, and *certs is assigned to the
+certificate contents of the structure.
+*/
+int
+GetPkcs7Certificates(
+    PKCS7* p7,
+    STACK_OF(X509)** certs)
+{
+    if (!p7 || !certs)
+    {
+        return 0;
+    }
+
+    switch (OBJ_obj2nid(p7->type))
+    {
+        case NID_pkcs7_signed:
+            *certs = p7->d.sign->cert;
+            return 1;
+        case NID_pkcs7_signedAndEnveloped:
+            *certs = p7->d.signed_and_enveloped->cert;
+            return 1;
+    }
+
+    return 0;
+}
+
 // Lock used to make sure EnsureopenSslInitialized itself is thread safe
 static pthread_mutex_t g_initLock = PTHREAD_MUTEX_INITIALIZER;
 
