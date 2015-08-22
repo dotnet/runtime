@@ -270,7 +270,7 @@ DllsName(
     }
     
 #ifndef FEATURE_PAL
-    if (wcsrchr (dllName, '\\') == NULL) {
+    if (_wcsrchr (dllName, '\\') == NULL) {
         DllsNameFromPeb (addrContaining,dllName);
     }
 #endif

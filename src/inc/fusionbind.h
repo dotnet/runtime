@@ -29,7 +29,11 @@
 #include "fusionsetup.h"
 #include "sstring.h"
 #include "ex.h"
+#ifdef PAL_STDCPP_COMPAT
+#include <type_traits>
+#else
 #include "clr_std/type_traits"
+#endif
 
 #include "binderngen.h"
 #include "clrprivbinding.h"

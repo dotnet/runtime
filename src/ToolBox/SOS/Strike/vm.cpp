@@ -325,7 +325,7 @@ PrintVmStatsHeader(
 
 VOID
 PrintIndividualStat(
-    __in __in_z IN PSTR Name,
+    ___in __in_z IN PSTR Name,
     IN PINDIVIDUAL_STAT Stat
     )
 {
@@ -380,7 +380,7 @@ PrintIndividualStat(
 
 VOID
 PrintVmStats(
-    __in __in_z IN PSTR Name,
+    ___in __in_z IN PSTR Name,
     IN PVM_STATS Stats
     )
 {

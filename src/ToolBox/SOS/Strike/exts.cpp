@@ -153,9 +153,9 @@ extern HMODULE g_hInstance;
 // This function throws an exception that can be caught by the debugger,
 // instead of allowing the default CRT behavior of invoking Watson to failfast.
 void __cdecl _SOS_invalid_parameter(
-   const wchar_t * expression,
-   const wchar_t * function, 
-   const wchar_t * file, 
+   const WCHAR * expression,
+   const WCHAR * function, 
+   const WCHAR * file, 
    unsigned int line,
    uintptr_t pReserved
 )
