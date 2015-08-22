@@ -389,14 +389,14 @@ void DecodeIL(IMetaDataImport *pImport, BYTE *buffer, ULONG bufSize)
             long l = readData<long>();
 
             ULONG numChars;
-            wchar_t str[84];
+            WCHAR str[84];
 
             if ((pImport != NULL) && (pImport->GetUserString((mdString) l, str, 80, &numChars) == S_OK))
             {
                 if (numChars < 80)
                     str[numChars] = 0;
                 wcscpy_s(&str[79], 4, L"...");
-                wchar_t* ptr = str;
+                WCHAR* ptr = str;
                 while(*ptr != 0) {
                     if (*ptr < 0x20 || * ptr >= 0x80) {
                         *ptr = '.';

@@ -139,6 +139,7 @@ typedef enum tagEFaultRepRetVal
 
 #include "pal.h"
 
+#ifndef PAL_STDCPP_COMPAT
 #ifdef __cplusplus
 #ifndef __PLACEMENT_NEW_INLINE
 #define __PLACEMENT_NEW_INLINE
@@ -147,7 +148,8 @@ inline void *__cdecl operator new(size_t, void *_P)
     return (_P);
 }
 #endif // __PLACEMENT_NEW_INLINE
-#endif
+#endif // __cplusplus
+#endif // !PAL_STDCPP_COMPAT
 
 #include <pal_assert.h>
 
@@ -225,11 +227,15 @@ inline void *__cdecl operator new(size_t, void *_P)
 
 #if defined(__GNUC__) && (__GNUC__ == 3 && __GNUC_MINOR__ >= 5 || __GNUC__ > 3)
 #define FIELD_OFFSET(type, field) __builtin_offsetof(type, field)
+#ifndef offsetof
 #define offsetof(type, field) __builtin_offsetof(type, field)
+#endif
 #define PAL_safe_offsetof(type, field) __builtin_offsetof(type, field)
 #else
 #define FIELD_OFFSET(type, field) (((LONG)(LONG_PTR)&(((type *)64)->field)) - 64)
+#ifndef offsetof
 #define offsetof(s,m)          ((size_t)((ptrdiff_t)&(((s *)64)->m)) - 64)
+#endif
 #define PAL_safe_offsetof(s,m) ((size_t)((ptrdiff_t)&(char&)(((s *)64)->m))-64)
 #endif
 

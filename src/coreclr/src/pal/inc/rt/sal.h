@@ -2654,8 +2654,8 @@ buffer, use the table in the buffer annotations section.
 -------------------------------------------------------------------------------
 */
 
-#ifndef PAL_STDCPP_COMPAT
 // These macros conflict with c++ headers.
+#ifndef PAL_STDCPP_COMPAT
 #define __in                                                     _SAL1_Source_(__in, (), _In_)
 #define __out                                                    _SAL1_Source_(__out, (), _Out_)
 #endif // !PAL_STDCPP_COMPAT
