@@ -35,7 +35,7 @@ INFO="This Document is machine-generated from commit $COMMIT on ${DATE}. It migh
 read -r -d '' HEADER << "EOF"
 When using these configurations from environment variables, the variable need to have `ComPlus_` prefix in its name. e.g. To set DumpJittedMethods to 1, add `ComPlus_DumpJittedMethods=1` to envvars.
 
-See also [CLR Configurations](clr-configurations.md) for instructions.
+See also [Dumps and Other Tools](../botr/ryujit-overview.md#dumps-and-other-tools) for more information.
 
 Name | Description | Type | Class | Default Value | Flags 
 -----|-------------|------|-------|---------------|-------
