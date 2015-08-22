@@ -66,12 +66,22 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative)]
         internal static extern int GetX509StackFieldCount(SafeX509StackHandle stack);
 
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern int GetX509StackFieldCount(SafeSharedX509StackHandle stack);
+
         /// <summary>
         /// Gets a pointer to a certificate within a STACK_OF(X509). This pointer will later
         /// be freed, so it should be cloned via new X509Certificate2(IntPtr)
         /// </summary>
         [DllImport(Libraries.CryptoNative)]
         internal static extern IntPtr GetX509StackField(SafeX509StackHandle stack, int loc);
+
+        /// <summary>
+        /// Gets a pointer to a certificate within a STACK_OF(X509). This pointer will later
+        /// be freed, so it should be cloned via new X509Certificate2(IntPtr)
+        /// </summary>
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern IntPtr GetX509StackField(SafeSharedX509StackHandle stack, int loc);
 
         [DllImport(Libraries.CryptoNative)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -85,6 +95,9 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative)]
         internal static extern int UpRefEvpPkey(SafeEvpPkeyHandle handle);
+
+        [DllImport(Libraries.CryptoNative)]
+        private static extern int GetPkcs7Certificates(SafePkcs7Handle p7, out SafeSharedX509StackHandle certs);
 
         [DllImport(Libraries.CryptoNative)]
         private static extern int SetX509ChainVerifyTime(
@@ -139,6 +152,27 @@ internal static partial class Interop
             {
                 throw Interop.libcrypto.CreateOpenSslCryptographicException();
             }
+        }
+
+        internal static SafeSharedX509StackHandle GetPkcs7Certificates(SafePkcs7Handle p7)
+        {
+            if (p7 == null || p7.IsInvalid)
+            {
+                return SafeSharedX509StackHandle.InvalidHandle;
+            }
+
+            SafeSharedX509StackHandle certs;
+            int result = GetPkcs7Certificates(p7, out certs);
+
+            if (result != 1)
+            {
+                throw Interop.libcrypto.CreateOpenSslCryptographicException();
+            }
+
+            // Track the parent relationship for the interior pointer so lifetime is well-managed.
+            certs.SetParent(p7);
+
+            return certs;
         }
 
         private static byte[] GetDynamicBuffer<THandle>(NegativeSizeReadMethod<THandle> method, THandle handle)
