@@ -22,6 +22,11 @@ include_directories("classlibnative/cryptography")
 include_directories("classlibnative/inc")
 
 if(CLR_CMAKE_PLATFORM_UNIX)
+  add_subdirectory(ToolBox/SOS/Strike)
+
+  # Include the dummy c++ include files
+  include_directories("pal/inc/rt/cpp")
+
   # This prevents inclusion of standard C compiler headers
   add_compile_options(-nostdinc)
 
@@ -29,7 +34,6 @@ if(CLR_CMAKE_PLATFORM_UNIX)
     # This prevents inclusion of standard C++ compiler headers
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -nostdinc++")
   endif(NOT CLR_CMAKE_PLATFORM_DARWIN)
-
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 add_subdirectory(utilcode)

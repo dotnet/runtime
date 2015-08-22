@@ -474,17 +474,17 @@ BOOL ExpressionNode::ShouldExpandVariable(__in_z WCHAR* varToExpand)
     if(pAbsoluteExpression == NULL || varToExpand == NULL) return FALSE;
 
     // if there is a cast operation, move past it
-    WCHAR* pEndCast = wcschr(varToExpand, L')');
+    WCHAR* pEndCast = _wcschr(varToExpand, L')');
     varToExpand = (pEndCast == NULL) ? varToExpand : pEndCast+1; 
 
-    size_t varToExpandLen = wcslen(varToExpand);
-    size_t currentExpansionLen = wcslen(pAbsoluteExpression);
+    size_t varToExpandLen = _wcslen(varToExpand);
+    size_t currentExpansionLen = _wcslen(pAbsoluteExpression);
     if(currentExpansionLen > varToExpandLen) return FALSE;
     if(currentExpansionLen < varToExpandLen && 
         varToExpand[currentExpansionLen] != L'.' &&
         varToExpand[currentExpansionLen] != L'[')
         return FALSE;
-    if(wcsncmp(pAbsoluteExpression, varToExpand, currentExpansionLen) != 0) return FALSE;
+    if(_wcsncmp(pAbsoluteExpression, varToExpand, currentExpansionLen) != 0) return FALSE;
 
     return TRUE;
 }
@@ -558,9 +558,9 @@ HRESULT ExpressionNode::ExpandFields(ICorDebugValue* pInnerValue, __in_z WCHAR* 
     ExpressionNode* pBaseTypeNode = NULL;
     if(SUCCEEDED(pType->GetBase(&pBaseType)) && pBaseType != NULL && SUCCEEDED(CalculateTypeName(pBaseType, baseTypeName, mdNameLen)))
     {
-        if(wcsncmp(baseTypeName, L"System.Enum", 11) == 0)
+        if(_wcsncmp(baseTypeName, L"System.Enum", 11) == 0)
             return S_OK;
-        else if(wcsncmp(baseTypeName, L"System.Object", 13) != 0 && wcsncmp(baseTypeName, L"System.ValueType", 16) != 0)
+        else if(_wcsncmp(baseTypeName, L"System.Object", 13) != 0 && _wcsncmp(baseTypeName, L"System.ValueType", 16) != 0)
         {
             pBaseTypeNode = new ExpressionNode(pAbsoluteExpression, ChildKind_BaseClass, L"<baseclass>", pInnerValue, pBaseType, pILFrame);
             AddChild(pBaseTypeNode);
@@ -629,9 +629,9 @@ HRESULT ExpressionNode::ExpandFields(ICorDebugValue* pInnerValue, __in_z WCHAR* 
     if(pBaseTypeNode == NULL) return Status;
     if(fieldExpanded) return Status;
 
-    WCHAR* pEndCast = wcschr(varToExpand, L')');
+    WCHAR* pEndCast = _wcschr(varToExpand, L')');
     WCHAR* pNonCast = (pEndCast == NULL) ? varToExpand : pEndCast+1;
-    if(wcscmp(pNonCast, pAbsoluteExpression) != 0)
+    if(_wcscmp(pNonCast, pAbsoluteExpression) != 0)
     {
         pBaseTypeNode->Expand(varToExpand);
         return Status;
@@ -641,8 +641,8 @@ HRESULT ExpressionNode::ExpandFields(ICorDebugValue* pInnerValue, __in_z WCHAR* 
     {
         int cchCastTypeName = ((int)(pEndCast-1)-(int)varToExpand)/2;
         PopulateType();
-        if(wcslen(pTypeName) != (cchCastTypeName) ||
-            wcsncmp(varToExpand+1, pTypeName, cchCastTypeName) != 0)
+        if(_wcslen(pTypeName) != (cchCastTypeName) ||
+            _wcsncmp(varToExpand+1, pTypeName, cchCastTypeName) != 0)
         {
             pBaseTypeNode->Expand(varToExpand);
             return Status;
@@ -712,7 +712,7 @@ BOOL ExpressionNode::IsEnum(ICorDebugValue * pInputValue)
     if(FAILED(pType->GetBase(&pBaseType)) || pBaseType == NULL) return FALSE;
     if(FAILED(CalculateTypeName(pBaseType, baseTypeName, mdNameLen))) return  FALSE;
 
-    return (wcsncmp(baseTypeName, L"System.Enum", 11) == 0);
+    return (_wcsncmp(baseTypeName, L"System.Enum", 11) == 0);
 }
 
 // Calculates the value text for nodes that have enum values
@@ -1208,7 +1208,7 @@ VOID ExpressionNode::EvaluateExpressionFrameScanCallback(ICorDebugFrame* pFrame,
 VOID ExpressionNode::EvaluateExpressionVariableScanCallback(ICorDebugValue* pValue, __in_z WCHAR* pName, __out_z WCHAR* pErrorMessage, VOID* pUserData)
 {
     EvaluateExpressionFrameScanData* pData = (EvaluateExpressionFrameScanData*)pUserData;
-    if(wcscmp(pName, pData->pIdentifier) == 0)
+    if(_wcscmp(pName, pData->pIdentifier) == 0)
     {
         // found it
         pData->pFoundValue = pValue;
@@ -1484,7 +1484,7 @@ HRESULT ExpressionNode::CreateExpressionNodeHelper(__in_z WCHAR* pExpression,
                 UVCP_CONSTANT     pDefaultValue;
                 ULONG             cchDefaultValue;
                 if(SUCCEEDED(pBaseTypeMD->GetFieldProps(fieldDef, NULL, mdName, mdNameLen, &nameLen, &fieldAttr, NULL, NULL, (DWORD*)&fieldDefaultValueEt, &pDefaultValue, &cchDefaultValue)) &&
-                    wcscmp(mdName, pIdentifier) == 0)
+                    _wcscmp(mdName, pIdentifier) == 0)
                 {
                     ToRelease<ICorDebugType> pFieldValType = NULL;
                     ToRelease<ICorDebugValue> pFieldVal;
@@ -1576,12 +1576,12 @@ HRESULT ExpressionNode::ParseNextIdentifier(__in_z WCHAR** expression, __inout_e
 
     WCHAR* expressionStart = *expression;
     DWORD currentCharsParsed = *charactersParsed;
-    DWORD identifierLen = (DWORD) wcscspn(expressionStart, L".[");
+    DWORD identifierLen = (DWORD) _wcscspn(expressionStart, L".[");
     // if the first character was a . or [ skip over it. Note that we don't
     // do this always in case the first WCHAR was part of a surrogate pair
     if(identifierLen == 0)
     {
-        identifierLen = (DWORD) wcscspn(expressionStart+1, L".[") + 1;
+        identifierLen = (DWORD) _wcscspn(expressionStart+1, L".[") + 1;
     }
 
     *expression += identifierLen;
@@ -1676,7 +1676,7 @@ HRESULT ExpressionNode::EnumerateParameters(IMetaDataImport * pMD,
             if(SUCCEEDED(pMD->GetParamForMethodIndex(methodDef, idx, &paramDef)))
                 pMD->GetParamProps(paramDef, NULL, NULL, paramName, mdNameLen, &paramNameLen, NULL, NULL, NULL, NULL);
         }
-        if(wcslen(paramName) == 0)
+        if(_wcslen(paramName) == 0)
             swprintf_s(paramName, mdNameLen, L"param_%d\0", i);
 
         ToRelease<ICorDebugValue> pValue;
@@ -1736,7 +1736,7 @@ HRESULT ExpressionNode::EnumerateLocals(IMetaDataImport * pMD,
                 ULONG cArgsFetched;
                 hr = pLocalsEnum->Next(1, &pValue, &cArgsFetched);
             }
-            if(wcslen(paramName) == 0)
+            if(_wcslen(paramName) == 0)
                 swprintf_s(paramName, mdNameLen, L"local_%d\0", i);
 
             if (FAILED(hr))
@@ -1899,75 +1899,75 @@ HRESULT ExpressionNode::GetCanonicalElementTypeForTypeName(__in_z WCHAR* pTypeNa
     //Sadly ICorDebug deliberately prevents creating ICorDebugType instances
     //that use canonical short form element types... seems like an issue to me.
 
-    if(wcscmp(pTypeName, L"System.String")==0)
+    if(_wcscmp(pTypeName, L"System.String")==0)
     {
         *et = ELEMENT_TYPE_STRING;
     }
-    else if(wcscmp(pTypeName, L"System.Object")==0)
+    else if(_wcscmp(pTypeName, L"System.Object")==0)
     {
         *et = ELEMENT_TYPE_OBJECT;
     }
-    else if(wcscmp(pTypeName, L"System.Void")==0)
+    else if(_wcscmp(pTypeName, L"System.Void")==0)
     {
         *et = ELEMENT_TYPE_VOID;
     }
-    else if(wcscmp(pTypeName, L"System.Boolean")==0)
+    else if(_wcscmp(pTypeName, L"System.Boolean")==0)
     {
         *et = ELEMENT_TYPE_BOOLEAN;
     }
-    else if(wcscmp(pTypeName, L"System.Char")==0)
+    else if(_wcscmp(pTypeName, L"System.Char")==0)
     {
         *et = ELEMENT_TYPE_CHAR;
     }
-    else if(wcscmp(pTypeName, L"System.Byte")==0)
+    else if(_wcscmp(pTypeName, L"System.Byte")==0)
     {
         *et = ELEMENT_TYPE_U1;
     }
-    else if(wcscmp(pTypeName, L"System.Sbyte")==0)
+    else if(_wcscmp(pTypeName, L"System.Sbyte")==0)
     {
         *et = ELEMENT_TYPE_I1;
     }
-    else if(wcscmp(pTypeName, L"System.Int16")==0)
+    else if(_wcscmp(pTypeName, L"System.Int16")==0)
     {
         *et = ELEMENT_TYPE_I2;
     }
-    else if(wcscmp(pTypeName, L"System.UInt16")==0)
+    else if(_wcscmp(pTypeName, L"System.UInt16")==0)
     {
         *et = ELEMENT_TYPE_U2;
     }
-    else if(wcscmp(pTypeName, L"System.UInt32")==0)
+    else if(_wcscmp(pTypeName, L"System.UInt32")==0)
     {
         *et = ELEMENT_TYPE_U4;
     }
-    else if(wcscmp(pTypeName, L"System.Int32")==0)
+    else if(_wcscmp(pTypeName, L"System.Int32")==0)
     {
         *et = ELEMENT_TYPE_I4;
     }
-    else if(wcscmp(pTypeName, L"System.UInt64")==0)
+    else if(_wcscmp(pTypeName, L"System.UInt64")==0)
     {
         *et = ELEMENT_TYPE_U8;
     }
-    else if(wcscmp(pTypeName, L"System.Int64")==0)
+    else if(_wcscmp(pTypeName, L"System.Int64")==0)
     {
         *et = ELEMENT_TYPE_I8;
     }
-    else if(wcscmp(pTypeName, L"System.Single")==0)
+    else if(_wcscmp(pTypeName, L"System.Single")==0)
     {
         *et = ELEMENT_TYPE_R4;
     }
-    else if(wcscmp(pTypeName, L"System.Double")==0)
+    else if(_wcscmp(pTypeName, L"System.Double")==0)
     {
         *et = ELEMENT_TYPE_R8;
     }
-    else if(wcscmp(pTypeName, L"System.IntPtr")==0)
+    else if(_wcscmp(pTypeName, L"System.IntPtr")==0)
     {
         *et = ELEMENT_TYPE_U;
     }
-    else if(wcscmp(pTypeName, L"System.UIntPtr")==0)
+    else if(_wcscmp(pTypeName, L"System.UIntPtr")==0)
     {
         *et = ELEMENT_TYPE_I;
     }
-    else if(wcscmp(pTypeName, L"System.TypedReference")==0)
+    else if(_wcscmp(pTypeName, L"System.TypedReference")==0)
     {
         *et = ELEMENT_TYPE_TYPEDBYREF;
     }
@@ -2056,8 +2056,8 @@ HRESULT ExpressionNode::FindTypeByName(ICorDebugModule* pModule, __in_z WCHAR* p
     // before the list
     WCHAR rootName[mdNameLen];
     WCHAR* pRootName = NULL;
-    int typeNameLen = (int) wcslen(pTypeName);
-    int genericParamListStart = (int) wcscspn(pTypeName, L"<");
+    int typeNameLen = (int) _wcslen(pTypeName);
+    int genericParamListStart = (int) _wcscspn(pTypeName, L"<");
     if(genericParamListStart != typeNameLen)
     {
         if(pTypeName[typeNameLen-1] != L'>' || genericParamListStart > mdNameLen)
@@ -2112,8 +2112,8 @@ HRESULT ExpressionNode::FindTypeByName(ICorDebugModule* pModule, __in_z WCHAR* p
         for(int i = 0; i < countTypeParams; i++)
         {
             WCHAR typeParamName[mdNameLen];
-            WCHAR* pNextComma = wcschr(pCurName, L',');
-            int len = (pNextComma != NULL) ? (int)(pNextComma - pCurName) : (int)wcslen(pCurName)-1;
+            WCHAR* pNextComma = _wcschr(pCurName, L',');
+            int len = (pNextComma != NULL) ? (int)(pNextComma - pCurName) : (int)_wcslen(pCurName)-1;
             if(len > mdNameLen)
                 return E_FAIL;
             wcsncpy_s(typeParamName, mdNameLen, pCurName, len);
@@ -2166,8 +2166,8 @@ HRESULT ExpressionNode::IsTokenValueTypeOrEnum(mdToken token, IMetaDataImport* p
         IfFailRet(pMetadata->GetTypeDefProps(token, nameBuffer, _countof(nameBuffer), &chTypeDef, NULL, NULL));
     }
 
-    if(wcscmp(nameBuffer, L"System.ValueType") == 0 ||
-        wcscmp(nameBuffer, L"System.Enum") == 0)
+    if(_wcscmp(nameBuffer, L"System.ValueType") == 0 ||
+        _wcscmp(nameBuffer, L"System.Enum") == 0)
     {
         *pResult = TRUE;
     }

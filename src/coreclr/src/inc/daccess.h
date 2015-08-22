@@ -537,8 +537,12 @@
 
 #define DACCESS_TABLE_RESOURCE "COREXTERNALDATAACCESSRESOURCE"
 
+#ifdef PAL_STDCPP_COMPAT
+#include <type_traits>
+#else
 #include "clr_std/type_traits"
 #include "crosscomp.h"
+#endif
 
 // Information stored in the DAC table of interest to the DAC implementation
 // Note that this information is shared between all instantiations of ClrDataAccess, so initialize
@@ -1413,14 +1417,14 @@ public:
 
 // Pointer wrapper for 16-bit strings.
 template<typename type, ULONG32 maxChars = 32760>
-class __Str16Ptr : public __DPtr<wchar_t>
+class __Str16Ptr : public __DPtr<WCHAR>
 {
 public:
     typedef type _Type;
     typedef type* _Ptr;
     
-    __Str16Ptr< type, maxChars >(void) : __DPtr<wchar_t>() {}
-    __Str16Ptr< type, maxChars >(TADDR addr) : __DPtr<wchar_t>(addr) {}
+    __Str16Ptr< type, maxChars >(void) : __DPtr<WCHAR>() {}
+    __Str16Ptr< type, maxChars >(TADDR addr) : __DPtr<WCHAR>(addr) {}
     explicit __Str16Ptr< type, maxChars >(__TPtrBase addr)
     {
         m_addr = addr.GetAddr();
@@ -2354,8 +2358,8 @@ typedef S8PTR(char)           PTR_STR;
 typedef S8PTR(const char)     PTR_CSTR;
 typedef S8PTR(char)           PTR_UTF8;
 typedef S8PTR(const char)     PTR_CUTF8;
-typedef S16PTR(wchar_t)       PTR_WSTR;
-typedef S16PTR(const wchar_t) PTR_CWSTR;
+typedef S16PTR(WCHAR)         PTR_WSTR;
+typedef S16PTR(const WCHAR)   PTR_CWSTR;
 
 typedef DPTR(T_CONTEXT)                  PTR_CONTEXT;
 typedef DPTR(PTR_CONTEXT)                PTR_PTR_CONTEXT;
