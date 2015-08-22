@@ -6,6 +6,17 @@ namespace VectorMathTests
 {
     class Program
     {
+		const float EPS = Single.Epsilon * 5;
+		
+		static bool CheckEQ(float a, float b)
+        {
+            return Math.Abs(a - b) < 5 * EPS;
+        }
+
+        static bool CheckNEQ(float a, float b)
+        {
+            return !CheckEQ(a, b);
+        }
 
         static int Adds()
         {
@@ -21,46 +32,39 @@ namespace VectorMathTests
             a += b;
             a += b;
             a += b;
-            if (a.X != 10 || a.Y != 20)
+            if (CheckNEQ(a.X, 10) || CheckNEQ(a.Y, 20))
             {
                 return 0;
             }
             return 100;
-
         }
-
 
         static int Main(string[] args)
         {
-
-
             Point a = new Point(0, 0), b = new Point(1, 0);
             Point c = a + b;
             Point d = c - b;
             Point e = d - a;
-            if (e.X != 0 || e.Y != 0)
+            if (CheckNEQ(e.X, 0) || CheckNEQ(e.Y, 0))
             {
                 return 0;
             }
-
             e += e;
-            if (e.X != 0 || e.Y != 0)
+            if (CheckNEQ(e.X, 0) || CheckNEQ(e.Y, 0))
             {
                 return 0;
             }
-
             a += new Point(5, 2);
             e += a + b;
-            if (e.X != 6 || e.Y != 2)
+            if (CheckNEQ(e.X, 6) || CheckNEQ(e.Y, 2))
             {
                 return 0;
             }
             e *= 10;
-            if (e.X != 60 || e.Y != 20)
+            if (CheckNEQ(e.X, 60) || CheckNEQ(e.Y, 20))
             {
                 return 0;
             }
-            // Debug.Assert(e.X == 0 && e.Y == 0);      
             if (Adds() != 100)
             {
                 return 0;

@@ -1,3 +1,5 @@
+// Test generates Points, builds ConvexHull and then find the biggest Circle inside it.
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,21 +16,7 @@ namespace ClassLibrary
     {
         const float EPS = 1E-9F;
         const int steps = 100;
-        const float INF = 1000000;
-        //public struct Point
-        //{
-        //    public double X, Y;
-        //    public static Point operator -(Point a, Point b)
-        //    {
-        //        Point r;
-        //        r.X = a.X - b.X;
-        //        r.Y = a.Y - b.Y;
-        //        return r;
-        //    }
-
-
-
-        //}
+        const float INF = Single.PositiveInfinity;
 
         public static float vectMul(Point a, Point b)
         {
@@ -67,11 +55,11 @@ namespace ClassLibrary
             a = b;
             b = c;
         }
-
+		
+		
+		// Calc the radius of a circle, with a center in (x, y), the is bounded with Lines. 
         static public float radius(float x, float y, List<Line> l)
         {
-
-
             int n = (int)l.Count;
             float res = INF;
             for (int i = 0; i < n; ++i)
@@ -84,10 +72,9 @@ namespace ClassLibrary
             return res;
         }
 
+		// Find y and calc the radius of a circle, with a center in (x), tha is bounded with Lines.
         static public float y_radius(float x, List<Point> a, List<Line> l, out float yOut)
         {
-
-
             int n = (int)a.Count;
             float ly = INF, ry = -INF;
             for (int i = 0; i < n; ++i)
@@ -100,7 +87,6 @@ namespace ClassLibrary
                     swap(ref x1, ref x2);
                     swap(ref y1, ref y2);
                 }
-
                 if (x1 <= x + EPS && x - EPS <= x2)
                 {
                     float y = y1 + (x - x1) * (y2 - y1) / (x2 - x1);
@@ -123,16 +109,12 @@ namespace ClassLibrary
             return radius(x, ly, l);
         }
 
-
-
-
         static public Boolean Check(List<Point> points)
         {
             float zn = vectMul((points[2] - points[0]), (points[1] - points[0]));
             for (int i = 2; i < points.Count; ++i)
             {
                 float z = vectMul((points[i] - points[i - 2]), (points[i - 1] - points[i - 2]));
-
                 if (z * zn < 0)
                 {
 
@@ -146,12 +128,11 @@ namespace ClassLibrary
             return true;
         }
 
-        static public Boolean Solve(List<Point> points, out Point O, out float r)
+        static public Boolean FindCircle(List<Point> points, out Point O, out float r)
         {
             O.X = 0;
             O.Y = 0;
             r = 0;
-
             if (points.Count < 3)
                 return false;
             points.Add(points[0]);
@@ -195,13 +176,11 @@ namespace ClassLibrary
                 else
                     rx = x2;
             }
-
             float y;
             float ans = y_radius(lx, points, l, out y);
             O.X = lx;
             O.Y = y;
             r = ans;
-
             return true;
         }
 
@@ -259,7 +238,7 @@ namespace ClassLibrary
             double mantissa = (random.NextDouble() * 2.0) - 1.0;
             double exponent = Math.Pow(2.0, random.Next(-32, 32));
             return (float)(mantissa * exponent);
-        } 
+        }
 
         static int Main(string[] args)
         {
@@ -275,10 +254,10 @@ namespace ClassLibrary
             convex_hull(points);
             Point O;
             float r;
-            Solve(points, out O, out r);
+            FindCircle(points, out O, out r);
 
-		
-            if (r >= 999999.9 - 1 && r <= 999999.9 + 1)
+            float expRes = 7.565624E7F;
+            if (Math.Abs(r - expRes) > EPS)
                 return 100;
             return 0;
         }

@@ -6,9 +6,6 @@ namespace VectorMathTests
 {
     class Program
     {
-
-
-
         static int Main(string[] args)
         {
             {
