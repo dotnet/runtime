@@ -6,9 +6,7 @@ namespace VectorMathTests
 {
     class Program
     {
-
         static Point a;
-
         static int Main(string[] args)
         {
             Point p = new Point(1, 2, 3, 4);

@@ -3,11 +3,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Point = System.Numerics.Vector4;
 
-
 namespace Test
-{
-    [StructLayout(LayoutKind.Explicit, Pack = 1, Size = 8)]
-   
+{ 
     static class Program
     {
         static int Main()
@@ -19,11 +16,11 @@ namespace Test
                 Do1(&x, &y);
                 Do2(&y, &z);
             }
-			if (y.X != 1)
+			if (((int)y.X) != 1)
 			{
 				return 0;
 			}
-			if (z.X != 1)
+			if (((int)z.X) != 1)
 			{
 				return 0;
 			}

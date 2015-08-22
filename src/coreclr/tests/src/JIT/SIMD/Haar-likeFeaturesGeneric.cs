@@ -6,7 +6,8 @@ namespace VectorMathTests
 {
     class Program
     {
-
+		const float EPS = Single.Epsilon * 5;
+		
         static float NextFloat(Random random)
         {
             double mantissa = (random.NextDouble() * 2.0) - 1.0;
@@ -22,7 +23,6 @@ namespace VectorMathTests
         static double[] VectorFilter(double[] color, double[] mask)
         {
             int count = Point.Count;
-
             int N = color.Length;
             double[] res = new double[N];
             for (int i = 0; i < N; i += count)
@@ -43,7 +43,6 @@ namespace VectorMathTests
         static double[] VectorAndFilter(double[] color, double[] mask)
         {
             int count = Point.Count;
-
             int N = color.Length;
             double[] res = new double[N];
             for (int i = 0; i < N; i += count)
@@ -57,12 +56,11 @@ namespace VectorMathTests
                     res[i + j] = r[j];
                 }
             }
-
             return res;
         }
 
         static double[] SimpleFilter(double[] color, double[] mask)
-        {           
+        {
             int N = color.Length;
             double[] res = new double[N];
             for (int i = 0; i < N; i += 1)
@@ -96,7 +94,7 @@ namespace VectorMathTests
                 else
                 {
                     res[i] = 1;
-                }                
+                }
             }
             return res;
         }
@@ -107,7 +105,7 @@ namespace VectorMathTests
             double[] res = new double[N];
             for (int i = 0; i < N; ++i)
             {
-              
+
                 if (mask[i] == 0)
                 {
                     res[i] = 0;
@@ -125,14 +123,14 @@ namespace VectorMathTests
             int N = a.Length;
             for (int i = 0; i < N; ++i)
             {
-                if (a[i] != b[i])
+                if (Math.Abs(a[i] - b[i]) > EPS)
                 {
                     return false;
                 }
             }
             return true;
         }
-        
+
         static int Main(string[] args)
         {
             Random random = new Random(13);
@@ -145,7 +143,7 @@ namespace VectorMathTests
             double[] res = VectorFilter(color, mask);
             double[] check = SimpleFilter(color, mask);
             double[] andRes = VectorAndFilter(color, andMask);
-            
+
             if (checkEQ(res, check) == false)
             {
                 return 0;
@@ -154,8 +152,6 @@ namespace VectorMathTests
             {
                 return 0;
             }
-
-
             return 100;
         }
     }

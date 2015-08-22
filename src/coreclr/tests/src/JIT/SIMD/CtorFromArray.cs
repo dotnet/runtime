@@ -6,27 +6,29 @@ namespace VectorMathTests
 {
     class Program
     {
-        static int test(int[] arr)
+        static int[] GenerateArray(int size, int value)
         {
-            int a = arr[0];
-            return a;
+            int[] arr = new int[size];
+            for (int i = 0; i < size; ++i)
+            {
+                arr[i] = value;
+            }
+            return arr;
         }
 
         static int Main(string[] args)
         {
-			int[] arr = new int[] {1,2,3,4,5,6,7,8};
-			Point p = new Point(arr, 0);
+            int v = 2;
+            int[] arr = GenerateArray(20, v);
+            Point p = new Point(arr);
             for (int i = 0; i < Point.Count; ++i)
             {
-                if (p[i] != arr[i])
+                if (p[i] != v)
                 {
                     return 0;
                 }
             }
             return 100;
-
-
-            
         }
     }
 }
