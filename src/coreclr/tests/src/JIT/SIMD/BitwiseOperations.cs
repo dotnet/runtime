@@ -6,7 +6,6 @@ namespace VectorMathTests
 {
     class Program
     {
-
         static float NextFloat(Random random)
         {
             double mantissa = (random.NextDouble() * 2.0) - 1.0;
@@ -14,10 +13,8 @@ namespace VectorMathTests
             return (float)(mantissa * exponent);
         }
 
-
         static int TestDouble()
         {
-            // care with NAN, it is very ofter situation.
             Random random = new Random(11);
             double[] arr1 = new double[] { NextFloat(random), NextFloat(random), NextFloat(random), NextFloat(random) };
             double[] arr2 = new double[] { NextFloat(random), NextFloat(random), NextFloat(random), NextFloat(random) };
@@ -45,7 +42,7 @@ namespace VectorMathTests
                 }
                 r = f | s;
                 d = BitConverter.Int64BitsToDouble(r);
-                if (orR[i] != d)
+                if (orR[i] != d && d == d)
                 {
                     return 0;
                 }
@@ -58,11 +55,21 @@ namespace VectorMathTests
             return (byte)random.Next(0, 255);
         }
 
+        static byte[] GenerateByteArray(int size, Random random)
+        {
+            byte[] arr = new byte[size];
+            for (int i = 0; i < size; ++i)
+            {
+                arr[i] = NextByte(random);
+            }
+            return arr;
+        }
+
         static int TestBool()
         {
             Random random = new Random(13);
-            byte[] arr1 = new byte[] { NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random) };
-            byte[] arr2 = new byte[] { NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random), NextByte(random) };
+            byte[] arr1 = GenerateByteArray(64, random);
+            byte[] arr2 = GenerateByteArray(64, random);
             var a = new System.Numerics.Vector<byte>(arr1);
             var b = new System.Numerics.Vector<byte>(arr2);
 
@@ -83,7 +90,7 @@ namespace VectorMathTests
                     return 0;
                 }
                 d = a[i] | b[i];
-                if (orR[i] != d && d == d)
+                if (orR[i] != d)
                 {
                     return 0;
                 }

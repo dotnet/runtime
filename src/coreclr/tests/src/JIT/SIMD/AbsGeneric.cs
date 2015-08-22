@@ -6,12 +6,21 @@ namespace VectorMathTests
 {
     class Program
     {
+        const float EPS = Single.Epsilon * 5;
 
-
+        static short[] GenerateArray(int size, short value)
+        {
+            short[] arr = new short[size];
+            for (int i = 0; i < size; ++i)
+            {
+                arr[i] = value;
+            }
+            return arr;
+        }
 
         static int Main(string[] args)
         {
-			short[] arr = new short[] {-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5};
+            short[] arr = GenerateArray(60, 5);
             var a = new System.Numerics.Vector<short>(arr);
             a = System.Numerics.Vector.Abs(a);
             if (a[0] != 5)
@@ -55,7 +64,6 @@ namespace VectorMathTests
             {
                 return 0;
             }
-
             return 100;
         }
     }

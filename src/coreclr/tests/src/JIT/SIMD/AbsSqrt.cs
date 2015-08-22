@@ -7,20 +7,19 @@ namespace VectorMathTests
 {
     class Program
     {
-
-
-
         static int Main(string[] args)
         {
-            Point a = new Point(1, 2, 3, 4);
-            Point b = new Point(2, 2, 1, 1);
-            float c = 33;
-            Point d = (b + a) * c;
-            Point q = d + a;
-            Point s = Point.SquareRoot(q);
+            Point a = new Point(11, 13, 8, 4);
+            Point b = new Point(11, 13, 2, 1);
+            Point d = a * b;
+            Point s = Point.SquareRoot(d);
             s *= -1;
             s = Point.Abs(s);
-            return (int)(s).X * 10;
+            if ((int)(s.X) == 11 && (int)(s.Y) == 13 && (int)(s.Z) == 4 && (int)(s.W) == 2)
+            {
+                return 100;
+            }
+            return 0;
         }
     }
 }
