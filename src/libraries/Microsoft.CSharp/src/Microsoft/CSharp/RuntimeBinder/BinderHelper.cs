@@ -195,7 +195,10 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private static bool IsTransparentProxy(object obj)
         {
-            return obj != null; 
+            // In the full framework, this checks:
+            //     return obj != null && RemotingServices.IsTransparentProxy(obj);
+            // but transparent proxies don't exist in .NET Core.
+            return false;
         }
 
         /////////////////////////////////////////////////////////////////////////////////
