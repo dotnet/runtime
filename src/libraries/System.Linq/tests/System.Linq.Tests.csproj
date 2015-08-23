@@ -89,9 +89,8 @@
     <Compile Include="LegacyTests\TakeWhileTests.cs" />
     <Compile Include="LegacyTests\ThenByDescendingTests.cs" />
     <Compile Include="LegacyTests\ThenByTests.cs" />
-    <Compile Include="LegacyTests\ToDictionaryTests.cs" />
-    <Compile Include="LegacyTests\ToLookupTests.cs" />
-    <Compile Include="LegacyTests\ToSequenceTests.cs" />
+    <Compile Include="ToLookupTests.cs" />
+    <Compile Include="AsEnumerableTests.cs" />
     <Compile Include="LegacyTests\WhereTests.cs" />
     <Compile Include="ZipTests.cs" />
   </ItemGroup>
