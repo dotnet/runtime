@@ -282,6 +282,7 @@ public class GCTests
         Assert.True(GC.GetGeneration(bytes) == genBefore);
     }
 
+    [ActiveIssue(2938)]
     [Fact]
     public static void GetTotalMemoryTest_ForceCollection()
     {
