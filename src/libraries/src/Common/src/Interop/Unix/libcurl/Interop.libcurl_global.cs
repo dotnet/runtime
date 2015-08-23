@@ -4,6 +4,9 @@
 using System;
 using System.Runtime.InteropServices;
 
+using size_t = System.UInt64;
+using curl_socket_t = System.Int32;
+
 internal static partial class Interop
 {
     internal static partial class libcurl
@@ -14,8 +17,5 @@ internal static partial class Interop
 
         [DllImport(Interop.Libraries.LibCurl)]
         public static extern void curl_global_cleanup();
-
-        [DllImport(Interop.Libraries.LibCurl)]
-        public static extern IntPtr curl_version_info(int curlVersionStamp);
     }
 }
