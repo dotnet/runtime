@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading;
+using System.Diagnostics;
 using System.Collections.Generic;
 
 namespace System.Diagnostics.Tracing
@@ -24,10 +25,6 @@ namespace System.Diagnostics.Tracing
     /// </summary>
     public class TelemetryListener : TelemetrySource, IObservable<KeyValuePair<string, object>>, IDisposable
     {
-        /// <summary>
-        /// When a TelemetryListener is created it is given a name.   Return this.  
-        /// </summary>
-        public string Name { get; private set; }
         /// <summary>
         /// This is the TelemetryListener that is used by default by the class library.   
         /// Generally you don't want to make your own but rather have everyone use this one, which
@@ -98,7 +95,10 @@ namespace System.Diagnostics.Tracing
             // chicken and egg problem because I need to call this code to initialize TelemetryListener.DefaultListener.      
             var lockObj = DefaultListener;
             if (lockObj == null)
+            {
                 lockObj = this;
+                Debug.Assert(this.Name == "TelemetryListener.DefaultListener");
+            }
 
             // Insert myself into the list of all Listeners.   
             lock (lockObj)
@@ -158,6 +158,11 @@ namespace System.Diagnostics.Tracing
         }
 
         /// <summary>
+        /// When a TelemetryListener is created it is given a name.   Return this.  
+        /// </summary>
+        public string Name { get; private set; }
+
+        /// <summary>
         /// Return the name for the ToString() to aid in debugging.  
         /// </summary>
         /// <returns></returns>
@@ -214,8 +219,7 @@ namespace System.Diagnostics.Tracing
                         var cur = newSubscriptions;
                         while (cur != null)
                         {
-                            if (cur.Observer == Observer && cur.IsEnabled == IsEnabled) 
-                                throw new Exception("Did not remove subscription!");
+                            Debug.Assert(!(cur.Observer == Observer && cur.IsEnabled == IsEnabled), "Did not remove subscription!");
                             cur = cur.Next;
                         }
 #endif
@@ -229,11 +233,8 @@ namespace System.Diagnostics.Tracing
             {
                 if (subscriptions == null)
                 {
-#if DEBUG
-                    throw new Exception("Could not find subscription");
-#else
+                    Debug.Assert(false, "Could not find subscription");
                     return null;
-#endif
                 }
 
                 if (subscriptions.Observer == subscription.Observer && subscriptions.IsEnabled == subscription.IsEnabled)
