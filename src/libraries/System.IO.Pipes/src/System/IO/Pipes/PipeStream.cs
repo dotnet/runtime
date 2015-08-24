@@ -110,22 +110,7 @@ namespace System.IO.Pipes
         [SecurityCritical]
         public override int Read([In, Out] byte[] buffer, int offset, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
-            }
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (buffer.Length - offset < count)
-            {
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
-            }
+            CheckReadWriteArgs(buffer, offset, count);
             if (!CanRead)
             {
                 throw __Error.GetReadNotSupported();
@@ -139,15 +124,7 @@ namespace System.IO.Pipes
         [SecuritySafeCritical]
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (buffer == null)
-                throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (buffer.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
+            CheckReadWriteArgs(buffer, offset, count);
 
             if (cancellationToken.IsCancellationRequested)
             {
@@ -167,22 +144,7 @@ namespace System.IO.Pipes
         [SecurityCritical]
         public override void Write(byte[] buffer, int offset, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
-            }
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (buffer.Length - offset < count)
-            {
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
-            }
+            CheckReadWriteArgs(buffer, offset, count);
             if (!CanWrite)
             {
                 throw __Error.GetWriteNotSupported();
@@ -190,22 +152,12 @@ namespace System.IO.Pipes
             CheckWriteOperations();
 
             WriteCore(buffer, offset, count);
-
-            return;
         }
 
         [SecuritySafeCritical]
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (buffer == null)
-                throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (buffer.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
+            CheckReadWriteArgs(buffer, offset, count);
 
             if (cancellationToken.IsCancellationRequested)
             {
@@ -222,6 +174,28 @@ namespace System.IO.Pipes
             return WriteAsyncCore(buffer, offset, count, cancellationToken);
         }
 
+        private static void CheckReadWriteArgs(byte[] buffer, int offset, int count)
+        {
+            if (buffer == null)
+                throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (count < 0)
+                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (buffer.Length - offset < count)
+                throw new ArgumentException(SR.Argument_InvalidOffLen);
+        }
+
+        [Conditional("DEBUG")]
+        private static void DebugAssertReadWriteArgs(byte[] buffer, int offset, int count, SafePipeHandle handle)
+        {
+            Debug.Assert(buffer != null, "buffer is null");
+            Debug.Assert(offset >= 0, "offset is negative");
+            Debug.Assert(count >= 0, "count is negative");
+            Debug.Assert(offset <= buffer.Length - count, "offset + count is too big");
+            Debug.Assert(handle != null, "handle is null");
+            Debug.Assert(!handle.IsClosed, "handle is closed");
+        }
 
         [ThreadStatic]
         private static byte[] t_singleByteArray;

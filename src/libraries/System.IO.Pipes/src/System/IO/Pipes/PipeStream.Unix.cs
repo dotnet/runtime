@@ -75,12 +75,8 @@ namespace System.IO.Pipes
         [SecurityCritical]
         private unsafe int ReadCore(byte[] buffer, int offset, int count)
         {
-            Debug.Assert(_handle != null, "_handle is null");
-            Debug.Assert(!_handle.IsClosed, "_handle is closed");
+            DebugAssertReadWriteArgs(buffer, offset, count, _handle);
             Debug.Assert(CanRead, "can't read");
-            Debug.Assert(buffer != null, "buffer is null");
-            Debug.Assert(offset >= 0, "offset is negative");
-            Debug.Assert(count >= 0, "count is negative");
 
             fixed (byte* bufPtr = buffer)
             {
@@ -103,12 +99,8 @@ namespace System.IO.Pipes
         [SecurityCritical]
         private unsafe void WriteCore(byte[] buffer, int offset, int count)
         {
-            Debug.Assert(_handle != null, "_handle is null");
-            Debug.Assert(!_handle.IsClosed, "_handle is closed");
+            DebugAssertReadWriteArgs(buffer, offset, count, _handle);
             Debug.Assert(CanWrite, "can't write");
-            Debug.Assert(buffer != null, "buffer is null");
-            Debug.Assert(offset >= 0, "offset is negative");
-            Debug.Assert(count >= 0, "count is negative");
 
             fixed (byte* bufPtr = buffer)
             {
