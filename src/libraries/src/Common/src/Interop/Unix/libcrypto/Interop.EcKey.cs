@@ -28,10 +28,21 @@ internal static partial class Interop
 
         internal static int EcKeyGetCurveName(SafeEcKeyHandle ecKey)
         {
-            IntPtr ecGroup = EC_KEY_get0_group(ecKey.DangerousGetHandle());
-            int nid = EC_GROUP_get_curve_name(ecGroup);
-            GC.KeepAlive(ecKey);
-            return nid;
+            bool mustRelease = false;
+            try
+            {
+                ecKey.DangerousAddRef(ref mustRelease);
+                IntPtr ecGroup = EC_KEY_get0_group(ecKey.DangerousGetHandle());
+                int nid = EC_GROUP_get_curve_name(ecGroup);
+                return nid;
+            }
+            finally
+            {
+                if (mustRelease)
+                {
+                    ecKey.DangerousRelease();
+                }
+            }
         }
 
         // This P/Invoke is a classic GC trap, so we're only exposing it via a safe helper (EcKeyGetCurveName)
