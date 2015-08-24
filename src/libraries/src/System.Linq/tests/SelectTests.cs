@@ -658,7 +658,7 @@ namespace System.Linq.Tests
             var result = source.Select(selector);
             var enumerator = result.GetEnumerator();
 
-            Assert.Throws<NotImplementedException>(() => enumerator.Reset());
+            Assert.Throws<NotSupportedException>(() => enumerator.Reset());
         }
     }
 }

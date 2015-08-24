@@ -831,7 +831,7 @@ namespace System.Linq.Tests
 
             var enumerator = source.Where(value => true).GetEnumerator();
 
-            Assert.Throws<NotImplementedException>(() => enumerator.Reset());
+            Assert.Throws<NotSupportedException>(() => enumerator.Reset());
         }
 
         [Fact]
