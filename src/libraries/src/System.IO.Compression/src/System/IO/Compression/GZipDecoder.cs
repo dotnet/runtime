@@ -21,6 +21,17 @@ namespace System.IO.Compression
         private uint _actualCrc32;
         private long _actualStreamSizeModulo;
 
+        public int ZLibWindowSize
+        {
+            get
+            {
+                // Since we don't necessarily know what WindowSize the stream was compressed with,
+                // we use the upper bound of (32..47) as the WindowSize for decompression. This enables
+                // detection for Zlib and GZip headers
+                return 47;
+            }
+        }
+
         public GZipDecoder()
         {
             Reset();

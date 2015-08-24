@@ -2,8 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 //
-
-//
 //  zlib.h -- interface of the 'zlib' general purpose compression library
 //  version 1.2.1, November 17th, 2003
 //
@@ -27,12 +25,11 @@
 //
 //
 
-using System;
 using System.Diagnostics;
 
 namespace System.IO.Compression
 {
-    internal class Inflater
+    internal class InflaterManaged : IInflater
     {
         // const tables used in decoding:
 
@@ -91,7 +88,7 @@ namespace System.IO.Compression
 
         private IFileFormatReader _formatReader;  // class to decode header and footer (e.g. gzip)
 
-        public Inflater()
+        public InflaterManaged()
         {
             _output = new OutputWindow();
             _input = new InputBuffer();
@@ -101,7 +98,22 @@ namespace System.IO.Compression
             Reset();
         }
 
-        internal void SetFileFormatReader(IFileFormatReader reader)
+        internal InflaterManaged(IFileFormatReader reader)
+        {
+            _output = new OutputWindow();
+            _input = new InputBuffer();
+
+            _codeList = new byte[HuffmanTree.MaxLiteralTreeElements + HuffmanTree.MaxDistTreeElements];
+            _codeLengthTreeCodeLength = new byte[HuffmanTree.NumberOfCodeLengthTreeElements];
+            if (reader != null)
+            {
+                _formatReader = reader;
+                _hasFormatReader = true;
+            }
+            Reset();
+        }
+
+        public void SetFileFormatReader(IFileFormatReader reader)
         {
             _formatReader = reader;
             _hasFormatReader = true;
@@ -125,7 +137,6 @@ namespace System.IO.Compression
             _input.SetInput(inputBytes, offset, length);    // append the bytes
         }
 
-
         public bool Finished()
         {
             return (_state == InflaterState.Done || _state == InflaterState.VerifyingFooter);
@@ -146,7 +157,7 @@ namespace System.IO.Compression
 
         public int Inflate(byte[] bytes, int offset, int length)
         {
-            // copy bytes from output to outputbytes if we have aviable bytes 
+            // copy bytes from output to outputbytes if we have available bytes 
             // if buffer is not filled up. keep decoding until no input are available
             // if decodeBlock returns false. Throw an exception.
             int count = 0;
@@ -731,6 +742,8 @@ namespace System.IO.Compression
             _state = InflaterState.DecodeTop;
             return true;
         }
+
+        public void Dispose() { }
     }
 }
 
