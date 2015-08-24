@@ -16,8 +16,8 @@ namespace System.Net.Http.Tests
         [Fact]
         public void AreEqualCollections_UseSetOfEqualCollections_ReturnsTrue()
         {
-            ICollection<NameValueHeaderValue> x = new List<NameValueHeaderValue>();
-            ICollection<NameValueHeaderValue> y = new List<NameValueHeaderValue>();
+            ObjectCollection<NameValueHeaderValue> x = new ObjectCollection<NameValueHeaderValue>();
+            ObjectCollection<NameValueHeaderValue> y = new ObjectCollection<NameValueHeaderValue>();
 
             Assert.True(HeaderUtilities.AreEqualCollections(x, y));
 
@@ -38,8 +38,8 @@ namespace System.Net.Http.Tests
         [Fact]
         public void AreEqualCollections_UseSetOfNotEqualCollections_ReturnsFalse()
         {
-            ICollection<NameValueHeaderValue> x = new List<NameValueHeaderValue>();
-            ICollection<NameValueHeaderValue> y = new List<NameValueHeaderValue>();
+            ObjectCollection<NameValueHeaderValue> x = new ObjectCollection<NameValueHeaderValue>();
+            ObjectCollection<NameValueHeaderValue> y = new ObjectCollection<NameValueHeaderValue>();
 
             Assert.True(HeaderUtilities.AreEqualCollections(x, y), "Expected '<empty>' == '<empty>'");
 
