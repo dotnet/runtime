@@ -56,12 +56,8 @@ namespace System.IO.Pipes
         [SecurityCritical]
         private unsafe int ReadCore(byte[] buffer, int offset, int count)
         {
-            Debug.Assert(_handle != null, "_handle is null");
-            Debug.Assert(!_handle.IsClosed, "_handle is closed");
+            DebugAssertReadWriteArgs(buffer, offset, count, _handle);
             Debug.Assert(CanRead, "can't read");
-            Debug.Assert(buffer != null, "buffer is null");
-            Debug.Assert(offset >= 0, "offset is negative");
-            Debug.Assert(count >= 0, "count is negative");
 
             if (_isAsync)
             {
@@ -106,12 +102,8 @@ namespace System.IO.Pipes
         [SecurityCritical]
         private unsafe void WriteCore(byte[] buffer, int offset, int count)
         {
-            Debug.Assert(_handle != null, "_handle is null");
-            Debug.Assert(!_handle.IsClosed, "_handle is closed");
+            DebugAssertReadWriteArgs(buffer, offset, count, _handle);
             Debug.Assert(CanWrite, "can't write");
-            Debug.Assert(buffer != null, "buffer is null");
-            Debug.Assert(offset >= 0, "offset is negative");
-            Debug.Assert(count >= 0, "count is negative");
 
             if (_isAsync)
             {
@@ -298,13 +290,9 @@ namespace System.IO.Pipes
         [SecurityCritical]
         private Task WriteAsyncCorePrivate(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            Debug.Assert(_handle != null, "_handle is null");
-            Debug.Assert(!_handle.IsClosed, "_handle is closed");
+            DebugAssertReadWriteArgs(buffer, offset, count, _handle);
             Debug.Assert(CanWrite, "can't write");
-            Debug.Assert(buffer != null, "buffer == null");
             Debug.Assert(_isAsync, "WriteAsyncCorePrivate doesn't work on synchronous file streams!");
-            Debug.Assert(offset >= 0, "offset is negative");
-            Debug.Assert(count >= 0, "count is negative");
 
             if (buffer.Length == 0)
             {
@@ -347,12 +335,8 @@ namespace System.IO.Pipes
         private unsafe int ReadFileNative(SafePipeHandle handle, byte[] buffer, int offset, int count,
                 NativeOverlapped* overlapped, out int errorCode)
         {
-            Debug.Assert(handle != null, "handle is null");
-            Debug.Assert(offset >= 0, "offset is negative");
-            Debug.Assert(count >= 0, "count is negative");
-            Debug.Assert(buffer != null, "buffer == null");
+            DebugAssertReadWriteArgs(buffer, offset, count, handle);
             Debug.Assert((_isAsync && overlapped != null) || (!_isAsync && overlapped == null), "Async IO parameter screwup in call to ReadFileNative.");
-            Debug.Assert(buffer.Length - offset >= count, "offset + count >= buffer length");
 
             // You can't use the fixed statement on an array of length 0. Note that async callers
             // check to avoid calling this first, so they can call user's callback
@@ -401,12 +385,8 @@ namespace System.IO.Pipes
         private unsafe int WriteFileNative(SafePipeHandle handle, byte[] buffer, int offset, int count,
                 NativeOverlapped* overlapped, out int errorCode)
         {
-            Debug.Assert(handle != null, "handle is null");
-            Debug.Assert(offset >= 0, "offset is negative");
-            Debug.Assert(count >= 0, "count is negative");
-            Debug.Assert(buffer != null, "buffer == null");
+            DebugAssertReadWriteArgs(buffer, offset, count, handle);
             Debug.Assert((_isAsync && overlapped != null) || (!_isAsync && overlapped == null), "Async IO parameter screwup in call to WriteFileNative.");
-            Debug.Assert(buffer.Length - offset >= count, "offset + count >= buffer length");
 
             // You can't use the fixed statement on an array of length 0. Note that async callers
             // check to avoid calling this first, so they can call user's callback
@@ -447,13 +427,9 @@ namespace System.IO.Pipes
         [SecurityCritical]
         private Task<int> ReadAsyncCorePrivate(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            Debug.Assert(_handle != null, "_handle is null");
-            Debug.Assert(!_handle.IsClosed, "_handle is closed");
+            DebugAssertReadWriteArgs(buffer, offset, count, _handle);
             Debug.Assert(CanRead, "can't read");
-            Debug.Assert(buffer != null, "buffer == null");
             Debug.Assert(_isAsync, "ReadAsyncCorePrivate doesn't work on synchronous file streams!");
-            Debug.Assert(offset >= 0, "offset is negative");
-            Debug.Assert(count >= 0, "count is negative");
 
             if (buffer.Length == 0)
             {
