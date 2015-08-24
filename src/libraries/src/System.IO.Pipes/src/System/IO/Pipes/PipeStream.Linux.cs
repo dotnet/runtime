@@ -29,5 +29,12 @@ namespace System.IO.Pipes
                 (int)SysCall(_handle, (fd, _, __, ___) => Interop.libc.fcntl(fd, Interop.libc.FcntlCommands.F_GETPIPE_SZ)) :
                 _outBufferSize;
         }
+
+        internal static unsafe void CreateAnonymousPipe(HandleInheritability inheritability, int* fdsptr)
+        {
+            var flags = (inheritability & HandleInheritability.Inheritable) == 0 ?
+                Interop.libc.Pipe2Flags.O_CLOEXEC : 0;
+            while (Interop.CheckIo(Interop.libc.pipe2(fdsptr, flags))) ;
+        }
     }
 }

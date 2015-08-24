@@ -343,11 +343,59 @@ namespace System.IO.Pipes
         private unsafe int ReadCoreWithCancellation(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             DebugAssertReadWriteArgs(buffer, offset, count, _handle);
+            Debug.Assert(cancellationToken.CanBeCanceled, "ReadCoreNoCancellation should be used if cancellation can't happen");
 
-            // TODO: Implement this with cancellation
+            // Register for a cancellation request.  This will throw if cancellation has already been requested,
+            // and otherwise will write to the cancellation pipe if/when cancellation has been requested.
+            using (DescriptorCancellationRegistration cancellation = RegisterForCancellation(cancellationToken))
+            {
+                bool gotRef = false;
+                try
+                {
+                    cancellation.Poll.DangerousAddRef(ref gotRef);
+                    fixed (byte* bufPtr = buffer)
+                    {
+                        const int CancellationSentinel = -42;
+                        int rv = (int)SysCall(_handle, (fd, ptr, len, cancellationFd) =>
+                        {
+                            // Wait for data to be available on either the pipe we want to read from
+                            // or on the cancellation pipe, which would signal a cancellation request.
+                            Interop.libc.pollfd* fds = stackalloc Interop.libc.pollfd[2];
+                            fds[0] = new Interop.libc.pollfd { fd = fd, events = Interop.libc.PollFlags.POLLIN, revents = 0 };
+                            fds[1] = new Interop.libc.pollfd { fd = (int)cancellationFd, events = Interop.libc.PollFlags.POLLIN, revents = 0 };
+                            while (Interop.CheckIo(Interop.libc.poll(fds, 2, -1))) ;
 
-            cancellationToken.ThrowIfCancellationRequested();
-            return ReadCoreNoCancellation(buffer, offset, count);
+                            // If we woke up because of a cancellation request, bail.
+                            if ((fds[1].revents & Interop.libc.PollFlags.POLLIN) != 0)
+                            {
+                                return CancellationSentinel;
+                            }
+
+                            // Otherwise, we woke up because data is available on the pipe. Read it.
+                            Debug.Assert((fds[0].revents & Interop.libc.PollFlags.POLLIN) != 0);
+                            long result = (long)Interop.libc.read(fd, (byte*)ptr, (IntPtr)len);
+                            Debug.Assert(result <= len);
+                            return result;
+                        }, (IntPtr)(bufPtr + offset), count, cancellation.Poll.DangerousGetHandle());
+                        Debug.Assert(rv >= 0 || rv == CancellationSentinel);
+
+                        // If cancellation was requested, waking up the read, throw.
+                        if (rv == CancellationSentinel)
+                        {
+                            Debug.Assert(cancellationToken.IsCancellationRequested);
+                            throw new OperationCanceledException(cancellationToken);
+                        }
+
+                        // Otherwise return what we read.
+                        return rv;
+                    }
+                }
+                finally
+                {
+                    if (gotRef)
+                        cancellation.Poll.DangerousRelease();
+                }
+            }
         }
 
         private unsafe void WriteCoreNoCancellation(byte[] buffer, int offset, int count)
@@ -374,10 +422,113 @@ namespace System.IO.Pipes
         {
             DebugAssertReadWriteArgs(buffer, offset, count, _handle);
 
-            // TODO: Implement this with cancellation
+            // NOTE:
+            // We currently ignore cancellationToken.  Unlike on Windows, writes to pipes on Unix are likely to succeed
+            // immediately, even if no reader is currently listening, as long as there's room in the kernel buffer.
+            // However it's still possible for write to block if the buffer is full.  We could try using a poll mechanism
+            // like we do for read, but checking for POLLOUT is only going to tell us that there's room to write at least
+            // one byte to the pipe, not enough room to write enough that we won't block.  The only way to guarantee
+            // that would seem to be writing one byte at a time, which has huge overheads when writing large chunks of data.
+            // Given all this, at least for now we just do an initial check for cancellation and then call to the 
+            // non -cancelable version.
 
             cancellationToken.ThrowIfCancellationRequested();
             WriteCoreNoCancellation(buffer, offset, count);
+        }
+
+        /// <summary>Creates an anonymous pipe.</summary>
+        /// <param name="inheritability">The inheritability to try to use.  This may not always be honored, depending on platform.</param>
+        /// <param name="reader">The resulting reader end of the pipe.</param>
+        /// <param name="writer">The resulting writer end of the pipe.</param>
+        internal static unsafe void CreateAnonymousPipe(
+            HandleInheritability inheritability, out SafePipeHandle reader, out SafePipeHandle writer)
+        {
+            // Allocate the safe handle objects prior to calling pipe/pipe2, in order to help slightly in low-mem situations
+            reader = new SafePipeHandle();
+            writer = new SafePipeHandle();
+
+            // Create the OS pipe
+            int* fds = stackalloc int[2];
+            CreateAnonymousPipe(inheritability, fds);
+
+            // Store the file descriptors into our safe handles
+            reader.SetHandle(fds[Interop.libc.ReadEndOfPipe]);
+            writer.SetHandle(fds[Interop.libc.WriteEndOfPipe]);
+        }
+
+        /// <summary>
+        /// Creates a cancellation registration.  This creates a pipe that'll have one end written to
+        /// when cancellation is requested.  The other end can be poll'd to see when cancellation has occurred.
+        /// </summary>
+        private static unsafe DescriptorCancellationRegistration RegisterForCancellation(CancellationToken cancellationToken)
+        {
+            Debug.Assert(cancellationToken.CanBeCanceled);
+
+            // Fast path: before doing any real work, throw if cancellation has already been requested
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // Create a pipe we can use to send a signal to the reader/writer
+            // to wake it up if blocked.
+            SafePipeHandle poll, send;
+            CreateAnonymousPipe(HandleInheritability.None, out poll, out send);
+
+            // Register a cancellation callback to send a byte to the cancellation pipe
+            CancellationTokenRegistration reg = cancellationToken.Register(s =>
+            {
+                SafePipeHandle sendRef = (SafePipeHandle)s;
+                bool gotSendRef = false;
+                try
+                {
+                    sendRef.DangerousAddRef(ref gotSendRef);
+                    int fd = (int)sendRef.DangerousGetHandle();
+                    byte b = 1;
+                    while (Interop.CheckIo((int)Interop.libc.write(fd, &b, (IntPtr)1))) ;
+                }
+                finally
+                {
+                    if (gotSendRef)
+                        sendRef.DangerousRelease();
+                }
+            }, send);
+
+            // Return a disposable struct that will unregister the cancellation registration
+            // and dispose of the pipe.
+            return new DescriptorCancellationRegistration(reg, poll, send);
+        }
+
+        /// <summary>Disposable struct that'll clean up the results of a RegisterForCancellation operation.</summary>
+        private struct DescriptorCancellationRegistration : IDisposable
+        {
+            private CancellationTokenRegistration _registration;
+            private readonly SafePipeHandle _poll;
+            private readonly SafePipeHandle _send;
+
+            internal DescriptorCancellationRegistration(
+                CancellationTokenRegistration registration,
+                SafePipeHandle poll, SafePipeHandle send)
+            {
+                Debug.Assert(poll != null);
+                Debug.Assert(send != null);
+
+                _registration = registration;
+                _poll = poll;
+                _send = send;
+            }
+
+            internal SafePipeHandle Poll { get { return _poll; } }
+
+            public void Dispose()
+            {
+                // Dispose the registration prior to disposing of the pipe handles.
+                // Otherwise a concurrent cancellation request could try to use
+                // the already disposed pipe.
+                _registration.Dispose();
+
+                if (_send != null)
+                    _send.Dispose();
+                if (_poll != null)
+                    _poll.Dispose();
+            }
         }
 
         /// <summary>
