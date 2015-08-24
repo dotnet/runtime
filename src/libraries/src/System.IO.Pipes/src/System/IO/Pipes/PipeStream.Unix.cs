@@ -72,57 +72,47 @@ namespace System.IO.Pipes
             // nop
         }
 
-        [SecurityCritical]
-        private unsafe int ReadCore(byte[] buffer, int offset, int count)
+        private int ReadCore(byte[] buffer, int offset, int count)
         {
-            DebugAssertReadWriteArgs(buffer, offset, count, _handle);
-            Debug.Assert(CanRead, "can't read");
+            return ReadCoreNoCancellation(buffer, offset, count);
+        }
 
-            fixed (byte* bufPtr = buffer)
+        private void WriteCore(byte[] buffer, int offset, int count)
+        {
+            WriteCoreNoCancellation(buffer, offset, count);
+        }
+
+        private async Task<int> ReadAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            SemaphoreSlim activeAsync = EnsureAsyncActiveSemaphoreInitialized();
+            await activeAsync.WaitAsync(cancellationToken).ForceAsync();
+            try
             {
-                return (int)SysCall(_handle, (fd, ptr, len, _) =>
-                {
-                    long result = (long)Interop.libc.read(fd, (byte*)ptr, (IntPtr)len);
-                    Debug.Assert(result <= len);
-                    return result;
-                }, (IntPtr)(bufPtr + offset), count);
+                return cancellationToken.CanBeCanceled ?
+                    ReadCoreWithCancellation(buffer, offset, count, cancellationToken) :
+                    ReadCoreNoCancellation(buffer, offset, count);
+            }
+            finally
+            {
+                activeAsync.Release();
             }
         }
 
-        [SecuritySafeCritical]
-        private Task<int> ReadAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        private async Task WriteAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            // Delegate to the base Stream's ReadAsync, which will just invoke Read asynchronously.
-            return base.ReadAsync(buffer, offset, count, cancellationToken);
-        }
-
-        [SecurityCritical]
-        private unsafe void WriteCore(byte[] buffer, int offset, int count)
-        {
-            DebugAssertReadWriteArgs(buffer, offset, count, _handle);
-            Debug.Assert(CanWrite, "can't write");
-
-            fixed (byte* bufPtr = buffer)
+            SemaphoreSlim activeAsync = EnsureAsyncActiveSemaphoreInitialized();
+            await activeAsync.WaitAsync(cancellationToken).ForceAsync();
+            try
             {
-                while (count > 0)
-                {
-                    int bytesWritten = (int)SysCall(_handle, (fd, ptr, len, _) =>
-                    {
-                        long result = (long)Interop.libc.write(fd, (byte*)ptr, (IntPtr)len);
-                        Debug.Assert(result <= len);
-                        return result;
-                    }, (IntPtr)(bufPtr + offset), count);
-                    count -= bytesWritten;
-                    offset += bytesWritten;
-                }
+                if (cancellationToken.CanBeCanceled)
+                    WriteCoreWithCancellation(buffer, offset, count, cancellationToken);
+                else
+                    WriteCoreNoCancellation(buffer, offset, count);
             }
-        }
-
-        [SecuritySafeCritical]
-        private Task WriteAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            // Delegate to the base Stream's WriteAsync, which will just invoke Write asynchronously.
-            return base.WriteAsync(buffer, offset, count, cancellationToken);
+            finally
+            {
+                activeAsync.Release();
+            }
         }
 
         // Blocks until the other end of the pipe has read in all written buffer.
@@ -219,6 +209,19 @@ namespace System.IO.Pipes
         // -----------------------------
 
         private static string s_pipeDirectoryPath;
+
+        /// <summary>
+        /// We want to ensure that only one asynchronous operation is actually in flight
+        /// at a time. The base Stream class ensures this by serializing execution via a 
+        /// semaphore.  Since we don't delegate to the base stream for Read/WriteAsync due 
+        /// to having specialized support for cancellation, we do the same serialization here.
+        /// </summary>
+        private SemaphoreSlim _asyncActiveSemaphore;
+
+        private SemaphoreSlim EnsureAsyncActiveSemaphoreInitialized()
+        {
+            return LazyInitializer.EnsureInitialized(ref _asyncActiveSemaphore, () => new SemaphoreSlim(1, 1));
+        }
 
         private static string EnsurePipeDirectoryPath()
         {
@@ -321,6 +324,60 @@ namespace System.IO.Pipes
             // is handling just by queueing a work item to do the work synchronously on a pool thread.
 
             return flags;
+        }
+
+        private unsafe int ReadCoreNoCancellation(byte[] buffer, int offset, int count)
+        {
+            DebugAssertReadWriteArgs(buffer, offset, count, _handle);
+            fixed (byte* bufPtr = buffer)
+            {
+                return (int)SysCall(_handle, (fd, ptr, len, _) =>
+                {
+                    long result = (long)Interop.libc.read(fd, (byte*)ptr, (IntPtr)len);
+                    Debug.Assert(result <= len);
+                    return result;
+                }, (IntPtr)(bufPtr + offset), count);
+            }
+        }
+
+        private unsafe int ReadCoreWithCancellation(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            DebugAssertReadWriteArgs(buffer, offset, count, _handle);
+
+            // TODO: Implement this with cancellation
+
+            cancellationToken.ThrowIfCancellationRequested();
+            return ReadCoreNoCancellation(buffer, offset, count);
+        }
+
+        private unsafe void WriteCoreNoCancellation(byte[] buffer, int offset, int count)
+        {
+            DebugAssertReadWriteArgs(buffer, offset, count, _handle);
+
+            fixed (byte* bufPtr = buffer)
+            {
+                while (count > 0)
+                {
+                    int bytesWritten = (int)SysCall(_handle, (fd, ptr, len, _) =>
+                    {
+                        long result = (long)Interop.libc.write(fd, (byte*)ptr, (IntPtr)len);
+                        Debug.Assert(result <= len);
+                        return result;
+                    }, (IntPtr)(bufPtr + offset), count);
+                    count -= bytesWritten;
+                    offset += bytesWritten;
+                }
+            }
+        }
+
+        private void WriteCoreWithCancellation(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            DebugAssertReadWriteArgs(buffer, offset, count, _handle);
+
+            // TODO: Implement this with cancellation
+
+            cancellationToken.ThrowIfCancellationRequested();
+            WriteCoreNoCancellation(buffer, offset, count);
         }
 
         /// <summary>
