@@ -139,8 +139,15 @@ typedef struct MonoCompileArch {
 /* Linux */
 #ifdef __mono_ppc64__
 #define PPC_RET_ADDR_OFFSET 16
-#define PPC_STACK_PARAM_OFFSET 48
-#define PPC_MINIMAL_STACK_SIZE 48
+ // Power LE abvi2
+ #if (_CALL_ELF == 2)
+  #define PPC_STACK_PARAM_OFFSET 32
+  #define PPC_MINIMAL_STACK_SIZE 32
+ #else
+  #define PPC_STACK_PARAM_OFFSET 48
+  #define PPC_MINIMAL_STACK_SIZE 48
+ #endif
+#define MONO_ARCH_HAVE_SETUP_ASYNC_CALLBACK 1
 #define PPC_MINIMAL_PARAM_AREA_SIZE 64
 #define PPC_LAST_FPARG_REG ppc_f13
 #define PPC_PASS_STRUCTS_BY_VALUE 1

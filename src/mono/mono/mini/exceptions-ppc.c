@@ -786,3 +786,16 @@ mono_arch_handle_exception (void *ctx, gpointer obj)
 	return result;
 #endif
 }
+
+
+// FIX ME: This is not complete
+void
+mono_arch_setup_async_callback (MonoContext *ctx, void (*async_cb)(void *fun), gpointer user_data)
+{
+	uintptr_t sp = (uintptr_t) MONO_CONTEXT_GET_SP(ctx);
+	sp -= PPC_MINIMAL_STACK_SIZE;
+	*(unsigned long *)sp = MONO_CONTEXT_GET_SP(ctx);
+	MONO_CONTEXT_SET_BP(ctx, sp);
+	MONO_CONTEXT_SET_IP(ctx, (unsigned long) async_cb);
+}
+
