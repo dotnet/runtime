@@ -101,5 +101,41 @@ namespace System.Linq.Tests
                 Assert.NotSame(enum1, enum2);
             }
         }
+
+        [Fact]
+        public void SameResultsRepeatCallsIntQuery()
+        {
+            Assert.Equal(Enumerable.Repeat(-3, 0), Enumerable.Repeat(-3, 0));
+        }
+
+        [Fact]
+        public void SameResultsRepeatCallsStringQuery()
+        {
+            Assert.Equal(Enumerable.Repeat("SSS", 99), Enumerable.Repeat("SSS", 99));
+        }
+        
+        [Fact]
+        public void CountOneSingleResult()
+        {
+            int[] expected = { -15 };
+
+            Assert.Equal(expected, Enumerable.Repeat(-15, 1));
+        }
+
+        [Fact]
+        public void RepeatArbitraryCorrectResults()
+        {
+            int[] expected = { 12, 12, 12, 12, 12, 12, 12, 12 };
+
+            Assert.Equal(expected, Enumerable.Repeat(12, 8));
+        }
+
+        [Fact]
+        public void RepeatNull()
+        {
+            int?[] expected = { null, null, null, null };
+
+            Assert.Equal(expected, Enumerable.Repeat((int?)null, 4));
+        }
     }
 }
