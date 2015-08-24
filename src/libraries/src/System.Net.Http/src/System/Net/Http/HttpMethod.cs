@@ -1,17 +1,14 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Net.Http
 {
     public class HttpMethod : IEquatable<HttpMethod>
     {
-        private string _method;
+        private readonly string _method;
+        private int _hashcode;
 
         private static readonly HttpMethod s_getMethod = new HttpMethod("GET");
         private static readonly HttpMethod s_putMethod = new HttpMethod("PUT");
@@ -21,7 +18,7 @@ namespace System.Net.Http
         private static readonly HttpMethod s_optionsMethod = new HttpMethod("OPTIONS");
         private static readonly HttpMethod s_traceMethod = new HttpMethod("TRACE");
 
-        // Don't expose CONNECT as static property, since it's used by the transport to connect to a proxy. 
+        // Don't expose CONNECT as static property, since it's used by the transport to connect to a proxy.
         // CONNECT is not used by users directly.
 
         public static HttpMethod Get
@@ -106,7 +103,17 @@ namespace System.Net.Http
 
         public override int GetHashCode()
         {
-            return _method.ToUpperInvariant().GetHashCode();
+            if (_hashcode == 0)
+            {
+                // If _method is already uppercase, _method.GetHashCode() can be
+                // used instead of _method.ToUpperInvariant().GetHashCode(),
+                // avoiding the unnecessary extra string allocation.
+                _hashcode = IsUpperAscii(_method) ?
+                    _method.GetHashCode() :
+                    _method.ToUpperInvariant().GetHashCode();
+            }
+
+            return _hashcode;
         }
 
         public override string ToString()
@@ -131,6 +138,20 @@ namespace System.Net.Http
         public static bool operator !=(HttpMethod left, HttpMethod right)
         {
             return !(left == right);
+        }
+
+        private static bool IsUpperAscii(string value)
+        {
+            for (int i = 0; i < value.Length; i++)
+            {
+                char c = value[i];
+                if (!(c >= 'A' && c <= 'Z'))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }
