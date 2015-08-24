@@ -14096,6 +14096,11 @@ bool                Compiler::fgOptimizeBranch(BasicBlock* bJump)
     if (bDest->bbJumpDest != bJump->bbNext)
         return false;
 
+	// 'bJump' must be in the same try region as the condition, since we're going to insert
+	// a duplicated condition in 'bJump', and the condition might include exception throwing code.
+	if (!BasicBlock::sameTryRegion(bJump, bDest))
+		return false;
+
     // do not jump into another try region
     BasicBlock* bDestNext = bDest->bbNext;
     if (bDestNext->hasTryIndex() && !BasicBlock::sameTryRegion(bJump, bDestNext))
