@@ -11,7 +11,7 @@ namespace System.IO.Pipes
         {
             if (bufferSize > 0)
             {
-                SysCall(handle, (fd, _, size) => Interop.libc.fcntl(fd, Interop.libc.FcntlCommands.F_SETPIPE_SZ, size), 
+                SysCall(handle, (fd, _, size, __) => Interop.libc.fcntl(fd, Interop.libc.FcntlCommands.F_SETPIPE_SZ, size), 
                     IntPtr.Zero, bufferSize);
             }
         }
@@ -26,7 +26,7 @@ namespace System.IO.Pipes
             // If we don't, the pipe has been created but not yet connected (in the case of named pipes),
             // so just return the buffer size that was passed to the constructor.
             return _handle != null ?
-                (int)SysCall(_handle, (fd, _, __) => Interop.libc.fcntl(fd, Interop.libc.FcntlCommands.F_GETPIPE_SZ)) :
+                (int)SysCall(_handle, (fd, _, __, ___) => Interop.libc.fcntl(fd, Interop.libc.FcntlCommands.F_GETPIPE_SZ)) :
                 _outBufferSize;
         }
     }

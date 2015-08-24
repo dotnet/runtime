@@ -44,7 +44,7 @@ namespace System.IO.Pipes
         /// <param name="safePipeHandle">The handle to validate.</param>
         internal void ValidateHandleIsPipe(SafePipeHandle safePipeHandle)
         {
-            SysCall(safePipeHandle, (fd, _, __) =>
+            SysCall(safePipeHandle, (fd, _, __, ___) =>
             {
                 Interop.Sys.FileStatus status;
                 int result = Interop.Sys.FStat(fd, out status);
@@ -84,7 +84,7 @@ namespace System.IO.Pipes
 
             fixed (byte* bufPtr = buffer)
             {
-                return (int)SysCall(_handle, (fd, ptr, len) =>
+                return (int)SysCall(_handle, (fd, ptr, len, _) =>
                 {
                     long result = (long)Interop.libc.read(fd, (byte*)ptr, (IntPtr)len);
                     Debug.Assert(result <= len);
@@ -114,7 +114,7 @@ namespace System.IO.Pipes
             {
                 while (count > 0)
                 {
-                    int bytesWritten = (int)SysCall(_handle, (fd, ptr, len) =>
+                    int bytesWritten = (int)SysCall(_handle, (fd, ptr, len, _) =>
                     {
                         long result = (long)Interop.libc.write(fd, (byte*)ptr, (IntPtr)len);
                         Debug.Assert(result <= len);
@@ -340,6 +340,7 @@ namespace System.IO.Pipes
         /// <param name="sysCall">A delegate that invokes the system call.</param>
         /// <param name="arg1">The first argument to be passed to the system call, after the file descriptor.</param>
         /// <param name="arg2">The second argument to be passed to the system call.</param>
+        /// <param name="arg3">The third argument to be passed to the system call.</param>
         /// <returns>The return value of the system call.</returns>
         /// <remarks>
         /// Arguments are expected to be passed via <paramref name="arg1"/> and <paramref name="arg2"/>
@@ -347,8 +348,8 @@ namespace System.IO.Pipes
         /// </remarks>
         private long SysCall(
             SafePipeHandle handle,
-            Func<int, IntPtr, int, long> sysCall,
-            IntPtr arg1 = default(IntPtr), int arg2 = default(int))
+            Func<int, IntPtr, int, IntPtr, long> sysCall,
+            IntPtr arg1 = default(IntPtr), int arg2 = default(int), IntPtr arg3 = default(IntPtr))
         {
             bool gotRefOnHandle = false;
             try
@@ -362,8 +363,8 @@ namespace System.IO.Pipes
 
                 while (true)
                 {
-                    long result = sysCall(fd, arg1, arg2);
-                    if (result < 0)
+                    long result = sysCall(fd, arg1, arg2, arg3);
+                    if (result == -1)
                     {
                         Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
 
