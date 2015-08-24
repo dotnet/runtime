@@ -7,6 +7,7 @@ using System.IO;
 using System.Threading;
 
 using Microsoft.Win32.SafeHandles;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -377,28 +378,12 @@ namespace System.Security.Cryptography
 
         protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
         {
-            // we're sealed and the base should have checked this already
-            Contract.Assert(data != null);
-            Contract.Assert(count >= 0 && count <= data.Length);
-            Contract.Assert(offset >= 0 && offset <= data.Length - count);
-            Contract.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
-
-            using (HashAlgorithm hasher = GetHashAlgorithm(hashAlgorithm))
-            {
-                return hasher.ComputeHash(data, offset, count);
-            }
+            return OpenSslAsymmetricAlgorithmCore.HashData(data, offset, count, hashAlgorithm);
         }
 
         protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
         {
-            // we're sealed and the base should have checked this already
-            Contract.Assert(data != null);
-            Contract.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
-
-            using (HashAlgorithm hasher = GetHashAlgorithm(hashAlgorithm))
-            {
-                return hasher.ComputeHash(data);
-            }
+            return OpenSslAsymmetricAlgorithmCore.HashData(data, hashAlgorithm);
         }
 
         public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
@@ -491,38 +476,6 @@ namespace System.Security.Cryptography
             }
 
             return nid;
-        }
-
-        private static HashAlgorithm GetHashAlgorithm(HashAlgorithmName hashAlgorithmName)
-        {
-            HashAlgorithm hasher;
-
-            if (hashAlgorithmName == HashAlgorithmName.MD5)
-            {
-                hasher = MD5.Create();
-            }
-            else if (hashAlgorithmName == HashAlgorithmName.SHA1)
-            {
-                hasher = SHA1.Create();
-            }
-            else if (hashAlgorithmName == HashAlgorithmName.SHA256)
-            {
-                hasher = SHA256.Create();
-            }
-            else if (hashAlgorithmName == HashAlgorithmName.SHA384)
-            {
-                hasher = SHA384.Create();
-            }
-            else if (hashAlgorithmName == HashAlgorithmName.SHA512)
-            {
-                hasher = SHA512.Create();
-            }
-            else
-            {
-                throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmName.Name);
-            }
-
-            return hasher;
         }
 
         private static Exception PaddingModeNotSupported()
