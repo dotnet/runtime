@@ -280,10 +280,12 @@ namespace System.Net.Http
             if (disposing && !_disposed)
             {
                 _disposed = true;
-                if (_multiHandlePtr.IsAllocated)
-                {
-                    _multiHandlePtr.Free();
-                }
+                // TODO: Check for the correct place to free this since
+                //       its lifetime should match _multiHandle
+                //if (_multiHandlePtr.IsAllocated)
+                //{
+                //    _multiHandlePtr.Free();
+                //}
                 _multiHandle = null;
             }
 
@@ -982,6 +984,12 @@ namespace System.Net.Http
                 {
                     Interop.libcurl.curl_multi_remove_handle(multiHandle, requestHandle);
                     multiHandle.RequestCount = multiHandle.RequestCount - 1;
+                    if (-1 != state.SocketFd)
+                    {
+                        int socketFd = state.SocketFd;
+                        state.SocketFd = -1;
+                        multiHandle.SignalFdSetChange(socketFd, true);
+                    }
                 }
                 state.SessionHandle = null;
                 requestHandle.DangerousRelease();
@@ -1019,6 +1027,7 @@ namespace System.Net.Http
                 this._handler = handler;
                 this._cancellationToken = cancellationToken;
                 this._requestMessage = request;
+                this.SocketFd = -1;
             }
 
             public CurlResponseMessage ResponseMessage { get; set; }
@@ -1033,7 +1042,9 @@ namespace System.Net.Http
 
             public byte[] RequestContentBuffer { get; set; }
 
-            public NetworkCredential NetworkCredential {get; set;}
+            public NetworkCredential NetworkCredential { get; set; }
+
+            public int SocketFd { get; set; }
 
             public CurlHandler Handler
             {
