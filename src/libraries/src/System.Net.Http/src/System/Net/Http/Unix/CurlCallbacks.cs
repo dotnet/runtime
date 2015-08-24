@@ -353,6 +353,7 @@ namespace System.Net.Http
             {
                 lock (state.SessionHandle)
                 {
+                    state.SocketFd = -1;
                     state.SessionHandle.SignalFdSetChange(socketFd, true);
                 }
             }
@@ -367,6 +368,7 @@ namespace System.Net.Http
                         throw new HttpRequestException(SR.net_http_client_execution_error,
                             GetCurlException(result, true));
                     }
+                    state.SocketFd = socketFd;
                     state.SessionHandle.SignalFdSetChange(socketFd, false);
                 }
             }
