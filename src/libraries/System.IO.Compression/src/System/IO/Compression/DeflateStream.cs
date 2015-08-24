@@ -15,7 +15,7 @@ namespace System.IO.Compression
         private Stream _stream;
         private CompressionMode _mode;
         private bool _leaveOpen;
-        private Inflater _inflater;
+        private IInflater _inflater;
         private IDeflater _deflater;
         private byte[] _buffer;
 
@@ -38,6 +38,23 @@ namespace System.IO.Compression
         {
         }
 
+        // Since a reader is being taken, CompressionMode.Decompress is implied
+        internal DeflateStream(Stream stream, bool leaveOpen, IFileFormatReader reader)
+        {
+            Debug.Assert(reader != null, "The IFileFormatReader passed to the internal DeflateStream constructor must be non-null");
+            if (stream == null)
+                throw new ArgumentNullException("stream");
+            if (!stream.CanRead)
+                throw new ArgumentException(SR.NotReadableStream, "stream");
+
+            _inflater = CreateInflater(reader);
+            _stream = stream;
+            _mode = CompressionMode.Decompress;
+            _leaveOpen = leaveOpen;
+            _buffer = new byte[DefaultBufferSize];
+        }
+
+
         public DeflateStream(Stream stream, CompressionMode mode, bool leaveOpen)
         {
             if (stream == null)
@@ -50,7 +67,7 @@ namespace System.IO.Compression
                     {
                         throw new ArgumentException(SR.NotReadableStream, "stream");
                     }
-                    _inflater = new Inflater();
+                    _inflater = CreateInflater();
                     break;
 
                 case CompressionMode.Compress:
@@ -126,11 +143,34 @@ namespace System.IO.Compression
             }
         }
 
-        internal void SetFileFormatReader(IFileFormatReader reader)
+        private static IInflater CreateInflater(IFileFormatReader reader = null)
         {
-            if (reader != null)
+            // The deflator type (zlib or managed) is normally determined by s_deflatorType,
+            // which is initialized by the provider based on what's available on the system.
+            // But for testing purposes, we sometimes want to override this, forcing
+            // compression/decompression to use a particular type.
+            WorkerType deflatorType = s_deflaterType;
+#if DEBUG
+            if (s_forcedTestingDeflaterType != WorkerType.Unknown)
+                deflatorType = s_forcedTestingDeflaterType;
+#endif
+
+            if (deflatorType == WorkerType.ZLib)
             {
-                _inflater.SetFileFormatReader(reader);
+                // Rather than reading raw data and using a FormatReader to interpret
+                // headers/footers manually, we instead set the zlib stream to parse
+                // that information for us.
+                if (reader == null)
+                    return new InflaterZlib(ZLibNative.Deflate_DefaultWindowBits);
+                else
+                {
+                    Debug.Assert(reader.ZLibWindowSize == 47, "A GZip reader must be designated with ZLibWindowSize == 47. Other header formats aren't supported by ZLib.");
+                    return new InflaterZlib(reader.ZLibWindowSize);
+                }
+            }
+            else
+            {
+                return new InflaterManaged(reader);
             }
         }
 
@@ -255,8 +295,6 @@ namespace System.IO.Compression
                     Debug.Assert(_inflater.AvailableOutput == 0, "We should have copied all stuff out!");
                     break;
                 }
-
-                Debug.Assert(_inflater.NeedsInput(), "We can only run into this case if we are short of input");
 
                 int bytes = _stream.Read(_buffer, 0, _buffer.Length);
                 if (bytes <= 0)
@@ -421,7 +459,6 @@ namespace System.IO.Compression
             InternalWrite(array, offset, count);
         }
 
-        // isAsync always seems to be false. why do we have it?
         internal void InternalWrite(byte[] array, int offset, int count)
         {
             DoMaintenance(array, offset, count);
@@ -496,7 +533,7 @@ namespace System.IO.Compression
             if (_mode != CompressionMode.Compress)
                 return;
 
-            // Some deflaters (e.g. ZLib write more than zero bytes for zero bytes inpuits.
+            // Some deflaters (e.g. ZLib) write more than zero bytes for zero byte inputs.
             // This round-trips and we should be ok with this, but our legacy managed deflater
             // always wrote zero output for zero input and upstack code (e.g. GZipStream)
             // took dependencies on it. Thus, make sure to only "flush" when we actually had
@@ -564,10 +601,13 @@ namespace System.IO.Compression
                     {
                         if (_deflater != null)
                             _deflater.Dispose();
+                        if (_inflater != null)
+                            _inflater.Dispose();
                     }
                     finally
                     {
                         _deflater = null;
+                        _inflater = null;
                         base.Dispose(disposing);
                     }
                 }  // finally

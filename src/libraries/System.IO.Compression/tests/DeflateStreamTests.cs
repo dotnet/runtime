@@ -525,6 +525,41 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        public void SequentialReadsOnMemoryStream_Return_SameBytes()
+        {
+            byte[] data = new byte[1024*10];
+            new Random(42).NextBytes(data);
+
+            var compressed = new MemoryStream();
+            using (var compressor = new DeflateStream(compressed, CompressionMode.Compress, true))
+            {
+                for (int i = 0; i < data.Length; i += 1024)
+                {
+                    compressor.Write(data, i, 1024);
+                }
+            }
+            compressed.Position = 0;
+
+            var decompressed = new MemoryStream();
+            using (var decompressor = new DeflateStream(compressed, CompressionMode.Decompress, true))
+            {
+                int i, j;
+                byte[] array = new byte[100];
+                byte[] array2 = new byte[100];
+
+                // only read in the first 100 bytes
+                decompressor.Read(array, 0, array.Length);
+                for (i = 0; i < array.Length; i++)
+                    Assert.Equal(data[i], array[i]);
+
+                // read in the next 100 bytes and make sure nothing is missing
+                decompressor.Read(array2, 0, array2.Length);
+                for (j = 0; j < array2.Length; j++)
+                    Assert.Equal(data[j], array[j]);
+            }
+        }
+
+        [Fact]
         public async Task WrapNullReturningTasksStream()
         {
             using (var ds = new DeflateStream(new BadWrappedStream(BadWrappedStream.Mode.ReturnNullTasks), CompressionMode.Decompress))

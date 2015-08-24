@@ -14,7 +14,7 @@ namespace System.IO.Compression
     internal class DeflaterZLib : IDeflater
     {
         private ZLibNative.ZLibStreamHandle _zlibStream;
-        private GCHandle? _inputBufferHandle;
+        private GCHandle _inputBufferHandle;
         private bool _isDisposed;
 
         // Note, DeflateStream or the deflater do not try to be thread safe.
@@ -81,31 +81,32 @@ namespace System.IO.Compression
             DeflateInit(zlibCompressionLevel, windowBits, memLevel, strategy);
         }
 
+        ~DeflaterZLib()
+        {
+            Dispose(false);
+        }
+
         void IDisposable.Dispose()
         {
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         [SecuritySafeCritical]
         protected virtual void Dispose(bool disposing)
         {
-            if (disposing && !_isDisposed)
+            if (!_isDisposed)
             {
-                if (_inputBufferHandle.HasValue)
-                    DeallocateInputBufferHandle();
+                if (disposing)
+                    _zlibStream.Dispose();
 
-                _zlibStream.Dispose();
+                if (_inputBufferHandle.IsAllocated)
+                    DeallocateInputBufferHandle();
                 _isDisposed = true;
             }
         }
 
-        private bool NeedsInput()
-        {
-            // Convenience method to call NeedsInput privately without a cast.
-            return ((IDeflater)this).NeedsInput();
-        }
-
-        bool IDeflater.NeedsInput()
+        public bool NeedsInput()
         {
             return 0 == _zlibStream.AvailIn;
         }
@@ -115,7 +116,7 @@ namespace System.IO.Compression
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
             Debug.Assert(null != inputBuffer);
             Debug.Assert(startIndex >= 0 && count >= 0 && count + startIndex <= inputBuffer.Length);
-            Debug.Assert(!_inputBufferHandle.HasValue);
+            Debug.Assert(!_inputBufferHandle.IsAllocated);
 
             if (0 == count)
                 return;
@@ -124,7 +125,7 @@ namespace System.IO.Compression
             {
                 _inputBufferHandle = GCHandle.Alloc(inputBuffer, GCHandleType.Pinned);
 
-                _zlibStream.NextIn = _inputBufferHandle.Value.AddrOfPinnedObject() + startIndex;
+                _zlibStream.NextIn = _inputBufferHandle.AddrOfPinnedObject() + startIndex;
                 _zlibStream.AvailIn = (uint)count;
             }
         }
@@ -135,8 +136,7 @@ namespace System.IO.Compression
 
             Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
             Debug.Assert(!NeedsInput(), "GetDeflateOutput should only be called after providing input");
-            Debug.Assert(_inputBufferHandle.HasValue);
-            Debug.Assert(_inputBufferHandle.Value.IsAllocated);
+            Debug.Assert(_inputBufferHandle.IsAllocated);
 
             try
             {
@@ -147,30 +147,24 @@ namespace System.IO.Compression
             finally
             {
                 // Before returning, make sure to release input buffer if necesary:
-                if (0 == _zlibStream.AvailIn && _inputBufferHandle.HasValue)
+                if (0 == _zlibStream.AvailIn && _inputBufferHandle.IsAllocated)
                     DeallocateInputBufferHandle();
             }
         }
 
-        private ZErrorCode ReadDeflateOutput(byte[] outputBuffer, ZFlushCode flushCode, out int bytesRead)
+        private unsafe ZErrorCode ReadDeflateOutput(byte[] outputBuffer, ZFlushCode flushCode, out int bytesRead)
         {
             lock (_syncLock)
             {
-                GCHandle outputBufferHndl = GCHandle.Alloc(outputBuffer, GCHandleType.Pinned);
-
-                try
+                fixed (byte* bufPtr = outputBuffer)
                 {
-                    _zlibStream.NextOut = outputBufferHndl.AddrOfPinnedObject();
+                    _zlibStream.NextOut = (IntPtr)bufPtr;
                     _zlibStream.AvailOut = (uint)outputBuffer.Length;
 
                     ZErrorCode errC = Deflate(flushCode);
                     bytesRead = outputBuffer.Length - (int)_zlibStream.AvailOut;
 
                     return errC;
-                }
-                finally
-                {
-                    outputBufferHndl.Free();
                 }
             }
         }
@@ -179,7 +173,7 @@ namespace System.IO.Compression
         {
             Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
-            Debug.Assert(!_inputBufferHandle.HasValue);
+            Debug.Assert(!_inputBufferHandle.IsAllocated);
 
             // Note: we require that NeedsInput() == true, i.e. that 0 == _zlibStream.AvailIn.
             // If there is still input left we should never be getting here; instead we
@@ -196,15 +190,13 @@ namespace System.IO.Compression
 
         private void DeallocateInputBufferHandle()
         {
-            Debug.Assert(_inputBufferHandle.HasValue);
-            Debug.Assert(_inputBufferHandle.Value.IsAllocated);
+            Debug.Assert(_inputBufferHandle.IsAllocated);
 
             lock (_syncLock)
             {
                 _zlibStream.AvailIn = 0;
                 _zlibStream.NextIn = ZLibNative.ZNullPtr;
-                _inputBufferHandle.Value.Free();
-                _inputBufferHandle = null;
+                _inputBufferHandle.Free();
             }
         }
 
