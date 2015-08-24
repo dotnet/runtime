@@ -13,7 +13,7 @@ namespace System.Diagnostics.Tracing
     {
         /// <summary>
         /// The NotificationSource that you should be writing to by default.  This is what
-        /// most of the class library does.   Data written here goss to DefaultListener
+        /// most of the class library does.   Data written here goes to DefaultListener
         /// which dispatches to all its subscribers.  
         /// </summary>
         public static TelemetrySource DefaultSource { get { return TelemetryListener.DefaultListener; } }
@@ -24,7 +24,7 @@ namespace System.Diagnostics.Tracing
         /// that gives the information to pass to the notification, which is arbitrary.  
         /// 
         /// The Telemetry name should be short (so don't use fully qualified names unless you have to
-        /// to avoid ambiguity), but you want the name to be globally unique.  Typicaly your componentName.eventName
+        /// to avoid ambiguity), but you want the name to be globally unique.  Typically your componentName.eventName
         /// where componentName and eventName are strings less than 10 characters are a good compromise.  
         /// evnetNames should NOT have '.' in them because component names have dots and for them both
         /// to have dots would lead to ambiguity.   The suggestion is to use _ instead.  It is assumed 

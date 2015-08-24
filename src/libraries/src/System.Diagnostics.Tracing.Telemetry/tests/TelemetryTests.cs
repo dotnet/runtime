@@ -283,7 +283,7 @@ namespace System.Diagnostics.Tracing.Telemetry.Tests
         }
 
         /// <summary>
-        /// Stresses the Subscribtion routine by having many threads subscribe and
+        /// Stresses the Subscription routine by having many threads subscribe and
         /// unsubscribe concurrently
         /// </summary>
         [Fact]
@@ -293,11 +293,11 @@ namespace System.Diagnostics.Tracing.Telemetry.Tests
             //  Beat on the default listener by subscribing and unsubscribing on many threads simultaneously. 
             var factory = new TaskFactory();
 
-            // To the whole stress test 10 times.  This keesp the task array size needed down while still
+            // To the whole stress test 10 times.  This keeps the task array size needed down while still
             // having lots of concurrency.   
             for (int j = 0; j < 20; j++)
             {
-                // Spawn off lots of concurrnet activity
+                // Spawn off lots of concurrent activity
                 var tasks = new Task[1000];
                 for (int i = 0; i < tasks.Length; i++)
                 {
@@ -320,7 +320,7 @@ namespace System.Diagnostics.Tracing.Telemetry.Tests
                             Assert.Equal(taskNum, result[0].Value);
 
                             // Spin a bit randomly.  This mixes of the lifetimes of the subscriptions and makes it 
-                            // more stressfull 
+                            // more stressful 
                             var cnt = random.Next(10, 100) * 1000;
                             while (0 < --cnt)
                                 GC.KeepAlive("");
@@ -350,7 +350,7 @@ namespace System.Diagnostics.Tracing.Telemetry.Tests
                 returnedListener = listener;
             };
 
-            // Subscribe, which delivers catchup event for the Default listener 
+            // Subscribe, which delivers catch-up event for the Default listener 
             TelemetryListener.AllListeners += onNewListener;
             Assert.Equal(TelemetryListener.DefaultListener, returnedListener);
             returnedListener = null;
@@ -442,7 +442,7 @@ namespace System.Diagnostics.Tracing.Telemetry.Tests
             {
                 tasks[i] = (factory.StartNew(delegate ()
                 {
-                    // Create a lset of TelemetryListeners (which add themselves to the AllListeners list. 
+                    // Create a set of TelemetryListeners (which add themselves to the AllListeners list. 
                     var listeners = new List<TelemetryListener>();
                     for (int j = 0; j < 200; j++)
                         listeners.Insert(0, (new TelemetryListener("Task " + i + " TestListener" + j)));
@@ -472,7 +472,7 @@ namespace System.Diagnostics.Tracing.Telemetry.Tests
 
         // Helper functions. 
         /// <summary>
-        /// Returns the list of active Telelemtry listeners.  
+        /// Returns the list of active telemetry listeners.  
         /// </summary>
         /// <returns></returns>
         private static List<TelemetryListener> GetActiveNonDefaultListeners()
@@ -500,7 +500,7 @@ namespace System.Diagnostics.Tracing.Telemetry.Tests
     }
 
 
-    // Takes an IObserver and returns a List<T> that are the elements obsverved.
+    // Takes an IObserver and returns a List<T> that are the elements observed.
     // Will assert on error and 'Completed' is set if the 'OnCompleted' callback
     // is issued.  
     internal class ObserverToList<T> : IObserver<T>
@@ -541,7 +541,7 @@ namespace System.Diagnostics.Tracing.Telemetry.Tests
     }
 
     /// <summary>
-    /// Trivial class used for payloads.  (Usuallly anonymous types are used.  
+    /// Trivial class used for payloads.  (Usually anonymous types are used.  
     /// </summary>
     internal class Payload
     {

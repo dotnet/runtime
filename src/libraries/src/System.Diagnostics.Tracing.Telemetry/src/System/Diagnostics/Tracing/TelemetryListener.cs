@@ -8,13 +8,13 @@ using System.Collections.Generic;
 namespace System.Diagnostics.Tracing
 {
     /// <summary>
-    /// A TelemetryListener something that forwards on events written with TelemetrySource.
+    /// A TelemetryListener is something that forwards on events written with TelemetrySource.
     /// It is an IObservable (has Subscribe method), and it also has a Subscribe overload that
-    /// lets you specify a 'IsEnabled' precicate that users of TelemetrySource will use for 
+    /// lets you specify a 'IsEnabled' predicate that users of TelemetrySource will use for 
     /// 'quick checks'.   
     /// 
     /// The item in the stream is a KeyValuePair[string, object] where the string is the name
-    /// of the telemetry item and the object is the payload (typically an anonumous type).  
+    /// of the telemetry item and the object is the payload (typically an anonymous type).  
     /// 
     /// There may be many TelemetryListeners in the system, but we encourage the use of
     /// The TelemetrySource.DefaultSource which goes to the TelemetryListener.DefaultListener.
@@ -31,7 +31,7 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// This is the TelemetryListener that is used by default by the class library.   
         /// Generally you don't want to make your own but rather have everyone use this one, which
-        /// insures that everyone who wished to subscribe gets the callbacks.  
+        /// ensures that everyone who wished to subscribe gets the callbacks.  
         /// The main reason not to us this one is that you WANT isolation from other 
         /// events in the system (e.g. multi-tenancy).  
         /// </summary>
@@ -39,7 +39,7 @@ namespace System.Diagnostics.Tracing
 
         /// <summary>
         /// When you subscribe to this you get callbacks for all NotificationListeners in the appdomain
-        /// as well as those that occured in the past, and all future Listeners created in the future. 
+        /// as well as those that occurred in the past, and all future Listeners created in the future. 
         /// </summary>
         public static event Action<TelemetryListener> AllListeners
         {
@@ -67,7 +67,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         virtual public IDisposable Subscribe(IObserver<KeyValuePair<string, object>> observer, Predicate<string> isEnabled)
         {
-            // If we have been disposed, we silently ingore any subscriptions.  
+            // If we have been disposed, we silently ignore any subscriptions.  
             if (_disposed)
                 return new Subscription() { Owner = this };
 
@@ -95,7 +95,7 @@ namespace System.Diagnostics.Tracing
         {
             Name = name;
             // To avoid allocating an explicit lock object I lock the Default TelemetryListener.   However there is a 
-            // chicken and egg problem because I need to call this code to initialize Default.   
+            // chicken and egg problem because I need to call this code to initialize TelemetryListener.DefaultListener.      
             var lockObj = DefaultListener;
             if (lockObj == null)
                 lockObj = this;
@@ -122,9 +122,11 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         virtual public void Dispose()
         {
-            // Remove myself from the list if all listeners.  
+            // Remove myself from the list of all listeners.  
             lock (DefaultListener)
             {
+                if (_disposed)
+                    return;
                 _disposed = true;
                 if (s_allListeners == this)
                     s_allListeners = s_allListeners._next;
@@ -209,10 +211,10 @@ namespace System.Diagnostics.Tracing
                     if (Interlocked.CompareExchange(ref Owner._subscriptions, newSubscriptions, subscriptions) == subscriptions)
                     {
 #if DEBUG
-                        var cur = subscriptions;
+                        var cur = newSubscriptions;
                         while (cur != null)
                         {
-                            if (cur.Observer == this)
+                            if (cur.Observer == Observer && cur.IsEnabled == IsEnabled) 
                                 throw new Exception("Did not remove subscription!");
                             cur = cur.Next;
                         }
@@ -245,13 +247,13 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        private Subscription _subscriptions;
+        private volatile Subscription _subscriptions;
         private TelemetryListener _next;               // We keep a linked list of all NotificationListeners (s_allListeners)
         private bool _disposed;                        // Has Dispose been called?
 
         private static Action<TelemetryListener> s_allListenersCallback;    // The list of clients to call back when a new TelemetryListener is created.  
         private static TelemetryListener s_allListeners;                    // As a service, we keep track of all instances of NotificationListeners.  
-        private static TelemetryListener s_default = new TelemetryListener("TelemetryListener.Default");
+        private static TelemetryListener s_default = new TelemetryListener("TelemetryListener.DefaultListener");
 
         #endregion
     }
