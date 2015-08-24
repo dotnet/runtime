@@ -59,6 +59,7 @@ namespace System.Linq.Tests
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => Enumerable.Range(1000, int.MaxValue));
             Assert.Throws<ArgumentOutOfRangeException>(() => Enumerable.Range(int.MaxValue, 1000));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Enumerable.Range(Int32.MaxValue - 10, 20));
         }
 
         [Fact]
@@ -104,6 +105,33 @@ namespace System.Linq.Tests
 
             int[] expected = { Int32.MaxValue - 3, Int32.MaxValue - 2, Int32.MaxValue - 1, Int32.MaxValue };
             Assert.Equal(expected, rangeEnumerable);
+        }
+        
+        [Fact]
+        public void RepeatedCallsSameResults()
+        {
+            Assert.Equal(Enumerable.Range(-1, 2), Enumerable.Range(-1, 2));
+            Assert.Equal(Enumerable.Range(0, 0), Enumerable.Range(0, 0));
+        }
+        
+        [Fact]
+        public void NegativeStart()
+        {
+            int start = -5;
+            int count = 1;
+            int[] expected = { -5 };
+
+            Assert.Equal(expected, Enumerable.Range(start, count));
+        }
+
+        [Fact]
+        public void ArbitraryStart()
+        {
+            int start = 12;
+            int count = 6;
+            int[] expected = { 12, 13, 14, 15, 16, 17 };
+
+            Assert.Equal(expected, Enumerable.Range(start, count));
         }
     }
 }
