@@ -15,5 +15,11 @@ namespace System.IO.Pipes
         private int InBufferSizeCore { get { throw new PlatformNotSupportedException(); } }
 
         private int OutBufferSizeCore { get { throw new PlatformNotSupportedException(); } }
+
+        internal static unsafe void CreateAnonymousPipe(HandleInheritability inheritability, int* fdsptr)
+        {
+            // Ignore inheritability, as on OSX pipe2 isn't available
+            while (Interop.CheckIo(Interop.libc.pipe(fdsptr))) ;
+        }
     }
 }
