@@ -57,7 +57,7 @@
     <Compile Include="UnionTests.cs" />
     <Compile Include="LegacyTests\AggregateTests.cs" />
     <Compile Include="LegacyTests\AverageTests.cs" />
-    <Compile Include="LegacyTests\CastTests.cs" />
+    <Compile Include="CastTests.cs" />
     <Compile Include="LegacyTests\ContainsTests.cs" />
     <Compile Include="CountTests.cs" />
     <Compile Include="LegacyTests\DefaultIfEmptyTests.cs" />
@@ -72,7 +72,7 @@
     <Compile Include="LongCountTests.cs" />
     <Compile Include="LegacyTests\MaxTests.cs" />
     <Compile Include="LegacyTests\MinTests.cs" />
-    <Compile Include="LegacyTests\OfTypeTests.cs" />
+    <Compile Include="OfTypeTests.cs" />
     <Compile Include="LegacyTests\OrderByDescendingTests.cs" />
     <Compile Include="LegacyTests\OrderByTests.cs" />
     <Compile Include="LegacyTests\RangeTests.cs" />
