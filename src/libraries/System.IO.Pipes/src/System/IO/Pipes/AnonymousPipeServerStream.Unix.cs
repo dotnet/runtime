@@ -14,29 +14,23 @@ namespace System.IO.Pipes
     {
         // Creates the anonymous pipe.
         [SecurityCritical]
-        private void Create(PipeDirection direction, HandleInheritability inheritability, int bufferSize)
+        private unsafe void Create(PipeDirection direction, HandleInheritability inheritability, int bufferSize)
         {
             Debug.Assert(direction != PipeDirection.InOut, "Anonymous pipe direction shouldn't be InOut");
             // Ignore bufferSize.  It's optional, and the fcntl F_SETPIPE_SZ for changing it is Linux specific.
 
-            // Use pipe or pipe2 to create our anonymous pipe
-            int[] fds = new int[2];
-            unsafe
-            {
-                fixed (int* fdsptr = fds)
-                {
-                    CreatePipe(inheritability, fdsptr);
-                }
-            }
+            // Create the handles before creating the pipe.  We do this for a bit more reliability in OOM conditions.
+            SafePipeHandle serverHandle = new SafePipeHandle();
+            SafePipeHandle clientHandle = new SafePipeHandle();
 
-            // Create SafePipeHandles for each end of the pipe.  Which ends goes with server and which goes with
+            // Use pipe or pipe2 to create our anonymous pipe
+            int* fds = stackalloc int[2];
+            CreatePipe(inheritability, fds);
+
+            // Set the handles for each end of the pipe.  Which ends goes with server and which goes with
             // client depends on the direction of the pipe.
-            SafePipeHandle serverHandle = new SafePipeHandle(
-                (IntPtr)fds[direction == PipeDirection.In ? Interop.libc.ReadEndOfPipe : Interop.libc.WriteEndOfPipe], 
-                ownsHandle: true);
-            SafePipeHandle clientHandle = new SafePipeHandle(
-                (IntPtr)fds[direction == PipeDirection.In ? Interop.libc.WriteEndOfPipe : Interop.libc.ReadEndOfPipe], 
-                ownsHandle: true);
+            serverHandle.SetHandle(fds[direction == PipeDirection.In ? Interop.libc.ReadEndOfPipe : Interop.libc.WriteEndOfPipe]);
+            clientHandle.SetHandle(fds[direction == PipeDirection.In ? Interop.libc.WriteEndOfPipe : Interop.libc.ReadEndOfPipe]);
 
             // Configure the pipe.  For buffer size, the size applies to the pipe, rather than to 
             // just one end's file descriptor, so we only need to do this with one of the handles.
