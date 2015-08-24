@@ -19,6 +19,10 @@ internal static partial class Interop
     {
         internal const int NID_undef = 0;
 
+        internal const int NID_secp224r1 = 713; // NIST-224
+        internal const int NID_secp384r1 = 715; // NIST-384
+        internal const int NID_secp521r1 = 716; // NIST-521
+
         [DllImport(Libraries.LibCrypto)]
         internal static extern NativeLong ASN1_INTEGER_get(IntPtr a);
 
