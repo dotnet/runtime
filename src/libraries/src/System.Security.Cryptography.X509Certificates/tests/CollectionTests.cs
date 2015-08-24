@@ -712,6 +712,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Fact]
         [ActiveIssue(2743, PlatformID.AnyUnix)]
+        [ActiveIssue(2885, PlatformID.Windows)]
         public static void ExportMultiplePrivateKeys()
         {
             var collection = new X509Certificate2Collection();
