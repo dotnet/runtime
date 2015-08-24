@@ -179,7 +179,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public override bool IsEnabled(string telemetryName)
         {
-            for (var curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
+            for (Subscription curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
             {
                 if (curSubscription.IsEnabled == null || curSubscription.IsEnabled(telemetryName))
                     return true;
@@ -192,7 +192,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public override void WriteTelemetry(string telemetryName, object parameters)
         {
-            for (var curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
+            for (Subscription curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
                 curSubscription.Observer.OnNext(new KeyValuePair<string, object>(telemetryName, parameters));
         }
 
@@ -248,7 +248,10 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        private volatile Subscription _subscriptions;
+        // TODO _subscriptions should be volatile but we get a warning (which gets treated as an error) that 
+        // when it gets passed as ref to Interlock.* functions that its volatileness disappears.    We really should
+        // just be suppressing the warning.    We can get away without the volatile because we only read it once 
+        private /* volatile */ Subscription _subscriptions;
         private TelemetryListener _next;               // We keep a linked list of all NotificationListeners (s_allListeners)
         private bool _disposed;                        // Has Dispose been called?
 
