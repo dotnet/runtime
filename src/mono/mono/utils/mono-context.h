@@ -368,6 +368,100 @@ typedef struct {
  * We might also want to add an additional field to propagate
  * the original context from the signal handler.
  */
+#ifdef __mono_ppc64__
+
+typedef struct {
+	gulong sc_ir;          // pc 
+	gulong sc_sp;          // r1
+	mgreg_t regs [32];
+	double fregs [32];
+} MonoContext;
+
+/* we have the stack pointer, not the base pointer in sigcontext */
+#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->sc_ir = (gulong)ip; } while (0);
+#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->sc_sp = (gulong)bp; } while (0);
+#define MONO_CONTEXT_SET_SP(ctx,sp) do { (ctx)->sc_sp = (gulong)sp; } while (0);
+
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->sc_ir))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->regs [ppc_r31-13]))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->sc_sp))
+
+#define MONO_CONTEXT_GET_CURRENT(ctx)	\
+	__asm__ __volatile__(	\
+		"std 0, 0(%0)\n"	\
+		"std 1, 8(%0)\n"	\
+		"std 0, 8*0+16(%0)\n"	\
+		"std 1, 8*1+16(%0)\n"	\
+		"std 2, 8*2+16(%0)\n"	\
+		"std 3, 8*3+16(%0)\n"	\
+		"std 4, 8*4+16(%0)\n"	\
+		"std 5, 8*5+16(%0)\n"	\
+		"std 6, 8*6+16(%0)\n"	\
+		"std 7, 8*7+16(%0)\n"	\
+		"std 8, 8*8+16(%0)\n"	\
+		"std 9, 8*9+16(%0)\n"	\
+		"std 10, 8*10+16(%0)\n"	\
+		"std 11, 8*11+16(%0)\n"	\
+		"std 12, 8*12+16(%0)\n"	\
+		"std 13, 8*13+16(%0)\n"	\
+		"std 14, 8*14+16(%0)\n"	\
+		"std 15, 8*15+16(%0)\n"	\
+		"std 16, 8*16+16(%0)\n"	\
+		"std 17, 8*17+16(%0)\n"	\
+		"std 18, 8*18+16(%0)\n"	\
+		"std 19, 8*19+16(%0)\n"	\
+		"std 20, 8*20+16(%0)\n"	\
+		"std 21, 8*21+16(%0)\n"	\
+		"std 22, 8*22+16(%0)\n"	\
+		"std 23, 8*23+16(%0)\n"	\
+		"std 24, 8*24+16(%0)\n"	\
+		"std 25, 8*25+16(%0)\n"	\
+		"std 26, 8*26+16(%0)\n"	\
+		"std 27, 8*27+16(%0)\n"	\
+		"std 28, 8*28+16(%0)\n"	\
+		"std 29, 8*29+16(%0)\n"	\
+		"std 30, 8*30+16(%0)\n"	\
+		"std 31, 8*31+16(%0)\n"	\
+		"stfd 0, 8*0+8*32+16(%0)\n"	\
+		"stfd 1, 8*1+8*32+16(%0)\n"	\
+		"stfd 2, 8*2+8*32+16(%0)\n"	\
+		"stfd 3, 8*3+8*32+16(%0)\n"	\
+		"stfd 4, 8*4+8*32+16(%0)\n"	\
+		"stfd 5, 8*5+8*32+16(%0)\n"	\
+		"stfd 6, 8*6+8*32+16(%0)\n"	\
+		"stfd 7, 8*7+8*32+16(%0)\n"	\
+		"stfd 8, 8*8+8*32+16(%0)\n"	\
+		"stfd 9, 8*9+8*32+16(%0)\n"	\
+		"stfd 10, 8*10+8*32+16(%0)\n"	\
+		"stfd 11, 8*11+8*32+16(%0)\n"	\
+		"stfd 12, 8*12+8*32+16(%0)\n"	\
+		"stfd 13, 8*13+8*32+16(%0)\n"	\
+		"stfd 14, 8*14+8*32+16(%0)\n"	\
+		"stfd 15, 8*15+8*32+16(%0)\n"	\
+		"stfd 16, 8*16+8*32+16(%0)\n"	\
+		"stfd 17, 8*17+8*32+16(%0)\n"	\
+		"stfd 18, 8*18+8*32+16(%0)\n"	\
+		"stfd 19, 8*19+8*32+16(%0)\n"	\
+		"stfd 20, 8*20+8*32+16(%0)\n"	\
+		"stfd 21, 8*21+8*32+16(%0)\n"	\
+		"stfd 22, 8*22+8*32+16(%0)\n"	\
+		"stfd 23, 8*23+8*32+16(%0)\n"	\
+		"stfd 24, 8*24+8*32+16(%0)\n"	\
+		"stfd 25, 8*25+8*32+16(%0)\n"	\
+		"stfd 26, 8*26+8*32+16(%0)\n"	\
+		"stfd 27, 8*27+8*32+16(%0)\n"	\
+		"stfd 28, 8*28+8*32+16(%0)\n"	\
+		"stfd 29, 8*29+8*32+16(%0)\n"	\
+		"stfd 30, 8*30+8*32+16(%0)\n"	\
+		"stfd 31, 8*31+8*32+16(%0)\n"	\
+		: : "r" (&(ctx))	\
+		: "memory"			\
+	)
+
+#define MONO_ARCH_HAS_MONO_CONTEXT 1
+
+#else 
+
 typedef struct {
 	gulong sc_ir;          // pc 
 	gulong sc_sp;          // r1
@@ -384,6 +478,7 @@ typedef struct {
 #define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->sc_ir))
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->regs [ppc_r31-13]))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->sc_sp))
+#endif
 
 #elif defined(__sparc__) || defined(sparc) /* defined(__mono_ppc__) */
 
