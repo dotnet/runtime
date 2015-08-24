@@ -59,7 +59,7 @@
     <Compile Include="LegacyTests\AverageTests.cs" />
     <Compile Include="LegacyTests\CastTests.cs" />
     <Compile Include="LegacyTests\ContainsTests.cs" />
-    <Compile Include="LegacyTests\CountTests.cs" />
+    <Compile Include="CountTests.cs" />
     <Compile Include="LegacyTests\DefaultIfEmptyTests.cs" />
     <Compile Include="LegacyTests\DistinctTests.cs" />
     <Compile Include="LegacyTests\ElementAtOrDefaultTests.cs" />
@@ -69,7 +69,7 @@
     <Compile Include="LegacyTests\GroupJoinTests.cs" />
     <Compile Include="LegacyTests\Helper.cs" />
     <Compile Include="LegacyTests\JoinTests.cs" />
-    <Compile Include="LegacyTests\LongCountTests.cs" />
+    <Compile Include="LongCountTests.cs" />
     <Compile Include="LegacyTests\MaxTests.cs" />
     <Compile Include="LegacyTests\MinTests.cs" />
     <Compile Include="LegacyTests\OfTypeTests.cs" />
