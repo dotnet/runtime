@@ -75,9 +75,6 @@
     <Compile Include="OfTypeTests.cs" />
     <Compile Include="LegacyTests\OrderByDescendingTests.cs" />
     <Compile Include="LegacyTests\OrderByTests.cs" />
-    <Compile Include="LegacyTests\RangeTests.cs" />
-    <Compile Include="LegacyTests\RepeatTests.cs" />
-    <Compile Include="LegacyTests\ReverseTests.cs" />
     <Compile Include="LegacyTests\SelectManyTests.cs" />
     <Compile Include="LegacyTests\SelectTests.cs" />
     <Compile Include="LegacyTests\SingleOrDefaultTests.cs" />
