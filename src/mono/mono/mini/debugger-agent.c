@@ -225,11 +225,6 @@ typedef struct {
      */
 	MonoThreadUnwindState filter_state;
 
-	/*
- 	 * The callee address of the last mono_runtime_invoke call
-	 */
-	gpointer invoke_addr;
-
 	gboolean abort_requested;
 
 	/*
@@ -693,7 +688,6 @@ static DebuggerProfiler debugger_profiler;
 
 /* The single step request instance */
 static SingleStepReq *ss_req;
-static gpointer ss_invoke_addr;
 
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 /* Number of single stepping operations in progress */
@@ -763,10 +757,6 @@ static void assembly_unload (MonoProfiler *prof, MonoAssembly *assembly);
 static void emit_assembly_load (gpointer assembly, gpointer user_data);
 
 static void emit_type_load (gpointer key, gpointer type, gpointer user_data);
-
-static void start_runtime_invoke (MonoProfiler *prof, MonoMethod *method);
-
-static void end_runtime_invoke (MonoProfiler *prof, MonoMethod *method);
 
 static void jit_end (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo, int result);
 
@@ -992,7 +982,6 @@ mono_debugger_agent_init (void)
 	mono_profiler_install_thread (thread_startup, thread_end);
 	mono_profiler_install_assembly (NULL, assembly_load, assembly_unload, NULL);
 	mono_profiler_install_jit_end (jit_end);
-	mono_profiler_install_method_invoke (start_runtime_invoke, end_runtime_invoke);
 
 	mono_native_tls_alloc (&debugger_tls_id, NULL);
 
@@ -3987,60 +3976,6 @@ assembly_unload (MonoProfiler *prof, MonoAssembly *assembly)
 }
 
 static void
-start_runtime_invoke (MonoProfiler *prof, MonoMethod *method)
-{
-#if defined(HOST_WIN32) && !defined(__GNUC__)
-	gpointer stackptr = ((guint64)_AddressOfReturnAddress () - sizeof (void*));
-#else
-	gpointer stackptr = __builtin_frame_address (1);
-#endif
-	MonoInternalThread *thread = mono_thread_internal_current ();
-	DebuggerTlsData *tls;
-
-	mono_loader_lock ();
-	
-	tls = mono_g_hash_table_lookup (thread_to_tls, thread);
-	/* Could be the debugger thread with assembly/type load hooks */
-	if (tls)
-		tls->invoke_addr = stackptr;
-
-	mono_loader_unlock ();
-}
-
-static void
-end_runtime_invoke (MonoProfiler *prof, MonoMethod *method)
-{
-	int i;
-#if defined(HOST_WIN32) && !defined(__GNUC__)
-	gpointer stackptr = ((guint64)_AddressOfReturnAddress () - sizeof (void*));
-#else
-	gpointer stackptr = __builtin_frame_address (1);
-#endif
-
-	if (!embedding || ss_req == NULL || stackptr != ss_invoke_addr || ss_req->thread != mono_thread_internal_current ())
-		return;
-
-	/*
-	 * We need to stop single stepping when exiting a runtime invoke, since if it is
-	 * a step out, it may return to native code, and thus never end.
-	 */
-	mono_loader_lock ();
-	ss_invoke_addr = NULL;
-
-	for (i = 0; i < event_requests->len; ++i) {
-		EventRequest *req = g_ptr_array_index (event_requests, i);
-
-		if (req->event_kind == EVENT_KIND_STEP) {
-			ss_destroy (req->info);
-			g_ptr_array_remove_index_fast (event_requests, i);
-			g_free (req);
-			break;
-		}
-	}
-	mono_loader_unlock ();
-}
-
-static void
 send_type_load (MonoClass *klass)
 {
 	gboolean type_load = FALSE;
@@ -5081,17 +5016,6 @@ start_single_stepping (void)
 
 	if (val == 1)
 		mono_arch_start_single_stepping ();
-
-	if (ss_req != NULL && ss_invoke_addr == NULL) {
-		DebuggerTlsData *tls;
-	
-		mono_loader_lock ();
-	
- 		tls = mono_g_hash_table_lookup (thread_to_tls, ss_req->thread);
-		ss_invoke_addr = tls->invoke_addr;
-		
-		mono_loader_unlock ();
-	}
 #else
 	g_assert_not_reached ();
 #endif
@@ -5105,8 +5029,6 @@ stop_single_stepping (void)
 
 	if (val == 0)
 		mono_arch_stop_single_stepping ();
-	if (ss_req != NULL)
-		ss_invoke_addr = NULL;
 #else
 	g_assert_not_reached ();
 #endif
