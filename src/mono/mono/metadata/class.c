@@ -1009,7 +1009,6 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 	MonoMethodInflated *iresult, *cached;
 	MonoMethodSignature *sig;
 	MonoGenericContext tmp_context;
-	gboolean is_mb_open = FALSE;
 
 	mono_error_init (error);
 
@@ -1041,44 +1040,9 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 		(method->klass->generic_container && context->class_inst)))
 		return method;
 
-	/*
-	 * The reason for this hack is to fix the behavior of inflating generic methods that come from a MethodBuilder.
-	 * What happens is that instantiating a generic MethodBuilder with its own arguments should create a diferent object.
-	 * This is opposite to the way non-SRE MethodInfos behave.
-	 * 
-	 * This happens, for example, when we want to emit a recursive generic method. Given the following C# code:
-	 * 
-	 * void Example<T> () {
-	 *    Example<T> ();
-	 * }
-	 *  
-	 * In Example, the method token must be encoded as: "void Example<!!0>()"
-	 * 
-	 * The reference to the first generic argument, "!!0", must be explicit otherwise it won't be inflated
-	 * properly. To get that we need to inflate the MethodBuilder with its own arguments.
-	 * 
-	 * On the other hand, inflating a non-SRE generic method with its own arguments should
-	 * return itself. For example:
-	 * 
-	 * MethodInfo m = ... //m is a generic method definition
-	 * MethodInfo res = m.MakeGenericMethod (m.GetGenericArguments ());
-	 * res == m
-	 *
-	 * To allow such scenarios we must allow inflation of MethodBuilder to happen in a diferent way than
-	 * what happens with regular methods.
-	 * 
-	 * There is one last touch to this madness, once a TypeBuilder is finished, IOW CreateType() is called,
-	 * everything should behave like a regular type or method.
-	 * 
-	 */
-	is_mb_open = method->is_generic &&
-		image_is_dynamic (method->klass->image) && !method->klass->wastypebuilder && /* that is a MethodBuilder from an unfinished TypeBuilder */
-		context->method_inst == mono_method_get_generic_container (method)->context.method_inst; /* and it's been instantiated with its own arguments.  */
-
 	iresult = g_new0 (MonoMethodInflated, 1);
 	iresult->context = *context;
 	iresult->declaring = method;
-	iresult->method.method.is_mb_open = is_mb_open;
 
 	if (!context->method_inst && method->is_generic)
 		iresult->context.method_inst = mono_method_get_generic_container (method)->context.method_inst;
@@ -1129,7 +1093,6 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 	result->is_generic = FALSE;
 	result->sre_method = FALSE;
 	result->signature = NULL;
-	result->is_mb_open = is_mb_open;
 
 	if (!context->method_inst) {
 		/* Set the generic_container of the result to the generic_container of method */
