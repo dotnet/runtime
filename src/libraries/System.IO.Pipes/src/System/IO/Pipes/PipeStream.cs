@@ -14,6 +14,8 @@ namespace System.IO.Pipes
 {
     public abstract partial class PipeStream : Stream
     {
+        private static readonly Task<int> s_zeroTask = Task.FromResult(0);
+
         private SafePipeHandle _handle;
         private bool _canRead;
         private bool _canWrite;
@@ -110,12 +112,16 @@ namespace System.IO.Pipes
         [SecurityCritical]
         public override int Read([In, Out] byte[] buffer, int offset, int count)
         {
+            if (_isAsync)
+            {
+                return ReadAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
+            }
+
             CheckReadWriteArgs(buffer, offset, count);
             if (!CanRead)
             {
                 throw __Error.GetReadNotSupported();
             }
-
             CheckReadOperations();
 
             return ReadCore(buffer, offset, count);
@@ -125,6 +131,10 @@ namespace System.IO.Pipes
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             CheckReadWriteArgs(buffer, offset, count);
+            if (!CanRead)
+            {
+                throw __Error.GetReadNotSupported();
+            }
 
             if (cancellationToken.IsCancellationRequested)
             {
@@ -138,12 +148,24 @@ namespace System.IO.Pipes
                 return base.ReadAsync(buffer, offset, count, cancellationToken);
             }
 
+            if (count == 0)
+            {
+                UpdateMessageCompletion(false);
+                return s_zeroTask;
+            }
+
             return ReadAsyncCore(buffer, offset, count, cancellationToken);
         }
 
         [SecurityCritical]
         public override void Write(byte[] buffer, int offset, int count)
         {
+            if (_isAsync)
+            {
+                WriteAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
+                return;
+            }
+
             CheckReadWriteArgs(buffer, offset, count);
             if (!CanWrite)
             {
@@ -158,6 +180,10 @@ namespace System.IO.Pipes
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             CheckReadWriteArgs(buffer, offset, count);
+            if (!CanWrite)
+            {
+                throw __Error.GetWriteNotSupported();
+            }
 
             if (cancellationToken.IsCancellationRequested)
             {
@@ -171,10 +197,15 @@ namespace System.IO.Pipes
                 return base.WriteAsync(buffer, offset, count, cancellationToken);
             }
 
+            if (count == 0)
+            {
+                return Task.CompletedTask;
+            }
+
             return WriteAsyncCore(buffer, offset, count, cancellationToken);
         }
 
-        private static void CheckReadWriteArgs(byte[] buffer, int offset, int count)
+        private void CheckReadWriteArgs(byte[] buffer, int offset, int count)
         {
             if (buffer == null)
                 throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
@@ -210,31 +241,18 @@ namespace System.IO.Pipes
         [SecurityCritical]
         public override int ReadByte()
         {
-            CheckReadOperations();
-            if (!CanRead)
-            {
-                throw __Error.GetReadNotSupported();
-            }
-
             byte[] buffer = SingleByteArray;
-            int n = ReadCore(buffer, 0, 1);
-
-            if (n == 0) { return -1; }
-            else return (int)buffer[0];
+            return Read(buffer, 0, 1) > 0 ?
+                buffer[0] :
+                -1;
         }
 
         [SecurityCritical]
         public override void WriteByte(byte value)
         {
-            CheckWriteOperations();
-            if (!CanWrite)
-            {
-                throw __Error.GetWriteNotSupported();
-            }
-
             byte[] buffer = SingleByteArray;
             buffer[0] = value;
-            WriteCore(buffer, 0, 1);
+            Write(buffer, 0, 1);
         }
 
         // Does nothing on PipeStreams.  We cannot call Interop.FlushFileBuffers here because we can deadlock
@@ -328,6 +346,13 @@ namespace System.IO.Pipes
 
                 return _isMessageComplete;
             }
+        }
+
+        internal void UpdateMessageCompletion(bool completion)
+        {
+            // Set message complete to true because the pipe is broken as well.
+            // Need this to signal to readers to stop reading.
+            _isMessageComplete = (completion || _state == PipeState.Broken);
         }
 
         public SafePipeHandle SafePipeHandle
@@ -513,5 +538,3 @@ namespace System.IO.Pipes
         }
     }
 }
-
-
