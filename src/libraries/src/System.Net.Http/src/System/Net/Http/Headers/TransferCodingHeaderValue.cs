@@ -8,8 +8,8 @@ namespace System.Net.Http.Headers
 {
     public class TransferCodingHeaderValue : ICloneable
     {
-        // Use ICollection<T> since we may have multiple parameters with the same name.
-        private ICollection<NameValueHeaderValue> _parameters;
+        // Use ObjectCollection<T> since we may have multiple parameters with the same name.
+        private ObjectCollection<NameValueHeaderValue> _parameters;
         private string _value;
 
         public string Value
@@ -109,7 +109,7 @@ namespace System.Net.Http.Headers
 
                 current++; // skip delimiter.
                 int parameterLength = NameValueHeaderValue.GetNameValueListLength(input, current, ';',
-                    transferCodingHeader.Parameters);
+                    (ObjectCollection<NameValueHeaderValue>)transferCodingHeader.Parameters);
 
                 if (parameterLength == 0)
                 {

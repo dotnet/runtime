@@ -13,7 +13,7 @@ namespace System.Net.Http.Headers
     {
         private static readonly Func<NameValueHeaderValue> s_nameValueCreator = CreateNameValue;
 
-        private ICollection<NameValueHeaderValue> _parameters;
+        private ObjectCollection<NameValueHeaderValue> _parameters;
 
         public ICollection<NameValueHeaderValue> Parameters
         {
@@ -136,7 +136,7 @@ namespace System.Net.Http.Headers
             {
                 current++; // skip delimiter.
                 int parameterLength = NameValueHeaderValue.GetNameValueListLength(input, current, ';',
-                    nameValueWithParameters.Parameters);
+                    (ObjectCollection<NameValueHeaderValue>)nameValueWithParameters.Parameters);
 
                 if (parameterLength == 0)
                 {

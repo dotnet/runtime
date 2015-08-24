@@ -10,7 +10,7 @@ namespace System.Net.Http.Headers
     {
         private const string charSet = "charset";
 
-        private ICollection<NameValueHeaderValue> _parameters;
+        private ObjectCollection<NameValueHeaderValue> _parameters;
         private string _mediaType;
 
         public string CharSet
@@ -177,7 +177,7 @@ namespace System.Net.Http.Headers
 
                 current++; // skip delimiter.
                 int parameterLength = NameValueHeaderValue.GetNameValueListLength(input, current, ';',
-                    mediaTypeHeader.Parameters);
+                    (ObjectCollection<NameValueHeaderValue>)mediaTypeHeader.Parameters);
 
                 if (parameterLength == 0)
                 {

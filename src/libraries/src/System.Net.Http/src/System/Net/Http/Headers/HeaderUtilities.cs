@@ -25,7 +25,7 @@ namespace System.Net.Http.Headers
         // Validator
         internal static readonly Action<HttpHeaderValueCollection<string>, string> TokenValidator = ValidateToken;
 
-        internal static void SetQuality(ICollection<NameValueHeaderValue> parameters, double? value)
+        internal static void SetQuality(ObjectCollection<NameValueHeaderValue> parameters, double? value)
         {
             Contract.Requires(parameters != null);
 
@@ -62,7 +62,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        internal static double? GetQuality(ICollection<NameValueHeaderValue> parameters)
+        internal static double? GetQuality(ObjectCollection<NameValueHeaderValue> parameters)
         {
             Contract.Requires(parameters != null);
 
@@ -126,12 +126,12 @@ namespace System.Net.Http.Headers
             }
         }
 
-        internal static bool AreEqualCollections<T>(ICollection<T> x, ICollection<T> y)
+        internal static bool AreEqualCollections<T>(ObjectCollection<T> x, ObjectCollection<T> y) where T : class
         {
             return AreEqualCollections(x, y, null);
         }
 
-        internal static bool AreEqualCollections<T>(ICollection<T> x, ICollection<T> y, IEqualityComparer<T> comparer)
+        internal static bool AreEqualCollections<T>(ObjectCollection<T> x, ObjectCollection<T> y, IEqualityComparer<T> comparer) where T : class
         {
             if (x == null)
             {
