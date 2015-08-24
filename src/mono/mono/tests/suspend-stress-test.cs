@@ -4,6 +4,26 @@ using System.Threading;
 using System.Diagnostics;
 using System.IO;
 
+/*
+TODO
+	Some tests are much more expensive than others (on cycles and synchronization), add a calibration step to figure out duration.
+	Some tests are more disrruptive than others, add weights to tests so some are picked more frequently.
+	The workload is too static, add some background generation noise tests.
+	The workload is too stable, add perturbance on the number of available tasks.
+	Fuse threadpool with non threadpool workloads by firing some tasks as separate threads.
+	Add an external watchdog so we can run the stress test in a loop for very long times and get results out of it.
+	We don't have enough tests, add one per locking operation we got in the runtime.
+
+Missing tests:
+	Ephemerons
+	Dynamic methods
+	Regular SRE
+	Remoting / Transparent Proxies
+	Context locals
+	Thread locals
+	Finalizers
+	Async socket IO
+*/
 
 class Driver {
 	static bool stop_please;
