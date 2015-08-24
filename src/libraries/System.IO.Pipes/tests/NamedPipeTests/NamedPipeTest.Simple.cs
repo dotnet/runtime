@@ -483,7 +483,6 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [ActiveIssue(812, PlatformID.AnyUnix)] // the cancellation token is ignored after the operation is initiated, due to base Stream's implementation        
         public async Task Server_ReadWriteCancelledToken_Throws_OperationCanceledException()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -501,12 +500,16 @@ namespace System.IO.Pipes.Tests
                     await Assert.ThrowsAnyAsync<OperationCanceledException>(() => serverReadToken);
                     Assert.True(server.ReadAsync(buffer, 0, buffer.Length, ctx1.Token).IsCanceled);
                 }
-                if (server.CanWrite)
+                if (server.CanWrite) 
                 {
                     var ctx1 = new CancellationTokenSource();
-                    Task serverWriteToken = server.WriteAsync(buffer, 0, buffer.Length, ctx1.Token);
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // On Unix WriteAsync's aren't cancelable once initiated
+                    {
+                        Task serverWriteToken = server.WriteAsync(buffer, 0, buffer.Length, ctx1.Token);
+                        ctx1.Cancel();
+                        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => serverWriteToken);
+                    }
                     ctx1.Cancel();
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => serverWriteToken);
                     Assert.True(server.WriteAsync(buffer, 0, buffer.Length, ctx1.Token).IsCanceled);
                 }
             }
@@ -573,7 +576,6 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [ActiveIssue(812, PlatformID.AnyUnix)] // the cancellation token is ignored after the operation is initiated, due to base Stream's implementation        
         public async Task Client_ReadWriteCancelledToken_Throws_OperationCanceledException()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -593,9 +595,13 @@ namespace System.IO.Pipes.Tests
                 if (client.CanWrite)
                 {
                     var ctx1 = new CancellationTokenSource();
-                    Task serverWriteToken = client.WriteAsync(buffer, 0, buffer.Length, ctx1.Token);
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // On Unix WriteAsync's aren't cancelable once initiated
+                    {
+                        Task serverWriteToken = client.WriteAsync(buffer, 0, buffer.Length, ctx1.Token);
+                        ctx1.Cancel();
+                        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => serverWriteToken);
+                    }
                     ctx1.Cancel();
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => serverWriteToken);
                     Assert.True(client.WriteAsync(buffer, 0, buffer.Length, ctx1.Token).IsCanceled);
                 }
             }
@@ -656,6 +662,40 @@ namespace System.IO.Pipes.Tests
                     Assert.True(Interop.CancelIoEx(client.SafePipeHandle), "Outer cancellation failed");
                     await Assert.ThrowsAsync<IOException>(() => clientWriteToken);
                 }
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ManyConcurrentOperations(bool cancelable)
+        {
+            using (NamedPipePair pair = CreateNamedPipePair(PipeOptions.Asynchronous, PipeOptions.Asynchronous))
+            {
+                await Task.WhenAll(pair.serverStream.WaitForConnectionAsync(), pair.clientStream.ConnectAsync());
+
+                const int NumOps = 100;
+                const int DataPerOp = 512;
+                byte[] sendingData = new byte[NumOps * DataPerOp];
+                byte[] readingData = new byte[sendingData.Length];
+                new Random().NextBytes(sendingData);
+                var cancellationToken = cancelable ? new CancellationTokenSource().Token : CancellationToken.None;
+
+                Stream reader = pair.writeToServer ? (Stream)pair.clientStream : pair.serverStream;
+                Stream writer = pair.writeToServer ? (Stream)pair.serverStream : pair.clientStream;
+
+                var reads = new Task<int>[NumOps];
+                var writes = new Task[NumOps];
+
+                for (int i = 0; i < reads.Length; i++)
+                    reads[i] = reader.ReadAsync(readingData, i * DataPerOp, DataPerOp, cancellationToken);
+                for (int i = 0; i < reads.Length; i++)
+                    writes[i] = writer.WriteAsync(sendingData, i * DataPerOp, DataPerOp, cancellationToken);
+
+                const int WaitTimeout = 30000;
+                Assert.True(Task.WaitAll(writes, WaitTimeout));
+                Assert.True(Task.WaitAll(reads, WaitTimeout));
+                Assert.Equal(sendingData, readingData);
             }
         }
     }
