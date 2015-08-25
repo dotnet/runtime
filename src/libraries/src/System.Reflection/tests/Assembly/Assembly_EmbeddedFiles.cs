@@ -16,6 +16,10 @@ namespace System.Reflection.Tests
         [Fact]
         public void TestEmbeddedFiles()
         {
+            var resources = typeof(EmbeddedFilesTest).GetTypeInfo().Assembly.GetManifestResourceNames();
+
+            Assert.Contains("EmbeddedImage.png", resources);
+
             Stream s = typeof(EmbeddedFilesTest).GetTypeInfo().Assembly.GetManifestResourceStream("EmbeddedImage.png");
             Assert.NotNull(s);
 
