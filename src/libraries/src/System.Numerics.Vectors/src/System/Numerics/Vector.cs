@@ -53,17 +53,10 @@ namespace System.Numerics
         {
             get
             {
-                if (Vector.IsHardwareAccelerated)
-                {
-                    throw new NotSupportedException(SR.Reflection_MethodNotSupported);
-                }
-                else
-                {
-                    return count;
-                }
+                return s_count;
             }
         }
-        private static int count = InitializeCount();
+        private static int s_count = InitializeCount();
 
         /// <summary>
         /// Returns a vector containing all zeroes.
@@ -84,55 +77,67 @@ namespace System.Numerics
         #endregion Static Members
 
         #region Static Initialization
-        private static int InitializeCount()
+        private struct VectorSizeHelper
         {
-            Contract.Requires(
-                Vector.IsHardwareAccelerated == false,
-                "InitializeCount cannot be invoked when running under hardware acceleration");
+            internal Vector<T> _placeholder;
+            internal byte _byte;
+        }
+
+		// Calculates the size of this struct in bytes, by computing the offset of a field in a structure
+        private static unsafe int InitializeCount()
+        {
+            VectorSizeHelper vsh;
+            byte* vectorBase = &vsh._placeholder.register.byte_0;
+            byte* byteBase = &vsh._byte;
+            int vectorSizeInBytes = (int)(byteBase - vectorBase);
+
+            int typeSizeInBytes = -1;
             if (typeof(T) == typeof(Byte))
             {
-                return 16;
+                typeSizeInBytes = sizeof(Byte);
             }
             else if (typeof(T) == typeof(SByte))
             {
-                return 16;
+                typeSizeInBytes = sizeof(SByte);
             }
             else if (typeof(T) == typeof(UInt16))
             {
-                return 8;
+                typeSizeInBytes = sizeof(UInt16);
             }
             else if (typeof(T) == typeof(Int16))
             {
-                return 8;
+                typeSizeInBytes = sizeof(Int16);
             }
             else if (typeof(T) == typeof(UInt32))
             {
-                return 4;
+                typeSizeInBytes = sizeof(UInt32);
             }
             else if (typeof(T) == typeof(Int32))
             {
-                return 4;
+                typeSizeInBytes = sizeof(Int32);
             }
             else if (typeof(T) == typeof(UInt64))
             {
-                return 2;
+                typeSizeInBytes = sizeof(UInt64);
             }
             else if (typeof(T) == typeof(Int64))
             {
-                return 2;
+                typeSizeInBytes = sizeof(Int64);
             }
             else if (typeof(T) == typeof(Single))
             {
-                return 4;
+                typeSizeInBytes = sizeof(Single);
             }
             else if (typeof(T) == typeof(Double))
             {
-                return 2;
+                typeSizeInBytes = sizeof(Double);
             }
             else
             {
                 throw new NotSupportedException(SR.Arg_TypeNotSupported);
             }
+
+            return vectorSizeInBytes / typeSizeInBytes;
         }
         #endregion Static Initialization
 
