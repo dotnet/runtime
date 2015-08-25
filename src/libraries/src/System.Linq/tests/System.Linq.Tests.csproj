@@ -55,8 +55,8 @@
     <Compile Include="ToListTests.cs" />
     <Compile Include="SelectTests.cs" />
     <Compile Include="UnionTests.cs" />
-    <Compile Include="LegacyTests\AggregateTests.cs" />
-    <Compile Include="LegacyTests\AverageTests.cs" />
+    <Compile Include="AggregateTests.cs" />
+    <Compile Include="AverageTests.cs" />
     <Compile Include="CastTests.cs" />
     <Compile Include="LegacyTests\ContainsTests.cs" />
     <Compile Include="CountTests.cs" />
