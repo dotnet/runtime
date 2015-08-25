@@ -60,7 +60,7 @@ namespace System.Globalization
         internal const long MaxMillis = (long)DaysTo10000 * MillisPerDay;
 
 
-        internal int m_currentEraValue = -1;
+        private int m_currentEraValue = -1;
 
 
         private bool m_isReadOnly = false;

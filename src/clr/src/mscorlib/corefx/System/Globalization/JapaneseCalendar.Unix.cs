@@ -5,16 +5,20 @@ namespace System.Globalization
 {
     public partial class JapaneseCalendar : Calendar
     {
-        public static int GetJapaneseEraCount()
+        private static int GetJapaneseEraCount()
         {
-            //TODO: Implement this fully.
-            throw new NotImplementedException();
+            //UNIXTODO: Implement this fully.
+            return 0;
         }
 
-        public static bool GetJapaneseEraInfo(int era, out DateTimeOffset dateOffset, out string eraName, out string abbreviatedEraName)
+        private static bool GetJapaneseEraInfo(int era, out DateTimeOffset dateOffset, out string eraName, out string abbreviatedEraName)
         {
-            //TODO: Implement this fully.
-            throw new NotImplementedException();
+            //UNIXTODO: Implement this fully.
+            dateOffset = default(DateTimeOffset);
+            eraName = null;
+            abbreviatedEraName = null;
+
+            return false;
         }
     }
 }
