@@ -259,6 +259,41 @@ namespace System.Reflection.Tests
             Assert.False(pi.IsRetval);
         }
 
+        [Fact]
+        public static void AttributesTest()
+        {
+            ParameterInfo pi = getParamInfo(typeof(MyClass), "MethodWithOptionalDefaultOutInMarshalParam", 0);
+
+            Assert.True(pi.Attributes.HasFlag(ParameterAttributes.Optional));
+            Assert.True(pi.Attributes.HasFlag(ParameterAttributes.HasDefault));
+            Assert.True(pi.Attributes.HasFlag(ParameterAttributes.HasFieldMarshal));
+            Assert.True(pi.Attributes.HasFlag(ParameterAttributes.Out));
+            Assert.True(pi.Attributes.HasFlag(ParameterAttributes.In));
+        }
+
+        [Theory]
+        [InlineData(typeof(OptionalAttribute))]
+        [InlineData(typeof(MarshalAsAttribute))]
+        [InlineData(typeof(OutAttribute))]
+        [InlineData(typeof(InAttribute))]
+        public static void CustomeAttributesTest(Type attrType)
+        {
+            ParameterInfo pi = getParamInfo(typeof(MyClass), "MethodWithOptionalDefaultOutInMarshalParam", 0);
+
+            var customAttrs = pi.CustomAttributes.GetEnumerator();
+
+            CustomAttributeData attribute = null;
+            while (customAttrs.MoveNext())
+            {
+                if (customAttrs.Current.AttributeType.Equals(attrType))
+                {
+                    attribute = customAttrs.Current;
+                }
+            }
+
+            Assert.NotNull(attribute);
+        }
+
 
         //Helper Method to get ParameterInfo object based on index
         private static ParameterInfo getParamInfo(Type type, string methodName, int index)
@@ -364,6 +399,11 @@ namespace System.Reflection.Tests
             }
 
             public int MethodWithOptionalAndNoDefault([Optional] Object o)
+            {
+                return 1;
+            }
+
+            public int MethodWithOptionalDefaultOutInMarshalParam([MarshalAs(UnmanagedType.LPWStr)][Out][In] string str = "")
             {
                 return 1;
             }
