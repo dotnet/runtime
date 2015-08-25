@@ -3,7 +3,7 @@ namespace System.Diagnostics.Tracing {
     public TelemetryListener(string name) { }
     public static System.Diagnostics.Tracing.TelemetryListener DefaultListener { get { return default(System.Diagnostics.Tracing.TelemetryListener); } }
     public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { return default(string); } }
-    public static event System.Action<System.Diagnostics.Tracing.TelemetryListener> AllListeners { add { } remove { } }
+    public static IObservable<TelemetryListener> AllListeners { get; } 
     public virtual void Dispose() { }
     public override bool IsEnabled(string telemetryName) { return default(bool); }
     public System.IDisposable Subscribe(System.IObserver<System.Collections.Generic.KeyValuePair<string, object>> observer) { return default(System.IDisposable); }
