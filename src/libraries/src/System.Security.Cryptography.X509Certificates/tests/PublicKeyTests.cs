@@ -101,30 +101,29 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal(expectedParameters, pk.EncodedParameters.RawData);
         }
 
-        /*
-         * TODO: Move the spirit of this method to a GetRSAPublicKey test
         [Fact]
         public static void TestKey_RSA()
         {
-            PublicKey pk = GetTestRsaKey();
-            RSA rsa = (RSA)pk.Key;
-            RSAParameters rsaParameters = rsa.ExportParameters(false);
+            using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
+            {
+                RSA rsa = cert.GetRSAPublicKey();
+                RSAParameters rsaParameters = rsa.ExportParameters(false);
 
-            byte[] expectedModulus = (
-                "E8AF5CA2200DF8287CBC057B7FADEEEB76AC28533F3ADB407DB38E33E6573FA5" +
-                "51153454A5CFB48BA93FA837E12D50ED35164EEF4D7ADB137688B02CF0595CA9" +
-                "EBE1D72975E41B85279BF3F82D9E41362B0B40FBBE3BBAB95C759316524BCA33" +
-                "C537B0F3EB7EA8F541155C08651D2137F02CBA220B10B1109D772285847C4FB9" +
-                "1B90B0F5A3FE8BF40C9A4EA0F5C90A21E2AAE3013647FD2F826A8103F5A935DC" +
-                "94579DFB4BD40E82DB388F12FEE3D67A748864E162C4252E2AAE9D181F0E1EB6" +
-                "C2AF24B40E50BCDE1C935C49A679B5B6DBCEF9707B280184B82A29CFBFA90505" +
-                "E1E00F714DFDAD5C238329EBC7C54AC8E82784D37EC6430B950005B14F6571C5").HexToByteArray();
+                byte[] expectedModulus = (
+                    "E8AF5CA2200DF8287CBC057B7FADEEEB76AC28533F3ADB407DB38E33E6573FA5" +
+                    "51153454A5CFB48BA93FA837E12D50ED35164EEF4D7ADB137688B02CF0595CA9" +
+                    "EBE1D72975E41B85279BF3F82D9E41362B0B40FBBE3BBAB95C759316524BCA33" +
+                    "C537B0F3EB7EA8F541155C08651D2137F02CBA220B10B1109D772285847C4FB9" +
+                    "1B90B0F5A3FE8BF40C9A4EA0F5C90A21E2AAE3013647FD2F826A8103F5A935DC" +
+                    "94579DFB4BD40E82DB388F12FEE3D67A748864E162C4252E2AAE9D181F0E1EB6" +
+                    "C2AF24B40E50BCDE1C935C49A679B5B6DBCEF9707B280184B82A29CFBFA90505" +
+                    "E1E00F714DFDAD5C238329EBC7C54AC8E82784D37EC6430B950005B14F6571C5").HexToByteArray();
 
-            byte[] expectedExponent = new byte[] { 0x01, 0x00, 0x01 };
+                byte[] expectedExponent = new byte[] { 0x01, 0x00, 0x01 };
 
-            Assert.Equal(expectedModulus, rsaParameters.Modulus);
-            Assert.Equal(expectedExponent, rsaParameters.Exponent);
+                Assert.Equal(expectedModulus, rsaParameters.Modulus);
+                Assert.Equal(expectedExponent, rsaParameters.Exponent);
+            }
         }
-        */
     }
 }
