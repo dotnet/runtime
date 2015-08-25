@@ -58,17 +58,10 @@ namespace System.Numerics
         {
             get
             {
-                if (Vector.IsHardwareAccelerated)
-                {
-                    throw new NotSupportedException(SR.Reflection_MethodNotSupported);
-                }
-                else
-                {
-                    return count;
-                }
+                return s_count;
             }
         }
-        private static int count = InitializeCount();
+        private static int s_count = InitializeCount();
 
         /// <summary>
         /// Returns a vector containing all zeroes.
@@ -89,25 +82,37 @@ namespace System.Numerics
         #endregion Static Members
 
         #region Static Initialization
-        private static int InitializeCount()
+        private struct VectorSizeHelper
         {
-            Contract.Requires(
-                Vector.IsHardwareAccelerated == false,
-                "InitializeCount cannot be invoked when running under hardware acceleration");
+            internal Vector<T> _placeholder;
+            internal byte _byte;
+        }
+
+		// Calculates the size of this struct in bytes, by computing the offset of a field in a structure
+        private static unsafe int InitializeCount()
+        {
+            VectorSizeHelper vsh;
+            byte* vectorBase = &vsh._placeholder.register.byte_0;
+            byte* byteBase = &vsh._byte;
+            int vectorSizeInBytes = (int)(byteBase - vectorBase);
+
+            int typeSizeInBytes = -1;
 <#    foreach (Type type in supportedTypes)
-    {
+      {
 #>
             <#=GenerateIfStatementHeader(type)#>
             {
-                return <#= GetNumFields(type, totalSize) #>;
+                typeSizeInBytes = sizeof(<#=type.Name#>);
             }
 <#
-    }
+      }
 #>
             else
             {
                 throw new NotSupportedException(SR.Arg_TypeNotSupported);
             }
+
+            return vectorSizeInBytes / typeSizeInBytes;
         }
         #endregion Static Initialization
 

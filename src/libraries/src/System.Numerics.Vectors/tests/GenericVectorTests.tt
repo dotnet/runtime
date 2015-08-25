@@ -1600,6 +1600,23 @@ namespace System.Numerics.Tests
                 Assert.Equal(vector[g], array[g + offset]);
             }
         }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void CountViaReflectionConsistency<#=type.Name#>() { TestCountViaReflectionConsistency<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestCountViaReflectionConsistency<T>() where T : struct
+        {
+            MethodInfo countMethod = typeof(Vector<T>).GetTypeInfo().GetDeclaredProperty("Count").GetMethod;
+            int valueFromReflection = (int)countMethod.Invoke(null, null);
+            int valueFromNormalCall = Vector<T>.Count;
+            Assert.Equal(valueFromNormalCall, valueFromReflection);
+        }
         #endregion Reflection Tests
 
         #region Helper Methods
