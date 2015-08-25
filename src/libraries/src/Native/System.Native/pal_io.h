@@ -4,6 +4,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <dirent.h>
 
 /**
  * File status returned by Stat or FStat.
@@ -96,6 +97,32 @@ enum
 };
 
 /**
+ * Constants from dirent.h for the inode type returned from readdir variants
+ */
+enum class NodeType : int16_t
+{
+    PAL_DT_UNKNOWN  =  0,   // Unknown file type
+    PAL_DT_FIFO     =  1,   // Named Pipe
+    PAL_DT_CHR      =  2,   // Character Device
+    PAL_DT_DIR      =  4,   // Directory
+    PAL_DT_BLK      =  6,   // Block Device
+    PAL_DT_REG      =  8,   // Regular file
+    PAL_DT_LNK      = 10,   // Symlink
+    PAL_DT_SOCK     = 12,   // Socket
+    PAL_DT_WHT      = 14    // BSD Whiteout
+};
+
+/**
+ * Our intermediate dirent struct that only gives back the data we need
+ */
+struct DirectoryEntry
+{
+    NodeType    InodeType;          // The inode type as described in the NodeType enum
+    const char* Name;               // Address of the name of the inode
+    int32_t     NameLength;         // Length (in chars) of the inode name
+};
+
+/**
  * Get file status from a decriptor. Implemented as shim to fstat(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
@@ -173,3 +200,33 @@ int32_t ShmOpen(
 extern "C"
 int32_t ShmUnlink(
      const char* name);
+
+/**
+ * Returns the size of the dirent struct on the current architecture
+ */
+extern "C"
+int32_t GetDirentSize();
+
+/**
+ * Re-entrant readdir that will retrieve the next dirent from the directory stream pointed to by dir.
+ * 
+ * Returns 0 when data is retrieved; returns -1 when end-of-stream is reached; returns an error code on failure
+ */
+extern "C"
+int32_t ReadDirR(
+    DIR*                dir, 
+    void*               buffer, 
+    int32_t             bufferSize, 
+    DirectoryEntry*     outputEntry);
+
+/**
+ * Returns a DIR struct containing info about the current path or NULL on failure; sets errno on fail.
+ */
+extern "C"
+DIR* OpenDir(const char* path);
+
+/**
+ * Closes the directory stream opened by opendir and returns 0 on success. On fail, -1 is returned and errno is set
+ */
+extern "C"
+int32_t CloseDir(DIR* directory);
