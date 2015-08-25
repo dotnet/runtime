@@ -361,6 +361,7 @@ else()
             ${ARCH_SOURCES_DIR}/jithelpers_fast.S
             ${ARCH_SOURCES_DIR}/jithelpers_fastwritebarriers.S
             ${ARCH_SOURCES_DIR}/jithelpers_slow.S
+            ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/theprestubamd64.S
             ${ARCH_SOURCES_DIR}/unixasmhelpers.S
             ${ARCH_SOURCES_DIR}/umthunkstub.S
