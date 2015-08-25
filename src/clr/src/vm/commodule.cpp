@@ -989,21 +989,21 @@ void QCALLTYPE COMModule::GetFullyQualifiedName(QCall::ModuleHandle pModule, QCa
                 //
                 if (pModule->GetFile()->GetAssembly()->GetILimage()->IsTrustedNativeImage())
                 {
-                    WCHAR fileNameWithoutNi[MAX_PATH];
+                    WCHAR fileNameWithoutNi[MAX_LONGPATH];
                     
-                    wcscpy_s(fileNameWithoutNi, MAX_PATH, fileName);
+                    wcscpy_s(fileNameWithoutNi, MAX_LONGPATH, fileName);
                     
                     if (StringEndsWith(fileName, W(".ni.dll")))
                     {
-                        wcscpy_s(fileNameWithoutNi + wcslen(fileNameWithoutNi) - wcslen(W(".ni.dll")), MAX_PATH, W(".dll"));
+                        wcscpy_s(fileNameWithoutNi + wcslen(fileNameWithoutNi) - wcslen(W(".ni.dll")), MAX_LONGPATH, W(".dll"));
                     }
                     else if (StringEndsWith(fileName, W(".ni.exe")))
                     {
-                        wcscpy_s(fileNameWithoutNi + wcslen(fileNameWithoutNi) - wcslen(W(".ni.exe")), MAX_PATH, W(".exe"));
+                        wcscpy_s(fileNameWithoutNi + wcslen(fileNameWithoutNi) - wcslen(W(".ni.exe")), MAX_LONGPATH, W(".exe"));
                     }
                     else if (StringEndsWith(fileName, W(".ni.winmd")))
                     {
-                        wcscpy_s(fileNameWithoutNi + wcslen(fileNameWithoutNi) - wcslen(W(".ni.winmd")), MAX_PATH, W(".winmd"));
+                        wcscpy_s(fileNameWithoutNi + wcslen(fileNameWithoutNi) - wcslen(W(".ni.winmd")), MAX_LONGPATH, W(".winmd"));
                     }
 
                     retString.Set(fileNameWithoutNi);

@@ -6774,7 +6774,7 @@ HRESULT CCLRErrorReportingManager::SetApplicationData(ApplicationDataKey key, WC
     if(g_fEEStarted)
         return HOST_E_INVALIDOPERATION;
 
-    if (pValue == NULL || wcslen(pValue) > MAX_PATH)
+    if (pValue == NULL || wcslen(pValue) > MAX_LONGPATH)
         return E_INVALIDARG;
 
     HRESULT hr = S_OK;

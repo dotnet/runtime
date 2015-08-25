@@ -1345,15 +1345,15 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
     HRESULT hr = E_FAIL;
 
 #ifdef FEATURE_MERGE_JIT_AND_ENGINE
-    WCHAR CoreClrFolder[MAX_PATH + 1];
+    WCHAR CoreClrFolder[MAX_LONGPATH + 1];
     extern HINSTANCE g_hThisInst;
-    if (WszGetModuleFileName(g_hThisInst, CoreClrFolder, MAX_PATH))
+    if (WszGetModuleFileName(g_hThisInst, CoreClrFolder, MAX_LONGPATH))
     {
         WCHAR *filePtr = wcsrchr(CoreClrFolder, DIRECTORY_SEPARATOR_CHAR_W);
         if (filePtr)
         {
             filePtr[1] = W('\0');
-            wcscat_s(CoreClrFolder, MAX_PATH, pwzJitName);
+            wcscat_s(CoreClrFolder, MAX_LONGPATH, pwzJitName);
             *phJit = CLRLoadLibrary(CoreClrFolder);
             if (*phJit != NULL)
             {
@@ -1550,8 +1550,8 @@ BOOL EEJitManager::LoadJIT()
             // back to JIT64. This same file is also used to prevent this app from participating in AutoNgen.
             if (AppX::IsAppXProcess())
             {
-                WCHAR szPathName[MAX_PATH];
-                UINT32 cchPathName = MAX_PATH;
+                WCHAR szPathName[MAX_LONGPATH];
+                UINT32 cchPathName = MAX_LONGPATH;
                 if (AppX::FindFileInCurrentPackage(L"UseLegacyJit.txt", &cchPathName, szPathName, PACKAGE_FILTER_HEAD) == S_OK)
                 {
                     fUsingCompatJit = TRUE;

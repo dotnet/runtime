@@ -210,7 +210,7 @@ HRESULT ProfilingAPIAttachClient::AttachProfiler(
         return E_INVALIDARG;
     }
 
-    if ((wszProfilerPath != NULL) && (wcslen(wszProfilerPath) >= MAX_PATH))
+    if ((wszProfilerPath != NULL) && (wcslen(wszProfilerPath) >= MAX_LONGPATH))
     {
         return E_INVALIDARG;
     }

@@ -2010,7 +2010,7 @@ public:
     enum
     {
         // If required buffer length > MAX_LOCAL_BUFFER_LENGTH, don't optimize by allocating memory on stack
-        MAX_LOCAL_BUFFER_LENGTH = (MAX_PATH + 1) * 2
+        MAX_LOCAL_BUFFER_LENGTH = (MAX_PATH_FNAME + 1) * 2
     };
 
     ILWSTRBufferMarshaler() :
@@ -2039,7 +2039,7 @@ public:
     enum
     {
         // If required buffer length > MAX_LOCAL_BUFFER_LENGTH, don't optimize by allocating memory on stack
-        MAX_LOCAL_BUFFER_LENGTH = MAX_PATH + 1
+        MAX_LOCAL_BUFFER_LENGTH = MAX_PATH_FNAME + 1
     };
 
     ILCSTRBufferMarshaler() :
@@ -2440,7 +2440,7 @@ public:
     enum
     {
         // If required buffer length > MAX_LOCAL_BUFFER_LENGTH, don't optimize by allocating memory on stack
-        MAX_LOCAL_BUFFER_LENGTH = (MAX_PATH + 1) * 2 + sizeof(DWORD)
+        MAX_LOCAL_BUFFER_LENGTH = (MAX_PATH_FNAME + 1) * 2 + sizeof(DWORD)
     };
 
 
@@ -2536,7 +2536,7 @@ public:
     enum
     {
         // If required buffer length > MAX_LOCAL_BUFFER_LENGTH, don't optimize by allocating memory on stack
-        MAX_LOCAL_BUFFER_LENGTH = MAX_PATH + 1
+        MAX_LOCAL_BUFFER_LENGTH = MAX_PATH_FNAME + 1
     };
 
     ILCSTRMarshaler() :
@@ -2565,7 +2565,7 @@ public:
     enum
     {
         // If required buffer length > MAX_LOCAL_BUFFER_LENGTH, don't optimize by allocating memory on stack
-        MAX_LOCAL_BUFFER_LENGTH = (MAX_PATH + 1) * 2 + 4
+        MAX_LOCAL_BUFFER_LENGTH = (MAX_PATH_FNAME + 1) * 2 + 4
     };
 
     ILBSTRMarshaler() :

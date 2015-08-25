@@ -53,7 +53,7 @@ struct CV_INFO_PDB70
     DWORD      magic; 
     GUID       signature;       // unique identifier 
     DWORD      age;             // an always-incrementing value 
-    char       path[MAX_PATH];  // zero terminated string with the name of the PDB file 
+    char       path[MAX_LONGPATH];  // zero terminated string with the name of the PDB file 
 };
 
 typedef DPTR(class PEImage)                PTR_PEImage;
