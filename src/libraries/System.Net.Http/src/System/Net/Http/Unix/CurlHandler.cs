@@ -402,6 +402,27 @@ namespace System.Net.Http
         {
             GCHandle stateHandle = GCHandle.FromIntPtr(statePtr);
             RequestCompletionSource state = (RequestCompletionSource)stateHandle.Target;
+
+            try
+            {
+                if (CURLcode.CURLE_OK == result && state.ResponseMessage.StatusCode != HttpStatusCode.Unauthorized && state.Handler.PreAuthenticate)
+                {
+                    ulong availedAuth;
+                    if (Interop.libcurl.curl_easy_getinfo(state.RequestHandle, CURLINFO.CURLINFO_HTTPAUTH_AVAIL, out availedAuth) == CURLcode.CURLE_OK)
+                    {
+                        state.Handler.AddCredentialToCache(state.RequestMessage.RequestUri, availedAuth, state.NetworkCredential);
+                    }
+                    // ignore errors
+                }
+            }
+            catch
+            {
+                // ignoring the exception in this case.
+                // There is no point in killing the request for the sake of putting the credentials into the cache
+            }
+
+            RemoveEasyHandle(multiHandle, stateHandle, true);
+
             try
             {
                 // No more callbacks so no more data
@@ -416,25 +437,10 @@ namespace System.Net.Http
                     state.TrySetException(new HttpRequestException(SR.net_http_client_execution_error,
                         GetCurlException(result)));
                 }
-
-                if (state.ResponseMessage.StatusCode != HttpStatusCode.Unauthorized && state.Handler.PreAuthenticate)
-                {
-                    ulong availedAuth;
-                    if (Interop.libcurl.curl_easy_getinfo(state.RequestHandle, CURLINFO.CURLINFO_HTTPAUTH_AVAIL, out availedAuth) == CURLcode.CURLE_OK)
-                    {
-                        state.Handler.AddCredentialToCache(state.RequestMessage.RequestUri, availedAuth, state.NetworkCredential);
-                    }
-                    // ignoring the exception in this case.
-                    // There is no point in killing the request for the sake of putting the credentials into the cache
-                }
             }
             catch (Exception ex)
             {
                 HandleAsyncException(state, ex);
-            }
-            finally
-            {
-                RemoveEasyHandle(multiHandle, stateHandle, true);
             }
         }
 
