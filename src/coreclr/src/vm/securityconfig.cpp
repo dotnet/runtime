@@ -2014,9 +2014,9 @@ void QCALLTYPE SecurityConfig::_GetMachineDirectory(QCall::StringHandleOnStack r
 
     BEGIN_QCALL;
 
-    WCHAR machine[MAX_PATH];
+    WCHAR machine[MAX_LONGPATH];
 
-    HRESULT hr = GetMachineDirectory(machine, MAX_PATH);
+    HRESULT hr = GetMachineDirectory(machine, MAX_LONGPATH);
     if (FAILED(hr))
         ThrowHR(hr);
 
@@ -2031,9 +2031,9 @@ void QCALLTYPE SecurityConfig::_GetUserDirectory(QCall::StringHandleOnStack retD
 
     BEGIN_QCALL;
 
-    WCHAR user[MAX_PATH];
+    WCHAR user[MAX_LONGPATH];
 
-    BOOL result = GetUserDirectory(user, MAX_PATH);
+    BOOL result = GetUserDirectory(user, MAX_LONGPATH);
     if (result)
         retDirectory.Set(user);
 
@@ -2065,10 +2065,10 @@ BOOL SecurityConfig::GetVIUserDirectory(__out_ecount(bufferCount) __out_z WCHAR*
 {
     STANDARD_VM_CONTRACT;
 
-    WCHAR scratchBuffer[MAX_PATH];
+    WCHAR scratchBuffer[MAX_LONGPATH];
     BOOL retval = FALSE;
 
-    DWORD size = MAX_PATH;
+    DWORD size = MAX_LONGPATH;
 
     if (!GetUserDir(buffer, bufferCount, TRUE))
         goto CLEANUP;

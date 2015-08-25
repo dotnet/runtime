@@ -1282,7 +1282,7 @@ HRESULT CLRProfilingImpl::AttachProfiler(DWORD dwProfileeProcessID,
     }
     CONTRACTL_END;
 
-    WCHAR wszRuntimeVersion[MAX_PATH];
+    WCHAR wszRuntimeVersion[MAX_PATH_FNAME];
     DWORD dwSize = _countof(wszRuntimeVersion); 
     HRESULT hr = GetCORVersionInternal(wszRuntimeVersion, dwSize, &dwSize);
     if (FAILED(hr))

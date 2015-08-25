@@ -4301,7 +4301,7 @@ void Assembly::WriteBreadcrumb(const SString &ssDisplayName)
 {
     STANDARD_VM_CONTRACT;
 
-    WCHAR path[MAX_PATH];
+    WCHAR path[MAX_LONGPATH];
     HRESULT hr = WszSHGetFolderPath(NULL, CSIDL_COMMON_APPDATA, NULL, SHGFP_TYPE_CURRENT, ARRAYSIZE(path), path);
     if (hr != S_OK)
     {
@@ -5127,7 +5127,7 @@ ExistingOobAssemblyList::ExistingOobAssemblyList()
 
     for (DWORD i = 0; ; i++)
     {
-        WCHAR name[MAX_PATH + 1];
+        WCHAR name[MAX_PATH_FNAME + 1];
         DWORD cchName = ARRAYSIZE(name);
         status = RegEnumKeyExW(hKey, i, name, &cchName, NULL, NULL, NULL, NULL);
 

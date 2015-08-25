@@ -625,7 +625,7 @@ FCIMPL3(void, DebugStackTrace::GetStackFramesInternal,
                 // Use the MethodDesc...
                 ULONG32 sourceLine = 0;
                 ULONG32 sourceColumn = 0;
-                WCHAR wszFileName[MAX_PATH];
+                WCHAR wszFileName[MAX_LONGPATH];
                 ULONG32 fileNameLength = 0;
 
                 {
@@ -747,7 +747,7 @@ FCIMPL3(void, DebugStackTrace::GetStackFramesInternal,
                                         // Also get the filename from the document...
                                         _ASSERTE (documents [j] != NULL);
 
-                                        hr = documents [j]->GetURL (MAX_PATH, &fileNameLength, wszFileName);
+                                        hr = documents [j]->GetURL (MAX_LONGPATH, &fileNameLength, wszFileName);
                                         _ASSERTE ( SUCCEEDED(hr) || (hr == E_OUTOFMEMORY) || (hr == HRESULT_FROM_WIN32(ERROR_NOT_ENOUGH_MEMORY)) );
 
 
