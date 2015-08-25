@@ -25,11 +25,36 @@ namespace Internal.Cryptography.Pal
             if (cspParameters == null)
                 return null;
 
-            // We never want to stomp over certificate private keys.
-            cspParameters.Flags |= CspProviderFlags.UseExistingKey;
-            return new RSACryptoServiceProvider(cspParameters);
+            if (cspParameters.ProviderType == 0)
+            {
+                // ProviderType being 0 signifies that this is actually a CNG key, not a CAPI key. Crypt32.dll stuffs the CNG Key Storage Provider
+                // name into CRYPT_KEY_PROV_INFO->ProviderName, and the CNG key name into CRYPT_KEY_PROV_INFO->KeyContainerName.
+
+                string keyStorageProvider = cspParameters.ProviderName;
+                string keyName = cspParameters.KeyContainerName;
+                CngKey cngKey = CngKey.Open(keyName, new CngProvider(keyStorageProvider));
+                return new RSACng(cngKey);
+            }
+            else
+            {
+                // ProviderType being non-zero signifies that this is a CAPI key.
+
+                // We never want to stomp over certificate private keys.
+                cspParameters.Flags |= CspProviderFlags.UseExistingKey;
+                return new RSACryptoServiceProvider(cspParameters);
+            }
         }
 
+        //
+        // Returns the private key referenced by a store certificate. Note that despite the return type being declared "CspParameters",
+        // the key can actually be a CNG key. To distinguish, examine the ProviderType property. If it is 0, this key is a CNG key with
+        // the various properties of CspParameters being "repurposed" into storing CNG info. 
+        // 
+        // This is a behavior this method inherits directly from the Crypt32 CRYPT_KEY_PROV_INFO semantics.
+        //
+        // It would have been nice not to let this ugliness escape out of this helper method. But X509Certificate2.ToString() calls this 
+        // method too so we cannot just change it without breaking its output.
+        // 
         private CspParameters GetPrivateKey()
         {
             int cbData = 0;

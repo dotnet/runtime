@@ -31,10 +31,9 @@ namespace Internal.Cryptography.Pal
                 case AlgId.CALG_RSA_KEYX:
                 case AlgId.CALG_RSA_SIGN:
                     {
-                        byte[] keyBlob = DecodeKeyBlob(CryptDecodeObjectStructType.RSA_CSP_PUBLICKEYBLOB, encodedKeyValue);
-                        RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
-                        rsa.ImportCspBlob(keyBlob);
-                        return rsa;
+                        byte[] keyBlob = DecodeKeyBlob(CryptDecodeObjectStructType.CNG_RSA_PUBLIC_KEY_BLOB, encodedKeyValue);
+                        CngKey cngKey = CngKey.Import(keyBlob, CngKeyBlobFormat.GenericPublicBlob);
+                        return new RSACng(cngKey);
                     }
 
                 case AlgId.CALG_DSS_SIGN:
