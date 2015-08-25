@@ -5,6 +5,7 @@ using Xunit;
 using System;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace System.Reflection.Tests
@@ -276,20 +277,11 @@ namespace System.Reflection.Tests
         [InlineData(typeof(MarshalAsAttribute))]
         [InlineData(typeof(OutAttribute))]
         [InlineData(typeof(InAttribute))]
-        public static void CustomeAttributesTest(Type attrType)
+        public static void CustomAttributesTest(Type attrType)
         {
             ParameterInfo pi = getParamInfo(typeof(MyClass), "MethodWithOptionalDefaultOutInMarshalParam", 0);
 
-            var customAttrs = pi.CustomAttributes.GetEnumerator();
-
-            CustomAttributeData attribute = null;
-            while (customAttrs.MoveNext())
-            {
-                if (customAttrs.Current.AttributeType.Equals(attrType))
-                {
-                    attribute = customAttrs.Current;
-                }
-            }
+            CustomAttributeData attribute = pi.CustomAttributes.SingleOrDefault(a => a.AttributeType.Equals(attrType));
 
             Assert.NotNull(attribute);
         }
