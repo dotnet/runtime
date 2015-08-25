@@ -47,7 +47,7 @@ namespace System.Reflection
         public bool IsAutoLayout { get { return default(bool); } }
         public bool IsByRef { get { return default(bool); } }
         public bool IsClass { get { return default(bool); } }
-        public bool IsCOMObject { get { return default(bool); } }
+        public virtual bool IsCOMObject { get { return default(bool); } }
         public abstract bool IsEnum { get; }
         public bool IsExplicitLayout { get { return default(bool); } }
         public abstract bool IsGenericParameter { get; }
