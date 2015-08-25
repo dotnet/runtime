@@ -58,13 +58,13 @@
     <Compile Include="AggregateTests.cs" />
     <Compile Include="AverageTests.cs" />
     <Compile Include="CastTests.cs" />
-    <Compile Include="LegacyTests\ContainsTests.cs" />
+    <Compile Include="ContainsTests.cs" />
     <Compile Include="CountTests.cs" />
-    <Compile Include="LegacyTests\DefaultIfEmptyTests.cs" />
-    <Compile Include="LegacyTests\DistinctTests.cs" />
+    <Compile Include="DefaultIfEmptyTests.cs" />
+    <Compile Include="DistinctTests.cs" />
     <Compile Include="LegacyTests\ElementAtOrDefaultTests.cs" />
     <Compile Include="LegacyTests\ElementAtTests.cs" />
-    <Compile Include="LegacyTests\EqualAllTests.cs" />
+    <Compile Include="SequenceEqualTests.cs" />
     <Compile Include="LegacyTests\GroupByTests.cs" />
     <Compile Include="LegacyTests\GroupJoinTests.cs" />
     <Compile Include="LegacyTests\Helper.cs" />
