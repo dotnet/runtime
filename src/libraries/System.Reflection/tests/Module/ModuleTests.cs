@@ -4,6 +4,7 @@
 using Xunit;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.CustomAttributesTests.Data;
 
@@ -50,19 +51,12 @@ namespace System.Reflection.Tests
             Module module = typeof(ModuleTest).GetTypeInfo().Module;
             var customAttrs = module.CustomAttributes.GetEnumerator();
 
-            CustomAttributeData attribute = null;
-            while (customAttrs.MoveNext())
-            {
-                if (customAttrs.Current.AttributeType.Equals(attrType))
-                {
-                    attribute = customAttrs.Current;
-                }
-            }
+            CustomAttributeData attribute = module.CustomAttributes.SingleOrDefault(a => a.AttributeType.Equals(attrType));
 
             Assert.NotNull(attribute);
 
-            Assert.True(attribute.ConstructorArguments.Count == 1);
-            Assert.True(attribute.NamedArguments.Count == 1);
+            Assert.Equal(1, attribute.ConstructorArguments.Count);
+            Assert.Equal(1, attribute.NamedArguments.Count);
                         
             Assert.Equal(typeof(CtorArg), attribute.ConstructorArguments[0].ArgumentType);
 
