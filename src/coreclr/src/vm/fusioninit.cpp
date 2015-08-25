@@ -41,8 +41,8 @@ STDAPI InitializeNativeBinder();
 extern HMODULE g_pMSCorEE;
 extern BOOL g_bRunningOnNT6OrHigher;
 
-WCHAR                         g_szWindowsDir[MAX_PATH+1];
-WCHAR                         g_FusionDllPath[MAX_PATH+1];
+WCHAR                         g_szWindowsDir[MAX_LONGPATH+1];
+WCHAR                         g_FusionDllPath[MAX_LONGPATH+1];
 HINSTANCE                     g_hInst = NULL;
 HMODULE                       g_hMSCorEE = NULL;
 DWORD                         g_dwLogInMemory;
@@ -57,7 +57,7 @@ BOOL                          g_fWow64Process;          // Wow64 Process
 PEKIND                        g_peKindProcess;
 List<CAssemblyDownload *>    *g_pDownloadList;
 BOOL                          g_bLogToWininet;
-WCHAR                         g_wzCustomLogPath[MAX_PATH];
+WCHAR                         g_wzCustomLogPath[MAX_LONGPATH];
 DWORD                         g_dwConfigForceUnification;
 DWORD                         g_dwFileInUseRetryAttempts;
 DWORD                         g_dwFileInUseMillisecondsBetweenRetries;
@@ -77,7 +77,7 @@ extern LCID                          g_lcid;
 IIdentityAuthority           *g_pIdentityAuthority;
 CIdentityCache               *g_pIdentityCache;
 
-WCHAR                         g_wzEXEPath[MAX_PATH+1];
+WCHAR                         g_wzEXEPath[MAX_LONGPATH+1];
 
 
 #ifdef _DEBUG
@@ -100,8 +100,8 @@ pfnMsiInstallProductW      g_pfnMsiInstallProductW;
 BOOL                       g_bCheckedMSIPresent;
 HMODULE                    g_hModMSI;
 
-WCHAR g_wzLocalDevOverridePath[MAX_PATH + 1];
-WCHAR g_wzGlobalDevOverridePath[MAX_PATH + 1];
+WCHAR g_wzLocalDevOverridePath[MAX_LONGPATH + 1];
+WCHAR g_wzGlobalDevOverridePath[MAX_LONGPATH + 1];
 DWORD g_dwDevOverrideFlags;
 
 HRESULT GetScavengerQuotasFromReg(DWORD *pdwZapQuotaInGAC,
@@ -262,7 +262,7 @@ HRESULT STDMETHODCALLTYPE InitializeFusion()
 #define _GetConfigDWORD(name, default) GetConfigDWORD(hKey, name, default)
 
     // Get this executable's filename
-    fExecutableIsKnown = WszGetModuleFileName(NULL, g_wzEXEPath, MAX_PATH);
+    fExecutableIsKnown = WszGetModuleFileName(NULL, g_wzEXEPath, MAX_LONGPATH);
     if(!fExecutableIsKnown) {
         hr = StringCbCopy(g_wzEXEPath, sizeof(g_wzEXEPath), W("Unknown"));
         if (FAILED(hr)) {
@@ -283,19 +283,19 @@ HRESULT STDMETHODCALLTYPE InitializeFusion()
         // executable, then read it
         pwzFileName = PathFindFileName(g_wzEXEPath);
         if(fExecutableIsKnown && pwzFileName) {
-            WCHAR       wzValue[MAX_PATH + 1];
+            WCHAR       wzValue[MAX_LONGPATH + 1];
             HKEY        hKeyExeName = NULL;
             DWORD       dwType = REG_SZ;
 
             wzValue[0] = W('\0');
 
             // key name + '\' + filename + null
-            if(lstrlenW(REG_KEY_IMAGE_FILE_EXECUTION_OPTIONS) + 1 + lstrlenW(pwzFileName) + 1 > MAX_PATH) {
+            if(lstrlenW(REG_KEY_IMAGE_FILE_EXECUTION_OPTIONS) + 1 + lstrlenW(pwzFileName) + 1 > MAX_PATH_FNAME) {
                 hr = HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
                 goto Exit;
             }
 
-            hr = StringCchPrintf(wzValue, MAX_PATH, W("%ws\\%ws"), 
+            hr = StringCchPrintf(wzValue, MAX_PATH_FNAME, W("%ws\\%ws"), 
                 REG_KEY_IMAGE_FILE_EXECUTION_OPTIONS, pwzFileName);
             if (FAILED(hr)) {
                 goto Exit;
@@ -309,7 +309,7 @@ HRESULT STDMETHODCALLTYPE InitializeFusion()
                 }
             }
             else {  // Success
-                dwSize = MAX_PATH * sizeof(WCHAR);
+                dwSize = MAX_LONGPATH * sizeof(WCHAR);
                 wzValue[0] = W('\0');
 
                 lResult = WszRegQueryValueEx(hKeyExeName, BINDING_CONFIGURATION, NULL, &dwType, (LPBYTE)wzValue, &dwSize);
@@ -339,8 +339,8 @@ HRESULT STDMETHODCALLTYPE InitializeFusion()
         // If we didn't get a path from the registry,
         // try the ENV variable.
         if(!wzBindingConfigPath[0]) {
-            dwSize = WszGetEnvironmentVariable(BINDING_CONFIGURATION, wzBindingConfigPath, MAX_PATH);
-            if(dwSize > MAX_PATH) {
+            dwSize = WszGetEnvironmentVariable(BINDING_CONFIGURATION, wzBindingConfigPath, MAX_LONGPATH);
+            if(dwSize > MAX_LONGPATH) {
                 hr = HRESULT_FROM_WIN32(ERROR_BUFFER_OVERFLOW);
                 goto Exit;
             }
@@ -423,10 +423,10 @@ HRESULT STDMETHODCALLTYPE InitializeFusion()
     }
 
     {
-        WCHAR wzBuf[MAX_PATH];
+        WCHAR wzBuf[1];
 
         wzBuf[0] = W('\0');
-        dwSize = WszGetEnvironmentVariable(W("USE_LEGACY_IDENTITY_FORMAT"), wzBuf, MAX_PATH);
+        dwSize = WszGetEnvironmentVariable(W("USE_LEGACY_IDENTITY_FORMAT"), wzBuf, 1);
         if (dwSize == 1 && !FusionCompareString(wzBuf, W("1"))) {
             g_dwUseLegacyIdentityFormat = 1;
         }
@@ -434,7 +434,7 @@ HRESULT STDMETHODCALLTYPE InitializeFusion()
 
     if (IsLoggingNeeded()) {
         g_bLogToWininet = TRUE;
-        dwSize = MAX_PATH;
+        dwSize = MAX_LONGPATH;
         DWORD dwAttr;
         BOOL  fExists;
         g_wzCustomLogPath[0] = W('\0');
@@ -524,13 +524,13 @@ HRESULT SetupDevOverride(LPCWSTR pwzBindingConfigDevOverridePath)
     if (g_dwDevOverrideEnable != 0) {
 
         // Check local dev path
-        if (!WszGetModuleFileName(NULL, g_wzLocalDevOverridePath, MAX_PATH)) {
+        if (!WszGetModuleFileName(NULL, g_wzLocalDevOverridePath, MAX_LONGPATH)) {
             hr = HRESULT_FROM_GetLastError();
             goto Exit;
         }
 
-        if (lstrlenW(g_wzLocalDevOverridePath) + lstrlenW(DEVOVERRIDE_PATH) <= MAX_PATH) {
-            // Only process .devoverride if the total path length <= MAX_PATH
+        if (lstrlenW(g_wzLocalDevOverridePath) + lstrlenW(DEVOVERRIDE_PATH) <= MAX_LONGPATH) {
+            // Only process .devoverride if the total path length <= MAX_LONGPATH
 
             hr = StringCbCat(g_wzLocalDevOverridePath, sizeof(g_wzLocalDevOverridePath), DEVOVERRIDE_PATH);
             if (FAILED(hr)) {
@@ -565,7 +565,7 @@ HRESULT SetupDevOverride(LPCWSTR pwzBindingConfigDevOverridePath)
 
         // BINDING_CONFIGURATION Env check
         if(pwzBindingConfigDevOverridePath && pwzBindingConfigDevOverridePath[0]) {
-            WCHAR       wzTempPath[MAX_PATH + 1];
+            WCHAR       wzTempPath[MAX_LONGPATH + 1];
             BOOL        fExists = FALSE;
             WIN32_FILE_ATTRIBUTE_DATA fileInfo;
 
@@ -610,7 +610,7 @@ HRESULT SetupDevOverride(LPCWSTR pwzBindingConfigDevOverridePath)
         }
 
         if(g_dwDevOverrideFlags & DEVOVERRIDE_GLOBAL) {
-            PathAddBackslashWrap(g_wzGlobalDevOverridePath, MAX_PATH);
+            PathAddBackslashWrap(g_wzGlobalDevOverridePath, MAX_LONGPATH);
         }
     }
 

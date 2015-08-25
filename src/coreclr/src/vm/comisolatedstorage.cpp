@@ -312,7 +312,7 @@ void QCALLTYPE COMIsolatedStorageFile::GetRootDir(DWORD                      dwF
     QCALL_CONTRACT;
     BEGIN_QCALL;
 
-    WCHAR wszPath[MAX_PATH + 1];
+    WCHAR wszPath[MAX_LONGPATH + 1];
     GetRootDirInternal(dwFlags, wszPath, COUNTOF(wszPath));
     retRootDir.Set(wszPath);
 
@@ -550,7 +550,7 @@ void COMIsolatedStorageFile::GetRootDirInternal(
     CONTRACTL {
         STANDARD_VM_CHECK;
         PRECONDITION(cPath > 1);
-        PRECONDITION(cPath <= MAX_PATH + 1);
+        PRECONDITION(cPath <= MAX_LONGPATH + 1);
     } CONTRACTL_END;
 
     ULONG len;

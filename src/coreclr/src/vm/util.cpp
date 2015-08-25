@@ -1297,7 +1297,7 @@ HRESULT WszSHGetFolderPath(
     HANDLE hToken,
     DWORD dwFlags,
     size_t cchPathMax,
-    __out_ecount(MAX_PATH) LPWSTR pwszPath)
+    __out_ecount(MAX_LONGPATH) LPWSTR pwszPath)
 {
     CONTRACTL
     {
@@ -1307,8 +1307,8 @@ HRESULT WszSHGetFolderPath(
     }
     CONTRACTL_END;
 
-    // SHGetFolderPath requirement: path buffer >= MAX_PATH chars
-    _ASSERTE(cchPathMax >= MAX_PATH);
+    // SHGetFolderPath requirement: path buffer >= MAX_LONGPATH chars
+    _ASSERTE(cchPathMax >= MAX_LONGPATH);
 
     HRESULT hr;
     ULONG maxLength = MAX_PATH;
@@ -1465,16 +1465,16 @@ BOOL IsUsingValidAppDataPath(__in_z WCHAR *userPath)
     }
     CONTRACTL_END;
 
-    WCHAR defaultPath[MAX_PATH];
+    WCHAR defaultPath[MAX_LONGPATH];
     HRESULT hr;
     HANDLE hToken;
 
     hToken = (HANDLE)(-1);
 
-    hr = WszSHGetFolderPath(NULL, CSIDL_APPDATA, hToken, SHGFP_TYPE_CURRENT, MAX_PATH, defaultPath);
+    hr = WszSHGetFolderPath(NULL, CSIDL_APPDATA, hToken, SHGFP_TYPE_CURRENT, MAX_LONGPATH, defaultPath);
     if (FAILED(hr))
     {
-        hr = WszSHGetFolderPath(NULL, CSIDL_APPDATA, hToken, SHGFP_TYPE_DEFAULT, MAX_PATH, defaultPath);
+        hr = WszSHGetFolderPath(NULL, CSIDL_APPDATA, hToken, SHGFP_TYPE_DEFAULT, MAX_LONGPATH, defaultPath);
     }
     if (FAILED(hr))
         return FALSE;
@@ -1512,11 +1512,11 @@ BOOL GetUserDir(__out_ecount(bufferCount) WCHAR * buffer, size_t bufferCount, BO
     // In Windows ME, there is currently a bug that makes local appdata and roaming appdata 
     // point to the same location, so we've decided to "do our own thing" and add \Local Settings before \Application Data 
     if (!fRoaming) {
-        WCHAR appdatafolder[MAX_PATH];
-        hr = WszSHGetFolderPath(NULL, CSIDL_APPDATA|CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, MAX_PATH, appdatafolder);
+        WCHAR appdatafolder[MAX_LONGPATH];
+        hr = WszSHGetFolderPath(NULL, CSIDL_APPDATA|CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, MAX_LONGPATH, appdatafolder);
         if (FAILED(hr))
         {
-            hr = WszSHGetFolderPath(NULL, CSIDL_APPDATA|CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_DEFAULT, MAX_PATH, appdatafolder);
+            hr = WszSHGetFolderPath(NULL, CSIDL_APPDATA|CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_DEFAULT, MAX_LONGPATH, appdatafolder);
         }
         if (FAILED(hr))
             return FALSE;
@@ -1532,7 +1532,7 @@ BOOL GetUserDir(__out_ecount(bufferCount) WCHAR * buffer, size_t bufferCount, BO
 
         if (!wcscmp(appdatafolder, buffer)) 
         {
-            WCHAR tempPartialPath[MAX_PATH];
+            WCHAR tempPartialPath[MAX_LONGPATH];
             ULONG slen = (ULONG)wcslen(buffer);
 
             if (buffer[slen - 1] == W('\\'))
@@ -1706,7 +1706,7 @@ BOOL GetInternetCacheDir(__out_ecount(bufferCount) WCHAR * buffer, size_t buffer
     }
     CONTRACTL_END;
 
-    _ASSERTE( bufferCount == MAX_PATH && "You should pass in a buffer of size MAX_PATH" );
+    _ASSERTE( bufferCount == MAX_LONGPATH && "You should pass in a buffer of size MAX_LONGPATH" );
 
     HRESULT hr = WszSHGetFolderPath( NULL, CSIDL_INTERNET_CACHE, NULL, SHGFP_TYPE_CURRENT, bufferCount, buffer );
     if (FAILED(hr))

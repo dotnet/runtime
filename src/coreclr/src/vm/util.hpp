@@ -365,7 +365,7 @@ HRESULT LoadMscorsn();
 
 #ifndef FEATURE_PAL
 
-HRESULT WszSHGetFolderPath(HWND hwndOwner, int nFolder, HANDLE hToken, DWORD dwFlags, size_t cchPath, __out_ecount(MAX_PATH) LPWSTR pszwPath);
+HRESULT WszSHGetFolderPath(HWND hwndOwner, int nFolder, HANDLE hToken, DWORD dwFlags, size_t cchPath, __out_ecount(MAX_LONGPATH) LPWSTR pszwPath);
 HRESULT WszShellExecute(HWND hwnd, LPCTSTR lpOperation, LPCTSTR lpFile, LPCTSTR lpParameters, LPCTSTR lpDirectory, INT nShowCmd);
 
 #ifndef DACCESS_COMPILE

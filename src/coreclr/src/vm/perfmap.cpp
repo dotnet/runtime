@@ -60,8 +60,8 @@ PerfMap::PerfMap(int pid)
     m_ErrorEncountered = false;
 
     // Build the path to the map file on disk.
-    WCHAR tempPath[MAX_PATH+1];
-    if(!GetTempPathW(MAX_PATH, tempPath))
+    WCHAR tempPath[MAX_LONGPATH+1];
+    if(!GetTempPathW(MAX_LONGPATH, tempPath))
     {
         return;
     }

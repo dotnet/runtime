@@ -321,7 +321,7 @@ HRESULT GetCurrentModuleFileName(__out_ecount(*pcchBuffer) LPWSTR pBuffer, __ino
     }
 
     // Get the appname to look up in the exclusion or inclusion list.
-    WCHAR appPath[MAX_PATH + 2];
+    WCHAR appPath[MAX_LONGPATH + 2];
 
     DWORD ret = WszGetModuleFileName(NULL, appPath, NumItems(appPath));
 

@@ -78,7 +78,7 @@ FindNamespaceFileInDirectory(
     if (wszDirectory == nullptr)
         return ERROR_NOT_SUPPORTED;
 
-    WCHAR wszFilePath[MAX_PATH + 1];
+    WCHAR wszFilePath[MAX_LONGPATH + 1];
     wcscpy_s(
         wszFilePath, 
         _countof(wszFilePath), 
@@ -90,7 +90,7 @@ FindNamespaceFileInDirectory(
     if (*(wszFirstFileNameChar - 1) != '\\')
         *wszFirstFileNameChar++ = '\\';
 
-    WCHAR wszRemainingNamespace[MAX_PATH +1];
+    WCHAR wszRemainingNamespace[MAX_PATH_FNAME +1];
     wcscpy_s(
         wszRemainingNamespace, 
         _countof(wszRemainingNamespace), 
