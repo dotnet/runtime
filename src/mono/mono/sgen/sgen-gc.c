@@ -3243,6 +3243,7 @@ sgen_gc_init (void)
 					sgen_env_var_error (MONO_GC_DEBUG_NAME, "Ignoring.", "`check-concurrent` only works with concurrent major collectors.");
 					continue;
 				}
+				nursery_clear_policy = CLEAR_AT_GC;
 				do_concurrent_checks = TRUE;
 			} else if (!strcmp (opt, "dump-nursery-at-minor-gc")) {
 				do_dump_nursery_content = TRUE;
