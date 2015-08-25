@@ -4,7 +4,6 @@
 //
 
 #include <stdint.h>
-#include <uchar.h>
 #include <unicode/unorm2.h>
 
 /*
