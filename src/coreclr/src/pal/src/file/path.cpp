@@ -51,10 +51,10 @@ See MSDN doc.
 DWORD
 PALAPI
 GetFullPathNameA(
-		 IN LPCSTR lpFileName,
-		 IN DWORD nBufferLength,
-		 OUT LPSTR lpBuffer,
-		 OUT LPSTR *lpFilePart)
+     IN LPCSTR lpFileName,
+     IN DWORD nBufferLength,
+     OUT LPSTR lpBuffer,
+     OUT LPSTR *lpFilePart)
 {
     DWORD  nReqPathLen, nRet = 0;
     LPSTR lpUnixPath = NULL;
@@ -96,7 +96,7 @@ GetFullPathNameA(
 
         /* allocate memory for full non-canonical path */
         max_len = strlen(lpFileName)+1; /* 1 for the slash to append */
-        max_len += MAX_PATH + 1; 
+        max_len += MAX_LONGPATH + 1; 
         lpUnixPath = (LPSTR)PAL_malloc(max_len);
         if(NULL == lpUnixPath)
         {
@@ -107,7 +107,7 @@ GetFullPathNameA(
         }
         
         /* build full path */
-        if(!GetCurrentDirectoryA(MAX_PATH + 1, lpUnixPath))
+        if(!GetCurrentDirectoryA(MAX_LONGPATH + 1, lpUnixPath))
         {
             /* no reason for this to fail now... */
             ASSERT("GetCurrentDirectoryA() failed! lasterror is %#xd\n",
@@ -186,15 +186,15 @@ See MSDN doc.
 DWORD
 PALAPI
 GetFullPathNameW(
-		 IN LPCWSTR lpFileName,
-		 IN DWORD nBufferLength,
-		 OUT LPWSTR lpBuffer,
-		 OUT LPWSTR *lpFilePart)
+     IN LPCWSTR lpFileName,
+     IN DWORD nBufferLength,
+     OUT LPWSTR lpBuffer,
+     OUT LPWSTR *lpFilePart)
 {
     LPSTR fileNameA;
     /* bufferA needs to be able to hold a path that's potentially as
        large as MAX_PATH WCHARs. */
-    CHAR  bufferA[MAX_PATH * sizeof(WCHAR)];
+    CHAR  bufferA[MAX_LONGPATH * sizeof(WCHAR)];
     LPSTR lpFilePartA;
     int   fileNameLength;
     int   srcSize;
@@ -234,7 +234,7 @@ GetFullPathNameW(
         DWORD dwLastError = GetLastError();
         if( dwLastError == ERROR_INSUFFICIENT_BUFFER )
         {
-            ERROR("lpFileName is larger than MAX_PATH (%d)!\n", MAX_PATH);
+            ERROR("lpFileName is larger than MAX_LONGPATH (%d)!\n", MAX_LONGPATH);
         }
         else
         {
@@ -269,7 +269,7 @@ GetFullPathNameW(
 
         goto done;
     }
-    
+
     /* MultiByteToWideChar counts the trailing NULL, but
        GetFullPathName does not. */
     nRet--;
@@ -1169,7 +1169,7 @@ SearchPathA(
                 pPathEnd = pPathStart + strlen(pPathStart);
                 /* we want to break out of the loop after this pass, so let
                    *pNextPath be '\0' */
-                pNextPath = pPathEnd;  
+                pNextPath = pPathEnd;
             }
             else
             {
@@ -1203,7 +1203,7 @@ SearchPathA(
                 nRet = 0;
                 goto done;
             }
-			    
+
             /* Canonicalize the path to deal with back-to-back '/', etc. */
             dw = GetFullPathNameA(FullPath, MAX_PATH,
                                   CanonicalFullPath, NULL);

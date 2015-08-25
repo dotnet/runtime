@@ -2917,7 +2917,7 @@ namespace System.Reflection
             StringBuilder assemblyFile = new StringBuilder(useLoadFile ? location : codeBase,
                                                            0,
                                                            useLoadFile ? location.LastIndexOf('\\') + 1 : codeBase.LastIndexOf('/') + 1,
-                                                           Path.MAX_PATH);
+                                                           Path.MaxPath);
             assemblyFile.Append(an.CultureInfo.Name);
             assemblyFile.Append(useLoadFile ? '\\' : '/');
             assemblyFile.Append(name);
