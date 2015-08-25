@@ -144,7 +144,7 @@ namespace CorUnix
     class CFileMappingImmutableData
     {
     public:
-        CHAR szFileName[MAX_PATH + 1];
+        CHAR szFileName[MAX_LONGPATH + 1];
         UINT MaxSize;               // The max size of the file mapping object
         DWORD flProtect;            // Protection desired for the file view
         BOOL bPALCreatedTempFile;   // TRUE if it's a PAL created file

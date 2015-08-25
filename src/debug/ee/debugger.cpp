@@ -15136,7 +15136,7 @@ HRESULT Debugger::InitAppDomainIPC(void)
     } hEnsureCleanup(this);
 
     DWORD dwStrLen = 0;
-    WCHAR szExeName[MAX_PATH];
+    WCHAR szExeName[MAX_LONGPATH];
     int i;
 
     // all fields in the object can be zero initialized.
@@ -15186,7 +15186,7 @@ HRESULT Debugger::InitAppDomainIPC(void)
     // also initialize the process name
     dwStrLen = WszGetModuleFileName(NULL,
                                     szExeName,
-                                    MAX_PATH);
+                                    MAX_LONGPATH);
 
     // If we couldn't get the name, then use a nice default.
     if (dwStrLen == 0)

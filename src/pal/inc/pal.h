@@ -149,11 +149,16 @@ extern "C" {
 #endif
 
 #define MAX_PATH 260
-#define _MAX_PATH   260 /* max. length of full pathname */
+#define _MAX_PATH 260
 #define _MAX_DRIVE  3   /* max. length of drive component */
 #define _MAX_DIR    256 /* max. length of path component */
 #define _MAX_FNAME  256 /* max. length of file name component */
 #define _MAX_EXT    256 /* max. length of extension component */
+
+// In some Win32 APIs MAX_PATH is used for file names (even though 256 is the normal file system limit)
+// use _MAX_PATH_FNAME to indicate these cases
+#define MAX_PATH_FNAME MAX_PATH
+#define MAX_LONGPATH   1024  /* max. length of full pathname */
 
 #define MAXSHORT      0x7fff
 #define MAXLONG       0x7fffffff
@@ -1069,7 +1074,7 @@ typedef struct _WIN32_FIND_DATAA {
     DWORD nFileSizeLow;
     DWORD dwReserved0;
     DWORD dwReserved1;
-    CHAR cFileName[ MAX_PATH ];
+    CHAR cFileName[ MAX_PATH_FNAME ];
     CHAR cAlternateFileName[ 14 ];
 } WIN32_FIND_DATAA, *PWIN32_FIND_DATAA, *LPWIN32_FIND_DATAA;
 
@@ -1082,7 +1087,7 @@ typedef struct _WIN32_FIND_DATAW {
     DWORD nFileSizeLow;
     DWORD dwReserved0;
     DWORD dwReserved1;
-    WCHAR cFileName[ MAX_PATH ];
+    WCHAR cFileName[ MAX_PATH_FNAME ];
     WCHAR cAlternateFileName[ 14 ];
 } WIN32_FIND_DATAW, *PWIN32_FIND_DATAW, *LPWIN32_FIND_DATAW;
 

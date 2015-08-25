@@ -379,9 +379,9 @@ namespace System {
             [System.Security.SecuritySafeCritical]  // auto-generated
 #endif
             get {
-                StringBuilder sb = new StringBuilder(Path.MAX_PATH);
-                int r = Win32Native.GetSystemDirectory(sb, Path.MAX_PATH);
-                Contract.Assert(r < Path.MAX_PATH, "r < Path.MAX_PATH");
+                StringBuilder sb = new StringBuilder(Path.MaxPath);
+                int r = Win32Native.GetSystemDirectory(sb, Path.MaxPath);
+                Contract.Assert(r < Path.MaxPath, "r < Path.MaxPath");
                 if (r==0) __Error.WinIOError();
                 String path = sb.ToString();
                 
@@ -399,9 +399,9 @@ namespace System {
         internal static String InternalWindowsDirectory {
             [System.Security.SecurityCritical]  // auto-generated
             get {
-                StringBuilder sb = new StringBuilder(Path.MAX_PATH);
-                int r = Win32Native.GetWindowsDirectory(sb, Path.MAX_PATH);
-                Contract.Assert(r < Path.MAX_PATH, "r < Path.MAX_PATH");
+                StringBuilder sb = new StringBuilder(Path.MaxPath);
+                int r = Win32Native.GetWindowsDirectory(sb, Path.MaxPath);
+                Contract.Assert(r < Path.MaxPath, "r < Path.MaxPath");
                 if (r==0) __Error.WinIOError();
                 String path = sb.ToString();
                 
@@ -1458,7 +1458,7 @@ namespace System {
             }
 #endif
 
-            StringBuilder sb = new StringBuilder(Path.MAX_PATH);
+            StringBuilder sb = new StringBuilder(Path.MaxPath);
             int hresult = Win32Native.SHGetFolderPath(IntPtr.Zero,                    /* hwndOwner: [in] Reserved */
                                                       ((int)folder | (int)option),    /* nFolder:   [in] CSIDL    */
                                                       IntPtr.Zero,                    /* hToken:    [in] access token */

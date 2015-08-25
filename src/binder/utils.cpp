@@ -267,7 +267,7 @@ namespace BINDER_SPACE
 
         if (!path.IsEmpty())
         {
-            WCHAR wszCanonicalPath[MAX_PATH];
+            WCHAR wszCanonicalPath[MAX_LONGPATH];
             PlatformPath(path);
 
             // This is also defined in rotor pal
@@ -300,7 +300,7 @@ namespace BINDER_SPACE
         BINDER_LOG_STRING(W("path A"), pathA);
         BINDER_LOG_STRING(W("path B"), pathB);
 
-        WCHAR tempResultPath[MAX_PATH];
+        WCHAR tempResultPath[MAX_LONGPATH];
         if (PathCombineW(tempResultPath, pathA, pathB))
         {
             combinedPath.Set(tempResultPath);
