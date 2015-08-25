@@ -270,6 +270,7 @@ public class GCTests
         }
     }
 
+    [ActiveIssue(2938)]
     [Fact]
     public static void GetTotalMemoryTest_NoForceCollection()
     {
@@ -295,6 +296,7 @@ public class GCTests
         Assert.True(GC.GetGeneration(bytes) > genBeforeGC);
     }
 
+    [ActiveIssue(2938)]
     [Fact]
     public static void GetGenerationTest()
     {
