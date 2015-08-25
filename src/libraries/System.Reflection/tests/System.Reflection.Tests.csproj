@@ -58,6 +58,7 @@
     <Compile Include="MethodInfo\MethodInfo_PropertyTests.cs" />
     <Compile Include="MethodInfo\MethodInfo_SpecialReturnTypeTests.cs" />
     <Compile Include="MethodInfo\MethodInfo_ToStringTests.cs" />
+    <Compile Include="Module\ModuleTests.cs" />
     <Compile Include="ParameterInfo\ParamInfo_NameTests.cs" />
     <Compile Include="ParameterInfo\ParamInfo_PositionTests.cs" />
     <Compile Include="ParameterInfo\ParamInfo_PropertyTests.cs" />
