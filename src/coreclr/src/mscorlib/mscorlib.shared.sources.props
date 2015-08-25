@@ -785,6 +785,7 @@
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\EncodingDataItem.Unix.cs" />
 
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\Interop.Libraries.cs" />
+    <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Calendar.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Casing.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Locale.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\CalendarData.Unix.cs" />
