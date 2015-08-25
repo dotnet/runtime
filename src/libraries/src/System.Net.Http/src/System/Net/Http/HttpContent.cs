@@ -21,19 +21,101 @@ namespace System.Net.Http
 
         internal const long MaxBufferSize = Int32.MaxValue;
         internal static readonly Encoding DefaultStringEncoding = Encoding.UTF8;
-        // These encodings have Byte-Order-Markers that we will use to detect the encoding.
-        private static Encoding[] s_encodingsWithBom =
-        {
-            Encoding.UTF8, // EF BB BF
-#if NETNative
-            // Not supported on Phone
-#else
-            // UTF32 Must be before Unicode because its BOM is similar but longer.
-            Encoding.UTF32, // FF FE 00 00
+
+        private const int UTF8CodePage = 65001;
+        private const int UTF8PreambleLength = 3;
+        private const byte UTF8PreambleByte0 = 0xEF;
+        private const byte UTF8PreambleByte1 = 0xBB;
+        private const byte UTF8PreambleByte2 = 0xBF;
+        private const int UTF8PreambleFirst2Bytes = 0xEFBB;
+
+#if !NETNative
+        // UTF32 not supported on Phone
+        private const int UTF32CodePage = 12000;
+        private const int UTF32PreambleLength = 4;
+        private const byte UTF32PreambleByte0 = 0xFF;
+        private const byte UTF32PreambleByte1 = 0xFE;
+        private const byte UTF32PreambleByte2 = 0x00;
+        private const byte UTF32PreambleByte3 = 0x00;
 #endif
-            Encoding.Unicode, // FF FE
-            Encoding.BigEndianUnicode, // FE FF
-        };
+        private const int UTF32OrUnicodePreambleFirst2Bytes = 0xFFFE;
+
+        private const int UnicodeCodePage = 1200;
+        private const int UnicodePreambleLength = 2;
+        private const byte UnicodePreambleByte0 = 0xFF;
+        private const byte UnicodePreambleByte1 = 0xFE;
+
+        private const int BigEndianUnicodeCodePage = 1201;
+        private const int BigEndianUnicodePreambleLength = 2;
+        private const byte BigEndianUnicodePreambleByte0 = 0xFE;
+        private const byte BigEndianUnicodePreambleByte1 = 0xFF;
+        private const int BigEndianUnicodePreambleFirst2Bytes = 0xFEFF;
+
+#if DEBUG
+        static HttpContent()
+        {
+            // Ensure the encoding constants used in this class match the actual data from the Encoding class
+            AssertEncodingConstants(Encoding.UTF8, UTF8CodePage, UTF8PreambleLength, UTF8PreambleFirst2Bytes,
+                UTF8PreambleByte0,
+                UTF8PreambleByte1,
+                UTF8PreambleByte2);
+
+#if !NETNative
+            // UTF32 not supported on Phone
+            AssertEncodingConstants(Encoding.UTF32, UTF32CodePage, UTF32PreambleLength, UTF32OrUnicodePreambleFirst2Bytes,
+                UTF32PreambleByte0,
+                UTF32PreambleByte1,
+                UTF32PreambleByte2,
+                UTF32PreambleByte3);
+#endif
+
+            AssertEncodingConstants(Encoding.Unicode, UnicodeCodePage, UnicodePreambleLength, UTF32OrUnicodePreambleFirst2Bytes,
+                UnicodePreambleByte0,
+                UnicodePreambleByte1);
+
+            AssertEncodingConstants(Encoding.BigEndianUnicode, BigEndianUnicodeCodePage, BigEndianUnicodePreambleLength, BigEndianUnicodePreambleFirst2Bytes,
+                BigEndianUnicodePreambleByte0,
+                BigEndianUnicodePreambleByte1);
+        }
+
+        private static void AssertEncodingConstants(Encoding encoding, int codePage, int preambleLength, int first2Bytes, params byte[] preamble)
+        {
+            Debug.Assert(encoding != null);
+            Debug.Assert(preamble != null);
+
+            Debug.Assert(codePage == encoding.CodePage,
+                "Encoding code page mismatch for encoding: " + encoding.EncodingName,
+                "Expected (constant): {0}, Actual (Encoding.CodePage): {1}", codePage, encoding.CodePage);
+
+            byte[] actualPreamble = encoding.GetPreamble();
+
+            Debug.Assert(preambleLength == actualPreamble.Length,
+                "Encoding preamble length mismatch for encoding: " + encoding.EncodingName,
+                "Expected (constant): {0}, Actual (Encoding.GetPreamble().Length): {1}", preambleLength, actualPreamble.Length);
+
+            Debug.Assert(actualPreamble.Length >= 2);
+            int actualFirst2Bytes = actualPreamble[0] << 8 | actualPreamble[1];
+
+            Debug.Assert(first2Bytes == actualFirst2Bytes,
+                "Encoding preamble first 2 bytes mismatch for encoding: " + encoding.EncodingName,
+                "Expected (constant): {0}, Actual: {1}", first2Bytes, actualFirst2Bytes);
+
+            Debug.Assert(preamble.Length == actualPreamble.Length,
+                "Encoding preamble mismatch for encoding: " + encoding.EncodingName,
+                "Expected (constant): {0}, Actual (Encoding.GetPreamble()): {1}",
+                BitConverter.ToString(preamble),
+                BitConverter.ToString(actualPreamble));
+
+            for (int i = 0; i < preamble.Length; i++)
+            {
+                Debug.Assert(preamble[i] == actualPreamble[i],
+                    "Encoding preamble mismatch for encoding: " + encoding.EncodingName,
+                    "Expected (constant): {0}, Actual (Encoding.GetPreamble()): {1}",
+                    BitConverter.ToString(preamble),
+                    BitConverter.ToString(actualPreamble));
+            }
+        }
+#endif
 
         public HttpContentHeaders Headers
         {
@@ -120,6 +202,9 @@ namespace System.Net.Http
                     try
                     {
                         encoding = Encoding.GetEncoding(innerThis.Headers.ContentType.CharSet);
+
+                        // Byte-order-mark (BOM) characters may be present even if a charset was specified.
+                        bomLength = GetPreambleLength(data, dataLength, encoding);
                     }
                     catch (ArgumentException e)
                     {
@@ -129,33 +214,18 @@ namespace System.Net.Http
                 }
 
                 // If no content encoding is listed in the ContentType HTTP header, or no Content-Type header present, 
-                // then check for a byte-order-mark (BOM) in the data to figure out the encoding.
+                // then check for a BOM in the data to figure out the encoding.
                 if (encoding == null)
                 {
-                    byte[] preamble;
-                    foreach (Encoding testEncoding in s_encodingsWithBom)
+                    if (!TryDetectEncoding(data, dataLength, out encoding, out bomLength))
                     {
-                        preamble = testEncoding.GetPreamble();
-                        if (ByteArrayHasPrefix(data, dataLength, preamble))
-                        {
-                            encoding = testEncoding;
-                            bomLength = preamble.Length;
-                            break;
-                        }
-                    }
-                }
+                        // Use the default encoding (UTF8) if we couldn't detect one.
+                        encoding = DefaultStringEncoding;
 
-                // Use the default encoding if we couldn't detect one.
-                encoding = encoding ?? DefaultStringEncoding;
-
-                // BOM characters may be present even if a charset was specified.
-                if (bomLength == -1)
-                {
-                    byte[] preamble = encoding.GetPreamble();
-                    if (ByteArrayHasPrefix(data, dataLength, preamble))
-                        bomLength = preamble.Length;
-                    else
+                        // We already checked to see if the data had a UTF8 BOM in TryDetectEncoding
+                        // and DefaultStringEncoding is UTF8, so the bomLength is 0.
                         bomLength = 0;
+                    }
                 }
 
                 try
@@ -533,6 +603,92 @@ namespace System.Net.Http
                 result = new HttpRequestException(SR.net_http_content_stream_copy_error, result);
             }
             return result;
+        }
+
+        private static int GetPreambleLength(byte[] data, int dataLength, Encoding encoding)
+        {
+            Debug.Assert(data != null);
+            Debug.Assert(dataLength <= data.Length);
+            Debug.Assert(encoding != null);
+
+            switch (encoding.CodePage)
+            {
+                case UTF8CodePage:
+                    return (dataLength >= UTF8PreambleLength
+                        && data[0] == UTF8PreambleByte0
+                        && data[1] == UTF8PreambleByte1
+                        && data[2] == UTF8PreambleByte2) ? UTF8PreambleLength : 0;
+#if !NETNative
+                // UTF32 not supported on Phone
+                case UTF32CodePage:
+                    return (dataLength >= UTF32PreambleLength
+                        && data[0] == UTF32PreambleByte0
+                        && data[1] == UTF32PreambleByte1
+                        && data[2] == UTF32PreambleByte2
+                        && data[3] == UTF32PreambleByte3) ? UTF32PreambleLength : 0;
+#endif
+                case UnicodeCodePage:
+                    return (dataLength >= UnicodePreambleLength
+                        && data[0] == UnicodePreambleByte0
+                        && data[1] == UnicodePreambleByte1) ? UnicodePreambleLength : 0;
+
+                case BigEndianUnicodeCodePage:
+                    return (dataLength >= BigEndianUnicodePreambleLength
+                        && data[0] == BigEndianUnicodePreambleByte0
+                        && data[1] == BigEndianUnicodePreambleByte1) ? BigEndianUnicodePreambleLength : 0;
+
+                default:
+                    byte[] preamble = encoding.GetPreamble();
+                    return ByteArrayHasPrefix(data, dataLength, preamble) ? preamble.Length : 0;
+            }
+        }
+
+        private static bool TryDetectEncoding(byte[] data, int dataLength, out Encoding encoding, out int preambleLength)
+        {
+            Debug.Assert(data != null);
+            Debug.Assert(dataLength <= data.Length);
+
+            if (dataLength >= 2)
+            {
+                int first2Bytes = data[0] << 8 | data[1];
+
+                switch (first2Bytes)
+                {
+                    case UTF8PreambleFirst2Bytes:
+                        if (dataLength >= UTF8PreambleLength && data[2] == UTF8PreambleByte2)
+                        {
+                            encoding = Encoding.UTF8;
+                            preambleLength = UTF8PreambleLength;
+                            return true;
+                        }
+                        break;
+
+                    case UTF32OrUnicodePreambleFirst2Bytes:
+#if !NETNative
+                        // UTF32 not supported on Phone
+                        if (dataLength >= UTF32PreambleLength && data[2] == UTF32PreambleByte2 && data[3] == UTF32PreambleByte3)
+                        {
+                            encoding = Encoding.UTF32;
+                            preambleLength = UTF32PreambleLength;
+                        }
+                        else
+#endif
+                        {
+                            encoding = Encoding.Unicode;
+                            preambleLength = UnicodePreambleLength;
+                        }
+                        return true;
+
+                    case BigEndianUnicodePreambleFirst2Bytes:
+                        encoding = Encoding.BigEndianUnicode;
+                        preambleLength = BigEndianUnicodePreambleLength;
+                        return true;
+                }
+            }
+
+            encoding = null;
+            preambleLength = 0;
+            return false;
         }
 
         private static bool ByteArrayHasPrefix(byte[] byteArray, int dataLength, byte[] prefix)
