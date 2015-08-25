@@ -15,6 +15,7 @@ endif()
 add_compile_options(-fPIC)
 
 set(NATIVEGLOBALIZATION_SOURCES
+    calendarData.cpp
     casing.cpp
     idna.cpp
     locale.cpp

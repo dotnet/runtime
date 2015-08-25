@@ -5,9 +5,9 @@ namespace System.Globalization
 {
     public partial class HijriCalendar : Calendar
     {
-        public static int GetHijriDateAdjustment()
+        private static int GetHijriDateAdjustment()
         {
-            //TODO: Implement this fully.
+            // this setting is not supported on Unix, so always return 0
             return 0;
         }
     }
