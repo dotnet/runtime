@@ -6,9 +6,24 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 add_definitions(-DPIC=1)
 add_definitions(-DBIT64=1)
 
-find_library(ICUUC NAMES icuuc)
+set(ICU_HOMEBREW_LIB_PATH "/usr/local/opt/icu4c/lib")
+set(ICU_HOMEBREW_INC_PATH "/usr/local/opt/icu4c/include")
+
+find_library(ICUUC NAMES icuuc PATHS ${ICU_HOMEBREW_LIB_PATH})
 if(ICUUC STREQUAL ICUUC-NOTFOUND)
-    message(WARNING "Cannot find libicuuc, skipping build for System.Globalization.Native. .NET globalization is not expected to function. Try installing libicu-dev (or the appropriate package for your platform)")
+    message(FATAL_ERROR "Cannot find libicuuc, try installing libicu-dev (or the appropriate package for your platform)")
+    return()
+endif()
+
+find_library(ICUI18N NAMES icui18n PATHS ${ICU_HOMEBREW_LIB_PATH})
+if(ICUI18N STREQUAL ICUI18N-NOTFOUND)
+    message(FATAL_ERROR "Cannot find libicui18n, try installing libicu-dev (or the appropriate package for your platform)")
+    return()
+endif()
+
+find_path(UTYPES_H "unicode/utypes.h" PATHS ${ICU_HOMEBREW_INC_PATH})
+if(UTYPES_H STREQUAL UTYPES_H-NOTFOUND)
+    message(FATAL_ERROR "Cannont find utypes.h, try installing libicu-dev (or the appropriate package for your platform)")
     return()
 endif()
 
@@ -23,6 +38,8 @@ set(NATIVEGLOBALIZATION_SOURCES
     localeStringData.cpp
     normalization.cpp
 )
+
+include_directories(${UTYPES_H})
 
 add_library(System.Globalization.Native
     SHARED

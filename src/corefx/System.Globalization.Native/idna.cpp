@@ -4,7 +4,6 @@
 //
 
 #include <stdint.h>
-#include <uchar.h>
 #include <unicode/uidna.h>
 
 const uint32_t AllowUnassigned = 0x1;
