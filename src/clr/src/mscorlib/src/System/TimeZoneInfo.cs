@@ -3176,9 +3176,9 @@ namespace System {
 
 
             try {
-                StringBuilder fileMuiPath = StringBuilderCache.Acquire(Win32Native.MAX_PATH);
-                fileMuiPath.Length = Win32Native.MAX_PATH;
-                int fileMuiPathLength = Win32Native.MAX_PATH;
+                StringBuilder fileMuiPath = StringBuilderCache.Acquire(Path.MaxPath);
+                fileMuiPath.Length = Path.MaxPath;
+                int fileMuiPathLength = Path.MaxPath;
                 int languageLength = 0;
                 Int64 enumerator = 0;
 

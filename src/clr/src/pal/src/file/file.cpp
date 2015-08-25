@@ -500,10 +500,10 @@ CorUnix::InternalCreateFile(
         goto done;
     }
 
-    if ( strlen(lpFileName) >= MAX_PATH )
+    if ( strlen(lpFileName) >= MAX_LONGPATH )
     {
         WARN("InternalCreateFile called with a filename whose size is "
-                "%d >= MAX_PATH (%d)\n", strlen(lpFileName), MAX_PATH);
+                "%d >= MAX_LONGPATH (%d)\n", strlen(lpFileName), MAX_LONGPATH);
         palError = ERROR_FILENAME_EXCED_RANGE;
         goto done;
     }
@@ -974,7 +974,7 @@ CreateFileW(
 {
     CPalThread *pThread;
     PAL_ERROR palError = NO_ERROR;
-    char    name[MAX_PATH];
+    char    name[MAX_LONGPATH];
     int     size;
     HANDLE  hRet = INVALID_HANDLE_VALUE;
 
@@ -988,14 +988,14 @@ CreateFileW(
 
     pThread = InternalGetCurrentThread();
 
-    size = WideCharToMultiByte( CP_ACP, 0, lpFileName, -1, name, MAX_PATH,
+    size = WideCharToMultiByte( CP_ACP, 0, lpFileName, -1, name, MAX_LONGPATH,
                                 NULL, NULL );
     if( size == 0 )
     {
         DWORD dwLastError = GetLastError();
         if( dwLastError == ERROR_INSUFFICIENT_BUFFER )
         {
-            WARN("lpFileName is larger than MAX_PATH (%d)!\n", MAX_PATH);
+            WARN("lpFileName is larger than MAX_LONGPATH (%d)!\n", MAX_LONGPATH);
             palError = ERROR_FILENAME_EXCED_RANGE;
         }
         else
@@ -1130,7 +1130,7 @@ DeleteFileA(
     DWORD   dwLastError = 0;
     char    lpUnixFileName[MAX_PATH];
     LPSTR lpFullUnixFileName = NULL;
-    DWORD cchFullUnixFileName = PATH_MAX+1;// InternalCanonicalizeRealPath requires this to be atleast PATH_MAX
+    DWORD cchFullUnixFileName = MAX_LONGPATH+1;// InternalCanonicalizeRealPath requires this to be atleast PATH_MAX
 
     PERF_ENTRY(DeleteFileA);
     ENTRY("DeleteFileA(lpFileName=%p (%s))\n", lpFileName?lpFileName:"NULL", lpFileName?lpFileName:"NULL");
@@ -1138,6 +1138,7 @@ DeleteFileA(
     pThread = InternalGetCurrentThread();
     if (strlen(lpFileName) >= MAX_PATH)
     {
+        WARN("lpFileName is larger than MAX_PATH (%d)!\n", MAX_PATH);
         pThread->SetLastError(ERROR_FILENAME_EXCED_RANGE);
         goto done;
     }
@@ -1377,6 +1378,7 @@ MoveFileExA(
 
     if (strlen(lpExistingFileName) >= MAX_PATH)
     {
+        WARN("lpExistingFileName is larger than MAX_PATH (%d)!\n", MAX_PATH);
         pThread->SetLastError(ERROR_FILENAME_EXCED_RANGE);
         goto done;
     }
@@ -1387,6 +1389,7 @@ MoveFileExA(
 
     if (strlen(lpNewFileName) >= MAX_PATH)
     {
+        WARN("lpNewFileName is larger than MAX_PATH (%d)!\n", MAX_PATH);
         pThread->SetLastError(ERROR_FILENAME_EXCED_RANGE);
         goto done;
     }
@@ -1619,16 +1622,17 @@ GetFileAttributesA(
 
     PERF_ENTRY(GetFileAttributesA);
     ENTRY("GetFileAttributesA(lpFileName=%p (%s))\n", lpFileName?lpFileName:"NULL", lpFileName?lpFileName:"NULL");
-     
+
     pThread = InternalGetCurrentThread();
     if (lpFileName == NULL)
     {
         dwLastError = ERROR_PATH_NOT_FOUND;
         goto done;
     }
-    
+
     if (strlen(lpFileName) >= MAX_PATH) 
     {
+        WARN("lpFileName is larger than MAX_PATH (%d)!\n", MAX_PATH);
         dwLastError = ERROR_FILENAME_EXCED_RANGE;
         goto done;
     }
