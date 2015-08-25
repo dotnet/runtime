@@ -19,11 +19,15 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Dictionaries\DictionaryExportDescriptorProvider.cs" />
     <Compile Include="Util\Formatters.cs" />
     <Compile Include="OrderedImportManyAttribute.cs" />
     <Compile Include="OrderedCollections\OrderedImportManyExportDescriptorProvider.cs" />
     <Compile Include="KeyByMetadataAttribute.cs" />
+    <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs">
+      <Link>Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\System.Composition.AttributedModel\src\System.Composition.AttributedModel.csproj">
