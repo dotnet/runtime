@@ -351,12 +351,11 @@ namespace System.Diagnostics.Tracing.Telemetry.Tests
             };
 
             // Subscribe, which delivers catch-up event for the Default listener 
-            TelemetryListener.AllListeners += onNewListener;
-            Assert.Equal(TelemetryListener.DefaultListener, returnedListener);
-            returnedListener = null;
-
-            // Now we unsubscribe
-            TelemetryListener.AllListeners -= onNewListener;
+            using (var allListenerSubscription = TelemetryListener.AllListeners.Subscribe(MakeObserver(onNewListener)))
+            {
+                Assert.Equal(TelemetryListener.DefaultListener, returnedListener);
+                returnedListener = null;
+            }   // Now we unsubscribe
 
             // Create an dispose a listener, but we won't get a callback for it.  
             using (new TelemetryListener("TestListen"))
@@ -365,35 +364,37 @@ namespace System.Diagnostics.Tracing.Telemetry.Tests
             Assert.Null(returnedListener);          // No callback was made 
 
             // Resubscribe  
-            TelemetryListener.AllListeners += onNewListener;
-            Assert.Equal(TelemetryListener.DefaultListener, returnedListener);
-            returnedListener = null;
-
-            // add two new subscribers
-            using (var listener1 = new TelemetryListener("TestListen1"))
+            using (var allListenerSubscription = TelemetryListener.AllListeners.Subscribe(MakeObserver(onNewListener)))
             {
-                Assert.Equal(listener1.Name, "TestListen1");
-                Assert.Equal(listener1, returnedListener);
+
+                Assert.Equal(TelemetryListener.DefaultListener, returnedListener);
                 returnedListener = null;
 
-                using (var listener2 = new TelemetryListener("TestListen2"))
+                // add two new subscribers
+                using (var listener1 = new TelemetryListener("TestListen1"))
                 {
-                    Assert.Equal(listener2.Name, "TestListen2");
-                    Assert.Equal(listener2, returnedListener);
+                    Assert.Equal(listener1.Name, "TestListen1");
+                    Assert.Equal(listener1, returnedListener);
                     returnedListener = null;
-                }   // Dispose of listener2
-            }   // Dispose of listener1
 
-            // Unsubscribe 
-            TelemetryListener.AllListeners -= onNewListener;
+                    using (var listener2 = new TelemetryListener("TestListen2"))
+                    {
+                        Assert.Equal(listener2.Name, "TestListen2");
+                        Assert.Equal(listener2, returnedListener);
+                        returnedListener = null;
+                    }   // Dispose of listener2
+                }   // Dispose of listener1
+
+            } // Unsubscribe 
 
             // Check that we are back to just the DefaultListener. 
-            TelemetryListener.AllListeners += onNewListener;
-            Assert.Equal(TelemetryListener.DefaultListener, returnedListener);
-            returnedListener = null;
-
-            TelemetryListener.AllListeners -= onNewListener;  // cleanup
+            using (var allListenerSubscription = TelemetryListener.AllListeners.Subscribe(MakeObserver(onNewListener)))
+            {
+                Assert.Equal(TelemetryListener.DefaultListener, returnedListener);
+                returnedListener = null;
+            }   // cleanup 
         }
+
 
         /// <summary>
         /// Tests that the 'catchupList' of active listeners is accurate even as we 
@@ -491,14 +492,31 @@ namespace System.Diagnostics.Tracing.Telemetry.Tests
             };
 
             // Subscribe, which gives you the list
-            TelemetryListener.AllListeners += onNewListener;
-            Assert.True(seenDefault);
-            // Unsubscribe to remove side effects.  
-            TelemetryListener.AllListeners -= onNewListener;
+            using (var allListenerSubscription = TelemetryListener.AllListeners.Subscribe(MakeObserver(onNewListener)))
+            {
+                Assert.True(seenDefault);
+            } // Unsubscribe to remove side effects.  
             return ret;
         }
-    }
 
+        /// <summary>
+        /// Used to make an observer out of a action delegate. 
+        /// </summary>
+        private static IObserver<T> MakeObserver<T>(Action<T> action) { return new Observer<T>(action);  }
+
+        /// <summary>
+        /// Used in the implementation of MakeObserver.  
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        private class Observer<T> : IObserver<T>
+        {
+            public Observer(Action<T> onNext) { _onNext = onNext; }
+            public void OnCompleted() { }
+            public void OnError(Exception error) { }
+            public void OnNext(T value) { _onNext(value); }
+            private Action<T> _onNext;
+        }
+    }
 
     // Takes an IObserver and returns a List<T> that are the elements observed.
     // Will assert on error and 'Completed' is set if the 'OnCompleted' callback

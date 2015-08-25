@@ -38,22 +38,15 @@ namespace System.Diagnostics.Tracing
         /// When you subscribe to this you get callbacks for all NotificationListeners in the appdomain
         /// as well as those that occurred in the past, and all future Listeners created in the future. 
         /// </summary>
-        public static event Action<TelemetryListener> AllListeners
+        public static IObservable<TelemetryListener> AllListeners
         {
-            add
+            get
             {
-                lock (DefaultListener)
+                if (s_allListenerObservable == null)
                 {
-                    s_allListenersCallback = (Action<TelemetryListener>)Delegate.Combine(s_allListenersCallback, value);
-
-                    // Call back for each existing listener on the new callback.  
-                    for (TelemetryListener cur = s_allListeners; cur != null; cur = cur._next)
-                        value(cur);
+                    s_allListenerObservable = new AllListenerObservable();
                 }
-            }
-            remove
-            {
-                s_allListenersCallback = (Action<TelemetryListener>)Delegate.Remove(s_allListenersCallback, value);
+                return s_allListenerObservable;
             }
         }
 
@@ -66,9 +59,10 @@ namespace System.Diagnostics.Tracing
         {
             // If we have been disposed, we silently ignore any subscriptions.  
             if (_disposed)
-                return new Subscription() { Owner = this };
-
-            Subscription newSubscription = new Subscription() { Observer = observer, IsEnabled = isEnabled, Owner = this, Next = _subscriptions };
+            {
+                return new TelemetrySubscription() { Owner = this };
+            }
+            TelemetrySubscription newSubscription = new TelemetrySubscription() { Observer = observer, IsEnabled = isEnabled, Owner = this, Next = _subscriptions };
             while (Interlocked.CompareExchange(ref _subscriptions, newSubscription, newSubscription.Next) != newSubscription.Next)
                 newSubscription.Next = _subscriptions;
             return newSubscription;
@@ -103,10 +97,10 @@ namespace System.Diagnostics.Tracing
             // Insert myself into the list of all Listeners.   
             lock (lockObj)
             {
-                // Issue the callback for this new telemetry listener. 
-                var callback = s_allListenersCallback;
-                if (callback != null)
-                    callback(this);
+                // Issue the callback for this new telemetry listener.
+                var allListenerObservable = s_allListenerObservable;
+                if (allListenerObservable != null) 
+                    allListenerObservable.OnNewTelemetryListener(this);
 
                 // And add it to the list of all past listeners.  
                 _next = s_allListeners;
@@ -126,7 +120,9 @@ namespace System.Diagnostics.Tracing
             lock (DefaultListener)
             {
                 if (_disposed)
+                {
                     return;
+                }
                 _disposed = true;
                 if (s_allListeners == this)
                     s_allListeners = s_allListeners._next;
@@ -147,7 +143,7 @@ namespace System.Diagnostics.Tracing
             }
 
             // Indicate completion to all subscribers.  
-            Subscription subscriber = null;
+            TelemetrySubscription subscriber = null;
             Interlocked.Exchange(ref subscriber, _subscriptions);
             while (subscriber != null)
             {
@@ -175,11 +171,11 @@ namespace System.Diagnostics.Tracing
 
         // NotificationSource implementation
         /// <summary>
-        /// Override 
+        /// Override abstract method
         /// </summary>
         public override bool IsEnabled(string telemetryName)
         {
-            for (Subscription curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
+            for (TelemetrySubscription curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
             {
                 if (curSubscription.IsEnabled == null || curSubscription.IsEnabled(telemetryName))
                     return true;
@@ -188,29 +184,29 @@ namespace System.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// Override 
+        /// Override abstract method
         /// </summary>
-        public override void WriteTelemetry(string telemetryName, object parameters)
+        public override void WriteTelemetry(string telemetryName, object arguments)
         {
-            for (Subscription curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
-                curSubscription.Observer.OnNext(new KeyValuePair<string, object>(telemetryName, parameters));
+            for (TelemetrySubscription curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
+                curSubscription.Observer.OnNext(new KeyValuePair<string, object>(telemetryName, arguments));
         }
 
         // Note that Subscriptions are READ ONLY.   This means you never update any fields (even on removal!)
-        private class Subscription : IDisposable
+        private class TelemetrySubscription : IDisposable
         {
             internal IObserver<KeyValuePair<string, object>> Observer;
             internal Predicate<string> IsEnabled;
             internal TelemetryListener Owner;          // The TelemetryListener this is a subscription for.  
-            internal Subscription Next;                // Linked list of subscribers
+            internal TelemetrySubscription Next;                // Linked list of subscribers
 
             public void Dispose()
             {
                 // TO keep this lock free and easy to analyze, the linked list is READ ONLY.   Thus we copy
-                for (; ;)
+                for (;;)
                 {
-                    Subscription subscriptions = Owner._subscriptions;
-                    Subscription newSubscriptions = Remove(subscriptions, this);    // Make a new list, with myself removed.  
+                    TelemetrySubscription subscriptions = Owner._subscriptions;
+                    TelemetrySubscription newSubscriptions = Remove(subscriptions, this);    // Make a new list, with myself removed.  
 
                     // try to update, but if someone beat us to it, then retry.  
                     if (Interlocked.CompareExchange(ref Owner._subscriptions, newSubscriptions, subscriptions) == subscriptions)
@@ -229,7 +225,7 @@ namespace System.Diagnostics.Tracing
             }
 
             // Create a new linked list where 'subscription has been removed from the linked list of 'subscriptions'. 
-            private static Subscription Remove(Subscription subscriptions, Subscription subscription)
+            private static TelemetrySubscription Remove(TelemetrySubscription subscriptions, TelemetrySubscription subscription)
             {
                 if (subscriptions == null)
                 {
@@ -244,19 +240,111 @@ namespace System.Diagnostics.Tracing
                 for (int i = 0; i < 100; i++)
                     GC.KeepAlive("");
 #endif 
-                return new Subscription() { Observer = subscriptions.Observer, Owner = subscriptions.Owner, IsEnabled = subscriptions.IsEnabled, Next = Remove(subscriptions.Next, subscription) };
+                return new TelemetrySubscription() { Observer = subscriptions.Observer, Owner = subscriptions.Owner, IsEnabled = subscriptions.IsEnabled, Next = Remove(subscriptions.Next, subscription) };
             }
         }
+
+        #region AllListenerObservable 
+        /// <summary>
+        /// Logically AllListenerObservable has a very simple task.  It has a linked list of subscribers that want
+        /// a callback when a new listener gets created.   When a new TelemetryListener gets created it should call 
+        /// OnNewTelemetryListener so that AllListenerObservable can forward it on to all the subscribers.   
+        /// </summary>
+        private class AllListenerObservable : IObservable<TelemetryListener>
+        {
+            public IDisposable Subscribe(IObserver<TelemetryListener> observer)
+            {
+                lock (DefaultListener)
+                {
+                    // Call back for each existing listener on the new callback (catch-up).   
+                    for (TelemetryListener cur = s_allListeners; cur != null; cur = cur._next)
+                        observer.OnNext(cur);
+
+                    // Add the observer to the list of subscribers.   
+                    _subscriptions = new AllListenerSubscription(this, observer, _subscriptions);
+                    return _subscriptions;
+                }
+            }
+
+            /// <summary>
+            /// Called when a new TelemetryListener gets created to tell anyone who subscribed that this happened.  
+            /// </summary>
+            /// <param name="telemetryListener"></param>
+            internal void OnNewTelemetryListener(TelemetryListener telemetryListener)
+            {
+                // Simply send a callback to every subscriber that we have a new listener
+                lock (DefaultListener)
+                {
+                    for (var cur = _subscriptions; cur != null; cur = cur.Next)
+                        cur.Subscriber.OnNext(telemetryListener);
+                }
+            }
+
+            #region private 
+            /// <summary>
+            /// Remove 'subscription from the list of subscriptions that the observable has.   Called when
+            /// subscriptions are disposed.  
+            /// </summary>
+            private void Remove(AllListenerSubscription subscription)
+            {
+                lock (DefaultListener)
+                {
+                    // Remove myself from the linked list.  
+                    if (_subscriptions == subscription)
+                        _subscriptions = subscription.Next;
+                    else
+                    {
+                        for (var cur = _subscriptions; cur.Next != null; cur = cur.Next)
+                        {
+                            if (cur.Next.Subscriber == this)
+                            {
+                                cur.Next = cur.Next.Next;
+                                return;
+                            }
+                        }
+                        Debug.Assert(false, "Could not find subscription in the AllListeners subscribers list");
+                    }
+                }
+            }
+
+            /// <summary>
+            /// One node in the linked list of subscriptions that AllListenerObservable keeps.   It is
+            /// IDisposable, and when that is called it removes itself from the list.  
+            /// </summary>
+            internal class AllListenerSubscription : IDisposable
+            {
+                internal AllListenerSubscription(AllListenerObservable owner, IObserver<TelemetryListener> subscriber, AllListenerSubscription next)
+                {
+                    this._owner = owner;
+                    this.Subscriber = subscriber;
+                    this.Next = next;
+                }
+
+                public void Dispose()
+                {
+                    _owner.Remove(this);
+                    Subscriber.OnCompleted();
+                }
+                    
+                private AllListenerObservable _owner;               // the list this is a member of.  
+                internal IObserver<TelemetryListener> Subscriber;
+                internal AllListenerSubscription Next;
+            }
+
+            private AllListenerSubscription _subscriptions;
+            #endregion 
+        }
+        #endregion 
 
         // TODO _subscriptions should be volatile but we get a warning (which gets treated as an error) that 
         // when it gets passed as ref to Interlock.* functions that its volatileness disappears.    We really should
         // just be suppressing the warning.    We can get away without the volatile because we only read it once 
-        private /* volatile */ Subscription _subscriptions;
+        private /* volatile */ TelemetrySubscription _subscriptions;
         private TelemetryListener _next;               // We keep a linked list of all NotificationListeners (s_allListeners)
         private bool _disposed;                        // Has Dispose been called?
 
-        private static Action<TelemetryListener> s_allListenersCallback;    // The list of clients to call back when a new TelemetryListener is created.  
-        private static TelemetryListener s_allListeners;                    // As a service, we keep track of all instances of NotificationListeners.  
+        private static TelemetryListener s_allListeners;                // linked list of all instances of TelemetryListeners.  
+        private static AllListenerObservable s_allListenerObservable;   // to make callbacks to this object when listeners come into existence.  
         private static TelemetryListener s_default = new TelemetryListener("TelemetryListener.DefaultListener");
 
         #endregion
