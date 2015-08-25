@@ -27,9 +27,6 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             PublicKey publicKey = certificate.PublicKey;
-
-            // When the CNG contract comes online this needs to return an RsaCng on Windows, unless CNG reports
-            // an error, then try falling back to CAPI (for CAPI-only smartcards).
             return (RSA)X509Pal.Instance.DecodePublicKey(
                 publicKey.Oid,
                 publicKey.EncodedKeyValue.RawData,
@@ -50,8 +47,6 @@ namespace System.Security.Cryptography.X509Certificates
                 return null;
             }
 
-            // When the CNG contract comes online this needs to return an RsaCng on Windows, unless CNG reports
-            // an error, then try falling back to CAPI (for CAPI-only smartcards).
             return certificate.Pal.GetRSAPrivateKey();
         }
 
