@@ -32,7 +32,7 @@ class PEAssembly;
 
 namespace BINDER_SPACE
 {
-    typedef InlineSString<MAX_PATH + 1> PathString;
+    typedef InlineSString<MAX_LONGPATH + 1> PathString;
 
     class AssemblyVersion;
     class AssemblyName;
