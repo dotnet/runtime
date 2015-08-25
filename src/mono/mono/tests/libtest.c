@@ -3825,7 +3825,7 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 		if (a1->A != 42)
 			return 8;
 
-		if (!fabs (a1->B - 3.1415) < 0.001)
+		if (!(fabs (a1->B - 3.1415) < 0.001))
 			return 9;
 
 		break;
@@ -3852,7 +3852,7 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 		if (a1->A != 42)
 			return 5;
 
-		if (!fabs (a1->B - 3.1415) < 0.001)
+		if (!(fabs (a1->B - 3.1415) < 0.001))
 			return 6;
 
 		break;
