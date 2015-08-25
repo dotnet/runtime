@@ -796,7 +796,7 @@ void TypeLibExporter::Convert(
     // Win2K: passing in too long a filename triggers a nasty buffer overrun bug
     // when the SaveAll() method is called. We'll avoid triggering this here.
     // 
-    if (wcslen(szTlbName) > MAX_PATH)
+    if (wcslen(szTlbName) > MAX_PATH_FNAME)
         IfFailReport(HRESULT_FROM_WIN32(ERROR_FILENAME_EXCED_RANGE));
 
     // Reverting to old behavior here until we can fix up the vtable offsets as well.

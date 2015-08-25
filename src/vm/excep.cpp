@@ -13865,7 +13865,7 @@ VOID GetAssemblyDetailInfo(SString    &sType,
 {
     WRAPPER_NO_CONTRACT;
 
-    InlineSString<MAX_PATH> sFormat;
+    InlineSString<MAX_LONGPATH> sFormat;
 #ifdef FEATURE_FUSION
     const WCHAR *pwzLoadContext = GetContextName(pPEAssembly->GetLoadContext(),
                                                  pPEAssembly->IsIntrospectionOnly());
@@ -13921,8 +13921,8 @@ VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,
          _ASSERTE(pPEAssemblyTypeFrom != NULL);
          _ASSERTE(pPEAssemblyTypeTo != NULL);
 
-         InlineSString<MAX_PATH> sAssemblyFromDisplayName;
-         InlineSString<MAX_PATH> sAssemblyToDisplayName;
+         InlineSString<MAX_LONGPATH> sAssemblyFromDisplayName;
+         InlineSString<MAX_LONGPATH> sAssemblyToDisplayName;
 
          pPEAssemblyTypeFrom->GetDisplayName(sAssemblyFromDisplayName);
          pPEAssemblyTypeTo->GetDisplayName(sAssemblyToDisplayName);
@@ -13930,8 +13930,8 @@ VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,
          // Found the culprit case. Now format the new exception text.
          InlineSString<MAX_CLASSNAME_LENGTH + 1> strCastFromName;
          InlineSString<MAX_CLASSNAME_LENGTH + 1> strCastToName;
-         InlineSString<MAX_PATH> sAssemblyDetailInfoFrom;
-         InlineSString<MAX_PATH> sAssemblyDetailInfoTo;
+         InlineSString<MAX_LONGPATH> sAssemblyDetailInfoFrom;
+         InlineSString<MAX_LONGPATH> sAssemblyDetailInfoTo;
 
          thCastFrom.GetName(strCastFromName);
          thCastTo.GetName(strCastToName);
