@@ -8314,7 +8314,8 @@ void PALAPI HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext)
         REGDISPLAY regDisplay;
         pThread->InitRegDisplay(&regDisplay, interruptedContext, true /* validContext */);
 
-        if (!pThread->IsSafeToInjectThreadAbort(interruptedContext))
+        BOOL unused;
+        if (IsIPInEpilog(interruptedContext, &codeInfo, &unused))
             return;
 
         // Use StackWalkFramesEx to find the location of the return address. This will locate the
