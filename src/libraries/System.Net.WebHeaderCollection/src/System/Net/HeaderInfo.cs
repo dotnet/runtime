@@ -3,13 +3,11 @@
 
 namespace System.Net
 {
-    internal delegate string[] HeaderParser(string value);
-
     internal class HeaderInfo
     {
         internal readonly bool IsRequestRestricted;
         internal readonly bool IsResponseRestricted;
-        internal readonly HeaderParser Parser;
+        internal readonly Func<string, string[]> Parser;
 
         // Note that the HeaderName field is not always valid, and should not
         // be used after initialization. In particular, the HeaderInfo returned
@@ -18,7 +16,7 @@ namespace System.Net
         internal readonly string HeaderName;
         internal readonly bool AllowMultiValues;
 
-        internal HeaderInfo(string name, bool requestRestricted, bool responseRestricted, bool multi, HeaderParser p)
+        internal HeaderInfo(string name, bool requestRestricted, bool responseRestricted, bool multi, Func<string, string[]> p)
         {
             HeaderName = name;
             IsRequestRestricted = requestRestricted;
