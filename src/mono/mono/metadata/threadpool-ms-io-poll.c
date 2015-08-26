@@ -120,7 +120,7 @@ poll_event_wait (void (*callback) (gint fd, gint events, gpointer user_data), gp
 #if !defined(HOST_WIN32)
 	ready = poll (poll_fds, poll_fds_size, -1);
 #else
-	ready = WSAPOLLFD (poll_fds, poll_fds_size, -1);
+	ready = WSAPoll(poll_fds, poll_fds_size, -1);
 	if (ready == SOCKET_ERROR)
 		ready = -1;
 #endif
