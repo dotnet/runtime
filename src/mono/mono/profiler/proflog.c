@@ -232,21 +232,23 @@ typedef struct _LogBuffer LogBuffer;
  * [pointer: sleb128] pointer of the metadata type depending on mtype
  * if mtype == TYPE_CLASS
  *	[image: sleb128] MonoImage* as a pointer difference from ptr_base
- *  [flags: uleb128] must be 0
+ * 	[flags: uleb128] must be 0
  * 	[name: string] full class name
  * if mtype == TYPE_IMAGE
- *  [flags: uleb128] must be 0
+ * 	[flags: uleb128] must be 0
  * 	[name: string] image file name
  * if mtype == TYPE_ASSEMBLY
- *  [flags: uleb128] must be 0
+ * 	[flags: uleb128] must be 0
  * 	[name: string] assembly name
  * if mtype == TYPE_DOMAIN
- *  [flags: uleb128] must be 0
+ * 	[flags: uleb128] must be 0
  * if mtype == TYPE_DOMAIN && exinfo == 0
  * 	[name: string] domain friendly name
  * if mtype == TYPE_CONTEXT
+ * 	[flags: uleb128] must be 0
  * 	[domain: sleb128] domain id as pointer
  * if mtype == TYPE_THREAD && (format_version < 11 || (format_version > 10 && exinfo == 0))
+ * 	[flags: uleb128] must be 0
  * 	[name: string] thread name
  *
  * type method format:
