@@ -1753,24 +1753,41 @@ ProcessFuncletsForGCReporting:
                         // and so we can detect it just from walking the stack.
                         if (!fSkippingFunclet && (pTracker != NULL))
                         {
-                            ExceptionTracker* pCurrTracker = pTracker;
-                            // Scan all previous trackers and see if the current frame is a caller of any of
-                            // the handling frames. 
-                            while ((pCurrTracker = pCurrTracker->GetPreviousExceptionTracker()) != NULL)
-                            {
-                                StackFrame sfFuncletParent = pCurrTracker->GetCallerOfActualHandlingFrame();
-                                if (ExceptionTracker::IsUnwoundToTargetParentFrame(&m_crawl, sfFuncletParent))
-                                {
-                                    // We have found that the current frame is a caller of a handling frame.
-                                    // Set the members the same way we would set them on Windows when we
-                                    // would detect this just from stack walking.
-                                    m_sfParent = sfFuncletParent;
-                                    m_sfFuncletParent = sfFuncletParent;
-                                    m_fProcessNonFilterFunclet = true;
-                                    pTracker = pCurrTracker;
+                            bool fFoundFuncletParent = false;
 
-                                    break;
+                            // First check if the current frame is a caller of a funclet of a collapsed exception tracker
+                            StackFrame sfFuncletParent = pTracker->GetCallerOfCollapsedActualHandlingFrame();
+                            if (!sfFuncletParent.IsNull() && ExceptionTracker::IsUnwoundToTargetParentFrame(&m_crawl, sfFuncletParent))
+                            {
+                                fFoundFuncletParent = true;
+                            }
+                            else
+                            {
+                                ExceptionTracker* pCurrTracker = pTracker;
+
+                                // Scan all previous trackers and see if the current frame is a caller of any of
+                                // the handling frames. 
+                                while ((pCurrTracker = pCurrTracker->GetPreviousExceptionTracker()) != NULL)
+                                {
+                                    sfFuncletParent = pCurrTracker->GetCallerOfActualHandlingFrame();
+                                    if (ExceptionTracker::IsUnwoundToTargetParentFrame(&m_crawl, sfFuncletParent))
+                                    {
+                                        pTracker = pCurrTracker;
+                                        fFoundFuncletParent = true;
+
+                                        break;
+                                    }
                                 }
+                            }
+
+                            if (fFoundFuncletParent)
+                            {
+                                // We have found that the current frame is a caller of a handling frame.
+                                // Set the members the same way we would set them on Windows when we
+                                // would detect this just from stack walking.
+                                m_sfParent = sfFuncletParent;
+                                m_sfFuncletParent = sfFuncletParent;
+                                m_fProcessNonFilterFunclet = true;
                             }
                         }
 #endif // FEATURE_PAL
