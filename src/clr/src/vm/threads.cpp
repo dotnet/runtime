@@ -2021,6 +2021,7 @@ Thread::Thread()
 #ifdef FEATURE_HIJACK
     m_ppvHJRetAddrPtr = (VOID**) 0xCCCCCCCCCCCCCCCC;
     m_pvHJRetAddr = (VOID*) 0xCCCCCCCCCCCCCCCC;
+
     X86_ONLY(m_LastRedirectIP = 0);
     X86_ONLY(m_SpinCount = 0);
 #endif // FEATURE_HIJACK
@@ -12000,6 +12001,7 @@ HRESULT Thread::NeedsPriorityScheduling(BOOL *pbNeedsPriorityScheduling)
     return S_OK;
 }
 
+#ifdef FEATURE_INCLUDE_ALL_INTERFACES
 HRESULT Thread::YieldTask()
 {
 #undef Sleep
@@ -12205,6 +12207,7 @@ HRESULT Thread::YieldTask()
 #endif //_DEBUG
 
 #endif // FEATURE_HIJACK
+
 Retry:
         ::ResumeThread(hThread);
         if (fDone)
@@ -12226,6 +12229,7 @@ Retry:
     return S_OK;
 #define Sleep(a) Dont_Use_Sleep(a)
 }
+#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 HRESULT Thread::LocksHeld(SIZE_T *pLockCount)
 {

@@ -922,6 +922,14 @@ CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_StressOn, W("StressOn"), "Enables the S
 CONFIG_DWORD_INFO_EX(INTERNAL_stressSynchronized, W("stressSynchronized"), 0, "Unknown if or where this is used; unless a test is specifically depending on this, it can be removed.", CLRConfig::REGUTIL_default)
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_StressThreadCount, W("StressThreadCount"), "")
 
+//
+// Thread Suspend
+//
+CONFIG_DWORD_INFO(INTERNAL_DiagnosticSuspend, W("DiagnosticSuspend"), 0, "")
+CONFIG_DWORD_INFO(INTERNAL_SuspendDeadlockTimeout, W("SuspendDeadlockTimeout"), 40000, "")
+CONFIG_DWORD_INFO(INTERNAL_SuspendThreadDeadlockTimeoutMs, W("SuspendThreadDeadlockTimeoutMs"), 2000, "")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadSuspendInjection, W("INTERNAL_ThreadSuspendInjection"), 1, "Specifies whether to inject activations for thread suspension on Unix")
+
 // 
 // Threadpool
 // 
@@ -1046,7 +1054,6 @@ CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_CPUFeatures, W("CPUFeatures"), "")
 CONFIG_STRING_INFO_EX(INTERNAL_DeadCodeMax, W("DeadCodeMax"), "Sets internal jit constants for Dead Code elmination", CLRConfig::REGUTIL_default)
 RETAIL_CONFIG_STRING_INFO_DIRECT_ACCESS(INTERNAL_DefaultVersion, W("DefaultVersion"), "Version of CLR to load.")
 RETAIL_CONFIG_STRING_INFO_DIRECT_ACCESS(EXTERNAL_developerInstallation, W("developerInstallation"), "Flag to enable DEVPATH binding feature") // TODO: check special handling
-CONFIG_DWORD_INFO(INTERNAL_DiagnosticSuspend, W("DiagnosticSuspend"), 0, "")
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_shadowCopyVerifyByTimestamp, W("shadowCopyVerifyByTimestamp"), 0, "Fusion flag to enable quick verification of files in the shadow copy directory by using timestamps.", CLRConfig::FavorConfigFile | CLRConfig::MayHavePerformanceDefault)
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_disableFusionUpdatesFromADManager, W("disableFusionUpdatesFromADManager"), 0, "Fusion flag to prevent changes to the AppDomainSetup object made by implementations of AppDomainManager.InitializeNewDomain from propagating to Fusion", CLRConfig::FavorConfigFile)
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_disableCachingBindingFailures, W("disableCachingBindingFailures"), 0, "Fusion flag to re-enable Everett bind caching behavior (Whidbey caches failures for sharing)", CLRConfig::FavorConfigFile)
@@ -1122,8 +1129,6 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_SleepOnExit, W("SleepOnExit"), 0, "Used for
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_StubLinkerUnwindInfoVerificationOn, W("StubLinkerUnwindInfoVerificationOn"), "")
 RETAIL_CONFIG_DWORD_INFO_EX(UNSUPPORTED_SuccessExit, W("SuccessExit"), 0, "", CLRConfig::REGUTIL_default)
 CONFIG_DWORD_INFO(INTERNAL_SupressAllowUntrustedCallerChecks, W("SupressAllowUntrustedCallerChecks"), 0, "Disable APTCA")
-CONFIG_DWORD_INFO(INTERNAL_SuspendDeadlockTimeout, W("SuspendDeadlockTimeout"), 40000, "")
-CONFIG_DWORD_INFO(INTERNAL_SuspendThreadDeadlockTimeoutMs, W("SuspendThreadDeadlockTimeoutMs"), 2000, "")
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_SymbolReadingPolicy, W("SymbolReadingPolicy"), "Specifies when PDBs may be read")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TestDataConsistency, W("TestDataConsistency"), FALSE, "allows ensuring the left side is not holding locks (and may thus be in an inconsistent state) when inspection occurs")
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_ThreadGuardPages, W("ThreadGuardPages"), 0, "", CLRConfig::REGUTIL_default)
