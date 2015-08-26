@@ -119,5 +119,12 @@ namespace System.Linq.Tests.LegacyTests
 
             Assert.Equal(expected, source.OrderBy((e) => e.Name).ThenBy((e) => e.City, null));
         }
+
+        [Fact]
+        public void NullSource()
+        {
+            IOrderedEnumerable<int> source = null;
+            Assert.Throws<ArgumentNullException>(() => source.ThenBy(i => i));
+        }
     }
 }

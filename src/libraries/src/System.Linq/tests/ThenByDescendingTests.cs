@@ -99,5 +99,12 @@ namespace System.Linq.Tests
 
             Assert.Equal(expected, source.OrderByDescending((e) => e.Country).ThenByDescending((e) => e.City));
         }
+
+        [Fact]
+        public void NullSource()
+        {
+            IOrderedEnumerable<int> source = null;
+            Assert.Throws<ArgumentNullException>(() => source.ThenByDescending(i => i));
+        }
     }
 }

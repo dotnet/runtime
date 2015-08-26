@@ -160,5 +160,12 @@ namespace System.Linq.Tests
             var outOfOrder = new[] { 7, 1, 0, 9, 3, 5, 4, 2, 8, 6 };
             Assert.Equal(Enumerable.Range(0, 10).Reverse(), outOfOrder.OrderByDescending(i => i, new ExtremeComparer()));
         }
+
+        [Fact]
+        public void NullSource()
+        {
+            IEnumerable<int> source = null;
+            Assert.Throws<ArgumentNullException>(() => source.OrderByDescending(i => i));
+        }
     }
 }
