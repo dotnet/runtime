@@ -137,8 +137,8 @@ XUNIT_PREFIX+="<assemblies>\n"
 XUNIT_PREFIX+="<assembly name=\"PAL\" total=\"$NUMBER_OF_TESTS\" passed=\"$NUMBER_OF_PASSED_TESTS\" failed=\"$NUMBER_OF_FAILED_TESTS\" skipped=\"0\">\n"
 XUNIT_PREFIX+="<collection total=\"$NUMBER_OF_TESTS\" passed=\"$NUMBER_OF_PASSED_TESTS\" failed=\"$NUMBER_OF_FAILED_TESTS\" skipped=\"0\" name=\"palsuite\">"
 
-echo -e $XUNIT_SUFFIX >> $PAL_XUNIT_TEST_LIST_TMP
-echo -e $XUNIT_PREFIX | cat - $PAL_XUNIT_TEST_LIST_TMP > $PAL_XUNIT_TEST_LIST
+printf "$XUNIT_SUFFIX" >> $PAL_XUNIT_TEST_LIST_TMP
+printf "$XUNIT_PREFIX" | cat - $PAL_XUNIT_TEST_LIST_TMP > $PAL_XUNIT_TEST_LIST
 
 # If there were tests failures then print the list of failed tests
 if [ $NUMBER_OF_FAILED_TESTS -gt "0" ]; then
