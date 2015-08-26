@@ -36,7 +36,6 @@
     <Compile Include="BitVector32\SetItemSectionIntTests.cs" />
     <Compile Include="BitVector32\ToStringBvTests.cs" />
     <Compile Include="BitVector32\ToStringTests.cs" />
-    <Compile Include="Common\CollectionTesting\ICollectionTest.cs" />
     <Compile Include="Common\CollectionTesting\IEnumerableTest.cs" />
     <Compile Include="Common\CollectionTesting\TestSupport.cs" />
     <Compile Include="Common\GenStrings.cs" />
