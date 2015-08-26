@@ -1,9 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Net;
-
 using Xunit;
 
 namespace System.Net.WebHeaderCollectionTests
@@ -23,6 +20,7 @@ namespace System.Net.WebHeaderCollectionTests
             Assert.Equal(0, w.AllKeys.Length);
             Assert.Equal(0, w.Count);
             Assert.Equal("\r\n", w.ToString());
+            Assert.Empty(w);
         }
 
         [Fact]
@@ -227,17 +225,29 @@ namespace System.Net.WebHeaderCollectionTests
             WebHeaderCollection w = new WebHeaderCollection();
             Assert.Equal(0, w.Count);
             Assert.Null(w["name"]);
+            Assert.Null(w.GetValues("name"));
         }
 
-        [Fact]
-        public void GetValues_Success()
+        public static object[][] TestHeadersWithValues = 
+        {
+            new object[] { "Accept",           "text/plain, text/html",                  new[] { "text/plain", "text/html" } },
+            new object[] { "uPgRaDe",          " HTTP/2.0 , SHTTP/1.3,  , RTA/x11 ",     new[] { "HTTP/2.0", "SHTTP/1.3", string.Empty, "RTA/x11" } },
+            new object[] { "Custom",           "foo, bar, spam",                         new[] { "foo, bar, spam" } },
+            new object[] { "CustomQuotes",     "\"foo, bar, spam",                       new[] { "\"foo, bar, spam" } },
+            new object[] { "If-Match",         "xyzzy",                                  new[] { "xyzzy" } },
+            new object[] { "If-Match",         "\"xyzzy\", \"r2d2xxxx\", \"c3piozzzz\"", new[] { "\"xyzzy\"", "\"r2d2xxxx\"", "\"c3piozzzz\"" } },
+            new object[] { "If-Match",         "xyzzy, \"r2d2, xxxx\", c3piozzzz",       new[] { "xyzzy", "\"r2d2, xxxx\"", "c3piozzzz" } },
+            new object[] { "WWW-Authenticate", "Basic",                                  new[] { "Basic" } },
+        };
+
+        [Theory]
+        [MemberData("TestHeadersWithValues")]
+        public void GetValues_String_Success(string header, string value, string[] expectedValues)
         {
             WebHeaderCollection w = new WebHeaderCollection();
-            w.Add("Accept", "text/plain, text/html");
-            string[] values = w.GetValues("Accept");
-            Assert.Equal(2, values.Length);
-            Assert.Equal("text/plain", values[0]);
-            Assert.Equal("text/html", values[1]);
+            w.Add(header, value);
+            string modifiedHeader = header.ToLowerInvariant(); // header should be case insensitive
+            Assert.Equal(expectedValues, w.GetValues(modifiedHeader));
         }
 
         [Fact]
@@ -283,5 +293,98 @@ namespace System.Net.WebHeaderCollectionTests
             Assert.Equal("AcceptContent-Length", result);
         }
 
+        [Fact]
+        public void Get_Success()
+        {
+            string[] keys = { "Accept", "uPgRaDe", "Custom" };
+            string[] values = { "text/plain, text/html", " HTTP/2.0 , SHTTP/1.3,  , RTA/x11 ", "\"xyzzy\", \"r2d2xxxx\", \"c3piozzzz\"" };
+            WebHeaderCollection w = new WebHeaderCollection();
+
+            for (int i = 0; i < keys.Length; ++i)
+            {
+                w.Add(keys[i], values[i]);
+            }
+
+            for (int i = 0; i < keys.Length; ++i)
+            {
+                string expected = values[i].Trim();
+                Assert.Equal(expected, w.Get(i));
+            }
+        }
+
+        [Fact]
+        public void Get_Fail()
+        {
+            WebHeaderCollection w = new WebHeaderCollection();
+            w.Add("Accept", "text/plain");
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => w.Get(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => w.Get(42));
+        }
+
+        [Fact]
+        public void GetValues_Int_Success()
+        {
+            string[] keys = { "Accept", "uPgRaDe", "Custom" };
+            string[] values = { "text/plain, text/html", " HTTP/2.0 , SHTTP/1.3,  , RTA/x11 ", "\"xyzzy\", \"r2d2xxxx\", \"c3piozzzz\"" };
+            WebHeaderCollection w = new WebHeaderCollection();
+
+            for (int i = 0; i < keys.Length; ++i)
+            {
+                w.Add(keys[i], values[i]);
+            }
+
+            for (int i = 0; i < keys.Length; ++i)
+            {
+                string[] expected = new[] { values[i].Trim() };
+                Assert.Equal(expected, w.GetValues(i));
+            }
+        }
+
+        [Fact]
+        public void GetValues_Int_Fail()
+        {
+            WebHeaderCollection w = new WebHeaderCollection();
+            w.Add("Accept", "text/plain");
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => w.GetValues(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => w.GetValues(42));
+        }
+
+        [Fact]
+        public void GetKey_Success()
+        {
+            const string key = "Accept";
+            const string key2 = "Content-Length";
+            WebHeaderCollection w = new WebHeaderCollection();
+
+            w.Add(key, "text/plain");
+            w.Add(key2, "123");
+
+            Assert.Equal(key, w.GetKey(0));
+            Assert.Equal(key2, w.GetKey(1));
+        }
+
+        [Fact]
+        public void GetKey_Fail()
+        {
+            WebHeaderCollection w = new WebHeaderCollection();
+            w.Add("Accept", "text/plain");
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => w.GetKey(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => w.GetKey(42));
+        }
+
+        [Fact]
+        public void Clear_Success()
+        {
+            WebHeaderCollection w = new WebHeaderCollection();
+            w.Add("Accept", "text/plain");
+            w.Add("Content-Length", "123");
+
+            Assert.NotEmpty(w);
+            w.Clear();
+            Assert.Empty(w);
+        }
     }
 }
