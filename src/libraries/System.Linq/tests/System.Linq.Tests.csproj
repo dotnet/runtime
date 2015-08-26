@@ -73,8 +73,8 @@
     <Compile Include="LegacyTests\MaxTests.cs" />
     <Compile Include="LegacyTests\MinTests.cs" />
     <Compile Include="OfTypeTests.cs" />
-    <Compile Include="LegacyTests\OrderByDescendingTests.cs" />
-    <Compile Include="LegacyTests\OrderByTests.cs" />
+    <Compile Include="OrderByDescendingTests.cs" />
+    <Compile Include="OrderByTests.cs" />
     <Compile Include="LegacyTests\SelectManyTests.cs" />
     <Compile Include="LegacyTests\SelectTests.cs" />
     <Compile Include="LegacyTests\SingleOrDefaultTests.cs" />
@@ -84,8 +84,8 @@
     <Compile Include="LegacyTests\SumTests.cs" />
     <Compile Include="LegacyTests\TakeTests.cs" />
     <Compile Include="LegacyTests\TakeWhileTests.cs" />
-    <Compile Include="LegacyTests\ThenByDescendingTests.cs" />
-    <Compile Include="LegacyTests\ThenByTests.cs" />
+    <Compile Include="ThenByDescendingTests.cs" />
+    <Compile Include="ThenByTests.cs" />
     <Compile Include="ToLookupTests.cs" />
     <Compile Include="AsEnumerableTests.cs" />
     <Compile Include="LegacyTests\WhereTests.cs" />
