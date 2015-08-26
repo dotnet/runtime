@@ -7,7 +7,7 @@
     <ProjectGuid>{F24D3391-2928-4E83-AADE-B34423498750}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Diagnostics.Tracing.Telemetry</AssemblyName>
-    <AssemblyVersion>4.0.11.0</AssemblyVersion>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
