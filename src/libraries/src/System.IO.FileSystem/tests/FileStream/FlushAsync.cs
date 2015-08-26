@@ -1,63 +1,53 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.FileSystem.Tests
 {
-    public partial class FileStream_Flush : FileSystemTest
+    public partial class FileStream_FlushAsync : FileSystemTest
     {
-        [Theory]
-        [InlineData(null)]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void FlushThrowsForDisposedStream(bool? flushToDisk)
+        [Fact]
+        public async Task FlushAsyncThrowsForDisposedStream()
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
             {
                 fs.Dispose();
-                Assert.Throws<ObjectDisposedException>(() => Flush(fs, flushToDisk));
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => fs.FlushAsync());
             }
         }
 
-        [Theory]
-        [InlineData(null)]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void BasicFlushFunctionality(bool? flushToDisk)
+        [Fact]
+        public async Task BasicFlushAsyncFunctionality()
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
             {
                 fs.WriteByte(0);
-                Flush(fs, flushToDisk);
+                await fs.FlushAsync();
 
                 fs.WriteByte(0xFF);
-                Flush(fs, flushToDisk);
+                await fs.FlushAsync();
             }
         }
 
-        [Theory]
-        [InlineData(null)]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void FlushWhenNothingToFlush(bool? flushToDisk)
+        [Fact]
+        public async Task FlushAsyncWhenNothingToFlush()
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
             {
                 fs.WriteByte(0);
-                Flush(fs, flushToDisk);
+                await fs.FlushAsync();
 
-                Flush(fs, flushToDisk);
-                Flush(fs, flushToDisk);
-                Flush(fs, flushToDisk);
+                await fs.FlushAsync();
+                await fs.FlushAsync();
+                await fs.FlushAsync();
             }
         }
 
-        [Theory]
-        [InlineData(null)]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void FlushOnReadOnlyStreamDoesNotThrow(bool? flushToDisk)
+        [Fact]
+        public async Task FlushAsyncOnReadOnlyFileDoesNotThrow()
         {
             string fileName = GetTestFilePath();
             File.WriteAllBytes(fileName, new byte[] { 0 });
@@ -66,7 +56,7 @@ namespace System.IO.FileSystem.Tests
             {
                 using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read))
                 {
-                    Flush(fs, flushToDisk);
+                    await fs.FlushAsync();
                 }
             }
             finally
@@ -79,22 +69,19 @@ namespace System.IO.FileSystem.Tests
         [InlineData(null)]
         [InlineData(false)]
         [InlineData(true)]
-        public void FlushAfterReading(bool? flushToDisk)
+        public async Task FlushAfterReading(bool? flushToDisk)
         {
             string fileName = GetTestFilePath();
             File.WriteAllBytes(fileName, TestBuffer);
             using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, 2))
             {
                 Assert.Equal(TestBuffer[0], fs.ReadByte());
-                Flush(fs, flushToDisk);
+                await fs.FlushAsync();
             }
         }
 
-        [Theory]
-        [InlineData(null)]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void FlushWriteWithOtherClient(bool? flushToDisk)
+        [Fact]
+        public async Task FlushAsyncWriteWithOtherClient()
         {
             string fileName = GetTestFilePath();
 
@@ -109,7 +96,7 @@ namespace System.IO.FileSystem.Tests
                 Assert.Equal(0, fsr.Length);
 
                 // This should cause a write, after it completes the two handles should be in sync
-                Flush(fs, flushToDisk);
+                await fs.FlushAsync();
                 Assert.Equal(TestBuffer.Length, fsr.Length);
 
                 byte[] buffer = new byte[TestBuffer.Length];
@@ -119,36 +106,11 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
-        public void FlushCallsFlush_flushToDisk_False()
+        public void FlushAsyncWithCanceledToken()
         {
-            using (StoreFlushArgFileStream fs = new StoreFlushArgFileStream(GetTestFilePath(), FileMode.Create))
+            using (FileStream fs = File.OpenWrite(GetTestFilePath()))
             {
-                fs.Flush();
-                Assert.True(fs.LastFlushArg.HasValue);
-                Assert.False(fs.LastFlushArg.Value);
-            }
-        }
-
-        private static void Flush(FileStream fs, bool? flushArg)
-        {
-            if (!flushArg.HasValue)
-                fs.Flush();
-            else
-                fs.Flush(flushArg.Value);
-        }
-
-        private sealed class StoreFlushArgFileStream : FileStream
-        {
-            public StoreFlushArgFileStream(string path, FileMode mode) : base(path, mode)
-            {
-            }
-
-            public bool? LastFlushArg;
-
-            public override void Flush(bool flushToDisk)
-            {
-                LastFlushArg = flushToDisk;
-                base.Flush(flushToDisk);
+                Assert.True(fs.FlushAsync(new CancellationToken(true)).IsCanceled);
             }
         }
 
