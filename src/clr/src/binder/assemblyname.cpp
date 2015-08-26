@@ -117,7 +117,7 @@ namespace BINDER_SPACE
             assemblyName.Normalize();
 
             COUNT_T assemblyNameLength = assemblyName.GetCount();
-            if (assemblyNameLength == 0 || assemblyNameLength >= MAX_PATH)
+            if (assemblyNameLength == 0 || assemblyNameLength >= MAX_PATH_FNAME)
             {
                 IF_FAIL_GO(FUSION_E_INVALID_NAME);
             }

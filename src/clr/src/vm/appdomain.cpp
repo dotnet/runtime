@@ -4775,8 +4775,8 @@ void SystemDomain::GetDevpathW(__out_ecount_opt(1) LPWSTR* pDevpath, DWORD* pdwD
                 RegKeyHolder userKey;
                 RegKeyHolder machineKey;
 
-                WCHAR pVersion[MAX_PATH];
-                DWORD dwVersion = MAX_PATH;
+                WCHAR pVersion[MAX_PATH_FNAME];
+                DWORD dwVersion = MAX_PATH_FNAME;
                 HRESULT hr = S_OK;
                 hr = FusionBind::GetVersion(pVersion, &dwVersion);
                 if(SUCCEEDED(hr)) {

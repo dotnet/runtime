@@ -3911,8 +3911,8 @@ void PEAssembly::SetNativeImage(IBindResult *pNativeFusionAssembly)
     CONTRACTL_END;
 
     StackSString path;
-    WCHAR pwzPath[MAX_PATH];
-    DWORD dwCCPath = MAX_PATH;
+    WCHAR pwzPath[MAX_LONGPATH];
+    DWORD dwCCPath = MAX_LONGPATH;
     ReleaseHolder<IAssemblyLocation> pIAssemblyLocation;
 
     IfFailThrow(pNativeFusionAssembly->GetAssemblyLocation(&pIAssemblyLocation));
@@ -4846,9 +4846,9 @@ PEModule::PEModule(PEImage *image, PEAssembly *assembly, mdFile token, IMetaData
     {
         IAssemblyLocation *pIAssemblyLocation = assembly->GetNativeAssemblyLocation();
 
-        WCHAR wzPath[MAX_PATH];
+        WCHAR wzPath[MAX_LONGPATH];
         WCHAR *pwzTemp = NULL;
-        DWORD dwCCPath = MAX_PATH;
+        DWORD dwCCPath = MAX_LONGPATH;
         SString path;
         SString moduleName(SString::Utf8, GetSimpleName());
 

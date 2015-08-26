@@ -412,7 +412,7 @@ Returns: pointer to lpszDest
 STDAPI_(LPWSTR) PathCombineW(LPWSTR lpszDest, LPCWSTR lpszDir, LPCWSTR lpszFile)
 {
 #ifdef DEBUG
-    RIPMSG(lpszDest && IS_VALID_WRITE_BUFFER(lpszDest, TCHAR, MAX_PATH), "PathCombine: caller passed bad lpszDest");
+    RIPMSG(lpszDest && IS_VALID_WRITE_BUFFER(lpszDest, TCHAR, MAX_LONGPATH), "PathCombine: caller passed bad lpszDest");
     RIPMSG(!lpszDir || IS_VALID_STRING_PTR(lpszDir, -1), "PathCombine: caller passed bad lpszDir");
     RIPMSG(!lpszFile || IS_VALID_STRING_PTR(lpszFile, -1), "PathCombine: caller passed bad lpszFile");
     RIPMSG(lpszDir || lpszFile, "PathCombine: caller neglected to pass lpszDir or lpszFile");
@@ -421,7 +421,7 @@ STDAPI_(LPWSTR) PathCombineW(LPWSTR lpszDest, LPCWSTR lpszDir, LPCWSTR lpszFile)
 
     if (lpszDest)
     {
-        TCHAR szTemp[MAX_PATH];
+        TCHAR szTemp[MAX_LONGPATH];
         LPWSTR pszT;
 
         *szTemp = W('\0');
