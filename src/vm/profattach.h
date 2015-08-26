@@ -126,7 +126,7 @@ public:
     CLSID           m_clsidProfiler;
 
     // The path to the profiler's COM object to load
-    WCHAR           m_wszProfilerPath[MAX_PATH];
+    WCHAR           m_wszProfilerPath[MAX_LONGPATH];
 
     // Client data is custom data that the profiler's
     // trigger-process wishes to copy into this process.

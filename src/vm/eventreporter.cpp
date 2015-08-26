@@ -47,7 +47,7 @@ EventReporter::EventReporter(EventReporterType type)
     m_eventType = type;
 
     HMODULE hModule = WszGetModuleHandle(NULL);
-    WCHAR appPath[MAX_PATH];
+    WCHAR appPath[MAX_LONGPATH];
     DWORD ret = WszGetModuleFileName(hModule, appPath, NumItems(appPath));
 
     fBufferFull = FALSE;
@@ -739,7 +739,7 @@ void EventReporter::GetCoreCLRInstanceProductVersion(DWORD * pdwMajor, DWORD * p
     _ASSERTE(hModRuntime != NULL);
 
     // Get the path to the runtime
-    WCHAR runtimePath[MAX_PATH];
+    WCHAR runtimePath[MAX_LONGPATH];
     DWORD ret = WszGetModuleFileName(hModRuntime, runtimePath, NumItems(runtimePath));
     if (ret != 0)
     {

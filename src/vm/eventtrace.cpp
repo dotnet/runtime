@@ -4846,7 +4846,7 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
             PCWSTR szDtraceOutput1=W(""),szDtraceOutput2=W("");
             UINT8 startupMode = 0;
             UINT startupFlags = 0;
-            WCHAR dllPath[MAX_PATH+1] = {0};
+            WCHAR dllPath[MAX_LONGPATH+1] = {0};
             UINT8 Sku = 0;
             _ASSERTE(g_fEEManagedEXEStartup ||   //CLR started due to a managed exe
                 g_fEEIJWStartup ||               //CLR started as a mixed mode Assembly
@@ -4931,7 +4931,7 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
                 startupMode = ETW::InfoLog::InfoStructs::Other;
             }
 
-            _ASSERTE (NumItems(dllPath) > MAX_PATH);
+            _ASSERTE (NumItems(dllPath) > MAX_LONGPATH);
             // if WszGetModuleFileName fails, we return an empty string
             if (!WszGetModuleFileName(GetCLRModule(), dllPath, MAX_PATH)) {
                 dllPath[0] = 0;
@@ -5761,10 +5761,10 @@ static void GetCodeViewInfo(Module * pModule, CV_INFO_PDB70 * pCvInfoIL, CV_INFO
             return;
 
         // cbDebugData actually can be < sizeof(CV_INFO_PDB70), since the "path" field
-        // can be truncated to its actual data length (i.e., fewer than MAX_PATH chars
+        // can be truncated to its actual data length (i.e., fewer than MAX_LONGPATH chars
         // may be present in the PE file). In some cases, though, cbDebugData will
-        // include all MAX_PATH chars even though path gets null-terminated well before
-        // the MAX_PATH limit.
+        // include all MAX_LONGPATH chars even though path gets null-terminated well before
+        // the MAX_LONGPATH limit.
         
         // Gotta have at least one byte of the path
         if (cbDebugData < offsetof(CV_INFO_PDB70, path) + sizeof(char))

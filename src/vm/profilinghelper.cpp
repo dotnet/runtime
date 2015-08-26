@@ -792,7 +792,7 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerForStartup()
         return S_FALSE;
     }
 
-    if ((wszProfilerDLL != NULL) && (wcslen(wszProfilerDLL) >= MAX_PATH))
+    if ((wszProfilerDLL != NULL) && (wcslen(wszProfilerDLL) >= MAX_LONGPATH))
     {
         LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiling flag set, but COR_PROFILER_PATH was not set properly.\n"));
 

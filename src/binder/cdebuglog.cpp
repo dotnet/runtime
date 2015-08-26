@@ -56,11 +56,11 @@ namespace BINDER_SPACE
         {
             HRESULT hr=S_OK;
             LPTSTR  pszFileName;
-            TCHAR   szPath[MAX_PATH];
+            TCHAR   szPath[MAX_LONGPATH];
             DWORD   dw = 0;
 
             // _ASSERTE (pszPath ) ;
-            if (wcslen(pszName) >= MAX_PATH)
+            if (wcslen(pszName) >= MAX_LONGPATH)
             {
                 IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_BUFFER_OVERFLOW));
             }

@@ -77,20 +77,20 @@ VOID InstallEEFunctionTable (
     CONTRACTL_END;
 
     static LPWSTR wszModuleName = NULL;
-    static WCHAR  rgwModuleName[MAX_PATH] = {0};
+    static WCHAR  rgwModuleName[MAX_LONGPATH] = {0};
 
     if (wszModuleName == NULL)        
     {
         WCHAR rgwTempName[MAX_PATH] = {0};
-        DWORD dwTempNameSize = MAX_PATH;
+        DWORD dwTempNameSize = MAX_LONGPATH;
 
         // Leaves trailing backslash on path, producing something like "c:\windows\microsoft.net\framework\v4.0.x86dbg\"
         HRESULT hr = GetInternalSystemDirectory(rgwTempName, &dwTempNameSize);
 
         //finish creating complete path and copy to buffer if we can
         if (FAILED(hr) ||
-            (wcscat_s(rgwTempName, MAX_PATH, MAIN_DAC_MODULE_DLL_NAME_W) != 0) ||
-            (wcscpy_s(rgwModuleName, MAX_PATH, rgwTempName) != 0))
+            (wcscat_s(rgwTempName, MAX_LONGPATH, MAIN_DAC_MODULE_DLL_NAME_W) != 0) ||
+            (wcscpy_s(rgwModuleName, MAX_LONGPATH, rgwTempName) != 0))
         {   // The CLR should become unavailable in this case.
             EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
         }
