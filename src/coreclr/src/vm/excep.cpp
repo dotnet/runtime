@@ -3492,7 +3492,7 @@ DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord)
                 if ((g_pConfig != NULL) && !g_pConfig->LegacyNullReferenceExceptionPolicy() &&
                     !GetCompatibilityFlag(compatNullReferenceExceptionOnAV) )
                 {
-#ifdef FEATURE_HIJACK
+#if defined(FEATURE_HIJACK) && !defined(PLATFORM_UNIX)
                     // If we got the exception on a redirect function it means the original exception happened in managed code:
                     if (Thread::IsAddrOfRedirectFunc(pExceptionRecord->ExceptionAddress))
                         return (DWORD) kNullReferenceException;
@@ -3501,7 +3501,7 @@ DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord)
                     {
                         return (DWORD) kNullReferenceException;
                     }
-#endif // FEATURE_HIJACK
+#endif // FEATURE_HIJACK && !PLATFORM_UNIX
 
                     // If the IP of the AV is not in managed code, then its an AccessViolationException.
                     if (!ExecutionManager::IsManagedCode((PCODE)pExceptionRecord->ExceptionAddress))
@@ -7631,7 +7631,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
 
 LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
 {
-    // It is not safe to execute code inside VM after we shutdown EE.  One example is DiablePreemptiveGC
+    // It is not safe to execute code inside VM after we shutdown EE.  One example is DisablePreemptiveGC
     // will block forever.
     if (g_fForbidEnterEE)
     {
@@ -7707,8 +7707,6 @@ LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
     // already occured.
     //
 
-
-#ifndef FEATURE_PAL
     Thread *pThread;
 
     {
@@ -7736,15 +7734,16 @@ LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
     // the operating system will not be able to walk the stack and not find the handlers for
     // the exception.  It is safe to unhijack the thread in this case for two reasons:
     // 1.  pThread refers to *this* thread.
-    // 2.  If another thread trys to hijack this thread, it will se we are not in managed
+    // 2.  If another thread tries to hijack this thread, it will see we are not in managed
     //     code (and thus won't try to hijack us).
-#if defined(WIN64EXCEPTIONS)
+#if defined(WIN64EXCEPTIONS) && defined(FEATURE_HIJACK)
     if (pThread != NULL)
     {
         pThread->UnhijackThreadNoAlloc();
     }
-#endif // defined(WIN64EXCEPTIONS)
+#endif // defined(WIN64EXCEPTIONS) && defined(FEATURE_HIJACK)
 
+#ifndef FEATURE_PAL
     if (IsSOExceptionCode(pExceptionInfo->ExceptionRecord->ExceptionCode))
     {
         //
@@ -7765,7 +7764,7 @@ LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
     {
         DontCallDirectlyForceStackOverflow();
     }
-#endif
+#endif // FEATURE_STACK_PROBE
 
     // We can't probe here, because we won't return from the CLRVectoredExceptionHandlerPhase2
     // on WIN64
@@ -7787,7 +7786,6 @@ LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
     return CLRVectoredExceptionHandlerPhase2(pExceptionInfo);
 #endif // !FEATURE_PAL
 }
-
 
 LONG WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo)
 {
@@ -8021,11 +8019,11 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
     }
 #endif // USE_REDIRECT_FOR_GCSTRESS
 
-#ifdef FEATURE_HIJACK
+#if defined(FEATURE_HIJACK) && !defined(PLATFORM_UNIX)
 #ifdef _TARGET_X86_
     CPFH_AdjustContextForThreadSuspensionRace(pContext, GetThread());
 #endif // _TARGET_X86_
-#endif // FEATURE_HIJACK
+#endif // FEATURE_HIJACK && !PLATFORM_UNIX
 
     // Some other parts of the EE use exceptions in their own nefarious ways.  We do some up-front processing
     // here to fix up the exception if needed.

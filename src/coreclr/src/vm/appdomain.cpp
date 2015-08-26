@@ -11285,7 +11285,7 @@ BOOL AppDomain::StopEEAndUnwindThreads(unsigned int retryCount, BOOL *pFMarkUnlo
 
                 if (pThread->PreemptiveGCDisabledOther())
                 {
-        #ifdef FEATURE_HIJACK
+        #if defined(FEATURE_HIJACK) && !defined(PLATFORM_UNIX)
                     Thread::SuspendThreadResult str = pThread->SuspendThread();
                     if (str == Thread::STR_Success)
                     {
