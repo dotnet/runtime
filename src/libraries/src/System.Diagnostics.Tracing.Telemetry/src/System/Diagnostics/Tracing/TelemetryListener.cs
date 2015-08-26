@@ -229,7 +229,7 @@ namespace System.Diagnostics.Tracing
             {
                 if (subscriptions == null)
                 {
-                    Debug.Assert(false, "Could not find subscription");
+                    // May happen if the IDisposable returned from Subscribe is Dispose'd again
                     return null;
                 }
 
@@ -285,25 +285,29 @@ namespace System.Diagnostics.Tracing
             /// Remove 'subscription from the list of subscriptions that the observable has.   Called when
             /// subscriptions are disposed.  
             /// </summary>
-            private void Remove(AllListenerSubscription subscription)
+            private bool Remove(AllListenerSubscription subscription)
             {
                 lock (DefaultListener)
                 {
-                    // Remove myself from the linked list.  
                     if (_subscriptions == subscription)
+                    {
                         _subscriptions = subscription.Next;
-                    else
+                        return true;
+                    }
+                    else if (_subscriptions != null)
                     {
                         for (var cur = _subscriptions; cur.Next != null; cur = cur.Next)
                         {
-                            if (cur.Next.Subscriber == this)
+                            if (cur.Next == subscription)
                             {
                                 cur.Next = cur.Next.Next;
-                                return;
+                                return true;
                             }
                         }
-                        Debug.Assert(false, "Could not find subscription in the AllListeners subscribers list");
                     }
+
+                    // Subscriber likely disposed multiple times
+                    return false;
                 }
             }
 
@@ -322,12 +326,14 @@ namespace System.Diagnostics.Tracing
 
                 public void Dispose()
                 {
-                    _owner.Remove(this);
-                    Subscriber.OnCompleted();
+                    if (_owner.Remove(this))
+                    {
+                        Subscriber.OnCompleted();
+                    }
                 }
                     
-                private AllListenerObservable _owner;               // the list this is a member of.  
-                internal IObserver<TelemetryListener> Subscriber;
+                private readonly AllListenerObservable _owner;               // the list this is a member of.  
+                internal readonly IObserver<TelemetryListener> Subscriber;
                 internal AllListenerSubscription Next;
             }
 
@@ -345,7 +351,7 @@ namespace System.Diagnostics.Tracing
 
         private static TelemetryListener s_allListeners;                // linked list of all instances of TelemetryListeners.  
         private static AllListenerObservable s_allListenerObservable;   // to make callbacks to this object when listeners come into existence.  
-        private static TelemetryListener s_default = new TelemetryListener("TelemetryListener.DefaultListener");
+        private static readonly TelemetryListener s_default = new TelemetryListener("TelemetryListener.DefaultListener");
 
         #endregion
     }
