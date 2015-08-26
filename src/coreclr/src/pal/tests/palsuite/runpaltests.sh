@@ -59,8 +59,7 @@ PAL_XUNIT_TEST_LIST_TMP=$PAL_TEST_OUTPUT_DIR/pal_tests.xml.tmp
 PAL_XUNIT_TEST_LIST=$PAL_TEST_OUTPUT_DIR/pal_tests.xml
 
 # Capturing stdout and stderr
-PAL_STDOUT_FILE=$PAL_TEST_OUTPUT_DIR/pal_stdout
-PAL_STDERR_FILE=$PAL_TEST_OUTPUT_DIR/pal_stderr
+PAL_OUT_FILE=$PAL_TEST_OUTPUT_DIR/pal_test_out
 
 # Remove the temporary test output directory
 rm -r $PAL_TEST_OUTPUT_DIR
@@ -77,28 +76,17 @@ NUMBER_OF_FAILED_TESTS=0
 # Read PAL tests names from the $PAL_TEST_LIST file and run them one by one.
 while read TEST_NAME
 do
-  # Remove stdout/stderr files if they exist
-  rm -f $PAL_STDOUT_FILE
-  rm -f $PAL_STDERR_FILE
-  
-  # Save stdout/stderr
-  exec 3>&1 4>&2
-  
-  # Redirect to temp files
-  # Redirect stdout to the backed up stderr so tee outputs stderr to stderr
-  exec > >(tee "$PAL_STDOUT_FILE")
-  exec 2> >(tee "$PAL_STDERR_FILE" >&2)
+  # Remove stdout/stderr file if it exists
+  rm -f $PAL_OUT_FILE
 
   # Create path to a test executable to run
   TEST_COMMAND="$PAL_TEST_BUILD/$TEST_NAME"
   echo -n .
-  $TEST_COMMAND
+  # Redirect to temp file
+  $TEST_COMMAND 2>&1 | tee ${PAL_OUT_FILE} ; ( exit ${PIPESTATUS[0]} )
 
   # Get exit code of the test process.
   TEST_EXIT_CODE=$?
-  
-  # Restore stdout/stderr
-  exec >&3 2>&4
   
   TEST_XUNIT_NAME=$(dirname $TEST_NAME)
   TEST_XUNIT_CLASSNAME=$(dirname $TEST_XUNIT_NAME)
@@ -117,7 +105,7 @@ do
   else
     echo "Fail\" >" >> $PAL_XUNIT_TEST_LIST_TMP
     echo "<failure exception-type=\"Exit code: $TEST_EXIT_CODE\">" >> $PAL_XUNIT_TEST_LIST_TMP  
-    echo "<message><![CDATA[$(cat $PAL_STDERR_FILE)]]></message>" >> $PAL_XUNIT_TEST_LIST_TMP  
+    echo "<message><![CDATA[$(cat $PAL_OUT_FILE)]]></message>" >> $PAL_XUNIT_TEST_LIST_TMP  
     echo "</failure>" >> $PAL_XUNIT_TEST_LIST_TMP  
     echo "</test>" >> $PAL_XUNIT_TEST_LIST_TMP
     FAILED_TEST="$TEST_NAME. Exit code: $TEST_EXIT_CODE"
