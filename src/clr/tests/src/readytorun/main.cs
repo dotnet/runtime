@@ -1,0 +1,325 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+//
+
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
+#if CORECLR
+using System.Runtime.Loader;
+#endif
+using System.Reflection;
+using System.IO;
+
+class InstanceFieldTest : MyClass
+{
+    public int Value;
+}
+
+class InstanceFieldTest2 : InstanceFieldTest
+{
+    public int Value2;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+class InstanceFieldTestWithLayout : MyClassWithLayout
+{
+    public int Value;
+}
+
+class GrowingBase
+{
+    MyGrowingStruct s;
+}
+
+class InheritingFromGrowingBase : GrowingBase
+{
+    public int x;
+}
+
+class Program
+{
+    static void TestVirtualMethodCalls()
+    {
+         var o = new MyClass();
+         Assert.AreEqual(o.VirtualMethod(), "Virtual method result");
+
+         var iface = (IMyInterface)o;
+         Assert.AreEqual(iface.InterfaceMethod(" "), "Interface result");
+         Assert.AreEqual(MyClass.TestInterfaceMethod(iface, "+"), "Interface+result");
+    }
+
+    static void TestMovedVirtualMethods()
+    {
+        var o = new MyChildClass();
+
+        Assert.AreEqual(o.MovedToBaseClass(), "MovedToBaseClass");
+        Assert.AreEqual(o.ChangedToVirtual(), "ChangedToVirtual");
+
+        o = null;
+
+        try
+        {
+            o.MovedToBaseClass();
+        }
+        catch (NullReferenceException)
+        {
+            try
+            {
+                o.ChangedToVirtual();
+            }
+            catch (NullReferenceException)
+            {
+                return;
+            }
+        }
+
+        Assert.AreEqual("NullReferenceException", "thrown");
+    }
+
+
+    static void TestConstrainedMethodCalls()
+    {
+        using (MyStruct s = new MyStruct())
+        {
+             ((Object)s).ToString();
+        }
+    }
+
+    static void TestConstrainedMethodCalls_Unsupported()
+    {
+        MyStruct s = new MyStruct();
+        s.ToString();
+    }
+
+    static void TestInterop()
+    {
+        // Verify both intra-module and inter-module PInvoke interop
+        MyClass.GetTickCount();
+        MyClass.TestInterop();
+    }
+
+    static void TestStaticFields()
+    {
+        MyClass.StaticObjectField = 894;
+        MyClass.StaticLongField = 4392854;
+        MyClass.StaticNullableGuidField = new Guid("0D7E505F-E767-4FEF-AEEC-3243A3005673");
+        MyClass.ThreadStaticStringField = "Hello";
+        MyClass.ThreadStaticIntField = 735;
+        MyClass.ThreadStaticDateTimeField = new DateTime(2011, 1, 1);
+
+        MyClass.TestStaticFields();
+
+#if false // TODO: Enable once LDFTN is supported
+        Task.Run(() => { 
+           MyClass.ThreadStaticStringField = "Garbage";
+           MyClass.ThreadStaticIntField = 0xBAAD;
+           MyClass.ThreadStaticDateTimeField = DateTime.Now;
+        }).Wait();
+#endif
+
+        Assert.AreEqual(MyClass.StaticObjectField, 894 + 12345678 /* + 1234 */);
+        Assert.AreEqual(MyClass.StaticLongField, (long)(4392854 * 456 /* * 45 */));
+        Assert.AreEqual(MyClass.StaticNullableGuidField, null);
+        Assert.AreEqual(MyClass.ThreadStaticStringField, "HelloWorld");
+        Assert.AreEqual(MyClass.ThreadStaticIntField, 735/78);
+        Assert.AreEqual(MyClass.ThreadStaticDateTimeField, new DateTime(2011, 1, 1) + new TimeSpan(123));
+    }
+
+    static void TestPreInitializedArray()
+    {
+        var a = new int[] { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512 };
+
+        int sum = 0;
+        foreach (var e in a) sum += e;
+        Assert.AreEqual(sum, 1023);
+    }
+
+    static void TestMultiDimmArray()
+    {
+       var a = new int[2,3,4];
+       a[0,1,2] = a[0,0,0] + a[1,1,1];
+       a.ToString();
+    }
+
+    static void TestGenericVirtualMethod()
+    {
+        var o = new MyGeneric<String, Object>();
+        Assert.AreEqual(o.GenericVirtualMethod<Program, IEnumerable<String>>(),
+            "System.StringSystem.ObjectProgramSystem.Collections.Generic.IEnumerable`1[System.String]");
+    }
+
+    static void TestMovedGenericVirtualMethod()
+    {
+        var o = new MyChildGeneric<Object>();
+
+        Assert.AreEqual(o.MovedToBaseClass<WeakReference>(), typeof(List<WeakReference>).ToString());
+        Assert.AreEqual(o.ChangedToVirtual<WeakReference>(), typeof(List<WeakReference>).ToString());
+
+        o = null;
+
+        try
+        {
+            o.MovedToBaseClass<WeakReference>();
+        }
+        catch (NullReferenceException)
+        {
+            try
+            {
+                o.ChangedToVirtual<WeakReference>();
+            }
+            catch (NullReferenceException)
+            {
+                return;
+            }
+        }
+
+        Assert.AreEqual("NullReferenceException", "thrown");
+    }
+
+    static void TestInstanceFields()
+    {
+        var t = new InstanceFieldTest2();
+        t.Value = 123;
+        t.Value2 = 234;
+        t.InstanceField = 345;
+
+        Assert.AreEqual(typeof(InstanceFieldTest).GetRuntimeField("Value").GetValue(t), 123);
+        Assert.AreEqual(typeof(InstanceFieldTest2).GetRuntimeField("Value2").GetValue(t), 234);
+        Assert.AreEqual(typeof(MyClass).GetRuntimeField("InstanceField").GetValue(t), 345);
+    }
+
+    static void TestInstanceFieldsWithLayout()
+    {
+        var t = new InstanceFieldTestWithLayout();
+        t.Value = 123;
+
+        Assert.AreEqual(typeof(InstanceFieldTestWithLayout).GetRuntimeField("Value").GetValue(t), 123);
+    }
+
+    static void TestInheritingFromGrowingBase()
+    {
+        var o = new InheritingFromGrowingBase();
+        o.x = 6780;
+        Assert.AreEqual(typeof(InheritingFromGrowingBase).GetRuntimeField("x").GetValue(o), 6780);
+    }
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    static void TestGrowingStruct()
+    {
+        MyGrowingStruct s = MyGrowingStruct.Construct();
+        MyGrowingStruct.Check(ref s);
+    }
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    static void TestChangingStruct()
+    {
+        MyChangingStruct s = MyChangingStruct.Construct();
+        s.x++;
+        MyChangingStruct.Check(ref s);
+    }
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    static void TestChangingHFAStruct()
+    {
+        MyChangingHFAStruct s = MyChangingHFAStruct.Construct();
+        MyChangingHFAStruct.Check(s);
+    }
+
+#if CORECLR
+    class MyLoadContext : AssemblyLoadContext
+    {
+        public MyLoadContext()
+        {
+        }
+
+        public void TestMultipleLoads()
+        {
+#if V2
+            string testVersion = "2";
+#else
+            string testVersion = "1";
+#endif            
+            Assembly a = LoadFromAssemblyPath(Path.Combine(Directory.GetCurrentDirectory(), "NI", "testv" + testVersion + ".ni.dll"));
+            Assert.AreEqual(AssemblyLoadContext.GetLoadContext(a), this);
+        }
+
+        protected override Assembly Load(AssemblyName an)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    static void TestMultipleLoads()
+    {
+        try
+        {
+            new MyLoadContext().TestMultipleLoads();
+        }
+        catch (FileLoadException e)
+        {
+            Assert.AreEqual(e.ToString().Contains("Native image cannot be loaded multiple times"), true);
+            return;
+        }
+
+        Assert.AreEqual("FileLoadException", "thrown");
+    }
+#endif
+
+    static void TestFieldLayoutNGenMixAndMatch()
+    {
+        // This test is verifying consistent field layout when ReadyToRun images are combined with NGen images
+        // "ngen install /nodependencies main.exe" to exercise the interesting case
+        var o = new ByteChildClass(67);
+        Assert.AreEqual(o.ChildByte, (byte)67);
+    }
+
+    static void RunAllTests()
+    {
+        TestVirtualMethodCalls();
+        TestMovedVirtualMethods();
+
+        TestConstrainedMethodCalls();
+
+        TestConstrainedMethodCalls_Unsupported();
+
+        TestInterop();
+
+        TestStaticFields();
+
+        TestPreInitializedArray();
+
+        TestMultiDimmArray();
+
+        TestGenericVirtualMethod();
+        TestMovedGenericVirtualMethod();
+
+        TestInstanceFields();
+
+        TestInstanceFieldsWithLayout();
+
+        TestInheritingFromGrowingBase();
+
+        TestGrowingStruct();
+        TestChangingStruct();
+        TestChangingHFAStruct();
+
+#if CORECLR
+        TestMultipleLoads();
+#endif
+
+        TestFieldLayoutNGenMixAndMatch();
+    }
+
+    static int Main()
+    {
+        // Run all tests 3x times to exercise both slow and fast paths work
+        for (int i = 0; i < 3; i++)
+           RunAllTests();
+
+        Console.WriteLine("PASSED");
+        return Assert.HasAssertFired ? 1 : 100;
+    }
+}
