@@ -46,15 +46,15 @@ namespace System.IO.FileSystem.DriveInfoTests
             string invalidDriveName = "NonExistentDriveName";
             var invalidDrive = new DriveInfo(invalidDriveName);
 
-            Assert.Throws<DriveNotFoundException>(() => { var invalid = invalidDrive.AvailableFreeSpace; });
-            Assert.Throws<DriveNotFoundException>(() => { var invalid = invalidDrive.DriveFormat; });
+            Assert.Throws<DriveNotFoundException>(() =>invalidDrive.AvailableFreeSpace);
+            Assert.Throws<DriveNotFoundException>(() => invalidDrive.DriveFormat);
             Assert.Equal(DriveType.NoRootDirectory, invalidDrive.DriveType);
             Assert.False(invalidDrive.IsReady);
             Assert.Equal(invalidDriveName, invalidDrive.Name);
             Assert.Equal(invalidDriveName, invalidDrive.ToString());
             Assert.Equal(invalidDriveName, invalidDrive.RootDirectory.Name);
-            Assert.Throws<DriveNotFoundException>(() => { var invalid = invalidDrive.TotalFreeSpace; });
-            Assert.Throws<DriveNotFoundException>(() => { var invalid = invalidDrive.TotalSize; });
+            Assert.Throws<DriveNotFoundException>(() => invalidDrive.TotalFreeSpace);
+            Assert.Throws<DriveNotFoundException>(() => invalidDrive.TotalSize);
             Assert.Equal(invalidDriveName, invalidDrive.VolumeLabel);   // VolumeLabel is equivalent to Name on Unix
         }
 

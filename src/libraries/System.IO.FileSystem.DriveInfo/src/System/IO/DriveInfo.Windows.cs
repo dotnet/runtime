@@ -14,7 +14,6 @@ namespace System.IO
         private static string NormalizeDriveName(string driveName)
         {
             Debug.Assert(driveName != null);
-            Contract.EndContractBlock();
 
             string name;
 
