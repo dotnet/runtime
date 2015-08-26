@@ -62,8 +62,8 @@
     <Compile Include="CountTests.cs" />
     <Compile Include="DefaultIfEmptyTests.cs" />
     <Compile Include="DistinctTests.cs" />
-    <Compile Include="LegacyTests\ElementAtOrDefaultTests.cs" />
-    <Compile Include="LegacyTests\ElementAtTests.cs" />
+    <Compile Include="ElementAtOrDefaultTests.cs" />
+    <Compile Include="ElementAtTests.cs" />
     <Compile Include="SequenceEqualTests.cs" />
     <Compile Include="LegacyTests\GroupByTests.cs" />
     <Compile Include="LegacyTests\GroupJoinTests.cs" />
