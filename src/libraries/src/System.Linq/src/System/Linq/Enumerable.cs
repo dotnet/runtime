@@ -3289,7 +3289,7 @@ namespace System.Linq
     {
         internal abstract void ComputeKeys(TElement[] elements, int count);
 
-        internal abstract int CompareKeys(int index1, int index2);
+        internal abstract int CompareAnyKeys(int index1, int index2);
 
         internal int[] Sort(TElement[] elements, int count)
         {
@@ -3298,6 +3298,11 @@ namespace System.Linq
             for (int i = 0; i < count; i++) map[i] = i;
             QuickSort(map, 0, count - 1);
             return map;
+        }
+
+        private int CompareKeys(int index1, int index2)
+        {
+            return index1 == index2 ? 0 : CompareAnyKeys(index1, index2);
         }
 
         private void QuickSort(int[] map, int left, int right)
@@ -3358,13 +3363,13 @@ namespace System.Linq
             if (next != null) next.ComputeKeys(elements, count);
         }
 
-        internal override int CompareKeys(int index1, int index2)
+        internal override int CompareAnyKeys(int index1, int index2)
         {
             int c = comparer.Compare(keys[index1], keys[index2]);
             if (c == 0)
             {
                 if (next == null) return index1 - index2;
-                return next.CompareKeys(index1, index2);
+                return next.CompareAnyKeys(index1, index2);
             }
             // -c will result in a negative value for int.MinValue (-int.MinValue == int.MinValue).
             // Flipping keys earlier is more likely to trigger something strange in a comparer,
