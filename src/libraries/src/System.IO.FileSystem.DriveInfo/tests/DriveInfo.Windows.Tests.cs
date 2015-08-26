@@ -75,12 +75,12 @@ namespace System.IO.FileSystem.DriveInfoTests
             }
             else
             {
-                Assert.Throws<IOException>(() => { var df = validDrive.DriveFormat; });
+                Assert.Throws<IOException>(() => validDrive.DriveFormat);
             }
 
             // Test Invalid drive
             var invalidDrive = new DriveInfo(GetInvalidDriveLettersOnMachine().First().ToString());
-            Assert.Throws<DriveNotFoundException>(() => { var df = invalidDrive.DriveFormat; });
+            Assert.Throws<DriveNotFoundException>(() => invalidDrive.DriveFormat);
         }
 
         [Fact]
@@ -135,17 +135,17 @@ namespace System.IO.FileSystem.DriveInfoTests
             string invalidDriveName = GetInvalidDriveLettersOnMachine().First().ToString();
             var invalidDrive = new DriveInfo(invalidDriveName);
 
-            Assert.Throws<DriveNotFoundException>(() => { var invalid = invalidDrive.AvailableFreeSpace; });
-            Assert.Throws<DriveNotFoundException>(() => { var invalid = invalidDrive.DriveFormat; });
+            Assert.Throws<DriveNotFoundException>(() => invalidDrive.AvailableFreeSpace);
+            Assert.Throws<DriveNotFoundException>(() => invalidDrive.DriveFormat);
             Assert.Equal(DriveType.NoRootDirectory, invalidDrive.DriveType);
             Assert.False(invalidDrive.IsReady);
             Assert.Equal(invalidDriveName + ":\\", invalidDrive.Name);
             Assert.Equal(invalidDriveName + ":\\", invalidDrive.ToString());
             Assert.Equal(invalidDriveName + ":\\", invalidDrive.RootDirectory.FullName);
-            Assert.Throws<DriveNotFoundException>(() => { var invalid = invalidDrive.TotalFreeSpace; });
-            Assert.Throws<DriveNotFoundException>(() => { var invalid = invalidDrive.TotalSize; });
-            Assert.Throws<DriveNotFoundException>(() => { var invalid = invalidDrive.VolumeLabel; });
-            Assert.Throws<DriveNotFoundException>(() => { invalidDrive.VolumeLabel = null; });
+            Assert.Throws<DriveNotFoundException>(() => invalidDrive.TotalFreeSpace);
+            Assert.Throws<DriveNotFoundException>(() => invalidDrive.TotalSize);
+            Assert.Throws<DriveNotFoundException>(() => invalidDrive.VolumeLabel);
+            Assert.Throws<DriveNotFoundException>(() => invalidDrive.VolumeLabel = null);
         }
 
         [Fact]
