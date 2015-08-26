@@ -100,8 +100,8 @@ namespace System.Linq.Tests
         [Fact]
         public void FirstAndLastAreDuplicatesNullPassedAsComparer()
         {
-            string[] source = { "Prakash", "Alpha", "DAN", "dan", "Prakash" };
-            string[] expected = { "Prakash", "Prakash", "DAN", "dan", "Alpha" };
+            int[] source = { 5, 1, 3, 2, 5 };
+            int[] expected = { 5, 5, 3, 2, 1 };
 
             Assert.Equal(expected, source.OrderByDescending(e => e, null));
         }
