@@ -129,7 +129,7 @@ struct DirectoryEntry
  */
 extern "C"
 int32_t FStat(
-    int32_t fileDescriptor,
+    int32_t fd,
     FileStatus* output);
 
 /**
@@ -160,7 +160,7 @@ int32_t LStat(
 extern "C"
 int32_t Open(
     const char* path,
-    int32_t oflag,
+    int32_t flags,
     int32_t mode);
 
 /**
@@ -170,8 +170,8 @@ int32_t Open(
  */
 extern "C"
 int32_t Close(
-    int32_t fileDescriptor);
-    
+    int32_t fd);
+
 /**
  * Delete an entry from the file system. Implemented as shim to unlink(2).
  *
@@ -180,7 +180,7 @@ int32_t Close(
 extern "C"
 int32_t Unlink(
     const char* path);
-    
+
 /**
  * Open or create a shared memory object. Implemented as shim to shm_open(3).
  *
@@ -188,9 +188,9 @@ int32_t Unlink(
  */
 extern "C"
 int32_t ShmOpen(
-     const char* name,
-     int32_t oflag,
-     int32_t mode);
+    const char* name,
+    int32_t flags,
+    int32_t mode);
      
 /**
  * Unlink a shared memory object. Implemented as shim to shm_unlink(3).
@@ -223,10 +223,12 @@ int32_t ReadDirR(
  * Returns a DIR struct containing info about the current path or NULL on failure; sets errno on fail.
  */
 extern "C"
-DIR* OpenDir(const char* path);
+DIR* OpenDir(
+    const char* path);
 
 /**
  * Closes the directory stream opened by opendir and returns 0 on success. On fail, -1 is returned and errno is set
  */
 extern "C"
-int32_t CloseDir(DIR* directory);
+int32_t CloseDir(
+    DIR* dir);
