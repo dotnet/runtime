@@ -232,3 +232,50 @@ DIR* OpenDir(
 extern "C"
 int32_t CloseDir(
     DIR* dir);
+
+/**
+ * Creates a pipe. Implemented as shim to pipe(2) or pipe2(2) if available.
+ * Flags are ignored if pipe2 is not available.
+ *
+ * Returns 0 for success, -1 for failure. Sets errno on failure.
+ */
+extern "C"
+int32_t Pipe(
+    int32_t pipefd[2], // [out] pipefds[0] gets read end, pipefd[1] gets write end.
+    int32_t flags);    // 0 for defaults or PAL_O_CLOEXEC for close-on-exec
+
+
+// NOTE: Rather than a general fcntl shim, we opt to export separate functions 
+// for each command. This allows use to have strongly typed arguments and saves
+// complexity around converting command codes.
+
+/**
+ * Determines if the current platform supports getting and setting pipe capacity.
+ *
+ * Returns true (non-zero) if supported, false (zero) if not.
+ */
+extern "C"
+int32_t FcntlCanGetSetPipeSz();
+
+/**
+ * Gets the capacity of a pipe.
+ *
+ * Returns the capacity or -1 with errno set aprropriately on failure.
+ *
+ * NOTE: Some platforms do not support this operation and will always fail with errno = ENOTSUP.
+ */
+extern "C"
+int32_t FcntlGetPipeSz(
+    int32_t fd);
+
+/**
+ * Sets the capacity of a pipe.
+ *
+ * Returns 0 for success, -1 for failure. Sets errno for failure.
+ *
+ * NOTE: Some platforms do not support this operation and will always fail with errno = ENOTSUP.
+ */
+extern "C"
+int32_t FcntlSetPipeSz(
+    int32_t fd,
+    int32_t size);

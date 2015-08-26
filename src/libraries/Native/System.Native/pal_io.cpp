@@ -302,3 +302,58 @@ int32_t CloseDir(DIR* dir)
 {
     return closedir(dir);
 }
+
+extern "C"
+int32_t Pipe(int32_t pipeFds[2], int32_t flags)
+{
+    switch (flags)
+    {
+    case 0:
+        break;
+    case PAL_O_CLOEXEC:
+        flags = O_CLOEXEC;
+        break;
+    default:
+        assert(!"Unknown flag.");
+        errno = EINVAL;
+        return -1;
+    }
+
+#if HAVE_PIPE2
+    return pipe2(pipeFds, flags);
+#else
+    return pipe(pipeFds); // CLOEXEC intentionally ignored on platforms without pipe2.
+#endif
+}
+
+extern "C"
+int32_t FcntlCanGetSetPipeSz()
+{
+#if defined(F_GETPIPE_SZ) && defined(F_SETPIPE_SZ)
+    return true;
+#else
+    return false;
+#endif
+}
+
+extern "C"
+int32_t FcntlGetPipeSz(int32_t fd)
+{
+#ifdef F_GETPIPE_SZ
+    return fcntl(fd, F_GETPIPE_SZ);
+#else
+    errno = ENOTSUP;
+    return -1;
+#endif
+}
+
+extern "C"
+int32_t FcntlSetPipeSz(int32_t fd, int32_t size)
+{
+#ifdef F_SETPIPE_SZ
+    return fcntl(fd, F_SETPIPE_SZ, size);
+#else
+    errno = ENOTSUP;
+    return -1;
+#endif
+}
