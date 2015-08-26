@@ -552,6 +552,13 @@ public:
         return m_sfCallerOfActualHandlerFrame;
     }
 
+    StackFrame GetCallerOfCollapsedActualHandlingFrame()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return m_EnclosingClauseInfoOfCollapsedTracker.GetEnclosingClauseCallerSP();
+    }
+
 #ifndef FEATURE_PAL          
 private:
     EHWatsonBucketTracker m_WatsonBucketTracker;
