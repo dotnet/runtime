@@ -476,6 +476,64 @@ namespace System.Diagnostics.Tracing.Telemetry.Tests
             Assert.Equal(0, list.Count);
         }
 
+        [Fact]
+        public void DoubleDisposeOfListener()
+        {
+            var listener = new TelemetryListener("MyListener");
+            int completionCount = 0;
+
+            IDisposable subscription = listener.Subscribe(MakeObserver<KeyValuePair<string, object>>(_ => { }, () => completionCount++));
+            
+            listener.Dispose();
+            listener.Dispose();
+
+            subscription.Dispose();
+            subscription.Dispose();
+
+            Assert.Equal(1, completionCount);
+        }
+
+        [Fact]
+        public void ListenerToString()
+        {
+            string name = Guid.NewGuid().ToString();
+            using (var listener = new TelemetryListener(name))
+            {
+                Assert.Equal(name, listener.ToString());
+            }
+        }
+
+        [Fact]
+        public void DisposeAllListenerSubscriptionInSameOrderSubscribed()
+        {
+            int count1 = 0, count2 = 0, count3 = 0;
+            IDisposable sub1 = TelemetryListener.AllListeners.Subscribe(MakeObserver<TelemetryListener>(onCompleted: () => count1++));
+            IDisposable sub2 = TelemetryListener.AllListeners.Subscribe(MakeObserver<TelemetryListener>(onCompleted: () => count2++));
+            IDisposable sub3 = TelemetryListener.AllListeners.Subscribe(MakeObserver<TelemetryListener>(onCompleted: () => count3++));
+
+            Assert.Equal(0, count1);
+            Assert.Equal(0, count2);
+            Assert.Equal(0, count3);
+
+            sub1.Dispose();
+            Assert.Equal(1, count1);
+            Assert.Equal(0, count2);
+            Assert.Equal(0, count3);
+            sub1.Dispose(); // dispose again just to make sure nothing bad happens
+
+            sub2.Dispose();
+            Assert.Equal(1, count1);
+            Assert.Equal(1, count2);
+            Assert.Equal(0, count3);
+            sub2.Dispose();
+
+            sub3.Dispose();
+            Assert.Equal(1, count1);
+            Assert.Equal(1, count2);
+            Assert.Equal(1, count3);
+            sub3.Dispose();
+        }
+
         #region Helpers 
         /// <summary>
         /// Returns the list of active telemetry listeners.  
@@ -507,7 +565,11 @@ namespace System.Diagnostics.Tracing.Telemetry.Tests
         /// <summary>
         /// Used to make an observer out of a action delegate. 
         /// </summary>
-        private static IObserver<T> MakeObserver<T>(Action<T> action) { return new Observer<T>(action);  }
+        private static IObserver<T> MakeObserver<T>(
+            Action<T> onNext = null, Action onCompleted = null)
+        {
+            return new Observer<T>(onNext, onCompleted);
+        }
 
         /// <summary>
         /// Used in the implementation of MakeObserver.  
@@ -515,11 +577,18 @@ namespace System.Diagnostics.Tracing.Telemetry.Tests
         /// <typeparam name="T"></typeparam>
         private class Observer<T> : IObserver<T>
         {
-            public Observer(Action<T> onNext) { _onNext = onNext; }
-            public void OnCompleted() { }
+            public Observer(Action<T> onNext, Action onCompleted)
+            {
+                _onNext = onNext ?? new Action<T>(_ => { });
+                _onCompleted = onCompleted ?? new Action(() => { });
+            }
+
+            public void OnCompleted() { _onCompleted(); }
             public void OnError(Exception error) { }
             public void OnNext(T value) { _onNext(value); }
+
             private Action<T> _onNext;
+            private Action _onCompleted;
         }
         #endregion 
     }
