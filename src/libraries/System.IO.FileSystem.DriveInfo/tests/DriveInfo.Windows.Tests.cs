@@ -75,12 +75,12 @@ namespace System.IO.FileSystem.DriveInfoTests
             }
             else
             {
-                Assert.Throws<IOException>(() => { var df = validDrive.DriveFormat; });
+                Assert.Throws<IOException>(() => validDrive.DriveFormat);
             }
 
             // Test Invalid drive
             var invalidDrive = new DriveInfo(GetInvalidDriveLettersOnMachine().First().ToString());
-            Assert.Throws<DriveNotFoundException>(() => { var df = invalidDrive.DriveFormat; });
+            Assert.Throws<DriveNotFoundException>(() => invalidDrive.DriveFormat);
         }
 
         [Fact]
@@ -106,7 +106,6 @@ namespace System.IO.FileSystem.DriveInfoTests
             long fbTotal;
             DriveInfo drive;
 
-            // Scenario 1: Drive Exists
             drive = DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed).First();
             if (drive.IsReady)
             {
@@ -115,6 +114,11 @@ namespace System.IO.FileSystem.DriveInfoTests
 
                 if (fbUser != drive.AvailableFreeSpace)
                     Assert.True(drive.AvailableFreeSpace >= 0);
+
+                // valid property getters shouldn't throw
+                string name = drive.Name;
+                string format = drive.DriveFormat;
+                Assert.Equal(name, drive.ToString());
 
                 // totalsize should not change for a fixed drive.
                 Assert.Equal(tbUser, drive.TotalSize);
@@ -126,53 +130,66 @@ namespace System.IO.FileSystem.DriveInfoTests
 
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
-        public void TestInvalidDisksSpaceProperties()
+        public void TestInvalidDiskProperties()
         {
-            var invalidDrive = new DriveInfo(GetInvalidDriveLettersOnMachine().First().ToString());
+            string invalidDriveName = GetInvalidDriveLettersOnMachine().First().ToString();
+            var invalidDrive = new DriveInfo(invalidDriveName);
 
-            Assert.Throws<DriveNotFoundException>(() => { var size = invalidDrive.AvailableFreeSpace; });
-            Assert.Throws<DriveNotFoundException>(() => { var size = invalidDrive.TotalFreeSpace; });
-            Assert.Throws<DriveNotFoundException>(() => { var size = invalidDrive.TotalSize; });
+            Assert.Throws<DriveNotFoundException>(() => invalidDrive.AvailableFreeSpace);
+            Assert.Throws<DriveNotFoundException>(() => invalidDrive.DriveFormat);
+            Assert.Equal(DriveType.NoRootDirectory, invalidDrive.DriveType);
+            Assert.False(invalidDrive.IsReady);
+            Assert.Equal(invalidDriveName + ":\\", invalidDrive.Name);
+            Assert.Equal(invalidDriveName + ":\\", invalidDrive.ToString());
+            Assert.Equal(invalidDriveName + ":\\", invalidDrive.RootDirectory.FullName);
+            Assert.Throws<DriveNotFoundException>(() => invalidDrive.TotalFreeSpace);
+            Assert.Throws<DriveNotFoundException>(() => invalidDrive.TotalSize);
+            Assert.Throws<DriveNotFoundException>(() => invalidDrive.VolumeLabel);
+            Assert.Throws<DriveNotFoundException>(() => invalidDrive.VolumeLabel = null);
         }
 
-        [Fact, OuterLoop]
-        [ActiveIssue(1355)]
+        [Fact]
         [PlatformSpecific(PlatformID.Windows)]
-        public void TestVolumeLabel()
+        public void GetVolumeLabel_Returns_CorrectLabel()
         {
+            int serialNumber, maxFileNameLen, fileSystemFlags;
+            int volNameLen = 50;
+            int fileNameLen = 50;
+            StringBuilder volumeName = new StringBuilder(volNameLen);
+            StringBuilder fileSystemName = new StringBuilder(fileNameLen);
+
             // Get Volume Label - valid drive
             var validDrive = DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed).First();
-            const int volNameLen = 50;
-            StringBuilder volumeName = new StringBuilder(volNameLen);
-            const int fileSystemNameLen = 50;
-            StringBuilder fileSystemName = new StringBuilder(fileSystemNameLen);
-            int serialNumber, maxFileNameLen, fileSystemFlags;
-            bool r = GetVolumeInformation(validDrive.Name, volumeName, volNameLen, out serialNumber, out maxFileNameLen, out fileSystemFlags, fileSystemName, fileSystemNameLen);
+            bool r = GetVolumeInformation(validDrive.Name, volumeName, volNameLen, out serialNumber, out maxFileNameLen, out fileSystemFlags, fileSystemName, fileNameLen);
             if (r)
             {
                 Assert.Equal(volumeName.ToString(), validDrive.VolumeLabel);
             }
-
-            // Set Volume Label - valid drive
-            string newLabel = "DriveInfoTests";
-            string originalLabel = validDrive.VolumeLabel;
-
-            if (validDrive.IsReady)
+            else // if we can't compare the volumeName, we should at least check that getting it doesn't throw
             {
-                bool haveAccess = true;
-                try
-                {
-                    validDrive.VolumeLabel = newLabel;
-                    Assert.Equal(newLabel, validDrive.VolumeLabel);
-                }
-                catch (UnauthorizedAccessException) { haveAccess = false; }
-                finally
-                {
-                    if (haveAccess)
-                        validDrive.VolumeLabel = originalLabel;
-                }
+                var name = validDrive.VolumeLabel;
             }
+        }
 
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void SetVolumeLabel_Roundtrips()
+        {
+            DriveInfo drive = DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed).First();
+            string currentLabel = drive.VolumeLabel;
+            try
+            {
+                drive.VolumeLabel = currentLabel; // shouldn't change the state of the drive regardless of success
+            }
+            catch (UnauthorizedAccessException) { }
+            Assert.Equal(drive.VolumeLabel, currentLabel);
+        }
+
+        [Fact]
+        [ActiveIssue(1355)]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void VolumeLabelOnNetworkOrCdRom_Throws_UnauthorizedAccessException()
+        {
             // Test UnauthorizedAccess on Network or CD-ROM
             var noAccessDrive = DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Network || d.DriveType == DriveType.CDRom);
             foreach (var adrive in noAccessDrive)
@@ -180,11 +197,6 @@ namespace System.IO.FileSystem.DriveInfoTests
                 if (adrive.IsReady)
                     Assert.Throws<UnauthorizedAccessException>(() => { adrive.VolumeLabel = null; });
             }
-
-            // Test Invalid drive
-            var invalidDrive = new DriveInfo(GetInvalidDriveLettersOnMachine().First().ToString());
-            Assert.Throws<DriveNotFoundException>(() => { var vl = invalidDrive.VolumeLabel; });
-            Assert.Throws<DriveNotFoundException>(() => { invalidDrive.VolumeLabel = null; });
         }
 
         [DllImport("api-ms-win-core-file-l1-1-0.dll", SetLastError = true)]
