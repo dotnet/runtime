@@ -74,23 +74,7 @@
     <Compile Include="NameValueCollection\SetStrStrTests.cs" />
     <Compile Include="OrderedDictionary\CaseInsensitiveEqualityComparer.cs" />
     <Compile Include="OrderedDictionary\OrderedDictionaryTests.cs" />
-    <Compile Include="StringCollection\AddRangeStrATests.cs" />
-    <Compile Include="StringCollection\AddStrTests.cs" />
-    <Compile Include="StringCollection\ClearTests.cs" />
-    <Compile Include="StringCollection\ContainsStrTests.cs" />
-    <Compile Include="StringCollection\CopyToStrAIntTests.cs" />
-    <Compile Include="StringCollection\CtorTests.cs" />
-    <Compile Include="StringCollection\GetCountTests.cs" />
-    <Compile Include="StringCollection\GetEnumeratorTests.cs" />
-    <Compile Include="StringCollection\GetIsReadOnlyTests.cs" />
-    <Compile Include="StringCollection\GetIsSynchronizedTests.cs" />
-    <Compile Include="StringCollection\GetItemTests.cs" />
-    <Compile Include="StringCollection\GetSyncRootTests.cs" />
-    <Compile Include="StringCollection\IndexOfStrTests.cs" />
-    <Compile Include="StringCollection\InsertIntStrTests.cs" />
-    <Compile Include="StringCollection\RemoveAtIntTests.cs" />
-    <Compile Include="StringCollection\RemoveStrTests.cs" />
-    <Compile Include="StringCollection\SetItemTests.cs" />
+    <Compile Include="StringCollectionTests.cs" />
     <Compile Include="StringDictionary\AddStrStrTests.cs" />
     <Compile Include="StringDictionary\ClearTests.cs" />
     <Compile Include="StringDictionary\ContainsKeyStrTests.cs" />
@@ -106,9 +90,6 @@
     <Compile Include="StringDictionary\GetValuesTests.cs" />
     <Compile Include="StringDictionary\RemoveStrTests.cs" />
     <Compile Include="StringDictionary\SetItemStrStrTests.cs" />
-    <Compile Include="StringEnumerator\GetCurrentTests.cs" />
-    <Compile Include="StringEnumerator\MoveNextTests.cs" />
-    <Compile Include="StringEnumerator\ResetTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Collections.Specialized.csproj">
