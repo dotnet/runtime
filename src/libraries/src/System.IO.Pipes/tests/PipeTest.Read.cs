@@ -1,7 +1,9 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -258,15 +260,13 @@ namespace System.IO.Pipes.Tests
         }
 
         [Theory]
-        [InlineData(5000, 1, 1)]       // very small buffers
-        [InlineData(500, 21, 18)]      // lots of iterations, with read buffer smaller than write buffer
-        [InlineData(500, 18, 21)]      // lots of iterations, with write buffer smaller than read buffer
-        [InlineData(5, 128000, 64000)] // very large buffers
-        public async Task AsyncReadWriteChain(int iterations, int writeBufferSize, int readBufferSize)
+        [MemberData("AsyncReadWriteChain_MemberData")]
+        public async Task AsyncReadWriteChain(int iterations, int writeBufferSize, int readBufferSize, bool cancelableToken)
         {
             var writeBuffer = new byte[writeBufferSize];
             var readBuffer = new byte[readBufferSize];
             var rand = new Random();
+            var cancellationToken = cancelableToken ? new CancellationTokenSource().Token : CancellationToken.None;
 
             using (ServerClientPair pair = CreateServerClientPair())
             {
@@ -275,12 +275,12 @@ namespace System.IO.Pipes.Tests
                 for (int iter = 0; iter < iterations; iter++)
                 {
                     rand.NextBytes(writeBuffer);
-                    Task writerTask = pair.writeablePipe.WriteAsync(writeBuffer, 0, writeBuffer.Length);
+                    Task writerTask = pair.writeablePipe.WriteAsync(writeBuffer, 0, writeBuffer.Length, cancellationToken);
 
                     int totalRead = 0;
                     while (totalRead < writeBuffer.Length)
                     {
-                        int numRead = await pair.readablePipe.ReadAsync(readBuffer, 0, readBuffer.Length);
+                        int numRead = await pair.readablePipe.ReadAsync(readBuffer, 0, readBuffer.Length, cancellationToken);
                         Assert.True(numRead > 0);
                         Assert.Equal<byte>(
                             new ArraySegment<byte>(writeBuffer, totalRead, numRead),
@@ -291,6 +291,17 @@ namespace System.IO.Pipes.Tests
 
                     await writerTask;
                 }
+            }
+        }
+
+        public static IEnumerable<object[]> AsyncReadWriteChain_MemberData()
+        {
+            foreach (bool cancelableToken in new[] { true, false })
+            {
+                yield return new object[] { 5000, 1, 1, cancelableToken };  // very small buffers
+                yield return new object[] { 500, 21, 18, cancelableToken }; // lots of iterations, with read buffer smaller than write buffer
+                yield return new object[] { 500, 18, 21, cancelableToken }; // lots of iterations, with write buffer smaller than read buffer
+                yield return new object[] { 5, 128000, 64000, cancelableToken }; // very large buffers
             }
         }
 

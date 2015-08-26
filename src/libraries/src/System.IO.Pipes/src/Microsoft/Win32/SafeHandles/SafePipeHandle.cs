@@ -10,7 +10,7 @@ namespace Microsoft.Win32.SafeHandles
     [SecurityCritical]
     public sealed partial class SafePipeHandle : SafeHandle
     {
-        private SafePipeHandle()
+        internal SafePipeHandle()
             : base(new IntPtr(DefaultInvalidHandle), true) 
         {
         }
@@ -19,6 +19,11 @@ namespace Microsoft.Win32.SafeHandles
             : base(new IntPtr(DefaultInvalidHandle), ownsHandle)
         {
             SetHandle(preexistingHandle);
+        }
+
+        internal void SetHandle(int descriptor)
+        {
+            base.SetHandle((IntPtr)descriptor);
         }
     }
 }

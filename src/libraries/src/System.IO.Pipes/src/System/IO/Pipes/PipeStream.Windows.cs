@@ -13,7 +13,6 @@ namespace System.IO.Pipes
 {
     public abstract partial class PipeStream : Stream
     {
-        private static readonly Task<int> s_zeroTask = Task.FromResult(0);
         internal const bool CheckOperationsRequiresSetHandle = true;
         internal ThreadPoolBoundHandle _threadPoolBinding;
 
@@ -56,18 +55,6 @@ namespace System.IO.Pipes
         [SecurityCritical]
         private unsafe int ReadCore(byte[] buffer, int offset, int count)
         {
-            Debug.Assert(_handle != null, "_handle is null");
-            Debug.Assert(!_handle.IsClosed, "_handle is closed");
-            Debug.Assert(CanRead, "can't read");
-            Debug.Assert(buffer != null, "buffer is null");
-            Debug.Assert(offset >= 0, "offset is negative");
-            Debug.Assert(count >= 0, "count is negative");
-
-            if (_isAsync)
-            {
-                return ReadAsyncCorePrivate(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
-            }
-
             int errorCode = 0;
             int r = ReadFileNative(_handle, buffer, offset, count, null, out errorCode);
 
@@ -95,30 +82,61 @@ namespace System.IO.Pipes
         [SecuritySafeCritical]
         private Task<int> ReadAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (!CanRead)
+            var completionSource = new ReadWriteCompletionSource(this, buffer, cancellationToken, isWrite: false);
+
+            // Queue an async ReadFile operation and pass in a packed overlapped
+            int errorCode = 0;
+            int r;
+            unsafe
             {
-                throw __Error.GetReadNotSupported();
+                r = ReadFileNative(_handle, buffer, offset, count, completionSource.Overlapped, out errorCode);
             }
 
-            return ReadAsyncCorePrivate(buffer, offset, count, cancellationToken);
+            // ReadFile, the OS version, will return 0 on failure, but this ReadFileNative wrapper
+            // returns -1. This will return the following:
+            // - On error, r==-1.
+            // - On async requests that are still pending, r==-1 w/ hr==ERROR_IO_PENDING
+            // - On async requests that completed sequentially, r==0
+            // 
+            // You will NEVER RELIABLY be able to get the number of buffer read back from this call 
+            // when using overlapped structures!  You must not pass in a non-null lpNumBytesRead to
+            // ReadFile when using overlapped structures!  This is by design NT behavior.
+            if (r == -1)
+            {
+                switch (errorCode)
+                {
+                    // One side has closed its handle or server disconnected.
+                    // Set the state to Broken and do some cleanup work
+                    case Interop.mincore.Errors.ERROR_BROKEN_PIPE:
+                    case Interop.mincore.Errors.ERROR_PIPE_NOT_CONNECTED:
+                        State = PipeState.Broken;
+
+                        unsafe
+                        {
+                            // Clear the overlapped status bit for this special case. Failure to do so looks 
+                            // like we are freeing a pending overlapped.
+                            completionSource.Overlapped->InternalLow = IntPtr.Zero;
+                        }
+
+                        completionSource.ReleaseResources();
+                        UpdateMessageCompletion(true);
+                        return s_zeroTask;
+
+                    case Interop.mincore.Errors.ERROR_IO_PENDING:
+                        break;
+
+                    default:
+                        throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+                }
+            }
+
+            completionSource.RegisterForCancellation();
+            return completionSource.Task;
         }
 
         [SecurityCritical]
         private unsafe void WriteCore(byte[] buffer, int offset, int count)
         {
-            Debug.Assert(_handle != null, "_handle is null");
-            Debug.Assert(!_handle.IsClosed, "_handle is closed");
-            Debug.Assert(CanWrite, "can't write");
-            Debug.Assert(buffer != null, "buffer is null");
-            Debug.Assert(offset >= 0, "offset is negative");
-            Debug.Assert(count >= 0, "count is negative");
-
-            if (_isAsync)
-            {
-                WriteAsyncCorePrivate(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
-                return;
-            }
-
             int errorCode = 0;
             int r = WriteFileNative(_handle, buffer, offset, count, null, out errorCode);
 
@@ -127,18 +145,39 @@ namespace System.IO.Pipes
                 throw WinIOError(errorCode);
             }
             Debug.Assert(r >= 0, "PipeStream's WriteCore is likely broken.");
-            return;
         }
 
         [SecuritySafeCritical]
         private Task WriteAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (!CanWrite)
+            var completionSource = new ReadWriteCompletionSource(this, buffer, cancellationToken, isWrite: true);
+            int errorCode = 0;
+
+            // Queue an async WriteFile operation and pass in a packed overlapped
+            int r;
+            unsafe
             {
-                throw __Error.GetWriteNotSupported();
+                r = WriteFileNative(_handle, buffer, offset, count, completionSource.Overlapped, out errorCode);
             }
 
-            return WriteAsyncCorePrivate(buffer, offset, count, cancellationToken);
+            // WriteFile, the OS version, will return 0 on failure, but this WriteFileNative 
+            // wrapper returns -1. This will return the following:
+            // - On error, r==-1.
+            // - On async requests that are still pending, r==-1 w/ hr==ERROR_IO_PENDING
+            // - On async requests that completed sequentially, r==0
+            // 
+            // You will NEVER RELIABLY be able to get the number of buffer written back from this 
+            // call when using overlapped structures!  You must not pass in a non-null 
+            // lpNumBytesWritten to WriteFile when using overlapped structures!  This is by design 
+            // NT behavior.
+            if (r == -1 && errorCode != Interop.mincore.Errors.ERROR_IO_PENDING)
+            {
+                completionSource.ReleaseResources();
+                throw WinIOError(errorCode);
+            }
+
+            completionSource.RegisterForCancellation();
+            return completionSource.Task;
         }
 
         // Blocks until the other end of the pipe has read in all written buffer.
@@ -296,63 +335,11 @@ namespace System.IO.Pipes
         // -----------------------------
 
         [SecurityCritical]
-        private Task WriteAsyncCorePrivate(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            Debug.Assert(_handle != null, "_handle is null");
-            Debug.Assert(!_handle.IsClosed, "_handle is closed");
-            Debug.Assert(CanWrite, "can't write");
-            Debug.Assert(buffer != null, "buffer == null");
-            Debug.Assert(_isAsync, "WriteAsyncCorePrivate doesn't work on synchronous file streams!");
-            Debug.Assert(offset >= 0, "offset is negative");
-            Debug.Assert(count >= 0, "count is negative");
-
-            if (buffer.Length == 0)
-            {
-                return Task.CompletedTask;
-            }
-            else
-            {
-                var completionSource = new ReadWriteCompletionSource(this, buffer, cancellationToken, isWrite: true);
-                int errorCode = 0;
-
-                // Queue an async WriteFile operation and pass in a packed overlapped
-                int r;
-                unsafe
-                {
-                    r = WriteFileNative(_handle, buffer, offset, count, completionSource.Overlapped, out errorCode);
-                }
-
-                // WriteFile, the OS version, will return 0 on failure, but this WriteFileNative 
-                // wrapper returns -1. This will return the following:
-                // - On error, r==-1.
-                // - On async requests that are still pending, r==-1 w/ hr==ERROR_IO_PENDING
-                // - On async requests that completed sequentially, r==0
-                // 
-                // You will NEVER RELIABLY be able to get the number of buffer written back from this 
-                // call when using overlapped structures!  You must not pass in a non-null 
-                // lpNumBytesWritten to WriteFile when using overlapped structures!  This is by design 
-                // NT behavior.
-                if (r == -1 && errorCode != Interop.mincore.Errors.ERROR_IO_PENDING)
-                {
-                    completionSource.ReleaseResources();
-                    throw WinIOError(errorCode);
-                }
-
-                completionSource.RegisterForCancellation();
-                return completionSource.Task;
-            }
-        }
-
-        [SecurityCritical]
         private unsafe int ReadFileNative(SafePipeHandle handle, byte[] buffer, int offset, int count,
                 NativeOverlapped* overlapped, out int errorCode)
         {
-            Debug.Assert(handle != null, "handle is null");
-            Debug.Assert(offset >= 0, "offset is negative");
-            Debug.Assert(count >= 0, "count is negative");
-            Debug.Assert(buffer != null, "buffer == null");
+            DebugAssertReadWriteArgs(buffer, offset, count, handle);
             Debug.Assert((_isAsync && overlapped != null) || (!_isAsync && overlapped == null), "Async IO parameter screwup in call to ReadFileNative.");
-            Debug.Assert(buffer.Length - offset >= count, "offset + count >= buffer length");
 
             // You can't use the fixed statement on an array of length 0. Note that async callers
             // check to avoid calling this first, so they can call user's callback
@@ -401,12 +388,8 @@ namespace System.IO.Pipes
         private unsafe int WriteFileNative(SafePipeHandle handle, byte[] buffer, int offset, int count,
                 NativeOverlapped* overlapped, out int errorCode)
         {
-            Debug.Assert(handle != null, "handle is null");
-            Debug.Assert(offset >= 0, "offset is negative");
-            Debug.Assert(count >= 0, "count is negative");
-            Debug.Assert(buffer != null, "buffer == null");
+            DebugAssertReadWriteArgs(buffer, offset, count, handle);
             Debug.Assert((_isAsync && overlapped != null) || (!_isAsync && overlapped == null), "Async IO parameter screwup in call to WriteFileNative.");
-            Debug.Assert(buffer.Length - offset >= count, "offset + count >= buffer length");
 
             // You can't use the fixed statement on an array of length 0. Note that async callers
             // check to avoid calling this first, so they can call user's callback
@@ -445,77 +428,6 @@ namespace System.IO.Pipes
         }
 
         [SecurityCritical]
-        private Task<int> ReadAsyncCorePrivate(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            Debug.Assert(_handle != null, "_handle is null");
-            Debug.Assert(!_handle.IsClosed, "_handle is closed");
-            Debug.Assert(CanRead, "can't read");
-            Debug.Assert(buffer != null, "buffer == null");
-            Debug.Assert(_isAsync, "ReadAsyncCorePrivate doesn't work on synchronous file streams!");
-            Debug.Assert(offset >= 0, "offset is negative");
-            Debug.Assert(count >= 0, "count is negative");
-
-            if (buffer.Length == 0)
-            {
-                UpdateMessageCompletion(false);
-                return s_zeroTask;
-            }
-            else
-            {
-                var completionSource = new ReadWriteCompletionSource(this, buffer, cancellationToken, isWrite: false);
-
-                // Queue an async ReadFile operation and pass in a packed overlapped
-                int errorCode = 0;
-                int r;
-                unsafe
-                {
-                    r = ReadFileNative(_handle, buffer, offset, count, completionSource.Overlapped, out errorCode);
-                }
-
-                // ReadFile, the OS version, will return 0 on failure, but this ReadFileNative wrapper
-                // returns -1. This will return the following:
-                // - On error, r==-1.
-                // - On async requests that are still pending, r==-1 w/ hr==ERROR_IO_PENDING
-                // - On async requests that completed sequentially, r==0
-                // 
-                // You will NEVER RELIABLY be able to get the number of buffer read back from this call 
-                // when using overlapped structures!  You must not pass in a non-null lpNumBytesRead to
-                // ReadFile when using overlapped structures!  This is by design NT behavior.
-                if (r == -1)
-                {
-                    switch (errorCode)
-                    {
-                        // One side has closed its handle or server disconnected.
-                        // Set the state to Broken and do some cleanup work
-                        case Interop.mincore.Errors.ERROR_BROKEN_PIPE:
-                        case Interop.mincore.Errors.ERROR_PIPE_NOT_CONNECTED:
-                            State = PipeState.Broken;
-
-                            unsafe
-                            {
-                                // Clear the overlapped status bit for this special case. Failure to do so looks 
-                                // like we are freeing a pending overlapped.
-                                completionSource.Overlapped->InternalLow = IntPtr.Zero;
-                            }
-
-                            completionSource.ReleaseResources();
-                            UpdateMessageCompletion(true);
-                            return s_zeroTask;
-
-                        case Interop.mincore.Errors.ERROR_IO_PENDING:
-                            break;
-
-                        default:
-                            throw Win32Marshal.GetExceptionForWin32Error(errorCode);
-                    }
-                }
-
-                completionSource.RegisterForCancellation();
-                return completionSource.Task;
-            }
-        }
-
-        [SecurityCritical]
         internal static Interop.mincore.SECURITY_ATTRIBUTES GetSecAttrs(HandleInheritability inheritability)
         {
             Interop.mincore.SECURITY_ATTRIBUTES secAttrs = default(Interop.mincore.SECURITY_ATTRIBUTES);
@@ -526,13 +438,6 @@ namespace System.IO.Pipes
                 secAttrs.bInheritHandle = true;
             }
             return secAttrs;
-        }
-
-        internal void UpdateMessageCompletion(bool completion)
-        {
-            // Set message complete to true because the pipe is broken as well.
-            // Need this to signal to readers to stop reading.
-            _isMessageComplete = (completion || _state == PipeState.Broken);
         }
 
         /// <summary>

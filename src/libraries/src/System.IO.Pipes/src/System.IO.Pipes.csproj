@@ -183,6 +183,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.pipe.cs">
       <Link>Common\Interop\Unix\Interop.pipe.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.poll.cs">
+      <Link>Common\Interop\Unix\Interop.poll.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.read.cs">
       <Link>Common\Interop\Unix\Interop.read.cs</Link>
     </Compile>
@@ -198,10 +201,12 @@
     <Compile Include="$(CommonPath)\System\IO\PersistedFiles.Names.Unix.cs">
       <Link>Common\System\IO\PersistedFiles.Names.Unix.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\ForceAsyncAwaiter.cs">
+      <Link>Common\System\Threading\Tasks\ForceAsyncAwaiter.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- Linux -->
   <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
-    <Compile Include="System\IO\Pipes\AnonymousPipeServerStream.Linux.cs" />
     <Compile Include="System\IO\Pipes\PipeStream.Linux.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.fcntl.cs">
       <Link>Common\Interop\Unix\Interop.fcntl.cs</Link>
@@ -212,7 +217,6 @@
   </ItemGroup>
   <!-- OSX -->
   <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
-    <Compile Include="System\IO\Pipes\AnonymousPipeServerStream.OSX.cs" />
     <Compile Include="System\IO\Pipes\PipeStream.OSX.cs" />
   </ItemGroup>
   <!-- Resource files -->

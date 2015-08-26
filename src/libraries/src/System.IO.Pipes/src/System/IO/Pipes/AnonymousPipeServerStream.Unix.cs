@@ -14,29 +14,16 @@ namespace System.IO.Pipes
     {
         // Creates the anonymous pipe.
         [SecurityCritical]
-        private void Create(PipeDirection direction, HandleInheritability inheritability, int bufferSize)
+        private unsafe void Create(PipeDirection direction, HandleInheritability inheritability, int bufferSize)
         {
             Debug.Assert(direction != PipeDirection.InOut, "Anonymous pipe direction shouldn't be InOut");
             // Ignore bufferSize.  It's optional, and the fcntl F_SETPIPE_SZ for changing it is Linux specific.
 
-            // Use pipe or pipe2 to create our anonymous pipe
-            int[] fds = new int[2];
-            unsafe
-            {
-                fixed (int* fdsptr = fds)
-                {
-                    CreatePipe(inheritability, fdsptr);
-                }
-            }
-
-            // Create SafePipeHandles for each end of the pipe.  Which ends goes with server and which goes with
-            // client depends on the direction of the pipe.
-            SafePipeHandle serverHandle = new SafePipeHandle(
-                (IntPtr)fds[direction == PipeDirection.In ? Interop.libc.ReadEndOfPipe : Interop.libc.WriteEndOfPipe], 
-                ownsHandle: true);
-            SafePipeHandle clientHandle = new SafePipeHandle(
-                (IntPtr)fds[direction == PipeDirection.In ? Interop.libc.WriteEndOfPipe : Interop.libc.ReadEndOfPipe], 
-                ownsHandle: true);
+            SafePipeHandle serverHandle, clientHandle;
+            if (direction == PipeDirection.In)
+                CreateAnonymousPipe(inheritability, reader: out serverHandle, writer: out clientHandle);
+            else
+                CreateAnonymousPipe(inheritability, reader: out clientHandle, writer: out serverHandle);
 
             // Configure the pipe.  For buffer size, the size applies to the pipe, rather than to 
             // just one end's file descriptor, so we only need to do this with one of the handles.
