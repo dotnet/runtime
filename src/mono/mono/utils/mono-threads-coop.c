@@ -281,5 +281,29 @@ mono_threads_core_end_global_suspend (void)
 	mono_polling_required = 0;
 }
 
+void*
+mono_threads_enter_gc_unsafe_region (void)
+{
+	return mono_threads_reset_blocking_start ();
+}
+
+void*
+mono_threads_exit_gc_unsafe_region (void *regions_cookie)
+{
+	mono_threads_reset_blocking_end (regions_cookie);
+}
+
+#else
+
+void*
+mono_threads_enter_gc_unsafe_region (void)
+{
+	return NULL;
+}
+
+void*
+mono_threads_exit_gc_unsafe_region (void *regions_cookie)
+{
+}
 
 #endif

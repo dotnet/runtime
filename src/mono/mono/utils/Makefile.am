@@ -109,6 +109,7 @@ monoutils_sources = \
 	mono-threads-openbsd.c	\
 	mono-threads-android.c	\
 	mono-threads.h	\
+	mono-threads-api.h	\
 	mono-threads-coop.c	\
 	mono-threads-coop.h	\
 	mono-tls.h	\
