@@ -23,6 +23,7 @@
       <Link>Common\System\Net\HttpTestServers.cs</Link>
     </Compile>
     <Compile Include="HttpClientHandlerTest.cs" />
+    <Compile Include="HttpClientTest.cs" />
     <Compile Include="HttpMethodTest.cs" />
     <Compile Include="XunitTestAssemblyAtrributes.cs" />
   </ItemGroup>
