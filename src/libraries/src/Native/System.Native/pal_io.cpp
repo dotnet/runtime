@@ -97,10 +97,10 @@ int32_t Stat(const char* path, FileStatus* output)
 }
 
 extern "C"
-int32_t FStat(int32_t fileDescriptor, FileStatus* output)
+int32_t FStat(int32_t fd, FileStatus* output)
 {
     struct stat_ result;
-    int ret = fstat_(fileDescriptor, &result);
+    int ret = fstat_(fd, &result);
 
     if (ret == 0)
     {
@@ -185,9 +185,9 @@ int32_t Open(const char* path, int32_t flags, int32_t mode)
 }
 
 extern "C"
-int32_t Close(int32_t fileDescriptor)
+int32_t Close(int32_t fd)
 {
-    return close(fileDescriptor);
+    return close(fd);
 }
 
 extern "C"
@@ -214,7 +214,6 @@ int32_t ShmUnlink(const char* name)
 {
     return shm_unlink(name);
 }
-
 
 static
 void ConvertDirent(const dirent& entry, DirectoryEntry* outputEntry)
@@ -299,7 +298,7 @@ DIR* OpenDir(const char* path)
 }
 
 extern "C" 
-int32_t CloseDir(DIR* directory)
+int32_t CloseDir(DIR* dir)
 {
-    return closedir(directory);
+    return closedir(dir);
 }
