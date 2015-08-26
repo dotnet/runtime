@@ -420,7 +420,7 @@ namespace
             DWORD cchSubKeySize = 0;
             if (WszRegQueryInfoKey(hKeyAptca, NULL, NULL, NULL, NULL, &cchSubKeySize, NULL, NULL, NULL, NULL, NULL, NULL) != ERROR_SUCCESS)
             {
-                cchSubKeySize = MAX_PATH;
+                cchSubKeySize = MAX_PATH_FNAME;
             }
             ++cchSubKeySize;
 

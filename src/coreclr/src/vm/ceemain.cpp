@@ -2941,9 +2941,9 @@ static BOOL CacheCommandLine(__in LPWSTR pCmdLine, __in_opt LPWSTR* ArgvW)
     }
 
     if (ArgvW != NULL && ArgvW[0] != NULL) {
-        WCHAR wszModuleName[MAX_PATH];
-        WCHAR wszCurDir[MAX_PATH];
-        if (!WszGetCurrentDirectory(MAX_PATH, wszCurDir))
+        WCHAR wszModuleName[MAX_LONGPATH];
+        WCHAR wszCurDir[MAX_LONGPATH];
+        if (!WszGetCurrentDirectory(MAX_LONGPATH, wszCurDir))
             return FALSE;
 
 #ifdef _PREFAST_
@@ -3077,13 +3077,13 @@ BOOL STDMETHODCALLTYPE ExecuteEXE(__in LPWSTR pImageNameIn)
 
     EX_TRY_NOCATCH(LPWSTR, pImageNameInner, pImageNameIn)
     {
-        WCHAR               wzPath[MAX_PATH];
+        WCHAR               wzPath[MAX_LONGPATH];
         DWORD               dwPathLength = 0;
 
         // get the path of executable
-        dwPathLength = WszGetFullPathName(pImageNameInner, MAX_PATH, wzPath, NULL);
+        dwPathLength = WszGetFullPathName(pImageNameInner, MAX_LONGPATH, wzPath, NULL);
 
-        if (!dwPathLength || dwPathLength > MAX_PATH)
+        if (!dwPathLength || dwPathLength > MAX_LONGPATH)
         {
             ThrowWin32( !dwPathLength ? GetLastError() : ERROR_FILENAME_EXCED_RANGE);
         }
@@ -4262,7 +4262,7 @@ static HRESULT InitializeIPCManager(void)
         if (!WszGetModuleFileName(GetModuleInst(), (PWSTR)
                                   g_pIPCManagerInterface->
                                   GetInstancePath(),
-                                  MAX_PATH))
+                                  MAX_LONGPATH))
         {
             hr = HRESULT_FROM_GetLastErrorNA();
         }
