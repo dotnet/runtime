@@ -277,23 +277,23 @@ private:
             }
 #endif // !FEATURE_CORESYSTEM
 
-            WCHAR objectName[MAX_PATH];
-            WCHAR objectNamePrefix[MAX_PATH];
+            WCHAR objectName[MAX_LONGPATH];
+            WCHAR objectNamePrefix[MAX_LONGPATH];
             GetObjectNamePrefix(processID, fromRuntime, objectNamePrefix);
             // if there is a non-empty name prefix, append a '\'
             if (objectNamePrefix[0] != '\0')
                 wcscat_s(objectNamePrefix, ARRAYSIZE(objectNamePrefix), W("\\"));
-            swprintf_s(objectName, MAX_PATH, W("%sBBSweep_hSweepMutex"), objectNamePrefix);
+            swprintf_s(objectName, MAX_LONGPATH, W("%sBBSweep_hSweepMutex"), objectNamePrefix);
             hSweepMutex          = ::WszCreateMutex(pSecurityAttributes, false,       objectName);
-            swprintf_s(objectName, MAX_PATH, W("%sBBSweep_hProfDataWriterMutex"), objectNamePrefix);
+            swprintf_s(objectName, MAX_LONGPATH, W("%sBBSweep_hProfDataWriterMutex"), objectNamePrefix);
             hProfDataWriterMutex = ::WszCreateMutex(pSecurityAttributes, false,       objectName);
-            swprintf_s(objectName, MAX_PATH, W("%sBBSweep_hSweepEvent"), objectNamePrefix);
+            swprintf_s(objectName, MAX_LONGPATH, W("%sBBSweep_hSweepEvent"), objectNamePrefix);
             hSweepEvent          = ::WszCreateEvent(pSecurityAttributes, true, false, objectName);
 
             // Note that hTerminateEvent is not a named event.  That is because it is not
             // shared amongst the CLR processes (each process terminates at a different time)
             hTerminationEvent    = ::WszCreateEvent(pSecurityAttributes, true, false, NULL);
-            swprintf_s(objectName, MAX_PATH, W("%sBBSweep_hProfWriterSemaphore"), objectNamePrefix);
+            swprintf_s(objectName, MAX_LONGPATH, W("%sBBSweep_hProfWriterSemaphore"), objectNamePrefix);
             hProfWriterSemaphore = ::WszCreateSemaphore(pSecurityAttributes, MAX_COUNT, MAX_COUNT, objectName);
 
 #ifndef FEATURE_CORESYSTEM // @CORESYSTEMTODO
@@ -373,7 +373,7 @@ cleanup:
             // construct the object name prefix using AppContainerNamedObjectPath
             if (OpenProcessToken(hProcess, TOKEN_QUERY, &hToken) && IsAppContainerProcess(hToken))
             {
-                WCHAR appxNamedObjPath[MAX_PATH] = { 0 };
+                WCHAR appxNamedObjPath[MAX_LONGPATH] = { 0 };
                 ULONG appxNamedObjPathBufLen = 0;
 
                 if (fromRuntime)
@@ -399,7 +399,7 @@ cleanup:
                         DWORD sessionId = 0;
                         ProcessIdToSessionId(processID, &sessionId);
                         pfnGetAppContainerNamedObjectPath(hToken, NULL, sizeof (appxNamedObjPath) / sizeof (WCHAR), appxNamedObjPath, &appxNamedObjPathBufLen);
-                        swprintf_s(objectNamePrefix, MAX_PATH, W("Global\\Session\\%d\\%s"), sessionId, appxNamedObjPath);
+                        swprintf_s(objectNamePrefix, MAX_LONGPATH, W("Global\\Session\\%d\\%s"), sessionId, appxNamedObjPath);
                     }
                 }
             }

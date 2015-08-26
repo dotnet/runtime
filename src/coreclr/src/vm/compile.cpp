@@ -3078,7 +3078,7 @@ private:
     // interfaces and close the PDB file BEFORE this holder tries to *delete* the PDB
     // file. Also, keep these two in this relative order, so that m_deletePDBFileHolder
     // is destructed before m_wszPDBFilePath.
-    WCHAR m_wszPDBFilePath[MAX_PATH];
+    WCHAR m_wszPDBFilePath[MAX_LONGPATH];
     DeleteFileHolder m_deletePDBFileHolder;
     // 
     // ************* NOTE! *************
@@ -3249,7 +3249,7 @@ HRESULT NGenModulePdbWriter::WriteStringTable()
     UINT64 cbStringTableEstimate =
         sizeof(DWORD) +
         sizeof(CV_DebugSSubsectionHeader_t) +
-        m_cDocs * (MAX_PATH + 1);
+        m_cDocs * (MAX_LONGPATH + 1);
     if (!FitsIn<ULONG32>(cbStringTableEstimate))
     {
         return HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
@@ -3276,7 +3276,7 @@ HRESULT NGenModulePdbWriter::WriteStringTable()
     // The actual strings
     for (ULONG32 i=0; i < m_cDocs; i++)
     {
-        WCHAR wszURL[MAX_PATH];
+        WCHAR wszURL[MAX_LONGPATH];
         ULONG32 cchURL;
         hr = m_rgpDocs[i]->GetURL(_countof(wszURL), &cchURL, wszURL);
         if (FAILED(hr))
@@ -3361,7 +3361,7 @@ HRESULT NGenModulePdbWriter::InitILPdbData()
     GetSvcLogger()->Log(W("Loaded managed PDB"));
 
     // Grab the full path of the managed PDB so we can log it
-    WCHAR wszIlPdbPath[MAX_PATH];
+    WCHAR wszIlPdbPath[MAX_LONGPATH];
     ULONG32 cchIlPdbPath;
     hr = m_pReader->GetSymbolStoreFileName(
         _countof(wszIlPdbPath),
@@ -3698,8 +3698,8 @@ HRESULT NGenModulePdbWriter::WriteFileChecksums()
     // write it into the NGEN PDB.
     for (ULONG32 i=0; i < m_cDocs; i++)
     {
-        WCHAR wszURL[MAX_PATH];
-        char szURL[MAX_PATH];
+        WCHAR wszURL[MAX_LONGPATH];
+        char szURL[MAX_LONGPATH];
         ULONG32 cchURL;
         hr = m_rgpDocs[i]->GetURL(_countof(wszURL), &cchURL, wszURL);
         if (FAILED(hr))
@@ -4171,7 +4171,7 @@ HRESULT NGenMethodLinesPdbWriter::WriteLinesSubsection(
     BOOL fBeginNewBlock = TRUE;
     ULONG32 iSeqPointsPrev = (ULONG32) -1;
     DWORD dwNativeOffsetPrev = (DWORD) -1;
-    WCHAR wszURLPrev[MAX_PATH];
+    WCHAR wszURLPrev[MAX_LONGPATH];
     memset(&wszURLPrev, 0, sizeof(wszURLPrev));
     LPBYTE pbEnd = NULL;
 
@@ -4197,7 +4197,7 @@ HRESULT NGenMethodLinesPdbWriter::WriteLinesSubsection(
             // This is the first iteration where we're looking at this iSeqPoints.  So
             // check whether the document name has changed on us.  If it has, that means
             // we need to start a new block.
-            WCHAR wszURL[MAX_PATH];
+            WCHAR wszURL[MAX_LONGPATH];
             ULONG32 cchURL;
             hr = m_rgpDocs[iSeqPoints]->GetURL(_countof(wszURL), &cchURL, wszURL);
             if (FAILED(hr))
@@ -4238,7 +4238,7 @@ HRESULT NGenMethodLinesPdbWriter::WriteLinesSubsection(
             }
 
             // Now get the info we'll need for the next block
-            char szURL[MAX_PATH];
+            char szURL[MAX_LONGPATH];
             int cbWritten = WideCharToMultiByte(
                 CP_UTF8,
                 0,                                      // dwFlags
@@ -7859,7 +7859,7 @@ HRESULT
     {
         if (NingenEnabled())
         {
-            WCHAR buf[MAX_PATH + sizeof(CONFIGURATION_EXTENSION)/sizeof(WCHAR) + 1];
+            WCHAR buf[MAX_LONGPATH + sizeof(CONFIGURATION_EXTENSION)/sizeof(WCHAR) + 1];
             if (0 != wcscpy_s(buf, sizeof(buf)/sizeof(*buf), path))
             {
                 COMPlusThrowHR(COR_E_PATHTOOLONG);
