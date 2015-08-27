@@ -46,53 +46,51 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void SkipWhileAllTrue()
+        public void SameResultsRepeatCallsIntQuery()
         {
-            Assert.Equal(Enumerable.Empty<int>(), Enumerable.Range(0, 20).SkipWhile(i => i < 40));
-            Assert.Equal(Enumerable.Empty<int>(), Enumerable.Range(0, 20).SkipWhile((i, idx) => i == idx));
+            var q = from x in new[] { 9999, 0, 888, -1, 66, -777, 1, 2, -12345 }
+                    where x > Int32.MinValue
+                    select x;
+
+            Assert.Equal(q.Skip(0), q.Skip(0));
         }
 
         [Fact]
-        public void SkipWhileAllFalse()
+        public void SameResultsRepeatCallsStringQuery()
         {
-            Assert.Equal(Enumerable.Range(0, 20), Enumerable.Range(0, 20).SkipWhile(i => i != 0));
-            Assert.Equal(Enumerable.Range(0, 20), Enumerable.Range(0, 20).SkipWhile((i, idx) => i != idx));
+            var q = from x in new[] { "!@#$%^", "C", "AAA", "", "Calling Twice", "SoS", String.Empty }
+                    where !String.IsNullOrEmpty(x)
+                    select x;
+
+            Assert.Equal(q.Skip(0), q.Skip(0));
         }
 
         [Fact]
-        public void SkipWhileThrowsOnNull()
+        public void SkipOne()
         {
-            Assert.Throws<ArgumentNullException>(() => ((IEnumerable<int>)null).SkipWhile(i => i < 40));
-            Assert.Throws<ArgumentNullException>(() => ((IEnumerable<int>)null).SkipWhile((i, idx) => i == idx));
-            Assert.Throws<ArgumentNullException>(() => Enumerable.Range(0, 20).SkipWhile((Func<int, int, bool>)null));
-            Assert.Throws<ArgumentNullException>(() => Enumerable.Range(0, 20).SkipWhile((Func<int, bool>)null));
+            int?[] source = { 3, 100, 4, null, 10 };
+            int?[] expected = { 100, 4, null, 10 };
+            
+            Assert.Equal(expected, source.Skip(1));
+        }
+
+
+        [Fact]
+        public void SkipAllButOne()
+        {
+            int?[] source = { 3, 100, null, 4, 10 };
+            int?[] expected = { 10 };
+            
+            Assert.Equal(expected, source.Skip(source.Length - 1));
         }
 
         [Fact]
-        public void SkipWhilePassesPredicateExceptionWhenEnumerated()
+        public void SkipOneMoreThanAll()
         {
-            var source = Enumerable.Range(-2, 5).SkipWhile(i => 1 / i <= 0);
-            using(var en = source.GetEnumerator())
-            {
-                Assert.Throws<DivideByZeroException>(() => en.MoveNext());
-            }
-        }
-        
-        [Fact]
-        public void SkipWhileHalf()
-        {
-            Assert.Equal(Enumerable.Range(10, 10), Enumerable.Range(0, 20).SkipWhile(i => i < 10));
-            Assert.Equal(Enumerable.Range(10, 10), Enumerable.Range(0, 20).SkipWhile((i, idx) => idx < 10));
-        }
-
-        [Fact]
-        public void SkipErrorWhenSourceErrors()
-        {
-            var source = Enumerable.Range(-2, 5).Select(i => (decimal)i).Select(m => 1 / m).Skip(4);
-            using(var en = source.GetEnumerator())
-            {
-                Assert.Throws<DivideByZeroException>(() => en.MoveNext());
-            }
+            int[] source = { 3, 100, 4, 10 };
+            int[] expected = { };
+            
+            Assert.Equal(expected, source.Skip(source.Length + 1));
         }
     }
 }
