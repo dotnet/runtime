@@ -287,7 +287,7 @@ mono_threads_enter_gc_unsafe_region (void)
 	return mono_threads_reset_blocking_start ();
 }
 
-void*
+void
 mono_threads_exit_gc_unsafe_region (void *regions_cookie)
 {
 	mono_threads_reset_blocking_end (regions_cookie);
@@ -301,7 +301,7 @@ mono_threads_enter_gc_unsafe_region (void)
 	return NULL;
 }
 
-void*
+void
 mono_threads_exit_gc_unsafe_region (void *regions_cookie)
 {
 }

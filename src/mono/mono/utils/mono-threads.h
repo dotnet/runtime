@@ -16,6 +16,7 @@
 #include <mono/utils/mono-mutex.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/mono-threads-coop.h>
+#include <mono/utils/mono-threads-api.h>
 
 #include <glib.h>
 #include <config.h>

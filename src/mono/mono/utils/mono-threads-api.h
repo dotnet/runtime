@@ -21,7 +21,7 @@ This API is experimental. It will eventually be required to properly use the res
 
 /* Don't use those directly, use the MONO_(BEGIN|END)_EFRAME */
 MONO_API void* mono_threads_enter_gc_unsafe_region (void);
-MONO_API void* mono_threads_exit_gc_unsafe_region (void *region_cookie);
+MONO_API void mono_threads_exit_gc_unsafe_region (void *region_cookie);
 
 /*
 Use those macros to limit regions of code that interact with managed memory or use the embedding API.
