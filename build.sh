@@ -134,7 +134,7 @@ build_mscorlib()
     fi
 
     # Invoke MSBuild
-    mono "$__MSBuildPath" /nologo "$__ProjectRoot/build.proj" /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__LogsDir/MSCorLib_$__BuildOS__$__BuildArch__$__BuildType.log" /t:Build /p:OSGroup=$__BuildOS /p:BuildOS=$__BuildOS /p:UseRoslynCompiler=true /p:BuildNugetPackage=false
+    mono "$__MSBuildPath" /nologo "$__ProjectRoot/build.proj" /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__LogsDir/MSCorLib_$__BuildOS__$__BuildArch__$__BuildType.log" /t:Build /p:OSGroup=$__BuildOS /p:BuildOS=$__BuildOS /p:BuildArch=$__MSBuildBuildArch /p:UseRoslynCompiler=true /p:BuildNugetPackage=false
 }
 
 echo "Commencing CoreCLR Repo build"
