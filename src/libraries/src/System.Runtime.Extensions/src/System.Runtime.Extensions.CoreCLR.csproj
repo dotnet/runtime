@@ -115,9 +115,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.pathconf.cs">
       <Link>Common\Interop\Unix\libc\Interop.mkstemps.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gnu_get_libc_version.cs">
-      <Link>Common\Interop\Unix\libc\Interop.gnu_get_libc_version.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.QueryPerformanceCounter.cs">
       <Link>Common\Interop\Unix\libcoreclr\Interop.QueryPerformanceCounter.cs</Link>
     </Compile>

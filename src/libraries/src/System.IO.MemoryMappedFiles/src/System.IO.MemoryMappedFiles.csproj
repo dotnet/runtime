@@ -122,9 +122,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.IOErrors.cs">
       <Link>Common\Interop\Unix\Interop.IOErrors.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gnu_get_libc_version.cs">
-      <Link>Common\Interop\Unix\Interop.gnu_get_libc_version.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.MemoryMappedProtections.cs">
       <Link>Common\Interop\Unix\Interop.MemoryMappedProtections.cs</Link>
     </Compile>
