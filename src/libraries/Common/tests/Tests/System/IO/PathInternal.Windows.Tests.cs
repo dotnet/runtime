@@ -29,6 +29,8 @@ public class PathInternal_Windows_Tests
         InlineData(@"\\?", false),
         InlineData(@"\\", false),
         InlineData(@"//", false),
+        InlineData(@"\a", true),
+        InlineData(@"/a", true),
         InlineData(@"\", true),
         InlineData(@"/", true),
         InlineData(@"C:Path", true),
@@ -36,6 +38,7 @@ public class PathInternal_Windows_Tests
         InlineData(@"\\?\C:\Path", false),
         InlineData(@"Path", true),
         InlineData(@"X", true)]
+    [PlatformSpecific(PlatformID.Windows)]
     public void IsPathRelative(string path, bool expected)
     {
         Assert.Equal(expected, PathInternal.IsPathRelative(path));
