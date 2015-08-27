@@ -280,9 +280,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.ftruncate.cs">
       <Link>Common\Interop\Unix\Interop.ftruncate.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gnu_get_libc_version.cs">
-      <Link>Common\Interop\Unix\Interop.gnu_get_libc_version.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getcwd.cs">
       <Link>Common\Interop\Unix\Interop.getcwd.cs</Link>
     </Compile>

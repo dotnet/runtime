@@ -162,9 +162,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gethostname.cs">
       <Link>Common\Interop\Unix\Interop.gethostname.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gnu_get_libc_version.cs">
-      <Link>Common\Interop\Unix\Interop.gnu_get_libc_version.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.mkdir.cs">
       <Link>Common\Interop\Unix\Interop.mkdir.cs</Link>
     </Compile>
