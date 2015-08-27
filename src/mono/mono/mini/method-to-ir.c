@@ -10634,6 +10634,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			// FIXME: LLVM can't handle the inconsistent bb linking
 			if (!mono_class_is_nullable (klass) &&
+				!mini_is_gsharedvt_klass (klass) &&
 				ip + 5 < end && ip_in_bb (cfg, cfg->cbb, ip + 5) &&
 				(ip [5] == CEE_BRTRUE || 
 				 ip [5] == CEE_BRTRUE_S ||
