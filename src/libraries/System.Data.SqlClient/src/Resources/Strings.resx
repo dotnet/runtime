@@ -1,0 +1,1008 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ADP_CollectionIndexInt32" xml:space="preserve">
+    <value>Invalid index {0} for this {1} with Count={2}.</value>
+  </data>
+  <data name="ADP_CollectionIndexString" xml:space="preserve">
+    <value>An {0} with {1} '{2}' is not contained by this {3}.</value>
+  </data>
+  <data name="ADP_CollectionInvalidType" xml:space="preserve">
+    <value>The {0} only accepts non-null {1} type objects, not {2} objects.</value>
+  </data>
+  <data name="ADP_CollectionIsNotParent" xml:space="preserve">
+    <value>The {0} is already contained by another {1}.</value>
+  </data>
+  <data name="ADP_CollectionNullValue" xml:space="preserve">
+    <value>The {0} only accepts non-null {1} type objects.</value>
+  </data>
+  <data name="ADP_CollectionRemoveInvalidObject" xml:space="preserve">
+    <value>Attempted to remove an {0} that is not contained by this {1}.</value>
+  </data>
+  <data name="ADP_ConnectionAlreadyOpen" xml:space="preserve">
+    <value>The connection was not closed. {0}</value>
+  </data>
+  <data name="ADP_ConnectionStateMsg_Closed" xml:space="preserve">
+    <value>The connection's current state is closed.</value>
+  </data>
+  <data name="ADP_ConnectionStateMsg_Connecting" xml:space="preserve">
+    <value>The connection's current state is connecting.</value>
+  </data>
+  <data name="ADP_ConnectionStateMsg_Open" xml:space="preserve">
+    <value>The connection's current state is open.</value>
+  </data>
+  <data name="ADP_ConnectionStateMsg_OpenExecuting" xml:space="preserve">
+    <value>The connection's current state is executing.</value>
+  </data>
+  <data name="ADP_ConnectionStateMsg_OpenFetching" xml:space="preserve">
+    <value>The connection's current state is fetching.</value>
+  </data>
+  <data name="ADP_ConnectionStateMsg" xml:space="preserve">
+    <value>The connection's current state: {0}.</value>
+  </data>
+  <data name="ADP_ConnectionStringSyntax" xml:space="preserve">
+    <value>Format of the initialization string does not conform to specification starting at index {0}.</value>
+  </data>
+  <data name="ADP_DataReaderClosed" xml:space="preserve">
+    <value>Invalid attempt to call {0} when reader is closed.</value>
+  </data>
+  <data name="ADP_InternalConnectionError" xml:space="preserve">
+    <value>Internal DbConnection Error: {0}</value>
+  </data>
+  <data name="ADP_InvalidEnumerationValue" xml:space="preserve">
+    <value>The {0} enumeration value, {1}, is invalid.</value>
+  </data>
+  <data name="ADP_InvalidOffsetValue" xml:space="preserve">
+    <value>Invalid parameter Offset value '{0}'. The value must be greater than or equal to 0.</value>
+  </data>
+  <data name="ADP_NoConnectionString" xml:space="preserve">
+    <value>The ConnectionString property has not been initialized.</value>
+  </data>
+  <data name="ADP_OpenConnectionPropertySet" xml:space="preserve">
+    <value>Not allowed to change the '{0}' property. {1}</value>
+  </data>
+  <data name="ADP_PendingAsyncOperation" xml:space="preserve">
+    <value>Can not start another operation while there is an asynchronous operation pending.</value>
+  </data>
+  <data name="ADP_PooledOpenTimeout" xml:space="preserve">
+    <value>Timeout expired.  The timeout period elapsed prior to obtaining a connection from the pool.  This may have occurred because all pooled connections were in use and max pool size was reached.</value>
+  </data>
+  <data name="ADP_NonPooledOpenTimeout" xml:space="preserve">
+    <value>Timeout attempting to open the connection.  The time period elapsed prior to attempting to open the connection has been exceeded.  This may have occurred because of too many simultaneous non-pooled connection attempts.</value>
+  </data>
+  <data name="Data_InvalidOffsetLength" xml:space="preserve">
+    <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
+  </data>
+  <data name="SqlConvert_ConvertFailed" xml:space="preserve">
+    <value> Cannot convert object of type '{0}' to object of type '{1}'.</value>
+  </data>
+  <data name="SQL_WrongType" xml:space="preserve">
+    <value>Expecting argument of type {1}, but received type {0}.</value>
+  </data>
+  <data name="ADP_InvalidConnectionOptionValue" xml:space="preserve">
+    <value>Invalid value for key '{0}'.</value>
+  </data>
+  <data name="ADP_MissingConnectionOptionValue" xml:space="preserve">
+    <value>Use of key '{0}' requires the key '{1}' to be present.</value>
+  </data>
+  <data name="ADP_InvalidConnectionOptionValueLength" xml:space="preserve">
+    <value>The value's length for key '{0}' exceeds it's limit of '{1}'.</value>
+  </data>
+  <data name="ADP_KeywordNotSupported" xml:space="preserve">
+    <value>Keyword not supported: '{0}'.</value>
+  </data>
+  <data name="ADP_InternalProviderError" xml:space="preserve">
+    <value>Internal .Net Framework Data Provider error {0}.</value>
+  </data>
+  <data name="ADP_InvalidMultipartName" xml:space="preserve">
+    <value>{0} '{1}'.</value>
+  </data>
+  <data name="ADP_InvalidMultipartNameQuoteUsage" xml:space="preserve">
+    <value>{0} '{1}', incorrect usage of quotes.</value>
+  </data>
+  <data name="ADP_InvalidMultipartNameToManyParts" xml:space="preserve">
+    <value>{0} '{1}', the current limit of '{2}' is insufficient.</value>
+  </data>
+  <data name="SQL_BulkCopyDestinationTableName" xml:space="preserve">
+    <value>SqlBulkCopy.WriteToServer failed because the SqlBulkCopy.DestinationTableName is an invalid multipart name</value>
+  </data>
+  <data name="SQL_TDSParserTableName" xml:space="preserve">
+    <value>Processing of results from SQL Server failed because of an invalid multipart name</value>
+  </data>
+  <data name="SQL_TypeName" xml:space="preserve">
+    <value>SqlParameter.TypeName is an invalid multipart name</value>
+  </data>
+  <data name="SQLMSF_FailoverPartnerNotSupported" xml:space="preserve">
+    <value>Connecting to a mirrored SQL Server instance using the MultiSubnetFailover connection option is not supported.</value>
+  </data>
+  <data name="SQL_NotSupportedEnumerationValue" xml:space="preserve">
+    <value>The {0} enumeration value, {1}, is not supported by the .Net Framework SqlClient Data Provider.</value>
+  </data>
+  <data name="ADP_CommandTextRequired" xml:space="preserve">
+    <value>{0}: CommandText property has not been initialized</value>
+  </data>
+  <data name="ADP_ConnectionRequired" xml:space="preserve">
+    <value>{0}: Connection property has not been initialized.</value>
+  </data>
+  <data name="ADP_OpenConnectionRequired" xml:space="preserve">
+    <value>{0} requires an open and available Connection. {1}</value>
+  </data>
+  <data name="ADP_TransactionConnectionMismatch" xml:space="preserve">
+    <value>The transaction is either not associated with the current connection or has been completed.</value>
+  </data>
+  <data name="ADP_TransactionRequired" xml:space="preserve">
+    <value>{0} requires the command to have a transaction when the connection assigned to the command is in a pending local transaction.  The Transaction property of the command has not been initialized.</value>
+  </data>
+  <data name="ADP_OpenReaderExists" xml:space="preserve">
+    <value>There is already an open DataReader associated with this Command which must be closed first.</value>
+  </data>
+  <data name="ADP_CalledTwice" xml:space="preserve">
+    <value>The method '{0}' cannot be called more than once for the same execution.</value>
+  </data>
+  <data name="ADP_InvalidCommandTimeout" xml:space="preserve">
+    <value>Invalid CommandTimeout value {0}; the value must be &gt;= 0.</value>
+  </data>
+  <data name="ADP_UninitializedParameterSize" xml:space="preserve">
+    <value>{1}[{0}]: the Size property has an invalid size of 0.</value>
+  </data>
+  <data name="ADP_PrepareParameterType" xml:space="preserve">
+    <value>{0}.Prepare method requires all parameters to have an explicitly set type.</value>
+  </data>
+  <data name="ADP_PrepareParameterSize" xml:space="preserve">
+    <value>{0}.Prepare method requires all variable length parameters to have an explicitly set non-zero Size.</value>
+  </data>
+  <data name="ADP_PrepareParameterScale" xml:space="preserve">
+    <value>{0}.Prepare method requires parameters of type '{1}' have an explicitly set Precision and Scale.</value>
+  </data>
+  <data name="ADP_MismatchedAsyncResult" xml:space="preserve">
+    <value>Mismatched end method call for asyncResult.  Expected call to {0} but {1} was called instead.</value>
+  </data>
+  <data name="ADP_ClosedConnectionError" xml:space="preserve">
+    <value>Invalid operation. The connection is closed.</value>
+  </data>
+  <data name="ADP_ConnectionIsDisabled" xml:space="preserve">
+    <value>The connection has been disabled.</value>
+  </data>
+  <data name="ADP_EmptyDatabaseName" xml:space="preserve">
+    <value>Database cannot be null, the empty string, or string of only whitespace.</value>
+  </data>
+  <data name="ADP_InvalidSourceBufferIndex" xml:space="preserve">
+    <value>Invalid source buffer (size of {0}) offset: {1}</value>
+  </data>
+  <data name="ADP_InvalidDestinationBufferIndex" xml:space="preserve">
+    <value>Invalid destination buffer (size of {0}) offset: {1}</value>
+  </data>
+  <data name="ADP_StreamClosed" xml:space="preserve">
+    <value>Invalid attempt to {0} when stream is closed.</value>
+  </data>
+  <data name="ADP_InvalidSeekOrigin" xml:space="preserve">
+    <value>Specified SeekOrigin value is invalid.</value>
+  </data>
+  <data name="ADP_NonSequentialColumnAccess" xml:space="preserve">
+    <value>Invalid attempt to read from column ordinal '{0}'.  With CommandBehavior.SequentialAccess, you may only read from column ordinal '{1}' or greater.</value>
+  </data>
+  <data name="ADP_InvalidDataType" xml:space="preserve">
+    <value>The parameter data type of {0} is invalid.</value>
+  </data>
+  <data name="ADP_UnknownDataType" xml:space="preserve">
+    <value>No mapping exists from object type {0} to a known managed provider native type.</value>
+  </data>
+  <data name="ADP_DbTypeNotSupported" xml:space="preserve">
+    <value>No mapping exists from DbType {0} to a known {1}.</value>
+  </data>
+  <data name="ADP_VersionDoesNotSupportDataType" xml:space="preserve">
+    <value>The version of SQL Server in use does not support datatype '{0}'.</value>
+  </data>
+  <data name="ADP_ParameterValueOutOfRange" xml:space="preserve">
+    <value>Parameter value '{0}' is out of range.</value>
+  </data>
+  <data name="ADP_InvalidSizeValue" xml:space="preserve">
+    <value>Invalid parameter Size value '{0}'. The value must be greater than or equal to 0.</value>
+  </data>
+  <data name="ADP_NegativeParameter" xml:space="preserve">
+    <value>Invalid value for argument '{0}'. The value must be greater than or equal to 0.</value>
+  </data>
+  <data name="ADP_InvalidMetaDataValue" xml:space="preserve">
+    <value>Invalid value for this metadata.</value>
+  </data>
+  <data name="ADP_ParameterConversionFailed" xml:space="preserve">
+    <value>Failed to convert parameter value from a {0} to a {1}.</value>
+  </data>
+  <data name="ADP_ParallelTransactionsNotSupported" xml:space="preserve">
+    <value>{0} does not support parallel transactions.</value>
+  </data>
+  <data name="ADP_TransactionZombied" xml:space="preserve">
+    <value>This {0} has completed; it is no longer usable.</value>
+  </data>
+  <data name="ADP_InvalidDataLength2" xml:space="preserve">
+    <value>Specified length '{0}' is out of range.</value>
+  </data>
+  <data name="ADP_NonSeqByteAccess" xml:space="preserve">
+    <value>Invalid {2} attempt at dataIndex '{0}'.  With CommandBehavior.SequentialAccess, you may only read from dataIndex '{1}' or greater.</value>
+  </data>
+  <data name="ADP_InvalidMinMaxPoolSizeValues" xml:space="preserve">
+    <value>Invalid min or max pool size values, min pool size cannot be greater than the max pool size.</value>
+  </data>
+  <data name="SQL_InvalidPacketSizeValue" xml:space="preserve">
+    <value>Invalid 'Packet Size'.  The value must be an integer &gt;= 512 and &lt;= 32768.</value>
+  </data>
+  <data name="SQL_NullEmptyTransactionName" xml:space="preserve">
+    <value>Invalid transaction or invalid name for a point at which to save within the transaction.</value>
+  </data>
+  <data name="SQL_UserInstanceFailoverNotCompatible" xml:space="preserve">
+    <value>User Instance and Failover are not compatible options.  Please choose only one of the two in the connection string.</value>
+  </data>
+  <data name="SQL_EncryptionNotSupportedByClient" xml:space="preserve">
+    <value>The instance of SQL Server you attempted to connect to requires encryption but this machine does not support it.</value>
+  </data>
+  <data name="SQL_EncryptionNotSupportedByServer" xml:space="preserve">
+    <value>The instance of SQL Server you attempted to connect to does not support encryption.</value>
+  </data>
+  <data name="SQL_InvalidSQLServerVersionUnknown" xml:space="preserve">
+    <value>Unsupported SQL Server version.  The .Net Framework SqlClient Data Provider can only be used with SQL Server versions 7.0 and later.</value>
+  </data>
+  <data name="SQL_CannotModifyPropertyAsyncOperationInProgress" xml:space="preserve">
+    <value>{0} cannot be changed while async operation is in progress.</value>
+  </data>
+  <data name="SQL_InstanceFailure" xml:space="preserve">
+    <value>Instance failure.</value>
+  </data>
+  <data name="SQL_InvalidPartnerConfiguration" xml:space="preserve">
+    <value>Server {0}, database {1} is not configured for database mirroring.</value>
+  </data>
+  <data name="SQL_MarsUnsupportedOnConnection" xml:space="preserve">
+    <value>The connection does not support MultipleActiveResultSets.</value>
+  </data>
+  <data name="SQL_NonLocalSSEInstance" xml:space="preserve">
+    <value>SSE Instance re-direction is not supported for non-local user instances.</value>
+  </data>
+  <data name="SQL_PendingBeginXXXExists" xml:space="preserve">
+    <value>The command execution cannot proceed due to a pending asynchronous operation already in progress.</value>
+  </data>
+  <data name="SQL_NonXmlResult" xml:space="preserve">
+    <value>Invalid command sent to ExecuteXmlReader.  The command must return an Xml result.</value>
+  </data>
+  <data name="SQL_InvalidParameterTypeNameFormat" xml:space="preserve">
+    <value>Invalid 3 part name format for TypeName.</value>
+  </data>
+  <data name="SQL_InvalidParameterNameLength" xml:space="preserve">
+    <value>The length of the parameter '{0}' exceeds the limit of 128 characters.</value>
+  </data>
+  <data name="SQL_PrecisionValueOutOfRange" xml:space="preserve">
+    <value>Precision value '{0}' is either less than 0 or greater than the maximum allowed precision of 38.</value>
+  </data>
+  <data name="SQL_ScaleValueOutOfRange" xml:space="preserve">
+    <value>Scale value '{0}' is either less than 0 or greater than the maximum allowed scale of 38.</value>
+  </data>
+  <data name="SQL_TimeScaleValueOutOfRange" xml:space="preserve">
+    <value>Scale value '{0}' is either less than 0 or greater than the maximum allowed scale of 7.</value>
+  </data>
+  <data name="SQL_ParameterInvalidVariant" xml:space="preserve">
+    <value>Parameter '{0}' exceeds the size limit for the sql_variant datatype.</value>
+  </data>
+  <data name="SQL_ParameterTypeNameRequired" xml:space="preserve">
+    <value>The {0} type parameter '{1}' must have a valid type name.</value>
+  </data>
+  <data name="SQL_InvalidInternalPacketSize" xml:space="preserve">
+    <value>Invalid internal packet size:</value>
+  </data>
+  <data name="SQL_InvalidTDSVersion" xml:space="preserve">
+    <value>The SQL Server instance returned an invalid or unsupported protocol version during login negotiation.</value>
+  </data>
+  <data name="SQL_InvalidTDSPacketSize" xml:space="preserve">
+    <value>Invalid Packet Size.</value>
+  </data>
+  <data name="SQL_ParsingError" xml:space="preserve">
+    <value>Internal connection fatal error.</value>
+  </data>
+  <data name="SQL_ConnectionLockedForBcpEvent" xml:space="preserve">
+    <value>The connection cannot be used because there is an ongoing operation that must be finished.</value>
+  </data>
+  <data name="SQL_SNIPacketAllocationFailure" xml:space="preserve">
+    <value>Memory allocation for internal connection failed.</value>
+  </data>
+  <data name="SQL_SmallDateTimeOverflow" xml:space="preserve">
+    <value>SqlDbType.SmallDateTime overflow.  Value '{0}' is out of range.  Must be between 1/1/1900 12:00:00 AM and 6/6/2079 11:59:59 PM.</value>
+  </data>
+  <data name="SQL_TimeOverflow" xml:space="preserve">
+    <value>SqlDbType.Time overflow.  Value '{0}' is out of range.  Must be between 00:00:00.0000000 and 23:59:59.9999999.</value>
+  </data>
+  <data name="SQL_MoneyOverflow" xml:space="preserve">
+    <value>SqlDbType.SmallMoney overflow.  Value '{0}' is out of range.  Must be between -214,748.3648 and 214,748.3647.</value>
+  </data>
+  <data name="SQL_CultureIdError" xml:space="preserve">
+    <value>The Collation specified by SQL Server is not supported.</value>
+  </data>
+  <data name="SQL_OperationCancelled" xml:space="preserve">
+    <value>Operation cancelled by user.</value>
+  </data>
+  <data name="SQL_SevereError" xml:space="preserve">
+    <value>A severe error occurred on the current command.  The results, if any, should be discarded.</value>
+  </data>
+  <data name="SQL_SSPIGenerateError" xml:space="preserve">
+    <value>The target principal name is incorrect.  Cannot generate SSPI context.</value>
+  </data>
+  <data name="SQL_InvalidSSPIPacketSize" xml:space="preserve">
+    <value>Invalid SSPI packet size.</value>
+  </data>
+  <data name="SQL_SSPIInitializeError" xml:space="preserve">
+    <value>Cannot initialize SSPI package.</value>
+  </data>
+  <data name="SQL_Timeout" xml:space="preserve">
+    <value>Timeout expired.  The timeout period elapsed prior to completion of the operation or the server is not responding.</value>
+  </data>
+  <data name="SQL_Timeout_PreLogin_Begin" xml:space="preserve">
+    <value>Connection Timeout Expired.  The timeout period elapsed at the start of the pre-login phase.  This could be because of insufficient time provided for connection timeout.</value>
+  </data>
+  <data name="SQL_Timeout_PreLogin_InitializeConnection" xml:space="preserve">
+    <value>Connection Timeout Expired.  The timeout period elapsed while attempting to create and initialize a socket to the server.  This could be either because the server was unreachable or unable to respond back in time.</value>
+  </data>
+  <data name="SQL_Timeout_PreLogin_SendHandshake" xml:space="preserve">
+    <value>Connection Timeout Expired.  The timeout period elapsed while making a pre-login handshake request.  This could be because the server was unable to respond back in time.</value>
+  </data>
+  <data name="SQL_Timeout_PreLogin_ConsumeHandshake" xml:space="preserve">
+    <value>Connection Timeout Expired.  The timeout period elapsed while attempting to consume the pre-login handshake acknowledgement.  This could be because the pre-login handshake failed or the server was unable to respond back in time.</value>
+  </data>
+  <data name="SQL_Timeout_Login_Begin" xml:space="preserve">
+    <value>Connection Timeout Expired.  The timeout period elapsed at the start of the login phase.  This could be because of insufficient time provided for connection timeout.</value>
+  </data>
+  <data name="SQL_Timeout_Login_ProcessConnectionAuth" xml:space="preserve">
+    <value>Connection Timeout Expired.  The timeout period elapsed while attempting to authenticate the login.  This could be because the server failed to authenticate the user or the server was unable to respond back in time.</value>
+  </data>
+  <data name="SQL_Timeout_PostLogin" xml:space="preserve">
+    <value>Connection Timeout Expired.  The timeout period elapsed during the post-login phase.  The connection could have timed out while waiting for server to complete the login process and respond; Or it could have timed out while attempting to create multiple active connections.</value>
+  </data>
+  <data name="SQL_Timeout_FailoverInfo" xml:space="preserve">
+    <value>This failure occured while attempting to connect to the {0} server.</value>
+  </data>
+  <data name="SQL_Timeout_RoutingDestinationInfo" xml:space="preserve">
+    <value>This failure occurred while attempting to connect to the routing destination. The duration spent while attempting to connect to the original server was - [Pre-Login] initialization={0}; handshake={1}; [Login] initialization={2}; authentication={3}; [Post-Login] complete={4};  </value>
+  </data>
+  <data name="SQL_Duration_PreLogin_Begin" xml:space="preserve">
+    <value>The duration spent while attempting to connect to this server was - [Pre-Login] initialization={0};</value>
+  </data>
+  <data name="SQL_Duration_PreLoginHandshake" xml:space="preserve">
+    <value>The duration spent while attempting to connect to this server was - [Pre-Login] initialization={0}; handshake={1}; </value>
+  </data>
+  <data name="SQL_Duration_Login_Begin" xml:space="preserve">
+    <value>The duration spent while attempting to connect to this server was - [Pre-Login] initialization={0}; handshake={1}; [Login] initialization={2}; </value>
+  </data>
+  <data name="SQL_Duration_Login_ProcessConnectionAuth" xml:space="preserve">
+    <value>The duration spent while attempting to connect to this server was - [Pre-Login] initialization={0}; handshake={1}; [Login] initialization={2}; authentication={3}; </value>
+  </data>
+  <data name="SQL_Duration_PostLogin" xml:space="preserve">
+    <value>The duration spent while attempting to connect to this server was - [Pre-Login] initialization={0}; handshake={1}; [Login] initialization={2}; authentication={3}; [Post-Login] complete={4}; </value>
+  </data>
+  <data name="SQL_UserInstanceFailure" xml:space="preserve">
+    <value>A user instance was requested in the connection string but the server specified does not support this option.</value>
+  </data>
+  <data name="SQL_InvalidRead" xml:space="preserve">
+    <value>Invalid attempt to read when no data is present.</value>
+  </data>
+  <data name="SQL_NonBlobColumn" xml:space="preserve">
+    <value>Invalid attempt to GetBytes on column '{0}'.  The GetBytes function can only be used on columns of type Text, NText, or Image.</value>
+  </data>
+  <data name="SQL_NonCharColumn" xml:space="preserve">
+    <value>Invalid attempt to GetChars on column '{0}'.  The GetChars function can only be used on columns of type Text, NText, Xml, VarChar or NVarChar.</value>
+  </data>
+  <data name="SQL_StreamNotSupportOnColumnType" xml:space="preserve">
+    <value>Invalid attempt to GetStream on column '{0}'. The GetStream function can only be used on columns of type Binary, Image, Udt or VarBinary.</value>
+  </data>
+  <data name="SQL_TextReaderNotSupportOnColumnType" xml:space="preserve">
+    <value>Invalid attempt to GetTextReader on column '{0}'. The GetTextReader function can only be used on columns of type Char, NChar, NText, NVarChar, Text or VarChar.</value>
+  </data>
+  <data name="SQL_XmlReaderNotSupportOnColumnType" xml:space="preserve">
+    <value>Invalid attempt to GetXmlReader on column '{0}'. The GetXmlReader function can only be used on columns of type Xml.</value>
+  </data>
+  <data name="SQL_InvalidBufferSizeOrIndex" xml:space="preserve">
+    <value>Buffer offset '{1}' plus the bytes available '{0}' is greater than the length of the passed in buffer.</value>
+  </data>
+  <data name="SQL_InvalidDataLength" xml:space="preserve">
+    <value>Data length '{0}' is less than 0.</value>
+  </data>
+  <data name="SQL_BulkLoadMappingInaccessible" xml:space="preserve">
+    <value>The mapped collection is in use and cannot be accessed at this time;</value>
+  </data>
+  <data name="SQL_BulkLoadMappingsNamesOrOrdinalsOnly" xml:space="preserve">
+    <value>Mappings must be either all name or all ordinal based.</value>
+  </data>
+  <data name="SQL_BulkLoadCannotConvertValue" xml:space="preserve">
+    <value>The given value of type {0} from the data source cannot be converted to type {1} of the specified target column.</value>
+  </data>
+  <data name="SQL_BulkLoadNonMatchingColumnMapping" xml:space="preserve">
+    <value>The given ColumnMapping does not match up with any column in the source or destination.</value>
+  </data>
+  <data name="SQL_BulkLoadNonMatchingColumnName" xml:space="preserve">
+    <value>The given ColumnName '{0}' does not match up with any column in data source.</value>
+  </data>
+  <data name="SQL_BulkLoadStringTooLong" xml:space="preserve">
+    <value>String or binary data would be truncated.</value>
+  </data>
+  <data name="SQL_BulkLoadInvalidTimeout" xml:space="preserve">
+    <value>Timeout Value '{0}' is less than 0.</value>
+  </data>
+  <data name="SQL_BulkLoadInvalidVariantValue" xml:space="preserve">
+    <value>Value cannot be converted to SqlVariant.</value>
+  </data>
+  <data name="SQL_BulkLoadExistingTransaction" xml:space="preserve">
+    <value>Unexpected existing transaction.</value>
+  </data>
+  <data name="SQL_BulkLoadNoCollation" xml:space="preserve">
+    <value>Failed to obtain column collation information for the destination table. If the table is not in the current database the name must be qualified using the database name (e.g. [mydb]..[mytable](e.g. [mydb]..[mytable]); this also applies to temporary-tables (e.g. #mytable would be specified as tempdb..#mytable).</value>
+  </data>
+  <data name="SQL_BulkLoadConflictingTransactionOption" xml:space="preserve">
+    <value>Must not specify SqlBulkCopyOption.UseInternalTransaction and pass an external Transaction at the same time.</value>
+  </data>
+  <data name="SQL_BulkLoadInvalidOperationInsideEvent" xml:space="preserve">
+    <value>Function must not be called during event.</value>
+  </data>
+  <data name="SQL_BulkLoadMissingDestinationTable" xml:space="preserve">
+    <value>The DestinationTableName property must be set before calling this method.</value>
+  </data>
+  <data name="SQL_BulkLoadInvalidDestinationTable" xml:space="preserve">
+    <value>Cannot access destination table '{0}'.</value>
+  </data>
+  <data name="SQL_BulkLoadNotAllowDBNull" xml:space="preserve">
+    <value>Column '{0}' does not allow DBNull.Value.</value>
+  </data>
+  <data name="Sql_BulkLoadLcidMismatch" xml:space="preserve">
+    <value>The locale id '{0}' of the source column '{1}' and the locale id '{2}' of the destination column '{3}' do not match.</value>
+  </data>
+  <data name="SQL_BulkLoadPendingOperation" xml:space="preserve">
+    <value>Attempt to invoke bulk copy on an object that has a pending operation.</value>
+  </data>
+  <data name="SQL_ConnectionDoomed" xml:space="preserve">
+    <value>The requested operation cannot be completed because the connection has been broken.</value>
+  </data>
+  <data name="SQL_OpenResultCountExceeded" xml:space="preserve">
+    <value>Open result count exceeded.</value>
+  </data>
+  <data name="SQL_StreamWriteNotSupported" xml:space="preserve">
+    <value>The Stream does not support writing.</value>
+  </data>
+  <data name="SQL_StreamReadNotSupported" xml:space="preserve">
+    <value>The Stream does not support reading.</value>
+  </data>
+  <data name="SQL_StreamSeekNotSupported" xml:space="preserve">
+    <value>The Stream does not support seeking.</value>
+  </data>
+  <data name="SQL_ExClientConnectionId" xml:space="preserve">
+    <value>ClientConnectionId:{0}</value>
+  </data>
+  <data name="SQL_ExErrorNumberStateClass" xml:space="preserve">
+    <value>Error Number:{0},State:{1},Class:{2}</value>
+  </data>
+  <data name="SQL_ExOriginalClientConnectionId" xml:space="preserve">
+    <value>ClientConnectionId before routing:{0}</value>
+  </data>
+  <data name="SQL_ExRoutingDestination" xml:space="preserve">
+    <value>Routing Destination:{0}</value>
+  </data>
+  <data name="SqlMisc_NullString" xml:space="preserve">
+    <value>Null</value>
+  </data>
+  <data name="SqlMisc_MessageString" xml:space="preserve">
+    <value>Message</value>
+  </data>
+  <data name="SqlMisc_ArithOverflowMessage" xml:space="preserve">
+    <value>Arithmetic Overflow.</value>
+  </data>
+  <data name="SqlMisc_DivideByZeroMessage" xml:space="preserve">
+    <value>Divide by zero error encountered.</value>
+  </data>
+  <data name="SqlMisc_NullValueMessage" xml:space="preserve">
+    <value>Data is Null. This method or property cannot be called on Null values.</value>
+  </data>
+  <data name="SqlMisc_TruncationMessage" xml:space="preserve">
+    <value>Numeric arithmetic causes truncation.</value>
+  </data>
+  <data name="SqlMisc_DateTimeOverflowMessage" xml:space="preserve">
+    <value>SqlDateTime overflow. Must be between 1/1/1753 12:00:00 AM and 12/31/9999 11:59:59 PM.</value>
+  </data>
+  <data name="SqlMisc_ConcatDiffCollationMessage" xml:space="preserve">
+    <value>Two strings to be concatenated have different collation.</value>
+  </data>
+  <data name="SqlMisc_CompareDiffCollationMessage" xml:space="preserve">
+    <value>Two strings to be compared have different collation.</value>
+  </data>
+  <data name="SqlMisc_InvalidFlagMessage" xml:space="preserve">
+    <value>Invalid flag value.</value>
+  </data>
+  <data name="SqlMisc_NumeToDecOverflowMessage" xml:space="preserve">
+    <value>Conversion from SqlDecimal to Decimal overflows.</value>
+  </data>
+  <data name="SqlMisc_ConversionOverflowMessage" xml:space="preserve">
+    <value>Conversion overflows.</value>
+  </data>
+  <data name="SqlMisc_InvalidDateTimeMessage" xml:space="preserve">
+    <value>Invalid SqlDateTime.</value>
+  </data>
+  <data name="SqlMisc_TimeZoneSpecifiedMessage" xml:space="preserve">
+    <value>A time zone was specified. SqlDateTime does not support time zones.</value>
+  </data>
+  <data name="SqlMisc_InvalidArraySizeMessage" xml:space="preserve">
+    <value>Invalid array size.</value>
+  </data>
+  <data name="SqlMisc_InvalidPrecScaleMessage" xml:space="preserve">
+    <value>Invalid numeric precision/scale.</value>
+  </data>
+  <data name="SqlMisc_FormatMessage" xml:space="preserve">
+    <value>The input wasn't in a correct format.</value>
+  </data>
+  <data name="SqlMisc_SqlTypeMessage" xml:space="preserve">
+    <value>SqlType error.</value>
+  </data>
+  <data name="SqlMisc_StreamErrorMessage" xml:space="preserve">
+    <value>An error occurred while reading.</value>
+  </data>
+  <data name="SqlMisc_NoBufferMessage" xml:space="preserve">
+    <value>There is no buffer. Read or write operation failed.</value>
+  </data>
+  <data name="SqlMisc_BufferInsufficientMessage" xml:space="preserve">
+    <value>The buffer is insufficient. Read or write operation failed.</value>
+  </data>
+  <data name="SqlMisc_WriteNonZeroOffsetOnNullMessage" xml:space="preserve">
+    <value>Cannot write to non-zero offset, because current value is Null.</value>
+  </data>
+  <data name="SqlMisc_WriteOffsetLargerThanLenMessage" xml:space="preserve">
+    <value>Cannot write from an offset that is larger than current length. It would leave uninitialized data in the buffer.</value>
+  </data>
+  <data name="SqlMisc_TruncationMaxDataMessage" xml:space="preserve">
+    <value>Data returned is larger than 2Gb in size. Use SequentialAccess command behavior in order to get all of the data.</value>
+  </data>
+  <data name="SqlMisc_NotFilledMessage" xml:space="preserve">
+    <value>SQL Type has not been loaded with data.</value>
+  </data>
+  <data name="SqlMisc_AlreadyFilledMessage" xml:space="preserve">
+    <value>SQL Type has already been loaded with data.</value>
+  </data>
+  <data name="SqlMisc_ClosedXmlReaderMessage" xml:space="preserve">
+    <value>Invalid attempt to access a closed XmlReader.</value>
+  </data>
+  <data name="SqlMisc_InvalidOpStreamClosed" xml:space="preserve">
+    <value>Invalid attempt to call {0} when the stream is closed.</value>
+  </data>
+  <data name="SqlMisc_InvalidOpStreamNonWritable" xml:space="preserve">
+    <value>Invalid attempt to call {0} when the stream non-writable.</value>
+  </data>
+  <data name="SqlMisc_InvalidOpStreamNonReadable" xml:space="preserve">
+    <value>Invalid attempt to call {0} when the stream non-readable.</value>
+  </data>
+  <data name="SqlMisc_InvalidOpStreamNonSeekable" xml:space="preserve">
+    <value>Invalid attempt to call {0} when the stream is non-seekable.</value>
+  </data>
+  <data name="SqlMisc_SubclassMustOverride" xml:space="preserve">
+    <value>Subclass did not override a required method.</value>
+  </data>
+  <data name="Sql_InternalError" xml:space="preserve">
+    <value>Internal Error</value>
+  </data>
+  <data name="ADP_OperationAborted" xml:space="preserve">
+    <value>Operation aborted.</value>
+  </data>
+  <data name="ADP_OperationAbortedExceptionMessage" xml:space="preserve">
+    <value>Operation aborted due to an exception (see InnerException for details).</value>
+  </data>
+  <data name="SqlParameter_UnsupportedTVPOutputParameter" xml:space="preserve">
+    <value>ParameterDirection '{0}' specified for parameter '{1}' is not supported. Table-valued parameters only support ParameterDirection.Input.</value>
+  </data>
+  <data name="SqlParameter_DBNullNotSupportedForTVP" xml:space="preserve">
+    <value>DBNull value for parameter '{0}' is not supported. Table-valued parameters cannot be DBNull.</value>
+  </data>
+  <data name="SqlParameter_UnexpectedTypeNameForNonStruct" xml:space="preserve">
+    <value>TypeName specified for parameter '{0}'.  TypeName must only be set for Structured parameters.</value>
+  </data>
+  <data name="SQL_EnumeratedRecordMetaDataChanged" xml:space="preserve">
+    <value>Metadata for field '{0}' of record '{1}' did not match the original record's metadata.</value>
+  </data>
+  <data name="SQL_EnumeratedRecordFieldCountChanged" xml:space="preserve">
+    <value>Number of fields in record '{0}' does not match the number in the original record.</value>
+  </data>
+  <data name="SqlMetaData_InvalidSqlDbTypeForConstructorFormat" xml:space="preserve">
+    <value>The dbType {0} is invalid for this constructor.</value>
+  </data>
+  <data name="SqlMetaData_NameTooLong" xml:space="preserve">
+    <value>The name is too long.</value>
+  </data>
+  <data name="SqlMetaData_SpecifyBothSortOrderAndOrdinal" xml:space="preserve">
+    <value>The sort order and ordinal must either both be specified, or neither should be specified (SortOrder.Unspecified and -1).  The values given were: order = {0}, ordinal = {1}.</value>
+  </data>
+  <data name="SqlProvider_InvalidDataColumnType" xml:space="preserve">
+    <value>The type of column '{0}' is not supported.  The type is '{1}'</value>
+  </data>
+  <data name="SqlProvider_NotEnoughColumnsInStructuredType" xml:space="preserve">
+    <value>There are not enough fields in the Structured type.  Structured types must have at least one field.</value>
+  </data>
+  <data name="SqlProvider_DuplicateSortOrdinal" xml:space="preserve">
+    <value>The sort ordinal {0} was specified twice.</value>
+  </data>
+  <data name="SqlProvider_MissingSortOrdinal" xml:space="preserve">
+    <value>The sort ordinal {0} was not specified.</value>
+  </data>
+  <data name="SqlProvider_SortOrdinalGreaterThanFieldCount" xml:space="preserve">
+    <value>The sort ordinal {0} on field {1} exceeds the total number of fields.</value>
+  </data>
+  <data name="IEnumerableOfSqlDataRecordHasNoRows" xml:space="preserve">
+    <value>There are no records in the SqlDataRecord enumeration. To send a table-valued parameter with no rows, use a null reference for the value instead.</value>
+  </data>
+  <data name="SNI_ERROR_1" xml:space="preserve">
+    <value>I/O Error detected in read/write operation</value>
+  </data>
+  <data name="SNI_ERROR_2" xml:space="preserve">
+    <value>Connection was terminated</value>
+  </data>
+  <data name="SNI_ERROR_3" xml:space="preserve">
+    <value>Asynchronous operations not supported</value>
+  </data>
+  <data name="SNI_ERROR_5" xml:space="preserve">
+    <value>Invalid parameter(s) found</value>
+  </data>
+  <data name="SNI_ERROR_6" xml:space="preserve">
+    <value>Unsupported protocol specified</value>
+  </data>
+  <data name="SNI_ERROR_7" xml:space="preserve">
+    <value>Invalid connection found when setting up new session protocol</value>
+  </data>
+  <data name="SNI_ERROR_8" xml:space="preserve">
+    <value>Protocol not supported</value>
+  </data>
+  <data name="SNI_ERROR_9" xml:space="preserve">
+    <value>Associating port with I/O completion mechanism failed</value>
+  </data>
+  <data name="SNI_ERROR_11" xml:space="preserve">
+    <value>Timeout error</value>
+  </data>
+  <data name="SNI_ERROR_12" xml:space="preserve">
+    <value>No server name supplied</value>
+  </data>
+  <data name="SNI_ERROR_13" xml:space="preserve">
+    <value>TerminateListener() has been called</value>
+  </data>
+  <data name="SNI_ERROR_14" xml:space="preserve">
+    <value>Win9x not supported</value>
+  </data>
+  <data name="SNI_ERROR_15" xml:space="preserve">
+    <value>Function not supported</value>
+  </data>
+  <data name="SNI_ERROR_16" xml:space="preserve">
+    <value>Shared-Memory heap error</value>
+  </data>
+  <data name="SNI_ERROR_17" xml:space="preserve">
+    <value>Cannot find an ip/ipv6 type address to connect</value>
+  </data>
+  <data name="SNI_ERROR_18" xml:space="preserve">
+    <value>Connection has been closed by peer</value>
+  </data>
+  <data name="SNI_ERROR_19" xml:space="preserve">
+    <value>Physical connection is not usable</value>
+  </data>
+  <data name="SNI_ERROR_20" xml:space="preserve">
+    <value>Connection has been closed</value>
+  </data>
+  <data name="SNI_ERROR_21" xml:space="preserve">
+    <value>Encryption is enforced but there is no valid certificate</value>
+  </data>
+  <data name="SNI_ERROR_22" xml:space="preserve">
+    <value>Couldn't load library</value>
+  </data>
+  <data name="SNI_ERROR_23" xml:space="preserve">
+    <value>Cannot open a new thread in server process</value>
+  </data>
+  <data name="SNI_ERROR_24" xml:space="preserve">
+    <value>Cannot post event to completion port</value>
+  </data>
+  <data name="SNI_ERROR_25" xml:space="preserve">
+    <value>Connection string is not valid</value>
+  </data>
+  <data name="SNI_ERROR_26" xml:space="preserve">
+    <value>Error Locating Server/Instance Specified</value>
+  </data>
+  <data name="SNI_ERROR_27" xml:space="preserve">
+    <value>Error getting enabled protocols list from registry</value>
+  </data>
+  <data name="SNI_ERROR_28" xml:space="preserve">
+    <value>Server doesn't support requested protocol</value>
+  </data>
+  <data name="SNI_ERROR_29" xml:space="preserve">
+    <value>Shared Memory is not supported for clustered server connectivity</value>
+  </data>
+  <data name="SNI_ERROR_30" xml:space="preserve">
+    <value>Invalid attempt bind to shared memory segment</value>
+  </data>
+  <data name="SNI_ERROR_31" xml:space="preserve">
+    <value>Encryption(ssl/tls) handshake failed</value>
+  </data>
+  <data name="SNI_ERROR_32" xml:space="preserve">
+    <value>Packet size too large for SSL Encrypt/Decrypt operations</value>
+  </data>
+  <data name="SNI_ERROR_33" xml:space="preserve">
+    <value>SSRP error</value>
+  </data>
+  <data name="SNI_ERROR_34" xml:space="preserve">
+    <value>Could not connect to the Shared Memory pipe</value>
+  </data>
+  <data name="SNI_ERROR_35" xml:space="preserve">
+    <value>An internal exception was caught</value>
+  </data>
+  <data name="SNI_ERROR_36" xml:space="preserve">
+    <value>The Shared Memory dll used to connect to SQL Server 2000 was not found</value>
+  </data>
+  <data name="SNI_ERROR_37" xml:space="preserve">
+    <value>The SQL Server 2000 Shared Memory client dll appears to be invalid/corrupted</value>
+  </data>
+  <data name="SNI_ERROR_38" xml:space="preserve">
+    <value>Cannot open a Shared Memory connection to SQL Server 2000</value>
+  </data>
+  <data name="SNI_ERROR_39" xml:space="preserve">
+    <value>Shared memory connectivity to SQL Server 2000 is either disabled or not available on this machine</value>
+  </data>
+  <data name="SNI_ERROR_40" xml:space="preserve">
+    <value>Could not open a connection to SQL Server</value>
+  </data>
+  <data name="SNI_ERROR_41" xml:space="preserve">
+    <value>Cannot open a Shared Memory connection to a remote SQL server</value>
+  </data>
+  <data name="SNI_ERROR_42" xml:space="preserve">
+    <value>Could not establish dedicated administrator connection (DAC) on default port. Make sure that DAC is enabled</value>
+  </data>
+  <data name="SNI_ERROR_43" xml:space="preserve">
+    <value>An error occurred while obtaining the dedicated administrator connection (DAC) port. Make sure that SQL Browser is running, or check the error log for the port number</value>
+  </data>
+  <data name="SNI_ERROR_44" xml:space="preserve">
+    <value>Could not compose Service Principal Name (SPN) for Windows Integrated Authentication. Possible causes are server(s) incorrectly specified to connection API calls, Domain Name System (DNS) lookup failure or memory shortage</value>
+  </data>
+  <data name="SNI_ERROR_47" xml:space="preserve">
+    <value>Connecting with the MultiSubnetFailover connection option to a SQL Server instance configured with more than 64 IP addresses is not supported.</value>
+  </data>
+  <data name="SNI_ERROR_48" xml:space="preserve">
+    <value>Connecting to a named SQL Server instance using the MultiSubnetFailover connection option is not supported.</value>
+  </data>
+  <data name="SNI_ERROR_49" xml:space="preserve">
+    <value>Connecting to a SQL Server instance using the MultiSubnetFailover connection option is only supported when using the TCP protocol.</value>
+  </data>
+  <data name="SNI_ERROR_50" xml:space="preserve">
+    <value>Local Database Runtime error occurred. </value>
+  </data>
+  <data name="SNI_ERROR_51" xml:space="preserve">
+    <value>An instance name was not specified while connecting to a Local Database Runtime.</value>
+  </data>
+  <data name="SNI_ERROR_52" xml:space="preserve">
+    <value>Unable to locate a Local Database Runtime installation. Verify that SQL Server Express is properly installed and that the Local Database Runtime feature is enabled.</value>
+  </data>
+  <data name="SNI_ERROR_53" xml:space="preserve">
+    <value>Invalid Local Database Runtime registry configuration found. Verify that SQL Server Express is properly installed.</value>
+  </data>
+  <data name="SNI_ERROR_54" xml:space="preserve">
+    <value>Unable to locate the registry entry for SQLUserInstance.dll file path. Verify that the Local Database Runtime feature of SQL Server Express is properly installed.</value>
+  </data>
+  <data name="SNI_ERROR_55" xml:space="preserve">
+    <value>Registry value contains an invalid SQLUserInstance.dll file path. Verify that the Local Database Runtime feature of SQL Server Express is properly installed.</value>
+  </data>
+  <data name="SNI_ERROR_56" xml:space="preserve">
+    <value>Unable to load the SQLUserInstance.dll from the location specified in the registry. Verify that the Local Database Runtime feature of SQL Server Express is properly installed.</value>
+  </data>
+  <data name="SNI_ERROR_57" xml:space="preserve">
+    <value>Invalid SQLUserInstance.dll found at the location specified in the registry. Verify that the Local Database Runtime feature of SQL Server Express is properly installed.</value>
+  </data>
+  <data name="Snix_Connect" xml:space="preserve">
+    <value>A network-related or instance-specific error occurred while establishing a connection to SQL Server. The server was not found or was not accessible. Verify that the instance name is correct and that SQL Server is configured to allow remote connections.</value>
+  </data>
+  <data name="Snix_PreLoginBeforeSuccessfullWrite" xml:space="preserve">
+    <value>The client was unable to establish a connection because of an error during connection initialization process before login. Possible causes include the following:  the client tried to connect to an unsupported version of SQL Server; the server was too busy to accept new connections; or there was a resource limitation (insufficient memory or maximum allowed connections) on the server.</value>
+  </data>
+  <data name="Snix_PreLogin" xml:space="preserve">
+    <value>A connection was successfully established with the server, but then an error occurred during the pre-login handshake.</value>
+  </data>
+  <data name="Snix_LoginSspi" xml:space="preserve">
+    <value>A connection was successfully established with the server, but then an error occurred when obtaining the security/SSPI context information for integrated security login.</value>
+  </data>
+  <data name="Snix_Login" xml:space="preserve">
+    <value>A connection was successfully established with the server, but then an error occurred during the login process.</value>
+  </data>
+  <data name="Snix_EnableMars" xml:space="preserve">
+    <value>Connection open and login was successful, but then an error occurred while enabling MARS for this connection.</value>
+  </data>
+  <data name="Snix_AutoEnlist" xml:space="preserve">
+    <value>Connection open and login was successful, but then an error occurred while enlisting the connection into the current distributed transaction.</value>
+  </data>
+  <data name="Snix_GetMarsSession" xml:space="preserve">
+    <value>Failed to establish a MARS session in preparation to send the request to the server.</value>
+  </data>
+  <data name="Snix_Execute" xml:space="preserve">
+    <value>A transport-level error has occurred when sending the request to the server.</value>
+  </data>
+  <data name="Snix_Read" xml:space="preserve">
+    <value>A transport-level error has occurred when receiving results from the server.</value>
+  </data>
+  <data name="Snix_Close" xml:space="preserve">
+    <value>A transport-level error has occurred during connection clean-up.</value>
+  </data>
+  <data name="Snix_SendRows" xml:space="preserve">
+    <value>A transport-level error has occurred while sending information to the server.</value>
+  </data>
+  <data name="Snix_ProcessSspi" xml:space="preserve">
+    <value>A transport-level error has occured during SSPI handshake.</value>
+  </data>
+  <data name="LocalDB_FailedGetDLLHandle" xml:space="preserve">
+    <value>Local Database Runtime: Cannot load SQLUserInstance.dll.</value>
+  </data>
+  <data name="LocalDB_MethodNotFound" xml:space="preserve">
+    <value>Invalid SQLUserInstance.dll found at the location specified in the registry. Verify that the Local Database Runtime feature of SQL Server Express is properly installed.</value>
+  </data>
+  <data name="LocalDB_UnobtainableMessage" xml:space="preserve">
+    <value>Cannot obtain Local Database Runtime error message</value>
+  </data>
+  <data name="SQLROR_RecursiveRoutingNotSupported" xml:space="preserve">
+    <value>Two or more redirections have occurred. Only one redirection per login is allowed.</value>
+  </data>
+  <data name="SQLROR_FailoverNotSupported" xml:space="preserve">
+    <value>Connecting to a mirrored SQL Server instance using the ApplicationIntent ReadOnly connection option is not supported.</value>
+  </data>
+  <data name="SQLROR_UnexpectedRoutingInfo" xml:space="preserve">
+    <value>Unexpected routing information received.</value>
+  </data>
+  <data name="SQLROR_InvalidRoutingInfo" xml:space="preserve">
+    <value>Invalid routing information received.</value>
+  </data>
+  <data name="SQLROR_TimeoutAfterRoutingInfo" xml:space="preserve">
+    <value>Server provided routing information, but timeout already expired.</value>
+  </data>
+  <data name="SQLCR_InvalidConnectRetryCountValue" xml:space="preserve">
+    <value>Invalid ConnectRetryCount value (should be 0-255).</value>
+  </data>
+  <data name="SQLCR_InvalidConnectRetryIntervalValue" xml:space="preserve">
+    <value>Invalid ConnectRetryInterval value (should be 1-60).</value>
+  </data>
+  <data name="SQLCR_NextAttemptWillExceedQueryTimeout" xml:space="preserve">
+    <value>Next reconnection attempt will exceed query timeout. Reconnection was terminated.</value>
+  </data>
+  <data name="SQLCR_EncryptionChanged" xml:space="preserve">
+    <value>The server did not preserve SSL encryption during a recovery attempt, connection recovery is not possible.</value>
+  </data>
+  <data name="SQLCR_TDSVestionNotPreserved" xml:space="preserve">
+    <value>The server did not preserve the exact client TDS version requested during a recovery attempt, connection recovery is not possible.</value>
+  </data>
+  <data name="SQLCR_AllAttemptsFailed" xml:space="preserve">
+    <value>The connection is broken and recovery is not possible.  The client driver attempted to recover the connection one or more times and all attempts failed.  Increase the value of ConnectRetryCount to increase the number of recovery attempts.</value>
+  </data>
+  <data name="SQLCR_UnrecoverableServer" xml:space="preserve">
+    <value>The connection is broken and recovery is not possible.  The connection is marked by the server as unrecoverable.  No attempt was made to restore the connection.</value>
+  </data>
+  <data name="SQLCR_UnrecoverableClient" xml:space="preserve">
+    <value>The connection is broken and recovery is not possible.  The connection is marked by the client driver as unrecoverable.  No attempt was made to restore the connection.</value>
+  </data>
+  <data name="SQLCR_NoCRAckAtReconnection" xml:space="preserve">
+    <value>The server did not acknowledge a recovery attempt, connection recovery is not possible.</value>
+  </data>
+  <data name="SQL_UnsupportedKeyword" xml:space="preserve">
+    <value>The keyword '{0}' is not supported on this platform.</value>
+  </data>
+  <data name="SQL_UnsupportedFeature" xml:space="preserve">
+    <value>The server is attempting to use a feature that is not supported on this platform.</value>
+  </data>
+  <data name="SQL_UnsupportedToken" xml:space="preserve">
+    <value>Received an unsupported token '{0}' while reading data from the server.</value>
+  </data>
+  <data name="SQL_DbTypeNotSupportedOnThisPlatform" xml:space="preserve">
+    <value>Type {0} is not supported on this platform.</value>
+  </data>
+  <data name="SQL_NetworkLibraryNotSupported" xml:space="preserve">
+    <value>The keyword 'Network Library' is not supported on this platform, prefix the 'Data Source' with the protocol desired instead ('tcp:' for a TCP connection, or 'np:' for a Named Pipe connection).</value>
+  </data>
+</root>
