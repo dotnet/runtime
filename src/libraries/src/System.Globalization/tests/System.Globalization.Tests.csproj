@@ -18,6 +18,10 @@
   <ItemGroup>
     <Compile Include="CompareInfo.cs" />
     <Compile Include="CompareInfo.TestData.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoNumberDecimalDigits.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoNumberNegativePattern.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoPercentNegativePattern.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoPercentPositivePattern.cs" />
     <Compile Include="TextInfo.cs" />
     <Compile Include="CompareInfo\compareinfo.cs" />
     <Compile Include="CompareInfo\CompareInfoCompare.cs" />
@@ -149,6 +153,7 @@
     <Compile Include="TextElementEnumerator\TextElementEnumeratorGetTextElement.cs" />
     <Compile Include="TextElementEnumerator\TextElementEnumeratorMoveNext.cs" />
     <Compile Include="TextElementEnumerator\TextElementEnumeratorReset.cs" />
+    <Compile Include="TextInfo\TestInfoIsRightToLeft.cs" />
     <Compile Include="TextInfo\TextInfoCultureName.cs" />
     <Compile Include="TextInfo\TextInfoEquals.cs" />
     <Compile Include="TextInfo\TextInfoGetHashCode.cs" />
