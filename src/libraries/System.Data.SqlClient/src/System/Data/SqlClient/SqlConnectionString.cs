@@ -5,15 +5,9 @@
 
 //------------------------------------------------------------------------------
 
-using System;
 using System.Collections;
-using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Security;
-using System.Text;
 
 
 namespace System.Data.SqlClient

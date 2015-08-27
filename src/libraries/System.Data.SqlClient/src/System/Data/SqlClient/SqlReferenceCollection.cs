@@ -5,13 +5,8 @@
 
 //------------------------------------------------------------------------------
 
-using System;
-using System.Data;
-using System.Data.Common;
 using System.Diagnostics;
 using System.Data.ProviderBase;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace System.Data.SqlClient
 {

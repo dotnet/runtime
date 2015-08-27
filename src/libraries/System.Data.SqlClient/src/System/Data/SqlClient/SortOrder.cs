@@ -3,13 +3,7 @@
 
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //------------------------------------------------------------------------------
-// <copyright file="SqlMetaData.cs" company="Microsoft">
 
-//  </copyright>
-
-
-
-//------------------------------------------------------------------------------
 
 namespace System.Data.SqlClient
 {

@@ -5,9 +5,7 @@
 
 //------------------------------------------------------------------------------
 
-using System;
 using System.Collections;
-using System.Data;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
@@ -55,7 +53,7 @@ namespace System.Data.Common
         ;
 
 
-        private static readonly Regex ConnectionStringRegex = new Regex(ConnectionStringPattern, RegexOptions.ExplicitCapture | RegexOptions.Compiled);
+        private static readonly Regex s_connectionStringRegex = new Regex(ConnectionStringPattern, RegexOptions.ExplicitCapture | RegexOptions.Compiled);
 #endif
         private const string ConnectionStringValidKeyPattern = "^(?![;\\s])[^\\p{Cc}]+(?<!\\s)$"; // key not allowed to start with semi-colon or space or contain non-visible characters or end with space
         private const string ConnectionStringValidValuePattern = "^[^\u0000]*$";                    // value not allowed to contain embedded null
@@ -474,7 +472,7 @@ namespace System.Data.Common
             if (null != keyvalue)
             {
 #if DEBUG
-                bool compValue = ConnectionStringValidValueRegex.IsMatch(keyvalue);
+                bool compValue = s_connectionStringValidValueRegex.IsMatch(keyvalue);
                 Debug.Assert((-1 == keyvalue.IndexOf('\u0000')) == compValue, "IsValueValid mismatch with regex");
 #endif
                 return (-1 == keyvalue.IndexOf('\u0000'));
@@ -487,7 +485,7 @@ namespace System.Data.Common
             if (null != keyname)
             {
 #if DEBUG
-                bool compValue = ConnectionStringValidKeyRegex.IsMatch(keyname);
+                bool compValue = s_connectionStringValidKeyRegex.IsMatch(keyname);
                 Debug.Assert(((0 < keyname.Length) && (';' != keyname[0]) && !Char.IsWhiteSpace(keyname[0]) && (-1 == keyname.IndexOf('\u0000'))) == compValue, "IsValueValid mismatch with regex");
 #endif
                 return ((0 < keyname.Length) && (';' != keyname[0]) && !Char.IsWhiteSpace(keyname[0]) && (-1 == keyname.IndexOf('\u0000')));
@@ -496,9 +494,10 @@ namespace System.Data.Common
         }
 
 #if DEBUG
-        private static Hashtable SplitConnectionString(string connectionString, Hashtable synonyms) {
+        private static Hashtable SplitConnectionString(string connectionString, Hashtable synonyms)
+        {
             Hashtable parsetable = new Hashtable();
-            Regex parser = ConnectionStringRegex;
+            Regex parser = s_connectionStringRegex;
 
             const int KeyIndex = 1, ValueIndex = 2;
             Debug.Assert(KeyIndex == parser.GroupNumberFromName("key"), "wrong key index");
@@ -515,7 +514,7 @@ namespace System.Data.Common
                 CaptureCollection keyvalues = match.Groups[ValueIndex].Captures;
                 foreach (Capture keypair in match.Groups[KeyIndex].Captures)
                 {
-                    string keyname = keypair.Value.Replace("==", "=").ToLowerInvariant(); 
+                    string keyname = keypair.Value.Replace("==", "=").ToLowerInvariant();
                     string keyvalue = keyvalues[indexValue++].Value;
                     if (0 < keyvalue.Length)
                     {
@@ -552,7 +551,8 @@ namespace System.Data.Common
             return parsetable;
         }
 
-        private static void ParseComparison(Hashtable parsetable, string connectionString, Hashtable synonyms, Exception e) {
+        private static void ParseComparison(Hashtable parsetable, string connectionString, Hashtable synonyms, Exception e)
+        {
             try
             {
                 Hashtable parsedvalues = SplitConnectionString(connectionString, synonyms);
@@ -611,43 +611,43 @@ namespace System.Data.Common
             try
             {
 #endif
-            int nextStartPosition = 0;
-            int endPosition = connectionString.Length;
-            while (nextStartPosition < endPosition)
-            {
-                int startPosition = nextStartPosition;
-
-                string keyname, keyvalue;
-                nextStartPosition = GetKeyValuePair(connectionString, startPosition, buffer, out keyname, out keyvalue);
-                if (ADP.IsEmpty(keyname))
+                int nextStartPosition = 0;
+                int endPosition = connectionString.Length;
+                while (nextStartPosition < endPosition)
                 {
-                    // if (nextStartPosition != endPosition) { throw; }
-                    break;
-                }
+                    int startPosition = nextStartPosition;
+
+                    string keyname, keyvalue;
+                    nextStartPosition = GetKeyValuePair(connectionString, startPosition, buffer, out keyname, out keyvalue);
+                    if (ADP.IsEmpty(keyname))
+                    {
+                        // if (nextStartPosition != endPosition) { throw; }
+                        break;
+                    }
 #if DEBUG
                     DebugTraceKeyValuePair(keyname, keyvalue, synonyms);
 
                     Debug.Assert(IsKeyNameValid(keyname), "ParseFailure, invalid keyname");
                     Debug.Assert(IsValueValidInternal(keyvalue), "parse failure, invalid keyvalue");
 #endif
-                string realkeyname = ((null != synonyms) ? (string)synonyms[keyname] : keyname);
-                if (!IsKeyNameValid(realkeyname))
-                {
-                    throw ADP.KeywordNotSupported(keyname);
-                }
-                {
-                    parsetable[realkeyname] = keyvalue; // last key-value pair wins (or first)
-                }
+                    string realkeyname = ((null != synonyms) ? (string)synonyms[keyname] : keyname);
+                    if (!IsKeyNameValid(realkeyname))
+                    {
+                        throw ADP.KeywordNotSupported(keyname);
+                    }
+                    {
+                        parsetable[realkeyname] = keyvalue; // last key-value pair wins (or first)
+                    }
 
-                if (null != localKeychain)
-                {
-                    localKeychain = localKeychain.Next = new NameValuePair(realkeyname, keyvalue, nextStartPosition - startPosition);
+                    if (null != localKeychain)
+                    {
+                        localKeychain = localKeychain.Next = new NameValuePair(realkeyname, keyvalue, nextStartPosition - startPosition);
+                    }
+                    else if (buildChain)
+                    { // first time only - don't contain modified chain from UDL file
+                        keychain = localKeychain = new NameValuePair(realkeyname, keyvalue, nextStartPosition - startPosition);
+                    }
                 }
-                else if (buildChain)
-                { // first time only - don't contain modified chain from UDL file
-                    keychain = localKeychain = new NameValuePair(realkeyname, keyvalue, nextStartPosition - startPosition);
-                }
-            }
 #if DEBUG
             }
             catch (ArgumentException e)

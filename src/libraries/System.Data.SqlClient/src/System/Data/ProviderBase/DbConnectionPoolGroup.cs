@@ -4,11 +4,9 @@
 
 //------------------------------------------------------------------------------
 
-using System;
 using System.Collections.Concurrent;
 using System.Data.Common;
 using System.Diagnostics;
-using System.Threading;
 
 namespace System.Data.ProviderBase
 {

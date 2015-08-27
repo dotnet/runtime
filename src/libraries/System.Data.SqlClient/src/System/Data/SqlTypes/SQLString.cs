@@ -4,21 +4,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //------------------------------------------------------------------------------
 
-//  </copyright>
 
-
-
-//------------------------------------------------------------------------------
-
-//**************************************************************************
-//
-// Purpose: Implementation of SqlString which is equivalent to
-//            data type "nvarchar/varchar" in SQL Server
-//
-// @EndHeader@
-//**************************************************************************
-
-using System;
 using System.Data.Common;
 using System.Globalization;
 using System.Diagnostics;

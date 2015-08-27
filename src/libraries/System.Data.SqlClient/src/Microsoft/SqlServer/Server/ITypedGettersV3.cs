@@ -6,7 +6,6 @@
 //------------------------------------------------------------------------------
 
 using System;
-using System.Data;
 using System.Data.SqlTypes;
 
 namespace Microsoft.SqlServer.Server

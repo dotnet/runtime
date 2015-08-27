@@ -4,9 +4,7 @@
 
 //------------------------------------------------------------------------------
 
-using System;
 using System.Data.ProviderBase;
-using System.Diagnostics;
 
 namespace System.Data.SqlClient
 {

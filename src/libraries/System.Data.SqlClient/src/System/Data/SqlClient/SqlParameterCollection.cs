@@ -5,13 +5,7 @@
 
 //------------------------------------------------------------------------------
 
-using System;
-using System.Collections;
-using System.Data;
 using System.Data.Common;
-using System.Data.ProviderBase;
-using System.Data.SqlTypes;
-using System.Diagnostics;
 
 namespace System.Data.SqlClient
 {

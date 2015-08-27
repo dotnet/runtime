@@ -5,9 +5,7 @@
 
 //------------------------------------------------------------------------------
 
-using System;
 using System.Data.Common;
-using System.Diagnostics;
 
 
 namespace System.Data.SqlClient

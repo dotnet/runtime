@@ -4,13 +4,7 @@
 
 //------------------------------------------------------------------------------
 
-using System;
-using System.Data;
-using System.Data.Common;
 using System.Diagnostics;
-using System.Globalization;
-using System.Threading;
-using System.Data.SqlClient;
 using System.Text;
 
 namespace System.Data.SqlClient

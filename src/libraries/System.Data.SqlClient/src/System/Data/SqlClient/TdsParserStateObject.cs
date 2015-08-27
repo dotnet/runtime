@@ -5,19 +5,14 @@
 
 //------------------------------------------------------------------------------
 
-using System;
 using System.Collections.Generic;
 using System.Data.Common;
-using System.Data.ProviderBase;
-using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Security;
 using System.Text;
 
 namespace System.Data.SqlClient
@@ -674,7 +669,7 @@ namespace System.Data.SqlClient
         internal void CancelRequest()
         {
             ResetBuffer();    // clear out unsent buffer
-            // VSDD#903514, if the first sqlbulkcopy timeout, _outputPacketNumber may not be 1, 
+            // If the first sqlbulkcopy timeout, _outputPacketNumber may not be 1, 
             // the next sqlbulkcopy (same connection string) requires this to be 1, hence reset 
             // it here when exception happens in the first sqlbulkcopy
             _outputPacketNumber = 1;
@@ -2056,7 +2051,7 @@ namespace System.Data.SqlClient
         }
 
 #if DEBUG
-        string _lastStack;
+        private string _lastStack;
 #endif
 
         internal bool TryReadNetworkPacket()
@@ -2442,7 +2437,6 @@ namespace System.Data.SqlClient
                     // Be sure to release packet, otherwise it will be leaked by native.
                     SNINativeMethodWrapper.SNIPacketRelease(readPacket);
                 }
-
                 AssertValidState();
             }
         }
@@ -2727,7 +2721,8 @@ namespace System.Data.SqlClient
         }
 
         public void ReadAsyncCallback(IntPtr key, IntPtr packet, UInt32 error)
-        { // Key never used.
+        {
+            // Key never used.
             // Note - it's possible that when native calls managed that an asynchronous exception
             // could occur in the native->managed transition, which would
             // have two impacts:
@@ -3349,34 +3344,34 @@ namespace System.Data.SqlClient
                     if (!_skipSendAttention)
                     {
 #endif
-                    // Take lock and send attention
-                    bool releaseLock = false;
-                    if ((mustTakeWriteLock) && (!_parser.Connection.ThreadHasParserLockForClose))
-                    {
-                        releaseLock = true;
-                        _parser.Connection._parserLock.Wait(canReleaseFromAnyThread: false);
-                        _parser.Connection.ThreadHasParserLockForClose = true;
-                    }
-                    try
-                    {
-                        // Check again (just in case the connection was closed while we were waiting)
-                        if (_parser.State == TdsParserState.Closed || _parser.State == TdsParserState.Broken)
+                        // Take lock and send attention
+                        bool releaseLock = false;
+                        if ((mustTakeWriteLock) && (!_parser.Connection.ThreadHasParserLockForClose))
                         {
-                            return;
+                            releaseLock = true;
+                            _parser.Connection._parserLock.Wait(canReleaseFromAnyThread: false);
+                            _parser.Connection.ThreadHasParserLockForClose = true;
                         }
+                        try
+                        {
+                            // Check again (just in case the connection was closed while we were waiting)
+                            if (_parser.State == TdsParserState.Closed || _parser.State == TdsParserState.Broken)
+                            {
+                                return;
+                            }
 
-                        UInt32 sniError;
-                        _parser._asyncWrite = false; // stop async write 
-                        SNIWritePacket(Handle, attnPacket, out sniError, canAccumulate: false, callerHasConnectionLock: false);
-                    }
-                    finally
-                    {
-                        if (releaseLock)
-                        {
-                            _parser.Connection.ThreadHasParserLockForClose = false;
-                            _parser.Connection._parserLock.Release();
+                            UInt32 sniError;
+                            _parser._asyncWrite = false; // stop async write 
+                            SNIWritePacket(Handle, attnPacket, out sniError, canAccumulate: false, callerHasConnectionLock: false);
                         }
-                    }
+                        finally
+                        {
+                            if (releaseLock)
+                            {
+                                _parser.Connection.ThreadHasParserLockForClose = false;
+                                _parser.Connection._parserLock.Release();
+                            }
+                        }
 #if DEBUG
                     }
 #endif
@@ -3962,7 +3957,8 @@ namespace System.Data.SqlClient
             {
                 Debug.Assert(_snapshotInBuffCurrent == _snapshotInBuffs.Count, "Should not be reading new packets when not replaying last packet");
             }
-            internal void CheckStack(string trace) {
+            internal void CheckStack(string trace)
+            {
                 PacketData prev = _snapshotInBuffs[_snapshotInBuffCurrent - 1];
                 if (prev.Stack == null)
                 {

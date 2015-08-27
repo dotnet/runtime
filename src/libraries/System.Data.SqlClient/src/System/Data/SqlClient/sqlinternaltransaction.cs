@@ -5,10 +5,7 @@
 
 //------------------------------------------------------------------------------
 
-using System.Data;
 using System.Data.Common;
-using System.Data.ProviderBase;
-using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Threading;
 

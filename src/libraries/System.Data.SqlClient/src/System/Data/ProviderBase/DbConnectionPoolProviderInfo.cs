@@ -4,8 +4,6 @@
 
 //------------------------------------------------------------------------------
 
-using System;
-using System.Diagnostics;
 
 namespace System.Data.ProviderBase
 {

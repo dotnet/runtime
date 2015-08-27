@@ -1,24 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-//**************************************************************************
-//
-// Description: Class SqlChars is used to represent a char/varchar/nchar/nvarchar
-//		data from SQL Server. It contains a char array buffer, which can
-//		be refilled. For example, in data access, user could use one instance
-//		of SqlChars to bind to a binary column, and we will just keep copying
-//		the data into the same instance, and avoid allocation per row.
-//
-// @EndHeader@
-//**************************************************************************
 
-using System;
+
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Data.Common;
-using System.Data.SqlClient;
-using System.Data.SqlTypes;
 using Res = System.SR;
 
 

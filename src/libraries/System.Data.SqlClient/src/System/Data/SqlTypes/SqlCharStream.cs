@@ -3,18 +3,8 @@
 
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //------------------------------------------------------------------------------
-// <copyright file="SqlStreamChars.cs" company="Microsoft">
 
-//  </copyright>                                                                
-
-
-
-//------------------------------------------------------------------------------
-
-using System;
 using System.IO;
-using System.Runtime.InteropServices;
-using System.Data.SqlTypes;
 
 namespace System.Data.SqlTypes
 {

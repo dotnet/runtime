@@ -6,15 +6,11 @@
 //------------------------------------------------------------------------------
 
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Data;
 using System.Data.Common;
 using System.Data.SqlTypes;
 using System.Diagnostics;
-using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -954,10 +950,10 @@ namespace System.Data.SqlClient
                         isNull = (columnAsINullable != null) && columnAsINullable.IsNull;
                     }
 #if DEBUG
-                            else if (!isNull)
-                            {
-                                Debug.Assert(!(value is INullable) || !((INullable)value).IsNull, "IsDBNull returned false, but GetValue returned a null INullable");
-                            }
+                    else if (!isNull)
+                    {
+                        Debug.Assert(!(value is INullable) || !((INullable)value).IsNull, "IsDBNull returned false, but GetValue returned a null INullable");
+                    }
 #endif
                     return value;
                 }

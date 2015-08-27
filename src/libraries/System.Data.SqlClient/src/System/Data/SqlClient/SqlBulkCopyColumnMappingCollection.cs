@@ -5,11 +5,7 @@
 
 //------------------------------------------------------------------------------
 
-// todo: rename the file
-// Caution! ndp\fx\src\data\netmodule\sources needs to follow this name change
 
-using System;
-using System.Data;
 using System.Data.Common;
 
 using System.Collections;

@@ -5,15 +5,12 @@
 
 //------------------------------------------------------------------------------
 
-using System;
-using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
 using System.Text;
 using System.Threading.Tasks;
-using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 
 namespace System.Data.SqlClient

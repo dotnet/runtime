@@ -5,12 +5,9 @@
 
 //------------------------------------------------------------------------------
 
-using System;
 using System.Data.Common;
 using System.Data.ProviderBase;
-using System.Collections.Specialized;
 using System.Diagnostics;
-using System.IO;
 
 
 namespace System.Data.SqlClient

@@ -6,15 +6,7 @@
 
 //------------------------------------------------------------------------------
 
-//**************************************************************************
-//
-// Purpose: Implementation of SqlBinary which is corresponding to 
-//            data type "binary/varbinary" in SQL Server
-//
-// @EndHeader@
-//**************************************************************************
 
-using System;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Globalization;

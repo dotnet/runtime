@@ -6,18 +6,8 @@
 
 //------------------------------------------------------------------------------
 
-//**************************************************************************
-//
-// Purpose: Implementation of utilities in COM+ SQL Types Library.
-//			Includes interface INullable, exceptions SqlNullValueException
-//			and SqlTruncateException, and SQLDebug class.
-//
-// @EndHeader@
-//**************************************************************************
 
-using System;
-using System.Data;
-using System.Globalization;
+
 
 namespace System.Data.SqlTypes
 {

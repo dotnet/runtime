@@ -5,58 +5,13 @@
 
 //------------------------------------------------------------------------------
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Data;
-using System.Data.Common;
 using System.Diagnostics;
-using System.Globalization;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Data.SqlClient;
 using System.Reflection;
 
 
 namespace System.Data.Common
 {
-    /*
-        internal sealed class NamedConnectionStringConverter : StringConverter {
-
-            public NamedConnectionStringConverter() {
-            }
-
-            public override bool GetStandardValuesSupported(ITypeDescriptorContext context) {
-                return true;
-            }
-
-            public override bool GetStandardValuesExclusive(ITypeDescriptorContext context) {
-                // Although theoretically this could be true, some people may want to just type in a name
-                return false;
-            }
-
-            public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context) {
-                StandardValuesCollection standardValues = null;
-                if (null != context) {
-                    DbConnectionStringBuilder instance = (context.Instance as DbConnectionStringBuilder);
-                    if (null != instance) {
-                        string myProviderName = instance.GetType().Namespace;
-
-                        List<string> myConnectionNames = new List<string>();
-                        foreach(System.Configuration.ConnectionStringSetting setting in System.Configuration.ConfigurationManager.ConnectionStrings) {
-                            if (myProviderName.EndsWith(setting.ProviderName)) {
-                                myConnectionNames.Add(setting.ConnectionName);
-                            }
-                        }
-                        standardValues = new StandardValuesCollection(myConnectionNames);
-                    }
-                }
-                return standardValues;
-            }
-        }
-    */
-
-
     internal static class DbConnectionStringBuilderUtil
     {
         internal static bool ConvertToBoolean(object value)

@@ -4,15 +4,7 @@
 
 //------------------------------------------------------------------------------
 
-using System;
-using System.Collections;
-using System.Data.Common;
-using System.Diagnostics;
-using System.Globalization;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security.Principal;
-using System.Threading;
 
 
 namespace System.Data.ProviderBase

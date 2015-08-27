@@ -5,10 +5,7 @@
 // In the desktop version of the framework, this file is generated from ProviderBase\DbParameterHelper.cs
 //#line 1 "e:\\fxdata\\src\\ndp\\fx\\src\\data\\system\\data\\providerbase\\dbparameterhelper.cs"
 
-using System;
-using System.Data;
 using System.Data.Common;
-using System.Globalization;
 
 namespace System.Data.SqlClient
 {

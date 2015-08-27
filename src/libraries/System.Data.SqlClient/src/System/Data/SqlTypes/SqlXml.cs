@@ -3,24 +3,8 @@
 
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //------------------------------------------------------------------------------
-// <copyright file="SqlXmlReader.cs" company="Microsoft">
-
-//	</copyright>																
 
 
-//------------------------------------------------------------------------------
-
-//**************************************************************************
-//				Copyright (c) 1988-2000 Microsoft Corporation.
-//
-// Purpose: Implementation of SqlXml which is equivalent to 
-//			  data type "xml" in SQL Server
-//
-//
-// @EndHeader@
-//**************************************************************************
-
-using System;
 using System.IO;
 using System.Xml;
 using System.Data.Common;
