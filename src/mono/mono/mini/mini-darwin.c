@@ -256,11 +256,11 @@ mono_gdb_render_native_backtraces (pid_t crashed_pid)
 	gboolean using_lldb = FALSE;
 
 	using_lldb = TRUE;
-	/*
+
 	argv [0] = g_find_program_in_path ("gdb");
-	if (!argv [0])
-		using_lldb = TRUE;
-	*/
+	if (argv [0])
+		using_lldb = FALSE;
+
 	if (using_lldb)
 		argv [0] = g_find_program_in_path ("lldb");
 
