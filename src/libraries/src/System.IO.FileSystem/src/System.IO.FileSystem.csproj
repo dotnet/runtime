@@ -334,8 +334,8 @@
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Unix.cs">
       <Link>Common\System\IO\PathInternal.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.readdir.cs">
-      <Link>Common\Interop\Unix\Interop.readdir.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.ReadDir.cs">
+      <Link>Common\Interop\Unix\Interop.ReadDir.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeDirectoryHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeDirectoryHandle.Unix.cs</Link>
