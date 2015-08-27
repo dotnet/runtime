@@ -119,6 +119,22 @@ namespace System.Linq.Tests.LegacyTests
 
             Assert.Equal(expected, source.OrderBy((e) => e.Name).ThenBy((e) => e.City, null));
         }
+        
+        [Fact]
+        public void OrderIsStable()
+        {
+            var source = @"Because I could not stop for Death —
+He kindly stopped for me —
+The Carriage held but just Ourselves —
+And Immortality.".Split(new []{ ' ', '\n', '\r', '—' }, StringSplitOptions.RemoveEmptyEntries);
+            var expected = new []
+            {
+                "me", "not", "for", "for", "but", "stop", "held", "just", "could", "kindly", "stopped",
+                "I", "He", "The", "And", "Death", "Because", "Carriage", "Ourselves", "Immortality."
+            };
+            
+            Assert.Equal(expected, source.OrderBy(word => char.IsUpper(word[0])).ThenBy(word => word.Length));
+        }
 
         [Fact]
         public void NullSource()
