@@ -408,7 +408,9 @@ public static class PathTests
         {
             longPath.Append(Path.DirectorySeparatorChar).Append('a').Append(Path.DirectorySeparatorChar).Append('.');
         }
-        Assert.Throws<PathTooLongException>(() => Path.GetFullPath(longPath.ToString()));
+
+        // Now no longer throws unless over ~32K
+        Assert.NotNull(Path.GetFullPath(longPath.ToString()));
     }
 
     [PlatformSpecific(PlatformID.Windows)]
@@ -455,9 +457,17 @@ public static class PathTests
 
     [PlatformSpecific(PlatformID.Windows)]
     [Fact]
+    public static void GetFullPath_Windows_MaxPathNotTooLong()
+    {
+        // Shouldn't throw anymore
+        Path.GetFullPath(@"C:\" + new string('a', 255) + @"\");
+    }
+
+    [PlatformSpecific(PlatformID.Windows)]
+    [Fact]
     public static void GetFullPath_Windows_PathTooLong()
     {
-        Assert.Throws<PathTooLongException>(() => Path.GetFullPath(@"C:\" + new string('a', 255) + @"\"));
+        Assert.Throws<PathTooLongException>(() => Path.GetFullPath(@"C:\" + new string('a', short.MaxValue) + @"\"));
     }
 
     [PlatformSpecific(PlatformID.Windows)]

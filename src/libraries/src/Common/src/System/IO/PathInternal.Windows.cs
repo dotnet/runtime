@@ -16,7 +16,7 @@ namespace System.IO
         internal const string DevicePathPrefix = @"\\.\";
         internal const int MaxShortPath = 260;
         internal const int MaxShortDirectoryPath = 248;
-        internal const int MaxExtendedPath = short.MaxValue;
+        internal const int MaxLongPath = short.MaxValue;
 
         internal static readonly char[] InvalidPathChars =
         {
@@ -41,16 +41,29 @@ namespace System.IO
         /// </summary>
         internal static bool IsPathTooLong(string fullPath)
         {
+            // We'll never know precisely what will fail as paths get changed internally in Windows and
+            // may grow to exceed MaxExtendedPath. We'll only try to catch ones we know will absolutely
+            // fail.
+
+            if (fullPath.Length < MaxLongPath - UncExtendedPathPrefix.Length)
+            {
+                // We won't push it over MaxLongPath
+                return false;
+            }
+
+            // We need to check if we have a prefix to account for one being implicitly added.
             if (IsExtended(fullPath))
             {
-                return fullPath.Length >= MaxExtendedPath;
+                // We won't prepend, just check
+                return fullPath.Length >= MaxLongPath;
             }
-            else
+
+            if (fullPath.StartsWith(UncPathPrefix, StringComparison.Ordinal))
             {
-                // Will need to be updated with #2581 to allow all paths to MaxExtendedPath
-                // minus legth of extended local or UNC prefix.
-                return fullPath.Length >= MaxShortPath;
+                return fullPath.Length + UncExtendedPrefixToInsert.Length >= MaxLongPath;
             }
+
+            return fullPath.Length + ExtendedPathPrefix.Length >= MaxLongPath;
         }
 
         /// <summary>
@@ -58,16 +71,7 @@ namespace System.IO
         /// </summary>
         internal static bool IsDirectoryTooLong(string fullPath)
         {
-            if (IsExtended(fullPath))
-            {
-                return fullPath.Length >= MaxExtendedPath;
-            }
-            else
-            {
-                // Will need to be updated with #2581 to allow all paths to MaxExtendedPath
-                // minus legth of extended local or UNC prefix.
-                return fullPath.Length >= MaxShortDirectoryPath;
-            }
+            return IsPathTooLong(fullPath);
         }
 
         /// <summary>
@@ -272,17 +276,17 @@ namespace System.IO
                 return true;
             }
 
-            if ((path[0] == '\\') || (path[0] == '/'))
+            if (IsDirectorySeparator(path[0]))
             {
                 // There is no valid way to specify a relative path with two initial slashes
-                return !((path[1] == '\\') || (path[1] == '/'));
+                return !(IsDirectorySeparator(path[1]));
             }
 
             // The only way to specify a fixed path that doesn't begin with two slashes
             // is the drive, colon, slash format- i.e. C:\
             return !((path.Length >= 3)
-                && (path[1] == ':')
-                && ((path[2] == '\\') || (path[2] == '/')));
+                && (path[1] == Path.VolumeSeparatorChar)
+                && (IsDirectorySeparator(path[2])));
         }
 
         internal static bool IsDirectorySeparator(char c)

@@ -105,9 +105,9 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
-        public void DirectoryLongerThanMaxPathAsPath_DoesntThrow()
+        public void DirectoryLongerThanMaxLongPath_DoesntThrow()
         {
-            Assert.All((IOInputs.GetPathsLongerThanMaxPath()), (path) =>
+            Assert.All((IOInputs.GetPathsLongerThanMaxLongPath()), (path) =>
             {
                 Assert.False(Exists(path), path);
             });

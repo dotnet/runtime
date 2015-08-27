@@ -144,13 +144,43 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void MaxPath_Windows()
+        {
+            // Create a destination path longer than the traditional Windows limit of 256 characters,
+            // but under the long path limitation (32K).
+
+            string testFileSource = Path.Combine(TestDirectory, GetTestFileName());
+            File.Create(testFileSource).Dispose();
+            Assert.True(File.Exists(testFileSource), "test file should exist");
+
+            Assert.All(IOInputs.GetPathsLongerThanMaxPath(), (path) =>
+            {
+                string baseDestinationPath = Path.GetDirectoryName(path);
+                if (!Directory.Exists(baseDestinationPath))
+                {
+                    Directory.CreateDirectory(baseDestinationPath);
+                }
+                Assert.True(Directory.Exists(baseDestinationPath), "base destination path should exist");
+
+                Move(testFileSource, path);
+                Assert.True(File.Exists(path), "moved test file should exist");
+                File.Delete(testFileSource);
+                Assert.False(File.Exists(testFileSource), "source test file should not exist");
+                Move(path, testFileSource);
+                Assert.True(File.Exists(testFileSource), "restored test file should exist");
+            });
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
         public void LongPath()
         {
             //Create a destination path longer than the traditional Windows limit of 256 characters
             string testFileSource = Path.Combine(TestDirectory, GetTestFileName());
             File.Create(testFileSource).Dispose();
 
-            Assert.All(IOInputs.GetPathsLongerThanMaxPath(), (path) =>
+            Assert.All(IOInputs.GetPathsLongerThanMaxLongPath(), (path) =>
             {
                 Assert.Throws<PathTooLongException>(() => Move(testFileSource, path));
                 File.Delete(testFileSource);
