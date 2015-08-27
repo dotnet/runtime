@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -7,17 +7,17 @@ using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class NumberFormatInfoCurrencyDecimalDigits
+    public class NumberFormatInfoNumberDecimalDigits
     {
-        // PosTest1: Verify property CurrencyDecimalDigits default value
+        // PosTest1: Verify property NumberDecimalDigits default value
         [Fact]
         public void PosTest1()
         {
             NumberFormatInfo nfi = new NumberFormatInfo();
-            Assert.Equal(2, nfi.CurrencyDecimalDigits);
+            Assert.Equal(2, nfi.NumberDecimalDigits);
         }
 
-        // PosTest2: Verify set value of property CurrencyDecimalDigits
+        // PosTest2: Verify set value of property NumberDecimalDigits
         [Fact]
         public void PosTest2()
         {
@@ -25,8 +25,8 @@ namespace System.Globalization.Tests
 
             for (int i = 0; i < 100; i++)
             {
-                nfi.CurrencyDecimalDigits = i;
-                Assert.Equal(i, nfi.CurrencyDecimalDigits);
+                nfi.NumberDecimalDigits = i;
+                Assert.Equal(i, nfi.NumberDecimalDigits);
             }
         }
 
@@ -46,30 +46,19 @@ namespace System.Globalization.Tests
             NumberFormatInfo nfiReadOnly = NumberFormatInfo.ReadOnly(nfi);
             Assert.Throws<InvalidOperationException>(() =>
             {
-                nfiReadOnly.CurrencyDecimalDigits = 1;
+                nfiReadOnly.NumberDecimalDigits = 1;
             });
         }
 
-        // TestLocale1: Verify value of property CurrencyDecimalDigits for specific locale
+        // TestLocale1: Verify value of property NumberDecimalDigits for specific locale
         [Fact]
-        public void TestLocale1()
+        public void TestLocale()
         {
             CultureInfo myTestCulture = new CultureInfo("en-US");
             NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int expected = nfi.CurrencyDecimalDigits;
+            int expected = nfi.NumberDecimalDigits;
             // todo: determine why some values are different
             Assert.True(expected == 3 || expected == 2); //ICU=3, 2=Windows
-        }
-
-        // TestLocale2: Verify value of property CurrencyDecimalDigits for specific locale
-        [Fact]
-        public void TestLocale2()
-        {
-            CultureInfo myTestCulture = new CultureInfo("ko");
-            NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int expected = nfi.CurrencyDecimalDigits;
-            // todo: determine why some values are different
-            Assert.True(expected == 2 || expected == 0); //ICU=2, 0=Windows
         }
 
         private void VerificationHelper<T>(int i) where T : Exception
@@ -77,8 +66,8 @@ namespace System.Globalization.Tests
             NumberFormatInfo nfi = new NumberFormatInfo();
             Assert.Throws<T>(() =>
             {
-                nfi.CurrencyDecimalDigits = i;
-                int actual = nfi.CurrencyDecimalDigits;
+                nfi.NumberDecimalDigits = i;
+                int actual = nfi.NumberDecimalDigits;
             });
         }
     }
