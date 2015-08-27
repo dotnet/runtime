@@ -46,7 +46,7 @@ namespace System.IO.Pipes
             _path = GetPipePath(".", pipeName);
             while (true)
             {
-                int result = Interop.libc.mkfifo(_path, (int)Interop.libc.Permissions.S_IRWXU);
+                int result = Interop.Sys.MkFifo(_path, (int)Interop.Sys.Permissions.S_IRWXU);
                 if (result == 0)
                 {
                     // The FIFO was successfully created - note that although we create the FIFO here, we don't
@@ -98,7 +98,7 @@ namespace System.IO.Pipes
             var serverHandle = Microsoft.Win32.SafeHandles.SafePipeHandle.Open(
                 _path, 
                 TranslateFlags(_direction, _options, _inheritability), 
-                (int)Interop.libc.Permissions.S_IRWXU);
+                (int)Interop.Sys.Permissions.S_IRWXU);
 
             InitializeBufferSize(serverHandle, _outBufferSize); // there's only one capacity on Linux; just use the out buffer size
             InitializeHandle(serverHandle, isExposed: false, isAsync: (_options & PipeOptions.Asynchronous) != 0);

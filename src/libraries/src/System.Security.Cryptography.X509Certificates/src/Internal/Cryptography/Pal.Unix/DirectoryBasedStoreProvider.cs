@@ -298,15 +298,15 @@ namespace Internal.Cryptography.Pal
 
 #if DEBUG
                 // Verify that we're creating files with u+rw and o-rw, g-rw.
-                const Interop.libc.Permissions requiredPermissions =
-                    Interop.libc.Permissions.S_IRUSR |
-                    Interop.libc.Permissions.S_IWUSR;
+                const Interop.Sys.Permissions requiredPermissions =
+                    Interop.Sys.Permissions.S_IRUSR |
+                    Interop.Sys.Permissions.S_IWUSR;
 
-                const Interop.libc.Permissions forbiddenPermissions =
-                    Interop.libc.Permissions.S_IROTH |
-                    Interop.libc.Permissions.S_IWOTH |
-                    Interop.libc.Permissions.S_IRGRP |
-                    Interop.libc.Permissions.S_IWGRP;
+                const Interop.Sys.Permissions forbiddenPermissions =
+                    Interop.Sys.Permissions.S_IROTH |
+                    Interop.Sys.Permissions.S_IWOTH |
+                    Interop.Sys.Permissions.S_IRGRP |
+                    Interop.Sys.Permissions.S_IWGRP;
 
                 Interop.Sys.FileStatus stat;
 
