@@ -341,7 +341,7 @@ namespace System.Net.Http
         {
             SafeCurlHandle requestHandle = new SafeCurlHandle();
             GCHandle stateHandle = new GCHandle();
-            bool needCleanup = false;
+            Exception exception = null;
 
             try
             {
@@ -350,52 +350,32 @@ namespace System.Net.Http
                 stateHandle = GCHandle.Alloc(state);
                 requestHandle = CreateRequestHandle(state, stateHandle);
                 state.RequestHandle = requestHandle;
-                needCleanup = true;
 
-                if (state.CancellationToken.IsCancellationRequested)
-                {
-                    state.TrySetCanceled(state.CancellationToken);
-                    return;
-                }
-
-                if (state.RequestMessage.Content != null)
+                if (!state.CancellationToken.IsCancellationRequested && (state.RequestMessage.Content != null))
                 {
                     Stream requestContentStream =
                         await state.RequestMessage.Content.ReadAsStreamAsync().ConfigureAwait(false);
-                    if (state.CancellationToken.IsCancellationRequested)
-                    {
-                        state.TrySetCanceled(state.CancellationToken);
-                        return;
-                    }
                     state.RequestContentStream = requestContentStream;
-                    state.RequestContentBuffer = new byte[s_requestBufferSize];
+                    if (!state.CancellationToken.IsCancellationRequested)
+                    {
+                        state.RequestContentBuffer = new byte[s_requestBufferSize];
+                    }
                 }
 
-                AddEasyHandle(state);
-                needCleanup = false;
+                if (!state.CancellationToken.IsCancellationRequested)
+                {
+                    AddEasyHandle(state);
+                    return;
+                }
             }
             catch (Exception ex)
             {
-                HandleAsyncException(state, ex);
+                exception = ex;
             }
-            finally
-            {
-                if (needCleanup)
-                {
-                    RemoveEasyHandle(_multiHandle, stateHandle, false);
-                }
-                else if (state.Task.IsCompleted)
-                {
-                    if (stateHandle.IsAllocated)
-                    {
-                        stateHandle.Free();
-                    }
-                    if (!requestHandle.IsInvalid)
-                    {
-                        SafeCurlHandle.DisposeAndClearHandle(ref requestHandle);
-                    }
-                }
-            }
+
+            // Either there was a cancellation or an exception
+            RemoveEasyHandle(_multiHandle, stateHandle, state);
+            HandleAsyncException(state, exception);
         }
 
         private static void EndRequest(SafeCurlMultiHandle multiHandle, IntPtr statePtr, int result)
@@ -403,21 +383,14 @@ namespace System.Net.Http
             GCHandle stateHandle = GCHandle.FromIntPtr(statePtr);
             RequestCompletionSource state = (RequestCompletionSource)stateHandle.Target;
 
-            try
+            if (CURLcode.CURLE_OK == result && state.ResponseMessage.StatusCode != HttpStatusCode.Unauthorized && state.Handler.PreAuthenticate)
             {
-                if (CURLcode.CURLE_OK == result && state.ResponseMessage.StatusCode != HttpStatusCode.Unauthorized && state.Handler.PreAuthenticate)
+                ulong availedAuth;
+                if (Interop.libcurl.curl_easy_getinfo(state.RequestHandle, CURLINFO.CURLINFO_HTTPAUTH_AVAIL, out availedAuth) == CURLcode.CURLE_OK)
                 {
-                    ulong availedAuth;
-                    if (Interop.libcurl.curl_easy_getinfo(state.RequestHandle, CURLINFO.CURLINFO_HTTPAUTH_AVAIL, out availedAuth) == CURLcode.CURLE_OK)
-                    {
-                        state.Handler.AddCredentialToCache(state.RequestMessage.RequestUri, availedAuth, state.NetworkCredential);
-                    }
-                    // ignore errors
+                    state.Handler.AddCredentialToCache(state.RequestMessage.RequestUri, availedAuth, state.NetworkCredential);
                 }
-            }
-            catch
-            {
-                // ignoring the exception in this case.
+                // ignore errors
                 // There is no point in killing the request for the sake of putting the credentials into the cache
             }
 
@@ -484,7 +457,7 @@ namespace System.Net.Http
                 if (state.RequestMessage.Content == null)
                 {
                     SetCurlOption(requestHandle, CURLoption.CURLOPT_POSTFIELDSIZE, 0L);
-                    SetCurlOption(requestHandle, CURLoption.CURLOPT_POSTFIELDS, "");
+                    SetCurlOption(requestHandle, CURLoption.CURLOPT_COPYPOSTFIELDS, String.Empty);
                 }
             }
 
@@ -961,6 +934,8 @@ namespace System.Net.Http
                                 CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
                         _multiHandle.PollCancelled = false;
                     }
+                    bool ignored = false;
+                    _multiHandle.DangerousAddRef(ref ignored);
                 }
                 // Note that we are deliberately not decreasing the ref counts of
                 // the multi and easy handles since that will be done in RemoveEasyHandle
@@ -979,26 +954,45 @@ namespace System.Net.Http
             }
         }
 
+        private static void RemoveEasyHandle(SafeCurlMultiHandle multiHandle, GCHandle stateHandle, RequestCompletionSource state)
+        {
+            RemoveEasyHandle(multiHandle, state, false);
+            if (stateHandle.IsAllocated)
+            {
+                stateHandle.Free();
+            }
+        }
+
         private static void RemoveEasyHandle(SafeCurlMultiHandle multiHandle, GCHandle stateHandle, bool onMultiStack)
         {
+            Debug.Assert(stateHandle.IsAllocated);
+
             RequestCompletionSource state = (RequestCompletionSource)stateHandle.Target;
+            RemoveEasyHandle(multiHandle, state, onMultiStack);
+            stateHandle.Free();
+        }
+
+        private static void RemoveEasyHandle(SafeCurlMultiHandle multiHandle, RequestCompletionSource state, bool onMultiStack)
+        {
             SafeCurlHandle requestHandle = state.RequestHandle;
 
             if (onMultiStack)
             {
+                Debug.Assert(!requestHandle.IsInvalid);
                 lock (multiHandle)
                 {
                     Interop.libcurl.curl_multi_remove_handle(multiHandle, requestHandle);
                     multiHandle.RequestCount = multiHandle.RequestCount - 1;
-                    if (-1 != state.SocketFd)
-                    {
-                        int socketFd = state.SocketFd;
-                        state.SocketFd = -1;
-                        multiHandle.SignalFdSetChange(socketFd, true);
-                    }
+                    multiHandle.SignalFdSetChange(state.SocketFd, true);
                 }
+                state.SessionHandle.DangerousRelease();
                 state.SessionHandle = null;
                 requestHandle.DangerousRelease();
+            }
+
+            if (state.RequestContentStream != null)
+            {
+                state.RequestContentStream.Dispose();
             }
 
             if (!state.RequestHeaderHandle.IsInvalid)
@@ -1007,9 +1001,10 @@ namespace System.Net.Http
                 SafeCurlSlistHandle.DisposeAndClearHandle(ref headerHandle);
             }
 
-            SafeCurlHandle.DisposeAndClearHandle(ref requestHandle);
-
-            stateHandle.Free();
+            if (!requestHandle.IsInvalid)
+            {
+                SafeCurlHandle.DisposeAndClearHandle(ref requestHandle);
+            }
         }
 
         #endregion

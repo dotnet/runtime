@@ -176,10 +176,15 @@ internal static partial class Interop
             internal void SignalFdSetChange(int fd, bool isRemove)
             {
                 Debug.Assert(Monitor.IsEntered(this));
-                bool changed = isRemove ? _fdSet.Remove(fd) : _fdSet.Add(fd);
-                if (!changed)
+
+                // If there is no valid fd, the poll still needs to be unblocked
+                if (-1 != fd)
                 {
-                    return;
+                    bool changed = isRemove ? _fdSet.Remove(fd) : _fdSet.Add(fd);
+                    if (!changed)
+                    {
+                        return;
+                    }
                 }
 
                 unsafe

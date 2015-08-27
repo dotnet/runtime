@@ -353,7 +353,6 @@ namespace System.Net.Http
             {
                 lock (state.SessionHandle)
                 {
-                    state.SocketFd = -1;
                     state.SessionHandle.SignalFdSetChange(socketFd, true);
                 }
             }
