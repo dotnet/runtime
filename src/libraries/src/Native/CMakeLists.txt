@@ -37,4 +37,5 @@ endif ()
 include(configure.cmake)
 
 add_subdirectory(System.Native)
+add_subdirectory(System.Net.Http.Native)
 add_subdirectory(System.Security.Cryptography.Native)
