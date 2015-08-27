@@ -19,10 +19,6 @@ clean_aot () {
 	rm -rf *.exe..so *.exe.dylib *.exe.dylib.dSYM
 }
 
-# The test compares the generated native code size between a compilation with and without seq points.
-# In some architectures ie:amd64 when possible 32bit instructions and registers are used instead of 64bit ones.
-# Using MONO_DEBUG=single-imm-size avoids 32bit optimizations thus mantaining the native code size between compilations.
-
 get_methods () {
 	if [ -z $4 ]; then
 		MONO_PATH=$1 $2 -v --compile-all=1 $3 | grep '^Method .*code length' | sed 's/emitted[^()]*//' | sort
@@ -43,14 +39,14 @@ get_method () {
 
 diff_methods () {
 	TMP_FILE=$(tmp_file)
-	echo "$(MONO_DEBUG=single-imm-size get_methods $1 $2 $3 $4)" >$TMP_FILE
-	diff <(cat $TMP_FILE) <(echo "$(MONO_DEBUG=gen-compact-seq-points,single-imm-size get_methods $1 $2 $3 $4)")
+	echo "$(get_methods $1 $2 $3 $4)" >$TMP_FILE
+	diff <(cat $TMP_FILE) <(echo "$(MONO_DEBUG=gen-compact-seq-points get_methods $1 $2 $3 $4)")
 }
 
 diff_method () {
 	TMP_FILE=$(tmp_file)
-	echo "$(MONO_DEBUG=single-imm-size get_method $1 $2 $3 $4 $5)" >$TMP_FILE
-	sdiff -w 150 <(cat $TMP_FILE) <(echo "$(MONO_DEBUG=gen-compact-seq-points,single-imm-size get_method $1 $2 $3 $4 $5 | grep -Ev il_seq_point)")
+	echo "$(get_method $1 $2 $3 $4 $5)" >$TMP_FILE
+	sdiff -w 150 <(cat $TMP_FILE) <(echo "$(MONO_DEBUG=gen-compact-seq-points get_method $1 $2 $3 $4 $5 | grep -Ev il_seq_point)")
 }
 
 get_method_name () {
