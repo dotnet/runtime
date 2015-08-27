@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.IO
 {
@@ -16,7 +15,7 @@ namespace System.IO
         /// <summary>Returns a value indicating if the given path contains invalid characters.</summary>
         internal static bool HasIllegalCharacters(string path, bool checkAdditional = false)
         {
-            Contract.Requires(path != null);
+            Debug.Assert(path != null);
 
             foreach (char c in path)
             {

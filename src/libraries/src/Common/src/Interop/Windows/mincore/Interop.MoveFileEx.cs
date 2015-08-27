@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.Win32.SafeHandles;
+using System.IO;
 using System.Runtime.InteropServices;
 
 internal partial class Interop
@@ -13,6 +14,8 @@ internal partial class Interop
 
         internal static bool MoveFile(string src, string dst)
         {
+            src = PathInternal.AddExtendedPathPrefixForLongPaths(src);
+            dst = PathInternal.AddExtendedPathPrefixForLongPaths(dst);
             return MoveFileEx(src, dst, 2 /* MOVEFILE_COPY_ALLOWED */);
         }
     }

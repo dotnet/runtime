@@ -3,6 +3,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 
 internal partial class Interop
@@ -10,7 +11,14 @@ internal partial class Interop
     internal partial class mincore
     {
         [DllImport(Libraries.CoreFile_L1, EntryPoint = "GetFileAttributesExW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
-        internal static extern bool GetFileAttributesEx(string name, GET_FILEEX_INFO_LEVELS fileInfoLevel, ref WIN32_FILE_ATTRIBUTE_DATA lpFileInformation);
+        private static extern bool GetFileAttributesExPrivate(string name, GET_FILEEX_INFO_LEVELS fileInfoLevel, ref WIN32_FILE_ATTRIBUTE_DATA lpFileInformation);
+
+
+        internal static bool GetFileAttributesEx(string name, GET_FILEEX_INFO_LEVELS fileInfoLevel, ref WIN32_FILE_ATTRIBUTE_DATA lpFileInformation)
+        {
+            name = PathInternal.AddExtendedPathPrefixForLongPaths(name);
+            return GetFileAttributesExPrivate(name, fileInfoLevel, ref lpFileInformation);
+        }
 
         internal enum GET_FILEEX_INFO_LEVELS : uint
         {

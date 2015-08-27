@@ -171,4 +171,7 @@
   <data name="EventStream_FailedToStart" xml:space="preserve">
     <value>Failed to start the EventStream</value>
   </data>
+  <data name="Argument_InvalidPathChars" xml:space="preserve">
+    <value>Illegal characters in path.</value>
+  </data>
 </root>
