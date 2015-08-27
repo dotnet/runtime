@@ -262,8 +262,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.chdir.cs">
       <Link>Common\Interop\Unix\Interop.chdir.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.chmod.cs">
-      <Link>Common\Interop\Unix\Interop.chmod.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.ChMod.cs">
+      <Link>Common\Interop\Unix\Interop.ChMod.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Close.cs">
       <Link>Common\Interop\Unix\Interop.Close.cs</Link>
@@ -292,13 +292,13 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.lseek.cs">
       <Link>Common\Interop\Unix\Interop.lseek64.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.mkdir.cs">
-      <Link>Common\Interop\Unix\Interop.mkdir.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MkDir.cs">
+      <Link>Common\Interop\Unix\Interop.MkDir.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.pathconf.cs">
       <Link>Common\Interop\Unix\Interop.pathconf.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.Permissions.cs">
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Permissions.cs">
       <Link>Common\Interop\Unix\Interop.Permissions.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.read.cs">

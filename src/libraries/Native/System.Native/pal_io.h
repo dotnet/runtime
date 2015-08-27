@@ -279,3 +279,33 @@ extern "C"
 int32_t FcntlSetPipeSz(
     int32_t fd,
     int32_t size);
+
+/**
+ * Create a directory. Implemented as a shim to mkdir(2).
+ *
+ * Returns 0 for success, -1 for failure. Sets errno for failure.
+ */    
+extern "C"
+int32_t MkDir(
+    const char* path,
+    int32_t mode);
+
+/**
+ * Change permissions of a file. Implemented as a shim to chmod(2).
+ *
+ * Returns 0 for success, -1 for failure. Sets errno for failure.
+ */
+extern "C"
+int32_t ChMod(
+    const char* path,
+    int32_t mode);
+
+/**
+ * Create a FIFO (named pipe). Implemented as a shim to mkfifo(3).
+ *
+ * Returns 0 for success, -1 for failure. Sets errno for failure.
+ */    
+extern "C"
+int32_t MkFifo(
+    const char* path,
+    int32_t mode);

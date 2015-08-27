@@ -85,7 +85,7 @@ namespace System.IO
 
             // Translate the arguments into arguments for an open call
             Interop.Sys.OpenFlags openFlags = PreOpenConfigurationFromOptions(mode, access, options); // FileShare currently ignored
-            Interop.libc.Permissions openPermissions = Interop.libc.Permissions.S_IRWXU; // creator has read/write/execute permissions; no permissions for anyone else
+            Interop.Sys.Permissions openPermissions = Interop.Sys.Permissions.S_IRWXU; // creator has read/write/execute permissions; no permissions for anyone else
 
             // Open the file and store the safe handle. Subsequent code in this method expects the safe handle to be initialized.
             _fileHandle = SafeFileHandle.Open(path, openFlags, (int)openPermissions);
