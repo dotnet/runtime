@@ -756,7 +756,8 @@ mono_arch_init (void)
 {
 	mono_mutex_init_recursive (&mini_arch_mutex);
 
-	bp_trampoline = mini_get_breakpoint_trampoline ();
+	if (!mono_aot_only)
+		bp_trampoline = mini_get_breakpoint_trampoline ();
 
 	mono_aot_register_jit_icall ("mono_x86_throw_exception", mono_x86_throw_exception);
 	mono_aot_register_jit_icall ("mono_x86_throw_corlib_exception", mono_x86_throw_corlib_exception);

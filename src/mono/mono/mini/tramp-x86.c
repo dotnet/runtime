@@ -830,7 +830,7 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	x86_mov_membase_reg (code, X86_ESP, 0, X86_EAX, sizeof (mgreg_t));
 
 	if (aot) {
-		g_assert_not_reached ();
+		x86_breakpoint ();
 	} else {
 		if (single_step)
 			x86_call_code (code, debugger_agent_single_step_from_context);
