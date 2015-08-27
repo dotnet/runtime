@@ -5,22 +5,17 @@
 
 //------------------------------------------------------------------------------
 
-using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Data.Common;
-using System.Data.ProviderBase;
 using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.IO;
 using System.Globalization;
 using System.Reflection;
-using System.Text;
 using System.Xml;
 using MSS = Microsoft.SqlServer.Server;
 
 using Microsoft.SqlServer.Server;
-using System.Threading.Tasks;
 
 namespace System.Data.SqlClient
 {

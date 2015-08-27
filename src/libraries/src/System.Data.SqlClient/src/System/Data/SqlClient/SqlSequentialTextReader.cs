@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Text;
@@ -499,7 +498,7 @@ namespace System.Data.SqlClient
 
         public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
-            throw new NotImplementedException("Not required");
+            throw NotImplemented.ByDesignWithMessage("Not required");
         }
 
         public override int GetCharCount(byte[] bytes, int index, int count)
@@ -509,7 +508,7 @@ namespace System.Data.SqlClient
 
         public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
         {
-            throw new NotImplementedException("Not required");
+            throw NotImplemented.ByDesignWithMessage("Not required");
         }
 
         public override int GetMaxCharCount(int byteCount)

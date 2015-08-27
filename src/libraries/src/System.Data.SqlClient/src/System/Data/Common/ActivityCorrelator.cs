@@ -4,10 +4,6 @@
 
 //------------------------------------------------------------------------------
 
-using System;
-using System.Data;
-using System.Threading;
-using System.Diagnostics;
 using System.Globalization;
 
 namespace System.Data.Common

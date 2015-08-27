@@ -5,18 +5,13 @@
 
 //------------------------------------------------------------------------------
 
-using System;
 using System.Collections;
-using System.Collections.Specialized;
-using System.Data;
 using System.Data.SqlTypes;
 using System.Data.Common;
 using System.Data.ProviderBase;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Xml;
 
@@ -624,16 +619,16 @@ namespace System.Data.SqlClient
                             }
                         }
 #if DEBUG
-                            else
+                        else
+                        {
+                            byte token;
+                            if (!_stateObj.TryPeekByte(out token))
                             {
-                                byte token;
-                                if (!_stateObj.TryPeekByte(out token))
-                                {
-                                    return false;
-                                }
-
-                                Debug.Assert(TdsParser.IsValidTdsToken(token), string.Format("DataReady is false, but next token is invalid: {0,-2:X2}", token));
+                                return false;
                             }
+
+                            Debug.Assert(TdsParser.IsValidTdsToken(token), string.Format("DataReady is false, but next token is invalid: {0,-2:X2}", token));
+                        }
 #endif
 
 
@@ -2917,16 +2912,16 @@ namespace System.Data.SqlClient
                 more = false;
 
 #if DEBUG
-                    if ((!_sharedState._dataReady) && (_stateObj._pendingData))
+                if ((!_sharedState._dataReady) && (_stateObj._pendingData))
+                {
+                    byte token;
+                    if (!_stateObj.TryPeekByte(out token))
                     {
-                        byte token;
-                        if (!_stateObj.TryPeekByte(out token))
-                        {
-                            return false;
-                        }
-
-                        Debug.Assert(TdsParser.IsValidTdsToken(token), string.Format("DataReady is false, but next token is invalid: {0,-2:X2}", token));
+                        return false;
                     }
+
+                    Debug.Assert(TdsParser.IsValidTdsToken(token), string.Format("DataReady is false, but next token is invalid: {0,-2:X2}", token));
+                }
 #endif
 
                 return true;
@@ -3904,52 +3899,52 @@ namespace System.Data.SqlClient
                 if ((!_haltRead) && ((!_sharedState._dataReady) || (WillHaveEnoughData(_metaData.Length - 1))))
                 {
 #if DEBUG
-                        try
-                        {
-                            _stateObj._shouldHaveEnoughData = true;
+                    try
+                    {
+                        _stateObj._shouldHaveEnoughData = true;
 #endif
-                    if (_sharedState._dataReady)
-                    {
-                        // Clean off current row
-                        CleanPartialReadReliable();
-                    }
-
-                    // If there a ROW token ready (as well as any metadata for the row)
-                    if (_stateObj.IsRowTokenReady())
-                    {
-                        // Read the ROW token
-                        bool result = TryReadInternal(true, out more);
-                        Debug.Assert(result, "Should not have run out of data");
-
-                        rowTokenRead = true;
-                        if (more)
+                        if (_sharedState._dataReady)
                         {
-                            // Sequential mode, nothing left to do
-                            if (IsCommandBehavior(CommandBehavior.SequentialAccess))
+                            // Clean off current row
+                            CleanPartialReadReliable();
+                        }
+
+                        // If there a ROW token ready (as well as any metadata for the row)
+                        if (_stateObj.IsRowTokenReady())
+                        {
+                            // Read the ROW token
+                            bool result = TryReadInternal(true, out more);
+                            Debug.Assert(result, "Should not have run out of data");
+
+                            rowTokenRead = true;
+                            if (more)
                             {
-                                return ADP.TrueTask;
+                                // Sequential mode, nothing left to do
+                                if (IsCommandBehavior(CommandBehavior.SequentialAccess))
+                                {
+                                    return ADP.TrueTask;
+                                }
+                                // For non-sequential, check if we can read the row data now
+                                else if (WillHaveEnoughData(_metaData.Length - 1))
+                                {
+                                    // Read row data
+                                    result = TryReadColumn(_metaData.Length - 1, setTimeout: true);
+                                    Debug.Assert(result, "Should not have run out of data");
+                                    return ADP.TrueTask;
+                                }
                             }
-                            // For non-sequential, check if we can read the row data now
-                            else if (WillHaveEnoughData(_metaData.Length - 1))
+                            else
                             {
-                                // Read row data
-                                result = TryReadColumn(_metaData.Length - 1, setTimeout: true);
-                                Debug.Assert(result, "Should not have run out of data");
-                                return ADP.TrueTask;
+                                // No data left, return
+                                return ADP.FalseTask;
                             }
                         }
-                        else
-                        {
-                            // No data left, return
-                            return ADP.FalseTask;
-                        }
-                    }
 #if DEBUG
-                        }
-                        finally
-                        {
-                            _stateObj._shouldHaveEnoughData = false;
-                        }
+                    }
+                    finally
+                    {
+                        _stateObj._shouldHaveEnoughData = false;
+                    }
 #endif
                 }
             }
@@ -4080,8 +4075,8 @@ namespace System.Data.SqlClient
                         {
                             _stateObj._shouldHaveEnoughData = true;
 #endif
-                        ReadColumnHeader(i);
-                        return _data[i].IsNull ? ADP.TrueTask : ADP.FalseTask;
+                            ReadColumnHeader(i);
+                            return _data[i].IsNull ? ADP.TrueTask : ADP.FalseTask;
 #if DEBUG
                         }
                         finally
@@ -4204,7 +4199,7 @@ namespace System.Data.SqlClient
                     {
                         _stateObj._shouldHaveEnoughData = true;
 #endif
-                    return Task.FromResult(GetFieldValueInternal<T>(i));
+                        return Task.FromResult(GetFieldValueInternal<T>(i));
 #if DEBUG
                     }
                     finally

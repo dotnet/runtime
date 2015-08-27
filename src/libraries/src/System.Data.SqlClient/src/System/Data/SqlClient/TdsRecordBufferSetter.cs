@@ -6,9 +6,6 @@
 //------------------------------------------------------------------------------
 
 using Microsoft.SqlServer.Server;
-using System;
-using System.Data;
-using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Data.SqlTypes;
 

@@ -5,7 +5,6 @@
 //  Class used to manage timeouts in complex system operations.
 //
 
-using System;
 using System.Data.Common;
 using System.Diagnostics;
 

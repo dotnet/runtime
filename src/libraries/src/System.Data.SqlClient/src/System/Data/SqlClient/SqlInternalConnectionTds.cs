@@ -5,18 +5,11 @@
 
 //------------------------------------------------------------------------------
 
-using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Data.Common;
 using System.Data.ProviderBase;
 using System.Diagnostics;
 using System.Globalization;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Security;
-using System.Text;
 using System.Threading;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;

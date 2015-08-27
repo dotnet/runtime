@@ -9,7 +9,7 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PlatformTarget>AnyCPU</PlatformTarget>
-	<DefineConstants>PROJECTK;</DefineConstants>
+	<DefineConstants>$(DefineConstants);PROJECTK</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
@@ -140,9 +140,11 @@
     <Compile Include="System\Data\SqlTypes\SQLString.cs" />
     <Compile Include="System\Data\SqlTypes\SQLUtility.cs" />
     <Compile Include="System\Data\SqlTypes\SqlXml.cs" />
+	<Compile Include="$(CommonPath)\System\NotImplemented.cs"/>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Import Project=".\GenerateThisAssemblyCs.targets" />
 </Project>

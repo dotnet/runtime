@@ -4,32 +4,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //------------------------------------------------------------------------------
 
-//  </copyright>																
 
-
-
-//------------------------------------------------------------------------------
-
-//**************************************************************************
-//
-// Description: Class SqlBytes is used to represent a binary/varbinary/image
-//		data from SQL Server. It contains a byte array buffer, which can
-//		be refilled. For example, in data access, user could use one instance
-//		of sqlbytes to bind to a binary column, and we will just keep copying
-//		the data into the same instance, and avoid allocation per row.
-//		It is also used to construct a UDT from on-disk binary value.
-//
-//
-// @EndHeader@
-//**************************************************************************
-
-using System;
 using System.Diagnostics;
 using System.Data.Common;
-using System.Data.SqlClient;
-using System.Data.SqlTypes;
 using System.IO;
-using System.Runtime.InteropServices;
 using Res = System.SR;
 
 

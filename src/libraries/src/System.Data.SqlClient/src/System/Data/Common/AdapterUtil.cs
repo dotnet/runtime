@@ -1,21 +1,16 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Data;
 using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Security;
-using System.Data.SqlClient;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Res = System.SR;
-using System.Reflection;
 
 namespace System
 {
@@ -47,9 +42,7 @@ namespace System.Data.Common
 
         static internal Task<T> CreatedTaskWithException<T>(Exception ex)
         {
-            TaskCompletionSource<T> completion = new TaskCompletionSource<T>();
-            completion.SetException(ex);
-            return completion.Task;
+            return Task.FromException<T>(ex);
         }
 
         static internal Task<T> CreatedTaskWithCancellation<T>()
@@ -325,7 +318,7 @@ namespace System.Data.Common
                 case IsolationLevel.RepeatableRead:
                 case IsolationLevel.Serializable:
                 case IsolationLevel.Snapshot:
-                    Debug.Assert(false, "valid IsolationLevel " + value.ToString());
+                    Debug.Fail("valid IsolationLevel " + value.ToString());
                     break;
             }
 #endif
@@ -398,10 +391,9 @@ namespace System.Data.Common
             return InvalidOperation(Res.GetString(Res.ADP_NoConnectionString));
         }
 
-        static internal NotImplementedException MethodNotImplemented(string methodName)
+        static internal Exception MethodNotImplemented(string methodName)
         {
-            NotImplementedException e = new NotImplementedException(methodName);
-            return e;
+            return NotImplemented.ByDesignWithMessage(methodName);
         }
 
         static private string ConnectionStateMsg(ConnectionState state)
@@ -1134,14 +1126,12 @@ namespace System.Data.Common
 
         private static Version s_systemDataVersion;
 
-        private static AssemblyName s_sqlConnectionAssembly = (new AssemblyName(typeof(System.Data.SqlClient.SqlConnection).GetTypeInfo().FullName));
-
         static internal Version GetAssemblyVersion()
         {
             // NOTE: Using lazy thread-safety since we don't care if two threads both happen to update the value at the same time
             if (s_systemDataVersion == null)
             {
-                s_systemDataVersion = s_sqlConnectionAssembly.Version;
+                s_systemDataVersion = new Version(ThisAssembly.InformationalVersion);
             }
 
             return s_systemDataVersion;

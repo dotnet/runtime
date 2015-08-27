@@ -5,18 +5,9 @@
 
 //------------------------------------------------------------------------------
 
-using System;
-using System.Collections.Generic;
-using System.Data;
 using System.Data.Common;
 using System.Data.ProviderBase;
 using System.Diagnostics;
-using System.Globalization;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
 
 
 namespace System.Data.SqlClient

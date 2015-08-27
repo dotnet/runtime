@@ -5,9 +5,7 @@
 
 //------------------------------------------------------------------------------
 
-using System.Diagnostics;
 
-using System;
 
 namespace System.Data.SqlClient
 {

@@ -5,9 +5,7 @@
 
 //------------------------------------------------------------------------------
 
-using System.Diagnostics;
 using System.Text;
-using System.Globalization;
 
 namespace System.Data.Common
 {

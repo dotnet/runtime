@@ -5,9 +5,7 @@
 
 //------------------------------------------------------------------------------
 
-using System;
 using System.Collections;
-using System.Data;
 using System.Data.ProviderBase;
 using System.Diagnostics;
 using System.ComponentModel;
@@ -41,22 +39,6 @@ namespace System.Data.Common
                 return _current;
             }
         }
-
-        /*public IDataRecord Current {
-            get {
-                return _current;
-            }
-        }*/
-
-        /*
-                virtual internal IDataRecord NewRecord(SchemaInfo[] si, object[] values, PropertyDescriptorCollection descriptors) {
-                    return new DbDataRecord(si, values, descriptors);
-                }
-
-                virtual internal void GetValues(object[] values) {
-                    _reader.GetValues(values);
-                }
-        */
 
         public bool MoveNext()
         {

@@ -5,13 +5,12 @@
 
 //------------------------------------------------------------------------------
 
-using System.ComponentModel;
 
 namespace System.Data.Common
 {
     public abstract class DbDataRecord
     {
-        protected DbDataRecord() : base()
+        protected DbDataRecord()
         {
         }
 

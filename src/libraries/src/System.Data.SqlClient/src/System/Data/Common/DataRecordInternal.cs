@@ -5,14 +5,8 @@
 
 //------------------------------------------------------------------------------
 
-using System;
-using System.Collections;
-using System.ComponentModel;
-using System.Data;
 using System.Data.ProviderBase;
 using System.Diagnostics;
-using System.IO;
-using System.Threading;
 
 namespace System.Data.Common
 {

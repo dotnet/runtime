@@ -1,20 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-
-
-//------------------------------------------------------------------------------
-
-// Todo: rename the file
-// Caution! ndp\fx\src\data\netmodule\sources needs to follow this change
-
-using System;
-using System.Data;
 using System.Data.Common;
-using System.Data.SqlTypes;
 
-using System.Collections;
-using System.Diagnostics;
 
 namespace System.Data.SqlClient
 {

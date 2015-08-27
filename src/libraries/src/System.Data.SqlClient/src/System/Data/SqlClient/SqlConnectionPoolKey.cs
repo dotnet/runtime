@@ -5,8 +5,6 @@
 
 //------------------------------------------------------------------------------
 
-using System;
-using System.Collections;
 using System.Data.Common;
 
 namespace System.Data.SqlClient

@@ -5,19 +5,12 @@
 
 //------------------------------------------------------------------------------
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Xml;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 
 namespace System.Data.SqlClient
 {

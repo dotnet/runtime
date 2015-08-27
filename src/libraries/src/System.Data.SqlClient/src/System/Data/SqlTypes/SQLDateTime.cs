@@ -6,15 +6,8 @@
 
 //------------------------------------------------------------------------------
 
-//**************************************************************************
-//
-// Purpose: Implementation of SqlDateTime which is equivalent to
-//            data type "datetime" in SQL Server
-//
-// @EndHeader@
-//**************************************************************************
 
-using System;
+
 using System.Data.Common;
 using System.Diagnostics;
 using System.Runtime.InteropServices;

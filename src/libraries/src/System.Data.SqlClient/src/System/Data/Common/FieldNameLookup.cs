@@ -5,14 +5,9 @@
 
 //------------------------------------------------------------------------------
 
-using System;
 using System.Collections;
-using System.ComponentModel;
-using System.Data;
 using System.Data.Common;
-using System.Diagnostics;
 using System.Globalization;
-using System.Text;
 
 namespace System.Data.ProviderBase
 {
@@ -79,7 +74,7 @@ namespace System.Data.ProviderBase
         }
 
         public int IndexOfName(string fieldName)
-        { // V1.2.3300
+        {
             if (null == _fieldNameLookup)
             {
                 GenerateLookup();
@@ -90,7 +85,7 @@ namespace System.Data.ProviderBase
         }
 
         public int IndexOf(string fieldName)
-        { // V1.2.3300
+        {
             if (null == _fieldNameLookup)
             {
                 GenerateLookup();
