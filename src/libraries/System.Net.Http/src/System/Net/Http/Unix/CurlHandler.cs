@@ -341,7 +341,6 @@ namespace System.Net.Http
         {
             SafeCurlHandle requestHandle = new SafeCurlHandle();
             GCHandle stateHandle = new GCHandle();
-            Exception exception = null;
 
             try
             {
@@ -351,31 +350,27 @@ namespace System.Net.Http
                 requestHandle = CreateRequestHandle(state, stateHandle);
                 state.RequestHandle = requestHandle;
 
-                if (!state.CancellationToken.IsCancellationRequested && (state.RequestMessage.Content != null))
+                if (state.RequestMessage.Content != null)
                 {
                     Stream requestContentStream =
                         await state.RequestMessage.Content.ReadAsStreamAsync().ConfigureAwait(false);
                     state.RequestContentStream = requestContentStream;
-                    if (!state.CancellationToken.IsCancellationRequested)
+                    if (state.CancellationToken.IsCancellationRequested)
                     {
-                        state.RequestContentBuffer = new byte[s_requestBufferSize];
+                        RemoveEasyHandle(_multiHandle, stateHandle, state);
+                        state.TrySetCanceled(state.CancellationToken);
+                        return;
                     }
+                    state.RequestContentBuffer = new byte[s_requestBufferSize];
                 }
 
-                if (!state.CancellationToken.IsCancellationRequested)
-                {
-                    AddEasyHandle(state);
-                    return;
-                }
+                AddEasyHandle(state);
             }
             catch (Exception ex)
             {
-                exception = ex;
+                RemoveEasyHandle(_multiHandle, stateHandle, state);
+                HandleAsyncException(state, ex);
             }
-
-            // Either there was a cancellation or an exception
-            RemoveEasyHandle(_multiHandle, stateHandle, state);
-            HandleAsyncException(state, exception);
         }
 
         private static void EndRequest(SafeCurlMultiHandle multiHandle, IntPtr statePtr, int result)
@@ -956,11 +951,11 @@ namespace System.Net.Http
 
         private static void RemoveEasyHandle(SafeCurlMultiHandle multiHandle, GCHandle stateHandle, RequestCompletionSource state)
         {
-            RemoveEasyHandle(multiHandle, state, false);
             if (stateHandle.IsAllocated)
             {
                 stateHandle.Free();
             }
+            RemoveEasyHandle(multiHandle, state, false);
         }
 
         private static void RemoveEasyHandle(SafeCurlMultiHandle multiHandle, GCHandle stateHandle, bool onMultiStack)
@@ -968,8 +963,8 @@ namespace System.Net.Http
             Debug.Assert(stateHandle.IsAllocated);
 
             RequestCompletionSource state = (RequestCompletionSource)stateHandle.Target;
-            RemoveEasyHandle(multiHandle, state, onMultiStack);
             stateHandle.Free();
+            RemoveEasyHandle(multiHandle, state, onMultiStack);
         }
 
         private static void RemoveEasyHandle(SafeCurlMultiHandle multiHandle, RequestCompletionSource state, bool onMultiStack)
