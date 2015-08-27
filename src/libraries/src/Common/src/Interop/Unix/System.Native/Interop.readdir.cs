@@ -48,7 +48,7 @@ internal static partial class Interop
         private static unsafe extern int ReadDirR(SafeDirectoryHandle dir, byte* buffer, int bufferSize, out InternalDirectoryEntry outputEntry);
 
         [DllImport(Libraries.SystemNative, SetLastError = true)]
-        internal static extern int CloseDir(IntPtr directory);
+        internal static extern int CloseDir(IntPtr dir);
 
         // The calling pattern for ReadDir is described in src/Native/System.Native/pal_readdir.cpp
         internal static int ReadDir(SafeDirectoryHandle dir, out DirectoryEntry outputEntry)

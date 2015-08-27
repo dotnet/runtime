@@ -153,11 +153,11 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.IOErrors.cs">
       <Link>Common\Interop\Unix\Interop.IOErrors.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.pipe2.cs">
-      <Link>Common\Interop\Unix\Interop.pipe2.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Close.cs">
       <Link>Common\Interop\Unix\Interop.Close.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Fcntl.cs">
+      <Link>Common\Interop\Unix\Interop.Fcntl.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gethostname.cs">
       <Link>Common\Interop\Unix\Interop.gethostname.cs</Link>
@@ -180,8 +180,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.Permissions.cs">
       <Link>Common\Interop\Unix\Interop.Permissions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.pipe.cs">
-      <Link>Common\Interop\Unix\Interop.pipe.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Pipe.cs">
+      <Link>Common\Interop\Unix\Interop.Pipe.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.poll.cs">
       <Link>Common\Interop\Unix\Interop.poll.cs</Link>
@@ -204,20 +204,6 @@
     <Compile Include="$(CommonPath)\System\Threading\Tasks\ForceAsyncAwaiter.cs">
       <Link>Common\System\Threading\Tasks\ForceAsyncAwaiter.cs</Link>
     </Compile>
-  </ItemGroup>
-  <!-- Linux -->
-  <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
-    <Compile Include="System\IO\Pipes\PipeStream.Linux.cs" />
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.fcntl.cs">
-      <Link>Common\Interop\Unix\Interop.fcntl.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.FcntlCommands.cs">
-      <Link>Common\Interop\Linux\Interop.FcntlCommands.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <!-- OSX -->
-  <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
-    <Compile Include="System\IO\Pipes\PipeStream.OSX.cs" />
   </ItemGroup>
   <!-- Resource files -->
   <ItemGroup>

@@ -1,6 +1,7 @@
 #pragma once
 
 #cmakedefine01 HAVE_STAT64
+#cmakedefine01 HAVE_PIPE2
 #cmakedefine01 HAVE_STAT_BIRTHTIME
 #cmakedefine01 HAVE_GNU_STRERROR_R
 #cmakedefine01 HAVE_DIRENT_NAME_LEN

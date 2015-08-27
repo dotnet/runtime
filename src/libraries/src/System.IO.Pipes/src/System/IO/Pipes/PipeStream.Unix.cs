@@ -154,7 +154,7 @@ namespace System.IO.Pipes
                 {
                     throw new NotSupportedException(SR.NotSupported_UnreadableStream);
                 }
-                return InBufferSizeCore;
+                return GetPipeBufferSize();
             }
         }
 
@@ -173,7 +173,7 @@ namespace System.IO.Pipes
                 {
                     throw new NotSupportedException(SR.NotSupported_UnwritableStream);
                 }
-                return OutBufferSizeCore;
+                return GetPipeBufferSize();
             }
         }
 
@@ -452,8 +452,8 @@ namespace System.IO.Pipes
             CreateAnonymousPipe(inheritability, fds);
 
             // Store the file descriptors into our safe handles
-            reader.SetHandle(fds[Interop.libc.ReadEndOfPipe]);
-            writer.SetHandle(fds[Interop.libc.WriteEndOfPipe]);
+            reader.SetHandle(fds[Interop.Sys.ReadEndOfPipe]);
+            writer.SetHandle(fds[Interop.Sys.WriteEndOfPipe]);
         }
 
         /// <summary>
@@ -588,5 +588,36 @@ namespace System.IO.Pipes
             }
         }
 
+        internal void InitializeBufferSize(SafePipeHandle handle, int bufferSize)
+        {
+            // bufferSize is just advisory and ignored if platform does not support setting pipe capacity via fcntl.
+            if (bufferSize > 0 && Interop.Sys.Fcntl.CanGetSetPipeSz)
+            {
+                SysCall(handle, (fd, _, size, __) => Interop.Sys.Fcntl.SetPipeSz(fd, size), 
+                    IntPtr.Zero, bufferSize);
+            }
+        }
+
+        private int GetPipeBufferSize()
+        {
+            if (!Interop.Sys.Fcntl.CanGetSetPipeSz)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            // If we have a handle, get the capacity of the pipe (there's no distinction between in/out direction).
+            // If we don't, the pipe has been created but not yet connected (in the case of named pipes),
+            // so just return the buffer size that was passed to the constructor.
+            return _handle != null ?
+                (int)SysCall(_handle, (fd, _, __, ___) => Interop.Sys.Fcntl.GetPipeSz(fd)) :
+                _outBufferSize;
+        }
+
+        internal static unsafe void CreateAnonymousPipe(HandleInheritability inheritability, int* fdsptr)
+        {
+            var flags = (inheritability & HandleInheritability.Inheritable) == 0 ?
+                Interop.Sys.PipeFlags.O_CLOEXEC : 0;
+            while (Interop.CheckIo(Interop.Sys.Pipe(fdsptr, flags))) ;
+        }
     }
 }

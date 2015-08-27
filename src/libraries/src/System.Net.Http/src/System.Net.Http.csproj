@@ -159,8 +159,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.OpenFlags.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.OpenFlags.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.pipe.cs">
-      <Link>Common\Interop\Unix\libc\Interop.pipe.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Pipe.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.Pipe.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.poll.cs">
       <Link>Common\Interop\Unix\libc\Interop.poll.cs</Link>
