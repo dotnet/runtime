@@ -357,3 +357,21 @@ int32_t FcntlSetPipeSz(int32_t fd, int32_t size)
     return -1;
 #endif
 }
+
+extern "C"
+int32_t MkDir(const char* path, int32_t mode)
+{
+    return mkdir(path, mode);
+}
+
+extern "C"
+int32_t ChMod(const char* path, int32_t mode)
+{
+    return chmod(path, mode);
+}
+
+extern "C"
+int32_t MkFifo(const char* path, int32_t mode)
+{
+    return mkfifo(path, mode);
+}

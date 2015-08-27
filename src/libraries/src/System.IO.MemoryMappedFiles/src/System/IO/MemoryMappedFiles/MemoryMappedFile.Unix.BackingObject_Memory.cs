@@ -20,13 +20,13 @@ namespace System.IO.MemoryMappedFiles
             flags |= Interop.Sys.OpenFlags.O_CREAT | Interop.Sys.OpenFlags.O_EXCL; // CreateNew
 
             // Determine the permissions with which to create the file
-            Interop.libc.Permissions perms = default(Interop.libc.Permissions);
+            Interop.Sys.Permissions perms = default(Interop.Sys.Permissions);
             if ((protections & Interop.libc.MemoryMappedProtections.PROT_READ) != 0)
-                perms |= Interop.libc.Permissions.S_IRUSR;
+                perms |= Interop.Sys.Permissions.S_IRUSR;
             if ((protections & Interop.libc.MemoryMappedProtections.PROT_WRITE) != 0)
-                perms |= Interop.libc.Permissions.S_IWUSR;
+                perms |= Interop.Sys.Permissions.S_IWUSR;
             if ((protections & Interop.libc.MemoryMappedProtections.PROT_EXEC) != 0)
-                perms |= Interop.libc.Permissions.S_IXUSR;
+                perms |= Interop.Sys.Permissions.S_IXUSR;
 
             // Create the shared memory object.
             int fd;

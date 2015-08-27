@@ -149,8 +149,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
       <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.Permissions.cs">
-      <Link>Common\Interop\Unix\libc\Interop.Permissions.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Permissions.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.Permissions.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.ASN1.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.ASN1.cs</Link>

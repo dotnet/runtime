@@ -280,7 +280,7 @@ namespace System.IO.Pipes
         {
             while (true)
             {
-                int result = Interop.libc.mkdir(directoryPath, (int)Interop.libc.Permissions.S_IRWXU);
+                int result = Interop.Sys.MkDir(directoryPath, (int)Interop.Sys.Permissions.S_IRWXU);
 
                 // If successful created, we're done.
                 if (result >= 0)
