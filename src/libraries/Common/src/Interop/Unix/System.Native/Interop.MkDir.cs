@@ -4,13 +4,11 @@
 using System;
 using System.Runtime.InteropServices;
 
-using mode_t = System.Int32;
-
 internal static partial class Interop
 {
-    internal static partial class libc
+    internal static partial class Sys
     {
-        [DllImport(Libraries.Libc, SetLastError = true)]
-        internal static extern int mkdir(string pathname, mode_t mode);
+        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        internal static extern int MkDir(string path, int mode);
     }
 }

@@ -5,7 +5,7 @@ using System;
 
 internal static partial class Interop
 {
-    internal static partial class libc
+    internal static partial class Sys
     {
         [Flags]
         internal enum Permissions

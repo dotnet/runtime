@@ -45,8 +45,8 @@ namespace System.IO
             // Now copy over relevant read/write/execute permissions from the source to the destination
             Interop.Sys.FileStatus status;
             while (Interop.CheckIo(Interop.Sys.Stat(sourceFullPath, out status), sourceFullPath)) ;
-            int newMode = status.Mode & (int)Interop.libc.Permissions.Mask;
-            while (Interop.CheckIo(Interop.libc.chmod(destFullPath, newMode), destFullPath)) ;
+            int newMode = status.Mode & (int)Interop.Sys.Permissions.Mask;
+            while (Interop.CheckIo(Interop.Sys.ChMod(destFullPath, newMode), destFullPath)) ;
         }
 
         public override void MoveFile(string sourceFullPath, string destFullPath)
@@ -183,7 +183,7 @@ namespace System.IO
                 }
 
                 Interop.ErrorInfo errorInfo = default(Interop.ErrorInfo);
-                while ((result = Interop.libc.mkdir(name, (int)Interop.libc.Permissions.S_IRWXU)) < 0 && (errorInfo = Interop.Sys.GetLastErrorInfo()).Error == Interop.Error.EINTR) ;
+                while ((result = Interop.Sys.MkDir(name, (int)Interop.Sys.Permissions.S_IRWXU)) < 0 && (errorInfo = Interop.Sys.GetLastErrorInfo()).Error == Interop.Error.EINTR) ;
                 if (result < 0 && firstError.Error == 0)
                 {
                     // While we tried to avoid creating directories that don't

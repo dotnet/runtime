@@ -29,7 +29,7 @@ namespace System.IO.Pipes
                 var clientHandle = Microsoft.Win32.SafeHandles.SafePipeHandle.Open(
                     _normalizedPipePath, 
                     TranslateFlags(_direction, _pipeOptions, _inheritability),
-                    (int)Interop.libc.Permissions.S_IRWXU);
+                    (int)Interop.Sys.Permissions.S_IRWXU);
 
                 // Pipe successfully opened.  Store our client handle.
                 InitializeHandle(clientHandle, isExposed: false, isAsync: (_pipeOptions & PipeOptions.Asynchronous) != 0);
