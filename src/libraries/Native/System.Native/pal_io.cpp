@@ -97,10 +97,10 @@ int32_t Stat(const char* path, FileStatus* output)
 }
 
 extern "C"
-int32_t FStat(int32_t fileDescriptor, FileStatus* output)
+int32_t FStat(int32_t fd, FileStatus* output)
 {
     struct stat_ result;
-    int ret = fstat_(fileDescriptor, &result);
+    int ret = fstat_(fd, &result);
 
     if (ret == 0)
     {
@@ -185,9 +185,9 @@ int32_t Open(const char* path, int32_t flags, int32_t mode)
 }
 
 extern "C"
-int32_t Close(int32_t fileDescriptor)
+int32_t Close(int32_t fd)
 {
-    return close(fileDescriptor);
+    return close(fd);
 }
 
 extern "C"
@@ -214,7 +214,6 @@ int32_t ShmUnlink(const char* name)
 {
     return shm_unlink(name);
 }
-
 
 static
 void ConvertDirent(const dirent& entry, DirectoryEntry* outputEntry)
@@ -299,7 +298,62 @@ DIR* OpenDir(const char* path)
 }
 
 extern "C" 
-int32_t CloseDir(DIR* directory)
+int32_t CloseDir(DIR* dir)
 {
-    return closedir(directory);
+    return closedir(dir);
+}
+
+extern "C"
+int32_t Pipe(int32_t pipeFds[2], int32_t flags)
+{
+    switch (flags)
+    {
+    case 0:
+        break;
+    case PAL_O_CLOEXEC:
+        flags = O_CLOEXEC;
+        break;
+    default:
+        assert(!"Unknown flag.");
+        errno = EINVAL;
+        return -1;
+    }
+
+#if HAVE_PIPE2
+    return pipe2(pipeFds, flags);
+#else
+    return pipe(pipeFds); // CLOEXEC intentionally ignored on platforms without pipe2.
+#endif
+}
+
+extern "C"
+int32_t FcntlCanGetSetPipeSz()
+{
+#if defined(F_GETPIPE_SZ) && defined(F_SETPIPE_SZ)
+    return true;
+#else
+    return false;
+#endif
+}
+
+extern "C"
+int32_t FcntlGetPipeSz(int32_t fd)
+{
+#ifdef F_GETPIPE_SZ
+    return fcntl(fd, F_GETPIPE_SZ);
+#else
+    errno = ENOTSUP;
+    return -1;
+#endif
+}
+
+extern "C"
+int32_t FcntlSetPipeSz(int32_t fd, int32_t size)
+{
+#ifdef F_SETPIPE_SZ
+    return fcntl(fd, F_SETPIPE_SZ, size);
+#else
+    errno = ENOTSUP;
+    return -1;
+#endif
 }

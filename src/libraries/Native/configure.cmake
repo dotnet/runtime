@@ -6,6 +6,10 @@ check_function_exists(
     stat64
     HAVE_STAT64)
 
+check_function_exists(
+    pipe2
+    HAVE_PIPE2)
+
 check_struct_has_member(
     "struct stat"
     st_birthtime
