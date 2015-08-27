@@ -103,6 +103,30 @@ enum {
 	INTERNAL_MEM_MAX
 };
 
+static inline mword
+sgen_mono_array_size (GCVTable vtable, MonoArray *array, mword *bounds_size, mword descr)
+{
+	mword size, size_without_bounds;
+	int element_size;
+
+	if ((descr & DESC_TYPE_MASK) == DESC_TYPE_VECTOR)
+		element_size = ((descr) >> VECTOR_ELSIZE_SHIFT) & MAX_ELEMENT_SIZE;
+	else
+		element_size = vtable->klass->sizes.element_size;
+
+	size_without_bounds = size = sizeof (MonoArray) + element_size * mono_array_length_fast (array);
+
+	if (G_UNLIKELY (array->bounds)) {
+		size += sizeof (mono_array_size_t) - 1;
+		size &= ~(sizeof (mono_array_size_t) - 1);
+		size += sizeof (MonoArrayBounds) * vtable->klass->rank;
+	}
+
+	if (bounds_size)
+		*bounds_size = size - size_without_bounds;
+	return size;
+}
+
 #define SGEN_CLIENT_OBJECT_HEADER_SIZE		(sizeof (GCObject))
 #define SGEN_CLIENT_MINIMUM_OBJECT_SIZE		SGEN_CLIENT_OBJECT_HEADER_SIZE
 
@@ -118,14 +142,7 @@ sgen_client_slow_object_get_size (GCVTable vtable, GCObject* o)
 	if (klass == mono_defaults.string_class) {
 		return G_STRUCT_OFFSET (MonoString, chars) + 2 * mono_string_length_fast ((MonoString*) o) + 2;
 	} else if (klass->rank) {
-		MonoArray *array = (MonoArray*)o;
-		size_t size = sizeof (MonoArray) + klass->sizes.element_size * mono_array_length_fast (array);
-		if (G_UNLIKELY (array->bounds)) {
-			size += sizeof (mono_array_size_t) - 1;
-			size &= ~(sizeof (mono_array_size_t) - 1);
-			size += sizeof (MonoArrayBounds) * klass->rank;
-		}
-		return size;
+		return sgen_mono_array_size (vtable, (MonoArray*)o, NULL, 0);
 	} else {
 		/* from a created object: the class must be inited already */
 		return klass->instance_size;
@@ -150,20 +167,7 @@ sgen_client_par_object_get_size (GCVTable vtable, GCObject* o)
 	} else if (descr == SGEN_DESC_STRING) {
 		return G_STRUCT_OFFSET (MonoString, chars) + 2 * mono_string_length_fast ((MonoString*) o) + 2;
 	} else if (type == DESC_TYPE_VECTOR) {
-		int element_size = ((descr) >> VECTOR_ELSIZE_SHIFT) & MAX_ELEMENT_SIZE;
-		MonoArray *array = (MonoArray*)o;
-		size_t size = sizeof (MonoArray) + element_size * mono_array_length_fast (array);
-
-		/*
-		 * Non-vector arrays with a single dimension whose lower bound is zero are
-		 * allocated without bounds.
-		 */
-		if ((descr & VECTOR_KIND_ARRAY) && array->bounds) {
-			size += sizeof (mono_array_size_t) - 1;
-			size &= ~(sizeof (mono_array_size_t) - 1);
-			size += sizeof (MonoArrayBounds) * ((MonoVTable*)vtable)->klass->rank;
-		}
-		return size;
+		return sgen_mono_array_size (vtable, (MonoArray*)o, NULL, descr);
 	}
 
 	return sgen_client_slow_object_get_size (vtable, o);
