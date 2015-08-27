@@ -38,6 +38,14 @@ namespace System.Linq.Tests
         {
             Assert.Throws<ArgumentNullException>(() => ((IEnumerable<DateTime>)null).Skip(3));
         }
+        
+        [Fact]
+        public void SkipOnEmpty()
+        {
+            Assert.Equal(Enumerable.Empty<int>(), Enumerable.Empty<int>().Skip(0));
+            Assert.Equal(Enumerable.Empty<string>(), Enumerable.Empty<string>().Skip(-1));
+            Assert.Equal(Enumerable.Empty<double>(), Enumerable.Empty<double>().Skip(1));
+        }
 
         [Fact]
         public void SkipNegative()
