@@ -208,7 +208,7 @@ exit /b 1
 echo Generating native image of mscorlib for %__BuildOS%.%__BuildArch%.%__BuildType%
 echo.
 set "__CrossGenMScorlibLog=%__LogsDir%\CrossgenMScorlib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-%__BinDir%\crossgen.exe %__BinDir%\mscorlib.dll > "%__CrossGenMScorlibLog%" 2>&1
+"%__BinDir%\crossgen.exe" "%__BinDir%\mscorlib.dll" > "%__CrossGenMScorlibLog%" 2>&1
 IF NOT ERRORLEVEL 1 (
   goto PerformTestBuild
 )
