@@ -101,6 +101,22 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void OrderIsStable()
+        {
+            var source = @"Because I could not stop for Death —
+He kindly stopped for me —
+The Carriage held but just Ourselves —
+And Immortality.".Split(new []{ ' ', '\n', '\r', '—' }, StringSplitOptions.RemoveEmptyEntries);
+            var expected = new []
+            {
+                "stopped", "kindly", "could", "stop", "held", "just", "not", "for", "for", "but", "me",
+                "Immortality.", "Ourselves", "Carriage", "Because", "Death", "The", "And", "He", "I"   
+            };
+            
+            Assert.Equal(expected, source.OrderBy(word => char.IsUpper(word[0])).ThenByDescending(word => word.Length));
+        }
+
+        [Fact]
         public void NullSource()
         {
             IOrderedEnumerable<int> source = null;
