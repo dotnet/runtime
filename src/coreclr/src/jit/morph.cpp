@@ -4108,6 +4108,13 @@ GenTreePtr          Compiler::fgMorphArrayIndex(GenTreePtr tree)
 
         bndsChk = arrBndsChk;
 
+        // Make sure to increment ref-counts if already ref-counted.
+        if (lvaLocalVarRefCounted)
+        {
+            lvaRecursiveIncRefCounts(index);
+            lvaRecursiveIncRefCounts(arrRef);
+        }
+
         // Now we'll switch to using the second copies for arrRef and index
         // to compute the address expression
 
