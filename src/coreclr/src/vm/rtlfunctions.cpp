@@ -81,7 +81,7 @@ VOID InstallEEFunctionTable (
 
     if (wszModuleName == NULL)        
     {
-        WCHAR rgwTempName[MAX_PATH] = {0};
+        WCHAR rgwTempName[MAX_LONGPATH] = {0};
         DWORD dwTempNameSize = MAX_LONGPATH;
 
         // Leaves trailing backslash on path, producing something like "c:\windows\microsoft.net\framework\v4.0.x86dbg\"

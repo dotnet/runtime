@@ -4933,10 +4933,10 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
 
             _ASSERTE (NumItems(dllPath) > MAX_LONGPATH);
             // if WszGetModuleFileName fails, we return an empty string
-            if (!WszGetModuleFileName(GetCLRModule(), dllPath, MAX_PATH)) {
+            if (!WszGetModuleFileName(GetCLRModule(), dllPath, MAX_LONGPATH)) {
                 dllPath[0] = 0;
             }
-            dllPath[MAX_PATH] = 0;
+            dllPath[MAX_LONGPATH] = 0;
 
             if(type == ETW::InfoLog::InfoStructs::Callback)
             {
