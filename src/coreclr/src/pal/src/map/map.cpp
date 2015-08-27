@@ -290,7 +290,6 @@ CreateFileMappingA(
                    IN LPCSTR lpName)
 {
     HANDLE hFileMapping = NULL;
-    WCHAR WideString[ MAX_PATH ];
     CPalThread *pThread = NULL;
     PAL_ERROR palError = NO_ERROR;
 
@@ -304,34 +303,10 @@ CreateFileMappingA(
 
     pThread = InternalGetCurrentThread();
 
-    if ( lpName != NULL )
+    if (lpName != nullptr)
     {
-        if ( 0 == MultiByteToWideChar(CP_ACP, 0, lpName, -1, 
-                                      WideString, MAX_PATH ) )
-        {
-            palError = GetLastError();
-            if ( ERROR_INSUFFICIENT_BUFFER == palError )
-            {
-                ERROR("lpName is larger than MAX_PATH (%d)!\n", MAX_PATH);
-            }
-            else
-            {
-                ERROR("MultiByteToWideChar failure! (error=%d)\n", 
-                   palError);
-            }
-            goto ExitCreateFileMappingA;
-        }
-
-        palError = InternalCreateFileMapping(
-            pThread,
-            hFile,
-            lpFileMappingAttributes,
-            flProtect,
-            dwMaximumSizeHigh,
-            dwMaximumSizeLow,
-            WideString,
-            &hFileMapping
-            );
+        ASSERT("lpName: Cross-process named objects are not supported in PAL");
+        palError = ERROR_NOT_SUPPORTED;
     }
     else
     {
@@ -347,8 +322,6 @@ CreateFileMappingA(
             );
     }
 
-
-ExitCreateFileMappingA:
 
     //
     // We always need to set last error, even on success:
@@ -451,6 +424,13 @@ CorUnix::InternalCreateFileMapping(
     //
     // Validate parameters
     //
+
+    if (lpName != nullptr)
+    {
+        ASSERT("lpName: Cross-process named objects are not supported in PAL");
+        palError = ERROR_NOT_SUPPORTED;
+        goto ExitInternalCreateFileMapping;
+    }
 
     if (0 != dwMaximumSizeHigh)
     {
@@ -823,7 +803,6 @@ OpenFileMappingA(
          IN LPCSTR lpName)
 {
     HANDLE hFileMapping = NULL;
-    WCHAR WideString[ MAX_PATH ];
     CPalThread *pThread = NULL;
     PAL_ERROR palError = NO_ERROR;
 
@@ -833,40 +812,17 @@ OpenFileMappingA(
 
     pThread = InternalGetCurrentThread();
 
-    if ( lpName != NULL )
-    {
-        if ( 0 == MultiByteToWideChar(CP_ACP, 0, lpName, -1, 
-                                      WideString, MAX_PATH ) )
-        {
-            palError = GetLastError();
-            if ( ERROR_INSUFFICIENT_BUFFER == palError )
-            {
-                ERROR("lpName is larger than MAX_PATH (%d)!\n", MAX_PATH);
-            }
-            else
-            {
-                ERROR("MultiByteToWideChar failure! (error=%d)\n", 
-                   palError);
-            }
-            palError = ERROR_INVALID_PARAMETER;
-            goto ExitOpenFileMappingA;
-        }
-
-        palError = InternalOpenFileMapping(
-            pThread,
-            dwDesiredAccess,
-            bInheritHandle,
-            &WideString[0],
-            &hFileMapping
-            );
-    }
-    else
+    if (lpName == nullptr)
     {
         ERROR("name is NULL\n");
         palError = ERROR_INVALID_PARAMETER;
     }
+    else
+    {
+        ASSERT("lpName: Cross-process named objects are not supported in PAL");
+        palError = ERROR_NOT_SUPPORTED;
+    }
 
-ExitOpenFileMappingA:
     if (NO_ERROR != palError)
     {
         pThread->SetLastError(palError);
@@ -901,29 +857,22 @@ OpenFileMappingW(
     pThread = InternalGetCurrentThread();
 
     /* validate parameters */
-    if (lpName == NULL)
+    if (lpName == nullptr)
     {
         ERROR("name is NULL\n");
-        pThread->SetLastError(ERROR_INVALID_PARAMETER);
-        goto ExitOpenFileMappingW;            
+        palError = ERROR_INVALID_PARAMETER;
     }
-
-    palError = InternalOpenFileMapping(
-        pThread,
-        dwDesiredAccess,
-        bInheritHandle,
-        lpName,
-        &hFileMapping
-        );
+    else
+    {
+        ASSERT("lpName: Cross-process named objects are not supported in PAL");
+        palError = ERROR_NOT_SUPPORTED;
+    }
 
     if (NO_ERROR != palError)
     {
         pThread->SetLastError(palError);
     }
-
-ExitOpenFileMappingW:    
-
-    LOGEXIT( "OpenFileMappingW returning %p.\n", hFileMapping );
+    LOGEXIT("OpenFileMappingW returning %p.\n", hFileMapping);
     PERF_EXIT(OpenFileMappingW);
     return hFileMapping;
 }

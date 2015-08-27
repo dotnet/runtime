@@ -34,7 +34,6 @@ int __cdecl main( int argc, char **argv )
     LPSECURITY_ATTRIBUTES   lpEventAttributes = NULL;
     BOOL                    bManualReset = TRUE; 
     BOOL                    bInitialState = FALSE;
-    LPCTSTR                 lpName = "WooBaby";
 
 
     /* PAL initialization */
@@ -48,7 +47,7 @@ int __cdecl main( int argc, char **argv )
     hEvent = CreateEvent(   lpEventAttributes, 
                             bManualReset,
                             bInitialState,
-                            lpName );
+                            NULL );
 
     if( hEvent == INVALID_HANDLE_VALUE )
     {
