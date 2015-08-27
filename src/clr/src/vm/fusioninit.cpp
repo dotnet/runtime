@@ -192,7 +192,7 @@ HRESULT STDMETHODCALLTYPE InitializeFusion()
     DWORD               dwSize = 0;
     BOOL                fExecutableIsKnown = FALSE;
     LPWSTR              pwzFileName = NULL;
-    WCHAR               wzBindingConfigPath[MAX_PATH + 1];
+    WCHAR               wzBindingConfigPath[MAX_LONGPATH + 1];
 
     BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(return COR_E_STACKOVERFLOW);
     
@@ -207,7 +207,7 @@ HRESULT STDMETHODCALLTYPE InitializeFusion()
 
     g_lcid = MAKELCID(LOCALE_INVARIANT, SORT_DEFAULT);
 
-    WszGetModuleFileName(g_hInst, g_FusionDllPath, MAX_PATH);
+    WszGetModuleFileName(g_hInst, g_FusionDllPath, MAX_LONGPATH);
 
     if (!InitFusionCriticalSections()) {
         hr = E_OUTOFMEMORY;

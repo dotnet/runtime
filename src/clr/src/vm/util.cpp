@@ -1311,7 +1311,7 @@ HRESULT WszSHGetFolderPath(
     _ASSERTE(cchPathMax >= MAX_LONGPATH);
 
     HRESULT hr;
-    ULONG maxLength = MAX_PATH;
+    ULONG maxLength = MAX_LONGPATH;
     HMODULE _hmodShell32 = 0;
     HMODULE _hmodSHFolder = 0;
 
