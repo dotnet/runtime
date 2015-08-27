@@ -3,7 +3,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 
 internal static partial class Interop
 {
@@ -11,11 +10,6 @@ internal static partial class Interop
     // This enables a project simply to include this file, and any usage of any of
     // the libcrypto or System.Security.Cryptography.Native functions will trigger 
     // initialization of the threading support.
-
-    // Note that we can collapse everything into Interop.Crypto once we no longer
-    // have a mix of P/Invokes to libcrypto and System.Security.Crytpography.Native.
-    // In the meantime, a third Interop.CryptoInitializer class is used to prevent
-    // a circular initialization dependency between the two. 
 
     internal static partial class libcrypto
     {
@@ -58,10 +52,7 @@ internal static partial class Interop
 
         internal static void Initialize()
         {
-            // No-op that exists to provide a hook for other static constructors
-            // to trigger initialization. Once we stop having direct P/Invokes
-            // to libcrypto and everything is collapsed in to the static constructor
-            // of Interop.Crypto, this function can be removed.
+            // No-op that exists to provide a hook for other static constructors.
         }
 
         [DllImport(Libraries.CryptoNative)]
