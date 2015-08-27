@@ -261,7 +261,6 @@ private:
     
     // Flags and state data.
     FILETYPE    m_FileType;             // Cached type of the file (based on extension).
-    WCHAR       m_rcShared[MAXSHMEM];   // Name of shared memory segment.
     LONG        m_cRef;                 // Ref count on this object.
     bool        m_bWriteThrough : 1;    // true for write through mode.
     bool        m_bRewrite : 1;         // State check for rewrite mode.
