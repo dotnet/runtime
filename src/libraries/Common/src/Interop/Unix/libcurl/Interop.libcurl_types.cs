@@ -42,13 +42,13 @@ internal static partial class Interop
             internal const int CURLOPT_PROXY = CurlOptionObjectPointBase + 4;
             internal const int CURLOPT_PROXYUSERPWD = CurlOptionObjectPointBase + 6;
             internal const int CURLOPT_READDATA = CurlOptionObjectPointBase + 9;
-            internal const int CURLOPT_POSTFIELDS = CurlOptionObjectPointBase + 15;
             internal const int CURLOPT_COOKIE = CurlOptionObjectPointBase + 22;
             internal const int CURLOPT_HTTPHEADER = CurlOptionObjectPointBase + 23;
             internal const int CURLOPT_HEADERDATA = CurlOptionObjectPointBase + 29;
             internal const int CURLOPT_ACCEPTENCODING = CurlOptionObjectPointBase + 102;
             internal const int CURLOPT_PRIVATE = CurlOptionObjectPointBase + 103;
             internal const int CURLOPT_IOCTLDATA = CurlOptionObjectPointBase + 131;
+            internal const int CURLOPT_COPYPOSTFIELDS = CurlOptionObjectPointBase + 165;
             internal const int CURLOPT_USERNAME = CurlOptionObjectPointBase + 173;
             internal const int CURLOPT_PASSWORD = CurlOptionObjectPointBase + 174;
 
