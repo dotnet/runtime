@@ -43,7 +43,7 @@ namespace Internal.Cryptography.Pal
         private readonly CertificatePolicy[] _policies;
         private bool _failAllCertificatePolicies;
 
-        public CertificatePolicyChain(X509Certificate2Collection chain)
+        public CertificatePolicyChain(List<X509Certificate2> chain)
         {
             _policies = new CertificatePolicy[chain.Count];
 
@@ -161,7 +161,7 @@ namespace Internal.Cryptography.Pal
             return true;
         }
 
-        private void ReadPolicies(X509Certificate2Collection chain)
+        private void ReadPolicies(List<X509Certificate2> chain)
         {
             for (int i = 0; i < chain.Count; i++)
             {

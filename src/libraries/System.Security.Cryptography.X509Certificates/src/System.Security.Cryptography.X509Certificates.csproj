@@ -129,6 +129,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <Compile Include="Internal\Cryptography\Pal.Unix\CertificateAssetDownloader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CertificatePal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CertificatePolicy.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\ChainPal.cs" />
@@ -173,6 +174,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.EvpPkey.Rsa.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.EvpPkey.Rsa.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.Initialization.cs">
+      <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.Initialization.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs</Link>
     </Compile>
@@ -190,6 +194,21 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.X509Ext.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.X509Ext.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.SafeCurlHandle.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.SafeCurlHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.libcurl.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.libcurl.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.libcurl_easy.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.libcurl_easy.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.libcurl_types.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.libcurl_types.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Close.cs">
+      <Link>Common\Interop\Unix\Interop.Close.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEUid.cs">
       <Link>Common\Interop\Unix\Interop.GetEUid.cs</Link>
