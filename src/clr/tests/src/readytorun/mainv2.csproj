@@ -15,7 +15,7 @@
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
     <NuGetPackageImportStamp>7a9bfb7d</NuGetPackageImportStamp>
-    <DefineConstants>$(DefineConstants);STATIC;CORECLR;V2</DefineConstants>
+    <DefineConstants>$(DefineConstants);STATIC;CORECLR</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
@@ -28,8 +28,8 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="testv2.csproj">
-       <Project>{95DFC527-4DC1-495E-97D7-E94EE1F7140D}</Project>
+    <ProjectReference Include="testv1\testv1.csproj">
+       <Project>{F74F55A1-DFCF-4C7C-B462-E96E1D0BB667}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -43,16 +43,18 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="testv2">
-      <HintPath>$(TargetDir)\testv2.dll</HintPath>
+    <Reference Include="test">
+      <HintPath>$(TargetDir)\testv1\test.dll</HintPath>
     </Reference>
   </ItemGroup>
   <PropertyGroup>
     <_CLRTestPreCommands><![CDATA[
 $(_CLRTestPreCommands)
 IF not exist NI mkdir NI
-%Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out NI\testv2.ni.dll testv2.dll 
+COPY /Y testv1\test.dll test.dll
 %Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out NI\mainv2.ni.exe mainv2.exe
+COPY /Y testv2\test.dll test.dll
+%Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out NI\test.ni.dll test.dll 
 ]]></_CLRTestPreCommands>
   </PropertyGroup>  
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
