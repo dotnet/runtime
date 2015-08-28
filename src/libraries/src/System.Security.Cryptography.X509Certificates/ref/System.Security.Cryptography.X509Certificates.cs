@@ -231,9 +231,9 @@ namespace System.Security.Cryptography.X509Certificates
     {
         internal X509ChainElementCollection() { }
         public int Count { get { return default(int); } }
-        public bool IsSynchronized { get { return default(bool); } }
+        bool System.Collections.ICollection.IsSynchronized { get { return default(bool); } }
         public System.Security.Cryptography.X509Certificates.X509ChainElement this[int index] { get { return default(System.Security.Cryptography.X509Certificates.X509ChainElement); } }
-        public object SyncRoot { get { return default(object); } }
+        object System.Collections.ICollection.SyncRoot { get { return default(object); } }
         public void CopyTo(System.Security.Cryptography.X509Certificates.X509ChainElement[] array, int index) { }
         public System.Security.Cryptography.X509Certificates.X509ChainElementEnumerator GetEnumerator() { return default(System.Security.Cryptography.X509Certificates.X509ChainElementEnumerator); }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
@@ -325,10 +325,10 @@ namespace System.Security.Cryptography.X509Certificates
     {
         public X509ExtensionCollection() { }
         public int Count { get { return default(int); } }
-        public bool IsSynchronized { get { return default(bool); } }
+        bool System.Collections.ICollection.IsSynchronized { get { return default(bool); } }
         public System.Security.Cryptography.X509Certificates.X509Extension this[int index] { get { return default(System.Security.Cryptography.X509Certificates.X509Extension); } }
         public System.Security.Cryptography.X509Certificates.X509Extension this[string oid] { get { return default(System.Security.Cryptography.X509Certificates.X509Extension); } }
-        public object SyncRoot { get { return default(object); } }
+        object System.Collections.ICollection.SyncRoot { get { return default(object); } }
         public int Add(System.Security.Cryptography.X509Certificates.X509Extension extension) { return default(int); }
         public void CopyTo(System.Security.Cryptography.X509Certificates.X509Extension[] array, int index) { }
         public System.Security.Cryptography.X509Certificates.X509ExtensionEnumerator GetEnumerator() { return default(System.Security.Cryptography.X509Certificates.X509ExtensionEnumerator); }

@@ -26,12 +26,12 @@ namespace System.Security.Cryptography.X509Certificates
             get { return _elements.Length; }
         }
 
-        public bool IsSynchronized
+        bool System.Collections.ICollection.IsSynchronized
         {
             get { return false; }
         }
 
-        public object SyncRoot
+        object System.Collections.ICollection.SyncRoot
         {
             get { return this; }
         }
