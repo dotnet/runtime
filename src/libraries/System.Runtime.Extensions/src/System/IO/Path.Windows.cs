@@ -33,7 +33,7 @@ namespace System.IO
         // For example, D:\<256 char file name> isn't legal, even though it's under 260 chars.
         internal static readonly int MaxPath = 260;
         private static readonly int MaxComponentLength = 255;
-        private const int MaxLongPath = 32000;
+        internal static readonly int MaxLongPath = short.MaxValue;
 
         private static bool IsDirectoryOrVolumeSeparator(char c)
         {
@@ -323,8 +323,10 @@ namespace System.IO
                     }
 
                     int thisPos = newBuffer.Length - 1;
-                    if (thisPos - lastDirectorySeparatorPos > MaxComponentLength)
+                    if (thisPos - lastDirectorySeparatorPos > MaxComponentLength + 1)
                     {
+                        // Components can be up to 255 characters plus an additional null,
+                        // so separators can be 256 characters apart
                         throw new PathTooLongException(SR.IO_PathTooLong);
                     }
                     lastDirectorySeparatorPos = thisPos;
@@ -405,7 +407,8 @@ namespace System.IO
                 index++;
             } // end while
 
-            if (newBuffer.Length - 1 - lastDirectorySeparatorPos > MaxComponentLength)
+            // Components can be up to 255 characters plus an additional null
+            if (newBuffer.Length - lastDirectorySeparatorPos > MaxComponentLength)
             {
                 throw new PathTooLongException(SR.IO_PathTooLong);
             }

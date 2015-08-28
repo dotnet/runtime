@@ -134,21 +134,15 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]  // auto-generated
         private static string NormalizePath(string path, bool fullCheck)
         {
-            return NormalizePath(path, fullCheck, MaxPath);
+            return NormalizePath(path, fullCheck, MaxLongPath, expandShortPaths: true);
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         private static string NormalizePath(string path, bool fullCheck, bool expandShortPaths)
         {
-            return NormalizePath(path, fullCheck, MaxPath, expandShortPaths);
+            return NormalizePath(path, fullCheck, MaxLongPath, expandShortPaths);
         }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        private static string NormalizePath(string path, bool fullCheck, int maxPathLength)
-        {
-            return NormalizePath(path, fullCheck, maxPathLength, expandShortPaths: true);
-        }
-
+        
         // Returns the name and extension parts of the given path. The resulting
         // string contains the characters of path that follow the last
         // separator in path. The resulting string is null if path is null.
