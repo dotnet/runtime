@@ -434,7 +434,6 @@ void UnassemblyUnmanaged(DWORD_PTR IP, BOOL bSuppressLines)
         
 }
 
-
 void DisasmAndClean (DWORD_PTR &IP, __out_ecount_opt(length) char *line, ULONG length)
 {
     ULONG64 vIP = TO_CDADDR(IP);
@@ -444,8 +443,10 @@ void DisasmAndClean (DWORD_PTR &IP, __out_ecount_opt(length) char *line, ULONG l
     char *ptr = strrchr (line, '\n');
     if (ptr != NULL)
         ptr[0] = '\0';
-
 }
+
+#endif // FEATURE_PAL
+
 
 // If byref, move to pass the byref prefix
 BOOL IsByRef (__deref_inout_z char *& ptr)
@@ -584,8 +585,7 @@ INT_PTR GetValueFromExpr(__in_z char *ptr, INT_PTR &value)
     {
         char *endptr;
         value = ParseHexNumber(myPtr, &endptr);
-        if (!bByRef && IsTermSep (endptr[0])
-            || bByRef && endptr[0] == ']')
+        if ((!bByRef && IsTermSep(endptr[0])) || (bByRef && endptr[0] == ']'))
         {
             if (bNegative)
                 value = -value;
@@ -710,7 +710,7 @@ LPCWSTR EHTypedClauseTypeName(___in const DACEHInfo* pEHInfo)
     _ASSERTE(pEHInfo != NULL);
     if ((pEHInfo->clauseType == EHTyped) && pEHInfo->isCatchAllHandler)
     {
-        return L"...";
+        return W("...");
     }
 
     // is there a method table or a token to look at?
@@ -839,6 +839,7 @@ void SOSEHInfo::FormatForDisassembly(CLRDATA_ADDRESS offSet)
 // use the IS_DBG_TARGET_XYZ macro.
 //
 
+#ifndef FEATURE_PAL
 
 // Return TRUE if we have printed something.
 BOOL PrintCallInfo (DWORD_PTR vEBP, DWORD_PTR IP,
@@ -921,6 +922,7 @@ BOOL PrintCallInfo (DWORD_PTR vEBP, DWORD_PTR IP,
                     ExtOut ("%s", Symbol);
                     if (Displacement)
                         ExtOut ("+%#x", Displacement);
+#ifndef FEATURE_PAL
                     if (!DSFlag.fSuppressSrcInfo)
                     {
                         ULONG line;
@@ -929,6 +931,7 @@ BOOL PrintCallInfo (DWORD_PTR vEBP, DWORD_PTR IP,
                         if (SUCCEEDED (hr))
                             ExtOut (" [%s:%d]", filename, line);
                     }
+#endif
                 }
                 else
                 {
@@ -1032,8 +1035,7 @@ void DumpStackWorker (DumpStackFlag &DSFlag)
     }
 }
 
-#endif // !FEATURE_PAL
-
+#endif // FEATURE_PAL
 
 #ifdef SOS_TARGET_X86
 ///
@@ -1117,40 +1119,6 @@ void AMD64Machine::DumpGCInfo(BYTE* pTable, unsigned methodSize, printfFtn gcPri
     gcDump.DumpGCTable(pTable, methodSize, 0);
 #endif // FEATURE_PAL
 }
-
-#ifdef FEATURE_PAL
-void AMD64Machine::Unassembly(
-    TADDR IPBegin, 
-    TADDR IPEnd, 
-    TADDR IPAskedFor, 
-    TADDR GCStressCodeCopy, 
-    GCEncodingInfo *pGCEncodingInfo, 
-    SOSEHInfo *pEHInfo,
-    BOOL bSuppressLines,
-    BOOL bDisplayOffsets) const
-{
-    ExtErr("AMD64Machine::Unassembly not implemented\n");
-}
-
-void AMD64Machine::IsReturnAddress(
-    TADDR retAddr, 
-    TADDR* whereCalled) const
-{
-    ExtErr("AMD64Machine::IsReturnAddress not implemented\n");
-}
-
-BOOL AMD64Machine::GetExceptionContext(
-    TADDR stack,
-    TADDR PC,
-    TADDR *cxrAddr,
-    CROSS_PLATFORM_CONTEXT * cxr,
-    TADDR *exrAddr,
-    PEXCEPTION_RECORD exr) const
-{ 
-    ExtErr("AMD64Machine::GetExceptionContext not implemented\n");
-    return FALSE;
-}
-#endif // FEATURE_PAL
 
 #endif // SOS_TARGET_AMD64
 

@@ -168,6 +168,8 @@ inline RegIndex FindReg (___in __in_z char *ptr, __out_opt int *plen = NULL, __o
     return NONE;
 }
 
+#ifndef FEATURE_PAL
+
 // Find the value of an expression.
 inline BOOL FindSrc (__in_z char *ptr, ___in Register *reg, INT_PTR &value, BOOL &bDigit)
 {
@@ -334,7 +336,6 @@ void DecodeAddressTerm (___in __in_z char *term, InstData& arg)
         }
     }
 }
-
 
 // Return 0 for non-managed call.  Otherwise return MD address.
 TADDR MDForCall (TADDR callee)
@@ -754,6 +755,8 @@ void
     }
 }
 
+#endif // FEATURE_PAL
+
 
 // Find the real callee site.  Handle JMP instruction.
 // Return TRUE if we get the address, FALSE if not.
@@ -807,7 +810,7 @@ BOOL GetCalleeSite (TADDR IP, TADDR &IPCallee)
     }
 }
 
-
+#ifndef FEATURE_PAL
 
 // GetFinalTarget is based on HandleCall, but avoids printing anything to the output.
 // This is currently only called on x64
@@ -864,6 +867,7 @@ eTargetType GetFinalTarget(TADDR callee, TADDR* finalMDorIP)
     return ettNative;
 }
 
+
 void ExpFuncStateInit (TADDR *IPRetAddr)
 {
     ULONG64 offset;
@@ -904,6 +908,8 @@ void ExpFuncStateInit (TADDR *IPRetAddr)
     }
 }
 
+#endif // FEATURE_PAL
+
 /**********************************************************************\
 * Routine Description:                                                 *
 *                                                                      *
@@ -925,6 +931,7 @@ BOOL
      TADDR     * exrAddr, 
      PEXCEPTION_RECORD exr) const
 {
+#ifndef FEATURE_PAL
 #ifdef SOS_TARGET_X86
     X86_CONTEXT * cxr = &pcxr->X86Context;
     size_t contextSize = offsetof(CONTEXT, ExtendedRegisters);
@@ -1006,8 +1013,11 @@ BOOL
     }
 
 #endif
-
     return TRUE;
+#else
+    ExtErr("AMD64Machine::GetExceptionContext not implemented\n");
+    return FALSE;
+#endif // FEATURE_PAL
 }
 
 
