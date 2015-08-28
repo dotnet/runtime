@@ -180,6 +180,12 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.SafeCurlHandle.cs">
       <Link>Common\Interop\Unix\libcurl\Interop.SafeCurlHandle.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.Initialization.cs">
+      <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.Initialization.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
