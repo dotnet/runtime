@@ -7510,6 +7510,8 @@ mono_image_init_name_cache (MonoImage *image)
 	}
 
 	g_hash_table_destroy (name_cache2);
+
+	mono_image_lock (image);
 	if (image->name_cache) {
 		/* Somebody initialized it before us */
 		g_hash_table_destroy (the_name_cache);
