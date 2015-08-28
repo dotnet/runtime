@@ -31,10 +31,6 @@ char* DumpParamAttr(__inout_ecount(cchszString) char* szString,
                     DWORD cchszString, 
                     DWORD dwAttr);
 
-void appendStr(CQuickBytes *out, const char* str, unsigned len=(unsigned)-1);
-void insertStr(CQuickBytes *out, const char* str);
-char* asString(CQuickBytes *out);
-
 const char* PrettyPrintSig(
     PCCOR_SIGNATURE typePtr,            // type to convert,     
     unsigned typeLen,					// the lenght of 'typePtr' 

@@ -19,11 +19,12 @@ add_definitions(-DSTRIKE)
 remove_definitions(-DUNICODE)
 remove_definitions(-D_UNICODE)
 
+include_directories(BEFORE ${VM_DIR})
+include_directories(${CLR_DIR}/src/gcdump)
+include_directories(${CLR_DIR}/src/debug/shim)
+
 if(WIN32)
-  include_directories(inc)
-  include_directories(BEFORE ${VM_DIR})
-  include_directories(${CLR_DIR}/src/gcdump)
-  include_directories(${CLR_DIR}/src/debug/shim)
+  include_directories("inc")
   include_directories("$ENV{VSInstallDir}/DIA SDK/include")
 
   add_definitions(-DUSE_STL)
@@ -51,22 +52,6 @@ if(WIN32)
     Native.rc
   )
   
-  if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
-      set(SOS_SOURCES_ARCH
-        disasmX86.cpp
-      )
-  elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
-      set(SOS_SOURCES_ARCH 
-        disasmX86.cpp
-      )
-  elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
-      set(SOS_SOURCES_ARCH
-        disasmARM.cpp
-      )
-  endif()
-  
-  list(APPEND SOS_SOURCES ${SOS_SOURCES_ARCH})
-
   add_definitions(-DFX_VER_INTERNALNAME_STR=SOS.dll)
 
   #Preprocess exports definition file
@@ -91,13 +76,15 @@ if(WIN32)
     ntdll.lib
   )
 else(WIN32)
+  if(NOT CLR_CMAKE_PLATFORM_ARCH_AMD64)
+    clr_unknown_arch()
+  endif()
+
   add_definitions(-DPAL_STDCPP_COMPAT=1)
   add_compile_options(-Wno-null-arithmetic)
   add_compile_options(-Wno-format)
 
-  include_directories(../lldbplugin/inc)
-  include_directories(BEFORE ${VM_DIR})
-  include_directories(${CLR_DIR}/src/debug/shim)
+  include_directories(BEFORE ../lldbplugin/inc)
 
   add_compile_options(-fPIC)
 
@@ -108,6 +95,7 @@ else(WIN32)
     exts.cpp
     gcroot.cpp
     metadata.cpp
+    sildasm.cpp
     stressLogDump.cpp
     strike.cpp
     sos.cpp
@@ -122,6 +110,22 @@ else(WIN32)
     mscordaccore
   )
 endif(WIN32)
+
+if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
+  set(SOS_SOURCES_ARCH
+    disasmX86.cpp
+  )
+elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
+  set(SOS_SOURCES_ARCH 
+    disasmX86.cpp
+  )
+elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
+  set(SOS_SOURCES_ARCH
+    disasmARM.cpp
+  )
+endif()
+
+list(APPEND SOS_SOURCES ${SOS_SOURCES_ARCH})
 
 add_library(sos SHARED ${SOS_SOURCES})
 add_dependencies(sos mscordaccore)

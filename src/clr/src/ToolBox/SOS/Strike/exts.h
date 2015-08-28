@@ -315,6 +315,7 @@ public:
     // Returns the size of the CONTEXT for the target machine
     virtual ULONG GetContextSize() const = 0;
 
+#ifndef FEATURE_PAL
     // Disassembles a managed method specified by the IPBegin-IPEnd range
     virtual void Unassembly(
                 TADDR IPBegin, 
@@ -325,6 +326,7 @@ public:
                 SOSEHInfo *pEHInfo,
                 BOOL bSuppressLines,
                 BOOL bDisplayOffsets) const = 0;
+#endif
 
     // Validates whether retAddr represents a return address by unassembling backwards.
     // If the instruction before retAddr represents a target-specific call instruction
