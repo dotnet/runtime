@@ -10,6 +10,18 @@ check_function_exists(
     pipe2
     HAVE_PIPE2)
 
+check_function_exists(
+    getmntinfo
+    HAVE_MNTINFO)
+
+check_function_exists(
+    strcpy_s
+    HAVE_STRCPY_S)
+
+check_function_exists(
+    strlcpy
+    HAVE_STRLCPY)
+
 check_struct_has_member(
     "struct stat"
     st_birthtime
@@ -21,6 +33,12 @@ check_struct_has_member(
     d_namlen
     "dirent.h"
     HAVE_DIRENT_NAME_LEN)
+
+check_struct_has_member(
+    "struct statfs"
+    f_fstypename
+    "sys/mount.h"
+    HAVE_STATFS_FSTYPENAME)
 
 check_cxx_source_compiles(
     "

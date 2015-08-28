@@ -5,6 +5,8 @@ set(NATIVE_SOURCES
     pal_exec.cpp
     pal_io.cpp
     pal_uid.cpp
+    pal_mount.cpp
+    pal_utilities.cpp
 )
 
 add_library(System.Native
