@@ -31,8 +31,8 @@ int __cdecl main(int argc, char *argv[])
     const UINT uUnique = 0;
     UINT uiError;
     const char* szDot = {"."};
-    char szReturnedName[MAX_PATH];
-    char szReturnedName_02[MAX_PATH];
+    char szReturnedName[MAX_LONGPATH];
+    char szReturnedName_02[MAX_LONGPATH];
     DWORD dwFileSize = 0;
     HANDLE hFile;
 

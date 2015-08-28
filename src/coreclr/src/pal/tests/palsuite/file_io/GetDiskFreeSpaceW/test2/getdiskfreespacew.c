@@ -23,7 +23,7 @@ int __cdecl main(int argc, char *argv[])
     DWORD dwNumberOfFreeClusters;  /* free clusters */
     DWORD dwTotalNumberOfClusters; /* total clusters */
     BOOL bRc = FALSE;
-    WCHAR szwCurrentPath[MAX_PATH];
+    WCHAR szwCurrentPath[MAX_LONGPATH];
 
 
     if (0 != PAL_Initialize(argc,argv))
@@ -32,7 +32,7 @@ int __cdecl main(int argc, char *argv[])
     }
 
     /* get the current directory so we are sure to have a valid path */
-    if (!GetCurrentDirectoryW(MAX_PATH, szwCurrentPath))
+    if (!GetCurrentDirectoryW(MAX_LONGPATH, szwCurrentPath))
     {
         Fail("GetDiskFreeSpaceW: ERROR -> GetCurrentDirectoryW failed with "
             "error code: %u.\n", 

@@ -166,7 +166,7 @@ Input paramters:
 source  = path to the file on input, path to the file with all 
           symbolic links traversed on return
 
-Note: Assumes the maximum size of the source is MAX_PATH
+Note: Assumes the maximum size of the source is MAX_LONGPATH
 
 Return value:
     TRUE on success, FALSE on failure
