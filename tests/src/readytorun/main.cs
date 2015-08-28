@@ -237,12 +237,7 @@ class Program
 
         public void TestMultipleLoads()
         {
-#if V2
-            string testVersion = "2";
-#else
-            string testVersion = "1";
-#endif            
-            Assembly a = LoadFromAssemblyPath(Path.Combine(Directory.GetCurrentDirectory(), "NI", "testv" + testVersion + ".ni.dll"));
+            Assembly a = LoadFromAssemblyPath(Path.Combine(Directory.GetCurrentDirectory(), "NI", "test.ni.dll"));
             Assert.AreEqual(AssemblyLoadContext.GetLoadContext(a), this);
         }
 
