@@ -243,9 +243,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.pathconf.cs">
       <Link>Common\Interop\Unix\Interop.pathconf.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.pipe.cs">
-      <Link>Common\Interop\Unix\Interop.pipe.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.readlink.cs">
       <Link>Common\Interop\Unix\Interop.readlink.cs</Link>
     </Compile>
