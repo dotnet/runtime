@@ -28,7 +28,7 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="testv1.csproj">
+    <ProjectReference Include="testv1\testv1.csproj">
        <Project>{F74F55A1-DFCF-4C7C-B462-E96E1D0BB667}</Project>
     </ProjectReference>
   </ItemGroup>
@@ -43,17 +43,18 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="testv1">
-      <HintPath>$(TargetDir)\testv1.dll</HintPath>
+    <Reference Include="test">
+      <HintPath>$(TargetDir)\testv1\test.dll</HintPath>
     </Reference>
   </ItemGroup>
   <PropertyGroup>
     <_CLRTestPreCommands><![CDATA[
 $(_CLRTestPreCommands)
 IF not exist NI mkdir NI
-%Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out NI\testv1.ni.dll testv1.dll 
+COPY /Y testv1\test.dll test.dll
+%Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out NI\test.ni.dll test.dll 
 %Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out NI\mainv1.ni.exe mainv1.exe
-    ]]></_CLRTestPreCommands>
+]]></_CLRTestPreCommands>
   </PropertyGroup>  
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
