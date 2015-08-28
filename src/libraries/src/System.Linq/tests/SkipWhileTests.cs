@@ -164,7 +164,8 @@ namespace System.Linq.Tests
             }
         }
 
-        [Fact(Skip="Long-running")]
+        [Fact]
+        [OuterLoop]
         public void IndexSkipWhileOverflowBeyondIntMaxValueElements()
         {
             var skipped = new FastInfiniteEnumerator().SkipWhile((e, i) => true);
