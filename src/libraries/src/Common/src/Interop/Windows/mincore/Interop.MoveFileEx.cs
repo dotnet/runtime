@@ -9,14 +9,17 @@ internal partial class Interop
 {
     internal partial class mincore
     {
+        /// <summary>
+        /// WARNING: This method does not implicitly handle long paths. Use MoveFile.
+        /// </summary>
         [DllImport(Libraries.CoreFile_L2, EntryPoint = "MoveFileExW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
-        private static extern bool MoveFileEx(string src, string dst, uint flags);
+        private static extern bool MoveFileExPrivate(string src, string dst, uint flags);
 
         internal static bool MoveFile(string src, string dst)
         {
-            src = PathInternal.AddExtendedPathPrefixForLongPaths(src);
-            dst = PathInternal.AddExtendedPathPrefixForLongPaths(dst);
-            return MoveFileEx(src, dst, 2 /* MOVEFILE_COPY_ALLOWED */);
+            src = PathInternal.EnsureExtendedPrefixOverMaxPath(src);
+            dst = PathInternal.EnsureExtendedPrefixOverMaxPath(dst);
+            return MoveFileExPrivate(src, dst, 2 /* MOVEFILE_COPY_ALLOWED */);
         }
     }
 }

@@ -14,9 +14,9 @@ public class PathInternal_Windows_Tests
     [InlineData(@"\\.\Foo", @"\\.\Foo")]
     [InlineData(@"\\Server\Share", PathInternal.UncExtendedPathPrefix + @"Server\Share")]
     [PlatformSpecific(PlatformID.Windows)]
-    public void AddExtendedPathPrefixTest(string path, string expected)
+    public void EnsureExtendedPrefixTest(string path, string expected)
     {
-        Assert.Equal(expected, PathInternal.AddExtendedPathPrefix(path));
+        Assert.Equal(expected, PathInternal.EnsureExtendedPrefix(path));
     }
 
     [Theory,
@@ -39,8 +39,8 @@ public class PathInternal_Windows_Tests
         InlineData(@"Path", true),
         InlineData(@"X", true)]
     [PlatformSpecific(PlatformID.Windows)]
-    public void IsPathRelative(string path, bool expected)
+    public void IsRelativeTest(string path, bool expected)
     {
-        Assert.Equal(expected, PathInternal.IsPathRelative(path));
+        Assert.Equal(expected, PathInternal.IsRelative(path));
     }
 }

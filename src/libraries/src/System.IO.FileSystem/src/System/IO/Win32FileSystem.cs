@@ -486,7 +486,7 @@ namespace System.IO
 
             // We want extended syntax so we can delete "extended" subdirectories and files
             // (most notably ones with trailing whitespace or periods)
-            RemoveDirectoryHelper(PathInternal.AddExtendedPathPrefix(fullPath), recursive, true);
+            RemoveDirectoryHelper(PathInternal.EnsureExtendedPrefix(fullPath), recursive, true);
         }
 
         [System.Security.SecurityCritical]  // auto-generated

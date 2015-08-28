@@ -78,11 +78,11 @@ namespace System.IO
         /// Adds the extended path prefix (\\?\) if not already present, IF the path is not relative,
         /// AND the path is more than 259 characters. (> MAX_PATH + null)
         /// </summary>
-        internal static string AddExtendedPathPrefixForLongPaths(string path)
+        internal static string EnsureExtendedPrefixOverMaxPath(string path)
         {
             if (path != null && path.Length >= MaxShortPath)
             {
-                return AddExtendedPathPrefix(path);
+                return EnsureExtendedPrefix(path);
             }
             else
             {
@@ -93,9 +93,9 @@ namespace System.IO
         /// <summary>
         /// Adds the extended path prefix (\\?\) if not already present, IF the path is not relative.
         /// </summary>
-        internal static string AddExtendedPathPrefix(string path)
+        internal static string EnsureExtendedPrefix(string path)
         {
-            if (IsExtended(path) || IsPathRelative(path) || IsDevicePath(path))
+            if (IsExtended(path) || IsRelative(path) || IsDevice(path))
                 return path;
 
             // Given \\server\share in longpath becomes \\?\UNC\server\share
@@ -108,7 +108,7 @@ namespace System.IO
         /// <summary>
         /// Removes the extended path prefix (\\?\) if present.
         /// </summary>
-        internal static string RemoveExtendedPathPrefix(string path)
+        internal static string RemoveExtendedPrefix(string path)
         {
             if (!IsExtended(path))
                 return path;
@@ -123,7 +123,7 @@ namespace System.IO
         /// <summary>
         /// Removes the extended path prefix (\\?\) if present.
         /// </summary>
-        internal static StringBuilder RemoveExtendedPathPrefix(StringBuilder path)
+        internal static StringBuilder RemoveExtendedPrefix(StringBuilder path)
         {
             if (!IsExtended(path))
                 return path;
@@ -138,7 +138,7 @@ namespace System.IO
         /// <summary>
         /// Returns true if the path uses the device syntax (\\.\)
         /// </summary>
-        internal static bool IsDevicePath(string path)
+        internal static bool IsDevice(string path)
         {
             return path != null && path.StartsWith(DevicePathPrefix, StringComparison.Ordinal);
         }
@@ -267,7 +267,7 @@ namespace System.IO
         /// for C: (rooted, but relative). "C:\a" is rooted and not relative (the current directory
         /// will not be used to modify the path).
         /// </remarks>
-        internal static bool IsPathRelative(string path)
+        internal static bool IsRelative(string path)
         {
             if (path.Length < 2)
             {
