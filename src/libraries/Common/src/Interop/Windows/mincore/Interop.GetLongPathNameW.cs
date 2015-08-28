@@ -10,27 +10,30 @@ partial class Interop
     partial class mincore
     {
         /// <summary>
-        /// WARNING: This overload does not implicitly handle long paths.
+        /// WARNING: This method does not implicitly handle long paths. Use GetLongPathName.
         /// </summary>
-        [DllImport(Libraries.CoreFile_L1, SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
-        internal unsafe static extern int GetLongPathNameW(char* path, char* longPathBuffer, int bufferLength);
-
         [DllImport(Libraries.CoreFile_L1, EntryPoint = "GetLongPathNameW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
-        private static extern int GetLongPathNameWPrivate(string path, [Out]StringBuilder longPathBuffer, int bufferLength);
+        internal unsafe static extern int GetLongPathNameUnsafe(char* path, char* longPathBuffer, int bufferLength);
 
-        internal static int GetLongPathNameW(string path, [Out]StringBuilder longPathBuffer, int bufferLength)
+        /// <summary>
+        /// WARNING: This method does not implicitly handle long paths. Use GetLongPathName.
+        /// </summary>
+        [DllImport(Libraries.CoreFile_L1, EntryPoint = "GetLongPathNameW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
+        private static extern int GetLongPathNamePrivate(string path, [Out]StringBuilder longPathBuffer, int bufferLength);
+
+        internal static int GetLongPathName(string path, [Out]StringBuilder longPathBuffer, int bufferLength)
         {
             bool wasExtended = PathInternal.IsExtended(path);
             if (!wasExtended)
             {
-                path = PathInternal.AddExtendedPathPrefixForLongPaths(path);
+                path = PathInternal.EnsureExtendedPrefixOverMaxPath(path);
             }
-            int result = GetLongPathNameWPrivate(path, longPathBuffer, longPathBuffer.Capacity);
+            int result = GetLongPathNamePrivate(path, longPathBuffer, longPathBuffer.Capacity);
 
             if (!wasExtended)
             {
                 // We don't want to give back \\?\ if we possibly added it ourselves
-                PathInternal.RemoveExtendedPathPrefix(longPathBuffer);
+                PathInternal.RemoveExtendedPrefix(longPathBuffer);
             }
             return result;
         }

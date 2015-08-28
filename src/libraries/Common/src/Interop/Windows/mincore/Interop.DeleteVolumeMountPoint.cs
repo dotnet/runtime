@@ -9,13 +9,16 @@ internal partial class Interop
 {
     internal partial class mincore
     {
+        /// <summary>
+        /// WARNING: This method does not implicitly handle long paths. Use DeleteVolumeMountPoint.
+        /// </summary>
         [DllImport(Libraries.CoreFile_L1, EntryPoint = "DeleteVolumeMountPointW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
         internal static extern bool DeleteVolumeMountPointPrivate(string mountPoint);
 
 
         internal static bool DeleteVolumeMountPoint(string mountPoint)
         {
-            mountPoint = PathInternal.AddExtendedPathPrefixForLongPaths(mountPoint);
+            mountPoint = PathInternal.EnsureExtendedPrefixOverMaxPath(mountPoint);
             return DeleteVolumeMountPointPrivate(mountPoint);
         }
     }

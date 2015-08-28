@@ -8,12 +8,15 @@ internal partial class Interop
 {
     internal partial class mincore
     {
+        /// <summary>
+        /// WARNING: This method does not implicitly handle long paths. Use SetFileAttributes.
+        /// </summary>
         [DllImport(Libraries.CoreFile_L1, EntryPoint = "SetFileAttributesW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
         private static extern bool SetFileAttributesPrivate(string name, int attr);
 
         internal static bool SetFileAttributes(string name, int attr)
         {
-            name = PathInternal.AddExtendedPathPrefixForLongPaths(name);
+            name = PathInternal.EnsureExtendedPrefixOverMaxPath(name);
             return SetFileAttributesPrivate(name, attr);
         }
     }

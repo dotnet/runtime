@@ -10,6 +10,9 @@ internal partial class Interop
 {
     internal partial class mincore
     {
+        /// <summary>
+        /// WARNING: This method does not implicitly handle long paths. Use CreateFile.
+        /// </summary>
         [DllImport(Libraries.CoreFile_L1, EntryPoint = "CreateFileW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
         private static extern SafeFileHandle CreateFilePrivate(
             string lpFileName,
@@ -29,7 +32,7 @@ internal partial class Interop
             int dwFlagsAndAttributes,
             IntPtr hTemplateFile)
         {
-            lpFileName = PathInternal.AddExtendedPathPrefixForLongPaths(lpFileName);
+            lpFileName = PathInternal.EnsureExtendedPrefixOverMaxPath(lpFileName);
             return CreateFilePrivate(lpFileName, dwDesiredAccess, dwShareMode, ref securityAttrs, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
         }
     }

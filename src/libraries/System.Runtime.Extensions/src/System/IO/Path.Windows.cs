@@ -176,16 +176,7 @@ namespace System.IO
             // since StringBuilder is used. 
             // 2. IsolatedStorage, which supports paths longer than MaxPath (value given 
             // by maxPathLength.
-            PathHelper newBuffer = null;
-            if (path.Length + 1 <= MaxPath)
-            {
-                char* m_arrayPtr = stackalloc char[MaxPath];
-                newBuffer = new PathHelper(m_arrayPtr, MaxPath);
-            }
-            else
-            {
-                newBuffer = new PathHelper(path.Length + MaxPath, maxPathLength);
-            }
+            PathHelper newBuffer = new PathHelper(path.Length + MaxPath, maxPathLength);
 
             uint numSpaces = 0;
             uint numDots = 0;
