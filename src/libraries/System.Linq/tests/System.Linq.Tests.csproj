@@ -47,6 +47,7 @@
     <Compile Include="ShortCircuitingTests.cs" />
     <Compile Include="SingleTests.cs" />
     <Compile Include="SkipTests.cs" />
+    <Compile Include="SkipWhileTests.cs" />
     <Compile Include="SumTests.cs" />
     <Compile Include="ReverseTests.cs" />
     <Compile Include="WhereTests.cs" />
@@ -79,8 +80,6 @@
     <Compile Include="LegacyTests\SelectTests.cs" />
     <Compile Include="LegacyTests\SingleOrDefaultTests.cs" />
     <Compile Include="LegacyTests\SingleTests.cs" />
-    <Compile Include="LegacyTests\SkipTests.cs" />
-    <Compile Include="LegacyTests\SkipWhileTests.cs" />
     <Compile Include="LegacyTests\SumTests.cs" />
     <Compile Include="LegacyTests\TakeTests.cs" />
     <Compile Include="LegacyTests\TakeWhileTests.cs" />
