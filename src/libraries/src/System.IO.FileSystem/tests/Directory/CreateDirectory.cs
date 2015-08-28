@@ -210,9 +210,21 @@ namespace System.IO.FileSystem.Tests
 
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
-        public void DirectoryLongerThanMaxPathAsPath_ThrowsPathTooLongException()
+        public void DirectoryLongerThanMaxPath_Succeeds()
         {
             var paths = IOInputs.GetPathsLongerThanMaxPath();
+            Assert.All(paths, (path) =>
+            {
+                DirectoryInfo result = Create(path);
+                Assert.True(Directory.Exists(result.FullName));
+            });
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void DirectoryLongerThanMaxLongPath_ThrowsPathTooLongException()
+        {
+            var paths = IOInputs.GetPathsLongerThanMaxLongPath();
             Assert.All(paths, (path) =>
             {
                 Assert.Throws<PathTooLongException>(() => Create(path));
@@ -221,9 +233,21 @@ namespace System.IO.FileSystem.Tests
 
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
-        public void ExtendedDirectoryLongerThanLegacyMaxPathSucceeds()
+        public void DirectoryLongerThanMaxLongPathWithExtendedSyntax_ThrowsPathTooLongException()
         {
-            var paths = IOInputs.GetPathsLongerThanMaxPath(useExtendedSyntax: true, includeExtendedMaxPath: false);
+            var paths = IOInputs.GetPathsLongerThanMaxLongPath(useExtendedSyntax: true);
+            Assert.All(paths, (path) =>
+            {
+                Assert.Throws<PathTooLongException>(() => Create(path));
+            });
+        }
+
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void ExtendedDirectoryLongerThanLegacyMaxPath_Succeeds()
+        {
+            var paths = IOInputs.GetPathsLongerThanMaxPath(useExtendedSyntax: true);
             Assert.All(paths, (path) =>
             {
                 Assert.True(Create(path).Exists);
@@ -232,12 +256,13 @@ namespace System.IO.FileSystem.Tests
 
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
-        public void DirectoryLongerThanMaxDirectoryAsPath_ThrowsPathTooLongException()
+        public void DirectoryLongerThanMaxDirectoryAsPath_Succeeds()
         {
             var paths = IOInputs.GetPathsLongerThanMaxDirectory();
             Assert.All(paths, (path) =>
             {
-                Assert.Throws<PathTooLongException>(() => Create(path));
+                var result = Create(path);
+                Assert.True(Directory.Exists(result.FullName));
             });
         }
 

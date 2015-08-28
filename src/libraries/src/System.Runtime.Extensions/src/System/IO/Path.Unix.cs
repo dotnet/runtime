@@ -18,6 +18,7 @@ namespace System.IO
         private static readonly char[] InvalidFileNameChars = { '\0', '/' };
 
         private static readonly int MaxPath = Interop.libc.MaxPath;
+        private static readonly int MaxLongPath = MaxPath;
         private static readonly int MaxComponentLength = Interop.libc.MaxName;
 
         private static bool IsDirectoryOrVolumeSeparator(char c)
