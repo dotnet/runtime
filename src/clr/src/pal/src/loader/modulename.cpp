@@ -46,7 +46,7 @@ SET_DEFAULT_DEBUG_CHANNEL(LOADER);
     Retrieve the full path of the librotor_pal.so using loadquery()
 
 Parameters:
-    pszBuf - CHAR array of MAX_PATH length
+    pszBuf - CHAR array of MAX_PATH_FNAME length
 
 Return value:
     0 on success
@@ -109,9 +109,9 @@ int GetLibRotorNameViaLoadQuery(LPSTR pszBuf)
             if (strstr(pInfo->ldinfo_filename, "librotor_pal.a"))
             {
                 UINT cchFileName = strlen(pInfo->ldinfo_filename);
-                if (cchFileName + 1  > MAX_PATH)
+                if (cchFileName + 1  > MAX_PATH_FNAME)
                 {
-                    ASSERT("Filename returned by loadquery was longer than MAX_PATH!\n");
+                    ASSERT("Filename returned by loadquery was longer than MAX_PATH_FNAME!\n");
                     SetLastError(ERROR_INTERNAL_ERROR);
                     goto Done;
                 }
@@ -119,7 +119,7 @@ int GetLibRotorNameViaLoadQuery(LPSTR pszBuf)
                 {
                     // The buffer should be large enough to accomodate the filename.
                     // So, we send in the size of the filename+1
-                    strcpy_s(pszBuf, MAX_PATH, pInfo->ldinfo_filename);
+                    strcpy_s(pszBuf, MAX_PATH_FNAME, pInfo->ldinfo_filename);
                     iRetVal = 0;
                     goto Done;
                 }
