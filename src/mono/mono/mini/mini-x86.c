@@ -6689,13 +6689,6 @@ mono_arch_get_trampolines (gboolean aot)
 	return tramps;
 }
 
-
-#if __APPLE__
-#define DBG_SIGNAL SIGBUS
-#else
-#define DBG_SIGNAL SIGSEGV
-#endif
-
 /* Soft Debug support */
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 
