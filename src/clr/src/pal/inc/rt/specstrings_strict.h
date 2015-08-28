@@ -609,7 +609,7 @@
 *  Advanced Annotation Examples
 * 
 *  __success(return == TRUE) LWSTDAPI_(BOOL) 
-*  PathCanonicalizeA(__out_ecount(MAX_LONGPATH) LPSTR pszBuf, LPCSTR pszPath);
+*  PathCanonicalizeA(__out_ecount(MAX_PATH) LPSTR pszBuf, LPCSTR pszPath);
 *  //  pszBuf is only guaranteed to be null-terminated when TRUE is returned.
 * 
 *  // Initialized LPWSTRs are null-terminated strings.
