@@ -72,10 +72,11 @@ extern "C" {
 #define _cdecl
 #define CDECL
 
-#ifndef PAL_STDCPP_COMPAT
+// On ARM __fastcall is ignored and causes a compile error
+#if !defined(PAL_STDCPP_COMPAT) || defined(__arm__)
 #define __fastcall
 #define _fastcall
-#endif // PAL_STDCPP_COMPAT
+#endif // !defined(PAL_STDCPP_COMPAT) || defined(__arm__)
 
 #endif  // !defined(__i386__)
 
@@ -594,7 +595,12 @@ typedef LONG_PTR LPARAM;
 
 #ifdef PAL_STDCPP_COMPAT
 
+#ifdef BIT64
 typedef unsigned long int uintptr_t;
+#else // !BIT64
+typedef unsigned int uintptr_t;
+#endif // !BIT64
+
 typedef char16_t WCHAR;
 
 #else // PAL_STDCPP_COMPAT
