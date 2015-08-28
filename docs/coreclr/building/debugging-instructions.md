@@ -42,27 +42,48 @@ You can combine steps 4-8 and pass everything on the lldb command line:
 
 SOS commands supported by the lldb plugin:
 
-    IP2MD
+    bpmd
+    ClrStack
     DumpStackObjects
     DumpMD
     DumpClass
     DumpMT
     DumpArray
     DumpObj
-    PrintException
-    DumpModule
-    DumpDomain
     DumpAssembly
+    DumpDomain
+    DumpHeap
+    DumpLog
+    DumpModule
+    DumpRuntimeTypes
+    DumpVC
+    EEHeap
+    EHInfo
+    FindAppDomain
+    GCRoot
+    GCInfo
+    IP2MD
+    Name2EE
+    PrintException
     ThreadState
     Threads
-    FindAppDomain
-    DumpLog
     Token2EE
-    Name2EE
-    ClrStack
-    BPMD
     VerifyHeap
-    DumpHeap
+
+There are some aliases for the most common commands:
+
+    bpmd            -> sos bpmd
+    clrstack        -> sos ClrStack
+    clrthreads      -> sos Threads
+    dumpheap        -> sos DumpHeap
+    dumpobj         -> sos DumpObj
+    dso             -> sos DumpStackObjects
+    eeheap          -> sos EEHeap
+    gcroot          -> sos GCRoot
+    ip2md           -> sos IP2MD
+    printexception  -> sos PrintException
+
+For more information on SOS commands see: https://msdn.microsoft.com/en-us/library/bb190764(v=vs.110).aspx
 
 Debugging Mscorlib and/or managed application
 =============================================
