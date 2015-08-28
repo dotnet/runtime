@@ -179,6 +179,15 @@ amd64_is_near_call (guint8 *code)
 	return code [0] == 0xe8;
 }
 
+static inline gboolean
+amd64_use_imm32 (gint64 val)
+{
+	if (mini_get_debug_options()->single_imm_size)
+		return FALSE;
+
+	return amd64_is_imm32 (val);
+}
+
 #ifdef __native_client_codegen__
 
 /* Keep track of instruction "depth", that is, the level of sub-instruction */
@@ -3182,7 +3191,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_COMPARE_IMM:
 		case OP_LCOMPARE_IMM:
-			if (!amd64_is_imm32 (ins->inst_imm)) {
+			if (!amd64_use_imm32 (ins->inst_imm)) {
 				NEW_INS (cfg, ins, temp, OP_I8CONST);
 				temp->inst_c0 = ins->inst_imm;
 				temp->dreg = mono_alloc_ireg (cfg);
@@ -3197,7 +3206,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 #ifndef __native_client_codegen__
 		/*  Don't generate memindex opcodes (to simplify */
 		/*  read sandboxing) */
-			if (!amd64_is_imm32 (ins->inst_offset)) {
+			if (!amd64_use_imm32 (ins->inst_offset)) {
 				NEW_INS (cfg, ins, temp, OP_I8CONST);
 				temp->inst_c0 = ins->inst_offset;
 				temp->dreg = mono_alloc_ireg (cfg);
@@ -3210,7 +3219,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_STORE_MEMBASE_IMM:
 #endif
 		case OP_STOREI8_MEMBASE_IMM:
-			if (!amd64_is_imm32 (ins->inst_imm)) {
+			if (!amd64_use_imm32 (ins->inst_imm)) {
 				NEW_INS (cfg, ins, temp, OP_I8CONST);
 				temp->inst_c0 = ins->inst_imm;
 				temp->dreg = mono_alloc_ireg (cfg);
@@ -3843,10 +3852,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 #endif
 		case OP_LOADI8_MEM:
 			// FIXME: Decompose this earlier
-			if (amd64_is_imm32 (ins->inst_imm))
+			if (amd64_use_imm32 (ins->inst_imm))
 				amd64_mov_reg_mem (code, ins->dreg, ins->inst_imm, 8);
 			else {
-				amd64_mov_reg_imm (code, ins->dreg, ins->inst_imm);
+				amd64_mov_reg_imm_size (code, ins->dreg, ins->inst_imm, sizeof(gpointer));
 				amd64_mov_reg_membase (code, ins->dreg, ins->dreg, 0, 8);
 			}
 			break;
@@ -3856,10 +3865,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_LOADU4_MEM:
 			// FIXME: Decompose this earlier
-			if (amd64_is_imm32 (ins->inst_imm))
+			if (amd64_use_imm32 (ins->inst_imm))
 				amd64_mov_reg_mem (code, ins->dreg, ins->inst_imm, 4);
 			else {
-				amd64_mov_reg_imm (code, ins->dreg, ins->inst_imm);
+				amd64_mov_reg_imm_size (code, ins->dreg, ins->inst_imm, sizeof(gpointer));
 				amd64_mov_reg_membase (code, ins->dreg, ins->dreg, 0, 4);
 			}
 			break;
@@ -4590,7 +4599,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		case OP_ICONST:
 		case OP_I8CONST:
-			if ((((guint64)ins->inst_c0) >> 32) == 0)
+			if ((((guint64)ins->inst_c0) >> 32) == 0 && !mini_get_debug_options()->single_imm_size)
 				amd64_mov_reg_imm_size (code, ins->dreg, ins->inst_c0, 4);
 			else
 				amd64_mov_reg_imm_size (code, ins->dreg, ins->inst_c0, 8);
@@ -7676,7 +7685,7 @@ mono_arch_flush_register_windows (void)
 gboolean 
 mono_arch_is_inst_imm (gint64 imm)
 {
-	return amd64_is_imm32 (imm);
+	return amd64_use_imm32 (imm);
 }
 
 /*
@@ -8078,7 +8087,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		if (item->is_equals) {
 			if (item->check_target_idx) {
 				if (!item->compare_done) {
-					if (amd64_is_imm32 (item->key))
+					if (amd64_use_imm32 ((gint64)item->key))
 						item->chunk_size += CMP_SIZE;
 					else
 						item->chunk_size += MOV_REG_IMM_SIZE + CMP_REG_REG_SIZE;
@@ -8114,7 +8123,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 				}
 			}
 		} else {
-			if (amd64_is_imm32 (item->key))
+			if (amd64_use_imm32 ((gint64)item->key))
 				item->chunk_size += CMP_SIZE;
 			else
 				item->chunk_size += MOV_REG_IMM_SIZE + CMP_REG_REG_SIZE;
@@ -8145,10 +8154,10 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 
 			if (item->check_target_idx || fail_case) {
 				if (!item->compare_done || fail_case) {
-					if (amd64_is_imm32 (item->key))
+					if (amd64_use_imm32 ((gint64)item->key))
 						amd64_alu_reg_imm_size (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gssize)item->key, sizeof(gpointer));
 					else {
-						amd64_mov_reg_imm (code, MONO_ARCH_IMT_SCRATCH_REG, item->key);
+						amd64_mov_reg_imm_size (code, MONO_ARCH_IMT_SCRATCH_REG, item->key, sizeof(gpointer));
 						amd64_alu_reg_reg (code, X86_CMP, MONO_ARCH_IMT_REG, MONO_ARCH_IMT_SCRATCH_REG);
 					}
 				}
@@ -8196,10 +8205,10 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 #endif
 			}
 		} else {
-			if (amd64_is_imm32 (item->key))
+			if (amd64_use_imm32 ((gint64)item->key))
 				amd64_alu_reg_imm_size (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gssize)item->key, sizeof (gpointer));
 			else {
-				amd64_mov_reg_imm (code, MONO_ARCH_IMT_SCRATCH_REG, item->key);
+				amd64_mov_reg_imm_size (code, MONO_ARCH_IMT_SCRATCH_REG, item->key, sizeof (gpointer));
 				amd64_alu_reg_reg (code, X86_CMP, MONO_ARCH_IMT_REG, MONO_ARCH_IMT_SCRATCH_REG);
 			}
 			item->jmp_code = code;
