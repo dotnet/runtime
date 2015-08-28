@@ -59,7 +59,7 @@ ResultBuffer *resultBuffer = NULL;
 
 int testStatus;
 
-const char sTmpEventName[MAX_PATH] = "StartTestEvent";
+const char sTmpEventName[MAX_PATH_FNAME] = "StartTestEvent";
 
 void PALAPI Run_Thread(LPVOID lpParam);
 
@@ -122,13 +122,13 @@ int GetParameters( int argc, char **argv)
     DWORD dwParam = 0;
 
     /* Variables to capture the file name and the file pointer at thread level*/
-    char fileName[MAX_PATH];
+    char fileName[MAX_LONGPATH];
     FILE *pFile = NULL;
     struct statistics* buffer = NULL;
     int statisticsSize = 0;
 
     /* Variables to capture the file name and the file pointer at process level*/
-    char processFileName[MAX_PATH];
+    char processFileName[MAX_LONGPATH];
     FILE *pProcessFile = NULL;   
     struct ProcessStats processStats;
     DWORD dwStartTime;
@@ -151,7 +151,7 @@ int GetParameters( int argc, char **argv)
     processStats.relationId = RELATION_ID;
     processStats.processId  = USE_PROCESS_COUNT;
 
-    _snprintf(processFileName, MAX_PATH, "%d_process_event_%d_.txt", USE_PROCESS_COUNT, RELATION_ID);
+    _snprintf(processFileName, MAX_LONGPATH, "%d_process_event_%d_.txt", USE_PROCESS_COUNT, RELATION_ID);
     pProcessFile = fopen(processFileName, "w+");
     if(pProcessFile == NULL)
     { 
@@ -160,7 +160,7 @@ int GetParameters( int argc, char **argv)
 
     statisticsSize = sizeof(struct statistics);
 
-    _snprintf(fileName, MAX_PATH, "%d_thread_event_%d_.txt", USE_PROCESS_COUNT, RELATION_ID);
+    _snprintf(fileName, MAX_LONGPATH, "%d_thread_event_%d_.txt", USE_PROCESS_COUNT, RELATION_ID);
     pFile = fopen(fileName, "w+");
     
     if(pFile == NULL)

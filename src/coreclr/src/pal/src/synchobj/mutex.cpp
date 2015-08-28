@@ -33,7 +33,7 @@ SET_DEFAULT_DEBUG_CHANNEL(SYNC);
 
 enum
 {
-    c_cchMaxMutex = MAX_PATH + 1
+    c_cchMaxMutex = MAX_LONGPATH + 1
 };
 
 CObjectType CorUnix::otMutex(

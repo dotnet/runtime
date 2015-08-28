@@ -29,7 +29,7 @@ unsigned int REPEAT_COUNT = 200;
 unsigned int RELATION_ID  = 1001;
 
 
-char objectSuffix[MAX_PATH];
+char objectSuffix[MAX_PATH_FNAME];
 
 struct TestStats{
     DWORD        operationTime;
@@ -87,7 +87,7 @@ int GetParameters( int argc, char **argv)
 	
     if(argc == 6)
     {
-        strncpy(objectSuffix, argv[5], MAX_PATH-1);
+        strncpy(objectSuffix, argv[5], MAX_PATH_FNAME-1);
     }
 
     return 0;
@@ -102,14 +102,14 @@ int GetParameters( int argc, char **argv)
     STARTUPINFO si[MAXIMUM_WAIT_OBJECTS];
     PROCESS_INFORMATION pi[MAXIMUM_WAIT_OBJECTS];
 
-    char lpCommandLine[MAX_PATH] = "";
-    char ObjName[MAX_PATH] = "SHARED_EVENT";
+    char lpCommandLine[MAX_LONGPATH] = "";
+    char ObjName[MAX_PATH_FNAME] = "SHARED_EVENT";
 
     int returnCode = 0;
     DWORD processReturnCode = 0;
     int testReturnCode = PASS;
 
-    char fileName[MAX_PATH];
+    char fileName[MAX_PATH_FNAME];
     FILE *pFile = NULL;
     DWORD dwStartTime;
     struct TestStats testStats;
@@ -119,7 +119,7 @@ int GetParameters( int argc, char **argv)
         return ( FAIL );
     }
     
-    ZeroMemory( objectSuffix, MAX_PATH );
+    ZeroMemory( objectSuffix, MAX_PATH_FNAME );
 
     if(GetParameters(argc, argv))
     {
@@ -128,7 +128,7 @@ int GetParameters( int argc, char **argv)
     
     if(argc == 5)
     {
-        strncat(ObjName, objectSuffix, MAX_PATH - (sizeof(ObjName) + 1) );
+        strncat(ObjName, objectSuffix, MAX_PATH_FNAME - (sizeof(ObjName) + 1) );
     }
 
      /* Register the start time */  
@@ -140,7 +140,7 @@ int GetParameters( int argc, char **argv)
     testStats.buildNumber  = getBuildNumber();
 
 
-    _snprintf(fileName, MAX_PATH, "main_event_%d_.txt", RELATION_ID);
+    _snprintf(fileName, MAX_PATH_FNAME, "main_event_%d_.txt", RELATION_ID);
     pFile = fopen(fileName, "w+");
     if(pFile == NULL)
     { 
@@ -162,8 +162,8 @@ int GetParameters( int argc, char **argv)
     for( i = 0; i < PROCESS_COUNT; i++ )
     {
 
-        ZeroMemory( lpCommandLine, MAX_PATH );
-        if ( _snprintf( lpCommandLine, MAX_PATH-1, "event %d %d %d %d %s", i, THREAD_COUNT, REPEAT_COUNT, RELATION_ID, objectSuffix) < 0 )
+        ZeroMemory( lpCommandLine, MAX_PATH_FNAME );
+        if ( _snprintf( lpCommandLine, MAX_PATH_FNAME-1, "event %d %d %d %d %s", i, THREAD_COUNT, REPEAT_COUNT, RELATION_ID, objectSuffix) < 0 )
         {
             Fail ("Error: Insufficient Event name string length for %s for iteration [%d]\n",  ObjName, i);
         }

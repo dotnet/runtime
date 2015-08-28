@@ -144,10 +144,10 @@ FindFirstFileA(
         dwLastError = ERROR_INVALID_PARAMETER;
         goto done;
     }                                        
-    if (strlen(lpFileName) >= MAX_PATH)
+    if (strlen(lpFileName) >= MAX_LONGPATH)
     {
         WARN("FindFirstFileA called with a pattern whose size is "
-             "%d >= MAX_PATH (%d)\n", strlen(lpFileName), MAX_PATH);
+             "%d >= MAX_PATH_FNAME (%d)\n", strlen(lpFileName), MAX_PATH_FNAME);
         dwLastError = ERROR_FILENAME_EXCED_RANGE;
         goto done;
     }
@@ -265,7 +265,7 @@ FindFirstFileW(
            IN LPCWSTR lpFileName,
            OUT LPWIN32_FIND_DATAW lpFindFileData)
 {
-    // MAX_PATH in this context is a file name, not a full path to a file.
+    // MAX_PATH_FNAME in this context is a file name, not a full path to a file.
     HANDLE retval = INVALID_HANDLE_VALUE;
     CHAR FileNameA[MAX_PATH_FNAME];
     WIN32_FIND_DATAA FindFileDataA;
@@ -777,13 +777,13 @@ static int FILEGlobFromSplitPath( CPalThread *pthrCurrent,
                                   glob_t *pgGlob )
 {
     int  Ret;
-    char Pattern[MAX_PATH];
-    char EscapedPattern[2*MAX_PATH];
+    char Pattern[MAX_LONGPATH];
+    char EscapedPattern[2*MAX_LONGPATH];
 
     TRACE("We shall attempt to glob from components [%s][%s][%s]\n",
           dir?dir:"NULL", fname?fname:"NULL", ext?ext:"NULL");
 
-    FILEMakePathA( Pattern, MAX_PATH, dir, fname, ext );
+    FILEMakePathA( Pattern, MAX_LONGPATH, dir, fname, ext );
     TRACE("Assembled Pattern = [%s]\n", Pattern);
 
     /* special handling is needed to handle the case where
