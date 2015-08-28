@@ -12,6 +12,9 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed class OpenSslX509ChainProcessor : IChainPal
     {
+        // Constructed (0x20) | Sequence (0x10) => 0x30.
+        private const uint ConstructedSequenceTagId = 0x30;
+
         public void Dispose()
         {
         }
@@ -38,7 +41,8 @@ namespace Internal.Cryptography.Pal
 
         public static IChainPal BuildChain(
             X509Certificate2 leaf,
-            X509Certificate2Collection candidates,
+            List<X509Certificate2> candidates,
+            List<X509Certificate2> downloaded,
             OidCollection applicationPolicy,
             OidCollection certificatePolicy,
             DateTime verificationTime)
@@ -90,31 +94,24 @@ namespace Internal.Cryptography.Pal
                     int chainSize = Interop.Crypto.GetX509StackFieldCount(chainStack);
                     int errorDepth = -1;
                     Interop.libcrypto.X509VerifyStatusCode errorCode = 0;
-                    string errorMsg = null;
 
                     if (verify == 0)
                     {
                         errorCode = Interop.libcrypto.X509_STORE_CTX_get_error(storeCtx);
                         errorDepth = Interop.libcrypto.X509_STORE_CTX_get_error_depth(storeCtx);
-                        errorMsg = Interop.libcrypto.X509_verify_cert_error_string(errorCode);
                     }
 
                     elements = new X509ChainElement[chainSize];
+                    int maybeRootDepth = chainSize - 1;
 
+                    // The leaf cert is 0, up to (maybe) the root at chainSize - 1
                     for (int i = 0; i < chainSize; i++)
                     {
                         List<X509ChainStatus> status = new List<X509ChainStatus>();
 
                         if (i == errorDepth)
                         {
-                            X509ChainStatus chainStatus = new X509ChainStatus
-                            {
-                                Status = MapVerifyErrorToChainStatus(errorCode),
-                                StatusInformation = errorMsg,
-                            };
-
-                            status.Add(chainStatus);
-                            AddUniqueStatus(overallStatus, ref chainStatus);
+                            AddElementStatus(errorCode, status, overallStatus);
                         }
 
                         IntPtr elementCertPtr = Interop.Crypto.GetX509StackField(chainStack, i);
@@ -127,6 +124,19 @@ namespace Internal.Cryptography.Pal
                         // Duplicate the certificate handle
                         X509Certificate2 elementCert = new X509Certificate2(elementCertPtr);
 
+                        // If the last cert is self signed then it's the root cert, do any extra checks.
+                        if (i == maybeRootDepth && IsSelfSigned(elementCert))
+                        {
+                            // If the root certificate was downloaded, it's untrusted.
+                            if (downloaded.Contains(elementCert))
+                            {
+                                AddElementStatus(
+                                    Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_CERT_UNTRUSTED,
+                                    status,
+                                    overallStatus);
+                            }
+                        }
+
                         elements[i] = new X509ChainElement(elementCert, status.ToArray(), "");
                     }
                 }
@@ -135,7 +145,7 @@ namespace Internal.Cryptography.Pal
             if ((certificatePolicy != null && certificatePolicy.Count > 0) ||
                 (applicationPolicy != null && applicationPolicy.Count > 0))
             {
-                X509Certificate2Collection certsToRead = new X509Certificate2Collection();
+                List<X509Certificate2> certsToRead = new List<X509Certificate2>();
 
                 foreach (X509ChainElement element in elements)
                 {
@@ -192,6 +202,38 @@ namespace Internal.Cryptography.Pal
             };
         }
 
+        private static void AddElementStatus(
+            Interop.libcrypto.X509VerifyStatusCode errorCode,
+            List<X509ChainStatus> elementStatus,
+            List<X509ChainStatus> overallStatus)
+        {
+            X509ChainStatusFlags statusFlag = MapVerifyErrorToChainStatus(errorCode);
+
+            Debug.Assert(
+                (statusFlag & (statusFlag - 1)) == 0,
+                "Status flag has more than one bit set",
+                "More than one bit is set in status '{0}' for error code '{1}'",
+                statusFlag,
+                errorCode);
+
+            foreach (X509ChainStatus currentStatus in elementStatus)
+            {
+                if ((currentStatus.Status & statusFlag) != 0)
+                {
+                    return;
+                }
+            }
+
+            X509ChainStatus chainStatus = new X509ChainStatus
+            {
+                Status = MapVerifyErrorToChainStatus(errorCode),
+                StatusInformation = Interop.libcrypto.X509_verify_cert_error_string(errorCode),
+            };
+
+            elementStatus.Add(chainStatus);
+            AddUniqueStatus(overallStatus, ref chainStatus);
+        }
+        
         private static void AddUniqueStatus(IList<X509ChainStatus> list, ref X509ChainStatus status)
         {
             X509ChainStatusFlags statusCode = status.Status;
@@ -285,28 +327,38 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        internal static X509Certificate2Collection FindCandidates(
+        internal static List<X509Certificate2> FindCandidates(
             X509Certificate2 leaf,
-            X509Certificate2Collection extraStore)
+            X509Certificate2Collection extraStore,
+            List<X509Certificate2> downloaded,
+            ref TimeSpan remainingDownloadTime)
         {
-            X509Certificate2Collection candidates = new X509Certificate2Collection();
+            List<X509Certificate2> candidates = new List<X509Certificate2>();
             Queue<X509Certificate2> toProcess = new Queue<X509Certificate2>();
             toProcess.Enqueue(leaf);
 
-            using (var rootStore = new X509Store(StoreName.Root, StoreLocation.LocalMachine))
-            using (var intermediateStore = new X509Store(StoreName.CertificateAuthority, StoreLocation.LocalMachine))
+            using (var systemRootStore = new X509Store(StoreName.Root, StoreLocation.LocalMachine))
+            using (var systemIntermediateStore = new X509Store(StoreName.CertificateAuthority, StoreLocation.LocalMachine))
+            using (var userRootStore = new X509Store(StoreName.Root, StoreLocation.CurrentUser))
+            using (var userIntermediateStore = new X509Store(StoreName.CertificateAuthority, StoreLocation.CurrentUser))
             {
-                rootStore.Open(OpenFlags.ReadOnly);
-                intermediateStore.Open(OpenFlags.ReadOnly);
+                systemRootStore.Open(OpenFlags.ReadOnly);
+                systemIntermediateStore.Open(OpenFlags.ReadOnly);
+                userRootStore.Open(OpenFlags.ReadOnly);
+                userIntermediateStore.Open(OpenFlags.ReadOnly);
 
-                X509Certificate2Collection rootCerts = rootStore.Certificates;
-                X509Certificate2Collection intermediateCerts = intermediateStore.Certificates;
+                X509Certificate2Collection systemRootCerts = systemRootStore.Certificates;
+                X509Certificate2Collection systemIntermediateCerts = systemIntermediateStore.Certificates;
+                X509Certificate2Collection userRootCerts = userRootStore.Certificates;
+                X509Certificate2Collection userIntermediateCerts = userIntermediateStore.Certificates;
 
                 X509Certificate2Collection[] storesToCheck =
                 {
                     extraStore,
-                    intermediateCerts,
-                    rootCerts,
+                    userIntermediateCerts,
+                    systemIntermediateCerts,
+                    userRootCerts,
+                    systemRootCerts,
                 };
 
                 while (toProcess.Count > 0)
@@ -318,9 +370,11 @@ namespace Internal.Cryptography.Pal
                         candidates.Add(current);
                     }
 
-                    X509Certificate2Collection results = FindIssuer(
+                    List<X509Certificate2> results = FindIssuer(
                         current,
-                        storesToCheck);
+                        storesToCheck,
+                        downloaded,
+                        ref remainingDownloadTime);
 
                     if (results != null)
                     {
@@ -338,11 +392,13 @@ namespace Internal.Cryptography.Pal
             return candidates;
         }
 
-        private static X509Certificate2Collection FindIssuer(
+        private static List<X509Certificate2> FindIssuer(
             X509Certificate2 cert,
-            X509Certificate2Collection[] stores)
+            X509Certificate2Collection[] stores,
+            List<X509Certificate2> downloadedCerts,
+            ref TimeSpan remainingDownloadTime)
         {
-            if (StringComparer.Ordinal.Equals(cert.Subject, cert.Issuer))
+            if (IsSelfSigned(cert))
             {
                 // It's a root cert, we won't make any progress.
                 return null;
@@ -352,7 +408,7 @@ namespace Internal.Cryptography.Pal
 
             foreach (X509Certificate2Collection store in stores)
             {
-                X509Certificate2Collection fromStore = null;
+                List<X509Certificate2> fromStore = null;
 
                 foreach (X509Certificate2 candidate in store)
                 {
@@ -364,7 +420,7 @@ namespace Internal.Cryptography.Pal
                     {
                         if (fromStore == null)
                         {
-                            fromStore = new X509Certificate2Collection();
+                            fromStore = new List<X509Certificate2>();
                         }
 
                         if (!fromStore.Contains(candidate))
@@ -377,6 +433,84 @@ namespace Internal.Cryptography.Pal
                 if (fromStore != null)
                 {
                     return fromStore;
+                }
+            }
+
+            byte[] authorityInformationAccess = null;
+
+            foreach (X509Extension extension in cert.Extensions)
+            {
+                if (StringComparer.Ordinal.Equals(extension.Oid.Value, Oids.AuthorityInformationAccess))
+                {
+                    // If there's an Authority Information Access extension, it might be used for
+                    // looking up additional certificates for the chain.
+                    authorityInformationAccess = extension.RawData;
+                    break;
+                }
+            }
+
+            if (authorityInformationAccess != null)
+            {
+                X509Certificate2 downloaded = DownloadCertificate(
+                    authorityInformationAccess,
+                    ref remainingDownloadTime);
+
+                if (downloaded != null)
+                {
+                    downloadedCerts.Add(downloaded);
+
+                    return new List<X509Certificate2>(1) { downloaded };
+                }
+            }
+
+            return null;
+        }
+
+        private static bool IsSelfSigned(X509Certificate2 cert)
+        {
+            return StringComparer.Ordinal.Equals(cert.Subject, cert.Issuer);
+        }
+
+        private static X509Certificate2 DownloadCertificate(
+            byte[] authorityInformationAccess,
+            ref TimeSpan remainingDownloadTime)
+        {
+            // Don't do any work if we're over limit.
+            if (remainingDownloadTime <= TimeSpan.Zero)
+            {
+                return null;
+            }
+
+            DerSequenceReader reader = new DerSequenceReader(authorityInformationAccess);
+
+            while (reader.HasData)
+            {
+                DerSequenceReader innerReader = reader.ReadSequence();
+
+                // If the sequence's first element is a sequence, unwrap it.
+                if (innerReader.PeekTag() == ConstructedSequenceTagId)
+                {
+                    innerReader = innerReader.ReadSequence();
+                }
+
+                Oid oid = innerReader.ReadOid();
+
+                if (StringComparer.Ordinal.Equals(oid.Value, Oids.CertificateAuthorityIssuers))
+                {
+                    string uri = innerReader.ReadIA5String();
+
+                    Uri parsedUri;
+                    if (!Uri.TryCreate(uri, UriKind.Absolute, out parsedUri))
+                    {
+                        continue;
+                    }
+
+                    if (!StringComparer.Ordinal.Equals(parsedUri.Scheme, "http"))
+                    {
+                        continue;
+                    }
+
+                    return CertificateAssetDownloader.DownloadCertificate(uri, ref remainingDownloadTime);
                 }
             }
 
