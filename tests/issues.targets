@@ -7,20 +7,5 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\lifetime\lifetime2.cmd" >
              <Issue>1037</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\BugWithAVX.cmd" >
-             <Issue>1441</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\CtorFromArray.cmd" >
-             <Issue>1441</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\Haar-likeFeaturesGeneric.cmd" >
-             <Issue>1441</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\CreateGeneric.cmd" >
-             <Issue>1441</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\BitwiseOperations.cmd" >
-             <Issue>1441</Issue>
-        </ExcludeList>
     </ItemGroup>
 </Project>
