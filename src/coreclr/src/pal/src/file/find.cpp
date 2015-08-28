@@ -147,7 +147,7 @@ FindFirstFileA(
     if (strlen(lpFileName) >= MAX_LONGPATH)
     {
         WARN("FindFirstFileA called with a pattern whose size is "
-             "%d >= MAX_PATH_FNAME (%d)\n", strlen(lpFileName), MAX_PATH_FNAME);
+             "%d >= MAX_LONGPATH (%d)\n", strlen(lpFileName), MAX_LONGPATH);
         dwLastError = ERROR_FILENAME_EXCED_RANGE;
         goto done;
     }
