@@ -127,7 +127,7 @@
 
    The success criteria can be specified with the _Success_(expr) annotation:
      _Success_(return != FALSE) BOOL
-     PathCanonicalizeA(_Out_writes_(MAX_LONGPATH) LPSTR pszBuf, LPCSTR pszPath) :
+     PathCanonicalizeA(_Out_writes_(MAX_PATH) LPSTR pszBuf, LPCSTR pszPath) :
         pszBuf is only guaranteed to be NULL-terminated when TRUE is returned,
         and FALSE indiates failure. In common practice, callers check for zero
         vs. non-zero returns, so it is preferable to express the success
@@ -785,7 +785,7 @@ enum __SAL_YesNo {_SAL_notpresent, _SAL_no, _SAL_maybe, _SAL_yes, _SAL_default};
    (<parameter>|return)[+n]  e.g. cch, return, cb+2
    
    If the buffer size is a constant expression use the c_ postfix.
-   E.g. cap_c_(20), count_c_(MAX_LONGPATH), bytecount_c_(16)
+   E.g. cap_c_(20), count_c_(MAX_PATH), bytecount_c_(16)
 
    If the buffer size is given by a limiting pointer use the ptrdiff_ versions
    of the macros.
@@ -2349,7 +2349,7 @@ typedef struct __F_ __F_;
  Advanced Annotation Examples
 
  __success(return != FALSE) LWSTDAPI_(BOOL) 
- PathCanonicalizeA(__out_ecount(MAX_LONGPATH) LPSTR pszBuf, LPCSTR pszPath) :
+ PathCanonicalizeA(__out_ecount(MAX_PATH) LPSTR pszBuf, LPCSTR pszPath) :
     pszBuf is only guaranteed to be NULL-terminated when TRUE is returned.
 
  typedef __nullterminated WCHAR* LPWSTR : Initialized LPWSTRs are NULL-terminated strings.

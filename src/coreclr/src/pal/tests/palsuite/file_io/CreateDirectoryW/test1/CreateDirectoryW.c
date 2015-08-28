@@ -20,7 +20,7 @@
 #if WIN32
 #define CREATE_MAX_PATH_SIZE    248
 #else
-#define CREATE_MAX_PATH_SIZE    _MAX_PATH
+#define CREATE_MAX_PATH_SIZE    MAX_LONGPATH
 #endif
 
 

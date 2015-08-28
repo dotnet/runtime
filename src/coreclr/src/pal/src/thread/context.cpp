@@ -193,7 +193,7 @@ BOOL CONTEXT_GetRegisters(DWORD processId, ucontext_t *registers)
             return FALSE;
         }
 #elif HAVE_BSD_REGS_T
-        char buf[MAX_LONGPATH];
+        char buf[MAX_PATH];
         struct reg bsd_registers;
 
         sprintf_s(buf, sizeof(buf), "/proc/%d/regs", processId);
