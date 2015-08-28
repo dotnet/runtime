@@ -139,7 +139,7 @@ namespace System.Linq
 
             void IEnumerator.Reset()
             {
-                throw NotImplemented.ByDesign;
+                throw Error.NotSupported();
             }
         }
 
