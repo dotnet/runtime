@@ -33,7 +33,7 @@ SET_DEFAULT_DEBUG_CHANNEL(SYNC);
 
 enum
 {
-    c_cchMaxEvent = MAX_PATH + 1
+    c_cchMaxEvent = MAX_LONGPATH + 1
 };
 
 CObjectType CorUnix::otManualResetEvent(
