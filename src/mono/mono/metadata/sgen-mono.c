@@ -1596,15 +1596,17 @@ sgen_client_cardtable_scan_object (GCObject *obj, mword block_obj_size, guint8 *
 	SGEN_ASSERT (0, SGEN_VTABLE_HAS_REFERENCES (vt), "Why would we ever call this on reference-free objects?");
 
 	if (vt->rank) {
+		MonoArray *arr = (MonoArray*)obj;
 		guint8 *card_data, *card_base;
 		guint8 *card_data_end;
 		char *obj_start = sgen_card_table_align_pointer (obj);
-		mword obj_size = sgen_client_par_object_get_size (vt, obj);
-		char *obj_end = (char*)obj + obj_size;
+		mword bounds_size;
+		mword obj_size = sgen_mono_array_size (vt, arr, &bounds_size, sgen_vtable_get_descriptor (vt));
+		/* We don't want to scan the bounds entries at the end of multidimensional arrays */
+		char *obj_end = (char*)obj + obj_size - bounds_size;
 		size_t card_count;
 		size_t extra_idx = 0;
 
-		MonoArray *arr = (MonoArray*)obj;
 		mword desc = (mword)klass->element_class->gc_descr;
 		int elem_size = mono_array_element_size (klass);
 

@@ -386,9 +386,6 @@ protocol_entry (unsigned char type, gpointer data, int size)
 		int __size = sizeof (PROTOCOL_STRUCT(method)); \
 		CLIENT_PROTOCOL_NAME (method) (f1, f2, f3, f4, f5, f6);
 
-#define FLUSH() \
-		binary_protocol_flush_buffers (FALSE);
-
 #define DEFAULT_PRINT()
 #define CUSTOM_PRINT(_)
 
@@ -398,6 +395,11 @@ protocol_entry (unsigned char type, gpointer data, int size)
 
 #define END_PROTOCOL_ENTRY \
 		protocol_entry (__type, __data, __size); \
+	}
+
+#define END_PROTOCOL_ENTRY_FLUSH \
+		protocol_entry (__type, __data, __size); \
+		binary_protocol_flush_buffers (FALSE); \
 	}
 
 #ifdef SGEN_HEAVY_BINARY_PROTOCOL

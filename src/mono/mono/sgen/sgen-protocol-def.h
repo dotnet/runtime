@@ -6,20 +6,18 @@ IS_VTABLE_MATCH (FALSE)
 END_PROTOCOL_ENTRY
 
 BEGIN_PROTOCOL_ENTRY2 (binary_protocol_collection_begin, TYPE_INT, index, TYPE_INT, generation)
-FLUSH ()
 DEFAULT_PRINT ()
 IS_ALWAYS_MATCH (TRUE)
 MATCH_INDEX (BINARY_PROTOCOL_MATCH)
 IS_VTABLE_MATCH (FALSE)
-END_PROTOCOL_ENTRY
+END_PROTOCOL_ENTRY_FLUSH
 
 BEGIN_PROTOCOL_ENTRY4 (binary_protocol_collection_end, TYPE_INT, index, TYPE_INT, generation, TYPE_LONGLONG, num_scanned_objects, TYPE_LONGLONG, num_unique_scanned_objects)
-FLUSH()
 CUSTOM_PRINT (printf ("%d generation %d scanned %lld unique %lld %0.2f%%", entry->index, entry->generation, entry->num_scanned_objects, entry->num_unique_scanned_objects, entry->num_unique_scanned_objects ? (100.0 * (double) entry->num_scanned_objects / (double) entry->num_unique_scanned_objects) : 0.0))
 IS_ALWAYS_MATCH (TRUE)
 MATCH_INDEX (BINARY_PROTOCOL_MATCH)
 IS_VTABLE_MATCH (FALSE)
-END_PROTOCOL_ENTRY
+END_PROTOCOL_ENTRY_FLUSH
 
 BEGIN_PROTOCOL_ENTRY0 (binary_protocol_concurrent_start)
 DEFAULT_PRINT ()
@@ -373,8 +371,6 @@ END_PROTOCOL_ENTRY_HEAVY
 #undef BEGIN_PROTOCOL_ENTRY_HEAVY5
 #undef BEGIN_PROTOCOL_ENTRY_HEAVY6
 
-#undef FLUSH
-
 #undef DEFAULT_PRINT
 #undef CUSTOM_PRINT
 
@@ -383,4 +379,5 @@ END_PROTOCOL_ENTRY_HEAVY
 #undef IS_VTABLE_MATCH
 
 #undef END_PROTOCOL_ENTRY
+#undef END_PROTOCOL_ENTRY_FLUSH
 #undef END_PROTOCOL_ENTRY_HEAVY

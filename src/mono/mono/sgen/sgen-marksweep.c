@@ -739,7 +739,11 @@ free_pinned_object (GCObject *obj, size_t size)
 static GCObject*
 major_alloc_degraded (GCVTable vtable, size_t size)
 {
-	GCObject *obj = alloc_obj (vtable, size, FALSE, SGEN_VTABLE_HAS_REFERENCES (vtable));
+	GCObject *obj;
+
+	major_finish_sweep_checking ();
+
+	obj = alloc_obj (vtable, size, FALSE, SGEN_VTABLE_HAS_REFERENCES (vtable));
 	if (G_LIKELY (obj)) {
 		HEAVY_STAT (++stat_objects_alloced_degraded);
 		HEAVY_STAT (stat_bytes_alloced_degraded += size);

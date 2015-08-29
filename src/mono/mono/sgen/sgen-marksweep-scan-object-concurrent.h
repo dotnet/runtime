@@ -85,8 +85,19 @@ major_scan_object_no_mark_concurrent (GCObject *start, SgenDescriptor desc, Sgen
 	major_scan_object_no_mark_concurrent_anywhere (start, desc, queue);
 }
 
-#undef ADD_TO_GLOBAL_REMSET
-#define ADD_TO_GLOBAL_REMSET(object,ptr,target)	sgen_add_to_global_remset ((ptr), (target))
+#undef HANDLE_PTR
+#define HANDLE_PTR(ptr,obj)     do {                                    \
+                void *__old = *(ptr);                                   \
+                binary_protocol_scan_process_reference ((obj), (ptr), __old); \
+                if (__old) {                                            \
+                        gboolean __still_in_nursery = major_copy_or_mark_object_no_evacuation ((ptr), __old, queue); \
+                        if (G_UNLIKELY (__still_in_nursery && !sgen_ptr_in_nursery ((ptr)) && !SGEN_OBJECT_IS_CEMENTED (*(ptr)))) { \
+                                void *__copy = *(ptr);                  \
+                                sgen_add_to_global_remset ((ptr), __copy); \
+                        }						\
+                }                                                       \
+        } while (0)
+
 
 static void
 major_scan_vtype_concurrent_finish (GCObject *full_object, char *start, SgenDescriptor desc, SgenGrayQueue *queue BINARY_PROTOCOL_ARG (size_t size))
