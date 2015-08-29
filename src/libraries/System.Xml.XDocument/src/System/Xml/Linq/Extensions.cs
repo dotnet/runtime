@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 
 using IEnumerable = System.Collections.IEnumerable;
-using Enumerable = System.Linq.Enumerable;
 
 namespace System.Xml.Linq
 {
@@ -269,7 +268,19 @@ namespace System.Xml.Linq
         /// </returns>
         public static IEnumerable<T> InDocumentOrder<T>(this IEnumerable<T> source) where T : XNode
         {
-            return Enumerable.OrderBy(source, n => (XNode)n, XNode.DocumentOrderComparer);
+            if (source == null) throw new ArgumentNullException("source");
+            return DocumentOrderIterator<T>(source);
+        }
+        
+        private static IEnumerable<T> DocumentOrderIterator<T>(IEnumerable<T> source) where T : XNode
+        {
+            int count;
+            T[] items = EnumerableHelpers.ToArray(source, out count);
+            if (count > 0)
+            {
+                Array.Sort(items, 0, count, XNode.DocumentOrderComparer);
+                for (int i = 0; i != count; ++i) yield return items[i];
+            }
         }
 
         /// <summary>
