@@ -25,7 +25,6 @@ Abstract:
 
 namespace CorUnix
 {
-
     extern CObjectType otProcess;
 
     typedef enum
@@ -35,6 +34,16 @@ namespace CorUnix
         PS_RUNNING,
         PS_DONE
     } PROCESS_STATE;
+
+    //
+    // Struct for process module list (EnumProcessModules)
+    //
+    struct ProcessModules
+    {
+        ProcessModules *Next;
+        PVOID BaseAddress;
+        CHAR Name[0];
+    };
 
     //
     // Ideally dwProcessId would be part of the process object's immutable
@@ -63,16 +72,18 @@ namespace CorUnix
             dwProcessId(0), 
             ps(PS_IDLE),
             dwExitCode(0), 
-            lAttachCount(0)
+            lAttachCount(0),
+            pProcessModules(NULL)
         {
         };
+
+        ~CProcProcessLocalData();
         
         DWORD dwProcessId;
-
         PROCESS_STATE ps;
         DWORD dwExitCode;
-        
         LONG lAttachCount;
+        ProcessModules *pProcessModules;
     };
 
     class CProcSharedData
