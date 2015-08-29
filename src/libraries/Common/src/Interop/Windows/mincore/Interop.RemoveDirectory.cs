@@ -9,12 +9,15 @@ internal partial class Interop
 {
     internal partial class mincore
     {
+        /// <summary>
+        /// WARNING: This method does not implicitly handle long paths. Use RemoveDirectory.
+        /// </summary>
         [DllImport(Libraries.CoreFile_L1, EntryPoint = "RemoveDirectoryW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
         private static extern bool RemoveDirectoryPrivate(string path);
 
         internal static bool RemoveDirectory(string path)
         {
-            path = PathInternal.AddExtendedPathPrefixForLongPaths(path);
+            path = PathInternal.EnsureExtendedPrefixOverMaxPath(path);
             return RemoveDirectoryPrivate(path);
         }
     }

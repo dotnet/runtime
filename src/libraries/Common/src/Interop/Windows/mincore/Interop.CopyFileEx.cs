@@ -9,6 +9,9 @@ internal partial class Interop
 {
     internal partial class mincore
     {
+        /// <summary>
+        /// WARNING: This method does not implicitly handle long paths. Use CopyFileEx.
+        /// </summary>
         [DllImport(Libraries.CoreFile_L2, EntryPoint = "CopyFileExW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
         private static extern bool CopyFileExPrivate(
             string src,
@@ -26,8 +29,8 @@ internal partial class Interop
             ref int cancel,
             int flags)
         {
-            src = PathInternal.AddExtendedPathPrefixForLongPaths(src);
-            dst = PathInternal.AddExtendedPathPrefixForLongPaths(dst);
+            src = PathInternal.EnsureExtendedPrefixOverMaxPath(src);
+            dst = PathInternal.EnsureExtendedPrefixOverMaxPath(dst);
             return CopyFileExPrivate(src, dst, progressRoutine, progressData, ref cancel, flags);
         }
     }

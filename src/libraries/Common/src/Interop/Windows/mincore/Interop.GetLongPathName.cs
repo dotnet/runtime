@@ -9,12 +9,15 @@ internal partial class Interop
 {
     internal partial class mincore
     {
+        /// <summary>
+        /// WARNING: This method does not implicitly handle long paths. Use GetLongPathName.
+        /// </summary>
         [DllImport(Libraries.CoreFile_L1, EntryPoint = "GetLongPathNameW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false, ExactSpelling = false)]
         private static extern int GetLongPathNamePrivate(string path, [Out]StringBuilder longPathBuffer, int bufferLength);
 
         internal static int GetLongPathName(string path, [Out]StringBuilder longPathBuffer, int bufferLength)
         {
-            path = PathInternal.AddExtendedPathPrefixForLongPaths(path);
+            path = PathInternal.EnsureExtendedPrefixOverMaxPath(path);
             return GetLongPathNamePrivate(path, longPathBuffer, bufferLength);
         }
     }
