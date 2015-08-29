@@ -3,32 +3,26 @@
 
 using System.Xml;
 using System.Xml.Linq;
-using Microsoft.Test.ModuleCore;
+using Xunit;
 
-namespace CoreXml.Test.XLinq
+namespace XDocumentTests.SDMSample
 {
-    public partial class FunctionalTests : TestModule
+    public class SDM_Misc
     {
-        public partial class SDMSamplesTests : XLinqTestCase
+        [Fact]
+        public void NodeTypes()
         {
-            public partial class SDM_Misc : XLinqTestCase
-            {
-                //[Variation(Desc = "NodeTypes")]
-                public void NodeTypes()
-                {
-                    XDocument document = new XDocument();
-                    XElement element = new XElement("x");
-                    XText text = new XText("text-value");
-                    XComment comment = new XComment("comment");
-                    XProcessingInstruction processingInstruction = new XProcessingInstruction("target", "data");
+            XDocument document = new XDocument();
+            XElement element = new XElement("x");
+            XText text = new XText("text-value");
+            XComment comment = new XComment("comment");
+            XProcessingInstruction processingInstruction = new XProcessingInstruction("target", "data");
 
-                    Validate.IsEqual(document.NodeType, XmlNodeType.Document);
-                    Validate.IsEqual(element.NodeType, XmlNodeType.Element);
-                    Validate.IsEqual(text.NodeType, XmlNodeType.Text);
-                    Validate.IsEqual(comment.NodeType, XmlNodeType.Comment);
-                    Validate.IsEqual(processingInstruction.NodeType, XmlNodeType.ProcessingInstruction);
-                }
-            }
+            Assert.Equal(XmlNodeType.Document, document.NodeType);
+            Assert.Equal(XmlNodeType.Element, element.NodeType);
+            Assert.Equal(XmlNodeType.Text, text.NodeType);
+            Assert.Equal(XmlNodeType.Comment, comment.NodeType);
+            Assert.Equal(XmlNodeType.ProcessingInstruction, processingInstruction.NodeType);
         }
     }
 }

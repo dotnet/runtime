@@ -6,169 +6,116 @@ using System.IO;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
-using Microsoft.Test.ModuleCore;
+using Xunit;
 
-namespace CoreXml.Test.XLinq
+namespace XDocumentTests.SDMSample
 {
-    public partial class FunctionalTests : TestModule
+    public class SDM_Comment
     {
-        public partial class SDMSamplesTests : XLinqTestCase
+        /// <summary>
+        /// Tests the Comment constructor that takes a value.
+        /// </summary>
+        [Fact]
+        public void CreateCommentSimple()
         {
-            public partial class SDM_Comment : XLinqTestCase
-            {
-                /// <summary>
-                /// Tests the Comment constructor that takes a value.
-                /// </summary>
-                /// <param name="contextValue"></param>
-                /// <returns></returns>
-                //[Variation(Desc = "CreateCommentSimple")]
-                public void CreateCommentSimple()
-                {
-                    try
-                    {
-                        new XComment((string)null);
-                        Validate.ExpectedThrow(typeof(ArgumentNullException));
-                    }
-                    catch (Exception ex)
-                    {
-                        Validate.Catch(ex, typeof(ArgumentNullException));
-                    }
+            Assert.Throws<ArgumentNullException>(() => new XComment((string)null));
 
-                    XComment c = new XComment("foo");
-                    Validate.IsEqual(c.Value, "foo");
-                    Validate.IsNull(c.Parent);
-                }
+            XComment c = new XComment("foo");
+            Assert.Equal("foo", c.Value);
+            Assert.Null(c.Parent);
+        }
 
-                /// <summary>
-                /// Tests the Comment constructor that operated from an XmlReader.
-                /// </summary>
-                /// <param name="contextValue"></param>
-                /// <returns></returns>
-                //[Variation(Desc = "CreateCommentFromReader")]
-                public void CreateCommentFromReader()
-                {
-                    TextReader textReader = new StringReader("<x><!-- 12345678 --></x>");
-                    XmlReader xmlReader = XmlReader.Create(textReader);
-                    // Advance to the Comment and construct.
-                    xmlReader.Read();
-                    xmlReader.Read();
-                    XComment c = (XComment)XNode.ReadFrom(xmlReader);
+        /// <summary>
+        /// Tests the Comment constructor that operated from an XmlReader.
+        /// </summary>
+        [Fact]
+        public void CreateCommentFromReader()
+        {
+            TextReader textReader = new StringReader("<x><!-- 12345678 --></x>");
+            XmlReader xmlReader = XmlReader.Create(textReader);
+            // Advance to the Comment and construct.
+            xmlReader.Read();
+            xmlReader.Read();
+            XComment c = (XComment)XNode.ReadFrom(xmlReader);
 
-                    Validate.IsEqual(c.Value, " 12345678 ");
-                }
+            Assert.Equal(" 12345678 ", c.Value);
+        }
 
-                /// <summary>
-                /// Validates the behavior of the Equals overload on XComment.
-                /// </summary>
-                /// <returns>true if pass, false if fail</returns>
-                //[Variation(Desc = "CommentEquals")]
-                public void CommentEquals()
-                {
-                    XComment c1 = new XComment("xxx");
-                    XComment c2 = new XComment("xxx");
-                    XComment c3 = new XComment("yyy");
+        /// <summary>
+        /// Validates the behavior of the Equals overload on XComment.
+        /// </summary>
+        [Fact]
+        public void CommentEquals()
+        {
+            XComment c1 = new XComment("xxx");
+            XComment c2 = new XComment("xxx");
+            XComment c3 = new XComment("yyy");
 
-                    bool b1 = c1.Equals(null);
-                    bool b2 = c1.Equals("foo");
-                    bool b3 = c1.Equals(c1);
-                    bool b4 = c1.Equals(c2);
-                    bool b5 = c1.Equals(c3);
+            Assert.False(c1.Equals(null));
+            Assert.False(c1.Equals("foo"));
+            Assert.True(c1.Equals(c1));
+            Assert.False(c1.Equals(c2));
+            Assert.False(c1.Equals(c3));
+        }
 
-                    Validate.IsEqual(b1, false);
-                    Validate.IsEqual(b2, false);
-                    Validate.IsEqual(b3, true);
-                    Validate.IsEqual(b4, false);
-                    Validate.IsEqual(b5, false);
-                }
+        /// <summary>
+        /// Validates the behavior of the DeepEquals overload on XComment.
+        /// </summary>
+        [Fact]
+        public void CommentDeepEquals()
+        {
+            XComment c1 = new XComment("xxx");
+            XComment c2 = new XComment("xxx");
+            XComment c3 = new XComment("yyy");
 
-                /// <summary>
-                /// Validates the behavior of the DeepEquals overload on XComment.
-                /// </summary>
-                /// <returns>true if pass, false if fail</returns>
-                //[Variation(Desc = "Comment DeepEquals")]
-                public void CommentDeepEquals()
-                {
-                    XComment c1 = new XComment("xxx");
-                    XComment c2 = new XComment("xxx");
-                    XComment c3 = new XComment("yyy");
+            Assert.False(XNode.DeepEquals(c1, (XComment)null));
+            Assert.True(XNode.DeepEquals(c1, c1));
+            Assert.True(XNode.DeepEquals(c1, c2));
+            Assert.False(XNode.DeepEquals(c1, c3));
 
-                    bool b1 = XNode.DeepEquals(c1, (XComment)null);
-                    bool b3 = XNode.DeepEquals(c1, c1);
-                    bool b4 = XNode.DeepEquals(c1, c2);
-                    bool b5 = XNode.DeepEquals(c1, c3);
-
-                    Validate.IsEqual(b1, false);
-                    Validate.IsEqual(b3, true);
-                    Validate.IsEqual(b4, true);
-                    Validate.IsEqual(b5, false);
-
-                    b1 = XNode.EqualityComparer.GetHashCode(c1) == XNode.EqualityComparer.GetHashCode(c2);
-                    Validate.IsEqual(b1, true);
-                }
+            Assert.Equal(XNode.EqualityComparer.GetHashCode(c1), XNode.EqualityComparer.GetHashCode(c2));
+        }
 
 
-                /// <summary>
-                /// Validates the behavior of the Value property on XComment.
-                /// </summary>
-                /// <returns>true if pass, false if fail</returns>
-                //[Variation(Desc = "CommentValue")]
-                public void CommentValue()
-                {
-                    XComment c = new XComment("xxx");
-                    Validate.IsEqual(c.Value, "xxx");
+        /// <summary>
+        /// Validates the behavior of the Value property on XComment.
+        /// </summary>
+        [Fact]
+        public void CommentValue()
+        {
+            XComment c = new XComment("xxx");
+            Assert.Equal("xxx", c.Value);
 
-                    // Null value not allowed.
-                    try
-                    {
-                        c.Value = null;
-                        Validate.ExpectedThrow(typeof(ArgumentNullException));
-                    }
-                    catch (Exception ex)
-                    {
-                        Validate.Catch(ex, typeof(ArgumentNullException));
-                    }
+            // Null value not allowed.
+            Assert.Throws<ArgumentNullException>(() => c.Value = null);
 
-                    // Try setting a value.
-                    c.Value = "abcd";
-                    Validate.IsEqual(c.Value, "abcd");
-                }
+            // Try setting a value.
+            c.Value = "abcd";
+            Assert.Equal("abcd", c.Value);
+        }
 
-                /// <summary>
-                /// Tests the WriteTo method on XComment.
-                /// </summary>
-                /// <param name="contextValue"></param>
-                /// <returns></returns>
-                //[Variation(Desc = "CommentWriteTo")]
-                public void CommentWriteTo()
-                {
-                    XComment c = new XComment("abcd ");
+        /// <summary>
+        /// Tests the WriteTo method on XComment.
+        /// </summary>
+        [Fact]
+        public void CommentWriteTo()
+        {
+            XComment c = new XComment("abcd ");
 
-                    // Null writer not allowed.
-                    try
-                    {
-                        c.WriteTo(null);
-                        Validate.ExpectedThrow(typeof(ArgumentNullException));
-                    }
-                    catch (Exception ex)
-                    {
-                        Validate.Catch(ex, typeof(ArgumentNullException));
-                    }
+            // Null writer not allowed.
+            Assert.Throws<ArgumentNullException>(() => c.WriteTo(null));
 
-                    // Test.
-                    StringBuilder stringBuilder = new StringBuilder();
-                    XmlWriter xmlWriter = XmlWriter.Create(stringBuilder);
+            // Test.
+            StringBuilder stringBuilder = new StringBuilder();
+            XmlWriter xmlWriter = XmlWriter.Create(stringBuilder);
 
-                    xmlWriter.WriteStartElement("x");
-                    c.WriteTo(xmlWriter);
-                    xmlWriter.WriteEndElement();
+            xmlWriter.WriteStartElement("x");
+            c.WriteTo(xmlWriter);
+            xmlWriter.WriteEndElement();
 
-                    xmlWriter.Flush();
+            xmlWriter.Flush();
 
-                    Validate.IsEqual(
-                        stringBuilder.ToString(),
-                        "<?xml version=\"1.0\" encoding=\"utf-16\"?><x><!--abcd --></x>");
-                }
-            }
+            Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-16\"?><x><!--abcd --></x>", stringBuilder.ToString());
         }
     }
 }
