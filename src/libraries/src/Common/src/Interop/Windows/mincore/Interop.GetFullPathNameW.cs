@@ -11,27 +11,30 @@ partial class Interop
     partial class mincore
     {
         /// <summary>
-        /// WARNING: This overload does not implicitly handle long paths.
+        /// WARNING: This method does not implicitly handle long paths. Use GetFullPathName.
         /// </summary>
-        [DllImport(Libraries.CoreFile_L1, SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
-        internal unsafe static extern int GetFullPathNameW(char* path, int numBufferChars, char* buffer, IntPtr mustBeZero);
-
         [DllImport(Libraries.CoreFile_L1, EntryPoint = "GetFullPathNameW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
-        private static extern int GetFullPathNameWPrivate(string path, int numBufferChars, [Out]StringBuilder buffer, IntPtr mustBeZero);
+        internal unsafe static extern int GetFullPathNameUnsafe(char* path, int numBufferChars, char* buffer, IntPtr mustBeZero);
 
-        internal static int GetFullPathNameW(string path, int numBufferChars, [Out]StringBuilder buffer, IntPtr mustBeZero)
+        /// <summary>
+        /// WARNING: This method does not implicitly handle long paths. Use GetFullPathName.
+        /// </summary>
+        [DllImport(Libraries.CoreFile_L1, EntryPoint = "GetFullPathNameW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
+        private static extern int GetFullPathNamePrivate(string path, int numBufferChars, [Out]StringBuilder buffer, IntPtr mustBeZero);
+
+        internal static int GetFullPathName(string path, int numBufferChars, [Out]StringBuilder buffer, IntPtr mustBeZero)
         {
             bool wasExtended = PathInternal.IsExtended(path);
             if (!wasExtended)
             {
-                path = PathInternal.AddExtendedPathPrefixForLongPaths(path);
+                path = PathInternal.EnsureExtendedPrefixOverMaxPath(path);
             }
-            int result = GetFullPathNameWPrivate(path, buffer.Capacity, buffer, mustBeZero);
+            int result = GetFullPathNamePrivate(path, buffer.Capacity, buffer, mustBeZero);
 
             if (!wasExtended)
             {
                 // We don't want to give back \\?\ if we possibly added it ourselves
-                PathInternal.RemoveExtendedPathPrefix(buffer);
+                PathInternal.RemoveExtendedPrefix(buffer);
             }
             return result;
         }
