@@ -55,6 +55,13 @@ if(WIN32)
     target_link_libraries(mscordbi ${COREDBI_LIBRARIES})
 
 elseif(CLR_CMAKE_PLATFORM_UNIX)
+
+    if(CLR_CMAKE_PLATFORM_LINUX)
+        # This option is necessary to ensure that the overloaded new/delete operators defined inside
+        # of the utilcode will be used instead of the standard library delete operator.
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Bsymbolic-functions")    
+    endif(CLR_CMAKE_PLATFORM_LINUX)
+
     list(APPEND COREDBI_LIBRARIES
         mdhotdata_full
         # share the PAL in the dac module
@@ -66,15 +73,8 @@ elseif(CLR_CMAKE_PLATFORM_UNIX)
     # find all symbols.
     target_link_libraries(mscordbi ${COREDBI_LIBRARIES} ${COREDBI_LIBRARIES})
 
-    # This option is necessary to ensure that the overloaded new/delete operators defined inside
-    # of the utilcode will be used instead of the standard library delete operator.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Bsymbolic-functions")    
-
     add_dependencies(mscordbi mscordaccore)
-    
 endif(WIN32)
-
-
 
 # add the install targets
 install (TARGETS mscordbi DESTINATION .)
