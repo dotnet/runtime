@@ -6,168 +6,116 @@ using System.IO;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
-using Microsoft.Test.ModuleCore;
 
-namespace CoreXml.Test.XLinq
+using Xunit;
+
+namespace XDocumentTests.SDMSample
 {
-    public partial class FunctionalTests : TestModule
+    public class SDM_CDATA
     {
-        public partial class SDMSamplesTests : XLinqTestCase
+        /// <summary>
+        /// Tests the XCData constructor that takes a value.
+        /// </summary>
+        [Fact]
+        public void CreateTextSimple()
         {
-            public partial class SDM_CDATA : XLinqTestCase
-            {
-                /// <summary>
-                /// Tests the XCData constructor that takes a value.
-                /// </summary>
-                /// <param name="contextValue"></param>
-                /// <returns></returns>
-                //[Variation(Desc = "CreateTextSimple")]
-                public void CreateTextSimple()
-                {
-                    try
-                    {
-                        new XCData((string)null);
-                        Validate.ExpectedThrow(typeof(ArgumentNullException));
-                    }
-                    catch (Exception ex)
-                    {
-                        Validate.Catch(ex, typeof(ArgumentNullException));
-                    }
+            Assert.Throws<ArgumentNullException>(() => new XCData((string)null));
 
-                    XCData c = new XCData("foo");
-                    Validate.IsEqual(c.Value, "foo");
-                    Validate.IsNull(c.Parent);
-                }
+            XCData c = new XCData("foo");
+            Assert.Equal("foo", c.Value);
+            Assert.Null(c.Parent);
+        }
 
-                /// <summary>
-                /// Tests the XText constructor that operated from an XmlReader.
-                /// </summary>
-                /// <param name="contextValue"></param>
-                /// <returns></returns>
-                //[Variation(Desc = "CreateTextFromReader")]
-                public void CreateTextFromReader()
-                {
-                    TextReader textReader = new StringReader("<x><![CDATA[12345678]]></x>");
-                    XmlReader xmlReader = XmlReader.Create(textReader);
-                    // Advance to the CData and construct.
-                    xmlReader.Read();
-                    xmlReader.Read();
-                    XCData c = (XCData)XNode.ReadFrom(xmlReader);
+        /// <summary>
+        /// Tests the XText constructor that operated from an XmlReader.
+        /// </summary>
+        [Fact]
+        public void CreateTextFromReader()
+        {
+            TextReader textReader = new StringReader("<x><![CDATA[12345678]]></x>");
+            XmlReader xmlReader = XmlReader.Create(textReader);
+            // Advance to the CData and construct.
+            xmlReader.Read();
+            xmlReader.Read();
+            XCData c = (XCData)XNode.ReadFrom(xmlReader);
 
-                    Validate.IsEqual(c.Value, "12345678");
-                }
+            Assert.Equal("12345678", c.Value);
+        }
 
-                /// <summary>
-                /// Validates the behavior of the Equals overload on XText.
-                /// </summary>
-                /// <returns>true if pass, false if fail</returns>
-                //[Variation(Desc = "TextEquals")]
-                public void TextEquals()
-                {
-                    XCData c1 = new XCData("xxx");
-                    XCData c2 = new XCData("xxx");
-                    XCData c3 = new XCData("yyy");
+        /// <summary>
+        /// Validates the behavior of the Equals overload on XText.
+        /// </summary>
+        [Fact]
+        public void TextEquals()
+        {
+            XCData c1 = new XCData("xxx");
+            XCData c2 = new XCData("xxx");
+            XCData c3 = new XCData("yyy");
 
-                    bool b1 = c1.Equals(null);
-                    bool b2 = c1.Equals("foo");
-                    bool b3 = c1.Equals(c1);
-                    bool b4 = c1.Equals(c2);
-                    bool b5 = c1.Equals(c3);
+            Assert.False(c1.Equals(null));
+            Assert.False(c1.Equals("foo"));
+            Assert.True(c1.Equals(c1));
+            Assert.False(c1.Equals(c2));
+            Assert.False(c1.Equals(c3));
+        }
 
-                    Validate.IsEqual(b1, false);
-                    Validate.IsEqual(b2, false);
-                    Validate.IsEqual(b3, true);
-                    Validate.IsEqual(b4, false);
-                    Validate.IsEqual(b5, false);
-                }
+        /// <summary>
+        /// Validates the behavior of the DeepEquals overload on XText.
+        /// </summary>
+        [Fact]
+        public void DeepEquals()
+        {
+            XCData c1 = new XCData("xxx");
+            XCData c2 = new XCData("xxx");
+            XCData c3 = new XCData("yyy");
 
-                /// <summary>
-                /// Validates the behavior of the DeepEquals overload on XText.
-                /// </summary>
-                /// <returns>true if pass, false if fail</returns>
-                //[Variation(Desc = "DeepEquals")]
-                public void DeepEquals()
-                {
-                    XCData c1 = new XCData("xxx");
-                    XCData c2 = new XCData("xxx");
-                    XCData c3 = new XCData("yyy");
+            Assert.False(XNode.DeepEquals(c1, (XText)null));
+            Assert.True(XNode.DeepEquals(c1, c1));
+            Assert.True(XNode.DeepEquals(c1, c2));
+            Assert.False(XNode.DeepEquals(c1, c3));
 
-                    bool b1 = XNode.DeepEquals(c1, (XText)null);
-                    bool b3 = XNode.DeepEquals(c1, c1);
-                    bool b4 = XNode.DeepEquals(c1, c2);
-                    bool b5 = XNode.DeepEquals(c1, c3);
+            Assert.Equal(XNode.EqualityComparer.GetHashCode(c1), XNode.EqualityComparer.GetHashCode(c2));
+        }
 
-                    Validate.IsEqual(b1, false);
-                    Validate.IsEqual(b3, true);
-                    Validate.IsEqual(b4, true);
-                    Validate.IsEqual(b5, false);
+        /// <summary>
+        /// Validates the behavior of the Value property on XText.
+        /// </summary>
+        [Fact]
+        public void TextValue()
+        {
+            XCData c = new XCData("xxx");
+            Assert.Equal("xxx", c.Value);
 
-                    b1 = XNode.EqualityComparer.GetHashCode(c1) == XNode.EqualityComparer.GetHashCode(c2);
-                    Validate.IsEqual(b1, true);
-                }
+            // Null value not allowed.
+            Assert.Throws<ArgumentNullException>(() => c.Value = null);
 
-                /// <summary>
-                /// Validates the behavior of the Value property on XText.
-                /// </summary>
-                /// <returns>true if pass, false if fail</returns>
-                //[Variation(Desc = "TextValue")]
-                public void TextValue()
-                {
-                    XCData c = new XCData("xxx");
-                    Validate.IsEqual(c.Value, "xxx");
+            // Try setting a value.
+            c.Value = "abcd";
+            Assert.Equal("abcd", c.Value);
+        }
 
-                    // Null value not allowed.
-                    try
-                    {
-                        c.Value = null;
-                        Validate.ExpectedThrow(typeof(ArgumentNullException));
-                    }
-                    catch (Exception ex)
-                    {
-                        Validate.Catch(ex, typeof(ArgumentNullException));
-                    }
+        /// <summary>
+        /// Tests the WriteTo method on XTest.
+        /// </summary>
+        [Fact]
+        public void TextWriteTo()
+        {
+            XCData c = new XCData("abcd");
 
-                    // Try setting a value.
-                    c.Value = "abcd";
-                    Validate.IsEqual(c.Value, "abcd");
-                }
+            // Null writer not allowed.
+            Assert.Throws<ArgumentNullException>(() => c.WriteTo(null));
 
-                /// <summary>
-                /// Tests the WriteTo method on XTest.
-                /// </summary>
-                /// <param name="contextValue"></param>
-                /// <returns></returns>
-                //[Variation(Desc = "TextWriteTo")]
-                public void TextWriteTo()
-                {
-                    XCData c = new XCData("abcd");
+            // Test.
+            StringBuilder stringBuilder = new StringBuilder();
+            XmlWriter xmlWriter = XmlWriter.Create(stringBuilder);
 
-                    // Null writer not allowed.
-                    try
-                    {
-                        c.WriteTo(null);
-                        Validate.ExpectedThrow(typeof(ArgumentNullException));
-                    }
-                    catch (Exception ex)
-                    {
-                        Validate.Catch(ex, typeof(ArgumentNullException));
-                    }
+            xmlWriter.WriteStartElement("x");
+            c.WriteTo(xmlWriter);
+            xmlWriter.WriteEndElement();
 
-                    // Test.
-                    StringBuilder stringBuilder = new StringBuilder();
-                    XmlWriter xmlWriter = XmlWriter.Create(stringBuilder);
+            xmlWriter.Flush();
 
-                    xmlWriter.WriteStartElement("x");
-                    c.WriteTo(xmlWriter);
-                    xmlWriter.WriteEndElement();
-
-                    xmlWriter.Flush();
-
-                    Validate.IsEqual(
-                        stringBuilder.ToString(),
-                        "<?xml version=\"1.0\" encoding=\"utf-16\"?><x><![CDATA[abcd]]></x>");
-                }
-            }
+            Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-16\"?><x><![CDATA[abcd]]></x>", stringBuilder.ToString());
         }
     }
 }

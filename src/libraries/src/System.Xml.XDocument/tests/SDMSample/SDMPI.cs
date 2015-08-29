@@ -6,177 +6,113 @@ using System.IO;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
-using Microsoft.Test.ModuleCore;
+using Xunit;
 
-namespace CoreXml.Test.XLinq
+namespace XDocumentTests.SDMSample
 {
-    public partial class FunctionalTests : TestModule
+    public class SDM__PI
     {
-        public partial class SDMSamplesTests : XLinqTestCase
+        /// <summary>
+        /// Tests the ProcessingInstruction constructor that takes a value.
+        /// </summary>
+        [Fact]
+        public void CreateProcessingInstructionSimple()
         {
-            public partial class SDM__PI : XLinqTestCase
-            {
-                /// <summary>
-                /// Tests the ProcessingInstruction constructor that takes a value.
-                /// </summary>
-                /// <param name="contextValue"></param>
-                /// <returns></returns>
-                //[Variation(Desc = "CreateProcessingInstructionSimple")]
-                public void CreateProcessingInstructionSimple()
-                {
-                    try
-                    {
-                        new XProcessingInstruction(null, "abcd");
-                        Validate.ExpectedThrow(typeof(ArgumentNullException));
-                    }
-                    catch (Exception ex)
-                    {
-                        Validate.Catch(ex, typeof(ArgumentNullException));
-                    }
+            Assert.Throws<ArgumentNullException>(() => new XProcessingInstruction(null, "abcd"));
+            Assert.Throws<ArgumentNullException>(() => new XProcessingInstruction("abcd", null));
 
-                    try
-                    {
-                        new XProcessingInstruction("abcd", null);
-                        Validate.ExpectedThrow(typeof(ArgumentNullException));
-                    }
-                    catch (Exception ex)
-                    {
-                        Validate.Catch(ex, typeof(ArgumentNullException));
-                    }
+            XProcessingInstruction c = new XProcessingInstruction("foo", "bar");
+            Assert.Equal("foo", c.Target);
+            Assert.Equal("bar", c.Data);
+            Assert.Null(c.Parent);
+        }
 
-                    XProcessingInstruction c = new XProcessingInstruction("foo", "bar");
-                    Validate.IsEqual(c.Target, "foo");
-                    Validate.IsEqual(c.Data, "bar");
-                    Validate.IsNull(c.Parent);
-                }
+        /// <summary>
+        /// Tests the ProcessingInstruction constructor that operated from an XmlReader.
+        /// </summary>
+        [Fact]
+        public void CreateProcessingInstructionFromReader()
+        {
+            TextReader textReader = new StringReader("<x><?target data?></x>");
+            XmlReader xmlReader = XmlReader.Create(textReader);
+            // Advance to the processing instruction and construct.
+            xmlReader.Read();
+            xmlReader.Read();
+            XProcessingInstruction c = (XProcessingInstruction)XNode.ReadFrom(xmlReader);
 
-                /// <summary>
-                /// Tests the ProcessingInstruction constructor that operated from an XmlReader.
-                /// </summary>
-                /// <param name="contextValue"></param>
-                /// <returns></returns>
-                //[Variation(Desc = "CreateProcessingInstructionFromReader")]
-                public void CreateProcessingInstructionFromReader()
-                {
-                    TextReader textReader = new StringReader("<x><?target data?></x>");
-                    XmlReader xmlReader = XmlReader.Create(textReader);
-                    // Advance to the processing instruction and construct.
-                    xmlReader.Read();
-                    xmlReader.Read();
-                    XProcessingInstruction c = (XProcessingInstruction)XNode.ReadFrom(xmlReader);
+            Assert.Equal("target", c.Target);
+            Assert.Equal("data", c.Data);
+        }
 
-                    Validate.IsEqual(c.Target, "target");
-                    Validate.IsEqual(c.Data, "data");
-                }
+        /// <summary>
+        /// Validates the behavior of the Equals overload on XProcessingInstruction.
+        /// </summary>
+        [Fact]
+        public void ProcessingInstructionEquals()
+        {
+            XProcessingInstruction c1 = new XProcessingInstruction("targetx", "datax");
+            XProcessingInstruction c2 = new XProcessingInstruction("targetx", "datay");
+            XProcessingInstruction c3 = new XProcessingInstruction("targety", "datax");
+            XProcessingInstruction c4 = new XProcessingInstruction("targety", "datay");
+            XProcessingInstruction c5 = new XProcessingInstruction("targetx", "datax");
 
-                /// <summary>
-                /// Validates the behavior of the Equals overload on XProcessingInstruction.
-                /// </summary>
-                /// <returns>true if pass, false if fail</returns>
-                //[Variation(Desc = "ProcessingInstructionEquals")]
-                public void ProcessingInstructionEquals()
-                {
-                    XProcessingInstruction c1 = new XProcessingInstruction("targetx", "datax");
-                    XProcessingInstruction c2 = new XProcessingInstruction("targetx", "datay");
-                    XProcessingInstruction c3 = new XProcessingInstruction("targety", "datax");
-                    XProcessingInstruction c4 = new XProcessingInstruction("targety", "datay");
-                    XProcessingInstruction c5 = new XProcessingInstruction("targetx", "datax");
+            Assert.False(XNode.DeepEquals(c1, (XProcessingInstruction)null));
+            Assert.True(XNode.DeepEquals(c1, c1));
+            Assert.False(XNode.DeepEquals(c1, c2));
+            Assert.False(XNode.DeepEquals(c1, c3));
+            Assert.False(XNode.DeepEquals(c1, c4));
+            Assert.True(XNode.DeepEquals(c1, c5));
 
-                    bool b1 = XNode.DeepEquals(c1, (XProcessingInstruction)null);
-                    bool b3 = XNode.DeepEquals(c1, c1);
-                    bool b4 = XNode.DeepEquals(c1, c2);
-                    bool b5 = XNode.DeepEquals(c1, c3);
-                    bool b6 = XNode.DeepEquals(c1, c4);
-                    bool b7 = XNode.DeepEquals(c1, c5);
+            Assert.Equal(XNode.EqualityComparer.GetHashCode(c1), XNode.EqualityComparer.GetHashCode(c5));
+        }
 
-                    Validate.IsEqual(b1, false);
-                    Validate.IsEqual(b3, true);
-                    Validate.IsEqual(b4, false);
-                    Validate.IsEqual(b5, false);
-                    Validate.IsEqual(b6, false);
-                    Validate.IsEqual(b7, true);
+        /// <summary>
+        /// Validates the behavior of the Target and Data properties on XProcessingInstruction.
+        /// </summary>
+        [Fact]
+        public void ProcessingInstructionValues()
+        {
+            XProcessingInstruction c = new XProcessingInstruction("xxx", "yyy");
+            Assert.Equal("xxx", c.Target);
+            Assert.Equal("yyy", c.Data);
 
-                    b1 = XNode.EqualityComparer.GetHashCode(c1) == XNode.EqualityComparer.GetHashCode(c5);
-                    Validate.IsEqual(b1, true);
-                }
+            // Null values not allowed.
+            Assert.Throws<ArgumentNullException>(() => c.Target = null);
+            Assert.Throws<ArgumentNullException>(() => c.Data = null);
 
-                /// <summary>
-                /// Validates the behavior of the Target and Data properties on XProcessingInstruction.
-                /// </summary>
-                /// <returns>true if pass, false if fail</returns>
-                //[Variation(Desc = "ProcessingInstructionValues")]
-                public void ProcessingInstructionValues()
-                {
-                    XProcessingInstruction c = new XProcessingInstruction("xxx", "yyy");
-                    Validate.IsEqual(c.Target, "xxx");
-                    Validate.IsEqual(c.Data, "yyy");
+            // Try setting values.
+            c.Target = "abcd";
+            Assert.Equal("abcd", c.Target);
 
-                    // Null values not allowed.
-                    try
-                    {
-                        c.Target = null;
-                        Validate.ExpectedThrow(typeof(ArgumentNullException));
-                    }
-                    catch (Exception ex)
-                    {
-                        Validate.Catch(ex, typeof(ArgumentNullException));
-                    }
+            c.Data = "efgh";
+            Assert.Equal("efgh", c.Data);
+            Assert.Equal("abcd", c.Target);
+        }
 
-                    try
-                    {
-                        c.Data = null;
-                        Validate.ExpectedThrow(typeof(ArgumentNullException));
-                    }
-                    catch (Exception ex)
-                    {
-                        Validate.Catch(ex, typeof(ArgumentNullException));
-                    }
+        /// <summary>
+        /// Tests the WriteTo method on XComment.
+        /// </summary>
+        [Fact]
+        public void ProcessingInstructionWriteTo()
+        {
+            XProcessingInstruction c = new XProcessingInstruction("target", "data");
 
-                    // Try setting values.
-                    c.Target = "abcd";
-                    Validate.IsEqual(c.Target, "abcd");
+            // Null writer not allowed.
+            Assert.Throws<ArgumentNullException>(() => c.WriteTo(null));
 
-                    c.Data = "efgh";
-                    Validate.IsEqual(c.Data, "efgh");
-                    Validate.IsEqual(c.Target, "abcd");
-                }
+            // Test.
+            StringBuilder stringBuilder = new StringBuilder();
+            XmlWriter xmlWriter = XmlWriter.Create(stringBuilder);
 
-                /// <summary>
-                /// Tests the WriteTo method on XComment.
-                /// </summary>
-                /// <param name="contextValue"></param>
-                /// <returns></returns>
-                //[Variation(Desc = "ProcessingInstructionWriteTo")]
-                public void ProcessingInstructionWriteTo()
-                {
-                    XProcessingInstruction c = new XProcessingInstruction("target", "data");
+            xmlWriter.WriteStartElement("x");
+            c.WriteTo(xmlWriter);
+            xmlWriter.WriteEndElement();
 
-                    // Null writer not allowed.
-                    try
-                    {
-                        c.WriteTo(null);
-                        Validate.ExpectedThrow(typeof(ArgumentNullException));
-                    }
-                    catch (Exception ex)
-                    {
-                        Validate.Catch(ex, typeof(ArgumentNullException));
-                    }
+            xmlWriter.Flush();
 
-                    // Test.
-                    StringBuilder stringBuilder = new StringBuilder();
-                    XmlWriter xmlWriter = XmlWriter.Create(stringBuilder);
-
-                    xmlWriter.WriteStartElement("x");
-                    c.WriteTo(xmlWriter);
-                    xmlWriter.WriteEndElement();
-
-                    xmlWriter.Flush();
-
-                    Validate.IsEqual(
-                        stringBuilder.ToString(),
-                        "<?xml version=\"1.0\" encoding=\"utf-16\"?><x><?target data?></x>");
-                }
-            }
+            Assert.Equal(
+                "<?xml version=\"1.0\" encoding=\"utf-16\"?><x><?target data?></x>",
+                stringBuilder.ToString());
         }
     }
 }
