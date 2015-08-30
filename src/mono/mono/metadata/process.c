@@ -534,16 +534,6 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject 
 			mono_array_setref (arr, i, mono_array_get (temp_arr, MonoObject*, i));
 	}
 
-	if (count == num_added) {
-		arr = temp_arr;
-	} else {
-		/* shorter version of the array */
-		arr = mono_array_new (mono_domain_get (), proc_class, num_added);
-
-		for (i = 0; i < num_added; i++)
-			mono_array_setref (arr, i, mono_array_get (temp_arr, MonoObject*, i));
-	}
-
 	return arr;
 }
 
