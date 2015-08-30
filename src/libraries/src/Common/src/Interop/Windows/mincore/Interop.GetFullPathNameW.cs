@@ -6,9 +6,9 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 
-partial class Interop
+internal partial class Interop
 {
-    partial class mincore
+    internal partial class mincore
     {
         /// <summary>
         /// WARNING: This method does not implicitly handle long paths. Use GetFullPathName.
@@ -22,19 +22,25 @@ partial class Interop
         [DllImport(Libraries.CoreFile_L1, EntryPoint = "GetFullPathNameW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
         private static extern int GetFullPathNamePrivate(string path, int numBufferChars, [Out]StringBuilder buffer, IntPtr mustBeZero);
 
-        internal static int GetFullPathName(string path, int numBufferChars, [Out]StringBuilder buffer, IntPtr mustBeZero)
+        internal static int GetFullPathName(string path, int numBufferChars, [Out]StringBuilder buffer)
         {
-            bool wasExtended = PathInternal.IsExtended(path);
-            if (!wasExtended)
-            {
-                path = PathInternal.EnsureExtendedPrefixOverMaxPath(path);
-            }
-            int result = GetFullPathNamePrivate(path, buffer.Capacity, buffer, mustBeZero);
+            // GetFullPathName is backwards from most APIs. It handles long "DOS" paths without a problem. While it understands
+            // extended paths (\\?\), it roots them incorrectly, eating into the volume name with relative paths.
 
-            if (!wasExtended)
+            PathInternal.ExtendedType extendedType = PathInternal.RemoveExtendedPrefix(ref path);
+            int result = GetFullPathNamePrivate(path, buffer.Capacity, buffer, IntPtr.Zero);
+
+            if ((extendedType & PathInternal.ExtendedType.Extended) != 0)
             {
-                // We don't want to give back \\?\ if we possibly added it ourselves
-                PathInternal.RemoveExtendedPrefix(buffer);
+                // We want to *always* give back whatever we removed
+                if (extendedType.HasFlag(PathInternal.ExtendedType.ExtendedUnc))
+                {
+                    buffer.Insert(2, PathInternal.UncExtendedPrefixToInsert);
+                }
+                else
+                {
+                    buffer.Insert(0, PathInternal.ExtendedPathPrefix);
+                }
             }
             return result;
         }
