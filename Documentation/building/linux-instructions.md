@@ -102,7 +102,7 @@ After you've done these steps, the runtime directory on Linux should look like t
 
 ```
 matell@linux:~$ ls ~/coreclr-demo/runtime/
-corerun  libcoreclr.so  mscorlib.dll  System.Console.dll  System.Diagnostics.Debug.dll
+corerun  libcoreclr.so  mscorlib.dll  System.Console.dll  System.Diagnostics.Debug.dll System.Native.so
 ```
 
 Download Dependencies
