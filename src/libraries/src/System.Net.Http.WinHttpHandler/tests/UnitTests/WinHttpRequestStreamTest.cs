@@ -217,7 +217,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         {
             Stream stream = MakeRequestStream();
 
-            TestControl.WinHttpAPIFail = true;
+            TestControl.Fail.WinHttpWriteData = true;
             
             Assert.Throws<IOException>(() => { stream.Write(new byte[1], 0, 1); });
         }

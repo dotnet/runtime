@@ -151,8 +151,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
 
             var request = new HttpRequestMessage(HttpMethod.Post, FakeServerEndpoint);
 
-            await Assert.ThrowsAsync<InvalidOperationException>(
-                async () => { HttpResponseMessage response = await client.SendAsync(request); });
+            await Assert.ThrowsAsync<InvalidOperationException>(() => client.SendAsync(request));
         }
 
         [Fact]
@@ -287,8 +286,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
 
             var request = new HttpRequestMessage(HttpMethod.Post, FakeServerEndpoint);
 
-            await Assert.ThrowsAsync<InvalidOperationException>(
-                async () => { HttpResponseMessage response = await client.SendAsync(request); });
+            await Assert.ThrowsAsync<InvalidOperationException>(() => client.SendAsync(request));
         }
 
 
@@ -304,8 +302,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
 
             var request = new HttpRequestMessage(HttpMethod.Post, FakeServerEndpoint);
 
-            await Assert.ThrowsAsync<InvalidOperationException>(
-                async () => { HttpResponseMessage response = await client.SendAsync(request); });
+            await Assert.ThrowsAsync<InvalidOperationException>(() => client.SendAsync(request));
         }
 
         [Fact]
@@ -519,8 +516,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
 
             var request = new HttpRequestMessage(HttpMethod.Post, FakeServerEndpoint);
 
-            await Assert.ThrowsAsync<InvalidOperationException>(
-                async () => { HttpResponseMessage response = await client.SendAsync(request); });
+            await Assert.ThrowsAsync<InvalidOperationException>(() => client.SendAsync(request));
         }
 
         // TODO: Need to skip this test due to missing native dependency clrcompression.dll.
@@ -816,8 +812,8 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             var content = new StringContent(new String('a', 1000));
             request.Content = content;
             
-            await Assert.ThrowsAsync<TaskCanceledException>(
-                async () => { await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token); });
+            await Assert.ThrowsAsync<TaskCanceledException>(() =>
+                client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token));
         }
 
         [Fact]
@@ -829,8 +825,8 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             var client = new HttpClient(handler);
             var request = new HttpRequestMessage(HttpMethod.Get, FakeServerEndpoint);
             
-            await Assert.ThrowsAsync<TaskCanceledException>(
-                async () => { await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token); });
+            await Assert.ThrowsAsync<TaskCanceledException>(() =>
+                client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token));
         }
 
         [Fact]
@@ -842,10 +838,23 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             var client = new HttpClient(handler);
             var request = new HttpRequestMessage(HttpMethod.Get, FakeServerEndpoint);
             
-            await Assert.ThrowsAsync<TaskCanceledException>(
-                async () => { await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token); });
+            await Assert.ThrowsAsync<TaskCanceledException>(() =>
+                client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token));
         }
 
+        [Fact]
+        public async Task SendAsync_WinHttpOpenReturnsError_ExpectHttpRequestException()
+        {
+            var handler = new WinHttpHandler();
+            var client = new HttpClient(handler);
+            var request = new HttpRequestMessage(HttpMethod.Get, FakeServerEndpoint);
+
+            TestControl.Fail.WinHttpOpen = true;
+
+            Exception ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
+            Assert.Equal(typeof(WinHttpException), ex.InnerException.GetType());
+        }
+        
         private HttpResponseMessage SendRequestHelper(WinHttpHandler handler, Action setup)
         {
             return SendRequestHelper(handler, setup, FakeServerEndpoint);
