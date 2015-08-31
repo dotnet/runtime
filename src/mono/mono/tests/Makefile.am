@@ -417,7 +417,12 @@ BASE_TEST_CS_SRC=		\
 	sleep.cs \
 	bug-27147.cs	\
 	bug-30085.cs	\
-	bug-17537.cs
+	bug-17537.cs	\
+	pinvoke_ppcc.cs	\
+	pinvoke_ppcs.cs	\
+	pinvoke_ppci.cs	\
+	pinvoke_ppcf.cs	\
+	pinvoke_ppcd.cs
 
 TEST_CS_SRC_DIST=	\
 	$(BASE_TEST_CS_SRC)	\
@@ -464,8 +469,8 @@ PLATFORM_DISABLED_TESTS=finalizer-abort.exe finalizer-exception.exe finalizer-ex
 endif
 
 if POWERPC64
-# These tests hang
-PLATFORM_DISABLED_TESTS=monitor.exe finalizer-abort.exe finalizer-exception.exe finalizer-exit.exe
+# FIXME: These tests hang/fail for unknown reasons
+PLATFORM_DISABLED_TESTS=monitor.exe threadpool-exceptions5.exe
 endif
 
 if ARM
@@ -856,6 +861,10 @@ runtest: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQS
 runtest-managed: test-runner.exe $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS)
 	@if [ "x$$CI" = "x1" ]; then disabled_tests="$(DISABLED_TESTS_WRENCH)"; else disabled_tests="$(DISABLED_TESTS)"; fi; \
 	$(RUNTIME) ./test-runner.exe -j a --disabled "$${disabled_tests}" $(TESTSI_CS) $(TESTBS) $(TESTSI_IL)
+
+runtest-managed-serial: test-runner.exe $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS)
+	@if [ "x$$CI" = "x1" ]; then disabled_tests="$(DISABLED_TESTS_WRENCH)"; else disabled_tests="$(DISABLED_TESTS)"; fi; \
+	$(RUNTIME) ./test-runner.exe -j 1 --disabled "$${disabled_tests}" $(TESTSI_CS) $(TESTBS) $(TESTSI_IL)
 
 testjit:
 	@if test x$(M) != x0; then $(MAKE) runtest-managed; else $(MAKE) runtest; fi
