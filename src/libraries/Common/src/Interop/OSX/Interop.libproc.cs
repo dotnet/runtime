@@ -482,7 +482,7 @@ internal static partial class Interop
             int result = proc_pid_rusage(pid, RUSAGE_SELF, &info);
             if (result < 0)
             {
-                throw new Win32Exception(SR.RUsageFailure);
+                throw new InvalidOperationException(SR.RUsageFailure);
             }
 
             return info;
