@@ -19,8 +19,8 @@ internal_init (void)
 {
 	if (keepalive_stacks)
 		return;
-	MONO_GC_REGISTER_ROOT_PINNING (keepalive_stacks);
-	keepalive_stacks = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_CONSERVATIVE_GC);
+	MONO_GC_REGISTER_ROOT_PINNING (keepalive_stacks, MONO_ROOT_SOURCE_THREADING, "tasklet stacks table");
+	keepalive_stacks = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_CONSERVATIVE_GC, MONO_ROOT_SOURCE_THREADING, "tasklet stacks table");
 }
 
 static void*
@@ -117,7 +117,7 @@ continuation_store (MonoContinuation *cont, int state, MonoException **e)
 		}
 		cont->stack_used_size = num_bytes;
 		cont->stack_alloc_size = num_bytes * 1.1;
-		cont->saved_stack = mono_gc_alloc_fixed (cont->stack_alloc_size, NULL);
+		cont->saved_stack = mono_gc_alloc_fixed (cont->stack_alloc_size, NULL, MONO_ROOT_SOURCE_THREADING, "saved tasklet stack");
 		mono_g_hash_table_insert (keepalive_stacks, cont->saved_stack, cont->saved_stack);
 		tasklets_unlock ();
 	}

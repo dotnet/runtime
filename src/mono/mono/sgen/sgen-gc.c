@@ -2520,7 +2520,7 @@ sgen_have_pending_finalizers (void)
  * We do not coalesce roots.
  */
 int
-sgen_register_root (char *start, size_t size, SgenDescriptor descr, int root_type)
+sgen_register_root (char *start, size_t size, SgenDescriptor descr, int root_type, int source, const char *msg)
 {
 	RootRecord new_root;
 	int i;
@@ -2532,6 +2532,8 @@ sgen_register_root (char *start, size_t size, SgenDescriptor descr, int root_typ
 			size_t old_size = root->end_root - start;
 			root->end_root = start + size;
 			SGEN_ASSERT (0, !!root->root_desc == !!descr, "Can't change whether a root is precise or conservative.");
+			SGEN_ASSERT (0, root->source == source, "Can't change a root's source identifier.");
+			SGEN_ASSERT (0, !!root->msg == !!msg, "Can't change a root's message.");
 			root->root_desc = descr;
 			roots_size += size;
 			roots_size -= old_size;
@@ -2542,6 +2544,8 @@ sgen_register_root (char *start, size_t size, SgenDescriptor descr, int root_typ
 
 	new_root.end_root = start + size;
 	new_root.root_desc = descr;
+	new_root.source = source;
+	new_root.msg = msg;
 
 	sgen_hash_table_replace (&roots_hash [root_type], start, &new_root, NULL);
 	roots_size += size;

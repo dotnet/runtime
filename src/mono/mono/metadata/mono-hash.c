@@ -64,6 +64,8 @@ struct _MonoGHashTable {
 	int   last_rehash;
 	GDestroyNotify value_destroy_func, key_destroy_func;
 	MonoGHashGCType gc_type;
+	MonoGCRootSource source;
+	const char *msg;
 };
 
 static MonoGHashTable *
@@ -78,7 +80,7 @@ static Slot*
 new_slot (MonoGHashTable *hash)
 {
 	if (hash->gc_type == MONO_HASH_CONSERVATIVE_GC)
-		return mono_gc_alloc_fixed (sizeof (Slot), MONO_GC_DESCRIPTOR_NULL);
+		return mono_gc_alloc_fixed (sizeof (Slot), MONO_GC_DESCRIPTOR_NULL, hash->source, hash->msg);
 	else
 		return mg_new (Slot, 1);
 }
@@ -126,11 +128,13 @@ calc_prime (int x)
 #endif
 
 MonoGHashTable *
-mono_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func, MonoGHashGCType type)
+mono_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func, MonoGHashGCType type, MonoGCRootSource source, const char *msg)
 {
 	MonoGHashTable *hash = mono_g_hash_table_new (hash_func, key_equal_func);
 
 	hash->gc_type = type;
+	hash->source = source;
+	hash->msg = msg;
 
 #ifdef HAVE_SGEN_GC
 	if (type > MONO_HASH_KEY_VALUE_GC)
@@ -142,7 +146,7 @@ mono_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func, Mono
 	if (!table_hash_descr)
 		table_hash_descr = mono_gc_make_root_descr_user (mono_g_hash_mark);
 	if (type != MONO_HASH_CONSERVATIVE_GC)
-		mono_gc_register_root_wbarrier ((char*)hash, sizeof (MonoGHashTable), table_hash_descr);
+		mono_gc_register_root_wbarrier ((char*)hash, sizeof (MonoGHashTable), table_hash_descr, source, msg);
 #endif
 
 	return hash;

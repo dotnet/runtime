@@ -373,6 +373,8 @@ typedef struct _RootRecord RootRecord;
 struct _RootRecord {
 	char *end_root;
 	SgenDescriptor root_desc;
+	int source;
+	const char *msg;
 };
 
 enum {
@@ -384,7 +386,7 @@ enum {
 
 extern SgenHashTable roots_hash [ROOT_TYPE_NUM];
 
-int sgen_register_root (char *start, size_t size, SgenDescriptor descr, int root_type);
+int sgen_register_root (char *start, size_t size, SgenDescriptor descr, int root_type, int source, const char *msg);
 void sgen_deregister_root (char* addr);
 
 typedef void (*IterateObjectCallbackFunc) (GCObject*, size_t, void*);

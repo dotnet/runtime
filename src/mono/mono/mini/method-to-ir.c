@@ -7365,7 +7365,7 @@ static void
 set_exception_object (MonoCompile *cfg, MonoException *exception)
 {
 	mono_cfg_set_exception (cfg, MONO_EXCEPTION_OBJECT_SUPPLIED);
-	MONO_GC_REGISTER_ROOT_SINGLE (cfg->exception_ptr);
+	MONO_GC_REGISTER_ROOT_SINGLE (cfg->exception_ptr, MONO_ROOT_SOURCE_JIT, "jit exception");
 	cfg->exception_ptr = exception;
 }
 

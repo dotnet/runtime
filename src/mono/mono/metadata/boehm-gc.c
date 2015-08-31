@@ -475,7 +475,7 @@ mono_gc_enable_alloc_events (void)
 }
 
 int
-mono_gc_register_root (char *start, size_t size, void *descr)
+mono_gc_register_root (char *start, size_t size, void *descr, MonoGCRootSource source, const char *msg)
 {
 	/* for some strange reason, they want one extra byte on the end */
 	GC_add_roots (start, start + size + 1);
@@ -566,7 +566,7 @@ mono_gc_make_root_descr_all_refs (int numbits)
 }
 
 void*
-mono_gc_alloc_fixed (size_t size, void *descr)
+mono_gc_alloc_fixed (size_t size, void *descr, MonoGCRootSource source, const char *msg)
 {
 	/* To help track down typed allocation bugs */
 	/*

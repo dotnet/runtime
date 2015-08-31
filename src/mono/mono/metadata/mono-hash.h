@@ -6,10 +6,11 @@
  *
  * Copyright 2013 Xamarin Inc (http://www.xamarin.com)
  */
-#include <glib.h>
-#include <mono/utils/mono-publib.h>
+
 #ifndef __MONO_G_HASH_H__
 #define __MONO_G_HASH_H__
+
+#include <mono/metadata/mono-gc.h>
 
 MONO_BEGIN_DECLS
 /* do not change the values of this enum */
@@ -22,7 +23,7 @@ typedef enum {
 
 typedef struct _MonoGHashTable MonoGHashTable;
 
-MONO_API MonoGHashTable *mono_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func, MonoGHashGCType type);
+MONO_API MonoGHashTable *mono_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func, MonoGHashGCType type, MonoGCRootSource source, const char *msg);
 MONO_API guint    mono_g_hash_table_size            (MonoGHashTable *hash);
 MONO_API gpointer mono_g_hash_table_lookup          (MonoGHashTable *hash, gconstpointer key);
 MONO_API gboolean mono_g_hash_table_lookup_extended (MonoGHashTable *hash, gconstpointer key, gpointer *orig_key, gpointer *value);
