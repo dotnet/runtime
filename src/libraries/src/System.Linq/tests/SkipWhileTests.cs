@@ -131,7 +131,7 @@ namespace System.Linq.Tests
             int[] source = { 6, 2, 5, 3, 8 };
             int[] expected = { 8 };
 
-            var actual = source.SkipWhile((element, index) => index < source.Length - 1);
+            Assert.Equal(expected, source.SkipWhile((element, index) => index < source.Length - 1));
         }
         
         private sealed class FastInfiniteEnumerator : IEnumerable<int>, IEnumerator<int>
