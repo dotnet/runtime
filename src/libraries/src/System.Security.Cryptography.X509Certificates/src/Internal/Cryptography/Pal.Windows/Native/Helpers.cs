@@ -32,7 +32,7 @@ namespace Internal.Cryptography.Pal.Native
             // Copy the oid strings to a local list to prevent a security race condition where
             // the OidCollection or individual oids can be modified by another thread and
             // potentially cause a buffer overflow
-            LowLevelListWithIList<byte[]> oidStrings = new LowLevelListWithIList<byte[]>();
+            List<byte[]> oidStrings = new List<byte[]>();
             foreach (Oid oid in oids)
             {
                 byte[] oidString = oid.ValueAsAscii();
