@@ -81,8 +81,8 @@
     <Compile Include="LegacyTests\SingleOrDefaultTests.cs" />
     <Compile Include="LegacyTests\SingleTests.cs" />
     <Compile Include="LegacyTests\SumTests.cs" />
-    <Compile Include="LegacyTests\TakeTests.cs" />
-    <Compile Include="LegacyTests\TakeWhileTests.cs" />
+    <Compile Include="TakeTests.cs" />
+    <Compile Include="TakeWhileTests.cs" />
     <Compile Include="ThenByDescendingTests.cs" />
     <Compile Include="ThenByTests.cs" />
     <Compile Include="ToLookupTests.cs" />
