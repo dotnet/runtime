@@ -4987,6 +4987,21 @@ mono_llvm_check_method_supported (MonoCompile *cfg)
 	if (cfg->disable_llvm)
 		return;
 
+	for (i = 0; i < header->num_clauses; ++i) {
+		clause = &header->clauses [i];
+
+		if (i > 0 && clause->try_offset <= header->clauses [i - 1].handler_offset + header->clauses [i - 1].handler_len) {
+			/*
+			 * FIXME: Some tests still fail with nested clauses.
+			 */
+			cfg->exception_message = g_strdup ("nested clauses");
+			cfg->disable_llvm = TRUE;
+			break;
+		}
+	}
+	if (cfg->disable_llvm)
+		return;
+
 	/* FIXME: */
 	if (cfg->method->dynamic) {
 		cfg->exception_message = g_strdup ("dynamic.");
