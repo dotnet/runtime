@@ -52,7 +52,7 @@ MakeTimeT(
 {
     struct tm currentTm;
     currentTm.tm_year = year - 1900;
-    currentTm.tm_mon = month;
+    currentTm.tm_mon = month - 1;
     currentTm.tm_mday = day;
     currentTm.tm_hour = hour;
     currentTm.tm_min = minute;
