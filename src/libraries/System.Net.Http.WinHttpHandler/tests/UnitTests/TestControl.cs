@@ -8,13 +8,18 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
 {
     public static class TestControl
     {
+        public static class Fail
+        {
+            public static bool WinHttpOpen { get; set; }
+            public static bool WinHttpReadData { get; set; }
+            public static bool WinHttpWriteData { get; set; }
+        }
+        
         public static bool WinHttpAutomaticProxySupport { get; set; }
 
         public static bool WinHttpDecompressionSupport { get; set; }
 
         public static int LastWin32Error { get; set; }
-
-        public static bool WinHttpAPIFail { get; set; }
 
         public static bool PACFileNotDetectedOnNetwork { get; set; }
 
@@ -28,7 +33,9 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             WinHttpDecompressionSupport = true;
 
             LastWin32Error = 0;
-            WinHttpAPIFail = false;
+            Fail.WinHttpOpen = false;
+            Fail.WinHttpReadData = false;
+            Fail.WinHttpWriteData = false;
 
             PACFileNotDetectedOnNetwork = false;
             ResponseDelayTime = 0;

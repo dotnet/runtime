@@ -1255,7 +1255,10 @@ namespace System.Net.Http
 
                 // Clear callback function in WinHTTP to prevent
                 // further native callbacks as we clean up the objects.
-                SetStatusCallback(requestHandle, null);
+                if (requestHandle != null)
+                {
+                    SetStatusCallback(requestHandle, null);
+                }
             }
 
             if (requestStateHandle.IsAllocated)
