@@ -11,7 +11,7 @@
 #include "formattype.h"
 
 /******************************************************************************/
-static char* asString(CQuickBytes *out) {
+char* asString(CQuickBytes *out) {
     CONTRACTL
     {
         THROWS;
@@ -27,7 +27,7 @@ static char* asString(CQuickBytes *out) {
     return((char*) out->Ptr()); 
 }
 
-static void appendStr(CQuickBytes *out, const char* str, unsigned len=(unsigned)-1) {
+void appendStr(CQuickBytes *out, const char* str, unsigned len) {
     CONTRACTL
     {
         THROWS;
@@ -43,7 +43,7 @@ static void appendStr(CQuickBytes *out, const char* str, unsigned len=(unsigned)
         // Note no trailing null!   
 }
 
-static void appendChar(CQuickBytes *out, char chr) {
+void appendChar(CQuickBytes *out, char chr) {
     CONTRACTL
     {
         THROWS;
@@ -57,7 +57,7 @@ static void appendChar(CQuickBytes *out, char chr) {
         // Note no trailing null!   
 }
 
-static void insertStr(CQuickBytes *out, const char* str) {
+void insertStr(CQuickBytes *out, const char* str) {
     CONTRACTL
     {
         THROWS;
