@@ -118,6 +118,11 @@ namespace System.Xml.Linq
         public static IEnumerable<XNode> Nodes<T>(this IEnumerable<T> source) where T : XContainer
         {
             if (source == null) throw new ArgumentNullException("source");
+            return NodesIterator(source);
+        }
+
+        private static IEnumerable<XNode> NodesIterator<T>(IEnumerable<T> source) where T : XContainer
+        {
             foreach (XContainer root in source)
             {
                 if (root != null)
