@@ -756,7 +756,7 @@ public static unsafe class StringTests
 
         Assert.Throws<ArgumentNullException>(() => s = String.Join("@@", (Object[])null));
 
-        // IEnumerable<String>
+        // IEnumerable<String> with IList optimization
         s = String.Join("|", new List<string>() { });
         Assert.Equal("", s);
 
@@ -772,6 +772,36 @@ public static unsafe class StringTests
         s = String.Join("|", new List<string>() { "Red", "Green", "Blue" });
         Assert.Equal("Red|Green|Blue", s);
 
+        s = String.Join("|", new List<string>() { null, "Green", null });
+        Assert.Equal("|Green|", s);
+
+        // IEnumerable<String> *without* IList optimization
+        Queue<string> values = new Queue<string>();
+        s = String.Join("|", values);
+        Assert.Equal("", s);
+
+        values.Enqueue(null);
+        s = String.Join("|", values);
+        Assert.Equal("", s);
+
+        values.Clear();
+        values.Enqueue("Red");
+        s = String.Join("|", values);
+        Assert.Equal("Red", s);
+
+        values.Clear();
+        values.Enqueue("Red");
+        values.Enqueue("Green");
+        values.Enqueue("Blue");
+        s = String.Join(null, values);
+        Assert.Equal("RedGreenBlue", s);
+        s = String.Join("|", values);
+        Assert.Equal("Red|Green|Blue", s);
+
+        values.Clear();
+        values.Enqueue(null);
+        values.Enqueue("Green");
+        values.Enqueue(null);
         s = String.Join("|", new List<string>() { null, "Green", null });
         Assert.Equal("|Green|", s);
 
