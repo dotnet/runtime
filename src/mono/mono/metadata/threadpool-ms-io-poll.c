@@ -35,20 +35,14 @@ POLL_INIT_FD (mono_pollfd *poll_fd, gint fd, gint events)
 static gboolean
 poll_init (gint wakeup_pipe_fd)
 {
-	gint i;
+	g_assert (wakeup_pipe_fd >= 0);
 
-	poll_fds_size = wakeup_pipe_fd + 1;
+	poll_fds_size = 1;
 	poll_fds_capacity = 64;
-
-	while (wakeup_pipe_fd >= poll_fds_capacity)
-		poll_fds_capacity *= 4;
 
 	poll_fds = g_new0 (mono_pollfd, poll_fds_capacity);
 
-	for (i = 0; i < wakeup_pipe_fd; ++i)
-		POLL_INIT_FD (&poll_fds [i], -1, 0);
-
-	POLL_INIT_FD (&poll_fds [wakeup_pipe_fd], wakeup_pipe_fd, POLLIN);
+	POLL_INIT_FD (&poll_fds [0], wakeup_pipe_fd, POLLIN);
 
 	return TRUE;
 }
@@ -63,48 +57,63 @@ static void
 poll_register_fd (gint fd, gint events, gboolean is_new)
 {
 	gint i;
-	mono_pollfd *poll_fd;
+	gint poll_event;
 
 	g_assert (fd >= 0);
 	g_assert (poll_fds_size <= poll_fds_capacity);
 
-	if (fd >= poll_fds_capacity) {
-		do {
-			poll_fds_capacity *= 4;
-		} while (fd >= poll_fds_capacity);
+	g_assert ((events & ~(EVENT_IN | EVENT_OUT)) == 0);
+
+	poll_event = 0;
+	if (events & EVENT_IN)
+		poll_event |= POLLIN;
+	if (events & EVENT_OUT)
+		poll_event |= POLLOUT;
+
+	for (i = 0; i < poll_fds_size; ++i) {
+		if (poll_fds [i].fd == fd) {
+			g_assert (!is_new);
+			POLL_INIT_FD (&poll_fds [i], fd, poll_event);
+			return;
+		}
+	}
+
+	g_assert (is_new);
+
+	for (i = 0; i < poll_fds_size; ++i) {
+		if (poll_fds [i].fd == -1) {
+			POLL_INIT_FD (&poll_fds [i], fd, poll_event);
+			return;
+		}
+	}
+
+	poll_fds_size += 1;
+
+	if (poll_fds_size > poll_fds_capacity) {
+		poll_fds_capacity *= 2;
+		g_assert (poll_fds_size <= poll_fds_capacity);
 
 		poll_fds = g_renew (mono_pollfd, poll_fds, poll_fds_capacity);
 	}
 
-	if (fd >= poll_fds_size) {
-		for (i = poll_fds_size; i <= fd; ++i)
-			POLL_INIT_FD (&poll_fds [i], -1, 0);
-
-		poll_fds_size = fd + 1;
-	}
-
-	poll_fd = &poll_fds [fd];
-
-	if (poll_fd->fd != -1) {
-		g_assert (poll_fd->fd == fd);
-		g_assert (!is_new);
-	}
-
-	POLL_INIT_FD (poll_fd, fd, ((events & EVENT_IN) ? POLLIN : 0) | ((events & EVENT_OUT) ? POLLOUT : 0));
+	POLL_INIT_FD (&poll_fds [poll_fds_size - 1], fd, poll_event);
 }
 
 static void
 poll_remove_fd (gint fd)
 {
-	mono_pollfd *poll_fd;
+	gint i;
 
 	g_assert (fd >= 0);
 
-	g_assert (fd < poll_fds_size);
-	poll_fd = &poll_fds [fd];
+	for (i = 0; i < poll_fds_size; ++i) {
+		if (poll_fds [i].fd == fd) {
+			POLL_INIT_FD (&poll_fds [i], -1, 0);
+			return;
+		}
+	}
 
-	g_assert (poll_fd->fd == fd);
-	POLL_INIT_FD (poll_fd, -1, 0);
+	g_assert_not_reached ();
 }
 
 static gint
