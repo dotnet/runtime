@@ -20,7 +20,7 @@
 #if WIN32
 #define CREATE_MAX_PATH_SIZE    248
 #else
-#define CREATE_MAX_PATH_SIZE    MAX_LONGPATH
+#define CREATE_MAX_PATH_SIZE    _MAX_PATH
 #endif
 
 
@@ -215,11 +215,14 @@ int __cdecl main(int argc, char *argv[])
                 "delete the directory with error %u.\n",
                 GetLastError());
         }
-        free(pTemp);
-        Fail("CreateDirectoryW: Failed because it created a directory"
-            " name 1 character longer (%d chars) than the max dir size"
-            " allowed\n", 
-            strlen(szDirName));
+		if (strlen(szDirName) > CREATE_MAX_PATH_SIZE)
+		{
+        	free(pTemp);
+        	Fail("CreateDirectoryW: Failed because it created a directory"
+            	" name 1 character longer (%d chars) than the max dir size"
+            	" allowed\n", 
+            	strlen(szDirName));
+		}
     }
       
     free(pTemp);
@@ -342,3 +345,4 @@ int __cdecl main(int argc, char *argv[])
     PAL_Terminate();  
     return PASS;
 }
+
