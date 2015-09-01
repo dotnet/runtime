@@ -182,17 +182,8 @@ namespace Tests
         [Fact]
         public static void Contains_SourceNull()
         {
-            try
-            {
-                IEnumerable<string> source = null;
-                string value = null;
-
-                source.Contains(value);
-                Assert.False(true);
-            }
-            catch (ArgumentNullException)
-            {
-            }
+            IEnumerable<string> source = null;
+            Assert.Throws<ArgumentNullException>("source", () => source.Contains(null));
         }
 
         public static IEnumerable<string> Contains_Source1()
@@ -458,66 +449,31 @@ namespace Tests
         [Fact]
         public static void RangeNegativeCount()
         {
-            try
-            {
-                Enumerable.Range(0, -1).ToList();
-                Assert.False(true);
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-            }
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => Enumerable.Range(0, -1));
         }
 
         [Fact]
         public static void MaxEmpty()
         {
-            try
-            {
-                Enumerable.Empty<int>().Max();
-                Assert.False(true);
-            }
-            catch (InvalidOperationException)
-            {
-            }
+            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<int>().Max());
         }
 
         [Fact]
         public static void MinEmpty()
         {
-            try
-            {
-                Enumerable.Empty<int>().Min();
-                Assert.False(true);
-            }
-            catch (InvalidOperationException)
-            {
-            }
+            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<int>().Min());
         }
 
         [Fact]
         public static void MaxNullSource()
         {
-            try
-            {
-                Enumerable.Max((IEnumerable<int>)null);
-                Assert.False(true);
-            }
-            catch (ArgumentNullException)
-            {
-            }
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).Max());
         }
 
         [Fact]
         public static void MinNullSource()
         {
-            try
-            {
-                Enumerable.Min((IEnumerable<int>)null);
-                Assert.False(true);
-            }
-            catch (ArgumentNullException)
-            {
-            }
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).Min());
         }
 
         [Fact]
@@ -702,23 +658,10 @@ namespace Tests
             ConstantExpression init1 = Expression.Constant(4, typeof(int));
             Expression[] inits = new Expression[] { null, init1 };
 
-            try
-            {
-                ListInitExpression result = Expression.ListInit(newExpr, inits);
-            }
-            catch (ArgumentNullException ane)
-            {
-                Assert.Equal("argument", ane.ParamName);
-            }
+            Assert.Throws<ArgumentNullException>("argument", () => Expression.ListInit(newExpr, inits));
 
             ElementInit[] einits = new ElementInit[] { };
-            try
-            {
-                ListInitExpression result1 = Expression.ListInit(newExpr, einits);
-            }
-            catch (ArgumentException)
-            {
-            }
+            Assert.Throws<ArgumentException>(() => Expression.ListInit(newExpr, einits));
         }
 
         public void Add(ref int i)
@@ -731,13 +674,7 @@ namespace Tests
             MethodInfo mi1 = typeof(Expression_Tests).GetMethod("Add");
             ConstantExpression ce1 = Expression.Constant(4, typeof(int));
 
-            try
-            {
-                ElementInit ei1 = Expression.ElementInit(mi1, new Expression[] { ce1 });
-            }
-            catch (ArgumentException)
-            {
-            }
+            Assert.Throws<ArgumentException>(() => Expression.ElementInit(mi1, new Expression[] { ce1 }));
         }
 
         public class Atom
@@ -764,14 +701,9 @@ namespace Tests
         [Fact]
         public static void EqualityBetweenStructAndIterfaceFails()
         {
-            try
-            {
-                Expression.Equal(Expression.Constant(5), Expression.Constant(null, typeof(IComparable)));
-                Assert.False(true);
-            }
-            catch (InvalidOperationException)
-            {
-            }
+            Expression expStruct = Expression.Constant(5);
+            Expression expIface = Expression.Constant(null, typeof(IComparable));
+            Assert.Throws<InvalidOperationException>(() => Expression.Equal(expStruct, expIface));
         }
 
         [Fact]
@@ -889,14 +821,7 @@ namespace Tests
         [Fact]
         public static void ConstantNullWithValueTypeIsInvalid()
         {
-            try
-            {
-                Expression.Constant(null, typeof(int));
-                Assert.False(true);
-            }
-            catch (ArgumentException)
-            {
-            }
+            Assert.Throws<ArgumentException>(() => Expression.Constant(null, typeof(int)));
         }
 
         [Fact]
@@ -1176,27 +1101,13 @@ namespace Tests
         [Fact]
         public static void TestGetFuncTypeWithNullFails()
         {
-            try
-            {
-                Expression.GetFuncType(null);
-                Assert.False(true);
-            }
-            catch (ArgumentNullException)
-            {
-            }
+            Assert.Throws<ArgumentNullException>("typeArgs", () => Expression.GetFuncType(null));
         }
 
         [Fact]
         public static void TestGetFuncTypeWithTooManyArgsFails()
         {
-            try
-            {
-                Expression.GetFuncType(new Type[] { typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int) });
-                Assert.False(true);
-            }
-            catch (ArgumentException)
-            {
-            }
+            Assert.Throws<ArgumentException>(() => Expression.GetFuncType(new Type[] { typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int) }));
         }
 
         [Fact]
@@ -1996,13 +1907,7 @@ namespace Tests
             Assert.Equal(f2().Value.Name, "lhs");
 
             var constant = Expression.Constant(1.0, typeof(double));
-            try
-            {
-                Expression<Func<double?>> e = Expression.Lambda<Func<double?>>(constant, null);
-            }
-            catch (ArgumentException)
-            {
-            }
+            Assert.Throws<ArgumentException>(() => Expression.Lambda<Func<double?>>(constant, null));
         }
 
         public static int GetBound()
@@ -3067,15 +2972,8 @@ namespace Tests
         [Fact]
         public static void InvokeNonTypedLambdaFails()
         {
-            try
-            {
-                Expression call = Expression.Call(null, typeof(Compiler_Tests).GetMethod("ComputeDynamicLambda", BindingFlags.Static | BindingFlags.Public), new Expression[] { });
-                InvocationExpression ie = Expression.Invoke(call, null);
-                Assert.False(true);
-            }
-            catch (ArgumentException)
-            {
-            }
+            Expression call = Expression.Call(null, typeof(Compiler_Tests).GetMethod("ComputeDynamicLambda", BindingFlags.Static | BindingFlags.Public), new Expression[] { });
+            Assert.Throws<ArgumentException>(() => Expression.Invoke(call, null));
         }
 
         public static LambdaExpression ComputeDynamicLambda()
@@ -3086,15 +2984,8 @@ namespace Tests
         [Fact]
         public static void InvokeNonTypedDelegateFails()
         {
-            try
-            {
-                Expression call = Expression.Call(null, typeof(Compiler_Tests).GetMethod("ComputeDynamicDelegate", BindingFlags.Static | BindingFlags.Public), new Expression[] { });
-                InvocationExpression ie = Expression.Invoke(call, null);
-                Assert.False(true);
-            }
-            catch (ArgumentException)
-            {
-            }
+            Expression call = Expression.Call(null, typeof(Compiler_Tests).GetMethod("ComputeDynamicDelegate", BindingFlags.Static | BindingFlags.Public), new Expression[] { });
+            Assert.Throws<ArgumentException>(() => Expression.Invoke(call, null));
         }
 
         public static Delegate ComputeDynamicDelegate()
@@ -3454,37 +3345,15 @@ namespace Tests
         [Fact]
         public static void StructStructMemberInitializationThroughPropertyThrowsException()
         {
-            try
-            {
-                Expression<Func<int, StructX>> f = GetExpressionTreeForMemberInitializationThroughProperty<StructX>();
-                var d = f.Compile();
-                StructX x = d(5);
-                Assert.Equal(5, x.A);
-                Assert.Equal(6, x.B);
-                Assert.Equal(7, x.SY.B);
-                Assert.False(true);
-            }
-            catch (InvalidOperationException)
-            {
-            }
+            Expression<Func<int, StructX>> f = GetExpressionTreeForMemberInitializationThroughProperty<StructX>();
+            Assert.Throws<InvalidOperationException>(() => f.Compile());
         }
 
         [Fact]
         public static void ClassStructMemberInitializationThroughPropertyThrowsException()
         {
-            try
-            {
-                Expression<Func<int, ClassX>> f = GetExpressionTreeForMemberInitializationThroughProperty<ClassX>();
-                var d = f.Compile();
-                ClassX x = d(5);
-                Assert.Equal(5, x.A);
-                Assert.Equal(6, x.B);
-                Assert.Equal(7, x.SY.B);
-                Assert.False(true);
-            }
-            catch (InvalidOperationException)
-            {
-            }
+            Expression<Func<int, ClassX>> f = GetExpressionTreeForMemberInitializationThroughProperty<ClassX>();
+            Assert.Throws<InvalidOperationException>(() => f.Compile());
         }
 
 
@@ -3654,36 +3523,22 @@ namespace Tests
         [Fact]
         public static void ConvertUnsignedToSigned()
         {
-            Func<sbyte> f2 = Expression.Lambda<Func<sbyte>>(Expression.Convert(Expression.Constant(UInt64.MaxValue), typeof(sbyte))).Compile();
-            Assert.Equal((sbyte)-1, f2());
+            Func<sbyte> f = Expression.Lambda<Func<sbyte>>(Expression.Convert(Expression.Constant(UInt64.MaxValue), typeof(sbyte))).Compile();
+            Assert.Equal((sbyte)-1, f());
         }
 
         [Fact]
         public static void ConvertCheckedSignedToUnsigned()
         {
-            try
-            {
-                Func<ulong> f = Expression.Lambda<Func<ulong>>(Expression.ConvertChecked(Expression.Constant((sbyte)-1), typeof(ulong))).Compile();
-                ulong result = f();
-                Assert.False(true);
-            }
-            catch (OverflowException)
-            {
-            }
+            Func<ulong> f = Expression.Lambda<Func<ulong>>(Expression.ConvertChecked(Expression.Constant((sbyte)-1), typeof(ulong))).Compile();
+            Assert.Throws<OverflowException>(() => f());
         }
 
         [Fact]
         public static void ConvertCheckedUnsignedToSigned()
         {
-            try
-            {
-                Func<sbyte> f2 = Expression.Lambda<Func<sbyte>>(Expression.ConvertChecked(Expression.Constant(UInt64.MaxValue), typeof(sbyte))).Compile();
-                sbyte result = f2();
-                Assert.False(true);
-            }
-            catch (OverflowException)
-            {
-            }
+            Func<sbyte> f = Expression.Lambda<Func<sbyte>>(Expression.ConvertChecked(Expression.Constant(UInt64.MaxValue), typeof(sbyte))).Compile();
+            Assert.Throws<OverflowException>(() => f());
         }
 
         [Fact]
