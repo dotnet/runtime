@@ -122,11 +122,6 @@ namespace System.Linq
 
             public abstract IEnumerable<TSource> Where(Func<TSource, bool> predicate);
 
-            public virtual TSource[] ToArray()
-            {
-                return new Buffer<TSource>(this, queryInterfaces: false).ToArray();
-            }
-
             object IEnumerator.Current
             {
                 get { return Current; }
@@ -368,7 +363,7 @@ namespace System.Linq
             }
         }
 
-        internal class WhereSelectArrayIterator<TSource, TResult> : Iterator<TResult>
+        internal class WhereSelectArrayIterator<TSource, TResult> : Iterator<TResult>, IArrayProvider<TResult>
         {
             private TSource[] _source;
             private Func<TSource, bool> _predicate;
@@ -416,12 +411,9 @@ namespace System.Linq
                 return new WhereEnumerableIterator<TResult>(this, predicate);
             }
 
-            public override TResult[] ToArray()
+            public TResult[] ToArray()
             {
-                if (_predicate != null)
-                {
-                    return base.ToArray();
-                }
+                if (_predicate != null) return null;
 
                 var results = new TResult[_source.Length];
                 for (int i = 0; i < results.Length; i++)
@@ -432,7 +424,7 @@ namespace System.Linq
             }
         }
 
-        internal class WhereSelectListIterator<TSource, TResult> : Iterator<TResult>
+        internal class WhereSelectListIterator<TSource, TResult> : Iterator<TResult>, IArrayProvider<TResult>
         {
             private List<TSource> _source;
             private Func<TSource, bool> _predicate;
@@ -485,12 +477,9 @@ namespace System.Linq
                 return new WhereEnumerableIterator<TResult>(this, predicate);
             }
 
-            public override TResult[] ToArray()
+            public TResult[] ToArray()
             {
-                if (_predicate != null)
-                {
-                    return base.ToArray();
-                }
+                if (_predicate != null) return null;
 
                 var results = new TResult[_source.Count];
                 for (int i = 0; i < results.Length; i++)
@@ -2770,6 +2759,11 @@ namespace System.Linq
         }
     }
 
+    internal interface IArrayProvider<TElement>
+    {
+        TElement[] ToArray();
+    }
+
     internal class IdentityFunction<TElement>
     {
         public static Func<TElement, TElement> Instance
@@ -3378,15 +3372,16 @@ namespace System.Linq
         internal TElement[] items;
         internal int count;
 
-        internal Buffer(IEnumerable<TElement> source, bool queryInterfaces = true)
+        internal Buffer(IEnumerable<TElement> source)
         {
-            if (queryInterfaces)
+            IArrayProvider<TElement> iterator = source as IArrayProvider<TElement>;
+            if (iterator != null)
             {
-                Enumerable.Iterator<TElement> iterator = source as Enumerable.Iterator<TElement>;
-                if (iterator != null)
+                TElement[] array = iterator.ToArray();
+                if (array != null)
                 {
-                    items = iterator.ToArray();
-                    count = items.Length;
+                    items = array;
+                    count = array.Length;
                     return;
                 }
             }
