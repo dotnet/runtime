@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Linq.Parallel.Tests
@@ -325,6 +326,25 @@ namespace System.Linq.Parallel.Tests
             IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
             operation.Item(DefaultStart, DefaultSize, source.Item).ForAll(x => seen.Add(x));
             seen.AssertComplete();
+        }
+
+        [Theory]
+        [MemberData("UnaryOperators")]
+        [MemberData("BinaryOperators")]
+        public static void GetEnumerator(LabeledOperation source, LabeledOperation operation)
+        {
+            int seen = DefaultStart;
+            IEnumerator<int> enumerator = operation.Item(DefaultStart, DefaultSize, source.Item).GetEnumerator();
+
+            while (enumerator.MoveNext())
+            {
+                int current = enumerator.Current;
+                Assert.Equal(seen++, current);
+                Assert.Equal(current, enumerator.Current);
+            }
+            Assert.Equal(DefaultStart + DefaultSize, seen);
+
+            Assert.Throws<NotSupportedException>(() => enumerator.Reset());
         }
 
         [Theory]

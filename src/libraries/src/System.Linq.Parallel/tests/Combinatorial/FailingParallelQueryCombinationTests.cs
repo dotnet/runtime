@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Linq.Parallel.Tests
@@ -133,6 +134,34 @@ namespace System.Linq.Parallel.Tests
         public static void ForAll_AggregateException(LabeledOperation source, LabeledOperation operation)
         {
             Functions.AssertThrowsWrapped<DeliberateTestException>(() => operation.Item(DefaultStart, DefaultSize, source.Item).ForAll(x => { }));
+        }
+
+        [Theory]
+        [MemberData("UnaryFailingOperators")]
+        [MemberData("BinaryFailingOperators")]
+        [MemberData("OrderFailingOperators")]
+        public static void GetEnumerator_AggregateException(LabeledOperation source, LabeledOperation operation)
+        {
+            IEnumerator<int> enumerator = operation.Item(DefaultStart, DefaultSize, source.Item).GetEnumerator();
+            // Spin until concat hits
+            // Union-Left needs to spin more than once rarely.
+            if (operation.ToString().StartsWith("Concat") || operation.ToString().StartsWith("Union-Left:ParallelEnumerable"))
+            {
+                Functions.AssertThrowsWrapped<DeliberateTestException>(() => { while (enumerator.MoveNext()) ; });
+            }
+            else
+            {
+                Functions.AssertThrowsWrapped<DeliberateTestException>(() => enumerator.MoveNext());
+            }
+
+            if (operation.ToString().StartsWith("OrderBy") || operation.ToString().StartsWith("ThenBy"))
+            {
+                Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+            }
+            else
+            {
+                Assert.False(enumerator.MoveNext());
+            }
         }
 
         [Theory]

@@ -24,9 +24,26 @@ namespace System.Linq.Parallel.Tests
             }
             while (enumerator.MoveNext())
             {
-                seen.Add(enumerator.Current);
+                int current = enumerator.Current;
+                seen.Add(current);
+                Assert.Equal(current, enumerator.Current);
             }
             seen.AssertComplete();
+
+            if (labeled.ToString().StartsWith("Enumerable.Range") || labeled.ToString().StartsWith("Partitioner"))
+            {
+                Assert.Throws<NotSupportedException>(() => enumerator.Reset());
+            }
+            else
+            {
+                enumerator.Reset();
+                seen = new IntegerRangeSet(0, count);
+                while (enumerator.MoveNext())
+                {
+                    Assert.True(seen.Add(enumerator.Current));
+                }
+                seen.AssertComplete();
+            }
         }
 
         [Theory]
@@ -53,9 +70,26 @@ namespace System.Linq.Parallel.Tests
             }
             while (enumerator.MoveNext())
             {
-                Assert.Equal(seen++, enumerator.Current);
+                int current = enumerator.Current;
+                Assert.Equal(seen++, current);
+                Assert.Equal(current, enumerator.Current);
             }
             Assert.Equal(count, seen);
+
+            if (labeled.ToString().StartsWith("Enumerable.Range") || labeled.ToString().StartsWith("Partitioner"))
+            {
+                Assert.Throws<NotSupportedException>(() => enumerator.Reset());
+            }
+            else
+            {
+                enumerator.Reset();
+                seen = 0;
+                while (enumerator.MoveNext())
+                {
+                    Assert.Equal(seen++, enumerator.Current);
+                }
+                Assert.Equal(count, seen);
+            }
         }
 
         [Theory]
@@ -75,11 +109,41 @@ namespace System.Linq.Parallel.Tests
             IEnumerator<int> enumerator = query.GetEnumerator();
 
             //moveNext will cause queryOpening to fail (no element generated)
-            AggregateException ae = Assert.Throws<AggregateException>(() => enumerator.MoveNext());
-            Assert.All(ae.InnerExceptions, e => Assert.IsType<DeliberateTestException>(e));
+            Functions.AssertThrowsWrapped<DeliberateTestException>(() => enumerator.MoveNext());
 
             //moveNext after queryOpening failed
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+        }
+
+        [Theory]
+        [MemberData("Ranges", (object)(new int[] { 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData("Ranges", (object)(new int[] { 16 }), MemberType = typeof(Sources))]
+        public static void GetEnumerator_CurrentBeforeMoveNext(Labeled<ParallelQuery<int>> labeled, int count)
+        {
+            IEnumerator<int> enumerator = labeled.Item.GetEnumerator();
+            if (labeled.ToString().StartsWith("Partitioner")
+                || labeled.ToString().StartsWith("Array"))
+            {
+                Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+            }
+            else
+            {
+                Assert.InRange(enumerator.Current, 0, count);
+            }
+        }
+
+        [Theory]
+        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(Sources))]
+        public static void GetEnumerator_MoveNextAfterEnd(Labeled<ParallelQuery<int>> labeled, int count)
+        {
+            IEnumerator<int> enumerator = labeled.Item.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                count--;
+            }
+            Assert.Equal(0, count);
+            Assert.False(enumerator.MoveNext());
         }
     }
 }
