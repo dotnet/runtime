@@ -3746,6 +3746,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ins->dreg != ins->sreg1)
 				ppc_fmr (code, ins->dreg, ins->sreg1);
 			break;
+		case OP_MOVE_F_TO_I4:
+			ppc_stfs (code, ins->sreg1, -4, ppc_r1);
+			ppc_ldptr (code, ins->dreg, -4, ppc_r1);
+			break;
+		case OP_MOVE_I4_TO_F:
+			ppc_stw (code, ins->sreg1, -4, ppc_r1);
+			ppc_lfs (code, ins->dreg, -4, ppc_r1);
+			break;
 		case OP_FCONV_TO_R4:
 			ppc_frsp (code, ins->dreg, ins->sreg1);
 			break;
