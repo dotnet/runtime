@@ -139,9 +139,6 @@ namespace System.Net.Http
         public HttpClientHandler()
         {
             _curlHandler = new CurlHandler();
-
-            // TODO: Set same defaults as Windows handler
-            AllowAutoRedirect = true;
         }
 
         protected override void Dispose(bool disposing)
