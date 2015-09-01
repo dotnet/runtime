@@ -103,7 +103,7 @@ namespace System.Security.Cryptography.X509Certificates
             return new X509ExtensionEnumerator(this);
         }
 
-        private LowLevelListWithIList<X509Extension> _list = new LowLevelListWithIList<X509Extension>();
+        private readonly List<X509Extension> _list = new List<X509Extension>();
     }
 }
 

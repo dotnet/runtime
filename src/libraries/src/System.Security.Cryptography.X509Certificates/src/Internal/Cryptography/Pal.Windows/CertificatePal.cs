@@ -354,9 +354,9 @@ namespace Internal.Cryptography.Pal
             {
                 unsafe
                 {
-                    LowLevelListWithIList<X509Extension> extensions = new LowLevelListWithIList<X509Extension>();
                     CERT_INFO* pCertInfo = _certContext.CertContext->pCertInfo;
                     int numExtensions = pCertInfo->cExtension;
+                    X509Extension[] extensions = new X509Extension[numExtensions];
                     for (int i = 0; i < numExtensions; i++)
                     {
                         CERT_EXTENSION* pCertExtension = pCertInfo->rgExtension + i;
@@ -365,8 +365,7 @@ namespace Internal.Cryptography.Pal
                         bool critical = pCertExtension->fCritical != 0;
                         byte[] rawData = pCertExtension->Value.ToByteArray();
 
-                        X509Extension extension = new X509Extension(oid, rawData, critical);
-                        extensions.Add(extension);
+                        extensions[i] = new X509Extension(oid, rawData, critical);
                     }
                     GC.KeepAlive(this);
                     return extensions;

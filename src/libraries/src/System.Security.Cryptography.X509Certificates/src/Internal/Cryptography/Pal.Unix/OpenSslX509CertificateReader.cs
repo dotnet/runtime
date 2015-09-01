@@ -199,7 +199,7 @@ namespace Internal.Cryptography.Pal
             get
             {
                 int extensionCount = Interop.libcrypto.X509_get_ext_count(_cert);
-                LowLevelListWithIList<X509Extension> extensions = new LowLevelListWithIList<X509Extension>(extensionCount);
+                X509Extension[] extensions = new X509Extension[extensionCount];
 
                 for (int i = 0; i < extensionCount; i++)
                 {
@@ -220,9 +220,8 @@ namespace Internal.Cryptography.Pal
 
                     byte[] extData = Interop.Crypto.GetAsn1StringBytes(dataPtr);
                     bool critical = Interop.libcrypto.X509_EXTENSION_get_critical(ext);
-                    X509Extension extension = new X509Extension(oid, extData, critical);
 
-                    extensions.Add(extension);
+                    extensions[i] = new X509Extension(oid, extData, critical);
                 }
 
                 return extensions;
