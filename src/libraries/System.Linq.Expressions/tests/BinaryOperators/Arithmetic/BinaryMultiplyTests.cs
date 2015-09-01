@@ -174,44 +174,16 @@ namespace Tests.ExpressionCompiler.Binary
 
         private static void VerifyByteMultiply(byte a, byte b)
         {
-            bool failed = false;
-            try
-            {
-                Expression<Func<byte>> e =
-                    Expression.Lambda<Func<byte>>(
-                        Expression.Multiply(
-                            Expression.Constant(a, typeof(byte)),
-                            Expression.Constant(b, typeof(byte))),
-                        Enumerable.Empty<ParameterExpression>());
-            }
-            catch (InvalidOperationException)
-            {
-                // this is expected
-                failed = true;
-            }
-
-            Assert.True(failed);
+            Expression aExp = Expression.Constant(a, typeof(byte));
+            Expression bExp = Expression.Constant(b, typeof(byte));
+            Assert.Throws<InvalidOperationException>(() => Expression.Multiply(aExp, bExp));
         }
 
         private static void VerifySByteMultiply(sbyte a, sbyte b)
         {
-            bool failed = false;
-            try
-            {
-                Expression<Func<sbyte>> e =
-                    Expression.Lambda<Func<sbyte>>(
-                        Expression.Multiply(
-                            Expression.Constant(a, typeof(sbyte)),
-                            Expression.Constant(b, typeof(sbyte))),
-                        Enumerable.Empty<ParameterExpression>());
-            }
-            catch (InvalidOperationException)
-            {
-                // this is expected
-                failed = true;
-            }
-
-            Assert.True(failed);
+            Expression aExp = Expression.Constant(a, typeof(sbyte));
+            Expression bExp = Expression.Constant(b, typeof(sbyte));
+            Assert.Throws<InvalidOperationException>(() => Expression.Multiply(aExp, bExp));
         }
 
         private static void VerifyUShortMultiply(ushort a, ushort b)
@@ -639,23 +611,9 @@ namespace Tests.ExpressionCompiler.Binary
 
         private static void VerifyCharMultiply(char a, char b)
         {
-            bool failed = false;
-            try
-            {
-                Expression<Func<char>> e =
-                    Expression.Lambda<Func<char>>(
-                        Expression.Multiply(
-                            Expression.Constant(a, typeof(char)),
-                            Expression.Constant(b, typeof(char))),
-                        Enumerable.Empty<ParameterExpression>());
-            }
-            catch (InvalidOperationException)
-            {
-                // this is expected
-                failed = true;
-            }
-
-            Assert.True(failed);
+            Expression aExp = Expression.Constant(a, typeof(char));
+            Expression bExp = Expression.Constant(b, typeof(char));
+            Assert.Throws<InvalidOperationException>(() => Expression.Multiply(aExp, bExp));
         }
 
         #endregion
