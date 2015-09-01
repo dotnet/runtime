@@ -4,6 +4,7 @@
 //
 
 #include <assert.h>
+#include <string.h>
 
 #include "locale.hpp"
 
@@ -14,7 +15,7 @@
 /*
 * These values should be kept in sync with System.Globalization.CalendarId
 */
-enum CalendarId : int32_t
+enum CalendarId : int16_t
 {
 	UNINITIALIZED_VALUE = 0,
 	GREGORIAN = 1,     // Gregorian (localized) calendar
@@ -122,27 +123,108 @@ const char* GetCalendarName(CalendarId calendarId)
 		case JAPANESELUNISOLAR:
 		case TAIWANLUNISOLAR:
 			return "chinese";
+		case KOREA:
+			return "dangi";
 		case PERSIAN:
 			return "persian";
 		case HIJRI:
-		case UMALQURA:
 			return "islamic";
+		case UMALQURA:
+			return "islamic-umalqura";
+		case TAIWAN:
+			return "roc";
 		case GREGORIAN:
 		case GREGORIAN_US:
 		case GREGORIAN_ARABIC:
 		case GREGORIAN_ME_FRENCH:
 		case GREGORIAN_XLIT_ENGLISH:
 		case GREGORIAN_XLIT_FRENCH:
-		case KOREA:
 		case JULIAN:
 		case LUNAR_ETO_CHN:
 		case LUNAR_ETO_KOR:
 		case LUNAR_ETO_ROKUYOU:
 		case SAKA:
-		case TAIWAN:
 		default:
 			return "gregorian";
 	}
+}
+
+/*
+Function:
+GetCalendarName
+
+Gets the associated CalendarId for the ICU calendar name.
+*/
+CalendarId GetCalendarId(const char* calendarName)
+{
+	if (strcmp(calendarName, "gregorian") == 0)
+		//TODO: what about the other gregorian types?
+		return GREGORIAN;
+	else if (strcmp(calendarName, "japanese") == 0)
+		return JAPAN;
+	else if (strcmp(calendarName, "buddhist") == 0)
+		return THAI;
+	else if (strcmp(calendarName, "hebrew") == 0)
+		return HEBREW;
+	else if (strcmp(calendarName, "chinese") == 0)
+		//TODO: what about these other lunisolar types?
+		//JAPANESELUNISOLAR:
+		//TAIWANLUNISOLAR:
+		//KOREANLUNISOLAR:
+		return CHINESELUNISOLAR;
+	else if (strcmp(calendarName, "dangi") == 0)
+		return KOREA;
+	else if (strcmp(calendarName, "persian") == 0)
+		return PERSIAN;
+	else if (strcmp(calendarName, "islamic") == 0)
+		return HIJRI;
+	else if (strcmp(calendarName, "islamic-umalqura") == 0)
+		return UMALQURA;
+	else if (strcmp(calendarName, "roc") == 0)
+		return TAIWAN;
+	else
+		return UNINITIALIZED_VALUE;
+}
+
+/*
+Function:
+GetCalendars
+
+Returns the list of CalendarIds that are available for the specified locale.
+*/
+extern "C" int32_t GetCalendars(const UChar* localeName, CalendarId* calendars, int32_t calendarsCapacity)
+{
+	Locale locale = GetLocale(localeName);
+	if (locale.isBogus())
+		return 0;
+
+	UErrorCode err = U_ZERO_ERROR;
+	LocalPointer<StringEnumeration> stringEnumerator(Calendar::getKeywordValuesForLocale("calendar", locale, TRUE, err));
+
+	if (stringEnumerator.isNull() || U_FAILURE(err))
+		return 0;
+
+	int stringEnumeratorCount = stringEnumerator->count(err);
+	if (U_FAILURE(err))
+		return 0;
+
+	int calendarsReturned = 0;
+	for (int i = 0; i < stringEnumeratorCount && calendarsReturned < calendarsCapacity; i++)
+	{
+		int32_t calendarNameLength = 0;
+		const char* calendarName = stringEnumerator->next(&calendarNameLength, err);
+		if (U_SUCCESS(err))
+		{
+			CalendarId calendarId = GetCalendarId(calendarName);
+			if (calendarId != UNINITIALIZED_VALUE)
+			{
+				calendars[calendarsReturned] = calendarId;
+				calendarsReturned++;
+			}
+		}
+	}
+
+	return calendarsReturned;
 }
 
 /*
