@@ -11,5 +11,7 @@ namespace System.Net.Http
         public const int DefaultMaxAutomaticRedirections = 50;
         public const DecompressionMethods DefaultAutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
         public const bool DefaultAutomaticRedirection = true;
+        public const bool DefaultUseCookies = true;
+        public const bool DefaultPreAuthenticate = false;
     }
 }

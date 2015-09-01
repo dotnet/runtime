@@ -4,8 +4,6 @@
 using System;
 using System.Runtime.InteropServices;
 
-using curl_socket_t = System.Int32;
-
 internal static partial class Interop
 {
     internal static partial class libcurl
@@ -14,20 +12,8 @@ internal static partial class Interop
         public static extern SafeCurlMultiHandle curl_multi_init();
 
         [DllImport(Interop.Libraries.LibCurl)]
-        public static extern void curl_multi_cleanup(
+        public static extern int curl_multi_cleanup(
             IntPtr handle);
-
-        [DllImport(Interop.Libraries.LibCurl)]
-        public static extern int curl_multi_setopt(
-            SafeCurlMultiHandle multi_handle,
-            int option,
-            curl_socket_callback value);
-
-        [DllImport(Interop.Libraries.LibCurl)]
-        public static extern int curl_multi_setopt(
-            SafeCurlMultiHandle multi_handle,
-            int option,
-            curl_multi_timer_callback value);
 
         [DllImport(Interop.Libraries.LibCurl)]
         public static extern int curl_multi_setopt(
@@ -46,16 +32,16 @@ internal static partial class Interop
             SafeCurlHandle easy_handle);
 
         [DllImport(Interop.Libraries.LibCurl)]
-        public static extern int curl_multi_assign(
+        public static extern unsafe int curl_multi_wait(
             SafeCurlMultiHandle multi_handle,
-            curl_socket_t sockfd,
-            IntPtr sockptr);
+            curl_waitfd* extra_fds,
+            uint extra_nfds,
+            int timeout_ms,
+            out int numfds);
 
         [DllImport(Interop.Libraries.LibCurl)]
-        public static extern int curl_multi_socket_action(
+        public static extern int curl_multi_perform(
             SafeCurlMultiHandle multi_handle,
-            curl_socket_t sockfd,
-            int ev_bitmask,
             out int running_handles);
 
         [DllImport(Interop.Libraries.LibCurl)]

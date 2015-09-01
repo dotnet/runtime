@@ -16,21 +16,12 @@ internal static partial class Interop
 
             public override bool IsInvalid
             {
-                get { return this.handle == IntPtr.Zero; }
-            }
-
-            public static void DisposeAndClearHandle(ref SafeCurlHandle curlHandle)
-            {
-                if (curlHandle != null)
-                {
-                    curlHandle.Dispose();
-                    curlHandle = null;
-                }
+                get { return handle == IntPtr.Zero; }
             }
 
             protected override bool ReleaseHandle()
             {
-                libcurl.curl_easy_cleanup(this.handle);
+                curl_easy_cleanup(handle);
                 return true;
             }
         }
