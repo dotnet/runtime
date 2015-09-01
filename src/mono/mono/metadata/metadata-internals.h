@@ -827,6 +827,8 @@ MonoImage *mono_image_open_raw (const char *fname, MonoImageOpenStatus *status);
 
 MonoImage *mono_image_open_metadata_only (const char *fname, MonoImageOpenStatus *status);
 
+MonoImage *mono_image_open_from_data_internal (char *data, guint32 data_len, gboolean need_copy, MonoImageOpenStatus *status, gboolean refonly, gboolean metadata_only, const char *name);
+
 MonoException *mono_get_exception_field_access_msg (const char *msg);
 
 MonoException *mono_get_exception_method_access_msg (const char *msg);

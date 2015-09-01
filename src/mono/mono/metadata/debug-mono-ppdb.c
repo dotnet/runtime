@@ -33,7 +33,7 @@ struct _MonoPPDBFile {
 };
 
 MonoPPDBFile*
-mono_ppdb_load_file (MonoImage *image)
+mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 {
 	MonoImage *ppdb_image;
 	const char *filename;
@@ -46,18 +46,22 @@ mono_ppdb_load_file (MonoImage *image)
 #endif
 	MonoPPDBFile *ppdb;
 
-	/* ppdb files drop the .exe/.dll extension */
-	filename = mono_image_get_filename (image);
-	if (strlen (filename) > 4 && (!strcmp (filename + strlen (filename) - 4, ".exe"))) {
-		s = g_strdup (filename);
-		s [strlen (filename) - 4] = '\0';
-		ppdb_filename = g_strdup_printf ("%s.pdb", s);
-		g_free (s);
+	if (raw_contents) {
+		ppdb_image = mono_image_open_from_data_internal ((char*)raw_contents, size, TRUE, NULL, FALSE, TRUE, NULL);
 	} else {
-		ppdb_filename = g_strdup_printf ("%s.pdb", filename);
-	}
+		/* ppdb files drop the .exe/.dll extension */
+		filename = mono_image_get_filename (image);
+		if (strlen (filename) > 4 && (!strcmp (filename + strlen (filename) - 4, ".exe"))) {
+			s = g_strdup (filename);
+			s [strlen (filename) - 4] = '\0';
+			ppdb_filename = g_strdup_printf ("%s.pdb", s);
+			g_free (s);
+		} else {
+			ppdb_filename = g_strdup_printf ("%s.pdb", filename);
+		}
 
-	ppdb_image = mono_image_open_metadata_only (ppdb_filename, &status);
+		ppdb_image = mono_image_open_metadata_only (ppdb_filename, &status);
+	}
 	if (!ppdb_image)
 		return NULL;
 

@@ -262,7 +262,7 @@ mono_debug_open_image (MonoImage *image, const guint8 *raw_contents, int size)
 	mono_image_addref (image);
 
 	/* Try a ppdb file first */
-	handle->ppdb = mono_ppdb_load_file (handle->image);
+	handle->ppdb = mono_ppdb_load_file (handle->image, raw_contents, size);
 
 	if (!handle->ppdb)
 		handle->symfile = mono_debug_open_mono_symbols (handle, raw_contents, size, FALSE);

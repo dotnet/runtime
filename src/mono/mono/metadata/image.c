@@ -1145,7 +1145,7 @@ register_image (MonoImage *image)
 }
 
 MonoImage *
-mono_image_open_from_data_with_name (char *data, guint32 data_len, gboolean need_copy, MonoImageOpenStatus *status, gboolean refonly, const char *name)
+mono_image_open_from_data_internal (char *data, guint32 data_len, gboolean need_copy, MonoImageOpenStatus *status, gboolean refonly, gboolean metadata_only, const char *name)
 {
 	MonoCLIImageInfo *iinfo;
 	MonoImage *image;
@@ -1175,12 +1175,19 @@ mono_image_open_from_data_with_name (char *data, guint32 data_len, gboolean need
 	iinfo = g_new0 (MonoCLIImageInfo, 1);
 	image->image_info = iinfo;
 	image->ref_only = refonly;
+	image->metadata_only = metadata_only;
 
 	image = do_mono_image_load (image, status, TRUE, TRUE);
 	if (image == NULL)
 		return NULL;
 
 	return register_image (image);
+}
+
+MonoImage *
+mono_image_open_from_data_with_name (char *data, guint32 data_len, gboolean need_copy, MonoImageOpenStatus *status, gboolean refonly, const char *name)
+{
+	return mono_image_open_from_data_internal (data, data_len, need_copy, status, refonly, FALSE, name);
 }
 
 MonoImage *

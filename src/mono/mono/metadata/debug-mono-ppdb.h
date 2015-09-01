@@ -17,7 +17,7 @@
 #include <mono/metadata/mono-debug.h>
 
 MonoPPDBFile*
-mono_ppdb_load_file (MonoImage *image);
+mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size);
 
 void
 mono_ppdb_close (MonoDebugHandle *handle);
