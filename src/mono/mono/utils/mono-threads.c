@@ -129,8 +129,9 @@ void
 mono_threads_begin_global_suspend (void)
 {
 	g_assert (pending_suspends == 0);
-	THREADS_SUSPEND_DEBUG ("------ BEGIN GLOBAL OP sp %d rp %d ap %d wd %d po %d\n", suspend_posts, resume_posts,
+	THREADS_SUSPEND_DEBUG ("------ BEGIN GLOBAL OP sp %d rp %d ap %d wd %d po %d (sp + rp + ap == wd) (wd == po)\n", suspend_posts, resume_posts,
 		abort_posts, waits_done, pending_ops);
+	g_assert ((suspend_posts + resume_posts + abort_posts) == waits_done);
 	mono_threads_core_begin_global_suspend ();
 }
 
@@ -140,6 +141,7 @@ mono_threads_end_global_suspend (void)
 	g_assert (pending_suspends == 0);
 	THREADS_SUSPEND_DEBUG ("------ END GLOBAL OP sp %d rp %d ap %d wd %d po %d\n", suspend_posts, resume_posts,
 		abort_posts, waits_done, pending_ops);
+	g_assert ((suspend_posts + resume_posts + abort_posts) == waits_done);
 	mono_threads_core_end_global_suspend ();
 }
 
@@ -172,10 +174,10 @@ mono_threads_wait_pending_operations (void)
 	int c = pending_suspends;
 
 	/* Wait threads to park */
+	THREADS_SUSPEND_DEBUG ("[INITIATOR-WAIT-COUNT] %d\n", c);
 	if (pending_suspends) {
 		MonoStopwatch suspension_time;
 		mono_stopwatch_start (&suspension_time);
-		THREADS_SUSPEND_DEBUG ("[INITIATOR-WAIT-COUNT] %d\n", c);
 		for (i = 0; i < pending_suspends; ++i) {
 			THREADS_SUSPEND_DEBUG ("[INITIATOR-WAIT-WAITING]\n");
 			InterlockedIncrement (&waits_done);
