@@ -562,9 +562,14 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	 * This is the only place where the `allocated_blocks` array can potentially grow.
 	 * We need to make sure concurrent sweep isn't running when that happens, so in that
 	 * specific case we just wait for sweep to finish.
+	 *
+	 * The memory barrier here and in `sweep_job_func()` are required because we need
+	 * `allocated_blocks` synchronized between this and the sweep thread.
 	 */
-	if (sgen_pointer_queue_will_grow (&allocated_blocks))
+	if (sgen_pointer_queue_will_grow (&allocated_blocks)) {
 		major_finish_sweep_checking ();
+		mono_memory_barrier ();
+	}
 
 	sgen_pointer_queue_add (&allocated_blocks, BLOCK_TAG (info));
 
@@ -1623,6 +1628,7 @@ sweep_job_func (void *thread_data_untyped, SgenThreadPoolJob *job)
 	}
 
 	sgen_pointer_queue_remove_nulls (&allocated_blocks);
+	mono_memory_barrier ();
 
 	sweep_finish ();
 
