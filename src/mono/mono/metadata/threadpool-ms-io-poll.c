@@ -109,11 +109,23 @@ poll_remove_fd (gint fd)
 	for (i = 0; i < poll_fds_size; ++i) {
 		if (poll_fds [i].fd == fd) {
 			POLL_INIT_FD (&poll_fds [i], -1, 0);
-			return;
+			break;
 		}
 	}
 
-	g_assert_not_reached ();
+	/* if we don't find the fd in poll_fds,
+	 * it means we try to delete it twice */
+	g_assert (i < poll_fds_size);
+
+	/* if we find it again, it means we added
+	 * it twice */
+	for (; i < poll_fds_size; ++i)
+		g_assert (poll_fds [i].fd != fd);
+
+	/* reduce the value of poll_fds_size so we
+	 * do not keep it too big */
+	while (poll_fds_size > 1 && poll_fds [poll_fds_size - 1].fd == -1)
+		poll_fds_size -= 1;
 }
 
 static gint
