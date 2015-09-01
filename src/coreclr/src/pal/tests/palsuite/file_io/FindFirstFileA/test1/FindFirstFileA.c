@@ -25,7 +25,7 @@ const char* szDirNameSlash =        "test_dir\\";
 const char* szDirNameWldCard_01 =   "?est_dir";
 const char* szDirNameWldCard_02 =   "test_*";
 /* Longer than MAX_LONGPATH characters */
-const char* szLongFindName =        "testingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtesting";
+char szLongFindName[MAX_LONGPATH+1];
 
 BOOL CleanUp()
 {
@@ -68,7 +68,7 @@ int __cdecl main(int argc, char *argv[])
     BOOL bRc = FALSE;
     WCHAR* szwTemp = NULL;
 
-
+	memset(szLongFindName, 'a', MAX_LONGPATH+1);
     if (0 != PAL_Initialize(argc,argv))
     {
         return FAIL;
