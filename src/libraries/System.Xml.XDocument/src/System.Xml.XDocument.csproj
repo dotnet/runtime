@@ -17,6 +17,9 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(CommonPath)\System\Collections\Generic\EnumerableHelpers.cs">
+      <Link>System\Collections\Generic\EnumerableHelpers.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
       <Link>System\StringBuilderCache.cs</Link>
     </Compile>
@@ -36,7 +39,6 @@
     <Compile Include="System\Xml\Linq\XHashtable.cs" />
     <Compile Include="System\Xml\Linq\XHelper.cs" />
     <Compile Include="System\Xml\Linq\XLinq.cs" />
-    <Compile Include="System\Linq\Enumerable.cs" />
     <Compile Include="System\Xml\Linq\XName.cs" />
     <Compile Include="System\Xml\Linq\XNamespace.cs" />
     <Compile Include="System\Xml\Linq\XNode.cs" />

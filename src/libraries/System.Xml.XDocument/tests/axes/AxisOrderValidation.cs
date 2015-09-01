@@ -332,5 +332,24 @@ namespace System.Xml.Linq.Tests
             IEnumerable<XElement> xElement = xDoc.Root.DescendantsAndSelf().Reverse();
             Assert.True(xElement.InDocumentOrder().EqualsAll(xDoc.Root.DescendantsAndSelf(), XNode.DeepEquals));
         }
+
+        [Fact]
+        public static void ReorderToDocumentOrder()
+        {
+            XDocument xDoc = TestData.GetDocumentWithContacts();
+            Random rnd = new Random();
+            var randomOrderedElements = xDoc.Root.DescendantNodesAndSelf().OrderBy(n => rnd.Next(0, int.MaxValue));
+            using (var en = randomOrderedElements.InDocumentOrder().GetEnumerator())
+            {
+                en.MoveNext();
+                var nodeFirst = en.Current;
+                while (en.MoveNext())
+                {
+                    var nodeSecond = en.Current;
+                    Assert.True(XNode.DocumentOrderComparer.Compare(nodeFirst, nodeSecond) < 0);
+                    nodeFirst = nodeSecond;
+                }
+            }
+        }
     }
 }
