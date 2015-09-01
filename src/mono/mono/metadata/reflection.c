@@ -2374,7 +2374,7 @@ mono_image_get_generic_param_info (MonoReflectionGenericParam *gparam, guint32 o
 	entry = g_new0 (GenericParamTableEntry, 1);
 	entry->owner = owner;
 	/* FIXME: track where gen_params should be freed and remove the GC root as well */
-	MONO_GC_REGISTER_ROOT_IF_MOVING (entry->gparam);
+	MONO_GC_REGISTER_ROOT_IF_MOVING (entry->gparam, MONO_ROOT_SOURCE_REFLECTION, "reflection generic parameter");
 	entry->gparam = gparam;
 	
 	g_ptr_array_add (assembly->gen_params, entry);
@@ -4827,7 +4827,7 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
 	mono_image_fill_module_table (domain, moduleb, assembly);
 
 	/* Collect all types into a list sorted by their table_idx */
-	mono_ptr_array_init (types, moduleb->num_types);
+	mono_ptr_array_init (types, moduleb->num_types, MONO_ROOT_SOURCE_REFLECTION, "dynamic module types list");
 
 	if (moduleb->types)
 		for (i = 0; i < moduleb->num_types; ++i) {
@@ -5293,21 +5293,21 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, c
 
 	mono_image_init (&image->image);
 
-	image->token_fixups = mono_g_hash_table_new_type ((GHashFunc)mono_object_hash, NULL, MONO_HASH_KEY_GC);
+	image->token_fixups = mono_g_hash_table_new_type ((GHashFunc)mono_object_hash, NULL, MONO_HASH_KEY_GC, MONO_ROOT_SOURCE_REFLECTION, "dynamic module token fixups table");
 	image->method_to_table_idx = g_hash_table_new (NULL, NULL);
 	image->field_to_table_idx = g_hash_table_new (NULL, NULL);
 	image->method_aux_hash = g_hash_table_new (NULL, NULL);
 	image->vararg_aux_hash = g_hash_table_new (NULL, NULL);
 	image->handleref = g_hash_table_new (NULL, NULL);
-	image->handleref_managed = mono_g_hash_table_new_type ((GHashFunc)mono_object_hash, NULL, MONO_HASH_KEY_GC);
-	image->tokens = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC);
-	image->generic_def_objects = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC);
-	image->methodspec = mono_g_hash_table_new_type ((GHashFunc)mono_object_hash, NULL, MONO_HASH_KEY_GC);
+	image->handleref_managed = mono_g_hash_table_new_type ((GHashFunc)mono_object_hash, NULL, MONO_HASH_KEY_GC, MONO_ROOT_SOURCE_REFLECTION, "dynamic module reference-to-token table");
+	image->tokens = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_REFLECTION, "dynamic module tokens table");
+	image->generic_def_objects = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_REFLECTION, "dynamic module generic definitions table");
+	image->methodspec = mono_g_hash_table_new_type ((GHashFunc)mono_object_hash, NULL, MONO_HASH_KEY_GC, MONO_ROOT_SOURCE_REFLECTION, "dynamic module method specifications table");
 	image->typespec = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
 	image->typeref = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
 	image->blob_cache = g_hash_table_new ((GHashFunc)mono_blob_entry_hash, (GCompareFunc)mono_blob_entry_equal);
 	image->gen_params = g_ptr_array_new ();
-	image->remapped_tokens = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC);
+	image->remapped_tokens = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_REFLECTION, "dynamic module remapped tokens table");
 
 	/*g_print ("string heap create for image %p (%s)\n", image, module_name);*/
 	string_heap_init (&image->sheap);
@@ -6274,7 +6274,7 @@ reflected_hash (gconstpointer a) {
 		e.refclass = (k);	\
 		mono_domain_lock (domain);	\
 		if (!domain->refobject_hash)	\
-			domain->refobject_hash = mono_g_hash_table_new_type (reflected_hash, reflected_equal, MONO_HASH_VALUE_GC);	\
+			domain->refobject_hash = mono_g_hash_table_new_type (reflected_hash, reflected_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, "domain reflection objects table");	\
 		if ((_obj = mono_g_hash_table_lookup (domain->refobject_hash, &e))) {	\
 			mono_domain_unlock (domain);	\
 			return _obj;	\
@@ -6301,7 +6301,7 @@ reflected_hash (gconstpointer a) {
         pe.refclass = (k); \
         mono_domain_lock (domain); \
 		if (!domain->refobject_hash)	\
-			domain->refobject_hash = mono_g_hash_table_new_type (reflected_hash, reflected_equal, MONO_HASH_VALUE_GC);	\
+			domain->refobject_hash = mono_g_hash_table_new_type (reflected_hash, reflected_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, "domain reflection objects table");	\
         _obj = mono_g_hash_table_lookup (domain->refobject_hash, &pe); \
         if (!_obj) { \
 		    ReflectedEntry *e = ALLOC_REFENTRY; 	\
@@ -6656,7 +6656,7 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 	mono_domain_lock (domain);
 	if (!domain->type_hash)
 		domain->type_hash = mono_g_hash_table_new_type ((GHashFunc)mono_metadata_type_hash, 
-				(GCompareFunc)mono_metadata_type_equal, MONO_HASH_VALUE_GC);
+				(GCompareFunc)mono_metadata_type_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, "domain reflection types table");
 	if ((res = mono_g_hash_table_lookup (domain->type_hash, type))) {
 		mono_domain_unlock (domain);
 		mono_loader_unlock ();
@@ -8455,7 +8455,7 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 		memset (params, 0, sizeof (void*) * sig->param_count);
 	} else {
 		/* Allocate using GC so it gets GC tracking */
-		params = mono_gc_alloc_fixed (sig->param_count * sizeof (void*), MONO_GC_DESCRIPTOR_NULL);
+		params = mono_gc_alloc_fixed (sig->param_count * sizeof (void*), MONO_GC_DESCRIPTOR_NULL, MONO_ROOT_SOURCE_REFLECTION, "custom attribute parameters");
 	}
 
 	/* skip prolog */
@@ -9573,7 +9573,7 @@ mono_reflection_register_with_runtime (MonoReflectionType *type)
 	} else {
 		if (!domain->type_hash)
 			domain->type_hash = mono_g_hash_table_new_type ((GHashFunc)mono_metadata_type_hash, 
-					(GCompareFunc)mono_metadata_type_equal, MONO_HASH_VALUE_GC);
+					(GCompareFunc)mono_metadata_type_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, "domain reflection types table");
 		mono_g_hash_table_insert (domain->type_hash, res, type);
 	}
 	mono_domain_unlock (domain);
@@ -11070,7 +11070,7 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 		dgclass->fields [i].type = mono_class_inflate_generic_type (
 			field->type, mono_generic_class_get_context ((MonoGenericClass *) dgclass));
 		dgclass->field_generic_types [i] = field->type;
-		MONO_GC_REGISTER_ROOT_IF_MOVING (dgclass->field_objects [i]);
+		MONO_GC_REGISTER_ROOT_IF_MOVING (dgclass->field_objects [i], MONO_ROOT_SOURCE_REFLECTION, "dynamic generic class field object");
 		dgclass->field_objects [i] = obj;
 
 		if (inflated_field) {

@@ -988,14 +988,14 @@ mono_debugger_agent_init (void)
 	/* Needed by the hash_table_new_type () call below */
 	mono_gc_base_init ();
 
-	thread_to_tls = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_KEY_GC);
-	MONO_GC_REGISTER_ROOT_FIXED (thread_to_tls);
+	thread_to_tls = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_KEY_GC, MONO_ROOT_SOURCE_DEBUGGER, "thread-to-tls table");
+	MONO_GC_REGISTER_ROOT_FIXED (thread_to_tls, MONO_ROOT_SOURCE_DEBUGGER, "thread-to-tls table");
 
-	tid_to_thread = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC);
-	MONO_GC_REGISTER_ROOT_FIXED (tid_to_thread);
+	tid_to_thread = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DEBUGGER, "tid-to-thread table");
+	MONO_GC_REGISTER_ROOT_FIXED (tid_to_thread, MONO_ROOT_SOURCE_DEBUGGER, "tid-to-thread table");
 
-	tid_to_thread_obj = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC);
-	MONO_GC_REGISTER_ROOT_FIXED (tid_to_thread_obj);
+	tid_to_thread_obj = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DEBUGGER, "tid-to-thread object table");
+	MONO_GC_REGISTER_ROOT_FIXED (tid_to_thread_obj, MONO_ROOT_SOURCE_DEBUGGER, "tid-to-thread object table");
 
 	pending_assembly_loads = g_ptr_array_new ();
 	domains = g_hash_table_new (mono_aligned_addr_hash, NULL);
@@ -1928,8 +1928,8 @@ objrefs_init (void)
 {
 	objrefs = g_hash_table_new_full (NULL, NULL, NULL, free_objref);
 	obj_to_objref = g_hash_table_new (NULL, NULL);
-	suspended_objs = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_KEY_GC);
-	MONO_GC_REGISTER_ROOT_FIXED (suspended_objs);
+	suspended_objs = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_KEY_GC, MONO_ROOT_SOURCE_DEBUGGER, "suspended objects table");
+	MONO_GC_REGISTER_ROOT_FIXED (suspended_objs, MONO_ROOT_SOURCE_DEBUGGER, "suspended objects table");
 }
 
 static void
@@ -3835,7 +3835,7 @@ thread_startup (MonoProfiler *prof, uintptr_t tid)
 	g_assert (!tls);
 	// FIXME: Free this somewhere
 	tls = g_new0 (DebuggerTlsData, 1);
-	MONO_GC_REGISTER_ROOT_SINGLE (tls->thread);
+	MONO_GC_REGISTER_ROOT_SINGLE (tls->thread, MONO_ROOT_SOURCE_DEBUGGER, "debugger thread reference");
 	tls->thread = thread;
 	mono_native_tls_set_value (debugger_tls_id, tls);
 

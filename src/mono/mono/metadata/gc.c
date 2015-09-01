@@ -94,7 +94,7 @@ add_thread_to_finalize (MonoInternalThread *thread)
 {
 	mono_finalizer_lock ();
 	if (!threads_to_finalize)
-		MONO_GC_REGISTER_ROOT_SINGLE (threads_to_finalize);
+		MONO_GC_REGISTER_ROOT_SINGLE (threads_to_finalize, MONO_ROOT_SOURCE_FINALIZER_QUEUE, "finalizable threads list");
 	threads_to_finalize = mono_mlist_append (threads_to_finalize, (MonoObject*)thread);
 	mono_finalizer_unlock ();
 }
@@ -667,7 +667,7 @@ alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
 	if (!handles->size) {
 		handles->size = 32;
 		if (handles->type > HANDLE_WEAK_TRACK) {
-			handles->entries = mono_gc_alloc_fixed (sizeof (gpointer) * handles->size, make_root_descr_all_refs (handles->size, handles->type == HANDLE_PINNED));
+			handles->entries = mono_gc_alloc_fixed (sizeof (gpointer) * handles->size, make_root_descr_all_refs (handles->size, handles->type == HANDLE_PINNED), MONO_ROOT_SOURCE_GC_HANDLE, "gc handles table");
 		} else {
 			handles->entries = g_malloc0 (sizeof (gpointer) * handles->size);
 			handles->domain_ids = g_malloc0 (sizeof (guint16) * handles->size);
@@ -705,7 +705,7 @@ alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
 		if (handles->type > HANDLE_WEAK_TRACK) {
 			gpointer *entries;
 
-			entries = mono_gc_alloc_fixed (sizeof (gpointer) * new_size, make_root_descr_all_refs (new_size, handles->type == HANDLE_PINNED));
+			entries = mono_gc_alloc_fixed (sizeof (gpointer) * new_size, make_root_descr_all_refs (new_size, handles->type == HANDLE_PINNED), MONO_ROOT_SOURCE_GC_HANDLE, "gc handles table");
 			mono_gc_memmove_aligned (entries, handles->entries, sizeof (gpointer) * handles->size);
 
 			mono_gc_free_fixed (handles->entries);
@@ -1180,8 +1180,8 @@ mono_gc_init (void)
 	mono_mutex_init_recursive (&finalizer_mutex);
 	mono_mutex_init_recursive (&reference_queue_mutex);
 
-	MONO_GC_REGISTER_ROOT_FIXED (gc_handles [HANDLE_NORMAL].entries);
-	MONO_GC_REGISTER_ROOT_FIXED (gc_handles [HANDLE_PINNED].entries);
+	MONO_GC_REGISTER_ROOT_FIXED (gc_handles [HANDLE_NORMAL].entries, MONO_ROOT_SOURCE_GC_HANDLE, "gc handles table");
+	MONO_GC_REGISTER_ROOT_FIXED (gc_handles [HANDLE_PINNED].entries, MONO_ROOT_SOURCE_GC_HANDLE, "gc handles table");
 
 	mono_counters_register ("Minor GC collections", MONO_COUNTER_GC | MONO_COUNTER_UINT, &gc_stats.minor_gc_count);
 	mono_counters_register ("Major GC collections", MONO_COUNTER_GC | MONO_COUNTER_UINT, &gc_stats.major_gc_count);

@@ -3222,7 +3222,7 @@ ves_icall_Type_GetFields_internal (MonoReflectionType *type, MonoString *name, g
 	klass = startklass = mono_class_from_mono_type (type->type);
 	refklass = mono_class_from_mono_type (reftype->type);
 
-	mono_ptr_array_init (tmp_array, 2);
+	mono_ptr_array_init (tmp_array, 2, MONO_ROOT_SOURCE_REFLECTION, "temporary reflection fields list");
 	
 handle_parent:	
 	if (klass->exception_type != MONO_EXCEPTION_NONE) {
@@ -3478,7 +3478,7 @@ ves_icall_Type_GetConstructors_internal (MonoReflectionType *type, guint32 bflag
 	gpointer iter = NULL;
 	MonoPtrArray tmp_array;
 	
-	mono_ptr_array_init (tmp_array, 4); /*FIXME, guestimating*/
+	mono_ptr_array_init (tmp_array, 4, MONO_ROOT_SOURCE_REFLECTION, "temporary reflection constructors list"); /*FIXME, guestimating*/
 
 	domain = ((MonoObject *)type)->vtable->domain;
 	if (type->type->byref)
@@ -3586,7 +3586,7 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 	GHashTable *properties = NULL;
 	MonoPtrArray tmp_array;
 
-	mono_ptr_array_init (tmp_array, 8); /*This the average for ASP.NET types*/
+	mono_ptr_array_init (tmp_array, 8, MONO_ROOT_SOURCE_REFLECTION, "temporary reflection properties list"); /*This the average for ASP.NET types*/
 
 	if (!System_Reflection_PropertyInfo)
 		System_Reflection_PropertyInfo = mono_class_from_name (
@@ -3720,7 +3720,7 @@ ves_icall_Type_GetEvents_internal (MonoReflectionType *type, MonoString *name, g
 	GHashTable *events = NULL;
 	MonoPtrArray tmp_array;
 
-	mono_ptr_array_init (tmp_array, 4);
+	mono_ptr_array_init (tmp_array, 4, MONO_ROOT_SOURCE_REFLECTION, "temporary reflection events list");
 
 	if (!System_Reflection_EventInfo)
 		System_Reflection_EventInfo = mono_class_from_name (
@@ -3853,7 +3853,7 @@ ves_icall_Type_GetNestedTypes (MonoReflectionType *type, MonoString *name, guint
 	if (klass->generic_class)
 		klass = klass->generic_class->container_class;
 
-	mono_ptr_array_init (tmp_array, 1);
+	mono_ptr_array_init (tmp_array, 1, MONO_ROOT_SOURCE_REFLECTION, "temporary reflection nested types list");
 	iter = NULL;
 	while ((nested = mono_class_get_nested_types (klass, &iter))) {
 		match = 0;

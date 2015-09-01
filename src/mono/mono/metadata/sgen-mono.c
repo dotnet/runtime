@@ -964,13 +964,13 @@ mono_gc_alloc_mature (MonoVTable *vtable)
 }
 
 void*
-mono_gc_alloc_fixed (size_t size, MonoGCDescriptor descr)
+mono_gc_alloc_fixed (size_t size, MonoGCDescriptor descr, MonoGCRootSource source, const char *msg)
 {
 	/* FIXME: do a single allocation */
 	void *res = calloc (1, size);
 	if (!res)
 		return NULL;
-	if (!mono_gc_register_root (res, size, descr)) {
+	if (!mono_gc_register_root (res, size, descr, source, msg)) {
 		free (res);
 		res = NULL;
 	}
@@ -2406,15 +2406,15 @@ mono_gc_set_stack_end (void *stack_end)
  */
 
 int
-mono_gc_register_root (char *start, size_t size, MonoGCDescriptor descr)
+mono_gc_register_root (char *start, size_t size, MonoGCDescriptor descr, MonoGCRootSource source, const char *msg)
 {
-	return sgen_register_root (start, size, descr, descr ? ROOT_TYPE_NORMAL : ROOT_TYPE_PINNED);
+	return sgen_register_root (start, size, descr, descr ? ROOT_TYPE_NORMAL : ROOT_TYPE_PINNED, source, msg);
 }
 
 int
-mono_gc_register_root_wbarrier (char *start, size_t size, MonoGCDescriptor descr)
+mono_gc_register_root_wbarrier (char *start, size_t size, MonoGCDescriptor descr, MonoGCRootSource source, const char *msg)
 {
-	return sgen_register_root (start, size, descr, ROOT_TYPE_WBARRIER);
+	return sgen_register_root (start, size, descr, ROOT_TYPE_WBARRIER, source, msg);
 }
 
 void

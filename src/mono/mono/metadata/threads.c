@@ -291,8 +291,8 @@ static gboolean handle_store(MonoThread *thread, gboolean force_attach)
 	}
 
 	if(threads==NULL) {
-		MONO_GC_REGISTER_ROOT_FIXED (threads);
-		threads=mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC);
+		MONO_GC_REGISTER_ROOT_FIXED (threads, MONO_ROOT_SOURCE_THREADING, "threads table");
+		threads=mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_THREADING, "threads table");
 	}
 
 	/* We don't need to duplicate thread->handle, because it is
@@ -603,7 +603,7 @@ create_internal_thread (void)
 	thread->managed_id = get_next_managed_thread_id ();
 	if (mono_gc_is_moving ()) {
 		thread->thread_pinning_ref = thread;
-		MONO_GC_REGISTER_ROOT_PINNING (thread->thread_pinning_ref);
+		MONO_GC_REGISTER_ROOT_PINNING (thread->thread_pinning_ref, MONO_ROOT_SOURCE_THREADING, "thread pinning reference");
 	}
 
 	return thread;
@@ -802,13 +802,13 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, StartInfo *star
 	 * table.
 	 */
 	if (thread_start_args == NULL) {
-		MONO_GC_REGISTER_ROOT_FIXED (thread_start_args);
-		thread_start_args = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_CONSERVATIVE_GC);
+		MONO_GC_REGISTER_ROOT_FIXED (thread_start_args, MONO_ROOT_SOURCE_THREADING, "thread start arguments table");
+		thread_start_args = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_CONSERVATIVE_GC, MONO_ROOT_SOURCE_THREADING, "thread start arguments table");
 	}
 	mono_g_hash_table_insert (thread_start_args, thread, start_info->start_arg);
 	if (threads_starting_up == NULL) {
-		MONO_GC_REGISTER_ROOT_FIXED (threads_starting_up);
-		threads_starting_up = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_KEY_VALUE_GC);
+		MONO_GC_REGISTER_ROOT_FIXED (threads_starting_up, MONO_ROOT_SOURCE_THREADING, "starting threads table");
+		threads_starting_up = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_THREADING, "starting threads table");
 	}
 	mono_g_hash_table_insert (threads_starting_up, thread, thread);
 	mono_threads_unlock ();
@@ -3621,7 +3621,9 @@ mono_alloc_static_data (gpointer **static_data_ptr, guint32 offset, gboolean thr
 				ctx_desc = mono_gc_make_root_descr_user (mark_ctx_slots);
 		}
 
-		static_data = mono_gc_alloc_fixed (static_data_size [0], threadlocal ? tls_desc : ctx_desc);
+		static_data = mono_gc_alloc_fixed (static_data_size [0], threadlocal ? tls_desc : ctx_desc,
+			threadlocal ? MONO_ROOT_SOURCE_THREAD_STATIC : MONO_ROOT_SOURCE_CONTEXT_STATIC,
+			threadlocal ? "managed thread-static variables" : "managed context-static variables");
 		*static_data_ptr = static_data;
 		static_data [0] = static_data;
 	}
@@ -3633,7 +3635,9 @@ mono_alloc_static_data (gpointer **static_data_ptr, guint32 offset, gboolean thr
 		if (mono_gc_user_markers_supported ())
 			static_data [i] = g_malloc0 (static_data_size [i]);
 		else
-			static_data [i] = mono_gc_alloc_fixed (static_data_size [i], MONO_GC_DESCRIPTOR_NULL);
+			static_data [i] = mono_gc_alloc_fixed (static_data_size [i], MONO_GC_DESCRIPTOR_NULL,
+				threadlocal ? MONO_ROOT_SOURCE_THREAD_STATIC : MONO_ROOT_SOURCE_CONTEXT_STATIC,
+				threadlocal ? "managed thread-static variables" : "managed context-static variables");
 	}
 }
 
