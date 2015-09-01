@@ -7,8 +7,6 @@
 
 #if defined(MONO_SUPPORT_TASKLETS)
 
-/* keepalive_stacks could be a per-stack var to avoid locking overhead */
-static MonoGHashTable *keepalive_stacks;
 static mono_mutex_t tasklets_mutex;
 #define tasklets_lock() mono_mutex_lock(&tasklets_mutex)
 #define tasklets_unlock() mono_mutex_unlock(&tasklets_mutex)
@@ -17,10 +15,9 @@ static mono_mutex_t tasklets_mutex;
 static void
 internal_init (void)
 {
-	if (keepalive_stacks)
-		return;
-	MONO_GC_REGISTER_ROOT_PINNING (keepalive_stacks, MONO_ROOT_SOURCE_THREADING, "tasklet stacks table");
-	keepalive_stacks = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_CONSERVATIVE_GC, MONO_ROOT_SOURCE_THREADING, "tasklet stacks table");
+	if (!mono_gc_is_moving ())
+		/* Boehm requires the keepalive stacks to be kept in a hash since mono_gc_alloc_fixed () returns GC memory */
+		g_assert_not_reached ();
 }
 
 static void*
@@ -33,12 +30,8 @@ continuation_alloc (void)
 static void
 continuation_free (MonoContinuation *cont)
 {
-	if (cont->saved_stack) {
-		tasklets_lock ();
-		mono_g_hash_table_remove (keepalive_stacks, cont->saved_stack);
-		tasklets_unlock ();
+	if (cont->saved_stack)
 		mono_gc_free_fixed (cont->saved_stack);
-	}
 	g_free (cont);
 }
 
@@ -111,14 +104,11 @@ continuation_store (MonoContinuation *cont, int state, MonoException **e)
 	} else {
 		tasklets_lock ();
 		internal_init ();
-		if (cont->saved_stack) {
-			mono_g_hash_table_remove (keepalive_stacks, cont->saved_stack);
+		if (cont->saved_stack)
 			mono_gc_free_fixed (cont->saved_stack);
-		}
 		cont->stack_used_size = num_bytes;
 		cont->stack_alloc_size = num_bytes * 1.1;
 		cont->saved_stack = mono_gc_alloc_fixed (cont->stack_alloc_size, NULL, MONO_ROOT_SOURCE_THREADING, "saved tasklet stack");
-		mono_g_hash_table_insert (keepalive_stacks, cont->saved_stack, cont->saved_stack);
 		tasklets_unlock ();
 	}
 	memcpy (cont->saved_stack, cont->return_sp, num_bytes);
