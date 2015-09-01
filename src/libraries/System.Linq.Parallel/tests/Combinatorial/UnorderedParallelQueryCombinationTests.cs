@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Linq.Parallel.Tests
@@ -105,6 +106,24 @@ namespace System.Linq.Parallel.Tests
                 .Except(operation.Item(DefaultStart + DefaultSize, DefaultSize, source.Item));
             Assert.All(query.ToList(), x => seen.Add((int)x));
             seen.AssertComplete();
+        }
+
+        [Theory]
+        [MemberData("UnaryUnorderedOperators")]
+        [MemberData("BinaryUnorderedOperators")]
+        public static void GetEnumerator_Unordered(LabeledOperation source, LabeledOperation operation)
+        {
+            IntegerRangeSet seen = new IntegerRangeSet(DefaultStart, DefaultSize);
+            IEnumerator<int> enumerator = operation.Item(DefaultStart, DefaultSize, source.Item).GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                int current = enumerator.Current;
+                seen.Add(current);
+                Assert.Equal(current, enumerator.Current);
+            }
+            seen.AssertComplete();
+
+            Assert.Throws<NotSupportedException>(() => enumerator.Reset());
         }
 
         [Theory]
