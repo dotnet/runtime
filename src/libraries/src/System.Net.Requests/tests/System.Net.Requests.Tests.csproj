@@ -7,7 +7,6 @@
     <ProjectGuid>{851A40FE-7F07-415D-8592-5FE2096E84D3}</ProjectGuid>
     <OutputType>Library</OutputType>
     <StringResourcesPath>..\src\Resources\Strings.resx</StringResourcesPath>
-    <UnsupportedPlatforms>Linux;OSX;FreeBSD</UnsupportedPlatforms>
   </PropertyGroup>
   
   <!-- Help VS understand available configurations -->
@@ -32,10 +31,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\src\System.Net.Requests.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
+      <Name>System.Net.Requests</Name>
+      <Project>{5EE76DCC-9FD5-47FD-AB45-BD0F0857740F}</Project>
     </ProjectReference>
   </ItemGroup>
 
