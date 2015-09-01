@@ -96,6 +96,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 	guint8 *code, *start;
 	int this_pos = s390_r2;
 	MonoDomain *domain = mono_domain_get ();
+	char trampName[128];
 
 	start = code = mono_domain_code_reserve (domain, 28);
 
@@ -108,7 +109,9 @@ mono_arch_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 	mono_arch_flush_icache (start, code - start);
 	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_UNBOX_TRAMPOLINE, method);
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), domain);
+	snprintf(trampName, sizeof(trampName), "%s_unbox_trampoline", method->name);
+
+	mono_tramp_info_register (mono_tramp_info_create (trampName, start, code - start, NULL, NULL), domain);
 
 	return start;
 }
@@ -555,6 +558,7 @@ mono_arch_get_static_rgctx_trampoline (MonoMethod *m,
 	guint8 *code, *start;
 	gint32 displace;
 	int buf_len;
+	char trampName[128];
 
 	MonoDomain *domain = mono_domain_get ();
 
@@ -570,7 +574,9 @@ mono_arch_get_static_rgctx_trampoline (MonoMethod *m,
 	mono_arch_flush_icache (start, code - start);
 	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_HELPER, NULL);
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), domain);
+	snprintf(trampName, sizeof(trampName), "%s_rgctx_trampoline", m->name);
+
+	mono_tramp_info_register (mono_tramp_info_create (trampName, start, code - start, NULL, NULL), domain);
 
 	return(start);
 }	

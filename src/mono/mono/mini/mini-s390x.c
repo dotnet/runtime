@@ -4935,8 +4935,9 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	guint8 *code;
 	guint32 size;
 	CallInfo *cinfo;
-	int tracing = 0;
-	int lmfOffset;
+	int tracing = 0,
+            argsClobbered = 0,
+	    lmfOffset;
 
 	cfg->code_size   = 512;
 
@@ -5212,8 +5213,87 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			    G_STRUCT_OFFSET(MonoLMF, pregs[0]));			
 	}
 
-	if (tracing)
-		code = mono_arch_instrument_prolog(cfg, enter_method, code, TRUE);
+	if (cfg->method->save_lmf)
+		argsClobbered = TRUE;
+
+	if (tracing) {
+		argsClobbered = TRUE;
+		code = mono_arch_instrument_prolog (cfg, enter_method, code, TRUE);
+	}
+
+	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
+		argsClobbered = TRUE;
+
+	/*
+	 * Optimize the common case of the first bblock making a call with the same
+	 * arguments as the method. This works because the arguments are still in their
+	 * original argument registers.
+	 */
+	if (!argsClobbered) {
+		MonoBasicBlock *first_bb = cfg->bb_entry;
+		MonoInst *next;
+		int filter = FILTER_IL_SEQ_POINT;
+
+		next = mono_bb_first_inst (first_bb, filter);
+		if (!next && first_bb->next_bb) {
+			first_bb = first_bb->next_bb;
+			next = mono_bb_first_inst (first_bb, filter);
+		}
+
+		if (first_bb->in_count > 1)
+			next = NULL;
+
+		for (i = 0; next && i < sig->param_count + sig->hasthis; ++i) {
+			ArgInfo *ainfo = cinfo->args + i;
+			gboolean match = FALSE;
+
+			inst = cfg->args [i];
+			if (inst->opcode != OP_REGVAR) {
+				switch (ainfo->regtype) {
+				case RegTypeGeneral: {
+					if (((next->opcode == OP_LOAD_MEMBASE) || 
+					     (next->opcode == OP_LOADI4_MEMBASE)) && 
+					     next->inst_basereg == inst->inst_basereg && 
+					     next->inst_offset == inst->inst_offset) {
+						if (next->dreg == ainfo->reg) {
+							NULLIFY_INS (next);
+							match = TRUE;
+						} else {
+							next->opcode = OP_MOVE;
+							next->sreg1 = ainfo->reg;
+							/* Only continue if the instruction doesn't change argument regs */
+							if (next->dreg == ainfo->reg)
+								match = TRUE;
+						}
+					}
+					break;
+				}
+				default:
+					break;
+				}
+			} else {
+				/* Argument allocated to (non-volatile) register */
+				switch (ainfo->regtype) {
+				case RegTypeGeneral:
+					if (next->opcode == OP_MOVE && 
+					    next->sreg1 == inst->dreg && 
+					    next->dreg == ainfo->reg) {
+						NULLIFY_INS (next);
+						match = TRUE;
+					}
+					break;
+				default:
+					break;
+				}
+			}
+
+			if (match) {
+				next = mono_inst_next (next, filter);
+				if (!next)
+					break;
+			}
+		}
+	}
 
 	cfg->code_len = code - cfg->native_code;
 	g_assert (cfg->code_len < cfg->code_size);
@@ -5914,6 +5994,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain,
 	int i;
 	int size = 0;
 	guchar *code, *start;
+	char trampName[64];
 
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
@@ -6034,7 +6115,8 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain,
 
 	g_assert (code - start <= size);
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), domain);
+	snprintf(trampName, sizeof(trampName), "%d_imt_thunk_trampoline", domain->domain_id);
+	mono_tramp_info_register (mono_tramp_info_create (trampName, start, code - start, NULL, NULL), domain);
 
 	return (start);
 }
