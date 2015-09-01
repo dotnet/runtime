@@ -1,12 +1,13 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class SingleTests
+    public class SingleOrDefaultTests
     {
         public static IEnumerable<int> RepeatedNumberGuaranteedNotCollectionType(int num, long count)
         {
@@ -16,37 +17,28 @@ namespace System.Linq.Tests
         [Fact]
         public void SameResultsRepeatCallsIntQuery()
         {
-            var q = from x in new[] { 999.9m }
+            var q = from x in new[] { 0.12335f }
                     select x;
 
-            Assert.Equal(q.Single(), q.Single());
+            Assert.Equal(q.SingleOrDefault(), q.SingleOrDefault());
         }
 
         [Fact]
         public void SameResultsRepeatCallsStringQuery()
         {
-            var q = from x in new[] { "!@#$%^" }
-                    where !String.IsNullOrEmpty(x)
+            var q = from x in new[] { "" }
                     select x;
 
-            Assert.Equal(q.Single(), q.Single());
-        }
-
-        [Fact]
-        public void SameResultsRepeatCallsIntQueryWithZero()
-        {
-            var q = from x in new[] { 0 }
-                    select x;
-
-            Assert.Equal(q.Single(), q.Single());
+            Assert.Equal(q.SingleOrDefault(string.IsNullOrEmpty), q.SingleOrDefault(string.IsNullOrEmpty));
         }
 
         [Fact]
         public void EmptyIList()
         {
-            int[] source = { };
-            
-            Assert.Throws<InvalidOperationException>(() => source.Single());
+            int?[] source = { };
+            int? expected = null;
+
+            Assert.Equal(expected, source.SingleOrDefault());
         }
 
         [Fact]
@@ -55,7 +47,7 @@ namespace System.Linq.Tests
             int[] source = { 4 };
             int expected = 4;
 
-            Assert.Equal(expected, source.Single());
+            Assert.Equal(expected, source.SingleOrDefault());
         }
 
         [Fact]
@@ -63,15 +55,16 @@ namespace System.Linq.Tests
         {
             int[] source = { 4, 4, 4, 4, 4 };
 
-            Assert.Throws<InvalidOperationException>(() => source.Single());
+            Assert.Throws<InvalidOperationException>(() => source.SingleOrDefault());
         }
 
         [Fact]
         public void EmptyNotIList()
         {
             IEnumerable<int> source = RepeatedNumberGuaranteedNotCollectionType(0, 0);
+            int expected = default(int);
 
-            Assert.Throws<InvalidOperationException>(() => source.Single());
+            Assert.Equal(expected, source.SingleOrDefault());
         }
 
         [Fact]
@@ -80,7 +73,7 @@ namespace System.Linq.Tests
             IEnumerable<int> source = RepeatedNumberGuaranteedNotCollectionType(-5, 1);
             int expected = -5;
 
-            Assert.Equal(expected, source.Single());
+            Assert.Equal(expected, source.SingleOrDefault());
         }
 
         [Fact]
@@ -88,15 +81,16 @@ namespace System.Linq.Tests
         {
             IEnumerable<int> source = RepeatedNumberGuaranteedNotCollectionType(3, 5);
 
-            Assert.Throws<InvalidOperationException>(() => source.Single());
+            Assert.Throws<InvalidOperationException>(() => source.SingleOrDefault());
         }
 
         [Fact]
         public void EmptySourceWithPredicate()
         {
             int[] source = { };
+            int expected = default(int);
 
-            Assert.Throws<InvalidOperationException>(() => source.Single(i => i % 2 == 0));
+            Assert.Equal(expected, source.SingleOrDefault(i => i % 2 == 0));
         }
 
         [Fact]
@@ -105,23 +99,25 @@ namespace System.Linq.Tests
             int[] source = { 4 };
             int expected = 4;
             
-            Assert.Equal(expected, source.Single(i => i % 2 == 0));
+            Assert.Equal(expected, source.SingleOrDefault(i => i % 2 == 0));
         }
 
         [Fact]
         public void SingleElementPredicateFalse()
         {
             int[] source = { 3 };
-            
-            Assert.Throws<InvalidOperationException>(() => source.Single(i => i % 2 == 0));
+            int expected = default(int);
+
+            Assert.Equal(expected, source.SingleOrDefault(i => i % 2 == 0));
         }
 
         [Fact]
         public void ManyElementsPredicateFalseForAll()
         {
             int[] source = { 3, 1, 7, 9, 13, 19 };
+            int expected = default(int);
 
-            Assert.Throws<InvalidOperationException>(() => source.Single(i => i % 2 == 0));
+            Assert.Equal(expected, source.SingleOrDefault(i => i % 2 == 0));
         }
 
         [Fact]
@@ -130,15 +126,15 @@ namespace System.Linq.Tests
             int[] source = { 3, 1, 7, 9, 13, 19, 20 };
             int expected = 20;
 
-            Assert.Equal(expected, source.Single(i => i % 2 == 0));
+            Assert.Equal(expected, source.SingleOrDefault(i => i % 2 == 0));
         }
 
         [Fact]
-        public void ManyElementsPredicateTrueForFirstAndLast()
+        public void ManyElementsPredicateTrueForFirstAndFifth()
         {
-            int[] source = { 2, 3, 1, 7, 9, 13, 19, 10 };
+            int[] source = { 2, 3, 1, 7, 10, 13, 19, 9 };
 
-            Assert.Throws<InvalidOperationException>(() => source.Single(i => i % 2 == 0));
+            Assert.Throws<InvalidOperationException>(() => source.SingleOrDefault(i => i % 2 == 0));
         }
 
         [Theory]
@@ -146,15 +142,15 @@ namespace System.Linq.Tests
         [InlineData(42, 100)]
         public void FindSingleMatch(int target, int range)
         {
-            Assert.Equal(target, Enumerable.Range(0, range).Single(i => i == target));
+            Assert.Equal(target, Enumerable.Range(0, range).SingleOrDefault(i => i == target));
         }
         
         [Fact]
         public void ThrowsOnNullSource()
         {
             int[] source = null;
-            Assert.Throws<ArgumentNullException>("source", () => source.Single());
-            Assert.Throws<ArgumentNullException>("source", () => source.Single(i => i % 2 == 0));
+            Assert.Throws<ArgumentNullException>("source", () => source.SingleOrDefault());
+            Assert.Throws<ArgumentNullException>("source", () => source.SingleOrDefault(i => i % 2 == 0));
         }
 
         [Fact]
@@ -162,7 +158,7 @@ namespace System.Linq.Tests
         {
             int[] source = { };
             Func<int, bool> nullPredicate = null;
-            Assert.Throws<ArgumentNullException>("predicate", () => source.Single(nullPredicate));
+            Assert.Throws<ArgumentNullException>("predicate", () => source.SingleOrDefault(nullPredicate));
         }
     }
 }
