@@ -206,7 +206,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         {
             Stream stream = MakeResponseStream();
 
-            TestControl.WinHttpAPIFail = true;
+            TestControl.Fail.WinHttpReadData = true;
             Assert.Throws<IOException>(() => { stream.Read(new byte[1], 0, 1); });
         }
 
