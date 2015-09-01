@@ -15,6 +15,9 @@ internal static partial class Interop
            IntPtr context);
 
         [DllImport(Libraries.GlobalizationInterop, CharSet = CharSet.Unicode)]
+        internal static extern int GetCalendars(string localeName, CalendarId[] calendars, int calendarsCapacity);
+
+        [DllImport(Libraries.GlobalizationInterop, CharSet = CharSet.Unicode)]
         internal static extern CalendarDataResult GetCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType calendarDataType, StringBuilder result, int resultCapacity);
 
         [DllImport(Libraries.GlobalizationInterop, CharSet = CharSet.Unicode)]

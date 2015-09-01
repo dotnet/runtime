@@ -69,8 +69,8 @@ namespace System.Globalization
         // Call native side to figure out which calendars are allowed
         internal static int GetCalendars(string localeName, bool useUserOverride, CalendarId[] calendars)
         {
-            // TODO: Implement this.
-            return 0;
+            // NOTE: there are no 'user overrides' on Linux
+            return Interop.GlobalizationInterop.GetCalendars(localeName, calendars, calendars.Length);
         }
 
         private static bool SystemSupportsTaiwaneseCalendar()
