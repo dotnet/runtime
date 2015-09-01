@@ -611,9 +611,9 @@ retry_state_change:
 			trace_state_change ("ABORT_BLOCKING", info, raw_state, STATE_RUNNING, 0);
 			return AbortBlockingOk;
 		} else {
-			if (InterlockedCompareExchange (&info->thread_state, build_thread_state (STATE_ASYNC_SUSPEND_REQUESTED, suspend_count), raw_state) != raw_state)
+			if (InterlockedCompareExchange (&info->thread_state, build_thread_state (STATE_SELF_SUSPEND_REQUESTED, suspend_count), raw_state) != raw_state)
 				goto retry_state_change;
-			trace_state_change ("ABORT_BLOCKING", info, raw_state, STATE_ASYNC_SUSPEND_REQUESTED, 0);
+			trace_state_change ("ABORT_BLOCKING", info, raw_state, STATE_SELF_SUSPEND_REQUESTED, 0);
 			return AbortBlockingOkAndPool;
 		}
 /*
