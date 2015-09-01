@@ -56,7 +56,9 @@ namespace Internal.Cryptography.Pal
                 // Do this here instead of a static field initializer so that
                 // the static initializer isn't capable of throwing the "home directory not found"
                 // exception.
-                s_userStoreRoot = PersistedFiles.GetUserFeatureDirectory("cryptography", "x509stores");
+                s_userStoreRoot = PersistedFiles.GetUserFeatureDirectory(
+                    X509Persistence.CryptographyFeatureName,
+                    X509Persistence.X509StoresSubFeatureName);
             }
 
             _storePath = Path.Combine(s_userStoreRoot, directoryName);

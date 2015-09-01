@@ -18,6 +18,7 @@ namespace Internal.Cryptography
         public const string SubjectKeyIdentifier        = "2.5.29.14";
         public const string KeyUsage                    = "2.5.29.15";
         public const string BasicConstraints2           = "2.5.29.19";
+        public const string CrlDistributionPoints       = "2.5.29.31";
         public const string CertPolicies                = "2.5.29.32";
         public const string AnyCertPolicy               = "2.5.29.32.0";
         public const string CertPolicyMappings          = "2.5.29.33";

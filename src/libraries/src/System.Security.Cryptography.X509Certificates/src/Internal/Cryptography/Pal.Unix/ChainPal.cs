@@ -27,12 +27,19 @@ namespace Internal.Cryptography.Pal
             DateTime verificationTime,
             TimeSpan timeout)
         {
-            CheckRevocationMode(revocationMode);
-
             // An input value of 0 on the timeout is "take all the time you need".
             if (timeout == TimeSpan.Zero)
             {
                 timeout = TimeSpan.MaxValue;
+            }
+
+            // Let Unspecified mean Local, so only convert if the source was UTC.
+            //
+            // Converge on Local instead of UTC because OpenSSL is going to assume we gave it
+            // local time.
+            if (verificationTime.Kind == DateTimeKind.Utc)
+            {
+                verificationTime = verificationTime.ToLocalTime();
             }
 
             TimeSpan remainingDownloadTime = timeout;
@@ -51,7 +58,10 @@ namespace Internal.Cryptography.Pal
                 downloaded,
                 applicationPolicy,
                 certificatePolicy,
-                verificationTime);
+                revocationMode,
+                revocationFlag,
+                verificationTime,
+                ref remainingDownloadTime);
 
             if (chain.ChainStatus.Length == 0 && downloaded.Count > 0)
             {
@@ -59,15 +69,6 @@ namespace Internal.Cryptography.Pal
             }
 
             return chain;
-        }
-
-        private static void CheckRevocationMode(X509RevocationMode revocationMode)
-        {
-            if (revocationMode != X509RevocationMode.NoCheck)
-            {
-                // TODO (#2203): Add support for revocation once networking is ready.
-                throw new NotImplementedException(SR.WorkInProgress);
-            }
         }
 
         private static void SaveIntermediateCertificates(

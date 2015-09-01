@@ -4,12 +4,13 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography.Pal
 {
     internal static class CertificateAssetDownloader
     {
-        private static Interop.libcurl.curl_readwrite_callback s_writeCallback = CurlWriteCallback;
+        private static readonly Interop.libcurl.curl_readwrite_callback s_writeCallback = CurlWriteCallback;
 
         internal static X509Certificate2 DownloadCertificate(string uri, ref TimeSpan remainingDownloadTime)
         {
@@ -30,7 +31,47 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        internal static unsafe byte[] DownloadAsset(string uri, ref TimeSpan remainingDownloadTime)
+        internal static SafeX509CrlHandle DownloadCrl(string uri, ref TimeSpan remainingDownloadTime)
+        {
+            byte[] data = DownloadAsset(uri, ref remainingDownloadTime);
+
+            if (data == null)
+            {
+                return null;
+            }
+
+            SafeX509CrlHandle handle;
+
+            unsafe
+            {
+                // DER-encoded CRL seems to be the most common off of some random spot-checking, so try DER first.
+                handle = Interop.libcrypto.OpenSslD2I(
+                    (ptr, b, i) => Interop.libcrypto.d2i_X509_CRL(ptr, b, i),
+                    data,
+                    checkHandle: false);
+            }
+
+            if (!handle.IsInvalid)
+            {
+                return handle;
+            }
+
+            using (SafeBioHandle bio = Interop.libcrypto.BIO_new(Interop.libcrypto.BIO_s_mem()))
+            {
+                Interop.libcrypto.BIO_write(bio, data, data.Length);
+
+                handle = Interop.libcrypto.PEM_read_bio_X509_CRL(bio);
+
+                if (!handle.IsInvalid)
+                {
+                    return handle;
+                }
+            }
+
+            return null;
+        }
+
+        private static byte[] DownloadAsset(string uri, ref TimeSpan remainingDownloadTime)
         {
             if (remainingDownloadTime <= TimeSpan.Zero)
             {

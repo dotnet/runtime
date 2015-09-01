@@ -32,6 +32,27 @@ namespace Microsoft.Win32.SafeHandles
             get { return handle == IntPtr.Zero; }
         }
     }
+
+    internal sealed class SafeX509CrlHandle : SafeHandle
+    {
+        private SafeX509CrlHandle() :
+            base(IntPtr.Zero, ownsHandle: true)
+        {
+        }
+
+        protected override bool ReleaseHandle()
+        {
+            Interop.libcrypto.X509_CRL_free(handle);
+            SetHandle(IntPtr.Zero);
+            return true;
+        }
+
+        public override bool IsInvalid
+        {
+            get { return handle == IntPtr.Zero; }
+        }
+    }
+
     [SecurityCritical]
     internal sealed class SafeX509StoreHandle : SafeHandle
     {

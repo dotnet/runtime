@@ -324,7 +324,7 @@ namespace Internal.Cryptography.Pal
             return new X500DistinguishedName(buf);
         }
 
-        private static DateTime ExtractValidityDateTime(IntPtr validityDatePtr)
+        internal static DateTime ExtractValidityDateTime(IntPtr validityDatePtr)
         {
             byte[] bytes = Interop.Crypto.GetAsn1StringBytes(validityDatePtr);
 
