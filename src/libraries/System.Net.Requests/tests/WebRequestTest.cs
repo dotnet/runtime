@@ -41,8 +41,18 @@ namespace System.Net.Requests.Test
         public void DefaultWebProxy_SetCredentialsToExplicitCredentialsThenGet_ValuesMatch()
         {
             IWebProxy proxy = WebRequest.DefaultWebProxy;
-            proxy.Credentials = _explicitCredentials;
-            Assert.Equal(_explicitCredentials, proxy.Credentials);
+            ICredentials oldCreds = proxy.Credentials;
+            try
+            {
+                proxy.Credentials = _explicitCredentials;
+                Assert.Equal(_explicitCredentials, proxy.Credentials);
+            }
+            finally
+            {
+                // Reset the credentials so as not to interfere with any subsequent tests, 
+                // e.g. DefaultWebProxy_VerifyDefaults_Success
+                proxy.Credentials = oldCreds;
+            }
         }
     }
 }

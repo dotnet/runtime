@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>System.Net.Http.Tests</RootNamespace>
     <AssemblyName>System.Net.Http.Tests</AssemblyName>
-    <UnsupportedPlatforms>Linux;OSX;FreeBSD</UnsupportedPlatforms>
+    <UnsupportedPlatforms>FreeBSD</UnsupportedPlatforms>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Release|AnyCPU' " />

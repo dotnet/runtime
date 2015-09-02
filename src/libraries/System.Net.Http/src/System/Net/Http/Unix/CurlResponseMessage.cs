@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 
 namespace System.Net.Http
@@ -12,30 +12,27 @@ namespace System.Net.Http
     {
         private readonly CurlResponseStream _responseStream = new CurlResponseStream();
 
-        #region Properties
-
-        internal CurlResponseStream ContentStream
-        {
-            get { return _responseStream; }
-        }
-
-        #endregion
-
         internal CurlResponseMessage(HttpRequestMessage request)
         {
             RequestMessage = request;
             Content = new StreamContent(_responseStream);
         }
+
+        internal CurlResponseStream ContentStream
+        {
+            get { return _responseStream; }
+        }
     }
 
     internal sealed class CurlResponseStream : Stream
     {
-        private volatile bool _disposed = false;
-        private Stream _innerStream;
         private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
         private readonly ManualResetEventSlim _readerRequestingDataEvent = new ManualResetEventSlim(false);
         private readonly ManualResetEventSlim _writerHasDataEvent = new ManualResetEventSlim(false);
         private readonly ManualResetEventSlim _readerReadAllDataEvent = new ManualResetEventSlim(false);
+        private volatile bool _disposed = false;
+        private Stream _innerStream;
+        private ExceptionDispatchInfo _storedException;
 
         private object LockObject
         {
@@ -44,24 +41,41 @@ namespace System.Net.Http
 
         internal void SignalComplete()
         {
-            if (!_disposed)
-            {
-                _cancellationTokenSource.Cancel();
-            }
+            _cancellationTokenSource.Cancel();
         }
 
-        internal unsafe void WaitAndSignalReaders(byte* pointer, long length)
+        internal void SignalFailure(ExceptionDispatchInfo error)
         {
-            CheckDisposed();
-            _readerRequestingDataEvent.Wait(Timeout.InfiniteTimeSpan, _cancellationTokenSource.Token);
-            lock (LockObject)
+            if (_storedException == null)
             {
-                _innerStream = new UnmanagedMemoryStream(pointer, length);
-                _readerReadAllDataEvent.Reset();
-                _readerRequestingDataEvent.Reset();
-                _writerHasDataEvent.Set();
+                _storedException = error;
             }
-            _readerReadAllDataEvent.Wait(Timeout.InfiniteTimeSpan, _cancellationTokenSource.Token);;
+            SignalComplete();
+        }
+
+        internal unsafe void WaitAndSignalReaders(IntPtr pointer, long length)
+        {
+            try
+            {
+                CheckDisposed();
+                _readerRequestingDataEvent.Wait(Timeout.InfiniteTimeSpan, _cancellationTokenSource.Token);
+                lock (LockObject)
+                {
+                    _innerStream = new UnmanagedMemoryStream((byte*)pointer, length);
+                    _readerReadAllDataEvent.Reset();
+                    _readerRequestingDataEvent.Reset();
+                    _writerHasDataEvent.Set();
+                }
+                _readerReadAllDataEvent.Wait(Timeout.InfiniteTimeSpan, _cancellationTokenSource.Token);
+            }
+            finally
+            {
+                if (_innerStream != null)
+                {
+                    _innerStream.Dispose();
+                    _innerStream = null;
+                }
+            }
         }
 
         public override bool CanRead
@@ -159,7 +173,7 @@ namespace System.Net.Http
                     }
 
                     // Since this is under lock, make sure the Read is non-blocking
-                    Debug.Assert((_innerStream is MemoryStream) || (_innerStream is UnmanagedMemoryStream));
+                    Debug.Assert((_innerStream is MemoryStream) || (_innerStream is UnmanagedMemoryStream), "_innerStream was an invalid type");
 
                     int bytesRead = _innerStream.Read(buffer, offset, (int)Math.Min((long)count, _innerStream.Length));
                     if (_innerStream.Position == _innerStream.Length)
@@ -168,10 +182,14 @@ namespace System.Net.Http
                         _innerStream = null;
                         _readerReadAllDataEvent.Set();
                     }
+
+                    ThrowStoredExceptionIfExists();
                     return bytesRead;
                 }
             }
             while (WaitForWriter());
+
+            ThrowStoredExceptionIfExists();
             return 0;
         }
 
@@ -223,7 +241,7 @@ namespace System.Net.Http
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(this.GetType().FullName);
+                throw new ObjectDisposedException(GetType().FullName);
             }
         }
 
@@ -250,9 +268,20 @@ namespace System.Net.Http
 
         private void SignalWriter()
         {
-            Debug.Assert(Monitor.IsEntered(LockObject));
+            Debug.Assert(Monitor.IsEntered(LockObject), "lock wasn't held");
             _writerHasDataEvent.Reset();
             _readerRequestingDataEvent.Set();
+        }
+
+        private void ThrowStoredExceptionIfExists()
+        {
+            // We may have been canceled to indicate some other failure, in which case
+            // we should propagate that failure.
+            ExceptionDispatchInfo edi = _storedException;
+            if (edi != null)
+            {
+                edi.Throw();
+            }
         }
 
         #endregion
