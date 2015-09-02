@@ -9,7 +9,7 @@ namespace Internal.Cryptography.Pal
 {
     internal static class CertificateAssetDownloader
     {
-        private static unsafe Interop.libcurl.curl_unsafe_write_callback s_writeCallback = CurlWriteCallback;
+        private static Interop.libcurl.curl_readwrite_callback s_writeCallback = CurlWriteCallback;
 
         internal static X509Certificate2 DownloadCertificate(string uri, ref TimeSpan remainingDownloadTime)
         {
@@ -101,7 +101,7 @@ namespace Internal.Cryptography.Pal
             return data;
         }
 
-        private static unsafe ulong CurlWriteCallback(byte* buffer, ulong size, ulong nitems, IntPtr context)
+        private static ulong CurlWriteCallback(IntPtr buffer, ulong size, ulong nitems, IntPtr context)
         {
             ulong totalSize = size * nitems;
 
@@ -114,7 +114,7 @@ namespace Internal.Cryptography.Pal
             List<byte[]> dataPieces = (List<byte[]>)gcHandle.Target;
             byte[] piece = new byte[totalSize];
 
-            Marshal.Copy((IntPtr)buffer, piece, 0, (int)totalSize);
+            Marshal.Copy(buffer, piece, 0, (int)totalSize);
             dataPieces.Add(piece);
 
             return totalSize;

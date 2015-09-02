@@ -26,7 +26,7 @@ namespace System.Net.Http
             private static readonly Interop.libcurl.curl_readwrite_callback s_receiveHeadersCallback = CurlReceiveHeadersCallback;
             private static readonly Interop.libcurl.curl_readwrite_callback s_sendCallback = CurlSendCallback;
             private static readonly Interop.libcurl.seek_callback s_seekCallback = CurlSeekCallback;
-            private unsafe static readonly Interop.libcurl.curl_unsafe_write_callback s_receiveBodyCallback = CurlReceiveBodyCallback;
+            private static readonly Interop.libcurl.curl_readwrite_callback s_receiveBodyCallback = CurlReceiveBodyCallback;
 
             /// <summary>
             /// A collection of not-yet-processed incoming requests for outbound connections to be made.
@@ -95,7 +95,7 @@ namespace System.Net.Http
 
                     // Kick off the processing task.  It's "DenyChildAttach" to avoid any surprises if
                     // code happens to create attached tasks, and it's LongRunning because this thread
-                    // is lkely going to sit around for a while in a wait loop (and the more requests
+                    // is likely going to sit around for a while in a wait loop (and the more requests
                     // are concurrently issued to the same agent, the longer the thread will be around).
                     const TaskCreationOptions Options = TaskCreationOptions.DenyChildAttach | TaskCreationOptions.LongRunning;
                     Task.Factory.StartNew(s =>
@@ -119,8 +119,8 @@ namespace System.Net.Http
                                 // subsequent Queue calls to see an improperly configured
                                 // set of descriptors.
                                 Interop.Sys.Close(thisRef._wakeupRequestedPipeFd);
-                                Interop.Sys.Close(thisRef._requestWakeupPipeFd);
                                 thisRef._wakeupRequestedPipeFd = 0;
+                                Interop.Sys.Close(thisRef._requestWakeupPipeFd);
                                 thisRef._requestWakeupPipeFd = 0;
 
                                 // In the time between we stopped processing and now,
@@ -496,8 +496,8 @@ namespace System.Net.Http
                 return size - 1;
             }
 
-            private unsafe static size_t CurlReceiveBodyCallback(
-                byte* buffer, size_t size, size_t nitems, IntPtr context)
+            private static size_t CurlReceiveBodyCallback(
+                IntPtr buffer, size_t size, size_t nitems, IntPtr context)
             {
                 size *= nitems;
 
@@ -515,8 +515,10 @@ namespace System.Net.Http
 
                             // Wait for a reader
                             // TODO: The below call blocks till all the data has been read since
-                            //       response body is not suppored to be buffered in memory.
-                            //       Figure out some way to work around this
+                            //       response body is not supported to be buffered in memory.
+                            //       Figure out some way to work around this.  For example, we could
+                            //       potentially return CURL_WRITEFUNC_PAUSE to pause the connection
+                            //       until a reader is ready to read, at which point we could unpause.
                             if (size != 0)
                             {
                                 easy.ResponseMessage.ContentStream.WaitAndSignalReaders(buffer, (long)size);
