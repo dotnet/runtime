@@ -2,9 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #pragma warning disable 3026, 0067, 3005 // Disabling a few CLS-compliance warnings
-using System;
 
-namespace EventDefinitions
+namespace System.Reflection.Tests
 {
     public interface IEventTestInterface
     {
