@@ -133,5 +133,18 @@ namespace System.Linq.Tests
 
             Assert.Equal(expected, Enumerable.Range(start, count));
         }
+        
+        [Fact]
+        public void RangeAsEnumeratorStartsZeroEndsAtLast()
+        {
+            // The behaviour here is not specified, but any change that breaks this is
+            // not strictly non-breaking, and while a dependency on it is perhaps unlikely
+            // such a change should be noted.
+            var ra = Enumerable.Range(4, 3);
+            var asEn = (IEnumerator<int>)ra;
+            Assert.Equal(0, asEn.Current);
+            ra.All(i => i > 0);
+            Assert.Equal(6, asEn.Current);
+        }
     }
 }
