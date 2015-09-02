@@ -10,7 +10,7 @@ namespace System.Diagnostics
             // Whereas the Win32 implementation caches the GetProcessId result, the Unix 
             // implementation doesn't so as to avoid problems with fork'd child processes 
             // ending up returning the same id as the parent.
-            return Interop.libc.getpid();
+            return Interop.Sys.GetPid();
         }
     }
 }

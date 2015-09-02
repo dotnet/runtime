@@ -113,6 +113,46 @@ enum class NodeType : int16_t
 };
 
 /**
+ * Constants from sys/file.h for lock types
+ */
+enum class LockOperations : int32_t
+{
+    PAL_LOCK_SH = 1,    /* shared lock */
+    PAL_LOCK_EX = 2,    /* exclusive lock */
+    PAL_LOCK_NB = 4,    /* don't block when locking*/
+    PAL_LOCK_UN = 8,    /* unlock */
+};
+
+/** 
+ * Constants for changing the access permissions of a path
+ */
+enum class AccessMode : int32_t
+{
+    PAL_F_OK = 0,   /* Check for existence */
+    PAL_X_OK = 1,   /* Check for execute */
+    PAL_W_OK = 2,   /* Check for write */
+    PAL_R_OK = 4,   /* Check for read */
+};
+
+/**
+ * Flags to pass to fnmatch for what type of pattern matching to do
+ */
+enum class FnMatchFlags : int32_t
+{
+    PAL_FNM_NONE = 0,
+};
+
+/**
+ * Constants passed to lseek telling the OS where to seek from
+ */
+enum class SeekWhence : int32_t
+{
+    PAL_SEEK_SET = 0,   /* seek from the beginning of the stream */
+    PAL_SEEK_CUR = 1,   /* seek from the current position */
+    PAL_SEEK_END = 2,   /* seek from the end of the stream, wrapping if necessary */
+};
+
+/**
  * Our intermediate dirent struct that only gives back the data we need
  */
 struct DirectoryEntry
@@ -309,3 +349,62 @@ extern "C"
 int32_t MkFifo(
     const char* path,
     int32_t mode);
+
+/**
+ * Flushes all modified data and attribtues of the specified File Descriptor to the storage medium.
+ * Returns 0 for success; on fail, -1 is returned and errno is set.
+ */
+extern "C"
+int32_t FSync(int32_t fd);
+
+/**
+ * Changes the advisory lock status on a given File Descriptor
+ * Returns 0 on success; otherwise, -1 is returned and errno is set
+ */
+extern "C"
+int32_t FLock(int32_t fd, LockOperations operation);
+
+/** 
+ * Changes the current working directory to be the specified path.
+ * Returns 0 on success; otherwise, returns -1 and errno is set
+ */
+extern "C"
+int32_t ChDir(const char* path);
+
+/**
+ * Checks the access permissions of the current calling user on the specified path for the specified mode.
+ * Returns -1 if the path cannot be found or the if desired access is not granted and errno is set; otherwise, returns 0.
+ */
+extern "C"
+int32_t Access(const char* path, AccessMode mode);
+
+/**
+ * Tests whether a pathname matches a specified pattern.
+ * Returns 0 if the string matches; returns FNM_NOMATCH if the call succeeded but the
+ * string does not match; otherwise, returns a non-zero error code.
+ */
+extern "C"
+int32_t FnMatch(const char* pattern, const char* path, FnMatchFlags flags);
+
+/**
+ * Seek to a specified location within a seekable stream
+ * On success, the resulting offet, in bytes, from the begining of the stream; otherwise,
+ * returns -1 and errno is set.
+ */
+extern "C"
+int64_t LSeek(int32_t fd, int64_t offset, SeekWhence whence);
+
+/**
+ * Creates a hard-link at link pointing to source.
+ * Returns 0 on success; otherwise, returns -1 and errno is set.
+ */
+extern "C"
+int32_t Link(const char* source, const char* linkTarget);
+
+/**
+ * Creates a file name that adheres to the specified template, creates the file on disk with
+ * 0600 permissions, and returns an open r/w File Descriptor on the file. 
+ * Returns a valid File Descriptor on success; otherwise, returns -1 and errno is set.
+ */
+extern "C"
+int32_t MksTemps(char* pathTemplate, int32_t suffixLength);
