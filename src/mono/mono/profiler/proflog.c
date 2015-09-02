@@ -489,6 +489,7 @@ typedef struct _MethodInfo MethodInfo;
 struct _MethodInfo {
 	MonoMethod *method;
 	MonoJitInfo *ji;
+	uint64_t time;
 };
 
 #ifdef TLS_INIT
@@ -700,12 +701,19 @@ register_method_local (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *ji)
 			ji = search.found;
 		}
 
-		g_assert (ji);
+		/*
+		 * FIXME: We can't always find JIT info for a generic shared method, especially
+		 * if we obtained the MonoMethod during an async stack walk. For now, we deal
+		 * with this by giving the generic shared method name and dummy code start/size
+		 * information (i.e. zeroes).
+		 */
+		//g_assert (ji);
 
 		MethodInfo *info = malloc (sizeof (MethodInfo));
 
 		info->method = method;
 		info->ji = ji;
+		info->time = current_time ();
 
 		g_ptr_array_add (TLS_GET (GPtrArray, tlsmethodlist), info);
 	}
@@ -4179,7 +4187,8 @@ writer_thread (void *arg)
 
 				char *name = mono_method_full_name (info->method, 1);
 				int nlen = strlen (name) + 1;
-				uint64_t now = current_time ();
+				void *cstart = info->ji ? mono_jit_info_get_code_start (info->ji) : NULL;
+				int csize = info->ji ? mono_jit_info_get_code_size (info->ji) : 0;
 
 				method_buffer = ensure_logbuf_inner (method_buffer,
 					EVENT_SIZE /* event */ +
@@ -4191,10 +4200,10 @@ writer_thread (void *arg)
 				);
 
 				emit_byte (method_buffer, TYPE_JIT | TYPE_METHOD);
-				emit_time (method_buffer, now);
+				emit_time (method_buffer, info->time);
 				emit_method_inner (method_buffer, info->method);
-				emit_ptr (method_buffer, mono_jit_info_get_code_start (info->ji));
-				emit_value (method_buffer, mono_jit_info_get_code_size (info->ji));
+				emit_ptr (method_buffer, cstart);
+				emit_value (method_buffer, csize);
 
 				memcpy (method_buffer->data, name, nlen);
 				method_buffer->data += nlen;

@@ -25,6 +25,7 @@
                    load/unload/name for assemblies
                removed TYPE_LOAD_ERR flag (profiler never generated it, now removed from the format itself)
                added TYPE_GC_HANDLE_{CREATED,DESTROYED}_BT
+               TYPE_JIT events are no longer guaranteed to have code start/size info (can be zero)
  */
 
 enum {
