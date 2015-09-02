@@ -60,16 +60,16 @@ UnicodeString* NormalizePattern(const UnicodeString *srcPattern, UnicodeString *
 
 	int iStart = 0;
 	int iEnd = srcPattern->length() - 1;
-	int32_t iNegative = srcPattern->indexOf(chPatternSeparator);
-	if (iNegative >= 0)
+	int32_t iNegativePatternStart = srcPattern->indexOf(chPatternSeparator);
+	if (iNegativePatternStart >= 0)
 	{
 		if (isNegative)
 		{
-			iStart = iNegative + 1;
+			iStart = iNegativePatternStart + 1;
 		}
 		else
 		{
-			iEnd = iNegative - 1;
+			iEnd = iNegativePatternStart - 1;
 		}
 	}
 
@@ -125,7 +125,7 @@ UnicodeString* NormalizePattern(const UnicodeString *srcPattern, UnicodeString *
 		}
 	}
 
-	// if there is no segative subpattern, the convention is to prefix the minus sign
+	// if there is no negative subpattern, the convention is to prefix the minus sign
 	if (isNegative && !minusAdded)
 	{
 		destPattern->insert(0, chPatternMinus);
@@ -143,11 +143,11 @@ Returns index -1 if no pattern is found.
 */
 int GetPattern(DecimalFormat *decimalFormat, const char* patterns[], int patternsCount, bool isNegative)
 {
+	const int INVALID_FORMAT = -1;
 	const int MAX_DOTNET_NUMERIC_PATTERN_LENGTH = 6; // example: "(C n)" plus terminator
 	char charPattern[MAX_DOTNET_NUMERIC_PATTERN_LENGTH] = { 0 };
 
 	UnicodeString icuPattern;
-	icuPattern.remove();
 	decimalFormat->toPattern(icuPattern);
 
 	UnicodeString normalizedPattern;
@@ -157,7 +157,7 @@ int GetPattern(DecimalFormat *decimalFormat, const char* patterns[], int pattern
 	assert(normalizedPattern.length() < MAX_DOTNET_NUMERIC_PATTERN_LENGTH);
 	if (normalizedPattern.length() == 0 || normalizedPattern.length() >= MAX_DOTNET_NUMERIC_PATTERN_LENGTH)
 	{
-		return -1;
+		return INVALID_FORMAT;
 	}
 
 	u_UCharsToChars(normalizedPattern.getTerminatedBuffer(), charPattern, normalizedPattern.length() + 1);
@@ -171,7 +171,7 @@ int GetPattern(DecimalFormat *decimalFormat, const char* patterns[], int pattern
 	};
 
 	assert(false); // should have found a valid pattern
-	return -1;
+	return INVALID_FORMAT;
 }
 
 /*
@@ -330,7 +330,7 @@ extern "C" int32_t GetLocaleInfoInt(const UChar* localeName, LocaleNumberData lo
 	}
 
 	UErrorCode status = U_ZERO_ERROR;
-	UNumberFormat* numformat = NULL;
+
 	switch (localeNumberData)
 	{
 	case LanguageId:
@@ -340,28 +340,28 @@ extern "C" int32_t GetLocaleInfoInt(const UChar* localeName, LocaleNumberData lo
 		status = GetMeasurementSystem(locale.getName(), value);
 		break;
 	case FractionalDigitsCount:
-		numformat = unum_open(UNUM_DECIMAL, NULL, 0, locale.getName(), NULL, &status);
-		if (U_FAILURE(status))
+	{
+		UNumberFormat* numformat = unum_open(UNUM_DECIMAL, NULL, 0, locale.getName(), NULL, &status);
+		if (U_SUCCESS(status))
 		{
-			assert(false);
-			return 0;
+			*value = unum_getAttribute(numformat, UNUM_MAX_FRACTION_DIGITS);
+			unum_close(numformat);
 		}
-		*value = unum_getAttribute(numformat, UNUM_MAX_FRACTION_DIGITS);
-		unum_close(numformat);
 		break;
+	}
 	case NegativeNumberFormat:
 		*value = GetNumberNegativePattern(locale);
 		break;
 	case MonetaryFractionalDigitsCount:
-		numformat = unum_open(UNUM_CURRENCY, NULL, 0, locale.getName(), NULL, &status);
-		if (U_FAILURE(status))
+	{
+		UNumberFormat* numformat = unum_open(UNUM_CURRENCY, NULL, 0, locale.getName(), NULL, &status);
+		if (U_SUCCESS(status))
 		{
-			assert(false);
-			return 0;
+			*value = unum_getAttribute(numformat, UNUM_MAX_FRACTION_DIGITS);
+			unum_close(numformat);
 		}
-		*value = unum_getAttribute(numformat, UNUM_MAX_FRACTION_DIGITS);
-		unum_close(numformat);
 		break;
+	}
 	case PositiveMonetaryNumberFormat:
 		*value = GetCurrencyPositivePattern(locale);
 		break;
