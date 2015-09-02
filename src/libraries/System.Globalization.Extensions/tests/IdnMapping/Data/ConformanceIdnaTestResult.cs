@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace System.Globalization.Extensions.Tests
+namespace System.Globalization.Tests
 {
     public class ConformanceIdnaTestResult
     {

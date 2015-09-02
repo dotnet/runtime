@@ -1,15 +1,12 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Xunit;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
-namespace System.Globalization.Extensions.Tests
+namespace System.Globalization.Tests
 {
     public static class Factory
     {

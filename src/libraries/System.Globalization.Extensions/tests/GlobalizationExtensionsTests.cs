@@ -3,7 +3,7 @@
 
 using Xunit;
 
-namespace System.Globalization.Extensions.Tests
+namespace System.Globalization.Tests
 {
     public class GlobalizationExtensionsTests
     {

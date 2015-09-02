@@ -2,10 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Xunit;
-using System;
-using System.Collections.Generic;
 
-namespace System.Globalization.Extensions.Tests
+namespace System.Globalization.Tests
 {
     /// <summary>
     /// This suite of tests enumerate a set of input and outputs provided by the Unicode consortium.
