@@ -4,20 +4,18 @@
 using System;
 using System.Runtime.InteropServices;
 
-using off_t = System.Int64; // Assuming either 64-bit machine or _FILE_OFFSET_BITS == 64
-
 internal static partial class Interop
 {
-    internal static partial class libc
+    internal static partial class Sys
     {
-        [DllImport(Libraries.Libc, SetLastError = true)]
-        internal static extern off_t lseek(int fd, off_t offset, SeekWhence whence);
-
         internal enum SeekWhence
         {
             SEEK_SET = 0,
             SEEK_CUR = 1,
             SEEK_END = 2
         }
+
+        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        internal static extern long LSeek(int fd, long offset, SeekWhence whence);
     }
 }

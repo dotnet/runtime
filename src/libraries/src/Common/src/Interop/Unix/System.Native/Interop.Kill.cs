@@ -6,15 +6,15 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class libc
+    internal static partial class Sys
     {
-        [DllImport(Libraries.Libc)]
-        internal static extern int fnmatch(string pattern, string str, FnmatchFlags flags);
-
-        [Flags]
-        internal enum FnmatchFlags
+        internal enum Signals : int
         {
-            None = 0
+            None = 0,
+            SIGKILL = 9,
         }
+
+        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        internal static extern int Kill(int pid, Signals signal);
     }
 }

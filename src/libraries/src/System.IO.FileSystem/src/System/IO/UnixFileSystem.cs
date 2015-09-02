@@ -55,7 +55,7 @@ namespace System.IO
             // if it exists. Since rename(source, dest) will replace the file at 'dest' if it exists,
             // link/unlink are used instead. Note that the Unix FileSystemWatcher will treat a Move 
             // as a Creation and Deletion instead of a Rename and thus differ from Windows.
-            while (Interop.libc.link(sourceFullPath, destFullPath) < 0)
+            while (Interop.Sys.Link(sourceFullPath, destFullPath) < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 if (errorInfo.Error == Interop.Error.EINTR) // interrupted; try again
@@ -499,7 +499,7 @@ namespace System.IO
                                 if (!ShouldIgnoreDirectory(dirent.InodeName))
                                 {
                                     if (_includeDirectories &&
-                                        Interop.libc.fnmatch(_searchPattern, dirent.InodeName, Interop.libc.FnmatchFlags.None) == 0)
+                                        Interop.Sys.FnMatch(_searchPattern, dirent.InodeName, Interop.Sys.FnMatchFlags.FNM_NONE) == 0)
                                     {
                                         yield return _translateResult(Path.Combine(dirPath.UserPath, dirent.InodeName), /*isDirectory*/true);
                                     }
@@ -514,7 +514,7 @@ namespace System.IO
                                 }
                             }
                             else if (_includeFiles &&
-                                     Interop.libc.fnmatch(_searchPattern, dirent.InodeName, Interop.libc.FnmatchFlags.None) == 0)
+                                     Interop.Sys.FnMatch(_searchPattern, dirent.InodeName, Interop.Sys.FnMatchFlags.FNM_NONE) == 0)
                             {
                                 yield return _translateResult(Path.Combine(dirPath.UserPath, dirent.InodeName), /*isDirectory*/false);
                             }
@@ -575,7 +575,7 @@ namespace System.IO
 
         public override void SetCurrentDirectory(string fullPath)
         {
-            while (Interop.CheckIo(Interop.libc.chdir(fullPath), fullPath)) ;
+            while (Interop.CheckIo(Interop.Sys.ChDir(fullPath), fullPath)) ;
         }
 
         public override FileAttributes GetAttributes(string fullPath)

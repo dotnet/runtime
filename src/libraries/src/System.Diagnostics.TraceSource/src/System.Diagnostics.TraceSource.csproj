@@ -52,8 +52,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getpid.cs">
-      <Link>Common\Interop\Unix\Interop.getpid.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPid.cs">
+      <Link>Common\Interop\Unix\Interop.GetPid.cs</Link>
     </Compile>
     <Compile Include="System\Diagnostics\TraceEventCache.Unix.cs" />
   </ItemGroup>

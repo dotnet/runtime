@@ -6,9 +6,9 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class libc
+    internal static partial class Sys
     {
-        [DllImport(Libraries.Libc, SetLastError = true)]
-        internal static extern int fsync(int fd);
+        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        internal static extern int Link(string source, string link);
     }
 }

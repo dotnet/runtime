@@ -85,7 +85,7 @@ namespace System.Diagnostics
         private void GetWorkingSetLimits(out IntPtr minWorkingSet, out IntPtr maxWorkingSet)
         {
             // We can only do this for the current process on OS X
-            if (_processId != Interop.libc.getpid())
+            if (_processId != Interop.Sys.GetPid())
                 throw new PlatformNotSupportedException(SR.OsxExternalProcessWorkingSetNotSupported);
 
             // Minimum working set (or resident set, as it is called on *nix) doesn't exist so set to 0
@@ -114,7 +114,7 @@ namespace System.Diagnostics
         private void SetWorkingSetLimitsCore(IntPtr? newMin, IntPtr? newMax, out IntPtr resultingMin, out IntPtr resultingMax)
         {
             // We can only do this for the current process on OS X
-            if (_processId != Interop.libc.getpid())
+            if (_processId != Interop.Sys.GetPid())
                 throw new PlatformNotSupportedException(SR.OsxExternalProcessWorkingSetNotSupported);
 
             // There isn't a way to set the minimum working set, so throw an exception here
@@ -151,7 +151,7 @@ namespace System.Diagnostics
         /// <summary>Gets the path to the current executable, or null if it could not be retrieved.</summary>
         private static string GetExePath()
         {
-            return Interop.libproc.proc_pidpath(Interop.libc.getpid());
+            return Interop.libproc.proc_pidpath(Interop.Sys.GetPid());
         }
 
         // ----------------------------------
@@ -160,7 +160,7 @@ namespace System.Diagnostics
 
         private Interop.libproc.rusage_info_v3 GetCurrentProcessRUsage()
         {
-            return Interop.libproc.proc_pid_rusage(Interop.libc.getpid());
+            return Interop.libproc.proc_pid_rusage(Interop.Sys.GetPid());
         }
 
     }

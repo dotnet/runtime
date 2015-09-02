@@ -25,7 +25,7 @@ namespace System.Diagnostics
         {
             // kill with signal==0 means to not actually send a signal.
             // If we get back 0, the process is still alive.
-            return 0 == Interop.libc.kill(processId, 0);
+            return 0 == Interop.Sys.Kill(processId, Interop.Sys.Signals.None);
         }
 
         /// <summary>Gets the ProcessInfo for the specified process ID on the specified machine.</summary>

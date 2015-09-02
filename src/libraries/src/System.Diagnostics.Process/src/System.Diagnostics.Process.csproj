@@ -231,23 +231,14 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gethostname.cs">
       <Link>Common\Interop\Unix\Interop.gethostname.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getpid.cs">
-      <Link>Common\Interop\Unix\Interop.getpid.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getsetpriority.cs">
       <Link>Common\Interop\Unix\Interop.getsetpriority.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.kill.cs">
-      <Link>Common\Interop\Unix\Interop.kill.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.pathconf.cs">
       <Link>Common\Interop\Unix\Interop.pathconf.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.readlink.cs">
       <Link>Common\Interop\Unix\Interop.readlink.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.Signals.cs">
-      <Link>Common\Interop\Unix\Interop.Signals.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.sysconf.cs">
       <Link>Common\Interop\Unix\Interop.sysconf.cs</Link>
@@ -258,8 +249,14 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.ForkAndExecProcess.cs">
       <Link>Common\Interop\Unix\Interop.ForkAndExecProcess.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getsid.cs">
-      <Link>Common\Interop\Unix\Interop.getsid.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPid.cs">
+      <Link>Common\Interop\Unix\Interop.GetPid.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetSid.cs">
+      <Link>Common\Interop\Unix\Interop.GetSid.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Kill.cs">
+      <Link>Common\Interop\Unix\Interop.Kill.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.ResourceLimits.cs">
       <Link>Common\Interop\Unix\Interop.ResourceLimits.cs</Link>
