@@ -51,7 +51,7 @@ NormalizePattern
 
 Returns a numeric string pattern in a format that we can match against the appropriate managed pattern.
 */
-UnicodeString* NormalizePattern(const UnicodeString *srcPattern, UnicodeString *destPattern, bool isNegative)
+void NormalizePattern(const UnicodeString *srcPattern, UnicodeString *destPattern, bool isNegative)
 {
 	// A srcPattern example: "#,##0.00 C;(#,##0.00 C)" but where C is the international currency symbol (chCurrencySign)
 	// The positive pattern comes first, then an optional negative pattern separated by a semicolon
@@ -80,7 +80,7 @@ UnicodeString* NormalizePattern(const UnicodeString *srcPattern, UnicodeString *
 
 	for (int i = iStart; i <= iEnd; i++)
 	{
-		UChar32 ch = srcPattern->char32At(i);
+		UChar ch = srcPattern->char32At(i);
 		switch (ch)
 		{
 		case chPatternDigit:
@@ -130,8 +130,6 @@ UnicodeString* NormalizePattern(const UnicodeString *srcPattern, UnicodeString *
 	{
 		destPattern->insert(0, chPatternMinus);
 	}
-
-	return destPattern;
 }
 
 /*
