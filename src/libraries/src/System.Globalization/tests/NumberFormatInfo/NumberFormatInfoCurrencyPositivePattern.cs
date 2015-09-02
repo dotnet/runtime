@@ -51,24 +51,16 @@ namespace System.Globalization.Tests
             });
         }
 
-        // TestLocale0: Verify value of property CurrencyPositivePattern for specific locale
-        [Fact]
-        public void TestLocale0()
+        // TestCurrencyPositivePatternLocale: Verify value of property CurrencyPositivePattern for specific locales
+        [Theory]
+        [InlineData("en-US", 0)]
+        [InlineData("fr-FR", 3)]
+        public void TestCurrencyPositivePatternLocale(string locale, int expected)
         {
-            CultureInfo myTestCulture = new CultureInfo("en-US");
+            CultureInfo myTestCulture = new CultureInfo(locale);
             NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int expected = nfi.CurrencyPositivePattern; //0="$n"
-            Assert.Equal(0, expected);
-        }
-
-        // TestLocale3: Verify value of property CurrencyPositivePattern for specific locale
-        [Fact]
-        public void TestLocale3()
-        {
-            CultureInfo myTestCulture = new CultureInfo("fr-FR");
-            NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int expected = nfi.CurrencyPositivePattern; //3="n $"
-            Assert.Equal(3, expected);
+            int actual = nfi.CurrencyPositivePattern;
+            Assert.Equal(expected, actual);
         }
 
         private void VerificationHelper<T>(int i) where T : Exception

@@ -50,14 +50,15 @@ namespace System.Globalization.Tests
             });
         }
 
-        // TestLocale11: Verify value of property NumberNegativePattern for specific locale
-        [Fact]
-        public void TestLocale11()
+        // TestNumberNegativePatternLocale: Verify value of property NumberNegativePattern for specific locales
+        [Theory]
+        [InlineData("en-US", 1)]
+        public void TestNumberNegativePatternLocale(string locale, int expected)
         {
-            CultureInfo myTestCulture = new CultureInfo("en-US");
+            CultureInfo myTestCulture = new CultureInfo(locale);
             NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int expected = nfi.NumberNegativePattern; //1="-n"
-            Assert.Equal(1, expected);
+            int actual = nfi.NumberNegativePattern;
+            Assert.Equal(expected, actual);
         }
 
         private void VerificationHelper<T>(int i) where T : Exception

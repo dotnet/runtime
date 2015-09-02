@@ -3,6 +3,7 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -50,15 +51,18 @@ namespace System.Globalization.Tests
             });
         }
 
-        // TestLocale1: Verify value of property NumberDecimalDigits for specific locale
-        [Fact]
-        public void TestLocale()
+        // TestCurrencyNumberDecimalDigitsLocale: Verify value of property NumberDecimalDigits for specific locales
+        [Theory]
+        [InlineData("en-US", 2, 3)]
+        public void TestCurrencyNumberDecimalDigitsLocale(string locale, int expectedWindows, int expectedIcu)
         {
-            CultureInfo myTestCulture = new CultureInfo("en-US");
+            CultureInfo myTestCulture = new CultureInfo(locale);
             NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int expected = nfi.NumberDecimalDigits;
-            // todo: determine why some values are different
-            Assert.True(expected == 3 || expected == 2); //ICU=3, 2=Windows
+            int actual = nfi.NumberDecimalDigits;
+            int expected = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? expectedWindows : expectedIcu;
+
+            // todo: determine if Windows version needs to support "accounting" currency explictly which contains parenthesis
+            Assert.Equal(expected, actual);
         }
 
         private void VerificationHelper<T>(int i) where T : Exception

@@ -3,6 +3,7 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -50,92 +51,36 @@ namespace System.Globalization.Tests
             });
         }
 
-        // TestLocale0: Verify value of property CurrencyNegativePattern for specific locale
-        [Fact]
-        public void TestLocale0()
+
+        // TestCurrencyNegativePatternLocale: Verify value of property CurrencyNegativePattern for specific locales
+        [Theory]
+        [InlineData("en-US", 0, 1)]
+        [InlineData("fa-IR", 3, 1)]
+        [InlineData("fr-CD", 4, 8)]
+        [InlineData("as", 12, 9)]
+        [InlineData("es-BO", 14, 1)]
+        [InlineData("fr-CA", 15, 8)]
+        public void TestCurrencyNegativePatternLocale(string locale, int expectedWindows, int expectedIcu)
         {
-            CultureInfo myTestCulture = new CultureInfo("en-US");
+            CultureInfo myTestCulture = new CultureInfo(locale);
             NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int expected = nfi.CurrencyNegativePattern; //0="($n)"
+            int actual = nfi.CurrencyNegativePattern;
+            int expected = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? expectedWindows : expectedIcu;
 
             // todo: determine if Windows version needs to support "accounting" currency explictly which contains parenthesis
-            Assert.True(expected == 1 || expected == 0); //1=ICU, 0=Windows
+            Assert.Equal(expected, actual);
         }
 
-        // TestLocale1: Verify value of property CurrencyNegativePattern for specific locale
-        [Fact]
-        public void TestLocale1()
+        // TestCurrencyNegativePatternLocale2: Verify value of property CurrencyNegativePattern for specific locales
+        [Theory]
+        [InlineData("en-CA", 1)]
+        [InlineData("bg-BG", 8)]
+        public void TestCurrencyNegativePatternLocale2(string locale, int expected)
         {
-            CultureInfo myTestCulture = new CultureInfo("en-CA");
+            CultureInfo myTestCulture = new CultureInfo(locale);
             NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int expected = nfi.CurrencyNegativePattern; // 1="-$n"
-            Assert.Equal(1, expected);
-        }
-
-        // TestLocale3: Verify value of property CurrencyNegativePattern for specific locale
-        [Fact]
-        public void TestLocale3()
-        {
-            CultureInfo myTestCulture = new CultureInfo("fa-IR"); // RTL locale
-            NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int expected = nfi.CurrencyNegativePattern; // 3="$n-" 
-            // todo: determine why some values are different
-            Assert.True(expected == 1 || expected == 3);  //1=ICU, 3=Windows
-        }
-
-        // TestLocale4: Verify value of property CurrencyNegativePattern for specific locale
-        [Fact]
-        public void TestLocale4()
-        {
-            CultureInfo myTestCulture = new CultureInfo("fr-CD");
-            NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int expected = nfi.CurrencyNegativePattern; // 4="(n$)"
-
-            // todo: determine if Windows version needs to support "accounting" currency explictly which contains parenthesis
-            Assert.True(expected == 8 || expected == 4); //8=ICU, 4=Windows
-        }
-
-        // TestLocale8: Verify value of property CurrencyNegativePattern for specific locale
-        [Fact]
-        public void TestLocale8()
-        {
-            CultureInfo myTestCulture = new CultureInfo("bg-BG");
-            NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int expected = nfi.CurrencyNegativePattern; // 8="-n $"
-            Assert.Equal(8, expected);
-        }
-
-        // TestLocale12: Verify value of property CurrencyNegativePattern for specific locale
-        [Fact]
-        public void TestLocale12()
-        {
-            CultureInfo myTestCulture = new CultureInfo("as");
-            NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int expected = nfi.CurrencyNegativePattern; // 12="$ -n"
-            // todo: determine why some values are different
-            Assert.True(expected == 9 || expected == 12);  //9=ICU, 12=Windows
-        }
-
-        // TestLocale14: Verify value of property CurrencyNegativePattern for specific locale
-        [Fact]
-        public void TestLocale14()
-        {
-            CultureInfo myTestCulture = new CultureInfo("es-BO");
-            NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int expected = nfi.CurrencyNegativePattern; //14="($ n)"
-            // todo: determine if Windows version needs to support "accounting" currency explictly which contains parenthesis
-            Assert.True(expected == 1 || expected == 14);  //1=ICU, 14=Windows
-        }
-
-        // TestLocale15: Verify value of property CurrencyNegativePattern for specific locale
-        [Fact]
-        public void TestLocale15()
-        {
-            CultureInfo myTestCulture = new CultureInfo("fr-CA");
-            NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int expected = nfi.CurrencyNegativePattern; //15="(n $)"
-            // todo: determine if Windows version needs to support "accounting" currency explictly which contains parenthesis
-            Assert.True(expected == 8 || expected == 15);  //8=ICU, 15=Windows
+            int actual = nfi.CurrencyNegativePattern;
+            Assert.Equal(expected, actual);
         }
 
         private void VerificationHelper<T>(int i) where T : Exception
