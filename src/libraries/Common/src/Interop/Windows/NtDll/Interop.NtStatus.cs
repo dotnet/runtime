@@ -14,5 +14,6 @@ internal static partial class Interop
         internal const uint STATUS_NONE_MAPPED = 0xC0000073;
         internal const uint STATUS_INSUFFICIENT_RESOURCES = 0xC000009A;
         internal const uint STATUS_ACCESS_DENIED = 0xC0000022;
+        internal const uint STATUS_ACCOUNT_RESTRICTION = 0xc000006e;
     }
 }
