@@ -661,6 +661,8 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 
 	start_func = start_info->func;
 	start_arg = start_info->obj->start_obj;
+	if (!start_arg)
+		start_arg = start_info->start_arg;
 
 	/* We have to do this here because mono_thread_new_init()
 	   requires that root_domain_thread is set up. */
