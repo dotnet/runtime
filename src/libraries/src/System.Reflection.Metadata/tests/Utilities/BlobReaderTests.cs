@@ -3,7 +3,6 @@
 
 using System.Reflection.Internal;
 using System.Text;
-using TestUtilities;
 using Xunit;
 
 namespace System.Reflection.Metadata.Tests

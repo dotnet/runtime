@@ -10,7 +10,6 @@ using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-using TestUtilities;
 using Xunit;
 
 namespace System.Reflection.Metadata.Tests
@@ -110,7 +109,7 @@ namespace System.Reflection.Metadata.Tests
         [Fact]
         public void StreamLengths()
         {
-            var reader = GetMetadataReader(TestResources.NetModule.AppCS);
+            var reader = GetMetadataReader(NetModule.AppCS);
             Assert.Equal(0x038, reader.GetHeapSize(HeapIndex.UserString));
             Assert.Equal(0x3c2, reader.GetHeapSize(HeapIndex.String));
             Assert.Equal(0x1cc, reader.GetHeapSize(HeapIndex.Blob));
@@ -121,7 +120,7 @@ namespace System.Reflection.Metadata.Tests
         public void CannotInstantiateReaderWithNonUtf8Decoder()
         {
             var decoder = new MetadataStringDecoder(Encoding.ASCII);
-            var exception = Assert.Throws<ArgumentException>(() => GetMetadataReader(TestResources.Misc.Members, decoder: decoder));
+            var exception = Assert.Throws<ArgumentException>(() => GetMetadataReader(Misc.Members, decoder: decoder));
             Assert.Equal("utf8Decoder", exception.ParamName);
         }
 
@@ -129,7 +128,7 @@ namespace System.Reflection.Metadata.Tests
         public void CanCustomizeReaderUtf8Fallback()
         {
             // start with a valid PE (cloned because we'll mutate it).
-            byte[] peImage = (byte[])TestResources.Namespace.NamespaceTests.Clone();
+            byte[] peImage = (byte[])Namespace.NamespaceTests.Clone();
 
             // find a System string in its string heap.
             int metadataStartOffset;
@@ -193,7 +192,7 @@ namespace System.Reflection.Metadata.Tests
         [Fact]
         public void ValidateAssemblyTableExe()
         {
-            var reader = GetMetadataReader(TestResources.NetModule.AppCS);
+            var reader = GetMetadataReader(NetModule.AppCS);
 
             // only one
             Assert.Equal(1, reader.AssemblyTable.NumberOfRows);
@@ -249,7 +248,7 @@ namespace System.Reflection.Metadata.Tests
                 new Version(/*VB*/10, 0, 0, 0),
             };
 
-            var reader = GetMetadataReader(TestResources.NetModule.AppCS);
+            var reader = GetMetadataReader(NetModule.AppCS);
 
             int i = 0;
             foreach (var assemblyRef in reader.AssemblyReferences)
@@ -287,7 +286,7 @@ namespace System.Reflection.Metadata.Tests
         [Fact]
         public void ValidateModuleTable()
         {
-            var reader = GetMetadataReader(TestResources.NetModule.AppCS);
+            var reader = GetMetadataReader(NetModule.AppCS);
 
             ModuleDefinition moduleDef = reader.GetModuleDefinition();
 
@@ -301,7 +300,7 @@ namespace System.Reflection.Metadata.Tests
         [Fact]
         public void ValidateModuleTableMod()
         {
-            var reader = GetMetadataReader(TestResources.NetModule.ModuleVB01, true);
+            var reader = GetMetadataReader(NetModule.ModuleVB01, true);
             ModuleDefinition moduleDef = reader.GetModuleDefinition();
 
             // Validity Rules
@@ -334,7 +333,7 @@ namespace System.Reflection.Metadata.Tests
                 new byte[] { 0xA7, 0xF0, 0x25, 0x28, 0x0F, 0x3C, 0x29, 0x2E, 0x83, 0x90, 0xF0, 0xFA, 0xA7, 0x13, 0x8E, 0xE4, 0x54, 0x16, 0xD7, 0xA0 }
             };
 
-            var reader = GetMetadataReader(TestResources.NetModule.AppCS);
+            var reader = GetMetadataReader(NetModule.AppCS);
 
             Assert.Equal(expMods.Length, reader.GetTableRowCount(TableIndex.ModuleRef));
             int m = 0;
@@ -390,7 +389,7 @@ namespace System.Reflection.Metadata.Tests
             };
 
             // ModuleVB01
-            var reader = GetMetadataReader(TestResources.NetModule.ModuleVB01, true);
+            var reader = GetMetadataReader(NetModule.ModuleVB01, true);
 
             Assert.Equal(expMods.Length, reader.ModuleRefTable.NumberOfRows);
             int m = 0;
@@ -402,7 +401,7 @@ namespace System.Reflection.Metadata.Tests
 
             // ==================================================
             // ModuleCS01
-            reader = GetMetadataReader(TestResources.NetModule.ModuleCS01, true);
+            reader = GetMetadataReader(NetModule.ModuleCS01, true);
 
             Assert.Equal(expMods.Length, reader.ModuleRefTable.NumberOfRows);
             m = 0;
@@ -456,7 +455,7 @@ namespace System.Reflection.Metadata.Tests
                 0x26000001, 0x26000002, 0x26000002, 0x27000009, 0x2700000a, 0x2700000a, 0x2700000c
             };
 
-            var reader = GetMetadataReader(TestResources.NetModule.AppCS);
+            var reader = GetMetadataReader(NetModule.AppCS);
 
             Assert.Equal(expTypes.Length, reader.ExportedTypeTable.NumberOfRows);
             for (int i = 0; i < reader.ExportedTypeTable.NumberOfRows; i++)
@@ -504,7 +503,7 @@ namespace System.Reflection.Metadata.Tests
                 0x1a000001, 0x23000001, 0x23000001, 0x23000001
             };
 
-            var reader = GetMetadataReader(TestResources.NetModule.AppCS);
+            var reader = GetMetadataReader(NetModule.AppCS);
 
             Assert.Equal(expNames.Length, reader.TypeReferences.Count);
             int i = 0;
@@ -555,7 +554,7 @@ namespace System.Reflection.Metadata.Tests
                 0x23000001, 0x23000002, 0x23000001, 0x23000001, 0x23000001, 0x23000001, 0x23000001,
             };
 
-            var reader = GetMetadataReader(TestResources.NetModule.ModuleCS01, true);
+            var reader = GetMetadataReader(NetModule.ModuleCS01, true);
             Assert.Equal(expNames.Length, reader.TypeReferences.Count);
 
             int i = 0;
@@ -604,7 +603,7 @@ namespace System.Reflection.Metadata.Tests
             };
             var expNest = new bool[] { false, false, false, false, false, false, false, false, false, false, false, false };
 
-            var reader = GetMetadataReader(TestResources.NetModule.AppCS);
+            var reader = GetMetadataReader(NetModule.AppCS);
             Assert.Equal(expNames.Length, reader.TypeDefinitions.Count);
 
             uint prevFieldStart = 0;
@@ -696,7 +695,7 @@ namespace System.Reflection.Metadata.Tests
                 /*ModVBInnerEnum*/ 0, 0, /*ModVBInnerStruct*/ 0, 0, /*ModVBDele*/0, 0, /*ModVBInnerIFoo*/0, 0,
             };
 
-            var reader = GetMetadataReader(TestResources.NetModule.ModuleVB01, true);
+            var reader = GetMetadataReader(NetModule.ModuleVB01, true);
             Assert.Equal(expNames.Length, reader.TypeDefinitions.Count);
 
             bool first = true;
@@ -942,7 +941,7 @@ namespace System.Reflection.Metadata.Tests
             uniqueDefinitions.Add("SkipFirst.AndSecond", new string[] { });
             uniqueDefinitions.Add("SkipFirstOnce", new string[] { });
 
-            var reader = GetMetadataReader(TestResources.Namespace.NamespaceTests);
+            var reader = GetMetadataReader(Namespace.NamespaceTests);
 
             NamespaceDefinitionHandle globalHandle = NamespaceDefinitionHandle.FromFullNameOffset(0);
             ValidateNamespaceChildren(reader, globalHandle, expNamespaces, uniqueDefinitions, uniqueForwarders);
@@ -954,7 +953,7 @@ namespace System.Reflection.Metadata.Tests
         [Fact]
         public void ValidateNamespaceCacheLaziness()
         {
-            var reader = GetMetadataReader(TestResources.Namespace.NamespaceTests);
+            var reader = GetMetadataReader(Namespace.NamespaceTests);
 
             Assert.False(reader.NamespaceCache.CacheIsRealized);
 
@@ -1029,7 +1028,7 @@ namespace System.Reflection.Metadata.Tests
                 new byte[] { 0x15, 0x12, 0x18, 0x01, 0x12, 0x28 },
             };
 
-            var reader = GetMetadataReader(TestResources.NetModule.AppCS);
+            var reader = GetMetadataReader(NetModule.AppCS);
             var table = reader.TypeSpecTable;
 
             // Validity Rules
@@ -1053,7 +1052,7 @@ namespace System.Reflection.Metadata.Tests
                 new byte[] { 0x14, 0x11, 0x14, 0x02, 0x00, 0x02, 0x00, 0x00 },
             };
 
-            var reader = GetMetadataReader(TestResources.NetModule.ModuleVB01, true);
+            var reader = GetMetadataReader(NetModule.ModuleVB01, true);
             var table = reader.TypeSpecTable;
 
             // Validity Rules
@@ -1623,7 +1622,7 @@ namespace System.Reflection.Metadata.Tests
                 new byte[] { 00, 02, 0x12, 0x41, 0x12, 0x41, 0x12, 0x41 },
             };
 
-            var reader = GetMetadataReader(TestResources.NetModule.ModuleVB01, true);
+            var reader = GetMetadataReader(NetModule.ModuleVB01, true);
 
             // Validity Rules
             Assert.Equal(expNames.Length, reader.MemberReferences.Count);
@@ -1656,7 +1655,7 @@ namespace System.Reflection.Metadata.Tests
             var expTDef = new int[] { 0x02000007, 0x2000008 }; // class other who implements the interface
             var expIfs = new int[] { 0x1b000001, 0x1b000002 }; // TypeSpec table 
 
-            var reader = GetMetadataReader(TestResources.NetModule.ModuleCS01, true);
+            var reader = GetMetadataReader(NetModule.ModuleCS01, true);
             Assert.Equal(2, reader.InterfaceImplTable.NumberOfRows);
 
             // uint ct = 0;
@@ -1711,7 +1710,7 @@ namespace System.Reflection.Metadata.Tests
             var modNumber = new ushort[] { 0, 0, 1, 0, 0 };
             var modTypeTokens = new int[] { 0x02000006, 0x02000007, 0x02000007, 0x02000008, 0x06000025, };
 
-            var reader = GetMetadataReader(TestResources.NetModule.AppCS);
+            var reader = GetMetadataReader(NetModule.AppCS);
 
             // Validity Rules
             Assert.Equal(expNames.Length, reader.GenericParamTable.NumberOfRows);
@@ -1727,7 +1726,7 @@ namespace System.Reflection.Metadata.Tests
 
             // =======================================
 
-            reader = GetMetadataReader(TestResources.NetModule.ModuleCS01, true);
+            reader = GetMetadataReader(NetModule.ModuleCS01, true);
 
             // Validity Rules
             Assert.Equal(modNames.Length, reader.GenericParamTable.NumberOfRows);
@@ -1761,7 +1760,7 @@ namespace System.Reflection.Metadata.Tests
             var modPkSize = new ushort[] { 0 };
             var modCsSize = new uint[] { 1 };
 
-            var reader = GetMetadataReader(TestResources.Interop.Interop_Mock01);
+            var reader = GetMetadataReader(Interop.Interop_Mock01);
 
             for (uint i = 0; i < reader.ClassLayoutTable.NumberOfRows; i++)
             {
@@ -1771,7 +1770,7 @@ namespace System.Reflection.Metadata.Tests
             }
 
             // =============================================
-            reader = GetMetadataReader(TestResources.NetModule.ModuleVB01, true);
+            reader = GetMetadataReader(NetModule.ModuleVB01, true);
             for (uint i = 0; i < reader.ClassLayoutTable.NumberOfRows; i++)
             {
                 var row = reader.GetTypeLayout(TypeDefinitionHandle.FromRowId(modTypeRids[i]));
@@ -1792,7 +1791,7 @@ namespace System.Reflection.Metadata.Tests
             var comFieldRids = new int[] { 7, 8, 9, 10 };
             var comOffset = new int[] { 0, 0, 0, 0 };
 
-            var reader = GetMetadataReader(TestResources.Interop.Interop_Mock01);
+            var reader = GetMetadataReader(Interop.Interop_Mock01);
 
             for (int i = 0; i < comFieldRids.Length; i++)
             {
@@ -1825,7 +1824,7 @@ namespace System.Reflection.Metadata.Tests
                 new byte[] { 0x2a, 0x50 }, new byte[] { 0x2a, 0x50 },
             };
 
-            var reader = GetMetadataReader(TestResources.Interop.Interop_Mock01);
+            var reader = GetMetadataReader(Interop.Interop_Mock01);
 
             for (int i = 0; i < reader.FieldMarshalTable.NumberOfRows; i++)
             {
@@ -1858,7 +1857,7 @@ namespace System.Reflection.Metadata.Tests
             var modClassRids = new int[] { 8, 9 }; // 0x02000008, 0x2000009 };
             var modInterface = new int[] { 0x1b000001, 0x1b000002 };
 
-            var reader = GetMetadataReader(TestResources.Interop.Interop_Mock01_Impl);
+            var reader = GetMetadataReader(Interop.Interop_Mock01_Impl);
 
             for (int i = 0; i < comClassRids.Length; i++)
             {
@@ -1866,7 +1865,7 @@ namespace System.Reflection.Metadata.Tests
                 Assert.Equal(comInterface[i], reader.GetInterfaceImplementation(impls.Single()).Interface.Token);
             }
 
-            reader = GetMetadataReader(TestResources.NetModule.ModuleCS01, true);
+            reader = GetMetadataReader(NetModule.ModuleCS01, true);
             for (int i = 0; i < modClassRids.Length; i++)
             {
                 var impls = reader.GetTypeDefinition(TypeDefinitionHandle.FromRowId(modClassRids[i])).GetInterfaceImplementations();
@@ -1888,7 +1887,7 @@ namespace System.Reflection.Metadata.Tests
             var comMthBody = new int[] { 0x06000001, 0x06000002, 0x06000003, 0x06000004, 0x06000005, 0x06000006, };
             var comMthDecl = new int[] { 0x0a000001, 0x0a000002, 0x0a000003, 0x0a000004, 0x0a000005, 0x0a000006, };
 
-            var reader = GetMetadataReader(TestResources.Interop.Interop_Mock01_Impl);
+            var reader = GetMetadataReader(Interop.Interop_Mock01_Impl);
 
             // Validity Rules
             Assert.Equal(comClassRids.Length, reader.MethodImplTable.NumberOfRows);
@@ -1951,7 +1950,7 @@ namespace System.Reflection.Metadata.Tests
                 new byte[] { 0x01, 00, 0x10, 0x4d, 0x6f, 0x64, 0x56, 0x42, 0x44, 0x65, 0x66, 0x61, 0x75, 0x6c, 0x74, 0x50, 0x72, 0x6f, 0x70, 00, 00 }
             };
 
-            var reader = GetMetadataReader(TestResources.Interop.Interop_Mock01);
+            var reader = GetMetadataReader(Interop.Interop_Mock01);
 
             int i = 0;
             foreach (var caHandle in reader.CustomAttributes)
@@ -1976,7 +1975,7 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal(0x37, i);
 
             // ====================================================
-            reader = GetMetadataReader(TestResources.NetModule.ModuleVB01, true);
+            reader = GetMetadataReader(NetModule.ModuleVB01, true);
 
             i = 0;
             foreach (var caHandle in reader.CustomAttributes)
@@ -2012,7 +2011,7 @@ namespace System.Reflection.Metadata.Tests
             var expMets = new int[] { /*0x6000018*/ 0x19, 0x1a, 0x017, 0x2c, 0x28, };
             var expAsso = new int[] { 0x14000001, 0x14000002, 0x17000003, 0x14000005, 0x17000006, };
 
-            var reader = GetMetadataReader(TestResources.NetModule.ModuleCS01, true);
+            var reader = GetMetadataReader(NetModule.ModuleCS01, true);
 
             // Validity Rules
             // Assert.Equal((uint)expSems.Length, table1.NumberOfRows);
@@ -2054,7 +2053,7 @@ namespace System.Reflection.Metadata.Tests
                 new byte[] { 0x07, 01, 0x1c }
             };
 
-            var reader = GetMetadataReader(TestResources.Interop.Interop_Mock01_Impl);
+            var reader = GetMetadataReader(Interop.Interop_Mock01_Impl);
 
             // Validity Rules
             Assert.Equal(expSigs.Length, reader.StandAloneSigTable.NumberOfRows);
@@ -2070,7 +2069,7 @@ namespace System.Reflection.Metadata.Tests
             }
 
             // ==============================================================
-            reader = GetMetadataReader(TestResources.NetModule.ModuleVB01, true);
+            reader = GetMetadataReader(NetModule.ModuleVB01, true);
 
             // Validity Rules
             Assert.Equal(modSigs.Length, reader.StandAloneSigTable.NumberOfRows);
@@ -2145,7 +2144,7 @@ namespace System.Reflection.Metadata.Tests
                 new byte[] { 3, 0, 0, 0 },
             };
 
-            var reader = GetMetadataReader(TestResources.NetModule.ModuleCS01, true);
+            var reader = GetMetadataReader(NetModule.ModuleCS01, true);
 
             // Validity Rules
             Assert.Equal(expTypes.Length, reader.GetTableRowCount(TableIndex.Constant));
@@ -2167,7 +2166,7 @@ namespace System.Reflection.Metadata.Tests
             }
 
             // =======================================
-            reader = GetMetadataReader(TestResources.NetModule.ModuleVB01, true);
+            reader = GetMetadataReader(NetModule.ModuleVB01, true);
 
             // Validity Rules
             Assert.Equal(modTypes.Length, reader.GetTableRowCount(TableIndex.Constant));
@@ -2206,7 +2205,7 @@ namespace System.Reflection.Metadata.Tests
             var modCount = new int[] { 22, 24 };
             var modValues = new string[] { "Static String Constant", "Readonly-String_Constant" };
 
-            var reader = GetMetadataReader(TestResources.NetModule.AppCS);
+            var reader = GetMetadataReader(NetModule.AppCS);
 
             for (uint i = 0; i < expOffset.Length; i++)
             {
@@ -2216,7 +2215,7 @@ namespace System.Reflection.Metadata.Tests
             }
 
             // =============================================
-            reader = GetMetadataReader(TestResources.NetModule.ModuleCS01, true);
+            reader = GetMetadataReader(NetModule.ModuleCS01, true);
 
             for (uint i = 0; i < modOffset.Length; i++)
             {
@@ -2229,7 +2228,7 @@ namespace System.Reflection.Metadata.Tests
         [Fact]
         public void EmptyType()
         {
-            var reader = GetMetadataReader(TestResources.Misc.EmptyType);
+            var reader = GetMetadataReader(Misc.EmptyType);
             var typeDef = reader.GetTypeDefinition(reader.TypeDefinitions.Skip(2).First());
 
             Assert.Equal("C", reader.GetString(typeDef.Name));
@@ -2251,7 +2250,7 @@ namespace System.Reflection.Metadata.Tests
         [Fact]
         public void Bug17109()
         {
-            var reader = GetMetadataReader(TestResources.Misc.CPPClassLibrary2);
+            var reader = GetMetadataReader(Misc.CPPClassLibrary2);
 
             var typeDef = reader.GetTypeDefinition(reader.TypeDefinitions.First());
             string name = reader.GetString(typeDef.Name);
@@ -2271,7 +2270,7 @@ namespace System.Reflection.Metadata.Tests
         [Fact]
         public void MemberCollections_AllMembers()
         {
-            var reader = GetMetadataReader(TestResources.Misc.Members);
+            var reader = GetMetadataReader(Misc.Members);
             var methodNames = (from m in reader.MethodDefinitions
                                select reader.GetString(reader.GetMethodDefinition(m).Name)).ToArray();
 
@@ -2336,7 +2335,7 @@ namespace System.Reflection.Metadata.Tests
         [Fact]
         public void MemberCollections_TypeMembers_FirstTypeDef()
         {
-            var reader = GetMetadataReader(TestResources.Misc.Members);
+            var reader = GetMetadataReader(Misc.Members);
             var typeModule = reader.GetTypeDefinition(reader.TypeDefinitions.First());
             Assert.Equal("<Module>", reader.GetString(typeModule.Name));
 
@@ -2361,7 +2360,7 @@ namespace System.Reflection.Metadata.Tests
         [Fact]
         public void MemberCollections_TypeMembers_MiddleTypeDef()
         {
-            var reader = GetMetadataReader(TestResources.Misc.Members);
+            var reader = GetMetadataReader(Misc.Members);
             var typeC = reader.GetTypeDefinition(reader.TypeDefinitions.Where(t => reader.GetString(reader.GetTypeDefinition(t).Name) == "C").Single());
 
             var methodNames = (from m in typeC.GetMethods()
@@ -2406,7 +2405,7 @@ namespace System.Reflection.Metadata.Tests
         [Fact]
         public void MemberCollections_TypeMembers_LastTypeDef()
         {
-            var reader = GetMetadataReader(TestResources.Misc.Members);
+            var reader = GetMetadataReader(Misc.Members);
             var typeE = reader.GetTypeDefinition(reader.TypeDefinitions.Last());
             Assert.Equal("E", reader.GetString(typeE.Name));
 
@@ -2492,7 +2491,7 @@ namespace System.Reflection.Metadata.Tests
                 4096,
                 FileOptions.DeleteOnClose);
 
-            using (var testData = new MemoryStream(TestResources.Misc.Members))
+            using (var testData = new MemoryStream(Misc.Members))
             {
                 while (stream.Length <= StreamMemoryBlockProvider.MemoryMapThreshold)
                 {

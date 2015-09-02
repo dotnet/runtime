@@ -3,11 +3,9 @@
 
 using System.Collections.Immutable;
 using System.IO;
-using System.Reflection.Internal;
-using TestUtilities;
 using Xunit;
 
-namespace System.Reflection.Metadata.Tests
+namespace System.Reflection.Internal.Tests
 {
     public class AbstractMemoryBlockTests
     {
