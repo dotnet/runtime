@@ -1,15 +1,23 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security.Claims;
+using System.Text;
 using System.Threading;
+
+using KERB_LOGON_SUBMIT_TYPE = Interop.SspiCli.KERB_LOGON_SUBMIT_TYPE;
+using KERB_S4U_LOGON = Interop.SspiCli.KERB_S4U_LOGON;
+using KerbS4uLogonFlags = Interop.SspiCli.KerbS4uLogonFlags;
+using LUID = Interop.LUID;
+using LSA_STRING = Interop.SspiCli.LSA_STRING;
+using QUOTA_LIMITS = Interop.SspiCli.QUOTA_LIMITS;
+using SECURITY_LOGON_TYPE = Interop.SspiCli.SECURITY_LOGON_TYPE;
+using TOKEN_SOURCE = Interop.SspiCli.TOKEN_SOURCE;
 
 namespace System.Security.Principal
 {
@@ -41,6 +49,145 @@ namespace System.Security.Principal
             : base(null, null, null, ClaimTypes.Name, ClaimTypes.GroupSid)
         { }
 
+        /// <summary>
+        /// Initializes a new instance of the WindowsIdentity class for the user represented by the specified User Principal Name (UPN).
+        /// </summary>
+        /// <remarks>
+        /// Unlike the desktop version, we connect to Lsa only as an untrusted caller. We do not attempt to explot Tcb privilege or adjust the current
+        /// thread privilege to include Tcb.
+        /// </remarks>
+        public WindowsIdentity(string sUserPrincipalName)
+            : base(null, null, null, ClaimTypes.Name, ClaimTypes.GroupSid)
+        {
+            // Desktop compat: See comments below for why we don't validate sUserPrincipalName.
+
+            using (SafeLsaHandle lsaHandle = ConnectToLsa())
+            {
+                int packageId = LookupAuthenticationPackage(lsaHandle, Interop.SspiCli.AuthenticationPackageNames.MICROSOFT_KERBEROS_NAME_A);
+
+                // 8 byte or less name that indicates the source of the access token. This choice of name is visible to callers through the native GetTokenInformation() api
+                // so we'll use the same name the CLR used even though we're not actually the "CLR."
+                byte[] sourceName = { (byte)'C', (byte)'L', (byte)'R', (byte)0 };
+
+                TOKEN_SOURCE sourceContext;
+                if (!Interop.SecurityBase.AllocateLocallyUniqueId(out sourceContext.SourceIdentifier))
+                    throw new SecurityException(Interop.mincore.GetMessage(Marshal.GetLastWin32Error()));
+                sourceContext.SourceName = new byte[TOKEN_SOURCE.TOKEN_SOURCE_LENGTH];
+                Array.Copy(sourceName, sourceContext.SourceName, sourceName.Length);
+
+                // Desktop compat: Desktop never null-checks sUserPrincipalName. Actual behavior is that the null makes it down to Encoding.Unicode.GetBytes() which then throws
+                // the ArgumentNullException (provided that the prior LSA calls didn't fail first.) To make this compat decision explicit, we'll null check ourselves 
+                // and simulate the exception from Encoding.Unicode.GetBytes().
+                if (sUserPrincipalName == null)
+                    throw new ArgumentNullException("s");
+
+                byte[] upnBytes = Encoding.Unicode.GetBytes(sUserPrincipalName);
+                if (upnBytes.Length > ushort.MaxValue)
+                {
+                    // Desktop compat: LSA only allocates 16 bits to hold the UPN size. We should throw an exception here but unfortunately, the desktop did an unchecked cast to ushort,
+                    // effectively truncating upnBytes to the first (N % 64K) bytes. We'll simulate the same behavior here (albeit in a way that makes it look less accidental.)
+                    Array.Resize(ref upnBytes, upnBytes.Length & ushort.MaxValue);
+                }
+                unsafe
+                {
+                    //
+                    // Build the KERB_S4U_LOGON structure.  Note that the LSA expects this entire
+                    // structure to be contained within the same block of memory, so we need to allocate
+                    // enough room for both the structure itself and the UPN string in a single buffer
+                    // and do the marshalling into this buffer by hand.
+                    //
+                    int authenticationInfoLength = checked(sizeof(KERB_S4U_LOGON) + upnBytes.Length);
+                    using (SafeLocalAllocHandle authenticationInfo = Interop.mincore_obsolete.LocalAlloc(0, new UIntPtr(checked((uint)authenticationInfoLength))))
+                    {
+                        if (authenticationInfo.IsInvalid || authenticationInfo == null)
+                            throw new OutOfMemoryException();
+
+                        KERB_S4U_LOGON* pKerbS4uLogin = (KERB_S4U_LOGON*)(authenticationInfo.DangerousGetHandle());
+                        pKerbS4uLogin->MessageType = KERB_LOGON_SUBMIT_TYPE.KerbS4ULogon;
+                        pKerbS4uLogin->Flags = KerbS4uLogonFlags.None;
+
+                        pKerbS4uLogin->ClientUpn.Length = pKerbS4uLogin->ClientUpn.MaximumLength = checked((ushort)upnBytes.Length);
+
+                        IntPtr pUpnOffset = (IntPtr)(pKerbS4uLogin + 1);
+                        pKerbS4uLogin->ClientUpn.Buffer = pUpnOffset;
+                        Marshal.Copy(upnBytes, 0, pKerbS4uLogin->ClientUpn.Buffer, upnBytes.Length);
+
+                        pKerbS4uLogin->ClientRealm.Length = pKerbS4uLogin->ClientRealm.MaximumLength = 0;
+                        pKerbS4uLogin->ClientRealm.Buffer = IntPtr.Zero;
+
+                        ushort sourceNameLength = checked((ushort)(sourceName.Length));
+                        using (SafeLocalAllocHandle sourceNameBuffer = Interop.mincore_obsolete.LocalAlloc(0, new UIntPtr(sourceNameLength)))
+                        {
+                            if (sourceNameBuffer.IsInvalid || sourceNameBuffer == null)
+                                throw new OutOfMemoryException();
+
+                            Marshal.Copy(sourceName, 0, sourceNameBuffer.DangerousGetHandle(), sourceName.Length);
+                            LSA_STRING lsaOriginName = new LSA_STRING(sourceNameBuffer.DangerousGetHandle(), sourceNameLength);
+
+                            SafeLsaReturnBufferHandle profileBuffer;
+                            int profileBufferLength;
+                            LUID logonId;
+                            SafeAccessTokenHandle accessTokenHandle;
+                            QUOTA_LIMITS quota;
+                            int subStatus;
+                            int ntStatus = Interop.SspiCli.LsaLogonUser(
+                                lsaHandle,
+                                ref lsaOriginName,
+                                SECURITY_LOGON_TYPE.Network,
+                                packageId,
+                                authenticationInfo.DangerousGetHandle(),
+                                authenticationInfoLength,
+                                IntPtr.Zero,
+                                ref sourceContext,
+                                out profileBuffer,
+                                out profileBufferLength,
+                                out logonId,
+                                out accessTokenHandle,
+                                out quota,
+                                out subStatus);
+
+                            if (ntStatus == unchecked((int)Interop.StatusOptions.STATUS_ACCOUNT_RESTRICTION) && subStatus < 0)
+                                ntStatus = subStatus;
+                            if (ntStatus < 0) // non-negative numbers indicate success
+                                throw GetExceptionFromNtStatus(ntStatus);
+                            if (subStatus < 0) // non-negative numbers indicate success
+                                throw GetExceptionFromNtStatus(subStatus);
+
+                            if (profileBuffer != null)
+                                profileBuffer.Dispose();
+
+                            _safeTokenHandle = accessTokenHandle;
+                        }
+                    }
+                }
+            }
+        }
+
+        private static SafeLsaHandle ConnectToLsa()
+        {
+            SafeLsaHandle lsaHandle;
+            int ntStatus = Interop.SspiCli.LsaConnectUntrusted(out lsaHandle);
+            if (ntStatus < 0) // non-negative numbers indicate success
+                throw GetExceptionFromNtStatus(ntStatus);
+            return lsaHandle;
+        }
+
+        private static int LookupAuthenticationPackage(SafeLsaHandle lsaHandle, string packageName)
+        {
+            unsafe
+            {
+                int packageId;
+                byte[] asciiPackageName = Encoding.ASCII.GetBytes(packageName);
+                fixed (byte* pAsciiPackageName = asciiPackageName)
+                {
+                    LSA_STRING lsaPackageName = new LSA_STRING((IntPtr)pAsciiPackageName, checked((ushort)(asciiPackageName.Length)));
+                    int ntStatus = Interop.SspiCli.LsaLookupAuthenticationPackage(lsaHandle, ref lsaPackageName, out packageId);
+                    if (ntStatus < 0) // non-negative numbers indicate success
+                        throw GetExceptionFromNtStatus(ntStatus);
+                }
+                return packageId;
+            }
+        }
 
         public WindowsIdentity(IntPtr userToken) : this(userToken, null, -1) { }
 
