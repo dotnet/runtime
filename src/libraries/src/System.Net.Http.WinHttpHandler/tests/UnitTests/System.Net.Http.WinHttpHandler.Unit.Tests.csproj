@@ -9,6 +9,7 @@
     <AssemblyName>System.Net.Http.WinHttpHandler.Unit.Tests</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>..\..\src\Resources\Strings.resx</StringResourcesPath>
+    <UnsupportedPlatforms>Linux;OSX;FreeBSD</UnsupportedPlatforms>
   </PropertyGroup>
   
   <!-- Help VS understand available configurations -->
@@ -75,6 +76,7 @@
     <Compile Include="FakeMarshal.cs" />
     <Compile Include="FakeRegistry.cs" />
     <Compile Include="FakeSafeWinHttpHandle.cs" />
+    <Compile Include="SafeWinHttpHandleTest.cs" />
     <Compile Include="TestServer.cs" />
     <Compile Include="TestControl.cs" />
     <Compile Include="WinHttpHandlerTest.cs" />

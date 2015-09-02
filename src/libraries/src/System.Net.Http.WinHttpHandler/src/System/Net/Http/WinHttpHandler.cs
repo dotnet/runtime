@@ -546,13 +546,12 @@ namespace System.Net.Http
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && !_disposed)
+            if (!_disposed)
             {
                 _disposed = true;
 
-                if (_sessionHandle != null)
+                if (disposing && _sessionHandle != null)
                 {
-                    _sessionHandle.DangerousRelease();
                     SafeWinHttpHandle.DisposeAndClearHandle(ref _sessionHandle);
                 }
             }
@@ -933,8 +932,6 @@ namespace System.Net.Http
 
         private void EnsureSessionHandleExists(RequestState state)
         {
-            bool ignore = false;
-
             if (_sessionHandle == null)
             {
                 lock (_lockObject)
@@ -989,8 +986,6 @@ namespace System.Net.Http
                             0);
                         if (!_sessionHandle.IsInvalid)
                         {
-                            _sessionHandle.DangerousAddRef(ref ignore);
-
                             return;
                         }
 
@@ -1018,8 +1013,6 @@ namespace System.Net.Http
                                 SR.net_http_client_execution_error,
                                 WinHttpException.CreateExceptionUsingLastError());
                         }
-
-                        _sessionHandle.DangerousAddRef(ref ignore);
                     }
                 }
             }
@@ -1083,7 +1076,6 @@ namespace System.Net.Http
             Exception savedException = null;
             SafeWinHttpHandle connectHandle = null;
             SafeWinHttpHandle requestHandle = null;
-            WinHttpRequestStream requestStream = null;
             GCHandle requestStateHandle = new GCHandle();
 
             if (state.CancellationToken.IsCancellationRequested)
@@ -1091,12 +1083,6 @@ namespace System.Net.Http
                 state.Tcs.TrySetCanceled(state.CancellationToken);
                 return;
             }
-
-            var cancellationTokenRegistration = state.CancellationToken.Register(s =>
-            {
-                RequestState rs = (RequestState)s;
-                rs.Tcs.TrySetCanceled(rs.CancellationToken);
-            }, state);
 
             try
             {
@@ -1119,6 +1105,7 @@ namespace System.Net.Http
                         SR.net_http_client_execution_error,
                         WinHttpException.CreateExceptionUsingLastError());
                 }
+                connectHandle.SetParentHandle(_sessionHandle);
 
                 if (state.RequestMessage.RequestUri.Scheme == UriSchemeHttps)
                 {
@@ -1144,7 +1131,8 @@ namespace System.Net.Http
                         SR.net_http_client_execution_error,
                         WinHttpException.CreateExceptionUsingLastError());
                 }
-
+                requestHandle.SetParentHandle(connectHandle);
+                
                 state.RequestHandle = requestHandle;
 
                 // Set callback function.
@@ -1186,11 +1174,13 @@ namespace System.Net.Http
                     // Send request body if present.
                     if (state.RequestMessage.Content != null)
                     {
-                        requestStream = new WinHttpRequestStream(requestHandle, chunkedModeForSend);
-                        await state.RequestMessage.Content.CopyToAsync(
-                            requestStream,
-                            state.TransportContext).ConfigureAwait(false);
-                        requestStream.EndUpload();
+                        using (var requestStream = new WinHttpRequestStream(requestHandle, chunkedModeForSend))
+                        {
+                            await state.RequestMessage.Content.CopyToAsync(
+                                requestStream,
+                                state.TransportContext).ConfigureAwait(false);
+                            requestStream.EndUpload();
+                        }
                     }
 
                     state.CancellationToken.ThrowIfCancellationRequested();
@@ -1236,7 +1226,7 @@ namespace System.Net.Http
                 state.CancellationToken.ThrowIfCancellationRequested();
 
                 // Create HttpResponseMessage object.
-                responseMessage = CreateResponseMessage(connectHandle, requestHandle, state.RequestMessage);
+                responseMessage = CreateResponseMessage(requestHandle, state.RequestMessage);
             }
             catch (Exception ex)
             {
@@ -1266,12 +1256,6 @@ namespace System.Net.Http
                 requestStateHandle.Free();
             }
 
-            if (requestStream != null)
-            {
-                requestStream.Dispose();
-            }
-
-            SafeWinHttpHandle.DisposeAndClearHandle(ref requestHandle);
             SafeWinHttpHandle.DisposeAndClearHandle(ref connectHandle);
 
             // Move the task to a terminal state.
@@ -1283,8 +1267,6 @@ namespace System.Net.Http
             {
                 HandleAsyncException(state, savedException);
             }
-
-            cancellationTokenRegistration.Dispose();
         }
 
         private void ProcessResponse(
@@ -1840,10 +1822,7 @@ namespace System.Net.Http
             }
         }
 
-        private HttpResponseMessage CreateResponseMessage(
-            SafeWinHttpHandle connectHandle,
-            SafeWinHttpHandle requestHandle,
-            HttpRequestMessage request)
+        private HttpResponseMessage CreateResponseMessage(SafeWinHttpHandle requestHandle, HttpRequestMessage request)
         {
             var response = new HttpResponseMessage();
             bool useDeflateDecompression = false;
@@ -1890,7 +1869,7 @@ namespace System.Net.Http
             }
 
             // Create response stream and wrap it in a StreamContent object.
-            var responseStream = new WinHttpResponseStream(_sessionHandle, connectHandle, requestHandle);
+            var responseStream = new WinHttpResponseStream(requestHandle);
             Stream decompressedStream = responseStream;
             if (_doManualDecompressionCheck)
             {

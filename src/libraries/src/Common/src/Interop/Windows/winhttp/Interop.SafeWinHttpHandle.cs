@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 using Microsoft.Win32.SafeHandles;
@@ -11,30 +12,48 @@ internal partial class Interop
     internal partial class WinHttp
     {
         // Issue 2501: Fold SafeWinHttpHandleWithCallback and SafeWinHttpHandle into a single type.
-        //
-        // SafeWinHttpHandleWithCallback is a better pattern; SafeWinHttpHandle is probably a better
-        // name. The implementation for the former should probably be folded into the latter.
-
+        // SafeWinHttpHandleWithCallback is incorrectly overriding the Dispose(bool disposing) method
+        // and will be fixed as part of merging the classes.
         internal class SafeWinHttpHandle : SafeHandleZeroOrMinusOneIsInvalid
         {
+            private SafeWinHttpHandle _parentHandle = null;
+            
             public SafeWinHttpHandle() : base(true)
             {
             }
 
-            public static void DisposeAndClearHandle(ref SafeWinHttpHandle winHttpHandler)
+            public static void DisposeAndClearHandle(ref SafeWinHttpHandle safeHandle)
             {
-                if (winHttpHandler != null)
+                if (safeHandle != null)
                 {
-                    winHttpHandler.Dispose();
-                    winHttpHandler = null;
+                    safeHandle.Dispose();
+                    safeHandle = null;
                 }
             }
 
+            public void SetParentHandle(SafeWinHttpHandle parentHandle)
+            {
+                Debug.Assert(_parentHandle == null);
+                Debug.Assert(parentHandle != null);
+                Debug.Assert(!parentHandle.IsInvalid);
+
+                bool ignore = false;
+                parentHandle.DangerousAddRef(ref ignore);
+                
+                _parentHandle = parentHandle;
+            }
+            
             // Important: WinHttp API calls should not happen while another WinHttp call for the same handle did not 
             // return. During finalization that was not initiated by the Dispose pattern we don't expect any other WinHttp
             // calls in progress.
             protected override bool ReleaseHandle()
             {
+                if (_parentHandle != null)
+                {
+                    _parentHandle.DangerousRelease();
+                    _parentHandle = null;
+                }
+                
                 // TODO(Issue 2500): Add logging so we know when the handle gets closed.
                 return Interop.WinHttp.WinHttpCloseHandle(handle);
             }
@@ -45,12 +64,8 @@ internal partial class Interop
             // Add a reference to this object so that the AppDomain doesn't get unloaded before the last WinHttp callback.
             public void AttachCallback()
             {
-                bool success = false;
-                DangerousAddRef(ref success);
-                if (!success)
-                {
-                    throw new InvalidOperationException("Could not increase SafeHandle reference.");
-                }
+                bool ignore = false;
+                DangerousAddRef(ref ignore);
             }
 
             public void DetachCallback()
