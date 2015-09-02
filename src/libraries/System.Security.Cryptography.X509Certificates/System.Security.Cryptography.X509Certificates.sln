@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.22911.2
+VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Cryptography.X509Certificates", "src\System.Security.Cryptography.X509Certificates.csproj", "{6F8576C2-6CD0-4DF3-8394-00B002D82E40}"
 EndProject
@@ -29,18 +29,18 @@ Global
 		{6F8576C2-6CD0-4DF3-8394-00B002D82E40}.Windows_Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
 		{6F8576C2-6CD0-4DF3-8394-00B002D82E40}.Windows_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
 		{6F8576C2-6CD0-4DF3-8394-00B002D82E40}.Windows_Release|Any CPU.Build.0 = Windows_Release|Any CPU
-		{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}.Linux_Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}.Linux_Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}.Linux_Release|Any CPU.ActiveCfg = Debug|Any CPU
-		{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}.Linux_Release|Any CPU.Build.0 = Debug|Any CPU
-		{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}.OSX_Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}.OSX_Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}.OSX_Release|Any CPU.ActiveCfg = Debug|Any CPU
-		{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}.OSX_Release|Any CPU.Build.0 = Debug|Any CPU
-		{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}.Windows_Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}.Windows_Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}.Windows_Release|Any CPU.ActiveCfg = Debug|Any CPU
-		{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}.Windows_Release|Any CPU.Build.0 = Debug|Any CPU
+		{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}.Linux_Debug|Any CPU.ActiveCfg = Linux_Debug|Any CPU
+		{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}.Linux_Debug|Any CPU.Build.0 = Linux_Debug|Any CPU
+		{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}.Linux_Release|Any CPU.ActiveCfg = Linux_Release|Any CPU
+		{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}.Linux_Release|Any CPU.Build.0 = Linux_Release|Any CPU
+		{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}.OSX_Debug|Any CPU.ActiveCfg = OSX_Debug|Any CPU
+		{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}.OSX_Debug|Any CPU.Build.0 = OSX_Debug|Any CPU
+		{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}.OSX_Release|Any CPU.ActiveCfg = OSX_Release|Any CPU
+		{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}.OSX_Release|Any CPU.Build.0 = OSX_Release|Any CPU
+		{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}.Windows_Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
+		{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}.Windows_Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
+		{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}.Windows_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
+		{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}.Windows_Release|Any CPU.Build.0 = Windows_Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

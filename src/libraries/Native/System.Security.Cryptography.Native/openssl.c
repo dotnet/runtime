@@ -141,6 +141,29 @@ GetX509NotAfter(
 
 /*
 Function:
+GetX509CrlNextUpdate
+
+Used by System.Security.Cryptography.X509Certificates' CrlCache to identify the
+end of the validity period of the certificate revocation list in question.
+
+Return values:
+NULL if the validity cannot be determined, a pointer to the ASN1_TIME structure for the NextUpdate value
+otherwise.
+*/
+ASN1_TIME*
+GetX509CrlNextUpdate(
+    X509_CRL* crl)
+{
+    if (crl)
+    {
+        return X509_CRL_get_nextUpdate(crl);
+    }
+
+    return NULL;
+}
+
+/*
+Function:
 GetX509Version
 
 Used by System.Security.Cryptography.X509Certificates' OpenSslX509CertificateReader to identify the
