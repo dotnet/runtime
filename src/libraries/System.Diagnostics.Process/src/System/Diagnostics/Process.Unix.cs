@@ -36,7 +36,7 @@ namespace System.Diagnostics
         public void Kill()
         {
             EnsureState(State.HaveId);
-            int errno = Interop.libc.kill(_processId, Interop.libc.Signals.SIGKILL);
+            int errno = Interop.Sys.Kill(_processId, Interop.Sys.Signals.SIGKILL);
             if (errno != 0)
             {
                 throw new Win32Exception(errno); // same exception as on Windows
@@ -172,7 +172,7 @@ namespace System.Diagnostics
         /// <summary>Gets the ID of the current process.</summary>
         private static int GetCurrentProcessId()
         {
-            return Interop.libc.getpid();
+            return Interop.Sys.GetPid();
         }
 
         /// <summary>

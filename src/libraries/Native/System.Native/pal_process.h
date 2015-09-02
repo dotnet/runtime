@@ -4,6 +4,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <string.h>
 
 /**
  * Used by System.Diagnostics.Process.Start to fork/exec a new process.
@@ -48,6 +49,12 @@ enum class RLimitResources : int32_t
     PAL_RLIMIT_NOFILE       = 9,        // Number of open files
 };
 
+enum class Signals : int32_t
+{
+    PAL_None = 0,       /* error check and don't send signal */
+    PAL_SIGKILL = 9,    /* kill the specified process */
+};
+
 /**
  * The current and maximum resource values for the current process.
  * These values are depict the resource according to the above enum.
@@ -77,3 +84,26 @@ extern "C"
 int32_t SetRLimit(
     RLimitResources resourceType,
     const RLimit*   limits);
+
+/**
+ * Kill the specified process (or process group) identified by the supplied pid; the 
+ * process or process group will be killed by the specified signal.
+ * Returns 0 on success; on failure, -1 is returned and errno is set
+ */
+extern "C"
+int32_t Kill(int32_t pid, int32_t signal);
+
+/**
+ * Returns the Process ID of the current executing process. 
+ * This call should never fail
+ */
+extern "C"
+int32_t GetPid();
+
+/**
+ * Returns the sessions ID of the specified process; if 0 is passed in, returns the 
+ * session ID of the current process.
+ * Returns a session ID on success; otherwise, returns -1 and sets errno.
+ */
+extern "C"
+int32_t GetSid(int32_t pid);

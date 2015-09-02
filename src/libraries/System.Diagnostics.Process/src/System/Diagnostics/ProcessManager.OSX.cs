@@ -45,7 +45,7 @@ namespace System.Diagnostics
             }
 
             // Get the sessionId for the given pid, getsid returns -1 on error
-            int sessionId = Interop.libc.getsid(pid);
+            int sessionId = Interop.Sys.GetSid(pid);
             if (sessionId != -1)
                 procInfo.SessionId = sessionId;
             

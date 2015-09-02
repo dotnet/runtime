@@ -8,6 +8,11 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <signal.h>
+
+// Validate that our Signals enum values are correct for the platform
+static_assert((int)Signals::PAL_None == 0, "");
+static_assert((int)Signals::PAL_SIGKILL == SIGKILL, "");
 
 enum
 {
@@ -245,4 +250,22 @@ int32_t SetRLimit(
     rlimit internalLimit;
     ConvertFromRLimitManagedToPal(*limits, internalLimit);
     return setrlimit(platformLimit, &internalLimit);
+}
+
+extern "C"
+int32_t Kill(int32_t pid, int32_t signal)
+{
+    return kill(pid, signal);
+}
+
+extern "C"
+int32_t GetPid()
+{
+    return getpid();
+}
+
+extern "C"
+int32_t GetSid(int32_t pid)
+{
+    return getsid(pid);
 }
