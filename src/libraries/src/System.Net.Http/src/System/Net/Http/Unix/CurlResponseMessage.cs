@@ -53,7 +53,7 @@ namespace System.Net.Http
             SignalComplete();
         }
 
-        internal unsafe void WaitAndSignalReaders(byte* pointer, long length)
+        internal unsafe void WaitAndSignalReaders(IntPtr pointer, long length)
         {
             try
             {
@@ -61,7 +61,7 @@ namespace System.Net.Http
                 _readerRequestingDataEvent.Wait(Timeout.InfiniteTimeSpan, _cancellationTokenSource.Token);
                 lock (LockObject)
                 {
-                    _innerStream = new UnmanagedMemoryStream(pointer, length);
+                    _innerStream = new UnmanagedMemoryStream((byte*)pointer, length);
                     _readerReadAllDataEvent.Reset();
                     _readerRequestingDataEvent.Reset();
                     _writerHasDataEvent.Set();

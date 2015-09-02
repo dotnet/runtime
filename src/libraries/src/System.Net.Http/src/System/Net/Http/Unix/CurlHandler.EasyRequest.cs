@@ -134,6 +134,10 @@ namespace System.Net.Http
             private void SetDebugging()
             {
                 SetCurlOption(CURLoption.CURLOPT_VERBOSE, 1L);
+
+                // In addition to CURLOPT_VERBOSE, CURLOPT_DEBUGFUNCTION could be used here in the future to:
+                // - Route the verbose output to somewhere other than stderr
+                // - Dump additional data related to CURLINFO_DATA_* and CURLINFO_SSL_DATA_*
             }
 
             private void SetMultithreading()

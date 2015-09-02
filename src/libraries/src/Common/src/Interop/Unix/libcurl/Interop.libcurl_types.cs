@@ -180,26 +180,8 @@ internal static partial class Interop
         };
 #pragma warning restore 0649
 
-        public delegate int curl_socket_callback(
-            IntPtr handle,
-            curl_socket_t sockfd,
-            int what,
-            IntPtr context,
-            IntPtr sockptr);
-
-        public delegate int curl_multi_timer_callback(
-            IntPtr handle,
-            long timeout_ms,
-            IntPtr context);
-
         public delegate size_t curl_readwrite_callback(
             IntPtr buffer,
-            size_t size,
-            size_t nitems,
-            IntPtr context);
-
-        public unsafe delegate size_t curl_unsafe_write_callback(
-            byte* buffer,
             size_t size,
             size_t nitems,
             IntPtr context);
