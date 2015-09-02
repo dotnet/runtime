@@ -2,8 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #include "../config.h"
-#include "pal_exec.h"
-
+#include "pal_process.h"
+#include <sys/resource.h>
 #include <assert.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -141,4 +141,108 @@ done:
     }
     
     return success ? 0 : -1;
+}
+
+// Each platform type has it's own RLIMIT values but the same name, so we need
+// to convert our standard types into the platform specific ones.
+static
+int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
+{
+    switch (value)
+    {
+        case RLimitResources::PAL_RLIMIT_CPU:
+            return RLIMIT_CPU;
+        case RLimitResources::PAL_RLIMIT_FSIZE:
+            return RLIMIT_FSIZE;
+        case RLimitResources::PAL_RLIMIT_DATA:
+            return RLIMIT_DATA;
+        case RLimitResources::PAL_RLIMIT_STACK:
+            return RLIMIT_STACK;
+        case RLimitResources::PAL_RLIMIT_CORE:
+            return RLIMIT_CORE;
+        case RLimitResources::PAL_RLIMIT_AS:
+            return RLIMIT_AS;
+        case RLimitResources::PAL_RLIMIT_RSS:
+            return RLIMIT_RSS;
+        case RLimitResources::PAL_RLIMIT_MEMLOCK:
+            return RLIMIT_MEMLOCK;
+        case RLimitResources::PAL_RLIMIT_NPROC:
+            return RLIMIT_NPROC;
+        case RLimitResources::PAL_RLIMIT_NOFILE:
+            return RLIMIT_NOFILE;
+    }
+
+    assert(!"Unknown RLIMIT value");
+    return -1;
+}
+
+// Because RLIM_INFINITY is different per-platform, use the max value of a uint64 (which is RLIM_INFINITY on Ubuntu)
+// to signify RLIM_INIFINITY; on OS X, where RLIM_INFINITY is slightly lower, we'll translate it to the correct value here.
+static
+uint64_t ConvertFromManagedRLimitInfinityToPalIfNecessary(uint64_t value)
+{
+    if (value == UINT64_MAX)
+        return RLIM_INFINITY;
+    else
+        return value;
+}
+
+// Because RLIM_INFINITY is different per-platform, use the max value of a uint64 (which is RLIM_INFINITY on Ubuntu)
+// to signify RLIM_INIFINITY; on OS X, where RLIM_INFINITY is slightly lower, we'll translate it to the correct value here.
+static
+uint64_t ConvertFromNativeRLimitInfinityToManagedIfNecessary(uint64_t value)
+{
+    if (value == RLIM_INFINITY)
+        return UINT64_MAX;
+    else
+        return value;
+}
+
+static
+void ConvertFromRLimitManagedToPal(const RLimit& pal, rlimit& native)
+{
+    native.rlim_cur = ConvertFromManagedRLimitInfinityToPalIfNecessary(pal.CurrentLimit);
+    native.rlim_max = ConvertFromManagedRLimitInfinityToPalIfNecessary(pal.MaximumLimit);
+}
+
+static
+void ConvertFromPalRLimitToManaged(const rlimit& native, RLimit& pal)
+{
+    pal.CurrentLimit = ConvertFromNativeRLimitInfinityToManagedIfNecessary(native.rlim_cur);
+    pal.MaximumLimit = ConvertFromNativeRLimitInfinityToManagedIfNecessary(native.rlim_max);
+}
+
+extern "C"
+int32_t GetRLimit(
+    RLimitResources     resourceType,
+    RLimit*             limits)
+{
+    assert(limits != nullptr);
+
+    int32_t platformLimit = ConvertRLimitResourcesPalToPlatform(resourceType);
+    rlimit internalLimit;
+    int result = getrlimit(platformLimit, &internalLimit);
+    if (result == 0)
+    {
+        ConvertFromPalRLimitToManaged(internalLimit, *limits);
+    }
+    else
+    {
+        *limits = { };
+    }
+    
+    return result;
+}
+
+extern "C"
+int32_t SetRLimit(
+    RLimitResources     resourceType,
+    const RLimit* limits)
+{
+    assert(limits != nullptr);
+
+    int32_t platformLimit = ConvertRLimitResourcesPalToPlatform(resourceType);
+    rlimit internalLimit;
+    ConvertFromRLimitManagedToPal(*limits, internalLimit);
+    return setrlimit(platformLimit, &internalLimit);
 }

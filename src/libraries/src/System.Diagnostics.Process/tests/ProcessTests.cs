@@ -359,7 +359,7 @@ namespace System.Diagnostics.ProcessTests
             Assert.InRange(processorTimeAtHalfSpin, processorTimeBeforeSpin, Process.GetCurrentProcess().TotalProcessorTime.TotalSeconds);
         }
 
-        [Fact]
+        [Fact, ActiveIssue(3037)]
         public void TestProcessStartTime()
         {
             DateTime timeBeforeCreatingProcess = DateTime.UtcNow;
