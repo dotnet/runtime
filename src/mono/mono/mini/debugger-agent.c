@@ -7013,7 +7013,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		 * Store the invoke data into tls, the thread will execute it after it is
 		 * resumed.
 		 */
-		if (tls->pending_invoke || tls->invoke)
+		if (tls->pending_invoke)
 			return ERR_NOT_SUSPENDED;
 		tls->pending_invoke = g_new0 (InvokeData, 1);
 		tls->pending_invoke->id = id;
