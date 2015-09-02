@@ -31,11 +31,14 @@ namespace System.Globalization
         {
             Contract.Assert(s != null);
 
-            StringBuilder sb = StringBuilderCache.Acquire(s.Length);
+            char[] buf = new char[s.Length];
 
-            Interop.GlobalizationInterop.ChangeCase(s, s.Length, sb, sb.Capacity, toUpper, m_needsTurkishCasing);
+            fixed(char* pBuf = buf)
+            {
+                Interop.GlobalizationInterop.ChangeCase(s, s.Length, pBuf, buf.Length, toUpper, m_needsTurkishCasing);
+            }
 
-            return StringBuilderCache.GetStringAndRelease(sb);
+            return new string(buf);
         }
 
         [System.Security.SecuritySafeCritical]

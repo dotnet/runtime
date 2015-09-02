@@ -13,6 +13,6 @@ internal static partial class Interop
         internal unsafe static extern void ChangeCase(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bIsUpper, bool bTurkishCasing);
 
         [DllImport(Libraries.GlobalizationInterop, CharSet = CharSet.Unicode)]
-        internal unsafe static extern void ChangeCase(string src, int srcLen, StringBuilder dstBuffer, int dstBufferCapacity, bool bIsUpper, bool bTurkishCasing);
+        internal unsafe static extern void ChangeCase(string src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bIsUpper, bool bTurkishCasing);
     }
 }
