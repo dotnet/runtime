@@ -66,6 +66,8 @@ namespace System.IO
 
         private void StopRaisingEvents()
         {
+            _enabled = false;
+
             // Make sure the Start and Stop can be called from different threads and don't 
             // stomp on the other's operation. We use the _syncLock instead of the
             // RunLoop or StreamRef because IntPtrs are value types and can't be locked
@@ -156,8 +158,11 @@ namespace System.IO
                     throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), _fullDirectory, true);
                 }
 
-                // Create the callback for the EventStream
-                _callback = new Interop.EventStream.FSEventStreamCallback(FileSystemEventCallback);
+                // Create the callback for the EventStream if it wasn't previously created for this instance.
+                if (_callback == null)
+                {
+                    _callback = new Interop.EventStream.FSEventStreamCallback(FileSystemEventCallback);
+                }
 
                 // Make sure the OS file buffer(s) are fully flushed so we don't get events from cached I/O
                 Interop.libc.sync();
@@ -175,6 +180,8 @@ namespace System.IO
                     path.Dispose();
                     throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), _fullDirectory, true);
                 }
+
+                _enabled = true;
 
                 // Create and start our watcher thread then wait for the thread to initialize and start 
                 // the RunLoop. We wait for that to prevent this function from returning before the RunLoop
