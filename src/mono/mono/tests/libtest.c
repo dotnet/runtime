@@ -3545,6 +3545,9 @@ mono_test_marshal_lookup_symbol (const char *symbol_name)
 	return lookup_mono_symbol (symbol_name);
 }
 
+#define MONO_BEGIN_EFRAME { void *__region_cookie = mono_threads_enter_gc_unsafe_region ();
+#define MONO_END_EFRAME mono_threads_exit_gc_unsafe_region (__region_cookie); }
+
 /**
  * test_method_thunk:
  *
@@ -3555,6 +3558,8 @@ mono_test_marshal_lookup_symbol (const char *symbol_name)
 LIBTEST_API int STDCALL  
 test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_object_method_handle)
 {
+	int ret = 0;
+
 	gpointer (*mono_method_get_unmanaged_thunk)(gpointer)
 		= lookup_mono_symbol ("mono_method_get_unmanaged_thunk");
 
@@ -3567,20 +3572,36 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 	gpointer (*mono_object_unbox)(gpointer)
 		= lookup_mono_symbol ("mono_object_unbox");
 
+	gpointer* (*mono_threads_enter_gc_unsafe_region) ()
+		= lookup_mono_symbol ("mono_threads_enter_gc_unsafe_region");
+
+	gpointer (*mono_threads_exit_gc_unsafe_region) (gpointer *)
+		= lookup_mono_symbol ("mono_threads_exit_gc_unsafe_region");
+
+	
+
 	gpointer test_method, ex = NULL;
 	gpointer (STDCALL *CreateObject)(gpointer*);
 
-	if (!mono_method_get_unmanaged_thunk)
-		return 1;
+	MONO_BEGIN_EFRAME;
+
+	if (!mono_method_get_unmanaged_thunk) {
+		ret = 1;
+		goto done;
+	}
 
 	test_method =  mono_method_get_unmanaged_thunk (test_method_handle);
-	if (!test_method)
-		return 2;
+	if (!test_method) {
+		ret = 2;
+		goto done;
+	}
 
 	CreateObject = mono_method_get_unmanaged_thunk (create_object_method_handle);
-	if (!CreateObject)
-		return 3;
-
+	if (!CreateObject) {
+		ret = 3;
+		goto done;
+	}
+	
 
 	switch (test_id) {
 
@@ -3594,8 +3615,10 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 	case 1: {
 		/* thunks.cs:Test.Test1 */
 		int (STDCALL *F)(gpointer*) = test_method;
-		if (F (&ex) != 42)
-			return 4;
+		if (F (&ex) != 42) {
+			ret = 4;
+			goto done;
+		}
 		break;
 	}
 
@@ -3603,8 +3626,10 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 		/* thunks.cs:Test.Test2 */
 		gpointer (STDCALL *F)(gpointer, gpointer*) = test_method;
 		gpointer str = mono_string_new_wrapper ("foo");
-		if (str != F (str, &ex))
-			return 4;
+		if (str != F (str, &ex)) {
+			ret = 4;
+			goto done;
+		}
 		break;
 	}
 
@@ -3618,8 +3643,10 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 		obj = CreateObject (&ex);
 		str = mono_string_new_wrapper ("bar");
 
-		if (str != F (obj, str, &ex))
-			return 4;
+		if (str != F (obj, str, &ex)) {
+			ret = 4;
+			goto done;
+		}
 		break;
 	}
 
@@ -3633,8 +3660,10 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 		obj = CreateObject (&ex);
 		str = mono_string_new_wrapper ("bar");
 
-		if (42 != F (obj, str, 42, &ex))
-			return 4;
+		if (42 != F (obj, str, 42, &ex)) {
+			ret = 4;
+			goto done;
+		}
 
 		break;
 	}
@@ -3650,8 +3679,10 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 		str = mono_string_new_wrapper ("bar");
 
 		F (obj, str, 42, &ex);
-		if (!ex)
-		    return 4;
+		if (!ex) {
+			ret = 4;
+			goto done;
+		}
 
 		break;
 	}
@@ -3668,11 +3699,15 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 		obj = CreateObject (&ex);
 
 		res = F (obj, 254, 32700, -245378, 6789600, 3.1415, 3.1415, str, &ex);
-		if (ex)
-			return 4;
+		if (ex) {
+			ret = 4;
+			goto done;
+		}
 
-		if (!res)
-			return 5;
+		if (!res) {
+			ret = 5;
+			goto done;
+		}
 
 		break;
 	}
@@ -3680,8 +3715,10 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 	case 7: {
 		/* thunks.cs:Test.Test7 */
 		gint64 (STDCALL *F)(gpointer*) = test_method;
-		if (F (&ex) != G_MAXINT64)
-			return 4;
+		if (F (&ex) != G_MAXINT64) {
+			ret = 4;
+			goto done;
+		}
 		break;
 	}
 
@@ -3701,8 +3738,10 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 		F = test_method;
 
 		F (&a1, &a2, &a3, &a4, &a5, &a6, &a7, &ex);
-		if (ex)
-			return 4;
+		if (ex) {
+			ret = 4;
+			goto done;
+		}
 
 		if (!(a1 == 254 &&
 		      a2 == 32700 &&
@@ -3710,8 +3749,10 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 		      a4 == 6789600 &&
 		      (fabs (a5 - 3.1415) < 0.001) &&
 		      (fabs (a6 - 3.1415) < 0.001) &&
-		      strcmp (mono_string_to_utf8 (a7), "Test8") == 0))
-			return 5;
+		      strcmp (mono_string_to_utf8 (a7), "Test8") == 0)){
+				ret = 5;
+				goto done;
+			}
 
 		break;
 	}
@@ -3732,8 +3773,10 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 		F = test_method;
 
 		F (&a1, &a2, &a3, &a4, &a5, &a6, &a7, &ex);
-		if (!ex)
-			return 4;
+		if (!ex) {
+			ret = 4;
+			goto done;
+		}
 
 		break;
 	}
@@ -3745,17 +3788,23 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 		gpointer obj1, obj2;
 
 		obj1 = obj2 = CreateObject (&ex);
-		if (ex)
-			return 4;
+		if (ex) {
+			ret = 4;
+			goto done;
+		}
 
 		F = test_method;
 
 		F (&obj1, &ex);
-		if (ex)
-			return 5;
+		if (ex) {
+			ret = 5;
+			goto done;
+		}
 
-		if (obj1 == obj2)
-			return 6;
+		if (obj1 == obj2) {
+			ret = 6;
+			goto done;
+		}
 
 		break;
 	}
@@ -3769,15 +3818,21 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 		int res;
 
 		obj = CreateObject (&ex);
-		if (ex)
-			return 4;
+		if (ex) {
+			ret = 4;
+			goto done;
+		}
 
-		if (!obj)
-			return 5;
+		if (!obj) {
+			ret = 5;
+			goto done;
+		}
 
 		a1 = mono_object_unbox (obj);
-		if (!a1)
-			return 6;
+		if (!a1) {
+			ret = 6;
+			goto done;
+		}
 
 		a1->A = 42;
 		a1->B = 3.1415;
@@ -3785,15 +3840,21 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 		F = test_method;
 
 		res = F (obj, &ex);
-		if (ex)
-			return 7;
+		if (ex) {
+			ret = 7;
+			goto done;
+		}
 
-		if (!res)
-			return 8;
+		if (!res) {
+			ret = 8;
+			goto done;
+		}
 
 		/* check whether the call was really by value */
-		if (a1->A != 42 || a1->B != 3.1415)
-			return 9;
+		if (a1->A != 42 || a1->B != 3.1415) {
+			ret = 9;
+			goto done;
+		}
 
 		break;
 	}
@@ -3806,27 +3867,39 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 		gpointer obj;
 
 		obj = CreateObject (&ex);
-		if (ex)
-			return 4;
+		if (ex) {
+			ret = 4;
+			goto done;
+		}
 
-		if (!obj)
-			return 5;
+		if (!obj) {
+			ret = 5;
+			goto done;
+		}
 
 		a1 = mono_object_unbox (obj);
-		if (!a1)
-			return 6;
+		if (!a1) {
+			ret = 6;
+			goto done;
+		}
 
 		F = test_method;
 
 		F (obj, &ex);
-		if (ex)
-			return 7;
+		if (ex) {
+			ret = 7;
+			goto done;
+		}
 
-		if (a1->A != 42)
-			return 8;
+		if (a1->A != 42) {
+			ret = 8;
+			goto done;
+		}
 
-		if (!(fabs (a1->B - 3.1415) < 0.001))
-			return 9;
+		if (!(fabs (a1->B - 3.1415) < 0.001)) {
+			ret = 9;
+			goto done;
+		}
 
 		break;
 	}
@@ -3841,19 +3914,27 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 		F = test_method;
 
 		obj = F (&ex);
-		if (ex)
-			return 4;
+		if (ex) {
+			ret = 4;
+			goto done;
+		}
 
-		if (!obj)
-			return 5;
+		if (!obj) {
+			ret = 5;
+			goto done;
+		}
 
 		a1 = mono_object_unbox (obj);
 
-		if (a1->A != 42)
-			return 5;
+		if (a1->A != 42) {
+			ret = 5;
+			goto done;
+		}
 
-		if (!(fabs (a1->B - 3.1415) < 0.001))
-			return 6;
+		if (!(fabs (a1->B - 3.1415) < 0.001)) {
+			ret = 6;
+			goto done;
+		}
 
 		break;
 	}
@@ -3866,16 +3947,22 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 		gpointer obj;
 
 		obj = CreateObject (&ex);
-		if (ex)
-			return 4;
+		if (ex) {
+			ret = 4;
+			goto done;
+		}
 
-		if (!obj)
-			return 5;
+		if (!obj) {
+			ret = 5;
+			goto done;
+		}
 		
 		a1 = mono_object_unbox (obj);
 
-		if (!a1)
-			return 6;
+		if (!a1) {
+			ret = 6;
+			goto done;
+		}
 
 		a1->A = 42;
 		a1->B = 3.1415;
@@ -3883,24 +3970,32 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 		F = test_method;
 
 		F (obj, &ex);
-		if (ex)
-			return 4;
+		if (ex) {
+			ret = 4;
+			goto done;
+		}
 
-		if (a1->A != 1)
-			return 5;
+		if (a1->A != 1) {
+			ret = 5;
+			goto done;
+		}
 
-		if (a1->B != 17)
-			return 6;
+		if (a1->B != 17) {
+			ret = 6;
+			goto done;
+		}
 
 		break;
 	}
 
 	default:
-		return 9;
+		ret = 9;
 
 	}
+done:
+	MONO_END_EFRAME;
 
-	return 0;
+	return ret;
 }
 
 typedef struct 
