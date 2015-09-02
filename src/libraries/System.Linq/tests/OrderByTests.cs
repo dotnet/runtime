@@ -162,6 +162,31 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.OrderBy(e => e.Score));
         }
 
+        [Fact]
+        public void OrderedToArray()
+        {
+            Record[] source = new Record[]
+            {
+                new Record{ Name = "Tim", Score = 90 },
+                new Record{ Name = "Robert", Score = 90 },
+                new Record{ Name = "Prakash", Score = 90 },
+                new Record{ Name = "Jim", Score = 90 },
+                new Record{ Name = "John", Score = 90 },
+                new Record{ Name = "Albert", Score = 90 },
+            };
+            Record[] expected = new Record[]
+            {
+                new Record{ Name = "Tim", Score = 90 },
+                new Record{ Name = "Robert", Score = 90 },
+                new Record{ Name = "Prakash", Score = 90 },
+                new Record{ Name = "Jim", Score = 90 },
+                new Record{ Name = "John", Score = 90 },
+                new Record{ Name = "Albert", Score = 90 },
+            };
+
+            Assert.Equal(expected, source.OrderBy(e => e.Score).ToArray());
+        }
+
         //FIXME: This will hang with a larger source. Do we want to deal with that case?
         [Fact]
         public void SurviveBadComparerAlwaysReturnsPositive()
