@@ -106,7 +106,7 @@ namespace System.IO
 
             // Early check for directory parameter so that an exception can be thrown as early as possible.
             if (path.Length == 0 || !Directory.Exists(path))
-                throw new ArgumentException(SR.InvalidDirName, path);
+                throw new ArgumentException(SR.Format(SR.InvalidDirName, path), "path");
 
             _directory = path;
             _filter = filter;
@@ -152,15 +152,13 @@ namespace System.IO
                     return;
                 }
 
-                _enabled = value;
-
-                if (_enabled)
+                if (value)
                 {
-                    StartRaisingEventsIfNotDisposed();
+                    StartRaisingEventsIfNotDisposed(); // will set _enabled to true once successfully started
                 }
                 else
                 {
-                    StopRaisingEvents();
+                    StopRaisingEvents(); // will set _enabled to false
                 }
             }
         }
