@@ -1980,7 +1980,7 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 	fragment_total = sgen_build_nursery_fragments (nursery_section, NULL);
 	if (!fragment_total)
 		degraded_mode = 1;
-	SGEN_LOG (4, "Free space in nursery after major %ld", fragment_total);
+	SGEN_LOG (4, "Free space in nursery after major %ld", (long)fragment_total);
 
 	if (do_concurrent_checks && concurrent_collection_in_progress)
 		sgen_debug_check_nursery_is_clean ();
@@ -2550,7 +2550,7 @@ sgen_register_root (char *start, size_t size, SgenDescriptor descr, int root_typ
 	sgen_hash_table_replace (&roots_hash [root_type], start, &new_root, NULL);
 	roots_size += size;
 
-	SGEN_LOG (3, "Added root for range: %p-%p, descr: %llx  (%d/%d bytes)", start, new_root.end_root, descr, (int)size, (int)roots_size);
+	SGEN_LOG (3, "Added root for range: %p-%p, descr: %llx  (%d/%d bytes)", start, new_root.end_root, (long long)descr, (int)size, (int)roots_size);
 
 	UNLOCK_GC;
 	return TRUE;
