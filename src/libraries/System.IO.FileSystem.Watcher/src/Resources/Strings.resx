@@ -174,4 +174,19 @@
   <data name="Argument_InvalidPathChars" xml:space="preserve">
     <value>Illegal characters in path.</value>
   </data>
+  <data name="IOException_INotifyInstanceSystemLimitExceeded" xml:space="preserve">
+    <value>The system limit on the number of inotify instances has been reached.</value>
+  </data>
+  <data name="IOException_INotifyInstanceUserLimitExceeded_Value" xml:space="preserve">
+    <value>The configured user limit ({0}) on the number of inotify instances has been reached.</value>
+  </data>
+  <data name="IOException_INotifyWatchesUserLimitExceeded_Value" xml:space="preserve">
+    <value>The configured user limit ({0}) on the number of inotify watches has been reached.</value>
+  </data>
+  <data name="IOException_INotifyInstanceUserLimitExceeded" xml:space="preserve">
+    <value>The configured user limit on the number of inotify instances has been reached.</value>
+  </data>
+  <data name="IOException_INotifyWatchesUserLimitExceeded" xml:space="preserve">
+    <value>The configured user limit on the number of inotify watches has been reached.</value>
+  </data>
 </root>

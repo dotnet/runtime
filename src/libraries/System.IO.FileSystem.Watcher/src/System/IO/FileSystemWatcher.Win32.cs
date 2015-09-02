@@ -64,6 +64,8 @@ namespace System.IO
         /// <summary>Stop monitoring the current directory.</summary>
         private void StopRaisingEvents()
         {
+            _enabled = false;
+
             // If we're not running, do nothing.
             if (IsHandleInvalid(_directoryHandle))
                 return;
@@ -82,9 +84,6 @@ namespace System.IO
             // check will see a valid handle, unless we also null it out.
             _directoryHandle.Dispose();
             _directoryHandle = null;
-
-            // Set enabled to false
-            _enabled = false;
         }
 
         private void FinalizeDispose()
