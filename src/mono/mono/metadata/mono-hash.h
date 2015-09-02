@@ -13,9 +13,8 @@
 #include <mono/metadata/mono-gc.h>
 
 MONO_BEGIN_DECLS
-/* do not change the values of this enum */
+
 typedef enum {
-	MONO_HASH_CONSERVATIVE_GC,
 	MONO_HASH_KEY_GC,
 	MONO_HASH_VALUE_GC,
 	MONO_HASH_KEY_VALUE_GC /* note this is the OR of the other two values */

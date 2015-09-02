@@ -75,28 +75,19 @@ mono_g_hash_table_new (GHashFunc hash_func, GEqualFunc key_equal_func);
 static MonoGCDescriptor table_hash_descr = MONO_GC_DESCRIPTOR_NULL;
 
 static void mono_g_hash_mark (void *addr, MonoGCMarkFunc mark_func, void *gc_data);
+#endif
 
 static Slot*
 new_slot (MonoGHashTable *hash)
 {
-	if (hash->gc_type == MONO_HASH_CONSERVATIVE_GC)
-		return mono_gc_alloc_fixed (sizeof (Slot), MONO_GC_DESCRIPTOR_NULL, hash->source, hash->msg);
-	else
-		return mg_new (Slot, 1);
+	return mg_new (Slot, 1);
 }
 
 static void
 free_slot (MonoGHashTable *hash, Slot *slot)
 {
-	if (hash->gc_type == MONO_HASH_CONSERVATIVE_GC)
-		mono_gc_free_fixed (slot);
-	else
-		mg_free (slot);
+	mg_free (slot);
 }
-#else
-#define new_slot(h)	mg_new(Slot,1)
-#define free_slot(h,s)	mg_free((s))
-#endif
 
 #if UNUSED
 static gboolean
@@ -136,17 +127,17 @@ mono_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func, Mono
 	hash->source = source;
 	hash->msg = msg;
 
-#ifdef HAVE_SGEN_GC
 	if (type > MONO_HASH_KEY_VALUE_GC)
 		g_error ("wrong type for gc hashtable");
+
+#ifdef HAVE_SGEN_GC
 	/*
 	 * We use a user defined marking function to avoid having to register a GC root for
 	 * each hash node.
 	 */
 	if (!table_hash_descr)
 		table_hash_descr = mono_gc_make_root_descr_user (mono_g_hash_mark);
-	if (type != MONO_HASH_CONSERVATIVE_GC)
-		mono_gc_register_root_wbarrier ((char*)hash, sizeof (MonoGHashTable), table_hash_descr, source, msg);
+	mono_gc_register_root_wbarrier ((char*)hash, sizeof (MonoGHashTable), table_hash_descr, source, msg);
 #endif
 
 	return hash;
