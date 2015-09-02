@@ -395,15 +395,41 @@ EnumEraNames
 Enumerates all the era names of the specified locale and calendar, invoking the callback function
 for each era name.
 */
-bool EnumEraNames(Locale& locale, CalendarId calendarId, EnumCalendarInfoCallback callback, const void* context)
+bool EnumEraNames(Locale& locale, CalendarId calendarId, CalendarDataType dataType, EnumCalendarInfoCallback callback, const void* context)
 {
 	UErrorCode err = U_ZERO_ERROR;
-	DateFormatSymbols dateFormatSymbols(locale, GetCalendarName(calendarId), err);
+	const char* calendarName = GetCalendarName(calendarId);
+	DateFormatSymbols dateFormatSymbols(locale, calendarName, err);
 	if (U_FAILURE(err))
 		return false;
 
 	int32_t eraNameCount;
-	const UnicodeString* eraNames = dateFormatSymbols.getEras(eraNameCount);
+	const UnicodeString* eraNames;
+
+	if (dataType == EraNames)
+	{
+		eraNames = dateFormatSymbols.getEras(eraNameCount);
+	}
+	else if (dataType == AbbrevEraNames)
+	{
+		if (strcmp(calendarName, "gregorian") == 0)
+		{
+			// NOTE: On Windows, the EraName is "A.D." and AbbrevEraName is "AD".
+			// But ICU/CLDR only supports "Anno Domini", "AD", and "A".
+			// So returning getEras (i.e. "AD") for both EraNames and AbbrevEraNames.
+			eraNames = dateFormatSymbols.getEras(eraNameCount);
+		}
+		else
+		{
+			eraNames = dateFormatSymbols.getNarrowEras(eraNameCount);
+		}
+	}
+	else
+	{
+		assert(false);
+		return false;
+	}
+
 	return EnumCalendarArray(eraNames, eraNameCount, callback, context);
 }
 
@@ -434,6 +460,7 @@ extern "C" int32_t EnumCalendarInfo(
 		case LongDates:
 			// TODO: need to replace the "EEEE"s with "dddd"s for .net
 			// Also, "LLLL"s to "MMMM"s
+			// Also, "G"s to "g"s
 			return InvokeCallbackForDateTimePattern(locale, "eeeeMMMMddyyyy", callback, context);
 		case YearMonths:
 			return InvokeCallbackForDateTimePattern(locale, "yyyyMMMM", callback, context);
@@ -453,12 +480,117 @@ extern "C" int32_t EnumCalendarInfo(
 			return EnumMonths(locale, calendarId, DateFormatSymbols::FORMAT, DateFormatSymbols::ABBREVIATED, callback, context);
 		case EraNames:
 		case AbbrevEraNames:
-			// NOTE: On Windows, the EraName is "A.D." and AbbrevEraName is "AD".
-			// But ICU/CLDR only supports "Anno Domini", "AD", and "A".
-			// So returning getEras (i.e. "AD") for both EraNames and AbbrevEraNames.
-			return EnumEraNames(locale, calendarId, callback, context);
+			return EnumEraNames(locale, calendarId, dataType, callback, context);
 		default:
 			assert(false);
 			return false;
 	}
+}
+
+/*
+Function:
+GetLatestJapaneseEra
+
+Gets the latest era in the Japanese calendar.
+*/
+extern "C" int32_t GetLatestJapaneseEra()
+{
+	UErrorCode err = U_ZERO_ERROR;
+	Locale japaneseLocale("ja_JP@calendar=japanese");
+	LocalPointer<Calendar> calendar(Calendar::createInstance(japaneseLocale, err));
+
+	if (U_FAILURE(err))
+		return 0;
+
+	return calendar->getMaximum(UCAL_ERA); 
+}
+
+/*
+Function:
+GetJapaneseEraInfo
+
+Gets the starting Gregorian date of the specified Japanese Era.
+*/
+extern "C" int32_t GetJapaneseEraStartDate(
+	int32_t era,
+	int32_t* startYear,
+	int32_t* startMonth,
+	int32_t* startDay)
+{
+	UErrorCode err = U_ZERO_ERROR;
+	Locale japaneseLocale("ja_JP@calendar=japanese");
+	LocalPointer<Calendar> calendar(Calendar::createInstance(japaneseLocale, err));
+	if (U_FAILURE(err))
+		return false;
+
+	calendar->set(UCAL_ERA, era);
+	calendar->set(UCAL_YEAR, 1);
+
+	// UCAL_EXTENDED_YEAR is the gregorian year for the JapaneseCalendar
+	*startYear = calendar->get(UCAL_EXTENDED_YEAR, err);
+	if (U_FAILURE(err))
+		return false;
+
+	// set the date to Jan 1
+	calendar->set(UCAL_MONTH, 0);
+	calendar->set(UCAL_DATE, 1);
+
+	int32_t currentEra = calendar->get(UCAL_ERA, err);
+	if (U_FAILURE(err))
+		return false;
+
+	if (currentEra == era)
+	{
+		// if Jan 1 is still in the specified Era, then the Era must have started on Jan 1.
+		*startMonth = 1;
+		*startDay = 1;
+		return true;
+	}
+
+	for (int i = 0; i < 12; i++)
+	{
+		// add 1 month at a time until we get into the specified Era
+		calendar->add(UCAL_MONTH, 1, err);
+		if (U_FAILURE(err))
+			return false;
+
+		currentEra = calendar->get(UCAL_ERA, err);
+		if (U_FAILURE(err))
+			return false;
+
+		if (currentEra == era)
+		{
+			for (int i = 0; i < 32; i++)
+			{
+				// now subtract 1 day at a time until we get out of the specified Era
+				calendar->add(Calendar::DATE, -1, err);
+				if (U_FAILURE(err))
+					return false;
+
+				currentEra = calendar->get(UCAL_ERA, err);
+				if (U_FAILURE(err))
+					return false;
+
+				if (currentEra != era)
+				{
+					// add back 1 day to get back into the specified Era
+					calendar->add(UCAL_DATE, 1, err);
+					if (U_FAILURE(err))
+						return false;
+
+					*startMonth = calendar->get(UCAL_MONTH, err) + 1;  // ICU Calendar months are 0-based, but .NET is 1-based
+					if (U_FAILURE(err))
+						return false;
+
+					*startDay = calendar->get(UCAL_DATE, err);
+					if (U_FAILURE(err))
+						return false;
+
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
 }

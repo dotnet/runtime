@@ -119,7 +119,7 @@ namespace System.Globalization
             return false;
         }
 
-        private static bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, out string[] calendarData)
+        internal static bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, out string[] calendarData)
         {
             calendarData = null;
 
