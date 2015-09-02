@@ -6168,7 +6168,7 @@ ves_icall_System_Text_EncodingHelper_InternalCodePage (gint32 *int_code_page)
 	p = encodings [0];
 	code = 0;
 	for (i = 0; p != 0; ){
-		if ((gssize) p < 7){
+		if ((gsize) p < 7){
 			code = (gssize) p;
 			p = encodings [++i];
 			continue;
