@@ -8404,7 +8404,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		break;
 	}
 	case CMD_METHOD_GET_LOCALS_INFO: {
-		int i, j, num_locals;
+		int i, num_locals;
 		MonoDebugLocalsInfo *locals;
 		int *locals_map = NULL;
 
@@ -8431,40 +8431,25 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 				buffer_add_int (buf, header->code_size);
 			}
 		} else {
-			/* Maps between the IL locals index and the index in locals->locals */
-			locals_map = g_new0 (int, header->num_locals);
-			for (i = 0; i < header->num_locals; ++i)
-				locals_map [i] = -1;
 			num_locals = locals->num_locals;
-			for (i = 0; i < num_locals; ++i) {
-				g_assert (locals->locals [i].index < header->num_locals);
-				locals_map [locals->locals [i].index] = i;
-			}
 			buffer_add_int (buf, num_locals);
 
 			/* Types */
-			for (i = 0; i < header->num_locals; ++i) {
-				if (locals_map [i] != -1)
-					buffer_add_typeid (buf, domain, mono_class_from_mono_type (header->locals [i]));
+			for (i = 0; i < num_locals; ++i) {
+				g_assert (locals->locals [i].index < header->num_locals);
+				buffer_add_typeid (buf, domain, mono_class_from_mono_type (header->locals [locals->locals [i].index]));
 			}
-
 			/* Names */
-			for (i = 0; i < header->num_locals; ++i) {
-				if (locals_map [i] != -1)
-					buffer_add_string (buf, locals->locals [locals_map [i]].name);
-			}
-
+			for (i = 0; i < num_locals; ++i)
+				buffer_add_string (buf, locals->locals [i].name);
 			/* Scopes */
-			for (i = 0; i < header->num_locals; ++i) {
-				if (locals_map [i] != -1) {
-					j = locals_map [i];
-					if (locals->locals [j].block) {
-						buffer_add_int (buf, locals->locals [j].block->start_offset);
-						buffer_add_int (buf, locals->locals [j].block->end_offset);
-					} else {
-						buffer_add_int (buf, 0);
-						buffer_add_int (buf, header->code_size);
-					}
+			for (i = 0; i < num_locals; ++i) {
+				if (locals->locals [i].block) {
+					buffer_add_int (buf, locals->locals [i].block->start_offset);
+					buffer_add_int (buf, locals->locals [i].block->end_offset);
+				} else {
+					buffer_add_int (buf, 0);
+					buffer_add_int (buf, header->code_size);
 				}
 			}
 		}
