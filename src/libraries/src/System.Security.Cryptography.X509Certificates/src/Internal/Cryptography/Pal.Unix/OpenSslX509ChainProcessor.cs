@@ -45,7 +45,10 @@ namespace Internal.Cryptography.Pal
             List<X509Certificate2> downloaded,
             OidCollection applicationPolicy,
             OidCollection certificatePolicy,
-            DateTime verificationTime)
+            X509RevocationMode revocationMode,
+            X509RevocationFlag revocationFlag,
+            DateTime verificationTime,
+            ref TimeSpan remainingDownloadTime)
         {
             X509ChainElement[] elements;
             List<X509ChainStatus> overallStatus = new List<X509ChainStatus>();
@@ -60,11 +63,42 @@ namespace Internal.Cryptography.Pal
                 Interop.libcrypto.CheckValidOpenSslHandle(store);
                 Interop.libcrypto.CheckValidOpenSslHandle(storeCtx);
 
+                bool lookupCrl = revocationMode != X509RevocationMode.NoCheck;
+
                 foreach (X509Certificate2 cert in candidates)
                 {
                     OpenSslX509CertificateReader pal = (OpenSslX509CertificateReader)cert.Pal;
 
                     if (!Interop.libcrypto.X509_STORE_add_cert(store, pal.SafeHandle))
+                    {
+                        throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                    }
+
+                    if (lookupCrl)
+                    {
+                        CrlCache.AddCrlForCertificate(
+                            cert,
+                            store,
+                            revocationMode,
+                            verificationTime,
+                            ref remainingDownloadTime);
+
+                        // If we only wanted the end-entity certificate CRL then don't look up
+                        // any more of them.
+                        lookupCrl = revocationFlag != X509RevocationFlag.EndCertificateOnly;
+                    }
+                }
+
+                if (revocationMode != X509RevocationMode.NoCheck)
+                {
+                    Interop.libcrypto.X509VerifyFlags vfyFlags = Interop.libcrypto.X509VerifyFlags.X509_V_FLAG_CRL_CHECK;
+
+                    if (revocationFlag != X509RevocationFlag.EndCertificateOnly)
+                    {
+                        vfyFlags |= Interop.libcrypto.X509VerifyFlags.X509_V_FLAG_CRL_CHECK_ALL;
+                    }
+
+                    if (!Interop.libcrypto.X509_STORE_set_flags(store, vfyFlags))
                     {
                         throw Interop.libcrypto.CreateOpenSslCryptographicException();
                     }
@@ -481,6 +515,18 @@ namespace Internal.Cryptography.Pal
                 return null;
             }
 
+            string uri = FindHttpAiaRecord(authorityInformationAccess, Oids.CertificateAuthorityIssuers);
+
+            if (uri == null)
+            {
+                return null;
+            }
+
+            return CertificateAssetDownloader.DownloadCertificate(uri, ref remainingDownloadTime);
+        }
+
+        internal static string FindHttpAiaRecord(byte[] authorityInformationAccess, string recordTypeOid)
+        {
             DerSequenceReader reader = new DerSequenceReader(authorityInformationAccess);
 
             while (reader.HasData)
@@ -495,7 +541,7 @@ namespace Internal.Cryptography.Pal
 
                 Oid oid = innerReader.ReadOid();
 
-                if (StringComparer.Ordinal.Equals(oid.Value, Oids.CertificateAuthorityIssuers))
+                if (StringComparer.Ordinal.Equals(oid.Value, recordTypeOid))
                 {
                     string uri = innerReader.ReadIA5String();
 
@@ -510,7 +556,7 @@ namespace Internal.Cryptography.Pal
                         continue;
                     }
 
-                    return CertificateAssetDownloader.DownloadCertificate(uri, ref remainingDownloadTime);
+                    return uri;
                 }
             }
 
