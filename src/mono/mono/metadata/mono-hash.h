@@ -17,7 +17,7 @@ MONO_BEGIN_DECLS
 typedef enum {
 	MONO_HASH_KEY_GC,
 	MONO_HASH_VALUE_GC,
-	MONO_HASH_KEY_VALUE_GC /* note this is the OR of the other two values */
+	MONO_HASH_KEY_VALUE_GC
 } MonoGHashGCType;
 
 typedef struct _MonoGHashTable MonoGHashTable;
