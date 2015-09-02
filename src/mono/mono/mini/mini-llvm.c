@@ -357,7 +357,7 @@ create_llvm_type_for_type (MonoClass *klass)
 
 	t = &klass->byval_arg;
 
-	if (mini_type_is_hfa (t, &nfields, &esize)) {
+	if (mini_type_is_hfa (t, &nfields, &esize) && nfields <= 4) {
 		/*
 		 * This is needed on arm64 where HFAs are returned in
 		 * registers.
