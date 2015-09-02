@@ -155,10 +155,6 @@ static GHashTable *contexts = NULL;
  * Protected by mono_threads_lock ().
  */
 static MonoGHashTable *threads_starting_up = NULL;
- 
-/* Maps a MonoThread to its start argument */
-/* Protected by mono_threads_lock () */
-static MonoGHashTable *thread_start_args = NULL;
 
 /* The TLS key that holds the MonoObject assigned to each thread */
 static MonoNativeTlsKey current_object_key;
@@ -664,7 +660,7 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 	}
 
 	start_func = start_info->func;
-	start_arg = start_info->start_arg;
+	start_arg = start_info->obj->start_obj;
 
 	/* We have to do this here because mono_thread_new_init()
 	   requires that root_domain_thread is set up. */
@@ -695,10 +691,6 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 		 */
 		ReleaseSemaphore (internal->start_notify, 1, NULL);
 	}
-
-	mono_threads_lock ();
-	mono_g_hash_table_remove (thread_start_args, start_info->obj);
-	mono_threads_unlock ();
 
 	g_free (start_info);
 	THREAD_DEBUG (g_message ("%s: start_wrapper for %"G_GSIZE_FORMAT, __func__,
@@ -795,17 +787,6 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, StartInfo *star
 		mono_threads_unlock ();
 		return FALSE;
 	}
-	/*
-	 * The thread start argument may be an object reference, and there is
-	 * no ref to keep it alive when the new thread is started but not yet
-	 * registered with the collector. So we store it in a GC tracked hash
-	 * table.
-	 */
-	if (thread_start_args == NULL) {
-		MONO_GC_REGISTER_ROOT_FIXED (thread_start_args, MONO_ROOT_SOURCE_THREADING, "thread start arguments table");
-		thread_start_args = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_CONSERVATIVE_GC, MONO_ROOT_SOURCE_THREADING, "thread start arguments table");
-	}
-	mono_g_hash_table_insert (thread_start_args, thread, start_info->start_arg);
 	if (threads_starting_up == NULL) {
 		MONO_GC_REGISTER_ROOT_FIXED (threads_starting_up, MONO_ROOT_SOURCE_THREADING, "starting threads table");
 		threads_starting_up = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_THREADING, "starting threads table");
@@ -911,7 +892,8 @@ guint32 mono_threads_get_default_stacksize (void)
 
 /*
  * mono_thread_create_internal:
- * 
+ *
+ *   ARG should not be a GC reference.
  */
 MonoInternalThread*
 mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gboolean threadpool_thread, guint32 stack_size)
@@ -1131,7 +1113,7 @@ ves_icall_System_Threading_Thread_Thread_internal (MonoThread *this_obj,
 	/* This is freed in start_wrapper */
 	start_info = g_new0 (StartInfo, 1);
 	start_info->func = NULL;
-	start_info->start_arg = this_obj->start_obj; /* FIXME: GC object stored in unmanaged memory */
+	start_info->start_arg = NULL;
 	start_info->delegate = start;
 	start_info->obj = this_obj;
 	g_assert (this_obj->obj.vtable->domain == mono_domain_get ());
