@@ -1,10 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Reflection.Metadata.Ecma335;
 using Xunit;
 
-namespace System.Reflection.Metadata.Tests
+namespace System.Reflection.Metadata.Ecma335.Tests
 {
     public class MetadataTokensTests
     {
