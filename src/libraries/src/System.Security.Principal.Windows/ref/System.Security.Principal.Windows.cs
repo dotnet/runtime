@@ -191,6 +191,7 @@ namespace System.Security.Principal
     {
         public WindowsIdentity(System.IntPtr userToken) { }
         public WindowsIdentity(System.IntPtr userToken, string type) { }
+        public WindowsIdentity(string sUserPrincipalName) { }
         public Microsoft.Win32.SafeHandles.SafeAccessTokenHandle AccessToken {[System.Security.SecurityCriticalAttribute]get { return default(Microsoft.Win32.SafeHandles.SafeAccessTokenHandle); } }
         public System.Security.Principal.IdentityReferenceCollection Groups { get { return default(System.Security.Principal.IdentityReferenceCollection); } }
         public System.Security.Principal.TokenImpersonationLevel ImpersonationLevel { get { return default(System.Security.Principal.TokenImpersonationLevel); } }
