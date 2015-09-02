@@ -36,7 +36,7 @@
     <Compile Include="main.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <None Include="project.json" />
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
