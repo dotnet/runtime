@@ -327,7 +327,7 @@ namespace System.Diagnostics
                         // able to get an exit code, but we'll at least be able 
                         // to determine if the process is still running (assuming
                         // there's not a race on its id).
-                        int killResult = Interop.libc.kill(_processId, 0); // 0 means don't send a signal
+                        int killResult = Interop.Sys.Kill(_processId, Interop.Sys.Signals.None); // 0 means don't send a signal
                         if (killResult == 0)
                         {
                             // Process is still running.  This could also be a defunct process that has completed

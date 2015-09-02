@@ -10,7 +10,10 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/file.h>
 #include <unistd.h>
+#include <fnmatch.h>
+#include <stdlib.h>
 
 #if HAVE_STAT64
 #    define stat_ stat64
@@ -61,6 +64,23 @@ static_assert((int)NodeType::PAL_DT_REG == DT_REG, "");
 static_assert((int)NodeType::PAL_DT_LNK == DT_LNK, "");
 static_assert((int)NodeType::PAL_DT_SOCK == DT_SOCK, "");
 static_assert((int)NodeType::PAL_DT_WHT == DT_WHT, "");
+
+// Validate that our Lock enum value are correct for the platform
+static_assert((int)LockOperations::PAL_LOCK_SH == LOCK_SH, "");
+static_assert((int)LockOperations::PAL_LOCK_EX == LOCK_EX, "");
+static_assert((int)LockOperations::PAL_LOCK_NB == LOCK_NB, "");
+static_assert((int)LockOperations::PAL_LOCK_UN == LOCK_UN, "");
+
+// Validate our AccessMode enum values are correct for the platform
+static_assert((int)AccessMode::PAL_F_OK == F_OK, "");
+static_assert((int)AccessMode::PAL_X_OK == X_OK, "");
+static_assert((int)AccessMode::PAL_W_OK == W_OK, "");
+static_assert((int)AccessMode::PAL_R_OK == R_OK, "");
+
+// Validate our SeekWhence enum values are correct for the platform
+static_assert((int)SeekWhence::PAL_SEEK_SET == SEEK_SET, "");
+static_assert((int)SeekWhence::PAL_SEEK_CUR == SEEK_CUR, "");
+static_assert((int)SeekWhence::PAL_SEEK_END == SEEK_END, "");
 
 static
 void ConvertFileStatus(const struct stat_& src, FileStatus* dst)
@@ -374,4 +394,52 @@ extern "C"
 int32_t MkFifo(const char* path, int32_t mode)
 {
     return mkfifo(path, mode);
+}
+
+extern "C"
+int32_t FSync(int32_t fd)
+{
+    return fsync(fd);
+}
+
+extern "C"
+int32_t FLock(int32_t fd, LockOperations operation)
+{
+    return flock(fd, (int32_t)operation);
+}
+
+extern "C"
+int32_t ChDir(const char* path)
+{
+    return chdir(path);
+}
+
+extern "C"
+int32_t Access(const char* path, AccessMode mode)
+{
+    return access(path, (int32_t)mode);
+}
+
+extern "C"
+int32_t FnMatch(const char* pattern, const char* path, FnMatchFlags flags)
+{
+    return fnmatch(pattern, path, (int32_t)flags);
+}
+
+extern "C"
+int64_t LSeek(int32_t fd, int64_t offset, SeekWhence whence)
+{
+    return lseek(fd, offset, (int32_t)whence);
+}
+
+extern "C"
+int32_t Link(const char* source, const char* linkTarget)
+{
+    return link(source, linkTarget);
+}
+
+extern "C"
+int32_t MksTemps(char* pathTemplate, int32_t suffixLength)
+{
+    return mkstemps(pathTemplate, suffixLength);
 }

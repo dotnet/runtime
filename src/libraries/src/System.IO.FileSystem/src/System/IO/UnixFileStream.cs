@@ -96,8 +96,8 @@ namespace System.IO
             // and not atomic with file opening, it's better than nothing.
             try
             {
-                Interop.libc.LockOperations lockOperation = (share == FileShare.None) ? Interop.libc.LockOperations.LOCK_EX : Interop.libc.LockOperations.LOCK_SH;
-                SysCall<Interop.libc.LockOperations, int>((fd, op, _) => Interop.libc.flock(fd, op), lockOperation | Interop.libc.LockOperations.LOCK_NB);
+                Interop.Sys.LockOperations lockOperation = (share == FileShare.None) ? Interop.Sys.LockOperations.LOCK_EX : Interop.Sys.LockOperations.LOCK_SH;
+                SysCall<Interop.Sys.LockOperations, int>((fd, op, _) => Interop.Sys.FLock(fd, op), lockOperation | Interop.Sys.LockOperations.LOCK_NB);
             }
             catch
             {
@@ -252,7 +252,7 @@ namespace System.IO
                 if (!_canSeek.HasValue)
                 {
                     // Lazily-initialize whether we're able to seek, tested by seeking to our current location.
-                    _canSeek = SysCall<int, int>((fd, _, __) => Interop.libc.lseek(fd, 0, Interop.libc.SeekWhence.SEEK_CUR), throwOnError: false) >= 0;
+                    _canSeek = SysCall<int, int>((fd, _, __) => Interop.Sys.LSeek(fd, 0, Interop.Sys.SeekWhence.SEEK_CUR), throwOnError: false) >= 0;
                 }
                 return _canSeek.Value;
             }
@@ -455,7 +455,7 @@ namespace System.IO
         /// <summary>Flushes the OS buffer.  This does not flush the internal read/write buffer.</summary>
         private void FlushOSBuffer()
         {
-            SysCall<int, int>((fd, _, __) => Interop.libc.fsync(fd));
+            SysCall<int, int>((fd, _, __) => Interop.Sys.FSync(fd));
         }
 
         /// <summary>
@@ -989,7 +989,7 @@ namespace System.IO
             Debug.Assert(!_fileHandle.IsClosed && CanSeek);
             Debug.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End);
 
-            long pos = SysCall((fd, off, or) => Interop.libc.lseek(fd, off, or), offset, (Interop.libc.SeekWhence)(int)origin); // SeekOrigin values are the same as Interop.libc.SeekWhence values
+            long pos = SysCall((fd, off, or) => Interop.Sys.LSeek(fd, off, or), offset, (Interop.Sys.SeekWhence)(int)origin); // SeekOrigin values are the same as Interop.libc.SeekWhence values
             _filePosition = pos;
             return pos;
         }

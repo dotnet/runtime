@@ -120,8 +120,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Close.cs">
       <Link>Common\Interop\Unix\Interop.Close.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.lseek.cs">
-      <Link>Common\Interop\Unix\Interop.lseek64.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.LSeek.cs">
+      <Link>Common\Interop\Unix\Interop.LSeek.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Open.cs">
       <Link>Common\Interop\Unix\Interop.Open.cs</Link>

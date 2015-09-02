@@ -166,7 +166,7 @@ namespace System.IO
 
             // Create, open, and close the temp file.
             int fd;
-            Interop.CheckIo(fd = Interop.libc.mkstemps(name, SuffixByteLength));
+            Interop.CheckIo(fd = Interop.Sys.MksTemps(name, SuffixByteLength));
             Interop.Sys.Close(fd); // ignore any errors from close; nothing to do if cleanup isn't possible
 
             // 'name' is now the name of the file
