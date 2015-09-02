@@ -1,12 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Runtime.InteropServices;
-
-namespace MethodDefinitions
+namespace System.Reflection.Tests
 {
-    public class BaseClass
+    public class MethodTestBaseClass
     {
         public static int Members = 38;
         public static int MembersEverything = 44;
@@ -82,7 +79,7 @@ namespace MethodDefinitions
         private static void PrivMeth3() { }
     }
 
-    public class SubClass : BaseClass
+    public class MethodTestSubClass : MethodTestBaseClass
     {
         public new static int Members = 31;
         public new static int MembersEverything = 51;
@@ -151,7 +148,7 @@ namespace MethodDefinitions
         private static void PrivMeth3() { }
     }
 
-    public abstract class AbsBaseClass
+    public abstract class MethodTestAbsBaseClass
     {
         public static int Members = 11;
         public static int MembersEverything = 17;
@@ -166,7 +163,7 @@ namespace MethodDefinitions
         protected internal abstract void meth4();
     }
 
-    public abstract class AbsSubClass : AbsBaseClass
+    public abstract class MethodTestAbsSubClass : MethodTestAbsBaseClass
     {
         public new static int Members = 7;
         public new static int MembersEverything = 17;

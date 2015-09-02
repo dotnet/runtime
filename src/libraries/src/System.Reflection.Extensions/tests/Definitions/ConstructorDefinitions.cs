@@ -2,50 +2,49 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #pragma warning disable 3026
-using System;
 
-namespace ConstructorDefinitions
+namespace System.Reflection.Tests
 {
-    public static class StaticClass
+    public static class ConstructorTestStaticClass
     {
         public static int Members = 3;
         public static int MembersEverything = 9;
-        static StaticClass() { }
+        static ConstructorTestStaticClass() { }
     }
 
-    public class ClassWithMultipleConstructors
+    public class ConstructorTestClassWithMultipleConstructors
     {
         public static int Members = 9;
         public static int MembersEverything = 15;
 
-        static ClassWithMultipleConstructors() { }
+        static ConstructorTestClassWithMultipleConstructors() { }
 
-        private ClassWithMultipleConstructors(String s) { }
+        private ConstructorTestClassWithMultipleConstructors(String s) { }
 
-        protected ClassWithMultipleConstructors(int i) { }
+        protected ConstructorTestClassWithMultipleConstructors(int i) { }
 
-        public ClassWithMultipleConstructors() { }
-        public ClassWithMultipleConstructors(TimeSpan ts) { }
-        public ClassWithMultipleConstructors(Object o1, Object o2) { }
-        public ClassWithMultipleConstructors(Object obj0, Int32 i4) { }
+        public ConstructorTestClassWithMultipleConstructors() { }
+        public ConstructorTestClassWithMultipleConstructors(TimeSpan ts) { }
+        public ConstructorTestClassWithMultipleConstructors(Object o1, Object o2) { }
+        public ConstructorTestClassWithMultipleConstructors(Object obj0, Int32 i4) { }
     }
 
-    public class BaseClass
+    public class ConstructorTestBaseClass
     {
         public static int Members = 5;
         public static int MembersEverything = 11;
 
-        static BaseClass() { }
-        public BaseClass() { }
-        public BaseClass(Int16 i2) { }
+        static ConstructorTestBaseClass() { }
+        public ConstructorTestBaseClass() { }
+        public ConstructorTestBaseClass(Int16 i2) { }
     }
 
-    public class SubClass : BaseClass
+    public class ConstructorTestSubClass : ConstructorTestBaseClass
     {
         public new static int Members = 5; //.cctor is added
         public new static int MembersEverything = 11;
 
-        public SubClass(String s) { }
-        public SubClass(Int16 i2) { }
+        public ConstructorTestSubClass(String s) { }
+        public ConstructorTestSubClass(Int16 i2) { }
     }
 }

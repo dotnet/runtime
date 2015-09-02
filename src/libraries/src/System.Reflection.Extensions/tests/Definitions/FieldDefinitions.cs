@@ -2,11 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #pragma warning disable 3026
-using System;
 
-namespace FieldDefinitions
+namespace System.Reflection.Tests
 {
-    public class BaseClass
+    public class FieldTestBaseClass
     {
         public static int Members = 35;
         public static int MembersEverything = 41;
@@ -55,7 +54,7 @@ namespace FieldDefinitions
         protected internal static volatile string ProIntfld6 = "";
     }
 
-    public class SubClass : BaseClass
+    public class FieldTestSubClass : FieldTestBaseClass
     {
         public new static int Members = 32;
         public new static int MembersEverything = 54;
