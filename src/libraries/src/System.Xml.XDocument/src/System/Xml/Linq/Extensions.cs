@@ -291,25 +291,37 @@ namespace System.Xml.Linq
         /// <summary>
         /// Removes each <see cref="XAttribute"/> represented in this <see cref="IEnumerable"/> of
         /// <see cref="XAttribute"/>.  Note that this method uses snapshot semantics (copies the
-        /// attributes to a <see cref="List&lt;T>"/> before deleting each).
+        /// attributes to an array before deleting each).
         /// </summary>
         public static void Remove(this IEnumerable<XAttribute> source)
         {
             if (source == null) throw new ArgumentNullException("source");
-            foreach (XAttribute a in new List<XAttribute>(source))
+
+            int count;
+            XAttribute[] attributes = EnumerableHelpers.ToArray(source, out count);
+            for (int i = 0; i < count; i++)
+            {
+                XAttribute a = attributes[i];
                 if (a != null) a.Remove();
+            }
         }
 
         /// <summary>
         /// Removes each <see cref="XNode"/> represented in this <see cref="IEnumerable"/>
-        /// T which must be a derived from <see cref="XNode"/>.  Note that this method uses snapshot semantics 
-        /// (copies the <see cref="XNode"/>s to a List before deleting each).
+        /// T which must be a derived from <see cref="XNode"/>.  Note that this method uses snapshot semantics
+        /// (copies the <see cref="XNode"/>s to an array before deleting each).
         /// </summary>
         public static void Remove<T>(this IEnumerable<T> source) where T : XNode
         {
             if (source == null) throw new ArgumentNullException("source");
-            foreach (T node in new List<T>(source))
+
+            int count;
+            T[] nodes = EnumerableHelpers.ToArray(source, out count);
+            for (int i = 0; i < count; i++)
+            {
+                T node = nodes[i];
                 if (node != null) node.Remove();
+            }
         }
 
         static IEnumerable<XAttribute> GetAttributes(IEnumerable<XElement> source, XName name)
