@@ -10,9 +10,9 @@ using Xunit;
 
 namespace System.Net.Http.WinHttpHandlerUnitTests
 {
-    public class WinHttpResponseStreamTests
+    public class WinHttpResponseStreamTest
     {
-        public WinHttpResponseStreamTests()
+        public WinHttpResponseStreamTest()
         {
             TestControl.ResetAll();
         }
@@ -252,11 +252,9 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
 
         internal Stream MakeResponseStream()
         {
-            var sessionHandle = new FakeSafeWinHttpHandle(true);
-            var connectHandle = new FakeSafeWinHttpHandle(true);
             var requestHandle = new FakeSafeWinHttpHandle(true);
 
-            return new WinHttpResponseStream(sessionHandle, connectHandle, requestHandle);
+            return new WinHttpResponseStream(requestHandle);
         }
     }
 }

@@ -82,6 +82,8 @@ internal static partial class Interop
 
         public static bool WinHttpCloseHandle(IntPtr sessionHandle)
         {
+            Marshal.FreeHGlobal(sessionHandle);
+
             return true;
         }
 
