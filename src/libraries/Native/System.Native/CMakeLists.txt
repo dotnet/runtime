@@ -2,10 +2,10 @@ project(System.Native)
 
 set(NATIVE_SOURCES
     pal_errno.cpp
-    pal_exec.cpp
     pal_io.cpp
-    pal_uid.cpp
     pal_mount.cpp
+    pal_process.cpp
+    pal_uid.cpp
     pal_utilities.cpp
 )
 
