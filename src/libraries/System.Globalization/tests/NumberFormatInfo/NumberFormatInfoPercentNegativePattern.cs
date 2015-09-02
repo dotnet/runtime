@@ -3,6 +3,7 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -50,35 +51,29 @@ namespace System.Globalization.Tests
             });
         }
 
-        // TestLocale0: Verify value of property PercentNegativePattern for specific locale
-        [Fact]
-        public void TestLocale0()
+        // TestPercentNegativePatternLocale: Verify value of property PercentNegativePattern for specific locales
+        [Theory]
+        [InlineData("en-US", 0, 1)]
+        public void TestPercentNegativePatternLocale(string locale, int expectedWindows, int expectedIcu)
         {
-            CultureInfo myTestCulture = new CultureInfo("en-US");
+            CultureInfo myTestCulture = new CultureInfo(locale);
             NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int expected = nfi.PercentNegativePattern; //0="-n %"
+            int actual = nfi.PercentNegativePattern;
+            int expected = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? expectedWindows : expectedIcu;
             // todo: determine why some values are different
-            Assert.True(expected == 1 || expected == 0); //ICU=1, 0=Windows
+            Assert.Equal(expected, actual);
         }
 
-        // TestLocale1: Verify value of property PercentNegativePattern for specific locale
-        [Fact]
-        public void TestLocale1()
+        // TestPercentNegativePatternLocale2: Verify value of property PercentNegativePattern for specific locales
+        [Theory]
+        [InlineData("en-MY", 1)]
+        [InlineData("tr", 2)]
+        public void TestPercentNegativePatternLocale2(string locale, int expected)
         {
-            CultureInfo myTestCulture = new CultureInfo("en-MY");
+            CultureInfo myTestCulture = new CultureInfo(locale);
             NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int expected = nfi.PercentNegativePattern; //1="-n%"
-            Assert.Equal(1, expected);
-        }
-
-        // TestLocale2: Verify value of property PercentNegativePattern for specific locale
-        [Fact]
-        public void TestLocale2()
-        {
-            CultureInfo myTestCulture = new CultureInfo("tr");
-            NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int expected = nfi.PercentNegativePattern; //2="-%n"
-            Assert.Equal(2, expected);
+            int actual = nfi.PercentNegativePattern;
+            Assert.Equal(expected, actual);
         }
 
         private void VerificationHelper<T>(int i) where T : Exception

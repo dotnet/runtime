@@ -3,6 +3,7 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -50,26 +51,19 @@ namespace System.Globalization.Tests
             });
         }
 
-        // TestLocale1: Verify value of property CurrencyDecimalDigits for specific locale
-        [Fact]
-        public void TestLocale1()
+        // TestCurrencyDecimalDigitsLocale: Verify value of property CurrencyDecimalDigits for specific locale
+        [Theory]
+        [InlineData("en-US", 2, 3)]
+        [InlineData("ko", 0, 2)]
+        public void TestCurrencyDecimalDigitsLocale(string locale, int expectedWindows, int expectedIcu)
         {
-            CultureInfo myTestCulture = new CultureInfo("en-US");
+            CultureInfo myTestCulture = new CultureInfo(locale);
             NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int expected = nfi.CurrencyDecimalDigits;
-            // todo: determine why some values are different
-            Assert.True(expected == 3 || expected == 2); //ICU=3, 2=Windows
-        }
+            int actual = nfi.CurrencyDecimalDigits;
+            int expected = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? expectedWindows : expectedIcu;
 
-        // TestLocale2: Verify value of property CurrencyDecimalDigits for specific locale
-        [Fact]
-        public void TestLocale2()
-        {
-            CultureInfo myTestCulture = new CultureInfo("ko");
-            NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int expected = nfi.CurrencyDecimalDigits;
             // todo: determine why some values are different
-            Assert.True(expected == 2 || expected == 0); //ICU=2, 0=Windows
+            Assert.Equal(expected, actual);
         }
 
         private void VerificationHelper<T>(int i) where T : Exception
