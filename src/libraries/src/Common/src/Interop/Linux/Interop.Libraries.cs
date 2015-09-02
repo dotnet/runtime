@@ -11,5 +11,6 @@ internal static partial class Interop
         internal const string INODE64SUFFIX = "";
 
         internal const string LibRt = "librt"; // POSIX Realtime Extensions library
+        internal const string LibCurl = "libcurl.so.4";             // Curl HTTP client library
     }
 }

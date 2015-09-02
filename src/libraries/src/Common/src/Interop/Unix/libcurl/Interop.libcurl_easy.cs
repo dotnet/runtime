@@ -47,19 +47,13 @@ internal static partial class Interop
         public static extern int curl_easy_setopt(
             SafeCurlHandle curl,
             int option,
-            curl_readwrite_callback callback);
-
-        [DllImport(Interop.Libraries.LibCurl)]
-        public static extern unsafe int curl_easy_setopt(
-            SafeCurlHandle curl,
-            int option,
-            curl_unsafe_write_callback callback);
+            SafeHandle value);
 
         [DllImport(Interop.Libraries.LibCurl)]
         public static extern int curl_easy_setopt(
             SafeCurlHandle curl,
             int option,
-            curl_ioctl_callback callback);
+            Delegate callback);
 
         [DllImport(Interop.Libraries.LibCurl)]
         public static extern IntPtr curl_easy_strerror(

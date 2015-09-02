@@ -8,7 +8,6 @@ internal static partial class Interop
         internal const string Libc = "libc";                   // C library
         internal const string LibCoreClr= "libcoreclr";        // CoreCLR runtime
         internal const string LibCrypto = "libcrypto";         // OpenSSL crypto library
-        internal const string LibCurl = "libcurl";             // Curl HTTP client library
         internal const string Zlib = "libz";                   // zlib compression library
 
         // Shims
