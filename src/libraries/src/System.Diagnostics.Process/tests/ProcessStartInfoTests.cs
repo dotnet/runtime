@@ -1,15 +1,15 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections;
 using System.Collections.Generic;
-using System.Security;
-using System.Security.Principal;
-using Microsoft.Win32;
 using System.IO;
-using Xunit;
-using Microsoft.Win32.SafeHandles;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Principal;
+using Microsoft.Win32;
+using Microsoft.Win32.SafeHandles;
+using Xunit;
 
 namespace System.Diagnostics.ProcessTests
 {
@@ -179,6 +179,60 @@ namespace System.Diagnostics.ProcessTests
                 KeyValuePair<string, string>[] kvpanull = null;
                 environment.CopyTo(kvpanull, 0);
             });
+        }
+
+        [Fact]
+        public void TestEnvironmentOfChildProcess()
+        {
+            var expectedEnv = new HashSet<string>();
+            var actualEnv = new HashSet<string>();
+            Process p = CreateProcess(() =>
+            {
+                foreach (DictionaryEntry envVar in Environment.GetEnvironmentVariables())
+                {
+                    Console.WriteLine(envVar.Key + "=" + envVar.Value);
+                }
+
+                return SuccessExitCode;
+            });
+
+            p.StartInfo.RedirectStandardOutput = true;
+            p.OutputDataReceived += (s, e) =>
+            {
+                if (e.Data != null)
+                {
+                    expectedEnv.Add(e.Data);
+                }
+            };
+
+            p.Start();
+            p.BeginOutputReadLine();
+
+            foreach (KeyValuePair<string, string> envVar in p.StartInfo.Environment)
+            {
+                actualEnv.Add(envVar.Key + "=" + envVar.Value);
+            }
+
+            Assert.True(p.WaitForExit(WaitInMS));
+            p.WaitForExit(); // This ensures async event handlers are finished processing.
+
+            // Validate against StartInfo.Environment
+            Assert.True(expectedEnv.SetEquals(actualEnv));
+
+            // Validate against current process
+            var currentProcEnv = new HashSet<string>();
+            foreach (DictionaryEntry envVar in Environment.GetEnvironmentVariables())
+            {
+                currentProcEnv.Add(envVar.Key + "=" + envVar.Value);
+            }
+
+            // Profilers / code coverage tools can add own environment variables but we start
+            // child process without them. Thus the set of variables from child process will
+            // compose subset of variables from current process.
+            // But in case if tests running directly through the Xunit runner, sets will be equal
+            // and Assert.ProperSubset will throw. We add null to avoid this.
+            currentProcEnv.Add(null);
+            Assert.ProperSubset(currentProcEnv, actualEnv);
         }
 
         [Fact]
