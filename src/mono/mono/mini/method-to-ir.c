@@ -7531,34 +7531,6 @@ is_supported_tail_call (MonoCompile *cfg, MonoMethod *method, MonoMethod *cmetho
 	return supported_tail_call;
 }
 
-/* emits the code needed to access a managed tls var (like ThreadStatic)
- * with the value of the tls offset in offset_reg. thread_ins represents the MonoInternalThread
- * pointer for the current thread.
- * Returns the MonoInst* representing the address of the tls var.
- */
-static MonoInst*
-emit_managed_static_data_access (MonoCompile *cfg, MonoInst *thread_ins, int offset_reg)
-{
-	MonoInst *addr;
-	int static_data_reg, array_reg, dreg;
-	int offset2_reg, idx_reg;
-	// inlined access to the tls data (see threads.c)
-	static_data_reg = alloc_ireg (cfg);
-	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, static_data_reg, thread_ins->dreg, MONO_STRUCT_OFFSET (MonoInternalThread, static_data));
-	idx_reg = alloc_ireg (cfg);
-	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IAND_IMM, idx_reg, offset_reg, 0x3f);
-	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHL_IMM, idx_reg, idx_reg, sizeof (gpointer) == 8 ? 3 : 2);
-	MONO_EMIT_NEW_BIALU (cfg, OP_PADD, static_data_reg, static_data_reg, idx_reg);
-	array_reg = alloc_ireg (cfg);
-	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, array_reg, static_data_reg, 0);
-	offset2_reg = alloc_ireg (cfg);
-	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_UN_IMM, offset2_reg, offset_reg, 6);
-	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IAND_IMM, offset2_reg, offset2_reg, 0x1ffffff);
-	dreg = alloc_ireg (cfg);
-	EMIT_NEW_BIALU (cfg, addr, OP_PADD, dreg, array_reg, offset2_reg);
-	return addr;
-}
-
 /*
  * handle_ctor_call:
  *
