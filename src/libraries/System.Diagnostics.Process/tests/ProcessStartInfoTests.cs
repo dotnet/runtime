@@ -217,7 +217,13 @@ namespace System.Diagnostics.ProcessTests
             p.WaitForExit(); // This ensures async event handlers are finished processing.
 
             // Validate against StartInfo.Environment
-            Assert.True(expectedEnv.SetEquals(actualEnv));
+            if (!expectedEnv.SetEquals(actualEnv))
+            {
+                var expected = string.Join(", ", expectedEnv.Except(actualEnv));
+                var actual = string.Join(", ", actualEnv.Except(expectedEnv));
+
+                Assert.True(false, string.Format("Expected: {0}{1}Actual: {2}", expected, Environment.NewLine, actual));
+            }
 
             // Validate against current process
             var currentProcEnv = new HashSet<string>();
