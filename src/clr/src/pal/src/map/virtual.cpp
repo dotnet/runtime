@@ -1480,7 +1480,7 @@ Function:
 static BOOL VIRTUALGetBackingFile(CPalThread *pthrCurrent)
 {
     BOOL result = FALSE;
-    char palName[MAX_PATH];
+    char palName[MAX_PATH_FNAME];
     
     InternalEnterCriticalSection(pthrCurrent, &virtual_critsec);
     
@@ -1500,7 +1500,7 @@ static BOOL VIRTUALGetBackingFile(CPalThread *pthrCurrent)
     }
 #endif
 
-    if (!(PALGetLibRotorPalName(palName, MAX_PATH)))
+    if (!(PALGetLibRotorPalName(palName, MAX_PATH_FNAME)))
     {
         ASSERT("Surprisingly, LibRotorPal can't be found!");
         goto done;

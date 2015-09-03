@@ -559,7 +559,7 @@ CorUnix::InternalCreateProcess(
     int iFdErr = -1;
     
     pid_t processId;
-    char lpFileName[MAX_PATH] ;
+    char lpFileName[MAX_LONGPATH] ;
     char **lppArgv = NULL;
     UINT nArg;
     int  iRet;
@@ -692,10 +692,10 @@ CorUnix::InternalCreateProcess(
 
         case FILE_PE: /* PE/COFF file */
             /*Get the path name where the PAL DLL was loaded from
-             * I am using MAX_PATH - (strlen(PROCESS_PELOADER_FILENAME)+1)
+             * I am using MAX_LONGPATH - (strlen(PROCESS_PELOADER_FILENAME)+1)
              * as the length as I have to append the file name at the end */
             if ( PAL_GetPALDirectoryA( lpFileName,
-                                      (MAX_PATH - (strlen(PROCESS_PELOADER_FILENAME)+1))))
+                                      (MAX_LONGPATH - (strlen(PROCESS_PELOADER_FILENAME)+1))))
             {
                 if ((strcat_s(lpFileName, sizeof(lpFileName), "/") != SAFECRT_SUCCESS) ||
                     (strcat_s(lpFileName, sizeof(lpFileName), PROCESS_PELOADER_FILENAME) != SAFECRT_SUCCESS))
@@ -3200,18 +3200,18 @@ getFileName(
 {
     LPWSTR lpEnd;
     WCHAR wcEnd;
-    char lpFileName[MAX_PATH];
+    char lpFileName[MAX_LONGPATH];
     char *lpTemp;
 
     if (lpApplicationName)
     {
-        int path_size = MAX_PATH;
+        int path_size = MAX_LONGPATH;
         lpTemp = lpPathFileName;
         /* if only a file name is specified, prefix it with "./" */
         if ((*lpApplicationName != '.') && (*lpApplicationName != '/') &&
             (*lpApplicationName != '\\'))
         {
-            if (strcpy_s(lpPathFileName, MAX_PATH, "./") != SAFECRT_SUCCESS)
+            if (strcpy_s(lpPathFileName, MAX_LONGPATH, "./") != SAFECRT_SUCCESS)
             {
                 ERROR("strcpy_s failed!\n");
                 return FALSE;
@@ -3284,7 +3284,7 @@ getFileName(
 
         /* Convert to ASCII */
         if (!WideCharToMultiByte(CP_ACP, 0, lpCommandLine, -1,
-                                 lpFileName, MAX_PATH, NULL, NULL))
+                                 lpFileName, MAX_LONGPATH, NULL, NULL))
         {
             ASSERT("WideCharToMultiByte failure\n");
             return FALSE;
@@ -3296,7 +3296,7 @@ getFileName(
         /* Replace '\' by '/' */
         FILEDosToUnixPathA(lpFileName);
 
-        if (!getPath(lpFileName, MAX_PATH, lpPathFileName))
+        if (!getPath(lpFileName, MAX_LONGPATH, lpPathFileName))
         {
             /* file is not in the path */
             return FALSE;

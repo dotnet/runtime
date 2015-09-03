@@ -30,8 +30,8 @@ int __cdecl main(int argc, char *argv[])
 {
     const UINT uUnique = 0;
     UINT uiError;
-    WCHAR szwReturnedName[MAX_PATH];
-    WCHAR szwReturnedName_02[MAX_PATH];
+    WCHAR szwReturnedName[MAX_LONGPATH];
+    WCHAR szwReturnedName_02[MAX_LONGPATH];
     DWORD dwFileSize = 0;
     HANDLE hFile;
     const WCHAR szwDot[] = {'.','\0'};

@@ -24,8 +24,8 @@ const char* szDirName =             "test_dir";
 const char* szDirNameSlash =        "test_dir\\";
 const char* szDirNameWldCard_01 =   "?est_dir";
 const char* szDirNameWldCard_02 =   "test_*";
-/* Longer than MAX_PATH characters */
-const char* szLongFindName =        "testingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtesting";
+/* Longer than MAX_LONGPATH characters */
+char szLongFindName[MAX_LONGPATH+1];
 
 BOOL CleanUp()
 {
@@ -68,7 +68,7 @@ int __cdecl main(int argc, char *argv[])
     BOOL bRc = FALSE;
     WCHAR* szwTemp = NULL;
 
-
+	memset(szLongFindName, 'a', MAX_LONGPATH+1);
     if (0 != PAL_Initialize(argc,argv))
     {
         return FAIL;
@@ -101,18 +101,18 @@ int __cdecl main(int argc, char *argv[])
 
 
     //
-    // find a file that is longer than MAX_PATH characters
+    // find a file that is longer than MAX_LONGPATH characters
     //
     hFind = FindFirstFileA(szLongFindName, &findFileData);
     if (hFind != INVALID_HANDLE_VALUE)
     {
-        Fail ("FindFirstFileA: ERROR -> Found non-existent file longer than MAX_PATH characters");
+        Fail ("FindFirstFileA: ERROR -> Found non-existent file longer than MAX_LONGPATH characters");
     }
     else if (GetLastError() != ERROR_FILENAME_EXCED_RANGE) 
     {
         // Confirm that the failure to find is due to long file name
         Fail ("FindFirstFileA: ERROR -> Failed as expected on a non-existent "
-              "file longer than MAX_PATH characters, but reporting some other "
+              "file longer than MAX_LONGPATH characters, but reporting some other "
               "error: %d\n", GetLastError());
     }
 

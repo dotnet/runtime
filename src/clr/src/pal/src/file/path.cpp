@@ -193,7 +193,7 @@ GetFullPathNameW(
 {
     LPSTR fileNameA;
     /* bufferA needs to be able to hold a path that's potentially as
-       large as MAX_PATH WCHARs. */
+       large as MAX_LONGPATH WCHARs. */
     CHAR  bufferA[MAX_LONGPATH * sizeof(WCHAR)];
     LPSTR lpFilePartA;
     int   fileNameLength;
@@ -209,8 +209,8 @@ GetFullPathNameW(
           lpBuffer, lpFilePart);
 
     /* Find the number of bytes required to convert lpFileName
-       to ANSI. This may be more than MAX_PATH. We try to
-       handle that case, since it may be less than MAX_PATH
+       to ANSI. This may be more than MAX_LONGPATH. We try to
+       handle that case, since it may be less than MAX_LONGPATH
        WCHARs. */
     fileNameLength = WideCharToMultiByte(CP_ACP, 0, lpFileName,
                                          -1, NULL, 0, NULL, NULL);
@@ -1087,8 +1087,8 @@ SearchPathA(
     )
 {
     DWORD nRet = 0;
-    CHAR FullPath[MAX_PATH];
-    CHAR CanonicalFullPath[MAX_PATH];
+    CHAR FullPath[MAX_LONGPATH];
+    CHAR CanonicalFullPath[MAX_LONGPATH];
     LPCSTR pPathStart;
     LPCSTR pPathEnd;
     size_t PathLength;
@@ -1129,15 +1129,15 @@ SearchPathA(
        provided path */
     if('\\' == lpFileName[0] || '/' == lpFileName[0])
     {
-        if(FileNameLength >= MAX_PATH)
+        if(FileNameLength >= MAX_LONGPATH)
         {
             WARN("absolute file name <%s> is too long\n", lpFileName);
             SetLastError(ERROR_INVALID_PARAMETER);
             goto done;
         }
         /* Canonicalize the path to deal with back-to-back '/', etc. */
-        dw = GetFullPathNameA(lpFileName, MAX_PATH, CanonicalFullPath, NULL);
-        if (dw == 0 || dw >= MAX_PATH) 
+        dw = GetFullPathNameA(lpFileName, MAX_LONGPATH, CanonicalFullPath, NULL);
+        if (dw == 0 || dw >= MAX_LONGPATH) 
         {
             WARN("couldn't canonicalize path <%s>, error is %#x. failing.\n",
                  FullPath, GetLastError());
@@ -1179,7 +1179,7 @@ SearchPathA(
     
             PathLength = pPathEnd-pPathStart;
     
-            if (PathLength+FileNameLength+1 >= MAX_PATH) 
+            if (PathLength+FileNameLength+1 >= MAX_LONGPATH) 
             {
                 /* The path+'/'+file length is too long.  Skip it. */
                 WARN("path component %.*s is too long, skipping it\n", 
@@ -1196,7 +1196,7 @@ SearchPathA(
                and lpFileName */
             memcpy(FullPath, pPathStart, PathLength);
             FullPath[PathLength] = '/';
-            if (strcpy_s(&FullPath[PathLength+1], MAX_PATH-PathLength, lpFileName) != SAFECRT_SUCCESS)
+            if (strcpy_s(&FullPath[PathLength+1], MAX_LONGPATH-PathLength, lpFileName) != SAFECRT_SUCCESS)
             {
                 ERROR("strcpy_s failed!\n");
                 SetLastError( ERROR_FILENAME_EXCED_RANGE );
@@ -1205,9 +1205,9 @@ SearchPathA(
             }
 
             /* Canonicalize the path to deal with back-to-back '/', etc. */
-            dw = GetFullPathNameA(FullPath, MAX_PATH,
+            dw = GetFullPathNameA(FullPath, MAX_LONGPATH,
                                   CanonicalFullPath, NULL);
-            if (dw == 0 || dw >= MAX_PATH) 
+            if (dw == 0 || dw >= MAX_LONGPATH) 
             {
                 /* Call failed - possibly low memory.  Skip the path */
                 WARN("couldn't canonicalize path <%s>, error is %#x. "
@@ -1305,14 +1305,14 @@ SearchPathW(
     )
 {
     DWORD nRet = 0;
-    WCHAR FullPath[MAX_PATH];
+    WCHAR FullPath[MAX_LONGPATH];
     LPCWSTR pPathStart;
     LPCWSTR pPathEnd;
     size_t PathLength;
     size_t FileNameLength;
     DWORD dw;
-    char AnsiPath[MAX_PATH];
-    WCHAR CanonicalPath[MAX_PATH];
+    char AnsiPath[MAX_LONGPATH];
+    WCHAR CanonicalPath[MAX_LONGPATH];
 
     PERF_ENTRY(SearchPathW);
     ENTRY("SearchPathW(lpPath=%p (%S), lpFileName=%p (%S), lpExtension=%p, "
@@ -1347,8 +1347,8 @@ SearchPathW(
     if('\\' == lpFileName[0] || '/' == lpFileName[0])
     {
         /* Canonicalize the path to deal with back-to-back '/', etc. */
-        dw = GetFullPathNameW(lpFileName, MAX_PATH, CanonicalPath, NULL);
-        if (dw == 0 || dw >= MAX_PATH) 
+        dw = GetFullPathNameW(lpFileName, MAX_LONGPATH, CanonicalPath, NULL);
+        if (dw == 0 || dw >= MAX_LONGPATH) 
         {
             WARN("couldn't canonicalize path <%S>, error is %#x. failing.\n",
                  lpPath, GetLastError());
@@ -1358,7 +1358,7 @@ SearchPathW(
 
         /* see if the file exists */
 	WideCharToMultiByte(CP_ACP, 0, CanonicalPath, -1,
-			    AnsiPath, MAX_PATH, NULL, NULL);
+			    AnsiPath, MAX_LONGPATH, NULL, NULL);
         if(0 == access(AnsiPath, F_OK))
         {
             /* found it */
@@ -1394,7 +1394,7 @@ SearchPathW(
     
             PathLength = pPathEnd-pPathStart;
     
-            if (PathLength+FileNameLength+1 >= MAX_PATH) 
+            if (PathLength+FileNameLength+1 >= MAX_LONGPATH) 
             {
                 /* The path+'/'+file length is too long.  Skip it. */
                 WARN("path component %.*S is too long, skipping it\n", 
@@ -1414,9 +1414,9 @@ SearchPathW(
             PAL_wcscpy(&FullPath[PathLength+1], lpFileName);
     
             /* Canonicalize the path to deal with back-to-back '/', etc. */
-            dw = GetFullPathNameW(FullPath, MAX_PATH,
+            dw = GetFullPathNameW(FullPath, MAX_LONGPATH,
                                   CanonicalPath, NULL);
-            if (dw == 0 || dw >= MAX_PATH) 
+            if (dw == 0 || dw >= MAX_LONGPATH) 
             {
                 /* Call failed - possibly low memory.  Skip the path */
                 WARN("couldn't canonicalize path <%S>, error is %#x. "
@@ -1426,7 +1426,7 @@ SearchPathW(
     
             /* see if the file exists */
             WideCharToMultiByte(CP_ACP, 0, CanonicalPath, -1,
-                                AnsiPath, MAX_PATH, NULL, NULL);
+                                AnsiPath, MAX_LONGPATH, NULL, NULL);
             if(0 == access(AnsiPath, F_OK))
             {
                 /* found it */
