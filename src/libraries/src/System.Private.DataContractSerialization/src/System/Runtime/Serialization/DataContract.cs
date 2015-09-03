@@ -96,7 +96,7 @@ namespace System.Runtime.Serialization
                 }
                 if (dataContract == null)
                 {
-                    throw new InvalidDataContractException(string.Format(SR.SerializationCodeIsMissingForType, type.ToString()));
+                    throw new InvalidDataContractException(SR.Format(SR.SerializationCodeIsMissingForType, type.ToString()));
                 }
             }
             return dataContract;
