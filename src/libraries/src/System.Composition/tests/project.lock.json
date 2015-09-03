@@ -25,12 +25,15 @@
           "lib/DNXCore50/System.Diagnostics.Debug.dll": {}
         }
       },
-      "System.Globalization/4.0.0": {
+      "System.Globalization/4.0.10": {
         "dependencies": {
           "System.Runtime": "4.0.0"
         },
         "compile": {
           "ref/dotnet/System.Globalization.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.Globalization.dll": {}
         }
       },
       "System.IO/4.0.10": {
@@ -345,7 +348,7 @@
           "lib/dnxcore50/xunit.execution.dnx.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00079": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00082": {
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
           "System.IO": "4.0.10",
@@ -438,19 +441,17 @@
         "runtimes/win8-aot/lib/netcore50/System.Diagnostics.Debug.dll"
       ]
     },
-    "System.Globalization/4.0.0": {
-      "sha512": "IBJyTo1y7ZtzzoJUA60T1XPvNTyw/wfFmjFoBFtlYfkekIOtD/AzDDIg0YdUa7eNtFEfliED2R7HdppTdU4t5A==",
+    "System.Globalization/4.0.10": {
+      "sha512": "kzRtbbCNAxdafFBDogcM36ehA3th8c1PGiz8QRkZn8O5yMBorDHSK8/TGJPYOaCS5zdsGk0u9qXHnW91nqy7fw==",
       "files": [
-        "License.rtf",
-        "System.Globalization.4.0.0.nupkg",
-        "System.Globalization.4.0.0.nupkg.sha512",
+        "System.Globalization.4.0.10.nupkg",
+        "System.Globalization.4.0.10.nupkg.sha512",
         "System.Globalization.nuspec",
+        "lib/DNXCore50/System.Globalization.dll",
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
-        "lib/net45/_._",
-        "lib/win8/_._",
-        "lib/wp80/_._",
-        "lib/wpa81/_._",
+        "lib/net46/_._",
+        "lib/netcore50/System.Globalization.dll",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
         "ref/dotnet/System.Globalization.dll",
@@ -466,23 +467,10 @@
         "ref/dotnet/zh-hant/System.Globalization.xml",
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
-        "ref/net45/_._",
-        "ref/netcore50/System.Globalization.dll",
-        "ref/netcore50/System.Globalization.xml",
-        "ref/netcore50/de/System.Globalization.xml",
-        "ref/netcore50/es/System.Globalization.xml",
-        "ref/netcore50/fr/System.Globalization.xml",
-        "ref/netcore50/it/System.Globalization.xml",
-        "ref/netcore50/ja/System.Globalization.xml",
-        "ref/netcore50/ko/System.Globalization.xml",
-        "ref/netcore50/ru/System.Globalization.xml",
-        "ref/netcore50/zh-hans/System.Globalization.xml",
-        "ref/netcore50/zh-hant/System.Globalization.xml",
-        "ref/win8/_._",
-        "ref/wp80/_._",
-        "ref/wpa81/_._",
+        "ref/net46/_._",
         "ref/xamarinios10/_._",
-        "ref/xamarinmac20/_._"
+        "ref/xamarinmac20/_._",
+        "runtimes/win8-aot/lib/netcore50/System.Globalization.dll"
       ]
     },
     "System.IO/4.0.10": {
@@ -1236,12 +1224,12 @@
         "lib/Xamarin.iOS/xunit.execution.iOS-Universal.xml"
       ]
     },
-    "xunit.netcore.extensions/1.0.0-prerelease-00079": {
+    "xunit.netcore.extensions/1.0.0-prerelease-00082": {
       "serviceable": true,
-      "sha512": "YtqpdxTUJ776HVnP1JwpauW+ZXBNiLhoAFW2aG+hYyQDvZjrriakrMsFy/OA4aSYCCNCIU6de1iaoxtzLIbgqg==",
+      "sha512": "p1lYJRspZCXU4SB1XB2wA5N03QvtB3HnCZIOAON7Rj+nNzQtlAcsHW17zbCdDvPCDj7ZyBbivNMXkf+SWAyEhA==",
       "files": [
-        "xunit.netcore.extensions.1.0.0-prerelease-00079.nupkg",
-        "xunit.netcore.extensions.1.0.0-prerelease-00079.nupkg.sha512",
+        "xunit.netcore.extensions.1.0.0-prerelease-00082.nupkg",
+        "xunit.netcore.extensions.1.0.0-prerelease-00082.nupkg.sha512",
         "xunit.netcore.extensions.nuspec",
         "lib/dotnet/Xunit.NetCore.Extensions.dll"
       ]
@@ -1249,6 +1237,7 @@
   },
   "projectFileDependencyGroups": {
     "": [
+      "System.Globalization >= 4.0.10",
       "System.Linq.Expressions >= 4.0.10",
       "System.Reflection.Emit.ILGeneration >= 4.0.0",
       "System.Reflection.Emit.Lightweight >= 4.0.0",

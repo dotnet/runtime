@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "System.Globalization": "4.0.10",
     "System.Linq.Expressions": "4.0.10",
     "System.Reflection.Emit.ILGeneration": "4.0.0",
     "System.Reflection.Emit.Lightweight": "4.0.0",
