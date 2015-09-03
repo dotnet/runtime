@@ -1439,6 +1439,11 @@ NotSupported_CollectibleCOM = COM Interop is not supported for collectible types
 NotSupported_CollectibleAssemblyResolve = Resolving to a collectible assembly is not supported.
 NotSupported_CollectibleBoundNonCollectible = A non-collectible assembly may not reference a collectible assembly.
 NotSupported_CollectibleDelegateMarshal = Delegate marshaling for types within collectible assemblies is not supported.
+NotSupported_NonStaticMethod = Non-static methods with NativeCallableAttribute are not supported.
+NotSupported_NativeCallableTarget = Methods with NativeCallableAttribute cannot be used as delegate target.
+NotSupported_GenericMethod = Generic methods with NativeCallableAttribute are not supported.
+NotSupported_NonBlittableTypes = Non-blittable parameter types are not supported for NativeCallable methods.
+
 #if FEATURE_WINDOWSPHONE
 NotSupported_UserDllImport = DllImport cannot be used on user-defined methods.
 NotSupported_UserCOM = COM Interop is not supported for user-defined types.
