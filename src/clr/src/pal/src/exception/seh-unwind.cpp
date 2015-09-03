@@ -199,6 +199,8 @@ static void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, 
 #endif
 }
 
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(_ARM64_)
+
 static DWORD64 GetPc(CONTEXT *context)
 {
 #if defined(_AMD64_)
@@ -220,6 +222,8 @@ static void SetPc(CONTEXT *context, DWORD64 pc)
 #error don't know how to set the program counter for this architecture
 #endif
 }
+
+#endif // defined(__APPLE__) || defined(__FreeBSD__) || defined(_ARM64_)
 
 BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers)
 {
