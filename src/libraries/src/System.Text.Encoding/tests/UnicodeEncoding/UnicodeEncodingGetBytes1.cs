@@ -1,11 +1,9 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Text;
 using Xunit;
 
-namespace System.Text.EncodingTests
+namespace System.Text.Tests
 {
     //System.Test.UnicodeEncoding.GetBytes(System.Char[],System.Int32,System.Int32,System.Byte[],System.Int32)
     public class UnicodeEncodingGetBytes1
