@@ -521,7 +521,7 @@ namespace System.Net.Http
                             //       until a reader is ready to read, at which point we could unpause.
                             if (size != 0)
                             {
-                                easy.ResponseMessage.ContentStream.WaitAndSignalReaders(buffer, (long)size);
+                                easy.ResponseMessage.ContentStream.WriteDataAndWaitForConsumption(buffer, (long)size);
                             }
 
                             return size;
