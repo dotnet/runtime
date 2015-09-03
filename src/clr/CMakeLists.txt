@@ -337,6 +337,26 @@ endif (WIN32)
 
 endif (OVERRIDE_CMAKE_CXX_FLAGS)
 
+OPTION(CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
+
+if(CMAKE_ENABLE_CODE_COVERAGE)
+
+  string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
+  if(NOT UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
+    message( WARNING "Code coverage results with an optimised (non-Debug) build may be misleading" )
+  endif(NOT UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
+
+  if(CLR_CMAKE_PLATFORM_UNIX)
+    add_definitions(-fprofile-arcs -ftest-coverage -fPIC)
+    set(CLANG_COVERAGE_LINK_FLAGS  "--coverage")
+    set(CMAKE_SHARED_LINKER_FLAGS  "${CMAKE_SHARED_LINKER_FLAGS} ${CLANG_COVERAGE_LINK_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS     "${CMAKE_EXE_LINKER_FLAGS} ${CLANG_COVERAGE_LINK_FLAGS}")
+  else()
+    message(WARNING "Code coverage builds not supported on current platform")
+  endif(CLR_CMAKE_PLATFORM_UNIX)
+
+endif(CMAKE_ENABLE_CODE_COVERAGE)
+
 if(CLR_CMAKE_PLATFORM_UNIX)
 add_definitions(-DDISABLE_CONTRACTS)
 # The -ferror-limit is helpful during the porting, it makes sure the compiler doesn't stop
