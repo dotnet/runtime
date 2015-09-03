@@ -419,22 +419,11 @@ namespace System.Net.Http
             }
         }
 
-        private static string GetCurlErrorString(int code, bool isMulti = false)
-        {
-            IntPtr ptr = isMulti ? Interop.libcurl.curl_multi_strerror(code) : Interop.libcurl.curl_easy_strerror(code);
-            return Marshal.PtrToStringAnsi(ptr);
-        }
-
-        private static Exception GetCurlException(int code, bool isMulti = false)
-        {
-            return new Exception(GetCurlErrorString(code, isMulti));
-        }
-
         private static void ThrowIfCURLEError(int error)
         {
             if (error != CURLcode.CURLE_OK)
             {
-                throw CreateHttpRequestException(GetCurlException(error));
+                throw CreateHttpRequestException(new CurlException(error, isMulti: false));
             }
         }
 
@@ -442,7 +431,7 @@ namespace System.Net.Http
         {
             if (error != CURLMcode.CURLM_OK)
             {
-                string msg = GetCurlErrorString(error, isMulti: true);
+                string msg = CurlException.GetCurlErrorString(error, true);
                 switch (error)
                 {
                     case CURLMcode.CURLM_ADDED_ALREADY:
@@ -456,7 +445,7 @@ namespace System.Net.Http
                         throw new OutOfMemoryException(msg);
                     case CURLMcode.CURLM_INTERNAL_ERROR:
                     default:
-                        throw CreateHttpRequestException(new Exception(msg));
+                        throw CreateHttpRequestException(new CurlException(error, msg));
                 }
             }
         }
