@@ -36,7 +36,7 @@ int __cdecl main(int argc, char *argv[])
 #if !(WIN32) /* Only execute if the is Free BSD */
 
     DWORD dwRc = 0;
-    WCHAR szwReturnedPath[MAX_PATH];
+    WCHAR szwReturnedPath[MAX_LONGPATH];
     WCHAR szwSmallBuff[3];
     const char szShortPathName[] = {"testing"};
     const char szLongPathName[] = {"This_is_a_long_directory_name"};
@@ -52,7 +52,7 @@ int __cdecl main(int argc, char *argv[])
     {
         return FAIL;
     }
-    memset(szwReturnedPath, 0, MAX_PATH*sizeof(WCHAR));
+    memset(szwReturnedPath, 0, MAX_LONGPATH*sizeof(WCHAR));
     memset(szwSmallBuff, 0, 3*sizeof(WCHAR));
     wLongPathPtr = convert((char*)szLongPathName);
     wShortPathPtr = convert((char*)szShortenedPathName);
@@ -64,7 +64,7 @@ int __cdecl main(int argc, char *argv[])
 
 
     /* attempt call on an invalid short path name */
-    dwRc = GetLongPathNameW(wShortPathPtr, szwReturnedPath, MAX_PATH);
+    dwRc = GetLongPathNameW(wShortPathPtr, szwReturnedPath, MAX_LONGPATH);
     if (dwRc != 0)
     {
         Trace("GetLongPathNameW: ERROR -> Call made with an invalid short "
@@ -78,7 +78,7 @@ int __cdecl main(int argc, char *argv[])
 
 
     /* attempt call on an invalid long path name */
-    dwRc = GetLongPathNameW(wLongPathPtr, szwReturnedPath, MAX_PATH);
+    dwRc = GetLongPathNameW(wLongPathPtr, szwReturnedPath, MAX_LONGPATH);
     if (dwRc != 0)
     {
         Trace("GetLongPathNameW: ERROR -> Call made with an invalid long "
@@ -104,8 +104,8 @@ int __cdecl main(int argc, char *argv[])
 
 
     /* get the long path name */
-    memset(szwReturnedPath, 0, MAX_PATH*sizeof(WCHAR));
-    dwRc = GetLongPathNameW(wShortPathPtr, szwReturnedPath, MAX_PATH);
+    memset(szwReturnedPath, 0, MAX_LONGPATH*sizeof(WCHAR));
+    dwRc = GetLongPathNameW(wShortPathPtr, szwReturnedPath, MAX_LONGPATH);
     StringLen = wcslen(wShortPathPtr);
 
    if (dwRc !=  StringLen)
@@ -173,8 +173,8 @@ int __cdecl main(int argc, char *argv[])
 
 
     /* get the long path name */
-    memset(szwReturnedPath, 0, MAX_PATH*sizeof(WCHAR));
-    dwRc = GetLongPathNameW(wShortPathPtr, szwReturnedPath, MAX_PATH);
+    memset(szwReturnedPath, 0, MAX_LONGPATH*sizeof(WCHAR));
+    dwRc = GetLongPathNameW(wShortPathPtr, szwReturnedPath, MAX_LONGPATH);
     StringLen = wcslen (wShortPathPtr);
 
     if (dwRc != StringLen)

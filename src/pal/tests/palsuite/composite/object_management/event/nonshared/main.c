@@ -93,14 +93,14 @@ int GetParameters( int argc, char **argv)
     STARTUPINFO si[MAXIMUM_WAIT_OBJECTS];
     PROCESS_INFORMATION pi[MAXIMUM_WAIT_OBJECTS];
 
-    char lpCommandLine[MAX_PATH] = "";
+    char lpCommandLine[MAX_LONGPATH] = "";
     const char *ObjName = "Event";
     
     int returnCode = 0;
     DWORD processReturnCode = 0;
     int testReturnCode = PASS;
 
-    char fileName[MAX_PATH];
+    char fileName[MAX_LONGPATH];
     FILE *pFile = NULL;
     DWORD dwStartTime = 0;
     struct TestStats testStats;
@@ -124,7 +124,7 @@ int GetParameters( int argc, char **argv)
     testStats.buildNumber  = getBuildNumber();
 
 
-    _snprintf(fileName, MAX_PATH, "main_event_%d_.txt", RELATION_ID);
+    _snprintf(fileName, MAX_LONGPATH, "main_event_%d_.txt", RELATION_ID);
     pFile = fopen(fileName, "w+");
     if(pFile == NULL)
     { 
@@ -135,7 +135,7 @@ int GetParameters( int argc, char **argv)
     {
 
         ZeroMemory( lpCommandLine, MAX_PATH );
-        if ( _snprintf( lpCommandLine, MAX_PATH-1, "event %d %d %d %d", i, THREAD_COUNT, REPEAT_COUNT, RELATION_ID) < 0 )
+        if ( _snprintf( lpCommandLine, MAX_LONGPATH-1, "event %d %d %d %d", i, THREAD_COUNT, REPEAT_COUNT, RELATION_ID) < 0 )
         {
             Fail ("Error: Insufficient Event name string length for %s for iteration [%d]\n", ObjName, i);            
         }

@@ -30,7 +30,7 @@ int __cdecl main(int argc, char *argv[])
     BOOL  success = TRUE;  /* assume success */
     DWORD dwRet;
     DWORD dwProcessId;
-    char szEventName[MAX_PATH];
+    char szEventName[MAX_LONGPATH];
     PWCHAR uniString;
 
     if(0 != (PAL_Initialize(argc, argv)))
@@ -65,7 +65,7 @@ int __cdecl main(int argc, char *argv[])
     }
 
     /* Open the event to tell test thread we are ready. */
-    if (_snprintf(szEventName, MAX_PATH-1, "%s%d", szcHelperProcessReadyEvName, dwProcessId) < 0)
+    if (_snprintf(szEventName, MAX_LONGPATH-1, "%s%d", szcHelperProcessReadyEvName, dwProcessId) < 0)
     {
         Fail ("helper.main: Insufficient event name string length for pid=%d\n", dwProcessId);
     }
@@ -82,7 +82,7 @@ int __cdecl main(int argc, char *argv[])
     }
 
     /* Open the event to let test thread tell us to exit. */
-    if (_snprintf(szEventName, MAX_PATH-1, "%s%d", szcHelperProcessFinishEvName, dwProcessId) < 0)
+    if (_snprintf(szEventName, MAX_LONGPATH-1, "%s%d", szcHelperProcessFinishEvName, dwProcessId) < 0)
     {
         Fail ("helper.main: Insufficient event name string length for pid=%d\n", dwProcessId);
     }

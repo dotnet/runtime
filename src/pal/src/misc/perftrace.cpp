@@ -691,13 +691,13 @@ static
 int
 PERFWriteCounters( pal_perf_api_info * table )
 {
-    char fileName[MAX_PATH];
+    char fileName[MAX_LONGPATH];
     pal_perf_api_info * off;
     PERF_FILE * hFile;
     int i;
 
     off = table;
-    PERFLogFileName(fileName, profile_summary_log_name, "_perf_summary.log", MAX_PATH);
+    PERFLogFileName(fileName, profile_summary_log_name, "_perf_summary.log", MAX_LONGPATH);
     hFile = PERF_FILEFN(fopen)(fileName, "a+");
     if(hFile != NULL)
     {   
@@ -737,7 +737,7 @@ PERFWriteCounters( pal_perf_api_info * table )
     if (pal_perf_histogram_size > 0)
     {
         off = table;
-        PERFLogFileName(fileName, profile_summary_log_name, "_perf_summary.hist", MAX_PATH);
+        PERFLogFileName(fileName, profile_summary_log_name, "_perf_summary.hist", MAX_LONGPATH);
         hFile = PERF_FILEFN(fopen)(fileName, "a+");
 
         if (hFile != NULL)
@@ -789,7 +789,7 @@ PERFReadSetting(  )
     char * ptr;
     char function_name[PAL_PERF_MAX_FUNCTION_NAME];  //no function can be longer than 127 bytes.
 
-    char  file_name_buf[MAX_PATH];  
+    char  file_name_buf[MAX_LONGPATH];  
     char  * input_file_name; 
     char  * summary_flag_env;
     char  * nested_tracing_env;
@@ -1078,14 +1078,14 @@ BOOL
 PERFFlushLog(pal_perf_thread_info * local_info, BOOL output_header)
 {
     BOOL ret = FALSE;
-    char fileName[MAX_PATH];
+    char fileName[MAX_LONGPATH];
     int nWrittenBytes = 0;
     PERF_FILE * hFile;
 
     if (summary_only)
         return TRUE;
 
-    PERFLogFileName(fileName, profile_time_log_name, "_perf_time.log", MAX_PATH);
+    PERFLogFileName(fileName, profile_time_log_name, "_perf_time.log", MAX_LONGPATH);
 
     hFile = PERF_FILEFN(fopen)(fileName, "a+");
 
@@ -1432,7 +1432,7 @@ char *
 PERFIsValidFile( const char * path, const char * file)
 {
     FILE * hFile;
-    char temp[MAX_PATH];
+    char temp[MAX_LONGPATH];
 
     if(file==NULL || strlen(file)==0) 
         return NULL;
