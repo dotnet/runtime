@@ -1,5 +1,5 @@
 {
-  "locked": false,
+  "locked": true,
   "version": -9996,
   "targets": {
     "DNXCore,Version=v5.0": {
@@ -14,7 +14,7 @@
           "lib/DNXCore50/System.Collections.dll": {}
         }
       },
-      "System.Console/4.0.0-beta-23213": {
+      "System.Console/4.0.0-beta-23302": {
         "dependencies": {
           "System.Runtime": "4.0.20",
           "System.Runtime.InteropServices": "4.0.20",
@@ -44,15 +44,12 @@
           "lib/DNXCore50/System.Diagnostics.Debug.dll": {}
         }
       },
-      "System.Globalization/4.0.10": {
+      "System.Globalization/4.0.0": {
         "dependencies": {
           "System.Runtime": "4.0.0"
         },
         "compile": {
           "ref/dotnet/System.Globalization.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Globalization.dll": {}
         }
       },
       "System.IO/4.0.10": {
@@ -94,12 +91,12 @@
           "lib/dotnet/System.Linq.dll": {}
         }
       },
-      "System.Numerics.Vectors/4.1.0": {
+      "System.Numerics.Vectors/4.1.1-beta-23226": {
         "dependencies": {
-          "System.Runtime": "4.0.20",
+          "System.Runtime": "4.0.0",
           "System.Resources.ResourceManager": "4.0.0",
-          "System.Globalization": "4.0.10",
-          "System.Runtime.Extensions": "4.0.10"
+          "System.Globalization": "4.0.0",
+          "System.Runtime.Extensions": "4.0.0"
         },
         "compile": {
           "ref/dotnet/System.Numerics.Vectors.dll": {}
@@ -237,7 +234,7 @@
           "lib/DNXCore50/System.Threading.Tasks.dll": {}
         }
       },
-      "System.Threading.Thread/4.0.0-beta-23213": {
+      "System.Threading.Thread/4.0.0-beta-23302": {
         "dependencies": {
           "System.Runtime": "4.0.0"
         },
@@ -284,12 +281,12 @@
         "runtimes/win8-aot/lib/netcore50/System.Collections.dll"
       ]
     },
-    "System.Console/4.0.0-beta-23213": {
+    "System.Console/4.0.0-beta-23302": {
       "serviceable": true,
-      "sha512": "JMXpqaP1+67/fISmYRXlRm6tGQHXu6seqgY56pAuSLMxpsK5FOYqUXx7RnUIG0SmIJO25ivTfTXLDVv2wTXYAg==",
+      "sha512": "rpWEkJWW29TjVZdDz5zr8VnBv4IN9BQHmP4Ky9tEbvkdhkJRb0ZO59acXMpVD1tSM2VhGlLnq0kpdjOLNmejNA==",
       "files": [
-        "System.Console.4.0.0-beta-23213.nupkg",
-        "System.Console.4.0.0-beta-23213.nupkg.sha512",
+        "System.Console.4.0.0-beta-23302.nupkg",
+        "System.Console.4.0.0-beta-23302.nupkg.sha512",
         "System.Console.nuspec",
         "lib/DNXCore50/System.Console.dll",
         "lib/MonoAndroid10/_._",
@@ -298,16 +295,6 @@
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
         "ref/dotnet/System.Console.dll",
-        "ref/dotnet/System.Console.xml",
-        "ref/dotnet/de/System.Console.xml",
-        "ref/dotnet/es/System.Console.xml",
-        "ref/dotnet/fr/System.Console.xml",
-        "ref/dotnet/it/System.Console.xml",
-        "ref/dotnet/ja/System.Console.xml",
-        "ref/dotnet/ko/System.Console.xml",
-        "ref/dotnet/ru/System.Console.xml",
-        "ref/dotnet/zh-hans/System.Console.xml",
-        "ref/dotnet/zh-hant/System.Console.xml",
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
         "ref/net46/System.Console.dll",
@@ -348,17 +335,19 @@
         "runtimes/win8-aot/lib/netcore50/System.Diagnostics.Debug.dll"
       ]
     },
-    "System.Globalization/4.0.10": {
-      "sha512": "kzRtbbCNAxdafFBDogcM36ehA3th8c1PGiz8QRkZn8O5yMBorDHSK8/TGJPYOaCS5zdsGk0u9qXHnW91nqy7fw==",
+    "System.Globalization/4.0.0": {
+      "sha512": "IBJyTo1y7ZtzzoJUA60T1XPvNTyw/wfFmjFoBFtlYfkekIOtD/AzDDIg0YdUa7eNtFEfliED2R7HdppTdU4t5A==",
       "files": [
-        "System.Globalization.4.0.10.nupkg",
-        "System.Globalization.4.0.10.nupkg.sha512",
+        "License.rtf",
+        "System.Globalization.4.0.0.nupkg",
+        "System.Globalization.4.0.0.nupkg.sha512",
         "System.Globalization.nuspec",
-        "lib/DNXCore50/System.Globalization.dll",
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
-        "lib/net46/_._",
-        "lib/netcore50/System.Globalization.dll",
+        "lib/net45/_._",
+        "lib/win8/_._",
+        "lib/wp80/_._",
+        "lib/wpa81/_._",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
         "ref/dotnet/System.Globalization.dll",
@@ -374,10 +363,23 @@
         "ref/dotnet/zh-hant/System.Globalization.xml",
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
-        "ref/net46/_._",
+        "ref/net45/_._",
+        "ref/netcore50/System.Globalization.dll",
+        "ref/netcore50/System.Globalization.xml",
+        "ref/netcore50/de/System.Globalization.xml",
+        "ref/netcore50/es/System.Globalization.xml",
+        "ref/netcore50/fr/System.Globalization.xml",
+        "ref/netcore50/it/System.Globalization.xml",
+        "ref/netcore50/ja/System.Globalization.xml",
+        "ref/netcore50/ko/System.Globalization.xml",
+        "ref/netcore50/ru/System.Globalization.xml",
+        "ref/netcore50/zh-hans/System.Globalization.xml",
+        "ref/netcore50/zh-hant/System.Globalization.xml",
+        "ref/win8/_._",
+        "ref/wp80/_._",
+        "ref/wpa81/_._",
         "ref/xamarinios10/_._",
-        "ref/xamarinmac20/_._",
-        "runtimes/win8-aot/lib/netcore50/System.Globalization.dll"
+        "ref/xamarinmac20/_._"
       ]
     },
     "System.IO/4.0.10": {
@@ -476,17 +478,18 @@
         "ref/wpa81/_._"
       ]
     },
-    "System.Numerics.Vectors/4.1.0": {
+    "System.Numerics.Vectors/4.1.1-beta-23226": {
       "serviceable": true,
-      "sha512": "jpubR06GWPoZA0oU5xLM7kHeV59/CKPBXZk4Jfhi0T3DafxbrdueHZ8kXlb+Fb5nd3DAyyMh2/eqEzLX0xv6Qg==",
+      "sha512": "G1In2giJjCioWBvT4CJrL/NSjg6am4oq8H7xyS2DOBswaPWqCfbNHk8M2CTIMLt44vAO8mynTPe1wEIFt4+C7A==",
       "files": [
-        "System.Numerics.Vectors.4.1.0.nupkg",
-        "System.Numerics.Vectors.4.1.0.nupkg.sha512",
+        "System.Numerics.Vectors.4.1.1-beta-23226.nupkg",
+        "System.Numerics.Vectors.4.1.1-beta-23226.nupkg.sha512",
         "System.Numerics.Vectors.nuspec",
         "lib/dotnet/System.Numerics.Vectors.dll",
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
         "lib/net46/System.Numerics.Vectors.dll",
+        "lib/portable-net45+win8/System.Numerics.Vectors.dll",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
         "ref/dotnet/System.Numerics.Vectors.dll",
@@ -900,11 +903,12 @@
         "runtimes/win8-aot/lib/netcore50/System.Threading.Tasks.dll"
       ]
     },
-    "System.Threading.Thread/4.0.0-beta-23213": {
-      "sha512": "3jISKL8QuJE5w45eya3fs8opFYWLaMrXu8jOjRRo/T0kZ6lqKdnYmLznTRnIrab8kzyNud2JLKQ6kMDCk/NINQ==",
+    "System.Threading.Thread/4.0.0-beta-23302": {
+      "serviceable": true,
+      "sha512": "0tn5ET6NNDVjJdpacPXM9lwa3tZeKiIYZHOZPtsbORXop84IN93KenlcqEdPizxPsnOAgauVIgeKftnvwcvlsQ==",
       "files": [
-        "System.Threading.Thread.4.0.0-beta-23213.nupkg",
-        "System.Threading.Thread.4.0.0-beta-23213.nupkg.sha512",
+        "System.Threading.Thread.4.0.0-beta-23302.nupkg",
+        "System.Threading.Thread.4.0.0-beta-23302.nupkg.sha512",
         "System.Threading.Thread.nuspec",
         "lib/DNXCore50/System.Threading.Thread.dll",
         "lib/MonoAndroid10/_._",
@@ -913,16 +917,6 @@
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
         "ref/dotnet/System.Threading.Thread.dll",
-        "ref/dotnet/System.Threading.Thread.xml",
-        "ref/dotnet/de/System.Threading.Thread.xml",
-        "ref/dotnet/es/System.Threading.Thread.xml",
-        "ref/dotnet/fr/System.Threading.Thread.xml",
-        "ref/dotnet/it/System.Threading.Thread.xml",
-        "ref/dotnet/ja/System.Threading.Thread.xml",
-        "ref/dotnet/ko/System.Threading.Thread.xml",
-        "ref/dotnet/ru/System.Threading.Thread.xml",
-        "ref/dotnet/zh-hans/System.Threading.Thread.xml",
-        "ref/dotnet/zh-hant/System.Threading.Thread.xml",
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
         "ref/net46/System.Threading.Thread.dll",
@@ -936,7 +930,7 @@
       "System.Collections >= 4.0.10",
       "System.Console >= 4.0.0-beta-*",
       "System.Linq >= 4.0.0",
-      "System.Numerics.Vectors >= 4.1.0",
+      "System.Numerics.Vectors >= 4.1.1-beta-23226",
       "System.Runtime >= 4.0.20-beta-*",
       "System.Runtime.Extensions >= 4.0.10-beta-*",
       "System.Threading >= 4.0.0-beta-*",
