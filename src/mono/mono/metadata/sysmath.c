@@ -263,6 +263,12 @@ ves_icall_System_Math_Pow (gdouble x, gdouble y)
 	if (result == MInfinity.d && x < 0.0 && isfinite (x) && ceil (y / 2) == floor (y / 2))
 		result = PInfinity.d;
 
+#if defined (__linux__) && SIZEOF_VOID_P == 4
+	/* On Linux 32bits, Math.Pow (-1, Double.MaxValue) would return NaN instead of 1 */
+	if (isnan (result) && isminusone (x) && (y > 9007199254740991.0 || y < -9007199254740991.0))
+		result = POne.d;
+#endif
+
 	return result == -0.0 ? 0 : result;
 }
 
