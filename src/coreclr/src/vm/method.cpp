@@ -5374,6 +5374,33 @@ void MethodDesc::ComputeSuppressUnmanagedCodeAccessAttr(IMDInternalImport *pImpo
 }
 
 //*******************************************************************************
+BOOL MethodDesc::HasNativeCallableAttribute()
+{
+
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        FORBID_FAULT;
+    }
+    CONTRACTL_END;
+
+// enable only for amd64 now, other platforms are not tested.
+#if defined(_TARGET_AMD64_) 
+
+#ifdef FEATURE_CORECLR
+    HRESULT hr = GetMDImport()->GetCustomAttributeByName(GetMemberDef(),
+        g_NativeCallableAttribute,
+        NULL,
+        NULL);
+    return (hr == S_OK);
+#endif //FEATURE_CORECLR
+
+#endif //_TARGET_AMD64_
+    return FALSE;
+}
+
+//*******************************************************************************
 BOOL MethodDesc::HasSuppressUnmanagedCodeAccessAttr()
 {
     LIMITED_METHOD_CONTRACT;
