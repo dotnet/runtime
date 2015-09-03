@@ -116,7 +116,7 @@ namespace System.Reflection.Metadata
             // Such files exist in the wild and may be produced by obfuscators.
             if (this.ModuleTable.NumberOfRows < 1)
             {
-                throw new BadImageFormatException(string.Format(SR.ModuleTableInvalidNumberOfRows, this.ModuleTable.NumberOfRows));
+                throw new BadImageFormatException(SR.Format(SR.ModuleTableInvalidNumberOfRows, this.ModuleTable.NumberOfRows));
             }
 
             //  read 
@@ -406,7 +406,7 @@ namespace System.Reflection.Metadata
 
             if ((presentTables & ~validTables) != 0)
             {
-                throw new BadImageFormatException(string.Format(SR.UnknownTables, presentTables));
+                throw new BadImageFormatException(SR.Format(SR.UnknownTables, presentTables));
             }
 
             if (_metadataStreamKind == MetadataStreamKind.Compressed)
@@ -433,7 +433,7 @@ namespace System.Reflection.Metadata
                 uint rowCount = memReader.ReadUInt32();
                 if (rowCount > TokenTypeIds.RIDMask)
                 {
-                    throw new BadImageFormatException(string.Format(SR.InvalidRowCount, rowCount));
+                    throw new BadImageFormatException(SR.Format(SR.InvalidRowCount, rowCount));
                 }
 
                 rowCounts[i] = (int)rowCount;

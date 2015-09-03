@@ -104,26 +104,26 @@ namespace System.Reflection
             if (!interfaceType.GetTypeInfo().IsInterface)
             {
                 // "T" is the generic parameter seen via the public contract
-                throw new ArgumentException(String.Format(SR.InterfaceType_Must_Be_Interface, interfaceType.FullName), "T");
+                throw new ArgumentException(SR.Format(SR.InterfaceType_Must_Be_Interface, interfaceType.FullName), "T");
             }
 
             // The base type cannot be sealed because the proxy needs to subclass it.
             if (baseTypeInfo.IsSealed)
             {
                 // "TProxy" is the generic parameter seen via the public contract
-                throw new ArgumentException(String.Format(SR.BaseType_Cannot_Be_Sealed, baseTypeInfo.FullName), "TProxy");
+                throw new ArgumentException(SR.Format(SR.BaseType_Cannot_Be_Sealed, baseTypeInfo.FullName), "TProxy");
             }
 
             // The base type cannot be abstract
             if (baseTypeInfo.IsAbstract)
             {
-                throw new ArgumentException(String.Format(SR.BaseType_Cannot_Be_Abstract, baseType.FullName), "TProxy");
+                throw new ArgumentException(SR.Format(SR.BaseType_Cannot_Be_Abstract, baseType.FullName), "TProxy");
             }
 
             // The base type must have a public default ctor
             if (!baseTypeInfo.DeclaredConstructors.Any(c => c.IsPublic && c.GetParameters().Length == 0))
             {
-                throw new ArgumentException(String.Format(SR.BaseType_Must_Have_Default_Ctor, baseType.FullName), "TProxy");
+                throw new ArgumentException(SR.Format(SR.BaseType_Must_Have_Default_Ctor, baseType.FullName), "TProxy");
             }
 
             // Create a type that derives from 'baseType' provided by caller
