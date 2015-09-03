@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -34,9 +34,6 @@
     <Compile Include="System\Net\WebHeaderCollection.cs" />
     <Compile Include="System\Net\WebRequest.cs" />
     <Compile Include="System\Net\WebResponse.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\wininet\Interop.wininet_errors.cs">
-      <Link>Common\Interop\Windows\wininet\Interop.wininet_errors.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
       <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
     </Compile>
@@ -49,6 +46,18 @@
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+    <Compile Include="$(CommonPath)\Interop\Windows\wininet\Interop.wininet_errors.cs">
+      <Link>Common\Interop\Windows\wininet\Interop.wininet_errors.cs</Link>
+    </Compile>
+    <Compile Include="System\Net\WebExceptionPal.Windows.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.CURLcode.cs">
+      <Link>Common\Interop\Unix\libcurl\Interop.CURLcode.cs</Link>
+    </Compile>
+    <Compile Include="System\Net\WebExceptionPal.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
