@@ -2419,6 +2419,8 @@ mono_class_field_is_special_static (MonoClassField *field)
 	if (mono_field_is_deleted (field))
 		return FALSE;
 	if (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL)) {
+		if (field->offset == -1)
+			return TRUE;
 		if (field_is_special_static (field->parent, field) != SPECIAL_STATIC_NONE)
 			return TRUE;
 	}
