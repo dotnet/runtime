@@ -141,7 +141,11 @@
     <Compile Include="System\Net\Http\Unix\CurlHandler.cs" />
     <Compile Include="System\Net\Http\Unix\CurlHandler.EasyRequest.cs" />
     <Compile Include="System\Net\Http\Unix\CurlHandler.MultiAgent.cs" />
+    <Compile Include="System\Net\Http\Unix\CurlException.cs" />
     <Compile Include="System\Net\Http\Unix\CurlResponseMessage.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.CURLcode.cs">
+      <Link>Common\Interop\Unix\libcurl\Interop.CURLcode.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
       <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
     </Compile>

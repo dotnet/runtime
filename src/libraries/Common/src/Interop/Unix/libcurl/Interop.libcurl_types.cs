@@ -70,13 +70,6 @@ internal static partial class Interop
             internal const int CURLPROXY_HTTP = 0;
         }
 
-        // Class for constants defined for the enum CURLcode in curl.h
-        internal static partial class CURLcode
-        {
-            internal const int CURLE_OK = 0;
-            internal const int CURLE_ABORTED_BY_CALLBACK = 42;
-        }
-
         // Class for constants defined for the enum CURLMcode in multi.h
         internal static partial class CURLMcode
         {

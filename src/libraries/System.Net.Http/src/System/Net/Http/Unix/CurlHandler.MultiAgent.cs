@@ -440,7 +440,7 @@ namespace System.Net.Http
                         completedOperation.EnsureResponseMessagePublished();
                         break;
                     default:
-                        completedOperation.FailRequest(CreateHttpRequestException(GetCurlException(messageResult)));
+                        completedOperation.FailRequest(CreateHttpRequestException(new CurlException(messageResult, false)));
                         break;
                 }
 

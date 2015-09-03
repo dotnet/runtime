@@ -387,7 +387,6 @@ namespace System.Net.Requests.Test
             WebResponse response = request.GetResponseAsync().Result;
         }
 
-        [ActiveIssue(3045, PlatformID.AnyUnix)]
         [Fact]
         public void GetResponseAsync_ServerNameNotInDns_ThrowsWebException()
         {
