@@ -1040,6 +1040,9 @@ mono_class_describe_statics (MonoClass* klass)
 				continue;
 			if (!(field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA)))
 				continue;
+			// Special static fields don't have a domain-level static slot
+			if (mono_class_field_is_special_static (field))
+				continue;
 
 			field_ptr = (const char*)addr + field->offset;
 

@@ -2066,6 +2066,9 @@ mono_class_layout_fields (MonoClass *class)
 			continue;
 		if (mono_field_is_deleted (field))
 			continue;
+		// Special static fields do not need a domain-level static slot
+		if (mono_class_field_is_special_static (field))
+			continue;
 
 		if (mono_type_has_exceptions (field->type)) {
 			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
