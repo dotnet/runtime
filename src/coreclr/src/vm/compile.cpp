@@ -1795,13 +1795,13 @@ HRESULT CEECompileInfo::GetMethodDef(CORINFO_METHOD_HANDLE methodHandle,
 // Depends on what things are persisted by CEEPreloader
 
 BOOL CEEPreloader::CanEmbedFunctionEntryPoint(
-        CORINFO_METHOD_HANDLE   methodHandle,
-        CORINFO_METHOD_HANDLE   contextHandle, /* = NULL */
-        CORINFO_ACCESS_FLAGS    accessFlags /*=CORINFO_ACCESS_ANY*/)
+    CORINFO_METHOD_HANDLE   methodHandle,
+    CORINFO_METHOD_HANDLE   contextHandle, /* = NULL */
+    CORINFO_ACCESS_FLAGS    accessFlags /*=CORINFO_ACCESS_ANY*/)
 {
     STANDARD_VM_CONTRACT;
 
-    MethodDesc * pMethod  = GetMethod(methodHandle);
+    MethodDesc * pMethod = GetMethod(methodHandle);
     MethodDesc * pContext = GetMethod(contextHandle);
 
     // IsRemotingInterceptedViaVirtualDispatch is a rather special case.
@@ -1818,11 +1818,18 @@ BOOL CEEPreloader::CanEmbedFunctionEntryPoint(
     // don't save these stubs.  Unlike most other remoting stubs these ones 
     // are NOT inserted by DoPrestub.
     //
-    if (((accessFlags & CORINFO_ACCESS_THIS) == 0)       &&
-        (pMethod->IsRemotingInterceptedViaVirtualDispatch())    )
+    if (((accessFlags & CORINFO_ACCESS_THIS) == 0) &&
+        (pMethod->IsRemotingInterceptedViaVirtualDispatch()))
     {
         return FALSE;
     }
+
+    // Methods with native callable attribute are special , since 
+    // they are used as LDFTN targets.Native Callable methods
+    // uses the same code path as reverse pinvoke and embedding them
+    // in an ngen image require saving the reverse pinvoke stubs.
+    if (pMethod->HasNativeCallableAttribute())
+        return FALSE;
 
     return TRUE;
 }
@@ -1864,6 +1871,12 @@ BOOL CEEPreloader::DoesMethodNeedRestoringBeforePrestubIsRun(
     }
 
     return FALSE;
+}
+
+BOOL CEECompileInfo::IsNativeCallableMethod(CORINFO_METHOD_HANDLE handle)
+{
+    MethodDesc * pMethod = GetMethod(handle);
+    return pMethod->HasNativeCallableAttribute();
 }
 
 BOOL CEEPreloader::CanSkipDependencyActivation(CORINFO_METHOD_HANDLE   context,

@@ -162,6 +162,12 @@ public:
 
         return (CorPinvokeMap)m_callConv;
     }
+
+    VOID SetCallingConvention(const CorPinvokeMap callConv)
+    {
+        m_callConv = (UINT16)callConv;
+    }
+
 #else
     PCODE GetExecStubEntryPoint();
 #endif

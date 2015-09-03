@@ -85,6 +85,10 @@ LOCAL_LABEL(HaveThread):
 
         mov             r12, rax                // r12 <- Thread*
 
+        //FailFast if a native callable method invoked via ldftn and calli.
+        cmp             dword ptr [r12 + OFFSETOF__Thread__m_fPreemptiveGCDisabled], 1
+        jz              LOCAL_LABEL(InvalidTransition)
+
         //
         // disable preemptive GC
         //
@@ -153,6 +157,10 @@ LOCAL_LABEL(DoThreadSetup):
         call            C_FUNC(CreateThreadBlockThrow)
         jmp             LOCAL_LABEL(HaveThread)
         
+LOCAL_LABEL(InvalidTransition):
+        //No arguments to setup , ReversePInvokeBadTransition will failfast
+        call            C_FUNC(ReversePInvokeBadTransition)
+
 LOCAL_LABEL(DoTrapReturningThreadsTHROW):
         mov             rdi, r12                                                                        // Thread* pThread
         mov             rsi, [rbp - UMThunkStubAMD64_RBP_OFFSET + UMThunkStubAMD64_METHODDESC_OFFSET]   // UMEntryThunk* pUMEntry

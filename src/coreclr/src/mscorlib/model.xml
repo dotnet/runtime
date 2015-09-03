@@ -6083,6 +6083,11 @@
       <Member MemberType="Field" Name="Sequential" />
       <Member MemberType="Field" Name="value__" />
     </Type>
+    <Type Name="System.Runtime.InteropServices.NativeCallableAttribute"> 
+      <Member Name="#ctor" />
+      <Member MemberType="Field" Name="CallingConvention" /> <!-- EE -->
+      <Member MemberType="Field" Name="EntryPoint" /> <!-- EE -->
+    </Type>
     <Type Name="System.Runtime.InteropServices.Marshal">
       <Member MemberType="Field" Name="SystemDefaultCharSize" />
       <Member Name="AddRef(System.IntPtr)" />
