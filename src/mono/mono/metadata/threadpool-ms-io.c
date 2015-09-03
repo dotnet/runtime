@@ -530,7 +530,7 @@ initialize (void)
 	g_assert (threadpool_io);
 
 	mono_mutex_init_recursive (&threadpool_io->updates_lock);
-	mono_cond_init (&threadpool_io->updates_cond, NULL);
+	mono_cond_init (&threadpool_io->updates_cond, 0);
 	mono_gc_register_root ((void*)&threadpool_io->updates [0], sizeof (threadpool_io->updates), MONO_GC_DESCRIPTOR_NULL, MONO_ROOT_SOURCE_THREAD_POOL, "i/o thread pool updates list");
 
 	threadpool_io->updates_size = 0;

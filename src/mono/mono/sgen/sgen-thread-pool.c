@@ -158,8 +158,8 @@ sgen_thread_pool_init (int num_threads, SgenThreadPoolThreadInitFunc init_func, 
 	SGEN_ASSERT (0, num_threads == 1, "We only support 1 thread pool thread for now.");
 
 	mono_mutex_init (&lock);
-	mono_cond_init (&work_cond, NULL);
-	mono_cond_init (&done_cond, NULL);
+	mono_cond_init (&work_cond, 0);
+	mono_cond_init (&done_cond, 0);
 
 	thread_init_func = init_func;
 	idle_job_func = idle_func;

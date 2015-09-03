@@ -492,7 +492,7 @@ worker_park (void)
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] current worker parking", GetCurrentThreadId ());
 
-	mono_cond_init (&cond, NULL);
+	mono_cond_init (&cond, 0);
 
 	mono_gc_set_skip_thread (TRUE);
 
