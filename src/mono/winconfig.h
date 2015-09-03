@@ -16,7 +16,9 @@
 #error Unknown architecture
 #endif
 
+#ifndef WINVER
 #define WINVER 0x0A00
+#endif
 
 #include <SDKDDKVer.h>
 
