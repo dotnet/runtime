@@ -44,23 +44,34 @@ namespace System.Diagnostics.Tracing
             // and until we finish construction... in that window, OnEventSourceCreated
             // will store the sources into the list rather than try to enable them directly,
             // and then here we can enumerate that list, then clear it out.
-            foreach (var source in _tmpEventSourceList)
+            List<EventSource> sources;
+            lock (_tmpEventSourceList)
+            {
+                sources = _tmpEventSourceList;
+                _tmpEventSourceList = null;
+            }
+            foreach (EventSource source in sources)
             {
                 EnableSourceIfMatch(source);
             }
-            _tmpEventSourceList = null;
         }
 
         protected override void OnEventSourceCreated(EventSource eventSource)
         {
-            if (_tmpEventSourceList != null)
+            List<EventSource> tmp = _tmpEventSourceList;
+            if (tmp != null)
             {
-                _tmpEventSourceList.Add(eventSource);
+                lock (tmp)
+                {
+                    if (_tmpEventSourceList != null)
+                    {
+                        _tmpEventSourceList.Add(eventSource);
+                        return;
+                    }
+                }
             }
-            else
-            {
-                EnableSourceIfMatch(eventSource);
-            }
+
+            EnableSourceIfMatch(eventSource);
         }
 
         private void EnableSourceIfMatch(EventSource source)
