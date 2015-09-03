@@ -79,6 +79,10 @@ public:
 
     // Marshals a delegate to a unmanaged callback.
     static LPVOID ConvertToCallback(OBJECTREF pDelegate);
+    
+    // Marshals a managed method to an unmanaged callback , provided the method is static and uses only 
+    // blittable parameter types.
+    static PCODE ConvertToCallback(MethodDesc* pMD);
 
     // Marshals an unmanaged callback to Delegate
     static OBJECTREF ConvertToDelegate(LPVOID pCallback, MethodTable* pMT);

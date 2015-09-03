@@ -1088,6 +1088,19 @@ UMEntryThunk *UMEntryThunkCache::GetUMEntryThunk(MethodDesc *pMD)
     RETURN pThunk;
 }
 
+// FailFast if a native callable method invoked directly from managed code.
+// UMThunkStub.asm check the mode and call this function to failfast.
+extern "C" VOID STDCALL ReversePInvokeBadTransition()
+{
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    // Fail 
+    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
+                                             COR_E_EXECUTIONENGINE,
+                                             W("Invalid Program: attempted to call a NativeCallable method from runtime-typesafe code.")
+                                            );
+}
+
 // Disable from a place that is calling into managed code via a UMEntryThunk.
 extern "C" VOID STDCALL UMThunkStubRareDisableWorker(Thread *pThread, UMEntryThunk *pUMEntryThunk)
 {
