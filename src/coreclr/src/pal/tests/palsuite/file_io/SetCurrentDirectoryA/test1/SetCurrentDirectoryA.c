@@ -60,13 +60,13 @@ int __cdecl main(int argc, char *argv[])
 {
     const char* szDirName = "testing";
     /* directory name longer than MAX_PATH characters */
-    const char* szLongDirName = "testingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtestingtesting";
+    char szLongDirName[MAX_LONGPATH+1];
     char szNewDir[_MAX_DIR+1];
     char szBuiltDir[_MAX_DIR+1];
     char szHomeDir[_MAX_DIR+1];
     WCHAR* szwPtr = NULL;
 
-
+	memset(szLongDirName, 'a', MAX_LONGPATH+1);
     if (0 != PAL_Initialize(argc,argv))
     {
         return FAIL;

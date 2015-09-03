@@ -343,7 +343,7 @@ DebugBreakCommand()
     const char *command_string = getenv (PAL_RUN_ON_DEBUG_BREAK);
     if (command_string) {
         char pid_buf[sizeof (PID_TEXT) + 32];
-        char exe_buf[sizeof (EXE_TEXT) + MAX_PATH + 1];
+        char exe_buf[sizeof (EXE_TEXT) + MAX_LONGPATH + 1];
 
         if (snprintf (pid_buf, sizeof (pid_buf), PID_TEXT "%d", getpid()) <= 0) {
             goto FAILED;
@@ -1600,7 +1600,7 @@ PAL_CreateExecWatchpoint(
     CPalThread *pTargetThread = NULL;
     IPalObject *pobjThread = NULL;
     int fd = -1;
-    char ctlPath[MAX_PATH];
+    char ctlPath[MAX_LONGPATH];
 
     struct
     {
@@ -1721,7 +1721,7 @@ PAL_DeleteExecWatchpoint(
     CPalThread *pTargetThread = NULL;
     IPalObject *pobjThread = NULL;
     int fd = -1;
-    char ctlPath[MAX_PATH];
+    char ctlPath[MAX_LONGPATH];
 
     struct
     {
