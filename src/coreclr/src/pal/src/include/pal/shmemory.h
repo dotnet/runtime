@@ -191,7 +191,7 @@ Return value :
 
 Notes :
     SHMalloc will fail if the requested size is larger than a certain maximum.
-    At the moment, the maximum is 520 bytes (MAX_PATH*2).
+    At the moment, the maximum is 520 bytes (MAX_PATH_FNAME*2).
 --*/
 SHMPTR SHMalloc(size_t size);
 

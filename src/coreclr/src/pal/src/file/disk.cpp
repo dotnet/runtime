@@ -68,7 +68,7 @@ GetDiskFreeSpaceW(
     pal_statfs fsInfoBuffer;
     INT  statfsRetVal = 0;
     DWORD dwLastError = NO_ERROR;
-    CHAR DirNameBuffer[ MAX_PATH ];
+    CHAR DirNameBuffer[ MAX_LONGPATH ];
 
     PERF_ENTRY(GetDiskFreeSpaceW);
     ENTRY( "GetDiskFreeSpaceW( lpDirectoryName=%p (%S), lpSectorsPerCluster=%p,"
@@ -112,7 +112,7 @@ GetDiskFreeSpaceW(
     if ( lpDirectoryName )
     {
         if ( WideCharToMultiByte( CP_ACP, 0, lpDirectoryName, -1,
-                                  DirNameBuffer,MAX_PATH, 0, 0 ) != 0 )
+                                  DirNameBuffer,MAX_LONGPATH, 0, 0 ) != 0 )
         {
             FILEDosToUnixPathA( DirNameBuffer );
             statfsRetVal = statfs( DirNameBuffer, &fsInfoBuffer );
