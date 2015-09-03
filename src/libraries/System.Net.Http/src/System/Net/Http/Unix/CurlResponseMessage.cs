@@ -281,12 +281,29 @@ namespace System.Net.Http
 
         private async Task<int> ReadAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            // There wasn't any data, so wait for the writer to publish more.
+            // Allow cancellation of the wait to be triggered by either the stream shutting down
+            // or by the caller's cancellation token having cancellation requested.
+            CancellationTokenSource cts = cancellationToken.CanBeCanceled ?
+                CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _completionSignal.Token) :
+                null;
             try
             {
-                await _writerPublishedDataEvent.WaitAsync(_completionSignal.Token).ConfigureAwait(false);
+                // There wasn't any data, so wait for the writer to publish more.
+                await _writerPublishedDataEvent.WaitAsync(cts != null ? cts.Token : _completionSignal.Token).ConfigureAwait(false);
             }
-            catch (OperationCanceledException) { }
+            catch (OperationCanceledException)
+            {
+                // If the user's cancellation token has had cancellation requested, propagate that OCE.
+                // Otherwise, if our internal completion signal token had cancellation requested, keep
+                // going, as we'll either need to return a successful 0 (no more data available)
+                // or throw a failure exception.
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+            finally
+            {
+                if (cts != null)
+                    cts.Dispose();
+            }
 
             // Now either cancellation should have been requested or
             // we should have data to read and return.
