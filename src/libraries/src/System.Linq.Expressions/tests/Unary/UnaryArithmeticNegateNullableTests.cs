@@ -108,34 +108,12 @@ namespace Tests.ExpressionCompiler.Unary
 
         private static void VerifyArithmeticNegateNullableByte(byte? value)
         {
-            try
-            {
-                Expression<Func<byte?>> e =
-                   Expression.Lambda<Func<byte?>>(
-                       Expression.Negate(Expression.Constant(value, typeof(byte?))),
-                       Enumerable.Empty<ParameterExpression>());
-                Assert.False(true); // shouldn't get here
-            }
-            catch (InvalidOperationException)
-            {
-                // success
-            }
+            Assert.Throws<InvalidOperationException>(() => Expression.Negate(Expression.Constant(value, typeof(byte?))));
         }
 
         private static void VerifyArithmeticNegateNullableChar(char? value)
         {
-            try
-            {
-                Expression<Func<char?>> e =
-                   Expression.Lambda<Func<char?>>(
-                       Expression.Negate(Expression.Constant(value, typeof(char?))),
-                       Enumerable.Empty<ParameterExpression>());
-                Assert.False(true); // shouldn't get here
-            }
-            catch (InvalidOperationException)
-            {
-                // success
-            }
+            Assert.Throws<InvalidOperationException>(() => Expression.Negate(Expression.Constant(value, typeof(char?))));
         }
 
         private static void VerifyArithmeticNegateNullableDecimal(decimal? value)
@@ -190,18 +168,7 @@ namespace Tests.ExpressionCompiler.Unary
 
         private static void VerifyArithmeticNegateNullableSByte(sbyte? value)
         {
-            try
-            {
-                Expression<Func<sbyte?>> e =
-                   Expression.Lambda<Func<sbyte?>>(
-                       Expression.Negate(Expression.Constant(value, typeof(sbyte?))),
-                       Enumerable.Empty<ParameterExpression>());
-                Assert.False(true); // shouldn't get here
-            }
-            catch (InvalidOperationException)
-            {
-                // success
-            }
+            Assert.Throws<InvalidOperationException>(() => Expression.Negate(Expression.Constant(value, typeof(sbyte?))));
         }
 
         private static void VerifyArithmeticNegateNullableShort(short? value)
