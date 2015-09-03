@@ -76,10 +76,6 @@ if(WIN32)
     ntdll.lib
   )
 else(WIN32)
-  if(NOT CLR_CMAKE_PLATFORM_ARCH_AMD64)
-    clr_unknown_arch()
-  endif()
-
   add_definitions(-DPAL_STDCPP_COMPAT=1)
   add_compile_options(-Wno-null-arithmetic)
   add_compile_options(-Wno-format)
