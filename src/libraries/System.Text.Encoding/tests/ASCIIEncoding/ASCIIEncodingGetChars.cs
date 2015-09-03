@@ -1,11 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Text;
 using Xunit;
 
-namespace System.Text.EncodingTests
+namespace System.Text.Tests
 {
     // Decodes a sequence of bytes from the specified byte array into the specified character array.   
     // ASCIIEncoding.GetChars(byte[], int, int, char[], int)
