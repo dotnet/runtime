@@ -45,8 +45,22 @@ Git Setup
 
 This guide assumes that you've cloned the corefx and coreclr repositories into `~/git/corefx` and `~/git/coreclr` on your Linux machine and the corefx and coreclr repositories into `D:\git\corefx` and `D:\git\coreclr` on Windows. If your setup is different, you'll need to pay careful attention to the commands you run. In this guide, I'll always show what directory I'm in on both the Linux and Windows machine.
 
-Build the Runtime
-=================
+Install Mono
+------------
+
+If you don't already have Mono installed on your system, use the [installation instructions](http://www.mono-project.com/docs/getting-started/install/linux/).
+
+At a high level, you do the following:
+
+```
+ellismg@linux:~$ sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+ellismg@linux:~$ echo "deb http://download.mono-project.com/repo/debian wheezy main" | sudo tee /etc/apt/sources.list.d/mono-xamarin.list
+ellismg@linux:~$ sudo apt-get update
+ellismg@linux:~$ sudo apt-get install mono-devel
+```
+
+Build the Runtime and Microsoft Core Library
+=============================================
 
 To build the runtime on Linux, run build.sh from the root of the coreclr repository:
 
@@ -58,6 +72,7 @@ After the build is completed, there should some files placed in `bin/Product/Lin
 
 * `corerun`: The command line host.  This program loads and starts the CoreCLR runtime and passes the managed program you want to run to it.
 * `libcoreclr.so`: The CoreCLR runtime itself.
+* `mscorlib.dll`: Microsoft Core Library (requires Mono).
 
 In order to keep everything tidy, let's create a new directory for the runtime and copy the runtime and corerun into it.
 
@@ -65,7 +80,23 @@ In order to keep everything tidy, let's create a new directory for the runtime a
 ellismg@linux:~/git/coreclr$ mkdir -p ~/coreclr-demo/runtime
 ellismg@linux:~/git/coreclr$ cp bin/Product/Linux.x64.Debug/corerun ~/coreclr-demo/runtime
 ellismg@linux:~/git/coreclr$ cp bin/Product/Linux.x64.Debug/libcoreclr.so ~/coreclr-demo/runtime
+ellismg@linux:~/git/coreclr$ cp bin/Product/Linux.x64.Debug/mscorlib.dll ~/coreclr-demo/runtime
 ```
+
+(Alternative) Build the Microsoft Core Library on Windows
+=========================================================
+
+If the build fails (for example due to Mono issues), alternatively you can build it on Windows.
+You'll need a Windows machine with clone of the CoreCLR project.
+
+You will build mscorlib.dll out of the coreclr repository.
+From a regular command prompt window run:
+
+```
+D:\git\coreclr> build.cmd linuxmscorlib
+```
+
+The output is placed in bin\Product\Linux.x64.Debug\mscorlib.dll. You'll want to copy this to the runtime folder on your Linux machine. (e.g. ~/coreclr-demo/runtime)
 
 Build the Framework Native Components
 ======================================
@@ -78,17 +109,10 @@ ellismg@linux:~/git/corefx$ cp bin/Linux.x64.Debug/Native/*.so ~/coreclr-demo/ru
 Build the Framework Managed Components
 ======================================
 
-We don't _yet_ have support for building managed code on Linux, so you'll need a Windows machine with clones of both the CoreCLR and CoreFX projects.
+We don't _yet_ have support for building managed code on Linux, so you'll need a Windows machine with clones of CoreFX project.
 
-You will build `mscorlib.dll` out of the coreclr repository and the rest of the framework that out of the corefx repository.  For mscorlib (from a regular command prompt window) run:
-
-```
-D:\git\coreclr> build.cmd linuxmscorlib
-```
-
-The output is placed in `bin\Product\Linux.x64.Debug\mscorlib.dll`.  You'll want to copy this to the runtime folder on your Linux machine. (e.g. `~/coreclr-demo/runtime`)
-
-For the rest of the framework, you need to pass some special parameters to build.cmd when building out of the CoreFX repository.
+You will build the rest of the framework that out of the corefx repository.  
+You need to pass some special parameters to build.cmd when building out of the CoreFX repository.
 
 ```
 D:\git\corefx> build.cmd /p:OSGroup=Linux /p:SkipTests=true
@@ -115,20 +139,6 @@ Create a folder for the packages:
 ```
 ellismg@linux:~$ mkdir ~/coreclr-demo/packages
 ellismg@linux:~$ cd ~/coreclr-demo/packages
-```
-
-Install Mono
-------------
-
-If you don't already have Mono installed on your system, use the [installation instructions](http://www.mono-project.com/docs/getting-started/install/linux/).
-
-At a high level, you do the following:
-
-```
-ellismg@linux:~$ sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
-ellismg@linux:~$ echo "deb http://download.mono-project.com/repo/debian wheezy main" | sudo tee /etc/apt/sources.list.d/mono-xamarin.list
-ellismg@linux:~$ sudo apt-get update
-ellismg@linux:~$ sudo apt-get install mono-devel
 ```
 
 Download the NuGet Client
@@ -211,4 +221,4 @@ ellismg@linux:~/coreclr-demo/runtime$ ./corerun HelloWorld.exe linux
 
 Over time, this process will get easier. We will remove the dependency on having to compile managed code on Windows. For example, we are working to get our NuGet packages to include both the Windows and Linux versions of an assembly, so you can simply nuget restore the dependencies. 
 
-Pull Requests to enable building CoreFX and mscorlib on Linux via Mono would be very welcome. A sample that builds Hello World on Linux using the correct references but via XBuild or MonoDevelop would also be great! Some of our processes (e.g. the mscorlib build) rely on Windows specific tools, but we want to figure out how to solve these problems for Linux as well. There's still a lot of work ahead, so if you're interested in helping, we're ready for you!
+Pull Requests to enable building CoreFX on Linux via Mono would be very welcome. A sample that builds Hello World on Linux using the correct references but via XBuild or MonoDevelop would also be great! There's still a lot of work ahead, so if you're interested in helping, we're ready for you!
