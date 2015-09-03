@@ -2501,9 +2501,6 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 		collector->major_ops_concurrent_start.copy_or_mark_object = major_copy_or_mark_object_concurrent_canonical;
 		collector->major_ops_concurrent_start.scan_object = major_scan_object_no_mark_concurrent_start;
 
-		collector->major_ops_concurrent.copy_or_mark_object = major_copy_or_mark_object_concurrent_canonical;
-		collector->major_ops_concurrent.scan_object = major_scan_object_no_mark_concurrent;
-
 		collector->major_ops_concurrent_finish.copy_or_mark_object = major_copy_or_mark_object_concurrent_finish_canonical;
 		collector->major_ops_concurrent_finish.scan_object = major_scan_object_no_evacuation;
 		collector->major_ops_concurrent_finish.scan_vtype = major_scan_vtype_concurrent_finish;

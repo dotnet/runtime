@@ -78,13 +78,6 @@ major_scan_object_no_mark_concurrent_start (GCObject *start, SgenDescriptor desc
 	major_scan_object_no_mark_concurrent_anywhere (start, desc, queue);
 }
 
-static void
-major_scan_object_no_mark_concurrent (GCObject *start, SgenDescriptor desc, SgenGrayQueue *queue)
-{
-	SGEN_ASSERT (0, !sgen_ptr_in_nursery (start), "Why are we scanning nursery objects in the concurrent collector?");
-	major_scan_object_no_mark_concurrent_anywhere (start, desc, queue);
-}
-
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)     do {                                    \
                 void *__old = *(ptr);                                   \
