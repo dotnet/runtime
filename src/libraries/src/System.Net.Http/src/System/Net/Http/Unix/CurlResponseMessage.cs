@@ -351,6 +351,8 @@ namespace System.Net.Http
         private int ConsumePublishedData(byte[] buffer, int offset, int count)
         {
             Debug.Assert(Monitor.IsEntered(LockObject), "Published data must only be accessed while holding the lock");
+            Debug.Assert(_availableData != IntPtr.Zero, "Expected available data pointer");
+            Debug.Assert(_availableDataLength > 0, "Expected positive length for available data");
 
             // Copy the data into the read buffer
             int bytesToRead = (int)Math.Min(_availableDataLength, count);
