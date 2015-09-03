@@ -27,6 +27,8 @@
 #include "environment.h"
 #include "coree.h"
 
+#include <Shellapi.h>
+
 HMODULE coree_module_handle = NULL;
 
 static gboolean init_from_coree = FALSE;
