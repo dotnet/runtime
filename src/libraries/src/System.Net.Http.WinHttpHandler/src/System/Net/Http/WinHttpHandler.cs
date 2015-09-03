@@ -179,7 +179,7 @@ namespace System.Net.Http
                     throw new ArgumentOutOfRangeException(
                         "value",
                         value,
-                        string.Format(SR.net_http_value_must_be_greater_than, 0));
+                        SR.Format(SR.net_http_value_must_be_greater_than, 0));
                 }
 
                 CheckDisposedOrStarted();
@@ -415,7 +415,7 @@ namespace System.Net.Http
                     throw new ArgumentOutOfRangeException(
                         "value",
                         value,
-                        string.Format(SR.net_http_value_must_be_greater_than, 0));
+                        SR.Format(SR.net_http_value_must_be_greater_than, 0));
                 }
 
                 CheckDisposedOrStarted();
@@ -513,7 +513,7 @@ namespace System.Net.Http
                     throw new ArgumentOutOfRangeException(
                         "value",
                         value,
-                        string.Format(SR.net_http_value_must_be_greater_than, 0));
+                        SR.Format(SR.net_http_value_must_be_greater_than, 0));
                 }
 
                 CheckDisposedOrStarted();
@@ -535,7 +535,7 @@ namespace System.Net.Http
                     throw new ArgumentOutOfRangeException(
                         "value",
                         value,
-                        string.Format(SR.net_http_value_must_be_greater_than, 0));
+                        SR.Format(SR.net_http_value_must_be_greater_than, 0));
                 }
 
                 CheckDisposedOrStarted();

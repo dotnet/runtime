@@ -28,7 +28,7 @@ namespace System.Reflection.Metadata
             var block = peReader.GetSectionData(relativeVirtualAddress);
             if (block.Length == 0)
             {
-                throw new BadImageFormatException(string.Format(SR.InvalidMethodRva, relativeVirtualAddress));
+                throw new BadImageFormatException(SR.Format(SR.InvalidMethodRva, relativeVirtualAddress));
             }
 
             // Call to validating public BlobReader constructor is by design -- we need to throw PlatformNotSupported on big-endian architecture.

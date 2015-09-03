@@ -120,14 +120,14 @@ namespace System.Reflection.Metadata
 
             if ((headByte & ILFormatMask) != ILFatFormat)
             {
-                throw new BadImageFormatException(string.Format(SR.InvalidMethodHeader1, headByte));
+                throw new BadImageFormatException(SR.Format(SR.InvalidMethodHeader1, headByte));
             }
 
             // FatILFormat
             byte headByte2 = reader.ReadByte();
             if ((headByte2 >> ILFatFormatHeaderSizeShift) != ILFatFormatHeaderSize)
             {
-                throw new BadImageFormatException(string.Format(SR.InvalidMethodHeader2, headByte, headByte2));
+                throw new BadImageFormatException(SR.Format(SR.InvalidMethodHeader2, headByte, headByte2));
             }
 
             bool localsInitialized = (headByte & ILInitLocals) == ILInitLocals;
@@ -148,7 +148,7 @@ namespace System.Reflection.Metadata
             }
             else
             {
-                throw new BadImageFormatException(string.Format(SR.InvalidLocalSignatureToken, unchecked((uint)localSignatureToken)));
+                throw new BadImageFormatException(SR.Format(SR.InvalidLocalSignatureToken, unchecked((uint)localSignatureToken)));
             }
 
             var ilBlock = reader.GetMemoryBlockAt(0, ilSize);
@@ -161,7 +161,7 @@ namespace System.Reflection.Metadata
                 byte sehHeader = reader.ReadByte();
                 if ((sehHeader & SectEHTable) != SectEHTable)
                 {
-                    throw new BadImageFormatException(string.Format(SR.InvalidSehHeader, sehHeader));
+                    throw new BadImageFormatException(SR.Format(SR.InvalidSehHeader, sehHeader));
                 }
 
                 bool sehFatFormat = (sehHeader & SectFatFormat) == SectFatFormat;

@@ -97,7 +97,7 @@ namespace System.Reflection
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void TableNotSorted(TableIndex tableIndex)
         {
-            throw new BadImageFormatException(String.Format(SR.MetadataTableNotSorted, (int)tableIndex));
+            throw new BadImageFormatException(SR.Format(SR.MetadataTableNotSorted, (int)tableIndex));
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
