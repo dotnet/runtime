@@ -47,9 +47,9 @@
   IL_0041:  neg
   IL_0042:  stloc.s    K2
   ldloc K1
-  call void ['mscorlib'] System.Console::WriteLine(int32)
+  call void [System.Console]System.Console::WriteLine(int32)
   ldloc K2
-  call void ['mscorlib'] System.Console::WriteLine(int32)
+  call void [System.Console]System.Console::WriteLine(int32)
   
   ldc.i4.s 100
   ret     

@@ -76,7 +76,7 @@
         IL_0011:  beq.s      IL_0021
 
         IL_0013:  ldstr      "Failed"
-        IL_0018:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+        IL_0018:  call       void [System.Console]System.Console::WriteLine(class System.String)
         IL_001d:  ldc.i4.1
         IL_001e:  stloc.1
         IL_001f:  leave.s    IL_0040
@@ -88,14 +88,14 @@
       {
         IL_0023:  pop
         IL_0024:  ldstr      "Failed w/ exception"
-        IL_0029:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+        IL_0029:  call       void [System.Console]System.Console::WriteLine(class System.String)
         IL_002e:  ldc.i4.2
         IL_002f:  stloc.1
         IL_0030:  leave.s    IL_0040
 
       }  // end handler
       IL_0032:  ldstr      "Passed"
-      IL_0037:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_0037:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_003c:  ldc.i4    0x64
       IL_003d:  stloc.1
       IL_003e:  br.s       IL_0040

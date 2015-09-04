@@ -624,7 +624,7 @@
                int32 V_10)
       IL_0000:  ldstr      "Test searches for longest common subsequence of 4 "
       + "strings\n\n"
-      IL_0005:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_0005:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_000a:  ldc.i4.4
       IL_000b:  newarr     ['mscorlib']System.String
       IL_0010:  stloc.s    V_8
@@ -781,13 +781,13 @@
       IL_00e7:  brfalse.s  IL_00f8
 
       IL_00e9:  ldstr      "Test passed"
-      IL_00ee:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_00ee:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_00f3:  ldc.i4     0x64
       IL_00f4:  stloc.s    V_7
       IL_00f6:  br.s       IL_0107
 
       IL_00f8:  ldstr      "Test failed."
-      IL_00fd:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_00fd:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0102:  ldc.i4.0
       IL_0103:  stloc.s    V_7
       IL_0105:  br.s       IL_0107
