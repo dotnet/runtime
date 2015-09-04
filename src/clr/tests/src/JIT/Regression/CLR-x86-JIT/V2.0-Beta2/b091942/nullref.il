@@ -67,7 +67,7 @@
 PASSED:
 
 	ldstr      "Test PASSED. Exit Code=100"
-	call       void [mscorlib] System.Console::WriteLine(string)
+	call       void [System.Console]System.Console::WriteLine(string)
 	ldc.i4.s   100
 	stloc.0
 	br.s       RET
@@ -110,7 +110,7 @@ NEXT:	ldsfld     class BigClass TestClass::s_bigClass
   {
     .locals init (bool retValue)
 	ldstr   "Running Test1: Using a class with a big offset field"
-	call    void [mscorlib] System.Console::WriteLine(string)
+	call    void [System.Console]System.Console::WriteLine(string)
 	.try
 	{
 		ldarg.0
@@ -161,7 +161,7 @@ NEXT:	ldloc.0
 	ldstr      "Value: {0}"    
 	ldloc.1
 	box        [mscorlib]System.Int32
-	call       void [mscorlib] System.Console::WriteLine(string, object)
+	call       void [System.Console]System.Console::WriteLine(string, object)
 
     IL_0000:  ret
   } 
@@ -170,7 +170,7 @@ NEXT:	ldloc.0
   {
     .locals init (bool retValue)
 	ldstr   "Running Test2: Using a valuetype with a not so big offset field"
-	call    void [mscorlib] System.Console::WriteLine(string)
+	call    void [System.Console]System.Console::WriteLine(string)
 	.try
 	{
 		ldarg.0
@@ -231,7 +231,7 @@ NEXT:	ldloc.0
 	box        [mscorlib]System.Int32
 	ldloc.1
 	box        [mscorlib]System.Int32
-	call       void [mscorlib] System.Console::WriteLine(string, object, object)
+	call       void [System.Console]System.Console::WriteLine(string, object, object)
 
     IL_0000:  ret
   } 
@@ -240,7 +240,7 @@ NEXT:	ldloc.0
   {
     .locals init (bool retValue)
 	ldstr   "Running Test3: Using a valuetype with a big offset field"
-	call    void [mscorlib] System.Console::WriteLine(string)
+	call    void [System.Console]System.Console::WriteLine(string)
 	.try
 	{
 		ldarg.0

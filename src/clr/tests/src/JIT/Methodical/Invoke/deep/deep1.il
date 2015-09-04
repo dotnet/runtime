@@ -538,14 +538,14 @@
       {
         IL_039f:  pop
         IL_03a0:  ldstr      "Failed w/ exception"
-        IL_03a5:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+        IL_03a5:  call       void [System.Console]System.Console::WriteLine(class System.String)
         IL_03aa:  ldc.i4.1
         IL_03ab:  stloc.1
         IL_03ac:  leave.s    IL_03bc
 
       }  // end handler
       IL_03ae:  ldstr      "Passed"
-      IL_03b3:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_03b3:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_03b8:  ldc.i4    0x64
       IL_03b9:  stloc.1
       IL_03ba:  br.s       IL_03bc
