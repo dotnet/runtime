@@ -84,19 +84,19 @@ namespace System.Linq.Tests
         [Fact]
         public void Repeat_EnumerableAndEnumeratorAreSame()
         {
-            var repeatEnumberable = Enumerable.Repeat(1, 1);
-            using (var repeatEnumberator = repeatEnumberable.GetEnumerator())
+            var repeatEnumerable = Enumerable.Repeat(1, 1);
+            using (var repeatEnumerator = repeatEnumerable.GetEnumerator())
             {
-                Assert.Same(repeatEnumberable, repeatEnumberator);
+                Assert.Same(repeatEnumerable, repeatEnumerator);
             }
         }
 
         [Fact]
         public void Repeat_GetEnumeratorReturnUniqueInstances()
         {
-            var repeatEnumberable = Enumerable.Repeat(1, 1);
-            using (var enum1 = repeatEnumberable.GetEnumerator())
-            using (var enum2 = repeatEnumberable.GetEnumerator())
+            var repeatEnumerable = Enumerable.Repeat(1, 1);
+            using (var enum1 = repeatEnumerable.GetEnumerator())
+            using (var enum2 = repeatEnumerable.GetEnumerator())
             {
                 Assert.NotSame(enum1, enum2);
             }
