@@ -1057,7 +1057,7 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 			const char *p;
 			MonoTypeEnum def_type;
 
-			if (strcmp ("value__", mono_field_get_name (field)) == 0)
+			if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 				continue;
 			if (mono_field_is_deleted (field))
 				continue;
