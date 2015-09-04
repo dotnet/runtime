@@ -1938,7 +1938,7 @@ UINT64 QCALLTYPE ThreadNative::GetProcessDefaultStackSize()
     return (UINT64)reserve;
 }
 
-
+#ifndef FEATURE_CORECLR
 FCIMPL0(void, ThreadNative::BeginCriticalRegion)
 {
     FCALL_CONTRACT;
@@ -1972,6 +1972,7 @@ FCIMPL0(void, ThreadNative::EndThreadAffinity)
     Thread::EndThreadAffinity();
 }
 FCIMPLEND
+#endif // !FEATURE_CORECLR
 
 
 FCIMPL1(FC_BOOL_RET, ThreadNative::IsThreadpoolThread, ThreadBaseObject* thread)
