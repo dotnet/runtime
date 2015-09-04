@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <stdint.h>
+#include "pal_types.h"
 
 /**
  * Abstraction helper method to safely copy strings using strlcpy or strcpy_s
