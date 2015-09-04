@@ -323,14 +323,21 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
 VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex);
 
 #define INSTALL_MANAGED_EXCEPTION_DISPATCHER        \
-        try { \
+        PAL_SEHException exCopy;                    \
+        bool hasCaughtException = false;            \
+        try {
 
 #define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER      \
         }                                           \
         catch (PAL_SEHException& ex)                \
         {                                           \
-            DispatchManagedException(ex);           \
+            exCopy = ex;                            \
+            hasCaughtException = true;              \
         }                                           \
+        if (hasCaughtException)                     \
+        {                                           \
+            DispatchManagedException(exCopy);       \
+        }
 
 #else
 

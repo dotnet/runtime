@@ -2446,6 +2446,9 @@ PAL_GetStackBase()
     status = pthread_attr_getstack(&attr, &stackAddr, &stackSize);
     _ASSERT_MSG(status == 0, "pthread_attr_getstack call failed");
 
+    status = pthread_attr_destroy(&attr);
+    _ASSERT_MSG(status == 0, "pthread_attr_destroy call failed");
+
     return (void*)((size_t)stackAddr + stackSize);
 #endif
 }
@@ -2480,6 +2483,9 @@ PAL_GetStackLimit()
 
     status = pthread_attr_getstack(&attr, &stackAddr, &stackSize);
     _ASSERT_MSG(status == 0, "pthread_attr_getstack call failed");
+
+    status = pthread_attr_destroy(&attr);
+    _ASSERT_MSG(status == 0, "pthread_attr_destroy call failed");
     
     return stackAddr;
 #endif
