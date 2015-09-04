@@ -70,24 +70,24 @@ void
 mono_threads_notify_initiator_of_abort (MonoThreadInfo* info)
 {
 	THREADS_SUSPEND_DEBUG ("[INITIATOR-NOTIFY-ABORT] %p\n", mono_thread_info_get_tid (info));
-	MONO_SEM_POST (&suspend_semaphore);
 	InterlockedIncrement (&abort_posts);
+	MONO_SEM_POST (&suspend_semaphore);
 }
 
 void
 mono_threads_notify_initiator_of_suspend (MonoThreadInfo* info)
 {
 	THREADS_SUSPEND_DEBUG ("[INITIATOR-NOTIFY-SUSPEND] %p\n", mono_thread_info_get_tid (info));
-	MONO_SEM_POST (&suspend_semaphore);
 	InterlockedIncrement (&suspend_posts);
+	MONO_SEM_POST (&suspend_semaphore);
 }
 
 void
 mono_threads_notify_initiator_of_resume (MonoThreadInfo* info)
 {
 	THREADS_SUSPEND_DEBUG ("[INITIATOR-NOTIFY-RESUME] %p\n", mono_thread_info_get_tid (info));
-	MONO_SEM_POST (&suspend_semaphore);
 	InterlockedIncrement (&resume_posts);
+	MONO_SEM_POST (&suspend_semaphore);
 }
 
 static void
