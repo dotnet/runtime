@@ -3,6 +3,11 @@
 
 
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly div_i4.exe{}
 
 .class public _div {
@@ -25,7 +30,7 @@ arithmetic:
 	//- Got an ArithmeticException
 	isinst			[mscorlib]System.ArithmeticException
         ldstr      "Got arithmetic exception"
-        call       void [mscorlib]System.Console::WriteLine(string)
+        call       void [System.Console]System.Console::WriteLine(string)
 	stloc	0
 	leave			AEEnd
 AEEnd:
@@ -33,7 +38,7 @@ AEEnd:
 	ldloc	0
 	brfalse			FAIL
         ldstr      "returning 0xAE"
-        call       void [mscorlib]System.Console::WriteLine(string)
+        call       void [System.Console]System.Console::WriteLine(string)
 	ldc.i4			0xAE
 	br				END
 
@@ -41,7 +46,7 @@ divbyzero:
 	//- Got a DivideByZeroException
 	isinst			[mscorlib]System.DivideByZeroException
         ldstr      "Got divide by zero"
-        call       void [mscorlib]System.Console::WriteLine(string)
+        call       void [System.Console]System.Console::WriteLine(string)
 	stloc	0
 	leave			DBZEnd
 DBZEnd:
@@ -49,13 +54,13 @@ DBZEnd:
 	ldloc	0
 	brfalse			FAIL
         ldstr      "returning 0xDB0E"
-        call       void [mscorlib]System.Console::WriteLine(string)
+        call       void [System.Console]System.Console::WriteLine(string)
 	ldc.i4			0xDB0E
 	br				END
 
 FAIL:
         ldstr      "Fail"
-        call       void [mscorlib]System.Console::WriteLine(string)
+        call       void [System.Console]System.Console::WriteLine(string)
 	ldc.i4			0x00000000
 	br				END
 END:
@@ -82,7 +87,7 @@ START_AE:
 	ldc.i4		0x80000000
 	ldc.i4		0xFFFFFFFF
         ldstr      "80000000/-1"
-        call       void [mscorlib]System.Console::WriteLine(string)
+        call       void [System.Console]System.Console::WriteLine(string)
 	call	int32 _div::_div(int32,int32)
 	ldc.i4		0xAE
 	ceq
@@ -95,7 +100,7 @@ START_DB0:
 	ldc.i4		0x80000000
 	ldc.i4		0x00000000
         ldstr      "80000000/0"
-        call       void [mscorlib]System.Console::WriteLine(string)
+        call       void [System.Console]System.Console::WriteLine(string)
 	call	int32 _div::_div(int32,int32)
 	ldc.i4		0xDB0E
 	ceq

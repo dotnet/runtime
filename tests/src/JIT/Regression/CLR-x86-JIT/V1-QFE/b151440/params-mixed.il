@@ -1,6 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 .assembly extern mscorlib
 {
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
@@ -39,7 +45,7 @@
                                                                          string)
       stloc.2
       ldloc.2
-      call       void [mscorlib]System.Console::WriteLine(string)
+      call       void [System.Console]System.Console::WriteLine(string)
       nop
       ldloc.2
       ldloc.1
@@ -55,14 +61,14 @@
       brtrue.s   IL_0042
 
       ldstr      "String.Insert test passed"
-      call       void [mscorlib]System.Console::WriteLine(string)
+      call       void [System.Console]System.Console::WriteLine(string)
       nop
       ldc.i4.s   100
       stloc.3
       br.s       IL_0051
 
     IL_0042:  ldstr      "String.Insert test failed"
-      call       void [mscorlib]System.Console::WriteLine(string)
+      call       void [System.Console]System.Console::WriteLine(string)
       nop
       ldc.i4.1
       stloc.3

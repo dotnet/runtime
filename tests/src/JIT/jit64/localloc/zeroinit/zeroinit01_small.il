@@ -1,6 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 // Test zero initialization of localloc
 .assembly extern mscorlib{}
 .assembly zeroinit01{}
@@ -59,12 +65,12 @@
     IL_0036:  brfalse.s  L_FAIL
 
     IL_0038:  ldstr      "pass"
-    IL_003d:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_003d:  call       void [System.Console]System.Console::WriteLine(string)
     ldc.i4	100
     IL_0042:  br.s       IL_004e
 
     L_FAIL:   ldstr      "fail"
-    IL_0049:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0049:  call       void [System.Console]System.Console::WriteLine(string)
     ldc.i4.1
     IL_004e:  ret
   } // end of method T::Main

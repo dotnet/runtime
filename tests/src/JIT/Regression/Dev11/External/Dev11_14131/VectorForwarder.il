@@ -1,6 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 
 
 
@@ -100,7 +106,7 @@
 
       IL_004c:  ldstr      "Failed - received indices that don't match the one"
       + "s that were sent."
-      IL_0051:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0051:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0056:  ldc.i4.1
       IL_0057:  stsfld     bool VectorForwarder.App::TestFailed
       IL_005c:  ret
@@ -177,7 +183,7 @@
     IL_0036:  box        [mscorlib]System.Int32
     IL_003b:  stelem.ref
     IL_003c:  ldloc.0
-    IL_003d:  call       void [mscorlib]System.Console::WriteLine(string,
+    IL_003d:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object[])
     IL_0042:  ret
   } // end of method App::Print4Indices
@@ -262,12 +268,12 @@
     IL_002c:  brtrue.s   IL_003b
 
     IL_002e:  ldstr      "Passed."
-    IL_0033:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0033:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0038:  ldc.i4.s   100
     IL_003a:  ret
 
     IL_003b:  ldstr      "Failed."
-    IL_0040:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0040:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0045:  ldc.i4.s   101
     IL_0047:  ret
   } // end of method App::Main

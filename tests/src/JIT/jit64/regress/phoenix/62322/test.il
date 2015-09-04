@@ -1,6 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 
 
 
@@ -39,7 +45,7 @@
     .maxstack  8
     IL_0000:  nop
     IL_0001:  ldstr      "Foo"
-    IL_0006:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0006:  call       void [System.Console]System.Console::WriteLine(string)
     IL_000b:  nop
     IL_000c:  ldnull
     IL_000d:  starg      0
@@ -90,7 +96,7 @@
 
     IL_000f:  nop
     IL_0010:  ldstr      "Test FAILED"
-    IL_0015:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0015:  call       void [System.Console]System.Console::WriteLine(string)
     IL_001a:  nop
     IL_001b:  ldc.i4.s   101
     IL_001d:  stloc.1
@@ -98,7 +104,7 @@
 
     IL_0020:  nop
     IL_0021:  ldstr      "Test SUCCESS"
-    IL_0026:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0026:  call       void [System.Console]System.Console::WriteLine(string)
     IL_002b:  nop
     IL_002c:  ldc.i4.s   100
     IL_002e:  stloc.1
@@ -120,7 +126,7 @@
     IL_0001:  ldstr      "Running tests for {0}"
     IL_0006:  ldtoken    !!T
     IL_000b:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-    IL_0010:  call       void [mscorlib]System.Console::WriteLine(string,
+    IL_0010:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
     IL_0015:  nop
     IL_0016:  ldc.i4.0
@@ -137,11 +143,11 @@
     IL_0029:  ldstr      "Widget<{0}>.Foo() failed"
     IL_002e:  ldtoken    !!T
     IL_0033:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-    IL_0038:  call       void [mscorlib]System.Console::WriteLine(string,
+    IL_0038:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
     IL_003d:  nop
     IL_003e:  ldloc.1
-    IL_003f:  call       void [mscorlib]System.Console::WriteLine(object)
+    IL_003f:  call       void [System.Console]System.Console::WriteLine(object)
     IL_0044:  nop
     IL_0045:  ldloc.0
     IL_0046:  ldc.i4.1

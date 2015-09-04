@@ -3,6 +3,11 @@
 
 //different ways to invoke method inside a loop (no tail. call or jmp/jmpi since they require empty stack)
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly loop2 {}
 .class private auto ansi beforefieldinit A
        extends [mscorlib]System.Object
@@ -1777,7 +1782,7 @@
     IL_000b:  beq.s      IL_0019
 
     IL_000d:  ldstr      "F1upBy1le failed"
-    IL_0012:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0012:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0017:  ldc.i4.1
     IL_0018:  stloc.0
     IL_0019:  ldc.i4.s   10
@@ -1786,7 +1791,7 @@
     IL_0022:  beq.s      IL_0030
 
     IL_0024:  ldstr      "F1downBy1ge failed"
-    IL_0029:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0029:  call       void [System.Console]System.Console::WriteLine(string)
     IL_002e:  ldc.i4.1
     IL_002f:  stloc.0
     IL_0030:  ldc.i4.s   10
@@ -1795,7 +1800,7 @@
     IL_0039:  beq.s      IL_0047
 
     IL_003b:  ldstr      "F1upBy1lt failed"
-    IL_0040:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0040:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0045:  ldc.i4.1
     IL_0046:  stloc.0
     IL_0047:  ldc.i4.s   10
@@ -1804,7 +1809,7 @@
     IL_0050:  beq.s      IL_005e
 
     IL_0052:  ldstr      "F1downBy1gt failed"
-    IL_0057:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0057:  call       void [System.Console]System.Console::WriteLine(string)
     IL_005c:  ldc.i4.1
     IL_005d:  stloc.0
     IL_005e:  ldc.i4.s   10
@@ -1813,7 +1818,7 @@
     IL_0067:  beq.s      IL_0075
 
     IL_0069:  ldstr      "F1upBy2le failed"
-    IL_006e:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_006e:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0073:  ldc.i4.1
     IL_0074:  stloc.0
     IL_0075:  ldc.i4.s   10
@@ -1822,7 +1827,7 @@
     IL_007e:  beq.s      IL_008c
 
     IL_0080:  ldstr      "F1downBy2ge failed"
-    IL_0085:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0085:  call       void [System.Console]System.Console::WriteLine(string)
     IL_008a:  ldc.i4.1
     IL_008b:  stloc.0
     IL_008c:  ldc.i4.s   10
@@ -1831,7 +1836,7 @@
     IL_0095:  beq.s      IL_00a3
 
     IL_0097:  ldstr      "F1upBy2lt failed"
-    IL_009c:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_009c:  call       void [System.Console]System.Console::WriteLine(string)
     IL_00a1:  ldc.i4.1
     IL_00a2:  stloc.0
     IL_00a3:  ldc.i4.s   10
@@ -1840,7 +1845,7 @@
     IL_00ac:  beq.s      IL_00ba
 
     IL_00ae:  ldstr      "F1downBy2gt failed"
-    IL_00b3:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_00b3:  call       void [System.Console]System.Console::WriteLine(string)
     IL_00b8:  ldc.i4.1
     IL_00b9:  stloc.0
     IL_00ba:  ldc.i4.s   10
@@ -1849,7 +1854,7 @@
     IL_00c3:  beq.s      IL_00d1
 
     IL_00c5:  ldstr      "F1upBy1ne failed"
-    IL_00ca:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_00ca:  call       void [System.Console]System.Console::WriteLine(string)
     IL_00cf:  ldc.i4.1
     IL_00d0:  stloc.0
     IL_00d1:  ldc.i4.s   10
@@ -1858,7 +1863,7 @@
     IL_00da:  beq.s      IL_00e8
 
     IL_00dc:  ldstr      "F1downBy1ne failed"
-    IL_00e1:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_00e1:  call       void [System.Console]System.Console::WriteLine(string)
     IL_00e6:  ldc.i4.1
     IL_00e7:  stloc.0
     IL_00e8:  ldc.i4.s   10
@@ -1867,7 +1872,7 @@
     IL_00f1:  beq.s      IL_00ff
 
     IL_00f3:  ldstr      "F1upBy2ne failed"
-    IL_00f8:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_00f8:  call       void [System.Console]System.Console::WriteLine(string)
     IL_00fd:  ldc.i4.1
     IL_00fe:  stloc.0
     IL_00ff:  ldc.i4.s   10
@@ -1876,7 +1881,7 @@
     IL_0108:  beq.s      IL_0116
 
     IL_010a:  ldstr      "F1downBy2ne failed"
-    IL_010f:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_010f:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0114:  ldc.i4.1
     IL_0115:  stloc.0
     IL_0116:  ldc.i4.1
@@ -1885,7 +1890,7 @@
     IL_011e:  beq.s      IL_012c
 
     IL_0120:  ldstr      "F1upBy3neWrap failed"
-    IL_0125:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0125:  call       void [System.Console]System.Console::WriteLine(string)
     IL_012a:  ldc.i4.1
     IL_012b:  stloc.0
     IL_012c:  ldc.i4.1
@@ -1894,7 +1899,7 @@
     IL_0133:  beq.s      IL_0141
 
     IL_0135:  ldstr      "F1downBy3neWrap failed"
-    IL_013a:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_013a:  call       void [System.Console]System.Console::WriteLine(string)
     IL_013f:  ldc.i4.1
     IL_0140:  stloc.0
     IL_0141:  ldc.i4.s   10
@@ -1903,7 +1908,7 @@
     IL_014a:  beq.s      IL_0158
 
     IL_014c:  ldstr      "F2upBy1le failed"
-    IL_0151:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0151:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0156:  ldc.i4.1
     IL_0157:  stloc.0
     IL_0158:  ldc.i4.s   10
@@ -1912,7 +1917,7 @@
     IL_0161:  beq.s      IL_016f
 
     IL_0163:  ldstr      "F2downBy1ge failed"
-    IL_0168:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0168:  call       void [System.Console]System.Console::WriteLine(string)
     IL_016d:  ldc.i4.1
     IL_016e:  stloc.0
     IL_016f:  ldc.i4.s   10
@@ -1921,7 +1926,7 @@
     IL_0178:  beq.s      IL_0186
 
     IL_017a:  ldstr      "F2upBy1lt failed"
-    IL_017f:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_017f:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0184:  ldc.i4.1
     IL_0185:  stloc.0
     IL_0186:  ldc.i4.s   10
@@ -1930,7 +1935,7 @@
     IL_018f:  beq.s      IL_019d
 
     IL_0191:  ldstr      "F2downBy1gt failed"
-    IL_0196:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0196:  call       void [System.Console]System.Console::WriteLine(string)
     IL_019b:  ldc.i4.1
     IL_019c:  stloc.0
     IL_019d:  ldc.i4.s   10
@@ -1939,7 +1944,7 @@
     IL_01a6:  beq.s      IL_01b4
 
     IL_01a8:  ldstr      "F2upBy2le failed"
-    IL_01ad:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_01ad:  call       void [System.Console]System.Console::WriteLine(string)
     IL_01b2:  ldc.i4.1
     IL_01b3:  stloc.0
     IL_01b4:  ldc.i4.s   10
@@ -1948,7 +1953,7 @@
     IL_01bd:  beq.s      IL_01cb
 
     IL_01bf:  ldstr      "F2downBy2ge failed"
-    IL_01c4:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_01c4:  call       void [System.Console]System.Console::WriteLine(string)
     IL_01c9:  ldc.i4.1
     IL_01ca:  stloc.0
     IL_01cb:  ldc.i4.s   10
@@ -1957,7 +1962,7 @@
     IL_01d4:  beq.s      IL_01e2
 
     IL_01d6:  ldstr      "F2upBy2lt failed"
-    IL_01db:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_01db:  call       void [System.Console]System.Console::WriteLine(string)
     IL_01e0:  ldc.i4.1
     IL_01e1:  stloc.0
     IL_01e2:  ldc.i4.s   10
@@ -1966,7 +1971,7 @@
     IL_01eb:  beq.s      IL_01f9
 
     IL_01ed:  ldstr      "F2downBy2gt failed"
-    IL_01f2:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_01f2:  call       void [System.Console]System.Console::WriteLine(string)
     IL_01f7:  ldc.i4.1
     IL_01f8:  stloc.0
     IL_01f9:  ldc.i4.s   10
@@ -1975,7 +1980,7 @@
     IL_0202:  beq.s      IL_0210
 
     IL_0204:  ldstr      "F2upBy1ne failed"
-    IL_0209:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0209:  call       void [System.Console]System.Console::WriteLine(string)
     IL_020e:  ldc.i4.1
     IL_020f:  stloc.0
     IL_0210:  ldc.i4.s   10
@@ -1984,7 +1989,7 @@
     IL_0219:  beq.s      IL_0227
 
     IL_021b:  ldstr      "F2downBy1ne failed"
-    IL_0220:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0220:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0225:  ldc.i4.1
     IL_0226:  stloc.0
     IL_0227:  ldc.i4.s   10
@@ -1993,7 +1998,7 @@
     IL_0230:  beq.s      IL_023e
 
     IL_0232:  ldstr      "F2upBy2ne failed"
-    IL_0237:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0237:  call       void [System.Console]System.Console::WriteLine(string)
     IL_023c:  ldc.i4.1
     IL_023d:  stloc.0
     IL_023e:  ldc.i4.s   10
@@ -2002,7 +2007,7 @@
     IL_0247:  beq.s      IL_0255
 
     IL_0249:  ldstr      "F2downBy2ne failed"
-    IL_024e:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_024e:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0253:  ldc.i4.1
     IL_0254:  stloc.0
     IL_0255:  ldc.i4.1
@@ -2011,7 +2016,7 @@
     IL_025d:  beq.s      IL_026b
 
     IL_025f:  ldstr      "F2upBy3neWrap failed"
-    IL_0264:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0264:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0269:  ldc.i4.1
     IL_026a:  stloc.0
     IL_026b:  ldc.i4.1
@@ -2020,7 +2025,7 @@
     IL_0272:  beq.s      IL_0280
 
     IL_0274:  ldstr      "F2downBy3neWrap failed"
-    IL_0279:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0279:  call       void [System.Console]System.Console::WriteLine(string)
     IL_027e:  ldc.i4.1
     IL_027f:  stloc.0
     IL_0280:  ldc.i4.s   10
@@ -2029,7 +2034,7 @@
     IL_0289:  beq.s      IL_0297
 
     IL_028b:  ldstr      "F3upBy1le failed"
-    IL_0290:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0290:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0295:  ldc.i4.1
     IL_0296:  stloc.0
     IL_0297:  ldc.i4.s   10
@@ -2038,7 +2043,7 @@
     IL_02a0:  beq.s      IL_02ae
 
     IL_02a2:  ldstr      "F3downBy1ge failed"
-    IL_02a7:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_02a7:  call       void [System.Console]System.Console::WriteLine(string)
     IL_02ac:  ldc.i4.1
     IL_02ad:  stloc.0
     IL_02ae:  ldc.i4.s   10
@@ -2047,7 +2052,7 @@
     IL_02b7:  beq.s      IL_02c5
 
     IL_02b9:  ldstr      "F3upBy1lt failed"
-    IL_02be:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_02be:  call       void [System.Console]System.Console::WriteLine(string)
     IL_02c3:  ldc.i4.1
     IL_02c4:  stloc.0
     IL_02c5:  ldc.i4.s   10
@@ -2056,7 +2061,7 @@
     IL_02ce:  beq.s      IL_02dc
 
     IL_02d0:  ldstr      "F3downBy1gt failed"
-    IL_02d5:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_02d5:  call       void [System.Console]System.Console::WriteLine(string)
     IL_02da:  ldc.i4.1
     IL_02db:  stloc.0
     IL_02dc:  ldc.i4.s   10
@@ -2065,7 +2070,7 @@
     IL_02e5:  beq.s      IL_02f3
 
     IL_02e7:  ldstr      "F3upBy2le failed"
-    IL_02ec:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_02ec:  call       void [System.Console]System.Console::WriteLine(string)
     IL_02f1:  ldc.i4.1
     IL_02f2:  stloc.0
     IL_02f3:  ldc.i4.s   10
@@ -2074,7 +2079,7 @@
     IL_02fc:  beq.s      IL_030a
 
     IL_02fe:  ldstr      "F3downBy2ge failed"
-    IL_0303:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0303:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0308:  ldc.i4.1
     IL_0309:  stloc.0
     IL_030a:  ldc.i4.s   10
@@ -2083,7 +2088,7 @@
     IL_0313:  beq.s      IL_0321
 
     IL_0315:  ldstr      "F3upBy2lt failed"
-    IL_031a:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_031a:  call       void [System.Console]System.Console::WriteLine(string)
     IL_031f:  ldc.i4.1
     IL_0320:  stloc.0
     IL_0321:  ldc.i4.s   10
@@ -2092,7 +2097,7 @@
     IL_032a:  beq.s      IL_0338
 
     IL_032c:  ldstr      "F3downBy2gt failed"
-    IL_0331:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0331:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0336:  ldc.i4.1
     IL_0337:  stloc.0
     IL_0338:  ldc.i4.s   10
@@ -2101,7 +2106,7 @@
     IL_0341:  beq.s      IL_034f
 
     IL_0343:  ldstr      "F3upBy1ne failed"
-    IL_0348:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0348:  call       void [System.Console]System.Console::WriteLine(string)
     IL_034d:  ldc.i4.1
     IL_034e:  stloc.0
     IL_034f:  ldc.i4.s   10
@@ -2110,7 +2115,7 @@
     IL_0358:  beq.s      IL_0366
 
     IL_035a:  ldstr      "F3downBy1ne failed"
-    IL_035f:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_035f:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0364:  ldc.i4.1
     IL_0365:  stloc.0
     IL_0366:  ldc.i4.s   10
@@ -2119,7 +2124,7 @@
     IL_036f:  beq.s      IL_037d
 
     IL_0371:  ldstr      "F3upBy2ne failed"
-    IL_0376:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0376:  call       void [System.Console]System.Console::WriteLine(string)
     IL_037b:  ldc.i4.1
     IL_037c:  stloc.0
     IL_037d:  ldc.i4.s   10
@@ -2128,7 +2133,7 @@
     IL_0386:  beq.s      IL_0394
 
     IL_0388:  ldstr      "F3downBy2ne failed"
-    IL_038d:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_038d:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0392:  ldc.i4.1
     IL_0393:  stloc.0
     IL_0394:  ldc.i4.1
@@ -2137,7 +2142,7 @@
     IL_039c:  beq.s      IL_03aa
 
     IL_039e:  ldstr      "F3upBy3neWrap failed"
-    IL_03a3:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_03a3:  call       void [System.Console]System.Console::WriteLine(string)
     IL_03a8:  ldc.i4.1
     IL_03a9:  stloc.0
     IL_03aa:  ldc.i4.1
@@ -2146,22 +2151,22 @@
     IL_03b1:  beq.s      IL_03bf
 
     IL_03b3:  ldstr      "F3downBy3neWrap failed"
-    IL_03b8:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_03b8:  call       void [System.Console]System.Console::WriteLine(string)
     IL_03bd:  ldc.i4.1
     IL_03be:  stloc.0
     IL_03bf:  ldloc.0
     IL_03c0:  brtrue.s   IL_03d6
 
-    IL_03c2:  call       void [mscorlib]System.Console::WriteLine()
+    IL_03c2:  call       void [System.Console]System.Console::WriteLine()
     IL_03c7:  ldstr      "Passed"
-    IL_03cc:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_03cc:  call       void [System.Console]System.Console::WriteLine(string)
     IL_03d1:  ldc.i4.s   100
     IL_03d3:  stloc.1
     IL_03d4:  br.s       IL_03e9
 
-    IL_03d6:  call       void [mscorlib]System.Console::WriteLine()
+    IL_03d6:  call       void [System.Console]System.Console::WriteLine()
     IL_03db:  ldstr      "Failed"
-    IL_03e0:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_03e0:  call       void [System.Console]System.Console::WriteLine(string)
     IL_03e5:  ldc.i4.1
     IL_03e6:  stloc.1
     IL_03e7:  br.s       IL_03e9

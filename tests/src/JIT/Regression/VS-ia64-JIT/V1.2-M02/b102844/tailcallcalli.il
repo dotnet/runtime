@@ -1,6 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 
 
 
@@ -64,7 +70,7 @@
       // Code size       11 (0xb)
       .maxstack  8
       IL_0000:  ldstr      "Looks good."
-      IL_0005:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0005:  call       void [System.Console]System.Console::WriteLine(string)
       IL_000a:  ret
     } // end of method Test::DummyMethod
 

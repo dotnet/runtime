@@ -1,6 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 .assembly extern mscorlib{}
 
 .assembly b471305
@@ -36,7 +42,7 @@
     ldloc.0
     stsfld int32 Program::foo
     ldsfld int32 Program::foo
-    call       void [mscorlib]System.Console::WriteLine(int32)
+    call       void [System.Console]System.Console::WriteLine(int32)
   
     ret
   } 
@@ -52,7 +58,7 @@
     IL_0001:  call       instance void Program::Test()
     IL_0006:  nop
     IL_0007:  ldstr      "Test SUCCESS"
-    IL_000c:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_000c:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0011:  nop
     IL_0012:  ldc.i4.s   100
     IL_0014:  stloc.0

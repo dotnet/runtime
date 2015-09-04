@@ -1,6 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 
 
 
@@ -299,7 +305,7 @@
     .maxstack  2
     IL_0000:  nop
     IL_0001:  ldstr      "Call from inside Child"
-    IL_0006:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0006:  call       void [System.Console]System.Console::WriteLine(string)
     IL_000b:  nop
     IL_000c:  ldstr      "Child.AbstractFinal"
     IL_0011:  ldarg.0
@@ -488,7 +494,7 @@
     .maxstack  2
     IL_0000:  nop
     IL_0001:  ldstr      "Call from inside GrandChild"
-    IL_0006:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0006:  call       void [System.Console]System.Console::WriteLine(string)
     IL_000b:  nop
     IL_000c:  ldstr      "Child.AbstractFinal"
     IL_0011:  ldarg.0
@@ -620,7 +626,7 @@
     .locals init (class Test.SealedGrandChild`1<object> V_0)
     IL_0000:  nop
     IL_0001:  ldstr      "Call SealedGrandChild from outside"
-    IL_0006:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0006:  call       void [System.Console]System.Console::WriteLine(string)
     IL_000b:  nop
     IL_000c:  newobj     instance void class Test.SealedGrandChild`1<object>::.ctor()
     IL_0011:  stloc.0
@@ -739,7 +745,7 @@
       IL_000e:  call       void Test.Program::CallFromInsideGrandChild()
       IL_0013:  nop
       IL_0014:  ldstr      "Test SUCCESS"
-      IL_0019:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0019:  call       void [System.Console]System.Console::WriteLine(string)
       IL_001e:  nop
       IL_001f:  ldc.i4.s   100
       IL_0021:  stloc.1
@@ -751,10 +757,10 @@
       IL_0024:  stloc.0
       IL_0025:  nop
       IL_0026:  ldloc.0
-      IL_0027:  call       void [mscorlib]System.Console::WriteLine(object)
+      IL_0027:  call       void [System.Console]System.Console::WriteLine(object)
       IL_002c:  nop
       IL_002d:  ldstr      "Test FAILED"
-      IL_0032:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0032:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0037:  nop
       IL_0038:  ldc.i4.s   101
       IL_003a:  stloc.1

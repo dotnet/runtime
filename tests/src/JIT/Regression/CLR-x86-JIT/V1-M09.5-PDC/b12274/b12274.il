@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly b12274
 {
 }
@@ -34,8 +39,8 @@ done:
 	ldc.i8		0xF444000000040002
 	call	int32 mul_ovf::u8(int64,int64)
 ldstr "Should be 0, we get "
-call       void [mscorlib]System.Console::Write(class [mscorlib]System.String)
-call       void [mscorlib]System.Console::WriteLine(int32)
+call       void [System.Console]System.Console::Write(class [mscorlib]System.String)
+call       void [System.Console]System.Console::WriteLine(int32)
 
 try_start:
 	ldc.i8		0x8000000000000000
@@ -46,7 +51,7 @@ try_start:
 try_end:
 	ldc.i4	0x1
 ldstr "We should not get here. "
-call       void [mscorlib]System.Console::Write(class [mscorlib]System.String)
+call       void [System.Console]System.Console::Write(class [mscorlib]System.String)
 ret
 
 handler_start:
@@ -56,7 +61,7 @@ handler_end:
 done:
 	ldc.i4	100
 ldstr "We should get here. "
-call       void [mscorlib]System.Console::Write(class [mscorlib]System.String)
+call       void [System.Console]System.Console::Write(class [mscorlib]System.String)
 	ret
 
 .try try_start to try_end catch [mscorlib]System.OverflowException handler handler_start to handler_end

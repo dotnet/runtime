@@ -1,7 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-.assembly extern mscorlib {}
+.assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly repro_32
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
@@ -26,7 +31,7 @@
                 ldc.i4     666
                 ldstr      "Test FAIL"
 	Done:
-		call       void class [mscorlib]System.Console::WriteLine(string)
+		call       void class [System.Console]System.Console::WriteLine(string)
 		ret
   } // end of method Test::Main
 

@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly legacy library stfldstatic1 {}
 .class private auto ansi beforefieldinit stfldstatic1
        extends [mscorlib]System.Object
@@ -33,7 +38,7 @@
     IL_0006:  stfld     int32 stfldstatic1::fld
     IL_000b:  
     IL_0010:  ldstr "PASSED"
-	call       void [mscorlib]System.Console::WriteLine(string)
+	call       void [System.Console]System.Console::WriteLine(string)
 	ldc.i4.s   100
     IL_0016:  ret
   } // end of method stfldstatic1::Main

@@ -5,7 +5,12 @@
 // OPTIONS: opts.MinOpts() == false
 // TID 330: IL Code Size,Instr 1893, 560, Basic Block count   1, Local Variable Num,Ref count 2000,279 for method <Module>.f():int
 
-.assembly extern mscorlib {}
+.assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly LVNumCnt0 {}
 .module LVNumCnt0.exe
 .method public static int32  Main() cil managed
@@ -2040,7 +2045,7 @@
   IL_0032:  mul
   IL_0033:  ldloc      V_1888
   IL_0037:  sub
-  IL_0038:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_0038:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_003d:  ldc.i4     0x1
   IL_0042:  stloc      V_8
   IL_0046:  ldloc      V_7
@@ -2058,7 +2063,7 @@
   IL_006f:  mul
   IL_0070:  ldloc      V_1888
   IL_0074:  sub
-  IL_0075:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_0075:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_007a:  ldc.i4     0x1
   IL_007f:  stloc      V_1
   IL_0083:  ldloc      V_2
@@ -2076,7 +2081,7 @@
   IL_00ac:  mul
   IL_00ad:  ldloc      V_1888
   IL_00b1:  sub
-  IL_00b2:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_00b2:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_00b7:  ldc.i4     0x1
   IL_00bc:  stloc      V_1
   IL_00c0:  ldloc      V_158
@@ -2094,7 +2099,7 @@
   IL_00e9:  mul
   IL_00ea:  ldloc      V_918
   IL_00ee:  sub
-  IL_00ef:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_00ef:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_00f4:  ldc.i4     0x1
   IL_00f9:  stloc      V_1
   IL_00fd:  ldloc      V_10
@@ -2112,7 +2117,7 @@
   IL_0126:  mul
   IL_0127:  ldloc      V_1888
   IL_012b:  sub
-  IL_012c:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_012c:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_0131:  ldc.i4     0x1
   IL_0136:  stloc      V_1
   IL_013a:  ldloc      V_10
@@ -2130,7 +2135,7 @@
   IL_0163:  mul
   IL_0164:  ldloc      V_1888
   IL_0168:  sub
-  IL_0169:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_0169:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_016e:  ldc.i4     0x1
   IL_0173:  stloc      V_1
   IL_0177:  ldloc      V_1800
@@ -2148,7 +2153,7 @@
   IL_01a0:  mul
   IL_01a1:  ldloc      V_1888
   IL_01a5:  sub
-  IL_01a6:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_01a6:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_01ab:  ldc.i4     0x1
   IL_01b0:  stloc      V_8
   IL_01b4:  ldloc      V_7
@@ -2166,7 +2171,7 @@
   IL_01dd:  mul
   IL_01de:  ldloc      V_1888
   IL_01e2:  sub
-  IL_01e3:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_01e3:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_01e8:  ldc.i4     0x1
   IL_01ed:  stloc      V_1
   IL_01f1:  ldloc      V_2
@@ -2184,7 +2189,7 @@
   IL_021a:  mul
   IL_021b:  ldloc      V_1888
   IL_021f:  sub
-  IL_0220:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_0220:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_0225:  ldc.i4     0x1
   IL_022a:  stloc      V_1
   IL_022e:  ldloc      V_158
@@ -2202,7 +2207,7 @@
   IL_0257:  mul
   IL_0258:  ldloc      V_918
   IL_025c:  sub
-  IL_025d:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_025d:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_0262:  ldc.i4     0x1
   IL_0267:  stloc      V_1
   IL_026b:  ldloc      V_10
@@ -2220,7 +2225,7 @@
   IL_0294:  mul
   IL_0295:  ldloc      V_1888
   IL_0299:  sub
-  IL_029a:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_029a:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_029f:  ldc.i4     0x1
   IL_02a4:  stloc      V_1
   IL_02a8:  ldloc      V_10
@@ -2238,7 +2243,7 @@
   IL_02d1:  mul
   IL_02d2:  ldloc      V_1888
   IL_02d6:  sub
-  IL_02d7:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_02d7:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_02dc:  ldc.i4     0x1
   IL_02e1:  stloc      V_1
   IL_02e5:  ldloc      V_1800
@@ -2256,7 +2261,7 @@
   IL_030e:  mul
   IL_030f:  ldloc      V_1888
   IL_0313:  sub
-  IL_0314:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_0314:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_0319:  ldc.i4     0x1
   IL_031e:  stloc      V_8
   IL_0322:  ldloc      V_7
@@ -2274,7 +2279,7 @@
   IL_034b:  mul
   IL_034c:  ldloc      V_1888
   IL_0350:  sub
-  IL_0351:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_0351:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_0356:  ldc.i4     0x1
   IL_035b:  stloc      V_1
   IL_035f:  ldloc      V_2
@@ -2292,7 +2297,7 @@
   IL_0388:  mul
   IL_0389:  ldloc      V_1888
   IL_038d:  sub
-  IL_038e:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_038e:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_0393:  ldc.i4     0x1
   IL_0398:  stloc      V_1
   IL_039c:  ldloc      V_158
@@ -2310,7 +2315,7 @@
   IL_03c5:  mul
   IL_03c6:  ldloc      V_918
   IL_03ca:  sub
-  IL_03cb:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_03cb:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_03d0:  ldc.i4     0x1
   IL_03d5:  stloc      V_1
   IL_03d9:  ldloc      V_10
@@ -2328,7 +2333,7 @@
   IL_0402:  mul
   IL_0403:  ldloc      V_1888
   IL_0407:  sub
-  IL_0408:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_0408:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_040d:  ldc.i4     0x1
   IL_0412:  stloc      V_1
   IL_0416:  ldloc      V_10
@@ -2346,7 +2351,7 @@
   IL_043f:  mul
   IL_0440:  ldloc      V_1888
   IL_0444:  sub
-  IL_0445:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_0445:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_044a:  ldc.i4     0x1
   IL_044f:  stloc      V_1
   IL_0453:  ldloc      V_1800
@@ -2364,7 +2369,7 @@
   IL_047c:  mul
   IL_047d:  ldloc      V_1888
   IL_0481:  sub
-  IL_0482:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_0482:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_0487:  ldc.i4     0x1
   IL_048c:  stloc      V_8
   IL_0490:  ldloc      V_7
@@ -2382,7 +2387,7 @@
   IL_04b9:  mul
   IL_04ba:  ldloc      V_1888
   IL_04be:  sub
-  IL_04bf:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_04bf:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_04c4:  ldc.i4     0x1
   IL_04c9:  stloc      V_1
   IL_04cd:  ldloc      V_2
@@ -2400,7 +2405,7 @@
   IL_04f6:  mul
   IL_04f7:  ldloc      V_1888
   IL_04fb:  sub
-  IL_04fc:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_04fc:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_0501:  ldc.i4     0x1
   IL_0506:  stloc      V_1
   IL_050a:  ldloc      V_158
@@ -2418,7 +2423,7 @@
   IL_0533:  mul
   IL_0534:  ldloc      V_918
   IL_0538:  sub
-  IL_0539:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_0539:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_053e:  ldc.i4     0x1
   IL_0543:  stloc      V_1
   IL_0547:  ldloc      V_10
@@ -2436,7 +2441,7 @@
   IL_0570:  mul
   IL_0571:  ldloc      V_1888
   IL_0575:  sub
-  IL_0576:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_0576:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_057b:  ldc.i4     0x1
   IL_0580:  stloc      V_1
   IL_0584:  ldloc      V_10
@@ -2454,7 +2459,7 @@
   IL_05ad:  mul
   IL_05ae:  ldloc      V_1888
   IL_05b2:  sub
-  IL_05b3:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_05b3:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_05b8:  ldc.i4     0x1
   IL_05bd:  stloc      V_1
   IL_05c1:  ldloc      V_1800
@@ -2472,7 +2477,7 @@
   IL_05ea:  mul
   IL_05eb:  ldloc      V_1888
   IL_05ef:  sub
-  IL_05f0:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_05f0:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_05f5:  ldc.i4     0x1
   IL_05fa:  stloc      V_8
   IL_05fe:  ldloc      V_7
@@ -2490,7 +2495,7 @@
   IL_0627:  mul
   IL_0628:  ldloc      V_1888
   IL_062c:  sub
-  IL_062d:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_062d:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_0632:  ldc.i4     0x1
   IL_0637:  stloc      V_1
   IL_063b:  ldloc      V_2
@@ -2508,7 +2513,7 @@
   IL_0664:  mul
   IL_0665:  ldloc      V_1888
   IL_0669:  sub
-  IL_066a:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_066a:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_066f:  ldc.i4     0x1
   IL_0674:  stloc      V_1
   IL_0678:  ldloc      V_158
@@ -2526,7 +2531,7 @@
   IL_06a1:  mul
   IL_06a2:  ldloc      V_918
   IL_06a6:  sub
-  IL_06a7:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_06a7:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_06ac:  ldc.i4     0x1
   IL_06b1:  stloc      V_1
   IL_06b5:  ldloc      V_10
@@ -2544,7 +2549,7 @@
   IL_06de:  mul
   IL_06df:  ldloc      V_1888
   IL_06e3:  sub
-  IL_06e4:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_06e4:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_06e9:  ldc.i4     0x1
   IL_06ee:  stloc      V_1
   IL_06f2:  ldloc      V_10
@@ -2562,7 +2567,7 @@
   IL_071b:  mul
   IL_071c:  ldloc      V_1888
   IL_0720:  sub
-  IL_0721:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_0721:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_0726:  ldc.i4     0x1
   IL_072b:  stloc      V_1
   IL_072f:  ldloc      V_1800
@@ -2581,6 +2586,6 @@
   IL_0759:  ldloc      V_1888
   IL_075d:  sub
   IL_075e:  dup
-  IL_075f:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_075f:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_0764:  ret
 }
