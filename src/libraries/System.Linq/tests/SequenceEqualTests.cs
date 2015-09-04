@@ -37,6 +37,16 @@ namespace System.Linq.Tests
             }
         }
         
+        private static IEnumerable<T> ForceNotCollection<T>(IEnumerable<T> source)
+        {
+            foreach (T item in source) yield return item;
+        }
+        
+        private static IEnumerable<T> FlipIsCollection<T>(IEnumerable<T> source)
+        {
+            return source is ICollection<T> ? ForceNotCollection(source) : new List<T>(source);
+        }
+        
         [Fact]
         public void SameResultsRepeatCallsIntQuery()
         {
@@ -66,6 +76,9 @@ namespace System.Linq.Tests
             int[] second = { };
 
             Assert.True(first.SequenceEqual(second));
+            Assert.True(FlipIsCollection(first).SequenceEqual(second));
+            Assert.True(first.SequenceEqual(FlipIsCollection(second)));
+            Assert.True(FlipIsCollection(first).SequenceEqual(FlipIsCollection(second)));
         }
 
         [Fact]
@@ -75,6 +88,9 @@ namespace System.Linq.Tests
             int?[] second = { 1, 2, 6, 4 };
             
             Assert.False(first.SequenceEqual(second));
+            Assert.False(FlipIsCollection(first).SequenceEqual(second));
+            Assert.False(first.SequenceEqual(FlipIsCollection(second)));
+            Assert.False(FlipIsCollection(first).SequenceEqual(FlipIsCollection(second)));
         }
 
         [Fact]
@@ -84,6 +100,9 @@ namespace System.Linq.Tests
             string[] second = { "Bbo", "mTi", "rishC" };
 
             Assert.False(first.SequenceEqual(second, null));
+            Assert.False(FlipIsCollection(first).SequenceEqual(second, null));
+            Assert.False(first.SequenceEqual(FlipIsCollection(second), null));
+            Assert.False(FlipIsCollection(first).SequenceEqual(FlipIsCollection(second), null));
         }
 
         [Fact]
@@ -93,6 +112,9 @@ namespace System.Linq.Tests
             string[] second = { "Bbo", "mTi", "rishC" };
 
             Assert.True(first.SequenceEqual(second, new AnagramEqualityComparer()));
+            Assert.True(FlipIsCollection(first).SequenceEqual(second, new AnagramEqualityComparer()));
+            Assert.True(first.SequenceEqual(FlipIsCollection(second), new AnagramEqualityComparer()));
+            Assert.True(FlipIsCollection(first).SequenceEqual(FlipIsCollection(second), new AnagramEqualityComparer()));
         }
 
         [Fact]
@@ -102,6 +124,9 @@ namespace System.Linq.Tests
             string[] second = { null };
             
             Assert.True(first.SequenceEqual(second, StringComparer.Ordinal));
+            Assert.True(FlipIsCollection(first).SequenceEqual(second, StringComparer.Ordinal));
+            Assert.True(first.SequenceEqual(FlipIsCollection(second), StringComparer.Ordinal));
+            Assert.True(FlipIsCollection(first).SequenceEqual(FlipIsCollection(second), StringComparer.Ordinal));
         }
 
         [Fact]
@@ -111,6 +136,9 @@ namespace System.Linq.Tests
             int?[] second = { -6, null, 0, -4, 9, 10, 20 };
 
             Assert.True(first.SequenceEqual(second));
+            Assert.True(FlipIsCollection(first).SequenceEqual(second));
+            Assert.True(first.SequenceEqual(FlipIsCollection(second)));
+            Assert.True(FlipIsCollection(first).SequenceEqual(FlipIsCollection(second)));
         }
 
         [Fact]
@@ -120,6 +148,9 @@ namespace System.Linq.Tests
             int?[] second = { 2, 3, 4 };
 
             Assert.False(first.SequenceEqual(second));
+            Assert.False(FlipIsCollection(first).SequenceEqual(second));
+            Assert.False(first.SequenceEqual(FlipIsCollection(second)));
+            Assert.False(FlipIsCollection(first).SequenceEqual(FlipIsCollection(second)));
         }
 
         [Fact]
@@ -129,6 +160,9 @@ namespace System.Linq.Tests
             int?[] second = { };
 
             Assert.False(first.SequenceEqual(second));
+            Assert.False(FlipIsCollection(first).SequenceEqual(second));
+            Assert.False(first.SequenceEqual(FlipIsCollection(second)));
+            Assert.False(FlipIsCollection(first).SequenceEqual(FlipIsCollection(second)));
         }
 
         [Fact]
@@ -138,6 +172,9 @@ namespace System.Linq.Tests
             int?[] second = { 4 };
 
             Assert.False(first.SequenceEqual(second));
+            Assert.False(FlipIsCollection(first).SequenceEqual(second));
+            Assert.False(first.SequenceEqual(FlipIsCollection(second)));
+            Assert.False(FlipIsCollection(first).SequenceEqual(FlipIsCollection(second)));
         }
 
         [Fact]
@@ -147,6 +184,9 @@ namespace System.Linq.Tests
             int?[] second = { 2, 2, 3, 4, 5 };
 
             Assert.False(first.SequenceEqual(second));
+            Assert.False(FlipIsCollection(first).SequenceEqual(second));
+            Assert.False(first.SequenceEqual(FlipIsCollection(second)));
+            Assert.False(FlipIsCollection(first).SequenceEqual(FlipIsCollection(second)));
         }
 
 
@@ -157,6 +197,9 @@ namespace System.Linq.Tests
             int?[] second = { 1, 2, 3, 4, 5 };
 
             Assert.False(first.SequenceEqual(second));
+            Assert.False(FlipIsCollection(first).SequenceEqual(second));
+            Assert.False(first.SequenceEqual(FlipIsCollection(second)));
+            Assert.False(FlipIsCollection(first).SequenceEqual(FlipIsCollection(second)));
         }
 
         [Fact]
@@ -166,6 +209,9 @@ namespace System.Linq.Tests
             int?[] second = { 1, 2, 3, 4, 4 };
 
             Assert.False(first.SequenceEqual(second));
+            Assert.False(FlipIsCollection(first).SequenceEqual(second));
+            Assert.False(first.SequenceEqual(FlipIsCollection(second)));
+            Assert.False(FlipIsCollection(first).SequenceEqual(FlipIsCollection(second)));
         }
 
         [Fact]
@@ -175,6 +221,9 @@ namespace System.Linq.Tests
             int?[] second = { 1, 2, 3, 4 };
 
             Assert.False(first.SequenceEqual(second));
+            Assert.False(FlipIsCollection(first).SequenceEqual(second));
+            Assert.False(first.SequenceEqual(FlipIsCollection(second)));
+            Assert.False(FlipIsCollection(first).SequenceEqual(FlipIsCollection(second)));
         }
 
         [Fact]
