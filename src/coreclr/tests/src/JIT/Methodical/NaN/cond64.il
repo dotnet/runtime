@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-.assembly extern mscorlib { }
+.assembly extern mscorlib {}
 .assembly cond64 { }
 .namespace JitTest {
 .class private auto ansi beforefieldinit Test extends [mscorlib]System.Object

@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 // castclass_catch_neg.il
-.assembly extern mscorlib { }
+.assembly extern mscorlib {}
 .assembly castclass_catch_neg { }
 .namespace JitTest
 {

@@ -3,7 +3,7 @@
 
 
 
-.assembly extern mscorlib { }
+.assembly extern mscorlib {}
 .assembly b71831 { }
 .class ILGEN_0x42acd912 {
 

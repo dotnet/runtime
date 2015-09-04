@@ -4,7 +4,7 @@
 
 
 .assembly ILGEN_0x97f1b6bf {}
- .assembly extern mscorlib{auto}
+.assembly extern mscorlib{auto}
 
 .class ILGEN_0x97f1b6bf {
 

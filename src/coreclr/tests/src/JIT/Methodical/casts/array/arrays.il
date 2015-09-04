@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 // arrays.il
-.assembly extern mscorlib { }
+.assembly extern mscorlib {}
 .assembly arrays { }
 .method public static int32 main() cil managed
 {

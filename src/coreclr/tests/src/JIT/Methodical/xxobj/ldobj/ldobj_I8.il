@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 // ldobj_I8.il
-.assembly extern mscorlib { }
+.assembly extern mscorlib {}
 .assembly ldobj_I8 { }
 .namespace JitTest
 {

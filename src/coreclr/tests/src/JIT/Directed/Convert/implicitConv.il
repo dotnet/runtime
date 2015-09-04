@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
- .assembly ILGEN_0xc60e022c {}
- .assembly extern mscorlib{auto}
+.assembly ILGEN_0xc60e022c {}
+.assembly extern mscorlib{auto}
 
 .class ILGEN_0xc60e022c {
 

@@ -7,9 +7,7 @@
 
 
 
-.assembly extern mscorlib
-{
-}
+.assembly extern mscorlib {}
 .assembly 'binop'// as "binop"
 {
 }
