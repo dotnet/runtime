@@ -21,6 +21,7 @@ namespace System.Net
                 {
                     t_ThreadKindStack = new Stack<ThreadKinds>();
                 }
+
                 return t_ThreadKindStack;
             }
         }
@@ -239,21 +240,25 @@ namespace System.Net
                 EventSourceLogging.Log.WarningDumpArray("buffer is null");
                 return;
             }
+
             if (offset >= buffer.Length)
             {
                 EventSourceLogging.Log.WarningDumpArray("offset out of range");
                 return;
             }
+
             if ((length < 0) || (length > buffer.Length - offset))
             {
                 EventSourceLogging.Log.WarningDumpArray("length out of range");
                 return;
             }
+
             var bufferSegment = new byte[length];
             for (int i = 0; i < length; i++)
             {
                 bufferSegment[i] = buffer[offset + i];
             }
+
             EventSourceLogging.Log.DebugDumpArray(bufferSegment);
         }
     }

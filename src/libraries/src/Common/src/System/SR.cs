@@ -18,6 +18,7 @@ namespace System
                 {
                     SR.s_resourceManager = new ResourceManager(SR.ResourceType);
                 }
+
                 return SR.s_resourceManager;
             }
         }
@@ -85,6 +86,7 @@ namespace System
             {
                 return String.Join(", ", resourceFormat, p1, p2, p3);
             }
+
             return String.Format(resourceFormat, p1, p2, p3);
         }
     }

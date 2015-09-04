@@ -1,0 +1,73 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{A55A2B9A-830F-4330-A0E7-02A9FB30ABD2}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <UnsupportedPlatforms>Linux;OSX;FreeBSD</UnsupportedPlatforms>
+  </PropertyGroup>
+  <!-- Help VS understand available configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
+  <ItemGroup>
+    <Compile Include="ClientAsyncAuthenticateTest.cs" />
+    <Compile Include="ClientDefaultEncryptionTest.cs" />
+    <Compile Include="DummyTcpServer.cs" />
+    <Compile Include="ParameterValidationTest.cs" />
+    <Compile Include="ServerAllowNoEncryptionTest.cs" />
+    <Compile Include="ServerNoEncryptionTest.cs" />
+    <Compile Include="ServerRequireEncryptionTest.cs" />
+    <Compile Include="SslStreamStreamToStreamTest.cs" />
+    <Compile Include="StreamAPMExtensions.cs" />
+    <Compile Include="SslStreamAPMExtensions.cs" />
+    <Compile Include="TestConfiguration.cs" />
+    <Compile Include="TransportContextTest.cs" />
+    
+    <!-- Common test files -->
+    <Compile Include="$(CommonTestPath)\System.Net\TestLogging.cs">
+      <Link>Common\System.Net\TestLogging.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System.Net\VerboseTestLogging.cs">
+      <Link>Common\System.Net\VerboseTestLogging.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System.Net\EventSourceTestLogging.cs">
+      <Link>Common\System.Net\EventSourceTestLogging.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System.Net\TaskAPMExtensions.cs">
+      <Link>Common\System.Net\TaskAPMExtensions.cs</Link>
+    </Compile>
+
+  </ItemGroup>
+
+  <!-- TODO: Remove after the packages are not using System.Private.Networking. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Net.Security.csproj">
+      <Project>{89F37791-6254-4D60-AB96-ACD3CCA0E771}</Project>
+      <Name>System.Net.Security</Name>
+    </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+
+  <!-- Temporary until we have new work in build tools to
+       deploy content from nuget packages -->
+  <Target Name="CopyX509TestDataToTestDirectory" AfterTargets="CopyTestToTestDirectory" Inputs="$(PackagesDir)$(X509TestPackage)\content" Outputs="$(TestPath)%(TestTargetFramework.Folder)\*.*">
+    <PropertyGroup>
+      <X509TestPackage>System.Security.Cryptography.X509Certificates.TestData\1.0.0-prerelease</X509TestPackage>
+      <TestTargetFrameworkFolder>%(TestTargetFramework.Folder)</TestTargetFrameworkFolder>
+    </PropertyGroup>
+    <ItemGroup>
+      <X509TestDataSrc Include="$(PackagesDir)$(X509TestPackage)\content\**\*.*" />
+      <X509TestDataDest Include="@(X509TestDataSrc->'$(TestPath)$(TestTargetFrameworkFolder)\%(RecursiveDir)%(Filename)%(Extension)')" />
+    </ItemGroup>
+    <Copy SourceFiles="@(X509TestDataSrc)" DestinationFiles="@(X509TestDataDest)" SkipUnchangedFiles="$(SkipCopyUnchangedFiles)" OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)" Retries="$(CopyRetryCount)" RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)" UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)">
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
+    </Copy>
+  </Target>
+
+</Project>
