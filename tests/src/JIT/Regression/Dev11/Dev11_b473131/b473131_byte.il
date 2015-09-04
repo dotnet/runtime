@@ -2,6 +2,12 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 
 
 // ----- DOS Header:
@@ -304,7 +310,7 @@
     IL_0005:  /* 02   |                  */ ldarg.0
     IL_0006:  /* 47   |                  */ ldind.u1
     IL_0007:  /* 8C   | (02)000002       */ box        mynamespace.e_t/*02000002*/
-    IL_000c:  /* 28   | (0A)000004       */ call       void [mscorlib/*23000001*/]System.Console/*01000007*/::WriteLine(string,
+    IL_000c:  /* 28   | (0A)000004       */ call       void [System.Console]System.Console::WriteLine(string,
                                                                                                                         object) /* 0A000004 */
     IL_0011:  /* 18   |                  */ ldc.i4.2
     IL_0012:  /* 2A   |                  */ ret
