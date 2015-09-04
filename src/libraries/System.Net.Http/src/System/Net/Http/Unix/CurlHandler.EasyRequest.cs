@@ -161,6 +161,10 @@ namespace System.Net.Http
                 if (_requestMessage.Method == HttpMethod.Put)
                 {
                     SetCurlOption(CURLoption.CURLOPT_UPLOAD, 1L);
+                    if (_requestMessage.Content == null)
+                    {
+                        SetCurlOption(CURLoption.CURLOPT_INFILESIZE, 0L);
+                    }
                 }
                 else if (_requestMessage.Method == HttpMethod.Head)
                 {
