@@ -7,8 +7,11 @@
 
 
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly 'qsort'// as "qsort"
 {
@@ -126,7 +129,7 @@
 		ldc.i4.1
 		ldstr "failed"
 	exit:
-		call void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		ret
     } // end of method 'AA::Main'
 

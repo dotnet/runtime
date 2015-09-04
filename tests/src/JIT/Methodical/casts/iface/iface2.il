@@ -3,6 +3,11 @@
 
 // iface2.il
 .assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly iface2 { }
 .namespace JitTest
 {
@@ -215,7 +220,7 @@
       IL_000c:  ldc.i4     0x1bc
       IL_0011:  beq.s      IL_0025
       IL_0013:  ldstr      "Test 1 failed."
-      IL_0018:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0018:  call       void [System.Console]System.Console::WriteLine(string)
       IL_001d:  ldc.i4.s   101
       IL_001f:  ret
       IL_0025:  ldloc.0
@@ -223,7 +228,7 @@
       IL_002b:  ldc.i4     0x1bc
       IL_0030:  beq.s      IL_0041
       IL_0032:  ldstr      "Test 2 failed."
-      IL_0037:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0037:  call       void [System.Console]System.Console::WriteLine(string)
       IL_003c:  ldc.i4.s   102
       IL_003e:  ret
       IL_0041:  ldloc.0
@@ -231,7 +236,7 @@
       IL_0047:  ldc.i4     0x1bc
       IL_004c:  beq.s      IL_005d
       IL_004e:  ldstr      "Test 3 failed."
-      IL_0053:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0053:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0058:  ldc.i4.s   103
       IL_005a:  ret
       IL_005d:  newobj     instance void JitTest.BaseClass::.ctor()
@@ -241,7 +246,7 @@
       IL_0069:  ldc.i4     0x7fc
       IL_006e:  beq.s      IL_007f
       IL_0070:  ldstr      "Test 4 failed."
-      IL_0075:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0075:  call       void [System.Console]System.Console::WriteLine(string)
       IL_007a:  ldc.i4.s   104
       IL_007c:  ret
       IL_007f:  ldloc.1
@@ -249,11 +254,11 @@
       IL_0085:  ldc.i4     0x7fc
       IL_008a:  beq.s      IL_009b
       IL_008c:  ldstr      "Test 5 failed."
-      IL_0091:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0091:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0096:  ldc.i4.s   105
       IL_0098:  ret
       IL_009b:  ldstr      "Passed"
-      IL_00a0:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_00a0:  call       void [System.Console]System.Console::WriteLine(string)
       IL_00a5:  ldc.i4 100
       IL_00aa:  ret
     }

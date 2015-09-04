@@ -7,8 +7,11 @@
 
 
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly 'ldfld_mulovf'// as "ldfld_mulovf"
 {
@@ -36,7 +39,7 @@
       IL_0010:  ldarg.0
       IL_0011:  ldfld     int64 JitTest.Test::op2
       IL_0016:  box     ['mscorlib']System.Int64
-      IL_001b:  call       void ['mscorlib']System.Console::Write(class System.String,
+      IL_001b:  call       void [System.Console]System.Console::Write(class System.String,
                                                                   class System.Object,
                                                                   class System.Object)
       .try
@@ -53,7 +56,7 @@
         IL_0031:  stloc.0
         IL_0032:  leave.s    IL_004f
 
-        IL_0034:  call       void ['mscorlib']System.Console::WriteLine()
+        IL_0034:  call       void [System.Console]System.Console::WriteLine()
         IL_0039:  ldarg.2
         IL_003a:  ldc.i4.0
         IL_003b:  ceq
@@ -65,7 +68,7 @@
       {
         IL_0040:  pop
         IL_0041:  ldstr      "overflow."
-        IL_0046:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+        IL_0046:  call       void [System.Console]System.Console::WriteLine(class System.String)
         IL_004b:  ldarg.2
         IL_004c:  stloc.0
         IL_004d:  leave.s    IL_004f
@@ -235,13 +238,13 @@
       IL_0188:  br.s       IL_0198
 
       IL_018a:  ldstr      "Test passed"
-      IL_018f:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_018f:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0194:  ldc.i4    0x64
       IL_0195:  stloc.1
       IL_0196:  br.s       IL_01a6
 
       IL_0198:  ldstr      "Test failed"
-      IL_019d:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_019d:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_01a2:  ldc.i4.1
       IL_01a3:  stloc.1
       IL_01a4:  br.s       IL_01a6

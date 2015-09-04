@@ -1,6 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 
 
 
@@ -89,14 +95,14 @@
 
     IL_0028:  nop
     IL_0029:  ldstr      "NOT same types"
-    IL_002e:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_002e:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0033:  ldc.i4.s 0
     IL_0034:  stloc.0
     IL_0035:  br.s       IL_0044
 
     IL_0037:  nop
     IL_0038:  ldstr      "same types"
-    IL_003d:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_003d:  call       void [System.Console]System.Console::WriteLine(string)
               ldloc.1
               castclass  class TypeTest.SomeClass[] pinned
               stloc.1

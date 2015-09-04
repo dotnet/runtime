@@ -1,6 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 // Metadata version: v2.0.50131
 .assembly extern mscorlib
 {
@@ -29,7 +35,7 @@ catch_begin:
 	stloc.1
 	ldloc.1
 	callvirt instance string [mscorlib]System.Object::ToString()
-	call void [mscorlib]System.Console::WriteLine(string)
+	call void [System.Console]System.Console::WriteLine(string)
 	ldstr "fail"
 	stloc.0
 	ldloc.0
@@ -47,10 +53,10 @@ catch_end:
 	.entrypoint
 
 	call object Test()
-	call void [mscorlib]System.Console::WriteLine(object)
+	call void [System.Console]System.Console::WriteLine(object)
 
 	ldstr "Test SUCCESS"
-	call void [mscorlib]System.Console::WriteLine(string)
+	call void [System.Console]System.Console::WriteLine(string)
 	ldc.i4 100
 	ret
 }

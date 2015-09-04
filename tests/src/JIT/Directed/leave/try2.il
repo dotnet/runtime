@@ -1,8 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
- .assembly extern mscorlib
-{ 
+.assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly try2
 { 
@@ -501,7 +504,7 @@
                 IL_00c5:  stloc.s    V_17
                 IL_00c7:  ldloc.s    V_17
                 IL_00c9:  box        Days
-                //IL_00ce:  call       void [mscorlib]System.Console::WriteLine(class System.Object)
+                //IL_00ce:  call       void [System.Console]System.Console::WriteLine(class System.Object)
                 IL_00d3:  leave.s    IL_00d8
 
               }  // end .try
@@ -910,13 +913,13 @@
     IL_0030:  brfalse.s  IL_0041
 
     IL_0032:  ldstr      "PASSED"
-    IL_0037:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+    IL_0037:  call       void [System.Console]System.Console::WriteLine(class System.String)
     IL_003c:  ldc.i4.s   100
     IL_003e:  stloc.1
     IL_003f:  br.s       IL_004f
 
     IL_0041:  ldstr      "FAILED"
-    IL_0046:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+    IL_0046:  call       void [System.Console]System.Console::WriteLine(class System.String)
     IL_004b:  ldc.i4.1
     IL_004c:  stloc.1
     IL_004d:  br.s       IL_004f

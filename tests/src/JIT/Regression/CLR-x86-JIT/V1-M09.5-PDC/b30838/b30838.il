@@ -6,6 +6,11 @@
 .module 'b10939'
 // MVID: {5E222DAB-74B5-4FA9-A101-AE45EE636213}
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly 'b10939'
 {
   
@@ -30,7 +35,7 @@
   IL_0001:  call       vararg class [mscorlib]System.Object[0] foo(class [mscorlib]System.Object)
   IL_0006:  pop
   IL_0007:  ldstr      "Passed."
-  IL_000c:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+  IL_000c:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
   IL_0011:  ldc.i4.0
 ldc.i4 100
 add

@@ -3,8 +3,12 @@
 
 //
 //
-.assembly extern mscorlib
-{ }
+.assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly 'test'
 { }
 .class private auto ansi Test extends [mscorlib]System.Object
@@ -29,11 +33,11 @@ loop_begin:
 	brfalse branch1
 	ldloca 0
 	ldstr "branch1"
-	call void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+	call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 	br.s merge1
 branch1:
 	ldstr "branch2"
-	call void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+	call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 	ldloca 1
 merge1:
 	ldloca 2

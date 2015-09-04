@@ -3,6 +3,11 @@
 
 // stfld on static
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly stfldstatic1 {}
 .class private auto ansi beforefieldinit stfldstatic1
        extends [mscorlib]System.Object
@@ -92,7 +97,7 @@
 
     ldloc.0
     ldfld     string stfldstatic1::s11
-    call void [mscorlib]System.Console::WriteLine(string)
+    call void [System.Console]System.Console::WriteLine(string)
 
     ldc.i4 100
     IL_00c3:  ret

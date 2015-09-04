@@ -1,8 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly samabo
 {
@@ -43,7 +46,7 @@
 
     IL_0012:  ldc.i4 100
     		ldstr "PASSED"
-    	call       void [mscorlib]System.Console::WriteLine(string)
+    	call       void [System.Console]System.Console::WriteLine(string)
     		ret
   } // end of method MyStruct::Main
 
@@ -105,7 +108,7 @@
     IL_0072:  mul
     IL_0073:  add
     IL_0074:  ldind.u2
-    IL_0075:  call       void [mscorlib]System.Console::Write(char)
+    IL_0075:  call       void [System.Console]System.Console::Write(char)
     IL_007a:  ldloc.1
     IL_007b:  ldc.i4.1
     IL_007c:  add
@@ -115,7 +118,7 @@
     IL_0080:  ble.s      IL_0063
 
     IL_0082:  ldnull
-    	call       void [mscorlib]System.Console::WriteLine(string)
+    	call       void [System.Console]System.Console::WriteLine(string)
     IL_0087:  //pop
     IL_0088:  ret
   } // end of method MyStruct::RunTest

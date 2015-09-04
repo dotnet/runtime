@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly compat_v { }
 .namespace JitTest
 {
@@ -61,15 +66,15 @@
       //IL_0006:  stloc.1
       //IL_0007:  ldloc.s   V_1
       IL_0009:  box        JitTest.BaseStruct
-      IL_000e:  call       void [mscorlib]System.Console::WriteLine(class System.Object)
+      IL_000e:  call       void [System.Console]System.Console::WriteLine(class System.Object)
       IL_0013:  ldc.i4.1
       IL_0014:  call       value class JitTest.BaseStruct JitTest.BaseStruct::caller(bool)
       //IL_0019:  stloc.1
       //IL_001a:  ldloc.s   V_1
       IL_001c:  box        JitTest.BaseStruct
-      IL_0021:  call       void [mscorlib]System.Console::WriteLine(class System.Object)
+      IL_0021:  call       void [System.Console]System.Console::WriteLine(class System.Object)
       IL_0026:  ldstr      "passed"
-      IL_002b:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+      IL_002b:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0030:  ldc.i4.s   100
       			ret
     } // end of method BaseStruct::Main

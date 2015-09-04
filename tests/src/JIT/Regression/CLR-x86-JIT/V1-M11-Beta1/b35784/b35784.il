@@ -1,8 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly 'typedref'// as "typedref"
 {
@@ -120,7 +123,7 @@
       IL_00a6:  ldstr      " "
       IL_00ab:  call class [mscorlib]System.String [mscorlib]System.String::Concat(class [mscorlib]System.String, class [mscorlib]System.String)
 
-      IL_00b0:  call void [mscorlib]System.Console::Write(class [mscorlib]System.String)
+      IL_00b0:  call void [System.Console]System.Console::Write(class [mscorlib]System.String)
 
       IL_00b5:  br.s       IL_00cc
 
@@ -130,7 +133,7 @@
       IL_00bd:  ldstr      " "
       IL_00c2:  call class [mscorlib]System.String [mscorlib]System.String::Concat(class [mscorlib]System.String, class [mscorlib]System.String)
 
-      IL_00c7:  call void [mscorlib]System.Console::Write(class [mscorlib]System.String)
+      IL_00c7:  call void [System.Console]System.Console::Write(class [mscorlib]System.String)
 
       IL_00cc:  ldloc.0
       IL_00cd:  ret
@@ -163,10 +166,10 @@
       IL_002c:  call instance vararg class [mscorlib]System.Object BoxTest.Test::Fibonacci(typedref, typedref)
 
       IL_0031:  pop
-      IL_0032:  call void [mscorlib]System.Console::WriteLine()
+      IL_0032:  call void [System.Console]System.Console::WriteLine()
 
       IL_0037:  ldstr      "*** PASSED ***"
-      IL_003c:  call void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+      IL_003c:  call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 
       IL_0041:  ldc.i4 100
       IL_0042:  ret

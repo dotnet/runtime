@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly gcval { }
 .namespace JitTest
 {
@@ -80,7 +85,7 @@
       br.s       IL_0023
 
       IL_001e:  ldstr      "passed"
-      IL_0023:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+      IL_0023:  call       void [System.Console]System.Console::WriteLine(class System.String)
       ldloc.0
       stloc.1
       ldloc.1

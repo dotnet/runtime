@@ -6,12 +6,11 @@
 
 
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
-                           
-  
-           
-  
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly 'test'
 {
@@ -39,7 +38,7 @@
 			   int32[] dim)
                
       			ldstr     "Creating 32-dimension array"
-      			call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      			call       void [System.Console]System.Console::WriteLine(class System.String)
 
       			ldc.i4	32
       			dup
@@ -93,9 +92,9 @@
 				dup
 				ldloc count
 				ldelem.i4
-				call       void ['mscorlib']System.Console::Write(int32)
+				call       void [System.Console]System.Console::Write(int32)
 				ldstr " "
-				call       void ['mscorlib']System.Console::Write(class System.String)
+				call       void [System.Console]System.Console::Write(class System.String)
 				ldloc count
 				ldc.i4.1
 				add
@@ -289,12 +288,12 @@
       			ldc.i4 1
       			div
       			dup
-      			call  void [mscorlib]System.Console::WriteLine(int32)
+      			call  void [System.Console]System.Console::WriteLine(int32)
       			ldc.i4 	0x57751795
       			ldc.i4 1
       			div
       			dup
-      			call  void [mscorlib]System.Console::WriteLine(int32)
+      			call  void [System.Console]System.Console::WriteLine(int32)
       			ceq
       			brtrue pass1
       			br throw0
@@ -355,12 +354,12 @@
       			ldc.i4 1
       			div
       			dup
-      			call  void [mscorlib]System.Console::WriteLine(int32)
+      			call  void [System.Console]System.Console::WriteLine(int32)
       			ldc.i4 	0x57751795
       			ldc.i4 1
       			div
       			dup
-      			call  void [mscorlib]System.Console::WriteLine(int32)
+      			call  void [System.Console]System.Console::WriteLine(int32)
       			ceq
       			brtrue pass1_5
       		throw0:
@@ -426,7 +425,7 @@
       			
       			ldc.i4 100
       			ldstr     "TEST PASSED"
-      			call       void ['mscorlib']System.Console::Write(class System.String)
+      			call       void [System.Console]System.Console::Write(class System.String)
       			ret
       			
 			cont0:
@@ -487,12 +486,12 @@
       			ldc.i4 1
       			div
       			dup
-      			call  void [mscorlib]System.Console::WriteLine(int32)
+      			call  void [System.Console]System.Console::WriteLine(int32)
       			ldc.i4 	0x57751795
       			ldc.i4 1
       			div
       			dup
-      			call  void [mscorlib]System.Console::WriteLine(int32)
+      			call  void [System.Console]System.Console::WriteLine(int32)
       			ceq
      			call void ['mscorlib']System.GC::Collect()
       			brtrue pass2

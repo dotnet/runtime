@@ -5,12 +5,11 @@
 
 
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
-                           
-  
-           
-  
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly 'test'
 {
@@ -34,10 +33,10 @@
       // Code size       42 (0x2a)
       .maxstack  3
 		ldstr     "Trying index "
-		call       void [mscorlib]System.Console::Write(class [mscorlib]System.String)
+		call       void [System.Console]System.Console::Write(class [mscorlib]System.String)
 		ldarga.s   idx
 		call       instance class [mscorlib]System.String [mscorlib]System.Int32::ToString()
-		call       void [mscorlib]System.Console::Write(class [mscorlib]System.String)
+		call       void [System.Console]System.Console::Write(class [mscorlib]System.String)
       .try
       {
 			ldarg.0
@@ -54,11 +53,11 @@
 			brtrue aaa
 			
         	ldstr      "READ-WRITE FAILED"
-        	call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+        	call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		aaa:
 			
         	ldstr      ": OK"
-        	call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+        	call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
         	leave.s    IL_0029
 
       }  // end .try
@@ -66,7 +65,7 @@
       {
         IL_001c:  pop
         IL_001d:  ldstr      ": exception!"
-        IL_0022:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+        IL_0022:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
         IL_0027:  leave.s    IL_0029
 
       }  // end handler
@@ -84,17 +83,17 @@
                int32 V_2)
                
       			ldstr     "Creating array of 16 elements"
-      			call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+      			call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
       			
       			ldc.i4.s   16
       			newobj		instance void int32[0...]::.ctor(int32)
       			stloc.0
       			
       			ldstr     "Reported array size is "
-      			call       void [mscorlib]System.Console::Write(class [mscorlib]System.String)
+      			call       void [System.Console]System.Console::Write(class [mscorlib]System.String)
       			ldloc.0
       			ldlen
-      			call       void [mscorlib]System.Console::WriteLine(int32)
+      			call       void [System.Console]System.Console::WriteLine(int32)
       
       			ldloc.0
       			ldc.i4 -10000

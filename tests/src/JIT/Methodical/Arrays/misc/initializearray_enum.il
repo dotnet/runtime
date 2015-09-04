@@ -1,6 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 
 
 
@@ -135,12 +141,12 @@ class My {
     IL_0014:  brtrue.s   IL_0022
 
     IL_0016:  ldstr      "FAILED"
-    IL_001b:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_001b:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0020:  ldc.i4.1
     IL_0021:  ret
 
     IL_0022:  ldstr      "PASSED"
-    IL_0027:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0027:  call       void [System.Console]System.Console::WriteLine(string)
     IL_002c:  ldc.i4.s   100
     IL_002e:  ret
   } // end of method My::Main

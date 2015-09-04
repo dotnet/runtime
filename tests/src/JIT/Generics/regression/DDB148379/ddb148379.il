@@ -1,6 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 
 
 
@@ -54,7 +60,7 @@
     IL_0000:  ldtoken    class [mscorlib]System.Collections.Generic.Dictionary`2<!T,!!U>
     IL_0005:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
               dup
-    IL_000a:  call       void [mscorlib]System.Console::WriteLine(object)
+    IL_000a:  call       void [System.Console]System.Console::WriteLine(object)
               callvirt   instance string [mscorlib]System.Object::ToString()
               ldstr  "System.Collections.Generic.Dictionary`2[System.String,System.Object]"
               call       bool [mscorlib]System.String::op_Inequality(string,
@@ -62,7 +68,7 @@
               ldc.i4.0
               beq        IL_000f
               ldstr "FAIL"
-              call void [mscorlib]System.Console::WriteLine(string)
+              call void [System.Console]System.Console::WriteLine(string)
               ldc.i4 99
               ret
     IL_000f:  ldc.i4 100
@@ -85,7 +91,7 @@
     IL_0000:  ldtoken    class [mscorlib]System.Collections.Generic.Dictionary`2<!!U,!T>
     IL_0005:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
               dup
-    IL_000a:  call       void [mscorlib]System.Console::WriteLine(object)
+    IL_000a:  call       void [System.Console]System.Console::WriteLine(object)
               callvirt   instance string [mscorlib]System.Object::ToString()
               ldstr  "System.Collections.Generic.Dictionary`2[System.Object,System.String]"
               call       bool [mscorlib]System.String::op_Inequality(string,
@@ -93,7 +99,7 @@
               ldc.i4.0
               beq        IL_000f
               ldstr "FAIL"
-              call void [mscorlib]System.Console::WriteLine(string)
+              call void [System.Console]System.Console::WriteLine(string)
               ldc.i4 99
               ret
              

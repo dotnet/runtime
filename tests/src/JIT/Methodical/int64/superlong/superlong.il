@@ -7,8 +7,11 @@
 
 
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly 'superlong'// as "superlong"
 {
@@ -140,7 +143,7 @@
       IL_005e:  beq.s      IL_0071
 
       IL_0060:  ldstr      "Failed."
-      IL_0065:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_0065:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_006a:  ldc.i4.1
       IL_006b:  stloc.3
       IL_006c:  br         IL_012f
@@ -197,20 +200,20 @@
         IL_0103:  beq.s      IL_0113
 
         IL_0105:  ldstr      "Failed (3)."
-        IL_010a:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+        IL_010a:  call       void [System.Console]System.Console::WriteLine(class System.String)
         IL_010f:  ldc.i4.1
         IL_0110:  stloc.3
         IL_0111:  leave.s    IL_012f
 
         IL_0113:  ldstr      "Passed!"
-        IL_0118:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+        IL_0118:  call       void [System.Console]System.Console::WriteLine(class System.String)
         IL_011d:  ldc.i4    0x64
         IL_011e:  stloc.3
         IL_011f:  leave.s    IL_012f
 
       }  // end handler
       IL_0121:  ldstr      "Failed (2)."
-      IL_0126:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_0126:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_012b:  ldc.i4.1
       IL_012c:  stloc.3
       IL_012d:  br.s       IL_012f

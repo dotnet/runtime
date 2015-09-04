@@ -7,8 +7,11 @@
 
 
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly 'ldsfld_mul'// as "ldsfld_mul"
 {
@@ -34,7 +37,7 @@
       IL_000a:  box     ['mscorlib']System.Int64
       IL_000f:  ldsfld    int64 JitTest.Test::op2
       IL_0014:  box     ['mscorlib']System.Int64
-      IL_0019:  call       void ['mscorlib']System.Console::Write(class System.String,
+      IL_0019:  call       void [System.Console]System.Console::Write(class System.String,
                                                                   class System.Object,
                                                                   class System.Object)
       .try
@@ -49,7 +52,7 @@
         IL_002d:  stloc.0
         IL_002e:  leave.s    IL_004b
 
-        IL_0030:  call       void ['mscorlib']System.Console::WriteLine()
+        IL_0030:  call       void [System.Console]System.Console::WriteLine()
         IL_0035:  ldarg.1
         IL_0036:  ldc.i4.0
         IL_0037:  ceq
@@ -61,7 +64,7 @@
       {
         IL_003c:  pop
         IL_003d:  ldstr      "overflow."
-        IL_0042:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+        IL_0042:  call       void [System.Console]System.Console::WriteLine(class System.String)
         IL_0047:  ldarg.1
         IL_0048:  stloc.0
         IL_0049:  leave.s    IL_004b
@@ -201,13 +204,13 @@
       IL_0165:  br.s       IL_0175
 
       IL_0167:  ldstr      "Test passed"
-      IL_016c:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_016c:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0171:  ldc.i4    0x64
       IL_0172:  stloc.0
       IL_0173:  br.s       IL_0183
 
       IL_0175:  ldstr      "Test failed"
-      IL_017a:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_017a:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_017f:  ldc.i4.1
       IL_0180:  stloc.0
       IL_0181:  br.s       IL_0183

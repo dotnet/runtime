@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly tail { }
 .class private auto ansi beforefieldinit AA
        extends [mscorlib]System.Object
@@ -88,7 +93,7 @@
     IL_0017:  beq.s      IL_0028
 
     IL_0019:  ldstr      "Error 101"
-    IL_001e:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_001e:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0023:  ldc.i4.s   101
     IL_0025:  stloc.2
     IL_0026:  br.s       IL_004f
@@ -99,13 +104,13 @@
     IL_002f:  beq.s      IL_0040
 
     IL_0031:  ldstr      "Error 102"
-    IL_0036:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0036:  call       void [System.Console]System.Console::WriteLine(string)
     IL_003b:  ldc.i4.s   102
     IL_003d:  stloc.2
     IL_003e:  br.s       IL_004f
 
     IL_0040:  ldstr      "Passed"
-    IL_0045:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0045:  call       void [System.Console]System.Console::WriteLine(string)
     IL_004a:  ldc.i4.s   100
     IL_004c:  stloc.2
     IL_004d:  br.s       IL_004f

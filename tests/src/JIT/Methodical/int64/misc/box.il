@@ -7,8 +7,11 @@
 
 
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly 'box'// as "box"
 {
@@ -82,18 +85,18 @@
       {
         IL_0074:  pop
         IL_0075:  ldstr      "Exception handled!"
-        IL_007a:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+        IL_007a:  call       void [System.Console]System.Console::WriteLine(class System.String)
         IL_007f:  leave.s    IL_008f
 
       }  // end handler
       IL_0081:  ldstr      "Passed"
-      IL_0086:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_0086:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_008b:  ldc.i4    0x64
       IL_008c:  stloc.2
       IL_008d:  br.s       IL_009d
 
       IL_008f:  ldstr      "Failed"
-      IL_0094:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_0094:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0099:  ldc.i4.1
       IL_009a:  stloc.2
       IL_009b:  br.s       IL_009d

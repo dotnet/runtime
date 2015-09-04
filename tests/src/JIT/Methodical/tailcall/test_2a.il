@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly test_2a { }
 .namespace JitTest
 {
@@ -26,7 +31,7 @@
       bne.un.s   IL_0029
 
       ldstr      "PASSED: 10! == 3628800"
-      call       void [mscorlib]System.Console::WriteLine(class System.String)
+      call       void [System.Console]System.Console::WriteLine(class System.String)
       ldc.i4.s   100
       ret
 
@@ -40,7 +45,7 @@ IL_0029:
       call       instance class System.String [mscorlib]System.Int32::ToString()
       call       class System.String [mscorlib]System.String::Concat(class System.String,
                                                                                class System.String)
-      call       void [mscorlib]System.Console::WriteLine(class System.String)
+      call       void [System.Console]System.Console::WriteLine(class System.String)
       ldc.i4.s   101
       ret
 

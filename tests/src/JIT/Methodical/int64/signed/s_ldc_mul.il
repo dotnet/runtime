@@ -7,8 +7,11 @@
 
 
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly 'ldc_mul'// as "ldc_mul"
 {
@@ -34,7 +37,7 @@
       IL_0007:  box     ['mscorlib']System.Int64
       IL_000c:  ldarg.s   op2
       IL_000e:  box     ['mscorlib']System.Int64
-      IL_0013:  call       void ['mscorlib']System.Console::Write(class System.String,
+      IL_0013:  call       void [System.Console]System.Console::Write(class System.String,
                                                                   class System.Object,
                                                                   class System.Object)
       .try
@@ -49,7 +52,7 @@
         IL_001f:  stloc.0
         IL_0020:  leave.s    IL_003d
 
-        IL_0022:  call       void ['mscorlib']System.Console::WriteLine()
+        IL_0022:  call       void [System.Console]System.Console::WriteLine()
         IL_0027:  ldarg.3
         IL_0028:  ldc.i4.0
         IL_0029:  ceq
@@ -61,7 +64,7 @@
       {
         IL_002e:  pop
         IL_002f:  ldstr      "overflow."
-        IL_0034:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+        IL_0034:  call       void [System.Console]System.Console::WriteLine(class System.String)
         IL_0039:  ldarg.3
         IL_003a:  stloc.0
         IL_003b:  leave.s    IL_003d
@@ -173,13 +176,13 @@
       IL_00d2:  br       IL_00e2
 
       IL_00d4:  ldstr      "Test passed"
-      IL_00d9:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_00d9:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_00de:  ldc.i4    0x64
       IL_00df:  stloc.0
       IL_00e0:  br       IL_00f0
 
       IL_00e2:  ldstr      "Test failed"
-      IL_00e7:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_00e7:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_00ec:  ldc.i4.1
       IL_00ed:  stloc.0
       IL_00ee:  br       IL_00f0

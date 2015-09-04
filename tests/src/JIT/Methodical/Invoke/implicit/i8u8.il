@@ -5,12 +5,11 @@
 
 
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
-                           
-  
-           
-  
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly 'test'
 {
@@ -73,13 +72,13 @@
       IL_000a:  blt.s      IL_001a
 
       IL_000c:  ldstr      "FAILED"
-      IL_0011:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_0011:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0016:  ldc.i4.1
       IL_0017:  stloc.0
       IL_0018:  br.s       IL_0028
 
       IL_001a:  ldstr      "PASSED"
-      IL_001f:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_001f:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0024:  ldc.i4   0x64
       IL_0025:  stloc.0
       IL_0026:  br.s       IL_0028
