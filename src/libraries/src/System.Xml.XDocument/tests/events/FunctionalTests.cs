@@ -192,7 +192,7 @@ namespace CoreXml.Test.XLinq
                 public override void AddChildren()
                 {
                     this.AddChild(new TestVariation(ReplaceNodes) { Attribute = new VariationAttribute("XElement - Replace Nodes") { Priority = 1 } });
-                    this.AddChild(new TestVariation(ReplaceWithIEnum) { Attribute = new VariationAttribute("XElement - Replace with IEnumberable") { Priority = 1 } });
+                    this.AddChild(new TestVariation(ReplaceWithIEnum) { Attribute = new VariationAttribute("XElement - Replace with IEnumerable") { Priority = 1 } });
                 }
             }
             public partial class EvensReplaceAttributes : EventsBase

@@ -395,7 +395,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 ///<summary>
-                /// This function returns mixed IEnumberalbe of XObjects with XAttributes first
+                /// This function returns mixed IEnumerable of XObjects with XAttributes first
                 ///</summary>
                 public IEnumerable<XObject> GetMixedNodes()
                 {
@@ -526,7 +526,7 @@ namespace CoreXml.Test.XLinq
                         throw new TestFailedException("");
                 }
 
-                //[Variation(Priority = 0, Desc = "Nested XStreamingElements + IEnumberable")]
+                //[Variation(Priority = 0, Desc = "Nested XStreamingElements + IEnumerable")]
                 public void NestedXStreamingElementPlusIEnumerable()
                 {
                     InputSpace.Contacts(ref _xDoc, ref _xmlDoc);
@@ -541,7 +541,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Priority = 1, Desc = "Laziness of IEnumerables - Modify IEnumerable after adding")]
-                public void IEnumberableLazinessTest1()
+                public void IEnumerableLazinessTest1()
                 {
                     XElement name = new XElement("name", "jane");
                     XElement phone = new XElement("phone", new XAttribute("type", "home"), "925-555-0134");
@@ -557,7 +557,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Priority = 1, Desc = "Laziness of IEnumerables - Make Sure IEnumerable is walked after Save")]
-                public void IEnumberableLazinessTest2()
+                public void IEnumerableLazinessTest2()
                 {
                     XElement name = new XElement("name", "jane");
                     XElement phone = new XElement("phone", new XAttribute("type", "home"), "925-555-0134");
@@ -569,7 +569,7 @@ namespace CoreXml.Test.XLinq
                     contact.Save(_targetStream);
                     _invokeStatus = true;
                     streamElement.Save(_sourceStream);
-                    TestLog.Compare(_invokeError == false, "IEnumberable walked before expected");
+                    TestLog.Compare(_invokeError == false, "IEnumerable walked before expected");
                     resetStreamPos();
                     if (!_diff.Compare(_sourceStream, _targetStream))
                         throw new TestFailedException("");
