@@ -193,13 +193,13 @@
       IL_000f:  beq.s      IL_001f
 
       IL_0011:  ldstr      "*** failed ***"
-      IL_0016:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_0016:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_001b:  ldc.i4.1
       IL_001c:  stloc.0
       IL_001d:  br.s       IL_002d
 
       IL_001f:  ldstr      "*** passed ***"
-      IL_0024:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_0024:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0029:  ldc.i4    0x64
       IL_002a:  stloc.0
       IL_002b:  br.s       IL_002d

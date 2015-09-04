@@ -94,13 +94,13 @@
       IL_0007:  brfalse.s  IL_0017
 
       IL_0009:  ldstr      "FAILED"
-      IL_000e:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_000e:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0013:  ldc.i4.1
       IL_0014:  stloc.0
       IL_0015:  br.s       IL_0025
 
       IL_0017:  ldstr      "PASSED"
-      IL_001c:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_001c:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0021:  ldc.i4    0x64
       IL_0022:  stloc.0
       IL_0023:  br.s       IL_0025
