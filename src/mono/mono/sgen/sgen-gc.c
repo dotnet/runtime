@@ -1789,7 +1789,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 	 * before pinning has finished.  For the non-concurrent
 	 * collector we start the workers after pinning.
 	 */
-	if (mode != COPY_OR_MARK_FROM_ROOTS_SERIAL) {
+	if (mode == COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT) {
 		SGEN_ASSERT (0, sgen_workers_all_done (), "Why are the workers not done when we start or finish a major collection?");
 		sgen_workers_start_all_workers (object_ops);
 		gray_queue_enable_redirect (WORKERS_DISTRIBUTE_GRAY_QUEUE);
@@ -1810,7 +1810,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 	 * FIXME: is this the right context?  It doesn't seem to contain a copy function
 	 * unless we're concurrent.
 	 */
-	enqueue_scan_from_roots_jobs (heap_start, heap_end, object_ops, concurrent);
+	enqueue_scan_from_roots_jobs (heap_start, heap_end, object_ops, mode == COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT);
 
 	TV_GETTIME (btv);
 	time_major_scan_roots += TV_ELAPSED (atv, btv);
@@ -1821,11 +1821,11 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 		/* Mod union card table */
 		sj = (ScanJob*)sgen_thread_pool_job_alloc ("scan mod union cardtable", job_scan_major_mod_union_card_table, sizeof (ScanJob));
 		sj->ops = object_ops;
-		sgen_workers_enqueue_job (&sj->job, TRUE);
+		sgen_workers_enqueue_job (&sj->job, FALSE);
 
 		sj = (ScanJob*)sgen_thread_pool_job_alloc ("scan LOS mod union cardtable", job_scan_los_mod_union_card_table, sizeof (ScanJob));
 		sj->ops = object_ops;
-		sgen_workers_enqueue_job (&sj->job, TRUE);
+		sgen_workers_enqueue_job (&sj->job, FALSE);
 
 		TV_GETTIME (atv);
 		time_major_scan_mod_union += TV_ELAPSED (btv, atv);
@@ -1837,8 +1837,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 static void
 major_finish_copy_or_mark (CopyOrMarkFromRootsMode mode)
 {
-	switch (mode) {
-	case COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT:
+	if (mode == COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT) {
 		/*
 		 * Prepare the pin queue for the next collection.  Since pinning runs on the worker
 		 * threads we must wait for the jobs to finish before we can reset it.
@@ -1850,14 +1849,6 @@ major_finish_copy_or_mark (CopyOrMarkFromRootsMode mode)
 
 		if (do_concurrent_checks)
 			sgen_debug_check_nursery_is_clean ();
-		break;
-	case COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT:
-		sgen_workers_wait_for_jobs_finished ();
-		break;
-	case COPY_OR_MARK_FROM_ROOTS_SERIAL:
-		break;
-	default:
-		g_assert_not_reached ();
 	}
 }
 
@@ -1921,10 +1912,6 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 		major_copy_or_mark_from_roots (NULL, COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT, object_ops);
 
 		major_finish_copy_or_mark (COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT);
-
-		sgen_workers_join ();
-
-		SGEN_ASSERT (0, sgen_gray_object_queue_is_empty (&gray_queue), "Why is the gray queue not empty after workers have finished working?");
 
 #ifdef SGEN_DEBUG_INTERNAL_ALLOC
 		main_gc_thread = NULL;
