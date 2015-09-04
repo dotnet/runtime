@@ -82,9 +82,9 @@ namespace CoreXml.Test.XLinq
                     this.AddChild(new TestVariation(WriteToWithNull) { Attribute = new VariationAttribute("WriteTo(null)") { Priority = 1 } });
                     this.AddChild(new TestVariation(ModifyOriginalElement) { Attribute = new VariationAttribute("Modify Original Elements") { Priority = 1 } });
                     this.AddChild(new TestVariation(NestedXStreamingElement) { Attribute = new VariationAttribute("Nested XStreamingElements") { Priority = 0 } });
-                    this.AddChild(new TestVariation(NestedXStreamingElementPlusIEnumerable) { Attribute = new VariationAttribute("Nested XStreamingElements + IEnumberable") { Priority = 0 } });
-                    this.AddChild(new TestVariation(IEnumberableLazinessTest1) { Attribute = new VariationAttribute("Laziness of IEnumerables - Modify IEnumerable after adding") { Priority = 1 } });
-                    this.AddChild(new TestVariation(IEnumberableLazinessTest2) { Attribute = new VariationAttribute("Laziness of IEnumerables - Make Sure IEnumerable is walked after Save") { Priority = 1 } });
+                    this.AddChild(new TestVariation(NestedXStreamingElementPlusIEnumerable) { Attribute = new VariationAttribute("Nested XStreamingElements + IEnumerable") { Priority = 0 } });
+                    this.AddChild(new TestVariation(IEnumerableLazinessTest1) { Attribute = new VariationAttribute("Laziness of IEnumerables - Modify IEnumerable after adding") { Priority = 1 } });
+                    this.AddChild(new TestVariation(IEnumerableLazinessTest2) { Attribute = new VariationAttribute("Laziness of IEnumerables - Make Sure IEnumerable is walked after Save") { Priority = 1 } });
                     this.AddChild(new TestVariation(XStreamingElementInXElement) { Attribute = new VariationAttribute("XStreamingElement in XElement") { Priority = 0 } });
                     this.AddChild(new TestVariation(XStreamingElementInXDocument) { Attribute = new VariationAttribute("XStreamingElement in XDocument") { Priority = 0 } });
                 }

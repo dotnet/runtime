@@ -186,7 +186,7 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                //[Variation(Priority = 1, Desc = "XElement - Replace with IEnumberable")]
+                //[Variation(Priority = 1, Desc = "XElement - Replace with IEnumerable")]
                 public void ReplaceWithIEnum()
                 {
                     XElement xElem = new XElement("root");
