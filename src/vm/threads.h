@@ -1787,10 +1787,12 @@ public:
 
 private:
     DWORD m_dwBeginLockCount;  // lock count when the thread enters current domain
+#ifndef FEATURE_CORECLR
     DWORD m_dwBeginCriticalRegionCount;  // lock count when the thread enters current domain
     DWORD m_dwCriticalRegionCount;
 
     DWORD m_dwThreadAffinityCount;
+#endif // !FEATURE_CORECLR
 
 #ifdef _DEBUG
     DWORD dbg_m_cSuspendedThreads;
@@ -1883,15 +1885,21 @@ public:
         LIMITED_METHOD_CONTRACT;
 
         _ASSERTE(m_dwLockCount >= m_dwBeginLockCount);
+#ifndef FEATURE_CORECLR
         _ASSERTE(m_dwCriticalRegionCount >= m_dwBeginCriticalRegionCount);
+#endif // !FEATURE_CORECLR
 
         // Equivalent to (m_dwLockCount != m_dwBeginLockCount ||
         //                m_dwCriticalRegionCount ! m_dwBeginCriticalRegionCount),
         // but without branching instructions
-        return ((m_dwLockCount ^ m_dwBeginLockCount) |
-                (m_dwCriticalRegionCount ^ m_dwBeginCriticalRegionCount));
-    }
+        BOOL fHasLock = (m_dwLockCount ^ m_dwBeginLockCount);
+#ifndef FEATURE_CORECLR
+        fHasLock |= (m_dwCriticalRegionCount ^ m_dwBeginCriticalRegionCount);
+#endif // !FEATURE_CORECLR
 
+        return fHasLock; 
+    }
+#ifndef FEATURE_CORECLR
     inline void BeginCriticalRegion()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1929,11 +1937,16 @@ public:
         _ASSERTE (m_dwCriticalRegionCount > 0);
         m_dwCriticalRegionCount --;
     }
+#endif // !FEATURE_CORECLR
 
     inline BOOL HasCriticalRegion()
     {
         LIMITED_METHOD_CONTRACT;
+#ifndef FEATURE_CORECLR
         return m_dwCriticalRegionCount != 0;
+#else 
+        return FALSE;        
+#endif
     }
 
     inline DWORD GetNewHashCode()
@@ -1980,6 +1993,11 @@ public:
     static void ReverseEnterRuntimeThrowComplus();
     static void ReverseLeaveRuntime();
 
+    // Hook for OS Critical Section, Mutex, and others that require thread affinity
+    static void BeginThreadAffinity();
+    static void EndThreadAffinity();
+
+#ifndef FEATURE_CORECLR
     inline void IncThreadAffinityCount()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1995,10 +2013,6 @@ public:
         m_dwThreadAffinityCount --;
     }
 
-    // Hook for OS Critical Section, Mutex, and others that require thread affinity
-    static void BeginThreadAffinity();
-    static void EndThreadAffinity();
-
     static void BeginThreadAffinityAndCriticalRegion()
     {
         LIMITED_METHOD_CONTRACT;
@@ -2012,11 +2026,16 @@ public:
         GetThread()->EndCriticalRegion();
         EndThreadAffinity();
     }
+#endif // !FEATURE_CORECLR
 
     BOOL HasThreadAffinity()
     {
         LIMITED_METHOD_CONTRACT;
+#ifndef FEATURE_CORECLR
         return m_dwThreadAffinityCount > 0;
+#else
+        return FALSE;
+#endif
     }
 
  private:
@@ -5539,9 +5558,12 @@ public:
 
 LCID GetThreadCultureIdNoThrow(Thread *pThread, BOOL bUICulture);
 
+#ifndef FEATURE_CORECLR
 // Request/Remove Thread Affinity for the current thread
 typedef StateHolder<Thread::BeginThreadAffinityAndCriticalRegion, Thread::EndThreadAffinityAndCriticalRegion> ThreadAffinityAndCriticalRegionHolder;
+#endif // !FEATURE_CORECLR
 typedef StateHolder<Thread::BeginThreadAffinity, Thread::EndThreadAffinity> ThreadAffinityHolder;
+
 typedef Thread::ForbidSuspendThreadHolder ForbidSuspendThreadHolder;
 typedef Thread::ThreadPreventAsyncHolder ThreadPreventAsyncHolder;
 typedef Thread::ThreadPreventAbortHolder ThreadPreventAbortHolder;
