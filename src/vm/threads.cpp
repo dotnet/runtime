@@ -1921,9 +1921,11 @@ Thread::Thread()
 
     m_dwLockCount = 0;
     m_dwBeginLockCount = 0;
+#ifndef FEATURE_CORECLR
     m_dwBeginCriticalRegionCount = 0;
     m_dwCriticalRegionCount = 0;
     m_dwThreadAffinityCount = 0;
+#endif // !FEATURE_CORECLR
 
 #ifdef _DEBUG
     dbg_m_cSuspendedThreads = 0;
@@ -8750,9 +8752,12 @@ void Thread::EnterContextRestricted(Context *pContext, ContextTransitionFrame *p
 
     if (pPrevDomain != pDomain)
     {
-    pFrame->SetLockCount(m_dwBeginLockCount, m_dwBeginCriticalRegionCount);
-    m_dwBeginLockCount = m_dwLockCount;
-    m_dwBeginCriticalRegionCount = m_dwCriticalRegionCount;
+        pFrame->SetLockCount(m_dwBeginLockCount);
+        m_dwBeginLockCount = m_dwLockCount;
+#ifndef FEATURE_CORECLR
+        pFrame->SetCriticalRegionCount(m_dwBeginCriticalRegionCount);
+        m_dwBeginCriticalRegionCount = m_dwCriticalRegionCount;
+#endif // !FEATURE_CORECLR
     }
 
     if (m_Context == pContext) {
@@ -8935,9 +8940,12 @@ void Thread::ReturnToContext(ContextTransitionFrame *pFrame)
         }
 
         m_dwLockCount = m_dwBeginLockCount;
+        m_dwBeginLockCount = pFrame->GetLockCount();
+#ifndef FEATURE_CORECLR
         m_dwCriticalRegionCount = m_dwBeginCriticalRegionCount;
+        m_dwBeginCriticalRegionCount = pFrame->GetCriticalRegionCount();
+#endif // !FEATURE_CORECLR
 
-        pFrame->GetLockCount(&m_dwBeginLockCount, &m_dwBeginCriticalRegionCount);
     }
 
     if (m_Context == pReturnContext)
@@ -11733,11 +11741,13 @@ void Thread::InternalReset(BOOL fFull, BOOL fNotFinalizerThread, BOOL fThreadObj
         FullResetThread();
     }
 
+#ifndef FEATURE_CORECLR
     _ASSERTE (m_dwCriticalRegionCount == 0);
     m_dwCriticalRegionCount = 0;
 
     _ASSERTE (m_dwThreadAffinityCount == 0);
     m_dwThreadAffinityCount = 0;
+#endif // !FEATURE_CORECLR
 
     //m_MarshalAlloc.Collapse(NULL);
 
@@ -11861,7 +11871,9 @@ HRESULT Thread::Reset(BOOL fFull)
 
         ResetThreadStateNC(TSNC_UnbalancedLocks);
         m_dwLockCount = 0;
+#ifndef FEATURE_CORECLR
         m_dwCriticalRegionCount = 0;
+#endif // !FEATURE_CORECLR
 
     InternalSwitchOut();
     m_OSThreadId = SWITCHED_OUT_FIBER_OSID;
@@ -12235,7 +12247,10 @@ HRESULT Thread::LocksHeld(SIZE_T *pLockCount)
 {
     LIMITED_METHOD_CONTRACT;
 
-    *pLockCount = m_dwLockCount + m_dwCriticalRegionCount;
+    *pLockCount = m_dwLockCount;
+#ifndef FEATURE_CORECLR
+    *pLockCount += m_dwCriticalRegionCount;
+#endif // !FEATURE_CORECLR
     return S_OK;
 }
 
@@ -12829,6 +12844,7 @@ void Thread::BeginThreadAffinity()
 {
     LIMITED_METHOD_CONTRACT;
 
+#ifndef FEATURE_CORECLR
     if (!CLRTaskHosted())
     {
         return;
@@ -12858,6 +12874,7 @@ void Thread::BeginThreadAffinity()
 #endif
     }
 #endif // FEATURE_INCLUDE_ALL_INTERFACES
+#endif // !FEATURE_CORECLR
 }
 
 
@@ -12866,6 +12883,7 @@ void Thread::EndThreadAffinity()
 {
     LIMITED_METHOD_CONTRACT;
 
+#ifndef FEATURE_CORECLR
     if (!CLRTaskHosted())
     {
         return;
@@ -12898,6 +12916,7 @@ void Thread::EndThreadAffinity()
 
     _ASSERTE (hr == S_OK);
 #endif // FEATURE_INCLUDE_ALL_INTERFACES
+#endif // !FEATURE_CORECLR
 }
 
 void Thread::SetupThreadForHost()
