@@ -549,11 +549,13 @@ namespace System.Threading
             int ret = SignalAndWaitOne(toSignal.safeWaitHandle,toWaitOn.safeWaitHandle,millisecondsTimeout,
                                 toWaitOn.hasThreadAffinity,exitContext);
 
+#if !FEATURE_CORECLR
             if(WAIT_FAILED != ret  && toSignal.hasThreadAffinity)
             {
                 Thread.EndCriticalRegion();
                 Thread.EndThreadAffinity();
             }
+#endif
 
             if(WAIT_ABANDONED == ret)
             {
