@@ -3,6 +3,8 @@
 
 using System.Diagnostics.Contracts;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Security.Cryptography
 {
@@ -21,11 +23,13 @@ namespace System.Security.Cryptography
         private bool _canRead;
         private bool _canWrite;
         private bool _finalBlockTransformed;
-
+        private SemaphoreSlim _lazyAsyncActiveSemaphore;
+        
         // Constructors
 
         public CryptoStream(Stream stream, ICryptoTransform transform, CryptoStreamMode mode)
         {
+
             _stream = stream;
             _transformMode = mode;
             _transform = transform;
@@ -147,9 +151,40 @@ namespace System.Security.Cryptography
             throw new NotSupportedException(SR.NotSupported_UnseekableStream);
         }
 
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            CheckReadArguments(buffer, offset, count);
+            return ReadAsyncInternal(buffer, offset, count, cancellationToken);
+        }
+
+        private async Task<int> ReadAsyncInternal(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            // To avoid a race with a stream's position pointer & generating race 
+            // conditions with internal buffer indexes in our own streams that 
+            // don't natively support async IO operations when there are multiple 
+            // async requests outstanding, we will block the application's main
+            // thread if it does a second IO request until the first one completes.
+
+            SemaphoreSlim semaphore = AsyncActiveSemaphore;
+            await semaphore.WaitAsync().ForceAsync();
+            try
+            {
+                return await ReadAsyncCore(buffer, offset, count, cancellationToken, useAsync: true);
+            }
+            finally
+            {
+                semaphore.Release();
+            }
+        }
+
         public override int Read(byte[] buffer, int offset, int count)
         {
-            // argument checking
+            CheckReadArguments(buffer, offset, count);
+            return ReadAsyncCore(buffer, offset, count, default(CancellationToken), useAsync: false).ConfigureAwait(false).GetAwaiter().GetResult();
+        }
+
+        private void CheckReadArguments(byte[] buffer, int offset, int count)
+        {
             if (!CanRead)
                 throw new NotSupportedException(SR.NotSupported_UnreadableStream);
             if (offset < 0)
@@ -158,7 +193,10 @@ namespace System.Security.Cryptography
                 throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
+        }
+
+        private async Task<int> ReadAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken, bool useAsync)
+        {
             // read <= count bytes from the input stream, transforming as we go.
             // Basic idea: first we deliver any bytes we already have in the
             // _OutputBuffer, because we know they're good.  Then, if asked to deliver 
@@ -208,7 +246,10 @@ namespace System.Security.Cryptography
                     // get first the block already read
                     Buffer.BlockCopy(_inputBuffer, 0, tempInputBuffer, 0, _inputBufferIndex);
                     amountRead = _inputBufferIndex;
-                    amountRead += _stream.Read(tempInputBuffer, _inputBufferIndex, numWholeBlocksInBytes - _inputBufferIndex);
+                    amountRead += useAsync ?
+                        await _stream.ReadAsync(tempInputBuffer, _inputBufferIndex, numWholeBlocksInBytes - _inputBufferIndex, cancellationToken) :
+                        _stream.Read(tempInputBuffer, _inputBufferIndex, numWholeBlocksInBytes - _inputBufferIndex);
+
                     _inputBufferIndex = 0;
                     if (amountRead <= _inputBlockSize)
                     {
@@ -241,7 +282,10 @@ namespace System.Security.Cryptography
             {
                 while (_inputBufferIndex < _inputBlockSize)
                 {
-                    amountRead = _stream.Read(_inputBuffer, _inputBufferIndex, _inputBlockSize - _inputBufferIndex);
+                    amountRead = useAsync ?
+                        await _stream.ReadAsync(_inputBuffer, _inputBufferIndex, _inputBlockSize - _inputBufferIndex, cancellationToken) :
+                        _stream.Read(_inputBuffer, _inputBufferIndex, _inputBlockSize - _inputBufferIndex);
+
                     // first, check to see if we're at the end of the input stream
                     if (amountRead == 0) goto ProcessFinalBlock;
                     _inputBufferIndex += amountRead;
@@ -290,7 +334,39 @@ namespace System.Security.Cryptography
             }
         }
 
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            CheckWriteArguments(buffer, offset, count);
+            return WriteAsyncInternal(buffer, offset, count, cancellationToken);
+        }
+
+        private async Task WriteAsyncInternal(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            // To avoid a race with a stream's position pointer & generating race 
+            // conditions with internal buffer indexes in our own streams that 
+            // don't natively support async IO operations when there are multiple 
+            // async requests outstanding, we will block the application's main
+            // thread if it does a second IO request until the first one completes.
+
+            SemaphoreSlim semaphore = AsyncActiveSemaphore;
+            await semaphore.WaitAsync().ForceAsync();
+            try
+            {
+                await WriteAsyncCore(buffer, offset, count, cancellationToken, useAsync: true);
+            }
+            finally
+            {
+                semaphore.Release();
+            }
+        }
+
         public override void Write(byte[] buffer, int offset, int count)
+        {
+            CheckWriteArguments(buffer, offset, count);
+            WriteAsyncCore(buffer, offset, count, default(CancellationToken), useAsync: false).GetAwaiter().GetResult();
+        }
+
+        private void CheckWriteArguments(byte[] buffer, int offset, int count)
         {
             if (!CanWrite)
                 throw new NotSupportedException(SR.NotSupported_UnwritableStream);
@@ -300,7 +376,10 @@ namespace System.Security.Cryptography
                 throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
+        }
+
+        private async Task WriteAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken, bool useAsync)
+        {
             // write <= count bytes to the output stream, transforming as we go.
             // Basic idea: using bytes in the _InputBuffer first, make whole blocks,
             // transform them, and write them out.  Cache any remaining bytes in the _InputBuffer.
@@ -331,7 +410,10 @@ namespace System.Security.Cryptography
             // If the OutputBuffer has anything in it, write it out
             if (_outputBufferIndex > 0)
             {
-                _stream.Write(_outputBuffer, 0, _outputBufferIndex);
+                if (useAsync)
+                    await _stream.WriteAsync(_outputBuffer, 0, _outputBufferIndex, cancellationToken);
+                else
+                    _stream.Write(_outputBuffer, 0, _outputBufferIndex);
                 _outputBufferIndex = 0;
             }
             // At this point, either the _InputBuffer is full, empty, or we've already returned.
@@ -340,8 +422,12 @@ namespace System.Security.Cryptography
             if (_inputBufferIndex == _inputBlockSize)
             {
                 numOutputBytes = _transform.TransformBlock(_inputBuffer, 0, _inputBlockSize, _outputBuffer, 0);
-                // write out the bytes we just got 
-                _stream.Write(_outputBuffer, 0, numOutputBytes);
+                // write out the bytes we just got
+                if (useAsync)
+                    await _stream.WriteAsync(_outputBuffer, 0, numOutputBytes, cancellationToken);
+                else
+                    _stream.Write(_outputBuffer, 0, numOutputBytes);
+
                 // reset the _InputBuffer
                 _inputBufferIndex = 0;
             }
@@ -357,7 +443,12 @@ namespace System.Security.Cryptography
                         int numWholeBlocksInBytes = numWholeBlocks * _inputBlockSize;
                         byte[] _tempOutputBuffer = new byte[numWholeBlocks * _outputBlockSize];
                         numOutputBytes = _transform.TransformBlock(buffer, currentInputIndex, numWholeBlocksInBytes, _tempOutputBuffer, 0);
-                        _stream.Write(_tempOutputBuffer, 0, numOutputBytes);
+
+                        if (useAsync)
+                            await _stream.WriteAsync(_tempOutputBuffer, 0, numOutputBytes, cancellationToken);
+                        else
+                            _stream.Write(_tempOutputBuffer, 0, numOutputBytes);
+
                         currentInputIndex += numWholeBlocksInBytes;
                         bytesToWrite -= numWholeBlocksInBytes;
                     }
@@ -365,7 +456,12 @@ namespace System.Security.Cryptography
                     {
                         // do it the slow way
                         numOutputBytes = _transform.TransformBlock(buffer, currentInputIndex, _inputBlockSize, _outputBuffer, 0);
-                        _stream.Write(_outputBuffer, 0, numOutputBytes);
+
+                        if (useAsync)
+                            await _stream.WriteAsync(_outputBuffer, 0, numOutputBytes, cancellationToken);
+                        else
+                            _stream.Write(_outputBuffer, 0, numOutputBytes);
+
                         currentInputIndex += _inputBlockSize;
                         bytesToWrite -= _inputBlockSize;
                     }
@@ -430,6 +526,16 @@ namespace System.Security.Cryptography
                 _inputBuffer = new byte[_inputBlockSize];
                 _outputBlockSize = _transform.OutputBlockSize;
                 _outputBuffer = new byte[_outputBlockSize];
+            }
+        }
+
+        private SemaphoreSlim AsyncActiveSemaphore
+        {
+            get
+            {
+                // Lazily-initialize _lazyAsyncActiveSemaphore.  As we're never accessing the SemaphoreSlim's
+                // WaitHandle, we don't need to worry about Disposing it.
+                return LazyInitializer.EnsureInitialized(ref _lazyAsyncActiveSemaphore, () => new SemaphoreSlim(1, 1));
             }
         }
     }
