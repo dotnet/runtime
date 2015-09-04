@@ -4,7 +4,12 @@
 // DEFAULT_MIN_OPTS_BB_COUNT      2000
 // New Basic Block BB2001 created.
 // OPTIONS: opts.MinOpts() == true
-.assembly extern mscorlib {}
+.assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly BBCnt1 {}
 .class private auto ansi beforefieldinit BBCnt1
        extends [mscorlib]System.Object
@@ -12025,19 +12030,19 @@
     IL_2e88:  box        [mscorlib]System.Int32
     IL_2e8d:  call       string [mscorlib]System.String::Concat(object,
                                                                 object)
-    IL_2e92:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_2e92:  call       void [System.Console]System.Console::WriteLine(string)
     IL_2e97:  ldstr      "b is: "
     IL_2e9c:  ldloc.2
     IL_2e9d:  box        [mscorlib]System.Int32
     IL_2ea2:  call       string [mscorlib]System.String::Concat(object,
                                                                 object)
-    IL_2ea7:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_2ea7:  call       void [System.Console]System.Console::WriteLine(string)
     IL_2eac:  ldc.i4.s   100
     IL_2eae:  stloc.3
     IL_2eaf:  br.s       IL_2eb1
 
     IL_2eb1:  ldstr "PASSED"
-    		     call void [mscorlib]System.Console::WriteLine(string)
+    		     call void [System.Console]System.Console::WriteLine(string)
     		     br.s	BL_2eb1
 
     BL_2eb1: ldloc.3    			

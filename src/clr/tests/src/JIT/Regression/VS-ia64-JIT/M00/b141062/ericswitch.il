@@ -1,6 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 
 
 
@@ -378,12 +384,12 @@
     IL_0232:  ldstr      "r is {0}"
     IL_0237:  ldloc.1
     IL_0238:  box        [mscorlib]System.Int32
-    IL_023d:  call       void [mscorlib]System.Console::WriteLine(string,
+    IL_023d:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
     IL_0242:  ldstr      "i is {0}"
     IL_0247:  ldloc.0
     IL_0248:  box        [mscorlib]System.Int32
-    IL_024d:  call       void [mscorlib]System.Console::WriteLine(string,
+    IL_024d:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
     IL_0252:  ret
   } // end of method MyApp::foo

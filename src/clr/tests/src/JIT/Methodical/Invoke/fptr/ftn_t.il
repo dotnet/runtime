@@ -5,7 +5,12 @@
 
 
 
-.assembly extern mscorlib {}
+.assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly 'bug'
 {
 
@@ -42,7 +47,7 @@
       // Code size       1 (0x1)
       .maxstack  8
       ldstr "Looks good."
-      call  void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+      call  void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
       ret
     } // end of method 'Test::DoStuff'
 

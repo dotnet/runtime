@@ -1,6 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 
 
 
@@ -1618,7 +1624,7 @@
          IL_000b:  ldflda     valuetype Seq0x12c000 S::x
          IL_0010:  call       void LdfldaHack::F(valuetype Seq0x12c000&)
                    ldstr     "FAIL: expected NullReferenceException not thrown"
-                   call      void [mscorlib]System.Console::WriteLine(string)
+                   call      void [System.Console]System.Console::WriteLine(string)
                    ldc.i4    99
                    stloc     V_2
          IL_0016:  leave     IL_00ff
@@ -1629,7 +1635,7 @@
               ldstr      "PASS: caught expected exception: {0}"
               ldloc      V_1
               callvirt   instance string [mscorlib]System.Object::ToString()
-              call       void [mscorlib]System.Console::WriteLine(string,object)
+              call       void [System.Console]System.Console::WriteLine(string,object)
               ldc.i4     100
               stloc      V_2
               leave      IL_00ff

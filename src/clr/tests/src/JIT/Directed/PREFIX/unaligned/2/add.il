@@ -4,6 +4,11 @@
 // (04/08/09) Updated the layout field values to match unaligned.0x2. Else the test fails on IA64 if explicit layouts are specified.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly 'add' {
  //This byte field requests that this assembly not be verified at run time and corresponds to this C# declaration:
   //[assembly:System.Security.Permissions.SecurityPermissionAttribute( [mscorlib]System.Security.Permissions.SecurityAction.RequestMinimum, Flags=System.Security.Permissions.SecurityPermissionFlag.SkipVerification )]
@@ -102,13 +107,13 @@
 //----------------
 PASS:
 	ldstr "Test SUCCESS"
-	call void [mscorlib]System.Console::WriteLine(string)
+	call void [System.Console]System.Console::WriteLine(string)
 	ldc.i4	0x64
 	ret
 //----------------
 FAIL:
 	ldstr "Test FAILED"
-	call void [mscorlib]System.Console::WriteLine(string)
+	call void [System.Console]System.Console::WriteLine(string)
 	ldc.i4	0x0
 	ret
 }

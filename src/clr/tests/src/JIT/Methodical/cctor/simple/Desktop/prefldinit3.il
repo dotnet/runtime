@@ -1,7 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-.assembly extern mscorlib {}
+.assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly precise3 {}
 .class private auto ansi beforefieldinit measure
        extends [mscorlib]System.Object
@@ -53,17 +58,17 @@
     IL_0007:  ldstr      "in .cctor(), measure.a is {0}"
     IL_000c:  ldsfld     int32 measure::a
     IL_0011:  box        [mscorlib]System.Int32
-    IL_0016:  call       void [mscorlib]System.Console::WriteLine(string,
+    IL_0016:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
     IL_001b:  ldstr      "FAILED"
-    IL_0020:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0020:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0025:  newobj     instance void [mscorlib]System.Exception::.ctor()
     IL_002a:  throw
 
     IL_002b:  ldstr      "in .cctor(), measure.a is {0}"
     IL_0030:  ldsfld     int32 measure::a
     IL_0035:  box        [mscorlib]System.Int32
-    IL_003a:  call       void [mscorlib]System.Console::WriteLine(string,
+    IL_003a:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
     IL_003f:  ldsfld     int32 measure::a
     IL_0044:  ldc.i4.8
@@ -76,17 +81,17 @@
     IL_0053:  ldstr      "in .cctor() after measure.a=8, measure.a is {0}"
     IL_0058:  ldsfld     int32 measure::a
     IL_005d:  box        [mscorlib]System.Int32
-    IL_0062:  call       void [mscorlib]System.Console::WriteLine(string,
+    IL_0062:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
     IL_0067:  ldstr      "FAILED"
-    IL_006c:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_006c:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0071:  newobj     instance void [mscorlib]System.Exception::.ctor()
     IL_0076:  throw
 
     IL_0077:  ldstr      "in .cctor() after measure.a=8, measure.a is {0}"
     IL_007c:  ldsfld     int32 measure::a
     IL_0081:  box        [mscorlib]System.Int32
-    IL_0086:  call       void [mscorlib]System.Console::WriteLine(string,
+    IL_0086:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
     IL_008b:  ret
   } // end of method test::.cctor
@@ -135,11 +140,11 @@
     .try
     {
       ldstr      "Testing .cctor() invocation by calling virtual method"
-      call       void [mscorlib]System.Console::WriteLine(string)
+      call       void [System.Console]System.Console::WriteLine(string)
       ldstr "We have beforefieldinit set and we are accessing virtual method rather than static method or static field, test may fail by design?"
-      call       void [mscorlib]System.Console::WriteLine(string)
+      call       void [System.Console]System.Console::WriteLine(string)
       ldnull
-      call       void [mscorlib]System.Console::WriteLine(string)
+      call       void [System.Console]System.Console::WriteLine(string)
       IL_0000:  ldc.i4.s   15
       IL_0002:  stloc.0
       IL_0003:  newobj     instance void test2::.ctor()
@@ -150,21 +155,21 @@
       IL_0010:  ldstr      "in Main(), measure.a is {0}"
       IL_0015:  ldsfld     int32 measure::a
       IL_001a:  box        [mscorlib]System.Int32
-      IL_001f:  call       void [mscorlib]System.Console::WriteLine(string,
+      IL_001f:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
       IL_0024:  ldstr      "FAILED"
-      IL_0029:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0029:  call       void [System.Console]System.Console::WriteLine(string)
       IL_002e:  ldc.i4.1
       IL_002f:  stloc.3
       IL_0030:  leave.s    IL_009e
 
       IL_0032:  ldstr      "Before running virtual method"
-      IL_0037:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0037:  call       void [System.Console]System.Console::WriteLine(string)
       IL_003c:  ldloc.1
       IL_003d:  ldloca.s   V_0
       IL_003f:  callvirt   instance void test::f(unsigned int8&)
       IL_0044:  ldstr      "After running virtual method"
-      IL_0049:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0049:  call       void [System.Console]System.Console::WriteLine(string)
       IL_004e:  ldsfld     int32 measure::a
       IL_0053:  ldc.i4.0
       IL_0054:  beq.s      IL_0078
@@ -172,10 +177,10 @@
       IL_0056:  ldstr      "in Main() after f(ref b), measure.a is {0}"
       IL_005b:  ldsfld     int32 measure::a
       IL_0060:  box        [mscorlib]System.Int32
-      IL_0065:  call       void [mscorlib]System.Console::WriteLine(string,
+      IL_0065:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
       IL_006a:  ldstr      "FAILED"
-      IL_006f:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_006f:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0074:  ldc.i4.m1
       IL_0075:  stloc.3
       IL_0076:  leave.s    IL_009e
@@ -188,15 +193,15 @@
       IL_007a:  stloc.2
       IL_007b:  ldloc.2
       IL_007c:  callvirt   instance string [mscorlib]System.Exception::get_StackTrace()
-      IL_0081:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0081:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0086:  ldc.i4.m1
       IL_0087:  stloc.3
       IL_0088:  leave.s    IL_009e
 
     }  // end handler
-    IL_008a:  call       void [mscorlib]System.Console::WriteLine()
+    IL_008a:  call       void [System.Console]System.Console::WriteLine()
     IL_008f:  ldstr      "PASSED"
-    IL_0094:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0094:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0099:  ldc.i4.s   100
     IL_009b:  stloc.3
     IL_009c:  br.s       IL_009e

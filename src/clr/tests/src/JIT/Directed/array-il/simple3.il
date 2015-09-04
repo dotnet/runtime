@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly simple3
 {
 }
@@ -22,7 +27,7 @@
     IL_000c:  ldloca.s   V_0
     IL_000e:  call       instance class [mscorlib]System.String [mscorlib]System.Int32::ToString()
     IL_0013:  call class [mscorlib]System.String [mscorlib]System.String::Concat(class [mscorlib]System.String,class [mscorlib]System.String)
-    IL_0018:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+    IL_0018:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
               ldloc 0
     IL_001d:  ret
   }
@@ -43,7 +48,7 @@
              int64 sum)
 
     IL_0000:  ldstr      "Starting..."
-    IL_0005:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+    IL_0005:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
     IL_000a:  ldc.i4.s   10
     IL_000c:  stloc.0
     IL_000d:  ldloc.0
@@ -202,12 +207,12 @@ bne.un IL_00da
     IL_00cc:  bne.un.s   IL_00da
 
     IL_00ce:  ldstr      "Everything Worked!"
-    IL_00d3:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+    IL_00d3:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
     IL_00d8:  ldc.i4    0x64
     IL_00d9:  ret
 
     IL_00da:  ldstr      "Something is broken!"
-    IL_00df:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+    IL_00df:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
     IL_00e4:  ldc.i4.1
     IL_00e5:  ret
   } // end of method 'Simple2_Array_Test::Main'

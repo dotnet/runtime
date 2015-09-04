@@ -1,7 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-.assembly extern mscorlib {}
+.assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly asm1{}
 
 .data LONG_DATA = int64(0x0000000100000002)
@@ -80,7 +85,7 @@
 L0:
 	stloc s
 	ldstr "L0"
-	call void [mscorlib]System.Console::WriteLine(string)
+	call void [System.Console]System.Console::WriteLine(string)
 	ldloca s
 	call instance void S::Incr()
 	ldloc s
@@ -90,14 +95,14 @@ L0:
 L1:
 	stloc s
 	ldstr "L1"
-	call void [mscorlib]System.Console::WriteLine(string)
+	call void [System.Console]System.Console::WriteLine(string)
 	ldloca s
 	call instance void S::Incr()
 	ldloc s
 
 L2:
 	ldfld int32 S::m_i2
-	call void [mscorlib]System.Console::WriteLine(int32)
+	call void [System.Console]System.Console::WriteLine(int32)
 
         ldc.i4 100
 	ret

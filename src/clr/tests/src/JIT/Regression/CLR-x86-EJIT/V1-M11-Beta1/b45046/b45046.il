@@ -5,7 +5,12 @@
 
 
 
-.assembly extern mscorlib {}
+.assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly 'b'// as "b"
 {
 
@@ -35,9 +40,9 @@
       		add
       		//print out counter
       		ldstr    "value is "
-      		call      void [mscorlib]System.Console::Write(class [mscorlib]System.String)
+      		call      void [System.Console]System.Console::Write(class [mscorlib]System.String)
       		dup
-      		call      void [mscorlib]System.Console::WriteLine(int32)
+      		call      void [System.Console]System.Console::WriteLine(int32)
       		//make a switch
 			dup
 			switch     (again, again, again, stop)
@@ -52,11 +57,11 @@
       		ceq
       		brfalse wrong
       		ldstr    "passed"
-      		call      void [mscorlib]System.Console::Write(class [mscorlib]System.String)
+      		call      void [System.Console]System.Console::Write(class [mscorlib]System.String)
       		br done
       	wrong:
       		ldstr    "failed"
-      		call      void [mscorlib]System.Console::Write(class [mscorlib]System.String)
+      		call      void [System.Console]System.Console::Write(class [mscorlib]System.String)
       	done:
       		ldc.i4 100
 		ret

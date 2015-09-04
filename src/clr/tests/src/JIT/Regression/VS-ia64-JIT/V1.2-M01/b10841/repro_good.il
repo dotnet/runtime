@@ -1,6 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 
 
 
@@ -53,7 +59,7 @@ pop
       .try
       {
         IL_0007:  ldloc.0
-        IL_0008:  call       void [mscorlib]System.Console::WriteLine(int32)
+        IL_0008:  call       void [System.Console]System.Console::WriteLine(int32)
         IL_000d:  ldstr      "TestEx"
         IL_0012:  newobj     instance void [mscorlib]System.Exception::.ctor(string)
         IL_0017:  throw
@@ -63,7 +69,7 @@ pop
       {
         IL_0018:  stloc.1
         IL_001f:  ldloc.0
-        IL_0020:  call       void [mscorlib]System.Console::WriteLine(int32)
+        IL_0020:  call       void [System.Console]System.Console::WriteLine(int32)
         IL_0025:  leave.s    IL_0027
 
       }  // end handler
@@ -73,11 +79,11 @@ pop
     finally
     {
       IL_002f:  ldloc.0
-      IL_0030:  call       void [mscorlib]System.Console::WriteLine(int32)
+      IL_0030:  call       void [System.Console]System.Console::WriteLine(int32)
       IL_0035:  endfinally
     }  // end handler
     IL_003a:  ldloc.0
-    IL_003b:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_003b:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_0040:  ldc.i4 100
     IL_0041:  stloc.s    V_4
     IL_0043:  br.s       IL_0045

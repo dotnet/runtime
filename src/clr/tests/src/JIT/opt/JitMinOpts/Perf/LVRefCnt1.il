@@ -4,7 +4,12 @@
 // DEFAULT_MIN_OPTS_LV_REF_COUNT  8000
 // New refCnts for V00: refCnt = 8001
 // OPTIONS: opts.MinOpts() == true
-.assembly extern mscorlib {}
+.assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly LVRefCnt1 {}
 .method public static int32 Main()
 {

@@ -5,6 +5,11 @@
 
 .module 'aaa.exe'
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly 'aaa'// as "aaa.exe"
 {
   
@@ -192,21 +197,21 @@
       IL_0029:  box        [mscorlib]System.Int32
       IL_002e:  call       class [mscorlib]System.String [mscorlib]System.String::Concat(class [mscorlib]System.Object,
                                                                                class [mscorlib]System.Object)
-      IL_0033:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+      IL_0033:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
       IL_0038:  ldstr      "How many times boo() was called: "
       IL_003d:  ldsfld    int32 DefaultNamespace.dotailcall::iboo
       IL_0042:  box        [mscorlib]System.Int32
       IL_0047:  call       class [mscorlib]System.String [mscorlib]System.String::Concat(class [mscorlib]System.Object,
                                                                                class [mscorlib]System.Object)
-      IL_004c:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+      IL_004c:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
       IL_0051:  ldstr      "How many times goo() was called: "
       IL_0056:  ldsfld    int32 DefaultNamespace.dotailcall::igoo
       IL_005b:  box        [mscorlib]System.Int32
       IL_0060:  call       class [mscorlib]System.String [mscorlib]System.String::Concat(class [mscorlib]System.Object,
                                                                                class [mscorlib]System.Object)
-      IL_0065:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+      IL_0065:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
       IL_006a:  ldstr      "Passed"
-      IL_006f:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+      IL_006f:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
       IL_0074:  ldc.i4    0x64
       IL_0079:  ret
     } // end of method 'dotailcall::Main'
