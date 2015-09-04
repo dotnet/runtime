@@ -4,9 +4,7 @@
 
 
 // Metadata version: v4.0.21104
-.assembly extern mscorlib
-{
-}
+.assembly extern mscorlib {}
 .assembly Dev10_863995
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 

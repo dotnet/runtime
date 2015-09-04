@@ -3,7 +3,7 @@
 
 
 .assembly ILStackAllocRepro {}
- .assembly extern mscorlib{auto}
+.assembly extern mscorlib{auto}
 
 .class private auto ansi beforefieldinit Foo
        extends [mscorlib]System.Object

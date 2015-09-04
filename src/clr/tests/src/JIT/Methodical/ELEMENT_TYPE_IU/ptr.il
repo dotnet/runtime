@@ -3,8 +3,7 @@
 
 //
 //.corflags 0x00000002
-.assembly extern mscorlib
-{ }
+.assembly extern mscorlib {}
 .assembly 'test'
 { }
 .module 'test.exe'

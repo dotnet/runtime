@@ -5,9 +5,7 @@
 
 
 
-.assembly extern mscorlib
-{
-}
+.assembly extern mscorlib {}
 .assembly 'catchfinally'// as "catchfinally"
 {
   .permission reqmin ['mscorlib']System.Security.Permissions.SecurityPermissionAttribute ( "SkipVerification" = true )

@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 // const.il
-.assembly extern mscorlib { }
+.assembly extern mscorlib {}
 .assembly 'const'
 {
   .permission reqmin ['mscorlib']System.Security.Permissions.SecurityPermissionAttribute ( "SkipVerification" = true )

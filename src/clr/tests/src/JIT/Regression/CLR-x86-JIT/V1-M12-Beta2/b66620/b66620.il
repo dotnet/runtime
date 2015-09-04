@@ -6,7 +6,7 @@
 // NEGATIVE
 // merge of instance and static method
 
-.assembly extern mscorlib { }
+.assembly extern mscorlib {}
 .assembly ctor_merge2 { }
 .class public auto ansi beforefieldinit TestClass
        extends [mscorlib]System.Object

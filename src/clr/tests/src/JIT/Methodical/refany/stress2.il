@@ -5,9 +5,7 @@
 
 
 
-.assembly extern mscorlib
-{
-}
+.assembly extern mscorlib {}
 .assembly stress2// as "stress2"
 {
 }

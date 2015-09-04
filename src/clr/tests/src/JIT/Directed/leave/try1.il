@@ -3,9 +3,7 @@
 
 //different datatype in try block
 //
-.assembly extern mscorlib
-{
-}
+.assembly extern mscorlib {}
 .assembly try1
 {
 }

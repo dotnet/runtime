@@ -5,9 +5,7 @@
 
  
 // Metadata version: v4.0.20926
-.assembly extern mscorlib
-{
-}
+.assembly extern mscorlib {}
 .assembly Dev10_884217_IL
 {
 }

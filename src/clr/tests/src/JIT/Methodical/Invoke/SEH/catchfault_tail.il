@@ -5,9 +5,7 @@
 
 
 
-.assembly extern mscorlib
-{
-}
+.assembly extern mscorlib {}
 .assembly 'catchfault_tail'// as "catchfault_tail"
 {
 }

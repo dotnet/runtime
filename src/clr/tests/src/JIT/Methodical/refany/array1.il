@@ -5,9 +5,7 @@
 
 
 
-.assembly extern mscorlib
-{
-}
+.assembly extern mscorlib {}
 .assembly array1// as "array1"
 {
 }

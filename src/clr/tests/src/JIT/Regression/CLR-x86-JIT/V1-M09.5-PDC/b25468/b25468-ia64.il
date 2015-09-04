@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
- .assembly extern legacy library mscorlib {}
+.assembly extern legacy library mscorlib {}
 .assembly ILGEN_0x145288f8 {}
  .class ILGEN_0x145288f8 {
 
