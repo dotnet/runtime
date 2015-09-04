@@ -3,8 +3,7 @@
 
 //
 //
-.assembly extern mscorlib
-{ }
+.assembly extern mscorlib {}
 .assembly 'c'// as "c"
 { }
 .module 'c.exe'

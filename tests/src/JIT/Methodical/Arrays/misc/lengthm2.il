@@ -7,13 +7,7 @@
 
 
 
-.assembly extern mscorlib
-{
-                           
-  
-           
-  
-}
+.assembly extern mscorlib {}
 .assembly 'test'
 {
 

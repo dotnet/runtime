@@ -6,9 +6,7 @@
 
 .file alignment 512
 
-.assembly extern mscorlib
-{
-}
+.assembly extern mscorlib {}
 .assembly accum // as "accum"
 {
 }

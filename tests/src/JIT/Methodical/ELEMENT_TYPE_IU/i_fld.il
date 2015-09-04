@@ -3,8 +3,7 @@
 
 //
 //
-.assembly extern mscorlib
-{ }
+.assembly extern mscorlib {}
 .assembly 'qsort'// as "qsort"
 { }
 .module 'qsort.exe'

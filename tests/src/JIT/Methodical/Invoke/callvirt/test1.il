@@ -5,13 +5,7 @@
 
 
 
-.assembly extern mscorlib
-{
-                           
-  
-           
-  
-}
+.assembly extern mscorlib {}
 .assembly 'test1'// as "test1"
 {
 

@@ -6,9 +6,7 @@
 
 .file alignment 512
 
-.assembly extern mscorlib
-{
-}
+.assembly extern mscorlib {}
 .assembly jumper // as "jumper"
 {
  //This byte field requests that this assembly not be verified at run time and corresponds to this C# declaration:

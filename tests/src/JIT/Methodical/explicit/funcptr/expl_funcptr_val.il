@@ -4,11 +4,7 @@
 
 
 
-.assembly extern mscorlib
-{
-  
-  
-}
+.assembly extern mscorlib {}
 .assembly funcptr_val
 {
 

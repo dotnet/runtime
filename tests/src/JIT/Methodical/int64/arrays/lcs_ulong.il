@@ -7,9 +7,7 @@
 
 
 
-.assembly extern mscorlib
-{
-}
+.assembly extern mscorlib {}
 .assembly 'lcs_ulong'// as "lcs_ulong"
 {
 }

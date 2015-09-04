@@ -3,13 +3,7 @@
 
 
 
-.assembly extern mscorlib
-{
-                           
-  
-           
-  
-}
+.assembly extern mscorlib {}
 .assembly 'rotarg_float'// as "rotarg_float"
 {
 

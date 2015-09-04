@@ -3,13 +3,7 @@
 
 
 
-.assembly extern mscorlib
-{
-                           
-  
-           
-  
-}
+.assembly extern mscorlib {}
 .assembly 'rotate_u2'// as "rotate_u2"
 {
 

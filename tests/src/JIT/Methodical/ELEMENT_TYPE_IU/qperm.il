@@ -7,9 +7,7 @@
 
 
 
-.assembly extern mscorlib
-{
-}
+.assembly extern mscorlib {}
 .assembly 'qsort'// as "qsort"
 {
   .permission reqmin ['mscorlib']System.Security.Permissions.SecurityPermissionAttribute ( "SkipVerification" = true )

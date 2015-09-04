@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .module extern kernel32
-.assembly extern mscorlib { }
+.assembly extern mscorlib {}
 .assembly sysinfo { }
 .module sysinfo.exe
 .namespace JitTest

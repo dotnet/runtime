@@ -3,13 +3,7 @@
 
 
 
-.assembly extern mscorlib
-{
-                           
-  
-           
-  
-}
+.assembly extern mscorlib {}
 .assembly 'refloc_f4'// as "refloc_f4"
 {
 
