@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <stdint.h>
+#include "pal_types.h"
 
 /**
  * Struct to describe the amount of free space and total space on a given mount point
