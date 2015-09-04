@@ -47,6 +47,7 @@ Abstract:
 #include <sys/wait.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <debugmacrosext.h>
 
 using namespace CorUnix;
 
@@ -2025,7 +2026,9 @@ CreateProcessModules(
 
         // Making something like: /proc/123/maps
         char mapFileName[100]; 
-        int chars = snprintf(mapFileName, sizeof(mapFileName), "/proc/%d/maps", dwProcessId);
+
+        INDEBUG(int chars = )
+        snprintf(mapFileName, sizeof(mapFileName), "/proc/%d/maps", dwProcessId);
         _ASSERTE(chars > 0 && chars <= sizeof(mapFileName));
 
         FILE *mapsFile = fopen(mapFileName, "r");
