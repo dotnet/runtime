@@ -193,8 +193,13 @@ LEAF_ENTRY RtlRestoreContext, _TEXT
     ldr R2, [r0, #(CONTEXT_Cpsr)]
     msr APSR, r2    
     
-    add r0, CONTEXT_R0
-    ldmia r0, {r0-r12, sp, lr, pc}
+    mov r12, r0 // ideally we would ldmia r0, {r0-r12, sp, lr, pc} here, but that isn't supported on new clang
+    add r12, CONTEXT_R0 // so we'll burn r12 as the IPC reg for now -- TODO: is this ok?
+    ldm r12, {r0-r11}
+    add r12, (CONTEXT_Sp - CONTEXT_R0)
+    ldr sp, [r12]
+    ldr lr, [r12, #(CONTEXT_Lr - CONTEXT_Sp)]
+    ldr pc, [r12, #(CONTEXT_Pc - CONTEXT_Sp)]
     
 LOCAL_LABEL(No_Restore_CONTEXT_INTEGER):
     
@@ -202,7 +207,9 @@ LOCAL_LABEL(No_Restore_CONTEXT_INTEGER):
     msr APSR, r2    
     
     add r0, CONTEXT_Sp
-    ldmia r0, {sp, lr, pc}
+    ldr sp, [r0]
+    ldr lr, [r0, #(CONTEXT_Lr - CONTEXT_Sp)]
+    ldr pc, [r0, #(CONTEXT_Pc - CONTEXT_Sp)]
     
 LOCAL_LABEL(No_Restore_CONTEXT_CONTROL):
     ldr r2, [r0, #(CONTEXT_ContextFlags)]
