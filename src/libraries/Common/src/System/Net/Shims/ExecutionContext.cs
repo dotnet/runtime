@@ -38,6 +38,7 @@ namespace System.Threading
             {
                 throw new InvalidOperationException();
             }
+
             s_threadEc.Value._isFlowSuppressed = false;
         }
 

@@ -1,0 +1,13 @@
+{
+  "dependencies": {
+    "System.Net.Primitives": "4.0.10-beta-*",
+    "System.Net.Sockets": "4.1.0-beta-*",
+    "System.Security.Cryptography.X509Certificates.TestData": "1.0.0-prerelease",
+
+    "xunit": "2.1.0-beta3-*",
+    "xunit.netcore.extensions": "1.0.0-prerelease-*"
+  },
+  "frameworks": {
+    "dnxcore50": {}
+  }
+}

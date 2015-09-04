@@ -1,0 +1,333 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="net_noseek" xml:space="preserve">
+    <value>This stream does not support seek operations.</value>
+  </data>
+  <data name="net_securitypackagesupport" xml:space="preserve">
+    <value>The requested security package is not supported.</value>
+  </data>
+  <data name="net_MethodNotImplementedException" xml:space="preserve">
+    <value>This method is not implemented by this class.</value>
+  </data>
+  <data name="net_completed_result" xml:space="preserve">
+    <value>This operation cannot be performed on a completed asynchronous result object.</value>
+  </data>
+  <data name="net_io_readfailure" xml:space="preserve">
+    <value>Unable to read data from the transport connection: {0}.</value>
+  </data>
+  <data name="net_io_connectionclosed" xml:space="preserve">
+    <value>The connection was closed</value>
+  </data>
+  <data name="net_io_invalidnestedcall" xml:space="preserve">
+    <value> The {0} method cannot be called when another {1} operation is pending.</value>
+  </data>
+  <data name="net_io_invalidendcall" xml:space="preserve">
+    <value>{0} can only be called once for each asynchronous operation.</value>
+  </data>
+  <data name="net_io_must_be_rw_stream" xml:space="preserve">
+    <value>The stream has to be read/write.</value>
+  </data>
+  <data name="net_io_header_id" xml:space="preserve">
+    <value>Found a wrong header field {0} read : {1}, expected : {2}.</value>
+  </data>
+  <data name="net_io_encrypt" xml:space="preserve">
+    <value>The encryption operation failed, see inner exception.</value>
+  </data>
+  <data name="net_io_decrypt" xml:space="preserve">
+    <value>The decryption operation failed, see inner exception.</value>
+  </data>
+  <data name="net_io_read" xml:space="preserve">
+    <value>The read operation failed, see inner exception.</value>
+  </data>
+  <data name="net_io_write" xml:space="preserve">
+    <value>The write operation failed, see inner exception.</value>
+  </data>
+  <data name="net_io_eof" xml:space="preserve">
+    <value> Received an unexpected EOF or 0 bytes from the transport stream.</value>
+  </data>
+  <data name="net_io_async_result" xml:space="preserve">
+    <value>The parameter: {0} is not valid. Use the object returned from corresponding Begin async call.</value>
+  </data>
+  <data name="net_ssl_io_frame" xml:space="preserve">
+    <value>The handshake failed due to an unexpected packet format.</value>
+  </data>
+  <data name="net_ssl_io_cert_validation" xml:space="preserve">
+    <value>The remote certificate is invalid according to the validation procedure.</value>
+  </data>
+  <data name="net_ssl_io_no_server_cert" xml:space="preserve">
+    <value>The server mode SSL must use a certificate with the associated private key.</value>
+  </data>
+  <data name="net_auth_reauth" xml:space="preserve">
+    <value>This operation is not allowed on a security context that has already been authenticated.</value>
+  </data>
+  <data name="net_auth_noauth" xml:space="preserve">
+    <value>This operation is only allowed using a successfully authenticated context.</value>
+  </data>
+  <data name="net_auth_client_server" xml:space="preserve">
+    <value>Once authentication is attempted as the client or server, additional authentication attempts must use the same client or server role.</value>
+  </data>
+  <data name="net_auth_SSPI" xml:space="preserve">
+    <value>A call to SSPI failed, see inner exception.</value>
+  </data>
+  <data name="net_auth_eof" xml:space="preserve">
+    <value>Authentication failed because the remote party has closed the transport stream.</value>
+  </data>
+  <data name="net_auth_ignored_reauth" xml:space="preserve">
+    <value>Re-authentication failed because the remote party continued to encrypt more than {0} bytes before answering re-authentication.</value>
+  </data>
+  <data name="net_auth_message_not_encrypted" xml:space="preserve">
+    <value>Protocol error: A received message contains a valid signature but it was not encrypted as required by the effective Protection Level.</value>
+  </data>
+  <data name="net_frame_size" xml:space="preserve">
+    <value>Received an invalid authentication frame. The message size is limited to {0} bytes, attempted to read {1} bytes.</value>
+  </data>
+  <data name="net_frame_read_io" xml:space="preserve">
+    <value>Received incomplete authentication message. Remote party has probably closed the connection.</value>
+  </data>
+  <data name="net_frame_read_size" xml:space="preserve">
+    <value>Cannot determine the frame size or a corrupted frame was received.</value>
+  </data>
+  <data name="net_frame_max_size" xml:space="preserve">
+    <value>The payload size is limited to {0}, attempted set it to {1}.</value>
+  </data>
+  <data name="net_offset_plus_count" xml:space="preserve">
+    <value>Sum of offset and count cannot be greater than the length of the buffer.</value>
+  </data>
+  <data name="net_invalid_enum" xml:space="preserve">
+    <value>The specified value is not valid in the '{0}' enumeration.</value>
+  </data>
+  <data name="net_log_exception" xml:space="preserve">
+    <value>Exception in {0}::{1} - {2}.</value>
+  </data>
+  <data name="net_log_sspi_enumerating_security_packages" xml:space="preserve">
+    <value>Enumerating security packages:</value>
+  </data>
+  <data name="net_log_sspi_security_package_not_found" xml:space="preserve">
+    <value>Security package '{0}' was not found.</value>
+  </data>
+  <data name="net_log_sspi_security_context_input_buffer" xml:space="preserve">
+    <value>{0}(In-Buffer length={1}, Out-Buffer length={2}, returned code={3}).</value>
+  </data>
+  <data name="net_log_sspi_security_context_input_buffers" xml:space="preserve">
+    <value>{0}(In-Buffers count={1}, Out-Buffer length={2}, returned code={3}).</value>
+  </data>
+  <data name="net_log_sspi_selected_cipher_suite" xml:space="preserve">
+    <value>{0}(Protocol={1}, Cipher={2} {3} bit strength, Hash={4} {5} bit strength, Key Exchange={6} {7} bit strength).</value>
+  </data>
+  <data name="net_log_remote_certificate" xml:space="preserve">
+    <value>Remote certificate: {0}.</value>
+  </data>
+  <data name="net_log_locating_private_key_for_certificate" xml:space="preserve">
+    <value>Locating the private key for the certificate: {0}.</value>
+  </data>
+  <data name="net_log_cert_is_of_type_2" xml:space="preserve">
+    <value>Certificate is of type X509Certificate2 and contains the private key.</value>
+  </data>
+  <data name="net_log_found_cert_in_store" xml:space="preserve">
+    <value>Found the certificate in the {0} store.</value>
+  </data>
+  <data name="net_log_did_not_find_cert_in_store" xml:space="preserve">
+    <value>Cannot find the certificate in either the LocalMachine store or the CurrentUser store.</value>
+  </data>
+  <data name="net_log_open_store_failed" xml:space="preserve">
+    <value>Opening Certificate store {0} failed, exception: {1}.</value>
+  </data>
+  <data name="net_log_got_certificate_from_delegate" xml:space="preserve">
+    <value>Got a certificate from the client delegate.</value>
+  </data>
+  <data name="net_log_no_delegate_and_have_no_client_cert" xml:space="preserve">
+    <value>Client delegate did not provide a certificate; and there are not other user-provided certificates. Need to attempt a session restart.</value>
+  </data>
+  <data name="net_log_no_delegate_but_have_client_cert" xml:space="preserve">
+    <value>Client delegate did not provide a certificate; but there are other user-provided certificates.</value>
+  </data>
+  <data name="net_log_attempting_restart_using_cert" xml:space="preserve">
+    <value>Attempting to restart the session using the user-provided certificate: {0}.</value>
+  </data>
+  <data name="net_log_no_issuers_try_all_certs" xml:space="preserve">
+    <value>We have user-provided certificates. The server has not specified any issuers, so try all the certificates.</value>
+  </data>
+  <data name="net_log_server_issuers_look_for_matching_certs" xml:space="preserve">
+    <value>We have user-provided certificates. The server has specified {0} issuer(s). Looking for certificates that match any of the issuers.</value>
+  </data>
+  <data name="net_log_selected_cert" xml:space="preserve">
+    <value>Selected certificate: {0}.</value>
+  </data>
+  <data name="net_log_n_certs_after_filtering" xml:space="preserve">
+    <value>Left with {0} client certificates to choose from.</value>
+  </data>
+  <data name="net_log_finding_matching_certs" xml:space="preserve">
+    <value>Trying to find a matching certificate in the certificate store.</value>
+  </data>
+  <data name="net_log_using_cached_credential" xml:space="preserve">
+    <value>Using the cached credential handle.</value>
+  </data>
+  <data name="net_log_remote_cert_user_declared_valid" xml:space="preserve">
+    <value>Remote certificate was verified as valid by the user.</value>
+  </data>
+  <data name="net_log_remote_cert_user_declared_invalid" xml:space="preserve">
+    <value>Remote certificate was verified as invalid by the user.</value>
+  </data>
+  <data name="net_log_remote_cert_has_no_errors" xml:space="preserve">
+    <value>Remote certificate has no errors.</value>
+  </data>
+  <data name="net_log_remote_cert_has_errors" xml:space="preserve">
+    <value>Remote certificate has errors:</value>
+  </data>
+  <data name="net_log_remote_cert_not_available" xml:space="preserve">
+    <value>The remote server did not provide a certificate.</value>
+  </data>
+  <data name="net_log_remote_cert_name_mismatch" xml:space="preserve">
+    <value>Certificate name mismatch.</value>
+  </data>
+  <data name="net_log_operation_returned_something" xml:space="preserve">
+    <value>{0} returned {1}.</value>
+  </data>
+  <data name="net_log_operation_failed_with_error" xml:space="preserve">
+    <value>{0} failed with error {1}.</value>
+  </data>
+  <data name="SSPIInvalidHandleType" xml:space="preserve">
+    <value>'{0}' is not a supported handle type.</value>
+  </data>
+  <data name="security_ExtendedProtectionPolicy_UseDifferentConstructorForNever" xml:space="preserve">
+    <value>To construct a policy with PolicyEnforcement.Never, the single-parameter constructor must be used.</value>
+  </data>
+  <data name="security_ExtendedProtectionPolicy_NoEmptyServiceNameCollection" xml:space="preserve">
+    <value>The ServiceNameCollection must contain at least one service name.</value>
+  </data>
+  <data name="security_ServiceNameCollection_EmptyServiceName" xml:space="preserve">
+    <value>A service name must not be null or empty.</value>
+  </data>
+  <data name="InvalidOperation_WrongAsyncResultOrEndReadCalledMultiple" xml:space="preserve">
+    <value>Either the IAsyncResult object did not come from the corresponding async method on this type, or EndRead was called multiple times with the same IAsyncResult.</value>
+  </data>
+  <data name="InvalidOperation_WrongAsyncResultOrEndWriteCalledMultiple" xml:space="preserve">
+    <value>Either the IAsyncResult object did not come from the corresponding async method on this type, or EndWrite was called multiple times with the same IAsyncResult.</value>
+  </data>
+  <data name="ObjectDisposed_StreamIsClosed" xml:space="preserve">
+    <value>Cannot access a closed Stream.</value>
+  </data>
+  <data name="NotSupported_UnreadableStream" xml:space="preserve">
+    <value>Stream does not support reading.</value>
+  </data>
+  <data name="NotSupported_UnwritableStream" xml:space="preserve">
+    <value>Stream does not support writing.</value>
+  </data>
+</root>
