@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly legacy library test {}
 
 .class public auto ansi beforefieldinit TEST
@@ -26,13 +31,13 @@
     IL_0015:  bne.un.s   IL_0026
 
     IL_0017:  ldstr      "PASS"
-    IL_001c:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_001c:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0021:  ldc.i4.s   100
     IL_0023:  stloc.1
     IL_0024:  br.s       IL_0034
 
     IL_0026:  ldstr      "!!!FAIL!!!"
-    IL_002b:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_002b:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0030:  ldc.i4.s   101
     IL_0031:  stloc.1
     IL_0032:  br.s       IL_0034

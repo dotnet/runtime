@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly legacy library ldelemnullarr2 {}
 .class private auto ansi beforefieldinit ldelemnullarr2
        extends [mscorlib]System.Object
@@ -14,7 +19,7 @@
     IL_0002:  ldnull
     IL_0003:  ldc.i4.0
     IL_0004:  ldelem.i4
-    IL_0005:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_0005:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_000a:  ret
   } // end of method ldelemnullarr2::f
 
@@ -34,18 +39,18 @@
     {
       IL_0007:  pop
       IL_0008:  ldstr      "Caught expected System.NullReferenceException"
-      IL_000d:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_000d:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0012:  ldstr      "PASSED"
-      IL_0017:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0017:  call       void [System.Console]System.Console::WriteLine(string)
       IL_001c:  ldc.i4.s   100
       IL_001e:  stloc.0
       IL_001f:  leave.s    IL_0039
 
     }  // end handler
     IL_0021:  ldstr      "Should have caught System.NullReferenceException"
-    IL_0026:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0026:  call       void [System.Console]System.Console::WriteLine(string)
     IL_002b:  ldstr      "FAILED"
-    IL_0030:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0030:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0035:  ldc.i4.1
     IL_0036:  stloc.0
     IL_0037:  br.s       IL_0039

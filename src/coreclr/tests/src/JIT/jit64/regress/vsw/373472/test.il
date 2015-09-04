@@ -1,6 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 
 
 
@@ -121,7 +127,7 @@
       IL_0032:  ldstr      "test1 exception: {0}"
       IL_0037:  ldloc.2
       IL_0038:  callvirt   instance string [mscorlib]System.Object::ToString()
-      IL_003d:  call       void [mscorlib]System.Console::WriteLine(string,
+      IL_003d:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
       IL_0042:  nop
       IL_0043:  nop
@@ -130,7 +136,7 @@
     }  // end handler
     IL_0046:  nop
     IL_0047:  ldstr      "Test1 failed"
-    IL_004c:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_004c:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0051:  nop
     IL_0052:  ldc.i4.0
     IL_0053:  stloc.3
@@ -193,7 +199,7 @@
       IL_002d:  ldstr      "test2 exception: {0}"
       IL_0032:  ldloc.2
       IL_0033:  callvirt   instance string [mscorlib]System.Object::ToString()
-      IL_0038:  call       void [mscorlib]System.Console::WriteLine(string,
+      IL_0038:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
       IL_003d:  nop
       IL_003e:  nop
@@ -202,7 +208,7 @@
     }  // end handler
     IL_0041:  nop
     IL_0042:  ldstr      "Test2 failed"
-    IL_0047:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0047:  call       void [System.Console]System.Console::WriteLine(string)
     IL_004c:  nop
     IL_004d:  ldc.i4.0
     IL_004e:  stloc.3
@@ -283,7 +289,7 @@
       IL_004a:  ldstr      "test3 exception: {0}"
       IL_004f:  ldloc.2
       IL_0050:  callvirt   instance string [mscorlib]System.Object::ToString()
-      IL_0055:  call       void [mscorlib]System.Console::WriteLine(string,
+      IL_0055:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
       IL_005a:  nop
       IL_005b:  nop
@@ -292,7 +298,7 @@
     }  // end handler
     IL_005e:  nop
     IL_005f:  ldstr      "Test3 failed"
-    IL_0064:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0064:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0069:  nop
     IL_006a:  ldc.i4.0
     IL_006b:  stloc.3
@@ -357,7 +363,7 @@
     }  // end handler
     IL_003b:  nop
     IL_003c:  ldstr      "Test4 failed"
-    IL_0041:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0041:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0046:  nop
     IL_0047:  ldc.i4.0
     IL_0048:  stloc.2
@@ -446,7 +452,7 @@
     }  // end handler
     IL_0055:  nop
     IL_0056:  ldstr      "Test5 failed"
-    IL_005b:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_005b:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0060:  nop
     IL_0061:  ldc.i4.0
     IL_0062:  stloc.2

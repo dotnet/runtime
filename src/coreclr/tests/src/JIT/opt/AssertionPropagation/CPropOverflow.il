@@ -1,6 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 
 
 
@@ -81,7 +87,7 @@
       IL_000e:  ldstr      "a={0}"
       IL_0013:  ldloc.1
       IL_0014:  box        [mscorlib]System.Int32
-      IL_0019:  call       void [mscorlib]System.Console::WriteLine(string,
+      IL_0019:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
       IL_001e:  nop
       IL_001f:  nop
@@ -95,7 +101,7 @@
       IL_0024:  ldstr      "Overflow test failed a={0}"
       IL_0029:  ldloc.1
       IL_002a:  box        [mscorlib]System.Int32
-      IL_002f:  call       void [mscorlib]System.Console::WriteLine(string,
+      IL_002f:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
       IL_0034:  nop
       IL_0035:  ldc.i4.1
@@ -114,7 +120,7 @@
 
     IL_0043:  nop
     IL_0044:  ldstr      "Test Failed"
-    IL_0049:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0049:  call       void [System.Console]System.Console::WriteLine(string)
     IL_004e:  nop
     IL_004f:  ldc.i4.s   101
     IL_0051:  stloc.2
@@ -122,7 +128,7 @@
 
     IL_0054:  nop
     IL_0055:  ldstr      "Passed"
-    IL_005a:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_005a:  call       void [System.Console]System.Console::WriteLine(string)
     IL_005f:  nop
     IL_0060:  ldc.i4.s   100
     IL_0062:  stloc.2

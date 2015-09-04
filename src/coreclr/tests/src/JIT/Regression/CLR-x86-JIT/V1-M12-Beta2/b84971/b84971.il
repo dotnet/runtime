@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly EHTest {}
 .class public EHTest
 {
@@ -65,7 +70,7 @@ leave RET
 }
 RET: ldc.i4 100
 ldstr "PASSED"
-call void [mscorlib]System.Console::WriteLine(string)
+call void [System.Console]System.Console::WriteLine(string)
 ret
 }
 

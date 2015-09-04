@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly vargtail
 {
 }
@@ -58,13 +63,13 @@
   IL_00c2:  beq        IL_00dc
 
   IL_00c7:  ldstr      "Passed"
-  IL_00d1:  call void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+  IL_00d1:  call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 
   IL_00d6:  ldc.i4     100
   IL_00db:  ret
 
   IL_00dc:  ldstr      "Failed"
-  IL_00e6:  call void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+  IL_00e6:  call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 
   IL_00eb:  ldc.i4     0x1
   IL_00f0:  ret

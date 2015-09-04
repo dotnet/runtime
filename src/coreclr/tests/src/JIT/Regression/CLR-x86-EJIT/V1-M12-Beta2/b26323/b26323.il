@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly b26323 { }
 .namespace Test
 {
@@ -17,7 +22,7 @@
 		ldc.i4     5
 		stfld      int32 Test.App::m_nField
 		ldstr      "In constructor."
-		call       void [mscorlib]System.Console::WriteLine(class System.String)
+		call       void [System.Console]System.Console::WriteLine(class System.String)
 		ret
     }
 
@@ -34,13 +39,13 @@
       IL_000e:  beq.s      IL_001c
 
       IL_0010:  ldstr      "**** TEST FAILED ****"
-      IL_0015:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+      IL_0015:  call       void [System.Console]System.Console::WriteLine(class System.String)
       
       IL_001a:  ldc.i4.1
       IL_001b:  ret
 
       IL_001c:  ldstr      "**** TEST PASSED ****"
-      IL_0021:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+      IL_0021:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0026:  ldc.i4 100
       IL_0027:  ret
     }

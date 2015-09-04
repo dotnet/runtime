@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly 'SignExpand'// as "SignExpand.exe" 
 {
   
@@ -27,19 +32,19 @@
     ldloc x
     ldc.i4 0
     ldelem.i1
-    call void [mscorlib]System.Console::WriteLine(int32)
+    call void [System.Console]System.Console::WriteLine(int32)
 
     ldloc x
     ldc.i4 0
     ldelema int8
     ldind.i1
-    call void [mscorlib]System.Console::WriteLine(int32)
+    call void [System.Console]System.Console::WriteLine(int32)
 
     ldloc x
     ldc.i4 0
     ldelema int8
     ldobj int8
-    call void [mscorlib]System.Console::WriteLine(int32)
+    call void [System.Console]System.Console::WriteLine(int32)
     ldc.i4 100
     ret
   }

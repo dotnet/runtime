@@ -1,7 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-.assembly extern mscorlib {}
+.assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly arrgetlen {}
 .class private sequential ansi sealed beforefieldinit VT
        extends [mscorlib]System.ValueType
@@ -185,7 +190,7 @@
     IL_0124:  br.s       IL_0135
 
     IL_0126:  ldstr      "PASSED"
-    IL_012b:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_012b:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0130:  ldc.i4.s   100
     IL_0132:  stloc.1
     IL_0133:  br.s       IL_0135

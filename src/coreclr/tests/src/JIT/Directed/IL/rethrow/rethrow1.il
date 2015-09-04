@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly rethrow1
 {
 }
@@ -25,12 +30,12 @@
   IL_000b:  stloc.1
   IL_000c:  ldstr "In Test"//ldptr      D_00003020
   IL_0011:  //newobj     instance void [mscorlib]System.String::.ctor(wchar*)
-  IL_0016:  call       void [mscorlib]System.Console::Write(class [mscorlib]System.String)
+  IL_0016:  call       void [System.Console]System.Console::Write(class [mscorlib]System.String)
   .try
   {
     IL_001b:  ldstr "In Try"//ldptr      D_00003034
     IL_0020:  //newobj     instance void [mscorlib]System.String::.ctor(wchar*)
-    IL_0025:  call       void [mscorlib]System.Console::Write(class [mscorlib]System.String)
+    IL_0025:  call       void [System.Console]System.Console::Write(class [mscorlib]System.String)
     IL_002a:  ldloc.1
     IL_002b:  ldloc.0
     IL_002c:  ldc.i4     0x1
@@ -39,7 +44,7 @@
     IL_0033:  stloc.1
     IL_0034:  ldstr "!!!AFTER THROW"//ldptr      D_00003044
     IL_0039:  //newobj     instance void [mscorlib]System.String::.ctor(wchar*)
-    IL_003e:  call       void [mscorlib]System.Console::Write(class [mscorlib]System.String)
+    IL_003e:  call       void [System.Console]System.Console::Write(class [mscorlib]System.String)
     IL_0043:  ldc.i4     0x1
     IL_0048:  stloc.2
     IL_0049:  leave      IL_0070
@@ -50,7 +55,7 @@
     IL_004e:  stloc.3
     IL_004f:  ldstr "In CATCH"//ldptr      D_00003064
     IL_0054:  //newobj     instance void [mscorlib]System.String::.ctor(wchar*)
-    IL_0059:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+    IL_0059:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
     IL_005e:  nop //ldloc.3
     IL_005f:  rethrow //throw
 
@@ -86,17 +91,17 @@
   IL_0005:  stloc.0
   IL_0006:  ldstr "Nested Test"//ldptr      D_0000307C
   IL_000b:  //newobj     instance void [mscorlib]System.String::.ctor(wchar*)
-  IL_0010:  call       void [mscorlib]System.Console::Write(class [mscorlib]System.String)
+  IL_0010:  call       void [System.Console]System.Console::Write(class [mscorlib]System.String)
   .try
   {
     IL_0015:  ldstr "going to test"//ldptr      D_00003098
     IL_001a:  //newobj     instance void [mscorlib]System.String::.ctor(wchar*)
-    IL_001f:  call       void [mscorlib]System.Console::Write(class [mscorlib]System.String)
+    IL_001f:  call       void [System.Console]System.Console::Write(class [mscorlib]System.String)
     IL_0024:  call       int32 ?test@@YAHXZ()
     IL_0029:  stloc.0
     IL_002a:  ldstr "!!! AFTER test call"//ldptr      D_000030B8
     IL_002f:  //newobj     instance void [mscorlib]System.String::.ctor(wchar*)
-    IL_0034:  call       void [mscorlib]System.Console::Write(class [mscorlib]System.String)
+    IL_0034:  call       void [System.Console]System.Console::Write(class [mscorlib]System.String)
     IL_0039:  leave      IL_0084
 
   }  // end .try
@@ -109,7 +114,7 @@
 
     IL_004a:  ldstr "GREAT!"//ldptr      D_000030E0
     IL_004f:  //newobj     instance void [mscorlib]System.String::.ctor(wchar*)
-    IL_0054:  call       void [mscorlib]System.Console::Write(class [mscorlib]System.String)
+    IL_0054:  call       void [System.Console]System.Console::Write(class [mscorlib]System.String)
     IL_0059:  ldc.i4     0x64
     IL_005e:  stloc.2
     IL_005f:  ldloc.2
@@ -118,7 +123,7 @@
 
     IL_0066:  ldstr "!!!NOT GOOD"//ldptr      D_000030F0
     IL_006b:  //newobj     instance void [mscorlib]System.String::.ctor(wchar*)
-    IL_0070:  call       void [mscorlib]System.Console::Write(class [mscorlib]System.String)
+    IL_0070:  call       void [System.Console]System.Console::Write(class [mscorlib]System.String)
     IL_0075:  ldc.i4     0x1
     IL_007a:  stloc.s    V_4
     IL_007c:  ldloc.s    V_4

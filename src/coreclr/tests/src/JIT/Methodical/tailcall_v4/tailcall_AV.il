@@ -1,6 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 // Metadata version: v4.0.AMD64chk
 .assembly extern mscorlib
 {
@@ -48,7 +54,7 @@
     IL_0015:  call       void TCS.TailCallStructs::Caller_0(valuetype CSCreate.MB1,
                                                             int32&)
     IL_001a:  ldloc.0
-    IL_001b:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_001b:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_0020:  ret
   } // end of method TailCallStructs::Head_0
 
@@ -81,7 +87,7 @@
     IL_000b:  stloc.0
     IL_000c:  ldloca.s   V_0
     IL_000e:  ldfld      uint8 CSCreate.MB1::b0
-    IL_0013:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_0013:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_0018:  ldarg.0
     IL_0019:  dup
     IL_001a:  ldind.i4
