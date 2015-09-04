@@ -19,8 +19,6 @@ HANDLE  SWAP_HANDLE     = ((VOID *)(-1));
 
 int __cdecl main(int argc, char *argv[])
 {
-    char    lpObjectName[] = "myMappingObject";
-    
     HANDLE  hFileMap;
 
     /* Initialize the PAL environment.
