@@ -86,7 +86,7 @@ We use and recommend the following workflow:
   - You can skip this step for trivial changes.
   - Reuse an existing issue on the topic, if there is one.
   - Get agreement from the team and the community that your proposed change is a good one.
-  - If your change adds a new API, follow the [API Review Process](https://github.com/dotnet/corefx/blob/master/Documentation/api-review-process.md). 
+  - If your change adds a new API, follow the [API Review Process](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/api-review-process.md). 
   - Clearly state that you are going to take on implementing it, if that's the case. You can request that the issue be assigned to you. Note: The issue filer and the implementer don't have to be the same person.
 2. Create a personal fork of the repository on GitHub (if you don't already have one).
 3. Create a branch off of master (`git checkout -b mybranch`). 
