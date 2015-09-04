@@ -110,10 +110,12 @@ public:
     UINT64 QCALLTYPE GetProcessDefaultStackSize();
 
     static FCDECL1(INT32,   GetManagedThreadId, ThreadBaseObject* th);
+#ifndef FEATURE_CORECLR
     static FCDECL0(void,    BeginCriticalRegion);
     static FCDECL0(void,    EndCriticalRegion);
     static FCDECL0(void,    BeginThreadAffinity);
     static FCDECL0(void,    EndThreadAffinity);
+#endif // !FEATURE_CORECLR
     static FCDECL1(void,    SpinWait,                       int iterations);
     static BOOL QCALLTYPE YieldThread();
     static FCDECL0(Object*, GetCurrentThread);

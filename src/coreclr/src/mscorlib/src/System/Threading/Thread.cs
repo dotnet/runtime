@@ -1450,6 +1450,7 @@ namespace System.Threading {
             set { SetAbortReason(value); }
         }
 
+#if !FEATURE_CORECLR
         /*
          *  This marks the beginning of a critical code region.
          */
@@ -1483,6 +1484,7 @@ namespace System.Threading {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public static extern void EndThreadAffinity();
+#endif // !FEATURE_CORECLR
 
         /*=========================================================================
         ** Volatile Read & Write and MemoryBarrier methods.
