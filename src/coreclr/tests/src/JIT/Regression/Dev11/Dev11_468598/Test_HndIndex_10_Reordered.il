@@ -1,6 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 
 
 
@@ -48,18 +54,18 @@
     IL_001c:  callvirt   instance string Test.BaseClass::get_Test()
     IL_0021:  call       string [mscorlib]System.String::Concat(string,
                                                                 string)
-    IL_0026:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0026:  call       void [System.Console]System.Console::WriteLine(string)
     IL_002b:  ldstr      "FAIL: The double ctor call worked without generati"
     + "ng an exception"
-    IL_0030:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0030:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0035:  ldc.i4     0x65
     IL_003a:  stloc      V_1
     IL_003e:  leave      IL_0065
 
     IL_0043:  callvirt   instance string [mscorlib]System.Exception::get_Message()
-    IL_0048:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0048:  call       void [System.Console]System.Console::WriteLine(string)
     IL_004d:  ldstr      "PASS: The double ctor call generated an exception"
-    IL_0052:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0052:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0057:  ldc.i4     0x64
     IL_005c:  stloc      V_1
     IL_0060:  leave      IL_0065
@@ -76,7 +82,7 @@
     // Code size       10 (0xa)
     .maxstack  8
     IL_0000:  ldarg      format
-    IL_0004:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0004:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0009:  ret
   } // end of method App::WriteLine
 
@@ -203,7 +209,7 @@
     IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
     IL_0006:  ldstr      "In BaseClass::BaseClass(string) with parameter \"{0}\""
     IL_000b:  ldarg      input
-    IL_000f:  call       void [mscorlib]System.Console::WriteLine(string,
+    IL_000f:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
     IL_0014:  ldarg.0
     IL_0015:  ldarg      input

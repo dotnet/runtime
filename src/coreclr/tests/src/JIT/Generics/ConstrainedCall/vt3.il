@@ -5,7 +5,12 @@
 // ldflda, ldelema, ldarga
 // Val*A: constrained, Val*B: box
 
-.assembly extern mscorlib {}
+.assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly vt3 {}
 .class interface private abstract auto ansi IncrDecr
 {
@@ -211,7 +216,7 @@
     IL_0012:  beq.s      IL_0045
 
     IL_0014:  ldstr      "FAILED"
-    IL_0019:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0019:  call       void [System.Console]System.Console::WriteLine(string)
     IL_001e:  ldstr      "mc.Val1A()={0}, mc.Val1B()={0}"
     IL_0023:  ldloc.0
     IL_0024:  callvirt   instance int32 class MyCounter<valuetype MyInt>::Val1A()
@@ -219,7 +224,7 @@
     IL_002e:  ldloc.0
     IL_002f:  callvirt   instance int32 class MyCounter<valuetype MyInt>::Val1B()
     IL_0034:  box        [mscorlib]System.Int32
-    IL_0039:  call       void [mscorlib]System.Console::WriteLine(string,
+    IL_0039:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object,
                                                                   object)
     IL_003e:  ldc.i4.1
@@ -233,7 +238,7 @@
     IL_0051:  beq.s      IL_0081
 
     IL_0053:  ldstr      "FAILED"
-    IL_0058:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0058:  call       void [System.Console]System.Console::WriteLine(string)
     IL_005d:  ldstr      "mc.Val1A()={0}, mc.Val1B()={0}"
     IL_0062:  ldloc.0
     IL_0063:  callvirt   instance int32 class MyCounter<valuetype MyInt>::Val2A()
@@ -241,7 +246,7 @@
     IL_006d:  ldloc.0
     IL_006e:  callvirt   instance int32 class MyCounter<valuetype MyInt>::Val2B()
     IL_0073:  box        [mscorlib]System.Int32
-    IL_0078:  call       void [mscorlib]System.Console::WriteLine(string,
+    IL_0078:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object,
                                                                   object)
     IL_007d:  ldc.i4.2
@@ -259,7 +264,7 @@
     IL_0097:  beq.s      IL_00c9
 
     IL_0099:  ldstr      "FAILED"
-    IL_009e:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_009e:  call       void [System.Console]System.Console::WriteLine(string)
     IL_00a3:  ldstr      "mc.Val1A()={0}, mc.Val1B()={0}"
     IL_00a8:  ldloc.0
     IL_00a9:  ldloc.1
@@ -269,7 +274,7 @@
     IL_00b5:  ldloc.1
     IL_00b6:  callvirt   instance int32 class MyCounter<valuetype MyInt>::Val3B(!0)
     IL_00bb:  box        [mscorlib]System.Int32
-    IL_00c0:  call       void [mscorlib]System.Console::WriteLine(string,
+    IL_00c0:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object,
                                                                   object)
     IL_00c5:  ldc.i4.3
@@ -277,7 +282,7 @@
     IL_00c7:  br.s       IL_00d8
 
     IL_00c9:  ldstr      "PASSED"
-    IL_00ce:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_00ce:  call       void [System.Console]System.Console::WriteLine(string)
     IL_00d3:  ldc.i4.s   100
     IL_00d5:  stloc.2
     IL_00d6:  br.s       IL_00d8

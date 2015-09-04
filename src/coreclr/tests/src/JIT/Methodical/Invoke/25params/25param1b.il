@@ -1,7 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-.assembly extern mscorlib {}
+.assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly '20param2a'{}
 .class private auto ansi beforefieldinit test
        extends [mscorlib]System.Object
@@ -90,7 +95,7 @@
     IL_0047:  ldstr      "The sum is {0}"
 		ldloc.0
 		box        [mscorlib]System.Int32
-		call       void [mscorlib]System.Console::WriteLine(string,
+		call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
     IL_0057:  ldloc.0
     IL_0058:  stloc.1
@@ -132,55 +137,55 @@
     .locals init (int32 V_0,
              int32 V_1)
     IL_0000:  ldarg.0
-    IL_0001:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_0001:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_0006:  ldarg.1
-    IL_0007:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_0007:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_000c:  ldarg.2
-    IL_000d:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_000d:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_0012:  ldarg.3
-    IL_0013:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_0013:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_0018:  ldarg.s    a5
-    IL_001a:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_001a:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_001f:  ldarg.s    a6
-    IL_0021:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_0021:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_0026:  ldarg.s    a7
-    IL_0028:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_0028:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_002d:  ldarg.s    a8
-    IL_002f:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_002f:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_0034:  ldarg.s    a9
-    IL_0036:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_0036:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_003b:  ldarg.s    a10
-    IL_003d:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_003d:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_0042:  ldarg.s    a11
-    IL_0044:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_0044:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_0049:  ldarg.s    a12
-    IL_004b:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_004b:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_0050:  ldarg.s    a13
-    IL_0052:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_0052:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_0057:  ldarg.s    a14
-    IL_0059:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_0059:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_005e:  ldarg.s    a15
-    IL_0060:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_0060:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_0065:  ldarg.s    a16
-    IL_0067:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_0067:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_006c:  ldarg.s    a17
-    IL_006e:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_006e:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_0073:  ldarg.s    a18
-    IL_0075:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_0075:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_007a:  ldarg.s    a19
-    IL_007c:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_007c:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_0081:  ldarg.s    a20
-    IL_0083:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_0083:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_0088:  ldarg.s    a21
-    IL_008a:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_008a:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_008f:  ldarg.s    a22
-    IL_0091:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_0091:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_0096:  ldarg.s    a23
-    IL_0098:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_0098:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_009d:  ldarg.s    a24
-    IL_009f:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_009f:  call       void [System.Console]System.Console::WriteLine(int32)
     IL_00a4:  ldarg.s    a25
-    IL_00a6:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_00a6:  call       void [System.Console]System.Console::WriteLine(int32)
     jmp       int32 test::f1(int32,
                                         int32,
                                         int32,
@@ -217,7 +222,7 @@
     .locals init (int32 V_0,
              int32 V_1)
 ldstr "Testing method of 25 parameters, all of int data type, jmp"
-call void [mscorlib]System.Console::WriteLine(string)
+call void [System.Console]System.Console::WriteLine(string)
     IL_0000:  ldc.i4.1
     IL_0001:  ldc.i4.2
     IL_0002:  ldc.i4.3

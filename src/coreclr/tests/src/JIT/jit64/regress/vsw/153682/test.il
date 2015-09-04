@@ -6,6 +6,11 @@
 // mov'ed to.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly legacy library test {}
 
 .class auto ansi sealed nested public save extends [mscorlib]System.Object
@@ -40,7 +45,7 @@
 
 
       IL_0018:  callvirt       instance string [mscorlib]System.Exception::get_Message()
-      IL_001d:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_001d:  call       void [System.Console]System.Console::WriteLine(string)
 
       IL_0022:  leave      IL_0027
 

@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly callorder
 {
 }
@@ -128,17 +133,17 @@
 		
 	passed:
 		ldstr	"Test passed."
-		call	void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call	void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		ldc.i4  0x64
 		ret
 		
 	failed:
 		ldstr	"Test # "
-		call	void [mscorlib]System.Console::Write(class [mscorlib]System.String)
+		call	void [System.Console]System.Console::Write(class [mscorlib]System.String)
 		ldloc.0
-		call	void [mscorlib]System.Console::Write(int32)
+		call	void [System.Console]System.Console::Write(int32)
 		ldstr	" failed!"
-		call	void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call	void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		ldc.i4.1
 		ret
 	}

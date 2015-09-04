@@ -1,6 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 // Metadata version: v4.0.x86chk
 .assembly extern mscorlib
 {
@@ -25,7 +31,7 @@
     .maxstack  8
     IL_0000:  ldstr      "In JumpCallTarget, this={0}"
     IL_0005:  ldarg.0
-    IL_0006:  call       void [mscorlib]System.Console::WriteLine(string,
+    IL_0006:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
     IL_000b:  ldstr      "JumpCall"
     IL_0010:  ret
@@ -52,7 +58,7 @@
     IL_0007:  callvirt   instance string JumpBug::BugRepro()
     IL_000c:  stloc.1
     IL_000d:  ldloc.1
-    IL_000e:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_000e:  call       void [System.Console]System.Console::WriteLine(string)
 ldc.i4 100
     IL_0013:  ret
   } // end of method JumpBug::Main

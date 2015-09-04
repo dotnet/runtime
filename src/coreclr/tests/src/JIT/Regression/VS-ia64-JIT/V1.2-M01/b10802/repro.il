@@ -1,6 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 
 
 
@@ -41,7 +47,7 @@
     .try
     {
       IL_02e8:  ldstr      "test # 17"
-      IL_02ed:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_02ed:  call       void [System.Console]System.Console::WriteLine(string)
       IL_02f2:  ldc.i4     -1
       IL_02fb:  conv.ovf.u
 
@@ -62,7 +68,7 @@
 
     IL_04f7:  ldc.i4.1
     IL_04f8:  ldstr      "failed"
-    IL_04fd:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_04fd:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0502:  ret
   } // end of method Test::Main
 

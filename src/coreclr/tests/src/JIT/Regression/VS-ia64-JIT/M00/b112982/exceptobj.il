@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly excepobj
 {
 }
@@ -27,23 +32,23 @@
 
 	  filter_begin_1:
                 ldstr      "in filter. Exception.Message = "
-	  			call       void [mscorlib]System.Console::Write(class [mscorlib]System.String)
+	  			call       void [System.Console]System.Console::Write(class [mscorlib]System.String)
 	  			callvirt   instance class [mscorlib]System.String [mscorlib]System.Object::ToString()
-	  			call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+	  			call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
       			ldc.i4.1
 	  			endfilter
 
       handler_begin_1:
       			pop
                 ldstr      "in except block."
-	  			call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+	  			call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
       			ldc.i4 100
       			stloc.0
       			leave.s    handler_end_1
 
       handler_end_1:
                 ldstr      "test passed."
-	  			call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+	  			call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
       			ldloc.0
       			ret
 

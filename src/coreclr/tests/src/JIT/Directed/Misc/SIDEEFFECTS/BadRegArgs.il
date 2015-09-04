@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly badregargs
 {
 }
@@ -15,7 +20,7 @@
   {
 	.locals(int32)
 
-	call void [mscorlib]System.Console::WriteLine()
+	call void [System.Console]System.Console::WriteLine()
 
 	ldarg a						// a += s_i
 	ldsfld int32 BadRegArgs::s_i
@@ -23,9 +28,9 @@
 	starg a
 
 	ldstr "Should print 100 : "
-	call void [mscorlib]System.Console::Write(class [mscorlib]System.String)
+	call void [System.Console]System.Console::Write(class [mscorlib]System.String)
 	ldarg a
-	call void [mscorlib]System.Console::WriteLine(int32)
+	call void [System.Console]System.Console::WriteLine(int32)
 	
 	ldarg a
 	ldc.i4 100
@@ -41,9 +46,9 @@
 	starg b
 
 	ldstr "Should print 0 : "
-	call void [mscorlib]System.Console::Write(class [mscorlib]System.String)
+	call void [System.Console]System.Console::Write(class [mscorlib]System.String)
 	ldarg b
-	call void [mscorlib]System.Console::WriteLine(int32)
+	call void [System.Console]System.Console::WriteLine(int32)
 	ldarg b
 	ldc.i4 0
 	bne.un ERR_EXIT
@@ -103,9 +108,9 @@ ERR_EXIT:
 	stloc temp
 
 	ldstr "Should print 300 : "
-	call void [mscorlib]System.Console::Write(class [mscorlib]System.String)
+	call void [System.Console]System.Console::Write(class [mscorlib]System.String)
 	ldloc temp
-	call void [mscorlib]System.Console::WriteLine(int32)
+	call void [System.Console]System.Console::WriteLine(int32)
 
 	ldloc temp
 	ldc.i4 300

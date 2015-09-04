@@ -5,7 +5,12 @@
 // VSWHIDBEY 91942
 
 
-.assembly extern mscorlib {}
+.assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly d
 {
 }
@@ -115,7 +120,7 @@ NEXT:	ldsfld     class BigClass TestClass::s_bigClass
 	{
 		pop
 		ldstr      "Test1 PASSED: expected NullReferenceException"
-		call       void [mscorlib]System.Console::WriteLine(string)
+		call       void [System.Console]System.Console::WriteLine(string)
 		ldc.i4.s   1
 		stloc.0
 		leave.s    RET
@@ -123,7 +128,7 @@ NEXT:	ldsfld     class BigClass TestClass::s_bigClass
 
 FAILED:
 	ldstr      "Test1 FAILED: NullReferenceException has not been thrown"
-	call       void [mscorlib]System.Console::WriteLine(string)
+	call       void [System.Console]System.Console::WriteLine(string)
 	ldc.i4.s   0
 	stloc.0
 
@@ -175,7 +180,7 @@ NEXT:	ldloc.0
 	{
 		pop
 		ldstr      "Test2 PASSED: expected NullReferenceException"
-		call       void [mscorlib]System.Console::WriteLine(string)
+		call       void [System.Console]System.Console::WriteLine(string)
 		ldc.i4.s   1
 		stloc.0
 		leave.s    RET
@@ -183,7 +188,7 @@ NEXT:	ldloc.0
 
 FAILED:
 	ldstr      "Test2 FAILED: NullReferenceException has not been thrown"
-	call       void [mscorlib]System.Console::WriteLine(string)
+	call       void [System.Console]System.Console::WriteLine(string)
 	ldc.i4.s   0
 	stloc.0
 
@@ -245,7 +250,7 @@ NEXT:	ldloc.0
 	{
 		pop
 		ldstr      "Test3 PASSED: expected NullReferenceException"
-		call       void [mscorlib]System.Console::WriteLine(string)
+		call       void [System.Console]System.Console::WriteLine(string)
 		ldc.i4.s   1
 		stloc.0
 		leave.s    RET
@@ -253,7 +258,7 @@ NEXT:	ldloc.0
 
 FAILED:
 	ldstr      "Test3 FAILED: NullReferenceException has not been thrown"
-	call       void [mscorlib]System.Console::WriteLine(string)
+	call       void [System.Console]System.Console::WriteLine(string)
 	ldc.i4.s   0
 	stloc.0
 
