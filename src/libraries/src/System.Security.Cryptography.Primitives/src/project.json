@@ -1,9 +1,12 @@
 {
   "dependencies": {
+    "System.Diagnostics.Debug": "4.0.0",
     "System.Diagnostics.Contracts": "4.0.0",
     "System.IO": "4.0.10",
     "System.Resources.ResourceManager": "4.0.0",
-    "System.Runtime": "4.0.20"
+    "System.Runtime": "4.0.20",
+    "System.Threading": "4.0.0",
+    "System.Threading.Tasks": "4.0.0"
   },
   "frameworks": {
     "dnxcore50": {}
