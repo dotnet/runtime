@@ -225,7 +225,7 @@ marker_idle_func (void *data_untyped)
 
 		SGEN_ASSERT (0, !sgen_gray_object_queue_is_empty (&data->private_gray_queue), "How is our gray queue empty if we just got work?");
 
-		sgen_drain_gray_stack (32, ctx);
+		sgen_drain_gray_stack (ctx);
 	} else {
 		worker_try_finish ();
 	}

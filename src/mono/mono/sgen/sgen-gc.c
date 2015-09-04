@@ -539,11 +539,9 @@ sgen_add_to_global_remset (gpointer ptr, gpointer obj)
  * frequently after each object is copied, to achieve better locality and cache
  * usage.
  *
- * max_objs is the maximum number of objects to scan, or -1 to scan until the stack is
- * empty.
  */
 gboolean
-sgen_drain_gray_stack (int max_objs, ScanCopyContext ctx)
+sgen_drain_gray_stack (ScanCopyContext ctx)
 {
 	ScanObjectFunc scan_func = ctx.ops->scan_object;
 	GrayQueue *queue = ctx.queue;
@@ -551,18 +549,15 @@ sgen_drain_gray_stack (int max_objs, ScanCopyContext ctx)
 	if (ctx.ops->drain_gray_stack)
 		return ctx.ops->drain_gray_stack (queue);
 
-	do {
-		int i;
-		for (i = 0; i != max_objs; ++i) {
-			GCObject *obj;
-			SgenDescriptor desc;
-			GRAY_OBJECT_DEQUEUE (queue, &obj, &desc);
-			if (!obj)
-				return TRUE;
-			SGEN_LOG (9, "Precise gray object scan %p (%s)", obj, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (obj)));
-			scan_func (obj, desc, queue);
-		}
-	} while (max_objs < 0);
+	for (;;) {
+		GCObject *obj;
+		SgenDescriptor desc;
+		GRAY_OBJECT_DEQUEUE (queue, &obj, &desc);
+		if (!obj)
+			return TRUE;
+		SGEN_LOG (9, "Precise gray object scan %p (%s)", obj, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (obj)));
+		scan_func (obj, desc, queue);
+	}
 	return FALSE;
 }
 
@@ -1080,7 +1075,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 	 *   To achieve better cache locality and cache usage, we drain the gray stack 
 	 * frequently, after each object is copied, and just finish the work here.
 	 */
-	sgen_drain_gray_stack (-1, ctx);
+	sgen_drain_gray_stack (ctx);
 	TV_GETTIME (atv);
 	SGEN_LOG (2, "%s generation done", generation_name (generation));
 
@@ -1102,7 +1097,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 	done_with_ephemerons = 0;
 	do {
 		done_with_ephemerons = sgen_client_mark_ephemerons (ctx);
-		sgen_drain_gray_stack (-1, ctx);
+		sgen_drain_gray_stack (ctx);
 		++ephemeron_rounds;
 	} while (!done_with_ephemerons);
 
@@ -1110,7 +1105,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 
 	if (sgen_client_bridge_need_processing ()) {
 		/*Make sure the gray stack is empty before we process bridge objects so we get liveness right*/
-		sgen_drain_gray_stack (-1, ctx);
+		sgen_drain_gray_stack (ctx);
 		sgen_collect_bridge_objects (generation, ctx);
 		if (generation == GENERATION_OLD)
 			sgen_collect_bridge_objects (GENERATION_NURSERY, ctx);
@@ -1134,7 +1129,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 	Make sure we drain the gray stack before processing disappearing links and finalizers.
 	If we don't make sure it is empty we might wrongly see a live object as dead.
 	*/
-	sgen_drain_gray_stack (-1, ctx);
+	sgen_drain_gray_stack (ctx);
 
 	/*
 	We must clear weak links that don't track resurrection before processing object ready for
@@ -1155,7 +1150,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 		sgen_finalize_in_range (GENERATION_NURSERY, ctx);
 	/* drain the new stack that might have been created */
 	SGEN_LOG (6, "Precise scan of gray area post fin");
-	sgen_drain_gray_stack (-1, ctx);
+	sgen_drain_gray_stack (ctx);
 
 	/*
 	 * This must be done again after processing finalizable objects since CWL slots are cleared only after the key is finalized.
@@ -1163,7 +1158,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 	done_with_ephemerons = 0;
 	do {
 		done_with_ephemerons = sgen_client_mark_ephemerons (ctx);
-		sgen_drain_gray_stack (-1, ctx);
+		sgen_drain_gray_stack (ctx);
 		++ephemeron_rounds;
 	} while (!done_with_ephemerons);
 
@@ -1194,7 +1189,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 			sgen_null_link_in_range (GENERATION_NURSERY, ctx, TRUE);
 		if (sgen_gray_object_queue_is_empty (queue))
 			break;
-		sgen_drain_gray_stack (-1, ctx);
+		sgen_drain_gray_stack (ctx);
 	}
 
 	g_assert (sgen_gray_object_queue_is_empty (queue));
@@ -1574,7 +1569,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 
 	sgen_pin_stats_print_class_stats ();
 
-	sgen_drain_gray_stack (-1, ctx);
+	sgen_drain_gray_stack (ctx);
 
 	/* FIXME: Why do we do this at this specific, seemingly random, point? */
 	sgen_client_collecting_minor (&fin_ready_queue, &critical_fin_queue);

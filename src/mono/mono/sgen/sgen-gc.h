@@ -802,7 +802,7 @@ void sgen_register_disappearing_link (GCObject *obj, void **link, gboolean track
 
 GCObject* sgen_weak_link_get (void **link_addr);
 
-gboolean sgen_drain_gray_stack (int max_objs, ScanCopyContext ctx);
+gboolean sgen_drain_gray_stack (ScanCopyContext ctx);
 
 enum {
 	SPACE_NURSERY,
