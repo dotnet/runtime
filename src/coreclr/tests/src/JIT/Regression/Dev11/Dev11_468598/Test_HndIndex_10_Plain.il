@@ -3,7 +3,12 @@
 
 
 
-.assembly extern mscorlib {}
+.assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 
 .assembly Test_HndIndex_10_Plain
 {
@@ -40,10 +45,10 @@
             ldloc       derivedInstance
             callvirt    instance string Test.BaseClass::get_Test()
             call        string [mscorlib]System.String::Concat(string, string)
-            call        void [mscorlib]System.Console::WriteLine(string)
+            call        void [System.Console]System.Console::WriteLine(string)
 
             ldstr       "FAIL: The double ctor call worked without generating an exception"
-            call        void [mscorlib]System.Console::WriteLine(string)
+            call        void [System.Console]System.Console::WriteLine(string)
             ldc.i4      101
             stloc       exitCode
             leave       RETURN_TO_CALLER
@@ -51,10 +56,10 @@
         catch [mscorlib]System.Exception
         {
             callvirt    instance string [mscorlib]System.Exception::get_Message()
-            call        void [mscorlib]System.Console::WriteLine(string)
+            call        void [System.Console]System.Console::WriteLine(string)
 
             ldstr       "PASS: The double ctor call generated an exception"
-            call        void [mscorlib]System.Console::WriteLine(string)
+            call        void [System.Console]System.Console::WriteLine(string)
             ldc.i4      100
             stloc       exitCode
             leave       RETURN_TO_CALLER
@@ -71,7 +76,7 @@
         .maxstack 8
 
         ldarg       format
-        call        void [mscorlib]System.Console::WriteLine(string)
+        call        void [System.Console]System.Console::WriteLine(string)
         ret
     }
 }
@@ -101,7 +106,7 @@
 
         ldstr       "In BaseClass::BaseClass(string) with parameter \"{0}\""
         ldarg       input
-        call        void [mscorlib]System.Console::WriteLine(string, object)
+        call        void [System.Console]System.Console::WriteLine(string, object)
 
         ldarg.0
         ldarg       input

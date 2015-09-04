@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly convr8d {}
 .class public sealed VT extends [mscorlib]System.ValueType
 {
@@ -219,9 +224,9 @@
     IL_0025:  stloc.s    V_6
     IL_0027:  newobj     instance void CL::.ctor()
     IL_002c:  stloc.s    V_8
-    IL_002e:  call       void [mscorlib]System.Console::WriteLine()
+    IL_002e:  call       void [System.Console]System.Console::WriteLine()
     IL_0033:  ldstr      "***add***"
-    IL_0038:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0038:  call       void [System.Console]System.Console::WriteLine(string)
     IL_003d:  ldc.r8     1.
     IL_003e:  ldc.r8     1.0000000000000001e-018
     IL_003f:  add
@@ -230,7 +235,7 @@
     IL_0042:  beq.s      IL_0050
 
     IL_0044:  ldstr      "((double)(f+delta))!=f"
-    IL_0049:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0049:  call       void [System.Console]System.Console::WriteLine(string)
     IL_004e:  ldc.i4.0
     IL_004f:  stloc.0
     IL_0050:  ldc.r8     1.
@@ -243,7 +248,7 @@
     IL_0059:  beq.s      IL_0067
 
     IL_005b:  ldstr      "((double)f2)!=f, f2=f+delta"
-    IL_0060:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0060:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0065:  ldc.i4.0
     IL_0066:  stloc.0
     IL_0067:  call       float64 convr8d::doubleadd()
@@ -252,7 +257,7 @@
     IL_006e:  beq.s      IL_007c
 
     IL_0070:  ldstr      "((double)doubleadd())!=f"
-    IL_0075:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0075:  call       void [System.Console]System.Console::WriteLine(string)
     IL_007a:  ldc.i4.0
     IL_007b:  stloc.0
     IL_007c:  call       float64 convr8d::doubleadd_inline()
@@ -261,7 +266,7 @@
     IL_0083:  beq.s      IL_0091
 
     IL_0085:  ldstr      "((double)doubleadd_inline())!=f"
-    IL_008a:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_008a:  call       void [System.Console]System.Console::WriteLine(string)
     IL_008f:  ldc.i4.0
     IL_0090:  stloc.0
     IL_0091:  ldloc.s    V_6
@@ -290,7 +295,7 @@
     IL_00b6:  beq.s      IL_00c4
 
     IL_00b8:  ldstr      "((double)arr[2])!=f"
-    IL_00bd:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_00bd:  call       void [System.Console]System.Console::WriteLine(string)
     IL_00c2:  ldc.i4.0
     IL_00c3:  stloc.0
     IL_00c4:  ldloca.s   V_7
@@ -313,7 +318,7 @@
     IL_00fb:  beq.s      IL_0109
 
     IL_00fd:  ldstr      "((double)vt1.f2)!=f"
-    IL_0102:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0102:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0107:  ldc.i4.0
     IL_0108:  stloc.0
     IL_0109:  ldloc.s    V_8
@@ -330,12 +335,12 @@
     IL_0128:  beq.s      IL_0136
 
     IL_012a:  ldstr      "((double)cl1.f2)!=f"
-    IL_012f:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_012f:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0134:  ldc.i4.0
     IL_0135:  stloc.0
-    IL_0136:  call       void [mscorlib]System.Console::WriteLine()
+    IL_0136:  call       void [System.Console]System.Console::WriteLine()
     IL_013b:  ldstr      "***sub***"
-    IL_0140:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0140:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0145:  ldc.r8     1.
     IL_0146:  ldc.r8     1.0000000000000001e-018
     IL_0147:  sub
@@ -344,7 +349,7 @@
     IL_014a:  beq.s      IL_0158
 
     IL_014c:  ldstr      "((double)(f-delta))!=f"
-    IL_0151:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0151:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0156:  ldc.i4.0
     IL_0157:  stloc.0
     IL_0158:  ldc.r8     1.
@@ -357,7 +362,7 @@
     IL_0161:  beq.s      IL_016f
 
     IL_0163:  ldstr      "((double)f2)!=f, f2=f-delta"
-    IL_0168:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0168:  call       void [System.Console]System.Console::WriteLine(string)
     IL_016d:  ldc.i4.0
     IL_016e:  stloc.0
     IL_016f:  call       float64 convr8d::doublesub()
@@ -366,7 +371,7 @@
     IL_0176:  beq.s      IL_0184
 
     IL_0178:  ldstr      "((double)doublesub())!=f"
-    IL_017d:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_017d:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0182:  ldc.i4.0
     IL_0183:  stloc.0
     IL_0184:  call       float64 convr8d::doublesub_inline()
@@ -375,7 +380,7 @@
     IL_018b:  beq.s      IL_0199
 
     IL_018d:  ldstr      "((double)doublesub_inline())!=f"
-    IL_0192:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0192:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0197:  ldc.i4.0
     IL_0198:  stloc.0
     IL_0199:  ldloc.s    V_6
@@ -404,7 +409,7 @@
     IL_01be:  beq.s      IL_01cc
 
     IL_01c0:  ldstr      "((double)arr[2])!=f"
-    IL_01c5:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_01c5:  call       void [System.Console]System.Console::WriteLine(string)
     IL_01ca:  ldc.i4.0
     IL_01cb:  stloc.0
     IL_01cc:  ldloca.s   V_7
@@ -427,7 +432,7 @@
     IL_0203:  beq.s      IL_0211
 
     IL_0205:  ldstr      "((double)vt1.f2)!=f"
-    IL_020a:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_020a:  call       void [System.Console]System.Console::WriteLine(string)
     IL_020f:  ldc.i4.0
     IL_0210:  stloc.0
     IL_0211:  ldloc.s    V_8
@@ -444,12 +449,12 @@
     IL_0230:  beq.s      IL_023e
 
     IL_0232:  ldstr      "((double)cl1.f2)!=f"
-    IL_0237:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0237:  call       void [System.Console]System.Console::WriteLine(string)
     IL_023c:  ldc.i4.0
     IL_023d:  stloc.0
-    IL_023e:  call       void [mscorlib]System.Console::WriteLine()
+    IL_023e:  call       void [System.Console]System.Console::WriteLine()
     IL_0243:  ldstr      "***mul***"
-    IL_0248:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0248:  call       void [System.Console]System.Console::WriteLine(string)
     IL_024d:  ldc.i4.3
     IL_024e:  conv.r8
     IL_024f:  ldc.r8     0.33333333333333331
@@ -459,7 +464,7 @@
     IL_0254:  beq.s      IL_0262
 
     IL_0256:  ldstr      "((double)(a*b))!=f"
-    IL_025b:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_025b:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0260:  ldc.i4.0
     IL_0261:  stloc.0
     IL_0262:  ldc.i4.3
@@ -473,7 +478,7 @@
     IL_026d:  beq.s      IL_027b
 
     IL_026f:  ldstr      "((double)f2)!=f, f2=a*b"
-    IL_0274:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0274:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0279:  ldc.i4.0
     IL_027a:  stloc.0
     IL_027b:  call       float64 convr8d::doublemul()
@@ -482,7 +487,7 @@
     IL_0282:  beq.s      IL_0290
 
     IL_0284:  ldstr      "((double)doublemul())!=f"
-    IL_0289:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0289:  call       void [System.Console]System.Console::WriteLine(string)
     IL_028e:  ldc.i4.0
     IL_028f:  stloc.0
     IL_0290:  call       float64 convr8d::doublemul_inline()
@@ -491,7 +496,7 @@
     IL_0297:  beq.s      IL_02a5
 
     IL_0299:  ldstr      "((double)doublemul_inline())!=f"
-    IL_029e:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_029e:  call       void [System.Console]System.Console::WriteLine(string)
     IL_02a3:  ldc.i4.0
     IL_02a4:  stloc.0
     IL_02a5:  ldloc.s    V_6
@@ -521,7 +526,7 @@
     IL_02cb:  beq.s      IL_02d9
 
     IL_02cd:  ldstr      "((double)arr[2])!=f"
-    IL_02d2:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_02d2:  call       void [System.Console]System.Console::WriteLine(string)
     IL_02d7:  ldc.i4.0
     IL_02d8:  stloc.0
     IL_02d9:  ldloca.s   V_7
@@ -545,7 +550,7 @@
     IL_030d:  beq.s      IL_031b
 
     IL_030f:  ldstr      "((double)vt1.f2)!=f"
-    IL_0314:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0314:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0319:  ldc.i4.0
     IL_031a:  stloc.0
     IL_031b:  ldloc.s    V_8
@@ -563,12 +568,12 @@
     IL_033b:  beq.s      IL_0349
 
     IL_033d:  ldstr      "((double)cl1.f2)!=f"
-    IL_0342:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0342:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0347:  ldc.i4.0
     IL_0348:  stloc.0
-    IL_0349:  call       void [mscorlib]System.Console::WriteLine()
+    IL_0349:  call       void [System.Console]System.Console::WriteLine()
     IL_034e:  ldstr      "***div***"
-    IL_0353:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0353:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0358:  ldc.r8     1.
     IL_0359:  ldc.i4.3
     IL_035a:  conv.r8
@@ -578,7 +583,7 @@
     IL_035f:  beq.s      IL_036d
 
     IL_0361:  ldstr      "((double)(f/a))!=b"
-    IL_0366:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0366:  call       void [System.Console]System.Console::WriteLine(string)
     IL_036b:  ldc.i4.0
     IL_036c:  stloc.0
     IL_036d:  ldc.r8     1.
@@ -592,7 +597,7 @@
     IL_0378:  beq.s      IL_0386
 
     IL_037a:  ldstr      "((double)f2)!=f, f2=f/a"
-    IL_037f:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_037f:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0384:  ldc.i4.0
     IL_0385:  stloc.0
     IL_0386:  call       float64 convr8d::doublediv()
@@ -601,7 +606,7 @@
     IL_038e:  beq.s      IL_039c
 
     IL_0390:  ldstr      "((double)doubledivl())!=b"
-    IL_0395:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0395:  call       void [System.Console]System.Console::WriteLine(string)
     IL_039a:  ldc.i4.0
     IL_039b:  stloc.0
     IL_039c:  call       float64 convr8d::doublediv_inline()
@@ -610,7 +615,7 @@
     IL_03a4:  beq.s      IL_03b2
 
     IL_03a6:  ldstr      "((double)doublediv_inline())!=b"
-    IL_03ab:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_03ab:  call       void [System.Console]System.Console::WriteLine(string)
     IL_03b0:  ldc.i4.0
     IL_03b1:  stloc.0
     IL_03b2:  ldloc.s    V_6
@@ -640,7 +645,7 @@
     IL_03d9:  beq.s      IL_03e7
 
     IL_03db:  ldstr      "((double)arr[2])!=b"
-    IL_03e0:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_03e0:  call       void [System.Console]System.Console::WriteLine(string)
     IL_03e5:  ldc.i4.0
     IL_03e6:  stloc.0
     IL_03e7:  ldloca.s   V_7
@@ -664,7 +669,7 @@
     IL_041c:  beq.s      IL_042a
 
     IL_041e:  ldstr      "((double)vt1.f2)!=b"
-    IL_0423:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0423:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0428:  ldc.i4.0
     IL_0429:  stloc.0
     IL_042a:  ldloc.s    V_8
@@ -682,21 +687,21 @@
     IL_044b:  beq.s      IL_0459
 
     IL_044d:  ldstr      "((double)cl1.f2)!=b"
-    IL_0452:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0452:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0457:  ldc.i4.0
     IL_0458:  stloc.0
-    IL_0459:  call       void [mscorlib]System.Console::WriteLine()
+    IL_0459:  call       void [System.Console]System.Console::WriteLine()
     IL_045e:  ldloc.0
     IL_045f:  brfalse.s  IL_0471
 
     IL_0461:  ldstr      "SUCCESS"
-    IL_0466:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0466:  call       void [System.Console]System.Console::WriteLine(string)
     IL_046b:  ldc.i4.s   100
     IL_046d:  stloc.s    V_9
     IL_046f:  br.s       IL_0480
 
     IL_0471:  ldstr      "FAILURE: float not truncated properly"
-    IL_0476:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0476:  call       void [System.Console]System.Console::WriteLine(string)
     IL_047b:  ldc.i4.1
     IL_047c:  stloc.s    V_9
     IL_047e:  br.s       IL_0480

@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly recurse_ep { }
 .namespace JitTest
 {
@@ -26,7 +31,7 @@
       IL_0012:  bne.un.s   IL_0021
 
       IL_0014:  ldstr      "PASSED: 10! == 3628800"
-      IL_0019:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+      IL_0019:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_001e:  ldc.i4.s   100
       IL_0020:  ret
 
@@ -35,7 +40,7 @@
       IL_002b:  call       instance class System.String [mscorlib]System.Int32::ToString()
       IL_0030:  call       class System.String [mscorlib]System.String::Concat(class System.String,
                                                                                class System.String)
-      IL_0035:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+      IL_0035:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_003a:  ldc.i4.s   101
       IL_003c:  ret
 

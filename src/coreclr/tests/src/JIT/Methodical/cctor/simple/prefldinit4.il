@@ -1,6 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 
 
 .assembly extern mscorlib
@@ -99,17 +105,17 @@
     IL_0013:  ldstr      "in .cctor(), measure.a is {0}"
     IL_0018:  ldsfld     int32 measure::a
     IL_001d:  box        [mscorlib]System.Int32
-    IL_0022:  call       void [mscorlib]System.Console::WriteLine(string,
+    IL_0022:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
     IL_0027:  ldstr      "FAILED"
-    IL_002c:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_002c:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0031:  newobj     instance void [mscorlib]System.Exception::.ctor()
     IL_0036:  throw
 
     IL_0037:  ldstr      "in .cctor(), measure.a is {0}"
     IL_003c:  ldsfld     int32 measure::a
     IL_0041:  box        [mscorlib]System.Int32
-    IL_0046:  call       void [mscorlib]System.Console::WriteLine(string,
+    IL_0046:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
     IL_004b:  ldsfld     int32 measure::a
     IL_0050:  ldsfld     unsigned int8 test::b
@@ -122,17 +128,17 @@
     IL_0067:  ldstr      "in .cctor() after measure.a+=b, measure.a is {0}"
     IL_006c:  ldsfld     int32 measure::a
     IL_0071:  box        [mscorlib]System.Int32
-    IL_0076:  call       void [mscorlib]System.Console::WriteLine(string,
+    IL_0076:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
     IL_007b:  ldstr      "FAILED"
-    IL_0080:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0080:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0085:  newobj     instance void [mscorlib]System.Exception::.ctor()
     IL_008a:  throw
 
     IL_008b:  ldstr      "in .cctor() after measure.a=8, measure.a is {0}"
     IL_0090:  ldsfld     int32 measure::a
     IL_0095:  box        [mscorlib]System.Int32
-    IL_009a:  call       void [mscorlib]System.Console::WriteLine(string,
+    IL_009a:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
     IL_009f:  ret
   } // end of method test::.cctor
@@ -162,10 +168,10 @@
     .try
     {
       IL_0000:  ldstr      "Testing .cctor() invocation by accessing static field"
-      IL_0005:  call       void [mscorlib]System.Console::WriteLine(string)
-      IL_000a:  call       void [mscorlib]System.Console::WriteLine()
+      IL_0005:  call       void [System.Console]System.Console::WriteLine(string)
+      IL_000a:  call       void [System.Console]System.Console::WriteLine()
       IL_000f:  ldstr      "Before calling static field"
-      IL_0014:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0014:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0019:  ldsfld     int32 measure::a
       IL_001e:  ldc.i4     0xcc
       IL_0023:  beq.s      IL_0047
@@ -173,10 +179,10 @@
       IL_0025:  ldstr      "in Main(), measure.a is {0}"
       IL_002a:  ldsfld     int32 measure::a
       IL_002f:  box        [mscorlib]System.Int32
-      IL_0034:  call       void [mscorlib]System.Console::WriteLine(string,
+      IL_0034:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
       IL_0039:  ldstr      "FAILED"
-      IL_003e:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_003e:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0043:  ldc.i4.1
       IL_0044:  stloc.1
       IL_0045:  leave.s    IL_00ac
@@ -184,7 +190,7 @@
       IL_0047:  ldc.i4.s   15
       IL_0049:  stsfld     unsigned int8 test::b
       IL_004e:  ldstr      "After calling static field"
-      IL_0053:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0053:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0058:  ldsfld     int32 measure::a
       IL_005d:  ldc.i4     0xd8
       IL_0062:  beq.s      IL_0086
@@ -192,10 +198,10 @@
       IL_0064:  ldstr      "in Main() after f(ref b), measure.a is {0}"
       IL_0069:  ldsfld     int32 measure::a
       IL_006e:  box        [mscorlib]System.Int32
-      IL_0073:  call       void [mscorlib]System.Console::WriteLine(string,
+      IL_0073:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
       IL_0078:  ldstr      "FAILED"
-      IL_007d:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_007d:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0082:  ldc.i4.m1
       IL_0083:  stloc.1
       IL_0084:  leave.s    IL_00ac
@@ -208,15 +214,15 @@
       IL_0088:  stloc.0
       IL_0089:  ldloc.0
       IL_008a:  callvirt   instance string [mscorlib]System.Exception::get_StackTrace()
-      IL_008f:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_008f:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0094:  ldc.i4.m1
       IL_0095:  stloc.1
       IL_0096:  leave.s    IL_00ac
 
     }  // end handler
-    IL_0098:  call       void [mscorlib]System.Console::WriteLine()
+    IL_0098:  call       void [System.Console]System.Console::WriteLine()
     IL_009d:  ldstr      "PASSED"
-    IL_00a2:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_00a2:  call       void [System.Console]System.Console::WriteLine(string)
     IL_00a7:  ldc.i4.s   100
     IL_00a9:  stloc.1
     IL_00aa:  br.s       IL_00ac

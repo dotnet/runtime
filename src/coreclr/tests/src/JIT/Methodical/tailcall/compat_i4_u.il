@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly compat_i4_u { }
 .namespace JitTest
 {
@@ -75,13 +80,13 @@
       IL_0007:  beq.s      IL_0017
 
       IL_0009:  ldstr      "failed"
-      IL_000e:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+      IL_000e:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0013:  ldc.i4.1
       IL_0014:  stloc.0
       IL_0015:  br.s       IL_0026
 
       IL_0017:  ldstr      "passed"
-      IL_001c:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+      IL_001c:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0021:  ldc.i4.s   100
       IL_0023:  stloc.0
       IL_0024:  br.s       IL_0026

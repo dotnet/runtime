@@ -1,6 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 .assembly ILGEN_0xef3a9aea {}
 .assembly extern mscorlib{auto}
 .class ILGEN_0xef3a9aea {
@@ -44,20 +50,20 @@
 catch [mscorlib]System.OverflowException
 {
  ldstr "System.OverflowException caught as expected"
- call void [mscorlib]System.Console::WriteLine(string)
+ call void [System.Console]System.Console::WriteLine(string)
  leave PASS
 }
 
 FAIL:
 ldc.i4 1
  ldstr "FAIL"
- call void [mscorlib]System.Console::WriteLine(string)
+ call void [System.Console]System.Console::WriteLine(string)
 ret
 
 PASS:
 ldc.i4 100
  ldstr "PASS"
- call void [mscorlib]System.Console::WriteLine(string)
+ call void [System.Console]System.Console::WriteLine(string)
 ret
 
 }

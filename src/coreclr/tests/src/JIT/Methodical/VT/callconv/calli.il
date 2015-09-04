@@ -6,8 +6,11 @@
 
 .file alignment 512
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly 'call' // as "call"
 {
@@ -86,7 +89,7 @@
       IL_0029:  stelem.ref
       IL_002a:  ldloc.0
       IL_002b:  call       class System.String [mscorlib]System.String::Concat(class System.String[])
-      IL_0030:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+      IL_0030:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0035:  ldstr      "this is {"
       IL_003a:  ldarg.0
       IL_003b:  call       instance class System.String JitTest.VT::ToString()
@@ -94,7 +97,7 @@
       IL_0045:  call       class System.String [mscorlib]System.String::Concat(class System.String,
                                                                                class System.String,
                                                                                class System.String)
-      IL_004a:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+      IL_004a:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_004f:  ret
     } // end of method VT::DoSomething
 
@@ -110,7 +113,7 @@
       			calli		instance class System.String()
       IL_000c:  call       class System.String [mscorlib]System.String::Concat(class System.String,
                                                                                class System.String)
-      IL_0011:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+      IL_0011:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0016:  ldstr      "this is {"
       IL_001b:  ldarg.0
       IL_001c:  call       instance class System.String JitTest.VT::ToString()
@@ -118,7 +121,7 @@
       IL_0026:  call       class System.String [mscorlib]System.String::Concat(class System.String,
                                                                                class System.String,
                                                                                class System.String)
-      IL_002b:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+      IL_002b:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0030:  ldarga.s   vt
       IL_0032:  ldfld      int32 JitTest.VT::m_vn
       IL_0037:  ldarga.s   vt
@@ -160,7 +163,7 @@
       IL_0029:  stelem.ref
       IL_002a:  ldloc.0
       IL_002b:  call       class System.String [mscorlib]System.String::Concat(class System.String[])
-      IL_0030:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+      IL_0030:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0035:  ldstr      "this is {"
       IL_003a:  ldarg.0
       			ldftn       instance class System.String JitTest.VT::ToString()
@@ -169,7 +172,7 @@
       IL_0045:  call       class System.String [mscorlib]System.String::Concat(class System.String,
                                                                                class System.String,
                                                                                class System.String)
-      IL_004a:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+      IL_004a:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_004f:  ret
     } // end of method VT::_DoSomething
 
@@ -183,7 +186,7 @@
       IL_0007:  call       instance class System.String JitTest.VT::ToString()
       IL_000c:  call       class System.String [mscorlib]System.String::Concat(class System.String,
                                                                                class System.String)
-      IL_0011:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+      IL_0011:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0016:  ldstr      "this is {"
       IL_001b:  ldarg.0
       IL_001c:  call       instance class System.String JitTest.VT::ToString()
@@ -191,7 +194,7 @@
       IL_0026:  call       class System.String [mscorlib]System.String::Concat(class System.String,
                                                                                class System.String,
                                                                                class System.String)
-      IL_002b:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+      IL_002b:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0030:  ldarga.s   vt
       IL_0032:  ldfld      int32 JitTest.VT::m_vn
       IL_0037:  ldarga.s   vt
@@ -250,7 +253,7 @@
       IL_0030:  call       instance class System.String JitTest.VT::ToString()
       IL_0035:  call       class System.String [mscorlib]System.String::Concat(class System.String,
                                                                                class System.String)
-      IL_003a:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+      IL_003a:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_003f:  ret
     } // end of method VT::TryInterface
 
@@ -287,7 +290,7 @@
       IL_0032:  call       instance class System.String JitTest.VT::ToString()
       IL_0037:  call       class System.String [mscorlib]System.String::Concat(class System.String,
                                                                                class System.String)
-      IL_003c:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+      IL_003c:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0041:  ldloca.s   V_0
       IL_0043:  ldfld      int32 JitTest.VT::m_vn
       IL_0048:  ldc.i4.s   10
@@ -301,7 +304,7 @@
       IL_005d:  brtrue.s   IL_006c
 
       IL_005f:  ldstr      "Failed"
-      IL_0064:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+      IL_0064:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0069:  ldc.i4.s   101
       IL_006b:  ret
 
@@ -324,7 +327,7 @@
       IL_0090:  call       instance class System.String JitTest.VT::ToString()
       IL_0095:  call       class System.String [mscorlib]System.String::Concat(class System.String,
                                                                                class System.String)
-      IL_009a:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+      IL_009a:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_009f:  ldloca.s   V_0
       IL_00a1:  ldfld      int32 JitTest.VT::m_vn
       IL_00a6:  ldc.i4.s   10
@@ -338,7 +341,7 @@
       IL_00bb:  brtrue.s   IL_00ca
 
       IL_00bd:  ldstr      "Failed"
-      IL_00c2:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+      IL_00c2:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_00c7:  ldc.i4.s   101
       IL_00c9:  ret
 
@@ -346,7 +349,7 @@
       IL_00cc:  box        JitTest.VT
       IL_00d1:  call       void JitTest.VT::TryInterface(class JitTest.ISomething)
       IL_00d6:  ldstr      "Passed"
-      IL_00db:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+      IL_00db:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_00e0:  ldc.i4.s   100
       IL_00e2:  ret
     } // end of method VT::Main

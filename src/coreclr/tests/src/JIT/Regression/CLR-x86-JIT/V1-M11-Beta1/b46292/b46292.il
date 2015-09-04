@@ -5,8 +5,11 @@
 
 
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly extern Microsoft.VisualBasic
 {
@@ -36,7 +39,7 @@
     {
       pop
       IL_000d:  ldstr      "exception"
-      IL_0012:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+      IL_0012:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
       IL_0017:  leave.s    IL_0019
 
     }  // end handler
@@ -64,7 +67,7 @@
     // Code size       11 (0xb)
     .maxstack  8
     IL_0000:  ldstr      "hi"
-    IL_0005:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+    IL_0005:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
     IL_000a:  ret
   } // end of method 'c1::foo'
 

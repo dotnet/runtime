@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly init_int64 { }
 .class private auto ansi beforefieldinit Test
        extends [mscorlib]System.Object
@@ -436,7 +441,7 @@
     IL_0005:  brfalse.s  IL_0019
 
     IL_0007:  ldstr      "Error 101"
-    IL_000c:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_000c:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0011:  ldc.i8   101
     IL_0013:  stloc.3
     IL_0014:  br         IL_02c3
@@ -446,7 +451,7 @@
     IL_0020:  beq.s      IL_0034
 
     IL_0022:  ldstr      "Error 102"
-    IL_0027:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0027:  call       void [System.Console]System.Console::WriteLine(string)
     IL_002c:  ldc.i8   102
     IL_002e:  stloc.3
     IL_002f:  br         IL_02c3
@@ -455,7 +460,7 @@
     IL_0039:  brfalse.s  IL_004d
 
     IL_003b:  ldstr      "Error 103"
-    IL_0040:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0040:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0045:  ldc.i8   103
     IL_0047:  stloc.3
     IL_0048:  br         IL_02c3
@@ -464,7 +469,7 @@
     IL_0052:  brfalse.s  IL_0066
 
     IL_0054:  ldstr      "Error 104"
-    IL_0059:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0059:  call       void [System.Console]System.Console::WriteLine(string)
     IL_005e:  ldc.i8   104
     IL_0060:  stloc.3
     IL_0061:  br         IL_02c3
@@ -477,7 +482,7 @@
     IL_0070:  brfalse.s  IL_0084
 
     IL_0072:  ldstr      "Error 105"
-    IL_0077:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0077:  call       void [System.Console]System.Console::WriteLine(string)
     IL_007c:  ldc.i8   105
     IL_007e:  stloc.3
     IL_007f:  br         IL_02c3
@@ -488,7 +493,7 @@
     IL_008c:  brfalse.s  IL_00a0
 
     IL_008e:  ldstr      "Error 106"
-    IL_0093:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0093:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0098:  ldc.i8   106
     IL_009a:  stloc.3
     IL_009b:  br         IL_02c3
@@ -499,7 +504,7 @@
     IL_00af:  brfalse.s  IL_00c3
 
     IL_00b1:  ldstr      "Error 107"
-    IL_00b6:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_00b6:  call       void [System.Console]System.Console::WriteLine(string)
     IL_00bb:  ldc.i8   107
     IL_00bd:  stloc.3
     IL_00be:  br         IL_02c3
@@ -511,7 +516,7 @@
     IL_00d4:  beq.s      IL_00e8
 
     IL_00d6:  ldstr      "Error 108"
-    IL_00db:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_00db:  call       void [System.Console]System.Console::WriteLine(string)
     IL_00e0:  ldc.i8   108
     IL_00e2:  stloc.3
     IL_00e3:  br         IL_02c3
@@ -522,7 +527,7 @@
     IL_00f7:  brfalse.s  IL_010b
 
     IL_00f9:  ldstr      "Error 109"
-    IL_00fe:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_00fe:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0103:  ldc.i8   109
     IL_0105:  stloc.3
     IL_0106:  br         IL_02c3
@@ -533,7 +538,7 @@
     IL_011a:  brfalse.s  IL_012e
 
     IL_011c:  ldstr      "Error 110"
-    IL_0121:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0121:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0126:  ldc.i8   110
     IL_0128:  stloc.3
     IL_0129:  br         IL_02c3
@@ -551,7 +556,7 @@
     IL_014a:  brfalse.s  IL_015e
 
     IL_014c:  ldstr      "Error 111"
-    IL_0151:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0151:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0156:  ldc.i8   111
     IL_0158:  stloc.3
     IL_0159:  br         IL_02c3
@@ -567,7 +572,7 @@
     IL_016a:  beq.s      IL_017e
 
     IL_016c:  ldstr      "Error 112"
-    IL_0171:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0171:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0176:  ldc.i8   112
     IL_0178:  stloc.3
     IL_0179:  br         IL_02c3
@@ -582,7 +587,7 @@
     IL_0188:  brfalse.s  IL_019c
 
     IL_018a:  ldstr      "Error 113"
-    IL_018f:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_018f:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0194:  ldc.i8   113
     IL_0196:  stloc.3
     IL_0197:  br         IL_02c3
@@ -597,7 +602,7 @@
     IL_01a6:  brfalse.s  IL_01ba
 
     IL_01a8:  ldstr      "Error 114"
-    IL_01ad:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_01ad:  call       void [System.Console]System.Console::WriteLine(string)
     IL_01b2:  ldc.i8   114
     IL_01b4:  stloc.3
     IL_01b5:  br         IL_02c3
@@ -625,7 +630,7 @@
     IL_01d4:  brfalse.s  IL_01e8
 
     IL_01d6:  ldstr      "Error 115"
-    IL_01db:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_01db:  call       void [System.Console]System.Console::WriteLine(string)
     IL_01e0:  ldc.i8   115
     IL_01e2:  stloc.3
     IL_01e3:  br         IL_02c3
@@ -647,7 +652,7 @@
     IL_01fb:  beq.s      IL_020f
 
     IL_01fd:  ldstr      "Error 116"
-    IL_0202:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0202:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0207:  ldc.i8   116
     IL_0209:  stloc.3
     IL_020a:  br         IL_02c3
@@ -668,7 +673,7 @@
     IL_0220:  brfalse.s  IL_0234
 
     IL_0222:  ldstr      "Error 117"
-    IL_0227:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0227:  call       void [System.Console]System.Console::WriteLine(string)
     IL_022c:  ldc.i8   117
     IL_022e:  stloc.3
     IL_022f:  br         IL_02c3
@@ -689,7 +694,7 @@
     IL_0245:  brfalse.s  IL_0256
 
     IL_0247:  ldstr      "Error 118"
-    IL_024c:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_024c:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0251:  ldc.i8   118
     IL_0253:  stloc.3
     IL_0254:  br      IL_02c3
@@ -700,7 +705,7 @@
     IL_025d:  beq.s      IL_026e
 
     IL_025f:  ldstr      "Error 119"
-    IL_0264:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0264:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0269:  ldc.i8   119
     IL_026b:  stloc.3
     IL_026c:  br.s       IL_02c3
@@ -711,7 +716,7 @@
     IL_0276:  beq.s      IL_0287
 
     IL_0278:  ldstr      "Error 120"
-    IL_027d:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_027d:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0282:  ldc.i8   120
     IL_0284:  stloc.3
     IL_0285:  br.s       IL_02c3
@@ -720,7 +725,7 @@
     IL_028c:  brfalse.s  IL_029d
 
     IL_028e:  ldstr      "Error 121"
-    IL_0293:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0293:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0298:  ldc.i8   121
     IL_029a:  stloc.3
     IL_029b:  br.s       IL_02c3
@@ -730,13 +735,13 @@
     IL_02a3:  brfalse.s  IL_02b4
 
     IL_02a5:  ldstr      "Error 122"
-    IL_02aa:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_02aa:  call       void [System.Console]System.Console::WriteLine(string)
     IL_02af:  ldc.i8   122
     IL_02b1:  stloc.3
     IL_02b2:  br.s       IL_02c3
 
     IL_02b4:  ldstr      "Passed"
-    IL_02b9:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_02b9:  call       void [System.Console]System.Console::WriteLine(string)
     IL_02be:  ldc.i8   100
     IL_02c0:  stloc.3
     IL_02c1:  br.s       IL_02c3

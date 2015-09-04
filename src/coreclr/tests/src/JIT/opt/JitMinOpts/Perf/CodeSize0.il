@@ -5,7 +5,12 @@
 // OPTIONS: opts.MinOpts() == false
 // TID 934: IL Code Size,Instr 59998,15513, Basic Block count 722, Local Variable Num,Ref count  17,5326 for method CodeSize0.Main():int
 
-.assembly extern mscorlib {}
+.assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly CodeSize0 {}
 .module CodeSize0.exe
 .class private auto ansi beforefieldinit CodeSize0
@@ -15968,7 +15973,7 @@
     IL_e96c:  box        [mscorlib]System.Int32
     IL_e971:  call       string [mscorlib]System.String::Concat(object,
                                                                 object)
-    IL_e976:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_e976:  call       void [System.Console]System.Console::WriteLine(string)
     IL_e97b:  ldstr      "b is: "
     IL_e980:  ldloc.s    V_7
     IL_e982:  ldloc.1
@@ -15976,7 +15981,7 @@
     IL_e984:  box        [mscorlib]System.Int32
     IL_e989:  call       string [mscorlib]System.String::Concat(object,
                                                                 object)
-    IL_e98e:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_e98e:  call       void [System.Console]System.Console::WriteLine(string)
     IL_e993:  ldstr      "c is: "
     IL_e998:  ldloc.s    V_8
     IL_e99a:  ldloc.2
@@ -15984,7 +15989,7 @@
     IL_e99c:  box        [mscorlib]System.Int32
     IL_e9a1:  call       string [mscorlib]System.String::Concat(object,
                                                                 object)
-    IL_e9a6:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_e9a6:  call       void [System.Console]System.Console::WriteLine(string)
     IL_e9ab:  ldstr      "d is: "
     IL_e9b0:  ldloc.s    V_9
     IL_e9b2:  ldloc.3
@@ -15992,7 +15997,7 @@
     IL_e9b4:  box        [mscorlib]System.Int32
     IL_e9b9:  call       string [mscorlib]System.String::Concat(object,
                                                                 object)
-    IL_e9be:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_e9be:  call       void [System.Console]System.Console::WriteLine(string)
     IL_e9c3:  ldstr      "e is: "
     IL_e9c8:  ldloc.s    V_10
     IL_e9ca:  ldloc.s    V_4
@@ -16000,7 +16005,7 @@
     IL_e9cd:  box        [mscorlib]System.Int32
     IL_e9d2:  call       string [mscorlib]System.String::Concat(object,
                                                                 object)
-    IL_e9d7:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_e9d7:  call       void [System.Console]System.Console::WriteLine(string)
     IL_e9dc:  ldstr      "f is: "
     IL_e9e1:  ldloc.s    V_11
     IL_e9e3:  ldloc.0
@@ -16008,7 +16013,7 @@
     IL_e9e5:  box        [mscorlib]System.Int32
     IL_e9ea:  call       string [mscorlib]System.String::Concat(object,
                                                                 object)
-    IL_e9ef:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_e9ef:  call       void [System.Console]System.Console::WriteLine(string)
     IL_e9f4:  ldstr      "g is: "
     IL_e9f9:  ldloc.s    V_12
     IL_e9fb:  ldloc.1
@@ -16016,7 +16021,7 @@
     IL_e9fd:  box        [mscorlib]System.Int32
     IL_ea02:  call       string [mscorlib]System.String::Concat(object,
                                                                 object)
-    IL_ea07:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_ea07:  call       void [System.Console]System.Console::WriteLine(string)
     IL_ea0c:  ldstr      "h is: "
     IL_ea11:  ldloc.s    V_13
     IL_ea13:  ldloc.2
@@ -16024,7 +16029,7 @@
     IL_ea15:  box        [mscorlib]System.Int32
     IL_ea1a:  call       string [mscorlib]System.String::Concat(object,
                                                                 object)
-    IL_ea1f:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_ea1f:  call       void [System.Console]System.Console::WriteLine(string)
     IL_ea24:  ldstr      "i is: "
     IL_ea29:  ldloc.s    V_14
     IL_ea2b:  ldloc.3
@@ -16032,7 +16037,7 @@
     IL_ea2d:  box        [mscorlib]System.Int32
     IL_ea32:  call       string [mscorlib]System.String::Concat(object,
                                                                 object)
-    IL_ea37:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_ea37:  call       void [System.Console]System.Console::WriteLine(string)
     IL_ea3c:  ldstr      "j is: "
     IL_ea41:  ldloc.s    V_15
     IL_ea43:  ldloc.s    V_4
@@ -16040,7 +16045,7 @@
     IL_ea46:  box        [mscorlib]System.Int32
     IL_ea4b:  call       string [mscorlib]System.String::Concat(object,
                                                                 object)
-    IL_ea50:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_ea50:  call       void [System.Console]System.Console::WriteLine(string)
     IL_ea55:  ldc.i4.s   100
     IL_ea57:  stloc.s    V_16
     IL_ea59:  br.s       IL_ea5b

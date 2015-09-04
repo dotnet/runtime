@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly 'finally' { }
 .namespace JitTest
 {
@@ -27,11 +32,11 @@
       .try
       {
         IL_0006:  ldstr      "before try...finally"
-        IL_000b:  call       void [mscorlib]System.Console::WriteLine(string)
+        IL_000b:  call       void [System.Console]System.Console::WriteLine(string)
         .try
         {
           IL_0010:  ldstr      "inside try"
-          IL_0015:  call       void [mscorlib]System.Console::WriteLine(string)
+          IL_0015:  call       void [System.Console]System.Console::WriteLine(string)
           IL_001a:  ldloc.0
           IL_001b:  brfalse.s  IL_0023
 
@@ -47,11 +52,11 @@
           IL_0025:  ldc.i4.1
           IL_0026:  stloc.1
           IL_0027:  ldstr      "inside finally"
-          IL_002c:  call       void [mscorlib]System.Console::WriteLine(string)
+          IL_002c:  call       void [System.Console]System.Console::WriteLine(string)
           IL_0031:  endfinally
         }  // end handler
         IL_0032:  ldstr      "after try...finally"
-        IL_0037:  call       void [mscorlib]System.Console::WriteLine(string)
+        IL_0037:  call       void [System.Console]System.Console::WriteLine(string)
         IL_003c:  leave.s    IL_004d
         
       }  // end .try
@@ -64,7 +69,7 @@
                   brfalse LEAVE
         		
         IL_003f:  ldstr      "inside catch"
-        IL_0044:  call       void [mscorlib]System.Console::WriteLine(string)
+        IL_0044:  call       void [System.Console]System.Console::WriteLine(string)
         IL_0049:  ldc.i4.1
         IL_004a:  stloc.2
         LEAVE:
@@ -78,13 +83,13 @@
       IL_0051:  brfalse.s  IL_0062
 
       IL_0053:  ldstr      "Passed => 100"
-      IL_0058:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0058:  call       void [System.Console]System.Console::WriteLine(string)
       IL_005d:  ldc.i4.s   100
       IL_005f:  stloc.3
       IL_0060:  br.s       IL_0071
 
       IL_0062:  ldstr      "Failed => 101"
-      IL_0067:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0067:  call       void [System.Console]System.Console::WriteLine(string)
       IL_006c:  ldc.i4.s   101
       IL_006e:  stloc.3
       IL_006f:  br.s       IL_0071

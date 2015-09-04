@@ -5,12 +5,11 @@
 
 
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
-                           
-  
-           
-  
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly 'recurse'// as "recurse"
 {
@@ -86,7 +85,7 @@
       IL_0012:  beq.s      IL_0022
 
       IL_0014:  ldstr      "FAILED"
-      IL_0019:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_0019:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_001e:  ldc.i4.1
       IL_001f:  stloc.2
       IL_0020:  br.s       IL_0046
@@ -96,13 +95,13 @@
       IL_0028:  beq.s      IL_0038
 
       IL_002a:  ldstr      "FAILED"
-      IL_002f:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_002f:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0034:  ldc.i4.2
       IL_0035:  stloc.2
       IL_0036:  br.s       IL_0046
 
       IL_0038:  ldstr      "PASSED"
-      IL_003d:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_003d:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0042:  ldc.i4    0x64
       IL_0043:  stloc.2
       IL_0044:  br.s       IL_0046

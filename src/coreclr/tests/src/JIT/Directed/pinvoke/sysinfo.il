@@ -3,6 +3,11 @@
 
 .module extern kernel32
 .assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly sysinfo { }
 .module sysinfo.exe
 .namespace JitTest
@@ -57,7 +62,7 @@
         IL_001d:  ldstr      " processor(s) found"
         IL_0022:  call       string [mscorlib]System.String::Concat(string,
                                                                     string)
-        IL_0027:  call       void [mscorlib]System.Console::WriteLine(string)
+        IL_0027:  call       void [System.Console]System.Console::WriteLine(string)
         IL_002c:  ldstr      "Allocation granularity is "
         IL_0031:  ldloca.s   V_0
         IL_0033:  ldflda     unsigned int32 JitTest.SYSTEM_INFO::dwAllocationGranularity
@@ -66,7 +71,7 @@
         IL_0042:  call       string [mscorlib]System.String::Concat(string,
                                                                     string,
                                                                     string)
-        IL_0047:  call       void [mscorlib]System.Console::WriteLine(string)
+        IL_0047:  call       void [System.Console]System.Console::WriteLine(string)
         IL_004c:  endfinally
       }  // end handler
       IL_004d:  ldc.i4 100

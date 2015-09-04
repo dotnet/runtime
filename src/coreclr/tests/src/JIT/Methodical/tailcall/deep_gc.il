@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly deep_gc { }
 .namespace JitTest
 {
@@ -1159,9 +1164,9 @@
 
       IL_0012:  ldloc.0
       IL_0013:  ldfld      int32 JitTest.TestClass::m_fld
-      IL_0018:  call       void [mscorlib]System.Console::Write(int32)
+      IL_0018:  call       void [System.Console]System.Console::Write(int32)
       IL_001d:  ldstr      " - prime!"
-      IL_0022:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+      IL_0022:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0027:  ldloc.0
       IL_0028:  dup
       IL_0029:  ldfld      int32 JitTest.TestClass::m_fld

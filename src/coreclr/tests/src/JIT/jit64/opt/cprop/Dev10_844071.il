@@ -7,8 +7,11 @@
 
 
 // Metadata version: v4.0.21218
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly Dev10_844071
 {
@@ -170,7 +173,7 @@
     IL_0020:  call       string [mscorlib]System.String::Concat(string,
                                                                 string,
                                                                 string)
-    IL_0025:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0025:  call       void [System.Console]System.Console::WriteLine(string)
     IL_002a:  nop
     IL_002b:  ldarg.0
     IL_002c:  ldfld      string MS.VT::path
@@ -201,7 +204,7 @@
     IL_0068:  call       string [mscorlib]System.String::Concat(string,
                                                                 string,
                                                                 string)
-    IL_006d:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_006d:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0072:  nop
     IL_0073:  ldarg.0
     IL_0074:  ldfld      string MS.VT::path
@@ -232,7 +235,7 @@
     IL_00b0:  call       string [mscorlib]System.String::Concat(string,
                                                                 string,
                                                                 string)
-    IL_00b5:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_00b5:  call       void [System.Console]System.Console::WriteLine(string)
     IL_00ba:  nop
     IL_00bb:  ldarg.0
     IL_00bc:  ldfld      string MS.VT::path
@@ -264,7 +267,7 @@
     IL_00fe:  call       string [mscorlib]System.String::Concat(string,
                                                                 string,
                                                                 string)
-    IL_0103:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0103:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0108:  nop
     IL_0109:  ldarg.0
     IL_010a:  ldfld      string MS.VT::path
@@ -296,7 +299,7 @@
     IL_014c:  call       string [mscorlib]System.String::Concat(string,
                                                                 string,
                                                                 string)
-    IL_0151:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0151:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0156:  nop
     IL_0157:  ldarg.0
     IL_0158:  ldfld      string MS.VT::path
@@ -328,7 +331,7 @@
     IL_0197:  call       string [mscorlib]System.String::Concat(string,
                                                                 string,
                                                                 string)
-    IL_019c:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_019c:  call       void [System.Console]System.Console::WriteLine(string)
     IL_01a1:  nop
     IL_01a2:  ldarg.0
     IL_01a3:  ldfld      string MS.VT::path
@@ -377,14 +380,14 @@
 
     IL_0019:  nop
     IL_001a:  ldstr      "PASSED."
-    IL_001f:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_001f:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0024:  nop
     IL_0025:  ldc.i4.s   100
     IL_0027:  stloc.0
     IL_0028:  br.s       IL_003a
 
     IL_002a:  ldstr      "FAILED."
-    IL_002f:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_002f:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0034:  nop
     IL_0035:  ldc.i4.s   101
     IL_0037:  stloc.0

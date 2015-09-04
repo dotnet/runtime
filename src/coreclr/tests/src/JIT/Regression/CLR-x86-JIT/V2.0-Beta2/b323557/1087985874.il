@@ -1,6 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 .assembly Test1 {}
 .assembly extern mscorlib{auto}
 .class FullProof {
@@ -28,7 +34,7 @@ IL_57:   shr.un         //  2 1 0 0 1
          pop            //  0 1
          cgt            //  1
          dup
-         call void [mscorlib]System.Console::WriteLine(int32)
+         call void [System.Console]System.Console::WriteLine(int32)
          ret
 }
 
@@ -39,7 +45,7 @@ IL_57:   shr.un         //  2 1 0 0 1
         ldc.r4 1
         ldc.r8 0
         cgt
-        call void [mscorlib]System.Console::WriteLine(int32)
+        call void [System.Console]System.Console::WriteLine(int32)
 
         call int32 FullProof::Test()
 
@@ -49,12 +55,12 @@ IL_57:   shr.un         //  2 1 0 0 1
 
 FAIL:
 	ldstr      "FAIL"
-	call       void [mscorlib]System.Console::WriteLine(string)
+	call       void [System.Console]System.Console::WriteLine(string)
 	ldc.i4.0
 	br.s       END
 PASS:
 	ldstr      "PASS"
-	call       void [mscorlib]System.Console::WriteLine(string)
+	call       void [System.Console]System.Console::WriteLine(string)
 	ldc.i4     100
 	br.s       END
 

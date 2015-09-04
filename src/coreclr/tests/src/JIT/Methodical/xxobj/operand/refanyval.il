@@ -3,6 +3,11 @@
 
 // refanyval.il
 .assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly 'refanyval'
 {
   
@@ -145,33 +150,33 @@
       IL_001b:  call       int32 JitTest.Test::refanyval_ldobj()
       IL_0020:  brfalse.s  IL_0031
       IL_0022:  ldstr      "refanyval_ldobj() failed."
-      IL_0027:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0027:  call       void [System.Console]System.Console::WriteLine(string)
       IL_002c:  ldc.i4.s   101
       IL_002e:  stloc.2
       IL_002f:  br.s       IL_0082
       IL_0031:  call       int32 JitTest.Test::refanyval_initobj()
       IL_0036:  brfalse.s  IL_0047
       IL_0038:  ldstr      "refanyval_initobj() failed."
-      IL_003d:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_003d:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0042:  ldc.i4.s   102
       IL_0044:  stloc.2
       IL_0045:  br.s       IL_0082
       IL_0047:  call       int32 JitTest.Test::refanyval_stobj()
       IL_004c:  brfalse.s  IL_005d
       IL_004e:  ldstr      "refanyval_stobj() failed."
-      IL_0053:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0053:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0058:  ldc.i4.s   103
       IL_005a:  stloc.2
       IL_005b:  br.s       IL_0082
       IL_005d:  call       int32 JitTest.Test::refanyval_cpobj()
       IL_0062:  brfalse.s  IL_0073
       IL_0064:  ldstr      "refanyval_cpobj() failed."
-      IL_0069:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0069:  call       void [System.Console]System.Console::WriteLine(string)
       IL_006e:  ldc.i4.s   104
       IL_0070:  stloc.2
       IL_0071:  br.s       IL_0082
       IL_0073:  ldstr      "All tests passed!"
-      IL_0078:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0078:  call       void [System.Console]System.Console::WriteLine(string)
       IL_007d:  ldc.i4.s   100
       IL_007f:  stloc.2
       IL_0080:  br.s       IL_0082

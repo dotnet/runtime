@@ -5,8 +5,11 @@
 
 
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly array2// as "array2"
 {
@@ -235,7 +238,7 @@
       IL_0084:  blt.s      IL_005e
 
       IL_0086:  ldstr      "Test passed."
-      IL_008b:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+      IL_008b:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
       IL_0090:  ldc.i4 100
       IL_0091:  stloc.3
       IL_0092:  br.s       IL_0094

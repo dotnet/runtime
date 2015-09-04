@@ -5,8 +5,11 @@
 
 
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly 'ldsfld_mulovf'// as "ldsfld_mulovf"
 {
@@ -32,7 +35,7 @@
       IL_000a:  box     ['mscorlib']System.UInt64
       IL_000f:  ldsfld    unsigned int64 JitTest.Test::op2
       IL_0014:  box     ['mscorlib']System.UInt64
-      IL_0019:  call       void ['mscorlib']System.Console::Write(class System.String,
+      IL_0019:  call       void [System.Console]System.Console::Write(class System.String,
                                                                   class System.Object,
                                                                   class System.Object)
       .try
@@ -47,7 +50,7 @@
         IL_002d:  stloc.0
         IL_002e:  leave.s    IL_004b
 
-        IL_0030:  call       void ['mscorlib']System.Console::WriteLine()
+        IL_0030:  call       void [System.Console]System.Console::WriteLine()
         IL_0035:  ldarg.1
         IL_0036:  ldc.i4.0
         IL_0037:  ceq
@@ -59,7 +62,7 @@
       {
         IL_003c:  pop
         IL_003d:  ldstr      "overflow."
-        IL_0042:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+        IL_0042:  call       void [System.Console]System.Console::WriteLine(class System.String)
         IL_0047:  ldarg.1
         IL_0048:  stloc.0
         IL_0049:  leave.s    IL_004b
@@ -158,13 +161,13 @@
       IL_00e4:  br       IL_00f4
 
       IL_00e6:  ldstr      "Test passed"
-      IL_00eb:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_00eb:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_00f0:  ldc.i4     0x64
       IL_00f1:  stloc.0
       IL_00f2:  br       IL_0102
 
       IL_00f4:  ldstr      "Test failed"
-      IL_00f9:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_00f9:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_00fe:  ldc.i4.1
       IL_00ff:  stloc.0
       IL_0100:  br       IL_0102

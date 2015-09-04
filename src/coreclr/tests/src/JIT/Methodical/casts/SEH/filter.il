@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly 'filter' { }
 .method public static int32 main() cil managed
 {
@@ -14,7 +19,7 @@ Begin_1:
 	leave.s		End_1
 Filter_1:
 	castclass	[mscorlib]System.DivideByZeroException
-	call		void [mscorlib]System.Console::WriteLine(object)
+	call		void [System.Console]System.Console::WriteLine(object)
 	ldc.i4.1
 	endfilter
 Handler_1:
@@ -29,7 +34,7 @@ Begin_2:
 	leave.s		End_2
 Filter_2:
 	isinst		[mscorlib]System.DivideByZeroException
-	call		void [mscorlib]System.Console::WriteLine(object)
+	call		void [System.Console]System.Console::WriteLine(object)
 	ldc.i4.1
 	endfilter
 Handler_2:

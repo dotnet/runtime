@@ -3,6 +3,11 @@
 
 // ldobj_V.il
 .assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly ldobj_V { }
 .namespace JitTest
 {
@@ -971,7 +976,7 @@
 		call valuetype JitTest.ValueClass JitTest.Test::method_6_8(valuetype JitTest.ValueClass)
 		pop
       ldstr      "Passed"
-      call       void [mscorlib]System.Console::WriteLine(string)
+      call       void [System.Console]System.Console::WriteLine(string)
       ldc.i4.s   100
       ret
     }
