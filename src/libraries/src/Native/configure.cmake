@@ -52,5 +52,5 @@ check_cxx_source_compiles(
     HAVE_GNU_STRERROR_R)
 
 configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
-    ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+    ${CMAKE_CURRENT_SOURCE_DIR}/Common/pal_config.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/Common/pal_config.h)
