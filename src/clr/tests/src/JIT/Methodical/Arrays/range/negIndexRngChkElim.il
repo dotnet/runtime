@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly ILGEN_0x1d013582 {}
- .assembly extern mscorlib{auto}
+.assembly extern mscorlib{auto}
 
 .class ILGEN_0x1d013582 {
 

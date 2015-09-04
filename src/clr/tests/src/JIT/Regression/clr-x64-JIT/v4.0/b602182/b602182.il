@@ -6,7 +6,7 @@
 
 
 .assembly ILGEN_0xad4651aa {}
- .assembly extern mscorlib{auto}
+.assembly extern mscorlib{auto}
 
 .class ILGEN_0xad4651aa {
 

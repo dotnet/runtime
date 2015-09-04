@@ -3,8 +3,11 @@
 
 
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly qsort
 {
@@ -102,7 +105,7 @@
       IL_0055:  call       instance string [mscorlib]System.UInt32::ToString()
       IL_005a:  call       string [mscorlib]System.String::Concat(string,
                                                                   string)
-      IL_005f:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_005f:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0064:  ldc.i4 100
       IL_0065:  stloc.s    V_5
       IL_0067:  br.s       IL_0083
@@ -116,7 +119,7 @@
       IL_0072:  ble.s      IL_0042
 
       IL_0074:  ldstr      "test failed"
-      IL_0079:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0079:  call       void [System.Console]System.Console::WriteLine(string)
       IL_007e:  ldc.i4 101
       IL_007f:  stloc.s    V_5
       IL_0081:  br.s       IL_0083

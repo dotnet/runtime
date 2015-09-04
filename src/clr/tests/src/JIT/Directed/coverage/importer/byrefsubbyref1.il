@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly byrefsubbyref1 {}
 .class a extends [mscorlib]System.Object
 {
@@ -51,19 +56,19 @@ ret
 	call int32 a::byrefsubbyref(class ctest&, class ctest&)
 	dup
 	stloc.2
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 
   // op1: byref, op2: int
 	ldloca V_2
 	ldc.i4 1
 	call int32 a::byrefsubi4(class ctest&, int32)
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 
   // op1: int, op2: byref
 	ldc.i4 1
 	ldloca V_1
 	call int32 a::i4subbyref(int32, class ctest&)
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 
 	// op1: byref, op2: byref
 	newobj     instance void ctest::.ctor()
@@ -99,7 +104,7 @@ ret
 	stloc.0
 	ldloca V_1
 	call int32 a::byrefsubbyref(class ctest&, class ctest&)
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 
 ldc.i4 100
   IL_0038:  ret

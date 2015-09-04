@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly ILGEN_0x3180c570 {}
 .class ILGEN_0x3180c570 {
 .method static int32 Method_0xa3b20838(unsigned int8 Arg_0x0, unsigned int16 Arg_0x2, float32 Arg_0x3) {

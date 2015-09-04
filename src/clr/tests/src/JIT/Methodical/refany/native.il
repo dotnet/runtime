@@ -5,8 +5,11 @@
 
 
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly 'native'// as "native"
 {
@@ -40,7 +43,7 @@
       IL_0020:  beq.s      IL_0030
 
       IL_0022:  ldstr      "Type does not match. Test failed"
-      IL_0027:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+      IL_0027:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
       IL_002c:  ldc.i4.1
       IL_002d:  stloc.2
       IL_002e:  br.s       IL_005a
@@ -52,13 +55,13 @@
       IL_003c:  beq.s      IL_004c
 
       IL_003e:  ldstr      "Value does not match. Test failed"
-      IL_0043:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+      IL_0043:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
       IL_0048:  ldc.i4.2
       IL_0049:  stloc.2
       IL_004a:  br.s       IL_005a
 
       IL_004c:  ldstr      "Test passed"
-      IL_0051:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+      IL_0051:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
       IL_0056:  ldc.i4 100
       IL_0057:  stloc.2
       IL_0058:  br.s       IL_005a

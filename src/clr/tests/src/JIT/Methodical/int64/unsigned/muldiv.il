@@ -5,8 +5,11 @@
 
 
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly 'muldiv'// as "muldiv"
 {
@@ -1481,7 +1484,7 @@
         IL_139b:  call       void JitTest.Test::testNumbers(unsigned int64,
                                                             unsigned int64)
         IL_13a0:  ldstr      "All tests passed."
-        IL_13a5:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+        IL_13a5:  call       void [System.Console]System.Console::WriteLine(class System.String)
         IL_13aa:  ldc.i4    0x64
         IL_13ab:  stloc.0
         IL_13ac:  leave.s    IL_13b3

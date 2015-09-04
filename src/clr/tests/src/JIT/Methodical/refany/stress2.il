@@ -5,8 +5,11 @@
 
 
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly stress2// as "stress2"
 {
@@ -33,7 +36,7 @@
       refanytype
       call      class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(value class [mscorlib]System.RuntimeTypeHandle)
       callvirt   class [mscorlib]System.String [mscorlib]System.Object::ToString()
-      call      void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+      call      void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
       */
       
       ldloca.s   REF
@@ -44,7 +47,7 @@
       refanytype
       call      class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(value class [mscorlib]System.RuntimeTypeHandle)
       callvirt   instance class [mscorlib]System.String [mscorlib]System.Object::ToString()
-      call      void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+      call      void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 
       ldc.i4 100
       ret

@@ -3,8 +3,12 @@
 
 //
 //
-.assembly extern mscorlib
-{ }
+.assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly 'test'
 { }
 .class private auto ansi Test extends [mscorlib]System.Object
@@ -17,7 +21,7 @@
 begin_1:
 	.try {
 		ldstr "test # 1"
-		call void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		ldc.i8 0x00000000000000fd
 		conv.ovf.u
 		ldc.i4 0x000000fd
@@ -32,7 +36,7 @@ begin_1:
 begin_2:
 	.try {
 		ldstr "test # 2"
-		call void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		ldc.i8 0x00000000000000a6
 		conv.ovf.u
 		ldc.i4 0x000000a6
@@ -47,7 +51,7 @@ begin_2:
 begin_3:
 	.try {
 		ldstr "test # 3"
-		call void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		ldc.i8 0x000000000000004c
 		conv.ovf.u
 		ldc.i4 0x0000004c
@@ -62,7 +66,7 @@ begin_3:
 begin_4:
 	.try {
 		ldstr "test # 4"
-		call void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		ldc.i8 0x0000000000000069
 		conv.ovf.u
 		ldc.i4 0x00000069
@@ -77,7 +81,7 @@ begin_4:
 begin_5:
 	.try {
 		ldstr "test # 5"
-		call void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		ldc.i8 0x0000000000006917
 		conv.ovf.u
 		ldc.i4 0x00006917
@@ -92,7 +96,7 @@ begin_5:
 begin_6:
 	.try {
 		ldstr "test # 6"
-		call void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		ldc.i8 0x0000000000003910
 		conv.ovf.u
 		ldc.i4 0x00003910
@@ -107,7 +111,7 @@ begin_6:
 begin_7:
 	.try {
 		ldstr "test # 7"
-		call void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		ldc.i8 0x0000000000006d94
 		conv.ovf.u
 		ldc.i4 0x00006d94
@@ -122,7 +126,7 @@ begin_7:
 begin_8:
 	.try {
 		ldstr "test # 8"
-		call void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		ldc.i8 0x000000000000b8d4
 		conv.ovf.u
 		ldc.i4 0x0000b8d4
@@ -137,7 +141,7 @@ begin_8:
 begin_9:
 	.try {
 		ldstr "test # 9"
-		call void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		ldc.i8 0x00000000002709f1
 		conv.ovf.u
 		ldc.i4 0x002709f1
@@ -152,7 +156,7 @@ begin_9:
 begin_10:
 	.try {
 		ldstr "test # 10"
-		call void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		ldc.i8 0x0000000000bd498d
 		conv.ovf.u
 		ldc.i4 0x00bd498d
@@ -167,7 +171,7 @@ begin_10:
 begin_11:
 	.try {
 		ldstr "test # 11"
-		call void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		ldc.i8 0x000000000026e414
 		conv.ovf.u
 		ldc.i4 0x0026e414
@@ -182,7 +186,7 @@ begin_11:
 begin_12:
 	.try {
 		ldstr "test # 12"
-		call void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		ldc.i8 0x0000000000149abc
 		conv.ovf.u
 		ldc.i4 0x00149abc
@@ -197,7 +201,7 @@ begin_12:
 begin_13:
 	.try {
 		ldstr "test # 13"
-		call void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		ldc.i8 0x000000007f5ca797
 		conv.ovf.u
 		ldc.i4 0x7f5ca797
@@ -212,7 +216,7 @@ begin_13:
 begin_14:
 	.try {
 		ldstr "test # 14"
-		call void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		ldc.i8 0x00000000ba989c83
 		conv.ovf.u
 		ldc.i4 0xba989c83
@@ -228,7 +232,7 @@ begin_14:
 begin_15:
 	.try {
 		ldstr "test # 15"
-		call void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		ldc.i8 0x00000000ef5d6f3c
 		conv.ovf.u
 		ldc.i4 0xef5d6f3c
@@ -244,7 +248,7 @@ begin_15:
 begin_16:
 	.try {
 		ldstr "test # 16"
-		call void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		ldc.i8 0x000000007ff93757
 		conv.ovf.u
 		ldc.i4 0x7ff93757
@@ -265,7 +269,7 @@ FAIL:
 	ldc.i4.1
 	ldstr "failed"
 PRINT:
-	call void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+	call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 	ret
 } // end of method 'Test::Main'
 

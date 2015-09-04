@@ -1,7 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-.assembly extern mscorlib {}
+.assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly test {}
 
 
@@ -18,7 +23,7 @@
 	{
 		call void test::test_001()
 		ldstr "Fail: test_001"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_001
@@ -30,8 +35,8 @@
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_001"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_001
@@ -42,7 +47,7 @@ TRY_END_001:
 	{
 		call void test::test_002()
 		ldstr "Fail: test_002"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_002
@@ -54,8 +59,8 @@ TRY_END_001:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_002"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_002
@@ -66,7 +71,7 @@ TRY_END_002:
 	{
 		call void test::test_003()
 		ldstr "Fail: test_003"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_003
@@ -78,8 +83,8 @@ TRY_END_002:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_003"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_003
@@ -90,7 +95,7 @@ TRY_END_003:
 	{
 		call void test::test_004()
 		ldstr "Fail: test_004"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_004
@@ -102,8 +107,8 @@ TRY_END_003:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_004"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_004
@@ -114,7 +119,7 @@ TRY_END_004:
 	{
 		call void test::test_005()
 		ldstr "Fail: test_005"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_005
@@ -126,8 +131,8 @@ TRY_END_004:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_005"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_005
@@ -138,7 +143,7 @@ TRY_END_005:
 	{
 		call void test::test_006()
 		ldstr "Fail: test_006"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_006
@@ -150,8 +155,8 @@ TRY_END_005:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_006"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_006
@@ -162,7 +167,7 @@ TRY_END_006:
 	{
 		call void test::test_007()
 		ldstr "Fail: test_007"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_007
@@ -174,8 +179,8 @@ TRY_END_006:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_007"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_007
@@ -186,7 +191,7 @@ TRY_END_007:
 	{
 		call void test::test_008()
 		ldstr "Fail: test_008"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_008
@@ -198,8 +203,8 @@ TRY_END_007:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_008"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_008
@@ -210,7 +215,7 @@ TRY_END_008:
 	{
 		call void test::test_009()
 		ldstr "Fail: test_009"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_009
@@ -222,8 +227,8 @@ TRY_END_008:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_009"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_009
@@ -234,7 +239,7 @@ TRY_END_009:
 	{
 		call void test::test_010()
 		ldstr "Fail: test_010"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_010
@@ -246,8 +251,8 @@ TRY_END_009:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_010"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_010
@@ -262,7 +267,7 @@ TRY_END_010:
 	{
 		call void test::test_011()
 		ldstr "Fail: test_011"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_011
@@ -274,8 +279,8 @@ TRY_END_010:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_011"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_011
@@ -286,7 +291,7 @@ TRY_END_011:
 	{
 		call void test::test_012()
 		ldstr "Fail: test_012"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_012
@@ -298,8 +303,8 @@ TRY_END_011:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_012"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_012
@@ -310,7 +315,7 @@ TRY_END_012:
 	{
 		call void test::test_013()
 		ldstr "Fail: test_013"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_013
@@ -322,8 +327,8 @@ TRY_END_012:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_013"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_013
@@ -334,7 +339,7 @@ TRY_END_013:
 	{
 		call void test::test_014()
 		ldstr "Fail: test_014"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_014
@@ -346,8 +351,8 @@ TRY_END_013:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_014"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_014
@@ -358,7 +363,7 @@ TRY_END_014:
 	{
 		call void test::test_015()
 		ldstr "Fail: test_015"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_015
@@ -370,8 +375,8 @@ TRY_END_014:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_015"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_015
@@ -382,7 +387,7 @@ TRY_END_015:
 	{
 		call void test::test_016()
 		ldstr "Fail: test_016"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_016
@@ -394,8 +399,8 @@ TRY_END_015:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_016"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_016
@@ -406,7 +411,7 @@ TRY_END_016:
 	{
 		call void test::test_017()
 		ldstr "Fail: test_017"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_017
@@ -418,8 +423,8 @@ TRY_END_016:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_017"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_017
@@ -430,7 +435,7 @@ TRY_END_017:
 	{
 		call void test::test_018()
 		ldstr "Fail: test_018"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_018
@@ -442,8 +447,8 @@ TRY_END_017:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_018"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_018
@@ -454,7 +459,7 @@ TRY_END_018:
 	{
 		call void test::test_019()
 		ldstr "Fail: test_019"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_019
@@ -466,8 +471,8 @@ TRY_END_018:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_019"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_019
@@ -478,7 +483,7 @@ TRY_END_019:
 	{
 		call void test::test_020()
 		ldstr "Fail: test_020"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_020
@@ -490,8 +495,8 @@ TRY_END_019:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_020"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_020
@@ -507,7 +512,7 @@ TRY_END_020:
 	{
 		call void test::test_021()
 		ldstr "Fail: test_021"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_021
@@ -519,8 +524,8 @@ TRY_END_020:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_021"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_021
@@ -531,7 +536,7 @@ TRY_END_021:
 	{
 		call void test::test_022()
 		ldstr "Fail: test_022"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_022
@@ -543,8 +548,8 @@ TRY_END_021:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_022"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_022
@@ -555,7 +560,7 @@ TRY_END_022:
 	{
 		call void test::test_023()
 		ldstr "Fail: test_023"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_023
@@ -567,8 +572,8 @@ TRY_END_022:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_023"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_023
@@ -579,7 +584,7 @@ TRY_END_023:
 	{
 		call void test::test_024()
 		ldstr "Fail: test_024"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_024
@@ -591,8 +596,8 @@ TRY_END_023:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_024"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_024
@@ -603,7 +608,7 @@ TRY_END_024:
 	{
 		call void test::test_025()
 		ldstr "Fail: test_025"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_025
@@ -615,8 +620,8 @@ TRY_END_024:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_025"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_025
@@ -627,7 +632,7 @@ TRY_END_025:
 	{
 		call void test::test_026()
 		ldstr "Fail: test_026"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_026
@@ -639,8 +644,8 @@ TRY_END_025:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_026"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_026
@@ -651,7 +656,7 @@ TRY_END_026:
 	{
 		call void test::test_027()
 		ldstr "Fail: test_027"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_027
@@ -663,8 +668,8 @@ TRY_END_026:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_027"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_027
@@ -675,7 +680,7 @@ TRY_END_027:
 	{
 		call void test::test_028()
 		ldstr "Fail: test_028"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_028
@@ -687,8 +692,8 @@ TRY_END_027:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_028"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_028
@@ -699,7 +704,7 @@ TRY_END_028:
 	{
 		call void test::test_029()
 		ldstr "Fail: test_029"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_029
@@ -711,8 +716,8 @@ TRY_END_028:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_029"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_029
@@ -723,7 +728,7 @@ TRY_END_029:
 	{
 		call void test::test_030()
 		ldstr "Fail: test_030"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_030
@@ -735,8 +740,8 @@ TRY_END_029:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_030"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_030
@@ -753,7 +758,7 @@ TRY_END_030:
 	{
 		call void test::test_001b()
 		ldstr "Fail: test_001b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b001
@@ -765,8 +770,8 @@ TRY_END_030:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_001b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b001
@@ -777,7 +782,7 @@ TRY_END_b001:
 	{
 		call void test::test_002b()
 		ldstr "Fail: test_002b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b002
@@ -789,8 +794,8 @@ TRY_END_b001:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_002b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b002
@@ -801,7 +806,7 @@ TRY_END_b002:
 	{
 		call void test::test_003b()
 		ldstr "Fail: test_003b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b003
@@ -813,8 +818,8 @@ TRY_END_b002:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_003b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b003
@@ -825,7 +830,7 @@ TRY_END_b003:
 	{
 		call void test::test_004b()
 		ldstr "Fail: test_004b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b004
@@ -837,8 +842,8 @@ TRY_END_b003:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_004b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b004
@@ -849,7 +854,7 @@ TRY_END_b004:
 	{
 		call void test::test_005b()
 		ldstr "Fail: test_005b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b005
@@ -861,8 +866,8 @@ TRY_END_b004:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_005b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b005
@@ -873,7 +878,7 @@ TRY_END_b005:
 	{
 		call void test::test_006b()
 		ldstr "Fail: test_006b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b006
@@ -885,8 +890,8 @@ TRY_END_b005:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_006b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b006
@@ -897,7 +902,7 @@ TRY_END_b006:
 	{
 		call void test::test_007b()
 		ldstr "Fail: test_007b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b007
@@ -909,8 +914,8 @@ TRY_END_b006:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_007b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b007
@@ -921,7 +926,7 @@ TRY_END_b007:
 	{
 		call void test::test_008b()
 		ldstr "Fail: test_008b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b008
@@ -933,8 +938,8 @@ TRY_END_b007:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_008b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b008
@@ -945,7 +950,7 @@ TRY_END_b008:
 	{
 		call void test::test_009b()
 		ldstr "Fail: test_009b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b009
@@ -957,8 +962,8 @@ TRY_END_b008:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_009b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b009
@@ -969,7 +974,7 @@ TRY_END_b009:
 	{
 		call void test::test_010b()
 		ldstr "Fail: test_010b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b010
@@ -981,8 +986,8 @@ TRY_END_b009:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_010b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b010
@@ -997,7 +1002,7 @@ TRY_END_b010:
 	{
 		call void test::test_011b()
 		ldstr "Fail: test_011b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b011
@@ -1009,8 +1014,8 @@ TRY_END_b010:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_011b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b011
@@ -1021,7 +1026,7 @@ TRY_END_b011:
 	{
 		call void test::test_012b()
 		ldstr "Fail: test_012b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b012
@@ -1033,8 +1038,8 @@ TRY_END_b011:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_012b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b012
@@ -1045,7 +1050,7 @@ TRY_END_b012:
 	{
 		call void test::test_013b()
 		ldstr "Fail: test_013b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b013
@@ -1057,8 +1062,8 @@ TRY_END_b012:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_013b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b013
@@ -1069,7 +1074,7 @@ TRY_END_b013:
 	{
 		call void test::test_014b()
 		ldstr "Fail: test_014b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b014
@@ -1081,8 +1086,8 @@ TRY_END_b013:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_014b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b014
@@ -1093,7 +1098,7 @@ TRY_END_b014:
 	{
 		call void test::test_015b()
 		ldstr "Fail: test_015b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b015
@@ -1105,8 +1110,8 @@ TRY_END_b014:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_015b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b015
@@ -1117,7 +1122,7 @@ TRY_END_b015:
 	{
 		call void test::test_016b()
 		ldstr "Fail: test_016b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b016
@@ -1129,8 +1134,8 @@ TRY_END_b015:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_016b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b016
@@ -1141,7 +1146,7 @@ TRY_END_b016:
 	{
 		call void test::test_017b()
 		ldstr "Fail: test_017b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b017
@@ -1153,8 +1158,8 @@ TRY_END_b016:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_017b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b017
@@ -1165,7 +1170,7 @@ TRY_END_b017:
 	{
 		call void test::test_018b()
 		ldstr "Fail: test_018b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b018
@@ -1177,8 +1182,8 @@ TRY_END_b017:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_018b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b018
@@ -1189,7 +1194,7 @@ TRY_END_b018:
 	{
 		call void test::test_019b()
 		ldstr "Fail: test_019b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b019
@@ -1201,8 +1206,8 @@ TRY_END_b018:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_019b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b019
@@ -1213,7 +1218,7 @@ TRY_END_b019:
 	{
 		call void test::test_020b()
 		ldstr "Fail: test_020b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b020
@@ -1225,8 +1230,8 @@ TRY_END_b019:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_020b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b020
@@ -1242,7 +1247,7 @@ TRY_END_b020:
 	{
 		call void test::test_021b()
 		ldstr "Fail: test_021b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b021
@@ -1254,8 +1259,8 @@ TRY_END_b020:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_021b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b021
@@ -1266,7 +1271,7 @@ TRY_END_b021:
 	{
 		call void test::test_022b()
 		ldstr "Fail: test_022b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b022
@@ -1278,8 +1283,8 @@ TRY_END_b021:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_022b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b022
@@ -1290,7 +1295,7 @@ TRY_END_b022:
 	{
 		call void test::test_023b()
 		ldstr "Fail: test_023b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b023
@@ -1302,8 +1307,8 @@ TRY_END_b022:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_023b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b023
@@ -1314,7 +1319,7 @@ TRY_END_b023:
 	{
 		call void test::test_024b()
 		ldstr "Fail: test_024b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b024
@@ -1326,8 +1331,8 @@ TRY_END_b023:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_024b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b024
@@ -1338,7 +1343,7 @@ TRY_END_b024:
 	{
 		call void test::test_025b()
 		ldstr "Fail: test_025b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b025
@@ -1350,8 +1355,8 @@ TRY_END_b024:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_025b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b025
@@ -1362,7 +1367,7 @@ TRY_END_b025:
 	{
 		call void test::test_026b()
 		ldstr "Fail: test_026b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b026
@@ -1374,8 +1379,8 @@ TRY_END_b025:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_026b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b026
@@ -1386,7 +1391,7 @@ TRY_END_b026:
 	{
 		call void test::test_027b()
 		ldstr "Fail: test_027b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b027
@@ -1398,8 +1403,8 @@ TRY_END_b026:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_027b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b027
@@ -1410,7 +1415,7 @@ TRY_END_b027:
 	{
 		call void test::test_028b()
 		ldstr "Fail: test_028b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b028
@@ -1422,8 +1427,8 @@ TRY_END_b027:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_028b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b028
@@ -1434,7 +1439,7 @@ TRY_END_b028:
 	{
 		call void test::test_029b()
 		ldstr "Fail: test_029b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b029
@@ -1446,8 +1451,8 @@ TRY_END_b028:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_029b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b029
@@ -1458,7 +1463,7 @@ TRY_END_b029:
 	{
 		call void test::test_030b()
 		ldstr "Fail: test_030b"
-		call void [mscorlib]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(string)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b030
@@ -1470,8 +1475,8 @@ TRY_END_b029:
 	catch [mscorlib]System.Exception
 	{
 		ldstr "Fail: test_030b"
-		call void [mscorlib]System.Console::WriteLine(string)
-		call void [mscorlib]System.Console::WriteLine(object)
+		call void [System.Console]System.Console::WriteLine(string)
+		call void [System.Console]System.Console::WriteLine(object)
 		ldc.i4 1
 		stloc 0
 		leave TRY_END_b030

@@ -3,8 +3,12 @@
 
 //
 //.corflags 0x00000002
-.assembly extern mscorlib
-{ }
+.assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly 'test'
 { }
 .module 'test.exe'
@@ -460,7 +464,7 @@
 
   IL_0068: 
 			ldstr "failed"
-  IL_0072:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+  IL_0072:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
   IL_0077:  ldc.i4.1
   IL_0078:  br.s       IL_0091
 
@@ -471,7 +475,7 @@
   IL_007e:  
  	  		ldstr "passed"
 
-  IL_0088:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+  IL_0088:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
   IL_008d:  ldc.i4    0x64
   IL_008e:  br.s       IL_0091
 

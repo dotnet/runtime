@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly b102962a {}
 .method public static int32
         main() cil managed
@@ -25,7 +30,7 @@
   IL_0010:  stloc.2
   IL_0011:  ldloc.2
   IL_0012:  ldind.u2
-  IL_0013:  call       void [mscorlib]System.Console::WriteLine(char)
+  IL_0013:  call       void [System.Console]System.Console::WriteLine(char)
   IL_0018:  ldc.i4 100
   IL_0019:  ret
 }

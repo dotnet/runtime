@@ -1,8 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly thisnull
 {
@@ -74,7 +77,7 @@
       IL_0012:  beq.s      IL_0022
 
       IL_0014:  ldstr      "Failed"
-      IL_0019:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0019:  call       void [System.Console]System.Console::WriteLine(string)
       IL_001e:  ldc.i4.1
       IL_001f:  stloc.1
       IL_0020:  br.s       IL_005d
@@ -131,7 +134,7 @@
 
       }  // end handler
       IL_004f:  ldstr      "Passed"
-      IL_0054:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0054:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0059:  ldc.i4    0x64
       IL_005a:  stloc.1
       IL_005b:  br.s       IL_005d

@@ -3,6 +3,11 @@
 
  .module 'rethrow.exe'
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly 'rethrow'// as "rethrow"
 {
   
@@ -87,11 +92,11 @@
   IL_0007:  ldc.i4.3
   IL_0008:  stloc.0
 	ldstr "In Test"
-  IL_0013:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+  IL_0013:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
   .try
   {
 ldstr "In try"
-    IL_0022:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+    IL_0022:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
     IL_0027:  ldloc.0
     IL_0028:  ldloc.3
     IL_0029:  ldc.i4.1
@@ -99,7 +104,7 @@ ldstr "In try"
     IL_002b:  div
     IL_002c:  stloc.0
 ldstr "!!! AFTER THROW"
-    IL_0037:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+    IL_0037:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
     IL_003c:  ldc.i4.1
     IL_003d:  stloc.2
     IL_003e:  leave.s    IL_0058
@@ -109,7 +114,7 @@ ldstr "!!! AFTER THROW"
   {
     IL_0040:  stloc.1
 ldstr "In Catch"
-    IL_004b:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+    IL_004b:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
     IL_0050:  ldloc.1
     IL_0051:  throw
 
@@ -144,15 +149,15 @@ ldstr "In Catch"
   IL_0002:  ldc.i4.2
   IL_0003:  stloc.1
 ldstr "Nested Try"
-  IL_000e:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+  IL_000e:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
   .try
   {
 ldstr "Going into test"
-    IL_001d:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+    IL_001d:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
     IL_0022:  call       int32  test()
     IL_0027:  stloc.1
 ldstr "!!! AFTER TEST"
-    IL_0032:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+    IL_0032:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
     IL_0037:  leave.s    IL_006a
 
   }  // end .try
@@ -164,14 +169,14 @@ ldstr "!!! AFTER TEST"
     IL_003c:  bne.un.s   IL_0051
 
 ldstr "GREAT!"
-    IL_0048:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+    IL_0048:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
     IL_004d:  ldc.i4     0x64
     IL_004e:  stloc.0
     IL_004f:  leave.s    IL_0066
 
 IL_0051:
 ldstr "!!! HMM...."
-    IL_005b:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+    IL_005b:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
     IL_0060:  ldc.i4.1
     IL_0061:  stloc.0
     IL_0062:  leave.s    IL_0066

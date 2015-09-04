@@ -7,6 +7,11 @@
 // merge of instance and static method
 
 .assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly ctor_merge2 { }
 .class public auto ansi beforefieldinit TestClass
        extends [mscorlib]System.Object
@@ -18,7 +23,7 @@
   {
     .maxstack  3
     IL_0000:  ldstr      "DelegateFunc1"
-    IL_0005:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+    IL_0005:  call       void [System.Console]System.Console::WriteLine(class System.String)
     IL_001a:  ret
   }
   .method public hidebysig instance void DelegateFunc2(int32) il managed
@@ -30,7 +35,7 @@
     pop
     
     IL_0000:  ldstr      "DelegateFunc2"
-    IL_0005:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+    IL_0005:  call       void [System.Console]System.Console::WriteLine(class System.String)
     IL_000f:  ret
   }
   .method private hidebysig static bool sel() il managed

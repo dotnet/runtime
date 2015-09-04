@@ -1,6 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 
 
 .assembly extern mscorlib
@@ -164,14 +170,14 @@
       IL_0042:  ldstr      "The expected result of (0xFF>>4) is: {0}"
       IL_0047:  ldc.i4.s   15
       IL_0049:  box        [mscorlib]System.Int32
-      IL_004e:  call       void [mscorlib]System.Console::WriteLine(string,
+      IL_004e:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
-      IL_0053:  call       void [mscorlib]System.Console::WriteLine()
+      IL_0053:  call       void [System.Console]System.Console::WriteLine()
       IL_0058:  ldstr      "The actual result for funciton argument is: {0}"
       IL_005d:  ldc.i4     0xff
       IL_0062:  call       native unsigned int ShiftTest.byte32Test::f1(native unsigned int)
       IL_0067:  box        [mscorlib]System.Byte
-      IL_006c:  call       void [mscorlib]System.Console::WriteLine(string,
+      IL_006c:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
       IL_0071:  ldloc.0
       IL_0072:  ldc.i4.4
@@ -181,7 +187,7 @@
       IL_0076:  ldstr      "The actual result for local variable is: {0}"
       IL_007b:  ldloc.0
       IL_007c:  box        [mscorlib]System.Byte
-      IL_0081:  call       void [mscorlib]System.Console::WriteLine(string,
+      IL_0081:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
       IL_0086:  ldsfld     native unsigned int ShiftTest.byte32Test::s_data
       IL_008b:  ldc.i4.4
@@ -191,7 +197,7 @@
       IL_0093:  ldstr      "The actual result for static field is: {0}"
       IL_0098:  ldsfld     native unsigned int ShiftTest.byte32Test::s_data
       IL_009d:  box        [mscorlib]System.Byte
-      IL_00a2:  call       void [mscorlib]System.Console::WriteLine(string,
+      IL_00a2:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
       IL_00a7:  ldloc.1
       IL_00a8:  dup
@@ -209,7 +215,7 @@
       IL_00ba:  ldc.i4.0
       IL_00bb:  ldelem.u1
       IL_00bc:  box        [mscorlib]System.Byte
-      IL_00c1:  call       void [mscorlib]System.Console::WriteLine(string,
+      IL_00c1:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
       IL_00c6:  ldloc.2
       IL_00c7:  dup
@@ -222,7 +228,7 @@
       IL_00da:  ldloc.2
       IL_00db:  ldfld      native unsigned int ShiftTest.CL::clm_data
       IL_00e0:  box        [mscorlib]System.Byte
-      IL_00e5:  call       void [mscorlib]System.Console::WriteLine(string,
+      IL_00e5:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
       IL_00ea:  ldloca.s   V_3
       IL_00ec:  dup
@@ -235,15 +241,15 @@
       IL_00ff:  ldloca.s   V_3
       IL_0101:  ldfld      native unsigned int ShiftTest.VT::vtm_data
       IL_0106:  box        [mscorlib]System.Byte
-      IL_010b:  call       void [mscorlib]System.Console::WriteLine(string,
+      IL_010b:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
-      IL_0110:  call       void [mscorlib]System.Console::WriteLine()
+      IL_0110:  call       void [System.Console]System.Console::WriteLine()
       IL_0115:  ldloc.0
       IL_0116:  ldc.i4.s   15
       IL_0118:  beq.s      IL_012c
 
       IL_011a:  ldstr      "FAILED for local variable"
-      IL_011f:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_011f:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0124:  ldc.i4.m1
       IL_0125:  stloc.s    V_4
       IL_0127:  br         IL_0344
@@ -254,7 +260,7 @@
       IL_0138:  beq.s      IL_014c
 
       IL_013a:  ldstr      "FAILED for function argument"
-      IL_013f:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_013f:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0144:  ldc.i4.m1
       IL_0145:  stloc.s    V_4
       IL_0147:  br         IL_0344
@@ -264,7 +270,7 @@
       IL_0153:  beq.s      IL_0167
 
       IL_0155:  ldstr      "FAILED for static field"
-      IL_015a:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_015a:  call       void [System.Console]System.Console::WriteLine(string)
       IL_015f:  ldc.i4.m1
       IL_0160:  stloc.s    V_4
       IL_0162:  br         IL_0344
@@ -276,7 +282,7 @@
       IL_016c:  beq.s      IL_0180
 
       IL_016e:  ldstr      "FAILED for array element"
-      IL_0173:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0173:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0178:  ldc.i4.m1
       IL_0179:  stloc.s    V_4
       IL_017b:  br         IL_0344
@@ -287,7 +293,7 @@
       IL_0188:  beq.s      IL_019c
 
       IL_018a:  ldstr      "FAILED for class member"
-      IL_018f:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_018f:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0194:  ldc.i4.m1
       IL_0195:  stloc.s    V_4
       IL_0197:  br         IL_0344
@@ -298,7 +304,7 @@
       IL_01a5:  beq.s      IL_01b9
 
       IL_01a7:  ldstr      "FAILED for valuestruct member"
-      IL_01ac:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_01ac:  call       void [System.Console]System.Console::WriteLine(string)
       IL_01b1:  ldc.i4.m1
       IL_01b2:  stloc.s    V_4
       IL_01b4:  br         IL_0344
@@ -320,14 +326,14 @@
       IL_01d4:  ldstr      "The expected result of (0x1<<4) is: {0}"
       IL_01d9:  ldc.i4.s   16
       IL_01db:  box        [mscorlib]System.Int32
-      IL_01e0:  call       void [mscorlib]System.Console::WriteLine(string,
+      IL_01e0:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
-      IL_01e5:  call       void [mscorlib]System.Console::WriteLine()
+      IL_01e5:  call       void [System.Console]System.Console::WriteLine()
       IL_01ea:  ldstr      "The actual result for funciton argument is: {0}"
       IL_01ef:  ldc.i4.1
       IL_01f0:  call       native unsigned int ShiftTest.byte32Test::f2(native unsigned int)
       IL_01f5:  box        [mscorlib]System.Byte
-      IL_01fa:  call       void [mscorlib]System.Console::WriteLine(string,
+      IL_01fa:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
       IL_01ff:  ldloc.0
       IL_0200:  ldc.i4.4
@@ -337,7 +343,7 @@
       IL_0204:  ldstr      "The actual result for local variable is: {0}"
       IL_0209:  ldloc.0
       IL_020a:  box        [mscorlib]System.Byte
-      IL_020f:  call       void [mscorlib]System.Console::WriteLine(string,
+      IL_020f:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
       IL_0214:  ldsfld     native unsigned int ShiftTest.byte32Test::s_data
       IL_0219:  ldc.i4.4
@@ -347,7 +353,7 @@
       IL_0221:  ldstr      "The actual result for static field is: {0}"
       IL_0226:  ldsfld     native unsigned int ShiftTest.byte32Test::s_data
       IL_022b:  box        [mscorlib]System.Byte
-      IL_0230:  call       void [mscorlib]System.Console::WriteLine(string,
+      IL_0230:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
       IL_0235:  ldloc.1
       IL_0236:  dup
@@ -365,7 +371,7 @@
       IL_0248:  ldc.i4.0
       IL_0249:  ldelem.u1
       IL_024a:  box        [mscorlib]System.Byte
-      IL_024f:  call       void [mscorlib]System.Console::WriteLine(string,
+      IL_024f:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
       IL_0254:  ldloc.2
       IL_0255:  dup
@@ -378,7 +384,7 @@
       IL_0268:  ldloc.2
       IL_0269:  ldfld      native unsigned int ShiftTest.CL::clm_data
       IL_026e:  box        [mscorlib]System.Byte
-      IL_0273:  call       void [mscorlib]System.Console::WriteLine(string,
+      IL_0273:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
       IL_0278:  ldloca.s   V_3
       IL_027a:  dup
@@ -391,15 +397,15 @@
       IL_028d:  ldloca.s   V_3
       IL_028f:  ldfld      native unsigned int ShiftTest.VT::vtm_data
       IL_0294:  box        [mscorlib]System.Byte
-      IL_0299:  call       void [mscorlib]System.Console::WriteLine(string,
+      IL_0299:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object)
-      IL_029e:  call       void [mscorlib]System.Console::WriteLine()
+      IL_029e:  call       void [System.Console]System.Console::WriteLine()
       IL_02a3:  ldloc.0
       IL_02a4:  ldc.i4.s   16
       IL_02a6:  beq.s      IL_02ba
 
       IL_02a8:  ldstr      "FAILED for local variable"
-      IL_02ad:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_02ad:  call       void [System.Console]System.Console::WriteLine(string)
       IL_02b2:  ldc.i4.m1
       IL_02b3:  stloc.s    V_4
       IL_02b5:  br         IL_0344
@@ -410,7 +416,7 @@
       IL_02c2:  beq.s      IL_02d3
 
       IL_02c4:  ldstr      "FAILED for function argument"
-      IL_02c9:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_02c9:  call       void [System.Console]System.Console::WriteLine(string)
       IL_02ce:  ldc.i4.m1
       IL_02cf:  stloc.s    V_4
       IL_02d1:  br.s       IL_0344
@@ -420,7 +426,7 @@
       IL_02da:  beq.s      IL_02eb
 
       IL_02dc:  ldstr      "FAILED for static field"
-      IL_02e1:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_02e1:  call       void [System.Console]System.Console::WriteLine(string)
       IL_02e6:  ldc.i4.m1
       IL_02e7:  stloc.s    V_4
       IL_02e9:  br.s       IL_0344
@@ -432,7 +438,7 @@
       IL_02f0:  beq.s      IL_0301
 
       IL_02f2:  ldstr      "FAILED for array element"
-      IL_02f7:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_02f7:  call       void [System.Console]System.Console::WriteLine(string)
       IL_02fc:  ldc.i4.m1
       IL_02fd:  stloc.s    V_4
       IL_02ff:  br.s       IL_0344
@@ -443,7 +449,7 @@
       IL_0309:  beq.s      IL_031a
 
       IL_030b:  ldstr      "FAILED for class member"
-      IL_0310:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0310:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0315:  ldc.i4.m1
       IL_0316:  stloc.s    V_4
       IL_0318:  br.s       IL_0344
@@ -454,13 +460,13 @@
       IL_0323:  beq.s      IL_0334
 
       IL_0325:  ldstr      "FAILED for valuestruct member"
-      IL_032a:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_032a:  call       void [System.Console]System.Console::WriteLine(string)
       IL_032f:  ldc.i4.m1
       IL_0330:  stloc.s    V_4
       IL_0332:  br.s       IL_0344
 
       IL_0334:  ldstr      "PASSED"
-      IL_0339:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0339:  call       void [System.Console]System.Console::WriteLine(string)
       IL_033e:  ldc.i4.s   100
       IL_0340:  stloc.s    V_4
       IL_0342:  br.s       IL_0344

@@ -3,6 +3,11 @@
 
 
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 
 //
 //======================================
@@ -27,9 +32,9 @@ try_start:
 	ldarg		0
 	conv.ovf.i4
 /*	dup
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 	ldarg		1
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 */
 	//- No exception
 	ldarg		1
@@ -104,9 +109,9 @@ try_start:
 	ldarg		0
 	conv.ovf.i4
 /*	dup
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 	ldarg		1
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 */
 	//- No exception
 	ldarg		1
@@ -181,9 +186,9 @@ try_start:
 	ldarg		0
 	conv.ovf.i4
 /*	dup
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 	ldarg		1
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 */
 	//- No exception
 	ldarg		1
@@ -258,9 +263,9 @@ try_start:
 	ldarg		0
 	conv.ovf.i4
 /*	dup
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 	ldarg		1
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 */
 	//- No exception
 	ldarg		1
@@ -335,9 +340,9 @@ try_start:
 	ldarg		0
 	conv.ovf.i4
 /*	dup
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 	ldarg		1
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 */
 	//- No exception
 	ldarg		1
@@ -412,9 +417,9 @@ try_start:
 	ldarg		0
 	conv.ovf.i4
 /*	dup
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 	ldarg		1
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 */
 	//- No exception
 	ldarg		1
@@ -489,9 +494,9 @@ try_start:
 	ldarg		0
 	conv.ovf.i4
 /*	dup
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 	ldarg		1
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 */
 	//- No exception
 	ldarg		1
@@ -566,9 +571,9 @@ try_start:
 	ldarg		0
 	conv.ovf.i4
 /*	dup
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 	ldarg		1
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 */
 	//- No exception
 	ldarg		1
@@ -643,9 +648,9 @@ try_start:
 	ldarg		0
 	conv.ovf.i4
 /*	dup
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 	ldarg		1
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 */
 	//- No exception
 	ldarg		1
@@ -720,9 +725,9 @@ try_start:
 	ldarg		0
 	conv.ovf.i4
 /*	dup
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 	ldarg		1
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 */
 	//- No exception
 	ldarg		1
@@ -797,9 +802,9 @@ try_start:
 	ldarg		0
 	conv.ovf.i4
 /*	dup
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 	ldarg		1
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 */
 	//- No exception
 	ldarg		1
@@ -874,9 +879,9 @@ try_start:
 	ldarg		0
 	conv.ovf.i4
 /*	dup
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 	ldarg		1
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 */
 	//- No exception
 	ldarg		1
@@ -951,9 +956,9 @@ try_start:
 	ldarg		0
 	conv.ovf.i4
 /*	dup
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 	ldarg		1
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 */
 	//- No exception
 	ldarg		1
@@ -1028,9 +1033,9 @@ try_start:
 	ldarg		0
 	conv.ovf.i4
 /*	dup
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 	ldarg		1
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 */
 	//- No exception
 	ldarg		1

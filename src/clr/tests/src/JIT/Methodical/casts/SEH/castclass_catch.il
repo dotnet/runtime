@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly castclass_catch { }
 .namespace JitTest
 {
@@ -27,9 +32,9 @@
         IL_0006:  ldloc.0
         IL_0007:  sub
         IL_0008:  div
-        IL_0009:  call       void [mscorlib]System.Console::WriteLine(int32)
+        IL_0009:  call       void [System.Console]System.Console::WriteLine(int32)
         IL_000e:  ldstr      "failed (1)"
-        IL_0013:  call       void [mscorlib]System.Console::WriteLine(string)
+        IL_0013:  call       void [System.Console]System.Console::WriteLine(string)
         IL_0018:  ldc.i4.s   101
         IL_001a:  stloc.s    V_4
         IL_001c:  leave.s    IL_003b
@@ -37,9 +42,9 @@
       catch [mscorlib]System.Exception 
       {
         IL_0020:  castclass  [mscorlib]System.DivideByZeroException
-        IL_0027:  call       void [mscorlib]System.Console::WriteLine(object)
+        IL_0027:  call       void [System.Console]System.Console::WriteLine(object)
         IL_002c:  ldstr      "*** TEST PASSED ***"
-        IL_0031:  call       void [mscorlib]System.Console::WriteLine(string)
+        IL_0031:  call       void [System.Console]System.Console::WriteLine(string)
         IL_0036:  leave.s    IL_0038
       }
       IL_0038:  ldc.i4.s   100

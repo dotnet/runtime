@@ -7,8 +7,11 @@
 
 
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly 'ldc_div'// as "ldc_div"
 {
@@ -34,7 +37,7 @@
       IL_0007:  box     ['mscorlib']System.Int64
       IL_000c:  ldarg.s   op1
       IL_000e:  box     ['mscorlib']System.Int64
-      IL_0013:  call       void ['mscorlib']System.Console::Write(class System.String,
+      IL_0013:  call       void [System.Console]System.Console::Write(class System.String,
                                                                   class System.Object,
                                                                   class System.Object)
       .try
@@ -49,7 +52,7 @@
         IL_001f:  stloc.0
         IL_0020:  leave.s    IL_003d
 
-        IL_0022:  call       void ['mscorlib']System.Console::WriteLine()
+        IL_0022:  call       void [System.Console]System.Console::WriteLine()
         IL_0027:  ldarg.3
         IL_0028:  ldc.i4.0
         IL_0029:  ceq
@@ -61,7 +64,7 @@
       {
         IL_002e:  pop
         IL_002f:  ldstr      "divide by zero."
-        IL_0034:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+        IL_0034:  call       void [System.Console]System.Console::WriteLine(class System.String)
         IL_0039:  ldarg.3
         IL_003a:  stloc.0
         IL_003b:  leave.s    IL_003d
@@ -205,13 +208,13 @@
       IL_00ef:  br.s       IL_00ff
 
       IL_00f1:  ldstr      "Test passed"
-      IL_00f6:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_00f6:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_00fb:  ldc.i4    0x64
       IL_00fc:  stloc.0
       IL_00fd:  br.s       IL_010d
 
       IL_00ff:  ldstr      "Test failed"
-      IL_0104:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_0104:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0109:  ldc.i4.1
       IL_010a:  stloc.0
       IL_010b:  br.s       IL_010d

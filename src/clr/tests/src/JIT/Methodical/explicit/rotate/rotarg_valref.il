@@ -3,12 +3,11 @@
 
 
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
-                           
-  
-           
-  
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly 'rotarg_valref'// as "rotarg_valref"
 {
@@ -280,7 +279,7 @@
         IL_0142:  beq.s      IL_0154
 
         IL_0144:  ldstr      "left weight do not match."
-        IL_0149:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+        IL_0149:  call       void [System.Console]System.Console::WriteLine(class System.String)
         IL_014e:  newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
         IL_0153:  throw
 
@@ -330,7 +329,7 @@
         IL_01d3:  beq.s      IL_01e5
 
         IL_01d5:  ldstr      "right weight do not match."
-        IL_01da:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+        IL_01da:  call       void [System.Console]System.Console::WriteLine(class System.String)
         IL_01df:  newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
         IL_01e4:  throw
 

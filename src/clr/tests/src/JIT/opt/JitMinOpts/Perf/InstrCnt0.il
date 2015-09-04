@@ -5,7 +5,12 @@
 // OPTIONS: opts.MinOpts() == false
 // TID ad4: IL Code Size,Instr 20006,19998, Basic Block count   1, Local Variable Num,Ref count   0,  0 for method <Module>.f():int
 
-.assembly extern mscorlib {}
+.assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly InstrCnt0 {}
 .module InstrCnt0.exe
 .method public static int32  Main() cil managed
@@ -11131,8893 +11136,8893 @@
   IL_56c1:  dup
   IL_56c2:  ldc.i4.6
   IL_56c3:  sub
-  IL_56c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_56c4:  call       void [System.Console]System.Console::Write(int32)
   IL_56c9:  dup
   IL_56ca:  ldc.i4.8
   IL_56cb:  mul
-  IL_56cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_56cc:  call       void [System.Console]System.Console::Write(int32)
   IL_56d1:  dup
   IL_56d2:  ldc.i4.6
   IL_56d3:  sub
-  IL_56d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_56d4:  call       void [System.Console]System.Console::Write(int32)
   IL_56d9:  dup
   IL_56da:  ldc.i4.4
   IL_56db:  shr
-  IL_56dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_56dc:  call       void [System.Console]System.Console::Write(int32)
   IL_56e1:  dup
   IL_56e2:  ldc.i4.1
   IL_56e3:  and
-  IL_56e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_56e4:  call       void [System.Console]System.Console::Write(int32)
   IL_56e9:  dup
   IL_56ea:  ldc.i4.1
   IL_56eb:  add
-  IL_56ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_56ec:  call       void [System.Console]System.Console::Write(int32)
   IL_56f1:  dup
   IL_56f2:  ldc.i4.8
   IL_56f3:  or
-  IL_56f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_56f4:  call       void [System.Console]System.Console::Write(int32)
   IL_56f9:  dup
   IL_56fa:  ldc.i4.8
   IL_56fb:  or
-  IL_56fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_56fc:  call       void [System.Console]System.Console::Write(int32)
   IL_5701:  dup
   IL_5702:  ldc.i4.7
   IL_5703:  sub
-  IL_5704:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5704:  call       void [System.Console]System.Console::Write(int32)
   IL_5709:  dup
   IL_570a:  ldc.i4.6
   IL_570b:  mul
-  IL_570c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_570c:  call       void [System.Console]System.Console::Write(int32)
   IL_5711:  dup
   IL_5712:  ldc.i4.8
   IL_5713:  shl
-  IL_5714:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5714:  call       void [System.Console]System.Console::Write(int32)
   IL_5719:  dup
   IL_571a:  ldc.i4.5
   IL_571b:  shl
-  IL_571c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_571c:  call       void [System.Console]System.Console::Write(int32)
   IL_5721:  dup
   IL_5722:  ldc.i4.4
   IL_5723:  shr
-  IL_5724:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5724:  call       void [System.Console]System.Console::Write(int32)
   IL_5729:  dup
   IL_572a:  ldc.i4.1
   IL_572b:  or
-  IL_572c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_572c:  call       void [System.Console]System.Console::Write(int32)
   IL_5731:  dup
   IL_5732:  ldc.i4.2
   IL_5733:  and
-  IL_5734:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5734:  call       void [System.Console]System.Console::Write(int32)
   IL_5739:  dup
   IL_573a:  ldc.i4.7
   IL_573b:  sub
-  IL_573c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_573c:  call       void [System.Console]System.Console::Write(int32)
   IL_5741:  dup
   IL_5742:  ldc.i4.6
   IL_5743:  shr
-  IL_5744:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5744:  call       void [System.Console]System.Console::Write(int32)
   IL_5749:  dup
   IL_574a:  ldc.i4.2
   IL_574b:  mul
-  IL_574c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_574c:  call       void [System.Console]System.Console::Write(int32)
   IL_5751:  dup
   IL_5752:  ldc.i4.6
   IL_5753:  shl
-  IL_5754:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5754:  call       void [System.Console]System.Console::Write(int32)
   IL_5759:  dup
   IL_575a:  ldc.i4.2
   IL_575b:  add
-  IL_575c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_575c:  call       void [System.Console]System.Console::Write(int32)
   IL_5761:  dup
   IL_5762:  ldc.i4.1
   IL_5763:  mul
-  IL_5764:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5764:  call       void [System.Console]System.Console::Write(int32)
   IL_5769:  dup
   IL_576a:  ldc.i4.0
   IL_576b:  shl
-  IL_576c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_576c:  call       void [System.Console]System.Console::Write(int32)
   IL_5771:  dup
   IL_5772:  ldc.i4.3
   IL_5773:  shr
-  IL_5774:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5774:  call       void [System.Console]System.Console::Write(int32)
   IL_5779:  dup
   IL_577a:  ldc.i4.3
   IL_577b:  sub
-  IL_577c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_577c:  call       void [System.Console]System.Console::Write(int32)
   IL_5781:  dup
   IL_5782:  ldc.i4.0
   IL_5783:  shl
-  IL_5784:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5784:  call       void [System.Console]System.Console::Write(int32)
   IL_5789:  dup
   IL_578a:  ldc.i4.1
   IL_578b:  xor
-  IL_578c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_578c:  call       void [System.Console]System.Console::Write(int32)
   IL_5791:  dup
   IL_5792:  ldc.i4.2
   IL_5793:  or
-  IL_5794:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5794:  call       void [System.Console]System.Console::Write(int32)
   IL_5799:  dup
   IL_579a:  ldc.i4.0
   IL_579b:  sub
-  IL_579c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_579c:  call       void [System.Console]System.Console::Write(int32)
   IL_57a1:  dup
   IL_57a2:  ldc.i4.4
   IL_57a3:  mul
-  IL_57a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_57a4:  call       void [System.Console]System.Console::Write(int32)
   IL_57a9:  dup
   IL_57aa:  ldc.i4.7
   IL_57ab:  add
-  IL_57ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_57ac:  call       void [System.Console]System.Console::Write(int32)
   IL_57b1:  dup
   IL_57b2:  ldc.i4.0
   IL_57b3:  xor
-  IL_57b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_57b4:  call       void [System.Console]System.Console::Write(int32)
   IL_57b9:  dup
   IL_57ba:  ldc.i4.3
   IL_57bb:  xor
-  IL_57bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_57bc:  call       void [System.Console]System.Console::Write(int32)
   IL_57c1:  dup
   IL_57c2:  ldc.i4.8
   IL_57c3:  add
-  IL_57c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_57c4:  call       void [System.Console]System.Console::Write(int32)
   IL_57c9:  dup
   IL_57ca:  ldc.i4.3
   IL_57cb:  mul
-  IL_57cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_57cc:  call       void [System.Console]System.Console::Write(int32)
   IL_57d1:  dup
   IL_57d2:  ldc.i4.5
   IL_57d3:  shr
-  IL_57d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_57d4:  call       void [System.Console]System.Console::Write(int32)
   IL_57d9:  dup
   IL_57da:  ldc.i4.2
   IL_57db:  mul
-  IL_57dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_57dc:  call       void [System.Console]System.Console::Write(int32)
   IL_57e1:  dup
   IL_57e2:  ldc.i4.8
   IL_57e3:  shr
-  IL_57e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_57e4:  call       void [System.Console]System.Console::Write(int32)
   IL_57e9:  dup
   IL_57ea:  ldc.i4.1
   IL_57eb:  shr
-  IL_57ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_57ec:  call       void [System.Console]System.Console::Write(int32)
   IL_57f1:  dup
   IL_57f2:  ldc.i4.5
   IL_57f3:  add
-  IL_57f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_57f4:  call       void [System.Console]System.Console::Write(int32)
   IL_57f9:  dup
   IL_57fa:  ldc.i4.2
   IL_57fb:  shr
-  IL_57fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_57fc:  call       void [System.Console]System.Console::Write(int32)
   IL_5801:  dup
   IL_5802:  ldc.i4.2
   IL_5803:  or
-  IL_5804:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5804:  call       void [System.Console]System.Console::Write(int32)
   IL_5809:  dup
   IL_580a:  ldc.i4.7
   IL_580b:  shr
-  IL_580c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_580c:  call       void [System.Console]System.Console::Write(int32)
   IL_5811:  dup
   IL_5812:  ldc.i4.5
   IL_5813:  mul
-  IL_5814:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5814:  call       void [System.Console]System.Console::Write(int32)
   IL_5819:  dup
   IL_581a:  ldc.i4.7
   IL_581b:  and
-  IL_581c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_581c:  call       void [System.Console]System.Console::Write(int32)
   IL_5821:  dup
   IL_5822:  ldc.i4.6
   IL_5823:  sub
-  IL_5824:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5824:  call       void [System.Console]System.Console::Write(int32)
   IL_5829:  dup
   IL_582a:  ldc.i4.6
   IL_582b:  xor
-  IL_582c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_582c:  call       void [System.Console]System.Console::Write(int32)
   IL_5831:  dup
   IL_5832:  ldc.i4.6
   IL_5833:  mul
-  IL_5834:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5834:  call       void [System.Console]System.Console::Write(int32)
   IL_5839:  dup
   IL_583a:  ldc.i4.8
   IL_583b:  shr
-  IL_583c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_583c:  call       void [System.Console]System.Console::Write(int32)
   IL_5841:  dup
   IL_5842:  ldc.i4.7
   IL_5843:  shl
-  IL_5844:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5844:  call       void [System.Console]System.Console::Write(int32)
   IL_5849:  dup
   IL_584a:  ldc.i4.4
   IL_584b:  mul
-  IL_584c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_584c:  call       void [System.Console]System.Console::Write(int32)
   IL_5851:  dup
   IL_5852:  ldc.i4.3
   IL_5853:  sub
-  IL_5854:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5854:  call       void [System.Console]System.Console::Write(int32)
   IL_5859:  dup
   IL_585a:  ldc.i4.5
   IL_585b:  xor
-  IL_585c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_585c:  call       void [System.Console]System.Console::Write(int32)
   IL_5861:  dup
   IL_5862:  ldc.i4.2
   IL_5863:  and
-  IL_5864:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5864:  call       void [System.Console]System.Console::Write(int32)
   IL_5869:  dup
   IL_586a:  ldc.i4.4
   IL_586b:  shl
-  IL_586c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_586c:  call       void [System.Console]System.Console::Write(int32)
   IL_5871:  dup
   IL_5872:  ldc.i4.7
   IL_5873:  mul
-  IL_5874:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5874:  call       void [System.Console]System.Console::Write(int32)
   IL_5879:  dup
   IL_587a:  ldc.i4.5
   IL_587b:  xor
-  IL_587c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_587c:  call       void [System.Console]System.Console::Write(int32)
   IL_5881:  dup
   IL_5882:  ldc.i4.0
   IL_5883:  add
-  IL_5884:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5884:  call       void [System.Console]System.Console::Write(int32)
   IL_5889:  dup
   IL_588a:  ldc.i4.6
   IL_588b:  sub
-  IL_588c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_588c:  call       void [System.Console]System.Console::Write(int32)
   IL_5891:  dup
   IL_5892:  ldc.i4.5
   IL_5893:  shr
-  IL_5894:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5894:  call       void [System.Console]System.Console::Write(int32)
   IL_5899:  dup
   IL_589a:  ldc.i4.7
   IL_589b:  shr
-  IL_589c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_589c:  call       void [System.Console]System.Console::Write(int32)
   IL_58a1:  dup
   IL_58a2:  ldc.i4.1
   IL_58a3:  shl
-  IL_58a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_58a4:  call       void [System.Console]System.Console::Write(int32)
   IL_58a9:  dup
   IL_58aa:  ldc.i4.5
   IL_58ab:  xor
-  IL_58ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_58ac:  call       void [System.Console]System.Console::Write(int32)
   IL_58b1:  dup
   IL_58b2:  ldc.i4.8
   IL_58b3:  and
-  IL_58b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_58b4:  call       void [System.Console]System.Console::Write(int32)
   IL_58b9:  dup
   IL_58ba:  ldc.i4.4
   IL_58bb:  shr
-  IL_58bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_58bc:  call       void [System.Console]System.Console::Write(int32)
   IL_58c1:  dup
   IL_58c2:  ldc.i4.7
   IL_58c3:  xor
-  IL_58c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_58c4:  call       void [System.Console]System.Console::Write(int32)
   IL_58c9:  dup
   IL_58ca:  ldc.i4.7
   IL_58cb:  or
-  IL_58cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_58cc:  call       void [System.Console]System.Console::Write(int32)
   IL_58d1:  dup
   IL_58d2:  ldc.i4.4
   IL_58d3:  or
-  IL_58d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_58d4:  call       void [System.Console]System.Console::Write(int32)
   IL_58d9:  dup
   IL_58da:  ldc.i4.3
   IL_58db:  sub
-  IL_58dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_58dc:  call       void [System.Console]System.Console::Write(int32)
   IL_58e1:  dup
   IL_58e2:  ldc.i4.3
   IL_58e3:  xor
-  IL_58e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_58e4:  call       void [System.Console]System.Console::Write(int32)
   IL_58e9:  dup
   IL_58ea:  ldc.i4.3
   IL_58eb:  and
-  IL_58ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_58ec:  call       void [System.Console]System.Console::Write(int32)
   IL_58f1:  dup
   IL_58f2:  ldc.i4.6
   IL_58f3:  mul
-  IL_58f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_58f4:  call       void [System.Console]System.Console::Write(int32)
   IL_58f9:  dup
   IL_58fa:  ldc.i4.7
   IL_58fb:  mul
-  IL_58fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_58fc:  call       void [System.Console]System.Console::Write(int32)
   IL_5901:  dup
   IL_5902:  ldc.i4.4
   IL_5903:  sub
-  IL_5904:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5904:  call       void [System.Console]System.Console::Write(int32)
   IL_5909:  dup
   IL_590a:  ldc.i4.3
   IL_590b:  shr
-  IL_590c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_590c:  call       void [System.Console]System.Console::Write(int32)
   IL_5911:  dup
   IL_5912:  ldc.i4.4
   IL_5913:  and
-  IL_5914:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5914:  call       void [System.Console]System.Console::Write(int32)
   IL_5919:  dup
   IL_591a:  ldc.i4.0
   IL_591b:  sub
-  IL_591c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_591c:  call       void [System.Console]System.Console::Write(int32)
   IL_5921:  dup
   IL_5922:  ldc.i4.7
   IL_5923:  or
-  IL_5924:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5924:  call       void [System.Console]System.Console::Write(int32)
   IL_5929:  dup
   IL_592a:  ldc.i4.1
   IL_592b:  and
-  IL_592c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_592c:  call       void [System.Console]System.Console::Write(int32)
   IL_5931:  dup
   IL_5932:  ldc.i4.5
   IL_5933:  add
-  IL_5934:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5934:  call       void [System.Console]System.Console::Write(int32)
   IL_5939:  dup
   IL_593a:  ldc.i4.4
   IL_593b:  shl
-  IL_593c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_593c:  call       void [System.Console]System.Console::Write(int32)
   IL_5941:  dup
   IL_5942:  ldc.i4.2
   IL_5943:  and
-  IL_5944:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5944:  call       void [System.Console]System.Console::Write(int32)
   IL_5949:  dup
   IL_594a:  ldc.i4.6
   IL_594b:  xor
-  IL_594c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_594c:  call       void [System.Console]System.Console::Write(int32)
   IL_5951:  dup
   IL_5952:  ldc.i4.5
   IL_5953:  shr
-  IL_5954:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5954:  call       void [System.Console]System.Console::Write(int32)
   IL_5959:  dup
   IL_595a:  ldc.i4.8
   IL_595b:  add
-  IL_595c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_595c:  call       void [System.Console]System.Console::Write(int32)
   IL_5961:  dup
   IL_5962:  ldc.i4.6
   IL_5963:  shl
-  IL_5964:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5964:  call       void [System.Console]System.Console::Write(int32)
   IL_5969:  dup
   IL_596a:  ldc.i4.7
   IL_596b:  sub
-  IL_596c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_596c:  call       void [System.Console]System.Console::Write(int32)
   IL_5971:  dup
   IL_5972:  ldc.i4.3
   IL_5973:  add
-  IL_5974:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5974:  call       void [System.Console]System.Console::Write(int32)
   IL_5979:  dup
   IL_597a:  ldc.i4.8
   IL_597b:  and
-  IL_597c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_597c:  call       void [System.Console]System.Console::Write(int32)
   IL_5981:  dup
   IL_5982:  ldc.i4.6
   IL_5983:  sub
-  IL_5984:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5984:  call       void [System.Console]System.Console::Write(int32)
   IL_5989:  dup
   IL_598a:  ldc.i4.8
   IL_598b:  shr
-  IL_598c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_598c:  call       void [System.Console]System.Console::Write(int32)
   IL_5991:  dup
   IL_5992:  ldc.i4.3
   IL_5993:  and
-  IL_5994:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5994:  call       void [System.Console]System.Console::Write(int32)
   IL_5999:  dup
   IL_599a:  ldc.i4.1
   IL_599b:  or
-  IL_599c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_599c:  call       void [System.Console]System.Console::Write(int32)
   IL_59a1:  dup
   IL_59a2:  ldc.i4.2
   IL_59a3:  shr
-  IL_59a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_59a4:  call       void [System.Console]System.Console::Write(int32)
   IL_59a9:  dup
   IL_59aa:  ldc.i4.1
   IL_59ab:  shr
-  IL_59ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_59ac:  call       void [System.Console]System.Console::Write(int32)
   IL_59b1:  dup
   IL_59b2:  ldc.i4.6
   IL_59b3:  shl
-  IL_59b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_59b4:  call       void [System.Console]System.Console::Write(int32)
   IL_59b9:  dup
   IL_59ba:  ldc.i4.5
   IL_59bb:  sub
-  IL_59bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_59bc:  call       void [System.Console]System.Console::Write(int32)
   IL_59c1:  dup
   IL_59c2:  ldc.i4.7
   IL_59c3:  and
-  IL_59c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_59c4:  call       void [System.Console]System.Console::Write(int32)
   IL_59c9:  dup
   IL_59ca:  ldc.i4.4
   IL_59cb:  or
-  IL_59cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_59cc:  call       void [System.Console]System.Console::Write(int32)
   IL_59d1:  dup
   IL_59d2:  ldc.i4.5
   IL_59d3:  xor
-  IL_59d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_59d4:  call       void [System.Console]System.Console::Write(int32)
   IL_59d9:  dup
   IL_59da:  ldc.i4.6
   IL_59db:  or
-  IL_59dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_59dc:  call       void [System.Console]System.Console::Write(int32)
   IL_59e1:  dup
   IL_59e2:  ldc.i4.2
   IL_59e3:  mul
-  IL_59e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_59e4:  call       void [System.Console]System.Console::Write(int32)
   IL_59e9:  dup
   IL_59ea:  ldc.i4.8
   IL_59eb:  or
-  IL_59ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_59ec:  call       void [System.Console]System.Console::Write(int32)
   IL_59f1:  dup
   IL_59f2:  ldc.i4.0
   IL_59f3:  or
-  IL_59f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_59f4:  call       void [System.Console]System.Console::Write(int32)
   IL_59f9:  dup
   IL_59fa:  ldc.i4.7
   IL_59fb:  shr
-  IL_59fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_59fc:  call       void [System.Console]System.Console::Write(int32)
   IL_5a01:  dup
   IL_5a02:  ldc.i4.8
   IL_5a03:  mul
-  IL_5a04:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5a04:  call       void [System.Console]System.Console::Write(int32)
   IL_5a09:  dup
   IL_5a0a:  ldc.i4.0
   IL_5a0b:  mul
-  IL_5a0c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5a0c:  call       void [System.Console]System.Console::Write(int32)
   IL_5a11:  dup
   IL_5a12:  ldc.i4.1
   IL_5a13:  and
-  IL_5a14:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5a14:  call       void [System.Console]System.Console::Write(int32)
   IL_5a19:  dup
   IL_5a1a:  ldc.i4.1
   IL_5a1b:  xor
-  IL_5a1c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5a1c:  call       void [System.Console]System.Console::Write(int32)
   IL_5a21:  dup
   IL_5a22:  ldc.i4.5
   IL_5a23:  shr
-  IL_5a24:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5a24:  call       void [System.Console]System.Console::Write(int32)
   IL_5a29:  dup
   IL_5a2a:  ldc.i4.1
   IL_5a2b:  or
-  IL_5a2c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5a2c:  call       void [System.Console]System.Console::Write(int32)
   IL_5a31:  dup
   IL_5a32:  ldc.i4.4
   IL_5a33:  mul
-  IL_5a34:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5a34:  call       void [System.Console]System.Console::Write(int32)
   IL_5a39:  dup
   IL_5a3a:  ldc.i4.3
   IL_5a3b:  sub
-  IL_5a3c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5a3c:  call       void [System.Console]System.Console::Write(int32)
   IL_5a41:  dup
   IL_5a42:  ldc.i4.0
   IL_5a43:  shl
-  IL_5a44:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5a44:  call       void [System.Console]System.Console::Write(int32)
   IL_5a49:  dup
   IL_5a4a:  ldc.i4.2
   IL_5a4b:  xor
-  IL_5a4c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5a4c:  call       void [System.Console]System.Console::Write(int32)
   IL_5a51:  dup
   IL_5a52:  ldc.i4.5
   IL_5a53:  or
-  IL_5a54:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5a54:  call       void [System.Console]System.Console::Write(int32)
   IL_5a59:  dup
   IL_5a5a:  ldc.i4.1
   IL_5a5b:  mul
-  IL_5a5c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5a5c:  call       void [System.Console]System.Console::Write(int32)
   IL_5a61:  dup
   IL_5a62:  ldc.i4.4
   IL_5a63:  add
-  IL_5a64:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5a64:  call       void [System.Console]System.Console::Write(int32)
   IL_5a69:  dup
   IL_5a6a:  ldc.i4.3
   IL_5a6b:  add
-  IL_5a6c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5a6c:  call       void [System.Console]System.Console::Write(int32)
   IL_5a71:  dup
   IL_5a72:  ldc.i4.8
   IL_5a73:  mul
-  IL_5a74:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5a74:  call       void [System.Console]System.Console::Write(int32)
   IL_5a79:  dup
   IL_5a7a:  ldc.i4.8
   IL_5a7b:  xor
-  IL_5a7c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5a7c:  call       void [System.Console]System.Console::Write(int32)
   IL_5a81:  dup
   IL_5a82:  ldc.i4.7
   IL_5a83:  xor
-  IL_5a84:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5a84:  call       void [System.Console]System.Console::Write(int32)
   IL_5a89:  dup
   IL_5a8a:  ldc.i4.5
   IL_5a8b:  xor
-  IL_5a8c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5a8c:  call       void [System.Console]System.Console::Write(int32)
   IL_5a91:  dup
   IL_5a92:  ldc.i4.4
   IL_5a93:  sub
-  IL_5a94:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5a94:  call       void [System.Console]System.Console::Write(int32)
   IL_5a99:  dup
   IL_5a9a:  ldc.i4.0
   IL_5a9b:  add
-  IL_5a9c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5a9c:  call       void [System.Console]System.Console::Write(int32)
   IL_5aa1:  dup
   IL_5aa2:  ldc.i4.6
   IL_5aa3:  add
-  IL_5aa4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5aa4:  call       void [System.Console]System.Console::Write(int32)
   IL_5aa9:  dup
   IL_5aaa:  ldc.i4.2
   IL_5aab:  or
-  IL_5aac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5aac:  call       void [System.Console]System.Console::Write(int32)
   IL_5ab1:  dup
   IL_5ab2:  ldc.i4.1
   IL_5ab3:  and
-  IL_5ab4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5ab4:  call       void [System.Console]System.Console::Write(int32)
   IL_5ab9:  dup
   IL_5aba:  ldc.i4.3
   IL_5abb:  add
-  IL_5abc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5abc:  call       void [System.Console]System.Console::Write(int32)
   IL_5ac1:  dup
   IL_5ac2:  ldc.i4.8
   IL_5ac3:  and
-  IL_5ac4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5ac4:  call       void [System.Console]System.Console::Write(int32)
   IL_5ac9:  dup
   IL_5aca:  ldc.i4.7
   IL_5acb:  xor
-  IL_5acc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5acc:  call       void [System.Console]System.Console::Write(int32)
   IL_5ad1:  dup
   IL_5ad2:  ldc.i4.5
   IL_5ad3:  mul
-  IL_5ad4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5ad4:  call       void [System.Console]System.Console::Write(int32)
   IL_5ad9:  dup
   IL_5ada:  ldc.i4.1
   IL_5adb:  add
-  IL_5adc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5adc:  call       void [System.Console]System.Console::Write(int32)
   IL_5ae1:  dup
   IL_5ae2:  ldc.i4.1
   IL_5ae3:  and
-  IL_5ae4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5ae4:  call       void [System.Console]System.Console::Write(int32)
   IL_5ae9:  dup
   IL_5aea:  ldc.i4.7
   IL_5aeb:  sub
-  IL_5aec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5aec:  call       void [System.Console]System.Console::Write(int32)
   IL_5af1:  dup
   IL_5af2:  ldc.i4.4
   IL_5af3:  add
-  IL_5af4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5af4:  call       void [System.Console]System.Console::Write(int32)
   IL_5af9:  dup
   IL_5afa:  ldc.i4.4
   IL_5afb:  xor
-  IL_5afc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5afc:  call       void [System.Console]System.Console::Write(int32)
   IL_5b01:  dup
   IL_5b02:  ldc.i4.6
   IL_5b03:  and
-  IL_5b04:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5b04:  call       void [System.Console]System.Console::Write(int32)
   IL_5b09:  dup
   IL_5b0a:  ldc.i4.0
   IL_5b0b:  add
-  IL_5b0c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5b0c:  call       void [System.Console]System.Console::Write(int32)
   IL_5b11:  dup
   IL_5b12:  ldc.i4.5
   IL_5b13:  or
-  IL_5b14:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5b14:  call       void [System.Console]System.Console::Write(int32)
   IL_5b19:  dup
   IL_5b1a:  ldc.i4.6
   IL_5b1b:  and
-  IL_5b1c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5b1c:  call       void [System.Console]System.Console::Write(int32)
   IL_5b21:  dup
   IL_5b22:  ldc.i4.4
   IL_5b23:  mul
-  IL_5b24:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5b24:  call       void [System.Console]System.Console::Write(int32)
   IL_5b29:  dup
   IL_5b2a:  ldc.i4.7
   IL_5b2b:  shl
-  IL_5b2c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5b2c:  call       void [System.Console]System.Console::Write(int32)
   IL_5b31:  dup
   IL_5b32:  ldc.i4.6
   IL_5b33:  mul
-  IL_5b34:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5b34:  call       void [System.Console]System.Console::Write(int32)
   IL_5b39:  dup
   IL_5b3a:  ldc.i4.1
   IL_5b3b:  shr
-  IL_5b3c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5b3c:  call       void [System.Console]System.Console::Write(int32)
   IL_5b41:  dup
   IL_5b42:  ldc.i4.5
   IL_5b43:  mul
-  IL_5b44:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5b44:  call       void [System.Console]System.Console::Write(int32)
   IL_5b49:  dup
   IL_5b4a:  ldc.i4.1
   IL_5b4b:  add
-  IL_5b4c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5b4c:  call       void [System.Console]System.Console::Write(int32)
   IL_5b51:  dup
   IL_5b52:  ldc.i4.3
   IL_5b53:  shl
-  IL_5b54:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5b54:  call       void [System.Console]System.Console::Write(int32)
   IL_5b59:  dup
   IL_5b5a:  ldc.i4.7
   IL_5b5b:  shl
-  IL_5b5c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5b5c:  call       void [System.Console]System.Console::Write(int32)
   IL_5b61:  dup
   IL_5b62:  ldc.i4.2
   IL_5b63:  shr
-  IL_5b64:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5b64:  call       void [System.Console]System.Console::Write(int32)
   IL_5b69:  dup
   IL_5b6a:  ldc.i4.3
   IL_5b6b:  shr
-  IL_5b6c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5b6c:  call       void [System.Console]System.Console::Write(int32)
   IL_5b71:  dup
   IL_5b72:  ldc.i4.3
   IL_5b73:  and
-  IL_5b74:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5b74:  call       void [System.Console]System.Console::Write(int32)
   IL_5b79:  dup
   IL_5b7a:  ldc.i4.5
   IL_5b7b:  shr
-  IL_5b7c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5b7c:  call       void [System.Console]System.Console::Write(int32)
   IL_5b81:  dup
   IL_5b82:  ldc.i4.4
   IL_5b83:  and
-  IL_5b84:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5b84:  call       void [System.Console]System.Console::Write(int32)
   IL_5b89:  dup
   IL_5b8a:  ldc.i4.1
   IL_5b8b:  xor
-  IL_5b8c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5b8c:  call       void [System.Console]System.Console::Write(int32)
   IL_5b91:  dup
   IL_5b92:  ldc.i4.7
   IL_5b93:  xor
-  IL_5b94:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5b94:  call       void [System.Console]System.Console::Write(int32)
   IL_5b99:  dup
   IL_5b9a:  ldc.i4.3
   IL_5b9b:  add
-  IL_5b9c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5b9c:  call       void [System.Console]System.Console::Write(int32)
   IL_5ba1:  dup
   IL_5ba2:  ldc.i4.1
   IL_5ba3:  add
-  IL_5ba4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5ba4:  call       void [System.Console]System.Console::Write(int32)
   IL_5ba9:  dup
   IL_5baa:  ldc.i4.7
   IL_5bab:  mul
-  IL_5bac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5bac:  call       void [System.Console]System.Console::Write(int32)
   IL_5bb1:  dup
   IL_5bb2:  ldc.i4.4
   IL_5bb3:  shl
-  IL_5bb4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5bb4:  call       void [System.Console]System.Console::Write(int32)
   IL_5bb9:  dup
   IL_5bba:  ldc.i4.2
   IL_5bbb:  and
-  IL_5bbc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5bbc:  call       void [System.Console]System.Console::Write(int32)
   IL_5bc1:  dup
   IL_5bc2:  ldc.i4.5
   IL_5bc3:  sub
-  IL_5bc4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5bc4:  call       void [System.Console]System.Console::Write(int32)
   IL_5bc9:  dup
   IL_5bca:  ldc.i4.5
   IL_5bcb:  add
-  IL_5bcc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5bcc:  call       void [System.Console]System.Console::Write(int32)
   IL_5bd1:  dup
   IL_5bd2:  ldc.i4.7
   IL_5bd3:  xor
-  IL_5bd4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5bd4:  call       void [System.Console]System.Console::Write(int32)
   IL_5bd9:  dup
   IL_5bda:  ldc.i4.8
   IL_5bdb:  sub
-  IL_5bdc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5bdc:  call       void [System.Console]System.Console::Write(int32)
   IL_5be1:  dup
   IL_5be2:  ldc.i4.0
   IL_5be3:  shl
-  IL_5be4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5be4:  call       void [System.Console]System.Console::Write(int32)
   IL_5be9:  dup
   IL_5bea:  ldc.i4.6
   IL_5beb:  or
-  IL_5bec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5bec:  call       void [System.Console]System.Console::Write(int32)
   IL_5bf1:  dup
   IL_5bf2:  ldc.i4.4
   IL_5bf3:  or
-  IL_5bf4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5bf4:  call       void [System.Console]System.Console::Write(int32)
   IL_5bf9:  dup
   IL_5bfa:  ldc.i4.3
   IL_5bfb:  shr
-  IL_5bfc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5bfc:  call       void [System.Console]System.Console::Write(int32)
   IL_5c01:  dup
   IL_5c02:  ldc.i4.6
   IL_5c03:  add
-  IL_5c04:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5c04:  call       void [System.Console]System.Console::Write(int32)
   IL_5c09:  dup
   IL_5c0a:  ldc.i4.1
   IL_5c0b:  and
-  IL_5c0c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5c0c:  call       void [System.Console]System.Console::Write(int32)
   IL_5c11:  dup
   IL_5c12:  ldc.i4.0
   IL_5c13:  shr
-  IL_5c14:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5c14:  call       void [System.Console]System.Console::Write(int32)
   IL_5c19:  dup
   IL_5c1a:  ldc.i4.7
   IL_5c1b:  sub
-  IL_5c1c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5c1c:  call       void [System.Console]System.Console::Write(int32)
   IL_5c21:  dup
   IL_5c22:  ldc.i4.8
   IL_5c23:  sub
-  IL_5c24:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5c24:  call       void [System.Console]System.Console::Write(int32)
   IL_5c29:  dup
   IL_5c2a:  ldc.i4.8
   IL_5c2b:  mul
-  IL_5c2c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5c2c:  call       void [System.Console]System.Console::Write(int32)
   IL_5c31:  dup
   IL_5c32:  ldc.i4.6
   IL_5c33:  xor
-  IL_5c34:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5c34:  call       void [System.Console]System.Console::Write(int32)
   IL_5c39:  dup
   IL_5c3a:  ldc.i4.8
   IL_5c3b:  and
-  IL_5c3c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5c3c:  call       void [System.Console]System.Console::Write(int32)
   IL_5c41:  dup
   IL_5c42:  ldc.i4.3
   IL_5c43:  shl
-  IL_5c44:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5c44:  call       void [System.Console]System.Console::Write(int32)
   IL_5c49:  dup
   IL_5c4a:  ldc.i4.0
   IL_5c4b:  sub
-  IL_5c4c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5c4c:  call       void [System.Console]System.Console::Write(int32)
   IL_5c51:  dup
   IL_5c52:  ldc.i4.2
   IL_5c53:  xor
-  IL_5c54:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5c54:  call       void [System.Console]System.Console::Write(int32)
   IL_5c59:  dup
   IL_5c5a:  ldc.i4.7
   IL_5c5b:  add
-  IL_5c5c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5c5c:  call       void [System.Console]System.Console::Write(int32)
   IL_5c61:  dup
   IL_5c62:  ldc.i4.7
   IL_5c63:  add
-  IL_5c64:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5c64:  call       void [System.Console]System.Console::Write(int32)
   IL_5c69:  dup
   IL_5c6a:  ldc.i4.3
   IL_5c6b:  mul
-  IL_5c6c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5c6c:  call       void [System.Console]System.Console::Write(int32)
   IL_5c71:  dup
   IL_5c72:  ldc.i4.6
   IL_5c73:  xor
-  IL_5c74:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5c74:  call       void [System.Console]System.Console::Write(int32)
   IL_5c79:  dup
   IL_5c7a:  ldc.i4.4
   IL_5c7b:  sub
-  IL_5c7c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5c7c:  call       void [System.Console]System.Console::Write(int32)
   IL_5c81:  dup
   IL_5c82:  ldc.i4.6
   IL_5c83:  sub
-  IL_5c84:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5c84:  call       void [System.Console]System.Console::Write(int32)
   IL_5c89:  dup
   IL_5c8a:  ldc.i4.5
   IL_5c8b:  xor
-  IL_5c8c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5c8c:  call       void [System.Console]System.Console::Write(int32)
   IL_5c91:  dup
   IL_5c92:  ldc.i4.3
   IL_5c93:  xor
-  IL_5c94:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5c94:  call       void [System.Console]System.Console::Write(int32)
   IL_5c99:  dup
   IL_5c9a:  ldc.i4.6
   IL_5c9b:  or
-  IL_5c9c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5c9c:  call       void [System.Console]System.Console::Write(int32)
   IL_5ca1:  dup
   IL_5ca2:  ldc.i4.3
   IL_5ca3:  xor
-  IL_5ca4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5ca4:  call       void [System.Console]System.Console::Write(int32)
   IL_5ca9:  dup
   IL_5caa:  ldc.i4.1
   IL_5cab:  shr
-  IL_5cac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5cac:  call       void [System.Console]System.Console::Write(int32)
   IL_5cb1:  dup
   IL_5cb2:  ldc.i4.4
   IL_5cb3:  shr
-  IL_5cb4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5cb4:  call       void [System.Console]System.Console::Write(int32)
   IL_5cb9:  dup
   IL_5cba:  ldc.i4.4
   IL_5cbb:  shl
-  IL_5cbc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5cbc:  call       void [System.Console]System.Console::Write(int32)
   IL_5cc1:  dup
   IL_5cc2:  ldc.i4.4
   IL_5cc3:  or
-  IL_5cc4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5cc4:  call       void [System.Console]System.Console::Write(int32)
   IL_5cc9:  dup
   IL_5cca:  ldc.i4.5
   IL_5ccb:  add
-  IL_5ccc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5ccc:  call       void [System.Console]System.Console::Write(int32)
   IL_5cd1:  dup
   IL_5cd2:  ldc.i4.8
   IL_5cd3:  sub
-  IL_5cd4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5cd4:  call       void [System.Console]System.Console::Write(int32)
   IL_5cd9:  dup
   IL_5cda:  ldc.i4.3
   IL_5cdb:  sub
-  IL_5cdc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5cdc:  call       void [System.Console]System.Console::Write(int32)
   IL_5ce1:  dup
   IL_5ce2:  ldc.i4.2
   IL_5ce3:  add
-  IL_5ce4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5ce4:  call       void [System.Console]System.Console::Write(int32)
   IL_5ce9:  dup
   IL_5cea:  ldc.i4.8
   IL_5ceb:  add
-  IL_5cec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5cec:  call       void [System.Console]System.Console::Write(int32)
   IL_5cf1:  dup
   IL_5cf2:  ldc.i4.2
   IL_5cf3:  shl
-  IL_5cf4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5cf4:  call       void [System.Console]System.Console::Write(int32)
   IL_5cf9:  dup
   IL_5cfa:  ldc.i4.4
   IL_5cfb:  shl
-  IL_5cfc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5cfc:  call       void [System.Console]System.Console::Write(int32)
   IL_5d01:  dup
   IL_5d02:  ldc.i4.5
   IL_5d03:  and
-  IL_5d04:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5d04:  call       void [System.Console]System.Console::Write(int32)
   IL_5d09:  dup
   IL_5d0a:  ldc.i4.5
   IL_5d0b:  xor
-  IL_5d0c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5d0c:  call       void [System.Console]System.Console::Write(int32)
   IL_5d11:  dup
   IL_5d12:  ldc.i4.7
   IL_5d13:  shl
-  IL_5d14:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5d14:  call       void [System.Console]System.Console::Write(int32)
   IL_5d19:  dup
   IL_5d1a:  ldc.i4.3
   IL_5d1b:  or
-  IL_5d1c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5d1c:  call       void [System.Console]System.Console::Write(int32)
   IL_5d21:  dup
   IL_5d22:  ldc.i4.7
   IL_5d23:  sub
-  IL_5d24:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5d24:  call       void [System.Console]System.Console::Write(int32)
   IL_5d29:  dup
   IL_5d2a:  ldc.i4.7
   IL_5d2b:  or
-  IL_5d2c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5d2c:  call       void [System.Console]System.Console::Write(int32)
   IL_5d31:  dup
   IL_5d32:  ldc.i4.3
   IL_5d33:  add
-  IL_5d34:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5d34:  call       void [System.Console]System.Console::Write(int32)
   IL_5d39:  dup
   IL_5d3a:  ldc.i4.4
   IL_5d3b:  sub
-  IL_5d3c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5d3c:  call       void [System.Console]System.Console::Write(int32)
   IL_5d41:  dup
   IL_5d42:  ldc.i4.4
   IL_5d43:  and
-  IL_5d44:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5d44:  call       void [System.Console]System.Console::Write(int32)
   IL_5d49:  dup
   IL_5d4a:  ldc.i4.6
   IL_5d4b:  and
-  IL_5d4c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5d4c:  call       void [System.Console]System.Console::Write(int32)
   IL_5d51:  dup
   IL_5d52:  ldc.i4.7
   IL_5d53:  xor
-  IL_5d54:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5d54:  call       void [System.Console]System.Console::Write(int32)
   IL_5d59:  dup
   IL_5d5a:  ldc.i4.1
   IL_5d5b:  xor
-  IL_5d5c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5d5c:  call       void [System.Console]System.Console::Write(int32)
   IL_5d61:  dup
   IL_5d62:  ldc.i4.7
   IL_5d63:  xor
-  IL_5d64:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5d64:  call       void [System.Console]System.Console::Write(int32)
   IL_5d69:  dup
   IL_5d6a:  ldc.i4.1
   IL_5d6b:  mul
-  IL_5d6c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5d6c:  call       void [System.Console]System.Console::Write(int32)
   IL_5d71:  dup
   IL_5d72:  ldc.i4.3
   IL_5d73:  shr
-  IL_5d74:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5d74:  call       void [System.Console]System.Console::Write(int32)
   IL_5d79:  dup
   IL_5d7a:  ldc.i4.5
   IL_5d7b:  and
-  IL_5d7c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5d7c:  call       void [System.Console]System.Console::Write(int32)
   IL_5d81:  dup
   IL_5d82:  ldc.i4.7
   IL_5d83:  shl
-  IL_5d84:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5d84:  call       void [System.Console]System.Console::Write(int32)
   IL_5d89:  dup
   IL_5d8a:  ldc.i4.0
   IL_5d8b:  shr
-  IL_5d8c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5d8c:  call       void [System.Console]System.Console::Write(int32)
   IL_5d91:  dup
   IL_5d92:  ldc.i4.0
   IL_5d93:  or
-  IL_5d94:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5d94:  call       void [System.Console]System.Console::Write(int32)
   IL_5d99:  dup
   IL_5d9a:  ldc.i4.6
   IL_5d9b:  or
-  IL_5d9c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5d9c:  call       void [System.Console]System.Console::Write(int32)
   IL_5da1:  dup
   IL_5da2:  ldc.i4.4
   IL_5da3:  shl
-  IL_5da4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5da4:  call       void [System.Console]System.Console::Write(int32)
   IL_5da9:  dup
   IL_5daa:  ldc.i4.2
   IL_5dab:  and
-  IL_5dac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5dac:  call       void [System.Console]System.Console::Write(int32)
   IL_5db1:  dup
   IL_5db2:  ldc.i4.3
   IL_5db3:  xor
-  IL_5db4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5db4:  call       void [System.Console]System.Console::Write(int32)
   IL_5db9:  dup
   IL_5dba:  ldc.i4.7
   IL_5dbb:  sub
-  IL_5dbc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5dbc:  call       void [System.Console]System.Console::Write(int32)
   IL_5dc1:  dup
   IL_5dc2:  ldc.i4.5
   IL_5dc3:  and
-  IL_5dc4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5dc4:  call       void [System.Console]System.Console::Write(int32)
   IL_5dc9:  dup
   IL_5dca:  ldc.i4.4
   IL_5dcb:  xor
-  IL_5dcc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5dcc:  call       void [System.Console]System.Console::Write(int32)
   IL_5dd1:  dup
   IL_5dd2:  ldc.i4.7
   IL_5dd3:  and
-  IL_5dd4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5dd4:  call       void [System.Console]System.Console::Write(int32)
   IL_5dd9:  dup
   IL_5dda:  ldc.i4.6
   IL_5ddb:  sub
-  IL_5ddc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5ddc:  call       void [System.Console]System.Console::Write(int32)
   IL_5de1:  dup
   IL_5de2:  ldc.i4.5
   IL_5de3:  add
-  IL_5de4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5de4:  call       void [System.Console]System.Console::Write(int32)
   IL_5de9:  dup
   IL_5dea:  ldc.i4.6
   IL_5deb:  xor
-  IL_5dec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5dec:  call       void [System.Console]System.Console::Write(int32)
   IL_5df1:  dup
   IL_5df2:  ldc.i4.3
   IL_5df3:  sub
-  IL_5df4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5df4:  call       void [System.Console]System.Console::Write(int32)
   IL_5df9:  dup
   IL_5dfa:  ldc.i4.5
   IL_5dfb:  sub
-  IL_5dfc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5dfc:  call       void [System.Console]System.Console::Write(int32)
   IL_5e01:  dup
   IL_5e02:  ldc.i4.5
   IL_5e03:  or
-  IL_5e04:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5e04:  call       void [System.Console]System.Console::Write(int32)
   IL_5e09:  dup
   IL_5e0a:  ldc.i4.0
   IL_5e0b:  and
-  IL_5e0c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5e0c:  call       void [System.Console]System.Console::Write(int32)
   IL_5e11:  dup
   IL_5e12:  ldc.i4.0
   IL_5e13:  shr
-  IL_5e14:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5e14:  call       void [System.Console]System.Console::Write(int32)
   IL_5e19:  dup
   IL_5e1a:  ldc.i4.0
   IL_5e1b:  shl
-  IL_5e1c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5e1c:  call       void [System.Console]System.Console::Write(int32)
   IL_5e21:  dup
   IL_5e22:  ldc.i4.1
   IL_5e23:  shr
-  IL_5e24:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5e24:  call       void [System.Console]System.Console::Write(int32)
   IL_5e29:  dup
   IL_5e2a:  ldc.i4.2
   IL_5e2b:  mul
-  IL_5e2c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5e2c:  call       void [System.Console]System.Console::Write(int32)
   IL_5e31:  dup
   IL_5e32:  ldc.i4.2
   IL_5e33:  xor
-  IL_5e34:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5e34:  call       void [System.Console]System.Console::Write(int32)
   IL_5e39:  dup
   IL_5e3a:  ldc.i4.0
   IL_5e3b:  mul
-  IL_5e3c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5e3c:  call       void [System.Console]System.Console::Write(int32)
   IL_5e41:  dup
   IL_5e42:  ldc.i4.4
   IL_5e43:  or
-  IL_5e44:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5e44:  call       void [System.Console]System.Console::Write(int32)
   IL_5e49:  dup
   IL_5e4a:  ldc.i4.5
   IL_5e4b:  shl
-  IL_5e4c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5e4c:  call       void [System.Console]System.Console::Write(int32)
   IL_5e51:  dup
   IL_5e52:  ldc.i4.0
   IL_5e53:  add
-  IL_5e54:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5e54:  call       void [System.Console]System.Console::Write(int32)
   IL_5e59:  dup
   IL_5e5a:  ldc.i4.8
   IL_5e5b:  add
-  IL_5e5c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5e5c:  call       void [System.Console]System.Console::Write(int32)
   IL_5e61:  dup
   IL_5e62:  ldc.i4.8
   IL_5e63:  or
-  IL_5e64:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5e64:  call       void [System.Console]System.Console::Write(int32)
   IL_5e69:  dup
   IL_5e6a:  ldc.i4.1
   IL_5e6b:  or
-  IL_5e6c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5e6c:  call       void [System.Console]System.Console::Write(int32)
   IL_5e71:  dup
   IL_5e72:  ldc.i4.2
   IL_5e73:  sub
-  IL_5e74:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5e74:  call       void [System.Console]System.Console::Write(int32)
   IL_5e79:  dup
   IL_5e7a:  ldc.i4.5
   IL_5e7b:  mul
-  IL_5e7c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5e7c:  call       void [System.Console]System.Console::Write(int32)
   IL_5e81:  dup
   IL_5e82:  ldc.i4.0
   IL_5e83:  add
-  IL_5e84:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5e84:  call       void [System.Console]System.Console::Write(int32)
   IL_5e89:  dup
   IL_5e8a:  ldc.i4.1
   IL_5e8b:  xor
-  IL_5e8c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5e8c:  call       void [System.Console]System.Console::Write(int32)
   IL_5e91:  dup
   IL_5e92:  ldc.i4.3
   IL_5e93:  add
-  IL_5e94:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5e94:  call       void [System.Console]System.Console::Write(int32)
   IL_5e99:  dup
   IL_5e9a:  ldc.i4.1
   IL_5e9b:  or
-  IL_5e9c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5e9c:  call       void [System.Console]System.Console::Write(int32)
   IL_5ea1:  dup
   IL_5ea2:  ldc.i4.6
   IL_5ea3:  or
-  IL_5ea4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5ea4:  call       void [System.Console]System.Console::Write(int32)
   IL_5ea9:  dup
   IL_5eaa:  ldc.i4.2
   IL_5eab:  sub
-  IL_5eac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5eac:  call       void [System.Console]System.Console::Write(int32)
   IL_5eb1:  dup
   IL_5eb2:  ldc.i4.4
   IL_5eb3:  xor
-  IL_5eb4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5eb4:  call       void [System.Console]System.Console::Write(int32)
   IL_5eb9:  dup
   IL_5eba:  ldc.i4.8
   IL_5ebb:  sub
-  IL_5ebc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5ebc:  call       void [System.Console]System.Console::Write(int32)
   IL_5ec1:  dup
   IL_5ec2:  ldc.i4.0
   IL_5ec3:  xor
-  IL_5ec4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5ec4:  call       void [System.Console]System.Console::Write(int32)
   IL_5ec9:  dup
   IL_5eca:  ldc.i4.8
   IL_5ecb:  xor
-  IL_5ecc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5ecc:  call       void [System.Console]System.Console::Write(int32)
   IL_5ed1:  dup
   IL_5ed2:  ldc.i4.4
   IL_5ed3:  or
-  IL_5ed4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5ed4:  call       void [System.Console]System.Console::Write(int32)
   IL_5ed9:  dup
   IL_5eda:  ldc.i4.0
   IL_5edb:  xor
-  IL_5edc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5edc:  call       void [System.Console]System.Console::Write(int32)
   IL_5ee1:  dup
   IL_5ee2:  ldc.i4.0
   IL_5ee3:  or
-  IL_5ee4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5ee4:  call       void [System.Console]System.Console::Write(int32)
   IL_5ee9:  dup
   IL_5eea:  ldc.i4.8
   IL_5eeb:  add
-  IL_5eec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5eec:  call       void [System.Console]System.Console::Write(int32)
   IL_5ef1:  dup
   IL_5ef2:  ldc.i4.5
   IL_5ef3:  add
-  IL_5ef4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5ef4:  call       void [System.Console]System.Console::Write(int32)
   IL_5ef9:  dup
   IL_5efa:  ldc.i4.2
   IL_5efb:  or
-  IL_5efc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5efc:  call       void [System.Console]System.Console::Write(int32)
   IL_5f01:  dup
   IL_5f02:  ldc.i4.1
   IL_5f03:  or
-  IL_5f04:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5f04:  call       void [System.Console]System.Console::Write(int32)
   IL_5f09:  dup
   IL_5f0a:  ldc.i4.2
   IL_5f0b:  sub
-  IL_5f0c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5f0c:  call       void [System.Console]System.Console::Write(int32)
   IL_5f11:  dup
   IL_5f12:  ldc.i4.1
   IL_5f13:  shr
-  IL_5f14:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5f14:  call       void [System.Console]System.Console::Write(int32)
   IL_5f19:  dup
   IL_5f1a:  ldc.i4.7
   IL_5f1b:  xor
-  IL_5f1c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5f1c:  call       void [System.Console]System.Console::Write(int32)
   IL_5f21:  dup
   IL_5f22:  ldc.i4.7
   IL_5f23:  shr
-  IL_5f24:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5f24:  call       void [System.Console]System.Console::Write(int32)
   IL_5f29:  dup
   IL_5f2a:  ldc.i4.7
   IL_5f2b:  sub
-  IL_5f2c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5f2c:  call       void [System.Console]System.Console::Write(int32)
   IL_5f31:  dup
   IL_5f32:  ldc.i4.7
   IL_5f33:  and
-  IL_5f34:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5f34:  call       void [System.Console]System.Console::Write(int32)
   IL_5f39:  dup
   IL_5f3a:  ldc.i4.5
   IL_5f3b:  xor
-  IL_5f3c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5f3c:  call       void [System.Console]System.Console::Write(int32)
   IL_5f41:  dup
   IL_5f42:  ldc.i4.0
   IL_5f43:  or
-  IL_5f44:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5f44:  call       void [System.Console]System.Console::Write(int32)
   IL_5f49:  dup
   IL_5f4a:  ldc.i4.8
   IL_5f4b:  or
-  IL_5f4c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5f4c:  call       void [System.Console]System.Console::Write(int32)
   IL_5f51:  dup
   IL_5f52:  ldc.i4.2
   IL_5f53:  sub
-  IL_5f54:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5f54:  call       void [System.Console]System.Console::Write(int32)
   IL_5f59:  dup
   IL_5f5a:  ldc.i4.7
   IL_5f5b:  add
-  IL_5f5c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5f5c:  call       void [System.Console]System.Console::Write(int32)
   IL_5f61:  dup
   IL_5f62:  ldc.i4.8
   IL_5f63:  shr
-  IL_5f64:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5f64:  call       void [System.Console]System.Console::Write(int32)
   IL_5f69:  dup
   IL_5f6a:  ldc.i4.3
   IL_5f6b:  xor
-  IL_5f6c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5f6c:  call       void [System.Console]System.Console::Write(int32)
   IL_5f71:  dup
   IL_5f72:  ldc.i4.1
   IL_5f73:  add
-  IL_5f74:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5f74:  call       void [System.Console]System.Console::Write(int32)
   IL_5f79:  dup
   IL_5f7a:  ldc.i4.3
   IL_5f7b:  shr
-  IL_5f7c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5f7c:  call       void [System.Console]System.Console::Write(int32)
   IL_5f81:  dup
   IL_5f82:  ldc.i4.5
   IL_5f83:  mul
-  IL_5f84:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5f84:  call       void [System.Console]System.Console::Write(int32)
   IL_5f89:  dup
   IL_5f8a:  ldc.i4.0
   IL_5f8b:  shl
-  IL_5f8c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5f8c:  call       void [System.Console]System.Console::Write(int32)
   IL_5f91:  dup
   IL_5f92:  ldc.i4.1
   IL_5f93:  shr
-  IL_5f94:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5f94:  call       void [System.Console]System.Console::Write(int32)
   IL_5f99:  dup
   IL_5f9a:  ldc.i4.8
   IL_5f9b:  xor
-  IL_5f9c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5f9c:  call       void [System.Console]System.Console::Write(int32)
   IL_5fa1:  dup
   IL_5fa2:  ldc.i4.4
   IL_5fa3:  xor
-  IL_5fa4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5fa4:  call       void [System.Console]System.Console::Write(int32)
   IL_5fa9:  dup
   IL_5faa:  ldc.i4.4
   IL_5fab:  and
-  IL_5fac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5fac:  call       void [System.Console]System.Console::Write(int32)
   IL_5fb1:  dup
   IL_5fb2:  ldc.i4.1
   IL_5fb3:  or
-  IL_5fb4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5fb4:  call       void [System.Console]System.Console::Write(int32)
   IL_5fb9:  dup
   IL_5fba:  ldc.i4.5
   IL_5fbb:  mul
-  IL_5fbc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5fbc:  call       void [System.Console]System.Console::Write(int32)
   IL_5fc1:  dup
   IL_5fc2:  ldc.i4.3
   IL_5fc3:  xor
-  IL_5fc4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5fc4:  call       void [System.Console]System.Console::Write(int32)
   IL_5fc9:  dup
   IL_5fca:  ldc.i4.0
   IL_5fcb:  shl
-  IL_5fcc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5fcc:  call       void [System.Console]System.Console::Write(int32)
   IL_5fd1:  dup
   IL_5fd2:  ldc.i4.1
   IL_5fd3:  xor
-  IL_5fd4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5fd4:  call       void [System.Console]System.Console::Write(int32)
   IL_5fd9:  dup
   IL_5fda:  ldc.i4.6
   IL_5fdb:  or
-  IL_5fdc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5fdc:  call       void [System.Console]System.Console::Write(int32)
   IL_5fe1:  dup
   IL_5fe2:  ldc.i4.0
   IL_5fe3:  sub
-  IL_5fe4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5fe4:  call       void [System.Console]System.Console::Write(int32)
   IL_5fe9:  dup
   IL_5fea:  ldc.i4.1
   IL_5feb:  xor
-  IL_5fec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5fec:  call       void [System.Console]System.Console::Write(int32)
   IL_5ff1:  dup
   IL_5ff2:  ldc.i4.2
   IL_5ff3:  xor
-  IL_5ff4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5ff4:  call       void [System.Console]System.Console::Write(int32)
   IL_5ff9:  dup
   IL_5ffa:  ldc.i4.2
   IL_5ffb:  shr
-  IL_5ffc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_5ffc:  call       void [System.Console]System.Console::Write(int32)
   IL_6001:  dup
   IL_6002:  ldc.i4.2
   IL_6003:  sub
-  IL_6004:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6004:  call       void [System.Console]System.Console::Write(int32)
   IL_6009:  dup
   IL_600a:  ldc.i4.4
   IL_600b:  shl
-  IL_600c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_600c:  call       void [System.Console]System.Console::Write(int32)
   IL_6011:  dup
   IL_6012:  ldc.i4.6
   IL_6013:  or
-  IL_6014:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6014:  call       void [System.Console]System.Console::Write(int32)
   IL_6019:  dup
   IL_601a:  ldc.i4.3
   IL_601b:  mul
-  IL_601c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_601c:  call       void [System.Console]System.Console::Write(int32)
   IL_6021:  dup
   IL_6022:  ldc.i4.0
   IL_6023:  shl
-  IL_6024:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6024:  call       void [System.Console]System.Console::Write(int32)
   IL_6029:  dup
   IL_602a:  ldc.i4.3
   IL_602b:  and
-  IL_602c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_602c:  call       void [System.Console]System.Console::Write(int32)
   IL_6031:  dup
   IL_6032:  ldc.i4.6
   IL_6033:  add
-  IL_6034:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6034:  call       void [System.Console]System.Console::Write(int32)
   IL_6039:  dup
   IL_603a:  ldc.i4.8
   IL_603b:  add
-  IL_603c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_603c:  call       void [System.Console]System.Console::Write(int32)
   IL_6041:  dup
   IL_6042:  ldc.i4.1
   IL_6043:  add
-  IL_6044:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6044:  call       void [System.Console]System.Console::Write(int32)
   IL_6049:  dup
   IL_604a:  ldc.i4.0
   IL_604b:  and
-  IL_604c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_604c:  call       void [System.Console]System.Console::Write(int32)
   IL_6051:  dup
   IL_6052:  ldc.i4.0
   IL_6053:  and
-  IL_6054:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6054:  call       void [System.Console]System.Console::Write(int32)
   IL_6059:  dup
   IL_605a:  ldc.i4.4
   IL_605b:  mul
-  IL_605c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_605c:  call       void [System.Console]System.Console::Write(int32)
   IL_6061:  dup
   IL_6062:  ldc.i4.4
   IL_6063:  sub
-  IL_6064:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6064:  call       void [System.Console]System.Console::Write(int32)
   IL_6069:  dup
   IL_606a:  ldc.i4.5
   IL_606b:  or
-  IL_606c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_606c:  call       void [System.Console]System.Console::Write(int32)
   IL_6071:  dup
   IL_6072:  ldc.i4.4
   IL_6073:  xor
-  IL_6074:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6074:  call       void [System.Console]System.Console::Write(int32)
   IL_6079:  dup
   IL_607a:  ldc.i4.1
   IL_607b:  add
-  IL_607c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_607c:  call       void [System.Console]System.Console::Write(int32)
   IL_6081:  dup
   IL_6082:  ldc.i4.1
   IL_6083:  and
-  IL_6084:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6084:  call       void [System.Console]System.Console::Write(int32)
   IL_6089:  dup
   IL_608a:  ldc.i4.4
   IL_608b:  or
-  IL_608c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_608c:  call       void [System.Console]System.Console::Write(int32)
   IL_6091:  dup
   IL_6092:  ldc.i4.4
   IL_6093:  or
-  IL_6094:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6094:  call       void [System.Console]System.Console::Write(int32)
   IL_6099:  dup
   IL_609a:  ldc.i4.4
   IL_609b:  xor
-  IL_609c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_609c:  call       void [System.Console]System.Console::Write(int32)
   IL_60a1:  dup
   IL_60a2:  ldc.i4.0
   IL_60a3:  and
-  IL_60a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_60a4:  call       void [System.Console]System.Console::Write(int32)
   IL_60a9:  dup
   IL_60aa:  ldc.i4.4
   IL_60ab:  shr
-  IL_60ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_60ac:  call       void [System.Console]System.Console::Write(int32)
   IL_60b1:  dup
   IL_60b2:  ldc.i4.8
   IL_60b3:  or
-  IL_60b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_60b4:  call       void [System.Console]System.Console::Write(int32)
   IL_60b9:  dup
   IL_60ba:  ldc.i4.1
   IL_60bb:  or
-  IL_60bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_60bc:  call       void [System.Console]System.Console::Write(int32)
   IL_60c1:  dup
   IL_60c2:  ldc.i4.2
   IL_60c3:  sub
-  IL_60c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_60c4:  call       void [System.Console]System.Console::Write(int32)
   IL_60c9:  dup
   IL_60ca:  ldc.i4.2
   IL_60cb:  sub
-  IL_60cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_60cc:  call       void [System.Console]System.Console::Write(int32)
   IL_60d1:  dup
   IL_60d2:  ldc.i4.2
   IL_60d3:  xor
-  IL_60d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_60d4:  call       void [System.Console]System.Console::Write(int32)
   IL_60d9:  dup
   IL_60da:  ldc.i4.6
   IL_60db:  shl
-  IL_60dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_60dc:  call       void [System.Console]System.Console::Write(int32)
   IL_60e1:  dup
   IL_60e2:  ldc.i4.6
   IL_60e3:  sub
-  IL_60e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_60e4:  call       void [System.Console]System.Console::Write(int32)
   IL_60e9:  dup
   IL_60ea:  ldc.i4.0
   IL_60eb:  shr
-  IL_60ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_60ec:  call       void [System.Console]System.Console::Write(int32)
   IL_60f1:  dup
   IL_60f2:  ldc.i4.3
   IL_60f3:  xor
-  IL_60f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_60f4:  call       void [System.Console]System.Console::Write(int32)
   IL_60f9:  dup
   IL_60fa:  ldc.i4.6
   IL_60fb:  shl
-  IL_60fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_60fc:  call       void [System.Console]System.Console::Write(int32)
   IL_6101:  dup
   IL_6102:  ldc.i4.3
   IL_6103:  mul
-  IL_6104:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6104:  call       void [System.Console]System.Console::Write(int32)
   IL_6109:  dup
   IL_610a:  ldc.i4.5
   IL_610b:  and
-  IL_610c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_610c:  call       void [System.Console]System.Console::Write(int32)
   IL_6111:  dup
   IL_6112:  ldc.i4.5
   IL_6113:  or
-  IL_6114:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6114:  call       void [System.Console]System.Console::Write(int32)
   IL_6119:  dup
   IL_611a:  ldc.i4.5
   IL_611b:  sub
-  IL_611c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_611c:  call       void [System.Console]System.Console::Write(int32)
   IL_6121:  dup
   IL_6122:  ldc.i4.5
   IL_6123:  shr
-  IL_6124:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6124:  call       void [System.Console]System.Console::Write(int32)
   IL_6129:  dup
   IL_612a:  ldc.i4.6
   IL_612b:  sub
-  IL_612c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_612c:  call       void [System.Console]System.Console::Write(int32)
   IL_6131:  dup
   IL_6132:  ldc.i4.2
   IL_6133:  and
-  IL_6134:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6134:  call       void [System.Console]System.Console::Write(int32)
   IL_6139:  dup
   IL_613a:  ldc.i4.2
   IL_613b:  shr
-  IL_613c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_613c:  call       void [System.Console]System.Console::Write(int32)
   IL_6141:  dup
   IL_6142:  ldc.i4.8
   IL_6143:  shl
-  IL_6144:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6144:  call       void [System.Console]System.Console::Write(int32)
   IL_6149:  dup
   IL_614a:  ldc.i4.6
   IL_614b:  xor
-  IL_614c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_614c:  call       void [System.Console]System.Console::Write(int32)
   IL_6151:  dup
   IL_6152:  ldc.i4.1
   IL_6153:  or
-  IL_6154:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6154:  call       void [System.Console]System.Console::Write(int32)
   IL_6159:  dup
   IL_615a:  ldc.i4.6
   IL_615b:  shr
-  IL_615c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_615c:  call       void [System.Console]System.Console::Write(int32)
   IL_6161:  dup
   IL_6162:  ldc.i4.0
   IL_6163:  or
-  IL_6164:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6164:  call       void [System.Console]System.Console::Write(int32)
   IL_6169:  dup
   IL_616a:  ldc.i4.2
   IL_616b:  sub
-  IL_616c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_616c:  call       void [System.Console]System.Console::Write(int32)
   IL_6171:  dup
   IL_6172:  ldc.i4.8
   IL_6173:  and
-  IL_6174:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6174:  call       void [System.Console]System.Console::Write(int32)
   IL_6179:  dup
   IL_617a:  ldc.i4.0
   IL_617b:  shr
-  IL_617c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_617c:  call       void [System.Console]System.Console::Write(int32)
   IL_6181:  dup
   IL_6182:  ldc.i4.0
   IL_6183:  or
-  IL_6184:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6184:  call       void [System.Console]System.Console::Write(int32)
   IL_6189:  dup
   IL_618a:  ldc.i4.2
   IL_618b:  shr
-  IL_618c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_618c:  call       void [System.Console]System.Console::Write(int32)
   IL_6191:  dup
   IL_6192:  ldc.i4.2
   IL_6193:  mul
-  IL_6194:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6194:  call       void [System.Console]System.Console::Write(int32)
   IL_6199:  dup
   IL_619a:  ldc.i4.3
   IL_619b:  mul
-  IL_619c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_619c:  call       void [System.Console]System.Console::Write(int32)
   IL_61a1:  dup
   IL_61a2:  ldc.i4.5
   IL_61a3:  sub
-  IL_61a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_61a4:  call       void [System.Console]System.Console::Write(int32)
   IL_61a9:  dup
   IL_61aa:  ldc.i4.5
   IL_61ab:  shr
-  IL_61ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_61ac:  call       void [System.Console]System.Console::Write(int32)
   IL_61b1:  dup
   IL_61b2:  ldc.i4.6
   IL_61b3:  xor
-  IL_61b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_61b4:  call       void [System.Console]System.Console::Write(int32)
   IL_61b9:  dup
   IL_61ba:  ldc.i4.2
   IL_61bb:  or
-  IL_61bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_61bc:  call       void [System.Console]System.Console::Write(int32)
   IL_61c1:  dup
   IL_61c2:  ldc.i4.8
   IL_61c3:  xor
-  IL_61c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_61c4:  call       void [System.Console]System.Console::Write(int32)
   IL_61c9:  dup
   IL_61ca:  ldc.i4.6
   IL_61cb:  and
-  IL_61cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_61cc:  call       void [System.Console]System.Console::Write(int32)
   IL_61d1:  dup
   IL_61d2:  ldc.i4.6
   IL_61d3:  mul
-  IL_61d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_61d4:  call       void [System.Console]System.Console::Write(int32)
   IL_61d9:  dup
   IL_61da:  ldc.i4.3
   IL_61db:  xor
-  IL_61dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_61dc:  call       void [System.Console]System.Console::Write(int32)
   IL_61e1:  dup
   IL_61e2:  ldc.i4.4
   IL_61e3:  and
-  IL_61e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_61e4:  call       void [System.Console]System.Console::Write(int32)
   IL_61e9:  dup
   IL_61ea:  ldc.i4.6
   IL_61eb:  shl
-  IL_61ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_61ec:  call       void [System.Console]System.Console::Write(int32)
   IL_61f1:  dup
   IL_61f2:  ldc.i4.6
   IL_61f3:  mul
-  IL_61f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_61f4:  call       void [System.Console]System.Console::Write(int32)
   IL_61f9:  dup
   IL_61fa:  ldc.i4.2
   IL_61fb:  and
-  IL_61fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_61fc:  call       void [System.Console]System.Console::Write(int32)
   IL_6201:  dup
   IL_6202:  ldc.i4.5
   IL_6203:  add
-  IL_6204:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6204:  call       void [System.Console]System.Console::Write(int32)
   IL_6209:  dup
   IL_620a:  ldc.i4.1
   IL_620b:  sub
-  IL_620c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_620c:  call       void [System.Console]System.Console::Write(int32)
   IL_6211:  dup
   IL_6212:  ldc.i4.4
   IL_6213:  shl
-  IL_6214:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6214:  call       void [System.Console]System.Console::Write(int32)
   IL_6219:  dup
   IL_621a:  ldc.i4.3
   IL_621b:  shl
-  IL_621c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_621c:  call       void [System.Console]System.Console::Write(int32)
   IL_6221:  dup
   IL_6222:  ldc.i4.1
   IL_6223:  xor
-  IL_6224:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6224:  call       void [System.Console]System.Console::Write(int32)
   IL_6229:  dup
   IL_622a:  ldc.i4.7
   IL_622b:  add
-  IL_622c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_622c:  call       void [System.Console]System.Console::Write(int32)
   IL_6231:  dup
   IL_6232:  ldc.i4.3
   IL_6233:  add
-  IL_6234:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6234:  call       void [System.Console]System.Console::Write(int32)
   IL_6239:  dup
   IL_623a:  ldc.i4.8
   IL_623b:  shr
-  IL_623c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_623c:  call       void [System.Console]System.Console::Write(int32)
   IL_6241:  dup
   IL_6242:  ldc.i4.5
   IL_6243:  mul
-  IL_6244:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6244:  call       void [System.Console]System.Console::Write(int32)
   IL_6249:  dup
   IL_624a:  ldc.i4.2
   IL_624b:  shl
-  IL_624c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_624c:  call       void [System.Console]System.Console::Write(int32)
   IL_6251:  dup
   IL_6252:  ldc.i4.1
   IL_6253:  mul
-  IL_6254:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6254:  call       void [System.Console]System.Console::Write(int32)
   IL_6259:  dup
   IL_625a:  ldc.i4.8
   IL_625b:  and
-  IL_625c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_625c:  call       void [System.Console]System.Console::Write(int32)
   IL_6261:  dup
   IL_6262:  ldc.i4.5
   IL_6263:  or
-  IL_6264:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6264:  call       void [System.Console]System.Console::Write(int32)
   IL_6269:  dup
   IL_626a:  ldc.i4.1
   IL_626b:  xor
-  IL_626c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_626c:  call       void [System.Console]System.Console::Write(int32)
   IL_6271:  dup
   IL_6272:  ldc.i4.5
   IL_6273:  and
-  IL_6274:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6274:  call       void [System.Console]System.Console::Write(int32)
   IL_6279:  dup
   IL_627a:  ldc.i4.4
   IL_627b:  sub
-  IL_627c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_627c:  call       void [System.Console]System.Console::Write(int32)
   IL_6281:  dup
   IL_6282:  ldc.i4.7
   IL_6283:  and
-  IL_6284:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6284:  call       void [System.Console]System.Console::Write(int32)
   IL_6289:  dup
   IL_628a:  ldc.i4.0
   IL_628b:  shr
-  IL_628c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_628c:  call       void [System.Console]System.Console::Write(int32)
   IL_6291:  dup
   IL_6292:  ldc.i4.2
   IL_6293:  add
-  IL_6294:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6294:  call       void [System.Console]System.Console::Write(int32)
   IL_6299:  dup
   IL_629a:  ldc.i4.3
   IL_629b:  xor
-  IL_629c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_629c:  call       void [System.Console]System.Console::Write(int32)
   IL_62a1:  dup
   IL_62a2:  ldc.i4.0
   IL_62a3:  add
-  IL_62a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_62a4:  call       void [System.Console]System.Console::Write(int32)
   IL_62a9:  dup
   IL_62aa:  ldc.i4.5
   IL_62ab:  mul
-  IL_62ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_62ac:  call       void [System.Console]System.Console::Write(int32)
   IL_62b1:  dup
   IL_62b2:  ldc.i4.4
   IL_62b3:  xor
-  IL_62b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_62b4:  call       void [System.Console]System.Console::Write(int32)
   IL_62b9:  dup
   IL_62ba:  ldc.i4.0
   IL_62bb:  xor
-  IL_62bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_62bc:  call       void [System.Console]System.Console::Write(int32)
   IL_62c1:  dup
   IL_62c2:  ldc.i4.7
   IL_62c3:  add
-  IL_62c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_62c4:  call       void [System.Console]System.Console::Write(int32)
   IL_62c9:  dup
   IL_62ca:  ldc.i4.8
   IL_62cb:  xor
-  IL_62cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_62cc:  call       void [System.Console]System.Console::Write(int32)
   IL_62d1:  dup
   IL_62d2:  ldc.i4.0
   IL_62d3:  shr
-  IL_62d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_62d4:  call       void [System.Console]System.Console::Write(int32)
   IL_62d9:  dup
   IL_62da:  ldc.i4.5
   IL_62db:  mul
-  IL_62dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_62dc:  call       void [System.Console]System.Console::Write(int32)
   IL_62e1:  dup
   IL_62e2:  ldc.i4.1
   IL_62e3:  xor
-  IL_62e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_62e4:  call       void [System.Console]System.Console::Write(int32)
   IL_62e9:  dup
   IL_62ea:  ldc.i4.5
   IL_62eb:  shl
-  IL_62ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_62ec:  call       void [System.Console]System.Console::Write(int32)
   IL_62f1:  dup
   IL_62f2:  ldc.i4.3
   IL_62f3:  or
-  IL_62f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_62f4:  call       void [System.Console]System.Console::Write(int32)
   IL_62f9:  dup
   IL_62fa:  ldc.i4.0
   IL_62fb:  mul
-  IL_62fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_62fc:  call       void [System.Console]System.Console::Write(int32)
   IL_6301:  dup
   IL_6302:  ldc.i4.8
   IL_6303:  shl
-  IL_6304:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6304:  call       void [System.Console]System.Console::Write(int32)
   IL_6309:  dup
   IL_630a:  ldc.i4.1
   IL_630b:  shl
-  IL_630c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_630c:  call       void [System.Console]System.Console::Write(int32)
   IL_6311:  dup
   IL_6312:  ldc.i4.8
   IL_6313:  mul
-  IL_6314:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6314:  call       void [System.Console]System.Console::Write(int32)
   IL_6319:  dup
   IL_631a:  ldc.i4.3
   IL_631b:  shl
-  IL_631c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_631c:  call       void [System.Console]System.Console::Write(int32)
   IL_6321:  dup
   IL_6322:  ldc.i4.8
   IL_6323:  or
-  IL_6324:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6324:  call       void [System.Console]System.Console::Write(int32)
   IL_6329:  dup
   IL_632a:  ldc.i4.4
   IL_632b:  add
-  IL_632c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_632c:  call       void [System.Console]System.Console::Write(int32)
   IL_6331:  dup
   IL_6332:  ldc.i4.5
   IL_6333:  shl
-  IL_6334:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6334:  call       void [System.Console]System.Console::Write(int32)
   IL_6339:  dup
   IL_633a:  ldc.i4.2
   IL_633b:  sub
-  IL_633c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_633c:  call       void [System.Console]System.Console::Write(int32)
   IL_6341:  dup
   IL_6342:  ldc.i4.7
   IL_6343:  shr
-  IL_6344:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6344:  call       void [System.Console]System.Console::Write(int32)
   IL_6349:  dup
   IL_634a:  ldc.i4.5
   IL_634b:  xor
-  IL_634c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_634c:  call       void [System.Console]System.Console::Write(int32)
   IL_6351:  dup
   IL_6352:  ldc.i4.7
   IL_6353:  add
-  IL_6354:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6354:  call       void [System.Console]System.Console::Write(int32)
   IL_6359:  dup
   IL_635a:  ldc.i4.1
   IL_635b:  sub
-  IL_635c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_635c:  call       void [System.Console]System.Console::Write(int32)
   IL_6361:  dup
   IL_6362:  ldc.i4.1
   IL_6363:  and
-  IL_6364:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6364:  call       void [System.Console]System.Console::Write(int32)
   IL_6369:  dup
   IL_636a:  ldc.i4.4
   IL_636b:  or
-  IL_636c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_636c:  call       void [System.Console]System.Console::Write(int32)
   IL_6371:  dup
   IL_6372:  ldc.i4.3
   IL_6373:  and
-  IL_6374:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6374:  call       void [System.Console]System.Console::Write(int32)
   IL_6379:  dup
   IL_637a:  ldc.i4.0
   IL_637b:  sub
-  IL_637c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_637c:  call       void [System.Console]System.Console::Write(int32)
   IL_6381:  dup
   IL_6382:  ldc.i4.0
   IL_6383:  mul
-  IL_6384:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6384:  call       void [System.Console]System.Console::Write(int32)
   IL_6389:  dup
   IL_638a:  ldc.i4.3
   IL_638b:  and
-  IL_638c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_638c:  call       void [System.Console]System.Console::Write(int32)
   IL_6391:  dup
   IL_6392:  ldc.i4.2
   IL_6393:  xor
-  IL_6394:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6394:  call       void [System.Console]System.Console::Write(int32)
   IL_6399:  dup
   IL_639a:  ldc.i4.4
   IL_639b:  shl
-  IL_639c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_639c:  call       void [System.Console]System.Console::Write(int32)
   IL_63a1:  dup
   IL_63a2:  ldc.i4.6
   IL_63a3:  mul
-  IL_63a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_63a4:  call       void [System.Console]System.Console::Write(int32)
   IL_63a9:  dup
   IL_63aa:  ldc.i4.4
   IL_63ab:  sub
-  IL_63ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_63ac:  call       void [System.Console]System.Console::Write(int32)
   IL_63b1:  dup
   IL_63b2:  ldc.i4.2
   IL_63b3:  shl
-  IL_63b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_63b4:  call       void [System.Console]System.Console::Write(int32)
   IL_63b9:  dup
   IL_63ba:  ldc.i4.6
   IL_63bb:  shl
-  IL_63bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_63bc:  call       void [System.Console]System.Console::Write(int32)
   IL_63c1:  dup
   IL_63c2:  ldc.i4.1
   IL_63c3:  xor
-  IL_63c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_63c4:  call       void [System.Console]System.Console::Write(int32)
   IL_63c9:  dup
   IL_63ca:  ldc.i4.7
   IL_63cb:  shr
-  IL_63cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_63cc:  call       void [System.Console]System.Console::Write(int32)
   IL_63d1:  dup
   IL_63d2:  ldc.i4.2
   IL_63d3:  shl
-  IL_63d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_63d4:  call       void [System.Console]System.Console::Write(int32)
   IL_63d9:  dup
   IL_63da:  ldc.i4.4
   IL_63db:  and
-  IL_63dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_63dc:  call       void [System.Console]System.Console::Write(int32)
   IL_63e1:  dup
   IL_63e2:  ldc.i4.3
   IL_63e3:  or
-  IL_63e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_63e4:  call       void [System.Console]System.Console::Write(int32)
   IL_63e9:  dup
   IL_63ea:  ldc.i4.3
   IL_63eb:  sub
-  IL_63ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_63ec:  call       void [System.Console]System.Console::Write(int32)
   IL_63f1:  dup
   IL_63f2:  ldc.i4.6
   IL_63f3:  xor
-  IL_63f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_63f4:  call       void [System.Console]System.Console::Write(int32)
   IL_63f9:  dup
   IL_63fa:  ldc.i4.1
   IL_63fb:  sub
-  IL_63fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_63fc:  call       void [System.Console]System.Console::Write(int32)
   IL_6401:  dup
   IL_6402:  ldc.i4.7
   IL_6403:  mul
-  IL_6404:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6404:  call       void [System.Console]System.Console::Write(int32)
   IL_6409:  dup
   IL_640a:  ldc.i4.8
   IL_640b:  xor
-  IL_640c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_640c:  call       void [System.Console]System.Console::Write(int32)
   IL_6411:  dup
   IL_6412:  ldc.i4.1
   IL_6413:  xor
-  IL_6414:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6414:  call       void [System.Console]System.Console::Write(int32)
   IL_6419:  dup
   IL_641a:  ldc.i4.8
   IL_641b:  xor
-  IL_641c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_641c:  call       void [System.Console]System.Console::Write(int32)
   IL_6421:  dup
   IL_6422:  ldc.i4.1
   IL_6423:  add
-  IL_6424:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6424:  call       void [System.Console]System.Console::Write(int32)
   IL_6429:  dup
   IL_642a:  ldc.i4.6
   IL_642b:  shl
-  IL_642c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_642c:  call       void [System.Console]System.Console::Write(int32)
   IL_6431:  dup
   IL_6432:  ldc.i4.4
   IL_6433:  or
-  IL_6434:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6434:  call       void [System.Console]System.Console::Write(int32)
   IL_6439:  dup
   IL_643a:  ldc.i4.7
   IL_643b:  shl
-  IL_643c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_643c:  call       void [System.Console]System.Console::Write(int32)
   IL_6441:  dup
   IL_6442:  ldc.i4.0
   IL_6443:  or
-  IL_6444:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6444:  call       void [System.Console]System.Console::Write(int32)
   IL_6449:  dup
   IL_644a:  ldc.i4.6
   IL_644b:  or
-  IL_644c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_644c:  call       void [System.Console]System.Console::Write(int32)
   IL_6451:  dup
   IL_6452:  ldc.i4.8
   IL_6453:  mul
-  IL_6454:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6454:  call       void [System.Console]System.Console::Write(int32)
   IL_6459:  dup
   IL_645a:  ldc.i4.8
   IL_645b:  shl
-  IL_645c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_645c:  call       void [System.Console]System.Console::Write(int32)
   IL_6461:  dup
   IL_6462:  ldc.i4.6
   IL_6463:  shl
-  IL_6464:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6464:  call       void [System.Console]System.Console::Write(int32)
   IL_6469:  dup
   IL_646a:  ldc.i4.3
   IL_646b:  mul
-  IL_646c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_646c:  call       void [System.Console]System.Console::Write(int32)
   IL_6471:  dup
   IL_6472:  ldc.i4.0
   IL_6473:  mul
-  IL_6474:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6474:  call       void [System.Console]System.Console::Write(int32)
   IL_6479:  dup
   IL_647a:  ldc.i4.7
   IL_647b:  mul
-  IL_647c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_647c:  call       void [System.Console]System.Console::Write(int32)
   IL_6481:  dup
   IL_6482:  ldc.i4.0
   IL_6483:  mul
-  IL_6484:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6484:  call       void [System.Console]System.Console::Write(int32)
   IL_6489:  dup
   IL_648a:  ldc.i4.2
   IL_648b:  add
-  IL_648c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_648c:  call       void [System.Console]System.Console::Write(int32)
   IL_6491:  dup
   IL_6492:  ldc.i4.5
   IL_6493:  mul
-  IL_6494:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6494:  call       void [System.Console]System.Console::Write(int32)
   IL_6499:  dup
   IL_649a:  ldc.i4.3
   IL_649b:  shr
-  IL_649c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_649c:  call       void [System.Console]System.Console::Write(int32)
   IL_64a1:  dup
   IL_64a2:  ldc.i4.4
   IL_64a3:  xor
-  IL_64a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_64a4:  call       void [System.Console]System.Console::Write(int32)
   IL_64a9:  dup
   IL_64aa:  ldc.i4.4
   IL_64ab:  sub
-  IL_64ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_64ac:  call       void [System.Console]System.Console::Write(int32)
   IL_64b1:  dup
   IL_64b2:  ldc.i4.7
   IL_64b3:  or
-  IL_64b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_64b4:  call       void [System.Console]System.Console::Write(int32)
   IL_64b9:  dup
   IL_64ba:  ldc.i4.2
   IL_64bb:  xor
-  IL_64bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_64bc:  call       void [System.Console]System.Console::Write(int32)
   IL_64c1:  dup
   IL_64c2:  ldc.i4.1
   IL_64c3:  and
-  IL_64c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_64c4:  call       void [System.Console]System.Console::Write(int32)
   IL_64c9:  dup
   IL_64ca:  ldc.i4.0
   IL_64cb:  and
-  IL_64cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_64cc:  call       void [System.Console]System.Console::Write(int32)
   IL_64d1:  dup
   IL_64d2:  ldc.i4.6
   IL_64d3:  mul
-  IL_64d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_64d4:  call       void [System.Console]System.Console::Write(int32)
   IL_64d9:  dup
   IL_64da:  ldc.i4.1
   IL_64db:  shl
-  IL_64dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_64dc:  call       void [System.Console]System.Console::Write(int32)
   IL_64e1:  dup
   IL_64e2:  ldc.i4.3
   IL_64e3:  xor
-  IL_64e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_64e4:  call       void [System.Console]System.Console::Write(int32)
   IL_64e9:  dup
   IL_64ea:  ldc.i4.5
   IL_64eb:  shl
-  IL_64ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_64ec:  call       void [System.Console]System.Console::Write(int32)
   IL_64f1:  dup
   IL_64f2:  ldc.i4.8
   IL_64f3:  shr
-  IL_64f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_64f4:  call       void [System.Console]System.Console::Write(int32)
   IL_64f9:  dup
   IL_64fa:  ldc.i4.3
   IL_64fb:  or
-  IL_64fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_64fc:  call       void [System.Console]System.Console::Write(int32)
   IL_6501:  dup
   IL_6502:  ldc.i4.2
   IL_6503:  xor
-  IL_6504:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6504:  call       void [System.Console]System.Console::Write(int32)
   IL_6509:  dup
   IL_650a:  ldc.i4.3
   IL_650b:  sub
-  IL_650c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_650c:  call       void [System.Console]System.Console::Write(int32)
   IL_6511:  dup
   IL_6512:  ldc.i4.6
   IL_6513:  and
-  IL_6514:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6514:  call       void [System.Console]System.Console::Write(int32)
   IL_6519:  dup
   IL_651a:  ldc.i4.8
   IL_651b:  and
-  IL_651c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_651c:  call       void [System.Console]System.Console::Write(int32)
   IL_6521:  dup
   IL_6522:  ldc.i4.5
   IL_6523:  add
-  IL_6524:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6524:  call       void [System.Console]System.Console::Write(int32)
   IL_6529:  dup
   IL_652a:  ldc.i4.3
   IL_652b:  shl
-  IL_652c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_652c:  call       void [System.Console]System.Console::Write(int32)
   IL_6531:  dup
   IL_6532:  ldc.i4.7
   IL_6533:  shr
-  IL_6534:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6534:  call       void [System.Console]System.Console::Write(int32)
   IL_6539:  dup
   IL_653a:  ldc.i4.5
   IL_653b:  and
-  IL_653c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_653c:  call       void [System.Console]System.Console::Write(int32)
   IL_6541:  dup
   IL_6542:  ldc.i4.2
   IL_6543:  or
-  IL_6544:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6544:  call       void [System.Console]System.Console::Write(int32)
   IL_6549:  dup
   IL_654a:  ldc.i4.1
   IL_654b:  sub
-  IL_654c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_654c:  call       void [System.Console]System.Console::Write(int32)
   IL_6551:  dup
   IL_6552:  ldc.i4.2
   IL_6553:  add
-  IL_6554:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6554:  call       void [System.Console]System.Console::Write(int32)
   IL_6559:  dup
   IL_655a:  ldc.i4.4
   IL_655b:  and
-  IL_655c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_655c:  call       void [System.Console]System.Console::Write(int32)
   IL_6561:  dup
   IL_6562:  ldc.i4.1
   IL_6563:  and
-  IL_6564:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6564:  call       void [System.Console]System.Console::Write(int32)
   IL_6569:  dup
   IL_656a:  ldc.i4.5
   IL_656b:  sub
-  IL_656c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_656c:  call       void [System.Console]System.Console::Write(int32)
   IL_6571:  dup
   IL_6572:  ldc.i4.5
   IL_6573:  and
-  IL_6574:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6574:  call       void [System.Console]System.Console::Write(int32)
   IL_6579:  dup
   IL_657a:  ldc.i4.6
   IL_657b:  and
-  IL_657c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_657c:  call       void [System.Console]System.Console::Write(int32)
   IL_6581:  dup
   IL_6582:  ldc.i4.0
   IL_6583:  shl
-  IL_6584:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6584:  call       void [System.Console]System.Console::Write(int32)
   IL_6589:  dup
   IL_658a:  ldc.i4.0
   IL_658b:  xor
-  IL_658c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_658c:  call       void [System.Console]System.Console::Write(int32)
   IL_6591:  dup
   IL_6592:  ldc.i4.4
   IL_6593:  add
-  IL_6594:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6594:  call       void [System.Console]System.Console::Write(int32)
   IL_6599:  dup
   IL_659a:  ldc.i4.6
   IL_659b:  mul
-  IL_659c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_659c:  call       void [System.Console]System.Console::Write(int32)
   IL_65a1:  dup
   IL_65a2:  ldc.i4.8
   IL_65a3:  mul
-  IL_65a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_65a4:  call       void [System.Console]System.Console::Write(int32)
   IL_65a9:  dup
   IL_65aa:  ldc.i4.1
   IL_65ab:  shr
-  IL_65ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_65ac:  call       void [System.Console]System.Console::Write(int32)
   IL_65b1:  dup
   IL_65b2:  ldc.i4.8
   IL_65b3:  shl
-  IL_65b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_65b4:  call       void [System.Console]System.Console::Write(int32)
   IL_65b9:  dup
   IL_65ba:  ldc.i4.5
   IL_65bb:  shr
-  IL_65bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_65bc:  call       void [System.Console]System.Console::Write(int32)
   IL_65c1:  dup
   IL_65c2:  ldc.i4.7
   IL_65c3:  and
-  IL_65c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_65c4:  call       void [System.Console]System.Console::Write(int32)
   IL_65c9:  dup
   IL_65ca:  ldc.i4.2
   IL_65cb:  or
-  IL_65cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_65cc:  call       void [System.Console]System.Console::Write(int32)
   IL_65d1:  dup
   IL_65d2:  ldc.i4.4
   IL_65d3:  sub
-  IL_65d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_65d4:  call       void [System.Console]System.Console::Write(int32)
   IL_65d9:  dup
   IL_65da:  ldc.i4.5
   IL_65db:  sub
-  IL_65dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_65dc:  call       void [System.Console]System.Console::Write(int32)
   IL_65e1:  dup
   IL_65e2:  ldc.i4.7
   IL_65e3:  shr
-  IL_65e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_65e4:  call       void [System.Console]System.Console::Write(int32)
   IL_65e9:  dup
   IL_65ea:  ldc.i4.8
   IL_65eb:  or
-  IL_65ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_65ec:  call       void [System.Console]System.Console::Write(int32)
   IL_65f1:  dup
   IL_65f2:  ldc.i4.1
   IL_65f3:  shr
-  IL_65f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_65f4:  call       void [System.Console]System.Console::Write(int32)
   IL_65f9:  dup
   IL_65fa:  ldc.i4.1
   IL_65fb:  and
-  IL_65fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_65fc:  call       void [System.Console]System.Console::Write(int32)
   IL_6601:  dup
   IL_6602:  ldc.i4.3
   IL_6603:  shl
-  IL_6604:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6604:  call       void [System.Console]System.Console::Write(int32)
   IL_6609:  dup
   IL_660a:  ldc.i4.4
   IL_660b:  mul
-  IL_660c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_660c:  call       void [System.Console]System.Console::Write(int32)
   IL_6611:  dup
   IL_6612:  ldc.i4.6
   IL_6613:  sub
-  IL_6614:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6614:  call       void [System.Console]System.Console::Write(int32)
   IL_6619:  dup
   IL_661a:  ldc.i4.2
   IL_661b:  sub
-  IL_661c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_661c:  call       void [System.Console]System.Console::Write(int32)
   IL_6621:  dup
   IL_6622:  ldc.i4.2
   IL_6623:  and
-  IL_6624:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6624:  call       void [System.Console]System.Console::Write(int32)
   IL_6629:  dup
   IL_662a:  ldc.i4.1
   IL_662b:  or
-  IL_662c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_662c:  call       void [System.Console]System.Console::Write(int32)
   IL_6631:  dup
   IL_6632:  ldc.i4.8
   IL_6633:  or
-  IL_6634:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6634:  call       void [System.Console]System.Console::Write(int32)
   IL_6639:  dup
   IL_663a:  ldc.i4.8
   IL_663b:  shl
-  IL_663c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_663c:  call       void [System.Console]System.Console::Write(int32)
   IL_6641:  dup
   IL_6642:  ldc.i4.1
   IL_6643:  or
-  IL_6644:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6644:  call       void [System.Console]System.Console::Write(int32)
   IL_6649:  dup
   IL_664a:  ldc.i4.4
   IL_664b:  and
-  IL_664c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_664c:  call       void [System.Console]System.Console::Write(int32)
   IL_6651:  dup
   IL_6652:  ldc.i4.5
   IL_6653:  shr
-  IL_6654:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6654:  call       void [System.Console]System.Console::Write(int32)
   IL_6659:  dup
   IL_665a:  ldc.i4.3
   IL_665b:  or
-  IL_665c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_665c:  call       void [System.Console]System.Console::Write(int32)
   IL_6661:  dup
   IL_6662:  ldc.i4.8
   IL_6663:  and
-  IL_6664:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6664:  call       void [System.Console]System.Console::Write(int32)
   IL_6669:  dup
   IL_666a:  ldc.i4.5
   IL_666b:  and
-  IL_666c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_666c:  call       void [System.Console]System.Console::Write(int32)
   IL_6671:  dup
   IL_6672:  ldc.i4.1
   IL_6673:  and
-  IL_6674:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6674:  call       void [System.Console]System.Console::Write(int32)
   IL_6679:  dup
   IL_667a:  ldc.i4.1
   IL_667b:  mul
-  IL_667c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_667c:  call       void [System.Console]System.Console::Write(int32)
   IL_6681:  dup
   IL_6682:  ldc.i4.1
   IL_6683:  xor
-  IL_6684:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6684:  call       void [System.Console]System.Console::Write(int32)
   IL_6689:  dup
   IL_668a:  ldc.i4.2
   IL_668b:  mul
-  IL_668c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_668c:  call       void [System.Console]System.Console::Write(int32)
   IL_6691:  dup
   IL_6692:  ldc.i4.0
   IL_6693:  mul
-  IL_6694:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6694:  call       void [System.Console]System.Console::Write(int32)
   IL_6699:  dup
   IL_669a:  ldc.i4.0
   IL_669b:  shl
-  IL_669c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_669c:  call       void [System.Console]System.Console::Write(int32)
   IL_66a1:  dup
   IL_66a2:  ldc.i4.4
   IL_66a3:  add
-  IL_66a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_66a4:  call       void [System.Console]System.Console::Write(int32)
   IL_66a9:  dup
   IL_66aa:  ldc.i4.6
   IL_66ab:  shr
-  IL_66ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_66ac:  call       void [System.Console]System.Console::Write(int32)
   IL_66b1:  dup
   IL_66b2:  ldc.i4.8
   IL_66b3:  shr
-  IL_66b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_66b4:  call       void [System.Console]System.Console::Write(int32)
   IL_66b9:  dup
   IL_66ba:  ldc.i4.2
   IL_66bb:  or
-  IL_66bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_66bc:  call       void [System.Console]System.Console::Write(int32)
   IL_66c1:  dup
   IL_66c2:  ldc.i4.6
   IL_66c3:  xor
-  IL_66c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_66c4:  call       void [System.Console]System.Console::Write(int32)
   IL_66c9:  dup
   IL_66ca:  ldc.i4.6
   IL_66cb:  sub
-  IL_66cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_66cc:  call       void [System.Console]System.Console::Write(int32)
   IL_66d1:  dup
   IL_66d2:  ldc.i4.1
   IL_66d3:  mul
-  IL_66d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_66d4:  call       void [System.Console]System.Console::Write(int32)
   IL_66d9:  dup
   IL_66da:  ldc.i4.1
   IL_66db:  shr
-  IL_66dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_66dc:  call       void [System.Console]System.Console::Write(int32)
   IL_66e1:  dup
   IL_66e2:  ldc.i4.1
   IL_66e3:  shl
-  IL_66e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_66e4:  call       void [System.Console]System.Console::Write(int32)
   IL_66e9:  dup
   IL_66ea:  ldc.i4.3
   IL_66eb:  and
-  IL_66ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_66ec:  call       void [System.Console]System.Console::Write(int32)
   IL_66f1:  dup
   IL_66f2:  ldc.i4.5
   IL_66f3:  xor
-  IL_66f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_66f4:  call       void [System.Console]System.Console::Write(int32)
   IL_66f9:  dup
   IL_66fa:  ldc.i4.0
   IL_66fb:  mul
-  IL_66fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_66fc:  call       void [System.Console]System.Console::Write(int32)
   IL_6701:  dup
   IL_6702:  ldc.i4.6
   IL_6703:  or
-  IL_6704:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6704:  call       void [System.Console]System.Console::Write(int32)
   IL_6709:  dup
   IL_670a:  ldc.i4.7
   IL_670b:  shl
-  IL_670c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_670c:  call       void [System.Console]System.Console::Write(int32)
   IL_6711:  dup
   IL_6712:  ldc.i4.5
   IL_6713:  shl
-  IL_6714:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6714:  call       void [System.Console]System.Console::Write(int32)
   IL_6719:  dup
   IL_671a:  ldc.i4.4
   IL_671b:  and
-  IL_671c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_671c:  call       void [System.Console]System.Console::Write(int32)
   IL_6721:  dup
   IL_6722:  ldc.i4.8
   IL_6723:  and
-  IL_6724:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6724:  call       void [System.Console]System.Console::Write(int32)
   IL_6729:  dup
   IL_672a:  ldc.i4.3
   IL_672b:  xor
-  IL_672c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_672c:  call       void [System.Console]System.Console::Write(int32)
   IL_6731:  dup
   IL_6732:  ldc.i4.8
   IL_6733:  shl
-  IL_6734:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6734:  call       void [System.Console]System.Console::Write(int32)
   IL_6739:  dup
   IL_673a:  ldc.i4.8
   IL_673b:  sub
-  IL_673c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_673c:  call       void [System.Console]System.Console::Write(int32)
   IL_6741:  dup
   IL_6742:  ldc.i4.5
   IL_6743:  shl
-  IL_6744:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6744:  call       void [System.Console]System.Console::Write(int32)
   IL_6749:  dup
   IL_674a:  ldc.i4.1
   IL_674b:  and
-  IL_674c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_674c:  call       void [System.Console]System.Console::Write(int32)
   IL_6751:  dup
   IL_6752:  ldc.i4.1
   IL_6753:  or
-  IL_6754:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6754:  call       void [System.Console]System.Console::Write(int32)
   IL_6759:  dup
   IL_675a:  ldc.i4.0
   IL_675b:  and
-  IL_675c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_675c:  call       void [System.Console]System.Console::Write(int32)
   IL_6761:  dup
   IL_6762:  ldc.i4.1
   IL_6763:  shl
-  IL_6764:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6764:  call       void [System.Console]System.Console::Write(int32)
   IL_6769:  dup
   IL_676a:  ldc.i4.1
   IL_676b:  xor
-  IL_676c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_676c:  call       void [System.Console]System.Console::Write(int32)
   IL_6771:  dup
   IL_6772:  ldc.i4.7
   IL_6773:  sub
-  IL_6774:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6774:  call       void [System.Console]System.Console::Write(int32)
   IL_6779:  dup
   IL_677a:  ldc.i4.8
   IL_677b:  add
-  IL_677c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_677c:  call       void [System.Console]System.Console::Write(int32)
   IL_6781:  dup
   IL_6782:  ldc.i4.0
   IL_6783:  xor
-  IL_6784:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6784:  call       void [System.Console]System.Console::Write(int32)
   IL_6789:  dup
   IL_678a:  ldc.i4.0
   IL_678b:  add
-  IL_678c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_678c:  call       void [System.Console]System.Console::Write(int32)
   IL_6791:  dup
   IL_6792:  ldc.i4.7
   IL_6793:  and
-  IL_6794:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6794:  call       void [System.Console]System.Console::Write(int32)
   IL_6799:  dup
   IL_679a:  ldc.i4.3
   IL_679b:  sub
-  IL_679c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_679c:  call       void [System.Console]System.Console::Write(int32)
   IL_67a1:  dup
   IL_67a2:  ldc.i4.7
   IL_67a3:  and
-  IL_67a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_67a4:  call       void [System.Console]System.Console::Write(int32)
   IL_67a9:  dup
   IL_67aa:  ldc.i4.2
   IL_67ab:  mul
-  IL_67ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_67ac:  call       void [System.Console]System.Console::Write(int32)
   IL_67b1:  dup
   IL_67b2:  ldc.i4.8
   IL_67b3:  shr
-  IL_67b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_67b4:  call       void [System.Console]System.Console::Write(int32)
   IL_67b9:  dup
   IL_67ba:  ldc.i4.6
   IL_67bb:  shl
-  IL_67bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_67bc:  call       void [System.Console]System.Console::Write(int32)
   IL_67c1:  dup
   IL_67c2:  ldc.i4.6
   IL_67c3:  sub
-  IL_67c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_67c4:  call       void [System.Console]System.Console::Write(int32)
   IL_67c9:  dup
   IL_67ca:  ldc.i4.2
   IL_67cb:  add
-  IL_67cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_67cc:  call       void [System.Console]System.Console::Write(int32)
   IL_67d1:  dup
   IL_67d2:  ldc.i4.2
   IL_67d3:  mul
-  IL_67d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_67d4:  call       void [System.Console]System.Console::Write(int32)
   IL_67d9:  dup
   IL_67da:  ldc.i4.2
   IL_67db:  shr
-  IL_67dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_67dc:  call       void [System.Console]System.Console::Write(int32)
   IL_67e1:  dup
   IL_67e2:  ldc.i4.7
   IL_67e3:  add
-  IL_67e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_67e4:  call       void [System.Console]System.Console::Write(int32)
   IL_67e9:  dup
   IL_67ea:  ldc.i4.2
   IL_67eb:  or
-  IL_67ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_67ec:  call       void [System.Console]System.Console::Write(int32)
   IL_67f1:  dup
   IL_67f2:  ldc.i4.3
   IL_67f3:  add
-  IL_67f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_67f4:  call       void [System.Console]System.Console::Write(int32)
   IL_67f9:  dup
   IL_67fa:  ldc.i4.0
   IL_67fb:  and
-  IL_67fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_67fc:  call       void [System.Console]System.Console::Write(int32)
   IL_6801:  dup
   IL_6802:  ldc.i4.8
   IL_6803:  mul
-  IL_6804:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6804:  call       void [System.Console]System.Console::Write(int32)
   IL_6809:  dup
   IL_680a:  ldc.i4.3
   IL_680b:  shl
-  IL_680c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_680c:  call       void [System.Console]System.Console::Write(int32)
   IL_6811:  dup
   IL_6812:  ldc.i4.5
   IL_6813:  and
-  IL_6814:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6814:  call       void [System.Console]System.Console::Write(int32)
   IL_6819:  dup
   IL_681a:  ldc.i4.3
   IL_681b:  and
-  IL_681c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_681c:  call       void [System.Console]System.Console::Write(int32)
   IL_6821:  dup
   IL_6822:  ldc.i4.2
   IL_6823:  add
-  IL_6824:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6824:  call       void [System.Console]System.Console::Write(int32)
   IL_6829:  dup
   IL_682a:  ldc.i4.8
   IL_682b:  mul
-  IL_682c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_682c:  call       void [System.Console]System.Console::Write(int32)
   IL_6831:  dup
   IL_6832:  ldc.i4.5
   IL_6833:  and
-  IL_6834:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6834:  call       void [System.Console]System.Console::Write(int32)
   IL_6839:  dup
   IL_683a:  ldc.i4.8
   IL_683b:  xor
-  IL_683c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_683c:  call       void [System.Console]System.Console::Write(int32)
   IL_6841:  dup
   IL_6842:  ldc.i4.8
   IL_6843:  shl
-  IL_6844:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6844:  call       void [System.Console]System.Console::Write(int32)
   IL_6849:  dup
   IL_684a:  ldc.i4.6
   IL_684b:  shl
-  IL_684c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_684c:  call       void [System.Console]System.Console::Write(int32)
   IL_6851:  dup
   IL_6852:  ldc.i4.8
   IL_6853:  or
-  IL_6854:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6854:  call       void [System.Console]System.Console::Write(int32)
   IL_6859:  dup
   IL_685a:  ldc.i4.6
   IL_685b:  and
-  IL_685c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_685c:  call       void [System.Console]System.Console::Write(int32)
   IL_6861:  dup
   IL_6862:  ldc.i4.1
   IL_6863:  mul
-  IL_6864:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6864:  call       void [System.Console]System.Console::Write(int32)
   IL_6869:  dup
   IL_686a:  ldc.i4.2
   IL_686b:  and
-  IL_686c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_686c:  call       void [System.Console]System.Console::Write(int32)
   IL_6871:  dup
   IL_6872:  ldc.i4.4
   IL_6873:  xor
-  IL_6874:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6874:  call       void [System.Console]System.Console::Write(int32)
   IL_6879:  dup
   IL_687a:  ldc.i4.6
   IL_687b:  shr
-  IL_687c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_687c:  call       void [System.Console]System.Console::Write(int32)
   IL_6881:  dup
   IL_6882:  ldc.i4.7
   IL_6883:  shl
-  IL_6884:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6884:  call       void [System.Console]System.Console::Write(int32)
   IL_6889:  dup
   IL_688a:  ldc.i4.4
   IL_688b:  shl
-  IL_688c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_688c:  call       void [System.Console]System.Console::Write(int32)
   IL_6891:  dup
   IL_6892:  ldc.i4.2
   IL_6893:  sub
-  IL_6894:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6894:  call       void [System.Console]System.Console::Write(int32)
   IL_6899:  dup
   IL_689a:  ldc.i4.0
   IL_689b:  and
-  IL_689c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_689c:  call       void [System.Console]System.Console::Write(int32)
   IL_68a1:  dup
   IL_68a2:  ldc.i4.7
   IL_68a3:  xor
-  IL_68a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_68a4:  call       void [System.Console]System.Console::Write(int32)
   IL_68a9:  dup
   IL_68aa:  ldc.i4.6
   IL_68ab:  mul
-  IL_68ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_68ac:  call       void [System.Console]System.Console::Write(int32)
   IL_68b1:  dup
   IL_68b2:  ldc.i4.3
   IL_68b3:  or
-  IL_68b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_68b4:  call       void [System.Console]System.Console::Write(int32)
   IL_68b9:  dup
   IL_68ba:  ldc.i4.0
   IL_68bb:  add
-  IL_68bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_68bc:  call       void [System.Console]System.Console::Write(int32)
   IL_68c1:  dup
   IL_68c2:  ldc.i4.0
   IL_68c3:  and
-  IL_68c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_68c4:  call       void [System.Console]System.Console::Write(int32)
   IL_68c9:  dup
   IL_68ca:  ldc.i4.0
   IL_68cb:  and
-  IL_68cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_68cc:  call       void [System.Console]System.Console::Write(int32)
   IL_68d1:  dup
   IL_68d2:  ldc.i4.3
   IL_68d3:  xor
-  IL_68d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_68d4:  call       void [System.Console]System.Console::Write(int32)
   IL_68d9:  dup
   IL_68da:  ldc.i4.7
   IL_68db:  or
-  IL_68dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_68dc:  call       void [System.Console]System.Console::Write(int32)
   IL_68e1:  dup
   IL_68e2:  ldc.i4.5
   IL_68e3:  shr
-  IL_68e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_68e4:  call       void [System.Console]System.Console::Write(int32)
   IL_68e9:  dup
   IL_68ea:  ldc.i4.3
   IL_68eb:  mul
-  IL_68ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_68ec:  call       void [System.Console]System.Console::Write(int32)
   IL_68f1:  dup
   IL_68f2:  ldc.i4.4
   IL_68f3:  shl
-  IL_68f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_68f4:  call       void [System.Console]System.Console::Write(int32)
   IL_68f9:  dup
   IL_68fa:  ldc.i4.3
   IL_68fb:  and
-  IL_68fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_68fc:  call       void [System.Console]System.Console::Write(int32)
   IL_6901:  dup
   IL_6902:  ldc.i4.2
   IL_6903:  sub
-  IL_6904:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6904:  call       void [System.Console]System.Console::Write(int32)
   IL_6909:  dup
   IL_690a:  ldc.i4.3
   IL_690b:  sub
-  IL_690c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_690c:  call       void [System.Console]System.Console::Write(int32)
   IL_6911:  dup
   IL_6912:  ldc.i4.2
   IL_6913:  mul
-  IL_6914:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6914:  call       void [System.Console]System.Console::Write(int32)
   IL_6919:  dup
   IL_691a:  ldc.i4.1
   IL_691b:  shr
-  IL_691c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_691c:  call       void [System.Console]System.Console::Write(int32)
   IL_6921:  dup
   IL_6922:  ldc.i4.5
   IL_6923:  or
-  IL_6924:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6924:  call       void [System.Console]System.Console::Write(int32)
   IL_6929:  dup
   IL_692a:  ldc.i4.7
   IL_692b:  xor
-  IL_692c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_692c:  call       void [System.Console]System.Console::Write(int32)
   IL_6931:  dup
   IL_6932:  ldc.i4.1
   IL_6933:  shl
-  IL_6934:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6934:  call       void [System.Console]System.Console::Write(int32)
   IL_6939:  dup
   IL_693a:  ldc.i4.3
   IL_693b:  sub
-  IL_693c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_693c:  call       void [System.Console]System.Console::Write(int32)
   IL_6941:  dup
   IL_6942:  ldc.i4.2
   IL_6943:  mul
-  IL_6944:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6944:  call       void [System.Console]System.Console::Write(int32)
   IL_6949:  dup
   IL_694a:  ldc.i4.6
   IL_694b:  shr
-  IL_694c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_694c:  call       void [System.Console]System.Console::Write(int32)
   IL_6951:  dup
   IL_6952:  ldc.i4.2
   IL_6953:  or
-  IL_6954:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6954:  call       void [System.Console]System.Console::Write(int32)
   IL_6959:  dup
   IL_695a:  ldc.i4.3
   IL_695b:  xor
-  IL_695c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_695c:  call       void [System.Console]System.Console::Write(int32)
   IL_6961:  dup
   IL_6962:  ldc.i4.5
   IL_6963:  shl
-  IL_6964:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6964:  call       void [System.Console]System.Console::Write(int32)
   IL_6969:  dup
   IL_696a:  ldc.i4.8
   IL_696b:  shr
-  IL_696c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_696c:  call       void [System.Console]System.Console::Write(int32)
   IL_6971:  dup
   IL_6972:  ldc.i4.7
   IL_6973:  and
-  IL_6974:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6974:  call       void [System.Console]System.Console::Write(int32)
   IL_6979:  dup
   IL_697a:  ldc.i4.2
   IL_697b:  mul
-  IL_697c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_697c:  call       void [System.Console]System.Console::Write(int32)
   IL_6981:  dup
   IL_6982:  ldc.i4.1
   IL_6983:  or
-  IL_6984:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6984:  call       void [System.Console]System.Console::Write(int32)
   IL_6989:  dup
   IL_698a:  ldc.i4.8
   IL_698b:  sub
-  IL_698c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_698c:  call       void [System.Console]System.Console::Write(int32)
   IL_6991:  dup
   IL_6992:  ldc.i4.5
   IL_6993:  or
-  IL_6994:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6994:  call       void [System.Console]System.Console::Write(int32)
   IL_6999:  dup
   IL_699a:  ldc.i4.6
   IL_699b:  shr
-  IL_699c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_699c:  call       void [System.Console]System.Console::Write(int32)
   IL_69a1:  dup
   IL_69a2:  ldc.i4.5
   IL_69a3:  xor
-  IL_69a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_69a4:  call       void [System.Console]System.Console::Write(int32)
   IL_69a9:  dup
   IL_69aa:  ldc.i4.1
   IL_69ab:  xor
-  IL_69ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_69ac:  call       void [System.Console]System.Console::Write(int32)
   IL_69b1:  dup
   IL_69b2:  ldc.i4.5
   IL_69b3:  xor
-  IL_69b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_69b4:  call       void [System.Console]System.Console::Write(int32)
   IL_69b9:  dup
   IL_69ba:  ldc.i4.6
   IL_69bb:  add
-  IL_69bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_69bc:  call       void [System.Console]System.Console::Write(int32)
   IL_69c1:  dup
   IL_69c2:  ldc.i4.2
   IL_69c3:  sub
-  IL_69c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_69c4:  call       void [System.Console]System.Console::Write(int32)
   IL_69c9:  dup
   IL_69ca:  ldc.i4.0
   IL_69cb:  sub
-  IL_69cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_69cc:  call       void [System.Console]System.Console::Write(int32)
   IL_69d1:  dup
   IL_69d2:  ldc.i4.7
   IL_69d3:  shr
-  IL_69d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_69d4:  call       void [System.Console]System.Console::Write(int32)
   IL_69d9:  dup
   IL_69da:  ldc.i4.5
   IL_69db:  mul
-  IL_69dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_69dc:  call       void [System.Console]System.Console::Write(int32)
   IL_69e1:  dup
   IL_69e2:  ldc.i4.7
   IL_69e3:  or
-  IL_69e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_69e4:  call       void [System.Console]System.Console::Write(int32)
   IL_69e9:  dup
   IL_69ea:  ldc.i4.4
   IL_69eb:  and
-  IL_69ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_69ec:  call       void [System.Console]System.Console::Write(int32)
   IL_69f1:  dup
   IL_69f2:  ldc.i4.3
   IL_69f3:  shl
-  IL_69f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_69f4:  call       void [System.Console]System.Console::Write(int32)
   IL_69f9:  dup
   IL_69fa:  ldc.i4.8
   IL_69fb:  and
-  IL_69fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_69fc:  call       void [System.Console]System.Console::Write(int32)
   IL_6a01:  dup
   IL_6a02:  ldc.i4.5
   IL_6a03:  shl
-  IL_6a04:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6a04:  call       void [System.Console]System.Console::Write(int32)
   IL_6a09:  dup
   IL_6a0a:  ldc.i4.2
   IL_6a0b:  mul
-  IL_6a0c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6a0c:  call       void [System.Console]System.Console::Write(int32)
   IL_6a11:  dup
   IL_6a12:  ldc.i4.4
   IL_6a13:  mul
-  IL_6a14:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6a14:  call       void [System.Console]System.Console::Write(int32)
   IL_6a19:  dup
   IL_6a1a:  ldc.i4.5
   IL_6a1b:  mul
-  IL_6a1c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6a1c:  call       void [System.Console]System.Console::Write(int32)
   IL_6a21:  dup
   IL_6a22:  ldc.i4.5
   IL_6a23:  or
-  IL_6a24:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6a24:  call       void [System.Console]System.Console::Write(int32)
   IL_6a29:  dup
   IL_6a2a:  ldc.i4.0
   IL_6a2b:  or
-  IL_6a2c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6a2c:  call       void [System.Console]System.Console::Write(int32)
   IL_6a31:  dup
   IL_6a32:  ldc.i4.7
   IL_6a33:  or
-  IL_6a34:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6a34:  call       void [System.Console]System.Console::Write(int32)
   IL_6a39:  dup
   IL_6a3a:  ldc.i4.7
   IL_6a3b:  sub
-  IL_6a3c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6a3c:  call       void [System.Console]System.Console::Write(int32)
   IL_6a41:  dup
   IL_6a42:  ldc.i4.7
   IL_6a43:  or
-  IL_6a44:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6a44:  call       void [System.Console]System.Console::Write(int32)
   IL_6a49:  dup
   IL_6a4a:  ldc.i4.3
   IL_6a4b:  shl
-  IL_6a4c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6a4c:  call       void [System.Console]System.Console::Write(int32)
   IL_6a51:  dup
   IL_6a52:  ldc.i4.6
   IL_6a53:  add
-  IL_6a54:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6a54:  call       void [System.Console]System.Console::Write(int32)
   IL_6a59:  dup
   IL_6a5a:  ldc.i4.3
   IL_6a5b:  xor
-  IL_6a5c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6a5c:  call       void [System.Console]System.Console::Write(int32)
   IL_6a61:  dup
   IL_6a62:  ldc.i4.2
   IL_6a63:  shr
-  IL_6a64:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6a64:  call       void [System.Console]System.Console::Write(int32)
   IL_6a69:  dup
   IL_6a6a:  ldc.i4.3
   IL_6a6b:  shr
-  IL_6a6c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6a6c:  call       void [System.Console]System.Console::Write(int32)
   IL_6a71:  dup
   IL_6a72:  ldc.i4.3
   IL_6a73:  or
-  IL_6a74:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6a74:  call       void [System.Console]System.Console::Write(int32)
   IL_6a79:  dup
   IL_6a7a:  ldc.i4.3
   IL_6a7b:  add
-  IL_6a7c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6a7c:  call       void [System.Console]System.Console::Write(int32)
   IL_6a81:  dup
   IL_6a82:  ldc.i4.4
   IL_6a83:  mul
-  IL_6a84:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6a84:  call       void [System.Console]System.Console::Write(int32)
   IL_6a89:  dup
   IL_6a8a:  ldc.i4.7
   IL_6a8b:  add
-  IL_6a8c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6a8c:  call       void [System.Console]System.Console::Write(int32)
   IL_6a91:  dup
   IL_6a92:  ldc.i4.1
   IL_6a93:  xor
-  IL_6a94:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6a94:  call       void [System.Console]System.Console::Write(int32)
   IL_6a99:  dup
   IL_6a9a:  ldc.i4.5
   IL_6a9b:  or
-  IL_6a9c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6a9c:  call       void [System.Console]System.Console::Write(int32)
   IL_6aa1:  dup
   IL_6aa2:  ldc.i4.5
   IL_6aa3:  shr
-  IL_6aa4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6aa4:  call       void [System.Console]System.Console::Write(int32)
   IL_6aa9:  dup
   IL_6aaa:  ldc.i4.6
   IL_6aab:  or
-  IL_6aac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6aac:  call       void [System.Console]System.Console::Write(int32)
   IL_6ab1:  dup
   IL_6ab2:  ldc.i4.5
   IL_6ab3:  shr
-  IL_6ab4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6ab4:  call       void [System.Console]System.Console::Write(int32)
   IL_6ab9:  dup
   IL_6aba:  ldc.i4.3
   IL_6abb:  and
-  IL_6abc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6abc:  call       void [System.Console]System.Console::Write(int32)
   IL_6ac1:  dup
   IL_6ac2:  ldc.i4.0
   IL_6ac3:  sub
-  IL_6ac4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6ac4:  call       void [System.Console]System.Console::Write(int32)
   IL_6ac9:  dup
   IL_6aca:  ldc.i4.8
   IL_6acb:  xor
-  IL_6acc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6acc:  call       void [System.Console]System.Console::Write(int32)
   IL_6ad1:  dup
   IL_6ad2:  ldc.i4.0
   IL_6ad3:  mul
-  IL_6ad4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6ad4:  call       void [System.Console]System.Console::Write(int32)
   IL_6ad9:  dup
   IL_6ada:  ldc.i4.1
   IL_6adb:  xor
-  IL_6adc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6adc:  call       void [System.Console]System.Console::Write(int32)
   IL_6ae1:  dup
   IL_6ae2:  ldc.i4.1
   IL_6ae3:  and
-  IL_6ae4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6ae4:  call       void [System.Console]System.Console::Write(int32)
   IL_6ae9:  dup
   IL_6aea:  ldc.i4.8
   IL_6aeb:  and
-  IL_6aec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6aec:  call       void [System.Console]System.Console::Write(int32)
   IL_6af1:  dup
   IL_6af2:  ldc.i4.8
   IL_6af3:  or
-  IL_6af4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6af4:  call       void [System.Console]System.Console::Write(int32)
   IL_6af9:  dup
   IL_6afa:  ldc.i4.7
   IL_6afb:  shr
-  IL_6afc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6afc:  call       void [System.Console]System.Console::Write(int32)
   IL_6b01:  dup
   IL_6b02:  ldc.i4.5
   IL_6b03:  or
-  IL_6b04:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6b04:  call       void [System.Console]System.Console::Write(int32)
   IL_6b09:  dup
   IL_6b0a:  ldc.i4.4
   IL_6b0b:  shl
-  IL_6b0c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6b0c:  call       void [System.Console]System.Console::Write(int32)
   IL_6b11:  dup
   IL_6b12:  ldc.i4.0
   IL_6b13:  and
-  IL_6b14:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6b14:  call       void [System.Console]System.Console::Write(int32)
   IL_6b19:  dup
   IL_6b1a:  ldc.i4.0
   IL_6b1b:  xor
-  IL_6b1c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6b1c:  call       void [System.Console]System.Console::Write(int32)
   IL_6b21:  dup
   IL_6b22:  ldc.i4.2
   IL_6b23:  xor
-  IL_6b24:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6b24:  call       void [System.Console]System.Console::Write(int32)
   IL_6b29:  dup
   IL_6b2a:  ldc.i4.7
   IL_6b2b:  add
-  IL_6b2c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6b2c:  call       void [System.Console]System.Console::Write(int32)
   IL_6b31:  dup
   IL_6b32:  ldc.i4.3
   IL_6b33:  xor
-  IL_6b34:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6b34:  call       void [System.Console]System.Console::Write(int32)
   IL_6b39:  dup
   IL_6b3a:  ldc.i4.7
   IL_6b3b:  shr
-  IL_6b3c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6b3c:  call       void [System.Console]System.Console::Write(int32)
   IL_6b41:  dup
   IL_6b42:  ldc.i4.2
   IL_6b43:  xor
-  IL_6b44:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6b44:  call       void [System.Console]System.Console::Write(int32)
   IL_6b49:  dup
   IL_6b4a:  ldc.i4.6
   IL_6b4b:  sub
-  IL_6b4c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6b4c:  call       void [System.Console]System.Console::Write(int32)
   IL_6b51:  dup
   IL_6b52:  ldc.i4.8
   IL_6b53:  or
-  IL_6b54:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6b54:  call       void [System.Console]System.Console::Write(int32)
   IL_6b59:  dup
   IL_6b5a:  ldc.i4.8
   IL_6b5b:  add
-  IL_6b5c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6b5c:  call       void [System.Console]System.Console::Write(int32)
   IL_6b61:  dup
   IL_6b62:  ldc.i4.1
   IL_6b63:  mul
-  IL_6b64:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6b64:  call       void [System.Console]System.Console::Write(int32)
   IL_6b69:  dup
   IL_6b6a:  ldc.i4.8
   IL_6b6b:  mul
-  IL_6b6c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6b6c:  call       void [System.Console]System.Console::Write(int32)
   IL_6b71:  dup
   IL_6b72:  ldc.i4.3
   IL_6b73:  and
-  IL_6b74:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6b74:  call       void [System.Console]System.Console::Write(int32)
   IL_6b79:  dup
   IL_6b7a:  ldc.i4.0
   IL_6b7b:  and
-  IL_6b7c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6b7c:  call       void [System.Console]System.Console::Write(int32)
   IL_6b81:  dup
   IL_6b82:  ldc.i4.7
   IL_6b83:  add
-  IL_6b84:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6b84:  call       void [System.Console]System.Console::Write(int32)
   IL_6b89:  dup
   IL_6b8a:  ldc.i4.2
   IL_6b8b:  shr
-  IL_6b8c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6b8c:  call       void [System.Console]System.Console::Write(int32)
   IL_6b91:  dup
   IL_6b92:  ldc.i4.1
   IL_6b93:  or
-  IL_6b94:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6b94:  call       void [System.Console]System.Console::Write(int32)
   IL_6b99:  dup
   IL_6b9a:  ldc.i4.7
   IL_6b9b:  sub
-  IL_6b9c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6b9c:  call       void [System.Console]System.Console::Write(int32)
   IL_6ba1:  dup
   IL_6ba2:  ldc.i4.1
   IL_6ba3:  shl
-  IL_6ba4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6ba4:  call       void [System.Console]System.Console::Write(int32)
   IL_6ba9:  dup
   IL_6baa:  ldc.i4.1
   IL_6bab:  shr
-  IL_6bac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6bac:  call       void [System.Console]System.Console::Write(int32)
   IL_6bb1:  dup
   IL_6bb2:  ldc.i4.4
   IL_6bb3:  add
-  IL_6bb4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6bb4:  call       void [System.Console]System.Console::Write(int32)
   IL_6bb9:  dup
   IL_6bba:  ldc.i4.0
   IL_6bbb:  shr
-  IL_6bbc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6bbc:  call       void [System.Console]System.Console::Write(int32)
   IL_6bc1:  dup
   IL_6bc2:  ldc.i4.0
   IL_6bc3:  mul
-  IL_6bc4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6bc4:  call       void [System.Console]System.Console::Write(int32)
   IL_6bc9:  dup
   IL_6bca:  ldc.i4.4
   IL_6bcb:  xor
-  IL_6bcc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6bcc:  call       void [System.Console]System.Console::Write(int32)
   IL_6bd1:  dup
   IL_6bd2:  ldc.i4.1
   IL_6bd3:  shr
-  IL_6bd4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6bd4:  call       void [System.Console]System.Console::Write(int32)
   IL_6bd9:  dup
   IL_6bda:  ldc.i4.6
   IL_6bdb:  shr
-  IL_6bdc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6bdc:  call       void [System.Console]System.Console::Write(int32)
   IL_6be1:  dup
   IL_6be2:  ldc.i4.8
   IL_6be3:  mul
-  IL_6be4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6be4:  call       void [System.Console]System.Console::Write(int32)
   IL_6be9:  dup
   IL_6bea:  ldc.i4.2
   IL_6beb:  shr
-  IL_6bec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6bec:  call       void [System.Console]System.Console::Write(int32)
   IL_6bf1:  dup
   IL_6bf2:  ldc.i4.7
   IL_6bf3:  and
-  IL_6bf4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6bf4:  call       void [System.Console]System.Console::Write(int32)
   IL_6bf9:  dup
   IL_6bfa:  ldc.i4.8
   IL_6bfb:  shl
-  IL_6bfc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6bfc:  call       void [System.Console]System.Console::Write(int32)
   IL_6c01:  dup
   IL_6c02:  ldc.i4.3
   IL_6c03:  add
-  IL_6c04:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6c04:  call       void [System.Console]System.Console::Write(int32)
   IL_6c09:  dup
   IL_6c0a:  ldc.i4.1
   IL_6c0b:  mul
-  IL_6c0c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6c0c:  call       void [System.Console]System.Console::Write(int32)
   IL_6c11:  dup
   IL_6c12:  ldc.i4.1
   IL_6c13:  add
-  IL_6c14:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6c14:  call       void [System.Console]System.Console::Write(int32)
   IL_6c19:  dup
   IL_6c1a:  ldc.i4.4
   IL_6c1b:  xor
-  IL_6c1c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6c1c:  call       void [System.Console]System.Console::Write(int32)
   IL_6c21:  dup
   IL_6c22:  ldc.i4.6
   IL_6c23:  xor
-  IL_6c24:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6c24:  call       void [System.Console]System.Console::Write(int32)
   IL_6c29:  dup
   IL_6c2a:  ldc.i4.0
   IL_6c2b:  mul
-  IL_6c2c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6c2c:  call       void [System.Console]System.Console::Write(int32)
   IL_6c31:  dup
   IL_6c32:  ldc.i4.7
   IL_6c33:  mul
-  IL_6c34:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6c34:  call       void [System.Console]System.Console::Write(int32)
   IL_6c39:  dup
   IL_6c3a:  ldc.i4.5
   IL_6c3b:  add
-  IL_6c3c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6c3c:  call       void [System.Console]System.Console::Write(int32)
   IL_6c41:  dup
   IL_6c42:  ldc.i4.2
   IL_6c43:  mul
-  IL_6c44:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6c44:  call       void [System.Console]System.Console::Write(int32)
   IL_6c49:  dup
   IL_6c4a:  ldc.i4.2
   IL_6c4b:  add
-  IL_6c4c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6c4c:  call       void [System.Console]System.Console::Write(int32)
   IL_6c51:  dup
   IL_6c52:  ldc.i4.3
   IL_6c53:  shl
-  IL_6c54:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6c54:  call       void [System.Console]System.Console::Write(int32)
   IL_6c59:  dup
   IL_6c5a:  ldc.i4.5
   IL_6c5b:  sub
-  IL_6c5c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6c5c:  call       void [System.Console]System.Console::Write(int32)
   IL_6c61:  dup
   IL_6c62:  ldc.i4.3
   IL_6c63:  shl
-  IL_6c64:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6c64:  call       void [System.Console]System.Console::Write(int32)
   IL_6c69:  dup
   IL_6c6a:  ldc.i4.6
   IL_6c6b:  and
-  IL_6c6c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6c6c:  call       void [System.Console]System.Console::Write(int32)
   IL_6c71:  dup
   IL_6c72:  ldc.i4.5
   IL_6c73:  add
-  IL_6c74:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6c74:  call       void [System.Console]System.Console::Write(int32)
   IL_6c79:  dup
   IL_6c7a:  ldc.i4.3
   IL_6c7b:  xor
-  IL_6c7c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6c7c:  call       void [System.Console]System.Console::Write(int32)
   IL_6c81:  dup
   IL_6c82:  ldc.i4.5
   IL_6c83:  shl
-  IL_6c84:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6c84:  call       void [System.Console]System.Console::Write(int32)
   IL_6c89:  dup
   IL_6c8a:  ldc.i4.2
   IL_6c8b:  xor
-  IL_6c8c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6c8c:  call       void [System.Console]System.Console::Write(int32)
   IL_6c91:  dup
   IL_6c92:  ldc.i4.8
   IL_6c93:  and
-  IL_6c94:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6c94:  call       void [System.Console]System.Console::Write(int32)
   IL_6c99:  dup
   IL_6c9a:  ldc.i4.4
   IL_6c9b:  or
-  IL_6c9c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6c9c:  call       void [System.Console]System.Console::Write(int32)
   IL_6ca1:  dup
   IL_6ca2:  ldc.i4.7
   IL_6ca3:  add
-  IL_6ca4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6ca4:  call       void [System.Console]System.Console::Write(int32)
   IL_6ca9:  dup
   IL_6caa:  ldc.i4.6
   IL_6cab:  and
-  IL_6cac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6cac:  call       void [System.Console]System.Console::Write(int32)
   IL_6cb1:  dup
   IL_6cb2:  ldc.i4.5
   IL_6cb3:  mul
-  IL_6cb4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6cb4:  call       void [System.Console]System.Console::Write(int32)
   IL_6cb9:  dup
   IL_6cba:  ldc.i4.8
   IL_6cbb:  shr
-  IL_6cbc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6cbc:  call       void [System.Console]System.Console::Write(int32)
   IL_6cc1:  dup
   IL_6cc2:  ldc.i4.6
   IL_6cc3:  sub
-  IL_6cc4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6cc4:  call       void [System.Console]System.Console::Write(int32)
   IL_6cc9:  dup
   IL_6cca:  ldc.i4.4
   IL_6ccb:  shl
-  IL_6ccc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6ccc:  call       void [System.Console]System.Console::Write(int32)
   IL_6cd1:  dup
   IL_6cd2:  ldc.i4.3
   IL_6cd3:  and
-  IL_6cd4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6cd4:  call       void [System.Console]System.Console::Write(int32)
   IL_6cd9:  dup
   IL_6cda:  ldc.i4.1
   IL_6cdb:  and
-  IL_6cdc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6cdc:  call       void [System.Console]System.Console::Write(int32)
   IL_6ce1:  dup
   IL_6ce2:  ldc.i4.4
   IL_6ce3:  or
-  IL_6ce4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6ce4:  call       void [System.Console]System.Console::Write(int32)
   IL_6ce9:  dup
   IL_6cea:  ldc.i4.8
   IL_6ceb:  shl
-  IL_6cec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6cec:  call       void [System.Console]System.Console::Write(int32)
   IL_6cf1:  dup
   IL_6cf2:  ldc.i4.3
   IL_6cf3:  shr
-  IL_6cf4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6cf4:  call       void [System.Console]System.Console::Write(int32)
   IL_6cf9:  dup
   IL_6cfa:  ldc.i4.7
   IL_6cfb:  shr
-  IL_6cfc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6cfc:  call       void [System.Console]System.Console::Write(int32)
   IL_6d01:  dup
   IL_6d02:  ldc.i4.0
   IL_6d03:  shr
-  IL_6d04:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6d04:  call       void [System.Console]System.Console::Write(int32)
   IL_6d09:  dup
   IL_6d0a:  ldc.i4.6
   IL_6d0b:  sub
-  IL_6d0c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6d0c:  call       void [System.Console]System.Console::Write(int32)
   IL_6d11:  dup
   IL_6d12:  ldc.i4.0
   IL_6d13:  sub
-  IL_6d14:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6d14:  call       void [System.Console]System.Console::Write(int32)
   IL_6d19:  dup
   IL_6d1a:  ldc.i4.1
   IL_6d1b:  xor
-  IL_6d1c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6d1c:  call       void [System.Console]System.Console::Write(int32)
   IL_6d21:  dup
   IL_6d22:  ldc.i4.7
   IL_6d23:  xor
-  IL_6d24:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6d24:  call       void [System.Console]System.Console::Write(int32)
   IL_6d29:  dup
   IL_6d2a:  ldc.i4.2
   IL_6d2b:  mul
-  IL_6d2c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6d2c:  call       void [System.Console]System.Console::Write(int32)
   IL_6d31:  dup
   IL_6d32:  ldc.i4.7
   IL_6d33:  and
-  IL_6d34:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6d34:  call       void [System.Console]System.Console::Write(int32)
   IL_6d39:  dup
   IL_6d3a:  ldc.i4.5
   IL_6d3b:  add
-  IL_6d3c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6d3c:  call       void [System.Console]System.Console::Write(int32)
   IL_6d41:  dup
   IL_6d42:  ldc.i4.6
   IL_6d43:  add
-  IL_6d44:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6d44:  call       void [System.Console]System.Console::Write(int32)
   IL_6d49:  dup
   IL_6d4a:  ldc.i4.0
   IL_6d4b:  mul
-  IL_6d4c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6d4c:  call       void [System.Console]System.Console::Write(int32)
   IL_6d51:  dup
   IL_6d52:  ldc.i4.5
   IL_6d53:  and
-  IL_6d54:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6d54:  call       void [System.Console]System.Console::Write(int32)
   IL_6d59:  dup
   IL_6d5a:  ldc.i4.8
   IL_6d5b:  shr
-  IL_6d5c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6d5c:  call       void [System.Console]System.Console::Write(int32)
   IL_6d61:  dup
   IL_6d62:  ldc.i4.4
   IL_6d63:  xor
-  IL_6d64:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6d64:  call       void [System.Console]System.Console::Write(int32)
   IL_6d69:  dup
   IL_6d6a:  ldc.i4.7
   IL_6d6b:  or
-  IL_6d6c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6d6c:  call       void [System.Console]System.Console::Write(int32)
   IL_6d71:  dup
   IL_6d72:  ldc.i4.7
   IL_6d73:  or
-  IL_6d74:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6d74:  call       void [System.Console]System.Console::Write(int32)
   IL_6d79:  dup
   IL_6d7a:  ldc.i4.4
   IL_6d7b:  sub
-  IL_6d7c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6d7c:  call       void [System.Console]System.Console::Write(int32)
   IL_6d81:  dup
   IL_6d82:  ldc.i4.1
   IL_6d83:  add
-  IL_6d84:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6d84:  call       void [System.Console]System.Console::Write(int32)
   IL_6d89:  dup
   IL_6d8a:  ldc.i4.6
   IL_6d8b:  or
-  IL_6d8c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6d8c:  call       void [System.Console]System.Console::Write(int32)
   IL_6d91:  dup
   IL_6d92:  ldc.i4.5
   IL_6d93:  shr
-  IL_6d94:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6d94:  call       void [System.Console]System.Console::Write(int32)
   IL_6d99:  dup
   IL_6d9a:  ldc.i4.5
   IL_6d9b:  shl
-  IL_6d9c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6d9c:  call       void [System.Console]System.Console::Write(int32)
   IL_6da1:  dup
   IL_6da2:  ldc.i4.0
   IL_6da3:  or
-  IL_6da4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6da4:  call       void [System.Console]System.Console::Write(int32)
   IL_6da9:  dup
   IL_6daa:  ldc.i4.6
   IL_6dab:  or
-  IL_6dac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6dac:  call       void [System.Console]System.Console::Write(int32)
   IL_6db1:  dup
   IL_6db2:  ldc.i4.5
   IL_6db3:  and
-  IL_6db4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6db4:  call       void [System.Console]System.Console::Write(int32)
   IL_6db9:  dup
   IL_6dba:  ldc.i4.8
   IL_6dbb:  shr
-  IL_6dbc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6dbc:  call       void [System.Console]System.Console::Write(int32)
   IL_6dc1:  dup
   IL_6dc2:  ldc.i4.3
   IL_6dc3:  or
-  IL_6dc4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6dc4:  call       void [System.Console]System.Console::Write(int32)
   IL_6dc9:  dup
   IL_6dca:  ldc.i4.7
   IL_6dcb:  xor
-  IL_6dcc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6dcc:  call       void [System.Console]System.Console::Write(int32)
   IL_6dd1:  dup
   IL_6dd2:  ldc.i4.5
   IL_6dd3:  xor
-  IL_6dd4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6dd4:  call       void [System.Console]System.Console::Write(int32)
   IL_6dd9:  dup
   IL_6dda:  ldc.i4.0
   IL_6ddb:  mul
-  IL_6ddc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6ddc:  call       void [System.Console]System.Console::Write(int32)
   IL_6de1:  dup
   IL_6de2:  ldc.i4.6
   IL_6de3:  add
-  IL_6de4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6de4:  call       void [System.Console]System.Console::Write(int32)
   IL_6de9:  dup
   IL_6dea:  ldc.i4.6
   IL_6deb:  shr
-  IL_6dec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6dec:  call       void [System.Console]System.Console::Write(int32)
   IL_6df1:  dup
   IL_6df2:  ldc.i4.2
   IL_6df3:  sub
-  IL_6df4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6df4:  call       void [System.Console]System.Console::Write(int32)
   IL_6df9:  dup
   IL_6dfa:  ldc.i4.6
   IL_6dfb:  or
-  IL_6dfc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6dfc:  call       void [System.Console]System.Console::Write(int32)
   IL_6e01:  dup
   IL_6e02:  ldc.i4.8
   IL_6e03:  sub
-  IL_6e04:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6e04:  call       void [System.Console]System.Console::Write(int32)
   IL_6e09:  dup
   IL_6e0a:  ldc.i4.1
   IL_6e0b:  shr
-  IL_6e0c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6e0c:  call       void [System.Console]System.Console::Write(int32)
   IL_6e11:  dup
   IL_6e12:  ldc.i4.1
   IL_6e13:  shl
-  IL_6e14:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6e14:  call       void [System.Console]System.Console::Write(int32)
   IL_6e19:  dup
   IL_6e1a:  ldc.i4.3
   IL_6e1b:  or
-  IL_6e1c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6e1c:  call       void [System.Console]System.Console::Write(int32)
   IL_6e21:  dup
   IL_6e22:  ldc.i4.4
   IL_6e23:  shl
-  IL_6e24:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6e24:  call       void [System.Console]System.Console::Write(int32)
   IL_6e29:  dup
   IL_6e2a:  ldc.i4.2
   IL_6e2b:  shr
-  IL_6e2c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6e2c:  call       void [System.Console]System.Console::Write(int32)
   IL_6e31:  dup
   IL_6e32:  ldc.i4.0
   IL_6e33:  or
-  IL_6e34:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6e34:  call       void [System.Console]System.Console::Write(int32)
   IL_6e39:  dup
   IL_6e3a:  ldc.i4.1
   IL_6e3b:  shl
-  IL_6e3c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6e3c:  call       void [System.Console]System.Console::Write(int32)
   IL_6e41:  dup
   IL_6e42:  ldc.i4.3
   IL_6e43:  sub
-  IL_6e44:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6e44:  call       void [System.Console]System.Console::Write(int32)
   IL_6e49:  dup
   IL_6e4a:  ldc.i4.4
   IL_6e4b:  and
-  IL_6e4c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6e4c:  call       void [System.Console]System.Console::Write(int32)
   IL_6e51:  dup
   IL_6e52:  ldc.i4.0
   IL_6e53:  add
-  IL_6e54:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6e54:  call       void [System.Console]System.Console::Write(int32)
   IL_6e59:  dup
   IL_6e5a:  ldc.i4.5
   IL_6e5b:  shr
-  IL_6e5c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6e5c:  call       void [System.Console]System.Console::Write(int32)
   IL_6e61:  dup
   IL_6e62:  ldc.i4.0
   IL_6e63:  xor
-  IL_6e64:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6e64:  call       void [System.Console]System.Console::Write(int32)
   IL_6e69:  dup
   IL_6e6a:  ldc.i4.2
   IL_6e6b:  shl
-  IL_6e6c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6e6c:  call       void [System.Console]System.Console::Write(int32)
   IL_6e71:  dup
   IL_6e72:  ldc.i4.0
   IL_6e73:  and
-  IL_6e74:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6e74:  call       void [System.Console]System.Console::Write(int32)
   IL_6e79:  dup
   IL_6e7a:  ldc.i4.2
   IL_6e7b:  or
-  IL_6e7c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6e7c:  call       void [System.Console]System.Console::Write(int32)
   IL_6e81:  dup
   IL_6e82:  ldc.i4.2
   IL_6e83:  and
-  IL_6e84:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6e84:  call       void [System.Console]System.Console::Write(int32)
   IL_6e89:  dup
   IL_6e8a:  ldc.i4.0
   IL_6e8b:  xor
-  IL_6e8c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6e8c:  call       void [System.Console]System.Console::Write(int32)
   IL_6e91:  dup
   IL_6e92:  ldc.i4.6
   IL_6e93:  mul
-  IL_6e94:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6e94:  call       void [System.Console]System.Console::Write(int32)
   IL_6e99:  dup
   IL_6e9a:  ldc.i4.4
   IL_6e9b:  and
-  IL_6e9c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6e9c:  call       void [System.Console]System.Console::Write(int32)
   IL_6ea1:  dup
   IL_6ea2:  ldc.i4.4
   IL_6ea3:  or
-  IL_6ea4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6ea4:  call       void [System.Console]System.Console::Write(int32)
   IL_6ea9:  dup
   IL_6eaa:  ldc.i4.8
   IL_6eab:  add
-  IL_6eac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6eac:  call       void [System.Console]System.Console::Write(int32)
   IL_6eb1:  dup
   IL_6eb2:  ldc.i4.1
   IL_6eb3:  xor
-  IL_6eb4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6eb4:  call       void [System.Console]System.Console::Write(int32)
   IL_6eb9:  dup
   IL_6eba:  ldc.i4.2
   IL_6ebb:  shr
-  IL_6ebc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6ebc:  call       void [System.Console]System.Console::Write(int32)
   IL_6ec1:  dup
   IL_6ec2:  ldc.i4.7
   IL_6ec3:  add
-  IL_6ec4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6ec4:  call       void [System.Console]System.Console::Write(int32)
   IL_6ec9:  dup
   IL_6eca:  ldc.i4.2
   IL_6ecb:  add
-  IL_6ecc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6ecc:  call       void [System.Console]System.Console::Write(int32)
   IL_6ed1:  dup
   IL_6ed2:  ldc.i4.5
   IL_6ed3:  and
-  IL_6ed4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6ed4:  call       void [System.Console]System.Console::Write(int32)
   IL_6ed9:  dup
   IL_6eda:  ldc.i4.7
   IL_6edb:  and
-  IL_6edc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6edc:  call       void [System.Console]System.Console::Write(int32)
   IL_6ee1:  dup
   IL_6ee2:  ldc.i4.5
   IL_6ee3:  xor
-  IL_6ee4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6ee4:  call       void [System.Console]System.Console::Write(int32)
   IL_6ee9:  dup
   IL_6eea:  ldc.i4.5
   IL_6eeb:  and
-  IL_6eec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6eec:  call       void [System.Console]System.Console::Write(int32)
   IL_6ef1:  dup
   IL_6ef2:  ldc.i4.2
   IL_6ef3:  and
-  IL_6ef4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6ef4:  call       void [System.Console]System.Console::Write(int32)
   IL_6ef9:  dup
   IL_6efa:  ldc.i4.8
   IL_6efb:  shl
-  IL_6efc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6efc:  call       void [System.Console]System.Console::Write(int32)
   IL_6f01:  dup
   IL_6f02:  ldc.i4.2
   IL_6f03:  mul
-  IL_6f04:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6f04:  call       void [System.Console]System.Console::Write(int32)
   IL_6f09:  dup
   IL_6f0a:  ldc.i4.3
   IL_6f0b:  sub
-  IL_6f0c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6f0c:  call       void [System.Console]System.Console::Write(int32)
   IL_6f11:  dup
   IL_6f12:  ldc.i4.8
   IL_6f13:  shr
-  IL_6f14:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6f14:  call       void [System.Console]System.Console::Write(int32)
   IL_6f19:  dup
   IL_6f1a:  ldc.i4.8
   IL_6f1b:  sub
-  IL_6f1c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6f1c:  call       void [System.Console]System.Console::Write(int32)
   IL_6f21:  dup
   IL_6f22:  ldc.i4.6
   IL_6f23:  shr
-  IL_6f24:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6f24:  call       void [System.Console]System.Console::Write(int32)
   IL_6f29:  dup
   IL_6f2a:  ldc.i4.3
   IL_6f2b:  sub
-  IL_6f2c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6f2c:  call       void [System.Console]System.Console::Write(int32)
   IL_6f31:  dup
   IL_6f32:  ldc.i4.1
   IL_6f33:  xor
-  IL_6f34:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6f34:  call       void [System.Console]System.Console::Write(int32)
   IL_6f39:  dup
   IL_6f3a:  ldc.i4.4
   IL_6f3b:  shr
-  IL_6f3c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6f3c:  call       void [System.Console]System.Console::Write(int32)
   IL_6f41:  dup
   IL_6f42:  ldc.i4.1
   IL_6f43:  shl
-  IL_6f44:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6f44:  call       void [System.Console]System.Console::Write(int32)
   IL_6f49:  dup
   IL_6f4a:  ldc.i4.6
   IL_6f4b:  or
-  IL_6f4c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6f4c:  call       void [System.Console]System.Console::Write(int32)
   IL_6f51:  dup
   IL_6f52:  ldc.i4.5
   IL_6f53:  add
-  IL_6f54:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6f54:  call       void [System.Console]System.Console::Write(int32)
   IL_6f59:  dup
   IL_6f5a:  ldc.i4.2
   IL_6f5b:  xor
-  IL_6f5c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6f5c:  call       void [System.Console]System.Console::Write(int32)
   IL_6f61:  dup
   IL_6f62:  ldc.i4.8
   IL_6f63:  sub
-  IL_6f64:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6f64:  call       void [System.Console]System.Console::Write(int32)
   IL_6f69:  dup
   IL_6f6a:  ldc.i4.7
   IL_6f6b:  mul
-  IL_6f6c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6f6c:  call       void [System.Console]System.Console::Write(int32)
   IL_6f71:  dup
   IL_6f72:  ldc.i4.5
   IL_6f73:  shr
-  IL_6f74:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6f74:  call       void [System.Console]System.Console::Write(int32)
   IL_6f79:  dup
   IL_6f7a:  ldc.i4.5
   IL_6f7b:  shr
-  IL_6f7c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6f7c:  call       void [System.Console]System.Console::Write(int32)
   IL_6f81:  dup
   IL_6f82:  ldc.i4.8
   IL_6f83:  mul
-  IL_6f84:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6f84:  call       void [System.Console]System.Console::Write(int32)
   IL_6f89:  dup
   IL_6f8a:  ldc.i4.7
   IL_6f8b:  and
-  IL_6f8c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6f8c:  call       void [System.Console]System.Console::Write(int32)
   IL_6f91:  dup
   IL_6f92:  ldc.i4.0
   IL_6f93:  or
-  IL_6f94:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6f94:  call       void [System.Console]System.Console::Write(int32)
   IL_6f99:  dup
   IL_6f9a:  ldc.i4.6
   IL_6f9b:  sub
-  IL_6f9c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6f9c:  call       void [System.Console]System.Console::Write(int32)
   IL_6fa1:  dup
   IL_6fa2:  ldc.i4.1
   IL_6fa3:  sub
-  IL_6fa4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6fa4:  call       void [System.Console]System.Console::Write(int32)
   IL_6fa9:  dup
   IL_6faa:  ldc.i4.3
   IL_6fab:  or
-  IL_6fac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6fac:  call       void [System.Console]System.Console::Write(int32)
   IL_6fb1:  dup
   IL_6fb2:  ldc.i4.4
   IL_6fb3:  shr
-  IL_6fb4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6fb4:  call       void [System.Console]System.Console::Write(int32)
   IL_6fb9:  dup
   IL_6fba:  ldc.i4.6
   IL_6fbb:  add
-  IL_6fbc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6fbc:  call       void [System.Console]System.Console::Write(int32)
   IL_6fc1:  dup
   IL_6fc2:  ldc.i4.7
   IL_6fc3:  or
-  IL_6fc4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6fc4:  call       void [System.Console]System.Console::Write(int32)
   IL_6fc9:  dup
   IL_6fca:  ldc.i4.5
   IL_6fcb:  shr
-  IL_6fcc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6fcc:  call       void [System.Console]System.Console::Write(int32)
   IL_6fd1:  dup
   IL_6fd2:  ldc.i4.1
   IL_6fd3:  add
-  IL_6fd4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6fd4:  call       void [System.Console]System.Console::Write(int32)
   IL_6fd9:  dup
   IL_6fda:  ldc.i4.0
   IL_6fdb:  sub
-  IL_6fdc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6fdc:  call       void [System.Console]System.Console::Write(int32)
   IL_6fe1:  dup
   IL_6fe2:  ldc.i4.0
   IL_6fe3:  or
-  IL_6fe4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6fe4:  call       void [System.Console]System.Console::Write(int32)
   IL_6fe9:  dup
   IL_6fea:  ldc.i4.2
   IL_6feb:  shr
-  IL_6fec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6fec:  call       void [System.Console]System.Console::Write(int32)
   IL_6ff1:  dup
   IL_6ff2:  ldc.i4.8
   IL_6ff3:  shl
-  IL_6ff4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6ff4:  call       void [System.Console]System.Console::Write(int32)
   IL_6ff9:  dup
   IL_6ffa:  ldc.i4.4
   IL_6ffb:  or
-  IL_6ffc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_6ffc:  call       void [System.Console]System.Console::Write(int32)
   IL_7001:  dup
   IL_7002:  ldc.i4.1
   IL_7003:  shr
-  IL_7004:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7004:  call       void [System.Console]System.Console::Write(int32)
   IL_7009:  dup
   IL_700a:  ldc.i4.2
   IL_700b:  and
-  IL_700c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_700c:  call       void [System.Console]System.Console::Write(int32)
   IL_7011:  dup
   IL_7012:  ldc.i4.6
   IL_7013:  shr
-  IL_7014:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7014:  call       void [System.Console]System.Console::Write(int32)
   IL_7019:  dup
   IL_701a:  ldc.i4.5
   IL_701b:  sub
-  IL_701c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_701c:  call       void [System.Console]System.Console::Write(int32)
   IL_7021:  dup
   IL_7022:  ldc.i4.7
   IL_7023:  shl
-  IL_7024:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7024:  call       void [System.Console]System.Console::Write(int32)
   IL_7029:  dup
   IL_702a:  ldc.i4.6
   IL_702b:  xor
-  IL_702c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_702c:  call       void [System.Console]System.Console::Write(int32)
   IL_7031:  dup
   IL_7032:  ldc.i4.6
   IL_7033:  mul
-  IL_7034:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7034:  call       void [System.Console]System.Console::Write(int32)
   IL_7039:  dup
   IL_703a:  ldc.i4.8
   IL_703b:  mul
-  IL_703c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_703c:  call       void [System.Console]System.Console::Write(int32)
   IL_7041:  dup
   IL_7042:  ldc.i4.4
   IL_7043:  shr
-  IL_7044:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7044:  call       void [System.Console]System.Console::Write(int32)
   IL_7049:  dup
   IL_704a:  ldc.i4.4
   IL_704b:  shr
-  IL_704c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_704c:  call       void [System.Console]System.Console::Write(int32)
   IL_7051:  dup
   IL_7052:  ldc.i4.1
   IL_7053:  or
-  IL_7054:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7054:  call       void [System.Console]System.Console::Write(int32)
   IL_7059:  dup
   IL_705a:  ldc.i4.4
   IL_705b:  and
-  IL_705c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_705c:  call       void [System.Console]System.Console::Write(int32)
   IL_7061:  dup
   IL_7062:  ldc.i4.2
   IL_7063:  shr
-  IL_7064:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7064:  call       void [System.Console]System.Console::Write(int32)
   IL_7069:  dup
   IL_706a:  ldc.i4.6
   IL_706b:  sub
-  IL_706c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_706c:  call       void [System.Console]System.Console::Write(int32)
   IL_7071:  dup
   IL_7072:  ldc.i4.6
   IL_7073:  add
-  IL_7074:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7074:  call       void [System.Console]System.Console::Write(int32)
   IL_7079:  dup
   IL_707a:  ldc.i4.2
   IL_707b:  shl
-  IL_707c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_707c:  call       void [System.Console]System.Console::Write(int32)
   IL_7081:  dup
   IL_7082:  ldc.i4.6
   IL_7083:  xor
-  IL_7084:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7084:  call       void [System.Console]System.Console::Write(int32)
   IL_7089:  dup
   IL_708a:  ldc.i4.7
   IL_708b:  and
-  IL_708c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_708c:  call       void [System.Console]System.Console::Write(int32)
   IL_7091:  dup
   IL_7092:  ldc.i4.4
   IL_7093:  and
-  IL_7094:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7094:  call       void [System.Console]System.Console::Write(int32)
   IL_7099:  dup
   IL_709a:  ldc.i4.3
   IL_709b:  sub
-  IL_709c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_709c:  call       void [System.Console]System.Console::Write(int32)
   IL_70a1:  dup
   IL_70a2:  ldc.i4.3
   IL_70a3:  xor
-  IL_70a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_70a4:  call       void [System.Console]System.Console::Write(int32)
   IL_70a9:  dup
   IL_70aa:  ldc.i4.7
   IL_70ab:  shl
-  IL_70ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_70ac:  call       void [System.Console]System.Console::Write(int32)
   IL_70b1:  dup
   IL_70b2:  ldc.i4.3
   IL_70b3:  shr
-  IL_70b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_70b4:  call       void [System.Console]System.Console::Write(int32)
   IL_70b9:  dup
   IL_70ba:  ldc.i4.4
   IL_70bb:  and
-  IL_70bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_70bc:  call       void [System.Console]System.Console::Write(int32)
   IL_70c1:  dup
   IL_70c2:  ldc.i4.8
   IL_70c3:  add
-  IL_70c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_70c4:  call       void [System.Console]System.Console::Write(int32)
   IL_70c9:  dup
   IL_70ca:  ldc.i4.2
   IL_70cb:  sub
-  IL_70cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_70cc:  call       void [System.Console]System.Console::Write(int32)
   IL_70d1:  dup
   IL_70d2:  ldc.i4.0
   IL_70d3:  and
-  IL_70d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_70d4:  call       void [System.Console]System.Console::Write(int32)
   IL_70d9:  dup
   IL_70da:  ldc.i4.7
   IL_70db:  sub
-  IL_70dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_70dc:  call       void [System.Console]System.Console::Write(int32)
   IL_70e1:  dup
   IL_70e2:  ldc.i4.1
   IL_70e3:  xor
-  IL_70e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_70e4:  call       void [System.Console]System.Console::Write(int32)
   IL_70e9:  dup
   IL_70ea:  ldc.i4.4
   IL_70eb:  add
-  IL_70ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_70ec:  call       void [System.Console]System.Console::Write(int32)
   IL_70f1:  dup
   IL_70f2:  ldc.i4.8
   IL_70f3:  xor
-  IL_70f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_70f4:  call       void [System.Console]System.Console::Write(int32)
   IL_70f9:  dup
   IL_70fa:  ldc.i4.4
   IL_70fb:  and
-  IL_70fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_70fc:  call       void [System.Console]System.Console::Write(int32)
   IL_7101:  dup
   IL_7102:  ldc.i4.3
   IL_7103:  add
-  IL_7104:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7104:  call       void [System.Console]System.Console::Write(int32)
   IL_7109:  dup
   IL_710a:  ldc.i4.6
   IL_710b:  sub
-  IL_710c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_710c:  call       void [System.Console]System.Console::Write(int32)
   IL_7111:  dup
   IL_7112:  ldc.i4.4
   IL_7113:  sub
-  IL_7114:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7114:  call       void [System.Console]System.Console::Write(int32)
   IL_7119:  dup
   IL_711a:  ldc.i4.7
   IL_711b:  shl
-  IL_711c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_711c:  call       void [System.Console]System.Console::Write(int32)
   IL_7121:  dup
   IL_7122:  ldc.i4.2
   IL_7123:  mul
-  IL_7124:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7124:  call       void [System.Console]System.Console::Write(int32)
   IL_7129:  dup
   IL_712a:  ldc.i4.2
   IL_712b:  shr
-  IL_712c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_712c:  call       void [System.Console]System.Console::Write(int32)
   IL_7131:  dup
   IL_7132:  ldc.i4.1
   IL_7133:  or
-  IL_7134:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7134:  call       void [System.Console]System.Console::Write(int32)
   IL_7139:  dup
   IL_713a:  ldc.i4.4
   IL_713b:  shr
-  IL_713c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_713c:  call       void [System.Console]System.Console::Write(int32)
   IL_7141:  dup
   IL_7142:  ldc.i4.1
   IL_7143:  or
-  IL_7144:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7144:  call       void [System.Console]System.Console::Write(int32)
   IL_7149:  dup
   IL_714a:  ldc.i4.2
   IL_714b:  shr
-  IL_714c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_714c:  call       void [System.Console]System.Console::Write(int32)
   IL_7151:  dup
   IL_7152:  ldc.i4.6
   IL_7153:  add
-  IL_7154:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7154:  call       void [System.Console]System.Console::Write(int32)
   IL_7159:  dup
   IL_715a:  ldc.i4.4
   IL_715b:  or
-  IL_715c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_715c:  call       void [System.Console]System.Console::Write(int32)
   IL_7161:  dup
   IL_7162:  ldc.i4.5
   IL_7163:  shl
-  IL_7164:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7164:  call       void [System.Console]System.Console::Write(int32)
   IL_7169:  dup
   IL_716a:  ldc.i4.5
   IL_716b:  add
-  IL_716c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_716c:  call       void [System.Console]System.Console::Write(int32)
   IL_7171:  dup
   IL_7172:  ldc.i4.3
   IL_7173:  xor
-  IL_7174:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7174:  call       void [System.Console]System.Console::Write(int32)
   IL_7179:  dup
   IL_717a:  ldc.i4.2
   IL_717b:  or
-  IL_717c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_717c:  call       void [System.Console]System.Console::Write(int32)
   IL_7181:  dup
   IL_7182:  ldc.i4.0
   IL_7183:  or
-  IL_7184:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7184:  call       void [System.Console]System.Console::Write(int32)
   IL_7189:  dup
   IL_718a:  ldc.i4.1
   IL_718b:  mul
-  IL_718c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_718c:  call       void [System.Console]System.Console::Write(int32)
   IL_7191:  dup
   IL_7192:  ldc.i4.8
   IL_7193:  sub
-  IL_7194:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7194:  call       void [System.Console]System.Console::Write(int32)
   IL_7199:  dup
   IL_719a:  ldc.i4.2
   IL_719b:  shr
-  IL_719c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_719c:  call       void [System.Console]System.Console::Write(int32)
   IL_71a1:  dup
   IL_71a2:  ldc.i4.1
   IL_71a3:  shr
-  IL_71a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_71a4:  call       void [System.Console]System.Console::Write(int32)
   IL_71a9:  dup
   IL_71aa:  ldc.i4.7
   IL_71ab:  and
-  IL_71ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_71ac:  call       void [System.Console]System.Console::Write(int32)
   IL_71b1:  dup
   IL_71b2:  ldc.i4.4
   IL_71b3:  sub
-  IL_71b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_71b4:  call       void [System.Console]System.Console::Write(int32)
   IL_71b9:  dup
   IL_71ba:  ldc.i4.0
   IL_71bb:  mul
-  IL_71bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_71bc:  call       void [System.Console]System.Console::Write(int32)
   IL_71c1:  dup
   IL_71c2:  ldc.i4.8
   IL_71c3:  and
-  IL_71c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_71c4:  call       void [System.Console]System.Console::Write(int32)
   IL_71c9:  dup
   IL_71ca:  ldc.i4.7
   IL_71cb:  or
-  IL_71cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_71cc:  call       void [System.Console]System.Console::Write(int32)
   IL_71d1:  dup
   IL_71d2:  ldc.i4.1
   IL_71d3:  shr
-  IL_71d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_71d4:  call       void [System.Console]System.Console::Write(int32)
   IL_71d9:  dup
   IL_71da:  ldc.i4.0
   IL_71db:  mul
-  IL_71dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_71dc:  call       void [System.Console]System.Console::Write(int32)
   IL_71e1:  dup
   IL_71e2:  ldc.i4.4
   IL_71e3:  and
-  IL_71e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_71e4:  call       void [System.Console]System.Console::Write(int32)
   IL_71e9:  dup
   IL_71ea:  ldc.i4.5
   IL_71eb:  or
-  IL_71ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_71ec:  call       void [System.Console]System.Console::Write(int32)
   IL_71f1:  dup
   IL_71f2:  ldc.i4.6
   IL_71f3:  shr
-  IL_71f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_71f4:  call       void [System.Console]System.Console::Write(int32)
   IL_71f9:  dup
   IL_71fa:  ldc.i4.2
   IL_71fb:  or
-  IL_71fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_71fc:  call       void [System.Console]System.Console::Write(int32)
   IL_7201:  dup
   IL_7202:  ldc.i4.0
   IL_7203:  xor
-  IL_7204:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7204:  call       void [System.Console]System.Console::Write(int32)
   IL_7209:  dup
   IL_720a:  ldc.i4.5
   IL_720b:  sub
-  IL_720c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_720c:  call       void [System.Console]System.Console::Write(int32)
   IL_7211:  dup
   IL_7212:  ldc.i4.6
   IL_7213:  sub
-  IL_7214:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7214:  call       void [System.Console]System.Console::Write(int32)
   IL_7219:  dup
   IL_721a:  ldc.i4.6
   IL_721b:  or
-  IL_721c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_721c:  call       void [System.Console]System.Console::Write(int32)
   IL_7221:  dup
   IL_7222:  ldc.i4.6
   IL_7223:  shr
-  IL_7224:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7224:  call       void [System.Console]System.Console::Write(int32)
   IL_7229:  dup
   IL_722a:  ldc.i4.4
   IL_722b:  sub
-  IL_722c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_722c:  call       void [System.Console]System.Console::Write(int32)
   IL_7231:  dup
   IL_7232:  ldc.i4.2
   IL_7233:  shr
-  IL_7234:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7234:  call       void [System.Console]System.Console::Write(int32)
   IL_7239:  dup
   IL_723a:  ldc.i4.3
   IL_723b:  xor
-  IL_723c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_723c:  call       void [System.Console]System.Console::Write(int32)
   IL_7241:  dup
   IL_7242:  ldc.i4.5
   IL_7243:  mul
-  IL_7244:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7244:  call       void [System.Console]System.Console::Write(int32)
   IL_7249:  dup
   IL_724a:  ldc.i4.1
   IL_724b:  shl
-  IL_724c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_724c:  call       void [System.Console]System.Console::Write(int32)
   IL_7251:  dup
   IL_7252:  ldc.i4.5
   IL_7253:  mul
-  IL_7254:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7254:  call       void [System.Console]System.Console::Write(int32)
   IL_7259:  dup
   IL_725a:  ldc.i4.7
   IL_725b:  mul
-  IL_725c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_725c:  call       void [System.Console]System.Console::Write(int32)
   IL_7261:  dup
   IL_7262:  ldc.i4.8
   IL_7263:  or
-  IL_7264:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7264:  call       void [System.Console]System.Console::Write(int32)
   IL_7269:  dup
   IL_726a:  ldc.i4.6
   IL_726b:  add
-  IL_726c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_726c:  call       void [System.Console]System.Console::Write(int32)
   IL_7271:  dup
   IL_7272:  ldc.i4.5
   IL_7273:  mul
-  IL_7274:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7274:  call       void [System.Console]System.Console::Write(int32)
   IL_7279:  dup
   IL_727a:  ldc.i4.8
   IL_727b:  xor
-  IL_727c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_727c:  call       void [System.Console]System.Console::Write(int32)
   IL_7281:  dup
   IL_7282:  ldc.i4.3
   IL_7283:  or
-  IL_7284:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7284:  call       void [System.Console]System.Console::Write(int32)
   IL_7289:  dup
   IL_728a:  ldc.i4.6
   IL_728b:  add
-  IL_728c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_728c:  call       void [System.Console]System.Console::Write(int32)
   IL_7291:  dup
   IL_7292:  ldc.i4.4
   IL_7293:  or
-  IL_7294:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7294:  call       void [System.Console]System.Console::Write(int32)
   IL_7299:  dup
   IL_729a:  ldc.i4.4
   IL_729b:  and
-  IL_729c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_729c:  call       void [System.Console]System.Console::Write(int32)
   IL_72a1:  dup
   IL_72a2:  ldc.i4.0
   IL_72a3:  and
-  IL_72a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_72a4:  call       void [System.Console]System.Console::Write(int32)
   IL_72a9:  dup
   IL_72aa:  ldc.i4.1
   IL_72ab:  shl
-  IL_72ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_72ac:  call       void [System.Console]System.Console::Write(int32)
   IL_72b1:  dup
   IL_72b2:  ldc.i4.1
   IL_72b3:  or
-  IL_72b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_72b4:  call       void [System.Console]System.Console::Write(int32)
   IL_72b9:  dup
   IL_72ba:  ldc.i4.8
   IL_72bb:  and
-  IL_72bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_72bc:  call       void [System.Console]System.Console::Write(int32)
   IL_72c1:  dup
   IL_72c2:  ldc.i4.3
   IL_72c3:  sub
-  IL_72c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_72c4:  call       void [System.Console]System.Console::Write(int32)
   IL_72c9:  dup
   IL_72ca:  ldc.i4.3
   IL_72cb:  xor
-  IL_72cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_72cc:  call       void [System.Console]System.Console::Write(int32)
   IL_72d1:  dup
   IL_72d2:  ldc.i4.5
   IL_72d3:  shr
-  IL_72d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_72d4:  call       void [System.Console]System.Console::Write(int32)
   IL_72d9:  dup
   IL_72da:  ldc.i4.2
   IL_72db:  and
-  IL_72dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_72dc:  call       void [System.Console]System.Console::Write(int32)
   IL_72e1:  dup
   IL_72e2:  ldc.i4.5
   IL_72e3:  xor
-  IL_72e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_72e4:  call       void [System.Console]System.Console::Write(int32)
   IL_72e9:  dup
   IL_72ea:  ldc.i4.1
   IL_72eb:  and
-  IL_72ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_72ec:  call       void [System.Console]System.Console::Write(int32)
   IL_72f1:  dup
   IL_72f2:  ldc.i4.3
   IL_72f3:  shl
-  IL_72f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_72f4:  call       void [System.Console]System.Console::Write(int32)
   IL_72f9:  dup
   IL_72fa:  ldc.i4.2
   IL_72fb:  xor
-  IL_72fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_72fc:  call       void [System.Console]System.Console::Write(int32)
   IL_7301:  dup
   IL_7302:  ldc.i4.5
   IL_7303:  add
-  IL_7304:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7304:  call       void [System.Console]System.Console::Write(int32)
   IL_7309:  dup
   IL_730a:  ldc.i4.6
   IL_730b:  mul
-  IL_730c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_730c:  call       void [System.Console]System.Console::Write(int32)
   IL_7311:  dup
   IL_7312:  ldc.i4.0
   IL_7313:  mul
-  IL_7314:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7314:  call       void [System.Console]System.Console::Write(int32)
   IL_7319:  dup
   IL_731a:  ldc.i4.8
   IL_731b:  shr
-  IL_731c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_731c:  call       void [System.Console]System.Console::Write(int32)
   IL_7321:  dup
   IL_7322:  ldc.i4.6
   IL_7323:  mul
-  IL_7324:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7324:  call       void [System.Console]System.Console::Write(int32)
   IL_7329:  dup
   IL_732a:  ldc.i4.4
   IL_732b:  and
-  IL_732c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_732c:  call       void [System.Console]System.Console::Write(int32)
   IL_7331:  dup
   IL_7332:  ldc.i4.0
   IL_7333:  mul
-  IL_7334:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7334:  call       void [System.Console]System.Console::Write(int32)
   IL_7339:  dup
   IL_733a:  ldc.i4.0
   IL_733b:  add
-  IL_733c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_733c:  call       void [System.Console]System.Console::Write(int32)
   IL_7341:  dup
   IL_7342:  ldc.i4.8
   IL_7343:  or
-  IL_7344:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7344:  call       void [System.Console]System.Console::Write(int32)
   IL_7349:  dup
   IL_734a:  ldc.i4.6
   IL_734b:  shl
-  IL_734c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_734c:  call       void [System.Console]System.Console::Write(int32)
   IL_7351:  dup
   IL_7352:  ldc.i4.0
   IL_7353:  shl
-  IL_7354:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7354:  call       void [System.Console]System.Console::Write(int32)
   IL_7359:  dup
   IL_735a:  ldc.i4.7
   IL_735b:  shr
-  IL_735c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_735c:  call       void [System.Console]System.Console::Write(int32)
   IL_7361:  dup
   IL_7362:  ldc.i4.5
   IL_7363:  or
-  IL_7364:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7364:  call       void [System.Console]System.Console::Write(int32)
   IL_7369:  dup
   IL_736a:  ldc.i4.4
   IL_736b:  sub
-  IL_736c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_736c:  call       void [System.Console]System.Console::Write(int32)
   IL_7371:  dup
   IL_7372:  ldc.i4.6
   IL_7373:  and
-  IL_7374:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7374:  call       void [System.Console]System.Console::Write(int32)
   IL_7379:  dup
   IL_737a:  ldc.i4.3
   IL_737b:  xor
-  IL_737c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_737c:  call       void [System.Console]System.Console::Write(int32)
   IL_7381:  dup
   IL_7382:  ldc.i4.5
   IL_7383:  and
-  IL_7384:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7384:  call       void [System.Console]System.Console::Write(int32)
   IL_7389:  dup
   IL_738a:  ldc.i4.7
   IL_738b:  add
-  IL_738c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_738c:  call       void [System.Console]System.Console::Write(int32)
   IL_7391:  dup
   IL_7392:  ldc.i4.1
   IL_7393:  shr
-  IL_7394:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7394:  call       void [System.Console]System.Console::Write(int32)
   IL_7399:  dup
   IL_739a:  ldc.i4.7
   IL_739b:  sub
-  IL_739c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_739c:  call       void [System.Console]System.Console::Write(int32)
   IL_73a1:  dup
   IL_73a2:  ldc.i4.1
   IL_73a3:  shr
-  IL_73a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_73a4:  call       void [System.Console]System.Console::Write(int32)
   IL_73a9:  dup
   IL_73aa:  ldc.i4.5
   IL_73ab:  mul
-  IL_73ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_73ac:  call       void [System.Console]System.Console::Write(int32)
   IL_73b1:  dup
   IL_73b2:  ldc.i4.2
   IL_73b3:  shl
-  IL_73b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_73b4:  call       void [System.Console]System.Console::Write(int32)
   IL_73b9:  dup
   IL_73ba:  ldc.i4.6
   IL_73bb:  mul
-  IL_73bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_73bc:  call       void [System.Console]System.Console::Write(int32)
   IL_73c1:  dup
   IL_73c2:  ldc.i4.2
   IL_73c3:  sub
-  IL_73c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_73c4:  call       void [System.Console]System.Console::Write(int32)
   IL_73c9:  dup
   IL_73ca:  ldc.i4.6
   IL_73cb:  xor
-  IL_73cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_73cc:  call       void [System.Console]System.Console::Write(int32)
   IL_73d1:  dup
   IL_73d2:  ldc.i4.8
   IL_73d3:  and
-  IL_73d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_73d4:  call       void [System.Console]System.Console::Write(int32)
   IL_73d9:  dup
   IL_73da:  ldc.i4.3
   IL_73db:  add
-  IL_73dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_73dc:  call       void [System.Console]System.Console::Write(int32)
   IL_73e1:  dup
   IL_73e2:  ldc.i4.2
   IL_73e3:  add
-  IL_73e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_73e4:  call       void [System.Console]System.Console::Write(int32)
   IL_73e9:  dup
   IL_73ea:  ldc.i4.6
   IL_73eb:  sub
-  IL_73ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_73ec:  call       void [System.Console]System.Console::Write(int32)
   IL_73f1:  dup
   IL_73f2:  ldc.i4.6
   IL_73f3:  and
-  IL_73f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_73f4:  call       void [System.Console]System.Console::Write(int32)
   IL_73f9:  dup
   IL_73fa:  ldc.i4.8
   IL_73fb:  or
-  IL_73fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_73fc:  call       void [System.Console]System.Console::Write(int32)
   IL_7401:  dup
   IL_7402:  ldc.i4.8
   IL_7403:  or
-  IL_7404:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7404:  call       void [System.Console]System.Console::Write(int32)
   IL_7409:  dup
   IL_740a:  ldc.i4.1
   IL_740b:  mul
-  IL_740c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_740c:  call       void [System.Console]System.Console::Write(int32)
   IL_7411:  dup
   IL_7412:  ldc.i4.3
   IL_7413:  or
-  IL_7414:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7414:  call       void [System.Console]System.Console::Write(int32)
   IL_7419:  dup
   IL_741a:  ldc.i4.7
   IL_741b:  mul
-  IL_741c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_741c:  call       void [System.Console]System.Console::Write(int32)
   IL_7421:  dup
   IL_7422:  ldc.i4.1
   IL_7423:  shl
-  IL_7424:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7424:  call       void [System.Console]System.Console::Write(int32)
   IL_7429:  dup
   IL_742a:  ldc.i4.2
   IL_742b:  mul
-  IL_742c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_742c:  call       void [System.Console]System.Console::Write(int32)
   IL_7431:  dup
   IL_7432:  ldc.i4.8
   IL_7433:  shl
-  IL_7434:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7434:  call       void [System.Console]System.Console::Write(int32)
   IL_7439:  dup
   IL_743a:  ldc.i4.3
   IL_743b:  sub
-  IL_743c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_743c:  call       void [System.Console]System.Console::Write(int32)
   IL_7441:  dup
   IL_7442:  ldc.i4.1
   IL_7443:  sub
-  IL_7444:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7444:  call       void [System.Console]System.Console::Write(int32)
   IL_7449:  dup
   IL_744a:  ldc.i4.7
   IL_744b:  shl
-  IL_744c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_744c:  call       void [System.Console]System.Console::Write(int32)
   IL_7451:  dup
   IL_7452:  ldc.i4.0
   IL_7453:  or
-  IL_7454:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7454:  call       void [System.Console]System.Console::Write(int32)
   IL_7459:  dup
   IL_745a:  ldc.i4.4
   IL_745b:  and
-  IL_745c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_745c:  call       void [System.Console]System.Console::Write(int32)
   IL_7461:  dup
   IL_7462:  ldc.i4.3
   IL_7463:  and
-  IL_7464:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7464:  call       void [System.Console]System.Console::Write(int32)
   IL_7469:  dup
   IL_746a:  ldc.i4.8
   IL_746b:  add
-  IL_746c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_746c:  call       void [System.Console]System.Console::Write(int32)
   IL_7471:  dup
   IL_7472:  ldc.i4.8
   IL_7473:  shr
-  IL_7474:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7474:  call       void [System.Console]System.Console::Write(int32)
   IL_7479:  dup
   IL_747a:  ldc.i4.3
   IL_747b:  xor
-  IL_747c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_747c:  call       void [System.Console]System.Console::Write(int32)
   IL_7481:  dup
   IL_7482:  ldc.i4.6
   IL_7483:  shr
-  IL_7484:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7484:  call       void [System.Console]System.Console::Write(int32)
   IL_7489:  dup
   IL_748a:  ldc.i4.3
   IL_748b:  mul
-  IL_748c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_748c:  call       void [System.Console]System.Console::Write(int32)
   IL_7491:  dup
   IL_7492:  ldc.i4.2
   IL_7493:  xor
-  IL_7494:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7494:  call       void [System.Console]System.Console::Write(int32)
   IL_7499:  dup
   IL_749a:  ldc.i4.8
   IL_749b:  mul
-  IL_749c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_749c:  call       void [System.Console]System.Console::Write(int32)
   IL_74a1:  dup
   IL_74a2:  ldc.i4.2
   IL_74a3:  xor
-  IL_74a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_74a4:  call       void [System.Console]System.Console::Write(int32)
   IL_74a9:  dup
   IL_74aa:  ldc.i4.2
   IL_74ab:  mul
-  IL_74ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_74ac:  call       void [System.Console]System.Console::Write(int32)
   IL_74b1:  dup
   IL_74b2:  ldc.i4.4
   IL_74b3:  add
-  IL_74b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_74b4:  call       void [System.Console]System.Console::Write(int32)
   IL_74b9:  dup
   IL_74ba:  ldc.i4.0
   IL_74bb:  shr
-  IL_74bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_74bc:  call       void [System.Console]System.Console::Write(int32)
   IL_74c1:  dup
   IL_74c2:  ldc.i4.6
   IL_74c3:  shl
-  IL_74c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_74c4:  call       void [System.Console]System.Console::Write(int32)
   IL_74c9:  dup
   IL_74ca:  ldc.i4.8
   IL_74cb:  shl
-  IL_74cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_74cc:  call       void [System.Console]System.Console::Write(int32)
   IL_74d1:  dup
   IL_74d2:  ldc.i4.8
   IL_74d3:  xor
-  IL_74d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_74d4:  call       void [System.Console]System.Console::Write(int32)
   IL_74d9:  dup
   IL_74da:  ldc.i4.8
   IL_74db:  or
-  IL_74dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_74dc:  call       void [System.Console]System.Console::Write(int32)
   IL_74e1:  dup
   IL_74e2:  ldc.i4.4
   IL_74e3:  xor
-  IL_74e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_74e4:  call       void [System.Console]System.Console::Write(int32)
   IL_74e9:  dup
   IL_74ea:  ldc.i4.7
   IL_74eb:  shl
-  IL_74ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_74ec:  call       void [System.Console]System.Console::Write(int32)
   IL_74f1:  dup
   IL_74f2:  ldc.i4.0
   IL_74f3:  and
-  IL_74f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_74f4:  call       void [System.Console]System.Console::Write(int32)
   IL_74f9:  dup
   IL_74fa:  ldc.i4.3
   IL_74fb:  xor
-  IL_74fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_74fc:  call       void [System.Console]System.Console::Write(int32)
   IL_7501:  dup
   IL_7502:  ldc.i4.1
   IL_7503:  or
-  IL_7504:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7504:  call       void [System.Console]System.Console::Write(int32)
   IL_7509:  dup
   IL_750a:  ldc.i4.5
   IL_750b:  mul
-  IL_750c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_750c:  call       void [System.Console]System.Console::Write(int32)
   IL_7511:  dup
   IL_7512:  ldc.i4.1
   IL_7513:  sub
-  IL_7514:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7514:  call       void [System.Console]System.Console::Write(int32)
   IL_7519:  dup
   IL_751a:  ldc.i4.7
   IL_751b:  shr
-  IL_751c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_751c:  call       void [System.Console]System.Console::Write(int32)
   IL_7521:  dup
   IL_7522:  ldc.i4.2
   IL_7523:  shl
-  IL_7524:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7524:  call       void [System.Console]System.Console::Write(int32)
   IL_7529:  dup
   IL_752a:  ldc.i4.2
   IL_752b:  shl
-  IL_752c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_752c:  call       void [System.Console]System.Console::Write(int32)
   IL_7531:  dup
   IL_7532:  ldc.i4.6
   IL_7533:  sub
-  IL_7534:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7534:  call       void [System.Console]System.Console::Write(int32)
   IL_7539:  dup
   IL_753a:  ldc.i4.2
   IL_753b:  mul
-  IL_753c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_753c:  call       void [System.Console]System.Console::Write(int32)
   IL_7541:  dup
   IL_7542:  ldc.i4.6
   IL_7543:  sub
-  IL_7544:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7544:  call       void [System.Console]System.Console::Write(int32)
   IL_7549:  dup
   IL_754a:  ldc.i4.3
   IL_754b:  xor
-  IL_754c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_754c:  call       void [System.Console]System.Console::Write(int32)
   IL_7551:  dup
   IL_7552:  ldc.i4.5
   IL_7553:  and
-  IL_7554:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7554:  call       void [System.Console]System.Console::Write(int32)
   IL_7559:  dup
   IL_755a:  ldc.i4.4
   IL_755b:  mul
-  IL_755c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_755c:  call       void [System.Console]System.Console::Write(int32)
   IL_7561:  dup
   IL_7562:  ldc.i4.6
   IL_7563:  xor
-  IL_7564:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7564:  call       void [System.Console]System.Console::Write(int32)
   IL_7569:  dup
   IL_756a:  ldc.i4.7
   IL_756b:  or
-  IL_756c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_756c:  call       void [System.Console]System.Console::Write(int32)
   IL_7571:  dup
   IL_7572:  ldc.i4.5
   IL_7573:  mul
-  IL_7574:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7574:  call       void [System.Console]System.Console::Write(int32)
   IL_7579:  dup
   IL_757a:  ldc.i4.2
   IL_757b:  xor
-  IL_757c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_757c:  call       void [System.Console]System.Console::Write(int32)
   IL_7581:  dup
   IL_7582:  ldc.i4.0
   IL_7583:  and
-  IL_7584:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7584:  call       void [System.Console]System.Console::Write(int32)
   IL_7589:  dup
   IL_758a:  ldc.i4.1
   IL_758b:  shl
-  IL_758c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_758c:  call       void [System.Console]System.Console::Write(int32)
   IL_7591:  dup
   IL_7592:  ldc.i4.4
   IL_7593:  shr
-  IL_7594:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7594:  call       void [System.Console]System.Console::Write(int32)
   IL_7599:  dup
   IL_759a:  ldc.i4.4
   IL_759b:  shl
-  IL_759c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_759c:  call       void [System.Console]System.Console::Write(int32)
   IL_75a1:  dup
   IL_75a2:  ldc.i4.6
   IL_75a3:  mul
-  IL_75a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_75a4:  call       void [System.Console]System.Console::Write(int32)
   IL_75a9:  dup
   IL_75aa:  ldc.i4.3
   IL_75ab:  xor
-  IL_75ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_75ac:  call       void [System.Console]System.Console::Write(int32)
   IL_75b1:  dup
   IL_75b2:  ldc.i4.1
   IL_75b3:  mul
-  IL_75b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_75b4:  call       void [System.Console]System.Console::Write(int32)
   IL_75b9:  dup
   IL_75ba:  ldc.i4.1
   IL_75bb:  mul
-  IL_75bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_75bc:  call       void [System.Console]System.Console::Write(int32)
   IL_75c1:  dup
   IL_75c2:  ldc.i4.1
   IL_75c3:  shl
-  IL_75c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_75c4:  call       void [System.Console]System.Console::Write(int32)
   IL_75c9:  dup
   IL_75ca:  ldc.i4.7
   IL_75cb:  and
-  IL_75cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_75cc:  call       void [System.Console]System.Console::Write(int32)
   IL_75d1:  dup
   IL_75d2:  ldc.i4.4
   IL_75d3:  or
-  IL_75d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_75d4:  call       void [System.Console]System.Console::Write(int32)
   IL_75d9:  dup
   IL_75da:  ldc.i4.7
   IL_75db:  mul
-  IL_75dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_75dc:  call       void [System.Console]System.Console::Write(int32)
   IL_75e1:  dup
   IL_75e2:  ldc.i4.3
   IL_75e3:  mul
-  IL_75e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_75e4:  call       void [System.Console]System.Console::Write(int32)
   IL_75e9:  dup
   IL_75ea:  ldc.i4.5
   IL_75eb:  shr
-  IL_75ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_75ec:  call       void [System.Console]System.Console::Write(int32)
   IL_75f1:  dup
   IL_75f2:  ldc.i4.2
   IL_75f3:  or
-  IL_75f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_75f4:  call       void [System.Console]System.Console::Write(int32)
   IL_75f9:  dup
   IL_75fa:  ldc.i4.0
   IL_75fb:  or
-  IL_75fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_75fc:  call       void [System.Console]System.Console::Write(int32)
   IL_7601:  dup
   IL_7602:  ldc.i4.2
   IL_7603:  and
-  IL_7604:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7604:  call       void [System.Console]System.Console::Write(int32)
   IL_7609:  dup
   IL_760a:  ldc.i4.5
   IL_760b:  or
-  IL_760c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_760c:  call       void [System.Console]System.Console::Write(int32)
   IL_7611:  dup
   IL_7612:  ldc.i4.8
   IL_7613:  shr
-  IL_7614:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7614:  call       void [System.Console]System.Console::Write(int32)
   IL_7619:  dup
   IL_761a:  ldc.i4.7
   IL_761b:  add
-  IL_761c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_761c:  call       void [System.Console]System.Console::Write(int32)
   IL_7621:  dup
   IL_7622:  ldc.i4.6
   IL_7623:  and
-  IL_7624:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7624:  call       void [System.Console]System.Console::Write(int32)
   IL_7629:  dup
   IL_762a:  ldc.i4.5
   IL_762b:  mul
-  IL_762c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_762c:  call       void [System.Console]System.Console::Write(int32)
   IL_7631:  dup
   IL_7632:  ldc.i4.4
   IL_7633:  add
-  IL_7634:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7634:  call       void [System.Console]System.Console::Write(int32)
   IL_7639:  dup
   IL_763a:  ldc.i4.1
   IL_763b:  mul
-  IL_763c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_763c:  call       void [System.Console]System.Console::Write(int32)
   IL_7641:  dup
   IL_7642:  ldc.i4.2
   IL_7643:  shl
-  IL_7644:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7644:  call       void [System.Console]System.Console::Write(int32)
   IL_7649:  dup
   IL_764a:  ldc.i4.6
   IL_764b:  add
-  IL_764c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_764c:  call       void [System.Console]System.Console::Write(int32)
   IL_7651:  dup
   IL_7652:  ldc.i4.4
   IL_7653:  xor
-  IL_7654:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7654:  call       void [System.Console]System.Console::Write(int32)
   IL_7659:  dup
   IL_765a:  ldc.i4.0
   IL_765b:  add
-  IL_765c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_765c:  call       void [System.Console]System.Console::Write(int32)
   IL_7661:  dup
   IL_7662:  ldc.i4.8
   IL_7663:  and
-  IL_7664:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7664:  call       void [System.Console]System.Console::Write(int32)
   IL_7669:  dup
   IL_766a:  ldc.i4.1
   IL_766b:  sub
-  IL_766c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_766c:  call       void [System.Console]System.Console::Write(int32)
   IL_7671:  dup
   IL_7672:  ldc.i4.0
   IL_7673:  and
-  IL_7674:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7674:  call       void [System.Console]System.Console::Write(int32)
   IL_7679:  dup
   IL_767a:  ldc.i4.2
   IL_767b:  and
-  IL_767c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_767c:  call       void [System.Console]System.Console::Write(int32)
   IL_7681:  dup
   IL_7682:  ldc.i4.2
   IL_7683:  xor
-  IL_7684:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7684:  call       void [System.Console]System.Console::Write(int32)
   IL_7689:  dup
   IL_768a:  ldc.i4.1
   IL_768b:  xor
-  IL_768c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_768c:  call       void [System.Console]System.Console::Write(int32)
   IL_7691:  dup
   IL_7692:  ldc.i4.7
   IL_7693:  sub
-  IL_7694:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7694:  call       void [System.Console]System.Console::Write(int32)
   IL_7699:  dup
   IL_769a:  ldc.i4.3
   IL_769b:  shl
-  IL_769c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_769c:  call       void [System.Console]System.Console::Write(int32)
   IL_76a1:  dup
   IL_76a2:  ldc.i4.6
   IL_76a3:  and
-  IL_76a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_76a4:  call       void [System.Console]System.Console::Write(int32)
   IL_76a9:  dup
   IL_76aa:  ldc.i4.1
   IL_76ab:  shr
-  IL_76ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_76ac:  call       void [System.Console]System.Console::Write(int32)
   IL_76b1:  dup
   IL_76b2:  ldc.i4.3
   IL_76b3:  shl
-  IL_76b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_76b4:  call       void [System.Console]System.Console::Write(int32)
   IL_76b9:  dup
   IL_76ba:  ldc.i4.8
   IL_76bb:  xor
-  IL_76bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_76bc:  call       void [System.Console]System.Console::Write(int32)
   IL_76c1:  dup
   IL_76c2:  ldc.i4.1
   IL_76c3:  mul
-  IL_76c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_76c4:  call       void [System.Console]System.Console::Write(int32)
   IL_76c9:  dup
   IL_76ca:  ldc.i4.3
   IL_76cb:  and
-  IL_76cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_76cc:  call       void [System.Console]System.Console::Write(int32)
   IL_76d1:  dup
   IL_76d2:  ldc.i4.1
   IL_76d3:  or
-  IL_76d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_76d4:  call       void [System.Console]System.Console::Write(int32)
   IL_76d9:  dup
   IL_76da:  ldc.i4.4
   IL_76db:  or
-  IL_76dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_76dc:  call       void [System.Console]System.Console::Write(int32)
   IL_76e1:  dup
   IL_76e2:  ldc.i4.7
   IL_76e3:  shl
-  IL_76e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_76e4:  call       void [System.Console]System.Console::Write(int32)
   IL_76e9:  dup
   IL_76ea:  ldc.i4.8
   IL_76eb:  sub
-  IL_76ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_76ec:  call       void [System.Console]System.Console::Write(int32)
   IL_76f1:  dup
   IL_76f2:  ldc.i4.4
   IL_76f3:  shl
-  IL_76f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_76f4:  call       void [System.Console]System.Console::Write(int32)
   IL_76f9:  dup
   IL_76fa:  ldc.i4.8
   IL_76fb:  and
-  IL_76fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_76fc:  call       void [System.Console]System.Console::Write(int32)
   IL_7701:  dup
   IL_7702:  ldc.i4.5
   IL_7703:  and
-  IL_7704:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7704:  call       void [System.Console]System.Console::Write(int32)
   IL_7709:  dup
   IL_770a:  ldc.i4.8
   IL_770b:  add
-  IL_770c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_770c:  call       void [System.Console]System.Console::Write(int32)
   IL_7711:  dup
   IL_7712:  ldc.i4.8
   IL_7713:  and
-  IL_7714:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7714:  call       void [System.Console]System.Console::Write(int32)
   IL_7719:  dup
   IL_771a:  ldc.i4.4
   IL_771b:  add
-  IL_771c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_771c:  call       void [System.Console]System.Console::Write(int32)
   IL_7721:  dup
   IL_7722:  ldc.i4.1
   IL_7723:  sub
-  IL_7724:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7724:  call       void [System.Console]System.Console::Write(int32)
   IL_7729:  dup
   IL_772a:  ldc.i4.2
   IL_772b:  shl
-  IL_772c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_772c:  call       void [System.Console]System.Console::Write(int32)
   IL_7731:  dup
   IL_7732:  ldc.i4.1
   IL_7733:  xor
-  IL_7734:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7734:  call       void [System.Console]System.Console::Write(int32)
   IL_7739:  dup
   IL_773a:  ldc.i4.5
   IL_773b:  xor
-  IL_773c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_773c:  call       void [System.Console]System.Console::Write(int32)
   IL_7741:  dup
   IL_7742:  ldc.i4.8
   IL_7743:  and
-  IL_7744:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7744:  call       void [System.Console]System.Console::Write(int32)
   IL_7749:  dup
   IL_774a:  ldc.i4.0
   IL_774b:  shr
-  IL_774c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_774c:  call       void [System.Console]System.Console::Write(int32)
   IL_7751:  dup
   IL_7752:  ldc.i4.3
   IL_7753:  xor
-  IL_7754:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7754:  call       void [System.Console]System.Console::Write(int32)
   IL_7759:  dup
   IL_775a:  ldc.i4.5
   IL_775b:  mul
-  IL_775c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_775c:  call       void [System.Console]System.Console::Write(int32)
   IL_7761:  dup
   IL_7762:  ldc.i4.8
   IL_7763:  sub
-  IL_7764:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7764:  call       void [System.Console]System.Console::Write(int32)
   IL_7769:  dup
   IL_776a:  ldc.i4.5
   IL_776b:  sub
-  IL_776c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_776c:  call       void [System.Console]System.Console::Write(int32)
   IL_7771:  dup
   IL_7772:  ldc.i4.2
   IL_7773:  sub
-  IL_7774:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7774:  call       void [System.Console]System.Console::Write(int32)
   IL_7779:  dup
   IL_777a:  ldc.i4.0
   IL_777b:  sub
-  IL_777c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_777c:  call       void [System.Console]System.Console::Write(int32)
   IL_7781:  dup
   IL_7782:  ldc.i4.8
   IL_7783:  mul
-  IL_7784:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7784:  call       void [System.Console]System.Console::Write(int32)
   IL_7789:  dup
   IL_778a:  ldc.i4.0
   IL_778b:  shl
-  IL_778c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_778c:  call       void [System.Console]System.Console::Write(int32)
   IL_7791:  dup
   IL_7792:  ldc.i4.4
   IL_7793:  and
-  IL_7794:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7794:  call       void [System.Console]System.Console::Write(int32)
   IL_7799:  dup
   IL_779a:  ldc.i4.4
   IL_779b:  xor
-  IL_779c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_779c:  call       void [System.Console]System.Console::Write(int32)
   IL_77a1:  dup
   IL_77a2:  ldc.i4.7
   IL_77a3:  mul
-  IL_77a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_77a4:  call       void [System.Console]System.Console::Write(int32)
   IL_77a9:  dup
   IL_77aa:  ldc.i4.5
   IL_77ab:  add
-  IL_77ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_77ac:  call       void [System.Console]System.Console::Write(int32)
   IL_77b1:  dup
   IL_77b2:  ldc.i4.5
   IL_77b3:  and
-  IL_77b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_77b4:  call       void [System.Console]System.Console::Write(int32)
   IL_77b9:  dup
   IL_77ba:  ldc.i4.6
   IL_77bb:  xor
-  IL_77bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_77bc:  call       void [System.Console]System.Console::Write(int32)
   IL_77c1:  dup
   IL_77c2:  ldc.i4.7
   IL_77c3:  shl
-  IL_77c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_77c4:  call       void [System.Console]System.Console::Write(int32)
   IL_77c9:  dup
   IL_77ca:  ldc.i4.1
   IL_77cb:  shr
-  IL_77cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_77cc:  call       void [System.Console]System.Console::Write(int32)
   IL_77d1:  dup
   IL_77d2:  ldc.i4.4
   IL_77d3:  sub
-  IL_77d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_77d4:  call       void [System.Console]System.Console::Write(int32)
   IL_77d9:  dup
   IL_77da:  ldc.i4.3
   IL_77db:  sub
-  IL_77dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_77dc:  call       void [System.Console]System.Console::Write(int32)
   IL_77e1:  dup
   IL_77e2:  ldc.i4.0
   IL_77e3:  shl
-  IL_77e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_77e4:  call       void [System.Console]System.Console::Write(int32)
   IL_77e9:  dup
   IL_77ea:  ldc.i4.1
   IL_77eb:  shr
-  IL_77ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_77ec:  call       void [System.Console]System.Console::Write(int32)
   IL_77f1:  dup
   IL_77f2:  ldc.i4.1
   IL_77f3:  mul
-  IL_77f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_77f4:  call       void [System.Console]System.Console::Write(int32)
   IL_77f9:  dup
   IL_77fa:  ldc.i4.7
   IL_77fb:  or
-  IL_77fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_77fc:  call       void [System.Console]System.Console::Write(int32)
   IL_7801:  dup
   IL_7802:  ldc.i4.0
   IL_7803:  sub
-  IL_7804:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7804:  call       void [System.Console]System.Console::Write(int32)
   IL_7809:  dup
   IL_780a:  ldc.i4.6
   IL_780b:  and
-  IL_780c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_780c:  call       void [System.Console]System.Console::Write(int32)
   IL_7811:  dup
   IL_7812:  ldc.i4.2
   IL_7813:  add
-  IL_7814:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7814:  call       void [System.Console]System.Console::Write(int32)
   IL_7819:  dup
   IL_781a:  ldc.i4.7
   IL_781b:  add
-  IL_781c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_781c:  call       void [System.Console]System.Console::Write(int32)
   IL_7821:  dup
   IL_7822:  ldc.i4.2
   IL_7823:  shr
-  IL_7824:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7824:  call       void [System.Console]System.Console::Write(int32)
   IL_7829:  dup
   IL_782a:  ldc.i4.8
   IL_782b:  add
-  IL_782c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_782c:  call       void [System.Console]System.Console::Write(int32)
   IL_7831:  dup
   IL_7832:  ldc.i4.6
   IL_7833:  shr
-  IL_7834:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7834:  call       void [System.Console]System.Console::Write(int32)
   IL_7839:  dup
   IL_783a:  ldc.i4.6
   IL_783b:  add
-  IL_783c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_783c:  call       void [System.Console]System.Console::Write(int32)
   IL_7841:  dup
   IL_7842:  ldc.i4.4
   IL_7843:  sub
-  IL_7844:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7844:  call       void [System.Console]System.Console::Write(int32)
   IL_7849:  dup
   IL_784a:  ldc.i4.3
   IL_784b:  shr
-  IL_784c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_784c:  call       void [System.Console]System.Console::Write(int32)
   IL_7851:  dup
   IL_7852:  ldc.i4.8
   IL_7853:  xor
-  IL_7854:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7854:  call       void [System.Console]System.Console::Write(int32)
   IL_7859:  dup
   IL_785a:  ldc.i4.5
   IL_785b:  shr
-  IL_785c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_785c:  call       void [System.Console]System.Console::Write(int32)
   IL_7861:  dup
   IL_7862:  ldc.i4.8
   IL_7863:  and
-  IL_7864:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7864:  call       void [System.Console]System.Console::Write(int32)
   IL_7869:  dup
   IL_786a:  ldc.i4.4
   IL_786b:  or
-  IL_786c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_786c:  call       void [System.Console]System.Console::Write(int32)
   IL_7871:  dup
   IL_7872:  ldc.i4.6
   IL_7873:  and
-  IL_7874:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7874:  call       void [System.Console]System.Console::Write(int32)
   IL_7879:  dup
   IL_787a:  ldc.i4.1
   IL_787b:  xor
-  IL_787c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_787c:  call       void [System.Console]System.Console::Write(int32)
   IL_7881:  dup
   IL_7882:  ldc.i4.5
   IL_7883:  shr
-  IL_7884:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7884:  call       void [System.Console]System.Console::Write(int32)
   IL_7889:  dup
   IL_788a:  ldc.i4.8
   IL_788b:  xor
-  IL_788c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_788c:  call       void [System.Console]System.Console::Write(int32)
   IL_7891:  dup
   IL_7892:  ldc.i4.1
   IL_7893:  and
-  IL_7894:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7894:  call       void [System.Console]System.Console::Write(int32)
   IL_7899:  dup
   IL_789a:  ldc.i4.0
   IL_789b:  and
-  IL_789c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_789c:  call       void [System.Console]System.Console::Write(int32)
   IL_78a1:  dup
   IL_78a2:  ldc.i4.6
   IL_78a3:  sub
-  IL_78a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_78a4:  call       void [System.Console]System.Console::Write(int32)
   IL_78a9:  dup
   IL_78aa:  ldc.i4.2
   IL_78ab:  or
-  IL_78ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_78ac:  call       void [System.Console]System.Console::Write(int32)
   IL_78b1:  dup
   IL_78b2:  ldc.i4.2
   IL_78b3:  mul
-  IL_78b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_78b4:  call       void [System.Console]System.Console::Write(int32)
   IL_78b9:  dup
   IL_78ba:  ldc.i4.3
   IL_78bb:  xor
-  IL_78bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_78bc:  call       void [System.Console]System.Console::Write(int32)
   IL_78c1:  dup
   IL_78c2:  ldc.i4.8
   IL_78c3:  add
-  IL_78c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_78c4:  call       void [System.Console]System.Console::Write(int32)
   IL_78c9:  dup
   IL_78ca:  ldc.i4.0
   IL_78cb:  or
-  IL_78cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_78cc:  call       void [System.Console]System.Console::Write(int32)
   IL_78d1:  dup
   IL_78d2:  ldc.i4.8
   IL_78d3:  add
-  IL_78d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_78d4:  call       void [System.Console]System.Console::Write(int32)
   IL_78d9:  dup
   IL_78da:  ldc.i4.8
   IL_78db:  shr
-  IL_78dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_78dc:  call       void [System.Console]System.Console::Write(int32)
   IL_78e1:  dup
   IL_78e2:  ldc.i4.5
   IL_78e3:  add
-  IL_78e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_78e4:  call       void [System.Console]System.Console::Write(int32)
   IL_78e9:  dup
   IL_78ea:  ldc.i4.8
   IL_78eb:  xor
-  IL_78ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_78ec:  call       void [System.Console]System.Console::Write(int32)
   IL_78f1:  dup
   IL_78f2:  ldc.i4.5
   IL_78f3:  or
-  IL_78f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_78f4:  call       void [System.Console]System.Console::Write(int32)
   IL_78f9:  dup
   IL_78fa:  ldc.i4.3
   IL_78fb:  xor
-  IL_78fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_78fc:  call       void [System.Console]System.Console::Write(int32)
   IL_7901:  dup
   IL_7902:  ldc.i4.4
   IL_7903:  xor
-  IL_7904:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7904:  call       void [System.Console]System.Console::Write(int32)
   IL_7909:  dup
   IL_790a:  ldc.i4.4
   IL_790b:  add
-  IL_790c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_790c:  call       void [System.Console]System.Console::Write(int32)
   IL_7911:  dup
   IL_7912:  ldc.i4.6
   IL_7913:  sub
-  IL_7914:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7914:  call       void [System.Console]System.Console::Write(int32)
   IL_7919:  dup
   IL_791a:  ldc.i4.8
   IL_791b:  shr
-  IL_791c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_791c:  call       void [System.Console]System.Console::Write(int32)
   IL_7921:  dup
   IL_7922:  ldc.i4.1
   IL_7923:  shl
-  IL_7924:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7924:  call       void [System.Console]System.Console::Write(int32)
   IL_7929:  dup
   IL_792a:  ldc.i4.8
   IL_792b:  and
-  IL_792c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_792c:  call       void [System.Console]System.Console::Write(int32)
   IL_7931:  dup
   IL_7932:  ldc.i4.1
   IL_7933:  shr
-  IL_7934:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7934:  call       void [System.Console]System.Console::Write(int32)
   IL_7939:  dup
   IL_793a:  ldc.i4.3
   IL_793b:  shl
-  IL_793c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_793c:  call       void [System.Console]System.Console::Write(int32)
   IL_7941:  dup
   IL_7942:  ldc.i4.3
   IL_7943:  add
-  IL_7944:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7944:  call       void [System.Console]System.Console::Write(int32)
   IL_7949:  dup
   IL_794a:  ldc.i4.0
   IL_794b:  shr
-  IL_794c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_794c:  call       void [System.Console]System.Console::Write(int32)
   IL_7951:  dup
   IL_7952:  ldc.i4.6
   IL_7953:  sub
-  IL_7954:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7954:  call       void [System.Console]System.Console::Write(int32)
   IL_7959:  dup
   IL_795a:  ldc.i4.4
   IL_795b:  xor
-  IL_795c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_795c:  call       void [System.Console]System.Console::Write(int32)
   IL_7961:  dup
   IL_7962:  ldc.i4.6
   IL_7963:  sub
-  IL_7964:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7964:  call       void [System.Console]System.Console::Write(int32)
   IL_7969:  dup
   IL_796a:  ldc.i4.7
   IL_796b:  add
-  IL_796c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_796c:  call       void [System.Console]System.Console::Write(int32)
   IL_7971:  dup
   IL_7972:  ldc.i4.8
   IL_7973:  shl
-  IL_7974:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7974:  call       void [System.Console]System.Console::Write(int32)
   IL_7979:  dup
   IL_797a:  ldc.i4.2
   IL_797b:  shr
-  IL_797c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_797c:  call       void [System.Console]System.Console::Write(int32)
   IL_7981:  dup
   IL_7982:  ldc.i4.7
   IL_7983:  and
-  IL_7984:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7984:  call       void [System.Console]System.Console::Write(int32)
   IL_7989:  dup
   IL_798a:  ldc.i4.3
   IL_798b:  and
-  IL_798c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_798c:  call       void [System.Console]System.Console::Write(int32)
   IL_7991:  dup
   IL_7992:  ldc.i4.7
   IL_7993:  xor
-  IL_7994:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7994:  call       void [System.Console]System.Console::Write(int32)
   IL_7999:  dup
   IL_799a:  ldc.i4.6
   IL_799b:  shr
-  IL_799c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_799c:  call       void [System.Console]System.Console::Write(int32)
   IL_79a1:  dup
   IL_79a2:  ldc.i4.1
   IL_79a3:  xor
-  IL_79a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_79a4:  call       void [System.Console]System.Console::Write(int32)
   IL_79a9:  dup
   IL_79aa:  ldc.i4.7
   IL_79ab:  xor
-  IL_79ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_79ac:  call       void [System.Console]System.Console::Write(int32)
   IL_79b1:  dup
   IL_79b2:  ldc.i4.1
   IL_79b3:  add
-  IL_79b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_79b4:  call       void [System.Console]System.Console::Write(int32)
   IL_79b9:  dup
   IL_79ba:  ldc.i4.5
   IL_79bb:  or
-  IL_79bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_79bc:  call       void [System.Console]System.Console::Write(int32)
   IL_79c1:  dup
   IL_79c2:  ldc.i4.6
   IL_79c3:  mul
-  IL_79c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_79c4:  call       void [System.Console]System.Console::Write(int32)
   IL_79c9:  dup
   IL_79ca:  ldc.i4.0
   IL_79cb:  shl
-  IL_79cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_79cc:  call       void [System.Console]System.Console::Write(int32)
   IL_79d1:  dup
   IL_79d2:  ldc.i4.8
   IL_79d3:  shr
-  IL_79d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_79d4:  call       void [System.Console]System.Console::Write(int32)
   IL_79d9:  dup
   IL_79da:  ldc.i4.6
   IL_79db:  sub
-  IL_79dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_79dc:  call       void [System.Console]System.Console::Write(int32)
   IL_79e1:  dup
   IL_79e2:  ldc.i4.8
   IL_79e3:  add
-  IL_79e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_79e4:  call       void [System.Console]System.Console::Write(int32)
   IL_79e9:  dup
   IL_79ea:  ldc.i4.2
   IL_79eb:  shl
-  IL_79ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_79ec:  call       void [System.Console]System.Console::Write(int32)
   IL_79f1:  dup
   IL_79f2:  ldc.i4.3
   IL_79f3:  and
-  IL_79f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_79f4:  call       void [System.Console]System.Console::Write(int32)
   IL_79f9:  dup
   IL_79fa:  ldc.i4.6
   IL_79fb:  shl
-  IL_79fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_79fc:  call       void [System.Console]System.Console::Write(int32)
   IL_7a01:  dup
   IL_7a02:  ldc.i4.2
   IL_7a03:  mul
-  IL_7a04:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7a04:  call       void [System.Console]System.Console::Write(int32)
   IL_7a09:  dup
   IL_7a0a:  ldc.i4.0
   IL_7a0b:  mul
-  IL_7a0c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7a0c:  call       void [System.Console]System.Console::Write(int32)
   IL_7a11:  dup
   IL_7a12:  ldc.i4.2
   IL_7a13:  shl
-  IL_7a14:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7a14:  call       void [System.Console]System.Console::Write(int32)
   IL_7a19:  dup
   IL_7a1a:  ldc.i4.7
   IL_7a1b:  add
-  IL_7a1c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7a1c:  call       void [System.Console]System.Console::Write(int32)
   IL_7a21:  dup
   IL_7a22:  ldc.i4.2
   IL_7a23:  mul
-  IL_7a24:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7a24:  call       void [System.Console]System.Console::Write(int32)
   IL_7a29:  dup
   IL_7a2a:  ldc.i4.4
   IL_7a2b:  mul
-  IL_7a2c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7a2c:  call       void [System.Console]System.Console::Write(int32)
   IL_7a31:  dup
   IL_7a32:  ldc.i4.3
   IL_7a33:  add
-  IL_7a34:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7a34:  call       void [System.Console]System.Console::Write(int32)
   IL_7a39:  dup
   IL_7a3a:  ldc.i4.2
   IL_7a3b:  shr
-  IL_7a3c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7a3c:  call       void [System.Console]System.Console::Write(int32)
   IL_7a41:  dup
   IL_7a42:  ldc.i4.5
   IL_7a43:  or
-  IL_7a44:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7a44:  call       void [System.Console]System.Console::Write(int32)
   IL_7a49:  dup
   IL_7a4a:  ldc.i4.3
   IL_7a4b:  shr
-  IL_7a4c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7a4c:  call       void [System.Console]System.Console::Write(int32)
   IL_7a51:  dup
   IL_7a52:  ldc.i4.5
   IL_7a53:  shr
-  IL_7a54:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7a54:  call       void [System.Console]System.Console::Write(int32)
   IL_7a59:  dup
   IL_7a5a:  ldc.i4.7
   IL_7a5b:  sub
-  IL_7a5c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7a5c:  call       void [System.Console]System.Console::Write(int32)
   IL_7a61:  dup
   IL_7a62:  ldc.i4.0
   IL_7a63:  sub
-  IL_7a64:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7a64:  call       void [System.Console]System.Console::Write(int32)
   IL_7a69:  dup
   IL_7a6a:  ldc.i4.7
   IL_7a6b:  shr
-  IL_7a6c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7a6c:  call       void [System.Console]System.Console::Write(int32)
   IL_7a71:  dup
   IL_7a72:  ldc.i4.1
   IL_7a73:  sub
-  IL_7a74:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7a74:  call       void [System.Console]System.Console::Write(int32)
   IL_7a79:  dup
   IL_7a7a:  ldc.i4.2
   IL_7a7b:  mul
-  IL_7a7c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7a7c:  call       void [System.Console]System.Console::Write(int32)
   IL_7a81:  dup
   IL_7a82:  ldc.i4.6
   IL_7a83:  mul
-  IL_7a84:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7a84:  call       void [System.Console]System.Console::Write(int32)
   IL_7a89:  dup
   IL_7a8a:  ldc.i4.0
   IL_7a8b:  and
-  IL_7a8c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7a8c:  call       void [System.Console]System.Console::Write(int32)
   IL_7a91:  dup
   IL_7a92:  ldc.i4.0
   IL_7a93:  mul
-  IL_7a94:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7a94:  call       void [System.Console]System.Console::Write(int32)
   IL_7a99:  dup
   IL_7a9a:  ldc.i4.5
   IL_7a9b:  add
-  IL_7a9c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7a9c:  call       void [System.Console]System.Console::Write(int32)
   IL_7aa1:  dup
   IL_7aa2:  ldc.i4.4
   IL_7aa3:  add
-  IL_7aa4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7aa4:  call       void [System.Console]System.Console::Write(int32)
   IL_7aa9:  dup
   IL_7aaa:  ldc.i4.2
   IL_7aab:  shl
-  IL_7aac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7aac:  call       void [System.Console]System.Console::Write(int32)
   IL_7ab1:  dup
   IL_7ab2:  ldc.i4.1
   IL_7ab3:  xor
-  IL_7ab4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7ab4:  call       void [System.Console]System.Console::Write(int32)
   IL_7ab9:  dup
   IL_7aba:  ldc.i4.7
   IL_7abb:  or
-  IL_7abc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7abc:  call       void [System.Console]System.Console::Write(int32)
   IL_7ac1:  dup
   IL_7ac2:  ldc.i4.6
   IL_7ac3:  shl
-  IL_7ac4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7ac4:  call       void [System.Console]System.Console::Write(int32)
   IL_7ac9:  dup
   IL_7aca:  ldc.i4.7
   IL_7acb:  mul
-  IL_7acc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7acc:  call       void [System.Console]System.Console::Write(int32)
   IL_7ad1:  dup
   IL_7ad2:  ldc.i4.3
   IL_7ad3:  add
-  IL_7ad4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7ad4:  call       void [System.Console]System.Console::Write(int32)
   IL_7ad9:  dup
   IL_7ada:  ldc.i4.8
   IL_7adb:  shr
-  IL_7adc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7adc:  call       void [System.Console]System.Console::Write(int32)
   IL_7ae1:  dup
   IL_7ae2:  ldc.i4.4
   IL_7ae3:  or
-  IL_7ae4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7ae4:  call       void [System.Console]System.Console::Write(int32)
   IL_7ae9:  dup
   IL_7aea:  ldc.i4.1
   IL_7aeb:  add
-  IL_7aec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7aec:  call       void [System.Console]System.Console::Write(int32)
   IL_7af1:  dup
   IL_7af2:  ldc.i4.6
   IL_7af3:  add
-  IL_7af4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7af4:  call       void [System.Console]System.Console::Write(int32)
   IL_7af9:  dup
   IL_7afa:  ldc.i4.7
   IL_7afb:  sub
-  IL_7afc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7afc:  call       void [System.Console]System.Console::Write(int32)
   IL_7b01:  dup
   IL_7b02:  ldc.i4.0
   IL_7b03:  sub
-  IL_7b04:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7b04:  call       void [System.Console]System.Console::Write(int32)
   IL_7b09:  dup
   IL_7b0a:  ldc.i4.5
   IL_7b0b:  or
-  IL_7b0c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7b0c:  call       void [System.Console]System.Console::Write(int32)
   IL_7b11:  dup
   IL_7b12:  ldc.i4.8
   IL_7b13:  xor
-  IL_7b14:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7b14:  call       void [System.Console]System.Console::Write(int32)
   IL_7b19:  dup
   IL_7b1a:  ldc.i4.5
   IL_7b1b:  mul
-  IL_7b1c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7b1c:  call       void [System.Console]System.Console::Write(int32)
   IL_7b21:  dup
   IL_7b22:  ldc.i4.3
   IL_7b23:  mul
-  IL_7b24:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7b24:  call       void [System.Console]System.Console::Write(int32)
   IL_7b29:  dup
   IL_7b2a:  ldc.i4.1
   IL_7b2b:  shl
-  IL_7b2c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7b2c:  call       void [System.Console]System.Console::Write(int32)
   IL_7b31:  dup
   IL_7b32:  ldc.i4.4
   IL_7b33:  sub
-  IL_7b34:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7b34:  call       void [System.Console]System.Console::Write(int32)
   IL_7b39:  dup
   IL_7b3a:  ldc.i4.8
   IL_7b3b:  shr
-  IL_7b3c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7b3c:  call       void [System.Console]System.Console::Write(int32)
   IL_7b41:  dup
   IL_7b42:  ldc.i4.2
   IL_7b43:  or
-  IL_7b44:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7b44:  call       void [System.Console]System.Console::Write(int32)
   IL_7b49:  dup
   IL_7b4a:  ldc.i4.8
   IL_7b4b:  shl
-  IL_7b4c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7b4c:  call       void [System.Console]System.Console::Write(int32)
   IL_7b51:  dup
   IL_7b52:  ldc.i4.2
   IL_7b53:  or
-  IL_7b54:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7b54:  call       void [System.Console]System.Console::Write(int32)
   IL_7b59:  dup
   IL_7b5a:  ldc.i4.0
   IL_7b5b:  shr
-  IL_7b5c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7b5c:  call       void [System.Console]System.Console::Write(int32)
   IL_7b61:  dup
   IL_7b62:  ldc.i4.3
   IL_7b63:  xor
-  IL_7b64:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7b64:  call       void [System.Console]System.Console::Write(int32)
   IL_7b69:  dup
   IL_7b6a:  ldc.i4.3
   IL_7b6b:  sub
-  IL_7b6c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7b6c:  call       void [System.Console]System.Console::Write(int32)
   IL_7b71:  dup
   IL_7b72:  ldc.i4.0
   IL_7b73:  shl
-  IL_7b74:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7b74:  call       void [System.Console]System.Console::Write(int32)
   IL_7b79:  dup
   IL_7b7a:  ldc.i4.3
   IL_7b7b:  xor
-  IL_7b7c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7b7c:  call       void [System.Console]System.Console::Write(int32)
   IL_7b81:  dup
   IL_7b82:  ldc.i4.1
   IL_7b83:  add
-  IL_7b84:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7b84:  call       void [System.Console]System.Console::Write(int32)
   IL_7b89:  dup
   IL_7b8a:  ldc.i4.4
   IL_7b8b:  add
-  IL_7b8c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7b8c:  call       void [System.Console]System.Console::Write(int32)
   IL_7b91:  dup
   IL_7b92:  ldc.i4.8
   IL_7b93:  and
-  IL_7b94:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7b94:  call       void [System.Console]System.Console::Write(int32)
   IL_7b99:  dup
   IL_7b9a:  ldc.i4.8
   IL_7b9b:  mul
-  IL_7b9c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7b9c:  call       void [System.Console]System.Console::Write(int32)
   IL_7ba1:  dup
   IL_7ba2:  ldc.i4.0
   IL_7ba3:  xor
-  IL_7ba4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7ba4:  call       void [System.Console]System.Console::Write(int32)
   IL_7ba9:  dup
   IL_7baa:  ldc.i4.0
   IL_7bab:  add
-  IL_7bac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7bac:  call       void [System.Console]System.Console::Write(int32)
   IL_7bb1:  dup
   IL_7bb2:  ldc.i4.7
   IL_7bb3:  mul
-  IL_7bb4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7bb4:  call       void [System.Console]System.Console::Write(int32)
   IL_7bb9:  dup
   IL_7bba:  ldc.i4.1
   IL_7bbb:  mul
-  IL_7bbc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7bbc:  call       void [System.Console]System.Console::Write(int32)
   IL_7bc1:  dup
   IL_7bc2:  ldc.i4.8
   IL_7bc3:  shl
-  IL_7bc4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7bc4:  call       void [System.Console]System.Console::Write(int32)
   IL_7bc9:  dup
   IL_7bca:  ldc.i4.6
   IL_7bcb:  and
-  IL_7bcc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7bcc:  call       void [System.Console]System.Console::Write(int32)
   IL_7bd1:  dup
   IL_7bd2:  ldc.i4.0
   IL_7bd3:  mul
-  IL_7bd4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7bd4:  call       void [System.Console]System.Console::Write(int32)
   IL_7bd9:  dup
   IL_7bda:  ldc.i4.7
   IL_7bdb:  add
-  IL_7bdc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7bdc:  call       void [System.Console]System.Console::Write(int32)
   IL_7be1:  dup
   IL_7be2:  ldc.i4.1
   IL_7be3:  and
-  IL_7be4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7be4:  call       void [System.Console]System.Console::Write(int32)
   IL_7be9:  dup
   IL_7bea:  ldc.i4.4
   IL_7beb:  shl
-  IL_7bec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7bec:  call       void [System.Console]System.Console::Write(int32)
   IL_7bf1:  dup
   IL_7bf2:  ldc.i4.0
   IL_7bf3:  xor
-  IL_7bf4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7bf4:  call       void [System.Console]System.Console::Write(int32)
   IL_7bf9:  dup
   IL_7bfa:  ldc.i4.2
   IL_7bfb:  and
-  IL_7bfc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7bfc:  call       void [System.Console]System.Console::Write(int32)
   IL_7c01:  dup
   IL_7c02:  ldc.i4.8
   IL_7c03:  shr
-  IL_7c04:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7c04:  call       void [System.Console]System.Console::Write(int32)
   IL_7c09:  dup
   IL_7c0a:  ldc.i4.3
   IL_7c0b:  mul
-  IL_7c0c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7c0c:  call       void [System.Console]System.Console::Write(int32)
   IL_7c11:  dup
   IL_7c12:  ldc.i4.6
   IL_7c13:  or
-  IL_7c14:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7c14:  call       void [System.Console]System.Console::Write(int32)
   IL_7c19:  dup
   IL_7c1a:  ldc.i4.6
   IL_7c1b:  xor
-  IL_7c1c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7c1c:  call       void [System.Console]System.Console::Write(int32)
   IL_7c21:  dup
   IL_7c22:  ldc.i4.0
   IL_7c23:  shr
-  IL_7c24:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7c24:  call       void [System.Console]System.Console::Write(int32)
   IL_7c29:  dup
   IL_7c2a:  ldc.i4.4
   IL_7c2b:  and
-  IL_7c2c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7c2c:  call       void [System.Console]System.Console::Write(int32)
   IL_7c31:  dup
   IL_7c32:  ldc.i4.8
   IL_7c33:  or
-  IL_7c34:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7c34:  call       void [System.Console]System.Console::Write(int32)
   IL_7c39:  dup
   IL_7c3a:  ldc.i4.7
   IL_7c3b:  add
-  IL_7c3c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7c3c:  call       void [System.Console]System.Console::Write(int32)
   IL_7c41:  dup
   IL_7c42:  ldc.i4.2
   IL_7c43:  add
-  IL_7c44:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7c44:  call       void [System.Console]System.Console::Write(int32)
   IL_7c49:  dup
   IL_7c4a:  ldc.i4.2
   IL_7c4b:  shl
-  IL_7c4c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7c4c:  call       void [System.Console]System.Console::Write(int32)
   IL_7c51:  dup
   IL_7c52:  ldc.i4.7
   IL_7c53:  shl
-  IL_7c54:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7c54:  call       void [System.Console]System.Console::Write(int32)
   IL_7c59:  dup
   IL_7c5a:  ldc.i4.3
   IL_7c5b:  and
-  IL_7c5c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7c5c:  call       void [System.Console]System.Console::Write(int32)
   IL_7c61:  dup
   IL_7c62:  ldc.i4.2
   IL_7c63:  xor
-  IL_7c64:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7c64:  call       void [System.Console]System.Console::Write(int32)
   IL_7c69:  dup
   IL_7c6a:  ldc.i4.7
   IL_7c6b:  add
-  IL_7c6c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7c6c:  call       void [System.Console]System.Console::Write(int32)
   IL_7c71:  dup
   IL_7c72:  ldc.i4.2
   IL_7c73:  xor
-  IL_7c74:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7c74:  call       void [System.Console]System.Console::Write(int32)
   IL_7c79:  dup
   IL_7c7a:  ldc.i4.2
   IL_7c7b:  shr
-  IL_7c7c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7c7c:  call       void [System.Console]System.Console::Write(int32)
   IL_7c81:  dup
   IL_7c82:  ldc.i4.1
   IL_7c83:  sub
-  IL_7c84:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7c84:  call       void [System.Console]System.Console::Write(int32)
   IL_7c89:  dup
   IL_7c8a:  ldc.i4.0
   IL_7c8b:  sub
-  IL_7c8c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7c8c:  call       void [System.Console]System.Console::Write(int32)
   IL_7c91:  dup
   IL_7c92:  ldc.i4.8
   IL_7c93:  and
-  IL_7c94:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7c94:  call       void [System.Console]System.Console::Write(int32)
   IL_7c99:  dup
   IL_7c9a:  ldc.i4.5
   IL_7c9b:  or
-  IL_7c9c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7c9c:  call       void [System.Console]System.Console::Write(int32)
   IL_7ca1:  dup
   IL_7ca2:  ldc.i4.7
   IL_7ca3:  mul
-  IL_7ca4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7ca4:  call       void [System.Console]System.Console::Write(int32)
   IL_7ca9:  dup
   IL_7caa:  ldc.i4.6
   IL_7cab:  xor
-  IL_7cac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7cac:  call       void [System.Console]System.Console::Write(int32)
   IL_7cb1:  dup
   IL_7cb2:  ldc.i4.7
   IL_7cb3:  add
-  IL_7cb4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7cb4:  call       void [System.Console]System.Console::Write(int32)
   IL_7cb9:  dup
   IL_7cba:  ldc.i4.1
   IL_7cbb:  sub
-  IL_7cbc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7cbc:  call       void [System.Console]System.Console::Write(int32)
   IL_7cc1:  dup
   IL_7cc2:  ldc.i4.0
   IL_7cc3:  xor
-  IL_7cc4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7cc4:  call       void [System.Console]System.Console::Write(int32)
   IL_7cc9:  dup
   IL_7cca:  ldc.i4.1
   IL_7ccb:  or
-  IL_7ccc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7ccc:  call       void [System.Console]System.Console::Write(int32)
   IL_7cd1:  dup
   IL_7cd2:  ldc.i4.1
   IL_7cd3:  and
-  IL_7cd4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7cd4:  call       void [System.Console]System.Console::Write(int32)
   IL_7cd9:  dup
   IL_7cda:  ldc.i4.0
   IL_7cdb:  mul
-  IL_7cdc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7cdc:  call       void [System.Console]System.Console::Write(int32)
   IL_7ce1:  dup
   IL_7ce2:  ldc.i4.2
   IL_7ce3:  shl
-  IL_7ce4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7ce4:  call       void [System.Console]System.Console::Write(int32)
   IL_7ce9:  dup
   IL_7cea:  ldc.i4.0
   IL_7ceb:  mul
-  IL_7cec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7cec:  call       void [System.Console]System.Console::Write(int32)
   IL_7cf1:  dup
   IL_7cf2:  ldc.i4.1
   IL_7cf3:  shr
-  IL_7cf4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7cf4:  call       void [System.Console]System.Console::Write(int32)
   IL_7cf9:  dup
   IL_7cfa:  ldc.i4.1
   IL_7cfb:  shr
-  IL_7cfc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7cfc:  call       void [System.Console]System.Console::Write(int32)
   IL_7d01:  dup
   IL_7d02:  ldc.i4.3
   IL_7d03:  and
-  IL_7d04:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7d04:  call       void [System.Console]System.Console::Write(int32)
   IL_7d09:  dup
   IL_7d0a:  ldc.i4.5
   IL_7d0b:  shr
-  IL_7d0c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7d0c:  call       void [System.Console]System.Console::Write(int32)
   IL_7d11:  dup
   IL_7d12:  ldc.i4.8
   IL_7d13:  shr
-  IL_7d14:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7d14:  call       void [System.Console]System.Console::Write(int32)
   IL_7d19:  dup
   IL_7d1a:  ldc.i4.0
   IL_7d1b:  xor
-  IL_7d1c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7d1c:  call       void [System.Console]System.Console::Write(int32)
   IL_7d21:  dup
   IL_7d22:  ldc.i4.4
   IL_7d23:  mul
-  IL_7d24:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7d24:  call       void [System.Console]System.Console::Write(int32)
   IL_7d29:  dup
   IL_7d2a:  ldc.i4.6
   IL_7d2b:  xor
-  IL_7d2c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7d2c:  call       void [System.Console]System.Console::Write(int32)
   IL_7d31:  dup
   IL_7d32:  ldc.i4.7
   IL_7d33:  or
-  IL_7d34:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7d34:  call       void [System.Console]System.Console::Write(int32)
   IL_7d39:  dup
   IL_7d3a:  ldc.i4.8
   IL_7d3b:  mul
-  IL_7d3c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7d3c:  call       void [System.Console]System.Console::Write(int32)
   IL_7d41:  dup
   IL_7d42:  ldc.i4.2
   IL_7d43:  shr
-  IL_7d44:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7d44:  call       void [System.Console]System.Console::Write(int32)
   IL_7d49:  dup
   IL_7d4a:  ldc.i4.0
   IL_7d4b:  and
-  IL_7d4c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7d4c:  call       void [System.Console]System.Console::Write(int32)
   IL_7d51:  dup
   IL_7d52:  ldc.i4.1
   IL_7d53:  mul
-  IL_7d54:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7d54:  call       void [System.Console]System.Console::Write(int32)
   IL_7d59:  dup
   IL_7d5a:  ldc.i4.4
   IL_7d5b:  xor
-  IL_7d5c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7d5c:  call       void [System.Console]System.Console::Write(int32)
   IL_7d61:  dup
   IL_7d62:  ldc.i4.1
   IL_7d63:  shr
-  IL_7d64:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7d64:  call       void [System.Console]System.Console::Write(int32)
   IL_7d69:  dup
   IL_7d6a:  ldc.i4.7
   IL_7d6b:  xor
-  IL_7d6c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7d6c:  call       void [System.Console]System.Console::Write(int32)
   IL_7d71:  dup
   IL_7d72:  ldc.i4.6
   IL_7d73:  mul
-  IL_7d74:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7d74:  call       void [System.Console]System.Console::Write(int32)
   IL_7d79:  dup
   IL_7d7a:  ldc.i4.7
   IL_7d7b:  add
-  IL_7d7c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7d7c:  call       void [System.Console]System.Console::Write(int32)
   IL_7d81:  dup
   IL_7d82:  ldc.i4.1
   IL_7d83:  add
-  IL_7d84:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7d84:  call       void [System.Console]System.Console::Write(int32)
   IL_7d89:  dup
   IL_7d8a:  ldc.i4.0
   IL_7d8b:  add
-  IL_7d8c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7d8c:  call       void [System.Console]System.Console::Write(int32)
   IL_7d91:  dup
   IL_7d92:  ldc.i4.3
   IL_7d93:  xor
-  IL_7d94:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7d94:  call       void [System.Console]System.Console::Write(int32)
   IL_7d99:  dup
   IL_7d9a:  ldc.i4.1
   IL_7d9b:  mul
-  IL_7d9c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7d9c:  call       void [System.Console]System.Console::Write(int32)
   IL_7da1:  dup
   IL_7da2:  ldc.i4.3
   IL_7da3:  shr
-  IL_7da4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7da4:  call       void [System.Console]System.Console::Write(int32)
   IL_7da9:  dup
   IL_7daa:  ldc.i4.4
   IL_7dab:  and
-  IL_7dac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7dac:  call       void [System.Console]System.Console::Write(int32)
   IL_7db1:  dup
   IL_7db2:  ldc.i4.0
   IL_7db3:  shl
-  IL_7db4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7db4:  call       void [System.Console]System.Console::Write(int32)
   IL_7db9:  dup
   IL_7dba:  ldc.i4.4
   IL_7dbb:  mul
-  IL_7dbc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7dbc:  call       void [System.Console]System.Console::Write(int32)
   IL_7dc1:  dup
   IL_7dc2:  ldc.i4.5
   IL_7dc3:  and
-  IL_7dc4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7dc4:  call       void [System.Console]System.Console::Write(int32)
   IL_7dc9:  dup
   IL_7dca:  ldc.i4.0
   IL_7dcb:  xor
-  IL_7dcc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7dcc:  call       void [System.Console]System.Console::Write(int32)
   IL_7dd1:  dup
   IL_7dd2:  ldc.i4.5
   IL_7dd3:  mul
-  IL_7dd4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7dd4:  call       void [System.Console]System.Console::Write(int32)
   IL_7dd9:  dup
   IL_7dda:  ldc.i4.4
   IL_7ddb:  sub
-  IL_7ddc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7ddc:  call       void [System.Console]System.Console::Write(int32)
   IL_7de1:  dup
   IL_7de2:  ldc.i4.3
   IL_7de3:  sub
-  IL_7de4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7de4:  call       void [System.Console]System.Console::Write(int32)
   IL_7de9:  dup
   IL_7dea:  ldc.i4.5
   IL_7deb:  sub
-  IL_7dec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7dec:  call       void [System.Console]System.Console::Write(int32)
   IL_7df1:  dup
   IL_7df2:  ldc.i4.7
   IL_7df3:  shr
-  IL_7df4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7df4:  call       void [System.Console]System.Console::Write(int32)
   IL_7df9:  dup
   IL_7dfa:  ldc.i4.7
   IL_7dfb:  sub
-  IL_7dfc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7dfc:  call       void [System.Console]System.Console::Write(int32)
   IL_7e01:  dup
   IL_7e02:  ldc.i4.4
   IL_7e03:  shl
-  IL_7e04:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7e04:  call       void [System.Console]System.Console::Write(int32)
   IL_7e09:  dup
   IL_7e0a:  ldc.i4.3
   IL_7e0b:  and
-  IL_7e0c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7e0c:  call       void [System.Console]System.Console::Write(int32)
   IL_7e11:  dup
   IL_7e12:  ldc.i4.8
   IL_7e13:  or
-  IL_7e14:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7e14:  call       void [System.Console]System.Console::Write(int32)
   IL_7e19:  dup
   IL_7e1a:  ldc.i4.7
   IL_7e1b:  and
-  IL_7e1c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7e1c:  call       void [System.Console]System.Console::Write(int32)
   IL_7e21:  dup
   IL_7e22:  ldc.i4.4
   IL_7e23:  shr
-  IL_7e24:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7e24:  call       void [System.Console]System.Console::Write(int32)
   IL_7e29:  dup
   IL_7e2a:  ldc.i4.4
   IL_7e2b:  xor
-  IL_7e2c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7e2c:  call       void [System.Console]System.Console::Write(int32)
   IL_7e31:  dup
   IL_7e32:  ldc.i4.7
   IL_7e33:  shl
-  IL_7e34:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7e34:  call       void [System.Console]System.Console::Write(int32)
   IL_7e39:  dup
   IL_7e3a:  ldc.i4.3
   IL_7e3b:  shr
-  IL_7e3c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7e3c:  call       void [System.Console]System.Console::Write(int32)
   IL_7e41:  dup
   IL_7e42:  ldc.i4.1
   IL_7e43:  shl
-  IL_7e44:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7e44:  call       void [System.Console]System.Console::Write(int32)
   IL_7e49:  dup
   IL_7e4a:  ldc.i4.7
   IL_7e4b:  and
-  IL_7e4c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7e4c:  call       void [System.Console]System.Console::Write(int32)
   IL_7e51:  dup
   IL_7e52:  ldc.i4.2
   IL_7e53:  xor
-  IL_7e54:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7e54:  call       void [System.Console]System.Console::Write(int32)
   IL_7e59:  dup
   IL_7e5a:  ldc.i4.4
   IL_7e5b:  and
-  IL_7e5c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7e5c:  call       void [System.Console]System.Console::Write(int32)
   IL_7e61:  dup
   IL_7e62:  ldc.i4.5
   IL_7e63:  or
-  IL_7e64:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7e64:  call       void [System.Console]System.Console::Write(int32)
   IL_7e69:  dup
   IL_7e6a:  ldc.i4.5
   IL_7e6b:  sub
-  IL_7e6c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7e6c:  call       void [System.Console]System.Console::Write(int32)
   IL_7e71:  dup
   IL_7e72:  ldc.i4.7
   IL_7e73:  or
-  IL_7e74:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7e74:  call       void [System.Console]System.Console::Write(int32)
   IL_7e79:  dup
   IL_7e7a:  ldc.i4.5
   IL_7e7b:  shr
-  IL_7e7c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7e7c:  call       void [System.Console]System.Console::Write(int32)
   IL_7e81:  dup
   IL_7e82:  ldc.i4.8
   IL_7e83:  mul
-  IL_7e84:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7e84:  call       void [System.Console]System.Console::Write(int32)
   IL_7e89:  dup
   IL_7e8a:  ldc.i4.3
   IL_7e8b:  xor
-  IL_7e8c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7e8c:  call       void [System.Console]System.Console::Write(int32)
   IL_7e91:  dup
   IL_7e92:  ldc.i4.1
   IL_7e93:  shr
-  IL_7e94:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7e94:  call       void [System.Console]System.Console::Write(int32)
   IL_7e99:  dup
   IL_7e9a:  ldc.i4.4
   IL_7e9b:  shr
-  IL_7e9c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7e9c:  call       void [System.Console]System.Console::Write(int32)
   IL_7ea1:  dup
   IL_7ea2:  ldc.i4.8
   IL_7ea3:  mul
-  IL_7ea4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7ea4:  call       void [System.Console]System.Console::Write(int32)
   IL_7ea9:  dup
   IL_7eaa:  ldc.i4.7
   IL_7eab:  or
-  IL_7eac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7eac:  call       void [System.Console]System.Console::Write(int32)
   IL_7eb1:  dup
   IL_7eb2:  ldc.i4.7
   IL_7eb3:  add
-  IL_7eb4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7eb4:  call       void [System.Console]System.Console::Write(int32)
   IL_7eb9:  dup
   IL_7eba:  ldc.i4.3
   IL_7ebb:  and
-  IL_7ebc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7ebc:  call       void [System.Console]System.Console::Write(int32)
   IL_7ec1:  dup
   IL_7ec2:  ldc.i4.6
   IL_7ec3:  or
-  IL_7ec4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7ec4:  call       void [System.Console]System.Console::Write(int32)
   IL_7ec9:  dup
   IL_7eca:  ldc.i4.8
   IL_7ecb:  mul
-  IL_7ecc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7ecc:  call       void [System.Console]System.Console::Write(int32)
   IL_7ed1:  dup
   IL_7ed2:  ldc.i4.8
   IL_7ed3:  or
-  IL_7ed4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7ed4:  call       void [System.Console]System.Console::Write(int32)
   IL_7ed9:  dup
   IL_7eda:  ldc.i4.8
   IL_7edb:  add
-  IL_7edc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7edc:  call       void [System.Console]System.Console::Write(int32)
   IL_7ee1:  dup
   IL_7ee2:  ldc.i4.1
   IL_7ee3:  xor
-  IL_7ee4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7ee4:  call       void [System.Console]System.Console::Write(int32)
   IL_7ee9:  dup
   IL_7eea:  ldc.i4.1
   IL_7eeb:  or
-  IL_7eec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7eec:  call       void [System.Console]System.Console::Write(int32)
   IL_7ef1:  dup
   IL_7ef2:  ldc.i4.2
   IL_7ef3:  shl
-  IL_7ef4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7ef4:  call       void [System.Console]System.Console::Write(int32)
   IL_7ef9:  dup
   IL_7efa:  ldc.i4.8
   IL_7efb:  shl
-  IL_7efc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7efc:  call       void [System.Console]System.Console::Write(int32)
   IL_7f01:  dup
   IL_7f02:  ldc.i4.1
   IL_7f03:  and
-  IL_7f04:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7f04:  call       void [System.Console]System.Console::Write(int32)
   IL_7f09:  dup
   IL_7f0a:  ldc.i4.4
   IL_7f0b:  shl
-  IL_7f0c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7f0c:  call       void [System.Console]System.Console::Write(int32)
   IL_7f11:  dup
   IL_7f12:  ldc.i4.1
   IL_7f13:  or
-  IL_7f14:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7f14:  call       void [System.Console]System.Console::Write(int32)
   IL_7f19:  dup
   IL_7f1a:  ldc.i4.4
   IL_7f1b:  xor
-  IL_7f1c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7f1c:  call       void [System.Console]System.Console::Write(int32)
   IL_7f21:  dup
   IL_7f22:  ldc.i4.0
   IL_7f23:  sub
-  IL_7f24:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7f24:  call       void [System.Console]System.Console::Write(int32)
   IL_7f29:  dup
   IL_7f2a:  ldc.i4.7
   IL_7f2b:  or
-  IL_7f2c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7f2c:  call       void [System.Console]System.Console::Write(int32)
   IL_7f31:  dup
   IL_7f32:  ldc.i4.5
   IL_7f33:  shl
-  IL_7f34:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7f34:  call       void [System.Console]System.Console::Write(int32)
   IL_7f39:  dup
   IL_7f3a:  ldc.i4.0
   IL_7f3b:  shl
-  IL_7f3c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7f3c:  call       void [System.Console]System.Console::Write(int32)
   IL_7f41:  dup
   IL_7f42:  ldc.i4.5
   IL_7f43:  and
-  IL_7f44:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7f44:  call       void [System.Console]System.Console::Write(int32)
   IL_7f49:  dup
   IL_7f4a:  ldc.i4.4
   IL_7f4b:  or
-  IL_7f4c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7f4c:  call       void [System.Console]System.Console::Write(int32)
   IL_7f51:  dup
   IL_7f52:  ldc.i4.8
   IL_7f53:  mul
-  IL_7f54:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7f54:  call       void [System.Console]System.Console::Write(int32)
   IL_7f59:  dup
   IL_7f5a:  ldc.i4.7
   IL_7f5b:  add
-  IL_7f5c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7f5c:  call       void [System.Console]System.Console::Write(int32)
   IL_7f61:  dup
   IL_7f62:  ldc.i4.2
   IL_7f63:  xor
-  IL_7f64:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7f64:  call       void [System.Console]System.Console::Write(int32)
   IL_7f69:  dup
   IL_7f6a:  ldc.i4.3
   IL_7f6b:  shr
-  IL_7f6c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7f6c:  call       void [System.Console]System.Console::Write(int32)
   IL_7f71:  dup
   IL_7f72:  ldc.i4.5
   IL_7f73:  xor
-  IL_7f74:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7f74:  call       void [System.Console]System.Console::Write(int32)
   IL_7f79:  dup
   IL_7f7a:  ldc.i4.2
   IL_7f7b:  xor
-  IL_7f7c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7f7c:  call       void [System.Console]System.Console::Write(int32)
   IL_7f81:  dup
   IL_7f82:  ldc.i4.3
   IL_7f83:  mul
-  IL_7f84:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7f84:  call       void [System.Console]System.Console::Write(int32)
   IL_7f89:  dup
   IL_7f8a:  ldc.i4.7
   IL_7f8b:  add
-  IL_7f8c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7f8c:  call       void [System.Console]System.Console::Write(int32)
   IL_7f91:  dup
   IL_7f92:  ldc.i4.5
   IL_7f93:  and
-  IL_7f94:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7f94:  call       void [System.Console]System.Console::Write(int32)
   IL_7f99:  dup
   IL_7f9a:  ldc.i4.5
   IL_7f9b:  and
-  IL_7f9c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7f9c:  call       void [System.Console]System.Console::Write(int32)
   IL_7fa1:  dup
   IL_7fa2:  ldc.i4.4
   IL_7fa3:  shl
-  IL_7fa4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7fa4:  call       void [System.Console]System.Console::Write(int32)
   IL_7fa9:  dup
   IL_7faa:  ldc.i4.2
   IL_7fab:  and
-  IL_7fac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7fac:  call       void [System.Console]System.Console::Write(int32)
   IL_7fb1:  dup
   IL_7fb2:  ldc.i4.0
   IL_7fb3:  or
-  IL_7fb4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7fb4:  call       void [System.Console]System.Console::Write(int32)
   IL_7fb9:  dup
   IL_7fba:  ldc.i4.3
   IL_7fbb:  shl
-  IL_7fbc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7fbc:  call       void [System.Console]System.Console::Write(int32)
   IL_7fc1:  dup
   IL_7fc2:  ldc.i4.3
   IL_7fc3:  shl
-  IL_7fc4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7fc4:  call       void [System.Console]System.Console::Write(int32)
   IL_7fc9:  dup
   IL_7fca:  ldc.i4.3
   IL_7fcb:  xor
-  IL_7fcc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7fcc:  call       void [System.Console]System.Console::Write(int32)
   IL_7fd1:  dup
   IL_7fd2:  ldc.i4.0
   IL_7fd3:  add
-  IL_7fd4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7fd4:  call       void [System.Console]System.Console::Write(int32)
   IL_7fd9:  dup
   IL_7fda:  ldc.i4.4
   IL_7fdb:  and
-  IL_7fdc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7fdc:  call       void [System.Console]System.Console::Write(int32)
   IL_7fe1:  dup
   IL_7fe2:  ldc.i4.8
   IL_7fe3:  xor
-  IL_7fe4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7fe4:  call       void [System.Console]System.Console::Write(int32)
   IL_7fe9:  dup
   IL_7fea:  ldc.i4.1
   IL_7feb:  and
-  IL_7fec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7fec:  call       void [System.Console]System.Console::Write(int32)
   IL_7ff1:  dup
   IL_7ff2:  ldc.i4.5
   IL_7ff3:  shr
-  IL_7ff4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7ff4:  call       void [System.Console]System.Console::Write(int32)
   IL_7ff9:  dup
   IL_7ffa:  ldc.i4.8
   IL_7ffb:  shl
-  IL_7ffc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_7ffc:  call       void [System.Console]System.Console::Write(int32)
   IL_8001:  dup
   IL_8002:  ldc.i4.7
   IL_8003:  xor
-  IL_8004:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8004:  call       void [System.Console]System.Console::Write(int32)
   IL_8009:  dup
   IL_800a:  ldc.i4.5
   IL_800b:  sub
-  IL_800c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_800c:  call       void [System.Console]System.Console::Write(int32)
   IL_8011:  dup
   IL_8012:  ldc.i4.6
   IL_8013:  or
-  IL_8014:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8014:  call       void [System.Console]System.Console::Write(int32)
   IL_8019:  dup
   IL_801a:  ldc.i4.8
   IL_801b:  shr
-  IL_801c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_801c:  call       void [System.Console]System.Console::Write(int32)
   IL_8021:  dup
   IL_8022:  ldc.i4.2
   IL_8023:  shr
-  IL_8024:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8024:  call       void [System.Console]System.Console::Write(int32)
   IL_8029:  dup
   IL_802a:  ldc.i4.3
   IL_802b:  xor
-  IL_802c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_802c:  call       void [System.Console]System.Console::Write(int32)
   IL_8031:  dup
   IL_8032:  ldc.i4.0
   IL_8033:  add
-  IL_8034:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8034:  call       void [System.Console]System.Console::Write(int32)
   IL_8039:  dup
   IL_803a:  ldc.i4.8
   IL_803b:  mul
-  IL_803c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_803c:  call       void [System.Console]System.Console::Write(int32)
   IL_8041:  dup
   IL_8042:  ldc.i4.8
   IL_8043:  shr
-  IL_8044:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8044:  call       void [System.Console]System.Console::Write(int32)
   IL_8049:  dup
   IL_804a:  ldc.i4.2
   IL_804b:  or
-  IL_804c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_804c:  call       void [System.Console]System.Console::Write(int32)
   IL_8051:  dup
   IL_8052:  ldc.i4.0
   IL_8053:  and
-  IL_8054:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8054:  call       void [System.Console]System.Console::Write(int32)
   IL_8059:  dup
   IL_805a:  ldc.i4.2
   IL_805b:  mul
-  IL_805c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_805c:  call       void [System.Console]System.Console::Write(int32)
   IL_8061:  dup
   IL_8062:  ldc.i4.7
   IL_8063:  or
-  IL_8064:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8064:  call       void [System.Console]System.Console::Write(int32)
   IL_8069:  dup
   IL_806a:  ldc.i4.1
   IL_806b:  sub
-  IL_806c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_806c:  call       void [System.Console]System.Console::Write(int32)
   IL_8071:  dup
   IL_8072:  ldc.i4.5
   IL_8073:  and
-  IL_8074:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8074:  call       void [System.Console]System.Console::Write(int32)
   IL_8079:  dup
   IL_807a:  ldc.i4.1
   IL_807b:  and
-  IL_807c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_807c:  call       void [System.Console]System.Console::Write(int32)
   IL_8081:  dup
   IL_8082:  ldc.i4.5
   IL_8083:  shr
-  IL_8084:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8084:  call       void [System.Console]System.Console::Write(int32)
   IL_8089:  dup
   IL_808a:  ldc.i4.8
   IL_808b:  shl
-  IL_808c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_808c:  call       void [System.Console]System.Console::Write(int32)
   IL_8091:  dup
   IL_8092:  ldc.i4.2
   IL_8093:  sub
-  IL_8094:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8094:  call       void [System.Console]System.Console::Write(int32)
   IL_8099:  dup
   IL_809a:  ldc.i4.8
   IL_809b:  xor
-  IL_809c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_809c:  call       void [System.Console]System.Console::Write(int32)
   IL_80a1:  dup
   IL_80a2:  ldc.i4.5
   IL_80a3:  shr
-  IL_80a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_80a4:  call       void [System.Console]System.Console::Write(int32)
   IL_80a9:  dup
   IL_80aa:  ldc.i4.2
   IL_80ab:  mul
-  IL_80ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_80ac:  call       void [System.Console]System.Console::Write(int32)
   IL_80b1:  dup
   IL_80b2:  ldc.i4.5
   IL_80b3:  add
-  IL_80b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_80b4:  call       void [System.Console]System.Console::Write(int32)
   IL_80b9:  dup
   IL_80ba:  ldc.i4.7
   IL_80bb:  or
-  IL_80bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_80bc:  call       void [System.Console]System.Console::Write(int32)
   IL_80c1:  dup
   IL_80c2:  ldc.i4.4
   IL_80c3:  and
-  IL_80c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_80c4:  call       void [System.Console]System.Console::Write(int32)
   IL_80c9:  dup
   IL_80ca:  ldc.i4.7
   IL_80cb:  or
-  IL_80cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_80cc:  call       void [System.Console]System.Console::Write(int32)
   IL_80d1:  dup
   IL_80d2:  ldc.i4.4
   IL_80d3:  or
-  IL_80d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_80d4:  call       void [System.Console]System.Console::Write(int32)
   IL_80d9:  dup
   IL_80da:  ldc.i4.4
   IL_80db:  or
-  IL_80dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_80dc:  call       void [System.Console]System.Console::Write(int32)
   IL_80e1:  dup
   IL_80e2:  ldc.i4.1
   IL_80e3:  mul
-  IL_80e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_80e4:  call       void [System.Console]System.Console::Write(int32)
   IL_80e9:  dup
   IL_80ea:  ldc.i4.3
   IL_80eb:  shr
-  IL_80ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_80ec:  call       void [System.Console]System.Console::Write(int32)
   IL_80f1:  dup
   IL_80f2:  ldc.i4.7
   IL_80f3:  and
-  IL_80f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_80f4:  call       void [System.Console]System.Console::Write(int32)
   IL_80f9:  dup
   IL_80fa:  ldc.i4.1
   IL_80fb:  xor
-  IL_80fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_80fc:  call       void [System.Console]System.Console::Write(int32)
   IL_8101:  dup
   IL_8102:  ldc.i4.5
   IL_8103:  shr
-  IL_8104:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8104:  call       void [System.Console]System.Console::Write(int32)
   IL_8109:  dup
   IL_810a:  ldc.i4.8
   IL_810b:  mul
-  IL_810c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_810c:  call       void [System.Console]System.Console::Write(int32)
   IL_8111:  dup
   IL_8112:  ldc.i4.0
   IL_8113:  mul
-  IL_8114:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8114:  call       void [System.Console]System.Console::Write(int32)
   IL_8119:  dup
   IL_811a:  ldc.i4.0
   IL_811b:  and
-  IL_811c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_811c:  call       void [System.Console]System.Console::Write(int32)
   IL_8121:  dup
   IL_8122:  ldc.i4.7
   IL_8123:  and
-  IL_8124:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8124:  call       void [System.Console]System.Console::Write(int32)
   IL_8129:  dup
   IL_812a:  ldc.i4.2
   IL_812b:  xor
-  IL_812c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_812c:  call       void [System.Console]System.Console::Write(int32)
   IL_8131:  dup
   IL_8132:  ldc.i4.5
   IL_8133:  or
-  IL_8134:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8134:  call       void [System.Console]System.Console::Write(int32)
   IL_8139:  dup
   IL_813a:  ldc.i4.6
   IL_813b:  and
-  IL_813c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_813c:  call       void [System.Console]System.Console::Write(int32)
   IL_8141:  dup
   IL_8142:  ldc.i4.1
   IL_8143:  mul
-  IL_8144:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8144:  call       void [System.Console]System.Console::Write(int32)
   IL_8149:  dup
   IL_814a:  ldc.i4.5
   IL_814b:  and
-  IL_814c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_814c:  call       void [System.Console]System.Console::Write(int32)
   IL_8151:  dup
   IL_8152:  ldc.i4.8
   IL_8153:  sub
-  IL_8154:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8154:  call       void [System.Console]System.Console::Write(int32)
   IL_8159:  dup
   IL_815a:  ldc.i4.2
   IL_815b:  shl
-  IL_815c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_815c:  call       void [System.Console]System.Console::Write(int32)
   IL_8161:  dup
   IL_8162:  ldc.i4.2
   IL_8163:  or
-  IL_8164:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8164:  call       void [System.Console]System.Console::Write(int32)
   IL_8169:  dup
   IL_816a:  ldc.i4.3
   IL_816b:  or
-  IL_816c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_816c:  call       void [System.Console]System.Console::Write(int32)
   IL_8171:  dup
   IL_8172:  ldc.i4.6
   IL_8173:  sub
-  IL_8174:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8174:  call       void [System.Console]System.Console::Write(int32)
   IL_8179:  dup
   IL_817a:  ldc.i4.6
   IL_817b:  and
-  IL_817c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_817c:  call       void [System.Console]System.Console::Write(int32)
   IL_8181:  dup
   IL_8182:  ldc.i4.5
   IL_8183:  and
-  IL_8184:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8184:  call       void [System.Console]System.Console::Write(int32)
   IL_8189:  dup
   IL_818a:  ldc.i4.6
   IL_818b:  or
-  IL_818c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_818c:  call       void [System.Console]System.Console::Write(int32)
   IL_8191:  dup
   IL_8192:  ldc.i4.1
   IL_8193:  shl
-  IL_8194:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8194:  call       void [System.Console]System.Console::Write(int32)
   IL_8199:  dup
   IL_819a:  ldc.i4.7
   IL_819b:  sub
-  IL_819c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_819c:  call       void [System.Console]System.Console::Write(int32)
   IL_81a1:  dup
   IL_81a2:  ldc.i4.7
   IL_81a3:  add
-  IL_81a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_81a4:  call       void [System.Console]System.Console::Write(int32)
   IL_81a9:  dup
   IL_81aa:  ldc.i4.1
   IL_81ab:  shr
-  IL_81ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_81ac:  call       void [System.Console]System.Console::Write(int32)
   IL_81b1:  dup
   IL_81b2:  ldc.i4.5
   IL_81b3:  add
-  IL_81b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_81b4:  call       void [System.Console]System.Console::Write(int32)
   IL_81b9:  dup
   IL_81ba:  ldc.i4.2
   IL_81bb:  sub
-  IL_81bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_81bc:  call       void [System.Console]System.Console::Write(int32)
   IL_81c1:  dup
   IL_81c2:  ldc.i4.4
   IL_81c3:  shr
-  IL_81c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_81c4:  call       void [System.Console]System.Console::Write(int32)
   IL_81c9:  dup
   IL_81ca:  ldc.i4.5
   IL_81cb:  shl
-  IL_81cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_81cc:  call       void [System.Console]System.Console::Write(int32)
   IL_81d1:  dup
   IL_81d2:  ldc.i4.1
   IL_81d3:  mul
-  IL_81d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_81d4:  call       void [System.Console]System.Console::Write(int32)
   IL_81d9:  dup
   IL_81da:  ldc.i4.4
   IL_81db:  mul
-  IL_81dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_81dc:  call       void [System.Console]System.Console::Write(int32)
   IL_81e1:  dup
   IL_81e2:  ldc.i4.3
   IL_81e3:  mul
-  IL_81e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_81e4:  call       void [System.Console]System.Console::Write(int32)
   IL_81e9:  dup
   IL_81ea:  ldc.i4.0
   IL_81eb:  add
-  IL_81ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_81ec:  call       void [System.Console]System.Console::Write(int32)
   IL_81f1:  dup
   IL_81f2:  ldc.i4.8
   IL_81f3:  add
-  IL_81f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_81f4:  call       void [System.Console]System.Console::Write(int32)
   IL_81f9:  dup
   IL_81fa:  ldc.i4.0
   IL_81fb:  shl
-  IL_81fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_81fc:  call       void [System.Console]System.Console::Write(int32)
   IL_8201:  dup
   IL_8202:  ldc.i4.0
   IL_8203:  xor
-  IL_8204:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8204:  call       void [System.Console]System.Console::Write(int32)
   IL_8209:  dup
   IL_820a:  ldc.i4.7
   IL_820b:  and
-  IL_820c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_820c:  call       void [System.Console]System.Console::Write(int32)
   IL_8211:  dup
   IL_8212:  ldc.i4.1
   IL_8213:  and
-  IL_8214:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8214:  call       void [System.Console]System.Console::Write(int32)
   IL_8219:  dup
   IL_821a:  ldc.i4.5
   IL_821b:  shl
-  IL_821c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_821c:  call       void [System.Console]System.Console::Write(int32)
   IL_8221:  dup
   IL_8222:  ldc.i4.4
   IL_8223:  xor
-  IL_8224:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8224:  call       void [System.Console]System.Console::Write(int32)
   IL_8229:  dup
   IL_822a:  ldc.i4.8
   IL_822b:  or
-  IL_822c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_822c:  call       void [System.Console]System.Console::Write(int32)
   IL_8231:  dup
   IL_8232:  ldc.i4.1
   IL_8233:  shr
-  IL_8234:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8234:  call       void [System.Console]System.Console::Write(int32)
   IL_8239:  dup
   IL_823a:  ldc.i4.8
   IL_823b:  sub
-  IL_823c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_823c:  call       void [System.Console]System.Console::Write(int32)
   IL_8241:  dup
   IL_8242:  ldc.i4.6
   IL_8243:  sub
-  IL_8244:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8244:  call       void [System.Console]System.Console::Write(int32)
   IL_8249:  dup
   IL_824a:  ldc.i4.4
   IL_824b:  add
-  IL_824c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_824c:  call       void [System.Console]System.Console::Write(int32)
   IL_8251:  dup
   IL_8252:  ldc.i4.5
   IL_8253:  sub
-  IL_8254:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8254:  call       void [System.Console]System.Console::Write(int32)
   IL_8259:  dup
   IL_825a:  ldc.i4.5
   IL_825b:  sub
-  IL_825c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_825c:  call       void [System.Console]System.Console::Write(int32)
   IL_8261:  dup
   IL_8262:  ldc.i4.3
   IL_8263:  mul
-  IL_8264:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8264:  call       void [System.Console]System.Console::Write(int32)
   IL_8269:  dup
   IL_826a:  ldc.i4.4
   IL_826b:  and
-  IL_826c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_826c:  call       void [System.Console]System.Console::Write(int32)
   IL_8271:  dup
   IL_8272:  ldc.i4.4
   IL_8273:  shr
-  IL_8274:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8274:  call       void [System.Console]System.Console::Write(int32)
   IL_8279:  dup
   IL_827a:  ldc.i4.2
   IL_827b:  shr
-  IL_827c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_827c:  call       void [System.Console]System.Console::Write(int32)
   IL_8281:  dup
   IL_8282:  ldc.i4.0
   IL_8283:  shl
-  IL_8284:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8284:  call       void [System.Console]System.Console::Write(int32)
   IL_8289:  dup
   IL_828a:  ldc.i4.4
   IL_828b:  sub
-  IL_828c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_828c:  call       void [System.Console]System.Console::Write(int32)
   IL_8291:  dup
   IL_8292:  ldc.i4.1
   IL_8293:  shl
-  IL_8294:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8294:  call       void [System.Console]System.Console::Write(int32)
   IL_8299:  dup
   IL_829a:  ldc.i4.0
   IL_829b:  shr
-  IL_829c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_829c:  call       void [System.Console]System.Console::Write(int32)
   IL_82a1:  dup
   IL_82a2:  ldc.i4.0
   IL_82a3:  add
-  IL_82a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_82a4:  call       void [System.Console]System.Console::Write(int32)
   IL_82a9:  dup
   IL_82aa:  ldc.i4.0
   IL_82ab:  and
-  IL_82ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_82ac:  call       void [System.Console]System.Console::Write(int32)
   IL_82b1:  dup
   IL_82b2:  ldc.i4.3
   IL_82b3:  shl
-  IL_82b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_82b4:  call       void [System.Console]System.Console::Write(int32)
   IL_82b9:  dup
   IL_82ba:  ldc.i4.2
   IL_82bb:  shr
-  IL_82bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_82bc:  call       void [System.Console]System.Console::Write(int32)
   IL_82c1:  dup
   IL_82c2:  ldc.i4.3
   IL_82c3:  and
-  IL_82c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_82c4:  call       void [System.Console]System.Console::Write(int32)
   IL_82c9:  dup
   IL_82ca:  ldc.i4.3
   IL_82cb:  shr
-  IL_82cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_82cc:  call       void [System.Console]System.Console::Write(int32)
   IL_82d1:  dup
   IL_82d2:  ldc.i4.5
   IL_82d3:  or
-  IL_82d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_82d4:  call       void [System.Console]System.Console::Write(int32)
   IL_82d9:  dup
   IL_82da:  ldc.i4.8
   IL_82db:  or
-  IL_82dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_82dc:  call       void [System.Console]System.Console::Write(int32)
   IL_82e1:  dup
   IL_82e2:  ldc.i4.7
   IL_82e3:  shl
-  IL_82e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_82e4:  call       void [System.Console]System.Console::Write(int32)
   IL_82e9:  dup
   IL_82ea:  ldc.i4.4
   IL_82eb:  and
-  IL_82ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_82ec:  call       void [System.Console]System.Console::Write(int32)
   IL_82f1:  dup
   IL_82f2:  ldc.i4.2
   IL_82f3:  and
-  IL_82f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_82f4:  call       void [System.Console]System.Console::Write(int32)
   IL_82f9:  dup
   IL_82fa:  ldc.i4.0
   IL_82fb:  and
-  IL_82fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_82fc:  call       void [System.Console]System.Console::Write(int32)
   IL_8301:  dup
   IL_8302:  ldc.i4.1
   IL_8303:  mul
-  IL_8304:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8304:  call       void [System.Console]System.Console::Write(int32)
   IL_8309:  dup
   IL_830a:  ldc.i4.7
   IL_830b:  shl
-  IL_830c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_830c:  call       void [System.Console]System.Console::Write(int32)
   IL_8311:  dup
   IL_8312:  ldc.i4.0
   IL_8313:  and
-  IL_8314:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8314:  call       void [System.Console]System.Console::Write(int32)
   IL_8319:  dup
   IL_831a:  ldc.i4.0
   IL_831b:  sub
-  IL_831c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_831c:  call       void [System.Console]System.Console::Write(int32)
   IL_8321:  dup
   IL_8322:  ldc.i4.1
   IL_8323:  and
-  IL_8324:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8324:  call       void [System.Console]System.Console::Write(int32)
   IL_8329:  dup
   IL_832a:  ldc.i4.0
   IL_832b:  shl
-  IL_832c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_832c:  call       void [System.Console]System.Console::Write(int32)
   IL_8331:  dup
   IL_8332:  ldc.i4.0
   IL_8333:  and
-  IL_8334:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8334:  call       void [System.Console]System.Console::Write(int32)
   IL_8339:  dup
   IL_833a:  ldc.i4.7
   IL_833b:  and
-  IL_833c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_833c:  call       void [System.Console]System.Console::Write(int32)
   IL_8341:  dup
   IL_8342:  ldc.i4.1
   IL_8343:  and
-  IL_8344:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8344:  call       void [System.Console]System.Console::Write(int32)
   IL_8349:  dup
   IL_834a:  ldc.i4.4
   IL_834b:  shr
-  IL_834c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_834c:  call       void [System.Console]System.Console::Write(int32)
   IL_8351:  dup
   IL_8352:  ldc.i4.2
   IL_8353:  shl
-  IL_8354:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8354:  call       void [System.Console]System.Console::Write(int32)
   IL_8359:  dup
   IL_835a:  ldc.i4.1
   IL_835b:  add
-  IL_835c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_835c:  call       void [System.Console]System.Console::Write(int32)
   IL_8361:  dup
   IL_8362:  ldc.i4.5
   IL_8363:  shl
-  IL_8364:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8364:  call       void [System.Console]System.Console::Write(int32)
   IL_8369:  dup
   IL_836a:  ldc.i4.2
   IL_836b:  shl
-  IL_836c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_836c:  call       void [System.Console]System.Console::Write(int32)
   IL_8371:  dup
   IL_8372:  ldc.i4.0
   IL_8373:  sub
-  IL_8374:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8374:  call       void [System.Console]System.Console::Write(int32)
   IL_8379:  dup
   IL_837a:  ldc.i4.3
   IL_837b:  sub
-  IL_837c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_837c:  call       void [System.Console]System.Console::Write(int32)
   IL_8381:  dup
   IL_8382:  ldc.i4.8
   IL_8383:  mul
-  IL_8384:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8384:  call       void [System.Console]System.Console::Write(int32)
   IL_8389:  dup
   IL_838a:  ldc.i4.5
   IL_838b:  add
-  IL_838c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_838c:  call       void [System.Console]System.Console::Write(int32)
   IL_8391:  dup
   IL_8392:  ldc.i4.5
   IL_8393:  shr
-  IL_8394:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8394:  call       void [System.Console]System.Console::Write(int32)
   IL_8399:  dup
   IL_839a:  ldc.i4.5
   IL_839b:  shl
-  IL_839c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_839c:  call       void [System.Console]System.Console::Write(int32)
   IL_83a1:  dup
   IL_83a2:  ldc.i4.7
   IL_83a3:  mul
-  IL_83a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_83a4:  call       void [System.Console]System.Console::Write(int32)
   IL_83a9:  dup
   IL_83aa:  ldc.i4.5
   IL_83ab:  and
-  IL_83ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_83ac:  call       void [System.Console]System.Console::Write(int32)
   IL_83b1:  dup
   IL_83b2:  ldc.i4.7
   IL_83b3:  xor
-  IL_83b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_83b4:  call       void [System.Console]System.Console::Write(int32)
   IL_83b9:  dup
   IL_83ba:  ldc.i4.7
   IL_83bb:  add
-  IL_83bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_83bc:  call       void [System.Console]System.Console::Write(int32)
   IL_83c1:  dup
   IL_83c2:  ldc.i4.6
   IL_83c3:  shr
-  IL_83c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_83c4:  call       void [System.Console]System.Console::Write(int32)
   IL_83c9:  dup
   IL_83ca:  ldc.i4.6
   IL_83cb:  xor
-  IL_83cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_83cc:  call       void [System.Console]System.Console::Write(int32)
   IL_83d1:  dup
   IL_83d2:  ldc.i4.3
   IL_83d3:  xor
-  IL_83d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_83d4:  call       void [System.Console]System.Console::Write(int32)
   IL_83d9:  dup
   IL_83da:  ldc.i4.4
   IL_83db:  shr
-  IL_83dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_83dc:  call       void [System.Console]System.Console::Write(int32)
   IL_83e1:  dup
   IL_83e2:  ldc.i4.1
   IL_83e3:  shr
-  IL_83e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_83e4:  call       void [System.Console]System.Console::Write(int32)
   IL_83e9:  dup
   IL_83ea:  ldc.i4.0
   IL_83eb:  shl
-  IL_83ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_83ec:  call       void [System.Console]System.Console::Write(int32)
   IL_83f1:  dup
   IL_83f2:  ldc.i4.4
   IL_83f3:  xor
-  IL_83f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_83f4:  call       void [System.Console]System.Console::Write(int32)
   IL_83f9:  dup
   IL_83fa:  ldc.i4.0
   IL_83fb:  or
-  IL_83fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_83fc:  call       void [System.Console]System.Console::Write(int32)
   IL_8401:  dup
   IL_8402:  ldc.i4.3
   IL_8403:  and
-  IL_8404:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8404:  call       void [System.Console]System.Console::Write(int32)
   IL_8409:  dup
   IL_840a:  ldc.i4.6
   IL_840b:  and
-  IL_840c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_840c:  call       void [System.Console]System.Console::Write(int32)
   IL_8411:  dup
   IL_8412:  ldc.i4.2
   IL_8413:  and
-  IL_8414:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8414:  call       void [System.Console]System.Console::Write(int32)
   IL_8419:  dup
   IL_841a:  ldc.i4.1
   IL_841b:  xor
-  IL_841c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_841c:  call       void [System.Console]System.Console::Write(int32)
   IL_8421:  dup
   IL_8422:  ldc.i4.2
   IL_8423:  or
-  IL_8424:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8424:  call       void [System.Console]System.Console::Write(int32)
   IL_8429:  dup
   IL_842a:  ldc.i4.7
   IL_842b:  or
-  IL_842c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_842c:  call       void [System.Console]System.Console::Write(int32)
   IL_8431:  dup
   IL_8432:  ldc.i4.8
   IL_8433:  mul
-  IL_8434:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8434:  call       void [System.Console]System.Console::Write(int32)
   IL_8439:  dup
   IL_843a:  ldc.i4.2
   IL_843b:  sub
-  IL_843c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_843c:  call       void [System.Console]System.Console::Write(int32)
   IL_8441:  dup
   IL_8442:  ldc.i4.6
   IL_8443:  mul
-  IL_8444:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8444:  call       void [System.Console]System.Console::Write(int32)
   IL_8449:  dup
   IL_844a:  ldc.i4.7
   IL_844b:  xor
-  IL_844c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_844c:  call       void [System.Console]System.Console::Write(int32)
   IL_8451:  dup
   IL_8452:  ldc.i4.4
   IL_8453:  and
-  IL_8454:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8454:  call       void [System.Console]System.Console::Write(int32)
   IL_8459:  dup
   IL_845a:  ldc.i4.7
   IL_845b:  xor
-  IL_845c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_845c:  call       void [System.Console]System.Console::Write(int32)
   IL_8461:  dup
   IL_8462:  ldc.i4.6
   IL_8463:  or
-  IL_8464:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8464:  call       void [System.Console]System.Console::Write(int32)
   IL_8469:  dup
   IL_846a:  ldc.i4.8
   IL_846b:  or
-  IL_846c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_846c:  call       void [System.Console]System.Console::Write(int32)
   IL_8471:  dup
   IL_8472:  ldc.i4.6
   IL_8473:  add
-  IL_8474:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8474:  call       void [System.Console]System.Console::Write(int32)
   IL_8479:  dup
   IL_847a:  ldc.i4.0
   IL_847b:  xor
-  IL_847c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_847c:  call       void [System.Console]System.Console::Write(int32)
   IL_8481:  dup
   IL_8482:  ldc.i4.1
   IL_8483:  shr
-  IL_8484:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8484:  call       void [System.Console]System.Console::Write(int32)
   IL_8489:  dup
   IL_848a:  ldc.i4.3
   IL_848b:  add
-  IL_848c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_848c:  call       void [System.Console]System.Console::Write(int32)
   IL_8491:  dup
   IL_8492:  ldc.i4.6
   IL_8493:  add
-  IL_8494:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8494:  call       void [System.Console]System.Console::Write(int32)
   IL_8499:  dup
   IL_849a:  ldc.i4.6
   IL_849b:  or
-  IL_849c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_849c:  call       void [System.Console]System.Console::Write(int32)
   IL_84a1:  dup
   IL_84a2:  ldc.i4.4
   IL_84a3:  mul
-  IL_84a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_84a4:  call       void [System.Console]System.Console::Write(int32)
   IL_84a9:  dup
   IL_84aa:  ldc.i4.1
   IL_84ab:  xor
-  IL_84ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_84ac:  call       void [System.Console]System.Console::Write(int32)
   IL_84b1:  dup
   IL_84b2:  ldc.i4.5
   IL_84b3:  shl
-  IL_84b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_84b4:  call       void [System.Console]System.Console::Write(int32)
   IL_84b9:  dup
   IL_84ba:  ldc.i4.6
   IL_84bb:  and
-  IL_84bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_84bc:  call       void [System.Console]System.Console::Write(int32)
   IL_84c1:  dup
   IL_84c2:  ldc.i4.4
   IL_84c3:  and
-  IL_84c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_84c4:  call       void [System.Console]System.Console::Write(int32)
   IL_84c9:  dup
   IL_84ca:  ldc.i4.7
   IL_84cb:  sub
-  IL_84cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_84cc:  call       void [System.Console]System.Console::Write(int32)
   IL_84d1:  dup
   IL_84d2:  ldc.i4.4
   IL_84d3:  shr
-  IL_84d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_84d4:  call       void [System.Console]System.Console::Write(int32)
   IL_84d9:  dup
   IL_84da:  ldc.i4.4
   IL_84db:  shl
-  IL_84dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_84dc:  call       void [System.Console]System.Console::Write(int32)
   IL_84e1:  dup
   IL_84e2:  ldc.i4.8
   IL_84e3:  sub
-  IL_84e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_84e4:  call       void [System.Console]System.Console::Write(int32)
   IL_84e9:  dup
   IL_84ea:  ldc.i4.0
   IL_84eb:  mul
-  IL_84ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_84ec:  call       void [System.Console]System.Console::Write(int32)
   IL_84f1:  dup
   IL_84f2:  ldc.i4.8
   IL_84f3:  sub
-  IL_84f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_84f4:  call       void [System.Console]System.Console::Write(int32)
   IL_84f9:  dup
   IL_84fa:  ldc.i4.6
   IL_84fb:  sub
-  IL_84fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_84fc:  call       void [System.Console]System.Console::Write(int32)
   IL_8501:  dup
   IL_8502:  ldc.i4.7
   IL_8503:  xor
-  IL_8504:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8504:  call       void [System.Console]System.Console::Write(int32)
   IL_8509:  dup
   IL_850a:  ldc.i4.7
   IL_850b:  mul
-  IL_850c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_850c:  call       void [System.Console]System.Console::Write(int32)
   IL_8511:  dup
   IL_8512:  ldc.i4.8
   IL_8513:  sub
-  IL_8514:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8514:  call       void [System.Console]System.Console::Write(int32)
   IL_8519:  dup
   IL_851a:  ldc.i4.4
   IL_851b:  shr
-  IL_851c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_851c:  call       void [System.Console]System.Console::Write(int32)
   IL_8521:  dup
   IL_8522:  ldc.i4.5
   IL_8523:  or
-  IL_8524:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8524:  call       void [System.Console]System.Console::Write(int32)
   IL_8529:  dup
   IL_852a:  ldc.i4.8
   IL_852b:  sub
-  IL_852c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_852c:  call       void [System.Console]System.Console::Write(int32)
   IL_8531:  dup
   IL_8532:  ldc.i4.5
   IL_8533:  xor
-  IL_8534:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8534:  call       void [System.Console]System.Console::Write(int32)
   IL_8539:  dup
   IL_853a:  ldc.i4.7
   IL_853b:  sub
-  IL_853c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_853c:  call       void [System.Console]System.Console::Write(int32)
   IL_8541:  dup
   IL_8542:  ldc.i4.2
   IL_8543:  add
-  IL_8544:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8544:  call       void [System.Console]System.Console::Write(int32)
   IL_8549:  dup
   IL_854a:  ldc.i4.3
   IL_854b:  and
-  IL_854c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_854c:  call       void [System.Console]System.Console::Write(int32)
   IL_8551:  dup
   IL_8552:  ldc.i4.2
   IL_8553:  or
-  IL_8554:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8554:  call       void [System.Console]System.Console::Write(int32)
   IL_8559:  dup
   IL_855a:  ldc.i4.8
   IL_855b:  xor
-  IL_855c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_855c:  call       void [System.Console]System.Console::Write(int32)
   IL_8561:  dup
   IL_8562:  ldc.i4.1
   IL_8563:  and
-  IL_8564:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8564:  call       void [System.Console]System.Console::Write(int32)
   IL_8569:  dup
   IL_856a:  ldc.i4.0
   IL_856b:  xor
-  IL_856c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_856c:  call       void [System.Console]System.Console::Write(int32)
   IL_8571:  dup
   IL_8572:  ldc.i4.0
   IL_8573:  xor
-  IL_8574:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8574:  call       void [System.Console]System.Console::Write(int32)
   IL_8579:  dup
   IL_857a:  ldc.i4.8
   IL_857b:  sub
-  IL_857c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_857c:  call       void [System.Console]System.Console::Write(int32)
   IL_8581:  dup
   IL_8582:  ldc.i4.4
   IL_8583:  add
-  IL_8584:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8584:  call       void [System.Console]System.Console::Write(int32)
   IL_8589:  dup
   IL_858a:  ldc.i4.4
   IL_858b:  sub
-  IL_858c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_858c:  call       void [System.Console]System.Console::Write(int32)
   IL_8591:  dup
   IL_8592:  ldc.i4.6
   IL_8593:  mul
-  IL_8594:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8594:  call       void [System.Console]System.Console::Write(int32)
   IL_8599:  dup
   IL_859a:  ldc.i4.8
   IL_859b:  mul
-  IL_859c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_859c:  call       void [System.Console]System.Console::Write(int32)
   IL_85a1:  dup
   IL_85a2:  ldc.i4.3
   IL_85a3:  sub
-  IL_85a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_85a4:  call       void [System.Console]System.Console::Write(int32)
   IL_85a9:  dup
   IL_85aa:  ldc.i4.5
   IL_85ab:  shl
-  IL_85ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_85ac:  call       void [System.Console]System.Console::Write(int32)
   IL_85b1:  dup
   IL_85b2:  ldc.i4.6
   IL_85b3:  sub
-  IL_85b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_85b4:  call       void [System.Console]System.Console::Write(int32)
   IL_85b9:  dup
   IL_85ba:  ldc.i4.8
   IL_85bb:  xor
-  IL_85bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_85bc:  call       void [System.Console]System.Console::Write(int32)
   IL_85c1:  dup
   IL_85c2:  ldc.i4.3
   IL_85c3:  and
-  IL_85c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_85c4:  call       void [System.Console]System.Console::Write(int32)
   IL_85c9:  dup
   IL_85ca:  ldc.i4.8
   IL_85cb:  or
-  IL_85cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_85cc:  call       void [System.Console]System.Console::Write(int32)
   IL_85d1:  dup
   IL_85d2:  ldc.i4.7
   IL_85d3:  or
-  IL_85d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_85d4:  call       void [System.Console]System.Console::Write(int32)
   IL_85d9:  dup
   IL_85da:  ldc.i4.7
   IL_85db:  or
-  IL_85dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_85dc:  call       void [System.Console]System.Console::Write(int32)
   IL_85e1:  dup
   IL_85e2:  ldc.i4.4
   IL_85e3:  mul
-  IL_85e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_85e4:  call       void [System.Console]System.Console::Write(int32)
   IL_85e9:  dup
   IL_85ea:  ldc.i4.0
   IL_85eb:  add
-  IL_85ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_85ec:  call       void [System.Console]System.Console::Write(int32)
   IL_85f1:  dup
   IL_85f2:  ldc.i4.1
   IL_85f3:  or
-  IL_85f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_85f4:  call       void [System.Console]System.Console::Write(int32)
   IL_85f9:  dup
   IL_85fa:  ldc.i4.4
   IL_85fb:  sub
-  IL_85fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_85fc:  call       void [System.Console]System.Console::Write(int32)
   IL_8601:  dup
   IL_8602:  ldc.i4.8
   IL_8603:  shr
-  IL_8604:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8604:  call       void [System.Console]System.Console::Write(int32)
   IL_8609:  dup
   IL_860a:  ldc.i4.6
   IL_860b:  shl
-  IL_860c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_860c:  call       void [System.Console]System.Console::Write(int32)
   IL_8611:  dup
   IL_8612:  ldc.i4.8
   IL_8613:  shr
-  IL_8614:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8614:  call       void [System.Console]System.Console::Write(int32)
   IL_8619:  dup
   IL_861a:  ldc.i4.4
   IL_861b:  or
-  IL_861c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_861c:  call       void [System.Console]System.Console::Write(int32)
   IL_8621:  dup
   IL_8622:  ldc.i4.0
   IL_8623:  add
-  IL_8624:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8624:  call       void [System.Console]System.Console::Write(int32)
   IL_8629:  dup
   IL_862a:  ldc.i4.4
   IL_862b:  sub
-  IL_862c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_862c:  call       void [System.Console]System.Console::Write(int32)
   IL_8631:  dup
   IL_8632:  ldc.i4.3
   IL_8633:  mul
-  IL_8634:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8634:  call       void [System.Console]System.Console::Write(int32)
   IL_8639:  dup
   IL_863a:  ldc.i4.6
   IL_863b:  or
-  IL_863c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_863c:  call       void [System.Console]System.Console::Write(int32)
   IL_8641:  dup
   IL_8642:  ldc.i4.8
   IL_8643:  shl
-  IL_8644:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8644:  call       void [System.Console]System.Console::Write(int32)
   IL_8649:  dup
   IL_864a:  ldc.i4.1
   IL_864b:  mul
-  IL_864c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_864c:  call       void [System.Console]System.Console::Write(int32)
   IL_8651:  dup
   IL_8652:  ldc.i4.4
   IL_8653:  add
-  IL_8654:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8654:  call       void [System.Console]System.Console::Write(int32)
   IL_8659:  dup
   IL_865a:  ldc.i4.3
   IL_865b:  shl
-  IL_865c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_865c:  call       void [System.Console]System.Console::Write(int32)
   IL_8661:  dup
   IL_8662:  ldc.i4.1
   IL_8663:  shr
-  IL_8664:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8664:  call       void [System.Console]System.Console::Write(int32)
   IL_8669:  dup
   IL_866a:  ldc.i4.5
   IL_866b:  xor
-  IL_866c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_866c:  call       void [System.Console]System.Console::Write(int32)
   IL_8671:  dup
   IL_8672:  ldc.i4.2
   IL_8673:  or
-  IL_8674:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8674:  call       void [System.Console]System.Console::Write(int32)
   IL_8679:  dup
   IL_867a:  ldc.i4.1
   IL_867b:  xor
-  IL_867c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_867c:  call       void [System.Console]System.Console::Write(int32)
   IL_8681:  dup
   IL_8682:  ldc.i4.5
   IL_8683:  xor
-  IL_8684:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8684:  call       void [System.Console]System.Console::Write(int32)
   IL_8689:  dup
   IL_868a:  ldc.i4.5
   IL_868b:  or
-  IL_868c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_868c:  call       void [System.Console]System.Console::Write(int32)
   IL_8691:  dup
   IL_8692:  ldc.i4.5
   IL_8693:  mul
-  IL_8694:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8694:  call       void [System.Console]System.Console::Write(int32)
   IL_8699:  dup
   IL_869a:  ldc.i4.5
   IL_869b:  shr
-  IL_869c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_869c:  call       void [System.Console]System.Console::Write(int32)
   IL_86a1:  dup
   IL_86a2:  ldc.i4.2
   IL_86a3:  add
-  IL_86a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_86a4:  call       void [System.Console]System.Console::Write(int32)
   IL_86a9:  dup
   IL_86aa:  ldc.i4.7
   IL_86ab:  shr
-  IL_86ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_86ac:  call       void [System.Console]System.Console::Write(int32)
   IL_86b1:  dup
   IL_86b2:  ldc.i4.3
   IL_86b3:  shr
-  IL_86b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_86b4:  call       void [System.Console]System.Console::Write(int32)
   IL_86b9:  dup
   IL_86ba:  ldc.i4.4
   IL_86bb:  sub
-  IL_86bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_86bc:  call       void [System.Console]System.Console::Write(int32)
   IL_86c1:  dup
   IL_86c2:  ldc.i4.5
   IL_86c3:  sub
-  IL_86c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_86c4:  call       void [System.Console]System.Console::Write(int32)
   IL_86c9:  dup
   IL_86ca:  ldc.i4.1
   IL_86cb:  shl
-  IL_86cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_86cc:  call       void [System.Console]System.Console::Write(int32)
   IL_86d1:  dup
   IL_86d2:  ldc.i4.7
   IL_86d3:  mul
-  IL_86d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_86d4:  call       void [System.Console]System.Console::Write(int32)
   IL_86d9:  dup
   IL_86da:  ldc.i4.6
   IL_86db:  and
-  IL_86dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_86dc:  call       void [System.Console]System.Console::Write(int32)
   IL_86e1:  dup
   IL_86e2:  ldc.i4.3
   IL_86e3:  add
-  IL_86e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_86e4:  call       void [System.Console]System.Console::Write(int32)
   IL_86e9:  dup
   IL_86ea:  ldc.i4.4
   IL_86eb:  mul
-  IL_86ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_86ec:  call       void [System.Console]System.Console::Write(int32)
   IL_86f1:  dup
   IL_86f2:  ldc.i4.0
   IL_86f3:  add
-  IL_86f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_86f4:  call       void [System.Console]System.Console::Write(int32)
   IL_86f9:  dup
   IL_86fa:  ldc.i4.6
   IL_86fb:  sub
-  IL_86fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_86fc:  call       void [System.Console]System.Console::Write(int32)
   IL_8701:  dup
   IL_8702:  ldc.i4.8
   IL_8703:  add
-  IL_8704:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8704:  call       void [System.Console]System.Console::Write(int32)
   IL_8709:  dup
   IL_870a:  ldc.i4.5
   IL_870b:  or
-  IL_870c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_870c:  call       void [System.Console]System.Console::Write(int32)
   IL_8711:  dup
   IL_8712:  ldc.i4.6
   IL_8713:  and
-  IL_8714:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8714:  call       void [System.Console]System.Console::Write(int32)
   IL_8719:  dup
   IL_871a:  ldc.i4.3
   IL_871b:  shr
-  IL_871c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_871c:  call       void [System.Console]System.Console::Write(int32)
   IL_8721:  dup
   IL_8722:  ldc.i4.0
   IL_8723:  shl
-  IL_8724:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8724:  call       void [System.Console]System.Console::Write(int32)
   IL_8729:  dup
   IL_872a:  ldc.i4.8
   IL_872b:  xor
-  IL_872c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_872c:  call       void [System.Console]System.Console::Write(int32)
   IL_8731:  dup
   IL_8732:  ldc.i4.2
   IL_8733:  shr
-  IL_8734:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8734:  call       void [System.Console]System.Console::Write(int32)
   IL_8739:  dup
   IL_873a:  ldc.i4.1
   IL_873b:  xor
-  IL_873c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_873c:  call       void [System.Console]System.Console::Write(int32)
   IL_8741:  dup
   IL_8742:  ldc.i4.0
   IL_8743:  xor
-  IL_8744:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8744:  call       void [System.Console]System.Console::Write(int32)
   IL_8749:  dup
   IL_874a:  ldc.i4.7
   IL_874b:  add
-  IL_874c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_874c:  call       void [System.Console]System.Console::Write(int32)
   IL_8751:  dup
   IL_8752:  ldc.i4.6
   IL_8753:  shr
-  IL_8754:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8754:  call       void [System.Console]System.Console::Write(int32)
   IL_8759:  dup
   IL_875a:  ldc.i4.4
   IL_875b:  mul
-  IL_875c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_875c:  call       void [System.Console]System.Console::Write(int32)
   IL_8761:  dup
   IL_8762:  ldc.i4.6
   IL_8763:  shr
-  IL_8764:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8764:  call       void [System.Console]System.Console::Write(int32)
   IL_8769:  dup
   IL_876a:  ldc.i4.5
   IL_876b:  xor
-  IL_876c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_876c:  call       void [System.Console]System.Console::Write(int32)
   IL_8771:  dup
   IL_8772:  ldc.i4.7
   IL_8773:  mul
-  IL_8774:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8774:  call       void [System.Console]System.Console::Write(int32)
   IL_8779:  dup
   IL_877a:  ldc.i4.5
   IL_877b:  sub
-  IL_877c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_877c:  call       void [System.Console]System.Console::Write(int32)
   IL_8781:  dup
   IL_8782:  ldc.i4.3
   IL_8783:  shr
-  IL_8784:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8784:  call       void [System.Console]System.Console::Write(int32)
   IL_8789:  dup
   IL_878a:  ldc.i4.6
   IL_878b:  mul
-  IL_878c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_878c:  call       void [System.Console]System.Console::Write(int32)
   IL_8791:  dup
   IL_8792:  ldc.i4.1
   IL_8793:  shl
-  IL_8794:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8794:  call       void [System.Console]System.Console::Write(int32)
   IL_8799:  dup
   IL_879a:  ldc.i4.3
   IL_879b:  and
-  IL_879c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_879c:  call       void [System.Console]System.Console::Write(int32)
   IL_87a1:  dup
   IL_87a2:  ldc.i4.6
   IL_87a3:  shl
-  IL_87a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_87a4:  call       void [System.Console]System.Console::Write(int32)
   IL_87a9:  dup
   IL_87aa:  ldc.i4.4
   IL_87ab:  mul
-  IL_87ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_87ac:  call       void [System.Console]System.Console::Write(int32)
   IL_87b1:  dup
   IL_87b2:  ldc.i4.3
   IL_87b3:  mul
-  IL_87b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_87b4:  call       void [System.Console]System.Console::Write(int32)
   IL_87b9:  dup
   IL_87ba:  ldc.i4.5
   IL_87bb:  shl
-  IL_87bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_87bc:  call       void [System.Console]System.Console::Write(int32)
   IL_87c1:  dup
   IL_87c2:  ldc.i4.8
   IL_87c3:  add
-  IL_87c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_87c4:  call       void [System.Console]System.Console::Write(int32)
   IL_87c9:  dup
   IL_87ca:  ldc.i4.1
   IL_87cb:  shl
-  IL_87cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_87cc:  call       void [System.Console]System.Console::Write(int32)
   IL_87d1:  dup
   IL_87d2:  ldc.i4.2
   IL_87d3:  shl
-  IL_87d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_87d4:  call       void [System.Console]System.Console::Write(int32)
   IL_87d9:  dup
   IL_87da:  ldc.i4.3
   IL_87db:  mul
-  IL_87dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_87dc:  call       void [System.Console]System.Console::Write(int32)
   IL_87e1:  dup
   IL_87e2:  ldc.i4.5
   IL_87e3:  sub
-  IL_87e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_87e4:  call       void [System.Console]System.Console::Write(int32)
   IL_87e9:  dup
   IL_87ea:  ldc.i4.1
   IL_87eb:  add
-  IL_87ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_87ec:  call       void [System.Console]System.Console::Write(int32)
   IL_87f1:  dup
   IL_87f2:  ldc.i4.1
   IL_87f3:  or
-  IL_87f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_87f4:  call       void [System.Console]System.Console::Write(int32)
   IL_87f9:  dup
   IL_87fa:  ldc.i4.7
   IL_87fb:  shr
-  IL_87fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_87fc:  call       void [System.Console]System.Console::Write(int32)
   IL_8801:  dup
   IL_8802:  ldc.i4.8
   IL_8803:  shr
-  IL_8804:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8804:  call       void [System.Console]System.Console::Write(int32)
   IL_8809:  dup
   IL_880a:  ldc.i4.0
   IL_880b:  shr
-  IL_880c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_880c:  call       void [System.Console]System.Console::Write(int32)
   IL_8811:  dup
   IL_8812:  ldc.i4.8
   IL_8813:  and
-  IL_8814:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8814:  call       void [System.Console]System.Console::Write(int32)
   IL_8819:  dup
   IL_881a:  ldc.i4.2
   IL_881b:  xor
-  IL_881c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_881c:  call       void [System.Console]System.Console::Write(int32)
   IL_8821:  dup
   IL_8822:  ldc.i4.0
   IL_8823:  add
-  IL_8824:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8824:  call       void [System.Console]System.Console::Write(int32)
   IL_8829:  dup
   IL_882a:  ldc.i4.3
   IL_882b:  sub
-  IL_882c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_882c:  call       void [System.Console]System.Console::Write(int32)
   IL_8831:  dup
   IL_8832:  ldc.i4.1
   IL_8833:  sub
-  IL_8834:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8834:  call       void [System.Console]System.Console::Write(int32)
   IL_8839:  dup
   IL_883a:  ldc.i4.8
   IL_883b:  xor
-  IL_883c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_883c:  call       void [System.Console]System.Console::Write(int32)
   IL_8841:  dup
   IL_8842:  ldc.i4.1
   IL_8843:  add
-  IL_8844:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8844:  call       void [System.Console]System.Console::Write(int32)
   IL_8849:  dup
   IL_884a:  ldc.i4.5
   IL_884b:  and
-  IL_884c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_884c:  call       void [System.Console]System.Console::Write(int32)
   IL_8851:  dup
   IL_8852:  ldc.i4.0
   IL_8853:  or
-  IL_8854:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8854:  call       void [System.Console]System.Console::Write(int32)
   IL_8859:  dup
   IL_885a:  ldc.i4.8
   IL_885b:  and
-  IL_885c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_885c:  call       void [System.Console]System.Console::Write(int32)
   IL_8861:  dup
   IL_8862:  ldc.i4.1
   IL_8863:  xor
-  IL_8864:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8864:  call       void [System.Console]System.Console::Write(int32)
   IL_8869:  dup
   IL_886a:  ldc.i4.6
   IL_886b:  or
-  IL_886c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_886c:  call       void [System.Console]System.Console::Write(int32)
   IL_8871:  dup
   IL_8872:  ldc.i4.3
   IL_8873:  xor
-  IL_8874:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8874:  call       void [System.Console]System.Console::Write(int32)
   IL_8879:  dup
   IL_887a:  ldc.i4.5
   IL_887b:  and
-  IL_887c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_887c:  call       void [System.Console]System.Console::Write(int32)
   IL_8881:  dup
   IL_8882:  ldc.i4.6
   IL_8883:  and
-  IL_8884:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8884:  call       void [System.Console]System.Console::Write(int32)
   IL_8889:  dup
   IL_888a:  ldc.i4.3
   IL_888b:  shr
-  IL_888c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_888c:  call       void [System.Console]System.Console::Write(int32)
   IL_8891:  dup
   IL_8892:  ldc.i4.2
   IL_8893:  or
-  IL_8894:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8894:  call       void [System.Console]System.Console::Write(int32)
   IL_8899:  dup
   IL_889a:  ldc.i4.5
   IL_889b:  add
-  IL_889c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_889c:  call       void [System.Console]System.Console::Write(int32)
   IL_88a1:  dup
   IL_88a2:  ldc.i4.6
   IL_88a3:  shr
-  IL_88a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_88a4:  call       void [System.Console]System.Console::Write(int32)
   IL_88a9:  dup
   IL_88aa:  ldc.i4.5
   IL_88ab:  sub
-  IL_88ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_88ac:  call       void [System.Console]System.Console::Write(int32)
   IL_88b1:  dup
   IL_88b2:  ldc.i4.1
   IL_88b3:  sub
-  IL_88b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_88b4:  call       void [System.Console]System.Console::Write(int32)
   IL_88b9:  dup
   IL_88ba:  ldc.i4.1
   IL_88bb:  xor
-  IL_88bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_88bc:  call       void [System.Console]System.Console::Write(int32)
   IL_88c1:  dup
   IL_88c2:  ldc.i4.2
   IL_88c3:  shr
-  IL_88c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_88c4:  call       void [System.Console]System.Console::Write(int32)
   IL_88c9:  dup
   IL_88ca:  ldc.i4.7
   IL_88cb:  sub
-  IL_88cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_88cc:  call       void [System.Console]System.Console::Write(int32)
   IL_88d1:  dup
   IL_88d2:  ldc.i4.3
   IL_88d3:  add
-  IL_88d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_88d4:  call       void [System.Console]System.Console::Write(int32)
   IL_88d9:  dup
   IL_88da:  ldc.i4.5
   IL_88db:  add
-  IL_88dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_88dc:  call       void [System.Console]System.Console::Write(int32)
   IL_88e1:  dup
   IL_88e2:  ldc.i4.6
   IL_88e3:  sub
-  IL_88e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_88e4:  call       void [System.Console]System.Console::Write(int32)
   IL_88e9:  dup
   IL_88ea:  ldc.i4.3
   IL_88eb:  shl
-  IL_88ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_88ec:  call       void [System.Console]System.Console::Write(int32)
   IL_88f1:  dup
   IL_88f2:  ldc.i4.0
   IL_88f3:  mul
-  IL_88f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_88f4:  call       void [System.Console]System.Console::Write(int32)
   IL_88f9:  dup
   IL_88fa:  ldc.i4.0
   IL_88fb:  shl
-  IL_88fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_88fc:  call       void [System.Console]System.Console::Write(int32)
   IL_8901:  dup
   IL_8902:  ldc.i4.3
   IL_8903:  shl
-  IL_8904:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8904:  call       void [System.Console]System.Console::Write(int32)
   IL_8909:  dup
   IL_890a:  ldc.i4.4
   IL_890b:  mul
-  IL_890c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_890c:  call       void [System.Console]System.Console::Write(int32)
   IL_8911:  dup
   IL_8912:  ldc.i4.7
   IL_8913:  mul
-  IL_8914:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8914:  call       void [System.Console]System.Console::Write(int32)
   IL_8919:  dup
   IL_891a:  ldc.i4.1
   IL_891b:  sub
-  IL_891c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_891c:  call       void [System.Console]System.Console::Write(int32)
   IL_8921:  dup
   IL_8922:  ldc.i4.3
   IL_8923:  xor
-  IL_8924:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8924:  call       void [System.Console]System.Console::Write(int32)
   IL_8929:  dup
   IL_892a:  ldc.i4.0
   IL_892b:  xor
-  IL_892c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_892c:  call       void [System.Console]System.Console::Write(int32)
   IL_8931:  dup
   IL_8932:  ldc.i4.3
   IL_8933:  and
-  IL_8934:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8934:  call       void [System.Console]System.Console::Write(int32)
   IL_8939:  dup
   IL_893a:  ldc.i4.5
   IL_893b:  add
-  IL_893c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_893c:  call       void [System.Console]System.Console::Write(int32)
   IL_8941:  dup
   IL_8942:  ldc.i4.2
   IL_8943:  xor
-  IL_8944:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8944:  call       void [System.Console]System.Console::Write(int32)
   IL_8949:  dup
   IL_894a:  ldc.i4.5
   IL_894b:  shr
-  IL_894c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_894c:  call       void [System.Console]System.Console::Write(int32)
   IL_8951:  dup
   IL_8952:  ldc.i4.4
   IL_8953:  xor
-  IL_8954:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8954:  call       void [System.Console]System.Console::Write(int32)
   IL_8959:  dup
   IL_895a:  ldc.i4.4
   IL_895b:  shr
-  IL_895c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_895c:  call       void [System.Console]System.Console::Write(int32)
   IL_8961:  dup
   IL_8962:  ldc.i4.1
   IL_8963:  xor
-  IL_8964:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8964:  call       void [System.Console]System.Console::Write(int32)
   IL_8969:  dup
   IL_896a:  ldc.i4.8
   IL_896b:  add
-  IL_896c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_896c:  call       void [System.Console]System.Console::Write(int32)
   IL_8971:  dup
   IL_8972:  ldc.i4.4
   IL_8973:  add
-  IL_8974:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8974:  call       void [System.Console]System.Console::Write(int32)
   IL_8979:  dup
   IL_897a:  ldc.i4.0
   IL_897b:  xor
-  IL_897c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_897c:  call       void [System.Console]System.Console::Write(int32)
   IL_8981:  dup
   IL_8982:  ldc.i4.5
   IL_8983:  add
-  IL_8984:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8984:  call       void [System.Console]System.Console::Write(int32)
   IL_8989:  dup
   IL_898a:  ldc.i4.7
   IL_898b:  shl
-  IL_898c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_898c:  call       void [System.Console]System.Console::Write(int32)
   IL_8991:  dup
   IL_8992:  ldc.i4.5
   IL_8993:  and
-  IL_8994:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8994:  call       void [System.Console]System.Console::Write(int32)
   IL_8999:  dup
   IL_899a:  ldc.i4.5
   IL_899b:  add
-  IL_899c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_899c:  call       void [System.Console]System.Console::Write(int32)
   IL_89a1:  dup
   IL_89a2:  ldc.i4.4
   IL_89a3:  shr
-  IL_89a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_89a4:  call       void [System.Console]System.Console::Write(int32)
   IL_89a9:  dup
   IL_89aa:  ldc.i4.6
   IL_89ab:  and
-  IL_89ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_89ac:  call       void [System.Console]System.Console::Write(int32)
   IL_89b1:  dup
   IL_89b2:  ldc.i4.8
   IL_89b3:  sub
-  IL_89b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_89b4:  call       void [System.Console]System.Console::Write(int32)
   IL_89b9:  dup
   IL_89ba:  ldc.i4.6
   IL_89bb:  or
-  IL_89bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_89bc:  call       void [System.Console]System.Console::Write(int32)
   IL_89c1:  dup
   IL_89c2:  ldc.i4.4
   IL_89c3:  xor
-  IL_89c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_89c4:  call       void [System.Console]System.Console::Write(int32)
   IL_89c9:  dup
   IL_89ca:  ldc.i4.2
   IL_89cb:  shr
-  IL_89cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_89cc:  call       void [System.Console]System.Console::Write(int32)
   IL_89d1:  dup
   IL_89d2:  ldc.i4.6
   IL_89d3:  mul
-  IL_89d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_89d4:  call       void [System.Console]System.Console::Write(int32)
   IL_89d9:  dup
   IL_89da:  ldc.i4.0
   IL_89db:  or
-  IL_89dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_89dc:  call       void [System.Console]System.Console::Write(int32)
   IL_89e1:  dup
   IL_89e2:  ldc.i4.0
   IL_89e3:  and
-  IL_89e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_89e4:  call       void [System.Console]System.Console::Write(int32)
   IL_89e9:  dup
   IL_89ea:  ldc.i4.1
   IL_89eb:  xor
-  IL_89ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_89ec:  call       void [System.Console]System.Console::Write(int32)
   IL_89f1:  dup
   IL_89f2:  ldc.i4.2
   IL_89f3:  add
-  IL_89f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_89f4:  call       void [System.Console]System.Console::Write(int32)
   IL_89f9:  dup
   IL_89fa:  ldc.i4.6
   IL_89fb:  mul
-  IL_89fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_89fc:  call       void [System.Console]System.Console::Write(int32)
   IL_8a01:  dup
   IL_8a02:  ldc.i4.4
   IL_8a03:  shr
-  IL_8a04:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8a04:  call       void [System.Console]System.Console::Write(int32)
   IL_8a09:  dup
   IL_8a0a:  ldc.i4.6
   IL_8a0b:  mul
-  IL_8a0c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8a0c:  call       void [System.Console]System.Console::Write(int32)
   IL_8a11:  dup
   IL_8a12:  ldc.i4.8
   IL_8a13:  add
-  IL_8a14:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8a14:  call       void [System.Console]System.Console::Write(int32)
   IL_8a19:  dup
   IL_8a1a:  ldc.i4.3
   IL_8a1b:  mul
-  IL_8a1c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8a1c:  call       void [System.Console]System.Console::Write(int32)
   IL_8a21:  dup
   IL_8a22:  ldc.i4.7
   IL_8a23:  shl
-  IL_8a24:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8a24:  call       void [System.Console]System.Console::Write(int32)
   IL_8a29:  dup
   IL_8a2a:  ldc.i4.1
   IL_8a2b:  or
-  IL_8a2c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8a2c:  call       void [System.Console]System.Console::Write(int32)
   IL_8a31:  dup
   IL_8a32:  ldc.i4.6
   IL_8a33:  shr
-  IL_8a34:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8a34:  call       void [System.Console]System.Console::Write(int32)
   IL_8a39:  dup
   IL_8a3a:  ldc.i4.6
   IL_8a3b:  or
-  IL_8a3c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8a3c:  call       void [System.Console]System.Console::Write(int32)
   IL_8a41:  dup
   IL_8a42:  ldc.i4.6
   IL_8a43:  add
-  IL_8a44:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8a44:  call       void [System.Console]System.Console::Write(int32)
   IL_8a49:  dup
   IL_8a4a:  ldc.i4.4
   IL_8a4b:  add
-  IL_8a4c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8a4c:  call       void [System.Console]System.Console::Write(int32)
   IL_8a51:  dup
   IL_8a52:  ldc.i4.7
   IL_8a53:  mul
-  IL_8a54:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8a54:  call       void [System.Console]System.Console::Write(int32)
   IL_8a59:  dup
   IL_8a5a:  ldc.i4.6
   IL_8a5b:  mul
-  IL_8a5c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8a5c:  call       void [System.Console]System.Console::Write(int32)
   IL_8a61:  dup
   IL_8a62:  ldc.i4.8
   IL_8a63:  and
-  IL_8a64:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8a64:  call       void [System.Console]System.Console::Write(int32)
   IL_8a69:  dup
   IL_8a6a:  ldc.i4.4
   IL_8a6b:  and
-  IL_8a6c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8a6c:  call       void [System.Console]System.Console::Write(int32)
   IL_8a71:  dup
   IL_8a72:  ldc.i4.6
   IL_8a73:  sub
-  IL_8a74:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8a74:  call       void [System.Console]System.Console::Write(int32)
   IL_8a79:  dup
   IL_8a7a:  ldc.i4.6
   IL_8a7b:  xor
-  IL_8a7c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8a7c:  call       void [System.Console]System.Console::Write(int32)
   IL_8a81:  dup
   IL_8a82:  ldc.i4.8
   IL_8a83:  xor
-  IL_8a84:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8a84:  call       void [System.Console]System.Console::Write(int32)
   IL_8a89:  dup
   IL_8a8a:  ldc.i4.3
   IL_8a8b:  mul
-  IL_8a8c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8a8c:  call       void [System.Console]System.Console::Write(int32)
   IL_8a91:  dup
   IL_8a92:  ldc.i4.4
   IL_8a93:  mul
-  IL_8a94:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8a94:  call       void [System.Console]System.Console::Write(int32)
   IL_8a99:  dup
   IL_8a9a:  ldc.i4.8
   IL_8a9b:  xor
-  IL_8a9c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8a9c:  call       void [System.Console]System.Console::Write(int32)
   IL_8aa1:  dup
   IL_8aa2:  ldc.i4.0
   IL_8aa3:  or
-  IL_8aa4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8aa4:  call       void [System.Console]System.Console::Write(int32)
   IL_8aa9:  dup
   IL_8aaa:  ldc.i4.8
   IL_8aab:  add
-  IL_8aac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8aac:  call       void [System.Console]System.Console::Write(int32)
   IL_8ab1:  dup
   IL_8ab2:  ldc.i4.1
   IL_8ab3:  sub
-  IL_8ab4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8ab4:  call       void [System.Console]System.Console::Write(int32)
   IL_8ab9:  dup
   IL_8aba:  ldc.i4.1
   IL_8abb:  xor
-  IL_8abc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8abc:  call       void [System.Console]System.Console::Write(int32)
   IL_8ac1:  dup
   IL_8ac2:  ldc.i4.1
   IL_8ac3:  mul
-  IL_8ac4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8ac4:  call       void [System.Console]System.Console::Write(int32)
   IL_8ac9:  dup
   IL_8aca:  ldc.i4.6
   IL_8acb:  mul
-  IL_8acc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8acc:  call       void [System.Console]System.Console::Write(int32)
   IL_8ad1:  dup
   IL_8ad2:  ldc.i4.5
   IL_8ad3:  shl
-  IL_8ad4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8ad4:  call       void [System.Console]System.Console::Write(int32)
   IL_8ad9:  dup
   IL_8ada:  ldc.i4.4
   IL_8adb:  add
-  IL_8adc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8adc:  call       void [System.Console]System.Console::Write(int32)
   IL_8ae1:  dup
   IL_8ae2:  ldc.i4.8
   IL_8ae3:  xor
-  IL_8ae4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8ae4:  call       void [System.Console]System.Console::Write(int32)
   IL_8ae9:  dup
   IL_8aea:  ldc.i4.3
   IL_8aeb:  sub
-  IL_8aec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8aec:  call       void [System.Console]System.Console::Write(int32)
   IL_8af1:  dup
   IL_8af2:  ldc.i4.5
   IL_8af3:  shl
-  IL_8af4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8af4:  call       void [System.Console]System.Console::Write(int32)
   IL_8af9:  dup
   IL_8afa:  ldc.i4.5
   IL_8afb:  shl
-  IL_8afc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8afc:  call       void [System.Console]System.Console::Write(int32)
   IL_8b01:  dup
   IL_8b02:  ldc.i4.8
   IL_8b03:  shr
-  IL_8b04:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8b04:  call       void [System.Console]System.Console::Write(int32)
   IL_8b09:  dup
   IL_8b0a:  ldc.i4.8
   IL_8b0b:  mul
-  IL_8b0c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8b0c:  call       void [System.Console]System.Console::Write(int32)
   IL_8b11:  dup
   IL_8b12:  ldc.i4.2
   IL_8b13:  xor
-  IL_8b14:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8b14:  call       void [System.Console]System.Console::Write(int32)
   IL_8b19:  dup
   IL_8b1a:  ldc.i4.3
   IL_8b1b:  mul
-  IL_8b1c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8b1c:  call       void [System.Console]System.Console::Write(int32)
   IL_8b21:  dup
   IL_8b22:  ldc.i4.0
   IL_8b23:  add
-  IL_8b24:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8b24:  call       void [System.Console]System.Console::Write(int32)
   IL_8b29:  dup
   IL_8b2a:  ldc.i4.0
   IL_8b2b:  and
-  IL_8b2c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8b2c:  call       void [System.Console]System.Console::Write(int32)
   IL_8b31:  dup
   IL_8b32:  ldc.i4.4
   IL_8b33:  shl
-  IL_8b34:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8b34:  call       void [System.Console]System.Console::Write(int32)
   IL_8b39:  dup
   IL_8b3a:  ldc.i4.0
   IL_8b3b:  and
-  IL_8b3c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8b3c:  call       void [System.Console]System.Console::Write(int32)
   IL_8b41:  dup
   IL_8b42:  ldc.i4.5
   IL_8b43:  add
-  IL_8b44:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8b44:  call       void [System.Console]System.Console::Write(int32)
   IL_8b49:  dup
   IL_8b4a:  ldc.i4.5
   IL_8b4b:  xor
-  IL_8b4c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8b4c:  call       void [System.Console]System.Console::Write(int32)
   IL_8b51:  dup
   IL_8b52:  ldc.i4.4
   IL_8b53:  mul
-  IL_8b54:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8b54:  call       void [System.Console]System.Console::Write(int32)
   IL_8b59:  dup
   IL_8b5a:  ldc.i4.8
   IL_8b5b:  mul
-  IL_8b5c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8b5c:  call       void [System.Console]System.Console::Write(int32)
   IL_8b61:  dup
   IL_8b62:  ldc.i4.8
   IL_8b63:  mul
-  IL_8b64:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8b64:  call       void [System.Console]System.Console::Write(int32)
   IL_8b69:  dup
   IL_8b6a:  ldc.i4.3
   IL_8b6b:  add
-  IL_8b6c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8b6c:  call       void [System.Console]System.Console::Write(int32)
   IL_8b71:  dup
   IL_8b72:  ldc.i4.8
   IL_8b73:  and
-  IL_8b74:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8b74:  call       void [System.Console]System.Console::Write(int32)
   IL_8b79:  dup
   IL_8b7a:  ldc.i4.8
   IL_8b7b:  xor
-  IL_8b7c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8b7c:  call       void [System.Console]System.Console::Write(int32)
   IL_8b81:  dup
   IL_8b82:  ldc.i4.2
   IL_8b83:  mul
-  IL_8b84:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8b84:  call       void [System.Console]System.Console::Write(int32)
   IL_8b89:  dup
   IL_8b8a:  ldc.i4.1
   IL_8b8b:  shl
-  IL_8b8c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8b8c:  call       void [System.Console]System.Console::Write(int32)
   IL_8b91:  dup
   IL_8b92:  ldc.i4.1
   IL_8b93:  or
-  IL_8b94:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8b94:  call       void [System.Console]System.Console::Write(int32)
   IL_8b99:  dup
   IL_8b9a:  ldc.i4.2
   IL_8b9b:  shr
-  IL_8b9c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8b9c:  call       void [System.Console]System.Console::Write(int32)
   IL_8ba1:  dup
   IL_8ba2:  ldc.i4.7
   IL_8ba3:  mul
-  IL_8ba4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8ba4:  call       void [System.Console]System.Console::Write(int32)
   IL_8ba9:  dup
   IL_8baa:  ldc.i4.2
   IL_8bab:  xor
-  IL_8bac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8bac:  call       void [System.Console]System.Console::Write(int32)
   IL_8bb1:  dup
   IL_8bb2:  ldc.i4.4
   IL_8bb3:  shr
-  IL_8bb4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8bb4:  call       void [System.Console]System.Console::Write(int32)
   IL_8bb9:  dup
   IL_8bba:  ldc.i4.5
   IL_8bbb:  xor
-  IL_8bbc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8bbc:  call       void [System.Console]System.Console::Write(int32)
   IL_8bc1:  dup
   IL_8bc2:  ldc.i4.3
   IL_8bc3:  shr
-  IL_8bc4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8bc4:  call       void [System.Console]System.Console::Write(int32)
   IL_8bc9:  dup
   IL_8bca:  ldc.i4.4
   IL_8bcb:  shl
-  IL_8bcc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8bcc:  call       void [System.Console]System.Console::Write(int32)
   IL_8bd1:  dup
   IL_8bd2:  ldc.i4.8
   IL_8bd3:  sub
-  IL_8bd4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8bd4:  call       void [System.Console]System.Console::Write(int32)
   IL_8bd9:  dup
   IL_8bda:  ldc.i4.0
   IL_8bdb:  shl
-  IL_8bdc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8bdc:  call       void [System.Console]System.Console::Write(int32)
   IL_8be1:  dup
   IL_8be2:  ldc.i4.7
   IL_8be3:  shr
-  IL_8be4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8be4:  call       void [System.Console]System.Console::Write(int32)
   IL_8be9:  dup
   IL_8bea:  ldc.i4.3
   IL_8beb:  or
-  IL_8bec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8bec:  call       void [System.Console]System.Console::Write(int32)
   IL_8bf1:  dup
   IL_8bf2:  ldc.i4.0
   IL_8bf3:  mul
-  IL_8bf4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8bf4:  call       void [System.Console]System.Console::Write(int32)
   IL_8bf9:  dup
   IL_8bfa:  ldc.i4.3
   IL_8bfb:  sub
-  IL_8bfc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8bfc:  call       void [System.Console]System.Console::Write(int32)
   IL_8c01:  dup
   IL_8c02:  ldc.i4.1
   IL_8c03:  shr
-  IL_8c04:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8c04:  call       void [System.Console]System.Console::Write(int32)
   IL_8c09:  dup
   IL_8c0a:  ldc.i4.5
   IL_8c0b:  sub
-  IL_8c0c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8c0c:  call       void [System.Console]System.Console::Write(int32)
   IL_8c11:  dup
   IL_8c12:  ldc.i4.3
   IL_8c13:  shl
-  IL_8c14:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8c14:  call       void [System.Console]System.Console::Write(int32)
   IL_8c19:  dup
   IL_8c1a:  ldc.i4.4
   IL_8c1b:  shr
-  IL_8c1c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8c1c:  call       void [System.Console]System.Console::Write(int32)
   IL_8c21:  dup
   IL_8c22:  ldc.i4.7
   IL_8c23:  or
-  IL_8c24:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8c24:  call       void [System.Console]System.Console::Write(int32)
   IL_8c29:  dup
   IL_8c2a:  ldc.i4.5
   IL_8c2b:  sub
-  IL_8c2c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8c2c:  call       void [System.Console]System.Console::Write(int32)
   IL_8c31:  dup
   IL_8c32:  ldc.i4.0
   IL_8c33:  xor
-  IL_8c34:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8c34:  call       void [System.Console]System.Console::Write(int32)
   IL_8c39:  dup
   IL_8c3a:  ldc.i4.6
   IL_8c3b:  sub
-  IL_8c3c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8c3c:  call       void [System.Console]System.Console::Write(int32)
   IL_8c41:  dup
   IL_8c42:  ldc.i4.5
   IL_8c43:  or
-  IL_8c44:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8c44:  call       void [System.Console]System.Console::Write(int32)
   IL_8c49:  dup
   IL_8c4a:  ldc.i4.6
   IL_8c4b:  mul
-  IL_8c4c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8c4c:  call       void [System.Console]System.Console::Write(int32)
   IL_8c51:  dup
   IL_8c52:  ldc.i4.2
   IL_8c53:  mul
-  IL_8c54:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8c54:  call       void [System.Console]System.Console::Write(int32)
   IL_8c59:  dup
   IL_8c5a:  ldc.i4.4
   IL_8c5b:  add
-  IL_8c5c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8c5c:  call       void [System.Console]System.Console::Write(int32)
   IL_8c61:  dup
   IL_8c62:  ldc.i4.1
   IL_8c63:  shr
-  IL_8c64:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8c64:  call       void [System.Console]System.Console::Write(int32)
   IL_8c69:  dup
   IL_8c6a:  ldc.i4.6
   IL_8c6b:  shl
-  IL_8c6c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8c6c:  call       void [System.Console]System.Console::Write(int32)
   IL_8c71:  dup
   IL_8c72:  ldc.i4.4
   IL_8c73:  sub
-  IL_8c74:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8c74:  call       void [System.Console]System.Console::Write(int32)
   IL_8c79:  dup
   IL_8c7a:  ldc.i4.5
   IL_8c7b:  shl
-  IL_8c7c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8c7c:  call       void [System.Console]System.Console::Write(int32)
   IL_8c81:  dup
   IL_8c82:  ldc.i4.8
   IL_8c83:  add
-  IL_8c84:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8c84:  call       void [System.Console]System.Console::Write(int32)
   IL_8c89:  dup
   IL_8c8a:  ldc.i4.2
   IL_8c8b:  or
-  IL_8c8c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8c8c:  call       void [System.Console]System.Console::Write(int32)
   IL_8c91:  dup
   IL_8c92:  ldc.i4.0
   IL_8c93:  xor
-  IL_8c94:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8c94:  call       void [System.Console]System.Console::Write(int32)
   IL_8c99:  dup
   IL_8c9a:  ldc.i4.0
   IL_8c9b:  shr
-  IL_8c9c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8c9c:  call       void [System.Console]System.Console::Write(int32)
   IL_8ca1:  dup
   IL_8ca2:  ldc.i4.0
   IL_8ca3:  and
-  IL_8ca4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8ca4:  call       void [System.Console]System.Console::Write(int32)
   IL_8ca9:  dup
   IL_8caa:  ldc.i4.6
   IL_8cab:  or
-  IL_8cac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8cac:  call       void [System.Console]System.Console::Write(int32)
   IL_8cb1:  dup
   IL_8cb2:  ldc.i4.5
   IL_8cb3:  or
-  IL_8cb4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8cb4:  call       void [System.Console]System.Console::Write(int32)
   IL_8cb9:  dup
   IL_8cba:  ldc.i4.4
   IL_8cbb:  xor
-  IL_8cbc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8cbc:  call       void [System.Console]System.Console::Write(int32)
   IL_8cc1:  dup
   IL_8cc2:  ldc.i4.8
   IL_8cc3:  sub
-  IL_8cc4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8cc4:  call       void [System.Console]System.Console::Write(int32)
   IL_8cc9:  dup
   IL_8cca:  ldc.i4.3
   IL_8ccb:  sub
-  IL_8ccc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8ccc:  call       void [System.Console]System.Console::Write(int32)
   IL_8cd1:  dup
   IL_8cd2:  ldc.i4.5
   IL_8cd3:  add
-  IL_8cd4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8cd4:  call       void [System.Console]System.Console::Write(int32)
   IL_8cd9:  dup
   IL_8cda:  ldc.i4.7
   IL_8cdb:  and
-  IL_8cdc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8cdc:  call       void [System.Console]System.Console::Write(int32)
   IL_8ce1:  dup
   IL_8ce2:  ldc.i4.0
   IL_8ce3:  xor
-  IL_8ce4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8ce4:  call       void [System.Console]System.Console::Write(int32)
   IL_8ce9:  dup
   IL_8cea:  ldc.i4.8
   IL_8ceb:  shr
-  IL_8cec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8cec:  call       void [System.Console]System.Console::Write(int32)
   IL_8cf1:  dup
   IL_8cf2:  ldc.i4.7
   IL_8cf3:  or
-  IL_8cf4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8cf4:  call       void [System.Console]System.Console::Write(int32)
   IL_8cf9:  dup
   IL_8cfa:  ldc.i4.1
   IL_8cfb:  shl
-  IL_8cfc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8cfc:  call       void [System.Console]System.Console::Write(int32)
   IL_8d01:  dup
   IL_8d02:  ldc.i4.2
   IL_8d03:  add
-  IL_8d04:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8d04:  call       void [System.Console]System.Console::Write(int32)
   IL_8d09:  dup
   IL_8d0a:  ldc.i4.2
   IL_8d0b:  or
-  IL_8d0c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8d0c:  call       void [System.Console]System.Console::Write(int32)
   IL_8d11:  dup
   IL_8d12:  ldc.i4.0
   IL_8d13:  and
-  IL_8d14:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8d14:  call       void [System.Console]System.Console::Write(int32)
   IL_8d19:  dup
   IL_8d1a:  ldc.i4.1
   IL_8d1b:  sub
-  IL_8d1c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8d1c:  call       void [System.Console]System.Console::Write(int32)
   IL_8d21:  dup
   IL_8d22:  ldc.i4.7
   IL_8d23:  add
-  IL_8d24:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8d24:  call       void [System.Console]System.Console::Write(int32)
   IL_8d29:  dup
   IL_8d2a:  ldc.i4.2
   IL_8d2b:  shl
-  IL_8d2c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8d2c:  call       void [System.Console]System.Console::Write(int32)
   IL_8d31:  dup
   IL_8d32:  ldc.i4.5
   IL_8d33:  shl
-  IL_8d34:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8d34:  call       void [System.Console]System.Console::Write(int32)
   IL_8d39:  dup
   IL_8d3a:  ldc.i4.4
   IL_8d3b:  mul
-  IL_8d3c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8d3c:  call       void [System.Console]System.Console::Write(int32)
   IL_8d41:  dup
   IL_8d42:  ldc.i4.1
   IL_8d43:  mul
-  IL_8d44:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8d44:  call       void [System.Console]System.Console::Write(int32)
   IL_8d49:  dup
   IL_8d4a:  ldc.i4.5
   IL_8d4b:  mul
-  IL_8d4c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8d4c:  call       void [System.Console]System.Console::Write(int32)
   IL_8d51:  dup
   IL_8d52:  ldc.i4.7
   IL_8d53:  xor
-  IL_8d54:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8d54:  call       void [System.Console]System.Console::Write(int32)
   IL_8d59:  dup
   IL_8d5a:  ldc.i4.8
   IL_8d5b:  and
-  IL_8d5c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8d5c:  call       void [System.Console]System.Console::Write(int32)
   IL_8d61:  dup
   IL_8d62:  ldc.i4.2
   IL_8d63:  shl
-  IL_8d64:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8d64:  call       void [System.Console]System.Console::Write(int32)
   IL_8d69:  dup
   IL_8d6a:  ldc.i4.7
   IL_8d6b:  shl
-  IL_8d6c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8d6c:  call       void [System.Console]System.Console::Write(int32)
   IL_8d71:  dup
   IL_8d72:  ldc.i4.4
   IL_8d73:  mul
-  IL_8d74:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8d74:  call       void [System.Console]System.Console::Write(int32)
   IL_8d79:  dup
   IL_8d7a:  ldc.i4.7
   IL_8d7b:  add
-  IL_8d7c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8d7c:  call       void [System.Console]System.Console::Write(int32)
   IL_8d81:  dup
   IL_8d82:  ldc.i4.5
   IL_8d83:  sub
-  IL_8d84:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8d84:  call       void [System.Console]System.Console::Write(int32)
   IL_8d89:  dup
   IL_8d8a:  ldc.i4.5
   IL_8d8b:  shl
-  IL_8d8c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8d8c:  call       void [System.Console]System.Console::Write(int32)
   IL_8d91:  dup
   IL_8d92:  ldc.i4.5
   IL_8d93:  shl
-  IL_8d94:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8d94:  call       void [System.Console]System.Console::Write(int32)
   IL_8d99:  dup
   IL_8d9a:  ldc.i4.2
   IL_8d9b:  add
-  IL_8d9c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8d9c:  call       void [System.Console]System.Console::Write(int32)
   IL_8da1:  dup
   IL_8da2:  ldc.i4.0
   IL_8da3:  sub
-  IL_8da4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8da4:  call       void [System.Console]System.Console::Write(int32)
   IL_8da9:  dup
   IL_8daa:  ldc.i4.3
   IL_8dab:  shl
-  IL_8dac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8dac:  call       void [System.Console]System.Console::Write(int32)
   IL_8db1:  dup
   IL_8db2:  ldc.i4.7
   IL_8db3:  mul
-  IL_8db4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8db4:  call       void [System.Console]System.Console::Write(int32)
   IL_8db9:  dup
   IL_8dba:  ldc.i4.2
   IL_8dbb:  shl
-  IL_8dbc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8dbc:  call       void [System.Console]System.Console::Write(int32)
   IL_8dc1:  dup
   IL_8dc2:  ldc.i4.0
   IL_8dc3:  shr
-  IL_8dc4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8dc4:  call       void [System.Console]System.Console::Write(int32)
   IL_8dc9:  dup
   IL_8dca:  ldc.i4.5
   IL_8dcb:  shl
-  IL_8dcc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8dcc:  call       void [System.Console]System.Console::Write(int32)
   IL_8dd1:  dup
   IL_8dd2:  ldc.i4.3
   IL_8dd3:  and
-  IL_8dd4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8dd4:  call       void [System.Console]System.Console::Write(int32)
   IL_8dd9:  dup
   IL_8dda:  ldc.i4.6
   IL_8ddb:  and
-  IL_8ddc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8ddc:  call       void [System.Console]System.Console::Write(int32)
   IL_8de1:  dup
   IL_8de2:  ldc.i4.0
   IL_8de3:  xor
-  IL_8de4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8de4:  call       void [System.Console]System.Console::Write(int32)
   IL_8de9:  dup
   IL_8dea:  ldc.i4.6
   IL_8deb:  shl
-  IL_8dec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8dec:  call       void [System.Console]System.Console::Write(int32)
   IL_8df1:  dup
   IL_8df2:  ldc.i4.0
   IL_8df3:  shl
-  IL_8df4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8df4:  call       void [System.Console]System.Console::Write(int32)
   IL_8df9:  dup
   IL_8dfa:  ldc.i4.5
   IL_8dfb:  xor
-  IL_8dfc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8dfc:  call       void [System.Console]System.Console::Write(int32)
   IL_8e01:  dup
   IL_8e02:  ldc.i4.1
   IL_8e03:  sub
-  IL_8e04:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8e04:  call       void [System.Console]System.Console::Write(int32)
   IL_8e09:  dup
   IL_8e0a:  ldc.i4.8
   IL_8e0b:  mul
-  IL_8e0c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8e0c:  call       void [System.Console]System.Console::Write(int32)
   IL_8e11:  dup
   IL_8e12:  ldc.i4.8
   IL_8e13:  or
-  IL_8e14:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8e14:  call       void [System.Console]System.Console::Write(int32)
   IL_8e19:  dup
   IL_8e1a:  ldc.i4.5
   IL_8e1b:  shl
-  IL_8e1c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8e1c:  call       void [System.Console]System.Console::Write(int32)
   IL_8e21:  dup
   IL_8e22:  ldc.i4.8
   IL_8e23:  shl
-  IL_8e24:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8e24:  call       void [System.Console]System.Console::Write(int32)
   IL_8e29:  dup
   IL_8e2a:  ldc.i4.3
   IL_8e2b:  shl
-  IL_8e2c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8e2c:  call       void [System.Console]System.Console::Write(int32)
   IL_8e31:  dup
   IL_8e32:  ldc.i4.0
   IL_8e33:  xor
-  IL_8e34:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8e34:  call       void [System.Console]System.Console::Write(int32)
   IL_8e39:  dup
   IL_8e3a:  ldc.i4.8
   IL_8e3b:  or
-  IL_8e3c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8e3c:  call       void [System.Console]System.Console::Write(int32)
   IL_8e41:  dup
   IL_8e42:  ldc.i4.2
   IL_8e43:  mul
-  IL_8e44:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8e44:  call       void [System.Console]System.Console::Write(int32)
   IL_8e49:  dup
   IL_8e4a:  ldc.i4.5
   IL_8e4b:  and
-  IL_8e4c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8e4c:  call       void [System.Console]System.Console::Write(int32)
   IL_8e51:  dup
   IL_8e52:  ldc.i4.7
   IL_8e53:  mul
-  IL_8e54:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8e54:  call       void [System.Console]System.Console::Write(int32)
   IL_8e59:  dup
   IL_8e5a:  ldc.i4.6
   IL_8e5b:  shr
-  IL_8e5c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8e5c:  call       void [System.Console]System.Console::Write(int32)
   IL_8e61:  dup
   IL_8e62:  ldc.i4.4
   IL_8e63:  and
-  IL_8e64:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8e64:  call       void [System.Console]System.Console::Write(int32)
   IL_8e69:  dup
   IL_8e6a:  ldc.i4.4
   IL_8e6b:  sub
-  IL_8e6c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8e6c:  call       void [System.Console]System.Console::Write(int32)
   IL_8e71:  dup
   IL_8e72:  ldc.i4.7
   IL_8e73:  and
-  IL_8e74:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8e74:  call       void [System.Console]System.Console::Write(int32)
   IL_8e79:  dup
   IL_8e7a:  ldc.i4.0
   IL_8e7b:  xor
-  IL_8e7c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8e7c:  call       void [System.Console]System.Console::Write(int32)
   IL_8e81:  dup
   IL_8e82:  ldc.i4.5
   IL_8e83:  or
-  IL_8e84:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8e84:  call       void [System.Console]System.Console::Write(int32)
   IL_8e89:  dup
   IL_8e8a:  ldc.i4.3
   IL_8e8b:  shr
-  IL_8e8c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8e8c:  call       void [System.Console]System.Console::Write(int32)
   IL_8e91:  dup
   IL_8e92:  ldc.i4.3
   IL_8e93:  or
-  IL_8e94:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8e94:  call       void [System.Console]System.Console::Write(int32)
   IL_8e99:  dup
   IL_8e9a:  ldc.i4.5
   IL_8e9b:  add
-  IL_8e9c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8e9c:  call       void [System.Console]System.Console::Write(int32)
   IL_8ea1:  dup
   IL_8ea2:  ldc.i4.0
   IL_8ea3:  or
-  IL_8ea4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8ea4:  call       void [System.Console]System.Console::Write(int32)
   IL_8ea9:  dup
   IL_8eaa:  ldc.i4.5
   IL_8eab:  and
-  IL_8eac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8eac:  call       void [System.Console]System.Console::Write(int32)
   IL_8eb1:  dup
   IL_8eb2:  ldc.i4.4
   IL_8eb3:  add
-  IL_8eb4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8eb4:  call       void [System.Console]System.Console::Write(int32)
   IL_8eb9:  dup
   IL_8eba:  ldc.i4.6
   IL_8ebb:  shl
-  IL_8ebc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8ebc:  call       void [System.Console]System.Console::Write(int32)
   IL_8ec1:  dup
   IL_8ec2:  ldc.i4.4
   IL_8ec3:  and
-  IL_8ec4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8ec4:  call       void [System.Console]System.Console::Write(int32)
   IL_8ec9:  dup
   IL_8eca:  ldc.i4.2
   IL_8ecb:  shr
-  IL_8ecc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8ecc:  call       void [System.Console]System.Console::Write(int32)
   IL_8ed1:  dup
   IL_8ed2:  ldc.i4.8
   IL_8ed3:  shr
-  IL_8ed4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8ed4:  call       void [System.Console]System.Console::Write(int32)
   IL_8ed9:  dup
   IL_8eda:  ldc.i4.5
   IL_8edb:  and
-  IL_8edc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8edc:  call       void [System.Console]System.Console::Write(int32)
   IL_8ee1:  dup
   IL_8ee2:  ldc.i4.3
   IL_8ee3:  sub
-  IL_8ee4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8ee4:  call       void [System.Console]System.Console::Write(int32)
   IL_8ee9:  dup
   IL_8eea:  ldc.i4.7
   IL_8eeb:  sub
-  IL_8eec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8eec:  call       void [System.Console]System.Console::Write(int32)
   IL_8ef1:  dup
   IL_8ef2:  ldc.i4.3
   IL_8ef3:  xor
-  IL_8ef4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8ef4:  call       void [System.Console]System.Console::Write(int32)
   IL_8ef9:  dup
   IL_8efa:  ldc.i4.7
   IL_8efb:  sub
-  IL_8efc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8efc:  call       void [System.Console]System.Console::Write(int32)
   IL_8f01:  dup
   IL_8f02:  ldc.i4.4
   IL_8f03:  or
-  IL_8f04:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8f04:  call       void [System.Console]System.Console::Write(int32)
   IL_8f09:  dup
   IL_8f0a:  ldc.i4.8
   IL_8f0b:  sub
-  IL_8f0c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8f0c:  call       void [System.Console]System.Console::Write(int32)
   IL_8f11:  dup
   IL_8f12:  ldc.i4.0
   IL_8f13:  sub
-  IL_8f14:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8f14:  call       void [System.Console]System.Console::Write(int32)
   IL_8f19:  dup
   IL_8f1a:  ldc.i4.5
   IL_8f1b:  xor
-  IL_8f1c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8f1c:  call       void [System.Console]System.Console::Write(int32)
   IL_8f21:  dup
   IL_8f22:  ldc.i4.6
   IL_8f23:  shl
-  IL_8f24:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8f24:  call       void [System.Console]System.Console::Write(int32)
   IL_8f29:  dup
   IL_8f2a:  ldc.i4.7
   IL_8f2b:  and
-  IL_8f2c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8f2c:  call       void [System.Console]System.Console::Write(int32)
   IL_8f31:  dup
   IL_8f32:  ldc.i4.6
   IL_8f33:  or
-  IL_8f34:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8f34:  call       void [System.Console]System.Console::Write(int32)
   IL_8f39:  dup
   IL_8f3a:  ldc.i4.1
   IL_8f3b:  xor
-  IL_8f3c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8f3c:  call       void [System.Console]System.Console::Write(int32)
   IL_8f41:  dup
   IL_8f42:  ldc.i4.0
   IL_8f43:  or
-  IL_8f44:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8f44:  call       void [System.Console]System.Console::Write(int32)
   IL_8f49:  dup
   IL_8f4a:  ldc.i4.5
   IL_8f4b:  add
-  IL_8f4c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8f4c:  call       void [System.Console]System.Console::Write(int32)
   IL_8f51:  dup
   IL_8f52:  ldc.i4.4
   IL_8f53:  mul
-  IL_8f54:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8f54:  call       void [System.Console]System.Console::Write(int32)
   IL_8f59:  dup
   IL_8f5a:  ldc.i4.4
   IL_8f5b:  or
-  IL_8f5c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8f5c:  call       void [System.Console]System.Console::Write(int32)
   IL_8f61:  dup
   IL_8f62:  ldc.i4.2
   IL_8f63:  shl
-  IL_8f64:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8f64:  call       void [System.Console]System.Console::Write(int32)
   IL_8f69:  dup
   IL_8f6a:  ldc.i4.3
   IL_8f6b:  add
-  IL_8f6c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8f6c:  call       void [System.Console]System.Console::Write(int32)
   IL_8f71:  dup
   IL_8f72:  ldc.i4.0
   IL_8f73:  xor
-  IL_8f74:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8f74:  call       void [System.Console]System.Console::Write(int32)
   IL_8f79:  dup
   IL_8f7a:  ldc.i4.5
   IL_8f7b:  shl
-  IL_8f7c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8f7c:  call       void [System.Console]System.Console::Write(int32)
   IL_8f81:  dup
   IL_8f82:  ldc.i4.1
   IL_8f83:  mul
-  IL_8f84:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8f84:  call       void [System.Console]System.Console::Write(int32)
   IL_8f89:  dup
   IL_8f8a:  ldc.i4.2
   IL_8f8b:  shl
-  IL_8f8c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8f8c:  call       void [System.Console]System.Console::Write(int32)
   IL_8f91:  dup
   IL_8f92:  ldc.i4.0
   IL_8f93:  shl
-  IL_8f94:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8f94:  call       void [System.Console]System.Console::Write(int32)
   IL_8f99:  dup
   IL_8f9a:  ldc.i4.5
   IL_8f9b:  mul
-  IL_8f9c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8f9c:  call       void [System.Console]System.Console::Write(int32)
   IL_8fa1:  dup
   IL_8fa2:  ldc.i4.1
   IL_8fa3:  or
-  IL_8fa4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8fa4:  call       void [System.Console]System.Console::Write(int32)
   IL_8fa9:  dup
   IL_8faa:  ldc.i4.0
   IL_8fab:  xor
-  IL_8fac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8fac:  call       void [System.Console]System.Console::Write(int32)
   IL_8fb1:  dup
   IL_8fb2:  ldc.i4.7
   IL_8fb3:  and
-  IL_8fb4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8fb4:  call       void [System.Console]System.Console::Write(int32)
   IL_8fb9:  dup
   IL_8fba:  ldc.i4.0
   IL_8fbb:  xor
-  IL_8fbc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8fbc:  call       void [System.Console]System.Console::Write(int32)
   IL_8fc1:  dup
   IL_8fc2:  ldc.i4.0
   IL_8fc3:  xor
-  IL_8fc4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8fc4:  call       void [System.Console]System.Console::Write(int32)
   IL_8fc9:  dup
   IL_8fca:  ldc.i4.0
   IL_8fcb:  shl
-  IL_8fcc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8fcc:  call       void [System.Console]System.Console::Write(int32)
   IL_8fd1:  dup
   IL_8fd2:  ldc.i4.7
   IL_8fd3:  and
-  IL_8fd4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8fd4:  call       void [System.Console]System.Console::Write(int32)
   IL_8fd9:  dup
   IL_8fda:  ldc.i4.6
   IL_8fdb:  sub
-  IL_8fdc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8fdc:  call       void [System.Console]System.Console::Write(int32)
   IL_8fe1:  dup
   IL_8fe2:  ldc.i4.3
   IL_8fe3:  add
-  IL_8fe4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8fe4:  call       void [System.Console]System.Console::Write(int32)
   IL_8fe9:  dup
   IL_8fea:  ldc.i4.8
   IL_8feb:  xor
-  IL_8fec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8fec:  call       void [System.Console]System.Console::Write(int32)
   IL_8ff1:  dup
   IL_8ff2:  ldc.i4.7
   IL_8ff3:  xor
-  IL_8ff4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8ff4:  call       void [System.Console]System.Console::Write(int32)
   IL_8ff9:  dup
   IL_8ffa:  ldc.i4.3
   IL_8ffb:  sub
-  IL_8ffc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_8ffc:  call       void [System.Console]System.Console::Write(int32)
   IL_9001:  dup
   IL_9002:  ldc.i4.7
   IL_9003:  mul
-  IL_9004:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9004:  call       void [System.Console]System.Console::Write(int32)
   IL_9009:  dup
   IL_900a:  ldc.i4.5
   IL_900b:  xor
-  IL_900c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_900c:  call       void [System.Console]System.Console::Write(int32)
   IL_9011:  dup
   IL_9012:  ldc.i4.6
   IL_9013:  shl
-  IL_9014:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9014:  call       void [System.Console]System.Console::Write(int32)
   IL_9019:  dup
   IL_901a:  ldc.i4.3
   IL_901b:  shl
-  IL_901c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_901c:  call       void [System.Console]System.Console::Write(int32)
   IL_9021:  dup
   IL_9022:  ldc.i4.2
   IL_9023:  mul
-  IL_9024:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9024:  call       void [System.Console]System.Console::Write(int32)
   IL_9029:  dup
   IL_902a:  ldc.i4.7
   IL_902b:  shl
-  IL_902c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_902c:  call       void [System.Console]System.Console::Write(int32)
   IL_9031:  dup
   IL_9032:  ldc.i4.3
   IL_9033:  add
-  IL_9034:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9034:  call       void [System.Console]System.Console::Write(int32)
   IL_9039:  dup
   IL_903a:  ldc.i4.0
   IL_903b:  xor
-  IL_903c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_903c:  call       void [System.Console]System.Console::Write(int32)
   IL_9041:  dup
   IL_9042:  ldc.i4.4
   IL_9043:  or
-  IL_9044:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9044:  call       void [System.Console]System.Console::Write(int32)
   IL_9049:  dup
   IL_904a:  ldc.i4.0
   IL_904b:  shr
-  IL_904c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_904c:  call       void [System.Console]System.Console::Write(int32)
   IL_9051:  dup
   IL_9052:  ldc.i4.3
   IL_9053:  add
-  IL_9054:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9054:  call       void [System.Console]System.Console::Write(int32)
   IL_9059:  dup
   IL_905a:  ldc.i4.6
   IL_905b:  xor
-  IL_905c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_905c:  call       void [System.Console]System.Console::Write(int32)
   IL_9061:  dup
   IL_9062:  ldc.i4.5
   IL_9063:  add
-  IL_9064:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9064:  call       void [System.Console]System.Console::Write(int32)
   IL_9069:  dup
   IL_906a:  ldc.i4.1
   IL_906b:  or
-  IL_906c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_906c:  call       void [System.Console]System.Console::Write(int32)
   IL_9071:  dup
   IL_9072:  ldc.i4.5
   IL_9073:  sub
-  IL_9074:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9074:  call       void [System.Console]System.Console::Write(int32)
   IL_9079:  dup
   IL_907a:  ldc.i4.4
   IL_907b:  shr
-  IL_907c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_907c:  call       void [System.Console]System.Console::Write(int32)
   IL_9081:  dup
   IL_9082:  ldc.i4.4
   IL_9083:  and
-  IL_9084:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9084:  call       void [System.Console]System.Console::Write(int32)
   IL_9089:  dup
   IL_908a:  ldc.i4.5
   IL_908b:  shl
-  IL_908c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_908c:  call       void [System.Console]System.Console::Write(int32)
   IL_9091:  dup
   IL_9092:  ldc.i4.1
   IL_9093:  shr
-  IL_9094:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9094:  call       void [System.Console]System.Console::Write(int32)
   IL_9099:  dup
   IL_909a:  ldc.i4.6
   IL_909b:  xor
-  IL_909c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_909c:  call       void [System.Console]System.Console::Write(int32)
   IL_90a1:  dup
   IL_90a2:  ldc.i4.0
   IL_90a3:  shl
-  IL_90a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_90a4:  call       void [System.Console]System.Console::Write(int32)
   IL_90a9:  dup
   IL_90aa:  ldc.i4.2
   IL_90ab:  xor
-  IL_90ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_90ac:  call       void [System.Console]System.Console::Write(int32)
   IL_90b1:  dup
   IL_90b2:  ldc.i4.8
   IL_90b3:  sub
-  IL_90b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_90b4:  call       void [System.Console]System.Console::Write(int32)
   IL_90b9:  dup
   IL_90ba:  ldc.i4.7
   IL_90bb:  mul
-  IL_90bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_90bc:  call       void [System.Console]System.Console::Write(int32)
   IL_90c1:  dup
   IL_90c2:  ldc.i4.0
   IL_90c3:  shl
-  IL_90c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_90c4:  call       void [System.Console]System.Console::Write(int32)
   IL_90c9:  dup
   IL_90ca:  ldc.i4.8
   IL_90cb:  or
-  IL_90cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_90cc:  call       void [System.Console]System.Console::Write(int32)
   IL_90d1:  dup
   IL_90d2:  ldc.i4.3
   IL_90d3:  shr
-  IL_90d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_90d4:  call       void [System.Console]System.Console::Write(int32)
   IL_90d9:  dup
   IL_90da:  ldc.i4.7
   IL_90db:  shr
-  IL_90dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_90dc:  call       void [System.Console]System.Console::Write(int32)
   IL_90e1:  dup
   IL_90e2:  ldc.i4.4
   IL_90e3:  sub
-  IL_90e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_90e4:  call       void [System.Console]System.Console::Write(int32)
   IL_90e9:  dup
   IL_90ea:  ldc.i4.6
   IL_90eb:  shl
-  IL_90ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_90ec:  call       void [System.Console]System.Console::Write(int32)
   IL_90f1:  dup
   IL_90f2:  ldc.i4.3
   IL_90f3:  xor
-  IL_90f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_90f4:  call       void [System.Console]System.Console::Write(int32)
   IL_90f9:  dup
   IL_90fa:  ldc.i4.8
   IL_90fb:  sub
-  IL_90fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_90fc:  call       void [System.Console]System.Console::Write(int32)
   IL_9101:  dup
   IL_9102:  ldc.i4.7
   IL_9103:  add
-  IL_9104:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9104:  call       void [System.Console]System.Console::Write(int32)
   IL_9109:  dup
   IL_910a:  ldc.i4.0
   IL_910b:  shl
-  IL_910c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_910c:  call       void [System.Console]System.Console::Write(int32)
   IL_9111:  dup
   IL_9112:  ldc.i4.4
   IL_9113:  xor
-  IL_9114:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9114:  call       void [System.Console]System.Console::Write(int32)
   IL_9119:  dup
   IL_911a:  ldc.i4.2
   IL_911b:  and
-  IL_911c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_911c:  call       void [System.Console]System.Console::Write(int32)
   IL_9121:  dup
   IL_9122:  ldc.i4.1
   IL_9123:  shr
-  IL_9124:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9124:  call       void [System.Console]System.Console::Write(int32)
   IL_9129:  dup
   IL_912a:  ldc.i4.5
   IL_912b:  and
-  IL_912c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_912c:  call       void [System.Console]System.Console::Write(int32)
   IL_9131:  dup
   IL_9132:  ldc.i4.7
   IL_9133:  mul
-  IL_9134:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9134:  call       void [System.Console]System.Console::Write(int32)
   IL_9139:  dup
   IL_913a:  ldc.i4.4
   IL_913b:  xor
-  IL_913c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_913c:  call       void [System.Console]System.Console::Write(int32)
   IL_9141:  dup
   IL_9142:  ldc.i4.2
   IL_9143:  and
-  IL_9144:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9144:  call       void [System.Console]System.Console::Write(int32)
   IL_9149:  dup
   IL_914a:  ldc.i4.7
   IL_914b:  add
-  IL_914c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_914c:  call       void [System.Console]System.Console::Write(int32)
   IL_9151:  dup
   IL_9152:  ldc.i4.2
   IL_9153:  shl
-  IL_9154:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9154:  call       void [System.Console]System.Console::Write(int32)
   IL_9159:  dup
   IL_915a:  ldc.i4.3
   IL_915b:  and
-  IL_915c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_915c:  call       void [System.Console]System.Console::Write(int32)
   IL_9161:  dup
   IL_9162:  ldc.i4.8
   IL_9163:  and
-  IL_9164:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9164:  call       void [System.Console]System.Console::Write(int32)
   IL_9169:  dup
   IL_916a:  ldc.i4.0
   IL_916b:  or
-  IL_916c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_916c:  call       void [System.Console]System.Console::Write(int32)
   IL_9171:  dup
   IL_9172:  ldc.i4.8
   IL_9173:  add
-  IL_9174:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9174:  call       void [System.Console]System.Console::Write(int32)
   IL_9179:  dup
   IL_917a:  ldc.i4.0
   IL_917b:  shr
-  IL_917c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_917c:  call       void [System.Console]System.Console::Write(int32)
   IL_9181:  dup
   IL_9182:  ldc.i4.5
   IL_9183:  add
-  IL_9184:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9184:  call       void [System.Console]System.Console::Write(int32)
   IL_9189:  dup
   IL_918a:  ldc.i4.5
   IL_918b:  and
-  IL_918c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_918c:  call       void [System.Console]System.Console::Write(int32)
   IL_9191:  dup
   IL_9192:  ldc.i4.1
   IL_9193:  mul
-  IL_9194:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9194:  call       void [System.Console]System.Console::Write(int32)
   IL_9199:  dup
   IL_919a:  ldc.i4.8
   IL_919b:  shr
-  IL_919c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_919c:  call       void [System.Console]System.Console::Write(int32)
   IL_91a1:  dup
   IL_91a2:  ldc.i4.2
   IL_91a3:  sub
-  IL_91a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_91a4:  call       void [System.Console]System.Console::Write(int32)
   IL_91a9:  dup
   IL_91aa:  ldc.i4.6
   IL_91ab:  shr
-  IL_91ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_91ac:  call       void [System.Console]System.Console::Write(int32)
   IL_91b1:  dup
   IL_91b2:  ldc.i4.1
   IL_91b3:  or
-  IL_91b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_91b4:  call       void [System.Console]System.Console::Write(int32)
   IL_91b9:  dup
   IL_91ba:  ldc.i4.7
   IL_91bb:  mul
-  IL_91bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_91bc:  call       void [System.Console]System.Console::Write(int32)
   IL_91c1:  dup
   IL_91c2:  ldc.i4.6
   IL_91c3:  mul
-  IL_91c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_91c4:  call       void [System.Console]System.Console::Write(int32)
   IL_91c9:  dup
   IL_91ca:  ldc.i4.2
   IL_91cb:  shl
-  IL_91cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_91cc:  call       void [System.Console]System.Console::Write(int32)
   IL_91d1:  dup
   IL_91d2:  ldc.i4.4
   IL_91d3:  or
-  IL_91d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_91d4:  call       void [System.Console]System.Console::Write(int32)
   IL_91d9:  dup
   IL_91da:  ldc.i4.7
   IL_91db:  mul
-  IL_91dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_91dc:  call       void [System.Console]System.Console::Write(int32)
   IL_91e1:  dup
   IL_91e2:  ldc.i4.6
   IL_91e3:  sub
-  IL_91e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_91e4:  call       void [System.Console]System.Console::Write(int32)
   IL_91e9:  dup
   IL_91ea:  ldc.i4.5
   IL_91eb:  shl
-  IL_91ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_91ec:  call       void [System.Console]System.Console::Write(int32)
   IL_91f1:  dup
   IL_91f2:  ldc.i4.3
   IL_91f3:  mul
-  IL_91f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_91f4:  call       void [System.Console]System.Console::Write(int32)
   IL_91f9:  dup
   IL_91fa:  ldc.i4.7
   IL_91fb:  add
-  IL_91fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_91fc:  call       void [System.Console]System.Console::Write(int32)
   IL_9201:  dup
   IL_9202:  ldc.i4.5
   IL_9203:  or
-  IL_9204:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9204:  call       void [System.Console]System.Console::Write(int32)
   IL_9209:  dup
   IL_920a:  ldc.i4.2
   IL_920b:  and
-  IL_920c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_920c:  call       void [System.Console]System.Console::Write(int32)
   IL_9211:  dup
   IL_9212:  ldc.i4.6
   IL_9213:  shr
-  IL_9214:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9214:  call       void [System.Console]System.Console::Write(int32)
   IL_9219:  dup
   IL_921a:  ldc.i4.3
   IL_921b:  add
-  IL_921c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_921c:  call       void [System.Console]System.Console::Write(int32)
   IL_9221:  dup
   IL_9222:  ldc.i4.8
   IL_9223:  sub
-  IL_9224:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9224:  call       void [System.Console]System.Console::Write(int32)
   IL_9229:  dup
   IL_922a:  ldc.i4.6
   IL_922b:  sub
-  IL_922c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_922c:  call       void [System.Console]System.Console::Write(int32)
   IL_9231:  dup
   IL_9232:  ldc.i4.7
   IL_9233:  shr
-  IL_9234:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9234:  call       void [System.Console]System.Console::Write(int32)
   IL_9239:  dup
   IL_923a:  ldc.i4.6
   IL_923b:  add
-  IL_923c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_923c:  call       void [System.Console]System.Console::Write(int32)
   IL_9241:  dup
   IL_9242:  ldc.i4.8
   IL_9243:  and
-  IL_9244:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9244:  call       void [System.Console]System.Console::Write(int32)
   IL_9249:  dup
   IL_924a:  ldc.i4.1
   IL_924b:  shr
-  IL_924c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_924c:  call       void [System.Console]System.Console::Write(int32)
   IL_9251:  dup
   IL_9252:  ldc.i4.7
   IL_9253:  shl
-  IL_9254:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9254:  call       void [System.Console]System.Console::Write(int32)
   IL_9259:  dup
   IL_925a:  ldc.i4.1
   IL_925b:  shr
-  IL_925c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_925c:  call       void [System.Console]System.Console::Write(int32)
   IL_9261:  dup
   IL_9262:  ldc.i4.2
   IL_9263:  mul
-  IL_9264:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9264:  call       void [System.Console]System.Console::Write(int32)
   IL_9269:  dup
   IL_926a:  ldc.i4.1
   IL_926b:  or
-  IL_926c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_926c:  call       void [System.Console]System.Console::Write(int32)
   IL_9271:  dup
   IL_9272:  ldc.i4.6
   IL_9273:  mul
-  IL_9274:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9274:  call       void [System.Console]System.Console::Write(int32)
   IL_9279:  dup
   IL_927a:  ldc.i4.2
   IL_927b:  or
-  IL_927c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_927c:  call       void [System.Console]System.Console::Write(int32)
   IL_9281:  dup
   IL_9282:  ldc.i4.2
   IL_9283:  shl
-  IL_9284:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9284:  call       void [System.Console]System.Console::Write(int32)
   IL_9289:  dup
   IL_928a:  ldc.i4.1
   IL_928b:  sub
-  IL_928c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_928c:  call       void [System.Console]System.Console::Write(int32)
   IL_9291:  dup
   IL_9292:  ldc.i4.6
   IL_9293:  add
-  IL_9294:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9294:  call       void [System.Console]System.Console::Write(int32)
   IL_9299:  dup
   IL_929a:  ldc.i4.5
   IL_929b:  add
-  IL_929c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_929c:  call       void [System.Console]System.Console::Write(int32)
   IL_92a1:  dup
   IL_92a2:  ldc.i4.8
   IL_92a3:  mul
-  IL_92a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_92a4:  call       void [System.Console]System.Console::Write(int32)
   IL_92a9:  dup
   IL_92aa:  ldc.i4.5
   IL_92ab:  mul
-  IL_92ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_92ac:  call       void [System.Console]System.Console::Write(int32)
   IL_92b1:  dup
   IL_92b2:  ldc.i4.1
   IL_92b3:  shr
-  IL_92b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_92b4:  call       void [System.Console]System.Console::Write(int32)
   IL_92b9:  dup
   IL_92ba:  ldc.i4.4
   IL_92bb:  add
-  IL_92bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_92bc:  call       void [System.Console]System.Console::Write(int32)
   IL_92c1:  dup
   IL_92c2:  ldc.i4.4
   IL_92c3:  shl
-  IL_92c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_92c4:  call       void [System.Console]System.Console::Write(int32)
   IL_92c9:  dup
   IL_92ca:  ldc.i4.5
   IL_92cb:  shr
-  IL_92cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_92cc:  call       void [System.Console]System.Console::Write(int32)
   IL_92d1:  dup
   IL_92d2:  ldc.i4.1
   IL_92d3:  sub
-  IL_92d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_92d4:  call       void [System.Console]System.Console::Write(int32)
   IL_92d9:  dup
   IL_92da:  ldc.i4.2
   IL_92db:  add
-  IL_92dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_92dc:  call       void [System.Console]System.Console::Write(int32)
   IL_92e1:  dup
   IL_92e2:  ldc.i4.7
   IL_92e3:  shl
-  IL_92e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_92e4:  call       void [System.Console]System.Console::Write(int32)
   IL_92e9:  dup
   IL_92ea:  ldc.i4.4
   IL_92eb:  xor
-  IL_92ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_92ec:  call       void [System.Console]System.Console::Write(int32)
   IL_92f1:  dup
   IL_92f2:  ldc.i4.4
   IL_92f3:  xor
-  IL_92f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_92f4:  call       void [System.Console]System.Console::Write(int32)
   IL_92f9:  dup
   IL_92fa:  ldc.i4.2
   IL_92fb:  shl
-  IL_92fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_92fc:  call       void [System.Console]System.Console::Write(int32)
   IL_9301:  dup
   IL_9302:  ldc.i4.8
   IL_9303:  and
-  IL_9304:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9304:  call       void [System.Console]System.Console::Write(int32)
   IL_9309:  dup
   IL_930a:  ldc.i4.7
   IL_930b:  sub
-  IL_930c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_930c:  call       void [System.Console]System.Console::Write(int32)
   IL_9311:  dup
   IL_9312:  ldc.i4.4
   IL_9313:  xor
-  IL_9314:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9314:  call       void [System.Console]System.Console::Write(int32)
   IL_9319:  dup
   IL_931a:  ldc.i4.2
   IL_931b:  or
-  IL_931c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_931c:  call       void [System.Console]System.Console::Write(int32)
   IL_9321:  dup
   IL_9322:  ldc.i4.1
   IL_9323:  sub
-  IL_9324:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9324:  call       void [System.Console]System.Console::Write(int32)
   IL_9329:  dup
   IL_932a:  ldc.i4.5
   IL_932b:  shl
-  IL_932c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_932c:  call       void [System.Console]System.Console::Write(int32)
   IL_9331:  dup
   IL_9332:  ldc.i4.8
   IL_9333:  or
-  IL_9334:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9334:  call       void [System.Console]System.Console::Write(int32)
   IL_9339:  dup
   IL_933a:  ldc.i4.4
   IL_933b:  shl
-  IL_933c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_933c:  call       void [System.Console]System.Console::Write(int32)
   IL_9341:  dup
   IL_9342:  ldc.i4.7
   IL_9343:  add
-  IL_9344:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9344:  call       void [System.Console]System.Console::Write(int32)
   IL_9349:  dup
   IL_934a:  ldc.i4.2
   IL_934b:  sub
-  IL_934c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_934c:  call       void [System.Console]System.Console::Write(int32)
   IL_9351:  dup
   IL_9352:  ldc.i4.6
   IL_9353:  shl
-  IL_9354:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9354:  call       void [System.Console]System.Console::Write(int32)
   IL_9359:  dup
   IL_935a:  ldc.i4.7
   IL_935b:  add
-  IL_935c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_935c:  call       void [System.Console]System.Console::Write(int32)
   IL_9361:  dup
   IL_9362:  ldc.i4.2
   IL_9363:  add
-  IL_9364:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9364:  call       void [System.Console]System.Console::Write(int32)
   IL_9369:  dup
   IL_936a:  ldc.i4.3
   IL_936b:  add
-  IL_936c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_936c:  call       void [System.Console]System.Console::Write(int32)
   IL_9371:  dup
   IL_9372:  ldc.i4.4
   IL_9373:  sub
-  IL_9374:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9374:  call       void [System.Console]System.Console::Write(int32)
   IL_9379:  dup
   IL_937a:  ldc.i4.4
   IL_937b:  shl
-  IL_937c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_937c:  call       void [System.Console]System.Console::Write(int32)
   IL_9381:  dup
   IL_9382:  ldc.i4.0
   IL_9383:  or
-  IL_9384:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9384:  call       void [System.Console]System.Console::Write(int32)
   IL_9389:  dup
   IL_938a:  ldc.i4.2
   IL_938b:  xor
-  IL_938c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_938c:  call       void [System.Console]System.Console::Write(int32)
   IL_9391:  dup
   IL_9392:  ldc.i4.7
   IL_9393:  sub
-  IL_9394:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9394:  call       void [System.Console]System.Console::Write(int32)
   IL_9399:  dup
   IL_939a:  ldc.i4.5
   IL_939b:  add
-  IL_939c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_939c:  call       void [System.Console]System.Console::Write(int32)
   IL_93a1:  dup
   IL_93a2:  ldc.i4.2
   IL_93a3:  shr
-  IL_93a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_93a4:  call       void [System.Console]System.Console::Write(int32)
   IL_93a9:  dup
   IL_93aa:  ldc.i4.4
   IL_93ab:  or
-  IL_93ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_93ac:  call       void [System.Console]System.Console::Write(int32)
   IL_93b1:  dup
   IL_93b2:  ldc.i4.5
   IL_93b3:  and
-  IL_93b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_93b4:  call       void [System.Console]System.Console::Write(int32)
   IL_93b9:  dup
   IL_93ba:  ldc.i4.1
   IL_93bb:  or
-  IL_93bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_93bc:  call       void [System.Console]System.Console::Write(int32)
   IL_93c1:  dup
   IL_93c2:  ldc.i4.1
   IL_93c3:  add
-  IL_93c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_93c4:  call       void [System.Console]System.Console::Write(int32)
   IL_93c9:  dup
   IL_93ca:  ldc.i4.4
   IL_93cb:  xor
-  IL_93cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_93cc:  call       void [System.Console]System.Console::Write(int32)
   IL_93d1:  dup
   IL_93d2:  ldc.i4.1
   IL_93d3:  sub
-  IL_93d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_93d4:  call       void [System.Console]System.Console::Write(int32)
   IL_93d9:  dup
   IL_93da:  ldc.i4.8
   IL_93db:  xor
-  IL_93dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_93dc:  call       void [System.Console]System.Console::Write(int32)
   IL_93e1:  dup
   IL_93e2:  ldc.i4.8
   IL_93e3:  and
-  IL_93e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_93e4:  call       void [System.Console]System.Console::Write(int32)
   IL_93e9:  dup
   IL_93ea:  ldc.i4.8
   IL_93eb:  xor
-  IL_93ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_93ec:  call       void [System.Console]System.Console::Write(int32)
   IL_93f1:  dup
   IL_93f2:  ldc.i4.0
   IL_93f3:  mul
-  IL_93f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_93f4:  call       void [System.Console]System.Console::Write(int32)
   IL_93f9:  dup
   IL_93fa:  ldc.i4.3
   IL_93fb:  add
-  IL_93fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_93fc:  call       void [System.Console]System.Console::Write(int32)
   IL_9401:  dup
   IL_9402:  ldc.i4.5
   IL_9403:  sub
-  IL_9404:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9404:  call       void [System.Console]System.Console::Write(int32)
   IL_9409:  dup
   IL_940a:  ldc.i4.4
   IL_940b:  or
-  IL_940c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_940c:  call       void [System.Console]System.Console::Write(int32)
   IL_9411:  dup
   IL_9412:  ldc.i4.5
   IL_9413:  add
-  IL_9414:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9414:  call       void [System.Console]System.Console::Write(int32)
   IL_9419:  dup
   IL_941a:  ldc.i4.5
   IL_941b:  shr
-  IL_941c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_941c:  call       void [System.Console]System.Console::Write(int32)
   IL_9421:  dup
   IL_9422:  ldc.i4.4
   IL_9423:  mul
-  IL_9424:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9424:  call       void [System.Console]System.Console::Write(int32)
   IL_9429:  dup
   IL_942a:  ldc.i4.8
   IL_942b:  or
-  IL_942c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_942c:  call       void [System.Console]System.Console::Write(int32)
   IL_9431:  dup
   IL_9432:  ldc.i4.1
   IL_9433:  and
-  IL_9434:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9434:  call       void [System.Console]System.Console::Write(int32)
   IL_9439:  dup
   IL_943a:  ldc.i4.4
   IL_943b:  shl
-  IL_943c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_943c:  call       void [System.Console]System.Console::Write(int32)
   IL_9441:  dup
   IL_9442:  ldc.i4.8
   IL_9443:  shl
-  IL_9444:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9444:  call       void [System.Console]System.Console::Write(int32)
   IL_9449:  dup
   IL_944a:  ldc.i4.8
   IL_944b:  xor
-  IL_944c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_944c:  call       void [System.Console]System.Console::Write(int32)
   IL_9451:  dup
   IL_9452:  ldc.i4.5
   IL_9453:  add
-  IL_9454:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9454:  call       void [System.Console]System.Console::Write(int32)
   IL_9459:  dup
   IL_945a:  ldc.i4.3
   IL_945b:  and
-  IL_945c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_945c:  call       void [System.Console]System.Console::Write(int32)
   IL_9461:  dup
   IL_9462:  ldc.i4.0
   IL_9463:  or
-  IL_9464:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9464:  call       void [System.Console]System.Console::Write(int32)
   IL_9469:  dup
   IL_946a:  ldc.i4.4
   IL_946b:  add
-  IL_946c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_946c:  call       void [System.Console]System.Console::Write(int32)
   IL_9471:  dup
   IL_9472:  ldc.i4.2
   IL_9473:  sub
-  IL_9474:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9474:  call       void [System.Console]System.Console::Write(int32)
   IL_9479:  dup
   IL_947a:  ldc.i4.0
   IL_947b:  or
-  IL_947c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_947c:  call       void [System.Console]System.Console::Write(int32)
   IL_9481:  dup
   IL_9482:  ldc.i4.3
   IL_9483:  xor
-  IL_9484:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9484:  call       void [System.Console]System.Console::Write(int32)
   IL_9489:  dup
   IL_948a:  ldc.i4.3
   IL_948b:  xor
-  IL_948c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_948c:  call       void [System.Console]System.Console::Write(int32)
   IL_9491:  dup
   IL_9492:  ldc.i4.2
   IL_9493:  sub
-  IL_9494:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9494:  call       void [System.Console]System.Console::Write(int32)
   IL_9499:  dup
   IL_949a:  ldc.i4.2
   IL_949b:  sub
-  IL_949c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_949c:  call       void [System.Console]System.Console::Write(int32)
   IL_94a1:  dup
   IL_94a2:  ldc.i4.3
   IL_94a3:  or
-  IL_94a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_94a4:  call       void [System.Console]System.Console::Write(int32)
   IL_94a9:  dup
   IL_94aa:  ldc.i4.8
   IL_94ab:  and
-  IL_94ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_94ac:  call       void [System.Console]System.Console::Write(int32)
   IL_94b1:  dup
   IL_94b2:  ldc.i4.2
   IL_94b3:  add
-  IL_94b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_94b4:  call       void [System.Console]System.Console::Write(int32)
   IL_94b9:  dup
   IL_94ba:  ldc.i4.2
   IL_94bb:  add
-  IL_94bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_94bc:  call       void [System.Console]System.Console::Write(int32)
   IL_94c1:  dup
   IL_94c2:  ldc.i4.2
   IL_94c3:  xor
-  IL_94c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_94c4:  call       void [System.Console]System.Console::Write(int32)
   IL_94c9:  dup
   IL_94ca:  ldc.i4.4
   IL_94cb:  shl
-  IL_94cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_94cc:  call       void [System.Console]System.Console::Write(int32)
   IL_94d1:  dup
   IL_94d2:  ldc.i4.3
   IL_94d3:  or
-  IL_94d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_94d4:  call       void [System.Console]System.Console::Write(int32)
   IL_94d9:  dup
   IL_94da:  ldc.i4.3
   IL_94db:  shl
-  IL_94dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_94dc:  call       void [System.Console]System.Console::Write(int32)
   IL_94e1:  dup
   IL_94e2:  ldc.i4.6
   IL_94e3:  shr
-  IL_94e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_94e4:  call       void [System.Console]System.Console::Write(int32)
   IL_94e9:  dup
   IL_94ea:  ldc.i4.7
   IL_94eb:  shr
-  IL_94ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_94ec:  call       void [System.Console]System.Console::Write(int32)
   IL_94f1:  dup
   IL_94f2:  ldc.i4.4
   IL_94f3:  shl
-  IL_94f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_94f4:  call       void [System.Console]System.Console::Write(int32)
   IL_94f9:  dup
   IL_94fa:  ldc.i4.3
   IL_94fb:  mul
-  IL_94fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_94fc:  call       void [System.Console]System.Console::Write(int32)
   IL_9501:  dup
   IL_9502:  ldc.i4.2
   IL_9503:  or
-  IL_9504:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9504:  call       void [System.Console]System.Console::Write(int32)
   IL_9509:  dup
   IL_950a:  ldc.i4.5
   IL_950b:  shr
-  IL_950c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_950c:  call       void [System.Console]System.Console::Write(int32)
   IL_9511:  dup
   IL_9512:  ldc.i4.4
   IL_9513:  add
-  IL_9514:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9514:  call       void [System.Console]System.Console::Write(int32)
   IL_9519:  dup
   IL_951a:  ldc.i4.1
   IL_951b:  shr
-  IL_951c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_951c:  call       void [System.Console]System.Console::Write(int32)
   IL_9521:  dup
   IL_9522:  ldc.i4.1
   IL_9523:  shr
-  IL_9524:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9524:  call       void [System.Console]System.Console::Write(int32)
   IL_9529:  dup
   IL_952a:  ldc.i4.0
   IL_952b:  shr
-  IL_952c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_952c:  call       void [System.Console]System.Console::Write(int32)
   IL_9531:  dup
   IL_9532:  ldc.i4.0
   IL_9533:  shl
-  IL_9534:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9534:  call       void [System.Console]System.Console::Write(int32)
   IL_9539:  dup
   IL_953a:  ldc.i4.5
   IL_953b:  add
-  IL_953c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_953c:  call       void [System.Console]System.Console::Write(int32)
   IL_9541:  dup
   IL_9542:  ldc.i4.5
   IL_9543:  xor
-  IL_9544:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9544:  call       void [System.Console]System.Console::Write(int32)
   IL_9549:  dup
   IL_954a:  ldc.i4.7
   IL_954b:  and
-  IL_954c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_954c:  call       void [System.Console]System.Console::Write(int32)
   IL_9551:  dup
   IL_9552:  ldc.i4.6
   IL_9553:  xor
-  IL_9554:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9554:  call       void [System.Console]System.Console::Write(int32)
   IL_9559:  dup
   IL_955a:  ldc.i4.5
   IL_955b:  xor
-  IL_955c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_955c:  call       void [System.Console]System.Console::Write(int32)
   IL_9561:  dup
   IL_9562:  ldc.i4.0
   IL_9563:  and
-  IL_9564:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9564:  call       void [System.Console]System.Console::Write(int32)
   IL_9569:  dup
   IL_956a:  ldc.i4.6
   IL_956b:  shr
-  IL_956c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_956c:  call       void [System.Console]System.Console::Write(int32)
   IL_9571:  dup
   IL_9572:  ldc.i4.2
   IL_9573:  shl
-  IL_9574:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9574:  call       void [System.Console]System.Console::Write(int32)
   IL_9579:  dup
   IL_957a:  ldc.i4.5
   IL_957b:  or
-  IL_957c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_957c:  call       void [System.Console]System.Console::Write(int32)
   IL_9581:  dup
   IL_9582:  ldc.i4.4
   IL_9583:  shl
-  IL_9584:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9584:  call       void [System.Console]System.Console::Write(int32)
   IL_9589:  dup
   IL_958a:  ldc.i4.5
   IL_958b:  mul
-  IL_958c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_958c:  call       void [System.Console]System.Console::Write(int32)
   IL_9591:  dup
   IL_9592:  ldc.i4.3
   IL_9593:  shl
-  IL_9594:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9594:  call       void [System.Console]System.Console::Write(int32)
   IL_9599:  dup
   IL_959a:  ldc.i4.4
   IL_959b:  sub
-  IL_959c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_959c:  call       void [System.Console]System.Console::Write(int32)
   IL_95a1:  dup
   IL_95a2:  ldc.i4.1
   IL_95a3:  shr
-  IL_95a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_95a4:  call       void [System.Console]System.Console::Write(int32)
   IL_95a9:  dup
   IL_95aa:  ldc.i4.3
   IL_95ab:  shl
-  IL_95ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_95ac:  call       void [System.Console]System.Console::Write(int32)
   IL_95b1:  dup
   IL_95b2:  ldc.i4.7
   IL_95b3:  shr
-  IL_95b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_95b4:  call       void [System.Console]System.Console::Write(int32)
   IL_95b9:  dup
   IL_95ba:  ldc.i4.3
   IL_95bb:  sub
-  IL_95bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_95bc:  call       void [System.Console]System.Console::Write(int32)
   IL_95c1:  dup
   IL_95c2:  ldc.i4.0
   IL_95c3:  and
-  IL_95c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_95c4:  call       void [System.Console]System.Console::Write(int32)
   IL_95c9:  dup
   IL_95ca:  ldc.i4.0
   IL_95cb:  add
-  IL_95cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_95cc:  call       void [System.Console]System.Console::Write(int32)
   IL_95d1:  dup
   IL_95d2:  ldc.i4.6
   IL_95d3:  shl
-  IL_95d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_95d4:  call       void [System.Console]System.Console::Write(int32)
   IL_95d9:  dup
   IL_95da:  ldc.i4.5
   IL_95db:  and
-  IL_95dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_95dc:  call       void [System.Console]System.Console::Write(int32)
   IL_95e1:  dup
   IL_95e2:  ldc.i4.3
   IL_95e3:  add
-  IL_95e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_95e4:  call       void [System.Console]System.Console::Write(int32)
   IL_95e9:  dup
   IL_95ea:  ldc.i4.6
   IL_95eb:  shr
-  IL_95ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_95ec:  call       void [System.Console]System.Console::Write(int32)
   IL_95f1:  dup
   IL_95f2:  ldc.i4.3
   IL_95f3:  shl
-  IL_95f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_95f4:  call       void [System.Console]System.Console::Write(int32)
   IL_95f9:  dup
   IL_95fa:  ldc.i4.3
   IL_95fb:  shl
-  IL_95fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_95fc:  call       void [System.Console]System.Console::Write(int32)
   IL_9601:  dup
   IL_9602:  ldc.i4.1
   IL_9603:  add
-  IL_9604:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9604:  call       void [System.Console]System.Console::Write(int32)
   IL_9609:  dup
   IL_960a:  ldc.i4.1
   IL_960b:  shl
-  IL_960c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_960c:  call       void [System.Console]System.Console::Write(int32)
   IL_9611:  dup
   IL_9612:  ldc.i4.8
   IL_9613:  mul
-  IL_9614:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9614:  call       void [System.Console]System.Console::Write(int32)
   IL_9619:  dup
   IL_961a:  ldc.i4.5
   IL_961b:  sub
-  IL_961c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_961c:  call       void [System.Console]System.Console::Write(int32)
   IL_9621:  dup
   IL_9622:  ldc.i4.7
   IL_9623:  shr
-  IL_9624:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9624:  call       void [System.Console]System.Console::Write(int32)
   IL_9629:  dup
   IL_962a:  ldc.i4.5
   IL_962b:  or
-  IL_962c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_962c:  call       void [System.Console]System.Console::Write(int32)
   IL_9631:  dup
   IL_9632:  ldc.i4.0
   IL_9633:  or
-  IL_9634:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9634:  call       void [System.Console]System.Console::Write(int32)
   IL_9639:  dup
   IL_963a:  ldc.i4.5
   IL_963b:  mul
-  IL_963c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_963c:  call       void [System.Console]System.Console::Write(int32)
   IL_9641:  dup
   IL_9642:  ldc.i4.3
   IL_9643:  xor
-  IL_9644:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9644:  call       void [System.Console]System.Console::Write(int32)
   IL_9649:  dup
   IL_964a:  ldc.i4.5
   IL_964b:  xor
-  IL_964c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_964c:  call       void [System.Console]System.Console::Write(int32)
   IL_9651:  dup
   IL_9652:  ldc.i4.5
   IL_9653:  shl
-  IL_9654:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9654:  call       void [System.Console]System.Console::Write(int32)
   IL_9659:  dup
   IL_965a:  ldc.i4.2
   IL_965b:  add
-  IL_965c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_965c:  call       void [System.Console]System.Console::Write(int32)
   IL_9661:  dup
   IL_9662:  ldc.i4.8
   IL_9663:  and
-  IL_9664:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9664:  call       void [System.Console]System.Console::Write(int32)
   IL_9669:  dup
   IL_966a:  ldc.i4.8
   IL_966b:  mul
-  IL_966c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_966c:  call       void [System.Console]System.Console::Write(int32)
   IL_9671:  dup
   IL_9672:  ldc.i4.7
   IL_9673:  and
-  IL_9674:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9674:  call       void [System.Console]System.Console::Write(int32)
   IL_9679:  dup
   IL_967a:  ldc.i4.7
   IL_967b:  shr
-  IL_967c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_967c:  call       void [System.Console]System.Console::Write(int32)
   IL_9681:  dup
   IL_9682:  ldc.i4.2
   IL_9683:  and
-  IL_9684:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9684:  call       void [System.Console]System.Console::Write(int32)
   IL_9689:  dup
   IL_968a:  ldc.i4.4
   IL_968b:  shr
-  IL_968c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_968c:  call       void [System.Console]System.Console::Write(int32)
   IL_9691:  dup
   IL_9692:  ldc.i4.4
   IL_9693:  or
-  IL_9694:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9694:  call       void [System.Console]System.Console::Write(int32)
   IL_9699:  dup
   IL_969a:  ldc.i4.2
   IL_969b:  shr
-  IL_969c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_969c:  call       void [System.Console]System.Console::Write(int32)
   IL_96a1:  dup
   IL_96a2:  ldc.i4.2
   IL_96a3:  or
-  IL_96a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_96a4:  call       void [System.Console]System.Console::Write(int32)
   IL_96a9:  dup
   IL_96aa:  ldc.i4.1
   IL_96ab:  add
-  IL_96ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_96ac:  call       void [System.Console]System.Console::Write(int32)
   IL_96b1:  dup
   IL_96b2:  ldc.i4.8
   IL_96b3:  shr
-  IL_96b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_96b4:  call       void [System.Console]System.Console::Write(int32)
   IL_96b9:  dup
   IL_96ba:  ldc.i4.6
   IL_96bb:  mul
-  IL_96bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_96bc:  call       void [System.Console]System.Console::Write(int32)
   IL_96c1:  dup
   IL_96c2:  ldc.i4.4
   IL_96c3:  mul
-  IL_96c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_96c4:  call       void [System.Console]System.Console::Write(int32)
   IL_96c9:  dup
   IL_96ca:  ldc.i4.3
   IL_96cb:  or
-  IL_96cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_96cc:  call       void [System.Console]System.Console::Write(int32)
   IL_96d1:  dup
   IL_96d2:  ldc.i4.8
   IL_96d3:  or
-  IL_96d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_96d4:  call       void [System.Console]System.Console::Write(int32)
   IL_96d9:  dup
   IL_96da:  ldc.i4.8
   IL_96db:  shl
-  IL_96dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_96dc:  call       void [System.Console]System.Console::Write(int32)
   IL_96e1:  dup
   IL_96e2:  ldc.i4.7
   IL_96e3:  sub
-  IL_96e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_96e4:  call       void [System.Console]System.Console::Write(int32)
   IL_96e9:  dup
   IL_96ea:  ldc.i4.5
   IL_96eb:  add
-  IL_96ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_96ec:  call       void [System.Console]System.Console::Write(int32)
   IL_96f1:  dup
   IL_96f2:  ldc.i4.3
   IL_96f3:  mul
-  IL_96f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_96f4:  call       void [System.Console]System.Console::Write(int32)
   IL_96f9:  dup
   IL_96fa:  ldc.i4.2
   IL_96fb:  add
-  IL_96fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_96fc:  call       void [System.Console]System.Console::Write(int32)
   IL_9701:  dup
   IL_9702:  ldc.i4.7
   IL_9703:  or
-  IL_9704:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9704:  call       void [System.Console]System.Console::Write(int32)
   IL_9709:  dup
   IL_970a:  ldc.i4.5
   IL_970b:  sub
-  IL_970c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_970c:  call       void [System.Console]System.Console::Write(int32)
   IL_9711:  dup
   IL_9712:  ldc.i4.4
   IL_9713:  or
-  IL_9714:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9714:  call       void [System.Console]System.Console::Write(int32)
   IL_9719:  dup
   IL_971a:  ldc.i4.7
   IL_971b:  xor
-  IL_971c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_971c:  call       void [System.Console]System.Console::Write(int32)
   IL_9721:  dup
   IL_9722:  ldc.i4.1
   IL_9723:  or
-  IL_9724:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9724:  call       void [System.Console]System.Console::Write(int32)
   IL_9729:  dup
   IL_972a:  ldc.i4.1
   IL_972b:  shr
-  IL_972c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_972c:  call       void [System.Console]System.Console::Write(int32)
   IL_9731:  dup
   IL_9732:  ldc.i4.2
   IL_9733:  sub
-  IL_9734:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9734:  call       void [System.Console]System.Console::Write(int32)
   IL_9739:  dup
   IL_973a:  ldc.i4.1
   IL_973b:  sub
-  IL_973c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_973c:  call       void [System.Console]System.Console::Write(int32)
   IL_9741:  dup
   IL_9742:  ldc.i4.0
   IL_9743:  shl
-  IL_9744:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9744:  call       void [System.Console]System.Console::Write(int32)
   IL_9749:  dup
   IL_974a:  ldc.i4.7
   IL_974b:  xor
-  IL_974c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_974c:  call       void [System.Console]System.Console::Write(int32)
   IL_9751:  dup
   IL_9752:  ldc.i4.4
   IL_9753:  or
-  IL_9754:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9754:  call       void [System.Console]System.Console::Write(int32)
   IL_9759:  dup
   IL_975a:  ldc.i4.6
   IL_975b:  mul
-  IL_975c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_975c:  call       void [System.Console]System.Console::Write(int32)
   IL_9761:  dup
   IL_9762:  ldc.i4.7
   IL_9763:  or
-  IL_9764:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9764:  call       void [System.Console]System.Console::Write(int32)
   IL_9769:  dup
   IL_976a:  ldc.i4.7
   IL_976b:  xor
-  IL_976c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_976c:  call       void [System.Console]System.Console::Write(int32)
   IL_9771:  dup
   IL_9772:  ldc.i4.3
   IL_9773:  sub
-  IL_9774:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9774:  call       void [System.Console]System.Console::Write(int32)
   IL_9779:  dup
   IL_977a:  ldc.i4.2
   IL_977b:  or
-  IL_977c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_977c:  call       void [System.Console]System.Console::Write(int32)
   IL_9781:  dup
   IL_9782:  ldc.i4.5
   IL_9783:  sub
-  IL_9784:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9784:  call       void [System.Console]System.Console::Write(int32)
   IL_9789:  dup
   IL_978a:  ldc.i4.2
   IL_978b:  or
-  IL_978c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_978c:  call       void [System.Console]System.Console::Write(int32)
   IL_9791:  dup
   IL_9792:  ldc.i4.0
   IL_9793:  shl
-  IL_9794:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9794:  call       void [System.Console]System.Console::Write(int32)
   IL_9799:  dup
   IL_979a:  ldc.i4.7
   IL_979b:  shl
-  IL_979c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_979c:  call       void [System.Console]System.Console::Write(int32)
   IL_97a1:  dup
   IL_97a2:  ldc.i4.4
   IL_97a3:  or
-  IL_97a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_97a4:  call       void [System.Console]System.Console::Write(int32)
   IL_97a9:  dup
   IL_97aa:  ldc.i4.7
   IL_97ab:  add
-  IL_97ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_97ac:  call       void [System.Console]System.Console::Write(int32)
   IL_97b1:  dup
   IL_97b2:  ldc.i4.6
   IL_97b3:  mul
-  IL_97b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_97b4:  call       void [System.Console]System.Console::Write(int32)
   IL_97b9:  dup
   IL_97ba:  ldc.i4.2
   IL_97bb:  shr
-  IL_97bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_97bc:  call       void [System.Console]System.Console::Write(int32)
   IL_97c1:  dup
   IL_97c2:  ldc.i4.0
   IL_97c3:  mul
-  IL_97c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_97c4:  call       void [System.Console]System.Console::Write(int32)
   IL_97c9:  dup
   IL_97ca:  ldc.i4.0
   IL_97cb:  and
-  IL_97cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_97cc:  call       void [System.Console]System.Console::Write(int32)
   IL_97d1:  dup
   IL_97d2:  ldc.i4.3
   IL_97d3:  and
-  IL_97d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_97d4:  call       void [System.Console]System.Console::Write(int32)
   IL_97d9:  dup
   IL_97da:  ldc.i4.5
   IL_97db:  or
-  IL_97dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_97dc:  call       void [System.Console]System.Console::Write(int32)
   IL_97e1:  dup
   IL_97e2:  ldc.i4.2
   IL_97e3:  mul
-  IL_97e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_97e4:  call       void [System.Console]System.Console::Write(int32)
   IL_97e9:  dup
   IL_97ea:  ldc.i4.3
   IL_97eb:  shl
-  IL_97ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_97ec:  call       void [System.Console]System.Console::Write(int32)
   IL_97f1:  dup
   IL_97f2:  ldc.i4.0
   IL_97f3:  xor
-  IL_97f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_97f4:  call       void [System.Console]System.Console::Write(int32)
   IL_97f9:  dup
   IL_97fa:  ldc.i4.0
   IL_97fb:  or
-  IL_97fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_97fc:  call       void [System.Console]System.Console::Write(int32)
   IL_9801:  dup
   IL_9802:  ldc.i4.5
   IL_9803:  sub
-  IL_9804:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9804:  call       void [System.Console]System.Console::Write(int32)
   IL_9809:  dup
   IL_980a:  ldc.i4.1
   IL_980b:  sub
-  IL_980c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_980c:  call       void [System.Console]System.Console::Write(int32)
   IL_9811:  dup
   IL_9812:  ldc.i4.8
   IL_9813:  sub
-  IL_9814:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9814:  call       void [System.Console]System.Console::Write(int32)
   IL_9819:  dup
   IL_981a:  ldc.i4.1
   IL_981b:  xor
-  IL_981c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_981c:  call       void [System.Console]System.Console::Write(int32)
   IL_9821:  dup
   IL_9822:  ldc.i4.6
   IL_9823:  mul
-  IL_9824:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9824:  call       void [System.Console]System.Console::Write(int32)
   IL_9829:  dup
   IL_982a:  ldc.i4.8
   IL_982b:  shl
-  IL_982c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_982c:  call       void [System.Console]System.Console::Write(int32)
   IL_9831:  dup
   IL_9832:  ldc.i4.1
   IL_9833:  shr
-  IL_9834:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9834:  call       void [System.Console]System.Console::Write(int32)
   IL_9839:  dup
   IL_983a:  ldc.i4.5
   IL_983b:  shl
-  IL_983c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_983c:  call       void [System.Console]System.Console::Write(int32)
   IL_9841:  dup
   IL_9842:  ldc.i4.5
   IL_9843:  sub
-  IL_9844:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9844:  call       void [System.Console]System.Console::Write(int32)
   IL_9849:  dup
   IL_984a:  ldc.i4.3
   IL_984b:  add
-  IL_984c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_984c:  call       void [System.Console]System.Console::Write(int32)
   IL_9851:  dup
   IL_9852:  ldc.i4.1
   IL_9853:  shl
-  IL_9854:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9854:  call       void [System.Console]System.Console::Write(int32)
   IL_9859:  dup
   IL_985a:  ldc.i4.5
   IL_985b:  shr
-  IL_985c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_985c:  call       void [System.Console]System.Console::Write(int32)
   IL_9861:  dup
   IL_9862:  ldc.i4.5
   IL_9863:  mul
-  IL_9864:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9864:  call       void [System.Console]System.Console::Write(int32)
   IL_9869:  dup
   IL_986a:  ldc.i4.6
   IL_986b:  and
-  IL_986c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_986c:  call       void [System.Console]System.Console::Write(int32)
   IL_9871:  dup
   IL_9872:  ldc.i4.1
   IL_9873:  sub
-  IL_9874:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9874:  call       void [System.Console]System.Console::Write(int32)
   IL_9879:  dup
   IL_987a:  ldc.i4.4
   IL_987b:  add
-  IL_987c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_987c:  call       void [System.Console]System.Console::Write(int32)
   IL_9881:  dup
   IL_9882:  ldc.i4.7
   IL_9883:  and
-  IL_9884:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9884:  call       void [System.Console]System.Console::Write(int32)
   IL_9889:  dup
   IL_988a:  ldc.i4.3
   IL_988b:  shl
-  IL_988c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_988c:  call       void [System.Console]System.Console::Write(int32)
   IL_9891:  dup
   IL_9892:  ldc.i4.1
   IL_9893:  sub
-  IL_9894:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9894:  call       void [System.Console]System.Console::Write(int32)
   IL_9899:  dup
   IL_989a:  ldc.i4.6
   IL_989b:  and
-  IL_989c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_989c:  call       void [System.Console]System.Console::Write(int32)
   IL_98a1:  dup
   IL_98a2:  ldc.i4.0
   IL_98a3:  shl
-  IL_98a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_98a4:  call       void [System.Console]System.Console::Write(int32)
   IL_98a9:  dup
   IL_98aa:  ldc.i4.0
   IL_98ab:  add
-  IL_98ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_98ac:  call       void [System.Console]System.Console::Write(int32)
   IL_98b1:  dup
   IL_98b2:  ldc.i4.7
   IL_98b3:  add
-  IL_98b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_98b4:  call       void [System.Console]System.Console::Write(int32)
   IL_98b9:  dup
   IL_98ba:  ldc.i4.7
   IL_98bb:  shl
-  IL_98bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_98bc:  call       void [System.Console]System.Console::Write(int32)
   IL_98c1:  dup
   IL_98c2:  ldc.i4.5
   IL_98c3:  shr
-  IL_98c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_98c4:  call       void [System.Console]System.Console::Write(int32)
   IL_98c9:  dup
   IL_98ca:  ldc.i4.0
   IL_98cb:  and
-  IL_98cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_98cc:  call       void [System.Console]System.Console::Write(int32)
   IL_98d1:  dup
   IL_98d2:  ldc.i4.0
   IL_98d3:  add
-  IL_98d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_98d4:  call       void [System.Console]System.Console::Write(int32)
   IL_98d9:  dup
   IL_98da:  ldc.i4.6
   IL_98db:  add
-  IL_98dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_98dc:  call       void [System.Console]System.Console::Write(int32)
   IL_98e1:  dup
   IL_98e2:  ldc.i4.5
   IL_98e3:  xor
-  IL_98e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_98e4:  call       void [System.Console]System.Console::Write(int32)
   IL_98e9:  dup
   IL_98ea:  ldc.i4.4
   IL_98eb:  shr
-  IL_98ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_98ec:  call       void [System.Console]System.Console::Write(int32)
   IL_98f1:  dup
   IL_98f2:  ldc.i4.4
   IL_98f3:  xor
-  IL_98f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_98f4:  call       void [System.Console]System.Console::Write(int32)
   IL_98f9:  dup
   IL_98fa:  ldc.i4.2
   IL_98fb:  shl
-  IL_98fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_98fc:  call       void [System.Console]System.Console::Write(int32)
   IL_9901:  dup
   IL_9902:  ldc.i4.7
   IL_9903:  and
-  IL_9904:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9904:  call       void [System.Console]System.Console::Write(int32)
   IL_9909:  dup
   IL_990a:  ldc.i4.6
   IL_990b:  sub
-  IL_990c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_990c:  call       void [System.Console]System.Console::Write(int32)
   IL_9911:  dup
   IL_9912:  ldc.i4.2
   IL_9913:  sub
-  IL_9914:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9914:  call       void [System.Console]System.Console::Write(int32)
   IL_9919:  dup
   IL_991a:  ldc.i4.4
   IL_991b:  xor
-  IL_991c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_991c:  call       void [System.Console]System.Console::Write(int32)
   IL_9921:  dup
   IL_9922:  ldc.i4.4
   IL_9923:  shl
-  IL_9924:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9924:  call       void [System.Console]System.Console::Write(int32)
   IL_9929:  dup
   IL_992a:  ldc.i4.8
   IL_992b:  shl
-  IL_992c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_992c:  call       void [System.Console]System.Console::Write(int32)
   IL_9931:  dup
   IL_9932:  ldc.i4.4
   IL_9933:  shl
-  IL_9934:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9934:  call       void [System.Console]System.Console::Write(int32)
   IL_9939:  dup
   IL_993a:  ldc.i4.7
   IL_993b:  shl
-  IL_993c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_993c:  call       void [System.Console]System.Console::Write(int32)
   IL_9941:  dup
   IL_9942:  ldc.i4.4
   IL_9943:  sub
-  IL_9944:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9944:  call       void [System.Console]System.Console::Write(int32)
   IL_9949:  dup
   IL_994a:  ldc.i4.1
   IL_994b:  xor
-  IL_994c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_994c:  call       void [System.Console]System.Console::Write(int32)
   IL_9951:  dup
   IL_9952:  ldc.i4.2
   IL_9953:  shl
-  IL_9954:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9954:  call       void [System.Console]System.Console::Write(int32)
   IL_9959:  dup
   IL_995a:  ldc.i4.0
   IL_995b:  and
-  IL_995c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_995c:  call       void [System.Console]System.Console::Write(int32)
   IL_9961:  dup
   IL_9962:  ldc.i4.1
   IL_9963:  mul
-  IL_9964:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9964:  call       void [System.Console]System.Console::Write(int32)
   IL_9969:  dup
   IL_996a:  ldc.i4.8
   IL_996b:  shr
-  IL_996c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_996c:  call       void [System.Console]System.Console::Write(int32)
   IL_9971:  dup
   IL_9972:  ldc.i4.5
   IL_9973:  add
-  IL_9974:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9974:  call       void [System.Console]System.Console::Write(int32)
   IL_9979:  dup
   IL_997a:  ldc.i4.3
   IL_997b:  shr
-  IL_997c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_997c:  call       void [System.Console]System.Console::Write(int32)
   IL_9981:  dup
   IL_9982:  ldc.i4.2
   IL_9983:  shl
-  IL_9984:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9984:  call       void [System.Console]System.Console::Write(int32)
   IL_9989:  dup
   IL_998a:  ldc.i4.1
   IL_998b:  add
-  IL_998c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_998c:  call       void [System.Console]System.Console::Write(int32)
   IL_9991:  dup
   IL_9992:  ldc.i4.2
   IL_9993:  shl
-  IL_9994:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9994:  call       void [System.Console]System.Console::Write(int32)
   IL_9999:  dup
   IL_999a:  ldc.i4.1
   IL_999b:  shl
-  IL_999c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_999c:  call       void [System.Console]System.Console::Write(int32)
   IL_99a1:  dup
   IL_99a2:  ldc.i4.2
   IL_99a3:  shl
-  IL_99a4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_99a4:  call       void [System.Console]System.Console::Write(int32)
   IL_99a9:  dup
   IL_99aa:  ldc.i4.2
   IL_99ab:  xor
-  IL_99ac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_99ac:  call       void [System.Console]System.Console::Write(int32)
   IL_99b1:  dup
   IL_99b2:  ldc.i4.0
   IL_99b3:  sub
-  IL_99b4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_99b4:  call       void [System.Console]System.Console::Write(int32)
   IL_99b9:  dup
   IL_99ba:  ldc.i4.5
   IL_99bb:  or
-  IL_99bc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_99bc:  call       void [System.Console]System.Console::Write(int32)
   IL_99c1:  dup
   IL_99c2:  ldc.i4.5
   IL_99c3:  or
-  IL_99c4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_99c4:  call       void [System.Console]System.Console::Write(int32)
   IL_99c9:  dup
   IL_99ca:  ldc.i4.0
   IL_99cb:  mul
-  IL_99cc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_99cc:  call       void [System.Console]System.Console::Write(int32)
   IL_99d1:  dup
   IL_99d2:  ldc.i4.3
   IL_99d3:  and
-  IL_99d4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_99d4:  call       void [System.Console]System.Console::Write(int32)
   IL_99d9:  dup
   IL_99da:  ldc.i4.2
   IL_99db:  mul
-  IL_99dc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_99dc:  call       void [System.Console]System.Console::Write(int32)
   IL_99e1:  dup
   IL_99e2:  ldc.i4.7
   IL_99e3:  and
-  IL_99e4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_99e4:  call       void [System.Console]System.Console::Write(int32)
   IL_99e9:  dup
   IL_99ea:  ldc.i4.1
   IL_99eb:  add
-  IL_99ec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_99ec:  call       void [System.Console]System.Console::Write(int32)
   IL_99f1:  dup
   IL_99f2:  ldc.i4.1
   IL_99f3:  and
-  IL_99f4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_99f4:  call       void [System.Console]System.Console::Write(int32)
   IL_99f9:  dup
   IL_99fa:  ldc.i4.6
   IL_99fb:  shl
-  IL_99fc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_99fc:  call       void [System.Console]System.Console::Write(int32)
   IL_9a01:  dup
   IL_9a02:  ldc.i4.1
   IL_9a03:  mul
-  IL_9a04:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9a04:  call       void [System.Console]System.Console::Write(int32)
   IL_9a09:  dup
   IL_9a0a:  ldc.i4.2
   IL_9a0b:  or
-  IL_9a0c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9a0c:  call       void [System.Console]System.Console::Write(int32)
   IL_9a11:  dup
   IL_9a12:  ldc.i4.4
   IL_9a13:  and
-  IL_9a14:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9a14:  call       void [System.Console]System.Console::Write(int32)
   IL_9a19:  dup
   IL_9a1a:  ldc.i4.2
   IL_9a1b:  or
-  IL_9a1c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9a1c:  call       void [System.Console]System.Console::Write(int32)
   IL_9a21:  dup
   IL_9a22:  ldc.i4.8
   IL_9a23:  shl
-  IL_9a24:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9a24:  call       void [System.Console]System.Console::Write(int32)
   IL_9a29:  dup
   IL_9a2a:  ldc.i4.1
   IL_9a2b:  shr
-  IL_9a2c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9a2c:  call       void [System.Console]System.Console::Write(int32)
   IL_9a31:  dup
   IL_9a32:  ldc.i4.2
   IL_9a33:  shl
-  IL_9a34:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9a34:  call       void [System.Console]System.Console::Write(int32)
   IL_9a39:  dup
   IL_9a3a:  ldc.i4.7
   IL_9a3b:  or
-  IL_9a3c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9a3c:  call       void [System.Console]System.Console::Write(int32)
   IL_9a41:  dup
   IL_9a42:  ldc.i4.5
   IL_9a43:  or
-  IL_9a44:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9a44:  call       void [System.Console]System.Console::Write(int32)
   IL_9a49:  dup
   IL_9a4a:  ldc.i4.1
   IL_9a4b:  and
-  IL_9a4c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9a4c:  call       void [System.Console]System.Console::Write(int32)
   IL_9a51:  dup
   IL_9a52:  ldc.i4.8
   IL_9a53:  add
-  IL_9a54:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9a54:  call       void [System.Console]System.Console::Write(int32)
   IL_9a59:  dup
   IL_9a5a:  ldc.i4.2
   IL_9a5b:  xor
-  IL_9a5c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9a5c:  call       void [System.Console]System.Console::Write(int32)
   IL_9a61:  dup
   IL_9a62:  ldc.i4.2
   IL_9a63:  or
-  IL_9a64:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9a64:  call       void [System.Console]System.Console::Write(int32)
   IL_9a69:  dup
   IL_9a6a:  ldc.i4.1
   IL_9a6b:  xor
-  IL_9a6c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9a6c:  call       void [System.Console]System.Console::Write(int32)
   IL_9a71:  dup
   IL_9a72:  ldc.i4.3
   IL_9a73:  sub
-  IL_9a74:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9a74:  call       void [System.Console]System.Console::Write(int32)
   IL_9a79:  dup
   IL_9a7a:  ldc.i4.2
   IL_9a7b:  xor
-  IL_9a7c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9a7c:  call       void [System.Console]System.Console::Write(int32)
   IL_9a81:  dup
   IL_9a82:  ldc.i4.7
   IL_9a83:  and
-  IL_9a84:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9a84:  call       void [System.Console]System.Console::Write(int32)
   IL_9a89:  dup
   IL_9a8a:  ldc.i4.2
   IL_9a8b:  and
-  IL_9a8c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9a8c:  call       void [System.Console]System.Console::Write(int32)
   IL_9a91:  dup
   IL_9a92:  ldc.i4.7
   IL_9a93:  shr
-  IL_9a94:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9a94:  call       void [System.Console]System.Console::Write(int32)
   IL_9a99:  dup
   IL_9a9a:  ldc.i4.4
   IL_9a9b:  shr
-  IL_9a9c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9a9c:  call       void [System.Console]System.Console::Write(int32)
   IL_9aa1:  dup
   IL_9aa2:  ldc.i4.5
   IL_9aa3:  add
-  IL_9aa4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9aa4:  call       void [System.Console]System.Console::Write(int32)
   IL_9aa9:  dup
   IL_9aaa:  ldc.i4.2
   IL_9aab:  shr
-  IL_9aac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9aac:  call       void [System.Console]System.Console::Write(int32)
   IL_9ab1:  dup
   IL_9ab2:  ldc.i4.6
   IL_9ab3:  shl
-  IL_9ab4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9ab4:  call       void [System.Console]System.Console::Write(int32)
   IL_9ab9:  dup
   IL_9aba:  ldc.i4.8
   IL_9abb:  sub
-  IL_9abc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9abc:  call       void [System.Console]System.Console::Write(int32)
   IL_9ac1:  dup
   IL_9ac2:  ldc.i4.0
   IL_9ac3:  sub
-  IL_9ac4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9ac4:  call       void [System.Console]System.Console::Write(int32)
   IL_9ac9:  dup
   IL_9aca:  ldc.i4.3
   IL_9acb:  mul
-  IL_9acc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9acc:  call       void [System.Console]System.Console::Write(int32)
   IL_9ad1:  dup
   IL_9ad2:  ldc.i4.6
   IL_9ad3:  add
-  IL_9ad4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9ad4:  call       void [System.Console]System.Console::Write(int32)
   IL_9ad9:  dup
   IL_9ada:  ldc.i4.5
   IL_9adb:  add
-  IL_9adc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9adc:  call       void [System.Console]System.Console::Write(int32)
   IL_9ae1:  dup
   IL_9ae2:  ldc.i4.8
   IL_9ae3:  or
-  IL_9ae4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9ae4:  call       void [System.Console]System.Console::Write(int32)
   IL_9ae9:  dup
   IL_9aea:  ldc.i4.6
   IL_9aeb:  shl
-  IL_9aec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9aec:  call       void [System.Console]System.Console::Write(int32)
   IL_9af1:  dup
   IL_9af2:  ldc.i4.5
   IL_9af3:  and
-  IL_9af4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9af4:  call       void [System.Console]System.Console::Write(int32)
   IL_9af9:  dup
   IL_9afa:  ldc.i4.4
   IL_9afb:  and
-  IL_9afc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9afc:  call       void [System.Console]System.Console::Write(int32)
   IL_9b01:  dup
   IL_9b02:  ldc.i4.2
   IL_9b03:  shr
-  IL_9b04:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9b04:  call       void [System.Console]System.Console::Write(int32)
   IL_9b09:  dup
   IL_9b0a:  ldc.i4.7
   IL_9b0b:  shl
-  IL_9b0c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9b0c:  call       void [System.Console]System.Console::Write(int32)
   IL_9b11:  dup
   IL_9b12:  ldc.i4.2
   IL_9b13:  add
-  IL_9b14:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9b14:  call       void [System.Console]System.Console::Write(int32)
   IL_9b19:  dup
   IL_9b1a:  ldc.i4.1
   IL_9b1b:  or
-  IL_9b1c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9b1c:  call       void [System.Console]System.Console::Write(int32)
   IL_9b21:  dup
   IL_9b22:  ldc.i4.3
   IL_9b23:  xor
-  IL_9b24:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9b24:  call       void [System.Console]System.Console::Write(int32)
   IL_9b29:  dup
   IL_9b2a:  ldc.i4.1
   IL_9b2b:  and
-  IL_9b2c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9b2c:  call       void [System.Console]System.Console::Write(int32)
   IL_9b31:  dup
   IL_9b32:  ldc.i4.7
   IL_9b33:  shl
-  IL_9b34:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9b34:  call       void [System.Console]System.Console::Write(int32)
   IL_9b39:  dup
   IL_9b3a:  ldc.i4.6
   IL_9b3b:  shr
-  IL_9b3c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9b3c:  call       void [System.Console]System.Console::Write(int32)
   IL_9b41:  dup
   IL_9b42:  ldc.i4.8
   IL_9b43:  or
-  IL_9b44:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9b44:  call       void [System.Console]System.Console::Write(int32)
   IL_9b49:  dup
   IL_9b4a:  ldc.i4.4
   IL_9b4b:  mul
-  IL_9b4c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9b4c:  call       void [System.Console]System.Console::Write(int32)
   IL_9b51:  dup
   IL_9b52:  ldc.i4.7
   IL_9b53:  add
-  IL_9b54:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9b54:  call       void [System.Console]System.Console::Write(int32)
   IL_9b59:  dup
   IL_9b5a:  ldc.i4.6
   IL_9b5b:  and
-  IL_9b5c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9b5c:  call       void [System.Console]System.Console::Write(int32)
   IL_9b61:  dup
   IL_9b62:  ldc.i4.2
   IL_9b63:  sub
-  IL_9b64:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9b64:  call       void [System.Console]System.Console::Write(int32)
   IL_9b69:  dup
   IL_9b6a:  ldc.i4.7
   IL_9b6b:  or
-  IL_9b6c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9b6c:  call       void [System.Console]System.Console::Write(int32)
   IL_9b71:  dup
   IL_9b72:  ldc.i4.0
   IL_9b73:  or
-  IL_9b74:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9b74:  call       void [System.Console]System.Console::Write(int32)
   IL_9b79:  dup
   IL_9b7a:  ldc.i4.0
   IL_9b7b:  and
-  IL_9b7c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9b7c:  call       void [System.Console]System.Console::Write(int32)
   IL_9b81:  dup
   IL_9b82:  ldc.i4.5
   IL_9b83:  xor
-  IL_9b84:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9b84:  call       void [System.Console]System.Console::Write(int32)
   IL_9b89:  dup
   IL_9b8a:  ldc.i4.3
   IL_9b8b:  or
-  IL_9b8c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9b8c:  call       void [System.Console]System.Console::Write(int32)
   IL_9b91:  dup
   IL_9b92:  ldc.i4.7
   IL_9b93:  xor
-  IL_9b94:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9b94:  call       void [System.Console]System.Console::Write(int32)
   IL_9b99:  dup
   IL_9b9a:  ldc.i4.8
   IL_9b9b:  add
-  IL_9b9c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9b9c:  call       void [System.Console]System.Console::Write(int32)
   IL_9ba1:  dup
   IL_9ba2:  ldc.i4.0
   IL_9ba3:  xor
-  IL_9ba4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9ba4:  call       void [System.Console]System.Console::Write(int32)
   IL_9ba9:  dup
   IL_9baa:  ldc.i4.7
   IL_9bab:  mul
-  IL_9bac:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9bac:  call       void [System.Console]System.Console::Write(int32)
   IL_9bb1:  dup
   IL_9bb2:  ldc.i4.7
   IL_9bb3:  and
-  IL_9bb4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9bb4:  call       void [System.Console]System.Console::Write(int32)
   IL_9bb9:  dup
   IL_9bba:  ldc.i4.2
   IL_9bbb:  xor
-  IL_9bbc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9bbc:  call       void [System.Console]System.Console::Write(int32)
   IL_9bc1:  dup
   IL_9bc2:  ldc.i4.1
   IL_9bc3:  add
-  IL_9bc4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9bc4:  call       void [System.Console]System.Console::Write(int32)
   IL_9bc9:  dup
   IL_9bca:  ldc.i4.5
   IL_9bcb:  shr
-  IL_9bcc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9bcc:  call       void [System.Console]System.Console::Write(int32)
   IL_9bd1:  dup
   IL_9bd2:  ldc.i4.3
   IL_9bd3:  mul
-  IL_9bd4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9bd4:  call       void [System.Console]System.Console::Write(int32)
   IL_9bd9:  dup
   IL_9bda:  ldc.i4.8
   IL_9bdb:  mul
-  IL_9bdc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9bdc:  call       void [System.Console]System.Console::Write(int32)
   IL_9be1:  dup
   IL_9be2:  ldc.i4.8
   IL_9be3:  add
-  IL_9be4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9be4:  call       void [System.Console]System.Console::Write(int32)
   IL_9be9:  dup
   IL_9bea:  ldc.i4.2
   IL_9beb:  add
-  IL_9bec:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9bec:  call       void [System.Console]System.Console::Write(int32)
   IL_9bf1:  dup
   IL_9bf2:  ldc.i4.2
   IL_9bf3:  mul
-  IL_9bf4:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9bf4:  call       void [System.Console]System.Console::Write(int32)
   IL_9bf9:  dup
   IL_9bfa:  ldc.i4.8
   IL_9bfb:  xor
-  IL_9bfc:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9bfc:  call       void [System.Console]System.Console::Write(int32)
   IL_9c01:  dup
   IL_9c02:  ldc.i4.2
   IL_9c03:  xor
-  IL_9c04:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9c04:  call       void [System.Console]System.Console::Write(int32)
   IL_9c09:  dup
   IL_9c0a:  ldc.i4.2
   IL_9c0b:  mul
-  IL_9c0c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9c0c:  call       void [System.Console]System.Console::Write(int32)
   IL_9c11:  dup
   IL_9c12:  ldc.i4.1
   IL_9c13:  and
-  IL_9c14:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9c14:  call       void [System.Console]System.Console::Write(int32)
   IL_9c19:  dup
   IL_9c1a:  ldc.i4.7
   IL_9c1b:  shl
-  IL_9c1c:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9c1c:  call       void [System.Console]System.Console::Write(int32)
   IL_9c21:  dup
   IL_9c22:  ldc.i4.0
   IL_9c23:  xor
-  IL_9c24:  call       void [mscorlib]System.Console::Write(int32)
+  IL_9c24:  call       void [System.Console]System.Console::Write(int32)
   IL_9c29:  dup
   IL_9c2a:  ldc.i4.2
   IL_9c2b:  xor
   IL_9c2c:  ldc.i4     0x1234
   IL_9c31:  add
-  IL_9c32:  call       void [mscorlib]System.Console::WriteLine(int32)
+  IL_9c32:  call       void [System.Console]System.Console::WriteLine(int32)
   IL_9c37:  ldc.i4     0x64
   IL_9c3c:  add
   IL_9c3d:  ret

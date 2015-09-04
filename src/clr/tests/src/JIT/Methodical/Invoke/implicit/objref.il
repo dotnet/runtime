@@ -5,12 +5,11 @@
 
 
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
-                           
-  
-           
-  
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly 'objref'// as "objref"
 {
@@ -75,7 +74,7 @@
       IL_0000:  ldarg.0
       IL_0001:  ldind.ref
       IL_0002:  callvirt   instance class System.String JitTest.Base::ToString()
-      IL_0007:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_0007:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_000c:  ret
     } // end of method 'Test::TestFunc'
 
@@ -86,7 +85,7 @@
       IL_0000:  ldarg.0
       IL_0001:  ldind.ref
       IL_0002:  callvirt   instance class System.String JitTest.Base::ToString()
-      IL_0007:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_0007:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_000c:  ret
     } // end of method 'Test::TestFunc'
 
@@ -119,14 +118,14 @@
       {
         IL_001c:  pop
         IL_001d:  ldstr      "Failed w/ exception"
-        IL_0022:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+        IL_0022:  call       void [System.Console]System.Console::WriteLine(class System.String)
         IL_0027:  ldc.i4.1
         IL_0028:  stloc.2
         IL_0029:  leave.s    IL_0039
 
       }  // end handler
       IL_002b:  ldstr      "Passed"
-      IL_0030:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_0030:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0035:  ldc.i4    0x64
       IL_0036:  stloc.2
       IL_0037:  br.s       IL_0039

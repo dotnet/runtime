@@ -1,6 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 // This test was failing due to a bug that existed when we were first bringing up GC on amd64.  Probably won't fail
 // anytime soon, but a good case to have.
 
@@ -19,7 +25,7 @@
       .try
       {
 	ldstr      "In Finalize() of Dummy"
-	call       void [mscorlib]System.Console::WriteLine(string)
+	call       void [System.Console]System.Console::WriteLine(string)
 	leave.s    IL_0019
 
       }
@@ -53,7 +59,7 @@
 
     IL_0010:  ldsfld     int32 Test::count
 
-	call       void [mscorlib]System.Console::WriteLine(int32)
+	call       void [System.Console]System.Console::WriteLine(int32)
 	ldsfld     int32 Test::count
 	ldc.i4.1
 	add
@@ -75,7 +81,7 @@
 	ldloc.0
 	call       void Test::foo(object)
 	ldstr      "After call to foo()"
-	call       void [mscorlib]System.Console::WriteLine(string)
+	call       void [System.Console]System.Console::WriteLine(string)
     	ldc.i4 100
 	ret
   }

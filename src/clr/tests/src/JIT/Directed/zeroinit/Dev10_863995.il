@@ -4,8 +4,11 @@
 
 
 // Metadata version: v4.0.21104
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly Dev10_863995
 {
@@ -100,13 +103,13 @@
       IL_0058:  brfalse    IL_0072
 
       IL_005d:  ldstr      "!!!!!!!!!! TEST PASSED !!!!!!!!!!!!!"
-      IL_0062:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0062:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0067:  ldc.i4.s   100
       IL_0069:  stloc      V_0
       IL_006d:  leave      IL_0087
 
       IL_0072:  ldstr      "!!!!!!!!!! TEST FAILED !!!!!!!!!!!!!"
-      IL_0077:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0077:  call       void [System.Console]System.Console::WriteLine(string)
       IL_007c:  ldc.i4.s   101
       IL_007e:  stloc      V_0
       IL_0082:  leave      IL_0087
@@ -208,7 +211,7 @@
       IL_0042:  ldarg.0
       IL_0043:  ldfld      int32 TwoStringInt::isInt
       IL_0048:  box        [mscorlib]System.Int32
-      IL_004d:  call       void [mscorlib]System.Console::WriteLine(string,
+      IL_004d:  call       void [System.Console]System.Console::WriteLine(string,
                                                                     object,
                                                                     object)
 //      IL_0052:  leave      IL_0057
