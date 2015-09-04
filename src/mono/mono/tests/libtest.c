@@ -3545,8 +3545,8 @@ mono_test_marshal_lookup_symbol (const char *symbol_name)
 	return lookup_mono_symbol (symbol_name);
 }
 
-#define MONO_BEGIN_EFRAME { void *__region_cookie = mono_threads_enter_gc_unsafe_region ();
-#define MONO_END_EFRAME mono_threads_exit_gc_unsafe_region (__region_cookie); }
+#define MONO_BEGIN_EFRAME { void *__region_cookie = mono_threads_enter_gc_unsafe_region ? mono_threads_enter_gc_unsafe_region () : NULL;
+#define MONO_END_EFRAME if (mono_threads_exit_gc_unsafe_region) mono_threads_exit_gc_unsafe_region (__region_cookie); }
 
 /**
  * test_method_thunk:
