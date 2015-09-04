@@ -3,8 +3,7 @@
 
 //
 //
-.assembly extern mscorlib
-{ }
+.assembly extern mscorlib {}
 .assembly 'test'
 { }
 .class private auto ansi Test extends [mscorlib]System.Object

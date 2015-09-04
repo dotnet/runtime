@@ -3,10 +3,7 @@
 
 
 
-.assembly extern mscorlib
-{
-  
-}
+.assembly extern mscorlib {}
 .assembly ILGEN_0xa20b8571
 {
   

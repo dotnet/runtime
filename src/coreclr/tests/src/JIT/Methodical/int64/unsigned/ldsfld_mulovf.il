@@ -5,9 +5,7 @@
 
 
 
-.assembly extern mscorlib
-{
-}
+.assembly extern mscorlib {}
 .assembly 'ldsfld_mulovf'// as "ldsfld_mulovf"
 {
 }

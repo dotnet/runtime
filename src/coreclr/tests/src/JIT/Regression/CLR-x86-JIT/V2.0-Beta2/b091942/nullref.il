@@ -5,9 +5,7 @@
 // VSWHIDBEY 91942
 
 
-.assembly extern mscorlib
-{
-}
+.assembly extern mscorlib {}
 .assembly d
 {
 }
