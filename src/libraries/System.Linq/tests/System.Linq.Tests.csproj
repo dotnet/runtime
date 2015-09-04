@@ -67,9 +67,9 @@
     <Compile Include="ElementAtTests.cs" />
     <Compile Include="SequenceEqualTests.cs" />
     <Compile Include="LegacyTests\GroupByTests.cs" />
-    <Compile Include="LegacyTests\GroupJoinTests.cs" />
+    <Compile Include="GroupJoinTests.cs" />
     <Compile Include="LegacyTests\Helper.cs" />
-    <Compile Include="LegacyTests\JoinTests.cs" />
+    <Compile Include="JoinTests.cs" />
     <Compile Include="LongCountTests.cs" />
     <Compile Include="LegacyTests\MaxTests.cs" />
     <Compile Include="LegacyTests\MinTests.cs" />
