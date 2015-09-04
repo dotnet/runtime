@@ -677,6 +677,9 @@
     <ReflectionEmitSources Include="$(BclSourcesRoot)\System\Reflection\Emit\XXXOnTypeBuilderInstantiation.cs" />
     <ReflectionEmitSources Include="$(BclSourcesRoot)\System\Reflection\Emit\UnmanagedMarshal.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(FeatureCoreclr)' == 'true'">
+    <ReflectionMetadataSources Include="$(BclSourcesRoot)\System\Reflection\Metadata\AssemblyExtensions.cs" />
+  </ItemGroup>
   <ItemGroup>
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\DateTimeFormat.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\DateTimeParse.cs" />
@@ -1307,6 +1310,7 @@
     <MscorlibSources Include="@(SerializationFormattersSources)" ><Visible>true</Visible></MscorlibSources>
     <MscorlibSources Include="@(SerializationFormattersBinarySources)" ><Visible>true</Visible></MscorlibSources>
     <MscorlibSources Include="@(ReflectionEmitSources)" ><Visible>true</Visible></MscorlibSources>
+    <MscorlibSources Include="@(ReflectionMetadataSources)" ><Visible>true</Visible></MscorlibSources>
     <MscorlibSources Include="@(ConfigurationAssembliesSources)" ><Visible>true</Visible></MscorlibSources>
     <MscorlibSources Include="@(SecCryptographySources)" ><Visible>true</Visible></MscorlibSources>
     <MscorlibSources Include="@(SecPublickeySources)" ><Visible>true</Visible></MscorlibSources>

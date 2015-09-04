@@ -2614,3 +2614,29 @@ INT_PTR QCALLTYPE AssemblyNative::GetLoadContextForAssembly(QCall::AssemblyHandl
     return ptrManagedAssemblyLoadContext;
 }
 #endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
+
+// static
+BOOL QCALLTYPE AssemblyNative::InternalTryGetRawMetadata(
+    QCall::AssemblyHandle assembly,
+    UINT8 **blobRef,
+    INT32 *lengthRef)
+{
+    QCALL_CONTRACT;
+
+    PTR_CVOID metadata = nullptr;
+
+    BEGIN_QCALL;
+
+    _ASSERTE(assembly != nullptr);
+    _ASSERTE(blobRef != nullptr);
+    _ASSERTE(lengthRef != nullptr);
+
+    static_assert_no_msg(sizeof(*lengthRef) == sizeof(COUNT_T));
+    metadata = assembly->GetFile()->GetLoadedMetadata(reinterpret_cast<COUNT_T *>(lengthRef));
+    *blobRef = reinterpret_cast<UINT8 *>(const_cast<PTR_VOID>(metadata));
+    _ASSERTE(*lengthRef >= 0);
+
+    END_QCALL;
+
+    return metadata != nullptr;
+}
