@@ -979,6 +979,14 @@ namespace System.Linq
             if (comparer == null) comparer = EqualityComparer<TSource>.Default;
             if (first == null) throw Error.ArgumentNull("first");
             if (second == null) throw Error.ArgumentNull("second");
+
+            ICollection<TSource> firstCol = first as ICollection<TSource>;
+            if (firstCol != null)
+            {
+                ICollection<TSource> secondCol = second as ICollection<TSource>;
+                if (secondCol != null && firstCol.Count != secondCol.Count) return false;
+            }
+
             using (IEnumerator<TSource> e1 = first.GetEnumerator())
             using (IEnumerator<TSource> e2 = second.GetEnumerator())
             {
@@ -986,9 +994,8 @@ namespace System.Linq
                 {
                     if (!(e2.MoveNext() && comparer.Equals(e1.Current, e2.Current))) return false;
                 }
-                if (e2.MoveNext()) return false;
+                return !e2.MoveNext();
             }
-            return true;
         }
 
         public static IEnumerable<TSource> AsEnumerable<TSource>(this IEnumerable<TSource> source)
