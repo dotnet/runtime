@@ -3,12 +3,11 @@
 
 
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
-                           
-  
-           
-  
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly 'refarg_i1'// as "refarg_i1"
 {
@@ -95,7 +94,7 @@
       {
         IL_0040:  pop
         IL_0041:  ldstr      "NullReferenceException caught in Finalizer as expected"
-        IL_0046:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+        IL_0046:  call       void [System.Console]System.Console::WriteLine(class System.String)
         IL_004b:  leave.s    IL_004d
 
       }  // end handler
@@ -149,13 +148,13 @@
       IL_000f:  beq.s      IL_001f
 
       IL_0011:  ldstr      "*** failed ***"
-      IL_0016:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_0016:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_001b:  ldc.i4.1
       IL_001c:  stloc.0
       IL_001d:  br.s       IL_002d
 
       IL_001f:  ldstr      "*** passed ***"
-      IL_0024:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_0024:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0029:  ldc.i4    0x64
       IL_002a:  stloc.0
       IL_002b:  br.s       IL_002d

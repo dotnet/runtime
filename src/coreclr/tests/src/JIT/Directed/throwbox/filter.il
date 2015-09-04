@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly 'filter' { }
 .namespace JitTest
 {
@@ -17,7 +22,7 @@
       
         TRY_1:
 			ldstr      "inside 1st try"
-			call       void [mscorlib]System.Console::WriteLine(string)
+			call       void [System.Console]System.Console::WriteLine(string)
 			ldc.r4 1.0
 			box float32
 			throw
@@ -25,7 +30,7 @@
           
 		FILTER_1:
   			ldstr      "entering filter"
-  			call       void [mscorlib]System.Console::WriteLine(string)
+  			call       void [System.Console]System.Console::WriteLine(string)
 			isinst [mscorlib]System.Single
 			br MAKE_JIT_WORK
 			
@@ -37,13 +42,13 @@
 			brtrue  OK_1
 			
 			ldstr      "bad value in filter!"
-			call       void [mscorlib]System.Console::WriteLine(string)
+			call       void [System.Console]System.Console::WriteLine(string)
 			ldc.i4.0
 			br.s MERGE_1
 			
 		OK_1:
 			ldstr      "leaving filter"
-			call       void [mscorlib]System.Console::WriteLine(string)
+			call       void [System.Console]System.Console::WriteLine(string)
 			ldc.i4.1
 			
 		MERGE_1:
@@ -51,7 +56,7 @@
 
 		HANDLER_1:
   			ldstr      "inside _except"
-  			call       void [mscorlib]System.Console::WriteLine(string)
+  			call       void [System.Console]System.Console::WriteLine(string)
 			pop
 			leave.s END_1          			
 

@@ -3,12 +3,11 @@
 
 
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
-                           
-  
-           
-  
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly 'refloc_i4'// as "refloc_i4"
 {
@@ -34,7 +33,7 @@
       // Code size       59 (0x3b)
       .maxstack  8
       IL_0000:  ldstr      "finalizer called."
-      IL_0005:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_0005:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_000a:  ldarg.0
       IL_0027:  ldfld      int32 Test.AA::mm
       			ldc.i4 45
@@ -132,13 +131,13 @@
       IL_0020:  beq.s      IL_0030
 
       IL_0022:  ldstr      "*** failed ***"
-      IL_0027:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_0027:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_002c:  ldc.i4.1
       IL_002d:  stloc.1
       IL_002e:  br.s       IL_003e
 
       IL_0030:  ldstr      "*** passed ***"
-      IL_0035:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_0035:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_003a:  ldc.i4    0x64
       IL_003b:  stloc.1
       IL_003c:  br.s       IL_003e

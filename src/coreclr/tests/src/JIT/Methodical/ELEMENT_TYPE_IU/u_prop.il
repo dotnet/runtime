@@ -3,8 +3,12 @@
 
 //
 //
-.assembly extern mscorlib
-{ }
+.assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly 'qsort'// as "qsort"
 { }
 .module 'qsort.exe'
@@ -26,7 +30,7 @@
 		ldloc.0
 		call instance native unsigned int Test.AA::get_I()
 		ldstr "passed"
-		call void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		ldc.i4 0x64
 		add
 		ret

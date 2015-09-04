@@ -2,7 +2,12 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 
-.assembly extern mscorlib {}
+.assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 
 .assembly Test {}
  
@@ -36,7 +41,7 @@ Return:
   IL_0029:  ldstr      "FAILED"
   IL_002e:  br.s       IL_0035
   IL_0030:  ldstr      "PASSED"
-  IL_0035:  call       void [mscorlib]System.Console::WriteLine(string,
+  IL_0035:  call       void [System.Console]System.Console::WriteLine(string,
                                                                 object)
   IL_003f:  ldloc.0
   IL_0040:  ret

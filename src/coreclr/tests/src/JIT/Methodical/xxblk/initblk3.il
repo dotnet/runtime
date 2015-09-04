@@ -4,6 +4,11 @@
 //transient, managed, unmanaged pointer
 //"plain", volatile., unaligned. initblk
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly initblk2 {}
 .module initblk2.exe
 
@@ -584,14 +589,14 @@
   brfalse.s  BL_0096
 
   ldstr "PASSED"
-  call       void [mscorlib]System.Console::WriteLine(string)
+  call       void [System.Console]System.Console::WriteLine(string)
   ldc.i4.s   100
   br.s       BL_00a9
 
   br.s       BL_00a8
 
   BL_0096:  ldstr      "FAILED"
-  call       void [mscorlib]System.Console::WriteLine(string)
+  call       void [System.Console]System.Console::WriteLine(string)
   ldc.i4.1
   br.s       BL_00a9
 

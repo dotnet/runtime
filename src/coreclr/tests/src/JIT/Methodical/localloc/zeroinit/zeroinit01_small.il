@@ -3,6 +3,11 @@
 
 // Test zero initialization of localloc
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly zeroinit01{}
 
 .class private auto ansi beforefieldinit T
@@ -59,12 +64,12 @@
     IL_0036:  brfalse.s  L_FAIL
 
     IL_0038:  ldstr      "pass"
-    IL_003d:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_003d:  call       void [System.Console]System.Console::WriteLine(string)
     ldc.i4	100
     IL_0042:  br.s       IL_004e
 
     L_FAIL:   ldstr      "fail"
-    IL_0049:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0049:  call       void [System.Console]System.Console::WriteLine(string)
     ldc.i4.1
     IL_004e:  ret
   } // end of method T::Main

@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly 'enum' { }
 .namespace BoxTest
 {
@@ -121,7 +126,7 @@
       IL_006b:  ldstr      " "
       IL_0070:  call       class System.String [mscorlib]System.String::Concat(class System.String,
                                                                                class System.String)
-      IL_0075:  call       void [mscorlib]System.Console::Write(class System.String)
+      IL_0075:  call       void [System.Console]System.Console::Write(class System.String)
       IL_007a:  ldloc.s   N
       IL_007c:  box [mscorlib]System.Int32
       IL_0081:  ret
@@ -147,9 +152,9 @@
       IL_0018:  call       instance class System.Object BoxTest.Test::Fibonacci(class System.Object,
                                                                                 class System.Object)
       IL_001d:  pop
-      IL_001e:  call       void [mscorlib]System.Console::WriteLine()
+      IL_001e:  call       void [System.Console]System.Console::WriteLine()
       IL_0023:  ldstr      "*** PASSED ***"
-      IL_0028:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+      IL_0028:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_002d:  ldc.i4    0x64
       IL_002e:  ret
     } // end of method 'Test::Main'

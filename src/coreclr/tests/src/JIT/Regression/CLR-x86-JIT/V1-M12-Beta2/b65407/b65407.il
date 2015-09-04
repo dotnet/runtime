@@ -3,8 +3,11 @@
 
 
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly sample
 {
@@ -38,14 +41,14 @@
     IL_0019:  conv.i8
     IL_001a:  stloc.0
     IL_001b:  ldstr      "bool to int32"
-    IL_0020:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0020:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0025:  ldloc.1
     IL_0026:  unbox      [mscorlib]System.Boolean
     IL_002b:  ldobj      [mscorlib]System.Boolean
     IL_0030:  conv.i8
     IL_0031:  stloc.0
     IL_0032:  ldstr      "bool to int64"
-    IL_0037:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0037:  call       void [System.Console]System.Console::WriteLine(string)
     IL_003c:  nop
     
     		  ldc.i4 100

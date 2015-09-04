@@ -1,6 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 // Metadata version: v2.0.50727
 .assembly extern mscorlib
 {
@@ -143,7 +149,7 @@ loop2:
 	ldloc.s    V_6
 	call       instance valuetype HFA valuetype HFA[0...,0...,0...]::Get(int32,int32,int32)
 	box        HFA
-	call       void [mscorlib]System.Console::WriteLine(object)
+	call       void [System.Console]System.Console::WriteLine(object)
 
 	ldloc.s    V_6
 	ldc.i4.1
@@ -189,13 +195,13 @@ rank0:
 	bne.un.s   fail
 
 	ldstr      "PASS"
-	call       void [mscorlib]System.Console::WriteLine(string)
+	call       void [System.Console]System.Console::WriteLine(string)
 	ldc.i4.s   100
 	ret
 
 fail:
 	ldstr      "FAIL"
-	call       void [mscorlib]System.Console::WriteLine(string)
+	call       void [System.Console]System.Console::WriteLine(string)
 	ldc.i4.m1
 	ret
   } // end of method HFA::Main

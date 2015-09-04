@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly tailwinapi
 {
 }
@@ -116,14 +121,14 @@
   IL_0022:  stloc.3
   IL_0023:  ldloc.0
   IL_0024:  castclass  [mscorlib]System.Object
-  IL_0029:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.Object)
+  IL_0029:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.Object)
   IL_002e:  ldloc.3
   IL_002f:  ldc.i4     0x0
   IL_0034:  bne.un     IL_004e
 
   IL_0039:  ldstr "Call ansi API failed"//ldptr      D_00003000
   IL_003e:  //newobj     instance void [mscorlib]System.String::.ctor(wchar*)
-  IL_0043:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+  IL_0043:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
   IL_0048:  ldc.i4     0x0
   IL_004d:  stloc.1
   IL_004e:  ldloc.2
@@ -133,14 +138,14 @@
   IL_005a:  stloc.3
   IL_005b:  ldloc.0
   IL_005c:  castclass  [mscorlib]System.Object
-  IL_0061:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.Object)
+  IL_0061:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.Object)
   IL_0066:  ldloc.3
   IL_0067:  ldc.i4     0x0
   IL_006c:  bne.un     IL_0086
 
   IL_0071:  ldstr "Called unicode/ansi based." //ldptr      D_00003030
   IL_0076:  //newobj     instance void [mscorlib]System.String::.ctor(wchar*)
-  IL_007b:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+  IL_007b:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
   IL_0080:  ldc.i4     0x0
   IL_0085:  stloc.1
   IL_0086:  ldloc.0
@@ -149,14 +154,14 @@
   IL_0091:  stloc.3
   IL_0092:  ldloc.0
   IL_0093:  castclass  [mscorlib]System.Object
-  IL_0098:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.Object)
+  IL_0098:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.Object)
   IL_009d:  ldloc.3
   IL_009e:  ldc.i4     0x0
   IL_00a3:  bne.un     IL_00bc
 
   IL_00a8:  ldstr "Call unicode/ansi" //ldptr      D_000030A0
   IL_00ad:  //newobj     instance void [mscorlib]System.String::.ctor(wchar*)
-  IL_00b2:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+  IL_00b2:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
   IL_00b7:  br         IL_00dc
 
   IL_00bc:  ldloc.1
@@ -165,13 +170,13 @@
 
   IL_00c7:  ldstr "Passed" //ldptr      D_000030EC
   IL_00cc:  //newobj     instance void [mscorlib]System.String::.ctor(wchar*)
-  IL_00d1:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+  IL_00d1:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
   IL_00d6:  ldc.i4     0x64
   IL_00db:  ret
 
   IL_00dc:  ldstr "failed"//ldptr      D_00003100
   IL_00e1:  //newobj     instance void [mscorlib]System.String::.ctor(wchar*)
-  IL_00e6:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+  IL_00e6:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
   IL_00eb:  ldc.i4     0x1
   IL_00f0:  ret
 } // end of global method 'main'

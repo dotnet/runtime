@@ -1,6 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 .assembly extern mscorlib
 {
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
@@ -44,14 +50,14 @@
       brtrue.s   IL_0039
 
       ldstr      "Passed"
-      call       void [mscorlib]System.Console::WriteLine(string)
+      call       void [System.Console]System.Console::WriteLine(string)
       nop
       ldc.i4.s   100
       stloc.2
       br.s       IL_0048
 
     IL_0039:  ldstr      "Failed"
-      call       void [mscorlib]System.Console::WriteLine(string)
+      call       void [System.Console]System.Console::WriteLine(string)
       nop
       ldc.i4.1
       stloc.2

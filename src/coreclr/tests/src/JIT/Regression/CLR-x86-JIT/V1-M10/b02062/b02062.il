@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly b02062
 {
 }
@@ -39,12 +44,12 @@
 		beq PASS1
 		
 FAIL1:	ldstr "Test failed. Looks like the static field access was incorrectly done"
-		call void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		ldc.i4 1
 		ret
 		
 PASS1:	ldstr "Static test passed"
-		call void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		
 		ldc.i4 777
 		newobj instance void test::.ctor(int32)
@@ -58,12 +63,12 @@ PASS1:	ldstr "Static test passed"
 		beq PASS2
 		
 FAIL2:	ldstr "Test failed. Looks like the static field access was incorrectly done"
-		call void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		ldc.i4 1
 		ret
 		
 PASS2:	ldstr "Even instance test passed"
-		call void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		ldc.i4 100
 		ret
 	}

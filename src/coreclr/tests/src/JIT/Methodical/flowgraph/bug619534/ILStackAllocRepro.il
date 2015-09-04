@@ -1,9 +1,15 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 
 .assembly ILStackAllocRepro {}
- .assembly extern mscorlib{auto}
+.assembly extern mscorlib{auto}
 
 .class private auto ansi beforefieldinit Foo
        extends [mscorlib]System.Object
@@ -20,7 +26,7 @@
     IL_0003:  stsfld     int32* Foo::buffer
     IL_0008:  ldsfld     int32* Foo::buffer
     IL_000d:  ldind.i4
-    IL_000e:  call       void [mscorlib]System.Console::WriteLine(int32)
+    IL_000e:  call       void [System.Console]System.Console::WriteLine(int32)
 ldc.i4 100
     IL_0013:  ret
   } // end of method Foo::Main

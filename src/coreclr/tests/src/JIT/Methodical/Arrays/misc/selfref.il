@@ -7,8 +7,11 @@
 
 
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly 'selfref'// as "selfref"
 {
@@ -98,7 +101,7 @@
       IL_0069:  beq.s      IL_007a
 
       IL_006b:  ldstr      "TEST FAILED!"
-      IL_0070:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+      IL_0070:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
       IL_0075:  ldc.i4.1
       IL_0076:  stloc.s    V_5
       IL_0078:  br.s       IL_009a
@@ -114,7 +117,7 @@
       IL_0089:  ble.s      IL_003f
 
       IL_008b:  ldstr      "TEST PASSED!"
-      IL_0090:  call       void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+      IL_0090:  call       void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
       IL_0095:  ldc.i4    0x64
       IL_0096:  stloc.s    V_5
       IL_0098:  br.s       IL_009a

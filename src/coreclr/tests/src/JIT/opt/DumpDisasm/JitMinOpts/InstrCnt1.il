@@ -3,7 +3,12 @@
 
 // DEFAULT_MIN_OPTS_INSTR_COUNT  20000
 // OPTIONS: opts.MinOpts() == true
-.assembly extern mscorlib {}
+.assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly InstrCnt1 {}
 .class private auto ansi beforefieldinit InstrCnt1
        extends [mscorlib]System.Object
@@ -19994,27 +19999,27 @@
     IL_5f3d:  ldloc.1
     IL_5f3e:  box        [mscorlib]System.Int32
     IL_5f43:  call       string [mscorlib]System.String::Concat(object,object)
-    IL_5f48:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_5f48:  call       void [System.Console]System.Console::WriteLine(string)
     IL_5f4d:  ldstr      "b is: "
     IL_5f52:  ldloc.2
     IL_5f53:  box        [mscorlib]System.Int32
     IL_5f58:  call       string [mscorlib]System.String::Concat(object,object)
-    IL_5f5d:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_5f5d:  call       void [System.Console]System.Console::WriteLine(string)
     IL_5f62:  ldstr      "c is: "
     IL_5f67:  ldloc.3
     IL_5f68:  box        [mscorlib]System.Int32
     IL_5f6d:  call       string [mscorlib]System.String::Concat(object,object)
-    IL_5f72:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_5f72:  call       void [System.Console]System.Console::WriteLine(string)
     IL_5f77:  ldstr      "d is: "
     IL_5f7c:  ldloc.s    V_4
     IL_5f7e:  box        [mscorlib]System.Int32
     IL_5f83:  call       string [mscorlib]System.String::Concat(object,object)
-    IL_5f88:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_5f88:  call       void [System.Console]System.Console::WriteLine(string)
     IL_5f8d:  ldstr      "e is: "
     IL_5f92:  ldloc.s    V_5
     IL_5f94:  box        [mscorlib]System.Int32
     IL_5f99:  call       string [mscorlib]System.String::Concat(object,object)
-    IL_5f9e:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_5f9e:  call       void [System.Console]System.Console::WriteLine(string)
     IL_5fa3:  ldc.i4.s   100
     IL_5fa5:  stloc.s    V_6
     IL_5fa7:  br.s       IL_5fa9

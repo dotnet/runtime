@@ -1,8 +1,14 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
+
 .assembly ILGEN_0xb0847955 {}
- .assembly extern mscorlib{auto}
+.assembly extern mscorlib{auto}
 
 .class ILGEN_0xb0847955 {
 
@@ -26,7 +32,7 @@ conv.i4
 ldc.i4 55
 sub
   dup
-  call void [mscorlib]System.Console::WriteLine(int32)
+  call void [System.Console]System.Console::WriteLine(int32)
  ret
 }
 

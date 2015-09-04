@@ -3,12 +3,11 @@
 
 
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
-                           
-  
-           
-  
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly 'refarg_o'// as "refarg_o"
 {
@@ -137,13 +136,13 @@
       IL_0014:  beq.s      IL_0024
 
       IL_0016:  ldstr      "*** failed ***"
-      IL_001b:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_001b:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0020:  ldc.i4.1
       IL_0021:  stloc.0
       IL_0022:  br.s       IL_0032
 
       IL_0024:  ldstr      "*** passed ***"
-      IL_0029:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_0029:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_002e:  ldc.i4    0x64
       IL_002f:  stloc.0
       IL_0030:  br.s       IL_0032

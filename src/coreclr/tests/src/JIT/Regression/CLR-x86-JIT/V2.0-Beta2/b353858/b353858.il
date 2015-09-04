@@ -4,7 +4,12 @@
 
 
 
-.assembly extern mscorlib {}
+.assembly extern mscorlib { }
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly q {}
 
 .method assembly static void CreateArrayOfVoid() noinlining
@@ -35,13 +40,13 @@
 
 FAIL:
   ldstr      "FAIL"
-  call       void [mscorlib]System.Console::WriteLine(string)
+  call       void [System.Console]System.Console::WriteLine(string)
   ldc.i4.0
   br.s       END
 
 PASS:
   ldstr      "PASS"
-  call       void [mscorlib]System.Console::WriteLine(string)
+  call       void [System.Console]System.Console::WriteLine(string)
   ldc.i4     100
   br.s       END
 

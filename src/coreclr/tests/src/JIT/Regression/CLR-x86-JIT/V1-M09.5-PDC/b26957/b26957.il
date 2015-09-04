@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly d001
 {
 }
@@ -54,16 +59,16 @@
   		.maxstack   1
         
     	ldarg       N
-    	call        void [mscorlib]System.Console::Write( int32 )
+    	call        void [System.Console]System.Console::Write( int32 )
     	ldstr       " is "
-    	call        void [mscorlib]System.Console::Write( class [mscorlib]System.String )
+    	call        void [System.Console]System.Console::Write( class [mscorlib]System.String )
     	ldarg       N
     	call        bool EvenOdd::IsEven(int32)
     	brfalse     LoadOdd
     	ldstr       "even"
         
 	Print:
-    	tail. call  void [mscorlib]System.Console::WriteLine( class [mscorlib]System.String )
+    	tail. call  void [System.Console]System.Console::WriteLine( class [mscorlib]System.String )
     	ret
         
 	LoadOdd:

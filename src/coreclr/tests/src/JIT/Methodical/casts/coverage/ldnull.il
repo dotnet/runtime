@@ -1,8 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly 'ldnull'
 {
@@ -35,12 +38,12 @@
       IL_0008:  brfalse.s  IL_0017
 
       IL_000a:  ldstr      "Failed => 101"
-      IL_000f:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_000f:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0014:  ldc.i4.s   101
       IL_0016:  ret
 
       IL_0017:  ldstr      "Passed => 100"
-      IL_001c:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_001c:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0021:  ldc.i4.s   100
       IL_0023:  ret
     } // end of method TestClass::Main

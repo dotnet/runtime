@@ -1,8 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly catch3
 {
@@ -399,7 +402,7 @@
       IL_018e:  stloc.s    V_43
       IL_0190:  ldloc.s    V_43
       IL_0192:  box        Days
-      //IL_0197:  call       void [mscorlib]System.Console::WriteLine(class System.Object)
+      //IL_0197:  call       void [System.Console]System.Console::WriteLine(class System.Object)
       IL_019c:  newobj     instance void [mscorlib]System.Object::.ctor()
       //IL_01a1:  stloc.s    V_44
       IL_01a3:  newobj     instance void catch3::.ctor()
@@ -561,7 +564,7 @@
       //IL_02f4:  stloc.s    V_74
       IL_02f6:  ldloc.s    V_74
       IL_02f8:  box        Days
-      //IL_02fd:  call       void [mscorlib]System.Console::WriteLine(class System.Object)
+      //IL_02fd:  call       void [System.Console]System.Console::WriteLine(class System.Object)
       //IL_0302:  newobj     instance void [mscorlib]System.Object::.ctor()
       //IL_0307:  stloc.s    V_75
       IL_0309:  newobj     instance void catch3::.ctor()
@@ -861,13 +864,13 @@
     IL_002b:  brfalse.s  IL_003c
 
     IL_002d:  ldstr      "PASSED"
-    IL_0032:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+    IL_0032:  call       void [System.Console]System.Console::WriteLine(class System.String)
     IL_0037:  ldc.i4.s   100
     IL_0039:  stloc.1
     IL_003a:  br.s       IL_004a
 
     IL_003c:  ldstr      "FAILED"
-    IL_0041:  call       void [mscorlib]System.Console::WriteLine(class System.String)
+    IL_0041:  call       void [System.Console]System.Console::WriteLine(class System.String)
     IL_0046:  ldc.i4.1
     IL_0047:  stloc.1
     IL_0048:  br.s       IL_004a

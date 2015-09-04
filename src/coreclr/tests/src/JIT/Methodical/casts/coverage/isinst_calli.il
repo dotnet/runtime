@@ -1,8 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly isinst_calli
 {
@@ -124,7 +127,7 @@
       IL_0007:  brtrue.s   IL_0016
 
       IL_0009:  ldstr      "Failed => 101"
-      IL_000e:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_000e:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0013:  ldc.i4.s   101
       IL_0015:  ret
 
@@ -135,7 +138,7 @@
       IL_001d:  brtrue.s   IL_002c
 
       IL_001f:  ldstr      "Failed => 102"
-      IL_0024:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0024:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0029:  ldc.i4.s   102
       IL_002b:  ret
 
@@ -146,7 +149,7 @@
       IL_0033:  brtrue.s   IL_0042
 
       IL_0035:  ldstr      "Failed => 103"
-      IL_003a:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_003a:  call       void [System.Console]System.Console::WriteLine(string)
       IL_003f:  ldc.i4.s   103
       IL_0041:  ret
 
@@ -157,7 +160,7 @@
       IL_0049:  brtrue.s   IL_0058
 
       IL_004b:  ldstr      "Failed => 104"
-      IL_0050:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0050:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0055:  ldc.i4.s   104
       IL_0057:  ret
 
@@ -168,12 +171,12 @@
       IL_005f:  brtrue.s   IL_006e
 
       IL_0061:  ldstr      "Failed => 105"
-      IL_0066:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0066:  call       void [System.Console]System.Console::WriteLine(string)
       IL_006b:  ldc.i4.s   105
       IL_006d:  ret
 
       IL_006e:  ldstr      "Passed => 100"
-      IL_0073:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0073:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0078:  ldc.i4.s   100
       IL_007a:  ret
     } // end of method TestClass::Main

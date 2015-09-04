@@ -7,8 +7,11 @@
 
 
 
-.assembly extern mscorlib
+.assembly extern mscorlib { }
+.assembly extern System.Console
 {
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly 'lcs'// as "lcs"
 {
@@ -745,13 +748,13 @@
       IL_00c0:  brfalse.s  IL_00d1
 
       IL_00c2:  ldstr      "Test passed"
-      IL_00c7:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_00c7:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_00cc:  ldc.i4    0x64
       IL_00cd:  stloc.s    V_7
       IL_00cf:  br.s       IL_00e0
 
       IL_00d1:  ldstr      "Test failed."
-      IL_00d6:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_00d6:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_00db:  ldc.i4.0
       IL_00dc:  stloc.s    V_7
       IL_00de:  br.s       IL_00e0

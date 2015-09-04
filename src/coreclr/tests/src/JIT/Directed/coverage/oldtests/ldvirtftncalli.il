@@ -3,6 +3,11 @@
 
 //Testing inliner on a small func that contains ldvirtftn and calli
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly 'ldvirtftncalli'
 {
   .permission reqmin ['mscorlib']System.Security.Permissions.SecurityPermissionAttribute ( "SkipVerification" = true )
@@ -448,13 +453,13 @@
     IL_00f6:  brtrue.s   IL_0106
 
     IL_00f8:  ldstr      "FAILED"
-    IL_00fd:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_00fd:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0102:  ldc.i4.1
     IL_0103:  stloc.2
     IL_0104:  br.s       IL_0115
 
     IL_0106:  ldstr      "PASSED"
-    IL_010b:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_010b:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0110:  ldc.i4.s   100
     IL_0112:  stloc.2
     IL_0113:  br.s       IL_0115
