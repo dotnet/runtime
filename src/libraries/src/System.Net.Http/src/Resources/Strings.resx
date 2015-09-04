@@ -327,4 +327,7 @@
   <data name="UnauthorizedAccess_IODenied_Path" xml:space="preserve">
     <value>Access to the path '{0}' is denied.</value>
   </data>
+  <data name="net_http_content_no_concurrent_reads" xml:space="preserve">
+    <value>The stream does not support concurrent read operations.</value>
+  </data>
 </root>

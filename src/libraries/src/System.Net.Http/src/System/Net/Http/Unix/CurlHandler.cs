@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,7 +20,8 @@ namespace System.Net.Http
     {
         #region Constants
 
-        private const string s_httpPrefix = "HTTP/";
+        private const string VerboseDebuggingConditional = "CURLHANDLER_VERBOSE";
+        private const string HttpPrefix = "HTTP/";
         private const char SpaceChar = ' ';
         private const int StatusCodeLength = 3;
 
@@ -314,7 +316,7 @@ namespace System.Net.Http
             else
             {
                 // Otherwise, just submit the request.
-                _agent.Queue(easy);
+                _agent.Queue(new MultiAgent.IncomingRequest { Easy = easy, Type = MultiAgent.IncomingRequestType.New });
                 return easy.Task;
             }
         }
@@ -335,7 +337,7 @@ namespace System.Net.Http
             }
             else
             {
-                _agent.Queue(easy);
+                _agent.Queue(new MultiAgent.IncomingRequest { Easy = easy, Type = MultiAgent.IncomingRequestType.New });
             }
             return await easy.Task.ConfigureAwait(false);
         }
@@ -423,7 +425,9 @@ namespace System.Net.Http
         {
             if (error != CURLcode.CURLE_OK)
             {
-                throw CreateHttpRequestException(new CurlException(error, isMulti: false));
+                var inner = new CurlException(error, isMulti: false);
+                VerboseTrace(inner.Message);
+                throw CreateHttpRequestException(inner);
             }
         }
 
@@ -432,6 +436,7 @@ namespace System.Net.Http
             if (error != CURLMcode.CURLM_OK)
             {
                 string msg = CurlException.GetCurlErrorString(error, true);
+                VerboseTrace(msg);
                 switch (error)
                 {
                     case CURLMcode.CURLM_ADDED_ALREADY:
@@ -450,6 +455,19 @@ namespace System.Net.Http
             }
         }
 
+        [Conditional(VerboseDebuggingConditional)]
+        private static void VerboseTrace(string text = null, [CallerMemberName] string memberName = null)
+        {
+            Interop.libc.printf("%s\n", string.Format("[{0}]: {1}", memberName, text));
+        }
+
+        [Conditional(VerboseDebuggingConditional)]
+        private static void VerboseTraceIf(bool condition, string text = null, [CallerMemberName] string memberName = null)
+        {
+            if (condition)
+                VerboseTrace(text, memberName);
+        }
+
         private static Exception CreateHttpRequestException(Exception inner = null)
         {
             return new HttpRequestException(SR.net_http_client_execution_error, inner);
@@ -457,7 +475,7 @@ namespace System.Net.Http
 
         private static bool TryParseStatusLine(HttpResponseMessage response, string responseHeader, EasyRequest state)
         {
-            if (!responseHeader.StartsWith(s_httpPrefix, StringComparison.OrdinalIgnoreCase))
+            if (!responseHeader.StartsWith(HttpPrefix, StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
@@ -470,7 +488,7 @@ namespace System.Net.Http
             int responseHeaderLength = responseHeader.Length;
 
             // Check if line begins with HTTP/1.1 or HTTP/1.0
-            int prefixLength = s_httpPrefix.Length;
+            int prefixLength = HttpPrefix.Length;
             int versionIndex = prefixLength + 2;
 
             if ((versionIndex < responseHeaderLength) && (responseHeader[prefixLength] == '1') && (responseHeader[prefixLength + 1] == '.'))

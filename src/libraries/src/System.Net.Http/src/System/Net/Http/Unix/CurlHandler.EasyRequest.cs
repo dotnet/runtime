@@ -1,20 +1,19 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Http.Headers;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 using CURLAUTH = Interop.libcurl.CURLAUTH;
-using CURLProxyType = Interop.libcurl.curl_proxytype;
 using CURLoption = Interop.libcurl.CURLoption;
+using CURLProxyType = Interop.libcurl.curl_proxytype;
 using SafeCurlHandle = Interop.libcurl.SafeCurlHandle;
 using SafeCurlSlistHandle = Interop.libcurl.SafeCurlSlistHandle;
-using System.Net.Http.Headers;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Runtime.ExceptionServices;
 
 namespace System.Net.Http
 {
@@ -24,8 +23,9 @@ namespace System.Net.Http
         {
             private readonly CurlHandler _handler;
             private readonly SafeCurlHandle _easyHandle;
-
+            
             internal MultiAgent _associatedMultiAgent;
+            internal PauseState _paused = PauseState.Unpaused;
 
             private readonly HttpRequestMessage _requestMessage;
             private readonly CurlResponseMessage _responseMessage;
@@ -38,7 +38,7 @@ namespace System.Net.Http
                 // Store supplied arguments
                 _handler = handler;
                 _requestMessage = requestMessage;
-                _responseMessage = new CurlResponseMessage(requestMessage);
+                _responseMessage = new CurlResponseMessage(this);
                 _cancellationToken = cancellationToken;
 
                 // Create the underlying easy handle
@@ -99,13 +99,13 @@ namespace System.Net.Http
 
                 // Make sure the exception is available on the response stream so that it's propagated
                 // from any attempts to read from the stream.
-                ResponseMessage.ContentStream.SignalFailure(ExceptionDispatchInfo.Capture(error));
+                ResponseMessage.ResponseStream.SignalComplete(error);
             }
 
             public void Cleanup() // not called Dispose because the request may still be in use after it's cleaned up
             {
-                ResponseMessage.ContentStream.SignalComplete(); // No more callbacks so no more data
-                // Don't dispose of the ResponseMessage.ContentStream as it may still be in use
+                ResponseMessage.ResponseStream.SignalComplete(); // No more callbacks so no more data
+                // Don't dispose of the ResponseMessage.ResponseStream as it may still be in use
                 // by code reading data stored in the stream.
 
                 // Dispose of the input content stream if there was one.  Nothing should be using it any more.
@@ -130,7 +130,7 @@ namespace System.Net.Http
                 SetCurlOption(CURLoption.CURLOPT_URL, _requestMessage.RequestUri.AbsoluteUri);
             }
 
-            [Conditional("CURLHANDLER_VERBOSE")]
+            [Conditional(VerboseDebuggingConditional)]
             private void SetDebugging()
             {
                 SetCurlOption(CURLoption.CURLOPT_VERBOSE, 1L);
@@ -376,6 +376,15 @@ namespace System.Net.Http
                 ThrowIfCURLEError(Interop.libcurl.curl_easy_setopt(_easyHandle, option, value));
             }
 
+            internal enum PauseState
+            {
+                /// <summary>The operation may be processed by libcurl.</summary>
+                Unpaused = 0,
+                /// <summary>libcurl should not process the operation.</summary>
+                Paused,
+                /// <summary>A request has been made to the MultiAgent to unpause the operation.</summary>
+                UnpauseRequestIssued
+            }
         }
     }
 }

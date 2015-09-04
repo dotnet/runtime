@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -65,7 +66,7 @@ namespace System.Net.Http.Tests
         {
             _output = output;
         }
-
+        
         [Fact]
         public async void SendAsync_SimpleGet_Success()
         {
@@ -246,7 +247,7 @@ namespace System.Net.Http.Tests
                 }
             }
         }
- 
+
         [Theory]
         [InlineData("X-Cust-Header","x-value")]
         public async void GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(string name, string value)
@@ -260,6 +261,24 @@ namespace System.Net.Http.Tests
                     httpResponse.EnsureSuccessStatusCode();
                     string responseText = await httpResponse.Content.ReadAsStringAsync();
                     Assert.True(JsonMessageContainsKeyValue(responseText, name, value));
+                }
+            }
+        }
+
+        [Fact]
+        public async Task GetAsync_ResponseHeadersRead_ReadFromEachIterativelyDoesntDeadlock()
+        {
+            using (var client = new HttpClient())
+            {
+                const int NumGets = 5;
+                Task<HttpResponseMessage>[] responseTasks = (from _ in Enumerable.Range(0, NumGets)
+                                                             select client.GetAsync(HttpTestServers.RemoteGetServer, HttpCompletionOption.ResponseHeadersRead)).ToArray();
+                for (int i = responseTasks.Length - 1; i >= 0; i--) // read backwards to increase liklihood that we wait on a different task than has data available
+                {
+                    using (HttpResponseMessage response = await responseTasks[i])
+                    {
+                        await AssertSuccessfulGetResponse(response, HttpTestServers.RemoteGetServer, _output);
+                    }
                 }
             }
         }
@@ -487,5 +506,6 @@ namespace System.Net.Http.Tests
         }
 
         #endregion
+
     }
 }
