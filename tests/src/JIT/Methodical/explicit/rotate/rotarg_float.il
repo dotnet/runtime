@@ -249,7 +249,7 @@
         IL_0135:  beq.s      IL_0147
 
         IL_0137:  ldstr      "left weight do not match."
-        IL_013c:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+        IL_013c:  call       void [System.Console]System.Console::WriteLine(class System.String)
         IL_0141:  newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
         IL_0146:  throw
 
@@ -297,7 +297,7 @@
         IL_01b9:  beq.s      IL_01cb
 
         IL_01bb:  ldstr      "right weight do not match."
-        IL_01c0:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+        IL_01c0:  call       void [System.Console]System.Console::WriteLine(class System.String)
         IL_01c5:  newobj     instance void ['mscorlib']System.ApplicationException::.ctor()
         IL_01ca:  throw
 

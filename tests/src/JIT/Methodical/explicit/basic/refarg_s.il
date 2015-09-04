@@ -139,13 +139,13 @@
       IL_0017:  brtrue.s   IL_0027
 
       IL_0019:  ldstr      "*** failed ***"
-      IL_001e:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_001e:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0023:  ldc.i4.1
       IL_0024:  stloc.0
       IL_0025:  br.s       IL_0035
 
       IL_0027:  ldstr      "*** passed ***"
-      IL_002c:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_002c:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0031:  ldc.i4    0x64
       IL_0032:  stloc.0
       IL_0033:  br.s       IL_0035

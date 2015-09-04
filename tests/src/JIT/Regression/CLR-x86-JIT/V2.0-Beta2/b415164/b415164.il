@@ -33,7 +33,7 @@
   {
     ldarg.0
     ldfld string TestClass::m_strField
-    call  void [mscorlib] System.Console::WriteLine(string)
+    call  void [System.Console]System.Console::WriteLine(string)
     ret
   }
   .method public hidebysig static int32 Main(class System.String[] args) il managed

@@ -38,7 +38,7 @@
 			   int32[] dim)
                
       			ldstr     "Creating 32-dimension array"
-      			call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      			call       void [System.Console]System.Console::WriteLine(class System.String)
 
       			ldc.i4	32
       			dup
@@ -92,9 +92,9 @@
 				dup
 				ldloc count
 				ldelem.i4
-				call       void ['mscorlib']System.Console::Write(int32)
+				call       void [System.Console]System.Console::Write(int32)
 				ldstr " "
-				call       void ['mscorlib']System.Console::Write(class System.String)
+				call       void [System.Console]System.Console::Write(class System.String)
 				ldloc count
 				ldc.i4.1
 				add
@@ -425,7 +425,7 @@
       			
       			ldc.i4 100
       			ldstr     "TEST PASSED"
-      			call       void ['mscorlib']System.Console::Write(class System.String)
+      			call       void [System.Console]System.Console::Write(class System.String)
       			ret
       			
 			cont0:

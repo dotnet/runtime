@@ -39,7 +39,7 @@
       IL_0010:  ldarg.0
       IL_0011:  ldfld     int64 JitTest.Test::op2
       IL_0016:  box     ['mscorlib']System.Int64
-      IL_001b:  call       void ['mscorlib']System.Console::Write(class System.String,
+      IL_001b:  call       void [System.Console]System.Console::Write(class System.String,
                                                                   class System.Object,
                                                                   class System.Object)
       .try
@@ -56,7 +56,7 @@
         IL_0031:  stloc.0
         IL_0032:  leave.s    IL_004f
 
-        IL_0034:  call       void ['mscorlib']System.Console::WriteLine()
+        IL_0034:  call       void [System.Console]System.Console::WriteLine()
         IL_0039:  ldarg.2
         IL_003a:  ldc.i4.0
         IL_003b:  ceq
@@ -68,7 +68,7 @@
       {
         IL_0040:  pop
         IL_0041:  ldstr      "overflow."
-        IL_0046:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+        IL_0046:  call       void [System.Console]System.Console::WriteLine(class System.String)
         IL_004b:  ldarg.2
         IL_004c:  stloc.0
         IL_004d:  leave.s    IL_004f
@@ -238,13 +238,13 @@
       IL_0189:  br.s       IL_0199
 
       IL_018b:  ldstr      "Test passed"
-      IL_0190:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_0190:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0195:  ldc.i4    0x64
       IL_0196:  stloc.1
       IL_0197:  br.s       IL_01a7
 
       IL_0199:  ldstr      "Test failed"
-      IL_019e:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
+      IL_019e:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_01a3:  ldc.i4.1
       IL_01a4:  stloc.1
       IL_01a5:  br.s       IL_01a7
