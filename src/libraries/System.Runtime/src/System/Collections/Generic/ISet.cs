@@ -18,7 +18,7 @@ namespace System.Collections.Generic
         //Transform this set into its union with the IEnumerable<T> other
         void UnionWith(IEnumerable<T> other);
 
-        //Transform this set into its intersection with the IEnumberable<T> other
+        //Transform this set into its intersection with the IEnumerable<T> other
         void IntersectWith(IEnumerable<T> other);
 
         //Transform this set so it contains no elements that are also in other
