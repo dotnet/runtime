@@ -3180,11 +3180,10 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	}
 
 	//printf ("F: %s\n", mono_method_full_name (method, TRUE));
-	
+
 	jinfo = decode_exception_debug_info (amodule, domain, method, ex_info, addr, code, code_len);
 
 	g_assert ((guint8*)addr >= (guint8*)jinfo->code_start);
-	g_assert ((guint8*)addr < (guint8*)jinfo->code_start + jinfo->code_size);
 
 	/* Add it to the normal JitInfo tables */
 	if (async) {
@@ -3216,6 +3215,10 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	} else {
 		mono_jit_info_table_add (domain, jinfo);
 	}
+
+	if ((guint8*)addr >= (guint8*)jinfo->code_start + jinfo->code_size)
+		/* addr is in the padding between methods, see the adjustment of code_size in decode_exception_debug_info () */
+		return NULL;
 	
 	return jinfo;
 }
