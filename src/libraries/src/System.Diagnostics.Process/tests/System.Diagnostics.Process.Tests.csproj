@@ -34,6 +34,7 @@
     <Compile Include="ProcessTestBase.cs" />
     <Compile Include="ProcessThreadTests.cs" />
     <Compile Include="ProcessWaitingTests.cs" />
+    <Compile Include="XunitAssemblyAttributes.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
