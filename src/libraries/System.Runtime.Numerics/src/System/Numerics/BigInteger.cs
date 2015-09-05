@@ -1023,16 +1023,63 @@ namespace System.Numerics
             left.AssertValid();
             right.AssertValid();
 
-            // gcd(0, 0) =  0 
-            // gcd(a, 0) = |a|, for a != 0, since any number is a divisor of 0, and the greatest divisor of a is |a|
-            if (left._sign == 0) return BigInteger.Abs(right);
-            if (right._sign == 0) return BigInteger.Abs(left);
+            bool trivialLeft = left._bits == null;
+            bool trivialRight = right._bits == null;
 
-            BigIntegerBuilder reg1 = new BigIntegerBuilder(left);
-            BigIntegerBuilder reg2 = new BigIntegerBuilder(right);
-            BigIntegerBuilder.GCD(ref reg1, ref reg2);
+            if (trivialLeft && trivialRight)
+            {
+                return BigIntegerCalculator.Gcd(NumericsHelpers.Abs(left._sign), NumericsHelpers.Abs(right._sign));
+            }
 
-            return reg1.GetInteger(+1);
+            if (trivialLeft)
+            {
+                return left._sign != 0
+                    ? BigIntegerCalculator.Gcd(right._bits, NumericsHelpers.Abs(left._sign))
+                    : new BigInteger(right._bits, false);
+            }
+
+            if (trivialRight)
+            {
+                return right._sign != 0
+                    ? BigIntegerCalculator.Gcd(left._bits, NumericsHelpers.Abs(right._sign))
+                    : new BigInteger(left._bits, false);
+            }
+
+            if (BigIntegerCalculator.Compare(left._bits, right._bits) < 0)
+            {
+                return GreatestCommonDivisor(right._bits, left._bits);
+            }
+            else
+            {
+                return GreatestCommonDivisor(left._bits, right._bits);
+            }
+        }
+
+        private static BigInteger GreatestCommonDivisor(uint[] leftBits, uint[] rightBits)
+        {
+            Debug.Assert(BigIntegerCalculator.Compare(leftBits, rightBits) >= 0);
+
+            // Short circuits to spare some allocations...
+
+            if (rightBits.Length == 1)
+            {
+                uint temp = BigIntegerCalculator.Remainder(leftBits, rightBits[0]);
+                return BigIntegerCalculator.Gcd(rightBits[0], temp);
+            }
+
+            if (rightBits.Length == 2)
+            {
+                if (leftBits.Length > 2)
+                    leftBits = BigIntegerCalculator.Remainder(leftBits, rightBits);
+
+                ulong left = ((ulong)rightBits[1] << 32) | rightBits[0];
+                ulong right = ((ulong)leftBits[1] << 32) | leftBits[0];
+
+                return BigIntegerCalculator.Gcd(left, right);
+            }
+
+            uint[] bits = BigIntegerCalculator.Gcd(leftBits, rightBits);
+            return new BigInteger(bits, false);
         }
 
         public static BigInteger Max(BigInteger left, BigInteger right)
@@ -1310,14 +1357,22 @@ namespace System.Numerics
         public static explicit operator Double(BigInteger value)
         {
             value.AssertValid();
-            if (value._bits == null)
-                return value._sign;
 
-            ulong man;
-            int exp;
-            int sign = +1;
-            BigIntegerBuilder reg = new BigIntegerBuilder(value, ref sign);
-            reg.GetApproxParts(out exp, out man);
+            int sign = value._sign;
+            uint[] bits = value._bits;
+
+            if (bits == null)
+                return sign;
+
+            ulong h = bits[bits.Length - 1];
+            ulong m = bits.Length > 1 ? bits[bits.Length - 2] : 0;
+            ulong l = bits.Length > 2 ? bits[bits.Length - 3] : 0;
+
+            int z = NumericsHelpers.CbitHighZero((uint)h);
+
+            int exp = (bits.Length - 2) * 32 - z;
+            ulong man = (h << 32 + z) | (m << z) | (l >> 32 - z);
+
             return NumericsHelpers.GetDoubleFromParts(sign, exp, man);
         }
 
@@ -1945,10 +2000,6 @@ namespace System.Numerics
             // no leading zeros
             return rgu.Length;
         }
-
-        internal int _Sign { get { return _sign; } }
-        internal uint[] _Bits { get { return _bits; } }
-
 
         internal static int BitLengthOfUInt(uint x)
         {
