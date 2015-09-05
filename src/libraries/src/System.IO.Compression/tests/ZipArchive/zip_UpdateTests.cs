@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace System.IO.Compression.Test
+namespace System.IO.Compression.Tests
 {
     public class zip_UpdateTests
     {
