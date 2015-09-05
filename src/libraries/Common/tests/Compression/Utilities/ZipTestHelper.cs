@@ -7,7 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace System.IO.Compression.Test
+namespace System.IO.Compression.Tests
 {
     public partial class ZipTest
     {
