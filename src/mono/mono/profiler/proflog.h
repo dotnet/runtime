@@ -72,9 +72,11 @@ enum {
 	TYPE_CLAUSE       = 1 << 4,
 	TYPE_EXCEPTION_BT = 1 << 7,
 	/* extended type for TYPE_ALLOC */
-	TYPE_ALLOC_BT  = 1 << 4,
+	TYPE_ALLOC_NO_BT  = 0 << 4,
+	TYPE_ALLOC_BT     = 1 << 4,
 	/* extended type for TYPE_MONITOR */
-	TYPE_MONITOR_BT  = 1 << 7,
+	TYPE_MONITOR_NO_BT  = 0 << 7,
+	TYPE_MONITOR_BT     = 1 << 7,
 	/* extended type for TYPE_SAMPLE */
 	TYPE_SAMPLE_HIT           = 0 << 4,
 	TYPE_SAMPLE_USYM          = 1 << 4,
