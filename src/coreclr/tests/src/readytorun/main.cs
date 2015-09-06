@@ -58,25 +58,28 @@ class Program
         Assert.AreEqual(o.MovedToBaseClass(), "MovedToBaseClass");
         Assert.AreEqual(o.ChangedToVirtual(), "ChangedToVirtual");
 
-        o = null;
+        if (!LLILCJitEnabled)
+        {
+            o = null;
 
-        try
-        {
-            o.MovedToBaseClass();
-        }
-        catch (NullReferenceException)
-        {
             try
             {
-                o.ChangedToVirtual();
+                o.MovedToBaseClass();
             }
             catch (NullReferenceException)
             {
-                return;
+                try
+                {
+                    o.ChangedToVirtual();
+                }
+                catch (NullReferenceException)
+                {
+                    return;
+                }
             }
-        }
 
-        Assert.AreEqual("NullReferenceException", "thrown");
+            Assert.AreEqual("NullReferenceException", "thrown");
+        }
     }
 
 
@@ -158,25 +161,28 @@ class Program
         Assert.AreEqual(o.MovedToBaseClass<WeakReference>(), typeof(List<WeakReference>).ToString());
         Assert.AreEqual(o.ChangedToVirtual<WeakReference>(), typeof(List<WeakReference>).ToString());
 
-        o = null;
+        if (!LLILCJitEnabled)
+        {
+            o = null;
 
-        try
-        {
-            o.MovedToBaseClass<WeakReference>();
-        }
-        catch (NullReferenceException)
-        {
             try
             {
-                o.ChangedToVirtual<WeakReference>();
+                o.MovedToBaseClass<WeakReference>();
             }
             catch (NullReferenceException)
             {
-                return;
+                try
+                {
+                    o.ChangedToVirtual<WeakReference>();
+                }
+                catch (NullReferenceException)
+                {
+                    return;
+                }
             }
-        }
 
-        Assert.AreEqual("NullReferenceException", "thrown");
+            Assert.AreEqual("NullReferenceException", "thrown");
+        }
     }
 
     static void TestInstanceFields()
@@ -249,17 +255,19 @@ class Program
 
     static void TestMultipleLoads()
     {
-        try
-        {
-            new MyLoadContext().TestMultipleLoads();
-        }
-        catch (FileLoadException e)
-        {
-            Assert.AreEqual(e.ToString().Contains("Native image cannot be loaded multiple times"), true);
-            return;
-        }
+        if (!LLILCJitEnabled) {
+            try
+            {
+                new MyLoadContext().TestMultipleLoads();
+            }
+            catch (FileLoadException e)
+            {
+                Assert.AreEqual(e.ToString().Contains("Native image cannot be loaded multiple times"), true);
+                return;
+            }
 
-        Assert.AreEqual("FileLoadException", "thrown");
+            Assert.AreEqual("FileLoadException", "thrown");
+        }
     }
 #endif
 
@@ -310,6 +318,15 @@ class Program
 
     static int Main()
     {
+        // Code compiled by LLILC jit can't catch exceptions yet so the tests
+        // don't throw them if LLILC jit is enabled. This should be removed once
+        // exception catching is supported by LLILC jit.
+        string AltJitName = System.Environment.GetEnvironmentVariable("complus_altjitname");
+        LLILCJitEnabled =
+            ((AltJitName != null) && AltJitName.ToLower().StartsWith("llilcjit") &&
+             ((System.Environment.GetEnvironmentVariable("complus_altjit") != null) ||
+              (System.Environment.GetEnvironmentVariable("complus_altjitngen") != null)));
+
         // Run all tests 3x times to exercise both slow and fast paths work
         for (int i = 0; i < 3; i++)
            RunAllTests();
@@ -317,4 +334,6 @@ class Program
         Console.WriteLine("PASSED");
         return Assert.HasAssertFired ? 1 : 100;
     }
+
+    static bool LLILCJitEnabled;
 }
