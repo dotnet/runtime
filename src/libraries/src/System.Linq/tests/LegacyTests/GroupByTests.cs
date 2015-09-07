@@ -1169,5 +1169,24 @@ namespace System.Linq.Tests.LegacyTests
             Assert.Equal(4, groupedArray.Length);
             Assert.Equal(source.GroupBy(r => r.Name), groupedArray);
         }
+
+        [Fact]
+        public void GroupingWithResultsToArray()
+        {
+            Record[] source = new Record[]
+            {
+                new Record{ Name = "Tim", Score = 55 },
+                new Record{ Name = "Chris", Score = 49 },
+                new Record{ Name = "Robert", Score = -100 },
+                new Record{ Name = "Chris", Score = 24 },
+                new Record{ Name = "Prakash", Score = 9 },
+                new Record{ Name = "Tim", Score = 25 }
+            };
+
+            IEnumerable<Record>[] groupedArray = source.GroupBy(r => r.Name, (r, e) => e).ToArray();
+            Assert.Equal(4, groupedArray.Length);
+            Assert.Equal(source.GroupBy(r => r.Name, (r, e) => e), groupedArray);
+        }
+
     }
 }

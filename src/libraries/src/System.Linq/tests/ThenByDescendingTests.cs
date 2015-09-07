@@ -117,6 +117,23 @@ And Immortality.".Split(new []{ ' ', '\n', '\r', '—' }, StringSplitOptions.Rem
         }
 
         [Fact]
+        public void OrderIsStableCustomComparer()
+        {
+            var source = @"Because I could not stop for Death —
+He kindly stopped for me —
+The Carriage held but just Ourselves —
+And Immortality.".Split(new[] { ' ', '\n', '\r', '—' }, StringSplitOptions.RemoveEmptyEntries);
+            var expected = new[]
+            {
+                "me", "not", "for", "for", "but", "stop", "held", "just", "could", "kindly", "stopped",
+                "I", "He", "The", "And", "Death", "Because", "Carriage", "Ourselves", "Immortality."
+            };
+
+            Assert.Equal(expected, source.OrderBy(word => char.IsUpper(word[0])).ThenByDescending(word => word.Length, Comparer<int>.Create((w1, w2) => w2.CompareTo(w1))));
+        }
+
+
+        [Fact]
         public void NullSource()
         {
             IOrderedEnumerable<int> source = null;
