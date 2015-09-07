@@ -1,20 +1,20 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 using CURLAUTH = Interop.libcurl.CURLAUTH;
-using CURLProxyType = Interop.libcurl.curl_proxytype;
 using CURLoption = Interop.libcurl.CURLoption;
+using CURLProxyType = Interop.libcurl.curl_proxytype;
 using SafeCurlHandle = Interop.libcurl.SafeCurlHandle;
 using SafeCurlSlistHandle = Interop.libcurl.SafeCurlSlistHandle;
-using System.Net.Http.Headers;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Runtime.ExceptionServices;
 
 namespace System.Net.Http
 {
@@ -22,15 +22,18 @@ namespace System.Net.Http
     {
         private sealed class EasyRequest : TaskCompletionSource<HttpResponseMessage>
         {
-            private readonly CurlHandler _handler;
-            private readonly SafeCurlHandle _easyHandle;
+            internal readonly CurlHandler _handler;
+            internal readonly HttpRequestMessage _requestMessage;
+            internal readonly CurlResponseMessage _responseMessage;
+            internal readonly CancellationToken _cancellationToken;
+            internal readonly SafeCurlHandle _easyHandle;
+            private SafeCurlSlistHandle _requestHeaders;
+
+            internal Stream _requestContentStream;
+            internal NetworkCredential _networkCredential;
 
             internal MultiAgent _associatedMultiAgent;
-
-            private readonly HttpRequestMessage _requestMessage;
-            private readonly CurlResponseMessage _responseMessage;
-            private readonly CancellationToken _cancellationToken;
-            private SafeCurlSlistHandle _requestHeaders;
+            internal PauseState _paused = PauseState.Unpaused;
 
             public EasyRequest(CurlHandler handler, HttpRequestMessage requestMessage, CancellationToken cancellationToken) :
                 base(TaskCreationOptions.RunContinuationsAsynchronously)
@@ -38,7 +41,7 @@ namespace System.Net.Http
                 // Store supplied arguments
                 _handler = handler;
                 _requestMessage = requestMessage;
-                _responseMessage = new CurlResponseMessage(requestMessage);
+                _responseMessage = new CurlResponseMessage(this);
                 _cancellationToken = cancellationToken;
 
                 // Create the underlying easy handle
@@ -61,18 +64,9 @@ namespace System.Net.Http
                 SetRequestHeaders();
             }
 
-            public CurlHandler Handler { get { return _handler; } }
-            public SafeCurlHandle EasyHandle { get { return _easyHandle; } }
-            public CancellationToken CancellationToken { get { return _cancellationToken; } }
-            public HttpRequestMessage RequestMessage { get { return _requestMessage; } }
-            public CurlResponseMessage ResponseMessage { get { return _responseMessage; } }
-
-            public Stream RequestContentStream { get; set; }
-            public NetworkCredential NetworkCredential { get; set; }
-
             public void EnsureResponseMessagePublished()
             {
-                bool result = TrySetResult(ResponseMessage);
+                bool result = TrySetResult(_responseMessage);
                 Debug.Assert(result || Task.Status == TaskStatus.RanToCompletion,
                     "If the task was already completed, it should have been completed succesfully; " +
                     "we shouldn't be completing as successful after already completing as failed.");
@@ -99,18 +93,18 @@ namespace System.Net.Http
 
                 // Make sure the exception is available on the response stream so that it's propagated
                 // from any attempts to read from the stream.
-                ResponseMessage.ContentStream.SignalFailure(ExceptionDispatchInfo.Capture(error));
+                _responseMessage.ResponseStream.SignalComplete(error);
             }
 
             public void Cleanup() // not called Dispose because the request may still be in use after it's cleaned up
             {
-                ResponseMessage.ContentStream.SignalComplete(); // No more callbacks so no more data
-                // Don't dispose of the ResponseMessage.ContentStream as it may still be in use
+                _responseMessage.ResponseStream.SignalComplete(); // No more callbacks so no more data
+                // Don't dispose of the ResponseMessage.ResponseStream as it may still be in use
                 // by code reading data stored in the stream.
 
                 // Dispose of the input content stream if there was one.  Nothing should be using it any more.
-                if (RequestContentStream != null)
-                    RequestContentStream.Dispose();
+                if (_requestContentStream != null)
+                    _requestContentStream.Dispose();
 
                 // Dispose of the underlying easy handle.  We're no longer processing it.
                 if (_easyHandle != null)
@@ -127,10 +121,11 @@ namespace System.Net.Http
 
             private void SetUrl()
             {
+                VerboseTrace(_requestMessage.RequestUri.AbsoluteUri);
                 SetCurlOption(CURLoption.CURLOPT_URL, _requestMessage.RequestUri.AbsoluteUri);
             }
 
-            [Conditional("CURLHANDLER_VERBOSE")]
+            [Conditional(VerboseDebuggingConditional)]
             private void SetDebugging()
             {
                 SetCurlOption(CURLoption.CURLOPT_VERBOSE, 1L);
@@ -147,17 +142,19 @@ namespace System.Net.Http
 
             private void SetRedirection()
             {
-                if (!Handler._automaticRedirection)
+                if (!_handler._automaticRedirection)
                 {
                     return;
                 }
 
+                VerboseTrace(_handler._maxAutomaticRedirections.ToString());
                 SetCurlOption(CURLoption.CURLOPT_FOLLOWLOCATION, 1L);
-                SetCurlOption(CURLoption.CURLOPT_MAXREDIRS, Handler._maxAutomaticRedirections);
+                SetCurlOption(CURLoption.CURLOPT_MAXREDIRS, _handler._maxAutomaticRedirections);
             }
 
             private void SetVerb()
             {
+                VerboseTrace(_requestMessage.Method.Method);
                 if (_requestMessage.Method == HttpMethod.Put)
                 {
                     SetCurlOption(CURLoption.CURLOPT_UPLOAD, 1L);
@@ -183,12 +180,12 @@ namespace System.Net.Http
 
             private void SetDecompressionOptions()
             {
-                if (!Handler.SupportsAutomaticDecompression)
+                if (!_handler.SupportsAutomaticDecompression)
                 {
                     return;
                 }
 
-                DecompressionMethods autoDecompression = Handler.AutomaticDecompression;
+                DecompressionMethods autoDecompression = _handler.AutomaticDecompression;
                 bool gzip = (autoDecompression & DecompressionMethods.GZip) != 0;
                 bool deflate = (autoDecompression & DecompressionMethods.Deflate) != 0;
                 if (gzip || deflate)
@@ -197,41 +194,48 @@ namespace System.Net.Http
                                        gzip ? EncodingNameGzip :
                                        EncodingNameDeflate;
                     SetCurlOption(CURLoption.CURLOPT_ACCEPTENCODING, encoding);
+                    VerboseTrace(encoding);
                 }
             }
 
             private void SetProxyOptions()
             {
-                if (Handler._proxyPolicy == ProxyUsePolicy.DoNotUseProxy)
+                if (_handler._proxyPolicy == ProxyUsePolicy.DoNotUseProxy)
                 {
                     SetCurlOption(CURLoption.CURLOPT_PROXY, string.Empty);
+                    VerboseTrace("No proxy");
                     return;
                 }
 
-                if ((Handler._proxyPolicy == ProxyUsePolicy.UseDefaultProxy) || 
-                    (Handler.Proxy == null))
+                if ((_handler._proxyPolicy == ProxyUsePolicy.UseDefaultProxy) || 
+                    (_handler.Proxy == null))
                 {
+                    VerboseTrace("Default proxy");
                     return;
                 }
 
-                Debug.Assert(Handler.Proxy != null, "proxy is null");
-                Debug.Assert(Handler._proxyPolicy == ProxyUsePolicy.UseCustomProxy, "_proxyPolicy is not UseCustomProxy");
-                if (Handler.Proxy.IsBypassed(RequestMessage.RequestUri))
+                Debug.Assert(_handler.Proxy != null, "proxy is null");
+                Debug.Assert(_handler._proxyPolicy == ProxyUsePolicy.UseCustomProxy, "_proxyPolicy is not UseCustomProxy");
+                if (_handler.Proxy.IsBypassed(_requestMessage.RequestUri))
                 {
                     SetCurlOption(CURLoption.CURLOPT_PROXY, string.Empty);
+                    VerboseTrace("Bypassed proxy");
                     return;
                 }
 
-                var proxyUri = Handler.Proxy.GetProxy(RequestMessage.RequestUri);
+                var proxyUri = _handler.Proxy.GetProxy(_requestMessage.RequestUri);
                 if (proxyUri == null)
                 {
+                    VerboseTrace("No proxy URI");
                     return;
                 }
 
                 SetCurlOption(CURLoption.CURLOPT_PROXYTYPE, CURLProxyType.CURLPROXY_HTTP);
                 SetCurlOption(CURLoption.CURLOPT_PROXY, proxyUri.AbsoluteUri);
                 SetCurlOption(CURLoption.CURLOPT_PROXYPORT, proxyUri.Port);
-                NetworkCredential credentials = GetCredentials(Handler.Proxy.Credentials, RequestMessage.RequestUri);
+                VerboseTrace("Set proxy: " + proxyUri.ToString());
+
+                NetworkCredential credentials = GetCredentials(_handler.Proxy.Credentials, _requestMessage.RequestUri);
                 if (credentials != null)
                 {
                     if (string.IsNullOrEmpty(credentials.UserName))
@@ -243,12 +247,13 @@ namespace System.Net.Http
                         string.Format("{0}:{1}", credentials.UserName, credentials.Password) :
                         string.Format("{2}\\{0}:{1}", credentials.UserName, credentials.Password, credentials.Domain);
                     SetCurlOption(CURLoption.CURLOPT_PROXYUSERPWD, credentialText);
+                    VerboseTrace("Set proxy credentials");
                 }
             }
 
             private void SetCredentialsOptions()
             {
-                NetworkCredential credentials = Handler.GetNetworkCredentials(Handler._serverCredentials, RequestMessage.RequestUri);
+                NetworkCredential credentials = _handler.GetNetworkCredentials(_handler._serverCredentials, _requestMessage.RequestUri);
                 if (credentials == null)
                 {
                     return;
@@ -265,47 +270,49 @@ namespace System.Net.Http
                     SetCurlOption(CURLoption.CURLOPT_PASSWORD, credentials.Password);
                 }
 
-                NetworkCredential = credentials;
+                _networkCredential = credentials;
+                VerboseTrace("Set credentials options");
             }
 
             private void SetCookieOption()
             {
-                if (!Handler._useCookie)
+                if (!_handler._useCookie)
                 {
                     return;
                 }
 
-                string cookieValues = Handler.CookieContainer.GetCookieHeader(RequestMessage.RequestUri);
+                string cookieValues = _handler.CookieContainer.GetCookieHeader(_requestMessage.RequestUri);
                 if (cookieValues != null)
                 {
                     SetCurlOption(CURLoption.CURLOPT_COOKIE, cookieValues);
+                    VerboseTrace("Set cookies");
                 }
             }
 
             private void SetRequestHeaders()
             {
                 HttpHeaders contentHeaders = null;
-                if (RequestMessage.Content != null)
+                if (_requestMessage.Content != null)
                 {
-                    SetChunkedModeForSend(RequestMessage);
+                    SetChunkedModeForSend(_requestMessage);
 
                     // TODO: Content-Length header isn't getting correctly placed using ToString()
                     // This is a bug in HttpContentHeaders that needs to be fixed.
-                    if (RequestMessage.Content.Headers.ContentLength.HasValue)
+                    if (_requestMessage.Content.Headers.ContentLength.HasValue)
                     {
-                        long contentLength = RequestMessage.Content.Headers.ContentLength.Value;
-                        RequestMessage.Content.Headers.ContentLength = null;
-                        RequestMessage.Content.Headers.ContentLength = contentLength;
+                        long contentLength = _requestMessage.Content.Headers.ContentLength.Value;
+                        _requestMessage.Content.Headers.ContentLength = null;
+                        _requestMessage.Content.Headers.ContentLength = contentLength;
                     }
-                    contentHeaders = RequestMessage.Content.Headers;
+                    contentHeaders = _requestMessage.Content.Headers;
                 }
 
                 var slist = new SafeCurlSlistHandle();
 
                 // Add request and content request headers
-                if (RequestMessage.Headers != null)
+                if (_requestMessage.Headers != null)
                 {
-                    AddRequestHeaders(RequestMessage.Headers, slist);
+                    AddRequestHeaders(_requestMessage.Headers, slist);
                 }
                 if (contentHeaders != null)
                 {
@@ -314,8 +321,8 @@ namespace System.Net.Http
 
                 // Since libcurl always adds a Transfer-Encoding header, we need to explicitly block
                 // it if caller specifically does not want to set the header
-                if (RequestMessage.Headers.TransferEncodingChunked.HasValue && 
-                    !RequestMessage.Headers.TransferEncodingChunked.Value)
+                if (_requestMessage.Headers.TransferEncodingChunked.HasValue && 
+                    !_requestMessage.Headers.TransferEncodingChunked.Value)
                 {
                     if (!Interop.libcurl.curl_slist_append(slist, NoTransferEncoding))
                     {
@@ -325,8 +332,9 @@ namespace System.Net.Http
 
                 if (!slist.IsInvalid)
                 {
-                    SetCurlOption(CURLoption.CURLOPT_HTTPHEADER, slist);
                     _requestHeaders = slist;
+                    SetCurlOption(CURLoption.CURLOPT_HTTPHEADER, slist);
+                    VerboseTrace("Set headers");
                 }
                 else
                 {
@@ -376,6 +384,21 @@ namespace System.Net.Http
                 ThrowIfCURLEError(Interop.libcurl.curl_easy_setopt(_easyHandle, option, value));
             }
 
+            internal enum PauseState
+            {
+                /// <summary>The operation may be processed by libcurl.</summary>
+                Unpaused = 0,
+                /// <summary>libcurl should not process the operation.</summary>
+                Paused,
+                /// <summary>A request has been made to the MultiAgent to unpause the operation.</summary>
+                UnpauseRequestIssued
+            }
+
+            [Conditional(VerboseDebuggingConditional)]
+            private void VerboseTrace(string text = null, [CallerMemberName] string memberName = null)
+            {
+                CurlHandler.VerboseTrace(text, memberName, easy: this, agent: null);
+            }
         }
     }
 }
