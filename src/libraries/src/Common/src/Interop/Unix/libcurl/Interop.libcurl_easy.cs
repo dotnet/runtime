@@ -74,5 +74,8 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.LibCurl)]
         public static extern int curl_easy_perform(
             SafeCurlHandle curl);
+
+        [DllImport(Interop.Libraries.LibCurl)]
+        public static extern int curl_easy_pause(SafeCurlHandle easy, int bitmask);
     }
 }
