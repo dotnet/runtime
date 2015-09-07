@@ -21,10 +21,11 @@
 
 #include "disasm.h"
 
-#include "..\..\..\inc\corhdr.h"
-#include "..\..\..\inc\cor.h"
-#include "..\..\..\inc\dacprivate.h"
+#include "../../../inc/corhdr.h"
+#include "../../../inc/cor.h"
+#include "../../../inc/dacprivate.h"
 
+#ifndef FEATURE_PAL
 namespace ARMGCDump
 {
 #undef _TARGET_X86_
@@ -38,6 +39,7 @@ namespace ARMGCDump
 #define DAC_ARG(x)
 #include "gcdumpnonx86.cpp"
 }
+#endif // !FEATURE_PAL
 
 #if defined(_TARGET_WIN64_)
 #error This file does not support SOS targeting ARM from a 64-bit debugger
@@ -247,6 +249,7 @@ void ARMMachine::IsReturnAddress(TADDR retAddr, TADDR* whereCalled) const
     }
 }
 
+#ifndef FEATURE_PAL
 
 // Return 0 for non-managed call.  Otherwise return MD address.
 static TADDR MDForCall (TADDR callee)
@@ -379,7 +382,6 @@ void ARMMachine::Unassembly (
         //
         // Print out any GC information corresponding to the current instruction offset.
         //
-
         if (pGCEncodingInfo)
         {
             SIZE_T curOffset = (PC - PCBegin) + pGCEncodingInfo->hotSizeToAdd;
@@ -543,6 +545,8 @@ static void ExpFuncStateInit (TADDR *PCRetAddr)
 #endif // 0
 }
 
+#endif // !FEATURE_PAL
+
 // @ARMTODO: Figure out how to extract this information under CoreARM
 BOOL ARMMachine::GetExceptionContext (TADDR stack, TADDR PC, TADDR *cxrAddr, CROSS_PLATFORM_CONTEXT * cxr,
                           TADDR * exrAddr, PEXCEPTION_RECORD exr) const
@@ -595,6 +599,8 @@ BOOL ARMMachine::GetExceptionContext (TADDR stack, TADDR PC, TADDR *cxrAddr, CRO
 #endif // 0
 }
 
+#ifndef FEATURE_PAL
+
 ///
 /// Dump ARM GCInfo table
 ///
@@ -610,3 +616,5 @@ void ARMMachine::DumpGCInfo(BYTE* pTable, unsigned methodSize, printfFtn gcPrint
 
     gcDump.DumpGCTable(pTable, methodSize, 0);
 }
+
+#endif // !FEATURE_PAL
