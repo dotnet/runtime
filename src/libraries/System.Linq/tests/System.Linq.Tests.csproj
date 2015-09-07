@@ -22,11 +22,13 @@
     <Compile Include="AnyTests.cs" />
     <Compile Include="CachedEnumerator.cs" />
     <Compile Include="ConcatTests.cs" />
+    <Compile Include="EnumerableDebugViewTests.cs" />
     <Compile Include="EnumerableTests.cs" />
     <Compile Include="EmptyEnumerable.cs" />
     <Compile Include="ExceptTests.cs" />
     <Compile Include="FirstOrDefaultTests.cs" />
     <Compile Include="FirstTests.cs" />
+    <Compile Include="GroupByTests.cs" />
     <Compile Include="Helpers\TestCollection.cs" />
     <Compile Include="Helpers\TestEnumerable.cs" />
     <Compile Include="Helpers\TestReadOnlyCollection.cs" />
