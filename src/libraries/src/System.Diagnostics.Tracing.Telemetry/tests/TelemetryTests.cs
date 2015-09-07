@@ -442,27 +442,30 @@ namespace System.Diagnostics.Tracing.Telemetry.Tests
             // having lots of concurrency.   
             for (int k = 0; k < 10; k++)
             {
-                var tasks = new Task[1]; // TODO FIX NOW should be 100  reduced to avoid failures while we investigate the race.  
+                var tasks = new Task[100];
                 for (int i = 0; i < tasks.Length; i++)
                 {
                     tasks[i] = (factory.StartNew(delegate ()
                     {
-                    // Create a set of TelemetryListeners (which add themselves to the AllListeners list. 
-                    var listeners = new List<TelemetryListener>();
+                        // Create a set of TelemetryListeners (which add themselves to the AllListeners list. 
+                        var listeners = new List<TelemetryListener>();
                         for (int j = 0; j < 100; j++)
                             listeners.Insert(0, (new TelemetryListener("Task " + i + " TestListener" + j)));
 
-                    // They are all in the list
-                    list = GetActiveNonDefaultListeners();
+                        // They are all in the list
+                        list = GetActiveNonDefaultListeners();
                         foreach (var listener in listeners)
                             Assert.Contains(listener, list);
 
-                    // Dispose them all 
-                    foreach (var listener in listeners)
-                            listener.Dispose();
+                        // Dispose them all, first the even then the odd, just to mix it up and be more stressful.  
+                        for (int j = 0; j < listeners.Count; j += 2)      // Even
+                            listeners[j].Dispose();
+                        for (int j = 1; j < listeners.Count; j += 2)      // odd
+                            listeners[j].Dispose();
 
-                    // And now they are not in the list.  
-                    list = GetActiveNonDefaultListeners();
+
+                        // And now they are not in the list.  
+                        list = GetActiveNonDefaultListeners();
                         foreach (var listener in listeners)
                             Assert.DoesNotContain(listener, list);
                     }));
@@ -483,7 +486,7 @@ namespace System.Diagnostics.Tracing.Telemetry.Tests
             int completionCount = 0;
 
             IDisposable subscription = listener.Subscribe(MakeObserver<KeyValuePair<string, object>>(_ => { }, () => completionCount++));
-            
+
             listener.Dispose();
             listener.Dispose();
 
