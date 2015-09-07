@@ -20,7 +20,8 @@ internal static partial class Interop
             private const int CurlOptionObjectPointBase = 10000;
             private const int CurlOptionFunctionPointBase = 20000;
 
-            internal const int CURLOPT_VERBOSE = CurlOptionLongBase + 41;
+            internal const int CURLOPT_INFILESIZE = CurlOptionLongBase + 14;
+            internal const int CURLOPT_VERBOSE = CurlOptionLongBase + 41;            
             internal const int CURLOPT_NOBODY = CurlOptionLongBase + 44;
             internal const int CURLOPT_UPLOAD = CurlOptionLongBase + 46;
             internal const int CURLOPT_POST = CurlOptionLongBase + 47;
@@ -58,7 +59,7 @@ internal static partial class Interop
         {
             // Curl info are of the format <type base> + <n>
             private const int CurlInfoStringBase = 0x100000;
-            private const int CurlInfoLongBase   = 0x200000;
+            private const int CurlInfoLongBase = 0x200000;
 
             internal const int CURLINFO_PRIVATE = CurlInfoStringBase + 21;
             internal const int CURLINFO_HTTPAUTH_AVAIL = CurlInfoLongBase + 23;
