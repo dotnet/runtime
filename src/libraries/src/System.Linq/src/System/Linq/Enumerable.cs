@@ -3188,8 +3188,6 @@ namespace System.Linq
         private int _freeList;
         private IEqualityComparer<TElement> _comparer;
 
-        public Set() : this(null) { }
-
         public Set(IEqualityComparer<TElement> comparer)
         {
             if (comparer == null) comparer = EqualityComparer<TElement>.Default;
@@ -3203,12 +3201,6 @@ namespace System.Linq
         public bool Add(TElement value)
         {
             return !Find(value, true);
-        }
-
-        // Check whether value is in set
-        public bool Contains(TElement value)
-        {
-            return Find(value, false);
         }
 
         // If value is in set, remove it and return true; otherwise return false
@@ -3567,6 +3559,11 @@ namespace System.Linq
         }
     }
 
+    // NOTE: DO NOT DELETE THE FOLLOWING DEBUG VIEW TYPES.
+    // Although it might be tempting due to them not be referenced anywhere in this library,
+    // Visual Studio currently depends on their existence to enable the "Results" view in 
+    // watch windows.
+
     /// <summary>
     /// This class provides the items view for the Enumerable
     /// </summary>
@@ -3624,7 +3621,7 @@ namespace System.Linq
         {
             get
             {
-                return Strings.EmptyEnumerable;
+                return SR.EmptyEnumerable;
             }
         }
     }

@@ -120,9 +120,6 @@
   <data name="EmptyEnumerable" xml:space="preserve">
     <value>Enumeration yielded no results</value>
   </data>
-  <data name="InvalidOperation_EnumOpCantHappen" xml:space="preserve">
-    <value>Enumeration has either not started or has already finished.</value>
-  </data>
   <data name="MoreThanOneElement" xml:space="preserve">
     <value>Sequence contains more than one element</value>
   </data>
