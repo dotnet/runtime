@@ -1202,18 +1202,9 @@ namespace Microsoft.Win32
                         // make sure the string is null terminated before processing the data
                         if (blob.Length > 0 && blob[blob.Length - 1] != (char)0)
                         {
-                            try
-                            {
-                                char[] newBlob = new char[checked(blob.Length + 1)];
-                                Array.Copy(blob, 0, newBlob, 0, blob.Length);
-                                newBlob[newBlob.Length - 1] = (char)0;
-                                blob = newBlob;
-                            }
-                            catch (OverflowException e)
-                            {
-                                throw new IOException(SR.Arg_RegGetOverflowBug, e);
-                            }
-                            blob[blob.Length - 1] = (char)0;
+                            char[] newBlob = new char[blob.Length + 1];
+                            Array.Copy(blob, 0, newBlob, 0, blob.Length);
+                            blob = newBlob;
                         }
 
                         var strings = new List<String>();
