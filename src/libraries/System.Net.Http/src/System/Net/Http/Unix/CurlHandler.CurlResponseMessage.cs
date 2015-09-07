@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -316,7 +317,7 @@ namespace System.Net.Http
                         var crs = new CancelableReadState(buffer, offset, count, this, cancellationToken);
                         crs._registration = cancellationToken.Register(s1 =>
                         {
-                            VerboseTrace("Cancellation invoked. Queueing work item to cancel read state.");
+                            ((CancelableReadState)s1)._stream.VerboseTrace("Cancellation invoked. Queueing work item to cancel read state.");
                             Task.Factory.StartNew(s2 =>
                             {
                                 var crsRef = (CancelableReadState)s2;
@@ -440,6 +441,12 @@ namespace System.Net.Http
                 {
                     throw new ObjectDisposedException(GetType().FullName);
                 }
+            }
+
+            [Conditional(VerboseDebuggingConditional)]
+            private void VerboseTrace(string text = null, [CallerMemberName] string memberName = null)
+            {
+                CurlHandler.VerboseTrace(text, memberName, _easy);
             }
 
             /// <summary>Verifies various invariants that must be true about our state.</summary>
