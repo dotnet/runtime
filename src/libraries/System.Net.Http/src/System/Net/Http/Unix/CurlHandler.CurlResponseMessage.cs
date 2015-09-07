@@ -21,9 +21,8 @@ namespace System.Net.Http
             {
                 Debug.Assert(easy != null, "Expected non-null EasyRequest");
                 _easy = easy;
-
-                _responseStream = new CurlResponseStream(this);
-                RequestMessage = easy.RequestMessage;
+                _responseStream = new CurlResponseStream(easy);
+                RequestMessage = easy._requestMessage;
                 Content = new StreamContent(_responseStream);
             }
 
@@ -55,8 +54,8 @@ namespace System.Net.Http
             /// <summary>A object used to synchronize all access to state on this response stream.</summary>
             private readonly object _lockObject = new object();
 
-            /// <summary>The response message that owns this response stream.</summary>
-            private readonly CurlResponseMessage _parentResponse;
+            /// <summary>The associated EasyRequest.</summary>
+            private readonly EasyRequest _easy;
 
             /// <summary>Stores whether Dispose has been called on the stream.</summary>
             private bool _disposed = false;
@@ -74,9 +73,6 @@ namespace System.Net.Http
             /// its state here for the writer to fill in when data is available.
             /// </summary>
             private ReadState _pendingReadRequest;
-
-            /// <summary>How much data has been read.</summary>
-            private long _position = 0;
 
             /// <summary>
             /// When data is provided by libcurl, it must be consumed all or nothing: either all of the data is consumed, or
@@ -96,10 +92,10 @@ namespace System.Net.Http
             /// </summary>
             private int _remainingDataCount;
 
-            internal CurlResponseStream(CurlResponseMessage parentResponse)
+            internal CurlResponseStream(EasyRequest easy)
             {
-                Debug.Assert(parentResponse != null, "Expected non-null parent");
-                _parentResponse = parentResponse;
+                Debug.Assert(easy != null, "Expected non-null associated EasyRequest");
+                _easy = easy;
             }
 
             public override bool CanRead { get { return !_disposed; } }
@@ -184,7 +180,7 @@ namespace System.Net.Http
                     if (_remainingDataCount > 0 || _pendingReadRequest == null)
                     {
                         VerboseTrace("Pausing due to _remainingDataCount: " + _remainingDataCount + ", _pendingReadRequest: " + (_pendingReadRequest != null));
-                        _parentResponse._easy._paused = EasyRequest.PauseState.Paused;
+                        _easy._paused = EasyRequest.PauseState.Paused;
                         return Interop.libcurl.CURL_WRITEFUNC_PAUSE;
                     }
 
@@ -194,9 +190,8 @@ namespace System.Net.Http
                     Debug.Assert(numBytesForTask > 0, "We must be copying a positive amount.");
                     Marshal.Copy(pointer, _pendingReadRequest._buffer, _pendingReadRequest._offset, numBytesForTask);
                     _pendingReadRequest.SetResult(numBytesForTask);
-                    _position += numBytesForTask;
                     ClearPendingReadRequest();
-                    VerboseTrace("Copied to task: " + numBytesForTask + " (Position: " + _position + ")");
+                    VerboseTrace("Copied to task: " + numBytesForTask);
 
                     // If there's any data left, transfer it to our remaining buffer. libcurl does not support
                     // partial transfers of data, so since we just took some of it to satisfy the read request
@@ -218,6 +213,7 @@ namespace System.Net.Http
                         {
                             _remainingData = new byte[Math.Max(_remainingData.Length * 2, _remainingDataCount)];
                         }
+                        VerboseTrace("Allocated new remainingData array of length: " + _remainingData.Length);
 
                         // Copy the remaining data to the buffer
                         Marshal.Copy(remainingPointer, _remainingData, 0, _remainingDataCount);
@@ -286,13 +282,12 @@ namespace System.Net.Http
                         int bytesToCopy = Math.Min(count, _remainingDataCount);
                         Array.Copy(_remainingData, _remainingDataOffset, buffer, offset, bytesToCopy);
 
-                        _position += bytesToCopy;
                         _remainingDataOffset += bytesToCopy;
                         _remainingDataCount -= bytesToCopy;
                         Debug.Assert(_remainingDataCount >= 0, "The remaining count should never go negative");
                         Debug.Assert(_remainingDataOffset <= _remainingData.Length, "The remaining offset should never exceed the buffer size");
 
-                        VerboseTrace("Copied to task: " + bytesToCopy + " (Position: " + _position + ")");
+                        VerboseTrace("Copied to task: " + bytesToCopy);
                         return Task.FromResult(bytesToCopy);
                     }
 
@@ -319,18 +314,23 @@ namespace System.Net.Http
                         // associated with the registration has completed, but if that action is currently
                         // executing and is blocked on the lock that's held while calling Dispose... deadlock.
                         var crs = new CancelableReadState(buffer, offset, count, this, cancellationToken);
-                        crs._registration = cancellationToken.Register(s1 => Task.Factory.StartNew(s2 =>
+                        crs._registration = cancellationToken.Register(s1 =>
                         {
-                            var crsRef = (CancelableReadState)s2;
-                            lock (crsRef._stream._lockObject)
+                            VerboseTrace("Cancellation invoked. Queueing work item to cancel read state.");
+                            Task.Factory.StartNew(s2 =>
                             {
-                                if (crsRef._stream._pendingReadRequest == crsRef)
+                                var crsRef = (CancelableReadState)s2;
+                                Debug.Assert(crsRef._token.IsCancellationRequested, "We should only be here if cancellation was requested.");
+                                lock (crsRef._stream._lockObject)
                                 {
-                                    crsRef.TrySetCanceled(crsRef._token);
-                                    crsRef._stream._pendingReadRequest = null;
+                                    if (crsRef._stream._pendingReadRequest == crsRef)
+                                    {
+                                        crsRef.TrySetCanceled(crsRef._token);
+                                        crsRef._stream.ClearPendingReadRequest();
+                                    }
                                 }
-                            }
-                        }, s1, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default), crs);
+                            }, s1, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
+                        }, crs);
                         _pendingReadRequest = crs;
                         VerboseTrace("Created pending cancelable read");
                     }
@@ -349,17 +349,16 @@ namespace System.Net.Http
             /// <summary>Requests that libcurl unpause the connection associated with this request.</summary>
             private void RequestUnpause()
             {
-                EasyRequest easy = _parentResponse._easy;
-                if (easy._paused == EasyRequest.PauseState.Paused)
+                if (_easy._paused == EasyRequest.PauseState.Paused)
                 {
                     VerboseTrace("Issuing unpause request");
-                    easy._paused = EasyRequest.PauseState.UnpauseRequestIssued;
-                    easy._associatedMultiAgent.Queue(
-                        new MultiAgent.IncomingRequest { Easy = easy, Type = MultiAgent.IncomingRequestType.Unpause });
+                    _easy._paused = EasyRequest.PauseState.UnpauseRequestIssued;
+                    _easy._associatedMultiAgent.Queue(
+                        new MultiAgent.IncomingRequest { Easy = _easy, Type = MultiAgent.IncomingRequestType.Unpause });
                 }
                 else
                 {
-                    VerboseTrace("Not issuing unpause request with state " + easy._paused);
+                    VerboseTrace("Not issuing unpause request with state " + _easy._paused);
                 }
             }
 
@@ -412,6 +411,7 @@ namespace System.Net.Http
             /// <summary>Clears a pending read request, making sure any cancellation registration is unregistered.</summary>
             private void ClearPendingReadRequest()
             {
+                Debug.Assert(Monitor.IsEntered(_lockObject), "Lock object must be held to manipulate _pendingReadRequest");
                 Debug.Assert(_pendingReadRequest != null, "Should only be clearing the pending read request if there is one");
 
                 var crs = _pendingReadRequest as CancelableReadState;
@@ -453,8 +453,8 @@ namespace System.Net.Http
                 Debug.Assert(_remainingData == null || _remainingDataCount <= _remainingData.Length, "The buffer must be large enough for the data length.");
                 Debug.Assert(_remainingData == null || _remainingDataOffset <= _remainingData.Length, "The offset must not walk off the buffer.");
 
-                Debug.Assert(!((_remainingDataCount > 0) & (_pendingReadRequest != null)), "We can't have both remaining data and a pending request.");
-                Debug.Assert(!((_completed != null) & (_pendingReadRequest != null)), "We can't both be completed and have a pending request.");
+                Debug.Assert(!((_remainingDataCount > 0) && (_pendingReadRequest != null)), "We can't have both remaining data and a pending request.");
+                Debug.Assert(!((_completed != null) && (_pendingReadRequest != null)), "We can't both be completed and have a pending request.");
                 Debug.Assert(_pendingReadRequest == null || !_pendingReadRequest.Task.IsCompleted, "A pending read request must not have been completed yet.");
 
                 Debug.Assert(!_disposed || _completed != null, "If disposed, the stream must also be completed.");

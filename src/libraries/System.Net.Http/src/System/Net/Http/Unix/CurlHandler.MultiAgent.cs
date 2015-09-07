@@ -332,7 +332,7 @@ namespace System.Net.Http
             private void HandleIncomingRequest(SafeCurlMultiHandle multiHandle, IncomingRequest request)
             {
                 Debug.Assert(!Monitor.IsEntered(_incomingRequests), "Incoming requests lock should only be held while accessing the queue");
-                VerboseTrace("Type: " + request.Type + ", Uri: " + request.Easy.RequestMessage.RequestUri);
+                VerboseTrace("Type: " + request.Type + ", Uri: " + request.Easy._requestMessage.RequestUri);
 
                 EasyRequest easy = request.Easy;
                 switch (request.Type)
@@ -343,13 +343,13 @@ namespace System.Net.Http
 
                     case IncomingRequestType.Cancel:
                         Debug.Assert(easy._associatedMultiAgent == this, "Should only cancel associated easy requests");
-                        Debug.Assert(easy.CancellationToken.IsCancellationRequested, "Cancellation should have been requested");
-                        FindAndFailActiveRequest(multiHandle, easy, new OperationCanceledException(easy.CancellationToken));
+                        Debug.Assert(easy._cancellationToken.IsCancellationRequested, "Cancellation should have been requested");
+                        FindAndFailActiveRequest(multiHandle, easy, new OperationCanceledException(easy._cancellationToken));
                         break;
 
                     case IncomingRequestType.Unpause:
                         Debug.Assert(easy._associatedMultiAgent == this, "Should only unpause associated easy requests");
-                        if (!easy.EasyHandle.IsClosed)
+                        if (!easy._easyHandle.IsClosed)
                         {
                             IntPtr gcHandlePtr;
                             ActiveRequest ar;
@@ -357,7 +357,7 @@ namespace System.Net.Http
                             Debug.Assert(easy._paused == EasyRequest.PauseState.UnpauseRequestIssued, "Unpause requests only make sense when a request has been issued");
 
                             easy._paused = EasyRequest.PauseState.Unpaused;
-                            int unpauseResult = Interop.libcurl.curl_easy_pause(easy.EasyHandle, Interop.libcurl.CURLPAUSE_CONT);
+                            int unpauseResult = Interop.libcurl.curl_easy_pause(easy._easyHandle, Interop.libcurl.CURLPAUSE_CONT);
                             if (unpauseResult != CURLcode.CURLE_OK)
                             {
                                 FindAndFailActiveRequest(multiHandle, easy, new CurlException(unpauseResult, isMulti: false));
@@ -377,9 +377,9 @@ namespace System.Net.Http
                 Debug.Assert(easy._associatedMultiAgent == null, "New requests should not be associated with an agent yet");
 
                 // If cancellation has been requested, complete the request proactively
-                if (easy.CancellationToken.IsCancellationRequested)
+                if (easy._cancellationToken.IsCancellationRequested)
                 {
-                    easy.FailRequest(new OperationCanceledException(easy.CancellationToken));
+                    easy.FailRequest(new OperationCanceledException(easy._cancellationToken));
                     easy.Cleanup(); // no active processing remains, so cleanup
                     return;
                 }
@@ -395,7 +395,7 @@ namespace System.Net.Http
                     easy._associatedMultiAgent = this;
                     easy.SetCurlOption(CURLoption.CURLOPT_PRIVATE, gcHandlePtr);
                     SetCurlCallbacks(easy, gcHandlePtr);
-                    ThrowIfCURLMError(Interop.libcurl.curl_multi_add_handle(multiHandle, easy.EasyHandle));
+                    ThrowIfCURLMError(Interop.libcurl.curl_multi_add_handle(multiHandle, easy._easyHandle));
                 }
                 catch (Exception exc)
                 {
@@ -412,9 +412,9 @@ namespace System.Net.Http
                 // associated with this agent, meaning that it's a cancellation request,
                 // and we'll deal with it appropriately.
                 var cancellationReg = default(CancellationTokenRegistration);
-                if (easy.CancellationToken.CanBeCanceled)
+                if (easy._cancellationToken.CanBeCanceled)
                 {
-                    cancellationReg = easy.CancellationToken.Register(s =>
+                    cancellationReg = easy._cancellationToken.Register(s =>
                     {
                         var state = (Tuple<MultiAgent, EasyRequest>)s;
                         state.Item1.Queue(new IncomingRequest { Easy = state.Item2, Type = IncomingRequestType.Cancel });
@@ -432,7 +432,7 @@ namespace System.Net.Http
                 IntPtr gcHandlePtr, CancellationTokenRegistration cancellationRegistration)
             {
                 // Remove the operation from the multi handle so we can shut down the multi handle cleanly
-                int removeResult = Interop.libcurl.curl_multi_remove_handle(multiHandle, easy.EasyHandle);
+                int removeResult = Interop.libcurl.curl_multi_remove_handle(multiHandle, easy._easyHandle);
                 Debug.Assert(removeResult == CURLMcode.CURLM_OK, "Failed to remove easy handle"); // ignore cleanup errors in release
 
                 // Release the associated GCHandle so that it's not kept alive forever
@@ -492,16 +492,16 @@ namespace System.Net.Http
 
             private void FinishRequest(EasyRequest completedOperation, int messageResult)
             {
-                VerboseTrace("completedOperation: " + completedOperation.RequestMessage.RequestUri + ", messageResult: " + messageResult);
+                VerboseTrace("completedOperation: " + completedOperation._requestMessage.RequestUri + ", messageResult: " + messageResult);
 
-                if (completedOperation.ResponseMessage.StatusCode != HttpStatusCode.Unauthorized && completedOperation.Handler.PreAuthenticate)
+                if (completedOperation._responseMessage.StatusCode != HttpStatusCode.Unauthorized && completedOperation._handler.PreAuthenticate)
                 {
                     ulong availedAuth;
-                    if (Interop.libcurl.curl_easy_getinfo(completedOperation.EasyHandle, CURLINFO.CURLINFO_HTTPAUTH_AVAIL, out availedAuth) == CURLcode.CURLE_OK)
+                    if (Interop.libcurl.curl_easy_getinfo(completedOperation._easyHandle, CURLINFO.CURLINFO_HTTPAUTH_AVAIL, out availedAuth) == CURLcode.CURLE_OK)
                     {
                         // TODO: fix locking in AddCredentialToCache
-                        completedOperation.Handler.AddCredentialToCache(
-                            completedOperation.RequestMessage.RequestUri, availedAuth, completedOperation.NetworkCredential);
+                        completedOperation._handler.AddCredentialToCache(
+                            completedOperation._requestMessage.RequestUri, availedAuth, completedOperation._networkCredential);
                     }
                     // Ignore errors: no need to fail for the sake of putting the credentials into the cache
                 }
@@ -537,7 +537,7 @@ namespace System.Net.Http
                     {
                         // The callback is invoked once per header; multi-line headers get merged into a single line.
                         string responseHeader = Marshal.PtrToStringAnsi(buffer).Trim();
-                        HttpResponseMessage response = easy.ResponseMessage;
+                        HttpResponseMessage response = easy._responseMessage;
 
                         if (!TryParseStatusLine(response, responseHeader, easy))
                         {
@@ -589,9 +589,9 @@ namespace System.Net.Http
                             easy.EnsureResponseMessagePublished();
 
                             // Try to transfer the data to a reader.  This will return either the
-                            // amount the amount of data transferred (equal to the amount requested
+                            // amount of data transferred (equal to the amount requested
                             // to be transferred), or it will return a pause request.
-                            return easy.ResponseMessage.ResponseStream.TransferDataToStream(buffer, (long)size);
+                            return easy._responseMessage.ResponseStream.TransferDataToStream(buffer, (long)size);
                         }
                     }
                     catch (Exception ex)
@@ -618,14 +618,14 @@ namespace System.Net.Http
                 EasyRequest easy;
                 if (TryGetEasyRequestFromContext(context, out easy))
                 {
-                    Debug.Assert(easy.RequestContentStream != null, "We should only be in the send callback if we have a request content stream");
+                    Debug.Assert(easy._requestContentStream != null, "We should only be in the send callback if we have a request content stream");
                     Debug.Assert(easy._associatedMultiAgent != null, "The request should be associated with a multi agent.");
 
                     // Transfer data from the request's content stream to libcurl
                     try
                     {
                         byte[] arr = easy._associatedMultiAgent._transferBuffer;
-                        int numBytes = easy.RequestContentStream.Read(arr, 0, Math.Min(arr.Length, (int)size)); // TODO: Fix potential blocking here
+                        int numBytes = easy._requestContentStream.Read(arr, 0, Math.Min(arr.Length, (int)size)); // TODO: Fix potential blocking here
                         Debug.Assert(numBytes >= 0 && (ulong)numBytes <= size, "Read more bytes than requested");
                         if (numBytes > 0)
                         {
@@ -652,9 +652,9 @@ namespace System.Net.Http
                 {
                     try
                     {
-                        if (easy.RequestContentStream.CanSeek)
+                        if (easy._requestContentStream.CanSeek)
                         {
-                            easy.RequestContentStream.Seek(offset, (SeekOrigin)origin);
+                            easy._requestContentStream.Seek(offset, (SeekOrigin)origin);
                             return Interop.libcurl.CURL_SEEKFUNC.CURL_SEEKFUNC_OK;
                         }
                         else
@@ -702,7 +702,7 @@ namespace System.Net.Http
                 easy.SetCurlOption(CURLoption.CURLOPT_HEADERDATA, easyGCHandle);
 
                 // If we're sending data as part of the request, add callbacks for sending request data
-                if (easy.RequestMessage.Content != null)
+                if (easy._requestMessage.Content != null)
                 {
                     easy.SetCurlOption(CURLoption.CURLOPT_READFUNCTION, s_sendCallback);
                     easy.SetCurlOption(CURLoption.CURLOPT_READDATA, easyGCHandle);
@@ -712,7 +712,7 @@ namespace System.Net.Http
                 }
 
                 // If we're expecting any data in response, add a callback for receiving body data
-                if (easy.RequestMessage.Method != HttpMethod.Head)
+                if (easy._requestMessage.Method != HttpMethod.Head)
                 {
                     easy.SetCurlOption(CURLoption.CURLOPT_WRITEFUNCTION, s_receiveBodyCallback);
                     easy.SetCurlOption(CURLoption.CURLOPT_WRITEDATA, easyGCHandle);

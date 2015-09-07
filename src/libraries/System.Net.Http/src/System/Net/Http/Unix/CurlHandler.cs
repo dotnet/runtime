@@ -327,12 +327,12 @@ namespace System.Net.Http
         /// </summary>
         private async Task<HttpResponseMessage> QueueOperationWithRequestContentAsync(EasyRequest easy)
         {
-            Debug.Assert(easy.RequestMessage.Content != null, "Expected request to have non-null request content");
+            Debug.Assert(easy._requestMessage.Content != null, "Expected request to have non-null request content");
 
-            easy.RequestContentStream = await easy.RequestMessage.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            if (easy.CancellationToken.IsCancellationRequested)
+            easy._requestContentStream = await easy._requestMessage.Content.ReadAsStreamAsync().ConfigureAwait(false);
+            if (easy._cancellationToken.IsCancellationRequested)
             {
-                easy.FailRequest(new OperationCanceledException(easy.CancellationToken));
+                easy.FailRequest(new OperationCanceledException(easy._cancellationToken));
                 easy.Cleanup(); // no active processing remains, so we can cleanup
             }
             else
@@ -520,12 +520,12 @@ namespace System.Net.Http
                     // For security reasons, we drop the server credential if it is a
                     // NetworkCredential.  But we allow credentials in a CredentialCache
                     // since they are specifically tied to URI's.
-                    if ((response.StatusCode == HttpStatusCode.Redirect) && !(state.Handler.Credentials is CredentialCache))
+                    if ((response.StatusCode == HttpStatusCode.Redirect) && !(state._handler.Credentials is CredentialCache))
                     {
                         state.SetCurlOption(CURLoption.CURLOPT_HTTPAUTH, CURLAUTH.None);
                         state.SetCurlOption(CURLoption.CURLOPT_USERNAME, IntPtr.Zero);
                         state.SetCurlOption(CURLoption.CURLOPT_PASSWORD, IntPtr.Zero);
-                        state.NetworkCredential = null;
+                        state._networkCredential = null;
                     }
 
                     int codeEndIndex = codeStartIndex + StatusCodeLength;
