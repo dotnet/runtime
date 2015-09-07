@@ -45,6 +45,22 @@ namespace System.Net.Http.Tests
             output.WriteLine(responseContent);
         }
 
+        public static object[][] PutServers
+        {
+            get
+            {
+                return HttpTestServers.PutServers;
+            }
+        }
+
+        public static object[][] PostServers
+        {
+            get
+            {
+                return HttpTestServers.PostServers;
+            }
+        }
+
         public HttpClientHandlerTest(ITestOutputHelper output)
         {
             _output = output;
@@ -259,8 +275,10 @@ namespace System.Net.Http.Tests
             }
         }
 
-        [Fact]
-        public async Task PostAsync_CallMethod_StringContent()
+        #region Post Methods Tests
+
+        [Theory, MemberData("PostServers")]
+        public async Task PostAsync_CallMethod_StringContent(Uri RemoteServer)
         {
             using (var handler = new HttpClientHandler())
             {
@@ -269,17 +287,17 @@ namespace System.Net.Http.Tests
                     var data = "Test String";
                     var stringContent = new StringContent(data, UnicodeEncoding.UTF8, mediaTypeJson);
                     HttpResponseMessage response =
-                        await client.PostAsync(HttpTestServers.RemotePostServer, stringContent);
+                        await client.PostAsync(RemoteServer, stringContent);
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    var responseContent = response.Content.ReadAsStringAsync().Result;
+                    var responseContent = await response.Content.ReadAsStringAsync();
                     Assert.True(JsonMessageContainsKeyValue(responseContent, dataKey, data));
                     _output.WriteLine(responseContent);
                 }
             }
         }
 
-        [Fact]
-        public async Task PostAsync_CallMethod_FormUrlEncodedContent()
+        [Theory, MemberData("PostServers")]
+        public async Task PostAsync_CallMethod_FormUrlEncodedContent(Uri RemoteServer)
         {
             using (var handler = new HttpClientHandler())
             {
@@ -287,9 +305,9 @@ namespace System.Net.Http.Tests
                 {
                     var values = new Dictionary<string, string> { { "thing1", "hello" }, { "thing2", "world" } };
                     var content = new FormUrlEncodedContent(values);
-                    HttpResponseMessage response = await client.PostAsync(HttpTestServers.RemotePostServer, content);
+                    HttpResponseMessage response = await client.PostAsync(RemoteServer, content);
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    var responseContent = response.Content.ReadAsStringAsync().Result;
+                    var responseContent = await response.Content.ReadAsStringAsync();
                     Assert.True(JsonMessageContainsKeyValue(responseContent, "thing1", "hello"));
                     Assert.True(JsonMessageContainsKeyValue(responseContent, "thing2", "world"));
                     _output.WriteLine(responseContent);
@@ -297,8 +315,8 @@ namespace System.Net.Http.Tests
             }
         }
 
-        [Fact]
-        public async Task PostAsync_CallMethod_UploadFile()
+       [Theory, MemberData("PostServers")]
+       public async Task PostAsync_CallMethod_UploadFile(Uri RemoteServer)
         {
             string fileName = Path.GetTempFileName();
             string fileTitle = "fileToUpload";
@@ -306,14 +324,8 @@ namespace System.Net.Http.Tests
 
             try
             {
-                //Delete File if exists
-                if (File.Exists(fileName))
-                {
-                    File.Delete(fileName);
-                }
-
-                //Create file
-                using (FileStream fs = File.Create(fileName))
+                // open file to edit
+                using (FileStream fs = File.Open(fileName, FileMode.OpenOrCreate))
                 {
                     // Add some text to file
                     byte[] author = new UTF8Encoding(true).GetBytes(fileContent);
@@ -333,9 +345,9 @@ namespace System.Net.Http.Tests
                             FileName = fileName
                         };
                         form.Add(content);
-                        HttpResponseMessage response = await client.PostAsync(HttpTestServers.RemotePostServer, form);
+                        HttpResponseMessage response = await client.PostAsync(RemoteServer, form);
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                        var responseContent = response.Content.ReadAsStringAsync().Result;
+                        var responseContent = await response.Content.ReadAsStringAsync();
                         Assert.True(JsonMessageContainsKeyValue(responseContent, fileTitle, fileContent));
                         _output.WriteLine(responseContent);
                     }
@@ -350,8 +362,8 @@ namespace System.Net.Http.Tests
             }
         }
 
-        [Fact]
-        public async Task PostAsync_CallMethodTwice_StringContent()
+        [Theory, MemberData("PostServers")]
+        public async Task PostAsync_CallMethodTwice_StringContent(Uri RemoteServer)
         {
             using (var handler = new HttpClientHandler())
             {
@@ -360,23 +372,23 @@ namespace System.Net.Http.Tests
                     var data = "Test String";
                     var stringContent = new StringContent(data, UnicodeEncoding.UTF8, mediaTypeJson);
                     HttpResponseMessage response =
-                        await client.PostAsync(HttpTestServers.RemotePostServer, stringContent);
-                    var responseContent = response.Content.ReadAsStringAsync().Result;
+                        await client.PostAsync(RemoteServer, stringContent);
+                    var responseContent = await response.Content.ReadAsStringAsync();
                     _output.WriteLine(responseContent);
 
                     //Repeat call
                     stringContent = new StringContent(data, UnicodeEncoding.UTF8, mediaTypeJson);
-                    response = await client.PostAsync(HttpTestServers.RemotePostServer, stringContent);
+                    response = await client.PostAsync(RemoteServer, stringContent);
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    responseContent = response.Content.ReadAsStringAsync().Result;
+                    responseContent = await response.Content.ReadAsStringAsync();
                     Assert.True(JsonMessageContainsKeyValue(responseContent, dataKey, data));
                     _output.WriteLine(responseContent);
                 }
             }
         }
 
-        [Fact]
-        public async Task PostAsync_CallMethod_UnicodeStringContent()
+        [Theory, MemberData("PostServers")]
+        public async Task PostAsync_CallMethod_UnicodeStringContent(Uri RemoteServer)
         {
             using (var handler = new HttpClientHandler())
             {
@@ -386,58 +398,25 @@ namespace System.Net.Http.Tests
                     var stringContent = new StringContent("\ub4f1\uffc7\u4e82\u67ab4\uc6d4\ud1a0\uc694\uc77c\uffda3\u3155\uc218\uffdb", UnicodeEncoding.UTF8,
                         mediaTypeJson);
                     HttpResponseMessage response =
-                        await client.PostAsync(HttpTestServers.RemotePostServer, stringContent);
+                        await client.PostAsync(RemoteServer, stringContent);
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    var responseContent = response.Content.ReadAsStringAsync().Result;
+                    var responseContent = await response.Content.ReadAsStringAsync();
                     _output.WriteLine(responseContent);
                 }
             }
         }
 
-        [Fact]
-        public async Task PutAsync_CallMethod_StringContent()
-        {
-            using (var handler = new HttpClientHandler())
-            {
-                using (var client = new HttpClient(handler))
-                {
-                    var stringContent = new StringContent("{ \"firstName\": \"John\" }", UnicodeEncoding.UTF32,
-                        mediaTypeJson);
-                    HttpResponseMessage response = await client.PutAsync(HttpTestServers.RemotePutServer, stringContent);
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    var responseContent = response.Content.ReadAsStringAsync().Result;
-                    _output.WriteLine(responseContent);
-                }
-            }
-        }
-
-        [Fact]
-        public async Task PostAsync_CallMethod_NullContent()
+        [Theory, MemberData("PostServers")]
+        public async Task PostAsync_CallMethod_NullContent(Uri RemoteServer)
         {
             using (var handler = new HttpClientHandler())
             {
                 using (var client = new HttpClient(handler))
                 {
                     HttpContent obj = new StringContent(String.Empty);
-                    HttpResponseMessage response = await client.PostAsync(HttpTestServers.RemotePostServer, null);
+                    HttpResponseMessage response = await client.PostAsync(RemoteServer, null);
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    var responseContent = response.Content.ReadAsStringAsync().Result;
-                    Assert.True(JsonMessageContainsKeyValue(responseContent, dataKey, String.Empty));
-                    _output.WriteLine(responseContent);
-                }
-            }
-        }
-
-        [Fact]
-        public async Task PutAsync_CallMethod_NullContent()
-        {
-            using (var handler = new HttpClientHandler())
-            {
-                using (var client = new HttpClient(handler))
-                {
-                    HttpResponseMessage response = await client.PutAsync(HttpTestServers.RemotePutServer, null);
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    var responseContent = response.Content.ReadAsStringAsync().Result;
+                    var responseContent = await response.Content.ReadAsStringAsync();
                     Assert.True(JsonMessageContainsKeyValue(responseContent, dataKey, String.Empty));
                     _output.WriteLine(responseContent);
                 }
@@ -451,8 +430,45 @@ namespace System.Net.Http.Tests
             {
                 using (var client = new HttpClient(handler))
                 {
-                    HttpResponseMessage response = await client.PutAsync(HttpTestServers.RemoteGetServer, null);
+                    HttpResponseMessage response = await client.PostAsync(HttpTestServers.RemoteGetServer, null);
                     Assert.Equal(HttpStatusCode.MethodNotAllowed, response.StatusCode);
+                }
+            }
+        }
+
+        #endregion
+
+        #region Put Method Tests
+
+        [Theory, MemberData("PutServers")]
+        public async Task PutAsync_CallMethod_StringContent(Uri RemoteServer)
+        {
+            using (var handler = new HttpClientHandler())
+            {
+                using (var client = new HttpClient(handler))
+                {
+                    var stringContent = new StringContent("{ \"firstName\": \"John\" }", UnicodeEncoding.UTF32,
+                        mediaTypeJson);
+                    HttpResponseMessage response = await client.PutAsync(RemoteServer, stringContent);
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    _output.WriteLine(responseContent);
+                }
+            }
+        }
+
+        [Theory, MemberData("PutServers")]
+        public async Task PutAsync_CallMethod_NullContent(Uri RemoteServer)
+        {
+            using (var handler = new HttpClientHandler())
+            {
+                using (var client = new HttpClient(handler))
+                {
+                    HttpResponseMessage response = await client.PutAsync(RemoteServer, null);
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    Assert.True(JsonMessageContainsKeyValue(responseContent, dataKey, String.Empty));
+                    _output.WriteLine(responseContent);
                 }
             }
         }
@@ -469,5 +485,7 @@ namespace System.Net.Http.Tests
                 }
             }
         }
+
+        #endregion
     }
 }

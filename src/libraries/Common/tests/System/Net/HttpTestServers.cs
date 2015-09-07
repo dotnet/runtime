@@ -29,6 +29,7 @@ namespace System.Net.Tests
 
         public readonly static object[][] GetServers = { new object[] { RemoteGetServer }, new object[] { SecureRemoteGetServer } };
         public readonly static object[][] PostServers = { new object[] { RemotePostServer }, new object[] { SecureRemotePostServer } };
+        public readonly static object[][] PutServers = { new object[] { RemotePutServer }, new object[] { SecureRemotePutServer } };
 
         public static Uri BasicAuthUriForCreds(string userName, string password)
         {
