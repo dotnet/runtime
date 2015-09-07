@@ -456,16 +456,37 @@ namespace System.Net.Http
         }
 
         [Conditional(VerboseDebuggingConditional)]
-        private static void VerboseTrace(string text = null, [CallerMemberName] string memberName = null)
+        private static void VerboseTrace(string text = null, [CallerMemberName] string memberName = null, EasyRequest easy = null, MultiAgent agent = null)
         {
-            Interop.libc.printf("%s\n", string.Format("[{0}]: {1}", memberName, text));
+            // If we weren't handed a multi agent, see if we can get one from the EasyRequest
+            if (agent == null && easy != null && easy._associatedMultiAgent != null)
+            {
+                agent = easy._associatedMultiAgent;
+            }
+
+            // Get an ID string that provides info about which MultiAgent worker and which EasyRequest this trace is about
+            string ids = "";
+            if (agent != null || easy != null)
+            {
+                ids = "(" +
+                    (agent != null ? "M#" + agent.RunningWorkerId : "") +
+                    (agent != null && easy != null ? ", " : "") +
+                    (easy != null ? "E#" + easy.Task.Id : "") +
+                    ")";
+            }
+
+            // Create the message and trace it out
+            string msg = string.Format("[{0, -25}]{1, -16}: {2}", memberName, ids, text);
+            Interop.libc.printf("%s\n", msg);
         }
 
         [Conditional(VerboseDebuggingConditional)]
-        private static void VerboseTraceIf(bool condition, string text = null, [CallerMemberName] string memberName = null)
+        private static void VerboseTraceIf(bool condition, string text = null, [CallerMemberName] string memberName = null, EasyRequest easy = null)
         {
             if (condition)
-                VerboseTrace(text, memberName);
+            {
+                VerboseTrace(text, memberName, easy, agent: null);
+            }
         }
 
         private static Exception CreateHttpRequestException(Exception inner = null)

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -120,6 +121,7 @@ namespace System.Net.Http
 
             private void SetUrl()
             {
+                VerboseTrace(_requestMessage.RequestUri.AbsoluteUri);
                 SetCurlOption(CURLoption.CURLOPT_URL, _requestMessage.RequestUri.AbsoluteUri);
             }
 
@@ -145,12 +147,14 @@ namespace System.Net.Http
                     return;
                 }
 
+                VerboseTrace(_handler._maxAutomaticRedirections.ToString());
                 SetCurlOption(CURLoption.CURLOPT_FOLLOWLOCATION, 1L);
                 SetCurlOption(CURLoption.CURLOPT_MAXREDIRS, _handler._maxAutomaticRedirections);
             }
 
             private void SetVerb()
             {
+                VerboseTrace(_requestMessage.Method.Method);
                 if (_requestMessage.Method == HttpMethod.Put)
                 {
                     SetCurlOption(CURLoption.CURLOPT_UPLOAD, 1L);
@@ -190,6 +194,7 @@ namespace System.Net.Http
                                        gzip ? EncodingNameGzip :
                                        EncodingNameDeflate;
                     SetCurlOption(CURLoption.CURLOPT_ACCEPTENCODING, encoding);
+                    VerboseTrace(encoding);
                 }
             }
 
@@ -198,12 +203,14 @@ namespace System.Net.Http
                 if (_handler._proxyPolicy == ProxyUsePolicy.DoNotUseProxy)
                 {
                     SetCurlOption(CURLoption.CURLOPT_PROXY, string.Empty);
+                    VerboseTrace("No proxy");
                     return;
                 }
 
                 if ((_handler._proxyPolicy == ProxyUsePolicy.UseDefaultProxy) || 
                     (_handler.Proxy == null))
                 {
+                    VerboseTrace("Default proxy");
                     return;
                 }
 
@@ -212,18 +219,22 @@ namespace System.Net.Http
                 if (_handler.Proxy.IsBypassed(_requestMessage.RequestUri))
                 {
                     SetCurlOption(CURLoption.CURLOPT_PROXY, string.Empty);
+                    VerboseTrace("Bypassed proxy");
                     return;
                 }
 
                 var proxyUri = _handler.Proxy.GetProxy(_requestMessage.RequestUri);
                 if (proxyUri == null)
                 {
+                    VerboseTrace("No proxy URI");
                     return;
                 }
 
                 SetCurlOption(CURLoption.CURLOPT_PROXYTYPE, CURLProxyType.CURLPROXY_HTTP);
                 SetCurlOption(CURLoption.CURLOPT_PROXY, proxyUri.AbsoluteUri);
                 SetCurlOption(CURLoption.CURLOPT_PROXYPORT, proxyUri.Port);
+                VerboseTrace("Set proxy: " + proxyUri.ToString());
+
                 NetworkCredential credentials = GetCredentials(_handler.Proxy.Credentials, _requestMessage.RequestUri);
                 if (credentials != null)
                 {
@@ -236,6 +247,7 @@ namespace System.Net.Http
                         string.Format("{0}:{1}", credentials.UserName, credentials.Password) :
                         string.Format("{2}\\{0}:{1}", credentials.UserName, credentials.Password, credentials.Domain);
                     SetCurlOption(CURLoption.CURLOPT_PROXYUSERPWD, credentialText);
+                    VerboseTrace("Set proxy credentials");
                 }
             }
 
@@ -259,6 +271,7 @@ namespace System.Net.Http
                 }
 
                 _networkCredential = credentials;
+                VerboseTrace("Set credentials options");
             }
 
             private void SetCookieOption()
@@ -272,6 +285,7 @@ namespace System.Net.Http
                 if (cookieValues != null)
                 {
                     SetCurlOption(CURLoption.CURLOPT_COOKIE, cookieValues);
+                    VerboseTrace("Set cookies");
                 }
             }
 
@@ -318,8 +332,9 @@ namespace System.Net.Http
 
                 if (!slist.IsInvalid)
                 {
-                    SetCurlOption(CURLoption.CURLOPT_HTTPHEADER, slist);
                     _requestHeaders = slist;
+                    SetCurlOption(CURLoption.CURLOPT_HTTPHEADER, slist);
+                    VerboseTrace("Set headers");
                 }
                 else
                 {
@@ -377,6 +392,12 @@ namespace System.Net.Http
                 Paused,
                 /// <summary>A request has been made to the MultiAgent to unpause the operation.</summary>
                 UnpauseRequestIssued
+            }
+
+            [Conditional(VerboseDebuggingConditional)]
+            private void VerboseTrace(string text = null, [CallerMemberName] string memberName = null)
+            {
+                CurlHandler.VerboseTrace(text, memberName, easy: this, agent: null);
             }
         }
     }

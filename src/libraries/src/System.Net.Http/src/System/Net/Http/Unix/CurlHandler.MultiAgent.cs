@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -56,10 +57,10 @@ namespace System.Net.Http
             private int _requestWakeupPipeFd;
             
             /// <summary>
-            /// true if a worker has been queued; false if no worker is queued.
+            /// Task for the currently running worker, or null if there is no current worker.
             /// Protected by a lock on <see cref="_incomingRequests"/>.
             /// </summary>
-            private bool _workerRunning;
+            private Task _runningWorker;
 
             /// <summary>Queues a request for the multi handle to process.</summary>
             public void Queue(IncomingRequest request)
@@ -72,12 +73,15 @@ namespace System.Net.Http
                 }
             }
 
+            /// <summary>Gets the ID of the currently running worker, or null if there isn't one.</summary>
+            internal int? RunningWorkerId { get { return _runningWorker != null ? (int?)_runningWorker.Id : null; } }
+
             /// <summary>Schedules the processing worker if one hasn't already been scheduled.</summary>
             private void EnsureWorkerIsRunning()
             {
                 Debug.Assert(Monitor.IsEntered(_incomingRequests), "Needs to be called under _incomingRequests lock");
 
-                if (!_workerRunning)
+                if (_runningWorker == null)
                 {
                     VerboseTrace("MultiAgent worker queued");
 
@@ -94,15 +98,12 @@ namespace System.Net.Http
                         _requestWakeupPipeFd = fds[Interop.Sys.WriteEndOfPipe];
                     }
 
-                    // Mark the worker as running.
-                    _workerRunning = true;
-
                     // Kick off the processing task.  It's "DenyChildAttach" to avoid any surprises if
                     // code happens to create attached tasks, and it's LongRunning because this thread
                     // is likely going to sit around for a while in a wait loop (and the more requests
                     // are concurrently issued to the same agent, the longer the thread will be around).
                     const TaskCreationOptions Options = TaskCreationOptions.DenyChildAttach | TaskCreationOptions.LongRunning;
-                    Task.Factory.StartNew(s =>
+                    _runningWorker = new Task(s =>
                     {
                         VerboseTrace("MultiAgent worker starting");
                         var thisRef = (MultiAgent)s;
@@ -132,14 +133,15 @@ namespace System.Net.Http
                                 // In the time between we stopped processing and now,
                                 // more requests could have been added.  If they were
                                 // kick off another processing loop.
-                                thisRef._workerRunning = false;
+                                thisRef._runningWorker = null;
                                 if (thisRef._incomingRequests.Count > 0)
                                 {
                                     thisRef.EnsureWorkerIsRunning();
                                 }
                             }
                         }
-                    }, this, CancellationToken.None, Options, TaskScheduler.Default);
+                    }, this, CancellationToken.None, Options);
+                    _runningWorker.Start(TaskScheduler.Default); // started after _runningWorker field set to avoid race conditions
                 }
                 else // _workerRunning == true
                 {
@@ -188,7 +190,7 @@ namespace System.Net.Http
             private void Process()
             {
                 Debug.Assert(!Monitor.IsEntered(_incomingRequests), "No locks should be held while invoking Process");
-                Debug.Assert(_workerRunning, "This is the worker, so it must be running");
+                Debug.Assert(_runningWorker != null && _runningWorker.Id == Task.CurrentId, "This is the worker, so it must be running");
                 Debug.Assert(_wakeupRequestedPipeFd != 0, "Should have a valid pipe for wake ups");
 
                 // Create the multi handle to use for this round of processing.  This one handle will be used
@@ -332,7 +334,7 @@ namespace System.Net.Http
             private void HandleIncomingRequest(SafeCurlMultiHandle multiHandle, IncomingRequest request)
             {
                 Debug.Assert(!Monitor.IsEntered(_incomingRequests), "Incoming requests lock should only be held while accessing the queue");
-                VerboseTrace("Type: " + request.Type + ", Uri: " + request.Easy._requestMessage.RequestUri);
+                VerboseTrace("Type: " + request.Type, easy: request.Easy);
 
                 EasyRequest easy = request.Easy;
                 switch (request.Type)
@@ -474,7 +476,7 @@ namespace System.Net.Http
 
             private void FindAndFailActiveRequest(SafeCurlMultiHandle multiHandle, EasyRequest easy, Exception error)
             {
-                VerboseTrace("Error: " + error.Message);
+                VerboseTrace("Error: " + error.Message, easy: easy);
 
                 IntPtr gcHandlePtr;
                 ActiveRequest activeRequest;
@@ -492,7 +494,7 @@ namespace System.Net.Http
 
             private void FinishRequest(EasyRequest completedOperation, int messageResult)
             {
-                VerboseTrace("completedOperation: " + completedOperation._requestMessage.RequestUri + ", messageResult: " + messageResult);
+                VerboseTrace("messageResult: " + messageResult, easy: completedOperation);
 
                 if (completedOperation._responseMessage.StatusCode != HttpStatusCode.Unauthorized && completedOperation._handler.PreAuthenticate)
                 {
@@ -523,7 +525,7 @@ namespace System.Net.Http
             
             private static size_t CurlReceiveHeadersCallback(IntPtr buffer, size_t size, size_t nitems, IntPtr context)
             {
-                VerboseTrace("size: " + size + ", nitems: " + nitems);
+                CurlHandler.VerboseTrace("size: " + size + ", nitems: " + nitems);
                 size *= nitems;
                 if (size == 0)
                 {
@@ -572,7 +574,7 @@ namespace System.Net.Http
             private static size_t CurlReceiveBodyCallback(
                 IntPtr buffer, size_t size, size_t nitems, IntPtr context)
             {
-                VerboseTrace("size: " + size + ", nitems: " + nitems);
+                CurlHandler.VerboseTrace("size: " + size + ", nitems: " + nitems);
                 size *= nitems;
 
                 EasyRequest easy;
@@ -602,13 +604,13 @@ namespace System.Net.Http
 
                 // Returing a value other than size fails the callback and forces
                 // request completion with an error.
-                VerboseTrace("Error: returning a bad size to abort the request");
+                CurlHandler.VerboseTrace("Error: returning a bad size to abort the request");
                 return (size > 0) ? size - 1 : 1;
             }
 
             private static size_t CurlSendCallback(IntPtr buffer, size_t size, size_t nitems, IntPtr context)
             {
-                VerboseTrace("size: " + size + ", nitems: " + nitems);
+                CurlHandler.VerboseTrace("size: " + size + ", nitems: " + nitems);
                 size *= nitems;
                 if (size == 0)
                 {
@@ -646,7 +648,7 @@ namespace System.Net.Http
 
             private static int CurlSeekCallback(IntPtr context, long offset, int origin)
             {
-                VerboseTrace("offset: " + offset + ", origin: " + origin);
+                CurlHandler.VerboseTrace("offset: " + offset + ", origin: " + origin);
                 EasyRequest easy;
                 if (TryGetEasyRequestFromContext(context, out easy))
                 {
@@ -718,6 +720,13 @@ namespace System.Net.Http
                     easy.SetCurlOption(CURLoption.CURLOPT_WRITEDATA, easyGCHandle);
                 }
             }
+
+            [Conditional(VerboseDebuggingConditional)]
+            private void VerboseTrace(string text = null, [CallerMemberName] string memberName = null, EasyRequest easy = null)
+            {
+                CurlHandler.VerboseTrace(text, memberName, easy, agent: this);
+            }
+
 
             /// <summary>Represents an active request currently being processed by the agent.</summary>
             private struct ActiveRequest
