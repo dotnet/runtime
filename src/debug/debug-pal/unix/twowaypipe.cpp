@@ -123,18 +123,54 @@ bool TwoWayPipe::WaitForConnection()
 
 // Reads data from pipe. Returns number of bytes read or a negative number in case of an error.
 // use GetLastError() for more details
+// UNIXTODO - mjm 9/6/15 - does not set last error on failure
 int TwoWayPipe::Read(void *buffer, DWORD bufferSize)
 {
     _ASSERTE(m_state == ServerConnected || m_state == ClientConnected);
-    return (int)read(m_inboundPipe, buffer, bufferSize);
+
+    int totalBytesRead = 0;
+    int bytesRead;
+    int cb = bufferSize;
+
+    while ((bytesRead = (int)read(m_inboundPipe, buffer, cb)) > 0)
+    {
+        totalBytesRead += bytesRead;
+        _ASSERTE(totalBytesRead <= bufferSize);
+        if (totalBytesRead >= bufferSize)
+        {
+            break;
+        }
+        buffer = (char*)buffer + bytesRead;
+        cb -= bytesRead;
+    }
+
+    return bytesRead == -1 ? -1 : totalBytesRead;
 }
 
 // Writes data to pipe. Returns number of bytes written or a negative number in case of an error.
 // use GetLastError() for more details
+// UNIXTODO - mjm 9/6/15 - does not set last error on failure
 int TwoWayPipe::Write(const void *data, DWORD dataSize)
 {
     _ASSERTE(m_state == ServerConnected || m_state == ClientConnected);
-    return (int)write(m_outboundPipe, data, dataSize);
+
+    int totalBytesWritten = 0;
+    int bytesWritten;
+    int cb = dataSize;
+
+    while ((bytesWritten = (int)write(m_outboundPipe, data, cb)) > 0)
+    {
+        totalBytesWritten += bytesWritten;
+        _ASSERTE(totalBytesWritten <= dataSize);
+        if (totalBytesWritten >= dataSize)
+        {
+            break;
+        }
+        data = (char*)data + bytesWritten;
+        cb -= bytesWritten;
+    }
+
+    return bytesWritten == -1 ? -1 : totalBytesWritten;
 }
 
 // Disconnect server or client side of the pipe.
