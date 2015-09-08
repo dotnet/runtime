@@ -164,6 +164,7 @@ PAL_SetHardwareExceptionHandler(
     IN PHARDWARE_EXCEPTION_HANDLER exceptionHandler)
 
 {
+    //TRACE("Hardware exception installed: %p\n", exceptionHandler);
     g_hardwareExceptionHandler = exceptionHandler;
 }
 
@@ -194,7 +195,8 @@ SEHProcessException(PEXCEPTION_POINTERS pointers)
         throw exception;
     }
 
-    TRACE("Unhandled hardware exception %08x\n", pointers->ExceptionRecord->ExceptionCode);
+    TRACE("Unhandled hardware exception %08x at %p\n", 
+        pointers->ExceptionRecord->ExceptionCode, pointers->ExceptionRecord->ExceptionAddress);
 }
 
 /*++
