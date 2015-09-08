@@ -15,10 +15,7 @@
 //   r0  : pointer to DebuggerEval object
 //
 
-NESTED_ENTRY FuncEvalHijack, _TEXT, FuncEvalHijackPersonalityRoutine
-
-    // NOTE: FuncEvalHijackPersonalityRoutine is dependent on the stack layout so if
-    //       you change the prolog you will also need to update the personality routine.
+NESTED_ENTRY FuncEvalHijack, _TEXT, UnhandledExceptionHandlerUnix
 
     // push arg to the stack so our personality routine can find it
     // push lr to get good stacktrace in debugger
@@ -48,7 +45,7 @@ NESTED_END FuncEvalHijack, _TEXT
 //   r3 : void* pdata
 //
 
-NESTED_ENTRY ExceptionHijack, _TEXT, ExceptionHijackPersonalityRoutine
+NESTED_ENTRY ExceptionHijack, _TEXT, UnhandledExceptionHandlerUnix
 
     CHECK_STACK_ALIGNMENT
 
