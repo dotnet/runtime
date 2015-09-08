@@ -6364,6 +6364,25 @@ public:
         ExceptionRecord = *pExceptionRecord;
         ContextRecord = *pContextRecord;
     }
+
+    PAL_SEHException()
+    {
+    }    
+
+    PAL_SEHException(const PAL_SEHException& ex)
+    {
+        *this = ex;
+    }    
+
+    PAL_SEHException& operator=(const PAL_SEHException& ex)
+    {
+        ExceptionPointers.ExceptionRecord = &ExceptionRecord;
+        ExceptionPointers.ContextRecord = &ContextRecord;
+        ExceptionRecord = ex.ExceptionRecord;
+        ContextRecord = ex.ContextRecord;
+
+        return *this;
+    }    
 };
 
 typedef VOID (PALAPI *PHARDWARE_EXCEPTION_HANDLER)(PAL_SEHException* ex);
