@@ -2,10 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.Tracing;
-using System.Threading;
 using Xunit;
 
-namespace Test
+namespace System.Threading.Tests
 {
     public class EtwTests
     {
