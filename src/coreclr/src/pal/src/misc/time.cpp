@@ -49,19 +49,16 @@ FALSE otherwise
 --*/
 BOOL TIMEInitialize(void)
 {
-    BOOL bRet = FALSE;
-
 #if HAVE_MACH_ABSOLUTE_TIME
     kern_return_t machRet;
     if ((machRet = mach_timebase_info(&s_TimebaseInfo)) != KERN_SUCCESS)
     {
         ASSERT("mach_timebase_info() failed: %s\n", mach_error_string(machRet));
-        goto Exit;
+        return FALSE;
     }
 #endif
-    bRet = TRUE;
-Exit:
-    return bRet;
+
+    return TRUE;
 }
 
 
