@@ -103,9 +103,9 @@ HANDLE NLSTable::CreateSharedMemoryMapping(const LPCWSTR pMappingName, const int
 
     // If we are on Windows 2000 or later, try to open it in global namespace.  The \global namespace is ignored if
     // Terminal service is not running.
-    WCHAR globalSectionName[MAX_PATH];
+    WCHAR globalSectionName[MAX_LONGPATH];
     wcscpy_s(globalSectionName, COUNTOF(globalSectionName), W("Global\\"));
-    if (wcslen(pMappingName) + wcslen(globalSectionName) >= MAX_PATH) {
+    if (wcslen(pMappingName) + wcslen(globalSectionName) >= MAX_LONGPATH) {
         goto ErrorExit;            
     }
     wcscat_s(globalSectionName, COUNTOF(globalSectionName), pMappingName);
@@ -192,9 +192,9 @@ PBYTE NLSTable::OpenOrCreateMemoryMapping(const LPCWSTR pMappingName, const int 
     // to synchornize different threads.
 
     // Try to open it in global namespace. The global\ namespace is ignored if terminal service is not running.
-    WCHAR globalSectionName[MAX_PATH];
+    WCHAR globalSectionName[MAX_LONGPATH];
     wcscpy_s(globalSectionName, COUNTOF(globalSectionName), W("Global\\"));
-    if (wcslen(pMappingName) + wcslen(globalSectionName) >= MAX_PATH)
+    if (wcslen(pMappingName) + wcslen(globalSectionName) >= MAX_LONGPATH)
         return NULL;
     
     wcscat_s(globalSectionName, COUNTOF(globalSectionName), pMappingName);

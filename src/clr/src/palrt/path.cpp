@@ -280,7 +280,7 @@ STDAPI_(BOOL) PathCanonicalizeW(LPWSTR lpszDst, LPCWSTR lpszSrc)
     BOOL fUNC;
     int cchPC;
 
-    RIPMSG(lpszDst && IS_VALID_WRITE_BUFFER(lpszDst, WCHAR, MAX_PATH), "PathCanonicalize: caller passed bad lpszDst");
+    RIPMSG(lpszDst && IS_VALID_WRITE_BUFFER(lpszDst, WCHAR, MAX_LONGPATH), "PathCanonicalize: caller passed bad lpszDst");
     RIPMSG(lpszSrc && IS_VALID_STRING_PTR(lpszSrc, -1), "PathCanonicalize: caller passed bad lpszSrc");
     RIPMSG(lpszDst != lpszSrc, "PathCanonicalize: caller passed the same buffer for lpszDst and lpszSrc");
 
@@ -466,7 +466,7 @@ STDAPI_(LPWSTR) PathCombineW(LPWSTR lpszDest, LPCWSTR lpszDir, LPCWSTR lpszFile)
                 {
                     // Skip the backslash when copying
                     // Note: We don't support strings longer than 4GB, but that's
-                    // okay because we already barf at MAX_PATH
+                    // okay because we already barf at MAX_LONGPATH
                     lstrcpynW(pszT, lpszFile+1, (int)(ARRAYSIZE(szTemp) - (pszT - szTemp)));
                 }
                 else
@@ -541,7 +541,7 @@ STDAPI_(LPWSTR) PathAddBackslashW(LPWSTR lpszPath)
                     // if we find these cases, return NULL.  Note: We need to
                     // check those places that call us to handle their GP fault
                     // if they try to use the NULL!
-                    if (ichPath >= (MAX_PATH - 2)) // -2 because ichPath doesn't include NULL, and we're adding a CH_WHACK.
+                    if (ichPath >= (MAX_LONGPATH - 2)) // -2 because ichPath doesn't include NULL, and we're adding a CH_WHACK.
                     {
                         return(NULL);
                     }

@@ -370,15 +370,15 @@ bool IsCoreClrWithGoodHeader(HANDLE hProcess, HMODULE hModule)
 {
     HRESULT hr = S_OK;
 
-    WCHAR modulePath[MAX_PATH];
+    WCHAR modulePath[MAX_LONGPATH];
     modulePath[0] = W('\0');
-    if(0 == GetModuleFileNameEx(hProcess, hModule, modulePath, MAX_PATH))
+    if(0 == GetModuleFileNameEx(hProcess, hModule, modulePath, MAX_LONGPATH))
     {
         return false;
     }
     else
     {
-        modulePath[MAX_PATH-1] = 0; // on older OS'es this doesn't get null terminated automatically on truncation
+        modulePath[MAX_LONGPATH-1] = 0; // on older OS'es this doesn't get null terminated automatically on truncation
     }
 
     if (IsCoreClr(modulePath))
@@ -467,7 +467,7 @@ HRESULT EnumerateCLRs(DWORD debuggeePID,
 
     size_t cbEventArrayData     = sizeof(HANDLE) * count;               // event array data
     size_t cbStringArrayData    = sizeof(LPWSTR) * count;               // string array data
-    size_t cbStringData         = sizeof(WCHAR)  * count * MAX_PATH;    // strings data
+    size_t cbStringData         = sizeof(WCHAR)  * count * MAX_LONGPATH;    // strings data
     size_t cbBuffer             = cbEventArrayData + cbStringArrayData + cbStringData;
 
     BYTE* pOutBuffer = new (nothrow) BYTE[cbBuffer];
@@ -497,8 +497,8 @@ HRESULT EnumerateCLRs(DWORD debuggeePID,
         if (IsCoreClrWithGoodHeader(hProcess, modules[i]))
         {
             // fill in path
-            pStringArray[idx] = &pStringData[idx * MAX_PATH];
-            GetModuleFileNameEx(hProcess, modules[i], pStringArray[idx], MAX_PATH);
+            pStringArray[idx] = &pStringData[idx * MAX_LONGPATH];
+            GetModuleFileNameEx(hProcess, modules[i], pStringArray[idx], MAX_LONGPATH);
 
 #ifndef FEATURE_PAL
             // fill in event handle -- if GetContinueStartupEvent fails, it will still return 
@@ -618,14 +618,14 @@ BYTE* GetRemoteModuleBaseAddress(DWORD dwPID, LPCWSTR szFullModulePath)
     DWORD countModules = min(cbNeeded, sizeof(modules)) / sizeof(HMODULE);
     for(DWORD i = 0; i < countModules; i++)
     {
-        WCHAR modulePath[MAX_PATH];
-        if(0 == GetModuleFileNameEx(hProcess, modules[i], modulePath, MAX_PATH))
+        WCHAR modulePath[MAX_LONGPATH];
+        if(0 == GetModuleFileNameEx(hProcess, modules[i], modulePath, MAX_LONGPATH))
         {
             continue;
         }
         else
         {
-            modulePath[MAX_PATH-1] = 0; // on older OS'es this doesn't get null terminated automatically
+            modulePath[MAX_LONGPATH-1] = 0; // on older OS'es this doesn't get null terminated automatically
             if (_wcsicmp(modulePath, szFullModulePath) == 0)
             {                
                 return (BYTE*) modules[i];
@@ -814,8 +814,8 @@ void GetDbiFilenameNextToRuntime(DWORD pidDebuggee, HMODULE hmodTargetCLR, SStri
     // Step 1: (pid, hmodule) --> full path
     // 
     HandleHolder hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pidDebuggee);
-    WCHAR modulePath[MAX_PATH];
-    if(0 == GetModuleFileNameEx(hProcess, hmodTargetCLR, modulePath, MAX_PATH))
+    WCHAR modulePath[MAX_LONGPATH];
+    if(0 == GetModuleFileNameEx(hProcess, hmodTargetCLR, modulePath, MAX_LONGPATH))
     {
         ThrowHR(E_FAIL);
     }

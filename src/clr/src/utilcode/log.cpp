@@ -33,7 +33,7 @@
 
 
 static DWORD    LogFlags                    = 0;
-static char     szLogFileName[MAX_PATH+1]   = DEFAULT_LOGFILE_NAME;
+static char     szLogFileName[MAX_LONGPATH+1]   = DEFAULT_LOGFILE_NAME;
 static HANDLE   LogFileHandle               = INVALID_HANDLE_VALUE;
 static MUTEX_COOKIE   LogFileMutex                = 0;
 static DWORD    LogFacilityMask             = LF_ALL;
@@ -123,7 +123,7 @@ VOID InitLogging()
             }
             if (LogFileHandle == INVALID_HANDLE_VALUE) {
                 DWORD       written;
-                char buff[MAX_PATH+60];
+                char buff[MAX_LONGPATH+60];
                 strcpy(buff, "Could not open log file, logging to ");
                 strcat_s(buff, _countof(buff), szLogFileName);
                 // ARULM--Changed WriteConsoleA to WriteFile to be CE compat

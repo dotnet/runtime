@@ -1318,7 +1318,7 @@ struct RSDS {
         DWORD magic;
         GUID  signature;
         DWORD age;
-        char  path[MAX_PATH];
+        char  path[MAX_LONGPATH];
 };
 
 #define SEEK(pos)                                \

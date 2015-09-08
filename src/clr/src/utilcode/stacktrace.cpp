@@ -617,13 +617,13 @@ DWORD_PTR dwAddr
         {
             if (mbi.Type & MEM_IMAGE)
             {
-                char achFile[MAX_PATH] = {0};
+                char achFile[MAX_LONGPATH] = {0};
                 DWORD cch;
                 
                 cch = GetModuleFileNameA(
                         (HINSTANCE)mbi.AllocationBase,
                         achFile,
-                        MAX_PATH);
+                        MAX_LONGPATH);
 
                 // Ignore the return code since we can't do anything with it.
                 _SymLoadModule(

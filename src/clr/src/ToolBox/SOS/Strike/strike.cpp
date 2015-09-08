@@ -305,7 +305,7 @@ DECLARE_API(IP2MD)
     DumpMDInfo(TO_TADDR(pMD), cdaStart, FALSE /* fStackTraceFormat */);
 
 #ifndef FEATURE_PAL
-    char  filename[MAX_PATH+1];
+    char  filename[MAX_PATH_FNAME+1];
     ULONG linenum;
     // symlines will be non-zero only if SYMOPT_LOAD_LINES was set in the symbol options
     ULONG symlines = 0;
@@ -318,7 +318,7 @@ DECLARE_API(IP2MD)
         && SUCCEEDED(GetLineByOffset(TO_CDADDR(IP), 
                          &linenum,
                          filename,
-                         MAX_PATH+1)))
+                         MAX_PATH_FNAME+1)))
     {
         ExtOut("Source file:  %s @ %d\n", filename, linenum);
     }
@@ -1171,7 +1171,7 @@ DECLARE_API(DumpClass)
     sos::MethodTable mt = TO_TADDR(methodTable);
     ExtOut("Class Name:      %S\n", mt.GetName());
 
-    WCHAR fileName[MAX_PATH];
+    WCHAR fileName[MAX_LONGPATH];
     FileNameForModule(TO_TADDR(mtdata.Module), fileName);
     ExtOut("mdToken:         %p\n", mtdata.cl);
     ExtOut("File:            %S\n", fileName);
@@ -1309,7 +1309,7 @@ DECLARE_API(DumpMT)
     sos::MethodTable mt = (TADDR)dwStartAddr;
     table.WriteRow("Name:", mt.GetName());
 
-    WCHAR fileName[MAX_PATH];
+    WCHAR fileName[MAX_LONGPATH];
     FileNameForModule(TO_TADDR(vMethTable.Module), fileName);
     table.WriteRow("mdToken:", Pointer(vMethTable.cl));
     table.WriteRow("File:", fileName[0] ? fileName : W("Unknown Module"));
@@ -2230,7 +2230,7 @@ size_t FormatGeneratedException (DWORD_PTR dataPtr,
     }
     
     // Buffer is calculated for sprintf below ("   %p %p %S\n");
-    WCHAR wszLineBuffer[mdNameLen + 8 + sizeof(size_t)*2 + MAX_PATH + 8];
+    WCHAR wszLineBuffer[mdNameLen + 8 + sizeof(size_t)*2 + MAX_LONGPATH + 8];
 
     if (count==0)
     {
@@ -2294,7 +2294,7 @@ size_t FormatGeneratedException (DWORD_PTR dataPtr,
         // or did not update so (when ste is an explicit frames), do not update wszBuffer
         if (Status == S_OK)
         {
-            char filename[MAX_PATH+1] = "";
+            char filename[MAX_LONGPATH+1] = "";
             ULONG linenum = 0;
             if (bLineNumbers
                     && FAILED(GetLineByOffset(TO_CDADDR(ste.ip), 
@@ -5243,7 +5243,7 @@ DECLARE_API(DumpModule)
         return Status;
     }
     
-    WCHAR FileName[MAX_PATH];
+    WCHAR FileName[MAX_LONGPATH];
     FileNameForModule (&module, FileName);
     ExtOut("Name:       %S\n", FileName[0] ? FileName : W("Unknown Module"));
 
@@ -6060,9 +6060,9 @@ DECLARE_API(WatsonBuckets)
 
 struct PendingBreakpoint
 {
-    WCHAR szModuleName[MAX_PATH];
+    WCHAR szModuleName[MAX_LONGPATH];
     WCHAR szFunctionName[mdNameLen];
-    WCHAR szFilename[MAX_PATH];
+    WCHAR szFilename[MAX_LONGPATH];
     DWORD lineNumber;
     TADDR pModule; 
     DWORD ilOffset;
@@ -6160,7 +6160,7 @@ public:
         if (!IsIn(szModule, szName, mod))
         {
             PendingBreakpoint *pNew = new PendingBreakpoint();
-            wcscpy_s(pNew->szModuleName, MAX_PATH, szModule);
+            wcscpy_s(pNew->szModuleName, MAX_LONGPATH, szModule);
             wcscpy_s(pNew->szFunctionName, mdNameLen, szName);
             pNew->SetModule(mod);
             pNew->ilOffset = ilOffset;
@@ -6174,7 +6174,7 @@ public:
         if (!IsIn(methodToken, mod, ilOffset))
         {
             PendingBreakpoint *pNew = new PendingBreakpoint();
-            wcscpy_s(pNew->szModuleName, MAX_PATH, szModule);
+            wcscpy_s(pNew->szModuleName, MAX_LONGPATH, szModule);
             wcscpy_s(pNew->szFunctionName, mdNameLen, szName);
             pNew->methodToken = methodToken;
             pNew->SetModule(mod);
@@ -6189,7 +6189,7 @@ public:
         if (!IsIn(szFilename, lineNumber, mod))
         {
             PendingBreakpoint *pNew = new PendingBreakpoint();
-            wcscpy_s(pNew->szFilename, MAX_PATH, szFilename);
+            wcscpy_s(pNew->szFilename, MAX_LONGPATH, szFilename);
             pNew->lineNumber = lineNumber;
             pNew->SetModule(mod);
             pNew->pNext = m_breakpoints;
@@ -6202,7 +6202,7 @@ public:
         if (!IsIn(methodToken, mod, ilOffset))
         {
             PendingBreakpoint *pNew = new PendingBreakpoint();
-            wcscpy_s(pNew->szFilename, MAX_PATH, szFilename);
+            wcscpy_s(pNew->szFilename, MAX_LONGPATH, szFilename);
             pNew->lineNumber = lineNumber;
             pNew->methodToken = methodToken;
             pNew->SetModule(mod);
@@ -6344,9 +6344,9 @@ public:
         ToRelease<IMetaDataImport> pMDImport = NULL;
         IfFailRet(module->QueryInterface(IID_IMetaDataImport, (LPVOID *) &pMDImport));
 
-        WCHAR wszNameBuffer[MAX_PATH];
+        WCHAR wszNameBuffer[MAX_LONGPATH];
         ULONG32 nameLen = 0;
-        if(FAILED(Status = module->GetFileName(MAX_PATH, &nameLen, wszNameBuffer)))
+        if(FAILED(Status = module->GetFileName(MAX_LONGPATH, &nameLen, wszNameBuffer)))
         {
             ExtOut("SOS error: IXCLRDataModule->GetFileName failed hr=0x%x\n", wszNameBuffer);
             return Status;
@@ -7076,7 +7076,7 @@ DECLARE_API(bpmd)
     
     LPWSTR ModuleName = (LPWSTR)alloca(mdNameLen * sizeof(WCHAR));
     LPWSTR FunctionName = (LPWSTR)alloca(mdNameLen * sizeof(WCHAR));
-    LPWSTR Filename = (LPWSTR)alloca(MAX_PATH * sizeof(WCHAR));
+    LPWSTR Filename = (LPWSTR)alloca(MAX_LONGPATH * sizeof(WCHAR));
 
     BOOL bNeedNotificationExceptions=FALSE;
 
@@ -7094,7 +7094,7 @@ DECLARE_API(bpmd)
         }
         else
         {
-            MultiByteToWideChar(CP_ACP, 0, DllName.data, -1, Filename, MAX_PATH);
+            MultiByteToWideChar(CP_ACP, 0, DllName.data, -1, Filename, MAX_LONGPATH);
         }
 
         // get modules that may need a breakpoint bound
@@ -8967,7 +8967,7 @@ DECLARE_API(Token2EE)
             }        
 
             DWORD_PTR dwAddr = moduleList[i];
-            WCHAR FileName[MAX_PATH];
+            WCHAR FileName[MAX_LONGPATH];
             FileNameForModule(dwAddr, FileName);
 
             // We'd like a short form for this output
@@ -9097,7 +9097,7 @@ DECLARE_API(Name2EE)
             }
             
             DWORD_PTR dwAddr = moduleList[i];
-            WCHAR FileName[MAX_PATH];
+            WCHAR FileName[MAX_LONGPATH];
             FileNameForModule (dwAddr, FileName);
 
             // We'd like a short form for this output
@@ -12585,11 +12585,11 @@ static HRESULT DumpMDInfoBuffer(DWORD_PTR dwStartAddr, DWORD Flags, ULONG64 Esp,
     if (g_ExtSymbols->GetModuleByOffset(UL64_TO_CDA(addrInModule), 0, &Index, 
         &base) == S_OK)
     {                                    
-        CHAR ModuleName[MAX_PATH+1];
+        CHAR ModuleName[MAX_LONGPATH+1];
 
         if (g_ExtSymbols->GetModuleNames (Index, base,
             NULL, 0, NULL,
-            ModuleName, MAX_PATH, NULL,
+            ModuleName, MAX_LONGPATH, NULL,
             NULL, 0, NULL) == S_OK)
         {
             MultiByteToWideChar (CP_ACP, 
@@ -13864,10 +13864,10 @@ void PrintHelp (__in_z LPCSTR pszCmdName)
 #else
 #define SOS_DOCUMENT_FILENAME "sosdocs.txt"
 
-        char  lpFilename[MAX_PATH+12]; // + 12 to make enough room for strcat function.
+        char  lpFilename[MAX_LONGPATH+12]; // + 12 to make enough room for strcat function.
         DWORD nReturnedSize;
-        nReturnedSize = GetModuleFileName(g_hInstance, lpFilename, MAX_PATH);
-        if ( nReturnedSize == 0 || nReturnedSize == MAX_PATH ) {
+        nReturnedSize = GetModuleFileName(g_hInstance, lpFilename, MAX_LONGPATH);
+        if ( nReturnedSize == 0 || nReturnedSize == MAX_LONGPATH ) {
             // We consider both of these cases as failed.
             ExtOut("Error getting the name for the current module\n");
             return;
@@ -13905,7 +13905,7 @@ void PrintHelp (__in_z LPCSTR pszCmdName)
     }
 
     // Find our line in the text file
-    char searchString[MAX_PATH];
+    char searchString[MAX_PATH_FNAME];
     sprintf_s(searchString, _countof(searchString), "COMMAND: %s.", pszCmdName);
     
     LPSTR pStart = strstr(pText, searchString);
