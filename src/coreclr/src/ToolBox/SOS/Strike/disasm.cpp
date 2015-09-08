@@ -101,7 +101,7 @@ GenOpenMapping(
             // file operations.  Convert to ANSI and see if
             // that helps.
             
-            CHAR FilePathA [ MAX_PATH + 10 ];
+            CHAR FilePathA [ MAX_LONGPATH + 10 ];
 
             if (WideCharToMultiByte (CP_ACP,
                                      0,
@@ -207,7 +207,7 @@ char* PrintOneLine (__in_z char *begin, __in_z char *limit)
 
 void UnassemblyUnmanaged(DWORD_PTR IP, BOOL bSuppressLines)
 {
-    char            filename[MAX_PATH+1];
+    char            filename[MAX_PATH_FNAME+1];
     char            line[256];
     int             lcount          = 10;
 
@@ -221,7 +221,7 @@ void UnassemblyUnmanaged(DWORD_PTR IP, BOOL bSuppressLines)
         ReloadSymbolWithLineInfo();
         fLineAvailable = SUCCEEDED (g_ExtSymbols->GetLineByOffset (TO_CDADDR(IP), &linenum,
                                                                     filename,
-                                                                    MAX_PATH+1,
+                                                                    MAX_PATH_FNAME+1,
                                                                     NULL,
                                                                     &Displacement));
     }
@@ -378,7 +378,7 @@ void UnassemblyUnmanaged(DWORD_PTR IP, BOOL bSuppressLines)
         }
     }
     
-    char filename1[MAX_PATH+1];
+    char filename1[MAX_PATH_FNAME+1];
     for (lastLine = beginLine; lastLine < endLine; lastLine ++) {
         if (IsInterrupt())
             return;
@@ -410,7 +410,7 @@ void UnassemblyUnmanaged(DWORD_PTR IP, BOOL bSuppressLines)
                 if (vIP > vNextLineIP || vNextLineIP - vIP > 40) {
                     if (FAILED (g_ExtSymbols->GetLineByOffset (vIP, &linenum,
                                                                filename1,
-                                                               MAX_PATH+1,
+                                                               MAX_PATH_FNAME+1,
                                                                NULL,
                                                                &Displacement))) {
                         if (lastLine != endOfFunc) {
@@ -847,7 +847,7 @@ BOOL PrintCallInfo (DWORD_PTR vEBP, DWORD_PTR IP,
                     BOOL bSymbolOnly)
 {
     char Symbol[1024];
-    char filename[MAX_PATH+1];
+    char filename[MAX_PATH_FNAME+1];
     ULONG64 Displacement;
     BOOL bOutput = FALSE;
 
@@ -927,7 +927,7 @@ BOOL PrintCallInfo (DWORD_PTR vEBP, DWORD_PTR IP,
                     {
                         ULONG line;
                         hr = g_ExtSymbols->GetLineByOffset (TO_CDADDR(IP), &line, filename,
-                            MAX_PATH+1, NULL, NULL);
+                            MAX_PATH_FNAME+1, NULL, NULL);
                         if (SUCCEEDED (hr))
                             ExtOut (" [%s:%d]", filename, line);
                     }

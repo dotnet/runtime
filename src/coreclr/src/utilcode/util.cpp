@@ -56,12 +56,12 @@ void InitWinRTStatus()
     const WCHAR wszComBaseDll[] = W("\\combase.dll");
     const SIZE_T cchComBaseDll = _countof(wszComBaseDll);
 
-    WCHAR wszComBasePath[MAX_PATH + 1];
+    WCHAR wszComBasePath[MAX_LONGPATH + 1];
     const SIZE_T cchComBasePath = _countof(wszComBasePath);
 
     ZeroMemory(wszComBasePath, cchComBasePath * sizeof(wszComBasePath[0]));
 
-    UINT cchSystemDirectory = WszGetSystemDirectory(wszComBasePath, MAX_PATH);
+    UINT cchSystemDirectory = WszGetSystemDirectory(wszComBasePath, MAX_LONGPATH);
 
     // Make sure that we're only probing in the system directory.  If we can't find the system directory, or
     // we find it but combase.dll doesn't fit into it, we'll fall back to a safe default of saying that WinRT
@@ -3630,7 +3630,7 @@ namespace Util
                 DWORD cCharsNeeded;
                 cCharsNeeded = GetEnvironmentVariableW(W("LOCALAPPDATA"), NULL, 0);
 
-                if ((cCharsNeeded != 0) && (cCharsNeeded < MAX_PATH))
+                if ((cCharsNeeded != 0) && (cCharsNeeded < MAX_LONGPATH))
                 {
                     wszLocalAppData = new WCHAR[cCharsNeeded];
                     cCharsNeeded = GetEnvironmentVariableW(W("LOCALAPPDATA"), wszLocalAppData, cCharsNeeded);

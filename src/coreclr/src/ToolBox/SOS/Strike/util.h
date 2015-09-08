@@ -1362,8 +1362,8 @@ private:
 HRESULT GetMethodDefinitionsFromName(DWORD_PTR ModulePtr, IXCLRDataModule* mod, const char* name, IXCLRDataMethodDefinition **ppMethodDefinitions, int numMethods, int *numMethodsNeeded);
 HRESULT GetMethodDescsFromName(DWORD_PTR ModulePtr, IXCLRDataModule* mod, const char* name, DWORD_PTR **pOut, int *numMethodDescs);
 
-HRESULT FileNameForModule (DacpModuleData *pModule, __out_ecount (MAX_PATH) WCHAR *fileName);
-HRESULT FileNameForModule (DWORD_PTR pModuleAddr, __out_ecount (MAX_PATH) WCHAR *fileName);
+HRESULT FileNameForModule (DacpModuleData *pModule, __out_ecount (MAX_LONGPATH) WCHAR *fileName);
+HRESULT FileNameForModule (DWORD_PTR pModuleAddr, __out_ecount (MAX_LONGPATH) WCHAR *fileName);
 void IP2MethodDesc (DWORD_PTR IP, DWORD_PTR &methodDesc, JITTypes &jitType,
                     DWORD_PTR &gcinfoAddr);
 const char *ElementTypeName (unsigned type);
@@ -1413,7 +1413,7 @@ int bitidx(SCALAR bitflag)
 HRESULT
 DllsName(
     ULONG_PTR addrContaining,
-    __out_ecount (MAX_PATH) WCHAR *dllName
+    __out_ecount (MAX_LONGPATH) WCHAR *dllName
     );
 
 inline

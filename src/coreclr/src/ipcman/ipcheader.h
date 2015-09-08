@@ -509,7 +509,7 @@ struct LegacyPrivateIPCControlBlock
 // Client blocks
     struct PerfCounterIPCControlBlock    m_perf;        // no longer used but kept for compat
     struct AppDomainEnumerationIPCBlock m_appdomain;
-    WCHAR                               m_instancePath[MAX_PATH];
+    WCHAR                               m_instancePath[MAX_LONGPATH];
 };
 
 typedef DPTR(LegacyPrivateIPCControlBlock) PTR_LegacyPrivateIPCControlBlock;
