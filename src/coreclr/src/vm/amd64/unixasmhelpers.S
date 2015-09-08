@@ -291,7 +291,7 @@ LEAF_END SinglecastDelegateInvokeStub, _TEXT
 // from the passed in context and finally sets the RSP to that frame and sets the return
 // address to the target frame's RIP.
 //
-// EXTERN_C void StartUnwindingNativeFrames(CONTEXT* context);
+// EXTERN_C void StartUnwindingNativeFrames(CONTEXT* context, PAL_SEHException* ex);
 LEAF_ENTRY StartUnwindingNativeFrames, _TEXT
         // Save the RBP to the stack so that the unwind can work at the instruction after
         // loading the RBP from the context, but before loading the RSP from the context.
@@ -316,6 +316,8 @@ LEAF_ENTRY StartUnwindingNativeFrames, _TEXT
         // Store return address to the stack
         push_register rax
         push_nonvol_reg rbp
-        call    EXTERNAL_C_FUNC(__cxa_rethrow)
+        // The PAL_SEHException pointer
+        mov     rdi, rsi 
+        call    EXTERNAL_C_FUNC(ThrowExceptionHelper)
 LEAF_END StartUnwindingNativeFrames, _TEXT
 
