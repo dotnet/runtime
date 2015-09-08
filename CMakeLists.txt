@@ -352,7 +352,7 @@ if(CMAKE_ENABLE_CODE_COVERAGE)
     set(CMAKE_SHARED_LINKER_FLAGS  "${CMAKE_SHARED_LINKER_FLAGS} ${CLANG_COVERAGE_LINK_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS     "${CMAKE_EXE_LINKER_FLAGS} ${CLANG_COVERAGE_LINK_FLAGS}")
   else()
-    message(WARNING "Code coverage builds not supported on current platform")
+    message(FATAL_ERROR "Code coverage builds not supported on current platform")
   endif(CLR_CMAKE_PLATFORM_UNIX)
 
 endif(CMAKE_ENABLE_CODE_COVERAGE)
