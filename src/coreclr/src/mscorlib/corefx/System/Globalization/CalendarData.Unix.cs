@@ -53,8 +53,8 @@ namespace System.Globalization
             result &= EnumCalendarInfo(localeName, calendarId, CalendarDataType.SuperShortDayNames, out this.saSuperShortDayNames);
             result &= EnumCalendarInfo(localeName, calendarId, CalendarDataType.MonthGenitiveNames, out this.saMonthGenitiveNames);
             result &= EnumCalendarInfo(localeName, calendarId, CalendarDataType.AbbrevMonthGenitiveNames, out this.saAbbrevMonthGenitiveNames);
-            result &= EnumCalendarInfo(localeName, calendarId, CalendarDataType.EraNames, out this.saEraNames);
-            result &= EnumCalendarInfo(localeName, calendarId, CalendarDataType.AbbrevEraNames, out this.saAbbrevEraNames);
+            result &= EnumEraNames(localeName, calendarId, CalendarDataType.EraNames, out this.saEraNames);
+            result &= EnumEraNames(localeName, calendarId, CalendarDataType.AbbrevEraNames, out this.saAbbrevEraNames);
 
             return result;
         }
@@ -70,7 +70,16 @@ namespace System.Globalization
         internal static int GetCalendars(string localeName, bool useUserOverride, CalendarId[] calendars)
         {
             // NOTE: there are no 'user overrides' on Linux
-            return Interop.GlobalizationInterop.GetCalendars(localeName, calendars, calendars.Length);
+            int count = Interop.GlobalizationInterop.GetCalendars(localeName, calendars, calendars.Length);
+
+            // ensure there is at least 1 calendar returned
+            if (count == 0 && calendars.Length > 0)
+            {
+                calendars[0] = CalendarId.GREGORIAN;
+                count = 1;
+            }
+
+            return count;
         }
 
         private static bool SystemSupportsTaiwaneseCalendar()
@@ -117,6 +126,21 @@ namespace System.Globalization
             }
 
             return false;
+        }
+
+        private bool EnumEraNames(string localeName, CalendarId calendarId, CalendarDataType dataType, out string[] eraNames)
+        {
+            bool result = EnumCalendarInfo(localeName, calendarId, dataType, out eraNames);
+
+            // .NET expects that only the Japanese calendars have more than 1 era.
+            // So for other calendars, only return the latest era.
+            if (calendarId != CalendarId.JAPAN && calendarId != CalendarId.JAPANESELUNISOLAR && eraNames.Length > 0)
+            {
+                string[] latestEraName = new string[] { eraNames[eraNames.Length - 1] };
+                eraNames = latestEraName;
+            }
+
+            return result;
         }
 
         internal static bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, out string[] calendarData)
