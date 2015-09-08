@@ -1228,6 +1228,7 @@ extern "C" PCODE STDCALL StubDispatchFixupWorker(TransitionBlock * pTransitionBl
     pSDFrame->SetCallSite(pModule, pIndirectCell);
 
     pSDFrame->Push(CURRENT_THREAD);
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
     PEImageLayout *pNativeImage = pModule->GetNativeOrReadyToRunImage();
@@ -1296,6 +1297,7 @@ extern "C" PCODE STDCALL StubDispatchFixupWorker(TransitionBlock * pTransitionBl
     // Ready to return
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
     pSDFrame->Pop(CURRENT_THREAD);
 
     return pTarget;
@@ -1575,6 +1577,7 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
 
     pSDFrame->SetRepresentativeSlot(pRepresentativeMT, representativeToken.GetSlotNumber());
     pSDFrame->Push(CURRENT_THREAD);
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
     // For Virtual Delegates the m_siteAddr is a field of a managed object
@@ -1604,6 +1607,7 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     GCPROTECT_END();
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
     pSDFrame->Pop(CURRENT_THREAD);
 
     return target;
