@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -52,7 +52,7 @@
       <Link>CommonTest\Streams\PositionValueStream.cs</Link>
     </Compile>
 
-    <Compile Include="ECDsaOpenSslProvider.cs" />
+    <Compile Include="EcDsaOpenSslProvider.cs" />
     <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\ECDsa\ECDsaFactory.cs">
       <Link>CommonTest\Cryptography\AlgorithmImplementations\ECDsa\ECDsaFactory.cs</Link>
     </Compile>
