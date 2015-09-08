@@ -47,7 +47,7 @@ CreateUrlCacheEntryW_NoThrow(
         IN LPCWSTR lpszUrlName,
         IN DWORD dwExpectedFileSize,
         IN LPCWSTR lpszFileExtension,
-        __out_ecount(MAX_PATH+1) LPWSTR lpszFileName,
+        __out_ecount(MAX_LONGPATH+1) LPWSTR lpszFileName,
         IN DWORD dwReserved
         );
 #endif
@@ -162,7 +162,7 @@ CopyBindInfo_NoThrow(
             IN LPCWSTR lpszUrlName,
             IN DWORD dwExpectedFileSize,
             IN LPCWSTR lpszFileExtension,
-            __out_ecount(MAX_PATH+1) LPWSTR lpszFileName,
+            __out_ecount(MAX_LONGPATH+1) LPWSTR lpszFileName,
             IN DWORD dwReserved
             )
     {

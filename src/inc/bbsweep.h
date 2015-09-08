@@ -337,7 +337,7 @@ cleanup:
     void GetObjectNamePrefix(DWORD processID, BOOL fromRuntime, __inout_z WCHAR* objectNamePrefix)
     {
         // default prefix
-        swprintf_s(objectNamePrefix, MAX_PATH, W("Global"));
+        swprintf_s(objectNamePrefix, MAX_LONGPATH, W("Global"));
 #ifndef FEATURE_PAL
         //
         // This method can be called:

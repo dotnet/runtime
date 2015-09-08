@@ -494,9 +494,9 @@ CorpubProcess::CorpubProcess(DWORD dwProcessId,
             // MSDN is very confused about whether the lenght is in bytes (MSDN 2002) or chars (MSDN 2004).
             // We err on the safe side by having buffer that's twice as large, and ignoring
             // the units on the return value.
-            WCHAR szName[MAX_PATH * sizeof(WCHAR)];
+            WCHAR szName[MAX_LONGPATH * sizeof(WCHAR)];
 
-            DWORD lenInCharsOrBytes = MAX_PATH*sizeof(WCHAR);
+            DWORD lenInCharsOrBytes = MAX_LONGPATH*sizeof(WCHAR);
 
             // Pass NULL module handle to get "Main Module", which will give us the process name.
             DWORD ret = (*fpGetModuleFileNameEx) (hProcess, NULL, szName, lenInCharsOrBytes);

@@ -204,7 +204,7 @@ HRESULT CreateInstanceCustomImpl(
     {
         _ASSERTE(dllName != NULL);
         HMODULE hDac = NULL;
-        WCHAR path[MAX_PATH];
+        WCHAR path[MAX_LONGPATH];
 
         if (SUCCEEDED(g_sos->GetDacModuleHandle(&hDac))
             && GetPathFromModule(hDac, path, _countof(path)))
@@ -249,7 +249,7 @@ HRESULT CreateInstanceCustomImpl(
                 continue;
             }
 
-            ArrayHolder<WCHAR> imgPath = new WCHAR[pathSize+MAX_PATH+1];
+            ArrayHolder<WCHAR> imgPath = new WCHAR[pathSize+MAX_LONGPATH+1];
             if (imgPath == NULL)
             {
                 continue;
@@ -265,7 +265,7 @@ HRESULT CreateInstanceCustomImpl(
             LPCWSTR pathElem = wcstok_s(imgPath, W(";"), &ctx);
             while (pathElem != NULL)
             {
-                WCHAR fullName[MAX_PATH];
+                WCHAR fullName[MAX_LONGPATH];
                 wcscpy_s(fullName, _countof(fullName), pathElem);
                 if (wcscat_s(fullName, W("\\")) == 0 && wcscat_s(fullName, dllName) == 0)
                 {
@@ -354,7 +354,7 @@ HRESULT ClrCreateInstance(
             {
                 // if we have a v4+ runtime that does not have the fix to activate the requested CLSID
                 // try activating with the path
-                WCHAR clrDir[MAX_PATH]; 
+                WCHAR clrDir[MAX_LONGPATH]; 
                 DWORD cchClrDir = _countof(clrDir);
                 IfFailGo( spClr->GetRuntimeDirectory(clrDir, &cchClrDir) );
                 IfFailGo( wcscat_s(clrDir, dllName) == 0 ? S_OK : E_FAIL  );
@@ -2050,7 +2050,7 @@ CLRDATA_ADDRESS GetAppDomain(CLRDATA_ADDRESS objPtr)
     return appDomain;
 }
 
-HRESULT FileNameForModule (DWORD_PTR pModuleAddr, __out_ecount (MAX_PATH) WCHAR *fileName)
+HRESULT FileNameForModule (DWORD_PTR pModuleAddr, __out_ecount (MAX_LONGPATH) WCHAR *fileName)
 {
     DacpModuleData ModuleData;
     fileName[0] = L'\0';
@@ -2070,8 +2070,8 @@ HRESULT FileNameForModule (DWORD_PTR pModuleAddr, __out_ecount (MAX_PATH) WCHAR 
 *    This function is called to find the file name given a Module.     *  
 *                                                                      *
 \**********************************************************************/
-// fileName should be at least MAX_PATH
-HRESULT FileNameForModule (DacpModuleData *pModule, __out_ecount (MAX_PATH) WCHAR *fileName)
+// fileName should be at least MAX_LONGPATH
+HRESULT FileNameForModule (DacpModuleData *pModule, __out_ecount (MAX_LONGPATH) WCHAR *fileName)
 {
     fileName[0] = L'\0';
     
@@ -2087,7 +2087,7 @@ HRESULT FileNameForModule (DacpModuleData *pModule, __out_ecount (MAX_PATH) WCHA
     hr = g_sos->GetPEFileBase(dwAddr, &base);
     if (SUCCEEDED(hr))
     {
-        hr = g_sos->GetPEFileName(dwAddr, MAX_PATH, fileName, NULL);
+        hr = g_sos->GetPEFileName(dwAddr, MAX_LONGPATH, fileName, NULL);
         if (SUCCEEDED(hr))
         {
             if (fileName[0] != L'\0')
@@ -2133,7 +2133,7 @@ void AssemblyInfo(DacpAssemblyData *pAssembly)
         DacpModuleData moduleData;
         if (moduleData.Request(g_sos,ModuleAddr)==S_OK)
         {
-            WCHAR fileName[MAX_PATH];
+            WCHAR fileName[MAX_LONGPATH];
             FileNameForModule (&moduleData, fileName);
             if (fileName[0])
             {
@@ -2643,10 +2643,10 @@ BOOL DebuggerModuleNamesMatch (CLRDATA_ADDRESS PEFileAddr, ___in __in_z LPSTR mN
                 ULONG64 base;
                 if (g_ExtSymbols->GetModuleByOffset(pebase, 0, &Index, &base) == S_OK)
                 {                                    
-                    CHAR ModuleName[MAX_PATH+1];
+                    CHAR ModuleName[MAX_LONGPATH+1];
 
                     if (g_ExtSymbols->GetModuleNames(Index, base, NULL, 0, NULL, ModuleName, 
-                        MAX_PATH, NULL, NULL, 0, NULL) == S_OK)
+                        MAX_LONGPATH, NULL, NULL, 0, NULL) == S_OK)
                     {
                         if (_stricmp (ModuleName, mName) == 0)
                         {
@@ -2712,7 +2712,7 @@ DWORD_PTR *ModuleFromName(__in_opt LPSTR mName, int *numModule)
         return NULL;
     }
     
-    WCHAR StringData[MAX_PATH];
+    WCHAR StringData[MAX_PATH_FNAME];
     char fileName[sizeof(StringData)/2];
     
     // Search all domains to find a module
@@ -3602,7 +3602,7 @@ BOOL GetSOSVersion(VS_FIXEDFILEINFO *pFileInfo)
 {
     _ASSERTE(pFileInfo);
     
-    WCHAR wszFullPath[MAX_PATH];
+    WCHAR wszFullPath[MAX_LONGPATH];
     DWORD cchFullPath = GetModuleFileNameW(g_hInstance, wszFullPath, _countof(wszFullPath));
     
     DWORD dwHandle = 0;
@@ -4155,7 +4155,7 @@ HRESULT LoadClrDebugDll(void)
         {
             return E_FAIL;
         }
-        char dacModulePath[MAX_PATH];
+        char dacModulePath[MAX_LONGPATH];
         strcpy_s(dacModulePath, _countof(dacModulePath), g_ExtClient->GetCoreClrDirectory());
         strcat_s(dacModulePath, _countof(dacModulePath), MAKEDLLNAME_A("mscordaccore"));
 
@@ -4364,9 +4364,9 @@ public:
             return hr;
         }
 
-        WCHAR dacPath[MAX_PATH];
-        DWORD len = GetModuleFileNameW(dacModule, dacPath, MAX_PATH);
-        if(len == 0 || len == MAX_PATH)
+        WCHAR dacPath[MAX_LONGPATH];
+        DWORD len = GetModuleFileNameW(dacModule, dacPath, MAX_LONGPATH);
+        if(len == 0 || len == MAX_LONGPATH)
         {
             ExtOut("GetModuleFileName(dacModuleHandle) failed. Last error = 0x%x\n", GetLastError());
             return E_FAIL;
@@ -4404,7 +4404,7 @@ public:
             return hr;
         }
 
-        ArrayHolder<WCHAR> symbolPath = new WCHAR[pathSize+MAX_PATH+1];
+        ArrayHolder<WCHAR> symbolPath = new WCHAR[pathSize+MAX_LONGPATH+1];
 
 
 
@@ -4415,7 +4415,7 @@ public:
             return hr;
         }
         
-        WCHAR foundPath[MAX_PATH];
+        WCHAR foundPath[MAX_LONGPATH];
         BOOL rc = SymFindFileInPathW((HANDLE)hProcess,
                                 symbolPath,
                                 pwszFileName,
@@ -4436,7 +4436,7 @@ public:
         *phModule = callbackData.hModule;
         return hr;
 #else
-        WCHAR modulePath[MAX_PATH];
+        WCHAR modulePath[MAX_LONGPATH];
         int length = MultiByteToWideChar(CP_ACP, 0, g_ExtClient->GetCoreClrDirectory(), -1, modulePath, _countof(modulePath));
         if (0 >= length)
         {
@@ -6172,7 +6172,7 @@ HRESULT SymbolReader::LoadSymbols(IMetaDataImport * pMD, ICorDebugModule * pModu
     IfFailRet(pModule->GetBaseAddress(&baseAddress));
 
     ULONG32 len = 0; 
-    WCHAR moduleName[MAX_PATH];
+    WCHAR moduleName[MAX_LONGPATH];
     IfFailRet(pModule->GetName(_countof(moduleName), &len, moduleName));
 
     return LoadSymbols(pMD, baseAddress, moduleName, isInMemory);
@@ -6462,7 +6462,7 @@ WString GetFrameFromAddress(TADDR frameAddr, IXCLRDataStackWalk *pStackWalk)
 
 WString MethodNameFromIP(CLRDATA_ADDRESS ip, BOOL bSuppressLines)
 {
-    ArrayHolder<char> filename = new char[MAX_PATH+1];
+    ArrayHolder<char> filename = new char[MAX_LONGPATH+1];
     ULONG linenum;
     WString methodOutput;
     CLRDATA_ADDRESS mdesc = 0;
@@ -6499,11 +6499,11 @@ WString MethodNameFromIP(CLRDATA_ADDRESS ip, BOOL bSuppressLines)
             if (g_ExtSymbols->GetModuleByOffset(UL64_TO_CDA(addrInModule), 0, &Index, 
                 &moduleBase) == S_OK)
             {                                    
-                CHAR ModuleName[MAX_PATH+1];
+                CHAR ModuleName[MAX_LONGPATH+1];
 
                 if (g_ExtSymbols->GetModuleNames (Index, moduleBase,
                     NULL, 0, NULL,
-                    ModuleName, MAX_PATH, NULL,
+                    ModuleName, MAX_LONGPATH, NULL,
                     NULL, 0, NULL) == S_OK)
                 {
                     MultiByteToWideChar (CP_ACP, 
@@ -6524,7 +6524,7 @@ WString MethodNameFromIP(CLRDATA_ADDRESS ip, BOOL bSuppressLines)
         }
             
         if (!bSuppressLines &&
-            SUCCEEDED(GetLineByOffset(TO_CDADDR(ip), &linenum, filename, MAX_PATH+1)))
+            SUCCEEDED(GetLineByOffset(TO_CDADDR(ip), &linenum, filename, MAX_LONGPATH+1)))
         {
             int len = MultiByteToWideChar(CP_ACP, 0, filename, -1, NULL, 0);
             ArrayHolder<WCHAR> wfilename = new WCHAR[len];

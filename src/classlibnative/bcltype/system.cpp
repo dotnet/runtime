@@ -347,9 +347,9 @@ FCIMPL0(StringObject*, SystemNative::GetRuntimeDirectory)
 {
     FCALL_CONTRACT;
 
-    wchar_t wszFile[MAX_PATH+1];
+    wchar_t wszFile[MAX_LONGPATH+1];
     STRINGREF   refRetVal   = NULL;
-    DWORD dwFile = MAX_PATH+1;
+    DWORD dwFile = MAX_LONGPATH+1;
 
     HELPER_METHOD_FRAME_BEGIN_RET_1(refRetVal);
 
