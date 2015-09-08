@@ -130,6 +130,7 @@ void ShimRemoteDataTarget::Dispose()
         m_pProxy->ReleaseTransport(m_pTransport);
     }
 
+    m_pTransport = NULL;
     m_hr = CORDBG_E_OBJECT_NEUTERED;
 }
 

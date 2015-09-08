@@ -894,12 +894,14 @@ CONTEXT_GetThreadContextFromPort(
         lpContext->R13 = State.__r13;
         lpContext->R14 = State.__r14;
         lpContext->R15 = State.__r15;
-//        lpContext->SegSs = State.ss; // no such state?
         lpContext->EFlags = State.__rflags;
         lpContext->Rip = State.__rip;
         lpContext->SegCs = State.__cs;
-//        lpContext->SegDs_PAL_Undefined = State.ds; // no such state?
-//        lpContext->SegEs_PAL_Undefined = State.es; // no such state?
+        // RtlRestoreContext uses the actual ss instead of this one
+        // to build the iret frame so just set it zero.
+        lpContext->SegSs = 0;
+        lpContext->SegDs = 0;
+        lpContext->SegEs = 0;
         lpContext->SegFs = State.__fs;
         lpContext->SegGs = State.__gs;
 #else

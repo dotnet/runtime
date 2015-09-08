@@ -93,6 +93,7 @@ struct ForwardedNotification
 #endif // !DISABLE_EXCEPTIONS
 
 static const char * PAL_MACH_EXCEPTION_MODE = "PAL_MachExceptionMode";
+
 enum MachExceptionMode
 {
     // special value to indicate we've not initialized yet
@@ -123,7 +124,7 @@ enum MachExceptionMode
     MachException_SuppressManaged   = 4,
 
     // Default value to use if environment variable not set.
-    MachException_Default           = 2,
+    MachException_Default           = 0,
 };
 
 static exception_mask_t GetExceptionMask()
@@ -536,6 +537,7 @@ void PAL_DispatchException(DWORD64 dwRDI, DWORD64 dwRSI, DWORD64 dwRDX, DWORD64 
     pointers.ExceptionRecord = pExRecord;
     pointers.ContextRecord = pContext;
 
+    NONPAL_TRACE("PAL_DispatchException(EC %08x EA %p)\n", pExRecord->ExceptionCode, pExRecord->ExceptionAddress);
     SEHProcessException(&pointers);
 }
 
@@ -717,7 +719,13 @@ catch_exception_raise(
 #endif // _AMD64_
         );
     
-    ThreadContext.ContextFlags = CONTEXT_ALL;
+    // Don't save/restore the debug registers because loading them on OSx causes a 
+    // priviledged instruction fault. The "DE" in CR4 is set.
+#ifdef _X86_
+    ThreadContext.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS | CONTEXT_FLOATING_POINT | CONTEXT_EXTENDED_REGISTERS
+#else
+    ThreadContext.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS | CONTEXT_FLOATING_POINT;
+#endif
 
     MachRet = CONTEXT_GetThreadContextFromPort(thread, &ThreadContext);
     CHECK_MACH("CONTEXT_GetThreadContextFromPort", MachRet);
@@ -1178,12 +1186,11 @@ bool IsHandledException(MachMessage *pNotification)
     if (IsWithinCoreCLR(ip))
     {
         NONPAL_TRACE("    IP (%p) is in CoreCLR.\n", ip);
-        return true;
+        return CatchHardwareExceptionHolder::IsEnabled();
     }
 
     // Check inside our executable heap.
-    bool fExecutableHeap = s_pExecutableHeap != NULL &&
-        malloc_zone_owns_addr(s_pExecutableHeap, ip);
+    bool fExecutableHeap = s_pExecutableHeap != NULL && malloc_zone_owns_addr(s_pExecutableHeap, ip);
     if (fExecutableHeap)
     {
         NONPAL_TRACE("    IP (%p) is in the executable heap (%p).\n", ip, s_pExecutableHeap);
@@ -1219,7 +1226,7 @@ bool IsHandledException(MachMessage *pNotification)
     void *pCallerIP = (void *)*((PULONG64)(rbpFaultingFunc+1));
     if (IsWithinCoreCLR(pCallerIP))
     {
-        NONPAL_TRACE("    CallerIP (%p) is in CoreCLR.\n", pCallerIP);
+        NONPAL_TRACE("    CallerIP (%p) is in CoreCLR (IP %p).\n", pCallerIP, ip);
         return true;
     }
 #endif // defined(_AMD64_)
