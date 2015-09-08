@@ -3631,7 +3631,7 @@ ExceptionTracker* ExceptionTracker::GetOrCreateTracker(
             fIsRethrow = true;
         }
         else
-        if (pTracker->m_ptrs.ExceptionRecord != pExceptionRecord)
+        if ((pTracker->m_ptrs.ExceptionRecord != pExceptionRecord) && !fIsInterleavedHandling)
         {
             EH_LOG((LL_INFO100, ">>NEW exception (exception records do not match)\n"));
             fCreateNewTracker = true;
@@ -4396,7 +4396,8 @@ bool IsSpInStackLimits(ULONG64 sp, ULONG64 stackLowAddress, ULONG64 stackHighAdd
 //
 // Arguments:
 //      context - context at which to start the native unwinding
-extern "C" void StartUnwindingNativeFrames(CONTEXT* context);
+//      ex      - pointer to the exception to use to unwind the native frames
+extern "C" void StartUnwindingNativeFrames(CONTEXT* context, PAL_SEHException* ex);
 
 //---------------------------------------------------------------------------------------
 //
@@ -4678,7 +4679,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
 
             // Now we need to unwind the native frames until we reach managed frames again or the exception is
             // handled in the native code.
-            StartUnwindingNativeFrames(&frameContext);
+            StartUnwindingNativeFrames(&frameContext, &ex);
             UNREACHABLE();
         }
 
@@ -4688,16 +4689,35 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
 }
 
+//---------------------------------------------------------------------------------------
+//
+// Helper function to throw the passed in exception.
+// It is called from the assembler function StartUnwindingNativeFrames 
+// Arguments:
+//
+//      ex - the exception to throw.
+//
+extern "C"
+void ThrowExceptionHelper(PAL_SEHException* ex)
+{
+    throw *ex;
+}
+
 VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex)
 {
-    try
+    do
     {
-        UnwindManagedExceptionPass1(ex);
+        try
+        {
+            UnwindManagedExceptionPass1(ex);
+            UNREACHABLE();
+        }
+        catch (PAL_SEHException& ex2)
+        {
+            ex = ex2;
+        }
     }
-    catch (PAL_SEHException& ex)
-    {
-        DispatchManagedException(ex);
-    }
+    while (true);
 }
 
 #ifdef _AMD64_
@@ -5064,17 +5084,7 @@ VOID PALAPI HandleHardwareException(PAL_SEHException* ex)
             }
 #endif //_AMD64_
 
-            // We throw the exception and catch it right away so that in case the DispatchManagedException
-            // needs to cross managed to native stack frames boundary, there is an exception that can
-            // be rethrow in the StartUnwindingNativeFrames.
-            try
-            {
-                throw *ex;
-            }
-            catch (PAL_SEHException& ex2)
-            {
-                DispatchManagedException(ex2);
-            }
+            DispatchManagedException(*ex);
             UNREACHABLE();
         }
     }
