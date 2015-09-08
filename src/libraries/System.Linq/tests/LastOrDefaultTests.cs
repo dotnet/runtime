@@ -15,6 +15,11 @@ namespace System.Linq.Tests.LegacyTests
                 yield return start + i;
         }
 
+        private static IEnumerable<T> ForceNotCollection<T>(IEnumerable<T> source)
+        {
+            foreach (T item in source) yield return item;
+        }
+
         private static bool IsEven(int num)
         {
             return num % 2 == 0;
@@ -140,7 +145,7 @@ namespace System.Linq.Tests.LegacyTests
         }
 
         [Fact]
-        public void EmptySource()
+        public void EmptyIListSource()
         {
             int?[] source = { };
 
@@ -149,7 +154,7 @@ namespace System.Linq.Tests.LegacyTests
         }
 
         [Fact]
-        public void OneElementTruePredicate()
+        public void OneElementIListTruePredicate()
         {
             int[] source = { 4 };
             Func<int, bool> predicate = IsEven;
@@ -159,7 +164,7 @@ namespace System.Linq.Tests.LegacyTests
         }
 
         [Fact]
-        public void ManyElementsPredicateFalseForAll()
+        public void ManyElementsIListPredicateFalseForAll()
         {
             int[] source = { 9, 5, 1, 3, 17, 21 };
             Func<int, bool> predicate = IsEven;
@@ -169,7 +174,7 @@ namespace System.Linq.Tests.LegacyTests
         }
 
         [Fact]
-        public void PredicateTrueOnlyForLast()
+        public void IListPredicateTrueOnlyForLast()
         {
             int[] source = { 9, 5, 1, 3, 17, 21, 50 };
             Func<int, bool> predicate = IsEven;
@@ -179,9 +184,58 @@ namespace System.Linq.Tests.LegacyTests
         }
 
         [Fact]
-        public void PredicateTrueForSome()
+        public void IListPredicateTrueForSome()
         {
             int[] source = { 3, 7, 10, 7, 9, 2, 11, 18, 13, 9 };
+            Func<int, bool> predicate = IsEven;
+            int expected = 18;
+
+            Assert.Equal(expected, source.LastOrDefault(predicate));
+        }
+
+        [Fact]
+        public void EmptyNotIListSource()
+        {
+            IEnumerable<int?> source = Enumerable.Repeat((int?)4, 0);
+
+            Assert.Null(source.LastOrDefault(x => true));
+            Assert.Null(source.LastOrDefault(x => false));
+        }
+
+        [Fact]
+        public void OneElementNotIListTruePredicate()
+        {
+            IEnumerable<int> source = ForceNotCollection(new[] { 4 });
+            Func<int, bool> predicate = IsEven;
+            int expected = 4;
+
+            Assert.Equal(expected, source.LastOrDefault(predicate));
+        }
+
+        [Fact]
+        public void ManyElementsNotIListPredicateFalseForAll()
+        {
+            IEnumerable<int> source = ForceNotCollection(new int[] { 9, 5, 1, 3, 17, 21 });
+            Func<int, bool> predicate = IsEven;
+            int expected = default(int);
+
+            Assert.Equal(expected, source.LastOrDefault(predicate));
+        }
+
+        [Fact]
+        public void NotIListPredicateTrueOnlyForLast()
+        {
+            IEnumerable<int> source = ForceNotCollection(new int[] { 9, 5, 1, 3, 17, 21, 50 });
+            Func<int, bool> predicate = IsEven;
+            int expected = 50;
+
+            Assert.Equal(expected, source.LastOrDefault(predicate));
+        }
+
+        [Fact]
+        public void NotIListPredicateTrueForSome()
+        {
+            IEnumerable<int> source = ForceNotCollection(new int[] { 3, 7, 10, 7, 9, 2, 11, 18, 13, 9 });
             Func<int, bool> predicate = IsEven;
             int expected = 18;
 
