@@ -866,6 +866,7 @@ EXTERN_C PCODE VirtualMethodFixupWorker(TransitionBlock * pTransitionBlock, CORC
         pEMFrame->SetFunction(pMD);   //  We will use the pMD to enumerate the GC refs in the arguments 
         pEMFrame->Push(CURRENT_THREAD);
 
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER;
         INSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE;
 
         // Skip fixup precode jump for better perf
@@ -892,6 +893,7 @@ EXTERN_C PCODE VirtualMethodFixupWorker(TransitionBlock * pTransitionBlock, CORC
         }
         
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE;
+        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
         pEMFrame->Pop(CURRENT_THREAD);
     }
 
