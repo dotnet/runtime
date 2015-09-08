@@ -50,7 +50,7 @@ typedef struct _PRIVATE_LDR_DATA_TABLE_ENTRY {
 #ifndef FEATURE_PAL
 static void DllsNameFromPeb(
     ULONG_PTR addrContaining,
-    __out_ecount (MAX_PATH) WCHAR *dllName
+    __out_ecount (MAX_LONGPATH) WCHAR *dllName
 	)
 {
     ULONG64 ProcessPeb;
@@ -194,17 +194,17 @@ static void DllsNameFromPeb(
                          pLdrEntry + Offset_FullDllName);
                 return;
             }
-            ZeroMemory( dllName, MAX_PATH * sizeof (WCHAR) );
+            ZeroMemory( dllName, MAX_LONGPATH * sizeof (WCHAR) );
             if (FAILED(g_ExtData->ReadVirtual((ULONG64)FullDllName.Buffer,
                                               dllName,
-                                              MAX_PATH < FullDllName.Length ? MAX_PATH : FullDllName.Length,
+                                              MAX_LONGPATH < FullDllName.Length ? MAX_LONGPATH : FullDllName.Length,
                                               NULL)))
             {
 #if 0
                 ExtOut ( "    Unable to read FullDllName.Buffer address at %p\n",
                          (ULONG64)FullDllName.Buffer);
 #endif
-                ZeroMemory( dllName, MAX_PATH * sizeof (WCHAR) );
+                ZeroMemory( dllName, MAX_LONGPATH * sizeof (WCHAR) );
             }
     
             //
@@ -228,7 +228,7 @@ static void DllsNameFromPeb(
                     break;
             }
     
-            ZeroMemory( dllName, MAX_PATH * sizeof (WCHAR) );
+            ZeroMemory( dllName, MAX_LONGPATH * sizeof (WCHAR) );
             if (FAILED(g_ExtData->ReadVirtual(pLdrEntry + Offset_OrderLinks,
                                               &LdrEntry.InMemoryOrderLinks,
                                               sizeof(LdrEntry.InMemoryOrderLinks),
@@ -248,7 +248,7 @@ static void DllsNameFromPeb(
 HRESULT
 DllsName(
     ULONG_PTR addrContaining,
-    __out_ecount (MAX_PATH) WCHAR *dllName
+    __out_ecount (MAX_LONGPATH) WCHAR *dllName
     )
 {
     dllName[0] = L'\0';
@@ -259,14 +259,14 @@ DllsName(
     if (FAILED(hr))
         return hr;
     
-    CHAR name[MAX_PATH+1];
+    CHAR name[MAX_LONGPATH+1];
     ULONG length;
     
-    hr = g_ExtSymbols->GetModuleNames(Index,base,name,MAX_PATH,&length,NULL,0,NULL,NULL,0,NULL);
+    hr = g_ExtSymbols->GetModuleNames(Index,base,name,MAX_LONGPATH,&length,NULL,0,NULL,NULL,0,NULL);
     
     if (SUCCEEDED(hr))
     {
-        MultiByteToWideChar (CP_ACP,0,name,-1,dllName,MAX_PATH);
+        MultiByteToWideChar (CP_ACP,0,name,-1,dllName,MAX_LONGPATH);
     }
     
 #ifndef FEATURE_PAL

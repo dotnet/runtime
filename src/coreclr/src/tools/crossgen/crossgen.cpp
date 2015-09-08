@@ -460,7 +460,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
     LPCWSTR pwzAppNiPaths = nullptr;
     LPCWSTR pwzPlatformAssembliesPaths = nullptr;
     LPCWSTR pwzPlatformWinmdPaths = nullptr;
-    WCHAR wzDirectoryToStorePDB[MAX_PATH] = W("\0");
+    WCHAR wzDirectoryToStorePDB[MAX_LONGPATH] = W("\0");
     bool fCreatePDB = false;
     bool fGeneratePDBLinesInfo = false;
     LPWSTR pwzSearchPathForManagedPDB = NULL;
@@ -896,7 +896,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
         PrintLogoHelper();
     }
 
-    WCHAR wzTrustedPathRoot[MAX_PATH];
+    WCHAR wzTrustedPathRoot[MAX_LONGPATH];
 
 #ifdef FEATURE_CORECLR
     SString ssTPAList;  
@@ -917,7 +917,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
 
     if (pwzTrustedPlatformAssemblies != nullptr)
     {
-        if (ComputeMscorlibPathFromTrustedPlatformAssemblies(wzTrustedPathRoot, MAX_PATH, pwzTrustedPlatformAssemblies))
+        if (ComputeMscorlibPathFromTrustedPlatformAssemblies(wzTrustedPathRoot, MAX_LONGPATH, pwzTrustedPlatformAssemblies))
         {
             pwzPlatformAssembliesPaths = wzTrustedPathRoot;
             SetMscorlibPath(pwzPlatformAssembliesPaths);
@@ -927,7 +927,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
 
     if (pwzPlatformAssembliesPaths == NULL)
     {
-        if (!WszGetModuleFileName(NULL, wzTrustedPathRoot, MAX_PATH))
+        if (!WszGetModuleFileName(NULL, wzTrustedPathRoot, MAX_LONGPATH))
         {
             ERROR_WIN32(W("Error: GetModuleFileName failed (%d)\n"), GetLastError());
             exit(CLR_INIT_ERROR);

@@ -16,7 +16,7 @@
 //  default shstr to something small, so we don't waste too much stack space
 //  MAX_PATH is used frequently, so we'd like to a factor of that - so that
 //  if we do grow to MAX_PATH size, we don't waste any extra.
-#define DEFAULT_SHSTR_LENGTH    (MAX_PATH/4)
+#define DEFAULT_SHSTR_LENGTH    (MAX_PATH_FNAME/4)
 
 
 #ifdef UNICODE
