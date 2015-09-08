@@ -1945,7 +1945,8 @@ void _wapi_handle_dump (void)
 						 _wapi_handle_typename[handle_data->type],
 						 handle_data->signalled?"Sg":"Un",
 						 handle_data->ref);
-				handle_details[handle_data->type](&handle_data->u);
+				if (handle_details[handle_data->type])
+					handle_details[handle_data->type](&handle_data->u);
 				g_print ("\n");
 			}
 		}
