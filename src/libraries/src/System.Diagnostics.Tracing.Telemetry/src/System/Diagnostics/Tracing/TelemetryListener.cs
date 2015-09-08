@@ -105,7 +105,7 @@ namespace System.Diagnostics.Tracing
             {
                 // Issue the callback for this new telemetry listener.
                 var allListenerObservable = s_allListenerObservable;
-                if (allListenerObservable != null) 
+                if (allListenerObservable != null)
                     allListenerObservable.OnNewTelemetryListener(this);
 
                 // And add it to the list of all past listeners.  
@@ -278,11 +278,11 @@ namespace System.Diagnostics.Tracing
             /// <param name="telemetryListener"></param>
             internal void OnNewTelemetryListener(TelemetryListener telemetryListener)
             {
-                Monitor.IsEntered(DefaultListener);     // We should only be called when we hold this lock
+                Debug.Assert(Monitor.IsEntered(DefaultListener));     // We should only be called when we hold this lock
 
                 // Simply send a callback to every subscriber that we have a new listener
-                    for (var cur = _subscriptions; cur != null; cur = cur.Next)
-                        cur.Subscriber.OnNext(telemetryListener);
+                for (var cur = _subscriptions; cur != null; cur = cur.Next)
+                    cur.Subscriber.OnNext(telemetryListener);
             }
 
             #region private 
@@ -336,7 +336,7 @@ namespace System.Diagnostics.Tracing
                         Subscriber.OnCompleted();           // Called outside of a lock
                     }
                 }
-                    
+
                 private readonly AllListenerObservable _owner;               // the list this is a member of.  
                 internal readonly IObserver<TelemetryListener> Subscriber;
                 internal AllListenerSubscription Next;
