@@ -12,6 +12,16 @@
 #include <unicode/dtptngen.h>
 #include <unicode/locdspnm.h>
 
+#define GREGORIAN_NAME "gregorian"
+#define JAPANESE_NAME "japanese"
+#define BUDDHIST_NAME "buddhist"
+#define HEBREW_NAME "hebrew"
+#define DANGI_NAME "dangi"
+#define PERSIAN_NAME "persian"
+#define ISLAMIC_NAME "islamic"
+#define ISLAMIC_UMALQURA_NAME "islamic-umalqura"
+#define ROC_NAME "roc"
+
 /*
 * These values should be kept in sync with System.Globalization.CalendarId
 */
@@ -113,26 +123,21 @@ const char* GetCalendarName(CalendarId calendarId)
 	switch (calendarId)
 	{
 		case JAPAN:
-			return "japanese";
+			return JAPANESE_NAME;
 		case THAI:
-			return "buddhist";
+			return BUDDHIST_NAME;
 		case HEBREW:
-			return "hebrew";
-		case CHINESELUNISOLAR:
-		case KOREANLUNISOLAR:
-		case JAPANESELUNISOLAR:
-		case TAIWANLUNISOLAR:
-			return "chinese";
+			return HEBREW_NAME;
 		case KOREA:
-			return "dangi";
+			return DANGI_NAME;
 		case PERSIAN:
-			return "persian";
+			return PERSIAN_NAME;
 		case HIJRI:
-			return "islamic";
+			return ISLAMIC_NAME;
 		case UMALQURA:
-			return "islamic-umalqura";
+			return ISLAMIC_UMALQURA_NAME;
 		case TAIWAN:
-			return "roc";
+			return ROC_NAME;
 		case GREGORIAN:
 		case GREGORIAN_US:
 		case GREGORIAN_ARABIC:
@@ -144,43 +149,43 @@ const char* GetCalendarName(CalendarId calendarId)
 		case LUNAR_ETO_KOR:
 		case LUNAR_ETO_ROKUYOU:
 		case SAKA:
+		// don't support the lunisolar calendars until we have a solid understanding
+		// of how they map to the ICU/CLDR calendars
+		case CHINESELUNISOLAR:
+		case KOREANLUNISOLAR:
+		case JAPANESELUNISOLAR:
+		case TAIWANLUNISOLAR:
 		default:
-			return "gregorian";
+			return GREGORIAN_NAME;
 	}
 }
 
 /*
 Function:
-GetCalendarName
+GetCalendarId
 
 Gets the associated CalendarId for the ICU calendar name.
 */
 CalendarId GetCalendarId(const char* calendarName)
 {
-	if (strcmp(calendarName, "gregorian") == 0)
+	if (strcasecmp(calendarName, GREGORIAN_NAME) == 0)
 		//TODO: what about the other gregorian types?
 		return GREGORIAN;
-	else if (strcmp(calendarName, "japanese") == 0)
+	else if (strcasecmp(calendarName, JAPANESE_NAME) == 0)
 		return JAPAN;
-	else if (strcmp(calendarName, "buddhist") == 0)
+	else if (strcasecmp(calendarName, BUDDHIST_NAME) == 0)
 		return THAI;
-	else if (strcmp(calendarName, "hebrew") == 0)
+	else if (strcasecmp(calendarName, HEBREW_NAME) == 0)
 		return HEBREW;
-	else if (strcmp(calendarName, "chinese") == 0)
-		//TODO: what about these other lunisolar types?
-		//JAPANESELUNISOLAR:
-		//TAIWANLUNISOLAR:
-		//KOREANLUNISOLAR:
-		return CHINESELUNISOLAR;
-	else if (strcmp(calendarName, "dangi") == 0)
+	else if (strcasecmp(calendarName, DANGI_NAME) == 0)
 		return KOREA;
-	else if (strcmp(calendarName, "persian") == 0)
+	else if (strcasecmp(calendarName, PERSIAN_NAME) == 0)
 		return PERSIAN;
-	else if (strcmp(calendarName, "islamic") == 0)
+	else if (strcasecmp(calendarName, ISLAMIC_NAME) == 0)
 		return HIJRI;
-	else if (strcmp(calendarName, "islamic-umalqura") == 0)
+	else if (strcasecmp(calendarName, ISLAMIC_UMALQURA_NAME) == 0)
 		return UMALQURA;
-	else if (strcmp(calendarName, "roc") == 0)
+	else if (strcasecmp(calendarName, ROC_NAME) == 0)
 		return TAIWAN;
 	else
 		return UNINITIALIZED_VALUE;
@@ -412,17 +417,7 @@ bool EnumEraNames(Locale& locale, CalendarId calendarId, CalendarDataType dataTy
 	}
 	else if (dataType == AbbrevEraNames)
 	{
-		if (strcmp(calendarName, "gregorian") == 0)
-		{
-			// NOTE: On Windows, the EraName is "A.D." and AbbrevEraName is "AD".
-			// But ICU/CLDR only supports "Anno Domini", "AD", and "A".
-			// So returning getEras (i.e. "AD") for both EraNames and AbbrevEraNames.
-			eraNames = dateFormatSymbols.getEras(eraNameCount);
-		}
-		else
-		{
-			eraNames = dateFormatSymbols.getNarrowEras(eraNameCount);
-		}
+		eraNames = dateFormatSymbols.getNarrowEras(eraNameCount);
 	}
 	else
 	{
@@ -502,7 +497,7 @@ extern "C" int32_t GetLatestJapaneseEra()
 	if (U_FAILURE(err))
 		return 0;
 
-	return calendar->getMaximum(UCAL_ERA); 
+	return calendar->getMaximum(UCAL_ERA);
 }
 
 /*
@@ -535,34 +530,18 @@ extern "C" int32_t GetJapaneseEraStartDate(
 	calendar->set(UCAL_MONTH, 0);
 	calendar->set(UCAL_DATE, 1);
 
-	int32_t currentEra = calendar->get(UCAL_ERA, err);
-	if (U_FAILURE(err))
-		return false;
-
-	if (currentEra == era)
+	int32_t currentEra;
+	for (int i = 0; i <= 12; i++)
 	{
-		// if Jan 1 is still in the specified Era, then the Era must have started on Jan 1.
-		*startMonth = 1;
-		*startDay = 1;
-		return true;
-	}
-
-	for (int i = 0; i < 12; i++)
-	{
-		// add 1 month at a time until we get into the specified Era
-		calendar->add(UCAL_MONTH, 1, err);
-		if (U_FAILURE(err))
-			return false;
-
 		currentEra = calendar->get(UCAL_ERA, err);
 		if (U_FAILURE(err))
 			return false;
 
 		if (currentEra == era)
 		{
-			for (int i = 0; i < 32; i++)
+			for (int i = 0; i < 31; i++)
 			{
-				// now subtract 1 day at a time until we get out of the specified Era
+				// subtract 1 day at a time until we get out of the specified Era
 				calendar->add(Calendar::DATE, -1, err);
 				if (U_FAILURE(err))
 					return false;
@@ -590,6 +569,11 @@ extern "C" int32_t GetJapaneseEraStartDate(
 				}
 			}
 		}
+
+		// add 1 month at a time until we get into the specified Era
+		calendar->add(UCAL_MONTH, 1, err);
+		if (U_FAILURE(err))
+			return false;
 	}
 
 	return false;
