@@ -7,7 +7,7 @@
     <ProjectGuid>{CB11B315-2567-4574-977D-89E3135243C4}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.XDocument.Streaming.Tests</AssemblyName>
-    <RootNamespace>CoreXml.Test.XLinq</RootNamespace>
+    <RootNamespace>XDocumentTests.Streaming</RootNamespace>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -15,15 +15,10 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="FunctionalTests.cs" />
     <Compile Include="StreamExtensions.cs" />
     <Compile Include="StreamingOutput.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(CommonTestPath)\SystemXml\XmlCoreTest\XmlCoreTest.csproj">
-      <Project>{89701565-f68b-46d9-bd78-95b0f052c50b}</Project>
-      <Name>XmlCoreTest</Name>
-    </ProjectReference>
     <ProjectReference Include="$(CommonTestPath)\SystemXml\XmlDiff\XmlDiff.csproj">
       <Project>{466d87df-bdec-4e6c-bacd-317d79b8edbe}</Project>
       <Name>XmlDiff</Name>
@@ -35,10 +30,6 @@
     <ProjectReference Include="..\XDocument.Common\XDocument.Common.csproj">
       <Project>{52666206-b6c9-49fa-a1d7-d0a0c68807b0}</Project>
       <Name>XDocument.Common</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\XDocument.Test.ModuleCore\XDocument.Test.ModuleCore.csproj">
-      <Project>{979510ce-9042-4f8d-9c74-ee03b89194cc}</Project>
-      <Name>XDocument.Test.ModuleCore</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
