@@ -326,7 +326,7 @@ BOOL Internal_ExtractFormatA(CPalThread *pthrCurrent, LPCSTR *Fmt, LPSTR Out, LP
         {
             *Prefix = PFF_PREFIX_LONG;
         }
-        else if (**Fmt == 'l')
+        if (**Fmt == 'l')
         {
             *Prefix = PFF_PREFIX_LONGLONG;   
             ++(*Fmt);
@@ -590,12 +590,28 @@ BOOL Internal_ExtractFormatW(CPalThread *pthrCurrent, LPCWSTR *Fmt, LPSTR Out, L
         *Prefix = PFF_PREFIX_LONGLONG;
     }
 #endif
-    /* grab prefix of 'I64' for __int64 */
-    if ((*Fmt)[0] == 'I' && (*Fmt)[1] == '6' && (*Fmt)[2] == '4')
+    if ((*Fmt)[0] == 'I')
     {
-        /* convert to 'll' so BSD's snprintf can handle it */
-        *Fmt += 3;
-        *Prefix = PFF_PREFIX_LONGLONG;
+        /* grab prefix of 'I64' for __int64 */
+        if ((*Fmt)[1] == '6' && (*Fmt)[2] == '4')
+        {
+            /* convert to 'll' so that Unix snprintf can handle it */
+            *Fmt += 3;
+            *Prefix = PFF_PREFIX_LONGLONG;
+        }
+        /* grab prefix of 'I32' for __int32 */
+        else if ((*Fmt)[1] == '3' && (*Fmt)[2] == '2')
+        {
+            *Fmt += 3;
+        }
+        else
+        {
+            ++(*Fmt);
+    #ifdef BIT64
+            /* convert to 'll' so that Unix snprintf can handle it */
+            *Prefix = PFF_PREFIX_LONGLONG;
+    #endif
+        }
     }
     /* grab a prefix of 'h' */
     else if (**Fmt == 'h')
@@ -612,6 +628,11 @@ BOOL Internal_ExtractFormatW(CPalThread *pthrCurrent, LPCWSTR *Fmt, LPSTR Out, L
 #endif   
         {
             *Prefix = PFF_PREFIX_LONG_W;
+        }
+        if (**Fmt == 'l')
+        {
+            *Prefix = PFF_PREFIX_LONGLONG;
+            ++(*Fmt);
         }
     }
     else if (**Fmt == 'L')
