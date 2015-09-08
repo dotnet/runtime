@@ -111,7 +111,6 @@
     <!-- Ported -->
     <Compile Include="PortedCommon\CommonUtilities.cs" />
     <Compile Include="PortedCommon\DllImports.cs" />
-    <Compile Include="PortedCommon\EnumerableUtils.cs" />
     <Compile Include="PortedCommon\IOInputs.cs" />
     <Compile Include="PortedCommon\IOServices.cs" />
     <Compile Include="PortedCommon\PathInfo.cs" />
