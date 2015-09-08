@@ -150,6 +150,7 @@ EXTERN_C void STDCALL UM2MDoADCallBack(UMEntryThunk *pEntryThunk,
     UM2MThunk_Args args = { pEntryThunk, pAddr, pArgs, argLen };
 
 
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
     {
         AppDomainFromIDHolder domain(pEntryThunk->GetDomainId(),FALSE);
@@ -161,6 +162,7 @@ EXTERN_C void STDCALL UM2MDoADCallBack(UMEntryThunk *pEntryThunk,
     GetThread()->DoADCallBack(pEntryThunk->GetDomainId(), UM2MThunk_Wrapper, &args);
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
 }
 
 #ifdef _TARGET_X86_
@@ -1178,6 +1180,7 @@ void STDCALL UMEntryThunk::DoRunTimeInit(UMEntryThunk* pUMEntryThunk)
     }
     CONTRACTL_END;
 
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     // this method is called by stubs which are called by managed code,
     // so we need an unwind and continue handler so that our internal
     // exceptions don't leak out into managed code.
@@ -1198,6 +1201,7 @@ void STDCALL UMEntryThunk::DoRunTimeInit(UMEntryThunk* pUMEntryThunk)
     }
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
 }
 
 UMEntryThunk* UMEntryThunk::CreateUMEntryThunk()
