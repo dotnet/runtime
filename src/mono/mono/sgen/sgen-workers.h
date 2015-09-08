@@ -42,7 +42,4 @@ gboolean sgen_workers_are_working (void);
 void sgen_workers_wait (void);
 SgenSectionGrayQueue* sgen_workers_get_distribute_section_gray_queue (void);
 
-void sgen_workers_signal_start_nursery_collection_and_wait (void);
-void sgen_workers_signal_finish_nursery_collection (void);
-
 #endif

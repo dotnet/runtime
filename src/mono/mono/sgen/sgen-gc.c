@@ -2256,13 +2256,9 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 			major_finish_concurrent_collection (wait_to_finish);
 			oldest_generation_collected = GENERATION_OLD;
 		} else {
-			sgen_workers_signal_start_nursery_collection_and_wait ();
-
 			major_update_concurrent_collection ();
 			if (generation_to_collect == GENERATION_NURSERY)
 				collect_nursery (NULL, FALSE);
-
-			sgen_workers_signal_finish_nursery_collection ();
 		}
 
 		goto done;
