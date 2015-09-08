@@ -48,6 +48,7 @@ Revision History:
 #include <stddef.h>
 #include <sys/stat.h>
 #include <limits.h>
+#include <debugmacrosext.h>
 
 #if defined(_AIX)
 // AIX requires explicit definition of the union semun (see semctl man page)
@@ -840,7 +841,8 @@ CThreadSuspensionInfo::AcquireSuspensionLock(
     }
     #else // DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
     {
-        int iPthreadError = pthread_mutex_lock(&pthrCurrent->suspensionInfo.m_ptmSuspmutex);
+        INDEBUG(int iPthreadError = )
+        pthread_mutex_lock(&pthrCurrent->suspensionInfo.m_ptmSuspmutex);
         _ASSERT_MSG(iPthreadError == 0, "pthread_mutex_lock returned %d\n", iPthreadError);
     }
     #endif // DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
@@ -873,7 +875,8 @@ CThreadSuspensionInfo::ReleaseSuspensionLock(
     }
     #else // DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 
     {
-        int iPthreadError = pthread_mutex_unlock(&pthrCurrent->suspensionInfo.m_ptmSuspmutex);
+        INDEBUG(int iPthreadError = )
+        pthread_mutex_unlock(&pthrCurrent->suspensionInfo.m_ptmSuspmutex);
         _ASSERT_MSG(iPthreadError == 0, "pthread_mutex_unlock returned %d\n", iPthreadError);
     }
     #endif // DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 
@@ -1583,10 +1586,11 @@ InitializePreCreateExit:
 
 CThreadSuspensionInfo::~CThreadSuspensionInfo()
 {
-#if !DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX                
+#if !DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
     if (m_fSuspmutexInitialized)
     {
-        int iError = pthread_mutex_destroy(&m_ptmSuspmutex);
+        INDEBUG(int iError = )
+        pthread_mutex_destroy(&m_ptmSuspmutex);
         _ASSERT_MSG(0 == iError, "pthread_mutex_destroy returned %d (%s)\n", iError, strerror(iError));
     }
 #endif
