@@ -1998,7 +1998,7 @@ VOID InlinedCallFrame::Init()
     m_pCallerReturnAddress = NULL;
 }
 
-#ifdef _WIN64
+#if defined(_WIN64) && !defined(FEATURE_PAL)
 
 EXTERN_C void PInvokeStubForHostInner(DWORD dwStackSize, LPVOID pStackFrame, LPVOID pTarget);
 
@@ -2077,8 +2077,7 @@ void __stdcall PInvokeStubForHostWorker(DWORD dwStackSize, LPVOID pStackFrame, L
         PInvokeStubForHostInner(dwStackSize, pStackFrame, pTarget);
     }
 }
-
-#endif // _WIN64
+#endif // _WIN64 && !FEATURE_PAL
 
 
 

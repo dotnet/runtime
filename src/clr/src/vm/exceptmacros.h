@@ -345,7 +345,6 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex);
         Exception* __pUnCException  = NULL;                                                 \
         Frame*     __pUnCEntryFrame = CURRENT_THREAD->GetFrame();                           \
         bool       __fExceptionCatched = false;                                             \
-        INSTALL_MANAGED_EXCEPTION_DISPATCHER                                                \
         SCAN_EHMARKER();                                                                    \
         if (true) PAL_CPP_TRY {                                                             \
             SCAN_EHMARKER_TRY();                                                            \
@@ -368,7 +367,6 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex);
         Exception* __pUnCException  = NULL;                                                 \
         Frame*     __pUnCEntryFrame = (pHelperFrame);                                       \
         bool       __fExceptionCatched = false;                                             \
-        INSTALL_MANAGED_EXCEPTION_DISPATCHER                                                \
         SCAN_EHMARKER();                                                                    \
         if (true) PAL_CPP_TRY {                                                             \
             SCAN_EHMARKER_TRY();                                                            \
@@ -394,7 +392,6 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex);
             SCAN_EHMARKER_CATCH();                                                          \
             UnwindAndContinueRethrowHelperAfterCatch(__pUnCEntryFrame, __pUnCException);    \
         }                                                                                   \
-        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER                                              \
     }                                                                                       \
 
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER                                               \
