@@ -468,27 +468,24 @@ namespace System.IO
                         while (Interop.Sys.ReadDir(dirHandle, out dirent) == 0)
                         {
                             // Get from the dir entry whether the entry is a file or directory.
-                            // We classify everything as a file unless we know it to be a directory,
-                            // e.g. a FIFO will be classified as a file.
+                            // We classify everything as a file unless we know it to be a directory.
                             bool isDir;
-                            switch (dirent.InodeType)
+                            if (dirent.InodeType == Interop.Sys.NodeType.DT_DIR)
                             {
-                                case Interop.Sys.NodeType.DT_DIR:
-                                    // We know it's a directory.
-                                    isDir = true;
-                                    break;
-                                case Interop.Sys.NodeType.DT_LNK:
-                                case Interop.Sys.NodeType.DT_UNKNOWN:
-                                    // It's a symlink or unknown: stat to it to see if we can resolve it to a directory.
-                                    // If we can't (e.g.symlink to a file, broken symlink, etc.), we'll just treat it as a file.
-                                    Interop.ErrorInfo errnoIgnored;
-                                    isDir = DirectoryExists(Path.Combine(dirPath.FullPath, dirent.InodeName), out errnoIgnored);
-                                    break;
-                                default:
-                                    // Otherwise, treat it as a file.  This includes regular files,
-                                    // FIFOs, etc.
-                                    isDir = false;
-                                    break;
+                                // We know it's a directory.
+                                isDir = true;
+                            }
+                            else if (dirent.InodeType == Interop.Sys.NodeType.DT_LNK || dirent.InodeType == Interop.Sys.NodeType.DT_UNKNOWN)
+                            {
+                                // It's a symlink or unknown: stat to it to see if we can resolve it to a directory.
+                                // If we can't (e.g.symlink to a file, broken symlink, etc.), we'll just treat it as a file.
+                                Interop.ErrorInfo errnoIgnored;
+                                isDir = DirectoryExists(Path.Combine(dirPath.FullPath, dirent.InodeName), out errnoIgnored);
+                            }
+                            else
+                            {
+                                // Otherwise, treat it as a file.  This includes regular files, FIFOs, etc.
+                                isDir = false;
                             }
 
                             // Yield the result if the user has asked for it.  In the case of directories,
@@ -498,18 +495,20 @@ namespace System.IO
                             {
                                 if (!ShouldIgnoreDirectory(dirent.InodeName))
                                 {
-                                    if (_includeDirectories &&
-                                        Interop.Sys.FnMatch(_searchPattern, dirent.InodeName, Interop.Sys.FnMatchFlags.FNM_NONE) == 0)
-                                    {
-                                        yield return _translateResult(Path.Combine(dirPath.UserPath, dirent.InodeName), /*isDirectory*/true);
-                                    }
+                                    string userPath = null;
                                     if (_searchOption == SearchOption.AllDirectories)
                                     {
                                         if (toExplore == null)
                                         {
                                             toExplore = new Stack<PathPair>();
                                         }
-                                        toExplore.Push(new PathPair(Path.Combine(dirPath.UserPath, dirent.InodeName), Path.Combine(dirPath.FullPath, dirent.InodeName)));
+                                        userPath = Path.Combine(dirPath.UserPath, dirent.InodeName);
+                                        toExplore.Push(new PathPair(userPath, Path.Combine(dirPath.FullPath, dirent.InodeName)));
+                                    }
+                                    if (_includeDirectories &&
+                                        Interop.Sys.FnMatch(_searchPattern, dirent.InodeName, Interop.Sys.FnMatchFlags.FNM_NONE) == 0)
+                                    {
+                                        yield return _translateResult(userPath ?? Path.Combine(dirPath.UserPath, dirent.InodeName), /*isDirectory*/true);
                                     }
                                 }
                             }
