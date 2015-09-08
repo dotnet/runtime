@@ -3,7 +3,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Security.Cryptography;
 using Internal.NativeCrypto;
 
@@ -30,15 +29,15 @@ namespace System.Security.Cryptography
             set
             {
                 int allFlags = 0x00FF; // this should change if more values are added to CspProviderFlags
-                Contract.Assert((CspProviderFlags.UseMachineKeyStore |
-                                CspProviderFlags.UseDefaultKeyContainer |
-                                CspProviderFlags.UseNonExportableKey |
-                                CspProviderFlags.UseExistingKey |
-                                CspProviderFlags.UseArchivableKey |
-                                CspProviderFlags.UseUserProtectedKey |
-                                CspProviderFlags.NoPrompt |
-                                CspProviderFlags.CreateEphemeralKey) == (CspProviderFlags)allFlags, "allFlags does not match all CspProviderFlags");
-                //ToDo : Add above error message to resource file
+                Debug.Assert((CspProviderFlags.UseMachineKeyStore |
+                              CspProviderFlags.UseDefaultKeyContainer |
+                              CspProviderFlags.UseNonExportableKey |
+                              CspProviderFlags.UseExistingKey |
+                              CspProviderFlags.UseArchivableKey |
+                              CspProviderFlags.UseUserProtectedKey |
+                              CspProviderFlags.NoPrompt |
+                              CspProviderFlags.CreateEphemeralKey) == (CspProviderFlags)allFlags, "allFlags does not match all CspProviderFlags");
+
                 int flags = (int)value;
                 if ((flags & ~allFlags) != 0)
                 {

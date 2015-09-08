@@ -3,7 +3,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Security.Cryptography;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -470,10 +469,10 @@ namespace System.Security.Cryptography
         protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
         {
             // we're sealed and the base should have checked this already
-            Contract.Assert(data != null);
-            Contract.Assert(count >= 0 && count <= data.Length);
-            Contract.Assert(offset >= 0 && offset <= data.Length - count);
-            Contract.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
+            Debug.Assert(data != null);
+            Debug.Assert(count >= 0 && count <= data.Length);
+            Debug.Assert(offset >= 0 && offset <= data.Length - count);
+            Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
 
             using (HashAlgorithm hash = GetHashAlgorithm(hashAlgorithm))
             {
@@ -484,8 +483,8 @@ namespace System.Security.Cryptography
         protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
         {
             // we're sealed and the base should have checked this already
-            Contract.Assert(data != null);
-            Contract.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
+            Debug.Assert(data != null);
+            Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
 
             using (HashAlgorithm hash = GetHashAlgorithm(hashAlgorithm))
             {
