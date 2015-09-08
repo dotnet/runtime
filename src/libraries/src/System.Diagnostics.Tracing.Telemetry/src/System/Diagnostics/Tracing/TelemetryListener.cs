@@ -6,6 +6,12 @@ using System.Threading;
 using System.Diagnostics;
 using System.Collections.Generic;
 
+// TODO when we upgrade to C# V6 you can remove this.  
+// warning CS0420: ‘P.x': a reference to a volatile field will not be treated as volatile
+// This happens when you pass a _subcribers (a volatile field) to interlocked operations (which are byref). 
+// This was fixed in C# V6.  
+#pragma warning disable 0420
+
 namespace System.Diagnostics.Tracing
 {
     /// <summary>
@@ -99,7 +105,7 @@ namespace System.Diagnostics.Tracing
             {
                 // Issue the callback for this new telemetry listener.
                 var allListenerObservable = s_allListenerObservable;
-                if (allListenerObservable != null) 
+                if (allListenerObservable != null)
                     allListenerObservable.OnNewTelemetryListener(this);
 
                 // And add it to the list of all past listeners.  
@@ -272,18 +278,17 @@ namespace System.Diagnostics.Tracing
             /// <param name="telemetryListener"></param>
             internal void OnNewTelemetryListener(TelemetryListener telemetryListener)
             {
+                Debug.Assert(Monitor.IsEntered(DefaultListener));     // We should only be called when we hold this lock
+
                 // Simply send a callback to every subscriber that we have a new listener
-                lock (DefaultListener)
-                {
-                    for (var cur = _subscriptions; cur != null; cur = cur.Next)
-                        cur.Subscriber.OnNext(telemetryListener);
-                }
+                for (var cur = _subscriptions; cur != null; cur = cur.Next)
+                    cur.Subscriber.OnNext(telemetryListener);
             }
 
             #region private 
             /// <summary>
             /// Remove 'subscription from the list of subscriptions that the observable has.   Called when
-            /// subscriptions are disposed.  
+            /// subscriptions are disposed.   Returns true if the subscription was removed.  
             /// </summary>
             private bool Remove(AllListenerSubscription subscription)
             {
@@ -328,10 +333,10 @@ namespace System.Diagnostics.Tracing
                 {
                     if (_owner.Remove(this))
                     {
-                        Subscriber.OnCompleted();
+                        Subscriber.OnCompleted();           // Called outside of a lock
                     }
                 }
-                    
+
                 private readonly AllListenerObservable _owner;               // the list this is a member of.  
                 internal readonly IObserver<TelemetryListener> Subscriber;
                 internal AllListenerSubscription Next;
@@ -342,10 +347,7 @@ namespace System.Diagnostics.Tracing
         }
         #endregion 
 
-        // TODO _subscriptions should be volatile but we get a warning (which gets treated as an error) that 
-        // when it gets passed as ref to Interlock.* functions that its volatileness disappears.    We really should
-        // just be suppressing the warning.    We can get away without the volatile because we only read it once 
-        private /* volatile */ TelemetrySubscription _subscriptions;
+        private volatile TelemetrySubscription _subscriptions;
         private TelemetryListener _next;               // We keep a linked list of all NotificationListeners (s_allListeners)
         private bool _disposed;                        // Has Dispose been called?
 
