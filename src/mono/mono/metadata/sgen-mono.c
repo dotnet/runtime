@@ -2565,35 +2565,6 @@ mono_gc_get_los_limit (void)
 	return SGEN_MAX_SMALL_OBJ_SIZE;
 }
 
-void
-mono_gc_weak_link_register (volatile gpointer *link_addr, MonoObject *obj, gboolean track)
-{
-	binary_protocol_dislink_add ((gpointer)link_addr, obj, track);
-}
-
-void
-mono_gc_weak_link_unregister (volatile gpointer *link_addr, gboolean track)
-{
-	binary_protocol_dislink_remove ((gpointer)link_addr, track);
-}
-
-void
-mono_gc_ensure_weak_links_accessible (void)
-{
-	/*
-	 * During the second bridge processing step the world is
-	 * running again.  That step processes all weak links once
-	 * more to null those that refer to dead objects.  Before that
-	 * is completed, those links must not be followed, so we
-	 * conservatively wait for bridge processing when any weak
-	 * link is dereferenced.
-	 */
-	/* FIXME: A GC can occur after this check fails, in which case we
-	 * should wait for bridge processing but would fail to do so.
-	 */
-	mono_gc_wait_for_bridge_processing ();
-}
-
 gpointer
 sgen_client_default_metadata (void)
 {
