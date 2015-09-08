@@ -1,15 +1,13 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Xunit;
-using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
+using Xunit;
 
-namespace Test
+namespace System.Threading.Tests
 {
     /// <summary>The class that contains the unit tests of the ThreadLocal.</summary>
     public static class ThreadLocalTests
