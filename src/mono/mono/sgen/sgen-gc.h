@@ -43,6 +43,7 @@ typedef struct _SgenThreadInfo SgenThreadInfo;
 #include "mono/sgen/sgen-conf.h"
 #include "mono/sgen/sgen-hash-table.h"
 #include "mono/sgen/sgen-protocol.h"
+#include "mono/sgen/gc-internal-agnostic.h"
 
 /* The method used to clear the nursery */
 /* Clearing at nursery collections is the safest, but has bad interactions with caches.
@@ -171,14 +172,6 @@ sgen_aligned_addr_hash (gconstpointer ptr)
 {
 	return GPOINTER_TO_UINT (ptr) >> 3;
 }
-
-/*
- * The link pointer is hidden by negating each bit.  We use the lowest
- * bit of the link (before negation) to store whether it needs
- * resurrection tracking.
- */
-#define HIDE_POINTER(p,t)	((gpointer)(~((size_t)(p)|((t)?1:0))))
-#define REVEAL_POINTER(p)	((gpointer)((~(size_t)(p))&~3L))
 
 #define SGEN_PTR_IN_NURSERY(p,bits,start,end)	(((mword)(p) & ~((1 << (bits)) - 1)) == (mword)(start))
 
@@ -786,7 +779,7 @@ void sgen_collect_bridge_objects (int generation, ScanCopyContext ctx);
 
 typedef gboolean (*SgenObjectPredicateFunc) (GCObject *obj, void *user_data);
 
-void sgen_null_links_if (SgenObjectPredicateFunc predicate, void *data, int generation);
+void sgen_null_links_if (SgenObjectPredicateFunc predicate, void *data, int generation, gboolean track);
 
 gboolean sgen_gc_is_object_ready_for_finalization (GCObject *object);
 void sgen_gc_lock (void);
@@ -796,7 +789,7 @@ void sgen_queue_finalization_entry (GCObject *obj);
 const char* sgen_generation_name (int generation);
 
 void sgen_finalize_in_range (int generation, ScanCopyContext ctx);
-void sgen_null_link_in_range (int generation, gboolean before_finalization, ScanCopyContext ctx);
+void sgen_null_link_in_range (int generation, ScanCopyContext ctx, gboolean track);
 void sgen_process_fin_stage_entries (void);
 gboolean sgen_have_pending_finalizers (void);
 void sgen_object_register_for_finalization (GCObject *obj, void *user_data);
@@ -804,7 +797,6 @@ void sgen_object_register_for_finalization (GCObject *obj, void *user_data);
 int sgen_gather_finalizers_if (SgenObjectPredicateFunc predicate, void *user_data, GCObject **out_array, int out_size);
 void sgen_remove_finalizers_if (SgenObjectPredicateFunc predicate, void *user_data, int generation);
 
-void sgen_process_dislink_stage_entries (void);
 void sgen_register_disappearing_link (GCObject *obj, void **link, gboolean track, gboolean in_gc);
 
 GCObject* sgen_weak_link_get (void **link_addr);
@@ -948,6 +940,19 @@ sgen_is_object_alive_for_current_gen (GCObject *object)
 
 int sgen_gc_invoke_finalizers (void);
 
+/* GC handles */
+
+void sgen_init_gchandles (void);
+
+void sgen_null_links_if (SgenObjectPredicateFunc predicate, void *data, int generation, gboolean track);
+
+typedef gpointer (*SgenGCHandleIterateCallback) (gpointer hidden, GCHandleType handle_type, int max_generation, gpointer user);
+
+void sgen_gchandle_iterate (GCHandleType handle_type, int max_generation, SgenGCHandleIterateCallback callback, gpointer user);
+void sgen_gchandle_set_target (guint32 gchandle, GCObject *obj);
+void sgen_mark_normal_gc_handles (void *addr, SgenUserMarkFunc mark_func, void *gc_data);
+gpointer sgen_gchandle_get_metadata (guint32 gchandle);
+
 /* Other globals */
 
 extern GCMemSection *nursery_section;
@@ -1012,23 +1017,6 @@ void sgen_debug_dump_heap (const char *type, int num, const char *reason);
 void sgen_debug_verify_nursery (gboolean do_dump_nursery_content);
 void sgen_debug_check_nursery_is_clean (void);
 
-/* Write barrier support */
-
-/*
- * This causes the compile to extend the liveness of 'v' till the call to dummy_use
- */
-static inline void
-sgen_dummy_use (gpointer v) {
-#if defined(__GNUC__)
-	__asm__ volatile ("" : "=r"(v) : "r"(v));
-#elif defined(_MSC_VER)
-	static volatile gpointer ptr;
-	ptr = v;
-#else
-#error "Implement sgen_dummy_use for your compiler"
-#endif
-}
-
 /* Environment variable parsing */
 
 #define MONO_GC_PARAMS_NAME	"MONO_GC_PARAMS"
@@ -1074,6 +1062,22 @@ gboolean nursery_canaries_enabled (void);
 					else				\
 						g_warning ("CORRUPT CANARY:\naddr->%p\ntype->%s\nexcepted->'%s'\nfound->'%s'\n", (char*) addr, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE ((addr))), CANARY_STRING, canary_copy); \
 				} }
+
+/*
+ * This causes the compile to extend the liveness of 'v' till the call to dummy_use
+ */
+static inline void
+sgen_dummy_use (gpointer v)
+{
+#if defined(__GNUC__)
+	__asm__ volatile ("" : "=r"(v) : "r"(v));
+#elif defined(_MSC_VER)
+	static volatile gpointer ptr;
+	ptr = v;
+#else
+#error "Implement sgen_dummy_use for your compiler"
+#endif
+}
 
 #endif /* HAVE_SGEN_GC */
 

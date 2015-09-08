@@ -25,6 +25,7 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/threadpool-ms.h>
 #include <mono/sgen/sgen-conf.h>
+#include <mono/sgen/sgen-gc.h>
 #include <mono/utils/mono-logger-internal.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/marshal.h> /* for mono_delegate_free_ftnptr () */
@@ -69,8 +70,6 @@ static mono_cond_t exited_cond;
 static MonoInternalThread *gc_thread;
 
 static void object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*));
-
-static void mono_gchandle_set_target (guint32 gchandle, MonoObject *obj);
 
 static void reference_queue_proccess_all (void);
 static void mono_reference_queue_cleanup (void);
@@ -529,16 +528,6 @@ ves_icall_System_GC_get_ephemeron_tombstone (void)
 #define mono_allocator_lock() mono_mutex_lock (&allocator_section)
 #define mono_allocator_unlock() mono_mutex_unlock (&allocator_section)
 static mono_mutex_t allocator_section;
-static mono_mutex_t handle_section;
-
-typedef enum {
-	HANDLE_WEAK,
-	HANDLE_WEAK_TRACK,
-	HANDLE_NORMAL,
-	HANDLE_PINNED
-} HandleType;
-
-static HandleType mono_gchandle_get_type (guint32 gchandle);
 
 MonoObject *
 ves_icall_System_GCHandle_GetTarget (guint32 handle)
@@ -583,7 +572,7 @@ ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle)
 {
 	MonoObject *obj;
 
-	if (mono_gchandle_get_type (handle) != HANDLE_PINNED)
+	if (MONO_GC_HANDLE_TYPE (handle) != HANDLE_PINNED)
 		return (gpointer)-2;
 	obj = mono_gchandle_get_target (handle);
 	if (obj) {
@@ -607,385 +596,6 @@ MonoBoolean
 ves_icall_Mono_Runtime_SetGCAllowSynchronousMajor (MonoBoolean flag)
 {
 	return mono_gc_set_allow_synchronous_major (flag);
-}
-
-typedef struct {
-	guint32  *bitmap;
-	gpointer *entries;
-	guint32   size;
-	guint8    type;
-	guint     slot_hint : 24; /* starting slot for search */
-	/* 2^16 appdomains should be enough for everyone (though I know I'll regret this in 20 years) */
-	/* we alloc this only for weak refs, since we can get the domain directly in the other cases */
-	guint16  *domain_ids;
-} HandleData;
-
-/* weak and weak-track arrays will be allocated in malloc memory 
- */
-static HandleData gc_handles [] = {
-	{NULL, NULL, 0, HANDLE_WEAK, 0},
-	{NULL, NULL, 0, HANDLE_WEAK_TRACK, 0},
-	{NULL, NULL, 0, HANDLE_NORMAL, 0},
-	{NULL, NULL, 0, HANDLE_PINNED, 0}
-};
-
-#define lock_handles(handles) do {	\
-	MONO_TRY_BLOCKING;	\
-	mono_mutex_lock (&handle_section);	\
-	MONO_FINISH_TRY_BLOCKING;	\
-} while (0)
-
-#define unlock_handles(handles) mono_mutex_unlock (&handle_section)
-
-static int
-find_first_unset (guint32 bitmap)
-{
-	int i;
-	for (i = 0; i < 32; ++i) {
-		if (!(bitmap & (1 << i)))
-			return i;
-	}
-	return -1;
-}
-
-static MonoGCDescriptor
-make_root_descr_all_refs (int numbits, gboolean pinned)
-{
-#ifdef HAVE_SGEN_GC
-	if (pinned)
-		return MONO_GC_DESCRIPTOR_NULL;
-#endif
-	return mono_gc_make_root_descr_all_refs (numbits);
-}
-
-static guint32
-alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
-{
-	gint slot, i;
-	guint32 res;
-	lock_handles (handles);
-	if (!handles->size) {
-		handles->size = 32;
-		if (handles->type > HANDLE_WEAK_TRACK) {
-			handles->entries = mono_gc_alloc_fixed (sizeof (gpointer) * handles->size, make_root_descr_all_refs (handles->size, handles->type == HANDLE_PINNED), MONO_ROOT_SOURCE_GC_HANDLE, "gc handles table");
-		} else {
-			handles->entries = g_malloc0 (sizeof (gpointer) * handles->size);
-			handles->domain_ids = g_malloc0 (sizeof (guint16) * handles->size);
-		}
-		handles->bitmap = g_malloc0 (handles->size / 8);
-	}
-	i = -1;
-	for (slot = handles->slot_hint; slot < handles->size / 32; ++slot) {
-		if (handles->bitmap [slot] != 0xffffffff) {
-			i = find_first_unset (handles->bitmap [slot]);
-			handles->slot_hint = slot;
-			break;
-		}
-	}
-	if (i == -1 && handles->slot_hint != 0) {
-		for (slot = 0; slot < handles->slot_hint; ++slot) {
-			if (handles->bitmap [slot] != 0xffffffff) {
-				i = find_first_unset (handles->bitmap [slot]);
-				handles->slot_hint = slot;
-				break;
-			}
-		}
-	}
-	if (i == -1) {
-		guint32 *new_bitmap;
-		guint32 new_size = handles->size * 2; /* always double: we memset to 0 based on this below */
-
-		/* resize and copy the bitmap */
-		new_bitmap = g_malloc0 (new_size / 8);
-		memcpy (new_bitmap, handles->bitmap, handles->size / 8);
-		g_free (handles->bitmap);
-		handles->bitmap = new_bitmap;
-
-		/* resize and copy the entries */
-		if (handles->type > HANDLE_WEAK_TRACK) {
-			gpointer *entries;
-
-			entries = mono_gc_alloc_fixed (sizeof (gpointer) * new_size, make_root_descr_all_refs (new_size, handles->type == HANDLE_PINNED), MONO_ROOT_SOURCE_GC_HANDLE, "gc handles table");
-			mono_gc_memmove_aligned (entries, handles->entries, sizeof (gpointer) * handles->size);
-
-			mono_gc_free_fixed (handles->entries);
-			handles->entries = entries;
-		} else {
-			gpointer *entries;
-			guint16 *domain_ids;
-			domain_ids = g_malloc0 (sizeof (guint16) * new_size);
-			entries = g_malloc0 (sizeof (gpointer) * new_size);
-			memcpy (domain_ids, handles->domain_ids, sizeof (guint16) * handles->size);
-			for (i = 0; i < handles->size; ++i) {
-				MonoObject *obj = mono_gc_weak_link_get (&(handles->entries [i]));
-				if (obj) {
-					mono_gc_weak_link_add (&(entries [i]), obj, track);
-					mono_gc_weak_link_remove (&(handles->entries [i]), track);
-				} else {
-					g_assert (!handles->entries [i]);
-				}
-			}
-			g_free (handles->entries);
-			g_free (handles->domain_ids);
-			handles->entries = entries;
-			handles->domain_ids = domain_ids;
-		}
-
-		/* set i and slot to the next free position */
-		i = 0;
-		slot = (handles->size + 1) / 32;
-		handles->slot_hint = handles->size + 1;
-		handles->size = new_size;
-	}
-	handles->bitmap [slot] |= 1 << i;
-	slot = slot * 32 + i;
-	handles->entries [slot] = NULL;
-	if (handles->type <= HANDLE_WEAK_TRACK) {
-		/*FIXME, what to use when obj == null?*/
-		handles->domain_ids [slot] = (obj ? mono_object_get_domain (obj) : mono_domain_get ())->domain_id;
-		if (obj)
-			mono_gc_weak_link_add (&(handles->entries [slot]), obj, track);
-	} else {
-		handles->entries [slot] = obj;
-	}
-
-#ifndef DISABLE_PERFCOUNTERS
-	mono_perfcounters->gc_num_handles++;
-#endif
-	unlock_handles (handles);
-	/*g_print ("allocated entry %d of type %d to object %p (in slot: %p)\n", slot, handles->type, obj, handles->entries [slot]);*/
-	res = (slot << 3) | (handles->type + 1);
-	mono_profiler_gc_handle (MONO_PROFILER_GC_HANDLE_CREATED, handles->type, res, obj);
-	return res;
-}
-
-/**
- * mono_gchandle_new:
- * @obj: managed object to get a handle for
- * @pinned: whether the object should be pinned
- *
- * This returns a handle that wraps the object, this is used to keep a
- * reference to a managed object from the unmanaged world and preventing the
- * object from being disposed.
- * 
- * If @pinned is false the address of the object can not be obtained, if it is
- * true the address of the object can be obtained.  This will also pin the
- * object so it will not be possible by a moving garbage collector to move the
- * object. 
- * 
- * Returns: a handle that can be used to access the object from
- * unmanaged code.
- */
-guint32
-mono_gchandle_new (MonoObject *obj, gboolean pinned)
-{
-	return alloc_handle (&gc_handles [pinned? HANDLE_PINNED: HANDLE_NORMAL], obj, FALSE);
-}
-
-/**
- * mono_gchandle_new_weakref:
- * @obj: managed object to get a handle for
- * @pinned: whether the object should be pinned
- *
- * This returns a weak handle that wraps the object, this is used to
- * keep a reference to a managed object from the unmanaged world.
- * Unlike the mono_gchandle_new the object can be reclaimed by the
- * garbage collector.  In this case the value of the GCHandle will be
- * set to zero.
- * 
- * If @pinned is false the address of the object can not be obtained, if it is
- * true the address of the object can be obtained.  This will also pin the
- * object so it will not be possible by a moving garbage collector to move the
- * object. 
- * 
- * Returns: a handle that can be used to access the object from
- * unmanaged code.
- */
-guint32
-mono_gchandle_new_weakref (MonoObject *obj, gboolean track_resurrection)
-{
-	guint32 handle = alloc_handle (&gc_handles [track_resurrection? HANDLE_WEAK_TRACK: HANDLE_WEAK], obj, track_resurrection);
-
-	return handle;
-}
-
-static HandleType
-mono_gchandle_get_type (guint32 gchandle)
-{
-	guint type = (gchandle & 7) - 1;
-
-	return type;
-}
-
-/**
- * mono_gchandle_get_target:
- * @gchandle: a GCHandle's handle.
- *
- * The handle was previously created by calling mono_gchandle_new or
- * mono_gchandle_new_weakref. 
- *
- * Returns a pointer to the MonoObject represented by the handle or
- * NULL for a collected object if using a weakref handle.
- */
-MonoObject*
-mono_gchandle_get_target (guint32 gchandle)
-{
-	guint slot = gchandle >> 3;
-	guint type = (gchandle & 7) - 1;
-	HandleData *handles = &gc_handles [type];
-	MonoObject *obj = NULL;
-	if (type > 3)
-		return NULL;
-	lock_handles (handles);
-	if (slot < handles->size && (handles->bitmap [slot / 32] & (1 << (slot % 32)))) {
-		if (handles->type <= HANDLE_WEAK_TRACK) {
-			obj = mono_gc_weak_link_get (&handles->entries [slot]);
-		} else {
-			obj = handles->entries [slot];
-		}
-	} else {
-		/* print a warning? */
-	}
-	unlock_handles (handles);
-	/*g_print ("get target of entry %d of type %d: %p\n", slot, handles->type, obj);*/
-	return obj;
-}
-
-static void
-mono_gchandle_set_target (guint32 gchandle, MonoObject *obj)
-{
-	guint slot = gchandle >> 3;
-	guint type = (gchandle & 7) - 1;
-	HandleData *handles = &gc_handles [type];
-
-	if (type > 3)
-		return;
-	lock_handles (handles);
-	if (slot < handles->size && (handles->bitmap [slot / 32] & (1 << (slot % 32)))) {
-		if (handles->type <= HANDLE_WEAK_TRACK) {
-			if (handles->entries [slot])
-				mono_gc_weak_link_remove (&handles->entries [slot], handles->type == HANDLE_WEAK_TRACK);
-			if (obj)
-				mono_gc_weak_link_add (&handles->entries [slot], obj, handles->type == HANDLE_WEAK_TRACK);
-			/*FIXME, what to use when obj == null?*/
-			handles->domain_ids [slot] = (obj ? mono_object_get_domain (obj) : mono_domain_get ())->domain_id;
-		} else {
-			handles->entries [slot] = obj;
-		}
-	} else {
-		/* print a warning? */
-	}
-	/*g_print ("changed entry %d of type %d to object %p (in slot: %p)\n", slot, handles->type, obj, handles->entries [slot]);*/
-	unlock_handles (handles);
-}
-
-/**
- * mono_gchandle_is_in_domain:
- * @gchandle: a GCHandle's handle.
- * @domain: An application domain.
- *
- * Returns: true if the object wrapped by the @gchandle belongs to the specific @domain.
- */
-gboolean
-mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain)
-{
-	guint slot = gchandle >> 3;
-	guint type = (gchandle & 7) - 1;
-	HandleData *handles = &gc_handles [type];
-	gboolean result = FALSE;
-	if (type > 3)
-		return FALSE;
-	lock_handles (handles);
-	if (slot < handles->size && (handles->bitmap [slot / 32] & (1 << (slot % 32)))) {
-		if (handles->type <= HANDLE_WEAK_TRACK) {
-			result = domain->domain_id == handles->domain_ids [slot];
-		} else {
-			MonoObject *obj;
-			obj = handles->entries [slot];
-			if (obj == NULL)
-				result = TRUE;
-			else
-				result = domain == mono_object_domain (obj);
-		}
-	} else {
-		/* print a warning? */
-	}
-	unlock_handles (handles);
-	return result;
-}
-
-/**
- * mono_gchandle_free:
- * @gchandle: a GCHandle's handle.
- *
- * Frees the @gchandle handle.  If there are no outstanding
- * references, the garbage collector can reclaim the memory of the
- * object wrapped. 
- */
-void
-mono_gchandle_free (guint32 gchandle)
-{
-	guint slot = gchandle >> 3;
-	guint type = (gchandle & 7) - 1;
-	HandleData *handles = &gc_handles [type];
-	if (type > 3)
-		return;
-
-	lock_handles (handles);
-	if (slot < handles->size && (handles->bitmap [slot / 32] & (1 << (slot % 32)))) {
-		if (handles->type <= HANDLE_WEAK_TRACK) {
-			if (handles->entries [slot])
-				mono_gc_weak_link_remove (&handles->entries [slot], handles->type == HANDLE_WEAK_TRACK);
-		} else {
-			handles->entries [slot] = NULL;
-		}
-		handles->bitmap [slot / 32] &= ~(1 << (slot % 32));
-	} else {
-		/* print a warning? */
-	}
-#ifndef DISABLE_PERFCOUNTERS
-	mono_perfcounters->gc_num_handles--;
-#endif
-	/*g_print ("freed entry %d of type %d\n", slot, handles->type);*/
-	unlock_handles (handles);
-	mono_profiler_gc_handle (MONO_PROFILER_GC_HANDLE_DESTROYED, handles->type, gchandle, NULL);
-}
-
-/**
- * mono_gchandle_free_domain:
- * @domain: domain that is unloading
- *
- * Function used internally to cleanup any GC handle for objects belonging
- * to the specified domain during appdomain unload.
- */
-void
-mono_gchandle_free_domain (MonoDomain *domain)
-{
-	guint type;
-
-	for (type = 0; type < 3; ++type) {
-		guint slot;
-		HandleData *handles = &gc_handles [type];
-		lock_handles (handles);
-		for (slot = 0; slot < handles->size; ++slot) {
-			if (!(handles->bitmap [slot / 32] & (1 << (slot % 32))))
-				continue;
-			if (type <= HANDLE_WEAK_TRACK) {
-				if (domain->domain_id == handles->domain_ids [slot]) {
-					handles->bitmap [slot / 32] &= ~(1 << (slot % 32));
-					if (handles->entries [slot])
-						mono_gc_weak_link_remove (&handles->entries [slot], handles->type == HANDLE_WEAK_TRACK);
-				}
-			} else {
-				if (handles->entries [slot] && mono_object_domain (handles->entries [slot]) == domain) {
-					handles->bitmap [slot / 32] &= ~(1 << (slot % 32));
-					handles->entries [slot] = NULL;
-				}
-			}
-		}
-		unlock_handles (handles);
-	}
-
 }
 
 MonoBoolean
@@ -1174,14 +784,10 @@ mono_gc_init_finalizer_thread (void)
 void
 mono_gc_init (void)
 {
-	mono_mutex_init_recursive (&handle_section);
 	mono_mutex_init_recursive (&allocator_section);
 
 	mono_mutex_init_recursive (&finalizer_mutex);
 	mono_mutex_init_recursive (&reference_queue_mutex);
-
-	MONO_GC_REGISTER_ROOT_FIXED (gc_handles [HANDLE_NORMAL].entries, MONO_ROOT_SOURCE_GC_HANDLE, "gc handles table");
-	MONO_GC_REGISTER_ROOT_FIXED (gc_handles [HANDLE_PINNED].entries, MONO_ROOT_SOURCE_GC_HANDLE, "gc handles table");
 
 	mono_counters_register ("Minor GC collections", MONO_COUNTER_GC | MONO_COUNTER_UINT, &gc_stats.minor_gc_count);
 	mono_counters_register ("Major GC collections", MONO_COUNTER_GC | MONO_COUNTER_UINT, &gc_stats.major_gc_count);
@@ -1290,17 +896,6 @@ mono_gc_cleanup (void)
 	mono_mutex_destroy (&reference_queue_mutex);
 }
 
-/**
- * mono_gc_mutex_cleanup:
- *
- * Destroy the mutexes that may still be used after the main cleanup routine.
- */
-void
-mono_gc_mutex_cleanup (void)
-{
-	mono_mutex_destroy (&handle_section);
-}
-
 gboolean
 mono_gc_is_finalizer_internal_thread (MonoInternalThread *thread)
 {
@@ -1377,13 +972,8 @@ reference_queue_proccess (MonoReferenceQueue *queue)
 	RefQueueEntry **iter = &queue->queue;
 	RefQueueEntry *entry;
 	while ((entry = *iter)) {
-#ifdef HAVE_SGEN_GC
-		if (queue->should_be_deleted || !mono_gc_weak_link_get (&entry->dis_link)) {
-			mono_gc_weak_link_remove (&entry->dis_link, TRUE);
-#else
 		if (queue->should_be_deleted || !mono_gchandle_get_target (entry->gchandle)) {
 			mono_gchandle_free ((guint32)entry->gchandle);
-#endif
 			ref_list_remove_element (iter, entry);
 			queue->callback (entry->user_data);
 			g_free (entry);
@@ -1438,11 +1028,7 @@ reference_queue_clear_for_domain (MonoDomain *domain)
 		RefQueueEntry *entry;
 		while ((entry = *iter)) {
 			if (entry->domain == domain) {
-#ifdef HAVE_SGEN_GC
-				mono_gc_weak_link_remove (&entry->dis_link, TRUE);
-#else
 				mono_gchandle_free ((guint32)entry->gchandle);
-#endif
 				ref_list_remove_element (iter, entry);
 				queue->callback (entry->user_data);
 				g_free (entry);
@@ -1506,12 +1092,8 @@ mono_gc_reference_queue_add (MonoReferenceQueue *queue, MonoObject *obj, void *u
 	entry->user_data = user_data;
 	entry->domain = mono_object_domain (obj);
 
-#ifdef HAVE_SGEN_GC
-	mono_gc_weak_link_add (&entry->dis_link, obj, TRUE);
-#else
 	entry->gchandle = mono_gchandle_new_weakref (obj, TRUE);
 	mono_object_register_finalizer (obj);
-#endif
 
 	ref_list_push (&queue->queue, entry);
 	return TRUE;

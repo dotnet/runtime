@@ -31,6 +31,47 @@
 #include "mono/sgen/sgen-conf.h"
 #endif
 
+/* h indicates whether to hide or just tag.
+ * (-!!h ^ p) is used instead of (h ? ~p : p) to avoid multiple mentions of p.
+ */
+#define MONO_GC_HIDE_POINTER(p,t,h) ((gpointer)(((-(size_t)!!(h) ^ (size_t)(p)) & ~3UL) | ((t) & 3UL)))
+#define MONO_GC_REVEAL_POINTER(p,h) ((gpointer)((-(size_t)!!(h) ^ (size_t)(p)) & ~3UL))
+
+#define MONO_GC_POINTER_TAG(p) ((size_t)(p) & 3UL)
+
+#define MONO_GC_HANDLE_OCCUPIED_MASK (1)
+#define MONO_GC_HANDLE_VALID_MASK (2)
+#define MONO_GC_HANDLE_TAG_MASK (MONO_GC_HANDLE_OCCUPIED_MASK | MONO_GC_HANDLE_VALID_MASK)
+
+#define MONO_GC_HANDLE_METADATA_POINTER(p,h) (MONO_GC_HIDE_POINTER ((p), MONO_GC_HANDLE_OCCUPIED_MASK, (h)))
+#define MONO_GC_HANDLE_OBJECT_POINTER(p,h) (MONO_GC_HIDE_POINTER ((p), MONO_GC_HANDLE_OCCUPIED_MASK | MONO_GC_HANDLE_VALID_MASK, (h)))
+
+#define MONO_GC_HANDLE_OCCUPIED(slot) ((size_t)(slot) & MONO_GC_HANDLE_OCCUPIED_MASK)
+#define MONO_GC_HANDLE_VALID(slot) ((size_t)(slot) & MONO_GC_HANDLE_VALID_MASK)
+
+#define MONO_GC_HANDLE_TAG(slot) ((size_t)(slot) & MONO_GC_HANDLE_TAG_MASK)
+
+#define MONO_GC_HANDLE_IS_OBJECT_POINTER(slot) (MONO_GC_HANDLE_TAG (slot) == (MONO_GC_HANDLE_OCCUPIED_MASK | MONO_GC_HANDLE_VALID_MASK))
+#define MONO_GC_HANDLE_IS_METADATA_POINTER(slot) (MONO_GC_HANDLE_TAG (slot) == MONO_GC_HANDLE_OCCUPIED_MASK)
+
+typedef enum {
+	HANDLE_TYPE_MIN = 0,
+	HANDLE_WEAK = HANDLE_TYPE_MIN,
+	HANDLE_WEAK_TRACK,
+	HANDLE_NORMAL,
+	HANDLE_PINNED,
+	HANDLE_TYPE_MAX
+} GCHandleType;
+
+#define GC_HANDLE_TYPE_IS_WEAK(x) ((x) <= HANDLE_WEAK_TRACK)
+
+#define MONO_GC_HANDLE_TYPE_SHIFT (3)
+#define MONO_GC_HANDLE_TYPE_MASK ((1 << MONO_GC_HANDLE_TYPE_SHIFT) - 1)
+#define MONO_GC_HANDLE_TYPE(x) (((x) & MONO_GC_HANDLE_TYPE_MASK) - 1)
+#define MONO_GC_HANDLE_SLOT(x) ((x) >> MONO_GC_HANDLE_TYPE_SHIFT)
+#define MONO_GC_HANDLE_TYPE_IS_WEAK(x) ((x) <= HANDLE_WEAK_TRACK)
+#define MONO_GC_HANDLE(slot, type) (((slot) << MONO_GC_HANDLE_TYPE_SHIFT) | (((type) & MONO_GC_HANDLE_TYPE_MASK) + 1))
+
 typedef struct {
 	guint minor_gc_count;
 	guint major_gc_count;

@@ -29,7 +29,7 @@
 #include "mono/sgen/sgen-gc.h"
 #include "mono/metadata/sgen-bridge.h"
 
-extern gboolean bridge_processing_in_progress;
+extern volatile gboolean bridge_processing_in_progress;
 extern MonoGCBridgeCallbacks bridge_callbacks;
 
 gboolean sgen_need_bridge_processing (void);

@@ -11,6 +11,7 @@
 #define __MONO_METADATA_GC_INTERNAL_H__
 
 #include <glib.h>
+#include <mono/utils/gc_wrapper.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/sgen/gc-internal-agnostic.h>
@@ -84,7 +85,6 @@ MonoBoolean ves_icall_Mono_Runtime_SetGCAllowSynchronousMajor (MonoBoolean flag)
 extern void mono_gc_init (void);
 extern void mono_gc_base_init (void);
 extern void mono_gc_cleanup (void);
-extern void mono_gc_mutex_cleanup (void);
 extern void mono_gc_base_cleanup (void);
 
 /*
@@ -107,9 +107,11 @@ void     mono_gc_enable_events (void);
 void     mono_gc_enable_alloc_events (void);
 
 /* disappearing link functionality */
-void        mono_gc_weak_link_add    (void **link_addr, MonoObject *obj, gboolean track);
-void        mono_gc_weak_link_remove (void **link_addr, gboolean track);
-MonoObject *mono_gc_weak_link_get    (void **link_addr);
+void mono_gc_weak_link_register (volatile gpointer *link_addr, MonoObject *obj, gboolean track);
+void mono_gc_weak_link_unregister (volatile gpointer *link_addr, gboolean track);
+void mono_gc_ensure_weak_links_accessible (void);
+
+void mono_gchandle_set_target (guint32 gchandle, MonoObject *obj);
 
 /*Ephemeron functionality. Sgen only*/
 gboolean    mono_gc_ephemeron_array_add (MonoObject *obj);

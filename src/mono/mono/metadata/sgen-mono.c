@@ -784,9 +784,9 @@ clear_domain_process_object (GCObject *obj, MonoDomain *domain)
 	remove = need_remove_object_for_domain (obj, domain);
 
 	if (remove && obj->synchronisation) {
-		void **dislink = mono_monitor_get_object_monitor_weak_link (obj);
+		guint32 dislink = mono_monitor_get_object_monitor_gchandle (obj);
 		if (dislink)
-			sgen_register_disappearing_link (NULL, dislink, FALSE, TRUE);
+			mono_gchandle_free (dislink);
 	}
 
 	return remove;
@@ -849,7 +849,6 @@ mono_gc_clear_domain (MonoDomain * domain)
 	major_collector.finish_sweeping ();
 
 	sgen_process_fin_stage_entries ();
-	sgen_process_dislink_stage_entries ();
 
 	sgen_clear_nursery_fragments ();
 
@@ -862,9 +861,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 	/*Ephemerons and dislinks must be processed before LOS since they might end up pointing
 	to memory returned to the OS.*/
 	null_ephemerons_for_domain (domain);
-
-	for (i = GENERATION_NURSERY; i < GENERATION_MAX; ++i)
-		sgen_null_links_if (object_in_domain_predicate, domain, i);
+	sgen_null_links_for_domain (domain);
 
 	for (i = GENERATION_NURSERY; i < GENERATION_MAX; ++i)
 		sgen_remove_finalizers_if (object_in_domain_predicate, domain, i);
@@ -2569,21 +2566,137 @@ mono_gc_get_los_limit (void)
 }
 
 void
-mono_gc_weak_link_add (void **link_addr, MonoObject *obj, gboolean track)
+mono_gc_weak_link_register (volatile gpointer *link_addr, MonoObject *obj, gboolean track)
 {
-	sgen_register_disappearing_link (obj, link_addr, track, FALSE);
+	binary_protocol_dislink_add ((gpointer)link_addr, obj, track);
 }
 
 void
-mono_gc_weak_link_remove (void **link_addr, gboolean track)
+mono_gc_weak_link_unregister (volatile gpointer *link_addr, gboolean track)
 {
-	sgen_register_disappearing_link (NULL, link_addr, track, FALSE);
+	binary_protocol_dislink_remove ((gpointer)link_addr, track);
 }
 
-MonoObject*
-mono_gc_weak_link_get (void **link_addr)
+void
+mono_gc_ensure_weak_links_accessible (void)
 {
-	return sgen_weak_link_get (link_addr);
+	/*
+	 * During the second bridge processing step the world is
+	 * running again.  That step processes all weak links once
+	 * more to null those that refer to dead objects.  Before that
+	 * is completed, those links must not be followed, so we
+	 * conservatively wait for bridge processing when any weak
+	 * link is dereferenced.
+	 */
+	/* FIXME: A GC can occur after this check fails, in which case we
+	 * should wait for bridge processing but would fail to do so.
+	 */
+	mono_gc_wait_for_bridge_processing ();
+}
+
+gpointer
+sgen_client_default_metadata (void)
+{
+	return mono_domain_get ();
+}
+
+gpointer
+sgen_client_metadata_for_object (GCObject *obj)
+{
+	return mono_object_domain (obj);
+}
+
+/**
+ * mono_gchandle_is_in_domain:
+ * @gchandle: a GCHandle's handle.
+ * @domain: An application domain.
+ *
+ * Returns: true if the object wrapped by the @gchandle belongs to the specific @domain.
+ */
+gboolean
+mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain)
+{
+	MonoDomain *gchandle_domain = sgen_gchandle_get_metadata (gchandle);
+	return domain->domain_id == gchandle_domain->domain_id;
+}
+
+/**
+ * mono_gchandle_free_domain:
+ * @unloading: domain that is unloading
+ *
+ * Function used internally to cleanup any GC handle for objects belonging
+ * to the specified domain during appdomain unload.
+ */
+void
+mono_gchandle_free_domain (MonoDomain *unloading)
+{
+}
+
+static gpointer
+null_link_if_in_domain (gpointer hidden, GCHandleType handle_type, int max_generation, gpointer user)
+{
+	MonoDomain *unloading_domain = user;
+	MonoDomain *obj_domain;
+	gboolean is_weak = MONO_GC_HANDLE_TYPE_IS_WEAK (handle_type);
+	if (MONO_GC_HANDLE_IS_OBJECT_POINTER (hidden)) {
+		MonoObject *obj = MONO_GC_REVEAL_POINTER (hidden, is_weak);
+		obj_domain = mono_object_domain (obj);
+	} else {
+		obj_domain = MONO_GC_REVEAL_POINTER (hidden, is_weak);
+	}
+	if (unloading_domain->domain_id == obj_domain->domain_id)
+		return NULL;
+	return hidden;
+}
+
+void
+sgen_null_links_for_domain (MonoDomain *domain)
+{
+	guint type;
+	for (type = HANDLE_TYPE_MIN; type < HANDLE_TYPE_MAX; ++type)
+		sgen_gchandle_iterate (type, GENERATION_OLD, null_link_if_in_domain, domain);
+}
+
+void
+mono_gchandle_set_target (guint32 gchandle, MonoObject *obj)
+{
+	sgen_gchandle_set_target (gchandle, obj);
+}
+
+void
+sgen_client_gchandle_created (int handle_type, GCObject *obj, guint32 handle)
+{
+#ifndef DISABLE_PERFCOUNTERS
+	mono_perfcounters->gc_num_handles++;
+#endif
+	mono_profiler_gc_handle (MONO_PROFILER_GC_HANDLE_CREATED, handle_type, handle, obj);
+}
+
+void
+sgen_client_gchandle_destroyed (int handle_type, guint32 handle)
+{
+#ifndef DISABLE_PERFCOUNTERS
+	mono_perfcounters->gc_num_handles--;
+#endif
+	mono_profiler_gc_handle (MONO_PROFILER_GC_HANDLE_DESTROYED, handle_type, handle, NULL);
+}
+
+void
+sgen_client_ensure_weak_gchandles_accessible (void)
+{
+	/*
+	 * During the second bridge processing step the world is
+	 * running again.  That step processes all weak links once
+	 * more to null those that refer to dead objects.  Before that
+	 * is completed, those links must not be followed, so we
+	 * conservatively wait for bridge processing when any weak
+	 * link is dereferenced.
+	 */
+	/* FIXME: A GC can occur after this check fails, in which case we
+	 * should wait for bridge processing but would fail to do so.
+	 */
+	if (G_UNLIKELY (bridge_processing_in_progress))
+		mono_gc_wait_for_bridge_processing ();
 }
 
 gboolean

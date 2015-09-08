@@ -88,6 +88,19 @@ gboolean sgen_client_mark_ephemerons (ScanCopyContext ctx);
 void sgen_client_clear_unreachable_ephemerons (ScanCopyContext ctx);
 
 /*
+ * May return NULL.  Must be an aligned pointer.
+ */
+gpointer sgen_client_default_metadata (void);
+gpointer sgen_client_metadata_for_object (GCObject *obj);
+
+/*
+ * No action required.
+ */
+void sgen_client_gchandle_created (int handle_type, GCObject *obj, guint32 handle);
+void sgen_client_gchandle_destroyed (int handle_type, guint32 handle);
+void sgen_client_ensure_weak_gchandles_accessible (void);
+
+/*
  * This is called for objects that are larger than one card.  If it's possible to scan only
  * parts of the object based on which cards are marked, do so and return TRUE.  Otherwise,
  * return FALSE.
