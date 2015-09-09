@@ -528,7 +528,7 @@ static BOOL Internal_ScanfExtractFormatA(LPCSTR *Fmt, LPSTR Out, int iOutSize, L
     /* grab prefix of 'I64' for __int64 */
     if ((*Fmt)[0] == 'I' && (*Fmt)[1] == '6' && (*Fmt)[2] == '4')
     {
-        /* convert to 'q'/'ll' so BSD's sscanf can handle it */
+        /* convert to 'q'/'ll' so Unix sscanf can handle it */
         *Fmt += 3;
         *Prefix = SCANF_PREFIX_LONGLONG;
     }
@@ -548,6 +548,11 @@ static BOOL Internal_ScanfExtractFormatA(LPCSTR *Fmt, LPSTR Out, int iOutSize, L
 #endif
         {
             *Prefix = SCANF_PREFIX_LONG; /* give it a wide prefix */
+        }
+        if (**Fmt == 'l')
+        {
+            *Prefix = SCANF_PREFIX_LONGLONG;
+            ++(*Fmt);
         }
     }
     else if (**Fmt == 'L')
@@ -839,7 +844,7 @@ static BOOL Internal_ScanfExtractFormatW(LPCWSTR *Fmt, LPSTR Out, int iOutSize, 
     /* grab prefix of 'I64' for __int64 */
     if ((*Fmt)[0] == 'I' && (*Fmt)[1] == '6' && (*Fmt)[2] == '4')
     {
-        /* convert to 'q'/'ll' so BSD's sscanf can handle it */
+        /* convert to 'q'/'ll' so that Unix sscanf can handle it */
         *Fmt += 3;
         *Prefix = SCANF_PREFIX_LONGLONG;
     }
@@ -859,6 +864,11 @@ static BOOL Internal_ScanfExtractFormatW(LPCWSTR *Fmt, LPSTR Out, int iOutSize, 
 #endif
         {
             *Prefix = SCANF_PREFIX_LONG; /* give it a wide prefix */
+        }
+        if (**Fmt == 'l')
+        {
+            *Prefix = SCANF_PREFIX_LONGLONG;
+            ++(*Fmt);
         }
     }
     else if (**Fmt == 'L')
