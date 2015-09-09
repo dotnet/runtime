@@ -59,7 +59,6 @@ namespace System.Globalization.Tests
 
         // NegTest1:the name is not valid region
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)] 
         public void TestInvalidRegion()
         {
             string name = "HELLOWORLD";

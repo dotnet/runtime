@@ -51,11 +51,21 @@ namespace System.Globalization.Tests
             });
         }
 
-        // TestCurrencyDecimalDigitsLocale: Verify value of property CurrencyDecimalDigits for specific locale
+        // TestCurrencyDecimalDigitsLocale1: Verify value of property CurrencyDecimalDigits for specific locale
         [Theory]
-        [InlineData("en-US", 2, 3)]
+        [InlineData("en-US", 2)]
+        public void TestCurrencyDecimalDigitsLocale1(string locale, int expected)
+        {
+            CultureInfo myTestCulture = new CultureInfo(locale);
+            NumberFormatInfo nfi = myTestCulture.NumberFormat;
+            int actual = nfi.CurrencyDecimalDigits;
+            Assert.Equal(expected, actual);
+        }
+
+        // TestCurrencyDecimalDigitsLocale2: Verify value of property CurrencyDecimalDigits for specific locale
+        [Theory]
         [InlineData("ko", 0, 2)]
-        public void TestCurrencyDecimalDigitsLocale(string locale, int expectedWindows, int expectedIcu)
+        public void TestCurrencyDecimalDigitsLocale2(string locale, int expectedWindows, int expectedIcu)
         {
             CultureInfo myTestCulture = new CultureInfo(locale);
             NumberFormatInfo nfi = myTestCulture.NumberFormat;

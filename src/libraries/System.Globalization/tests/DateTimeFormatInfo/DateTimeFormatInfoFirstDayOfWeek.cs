@@ -62,6 +62,26 @@ namespace System.Globalization.Tests
             });
         }
 
+        // TestLocaleSunday: Verify value of property FirstDayOfWeek for specific locale
+        [Fact]
+        public void TestLocaleSunday()
+        {
+            CultureInfo myTestCulture = new CultureInfo("en-US");
+            DateTimeFormatInfo dti = myTestCulture.DateTimeFormat;
+            DayOfWeek actual = dti.FirstDayOfWeek;
+            Assert.Equal(DayOfWeek.Sunday, actual);
+        }
+
+        // TestLocaleMonday: Verify value of property FirstDayOfWeek for specific locale
+        [Fact]
+        public void TestLocaleMonday()
+        {
+            CultureInfo myTestCulture = new CultureInfo("fr");
+            DateTimeFormatInfo dti = myTestCulture.DateTimeFormat;
+            DayOfWeek actual = dti.FirstDayOfWeek;
+            Assert.Equal(DayOfWeek.Monday, actual);
+        }
+
         private void VerificationHelper(DateTimeFormatInfo info, DayOfWeek expected, bool setter)
         {
             if (setter)
