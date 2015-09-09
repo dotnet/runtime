@@ -1,12 +1,10 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Xunit;
 using OLEDB.Test.ModuleCore;
-using System;
-using XmlReaderTest.Common;
+using Xunit;
 
-namespace XmlReaderTest
+namespace System.Xml.Tests
 {
     public partial class WrappedReaderTest : CGenericTestModule
     {

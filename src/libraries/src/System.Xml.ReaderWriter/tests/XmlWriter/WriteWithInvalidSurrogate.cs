@@ -1,22 +1,19 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Xunit;
-using System;
 using System.IO;
 using System.Text;
-using System.Xml;
-using System.Reflection;
+using Xunit;
 
-namespace XMLTests.ReaderWriter.RegressionTests
+namespace System.Xml.Tests
 {
-    public class XmlWriterTests
+    public class XmlWriterTests_InvalidSurrogate
     {
         private const int SurHighStart = 0xd800;
         private const int SurLowStart = 0xdc00;
         private const int SurLowEnd = 0xdfff;
 
-        static XmlWriterTests()
+        static XmlWriterTests_InvalidSurrogate()
         {
             // Make sure that we don't cache the value of the switch to enable testing
             AppContext.SetSwitch("TestSwitch.LocalAppContext.DisableCaching", true);

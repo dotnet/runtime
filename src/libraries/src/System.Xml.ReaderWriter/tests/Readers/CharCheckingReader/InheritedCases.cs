@@ -2,14 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using OLEDB.Test.ModuleCore;
-using System;
 using System.IO;
-using System.Text;
-using System.Xml;
 using XmlCoreTest.Common;
-using XmlReaderTest.Common;
 
-namespace XmlReaderTest
+namespace System.Xml.Tests
 {
     [TestModule(Name = "XmlCharCheckingReader Test", Desc = "XmlCharCheckingReader Test")]
     public partial class CharCheckingReaderTest : CGenericTestModule

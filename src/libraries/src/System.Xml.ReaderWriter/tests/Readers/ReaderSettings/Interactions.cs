@@ -1,16 +1,9 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.IO;
-using System.Xml;
-using System.Xml.Schema;
-using System.Collections;
-using XmlReaderTest.Common;
-
 using OLEDB.Test.ModuleCore;
 
-namespace XmlReaderTest.ReaderSettingsTest
+namespace System.Xml.Tests
 {
     [TestCase(Name = "LineInfo", Desc = "LineInfo")]
     public partial class TCLineInfo : TCXMLReaderBaseGeneral
