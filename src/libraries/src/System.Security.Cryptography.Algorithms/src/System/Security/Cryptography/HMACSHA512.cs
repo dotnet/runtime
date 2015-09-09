@@ -17,15 +17,15 @@ namespace System.Security.Cryptography
     public class HMACSHA512 : HMAC
     {
         public HMACSHA512()
-            : this(Helpers.GenerateRandom(128))
+            : this(Helpers.GenerateRandom(BlockSize))
         {
         }
 
         public HMACSHA512(byte[] key)
         {
             this.HashName = HashAlgorithmNames.SHA512;
-            _hMacCommon = new HMACCommon(HashAlgorithmNames.SHA512, key);
-            base.Key = key;
+            _hMacCommon = new HMACCommon(HashAlgorithmNames.SHA512, key, BlockSize);
+            base.Key = _hMacCommon.ActualKey;
         }
 
         public override int HashSize
@@ -44,8 +44,8 @@ namespace System.Security.Cryptography
             }
             set
             {
-                base.Key = value;
                 _hMacCommon.ChangeKey(value);
+                base.Key = _hMacCommon.ActualKey;
             }
         }
 
@@ -79,5 +79,6 @@ namespace System.Security.Cryptography
         }
 
         private HMACCommon _hMacCommon;
+        private const int BlockSize = 128;
     }
 }
