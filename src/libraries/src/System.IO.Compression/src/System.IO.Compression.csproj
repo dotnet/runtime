@@ -20,7 +20,7 @@
     <PackageTargetRuntime>win7</PackageTargetRuntime>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' ">
-    <PackageTargetRuntime>Unix</PackageTargetRuntime>
+    <PackageTargetRuntime>unix</PackageTargetRuntime>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU'" />

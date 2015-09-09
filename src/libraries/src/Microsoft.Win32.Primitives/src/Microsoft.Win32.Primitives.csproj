@@ -11,6 +11,13 @@
     <AssemblyName>Microsoft.Win32.Primitives</AssemblyName>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PackageTargetFramework>dotnet</PackageTargetFramework>
+  </PropertyGroup>
+   <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' ">
+    <PackageTargetRuntime>win7</PackageTargetRuntime>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <PackageTargetRuntime>unix</PackageTargetRuntime>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU' " />
