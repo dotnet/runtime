@@ -48,11 +48,11 @@ namespace System.Globalization
             result &= EnumCalendarInfo(localeName, calendarId, CalendarDataType.YearMonths, out this.saYearMonths);
             result &= EnumCalendarInfo(localeName, calendarId, CalendarDataType.DayNames, out this.saDayNames);
             result &= EnumCalendarInfo(localeName, calendarId, CalendarDataType.AbbrevDayNames, out this.saAbbrevDayNames);
-            result &= EnumCalendarInfo(localeName, calendarId, CalendarDataType.MonthNames, out this.saMonthNames);
-            result &= EnumCalendarInfo(localeName, calendarId, CalendarDataType.AbbrevMonthNames, out this.saAbbrevMonthNames);
             result &= EnumCalendarInfo(localeName, calendarId, CalendarDataType.SuperShortDayNames, out this.saSuperShortDayNames);
-            result &= EnumCalendarInfo(localeName, calendarId, CalendarDataType.MonthGenitiveNames, out this.saMonthGenitiveNames);
-            result &= EnumCalendarInfo(localeName, calendarId, CalendarDataType.AbbrevMonthGenitiveNames, out this.saAbbrevMonthGenitiveNames);
+            result &= EnumMonthNames(localeName, calendarId, CalendarDataType.MonthNames, out this.saMonthNames);
+            result &= EnumMonthNames(localeName, calendarId, CalendarDataType.AbbrevMonthNames, out this.saAbbrevMonthNames);
+            result &= EnumMonthNames(localeName, calendarId, CalendarDataType.MonthGenitiveNames, out this.saMonthGenitiveNames);
+            result &= EnumMonthNames(localeName, calendarId, CalendarDataType.AbbrevMonthGenitiveNames, out this.saAbbrevMonthGenitiveNames);
             result &= EnumEraNames(localeName, calendarId, CalendarDataType.EraNames, out this.saEraNames);
             result &= EnumEraNames(localeName, calendarId, CalendarDataType.AbbrevEraNames, out this.saAbbrevEraNames);
 
@@ -128,6 +128,27 @@ namespace System.Globalization
             return false;
         }
 
+        private bool EnumMonthNames(string localeName, CalendarId calendarId, CalendarDataType dataType, out string[] monthNames)
+        {
+            monthNames = null;
+
+            List<string> monthNameList = new List<string>(13);
+            bool result = EnumCalendarInfo(localeName, calendarId, dataType, monthNameList);
+            if (result)
+            {
+                // the month-name arrays are expected to have 13 elements.  If ICU only returns 12, add an
+                // extra empty string to fill the array.
+                if (monthNameList.Count == 12)
+                {
+                    monthNameList.Add(string.Empty);
+                }
+
+                monthNames = monthNameList.ToArray();
+            }
+
+            return result;
+        }
+
         private bool EnumEraNames(string localeName, CalendarId calendarId, CalendarDataType dataType, out string[] eraNames)
         {
             bool result = EnumCalendarInfo(localeName, calendarId, dataType, out eraNames);
@@ -148,16 +169,21 @@ namespace System.Globalization
             calendarData = null;
 
             List<string> calendarDataList = new List<string>();
+            bool result = EnumCalendarInfo(localeName, calendarId, dataType, calendarDataList);
+            if (result)
+            {
+                calendarData = calendarDataList.ToArray();
+            }
+
+            return result;
+        }
+
+        private static bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, List<string> calendarDataList)
+        {
             GCHandle context = GCHandle.Alloc(calendarDataList);
             try
             {
-                bool result = Interop.GlobalizationInterop.EnumCalendarInfo(EnumCalendarInfoCallback, localeName, calendarId, dataType, (IntPtr)context);
-                if (result)
-                {
-                    calendarData = calendarDataList.ToArray();
-                }
-
-                return result;
+                return Interop.GlobalizationInterop.EnumCalendarInfo(EnumCalendarInfoCallback, localeName, calendarId, dataType, (IntPtr)context);
             }
             finally
             {
