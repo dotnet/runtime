@@ -32,6 +32,7 @@ namespace System.Net.Http
 
         private const int RequestBufferSize = 16384; // Default used by libcurl
         private const string NoTransferEncoding = HttpKnownHeaderNames.TransferEncoding + ":";
+        private const string NoContentType = HttpKnownHeaderNames.ContentType + ":";
         private const int CurlAge = 5;
         private const int MinCurlAge = 3;
 
