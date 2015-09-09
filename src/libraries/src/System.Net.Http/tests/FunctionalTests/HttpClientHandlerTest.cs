@@ -455,6 +455,22 @@ namespace System.Net.Http.Tests
             }
         }
 
+        [Theory, MemberData("PostServers")]
+        public async Task PostAsync_CallMethod_StreamContent(Uri remoteServer)
+        {
+            var handler = new HttpClientHandler();
+            using (var client = new HttpClient(handler))
+            {
+                byte[] data = new byte[1234];
+                new Random(42).NextBytes(data);
+                HttpContent content = new StreamContent(new MemoryStream(data));
+                HttpResponseMessage response = await client.PostAsync(remoteServer, content);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                Assert.Contains(Convert.ToBase64String(data), responseContent);
+            }
+        }
+
         #endregion
 
         #region Put Method Tests
