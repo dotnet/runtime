@@ -333,7 +333,7 @@ namespace System.IO.Pipes
             {
                 return (int)SysCall(_handle, (fd, ptr, len, _) =>
                 {
-                    long result = (long)Interop.libc.read(fd, (byte*)ptr, (IntPtr)len);
+                    long result = (long)Interop.Sys.Read(fd, (byte*)ptr, (ulong)len);
                     Debug.Assert(result <= len);
                     return result;
                 }, (IntPtr)(bufPtr + offset), count);
@@ -360,20 +360,20 @@ namespace System.IO.Pipes
                         {
                             // Wait for data to be available on either the pipe we want to read from
                             // or on the cancellation pipe, which would signal a cancellation request.
-                            Interop.libc.pollfd* fds = stackalloc Interop.libc.pollfd[2];
-                            fds[0] = new Interop.libc.pollfd { fd = fd, events = Interop.libc.PollFlags.POLLIN, revents = 0 };
-                            fds[1] = new Interop.libc.pollfd { fd = (int)cancellationFd, events = Interop.libc.PollFlags.POLLIN, revents = 0 };
-                            while (Interop.CheckIo(Interop.libc.poll(fds, 2, -1))) ;
+                            Interop.Sys.PollFD* fds = stackalloc Interop.Sys.PollFD[2];
+                            fds[0] = new Interop.Sys.PollFD { FD = fd, Events = Interop.Sys.PollFlags.POLLIN, REvents = 0 };
+                            fds[1] = new Interop.Sys.PollFD { FD = (int)cancellationFd, Events = Interop.Sys.PollFlags.POLLIN, REvents = 0 };
+                            while (Interop.CheckIo(Interop.Sys.Poll(fds, 2, -1))) ;
 
                             // If we woke up because of a cancellation request, bail.
-                            if ((fds[1].revents & Interop.libc.PollFlags.POLLIN) != 0)
+                            if ((fds[1].REvents & Interop.Sys.PollFlags.POLLIN) != 0)
                             {
                                 return CancellationSentinel;
                             }
 
                             // Otherwise, we woke up because data is available on the pipe. Read it.
-                            Debug.Assert((fds[0].revents & Interop.libc.PollFlags.POLLIN) != 0);
-                            long result = (long)Interop.libc.read(fd, (byte*)ptr, (IntPtr)len);
+                            Debug.Assert((fds[0].REvents & Interop.Sys.PollFlags.POLLIN) != 0);
+                            long result = (long)Interop.Sys.Read(fd, (byte*)ptr, (ulong)len);
                             Debug.Assert(result <= len);
                             return result;
                         }, (IntPtr)(bufPtr + offset), count, cancellation.Poll.DangerousGetHandle());
@@ -408,7 +408,7 @@ namespace System.IO.Pipes
                 {
                     int bytesWritten = (int)SysCall(_handle, (fd, ptr, len, _) =>
                     {
-                        long result = (long)Interop.libc.write(fd, (byte*)ptr, (IntPtr)len);
+                        long result = (long)Interop.Sys.Write(fd, (byte*)ptr, (ulong)len);
                         Debug.Assert(result <= len);
                         return result;
                     }, (IntPtr)(bufPtr + offset), count);
@@ -482,7 +482,7 @@ namespace System.IO.Pipes
                     sendRef.DangerousAddRef(ref gotSendRef);
                     int fd = (int)sendRef.DangerousGetHandle();
                     byte b = 1;
-                    while (Interop.CheckIo((int)Interop.libc.write(fd, &b, (IntPtr)1))) ;
+                    while (Interop.CheckIo((int)Interop.Sys.Write(fd, &b, 1))) ;
                 }
                 finally
                 {

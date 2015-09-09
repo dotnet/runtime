@@ -27,6 +27,10 @@ check_function_exists(
     strlcpy
     HAVE_STRLCPY)
 
+check_function_exists(
+    posix_fadvise
+    HAVE_POSIX_ADVISE)
+
 check_struct_has_member(
     "struct stat"
     st_birthtime

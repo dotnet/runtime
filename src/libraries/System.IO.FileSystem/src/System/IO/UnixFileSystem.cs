@@ -212,7 +212,7 @@ namespace System.IO
 
         public override void MoveDirectory(string sourceFullPath, string destFullPath)
         {
-            while (Interop.libc.rename(sourceFullPath, destFullPath) < 0)
+            while (Interop.Sys.Rename(sourceFullPath, destFullPath) < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 switch (errorInfo.Error)
@@ -283,7 +283,7 @@ namespace System.IO
                 }
             }
 
-            while (Interop.libc.rmdir(fullPath) < 0)
+            while (Interop.Sys.RmDir(fullPath) < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 switch (errorInfo.Error)

@@ -165,7 +165,7 @@ namespace System.IO
                 }
 
                 // Make sure the OS file buffer(s) are fully flushed so we don't get events from cached I/O
-                Interop.libc.sync();
+                Interop.Sys.Sync();
 
                 // Create the event stream for the path and tell the stream to watch for file system events.
                 _eventStream = Interop.EventStream.FSEventStreamCreate(
