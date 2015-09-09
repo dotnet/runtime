@@ -21,7 +21,6 @@ namespace System.Globalization.Tests
 
         // PosTest1: Verify the ar (Arabic) TextInfo
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void PostTest1()
         {
             CultureInfo ci = new CultureInfo("ar");

@@ -3,6 +3,7 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -35,6 +36,44 @@ namespace System.Globalization.Tests
 
             myCultureInfo.DateTimeFormat.ShortTimePattern = "HH|mm";
             Assert.Equal("HH|mm", myCultureInfo.DateTimeFormat.ShortTimePattern);
+        }
+
+        [Theory]
+        [InlineData("en-US", "h:mm tt")]
+        public void TestShortTimePatternLocale(string locale, string expected)
+        {
+            CultureInfo myTestCulture = new CultureInfo(locale);
+            DateTimeFormatInfo dtf = myTestCulture.DateTimeFormat;
+            Assert.Equal(expected, dtf.ShortTimePattern);
+        }
+
+        [InlineData("fi-FI", "H:mm", "H.mm")]
+        public void TestShortTimePatternLocale2(string locale, string expectedWindows, string expectedIcu)
+        {
+            CultureInfo myTestCulture = new CultureInfo(locale);
+            DateTimeFormatInfo dtf = myTestCulture.DateTimeFormat;
+            string expected = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? expectedWindows : expectedIcu;
+            // todo: determine why Windows uses ":" instead of "."
+            Assert.Equal(expected, dtf.ShortTimePattern);
+        }
+
+        [Theory]
+        [InlineData("en-US", "h:mm:ss tt")]
+        public void TestLongTimePatternLocale(string locale, string expected)
+        {
+            CultureInfo myTestCulture = new CultureInfo(locale);
+            DateTimeFormatInfo dtf = myTestCulture.DateTimeFormat;
+            Assert.Equal(expected, dtf.LongTimePattern);
+        }
+
+        [InlineData("fi-FI", "H:mm:ss", "H.mm.ss")]
+        public void TestLongTimePatternLocale2(string locale, string expectedWindows, string expectedIcu)
+        {
+            CultureInfo myTestCulture = new CultureInfo(locale);
+            DateTimeFormatInfo dtf = myTestCulture.DateTimeFormat;
+            string expected = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? expectedWindows : expectedIcu;
+            // todo: determine why Windows uses ":" instead of "."
+            Assert.Equal(expected, dtf.LongTimePattern);
         }
 
         [Fact]

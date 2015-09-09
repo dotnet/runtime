@@ -24,10 +24,12 @@ namespace System.Globalization.Tests
             Assert.Throws<ArgumentNullException>(() => { CultureInfo myCulture = new CultureInfo(null); });
         }
 
-        [Fact]
-        public void TestInvalidCulture()
+        [Theory]
+        [InlineData("NotAValidCulture")]
+        [InlineData("en-XX")]
+        public void TestInvalidCulture(string cultureName)
         {
-            Assert.Throws<CultureNotFoundException>(() => { CultureInfo myCulture = new CultureInfo("NotAValidCulture"); });
+            Assert.Throws<CultureNotFoundException>(() => { CultureInfo myCulture = new CultureInfo(cultureName); });
         }
     }
 }
