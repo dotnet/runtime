@@ -2243,7 +2243,7 @@ private:
     //outer unknown cookie
     IUnknown*                       m_pOuter;
 
-    // pointer to an array of std. vtables
+    // array of pointers to std. vtables
     SLOT const*                     m_rgpVtable[enum_LastStdVtable];
     
     PTR_ComCallWrapper              m_pWrap;      // the first ComCallWrapper associated with this SimpleComCallWrapper
