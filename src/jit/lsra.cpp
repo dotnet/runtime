@@ -5940,9 +5940,18 @@ LinearScan::allocateRegisters()
                 if (refType == RefTypeDef)
                 {
                     assert(srcInterval->recentRefPosition->nodeLocation == currentLocation - 1);
-                    if (srcInterval->isActive && genRegMask(srcInterval->physReg) == currentRefPosition->registerAssignment)
+                    RegRecord* physRegRecord = srcInterval->assignedReg;
+
+                    // For a putarg_reg to be special, its next use location has to be the same
+                    // as fixed reg's next kill location. Otherwise, if source lcl var's next use
+                    // is after the kill of fixed reg but before putarg_reg's next use, fixed reg's
+                    // kill would lead to spill of source but not the putarg_reg if it were treated
+                    // as special.
+                    if (srcInterval->isActive && 
+                        genRegMask(srcInterval->physReg) == currentRefPosition->registerAssignment &&
+                        currentInterval->getNextRefLocation() == physRegRecord->getNextRefLocation())
                     {
-                        RegRecord* physRegRecord = srcInterval->assignedReg;
+                        
                         assert(physRegRecord->regNum == srcInterval->physReg);
                         // Is the next use of this lclVar prior to the next kill of the physReg?
                         if (srcInterval->getNextRefLocation() <= physRegRecord->getNextRefLocation())
