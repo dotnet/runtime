@@ -1,15 +1,13 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Xml;
 using OLEDB.Test.ModuleCore;
 
-namespace XmlReaderTest.Common
+namespace System.Xml.Tests
 {
     public partial class TCReadElementContentAsBase64 : TCXMLReaderBaseGeneral
     {
-        // Type is XmlReaderTest.Common.TCReadElementContentAsBase64
+        // Type is System.Xml.Tests.TCReadElementContentAsBase64
         // Test Case
         public override void AddChildren()
         {

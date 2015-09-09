@@ -1,16 +1,14 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Xml;
 using OLEDB.Test.ModuleCore;
 using XmlCoreTest.Common;
 
-namespace XmlWriterAPI.Test
+namespace System.Xml.Tests
 {
     public partial class TCNewLineHandling : XmlFactoryWriterTestCaseBase
     {
-        // Type is XmlWriterAPI.Test.TCNewLineHandling
+        // Type is System.Xml.Tests.TCNewLineHandling
         // Test Case
         public override void AddChildren()
         {
