@@ -30,6 +30,13 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
             return new HMACSHA1();
         }
 
+        protected override HashAlgorithm CreateHashAlgorithm()
+        {
+            return SHA1.Create();
+        }
+
+        protected override int BlockSize { get { return 64; } }
+
         [Fact]
         public void HmacSha1_Rfc2202_1()
         {
@@ -70,6 +77,12 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
         public void HmacSha1_Rfc2202_7()
         {
             VerifyHmac(7, "e8e99d0f45237d786d6bbaa7965c7808bbff1a91");
+        }
+
+        [Fact]
+        public void HMacSha1_Rfc2104_2()
+        {
+            VerifyHmacRfc2104_2();
         }
     }
 }
