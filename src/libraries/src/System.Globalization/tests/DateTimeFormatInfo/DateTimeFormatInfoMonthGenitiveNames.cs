@@ -58,7 +58,6 @@ namespace System.Globalization.Tests
 
         // PosTest3: Call MonthGenitiveNames getter method should return correct value for ru-ru culture
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)] 
         public void TestRuCulture()
         {
             DateTimeFormatInfo info = new CultureInfo("ru-RU").DateTimeFormat;
@@ -139,16 +138,6 @@ namespace System.Globalization.Tests
             string[] actual = info.MonthGenitiveNames;
             Assert.Equal(expected.Length, actual.Length);
             Assert.Equal(expected, actual);
-        }
-
-        private String Hex(String str)
-        {
-            StringBuilder retValue = new StringBuilder();
-            foreach (Char ch in str)
-            {
-                retValue.Append(String.Format("\\u{0:X4}", (int)ch));
-            }
-            return retValue.ToString();
         }
     }
 }
