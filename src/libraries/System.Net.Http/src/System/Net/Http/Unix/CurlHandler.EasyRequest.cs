@@ -291,7 +291,7 @@ namespace System.Net.Http
 
             private void SetRequestHeaders()
             {
-                HttpHeaders contentHeaders = null;
+                HttpContentHeaders contentHeaders = null;
                 if (_requestMessage.Content != null)
                 {
                     SetChunkedModeForSend(_requestMessage);
@@ -317,6 +317,13 @@ namespace System.Net.Http
                 if (contentHeaders != null)
                 {
                     AddRequestHeaders(contentHeaders, slist);
+                    if (contentHeaders.ContentType == null)
+                    {
+                        if (!Interop.libcurl.curl_slist_append(slist, NoContentType))
+                        {
+                            throw CreateHttpRequestException();
+                        }
+                    }
                 }
 
                 // Since libcurl always adds a Transfer-Encoding header, we need to explicitly block
