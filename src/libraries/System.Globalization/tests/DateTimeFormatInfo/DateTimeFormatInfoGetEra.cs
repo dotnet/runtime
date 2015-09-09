@@ -3,6 +3,7 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -31,10 +32,16 @@ namespace System.Globalization.Tests
         {
             DateTimeFormatInfo info = new CultureInfo("en-us").DateTimeFormat;
 
-            VerificationHelper(info, "A.D.", 1);
-            VerificationHelper(info, "a.d.", 1);
-            VerificationHelper(info, "AD", 1);
-            VerificationHelper(info, "ad", 1);
+            bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+            string eraName = isWindows ? "A.D." : "AD";
+            string lowerEraName = isWindows ? "a.d." : "ad";
+            string abbrevEraName = isWindows ? "AD" : "A";
+            string lowerAbbrevEraName = isWindows ? "ad" : "a";
+
+            VerificationHelper(info, eraName, 1);
+            VerificationHelper(info, lowerEraName, 1);
+            VerificationHelper(info, abbrevEraName, 1);
+            VerificationHelper(info, lowerAbbrevEraName, 1);
 
             VerificationHelper(info, "C.E.", -1);
             VerificationHelper(info, "CE", -1);
