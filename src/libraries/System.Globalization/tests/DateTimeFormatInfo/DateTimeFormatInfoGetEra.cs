@@ -52,7 +52,6 @@ namespace System.Globalization.Tests
 
         // PosTest3: Call GetEra when DateTimeFormatInfo created from fr-FR
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void TestFrFR()
         {
             DateTimeFormatInfo info = new CultureInfo("fr-FR").DateTimeFormat;

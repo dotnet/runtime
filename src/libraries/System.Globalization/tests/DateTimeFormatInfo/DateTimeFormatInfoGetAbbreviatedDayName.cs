@@ -46,7 +46,6 @@ namespace System.Globalization.Tests
 
         // PosTest3: Call GetAbbreviatedDayName on fr-FR culture DateTimeFormatInfo instance
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void PosTest3()
         {
             DateTimeFormatInfo info = new CultureInfo("fr-FR").DateTimeFormat;

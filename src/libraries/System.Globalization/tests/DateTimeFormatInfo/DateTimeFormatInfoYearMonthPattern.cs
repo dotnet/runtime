@@ -13,7 +13,6 @@ namespace System.Globalization.Tests
 
         // PosTest1: Call YearMonthPattern getter method should return correct value for InvariantInfo
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)] 
         public void TestGetter()
         {
             VerificationHelper(DateTimeFormatInfo.InvariantInfo, "yyyy MMMM", false);
