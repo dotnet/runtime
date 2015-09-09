@@ -788,6 +788,7 @@ struct _MonoDelegate {
 	MonoReflectionMethod *method_info;
 	MonoReflectionMethod *original_method_info;
 	MonoObject *data;
+	MonoBoolean method_is_virtual;
 };
 
 typedef struct _MonoMulticastDelegate MonoMulticastDelegate;

@@ -5616,6 +5616,12 @@ ves_icall_System_Delegate_AllocDelegateLike_internal (MonoDelegate *delegate)
 	return ret;
 }
 
+ICALL_EXPORT MonoReflectionMethod*
+ves_icall_System_Delegate_GetVirtualMethod_internal (MonoDelegate *delegate)
+{
+	return mono_method_get_object (mono_domain_get (), mono_object_get_virtual_method (delegate->target, delegate->method), mono_object_class (delegate->target));
+}
+
 /* System.Buffer */
 
 static inline gint32 

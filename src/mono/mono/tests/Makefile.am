@@ -184,6 +184,7 @@ BASE_TEST_CS_SRC=		\
 	delegate9.cs		\
 	delegate10.cs		\
 	delegate11.cs		\
+	delegate12.cs		\
 	remoting1.cs		\
 	remoting2.cs		\
 	remoting3.cs		\

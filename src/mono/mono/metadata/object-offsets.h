@@ -71,6 +71,7 @@ DECL_OFFSET(MonoDelegate, method_ptr)
 DECL_OFFSET(MonoDelegate, invoke_impl)
 DECL_OFFSET(MonoDelegate, method)
 DECL_OFFSET(MonoDelegate, method_code)
+DECL_OFFSET(MonoDelegate, method_is_virtual)
 
 DECL_OFFSET(MonoInternalThread, tid)
 DECL_OFFSET(MonoInternalThread, small_id)
