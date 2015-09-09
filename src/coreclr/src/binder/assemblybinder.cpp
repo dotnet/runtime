@@ -86,8 +86,7 @@ namespace BINDER_SPACE
         //
         HRESULT IsValidAssemblyVersion(/* in */ AssemblyName *pRequestedName,
                                        /* in */ AssemblyName *pFoundName,
-                                       /* in */ ApplicationContext *pApplicationContext,
-                                       /* in */ BOOL fBeingBoundToPlatformAssembly)
+                                       /* in */ ApplicationContext *pApplicationContext)
         {
             HRESULT hr = S_OK;
             BINDER_LOG_ENTER(W("IsValidAssemblyVersion"));
@@ -100,18 +99,10 @@ namespace BINDER_SPACE
 #endif
 
             //
-            // If the AssemblyRef has no version and we're not binding to a platform assembly,
-            // we can skip version checking and allow the bind
+            // If the AssemblyRef has no version, we can treat it as requesting the most accommodating version (0.0.0.0). In
+            // that case, skip version checking and allow the bind.
             //
-            //
-            // Windows Phone 7 Quirk:
-            //
-            // NetCF allows partial binds to platform assemblies.  If we are running a
-            // Mango application, skip the version check if no Ref version is provided,
-            // since there are apps in the Marketplace that do Assembly.Load("System")
-            //
-            if (((fWindowsPhone7 && fBeingBoundToPlatformAssembly) || !fBeingBoundToPlatformAssembly) && !pRequestedName->HaveAssemblyVersion())
-                
+            if (!pRequestedName->HaveAssemblyVersion())
             {
                 return hr;
             }
@@ -131,9 +122,8 @@ namespace BINDER_SPACE
                 // and satisfy this one's requirements, we're in a situation where the assembly
                 // Ref has a version, but the Def doesn't, which cannot succeed a bind
                 //
-                if (!fBeingBoundToPlatformAssembly
-                    && pRequestedName->HaveAssemblyVersion()
-                    && !pFoundName->HaveAssemblyVersion())
+                _ASSERTE(pRequestedName->HaveAssemblyVersion());
+                if (!pFoundName->HaveAssemblyVersion())
                 {
                     hr = FUSION_E_APP_DOMAIN_LOCKED;
                 }
@@ -1120,10 +1110,7 @@ namespace BINDER_SPACE
             else
             {
                 // Can't give higher serciving than already bound
-                IF_FAIL_GO(IsValidAssemblyVersion(pAssemblyName,
-                                                  pContextEntry->GetAssemblyName(),
-                                                  pApplicationContext,
-                                                  !!pContextEntry->GetIsInGAC()));
+                IF_FAIL_GO(IsValidAssemblyVersion(pAssemblyName, pContextEntry->GetAssemblyName(), pApplicationContext));
             }
             
             pBindResult->SetResult(pContextEntry);
@@ -1132,23 +1119,13 @@ namespace BINDER_SPACE
 #endif // !CROSSGEN_COMPILE
         if (pApplicationContext->IsTpaListProvided())
         {
-            bool fUnifiedAppAssemblyToPlatform = false;
             IF_FAIL_GO(BindByTpaList(pApplicationContext,
                                      pAssemblyName,
                                      FALSE /*fInspectionOnly*/,
-                                     pBindResult,
-                                     &fUnifiedAppAssemblyToPlatform));
+                                     pBindResult));
             if (pBindResult->HaveResult())
             {
-                bool fBeingBoundToPlatformAssembly = !!pBindResult->GetIsInGAC();
-                if (fUnifiedAppAssemblyToPlatform)
-                {
-                    // Pretend as if we have bound to an app assembly since the RequestedAssemblyName came in for an app
-                    // assembly and thus, may not contain a version number.
-                    fBeingBoundToPlatformAssembly = false;
-                }
-                
-                hr = IsValidAssemblyVersion(pAssemblyName, pBindResult->GetAssemblyName(), pApplicationContext, fBeingBoundToPlatformAssembly);
+                hr = IsValidAssemblyVersion(pAssemblyName, pBindResult->GetAssemblyName(), pApplicationContext);
                 if (FAILED(hr))
                 {
                     pBindResult->SetNoResult();                    
@@ -1361,17 +1338,13 @@ namespace BINDER_SPACE
     HRESULT AssemblyBinder::BindByTpaList(ApplicationContext  *pApplicationContext,
                                           AssemblyName        *pRequestedAssemblyName,
                                           BOOL                 fInspectionOnly,
-                                          BindResult          *pBindResult,
-                                          bool                *pfUnifiedAppAssemblyToPlatform)
+                                          BindResult          *pBindResult)
     {
         HRESULT hr = S_OK;
         BINDER_LOG_ENTER(W("AssemblyBinder::BindByTpaList"));
 
         SString &culture = pRequestedAssemblyName->GetCulture();
         bool fPartialMatchOnTpa = false;
-        
-        // Did we unify an app assembly (with same SimpleName+Culture+PKT) to a platform (TPA) assembly?
-        *pfUnifiedAppAssemblyToPlatform = false;
         
         if (!culture.IsEmpty() && !culture.EqualsCaseInsensitive(g_BinderVariables->cultureNeutral))
         {
@@ -1567,7 +1540,6 @@ namespace BINDER_SPACE
                             if (TestCandidateRefMatchesDef(pApplicationContext, pAssembly->GetAssemblyName(), pTPAAssembly->GetAssemblyName(), true /*tpaListAssembly*/))
                             {
                                 // Fullname (SimpleName+Culture+PKT) matched for TPA and app assembly - so bind to TPA instance.
-                                *pfUnifiedAppAssemblyToPlatform = true;
                                 pBindResult->SetResult(pTPAAssembly);
                                 GO_WITH_HRESULT(S_OK);
                             }
