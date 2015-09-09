@@ -3,6 +3,7 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 
@@ -16,8 +17,11 @@ namespace System.Globalization.Tests
         {
             DateTimeFormatInfo info = new CultureInfo("en-us").DateTimeFormat;
 
-            VerificationHelper(info, 0, "AD");
-            VerificationHelper(info, 1, "AD");
+            bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+            string abbreviatedEraName = isWindows ? "AD" : "A";
+
+            VerificationHelper(info, 0, abbreviatedEraName);
+            VerificationHelper(info, 1, abbreviatedEraName);
         }
 
         // PosTest2: Call GetAbbreviatedEraName to get Era's abbreviated name on instance created from ctor
@@ -61,14 +65,6 @@ namespace System.Globalization.Tests
         {
             string actual = info.GetAbbreviatedEraName(era);
             Assert.Equal(expected, actual);
-        }
-
-        private String Hex(String str)
-        {
-            StringBuilder retValue = new StringBuilder();
-            foreach (Char ch in str)
-                retValue.Append(String.Format("\\u{0:X4}", (int)ch));
-            return retValue.ToString();
         }
     }
 }

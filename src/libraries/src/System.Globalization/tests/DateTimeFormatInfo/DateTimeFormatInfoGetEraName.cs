@@ -3,6 +3,7 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -24,8 +25,12 @@ namespace System.Globalization.Tests
         public void PosTest2()
         {
             DateTimeFormatInfo info = new CultureInfo("en-us").DateTimeFormat;
-            VerificationHelper(info, 1, "A.D.");
-            VerificationHelper(info, 0, "A.D.");
+
+            bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+            string eraName = isWindows ? "A.D." : "AD";
+
+            VerificationHelper(info, 1, eraName);
+            VerificationHelper(info, 0, eraName);
         }
 
         // PosTest3: Call GetEra when DateTimeFormatInfo created from fr-FR
