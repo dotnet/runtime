@@ -21,8 +21,6 @@ namespace System.Net.Http
 
         internal WinHttpRequestStream(SafeWinHttpHandle requestHandle, bool chunkedMode)
         {
-            bool ignore = false;
-            requestHandle.DangerousAddRef(ref ignore);
             _requestHandle = requestHandle;
             _chunkedMode = chunkedMode;
         }
@@ -134,13 +132,9 @@ namespace System.Net.Http
         
         protected override void Dispose(bool disposing)
         {
-            if (disposing && !_disposed)
+            if (!_disposed)
             {
                 _disposed = true;
-
-                _requestHandle.DangerousRelease();
-
-                SafeWinHttpHandle.DisposeAndClearHandle(ref _requestHandle);
             }
 
             base.Dispose(disposing);

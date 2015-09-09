@@ -12,23 +12,10 @@ namespace System.Net.Http
     internal class WinHttpResponseStream : Stream
     {
         private volatile bool _disposed = false;
-        private SafeWinHttpHandle _sessionHandle = null;
-        private SafeWinHttpHandle _connectHandle = null;
         private SafeWinHttpHandle _requestHandle = null;
 
-        internal WinHttpResponseStream(
-            SafeWinHttpHandle sessionHandle,
-            SafeWinHttpHandle connectHandle,
-            SafeWinHttpHandle requestHandle)
+        internal WinHttpResponseStream(SafeWinHttpHandle requestHandle)
         {
-            // While we only use the requestHandle to do actual reads of the response body,
-            // we need to keep the parent handles (connection, session) alive as well.
-            bool ignore = false;
-            sessionHandle.DangerousAddRef(ref ignore);
-            connectHandle.DangerousAddRef(ref ignore);
-            requestHandle.DangerousAddRef(ref ignore);
-            _sessionHandle = sessionHandle;
-            _connectHandle = connectHandle;
             _requestHandle = requestHandle;
         }
 
@@ -145,17 +132,14 @@ namespace System.Net.Http
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && !_disposed)
+            if (!_disposed)
             {
                 _disposed = true;
 
-                _requestHandle.DangerousRelease();
-                _connectHandle.DangerousRelease();
-                _sessionHandle.DangerousRelease();
-
-                SafeWinHttpHandle.DisposeAndClearHandle(ref _requestHandle);
-                SafeWinHttpHandle.DisposeAndClearHandle(ref _connectHandle);
-                SafeWinHttpHandle.DisposeAndClearHandle(ref _sessionHandle);
+                if (disposing && _requestHandle != null)
+                {
+                    SafeWinHttpHandle.DisposeAndClearHandle(ref _requestHandle);
+                }
             }
 
             base.Dispose(disposing);
