@@ -627,6 +627,12 @@ namespace System.Net.Http
                     request.Headers.TransferEncodingChunked = false;
                 }
             }
+            else if (!chunkedMode)
+            {
+                // Make sure Transfer-Encoding: chunked header is set, 
+                // as we have content to send but no known length for it.
+                request.Headers.TransferEncodingChunked = true;
+            }
         }
 
         #endregion
