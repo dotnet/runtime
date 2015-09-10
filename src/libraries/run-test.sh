@@ -46,6 +46,14 @@ usage()
     echo "    --restrict-proj <regex>       Run test projects that match regex"
     echo "                                  default: .* (all projects)"
     echo
+    echo "Runtime Code Coverage options:"
+    echo "    --coreclr-coverage                Optional argument to get coreclr code coverage reports"
+    echo "    --coreclr-objs <location>         Location of root of the object directory"
+    echo "                                      containing the linux/mac coreclr build"
+    echo "                                      default: <repo_root>/bin/obj/<OS>.x64.<Configuration>"
+    echo "    --coreclr-src <location>          Location of root of the directory"
+    echo "                                      containing the coreclr source files"
+    echo
     exit 1
 }
 
@@ -211,6 +219,50 @@ runtest()
   exit $exitCode
 }
 
+coreclr_code_coverage()
+{
+  if [ ! "$OS" == "OSX" ] && [ ! "$OS" == "Linux" ]
+  then
+      echo "Code Coverage not supported on $OS"
+      exit 1
+  fi
+
+  if [ "$CoreClrSrc" == "" ]
+    then
+      echo "Coreclr source files are required to generate code coverage reports"
+      echo "Coreclr source files root path can be passed using '--coreclr-src' argument"
+      exit 1
+  fi
+
+  local coverageDir="$ProjectRoot/bin/Coverage"
+  local toolsDir="$ProjectRoot/bin/Coverage/tools"
+  local reportsDir="$ProjectRoot/bin/Coverage/reports"
+  local packageName="unix-code-coverage-tools.1.0.0.nupkg"
+  rm -rf $coverageDir
+  mkdir -p $coverageDir
+  mkdir -p $toolsDir
+  mkdir -p $reportsDir
+  pushd $toolsDir > /dev/null
+
+  echo "Pulling down code coverage tools"
+  wget -q https://www.myget.org/F/dotnet-buildtools/api/v2/package/unix-code-coverage-tools/1.0.0 -O $packageName
+  echo "Unzipping to $toolsDir"
+  unzip -q -o $packageName
+
+  # Invoke gcovr
+  chmod a+rwx ./gcovr
+  chmod a+rwx ./$OS/llvm-cov
+
+  echo
+  echo "Generating coreclr code coverage reports at $reportsDir/coreclr.html"
+  echo "./gcovr $CoreClrObjs --gcov-executable=$toolsDir/$OS/llvm-cov -r $CoreClrSrc --html --html-details -o $reportsDir/coreclr.html"
+  echo
+  ./gcovr $CoreClrObjs --gcov-executable=$toolsDir/$OS/llvm-cov -r $CoreClrSrc --html --html-details -o $reportsDir/coreclr.html
+  exitCode=$?
+  popd > /dev/null
+  exit $exitCode
+}
+
 # Parse arguments
 
 while [[ $# > 0 ]]
@@ -243,6 +295,15 @@ do
         ;;
         --os)
         OS=$2
+        ;;
+        --coreclr-coverage)
+        CoreClrCoverage=ON
+        ;;
+        --coreclr-objs)
+        CoreClrObjs=$2
+        ;;
+        --coreclr-src)
+        CoreClrSrc=$2
         ;;
         *)
         ;;
@@ -291,6 +352,12 @@ then
     exit 1
 fi
 
+if [ "$CoreClrObjs" == "" ]
+then
+    CoreClrObjs="$ProjectRoot/bin/obj/$OS.x64.$Configuration"
+fi
+
+
 create_test_overlay
 
 # Walk the directory tree rooted at src bin/tests/Windows_NT.AnyCPU.$Configuration/
@@ -312,6 +379,12 @@ done
 
 # Wait on the last processes
 wait_on_pids "$pids"
+
+
+if [ "$CoreClrCoverage" == "ON" ]
+then
+    coreclr_code_coverage
+fi
 
 if [ "$TestsFailed" -gt 0 ]
 then
