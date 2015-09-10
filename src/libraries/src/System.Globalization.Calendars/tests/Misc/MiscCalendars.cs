@@ -46,7 +46,6 @@ namespace System.Globalization.CalendarsTests
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void JapaneseTest()
         {
             JapaneseCalendar jCal = new JapaneseCalendar();
