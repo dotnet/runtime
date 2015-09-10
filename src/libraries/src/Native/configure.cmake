@@ -2,6 +2,10 @@ include(CheckFunctionExists)
 include(CheckStructHasMember)
 include(CheckCXXSourceCompiles)
 
+#CMake does not include /usr/local/include into the include search path
+#thus add it manually. This is required on FreeBSD.
+include_directories(/usr/local/include)
+
 check_function_exists(
     stat64
     HAVE_STAT64)
