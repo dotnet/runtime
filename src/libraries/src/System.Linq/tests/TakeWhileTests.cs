@@ -132,7 +132,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        [OuterLoop]
+        [ActiveIssue("Valid test but too intensive to enable even in OuterLoop")]
         public void IndexTakeWhileOverflowBeyondIntMaxValueElements()
         {
             var taken = new FastInfiniteEnumerator().TakeWhile((e, i) => true);
