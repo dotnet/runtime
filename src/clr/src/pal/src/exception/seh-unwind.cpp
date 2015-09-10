@@ -199,8 +199,6 @@ static void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, 
 #endif
 }
 
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(_ARM64_)
-
 static DWORD64 GetPc(CONTEXT *context)
 {
 #if defined(_AMD64_)
@@ -223,8 +221,6 @@ static void SetPc(CONTEXT *context, DWORD64 pc)
 #endif
 }
 
-#endif // defined(__APPLE__) || defined(__FreeBSD__) || defined(_ARM64_)
-
 BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers)
 {
     int st;
@@ -233,6 +229,18 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(_ARM64_)
     DWORD64 curPc;
 #endif
+
+    if ((context->ContextFlags & CONTEXT_EXCEPTION_ACTIVE) != 0)
+    {
+        // The current frame is a source of hardware exception. Due to the fact that
+        // we use the low level unwinder to unwind just one frame a time, the
+        // unwinder doesn't have the signal_frame flag set. So it doesn't
+        // know that it should not decrement the PC before looking up the unwind info.
+        // So we compensate it by incrementing the PC before passing it to the unwinder.
+        // Without it, the unwinder would not find unwind info if the hardware exception
+        // happened in the first instruction of a function.
+        SetPc(context, GetPc(context) + 1);
+    }
 
 #if UNWIND_CONTEXT_IS_UCONTEXT_T
     WinContextToUnwindContext(context, &unwContext);
@@ -271,6 +279,19 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
     if (st < 0)
     {
         return FALSE;
+    }
+
+    // Check if the frame we have unwound to is a frame that caused
+    // synchronous signal, like a hardware exception and record it
+    // in the context flags.
+    st = unw_is_signal_frame(&cursor); 
+    if (st > 0)
+    {
+        context->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+    }
+    else
+    {
+        context->ContextFlags &= ~CONTEXT_EXCEPTION_ACTIVE;
     }
 
     // Update the passed in windows context to reflect the unwind
