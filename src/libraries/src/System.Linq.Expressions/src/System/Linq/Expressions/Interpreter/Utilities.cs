@@ -88,37 +88,91 @@ namespace System.Linq.Expressions.Interpreter
     {
         public static object Int32ToObject(int i)
         {
+            switch (i)
+            {
+                case -1:
+                    return Int32_m;
+                case 0:
+                    return Int32_0;
+                case 1:
+                    return Int32_1;
+                case 2:
+                    return Int32_2;
+            }
+
             return i;
         }
+        
+        private static readonly object Int32_m = -1;
+        private static readonly object Int32_0 = 0;
+        private static readonly object Int32_1 = 1;
+        private static readonly object Int32_2 = 2;
+
         public static object BooleanToObject(bool b)
         {
             return b ? True : False;
         }
 
-        internal static object True = true;
-        internal static object False = false;
+        private static readonly object True = true;
+        private static readonly object False = false;
 
         internal static object GetPrimitiveDefaultValue(Type type)
         {
+            object result;
+
             switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(type))
             {
-                case TypeCode.Boolean: return ScriptingRuntimeHelpers.False;
-                case TypeCode.SByte: return default(SByte);
-                case TypeCode.Byte: return default(Byte);
-                case TypeCode.Char: return default(Char);
-                case TypeCode.Int16: return default(Int16);
-                case TypeCode.Int32: return ScriptingRuntimeHelpers.Int32ToObject(0);
-                case TypeCode.Int64: return default(Int64);
-                case TypeCode.UInt16: return default(UInt16);
-                case TypeCode.UInt32: return default(UInt32);
-                case TypeCode.UInt64: return default(UInt64);
-                case TypeCode.Single: return default(Single);
-                case TypeCode.Double: return default(Double);
-                //            case TypeCode.DBNull: return default(DBNull);
-                case TypeCode.DateTime: return default(DateTime);
-                case TypeCode.Decimal: return default(Decimal);
-                default: return null;
+                case TypeCode.Boolean:
+                    result = ScriptingRuntimeHelpers.False;
+                    break;
+                case TypeCode.SByte:
+                    result = default(SByte);
+                    break;
+                case TypeCode.Byte:
+                    result = default(Byte);
+                    break;
+                case TypeCode.Char:
+                    result = default(Char);
+                    break;
+                case TypeCode.Int16:
+                    result = default(Int16);
+                    break;
+                case TypeCode.Int32:
+                    result = ScriptingRuntimeHelpers.Int32_0;
+                    break;
+                case TypeCode.Int64:
+                    result = default(Int64);
+                    break;
+                case TypeCode.UInt16:
+                    result = default(UInt16);
+                    break;
+                case TypeCode.UInt32:
+                    result = default(UInt32);
+                    break;
+                case TypeCode.UInt64:
+                    result = default(UInt64);
+                    break;
+
+                case TypeCode.Single:
+                    return default(Single);
+                case TypeCode.Double:
+                    return default(Double);
+                //            case TypeCode.DBNull: 
+                //                  return default(DBNull); 
+                case TypeCode.DateTime:
+                    return default(DateTime);
+                case TypeCode.Decimal:
+                    return default(Decimal);
+                default:
+                    return null;
             }
+
+            if (type.GetTypeInfo().IsEnum)
+            {
+                result = Enum.ToObject(type, result);
+            }
+
+            return result;
         }
     }
 
