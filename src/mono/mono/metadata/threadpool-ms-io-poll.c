@@ -190,6 +190,10 @@ poll_event_wait (void (*callback) (gint fd, gint events, gpointer user_data), gp
 
 	if (ready == -1)
 		return -1;
+	if (ready == 0)
+		return 0;
+
+	g_assert (ready > 0);
 
 	for (i = 0; i < poll_fds_size; ++i) {
 		gint fd, events = 0;
