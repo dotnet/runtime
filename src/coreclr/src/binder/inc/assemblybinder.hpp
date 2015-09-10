@@ -154,8 +154,7 @@ namespace BINDER_SPACE
         static HRESULT BindByTpaList(/* in */  ApplicationContext  *pApplicationContext,
                                      /* in */  AssemblyName        *pRequestedAssemblyName,
                                      /* in */  BOOL                 fInspectionOnly,
-                                     /* out */ BindResult          *pBindResult,
-                                     /* out */ bool                *pfUnifiedAppAssemblyToPlatform);
+                                     /* out */ BindResult          *pBindResult);
         
         static HRESULT Register(/* in */  ApplicationContext *pApplicationContext,
                                 /* in */  BOOL                fInspectionOnly,
