@@ -27,12 +27,15 @@ namespace System.Numerics
         {
             // Same as above, but for 64-bit values.
 
-            while (right != 0)
+            while (right > 0xFFFFFFFF)
             {
                 ulong temp = left % right;
                 left = right;
                 right = temp;
             }
+
+            if (right != 0)
+                return Gcd((uint)right, (uint)(left % right));
 
             return left;
         }
