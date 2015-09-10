@@ -18,6 +18,7 @@
   <ItemGroup>
     <Compile Include="CompareInfo.cs" />
     <Compile Include="CompareInfo.TestData.cs" />
+    <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoData.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoNumberDecimalDigits.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoNumberGroupSizes.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoNumberNegativePattern.cs" />
