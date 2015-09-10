@@ -69,6 +69,18 @@ namespace System.Collections.Tests
             Assert.Equal(42, q.Dequeue());
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        public void Clear_Empty(int capacity)
+        {
+            var q = new Queue<int>(capacity);
+            Assert.Equal(0, q.Count);
+            q.Clear();
+            Assert.Equal(0, q.Count);
+        }
+
         [Fact]
         public void Clear_Normal()
         {
