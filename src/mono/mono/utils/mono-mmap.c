@@ -348,8 +348,9 @@ mono_valloc (void *addr, size_t length, int flags)
 int
 mono_vfree (void *addr, size_t length)
 {
+	int res;
 	BEGIN_CRITICAL_SECTION;
-	int res = munmap (addr, length);
+	res = munmap (addr, length);
 	END_CRITICAL_SECTION;
 	return res;
 }
