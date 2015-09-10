@@ -33,5 +33,14 @@ namespace System.Globalization.Tests
             CultureInfo myTestCulture = CultureInfo.InvariantCulture;
             Assert.Equal(myTestCulture.Parent, myExpectParent1);
         }
+
+        [Fact]
+        public void PosTest4()
+        {
+            CultureInfo myExpectParentCulture = new CultureInfo("uz-Cyrl-UZ");
+            Assert.Equal("uz-Cyrl", myExpectParentCulture.Parent.Name);
+            Assert.Equal("uz", myExpectParentCulture.Parent.Parent.Name);
+            Assert.Equal("", myExpectParentCulture.Parent.Parent.Parent.Name);
+        }
     }
 }

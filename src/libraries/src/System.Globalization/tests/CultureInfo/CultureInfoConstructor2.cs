@@ -26,7 +26,6 @@ namespace System.Globalization.Tests
 
         [Theory]
         [InlineData("NotAValidCulture")]
-        [InlineData("en-XX")]
         public void TestInvalidCulture(string cultureName)
         {
             Assert.Throws<CultureNotFoundException>(() => { CultureInfo myCulture = new CultureInfo(cultureName); });
