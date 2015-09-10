@@ -721,7 +721,7 @@ namespace System.Net.Http
                         if (bytesRead == 0)
                         {
                             multi.VerboseTrace("End of stream from stored task", easy: easy);
-                            sts.Update(null, 0, 0);
+                            sts.SetTaskOffsetCount(null, 0, 0);
                             return 0;
                         }
 
@@ -740,7 +740,7 @@ namespace System.Net.Http
                         // ... and copy as much of that as libcurl will allow.
                         int bytesToCopy = Math.Min(availableData, length);
                         Marshal.Copy(sts._buffer, sts._offset, buffer, bytesToCopy);
-                        multi.VerboseTrace("Copied " + bytesRead + " bytes from request stream", easy: easy);
+                        multi.VerboseTrace("Copied " + bytesToCopy + " bytes from request stream", easy: easy);
 
                         // Update the offset.  If we've gone through all of the data, reset the state 
                         // so that the next time we're called back we'll do a new read.
@@ -748,7 +748,7 @@ namespace System.Net.Http
                         Debug.Assert(sts._offset <= sts._count, "Offset should never exceed count");
                         if (sts._offset == sts._count)
                         {
-                            sts.Update(null, 0, 0);
+                            sts.SetTaskOffsetCount(null, 0, 0);
                         }
 
                         // Return the amount of data copied
@@ -767,6 +767,8 @@ namespace System.Net.Http
 
                 Debug.Assert(sts != null, "By this point we should have a transfer object");
                 Debug.Assert(sts._task == null, "There shouldn't be a task now.");
+                Debug.Assert(sts._count == 0, "Count should be zero.");
+                Debug.Assert(sts._offset == 0, "Offset should be zero.");
 
                 // If we get here, there was no previously read data available to copy.
                 // Initiate a new asynchronous read.
@@ -798,7 +800,7 @@ namespace System.Net.Http
                     if (bytesToCopy < bytesRead)
                     {
                         multi.VerboseTrace("Stashing away " + (bytesRead - bytesToCopy) + " bytes for next read.", easy: easy);
-                        sts.Update(asyncRead, bytesToCopy, bytesRead);
+                        sts.SetTaskOffsetCount(asyncRead, bytesToCopy, bytesRead);
                     }
 
                     // Return the number of bytes read.
@@ -807,7 +809,7 @@ namespace System.Net.Http
 
                 // Otherwise, the read completed asynchronously.  Store the task, and hook up a continuation 
                 // such that the connection will be unpaused once the task completes.
-                sts.Update(asyncRead, 0, 0);
+                sts.SetTaskOffsetCount(asyncRead, 0, 0);
                 asyncRead.ContinueWith((t, s) =>
                 {
                     EasyRequest easyRef = (EasyRequest)s;

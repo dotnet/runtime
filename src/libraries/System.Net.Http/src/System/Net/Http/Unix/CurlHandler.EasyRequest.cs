@@ -409,7 +409,7 @@ namespace System.Net.Http
                 internal int _count;
                 internal Task<int> _task;
 
-                internal void Update(Task<int> task, int offset, int count)
+                internal void SetTaskOffsetCount(Task<int> task, int offset, int count)
                 {
                     Debug.Assert(offset >= 0, "Offset should never be negative");
                     Debug.Assert(count >= 0, "Count should never be negative");
