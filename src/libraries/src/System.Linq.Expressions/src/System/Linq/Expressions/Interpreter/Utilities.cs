@@ -113,8 +113,8 @@ namespace System.Linq.Expressions.Interpreter
             return b ? True : False;
         }
 
-        private static readonly object True = true;
-        private static readonly object False = false;
+        internal static readonly object True = true;
+        internal static readonly object False = false;
 
         internal static object GetPrimitiveDefaultValue(Type type)
         {
