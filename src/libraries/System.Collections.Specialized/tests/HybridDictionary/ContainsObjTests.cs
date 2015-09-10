@@ -416,5 +416,11 @@ namespace System.Collections.Specialized.Tests
                 Assert.False(true, string.Format("Error, returned true when false expected"));
             }
         }
+
+        public class SpecialStruct
+        {
+            public Int32 Num;
+            public String Wrd;
+        }
     }
 }
