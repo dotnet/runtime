@@ -23,7 +23,7 @@
       <Link>Common\System\Net\HttpTestServers.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\Streams\DelegateStream.cs">
-      <Link>Common\Streams\DelegateReadStream.cs</Link>
+      <Link>Common\Streams\DelegateStream.cs</Link>
     </Compile>
     <Compile Include="HttpClientHandlerTest.cs" />
     <Compile Include="HttpClientTest.cs" />
