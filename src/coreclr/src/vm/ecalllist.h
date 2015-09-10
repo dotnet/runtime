@@ -1156,6 +1156,12 @@ FCFuncStart(gAssemblyFuncs)
 
 FCFuncEnd()
 
+#ifdef FEATURE_CORECLR
+FCFuncStart(gAssemblyExtensionsFuncs)
+    QCFuncElement("InternalTryGetRawMetadata", AssemblyNative::InternalTryGetRawMetadata)
+FCFuncEnd()
+#endif
+
 #if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 FCFuncStart(gAssemblyLoadContextFuncs)
     QCFuncElement("InitializeAssemblyLoadContext", AssemblyNative::InitializeAssemblyLoadContext)
@@ -2147,6 +2153,10 @@ FCClassElement("AssemblyBuilder", "System.Reflection.Emit", gAssemblyBuilderFunc
 #ifdef FEATURE_CAS_POLICY
 FCClassElement("AssemblyEvidenceFactory", "System.Security.Policy", gAssemblyEvidenceFactoryFuncs)
 #endif // FEATURE_CAS_POLICY
+
+#ifdef FEATURE_CORECLR
+FCClassElement("AssemblyExtensions", "System.Reflection.Metadata", gAssemblyExtensionsFuncs)
+#endif
 
 #if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 FCClassElement("AssemblyLoadContext", "System.Runtime.Loader", gAssemblyLoadContextFuncs)
