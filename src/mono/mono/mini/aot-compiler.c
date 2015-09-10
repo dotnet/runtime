@@ -8665,25 +8665,8 @@ init_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info, int gc_name_off
 		info->trampoline_size [i] = acfg->trampoline_size [i];
 	info->num_rgctx_fetch_trampolines = acfg->aot_opts.nrgctx_fetch_trampolines;
 
-#if defined (TARGET_ARM) && defined (TARGET_MACH)
-	{
-		MonoType t;
-		int align = 0;
-
-		memset (&t, 0, sizeof (MonoType));
-		t.type = MONO_TYPE_R8;
-		mono_type_size (&t, &align);
-		info->double_align = align;
-
-		memset (&t, 0, sizeof (MonoType));
-		t.type = MONO_TYPE_I8;
-		mono_type_size (&t, &align);
-		info->long_align = align;
-	}
-#else
 	info->double_align = MONO_ABI_ALIGNOF (double);
 	info->long_align = MONO_ABI_ALIGNOF (gint64);
-#endif
 	info->generic_tramp_num = MONO_TRAMPOLINE_NUM;
 	info->tramp_page_size = acfg->tramp_page_size;
 	for (i = 0; i < MONO_AOT_TRAMP_NUM; ++i)
