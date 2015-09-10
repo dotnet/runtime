@@ -32,7 +32,7 @@ namespace System.Globalization.Tests
             Assert.Equal(4, expected[2]);
         }
 
-        // NegTest1: ArgumentNullException is not thrown
+        // NegTest1: ArgumentNullException is thrown
         [Fact]
         public void NegTest1()
         {
@@ -44,7 +44,7 @@ namespace System.Globalization.Tests
             });
         }
 
-        // NegTest2: ArgumentOutOfRangeException is not thrown
+        // NegTest2: ArgumentOutOfRangeException is thrown
         [Fact]
         public void NegTest2()
         {
@@ -53,7 +53,7 @@ namespace System.Globalization.Tests
             VerificationHelper<ArgumentException>(new int[] { 0, 1, 2 });
         }
 
-        // NegTest3: InvalidOperationException is not thrown
+        // NegTest3: InvalidOperationException is thrown
         [Fact]
         public void NegTest3()
         {
