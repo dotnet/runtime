@@ -47,6 +47,7 @@ namespace Tests.ExpressionCompiler.Binary
                 for (int j = 0; j < array.Length; j++)
                 {
                     VerifyUShortAdd(array[i], array[j]);
+                    VerifyUShortAddOvf(array[i], array[j]);
                 }
             }
         }
@@ -60,6 +61,7 @@ namespace Tests.ExpressionCompiler.Binary
                 for (int j = 0; j < array.Length; j++)
                 {
                     VerifyShortAdd(array[i], array[j]);
+                    VerifyShortAddOvf(array[i], array[j]);
                 }
             }
         }
@@ -73,6 +75,7 @@ namespace Tests.ExpressionCompiler.Binary
                 for (int j = 0; j < array.Length; j++)
                 {
                     VerifyUIntAdd(array[i], array[j]);
+                    VerifyUIntAddOvf(array[i], array[j]);
                 }
             }
         }
@@ -86,6 +89,7 @@ namespace Tests.ExpressionCompiler.Binary
                 for (int j = 0; j < array.Length; j++)
                 {
                     VerifyIntAdd(array[i], array[j]);
+                    VerifyIntAddOvf(array[i], array[j]);
                 }
             }
         }
@@ -99,6 +103,7 @@ namespace Tests.ExpressionCompiler.Binary
                 for (int j = 0; j < array.Length; j++)
                 {
                     VerifyULongAdd(array[i], array[j]);
+                    VerifyULongAddOvf(array[i], array[j]);
                 }
             }
         }
@@ -112,6 +117,7 @@ namespace Tests.ExpressionCompiler.Binary
                 for (int j = 0; j < array.Length; j++)
                 {
                     VerifyLongAdd(array[i], array[j]);
+                    VerifyLongAddOvf(array[i], array[j]);
                 }
             }
         }
@@ -234,6 +240,54 @@ namespace Tests.ExpressionCompiler.Binary
             }
         }
 
+        private static void VerifyUShortAddOvf(ushort a, ushort b)
+        {
+            Expression<Func<ushort>> e =
+                Expression.Lambda<Func<ushort>>(
+                    Expression.AddChecked(
+                        Expression.Constant(a, typeof(ushort)),
+                        Expression.Constant(b, typeof(ushort))),
+                    Enumerable.Empty<ParameterExpression>());
+
+            Func<ushort> f = e.Compile();
+
+            // add with expression tree
+            ushort etResult = default(ushort);
+            Exception etException = null;
+            try
+            {
+                etResult = f();
+            }
+            catch (Exception ex)
+            {
+                etException = ex;
+            }
+
+            // add with real IL
+            ushort csResult = default(ushort);
+            Exception csException = null;
+            try
+            {
+                csResult = checked((ushort)(a + b));
+            }
+            catch (Exception ex)
+            {
+                csException = ex;
+            }
+
+            // either both should have failed the same way or they should both produce the same result
+            if (etException != null || csException != null)
+            {
+                Assert.NotNull(etException);
+                Assert.NotNull(csException);
+                Assert.Equal(csException.GetType(), etException.GetType());
+            }
+            else
+            {
+                Assert.Equal(csResult, etResult);
+            }
+        }
+
         private static void VerifyShortAdd(short a, short b)
         {
             Expression<Func<short>> e =
@@ -263,6 +317,54 @@ namespace Tests.ExpressionCompiler.Binary
             try
             {
                 csResult = (short)(a + b);
+            }
+            catch (Exception ex)
+            {
+                csException = ex;
+            }
+
+            // either both should have failed the same way or they should both produce the same result
+            if (etException != null || csException != null)
+            {
+                Assert.NotNull(etException);
+                Assert.NotNull(csException);
+                Assert.Equal(csException.GetType(), etException.GetType());
+            }
+            else
+            {
+                Assert.Equal(csResult, etResult);
+            }
+        }
+
+        private static void VerifyShortAddOvf(short a, short b)
+        {
+            Expression<Func<short>> e =
+                Expression.Lambda<Func<short>>(
+                    Expression.AddChecked(
+                        Expression.Constant(a, typeof(short)),
+                        Expression.Constant(b, typeof(short))),
+                    Enumerable.Empty<ParameterExpression>());
+
+            Func<short> f = e.Compile();
+
+            // add with expression tree
+            short etResult = default(short);
+            Exception etException = null;
+            try
+            {
+                etResult = f();
+            }
+            catch (Exception ex)
+            {
+                etException = ex;
+            }
+
+            // add with real IL
+            short csResult = default(short);
+            Exception csException = null;
+            try
+            {
+                csResult = checked((short)(a + b));
             }
             catch (Exception ex)
             {
@@ -330,6 +432,54 @@ namespace Tests.ExpressionCompiler.Binary
             }
         }
 
+        private static void VerifyUIntAddOvf(uint a, uint b)
+        {
+            Expression<Func<uint>> e =
+                Expression.Lambda<Func<uint>>(
+                    Expression.AddChecked(
+                        Expression.Constant(a, typeof(uint)),
+                        Expression.Constant(b, typeof(uint))),
+                    Enumerable.Empty<ParameterExpression>());
+
+            Func<uint> f = e.Compile();
+
+            // add with expression tree
+            uint etResult = default(uint);
+            Exception etException = null;
+            try
+            {
+                etResult = f();
+            }
+            catch (Exception ex)
+            {
+                etException = ex;
+            }
+
+            // add with real IL
+            uint csResult = default(uint);
+            Exception csException = null;
+            try
+            {
+                csResult = checked((uint)(a + b));
+            }
+            catch (Exception ex)
+            {
+                csException = ex;
+            }
+
+            // either both should have failed the same way or they should both produce the same result
+            if (etException != null || csException != null)
+            {
+                Assert.NotNull(etException);
+                Assert.NotNull(csException);
+                Assert.Equal(csException.GetType(), etException.GetType());
+            }
+            else
+            {
+                Assert.Equal(csResult, etResult);
+            }
+        }
+
         private static void VerifyIntAdd(int a, int b)
         {
             Expression<Func<int>> e =
@@ -359,6 +509,54 @@ namespace Tests.ExpressionCompiler.Binary
             try
             {
                 csResult = (int)(a + b);
+            }
+            catch (Exception ex)
+            {
+                csException = ex;
+            }
+
+            // either both should have failed the same way or they should both produce the same result
+            if (etException != null || csException != null)
+            {
+                Assert.NotNull(etException);
+                Assert.NotNull(csException);
+                Assert.Equal(csException.GetType(), etException.GetType());
+            }
+            else
+            {
+                Assert.Equal(csResult, etResult);
+            }
+        }
+
+        private static void VerifyIntAddOvf(int a, int b)
+        {
+            Expression<Func<int>> e =
+                Expression.Lambda<Func<int>>(
+                    Expression.AddChecked(
+                        Expression.Constant(a, typeof(int)),
+                        Expression.Constant(b, typeof(int))),
+                    Enumerable.Empty<ParameterExpression>());
+
+            Func<int> f = e.Compile();
+
+            // add with expression tree
+            int etResult = default(int);
+            Exception etException = null;
+            try
+            {
+                etResult = f();
+            }
+            catch (Exception ex)
+            {
+                etException = ex;
+            }
+
+            // add with real IL
+            int csResult = default(int);
+            Exception csException = null;
+            try
+            {
+                csResult = checked((int)(a + b));
             }
             catch (Exception ex)
             {
@@ -426,6 +624,54 @@ namespace Tests.ExpressionCompiler.Binary
             }
         }
 
+        private static void VerifyULongAddOvf(ulong a, ulong b)
+        {
+            Expression<Func<ulong>> e =
+                Expression.Lambda<Func<ulong>>(
+                    Expression.AddChecked(
+                        Expression.Constant(a, typeof(ulong)),
+                        Expression.Constant(b, typeof(ulong))),
+                    Enumerable.Empty<ParameterExpression>());
+
+            Func<ulong> f = e.Compile();
+
+            // add with expression tree
+            ulong etResult = default(ulong);
+            Exception etException = null;
+            try
+            {
+                etResult = f();
+            }
+            catch (Exception ex)
+            {
+                etException = ex;
+            }
+
+            // add with real IL
+            ulong csResult = default(ulong);
+            Exception csException = null;
+            try
+            {
+                csResult = checked((ulong)(a + b));
+            }
+            catch (Exception ex)
+            {
+                csException = ex;
+            }
+
+            // either both should have failed the same way or they should both produce the same result
+            if (etException != null || csException != null)
+            {
+                Assert.NotNull(etException);
+                Assert.NotNull(csException);
+                Assert.Equal(csException.GetType(), etException.GetType());
+            }
+            else
+            {
+                Assert.Equal(csResult, etResult);
+            }
+        }
+
         private static void VerifyLongAdd(long a, long b)
         {
             Expression<Func<long>> e =
@@ -455,6 +701,54 @@ namespace Tests.ExpressionCompiler.Binary
             try
             {
                 csResult = (long)(a + b);
+            }
+            catch (Exception ex)
+            {
+                csException = ex;
+            }
+
+            // either both should have failed the same way or they should both produce the same result
+            if (etException != null || csException != null)
+            {
+                Assert.NotNull(etException);
+                Assert.NotNull(csException);
+                Assert.Equal(csException.GetType(), etException.GetType());
+            }
+            else
+            {
+                Assert.Equal(csResult, etResult);
+            }
+        }
+
+        private static void VerifyLongAddOvf(long a, long b)
+        {
+            Expression<Func<long>> e =
+                Expression.Lambda<Func<long>>(
+                    Expression.AddChecked(
+                        Expression.Constant(a, typeof(long)),
+                        Expression.Constant(b, typeof(long))),
+                    Enumerable.Empty<ParameterExpression>());
+
+            Func<long> f = e.Compile();
+
+            // add with expression tree
+            long etResult = default(long);
+            Exception etException = null;
+            try
+            {
+                etResult = f();
+            }
+            catch (Exception ex)
+            {
+                etException = ex;
+            }
+
+            // add with real IL
+            long csResult = default(long);
+            Exception csException = null;
+            try
+            {
+                csResult = checked((long)(a + b));
             }
             catch (Exception ex)
             {

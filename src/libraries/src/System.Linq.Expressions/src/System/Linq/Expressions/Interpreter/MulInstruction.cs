@@ -53,7 +53,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = (Int16)unchecked((Int16)l * (Int16)r);
+                    frame.Data[frame.StackIndex - 2] = unchecked((Int16)((Int16)l * (Int16)r));
                 }
                 frame.StackIndex--;
                 return +1;
@@ -72,7 +72,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = (Int64)unchecked((Int64)l * (Int64)r);
+                    frame.Data[frame.StackIndex - 2] = unchecked((Int64)((Int64)l * (Int64)r));
                 }
                 frame.StackIndex--;
                 return +1;
@@ -91,7 +91,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = (UInt16)unchecked((UInt16)l * (UInt16)r);
+                    frame.Data[frame.StackIndex - 2] = unchecked((UInt16)((UInt16)l * (UInt16)r));
                 }
                 frame.StackIndex--;
                 return +1;
@@ -110,7 +110,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = (UInt32)unchecked((UInt32)l * (UInt32)r);
+                    frame.Data[frame.StackIndex - 2] = unchecked((UInt32)((UInt32)l * (UInt32)r));
                 }
                 frame.StackIndex--;
                 return +1;
@@ -129,7 +129,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = (UInt64)unchecked((UInt64)l * (UInt64)r);
+                    frame.Data[frame.StackIndex - 2] = unchecked((UInt64)((UInt64)l * (UInt64)r));
                 }
                 frame.StackIndex--;
                 return +1;
@@ -244,7 +244,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = (Int16)checked((Int16)l * (Int16)r);
+                    frame.Data[frame.StackIndex - 2] = checked((Int16)((Int16)l * (Int16)r));
                 }
                 frame.StackIndex--;
                 return +1;
@@ -263,7 +263,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = (Int64)checked((Int64)l * (Int64)r);
+                    frame.Data[frame.StackIndex - 2] = checked((Int64)((Int64)l * (Int64)r));
                 }
                 frame.StackIndex--;
                 return +1;
@@ -282,7 +282,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = (UInt16)checked((UInt16)l * (UInt16)r);
+                    frame.Data[frame.StackIndex - 2] = checked((UInt16)((UInt16)l * (UInt16)r));
                 }
                 frame.StackIndex--;
                 return +1;
@@ -301,7 +301,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = (UInt32)checked((UInt32)l * (UInt32)r);
+                    frame.Data[frame.StackIndex - 2] = checked((UInt32)((UInt32)l * (UInt32)r));
                 }
                 frame.StackIndex--;
                 return +1;
@@ -320,7 +320,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = (UInt64)checked((UInt64)l * (UInt64)r);
+                    frame.Data[frame.StackIndex - 2] = checked((UInt64)((UInt64)l * (UInt64)r));
                 }
                 frame.StackIndex--;
                 return +1;
