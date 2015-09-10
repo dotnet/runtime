@@ -98,26 +98,23 @@ namespace System.Linq.Expressions.Interpreter
                     return Int32_1;
                 case 2:
                     return Int32_2;
-                case 3:
-                    return Int32_3;
             }
 
             return i;
         }
         
-        internal static readonly object Int32_m = -1;
-        internal static readonly object Int32_0 = 0;
-        internal static readonly object Int32_1 = 1;
-        internal static readonly object Int32_2 = 2;
-        internal static readonly object Int32_3 = 3;
+        private static readonly object Int32_m = -1;
+        private static readonly object Int32_0 = 0;
+        private static readonly object Int32_1 = 1;
+        private static readonly object Int32_2 = 2;
 
         public static object BooleanToObject(bool b)
         {
             return b ? True : False;
         }
 
-        internal static readonly object True = true;
-        internal static readonly object False = false;
+        private static readonly object True = true;
+        private static readonly object False = false;
 
         internal static object GetPrimitiveDefaultValue(Type type)
         {
