@@ -3,7 +3,6 @@
 
 using System;
 using System.Globalization;
-using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 
@@ -11,15 +10,13 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoGetAbbreviatedEraName
     {
-        private static bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-
         // PosTest1: Call GetAbbreviatedEraName to get Era's abbreviated name
         [Fact]
         public void PosTest1()
         {
-            DateTimeFormatInfo info = new CultureInfo("en-us").DateTimeFormat;
-
-            string abbreviatedEraName = s_isWindows ? "AD" : "A";
+            CultureInfo cultureInfo = new CultureInfo("en-us");
+            DateTimeFormatInfo info = cultureInfo.DateTimeFormat;
+            string abbreviatedEraName = DateTimeFormatInfoData.GetAbbreviatedEraName(cultureInfo);
 
             VerificationHelper(info, 0, abbreviatedEraName);
             VerificationHelper(info, 1, abbreviatedEraName);
@@ -39,11 +36,9 @@ namespace System.Globalization.Tests
         [Fact]
         public void PosTest3()
         {
-            DateTimeFormatInfo info = new CultureInfo("ja-JP").DateTimeFormat;
-            //For Windows<Win7 and others, the default calendar is Gregorian Calendar, AD is expected to be the Era Name
-            // CLDR has the Japanese abbreviated era name for the Gregorian Calendar in English - "AD",
-            // so for non-Windows machines it will be "AD".
-            String expectedEraName = s_isWindows ? "\u897F\u66A6" : "AD";
+            CultureInfo cultureInfo = new CultureInfo("ja-JP");
+            DateTimeFormatInfo info = cultureInfo.DateTimeFormat;
+            string expectedEraName = DateTimeFormatInfoData.GetAbbreviatedEraName(cultureInfo);
 
             VerificationHelper(info, 1, expectedEraName);
         }

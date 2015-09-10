@@ -3,7 +3,6 @@
 
 using System;
 using System.Globalization;
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -20,33 +19,19 @@ namespace System.Globalization.Tests
             VerificationHelper(info, 0, "A.D.");
         }
 
-        // PosTest2: Call GetEra when DateTimeFormatInfo from en-us culture
-        [Fact]
-        public void PosTest2()
+        // PosTest2: Call GetEra when DateTimeFormatInfo from en-us and fr-FR cultures
+        [Theory]
+        [InlineData("en-us")]
+        [InlineData("fr-FR")]
+        public void PosTest2(string localeName)
         {
-            DateTimeFormatInfo info = new CultureInfo("en-us").DateTimeFormat;
-
-            bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-            string eraName = isWindows ? "A.D." : "AD";
+            CultureInfo cultureInfo = new CultureInfo(localeName);
+            DateTimeFormatInfo info = cultureInfo.DateTimeFormat;
+            string eraName = DateTimeFormatInfoData.GetEraName(cultureInfo);
 
             VerificationHelper(info, 1, eraName);
             VerificationHelper(info, 0, eraName);
         }
-
-        // PosTest3: Call GetEra when DateTimeFormatInfo created from fr-FR
-        [Fact]
-        public void PosTest3()
-        {
-            DateTimeFormatInfo info = new CultureInfo("fr-FR").DateTimeFormat;
-
-            // For Win7, "fr-FR" is "ap J.-C".
-            // for windows<Win7 & MAC, every culture is "A.D."
-            String expectedRetValue = "ap. J.-C.";
-
-            VerificationHelper(info, 1, expectedRetValue);
-            VerificationHelper(info, 0, expectedRetValue);
-        }
-
 
         // NegTest1: ArgumentOutOfRangeException should be thrown when era does not represent a valid era in the calendar specified in the Calendar property
         [Fact]
