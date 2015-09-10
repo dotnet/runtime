@@ -590,6 +590,9 @@ ves_icall_System_AppDomain_InternalIsFinalizingForUnload (gint32 domain_id);
 void
 ves_icall_System_AppDomain_InternalUnload          (gint32 domain_id);
 
+void
+ves_icall_System_AppDomain_DoUnhandledException (MonoException *exc);
+
 gint32
 ves_icall_System_AppDomain_ExecuteAssembly         (MonoAppDomain *ad, 
 													MonoReflectionAssembly *refass,
