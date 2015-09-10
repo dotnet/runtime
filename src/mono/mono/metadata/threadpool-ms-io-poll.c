@@ -204,6 +204,8 @@ poll_event_wait (void (*callback) (gint fd, gint events, gpointer user_data), gp
 			events |= EVENT_IN;
 		if (poll_fds [i].revents & (POLLOUT | POLLERR | POLLHUP | POLLNVAL))
 			events |= EVENT_OUT;
+		if (poll_fds [i].revents & (POLLERR | POLLHUP | POLLNVAL))
+			events |= EVENT_ERR;
 
 		callback (fd, events, user_data);
 

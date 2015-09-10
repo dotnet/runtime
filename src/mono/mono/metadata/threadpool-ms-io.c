@@ -40,6 +40,7 @@ typedef struct {
 enum {
 	EVENT_IN   = 1 << 0,
 	EVENT_OUT  = 1 << 1,
+	EVENT_ERR  = 1 << 2,
 } ThreadPoolIOEvent;
 
 #include "threadpool-ms-io-epoll.c"
@@ -293,8 +294,8 @@ wait_callback (gint fd, gint events, gpointer user_data)
 		g_assert (user_data);
 		states = user_data;
 
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_THREADPOOL, "io threadpool: cal fd %3d, events = %2s | %2s",
-			fd, (events & EVENT_IN) ? "RD" : "..", (events & EVENT_OUT) ? "WR" : "..");
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_THREADPOOL, "io threadpool: cal fd %3d, events = %2s | %2s | %3s",
+			fd, (events & EVENT_IN) ? "RD" : "..", (events & EVENT_OUT) ? "WR" : "..", (events & EVENT_ERR) ? "ERR" : "...");
 
 		if (!mono_g_hash_table_lookup_extended (states, GINT_TO_POINTER (fd), &k, (gpointer*) &list))
 			g_error ("wait_callback: fd %d not found in states table", fd);
