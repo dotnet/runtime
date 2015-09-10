@@ -22,6 +22,9 @@
     <Compile Include="$(CommonTestPath)\System\Net\HttpTestServers.cs">
       <Link>Common\System\Net\HttpTestServers.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\Streams\DelegateStream.cs">
+      <Link>Common\Streams\DelegateStream.cs</Link>
+    </Compile>
     <Compile Include="HttpClientHandlerTest.cs" />
     <Compile Include="HttpClientTest.cs" />
     <Compile Include="HttpMethodTest.cs" />

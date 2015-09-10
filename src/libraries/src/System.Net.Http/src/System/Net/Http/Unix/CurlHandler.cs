@@ -317,8 +317,22 @@ namespace System.Net.Http
             else
             {
                 // Otherwise, just submit the request.
-                _agent.Queue(new MultiAgent.IncomingRequest { Easy = easy, Type = MultiAgent.IncomingRequestType.New });
+                ConfigureAndQueue(easy);
                 return easy.Task;
+            }
+        }
+
+        private void ConfigureAndQueue(EasyRequest easy)
+        {
+            try
+            {
+                easy.InitializeCurl();
+                _agent.Queue(new MultiAgent.IncomingRequest { Easy = easy, Type = MultiAgent.IncomingRequestType.New });
+            }
+            catch (Exception exc)
+            {
+                easy.FailRequest(exc);
+                easy.Cleanup(); // no active processing remains, so we can cleanup
             }
         }
 
@@ -338,7 +352,7 @@ namespace System.Net.Http
             }
             else
             {
-                _agent.Queue(new MultiAgent.IncomingRequest { Easy = easy, Type = MultiAgent.IncomingRequestType.New });
+                ConfigureAndQueue(easy);
             }
             return await easy.Task.ConfigureAwait(false);
         }
@@ -464,20 +478,21 @@ namespace System.Net.Http
             {
                 agent = easy._associatedMultiAgent;
             }
+            int? agentId = agent != null ? agent.RunningWorkerId : null;
 
             // Get an ID string that provides info about which MultiAgent worker and which EasyRequest this trace is about
             string ids = "";
-            if (agent != null || easy != null)
+            if (agentId != null || easy != null)
             {
                 ids = "(" +
-                    (agent != null ? "M#" + agent.RunningWorkerId : "") +
-                    (agent != null && easy != null ? ", " : "") +
+                    (agentId != null ? "M#" + agentId : "") +
+                    (agentId != null && easy != null ? ", " : "") +
                     (easy != null ? "E#" + easy.Task.Id : "") +
                     ")";
             }
 
             // Create the message and trace it out
-            string msg = string.Format("[{0, -25}]{1, -16}: {2}", memberName, ids, text);
+            string msg = string.Format("[{0, -30}]{1, -16}: {2}", memberName, ids, text);
             Interop.libc.printf("%s\n", msg);
         }
 
@@ -611,6 +626,12 @@ namespace System.Net.Http
                     // Prevent libcurl from adding Transfer-Encoding header
                     request.Headers.TransferEncodingChunked = false;
                 }
+            }
+            else if (!chunkedMode)
+            {
+                // Make sure Transfer-Encoding: chunked header is set, 
+                // as we have content to send but no known length for it.
+                request.Headers.TransferEncodingChunked = true;
             }
         }
 

@@ -185,8 +185,9 @@ internal static partial class Interop
             curl_off_t offset, 
             int origin);
 
+        public const int CURL_READFUNC_ABORT = 0x10000000;
+        public const int CURL_READFUNC_PAUSE = 0x10000001;
         public const int CURL_WRITEFUNC_PAUSE = 0x10000001;
-        public const int CURLPAUSE_ALL = (1 << 2) | (1 << 0);
         public const int CURLPAUSE_CONT = 0;
     }
 }

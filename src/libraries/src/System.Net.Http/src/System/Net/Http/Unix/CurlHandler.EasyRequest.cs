@@ -26,32 +26,43 @@ namespace System.Net.Http
             internal readonly HttpRequestMessage _requestMessage;
             internal readonly CurlResponseMessage _responseMessage;
             internal readonly CancellationToken _cancellationToken;
-            internal readonly SafeCurlHandle _easyHandle;
+
+            internal SafeCurlHandle _easyHandle;
             private SafeCurlSlistHandle _requestHeaders;
 
             internal Stream _requestContentStream;
             internal NetworkCredential _networkCredential;
 
             internal MultiAgent _associatedMultiAgent;
-            internal PauseState _paused = PauseState.Unpaused;
+            internal SendTransferState _sendTransferState;
 
             public EasyRequest(CurlHandler handler, HttpRequestMessage requestMessage, CancellationToken cancellationToken) :
                 base(TaskCreationOptions.RunContinuationsAsynchronously)
             {
-                // Store supplied arguments
                 _handler = handler;
                 _requestMessage = requestMessage;
                 _responseMessage = new CurlResponseMessage(this);
                 _cancellationToken = cancellationToken;
+            }
 
+            /// <summary>
+            /// Initialize the underlying libcurl support for this EasyRequest.
+            /// This is separated out of the constructor so that we can take into account
+            /// any additional configuration needed based on the request message
+            /// after the EasyRequest is configured and so that error handling
+            /// can be better handled in the caller.
+            /// </summary>
+            internal void InitializeCurl()
+            {
                 // Create the underlying easy handle
-                _easyHandle = Interop.libcurl.curl_easy_init();
-                if (_easyHandle.IsInvalid)
+                SafeCurlHandle easyHandle = Interop.libcurl.curl_easy_init();
+                if (easyHandle.IsInvalid)
                 {
                     throw new OutOfMemoryException();
                 }
+                _easyHandle = easyHandle;
 
-                // Configure the easy handle
+                // Configure the handle
                 SetUrl();
                 SetDebugging();
                 SetMultithreading();
@@ -391,14 +402,23 @@ namespace System.Net.Http
                 ThrowIfCURLEError(Interop.libcurl.curl_easy_setopt(_easyHandle, option, value));
             }
 
-            internal enum PauseState
+            internal sealed class SendTransferState
             {
-                /// <summary>The operation may be processed by libcurl.</summary>
-                Unpaused = 0,
-                /// <summary>libcurl should not process the operation.</summary>
-                Paused,
-                /// <summary>A request has been made to the MultiAgent to unpause the operation.</summary>
-                UnpauseRequestIssued
+                internal readonly byte[] _buffer = new byte[RequestBufferSize]; // PERF TODO: Determine if this should be optimized to start smaller and grow
+                internal int _offset;
+                internal int _count;
+                internal Task<int> _task;
+
+                internal void SetTaskOffsetCount(Task<int> task, int offset, int count)
+                {
+                    Debug.Assert(offset >= 0, "Offset should never be negative");
+                    Debug.Assert(count >= 0, "Count should never be negative");
+                    Debug.Assert(offset <= count, "Offset should never be greater than count");
+
+                    _task = task;
+                    _offset = offset;
+                    _count = count;
+                }
             }
 
             [Conditional(VerboseDebuggingConditional)]

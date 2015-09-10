@@ -39,9 +39,14 @@ namespace System.Net.Http
          
             /// <summary>Map of activeOperations, indexed by a GCHandle ptr.</summary>
             private readonly Dictionary<IntPtr, ActiveRequest> _activeOperations = new Dictionary<IntPtr, ActiveRequest>();
-            
-            /// <summary>Buffer used to transfer data from a request content stream to libcurl.</summary>
-            private readonly byte[] _transferBuffer = new byte[RequestBufferSize];
+
+            /// <summary>
+            /// Lazily-initialized buffer used to transfer data from a request content stream to libcurl.
+            /// This buffer may be shared amongst all of the connections associated with
+            /// this multi agent, as long as those operations are performed synchronously on the thread
+            /// associated with the multi handle. Asynchronous operation must use a separate buffer.
+            /// </summary>
+            private byte[] _transferBuffer;
 
             /// <summary>
             /// Special file descriptor used to wake-up curl_multi_wait calls.  This is the read
@@ -110,7 +115,7 @@ namespace System.Net.Http
                         try
                         {
                             // Do the actual processing
-                            thisRef.Process();
+                            thisRef.WorkerLoop();
                         }
                         catch (Exception exc)
                         {
@@ -187,7 +192,14 @@ namespace System.Net.Http
                 VerboseTraceIf(bytesRead > 1, "Read more than one byte from wakeup pipe: " + bytesRead);
             }
 
-            private void Process()
+            /// <summary>Requests that libcurl unpause the connection associated with this request.</summary>
+            internal void RequestUnpause(EasyRequest easy)
+            {
+                VerboseTrace(easy: easy);
+                Queue(new IncomingRequest { Easy = easy, Type = IncomingRequestType.Unpause });
+            }
+
+            private void WorkerLoop()
             {
                 Debug.Assert(!Monitor.IsEntered(_incomingRequests), "No locks should be held while invoking Process");
                 Debug.Assert(_runningWorker != null && _runningWorker.Id == Task.CurrentId, "This is the worker, so it must be running");
@@ -356,9 +368,7 @@ namespace System.Net.Http
                             IntPtr gcHandlePtr;
                             ActiveRequest ar;
                             Debug.Assert(FindActiveRequest(easy, out gcHandlePtr, out ar), "Couldn't find active request for unpause");
-                            Debug.Assert(easy._paused == EasyRequest.PauseState.UnpauseRequestIssued, "Unpause requests only make sense when a request has been issued");
 
-                            easy._paused = EasyRequest.PauseState.Unpaused;
                             int unpauseResult = Interop.libcurl.curl_easy_pause(easy._easyHandle, Interop.libcurl.CURLPAUSE_CONT);
                             if (unpauseResult != CURLcode.CURLE_OK)
                             {
@@ -582,7 +592,6 @@ namespace System.Net.Http
                 {
                     try
                     {
-                        Debug.Assert(easy._paused == EasyRequest.PauseState.Unpaused, "We shouldn't be getting callbacks for a paused request.");
                         if (!(easy.Task.IsCanceled || easy.Task.IsFaulted))
                         {
                             // Complete the task if it hasn't already been.  This will make the
@@ -611,8 +620,9 @@ namespace System.Net.Http
             private static size_t CurlSendCallback(IntPtr buffer, size_t size, size_t nitems, IntPtr context)
             {
                 CurlHandler.VerboseTrace("size: " + size + ", nitems: " + nitems);
-                size *= nitems;
-                if (size == 0)
+                int length = checked((int)(size * nitems));
+                Debug.Assert(length <= RequestBufferSize, "length " + length + " should not be larger than RequestBufferSize " + RequestBufferSize);
+                if (length == 0)
                 {
                     return 0;
                 }
@@ -626,15 +636,22 @@ namespace System.Net.Http
                     // Transfer data from the request's content stream to libcurl
                     try
                     {
-                        byte[] arr = easy._associatedMultiAgent._transferBuffer;
-                        int numBytes = easy._requestContentStream.Read(arr, 0, Math.Min(arr.Length, (int)size)); // TODO: Fix potential blocking here
-                        Debug.Assert(numBytes >= 0 && (ulong)numBytes <= size, "Read more bytes than requested");
-                        if (numBytes > 0)
+                        if (easy._requestContentStream is MemoryStream)
                         {
-                            Marshal.Copy(arr, 0, buffer, numBytes);
+                            // If the request content stream is a memory stream (a very common case, as it's the default
+                            // stream type used by the base HttpContent type), then we can simply perform the read synchronously 
+                            // knowing that it won't block.
+                            return (size_t)TransferDataFromRequestMemoryStream(buffer, length, easy);
                         }
-
-                        return (size_t)numBytes;
+                        else
+                        {
+                            // Otherwise, we need to be concerned about blocking, due to this being called from the only thread able to 
+                            // service the multi agent (a multi handle can only be accessed by one thread at a time).  The whole 
+                            // operation, across potentially many callbacks, will be performed asynchronously: we issue the request
+                            // asynchronously, and if it's not completed immediately, we pause the connection until the data
+                            // is ready to be consumed by libcurl.
+                            return TransferDataFromRequestStream(buffer, length, easy);
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -643,7 +660,165 @@ namespace System.Net.Http
                 }
 
                 // Something went wrong.
-                return CURLcode.CURLE_ABORTED_BY_CALLBACK;
+                return Interop.libcurl.CURL_READFUNC_ABORT;
+            }
+
+            /// <summary>
+            /// Transfers up to <paramref name="length"/> data from the <paramref name="easy"/>'s
+            /// request content memory stream to the buffer.
+            /// </summary>
+            /// <returns>The number of bytes transferred.</returns>
+            private static int TransferDataFromRequestMemoryStream(IntPtr buffer, int length, EasyRequest easy)
+            {
+                Debug.Assert(easy._requestContentStream is MemoryStream, "Must only be used when the request stream is a memory stream");
+                Debug.Assert(easy._sendTransferState == null, "We should never have initialized the transfer state if the request stream is in memory");
+
+                MultiAgent multi = easy._associatedMultiAgent;
+
+                byte[] arr = multi._transferBuffer ?? (multi._transferBuffer = new byte[RequestBufferSize]);
+                int numBytes = easy._requestContentStream.Read(arr, 0, Math.Min(arr.Length, length));
+                Debug.Assert(numBytes >= 0 && numBytes <= length, "Read more bytes than requested");
+                if (numBytes > 0)
+                {
+                    Marshal.Copy(arr, 0, buffer, numBytes);
+                }
+
+                multi.VerboseTrace("Transferred " + numBytes + " from memory stream", easy: easy);
+                return numBytes;
+            }
+
+            /// <summary>
+            /// Transfers up to <paramref name="length"/> data from the <paramref name="easy"/>'s
+            /// request content (non-memory) stream to the buffer.
+            /// </summary>
+            /// <returns>The number of bytes transferred.</returns>
+            private static size_t TransferDataFromRequestStream(IntPtr buffer, int length, EasyRequest easy)
+            {
+                Debug.Assert(!(easy._requestContentStream is MemoryStream), "Memory streams should use TransferFromRequestMemoryStreamToBuffer.");
+
+                MultiAgent multi = easy._associatedMultiAgent;
+
+                // First check to see whether there's any data available from a previous asynchronous read request.
+                // If there is, the transfer state's Task field will be non-null, with its Result representing
+                // the number of bytes read.  The Buffer will then contain all of that read data.  If the Count
+                // is 0, then this is the first time we're checking that Task, and so we populate the Count
+                // from that read result.  After that, we can transfer as much data remains between Offset and
+                // Count.  Multiple callbacks may pull from that one read.
+
+                EasyRequest.SendTransferState sts = easy._sendTransferState;
+                if (sts != null)
+                {
+                    // Is there a previous read that may still have data to be consumed?
+                    if (sts._task != null)
+                    {
+                        Debug.Assert(sts._task.IsCompleted, "The task must have completed if we're getting called back.");
+
+                        // Determine how many bytes were read on the last asynchronous read.
+                        // If nothing was read, then we're done and can simply return 0 to indicate
+                        // the end of the stream.
+                        int bytesRead = sts._task.GetAwaiter().GetResult(); // will throw if read failed
+                        Debug.Assert(bytesRead >= 0 && bytesRead <= sts._buffer.Length, "ReadAsync returned an invalid result length: " + bytesRead);
+                        if (bytesRead == 0)
+                        {
+                            multi.VerboseTrace("End of stream from stored task", easy: easy);
+                            sts.SetTaskOffsetCount(null, 0, 0);
+                            return 0;
+                        }
+
+                        // If Count is still 0, then this is the first time after the task completed
+                        // that we're examining the data: transfer the bytesRead to the Count.
+                        if (sts._count == 0)
+                        {
+                            multi.VerboseTrace("ReadAsync completed with bytes: " + bytesRead, easy: easy);
+                            sts._count = bytesRead;
+                        }
+
+                        // Now Offset and Count are both accurate.  Determine how much data we can copy to libcurl...
+                        int availableData = sts._count - sts._offset;
+                        Debug.Assert(availableData > 0, "There must be some data still available.");
+
+                        // ... and copy as much of that as libcurl will allow.
+                        int bytesToCopy = Math.Min(availableData, length);
+                        Marshal.Copy(sts._buffer, sts._offset, buffer, bytesToCopy);
+                        multi.VerboseTrace("Copied " + bytesToCopy + " bytes from request stream", easy: easy);
+
+                        // Update the offset.  If we've gone through all of the data, reset the state 
+                        // so that the next time we're called back we'll do a new read.
+                        sts._offset += bytesToCopy;
+                        Debug.Assert(sts._offset <= sts._count, "Offset should never exceed count");
+                        if (sts._offset == sts._count)
+                        {
+                            sts.SetTaskOffsetCount(null, 0, 0);
+                        }
+
+                        // Return the amount of data copied
+                        Debug.Assert(bytesToCopy > 0, "We should never return 0 bytes here.");
+                        return (size_t)bytesToCopy;
+                    }
+
+                    // sts was non-null but sts.Task was null, meaning there was no previous task/data
+                    // from which to satisfy any of this request.
+                }
+                else // sts == null
+                {
+                    // Allocate a transfer state object to use for the remainder of this request.
+                    easy._sendTransferState = sts = new EasyRequest.SendTransferState();
+                }
+
+                Debug.Assert(sts != null, "By this point we should have a transfer object");
+                Debug.Assert(sts._task == null, "There shouldn't be a task now.");
+                Debug.Assert(sts._count == 0, "Count should be zero.");
+                Debug.Assert(sts._offset == 0, "Offset should be zero.");
+
+                // If we get here, there was no previously read data available to copy.
+                // Initiate a new asynchronous read.
+                Task<int> asyncRead = easy._requestContentStream.ReadAsync(
+                    sts._buffer, 0, Math.Min(sts._buffer.Length, length), easy._cancellationToken);
+                Debug.Assert(asyncRead != null, "Badly implemented stream returned a null task from ReadAsync");
+
+                // Even though it's "Async", it's possible this read could complete synchronously or extremely quickly.  
+                // Check to see if it did, in which case we can also satisfy the libcurl request synchronously in this callback.
+                if (asyncRead.IsCompleted)
+                {
+                    multi.VerboseTrace("ReadAsync completed immediately", easy: easy);
+
+                    // Get the amount of data read.
+                    int bytesRead = asyncRead.GetAwaiter().GetResult(); // will throw if read failed
+                    if (bytesRead == 0)
+                    {
+                        multi.VerboseTrace("End of stream from quick returning ReadAsync", easy: easy);
+                        return 0;
+                    }
+
+                    // Copy as much as we can.
+                    int bytesToCopy = Math.Min(bytesRead, length);
+                    Debug.Assert(bytesToCopy > 0 && bytesToCopy <= sts._buffer.Length, "ReadAsync quickly returned an invalid result length: " + bytesToCopy);
+                    Marshal.Copy(sts._buffer, 0, buffer, bytesToCopy);
+                    multi.VerboseTrace("Copied " + bytesToCopy + " from quick returning ReadAsync", easy: easy);
+
+                    // If we read more than we were able to copy, stash it away for the next read.
+                    if (bytesToCopy < bytesRead)
+                    {
+                        multi.VerboseTrace("Stashing away " + (bytesRead - bytesToCopy) + " bytes for next read.", easy: easy);
+                        sts.SetTaskOffsetCount(asyncRead, bytesToCopy, bytesRead);
+                    }
+
+                    // Return the number of bytes read.
+                    return (size_t)bytesToCopy;
+                }
+
+                // Otherwise, the read completed asynchronously.  Store the task, and hook up a continuation 
+                // such that the connection will be unpaused once the task completes.
+                sts.SetTaskOffsetCount(asyncRead, 0, 0);
+                asyncRead.ContinueWith((t, s) =>
+                {
+                    EasyRequest easyRef = (EasyRequest)s;
+                    easyRef._associatedMultiAgent.RequestUnpause(easyRef);
+                }, easy, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+
+                // Then pause the connection.
+                multi.VerboseTrace("Pausing the connection", easy: easy);
+                return Interop.libcurl.CURL_READFUNC_PAUSE;
             }
 
             private static int CurlSeekCallback(IntPtr context, long offset, int origin)
@@ -727,6 +902,14 @@ namespace System.Net.Http
                 CurlHandler.VerboseTrace(text, memberName, easy, agent: this);
             }
 
+            [Conditional(VerboseDebuggingConditional)]
+            private void VerboseTraceIf(bool condition, string text = null, [CallerMemberName] string memberName = null, EasyRequest easy = null)
+            {
+                if (condition)
+                {
+                    CurlHandler.VerboseTrace(text, memberName, easy, agent: this);
+                }
+            }
 
             /// <summary>Represents an active request currently being processed by the agent.</summary>
             private struct ActiveRequest
@@ -743,7 +926,7 @@ namespace System.Net.Http
             }
 
             /// <summary>The type of an incoming request to be processed by the agent.</summary>
-            internal enum IncomingRequestType
+            internal enum IncomingRequestType : byte
             {
                 /// <summary>A new request that's never been submitted to an agent.</summary>
                 New,
