@@ -47,6 +47,7 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, dtf.ShortTimePattern);
         }
 
+        [Theory]
         [InlineData("fi-FI", "H:mm", "H.mm")]
         public void TestShortTimePatternLocale2(string locale, string expectedWindows, string expectedIcu)
         {
@@ -66,6 +67,7 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, dtf.LongTimePattern);
         }
 
+        [Theory]
         [InlineData("fi-FI", "H:mm:ss", "H.mm.ss")]
         public void TestLongTimePatternLocale2(string locale, string expectedWindows, string expectedIcu)
         {

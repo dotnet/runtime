@@ -21,6 +21,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [InlineData("en-US", "English (United States)")]
+        [InlineData("fr-FR", "French (France)")]
         public void TestEnglishNameLocale(string locale, string expected)
         {
             CultureInfo myTestCulture = new CultureInfo(locale);
