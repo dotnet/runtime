@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-# Enable globstar for the purposes of directory evaluation
-shopt -s globstar
-
 wait_on_pids()
 {
   # Wait on the last processes
@@ -298,7 +295,8 @@ create_test_overlay
 TestsFailed=0
 numberOfProcesses=0
 maxProcesses=$(($(getconf _NPROCESSORS_ONLN)+1))
-for file in src/**/tests/**/*.Tests.csproj
+TestProjects=($(find . -regex ".*/src/.*/tests/.*\.Tests\.csproj"))
+for file in ${TestProjects[@]}
 do
   runtest $file &
   pids="$pids $!"
