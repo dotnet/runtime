@@ -3780,6 +3780,51 @@ namespace Tests
             Assert.Equal("null", f(null));
         }
 
+        public enum MyEnum
+        {
+            Value
+        }
+
+        public class EnumOutLambdaClass
+        {
+            public static void Bar(out MyEnum o)
+            {
+                o = MyEnum.Value;
+            }
+
+            public static void BarRef(ref MyEnum o)
+            {
+                o = MyEnum.Value;
+            }
+        }
+
+        [Fact]
+        public static void UninitializedEnumOut()
+        {
+            var x = Expression.Variable(typeof(MyEnum), "x");
+
+            var expression = Expression.Lambda<Action>(
+                            Expression.Block(
+                            new[] { x },
+                            Expression.Call(null, typeof(EnumOutLambdaClass).GetMethod("Bar"), x)));
+
+            expression.Compile()();
+        }
+
+        [Fact]
+        public static void DefaultEnumRef()
+        {
+            var x = Expression.Variable(typeof(MyEnum), "x");
+
+            var expression = Expression.Lambda<Action>(
+                            Expression.Block(
+                            new[] { x },
+                            Expression.Assign(x, Expression.Default(typeof(MyEnum))),
+                            Expression.Call(null, typeof(EnumOutLambdaClass).GetMethod("BarRef"), x)));
+
+            expression.Compile()();
+        }
+
         [Fact]
         public static void BinaryOperators()
         {
