@@ -181,7 +181,6 @@ namespace System.Net.Http
                     if (_remainingDataCount > 0 || _pendingReadRequest == null)
                     {
                         VerboseTrace("Pausing due to _remainingDataCount: " + _remainingDataCount + ", _pendingReadRequest: " + (_pendingReadRequest != null));
-                        _easy._paused = EasyRequest.PauseState.Paused;
                         return Interop.libcurl.CURL_WRITEFUNC_PAUSE;
                     }
 
@@ -342,24 +341,8 @@ namespace System.Net.Http
                         VerboseTrace("Created pending read");
                     }
 
-                    RequestUnpause();
+                    _easy._associatedMultiAgent.RequestUnpause(_easy);
                     return _pendingReadRequest.Task;
-                }
-            }
-
-            /// <summary>Requests that libcurl unpause the connection associated with this request.</summary>
-            private void RequestUnpause()
-            {
-                if (_easy._paused == EasyRequest.PauseState.Paused)
-                {
-                    VerboseTrace("Issuing unpause request");
-                    _easy._paused = EasyRequest.PauseState.UnpauseRequestIssued;
-                    _easy._associatedMultiAgent.Queue(
-                        new MultiAgent.IncomingRequest { Easy = _easy, Type = MultiAgent.IncomingRequestType.Unpause });
-                }
-                else
-                {
-                    VerboseTrace("Not issuing unpause request with state " + _easy._paused);
                 }
             }
 
