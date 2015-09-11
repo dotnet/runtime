@@ -151,9 +151,8 @@ namespace System.Linq.Tests
             Assert.Equal(4, resultArray[0]);
         }
 
-
         [Fact]
-        [OuterLoop]
+        [ActiveIssue("Valid test but too intensive to enable even in OuterLoop")]
         public void ToArray_FailOnExtremelyLargeCollection()
         {
             TestLargeSequence largeSeq = new TestLargeSequence();
