@@ -35,6 +35,7 @@ namespace System.Net.Http
 
             internal MultiAgent _associatedMultiAgent;
             internal SendTransferState _sendTransferState;
+            internal bool _isRedirect = false;
 
             public EasyRequest(CurlHandler handler, HttpRequestMessage requestMessage, CancellationToken cancellationToken) :
                 base(TaskCreationOptions.RunContinuationsAsynchronously)
@@ -69,9 +70,9 @@ namespace System.Net.Http
                 SetRedirection();
                 SetVerb();
                 SetDecompressionOptions();
-                SetProxyOptions();
-                SetCredentialsOptions();
-                SetCookieOption();
+                SetProxyOptions(_requestMessage.RequestUri);
+                SetCredentialsOptions(_handler.GetNetworkCredentials(_handler._serverCredentials,_requestMessage.RequestUri));
+                SetCookieOption(_requestMessage.RequestUri);
                 SetRequestHeaders();
             }
 
@@ -209,7 +210,7 @@ namespace System.Net.Http
                 }
             }
 
-            private void SetProxyOptions()
+            internal void SetProxyOptions(Uri requestUri)
             {
                 if (_handler._proxyPolicy == ProxyUsePolicy.DoNotUseProxy)
                 {
@@ -227,14 +228,14 @@ namespace System.Net.Http
 
                 Debug.Assert(_handler.Proxy != null, "proxy is null");
                 Debug.Assert(_handler._proxyPolicy == ProxyUsePolicy.UseCustomProxy, "_proxyPolicy is not UseCustomProxy");
-                if (_handler.Proxy.IsBypassed(_requestMessage.RequestUri))
+                if (_handler.Proxy.IsBypassed(requestUri))
                 {
                     SetCurlOption(CURLoption.CURLOPT_PROXY, string.Empty);
                     VerboseTrace("Bypassed proxy");
                     return;
                 }
 
-                var proxyUri = _handler.Proxy.GetProxy(_requestMessage.RequestUri);
+                var proxyUri = _handler.Proxy.GetProxy(requestUri);
                 if (proxyUri == null)
                 {
                     VerboseTrace("No proxy URI");
@@ -262,11 +263,14 @@ namespace System.Net.Http
                 }
             }
 
-            private void SetCredentialsOptions()
+            internal void SetCredentialsOptions(NetworkCredential credentials)
             {
-                NetworkCredential credentials = _handler.GetNetworkCredentials(_handler._serverCredentials, _requestMessage.RequestUri);
                 if (credentials == null)
                 {
+                    SetCurlOption(CURLoption.CURLOPT_HTTPAUTH, CURLAUTH.None);
+                    SetCurlOption(CURLoption.CURLOPT_USERNAME, IntPtr.Zero);
+                    SetCurlOption(CURLoption.CURLOPT_PASSWORD, IntPtr.Zero);
+                    _networkCredential = null;
                     return;
                 }
 
@@ -285,14 +289,14 @@ namespace System.Net.Http
                 VerboseTrace("Set credentials options");
             }
 
-            private void SetCookieOption()
+            internal void SetCookieOption(Uri uri)
             {
                 if (!_handler._useCookie)
                 {
                     return;
                 }
 
-                string cookieValues = _handler.CookieContainer.GetCookieHeader(_requestMessage.RequestUri);
+                string cookieValues = _handler.CookieContainer.GetCookieHeader(uri);
                 if (cookieValues != null)
                 {
                     SetCurlOption(CURLoption.CURLOPT_COOKIE, cookieValues);

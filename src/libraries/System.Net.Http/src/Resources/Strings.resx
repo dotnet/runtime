@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -284,6 +284,9 @@
   </data>
   <data name="net_cookie_attribute" xml:space="preserve">
     <value>The '{0}'='{1}' part of the cookie is invalid.</value>
+  </data>
+  <data name="net_http_invalid_cookiecontainer_unix" xml:space="preserve">
+    <value>CookieContainer property must not be null.</value>
   </data>
   <data name="net_http_unix_invalid_client_cert_option" xml:space="preserve">
     <value>libcurl supports only manual client certificate selection</value>
