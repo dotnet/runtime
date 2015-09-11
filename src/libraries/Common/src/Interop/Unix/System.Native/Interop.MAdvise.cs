@@ -6,16 +6,14 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class libc
+    internal static partial class Sys
     {
-        [Flags]
-        internal enum MemoryMappedFlags
+        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        internal static extern int MAdvise(IntPtr addr, ulong length, MemoryAdvice advice);
+
+        internal enum MemoryAdvice
         {
-            MAP_FILE = 0x0,
-            MAP_SHARED = 0x01,
-            MAP_PRIVATE = 0x02,
-            MAP_FIXED = 0x10,
-            MAP_ANONYMOUS = 0x20,
+            MADV_DONTFORK = 1,
         }
     }
 }

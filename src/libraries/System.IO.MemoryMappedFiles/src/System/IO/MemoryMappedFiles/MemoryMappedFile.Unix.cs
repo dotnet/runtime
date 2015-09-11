@@ -64,8 +64,8 @@ namespace System.IO.MemoryMappedFiles
                 // views over a read-only, anonymous, memory-backed map, because the data will never change, so all views
                 // will always see zero and can't change that.  In that case, we just use the built-in anonymous support of
                 // the map by leaving fileStream as null.
-                Interop.libc.MemoryMappedProtections protections = MemoryMappedView.GetProtections(access, forVerification: false);
-                if ((protections & Interop.libc.MemoryMappedProtections.PROT_WRITE) != 0 && capacity > 0)
+                Interop.Sys.MemoryMappedProtections protections = MemoryMappedView.GetProtections(access, forVerification: false);
+                if ((protections & Interop.Sys.MemoryMappedProtections.PROT_WRITE) != 0 && capacity > 0)
                 {
                     ownsFileStream = true;
                     fileStream = CreateSharedBackingObject(protections, capacity);
@@ -123,13 +123,114 @@ namespace System.IO.MemoryMappedFiles
             return new PlatformNotSupportedException(SR.PlatformNotSupported_NamedMaps);
         }
         
-        private static FileAccess TranslateProtectionsToFileAccess(Interop.libc.MemoryMappedProtections protections)
+        private static FileAccess TranslateProtectionsToFileAccess(Interop.Sys.MemoryMappedProtections protections)
         {
             return
-                (protections & (Interop.libc.MemoryMappedProtections.PROT_READ | Interop.libc.MemoryMappedProtections.PROT_WRITE)) != 0 ? FileAccess.ReadWrite :
-                (protections & (Interop.libc.MemoryMappedProtections.PROT_WRITE)) != 0 ? FileAccess.Write :
+                (protections & (Interop.Sys.MemoryMappedProtections.PROT_READ | Interop.Sys.MemoryMappedProtections.PROT_WRITE)) != 0 ? FileAccess.ReadWrite :
+                (protections & (Interop.Sys.MemoryMappedProtections.PROT_WRITE)) != 0 ? FileAccess.Write :
                 FileAccess.Read;
         }
 
+        private static FileStream CreateSharedBackingObject(Interop.Sys.MemoryMappedProtections protections, long capacity)
+        {
+            return CreateSharedBackingObjectUsingMemory(protections, capacity)
+                ?? CreateSharedBackingObjectUsingFile(protections, capacity);
+        }
+
+        // -----------------------------
+        // ---- PAL layer ends here ----
+        // -----------------------------
+
+        private static FileStream CreateSharedBackingObjectUsingMemory(
+           Interop.Sys.MemoryMappedProtections protections, long capacity)
+        {
+            // The POSIX shared memory object name must begin with '/'.  After that we just want something short and unique.
+            string mapName = "/corefx_map_" + Guid.NewGuid().ToString("N");
+
+            // Determine the flags to use when creating the shared memory object
+            Interop.Sys.OpenFlags flags = (protections & Interop.Sys.MemoryMappedProtections.PROT_WRITE) != 0 ?
+                Interop.Sys.OpenFlags.O_RDWR :
+                Interop.Sys.OpenFlags.O_RDONLY;
+            flags |= Interop.Sys.OpenFlags.O_CREAT | Interop.Sys.OpenFlags.O_EXCL; // CreateNew
+
+            // Determine the permissions with which to create the file
+            Interop.Sys.Permissions perms = default(Interop.Sys.Permissions);
+            if ((protections & Interop.Sys.MemoryMappedProtections.PROT_READ) != 0)
+                perms |= Interop.Sys.Permissions.S_IRUSR;
+            if ((protections & Interop.Sys.MemoryMappedProtections.PROT_WRITE) != 0)
+                perms |= Interop.Sys.Permissions.S_IWUSR;
+            if ((protections & Interop.Sys.MemoryMappedProtections.PROT_EXEC) != 0)
+                perms |= Interop.Sys.Permissions.S_IXUSR;
+
+            // Create the shared memory object.
+            int fd = Interop.Sys.ShmOpen(mapName, flags, (int)perms);
+            if (fd < 0)
+            {
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                if (errorInfo.Error == Interop.Error.ENOTSUP)
+                {
+                    // If ShmOpen is not supported, fall back to file backing object.
+                    // Note that the System.Native shim will force this failure on platforms where
+                    // the result of native shm_open does not work well with our subsequent call
+                    // to mmap.
+                    return null;
+                }
+
+                throw Interop.GetExceptionForIoErrno(errorInfo);
+            }
+
+            SafeFileHandle fileHandle = new SafeFileHandle((IntPtr)fd, ownsHandle: true);
+            try
+            {
+                // Unlink the shared memory object immediatley so that it'll go away once all handles 
+                // to it are closed (as with opened then unlinked files, it'll remain usable via
+                // the open handles even though it's unlinked and can't be opened anew via its name).
+                Interop.CheckIo(Interop.Sys.ShmUnlink(mapName));
+
+                // Give it the right capacity.  We do this directly with ftruncate rather
+                // than via FileStream.SetLength after the FileStream is created because, on some systems,
+                // lseek fails on shared memory objects, causing the FileStream to think it's unseekable,
+                // causing it to preemptively throw from SetLength.
+                Interop.CheckIo(Interop.Sys.FTruncate(fd, capacity));
+
+                // Wrap the file descriptor in a stream and return it.
+                return new FileStream(fileHandle, TranslateProtectionsToFileAccess(protections));
+            }
+            catch
+            {
+                fileHandle.Dispose();
+                throw;
+            }
+        }
+
+        private static string s_tempMapsDirectory;
+
+        private static FileStream CreateSharedBackingObjectUsingFile(Interop.Sys.MemoryMappedProtections protections, long capacity)
+        {
+            string tempMapsDirectory = s_tempMapsDirectory ?? (s_tempMapsDirectory = PersistedFiles.GetTempFeatureDirectory("maps"));
+            Directory.CreateDirectory(tempMapsDirectory);
+            string path = Path.Combine(tempMapsDirectory, Guid.NewGuid().ToString("N"));
+
+            FileAccess access =
+                (protections & (Interop.Sys.MemoryMappedProtections.PROT_READ | Interop.Sys.MemoryMappedProtections.PROT_WRITE)) != 0 ? FileAccess.ReadWrite :
+                (protections & (Interop.Sys.MemoryMappedProtections.PROT_WRITE)) != 0 ? FileAccess.Write :
+                FileAccess.Read;
+
+            // Create the backing file, then immediately unlink it so that it'll be cleaned up when no longer in use.
+            // Then enlarge it to the requested capacity.
+            const int DefaultBufferSize = 0x1000;
+            var fs = new FileStream(path, FileMode.CreateNew, TranslateProtectionsToFileAccess(protections), FileShare.ReadWrite, DefaultBufferSize);
+            try
+            {
+                Interop.CheckIo(Interop.Sys.Unlink(path));
+                fs.SetLength(capacity);
+            }
+            catch
+            {
+                fs.Dispose();
+                throw;
+            }
+            return fs;
+        }
     }
 }

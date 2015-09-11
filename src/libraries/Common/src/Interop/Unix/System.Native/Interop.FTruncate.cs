@@ -6,15 +6,9 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class libc
+    internal static partial class Sys
     {
-        [Flags]
-        internal enum MemoryMappedProtections
-        {
-            PROT_NONE = 0x0,
-            PROT_READ = 0x1,
-            PROT_WRITE = 0x2,
-            PROT_EXEC = 0x4
-        }
+        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        internal static extern int FTruncate(int fd, long length);
     }
 }

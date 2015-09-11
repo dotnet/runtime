@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <stdint.h>
+#include "pal_types.h"
 
 /**
  * Initializes curl. 
