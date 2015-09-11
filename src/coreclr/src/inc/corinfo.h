@@ -2027,7 +2027,12 @@ enum { LCL_FINALLY_MARK = 0xFC }; // FC = "Finally Call"
 #define CORINFO_PAGE_SIZE   0x1000                           // the page size on the machine
 
 // <TODO>@TODO: put this in the CORINFO_EE_INFO data structure</TODO>
+
+#ifndef FEATURE_PAL
 #define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((32*1024)-1)   // when generating JIT code
+#else // !FEATURE_PAL
+#define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((OS_PAGE_SIZE / 2) - 1)
+#endif // !FEATURE_PAL
 
 typedef void* CORINFO_MethodPtr;            // a generic method pointer
 
