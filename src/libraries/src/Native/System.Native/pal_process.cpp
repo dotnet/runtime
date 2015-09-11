@@ -3,16 +3,55 @@
 
 #include "pal_config.h"
 #include "pal_process.h"
-#include <sys/resource.h>
+
 #include <assert.h>
 #include <errno.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include <signal.h>
+#include <stdlib.h>
+#include <sys/resource.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <syslog.h>
+#include <unistd.h>
 
 // Validate that our Signals enum values are correct for the platform
-static_assert((int)Signals::PAL_None == 0, "");
-static_assert((int)Signals::PAL_SIGKILL == SIGKILL, "");
+static_assert(static_cast<int>(Signals::PAL_None) == 0, "");
+static_assert(static_cast<int>(Signals::PAL_SIGKILL) == SIGKILL, "");
+
+// Validate that our WaitPidOptions enum values are correct for the platform
+static_assert(static_cast<int>(WaitPidOptions::PAL_None)        == 0, "");
+static_assert(static_cast<int>(WaitPidOptions::PAL_WNOHANG)     == WNOHANG, "");
+static_assert(static_cast<int>(WaitPidOptions::PAL_WUNTRACED)   == WUNTRACED, "");
+
+// Validate that our SysLogPriority values are correct for the platform
+static_assert(static_cast<int>(SysLogPriority::PAL_LOG_EMERG)       == LOG_EMERG, "");
+static_assert(static_cast<int>(SysLogPriority::PAL_LOG_ALERT)       == LOG_ALERT, "");
+static_assert(static_cast<int>(SysLogPriority::PAL_LOG_CRIT)        == LOG_CRIT, "");
+static_assert(static_cast<int>(SysLogPriority::PAL_LOG_ERR)         == LOG_ERR, "");
+static_assert(static_cast<int>(SysLogPriority::PAL_LOG_WARNING)     == LOG_WARNING, "");
+static_assert(static_cast<int>(SysLogPriority::PAL_LOG_NOTICE)      == LOG_NOTICE, "");
+static_assert(static_cast<int>(SysLogPriority::PAL_LOG_INFO)        == LOG_INFO, "");
+static_assert(static_cast<int>(SysLogPriority::PAL_LOG_DEBUG)       == LOG_DEBUG, "");
+static_assert(static_cast<int>(SysLogPriority::PAL_LOG_KERN)        == LOG_KERN, "");
+static_assert(static_cast<int>(SysLogPriority::PAL_LOG_USER)        == LOG_USER, "");
+static_assert(static_cast<int>(SysLogPriority::PAL_LOG_MAIL)        == LOG_MAIL, "");
+static_assert(static_cast<int>(SysLogPriority::PAL_LOG_DAEMON)      == LOG_DAEMON, "");
+static_assert(static_cast<int>(SysLogPriority::PAL_LOG_AUTH)        == LOG_AUTH, "");
+static_assert(static_cast<int>(SysLogPriority::PAL_LOG_SYSLOG)      == LOG_SYSLOG, "");
+static_assert(static_cast<int>(SysLogPriority::PAL_LOG_LPR)         == LOG_LPR, "");
+static_assert(static_cast<int>(SysLogPriority::PAL_LOG_NEWS)        == LOG_NEWS, "");
+static_assert(static_cast<int>(SysLogPriority::PAL_LOG_UUCP)        == LOG_UUCP, "");
+static_assert(static_cast<int>(SysLogPriority::PAL_LOG_CRON)        == LOG_CRON, "");
+static_assert(static_cast<int>(SysLogPriority::PAL_LOG_AUTHPRIV)    == LOG_AUTHPRIV, "");
+static_assert(static_cast<int>(SysLogPriority::PAL_LOG_FTP)         == LOG_FTP, "");
+static_assert(static_cast<int>(SysLogPriority::PAL_LOG_LOCAL0)      == LOG_LOCAL0, "");
+static_assert(static_cast<int>(SysLogPriority::PAL_LOG_LOCAL1)      == LOG_LOCAL1, "");
+static_assert(static_cast<int>(SysLogPriority::PAL_LOG_LOCAL2)      == LOG_LOCAL2, "");
+static_assert(static_cast<int>(SysLogPriority::PAL_LOG_LOCAL3)      == LOG_LOCAL3, "");
+static_assert(static_cast<int>(SysLogPriority::PAL_LOG_LOCAL4)      == LOG_LOCAL4, "");
+static_assert(static_cast<int>(SysLogPriority::PAL_LOG_LOCAL5)      == LOG_LOCAL5, "");
+static_assert(static_cast<int>(SysLogPriority::PAL_LOG_LOCAL6)      == LOG_LOCAL6, "");
+static_assert(static_cast<int>(SysLogPriority::PAL_LOG_LOCAL7)      == LOG_LOCAL7, "");
 
 enum
 {
@@ -268,4 +307,42 @@ extern "C"
 int32_t GetSid(int32_t pid)
 {
     return getsid(pid);
+}
+
+extern "C"
+void SysLog(SysLogPriority priority, const char* message, const char* arg1)
+{
+    syslog(static_cast<int>(priority), message, arg1);
+}
+
+extern "C"
+int32_t WaitPid(int32_t pid, int32_t* status, WaitPidOptions options)
+{
+    assert(status != nullptr);
+    
+    return waitpid(pid, status, static_cast<int>(options));
+}
+
+extern "C"
+int32_t WExitStatus(int32_t status)
+{
+    return WEXITSTATUS(status);
+}
+
+extern "C"
+bool WIfExited(int32_t status)
+{
+    return WIFEXITED(status);
+}
+
+extern "C"
+bool WIfSignaled(int32_t status)
+{
+    return WIFSIGNALED(status);
+}
+
+extern "C"
+int32_t WTermSig(int32_t status)
+{
+    return WTERMSIG(status);
 }

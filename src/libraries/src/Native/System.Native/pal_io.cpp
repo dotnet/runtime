@@ -7,13 +7,17 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <fnmatch.h>
+#include <poll.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/file.h>
+#include <syslog.h>
 #include <unistd.h>
-#include <fnmatch.h>
-#include <stdlib.h>
+
 
 #if HAVE_STAT64
 #    define stat_ stat64
@@ -81,6 +85,23 @@ static_assert((int)AccessMode::PAL_R_OK == R_OK, "");
 static_assert((int)SeekWhence::PAL_SEEK_SET == SEEK_SET, "");
 static_assert((int)SeekWhence::PAL_SEEK_CUR == SEEK_CUR, "");
 static_assert((int)SeekWhence::PAL_SEEK_END == SEEK_END, "");
+
+// Validate our PollFlags enum values are correct for the platform
+static_assert((short)PollFlags::PAL_POLLIN   == POLLIN, "");
+static_assert((short)PollFlags::PAL_POLLOUT  == POLLOUT, "");
+static_assert((short)PollFlags::PAL_POLLERR  == POLLERR, "");
+static_assert((short)PollFlags::PAL_POLLHUP  == POLLHUP, "");
+static_assert((short)PollFlags::PAL_POLLNVAL == POLLNVAL, "");
+
+// Validate our FileAdvice enum values are correct for the platform
+#if HAVE_POSIX_ADVISE
+static_assert((int)FileAdvice::PAL_POSIX_FADV_NORMAL       == POSIX_FADV_NORMAL, "");
+static_assert((int)FileAdvice::PAL_POSIX_FADV_RANDOM       == POSIX_FADV_RANDOM, "");
+static_assert((int)FileAdvice::PAL_POSIX_FADV_SEQUENTIAL   == POSIX_FADV_SEQUENTIAL, "");
+static_assert((int)FileAdvice::PAL_POSIX_FADV_WILLNEED     == POSIX_FADV_WILLNEED, "");
+static_assert((int)FileAdvice::PAL_POSIX_FADV_DONTNEED     == POSIX_FADV_DONTNEED, "");
+static_assert((int)FileAdvice::PAL_POSIX_FADV_NOREUSE      == POSIX_FADV_NOREUSE, "");
+#endif 
 
 static
 void ConvertFileStatus(const struct stat_& src, FileStatus* dst)
@@ -627,4 +648,95 @@ extern "C"
 int32_t FTruncate(int32_t fd, int64_t length)
 {
     return ftruncate(fd, length);
+}
+
+void ConvertPollFDPalToPlatform(const PollFD& pal, pollfd& native)
+{
+    native.fd = pal.FD;
+    native.events = pal.Events;
+    native.revents = pal.REvents;
+}
+
+static
+void ConvertPollFDPlatformToPal(const pollfd& native, PollFD& pal)
+{
+    pal.FD = native.fd;
+    pal.Events = native.events;
+    pal.REvents = native.revents;
+}
+
+extern "C"
+int32_t Poll(PollFD* pollData, uint32_t numberOfPollFds, int32_t timeout)
+{
+    assert(numberOfPollFds <= 2);
+
+    if (numberOfPollFds > 2)
+        return ERANGE;
+
+    // Convert our standardized pollfd to the native one
+    pollfd fds[2];
+    for (int i = 0; i < numberOfPollFds; i++)
+    {
+        ConvertPollFDPalToPlatform(pollData[i], fds[i]);
+    }
+
+    // Call poll with the native pollfd and, if necessary, convert the results back to our standardized pollfd
+    int32_t result = poll(fds, numberOfPollFds, timeout);
+    if (result > 0) // We only have result data if the result is positive
+    {
+        for (int i = 0; i < numberOfPollFds; i++)
+        {
+            ConvertPollFDPlatformToPal(fds[i], pollData[i]);
+        }
+    }
+
+    return result;
+}
+
+extern "C"
+int32_t PosixFAdvise(int32_t fd, int64_t offset, int64_t length, FileAdvice advice)
+{
+#if HAVE_POSIX_ADVISE
+    return posix_fadvise(fd, offset, length, (int)advice);
+#else
+    // Not supported on this platform; however, we don't want to #error here since
+    // currently, this isn't used on platforms where it isn't supported.
+    return ENOTSUP;
+#endif
+}
+
+extern "C"
+int64_t Read(int32_t fd, void* buffer, uint64_t count)
+{
+    return read(fd, buffer, count);
+}
+
+extern "C"
+int64_t ReadLink(const char* path, char* buffer, uint64_t bufferSize)
+{
+    return readlink(path, buffer, bufferSize);
+}
+
+extern "C"
+int32_t Rename(const char* oldPath, const char* newPath)
+{
+    return rename(oldPath, newPath);
+}
+
+extern "C"
+int32_t RmDir(const char* path)
+{
+    return rmdir(path);
+}
+
+extern "C"
+void Sync()
+{
+    sync();
+}
+
+extern "C"
+int64_t Write(int32_t fd, const void* buffer, uint64_t bufferSize)
+{
+    return write(fd, buffer, bufferSize);
 }

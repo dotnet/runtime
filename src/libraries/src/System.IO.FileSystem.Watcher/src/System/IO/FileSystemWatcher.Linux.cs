@@ -681,8 +681,8 @@ namespace System.IO
                                         // that's actually what's needed (otherwise it'd be fine to block indefinitely waiting
                                         // for the next event to arrive).
                                         const int MillisecondsTimeout = 2;
-                                        Interop.libc.PollFlags resultFlags;
-                                        pollResult = Interop.libc.poll(_inotifyHandle.DangerousGetHandle().ToInt32(), Interop.libc.PollFlags.POLLIN, MillisecondsTimeout, out resultFlags);
+                                        Interop.Sys.PollFlags resultFlags;
+                                        pollResult = Interop.Sys.Poll(_inotifyHandle.DangerousGetHandle().ToInt32(), Interop.Sys.PollFlags.POLLIN, MillisecondsTimeout, out resultFlags);
                                     }
                                     finally
                                     {
@@ -766,7 +766,7 @@ namespace System.IO
                                 long result;
                                 fixed (byte* buf = thisRef._buffer)
                                 {
-                                    result = (long)Interop.libc.read(fd, buf, (IntPtr)thisRef._buffer.Length);
+                                    result = (long)Interop.Sys.Read(fd, buf, (ulong)thisRef._buffer.Length);
                                 }
                                 Debug.Assert(result <= thisRef._buffer.Length);
                                 return result;

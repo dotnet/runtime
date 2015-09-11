@@ -9,4 +9,4 @@
  * Abstraction helper method to safely copy strings using strlcpy or strcpy_s
  * or a different safe copy method, depending on the current platform.
  */
-void SafeStringCopy(char* destination, int32_t destinationSize, char* source);
+void SafeStringCopy(char* destination, int32_t destinationSize, const char* source);

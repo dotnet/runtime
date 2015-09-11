@@ -3,10 +3,12 @@
 
 #include "pal_config.h"
 #include "pal_utilities.h"
-#include <string.h>
-#include <stdio.h>
 
-void SafeStringCopy(char* destination, int32_t destinationSize, char* source)
+#include <cstdarg>
+#include <stdio.h>
+#include <string.h>
+
+void SafeStringCopy(char* destination, int32_t destinationSize, const char* source)
 {
 #if HAVE_STRCPY_S
     strcpy_s(destination, destinationSize, source);

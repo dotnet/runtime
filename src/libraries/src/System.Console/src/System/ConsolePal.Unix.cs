@@ -290,7 +290,7 @@ namespace System
             fixed (byte* bufPtr = buffer)
             {
                 long result;
-                while (Interop.CheckIo(result = (long)Interop.libc.read(fd, (byte*)bufPtr + offset, (IntPtr)count))) ;
+                while (Interop.CheckIo(result = (long)Interop.Sys.Read(fd, (byte*)bufPtr + offset, (ulong)count))) ;
                 Debug.Assert(result <= count);
                 return (int)result;
             }
@@ -308,7 +308,7 @@ namespace System
                 while (count > 0)
                 {
                     int bytesWritten;
-                    while (Interop.CheckIo(bytesWritten = (int)Interop.libc.write(fd, bufPtr + offset, (IntPtr)count))) ;
+                    while (Interop.CheckIo(bytesWritten = (int)Interop.Sys.Write(fd, bufPtr + offset, (ulong)count))) ;
                     count -= bytesWritten;
                     offset += bytesWritten;
                 }
@@ -1005,8 +1005,8 @@ namespace System
                     // Determine how much space is needed to store the formatted string.
                     string stringArg = arg as string;
                     int neededLength = stringArg != null ?
-                        Interop.libc.snprintf(null, IntPtr.Zero, format, stringArg) :
-                        Interop.libc.snprintf(null, IntPtr.Zero, format, (int)arg);
+                        Interop.Sys.SNPrintF(null, 0, format, stringArg) :
+                        Interop.Sys.SNPrintF(null, 0, format, (int)arg);
                     if (neededLength == 0)
                     {
                         return string.Empty;
@@ -1021,8 +1021,8 @@ namespace System
                     fixed (byte* ptr = bytes)
                     {
                         int length = stringArg != null ?
-                            Interop.libc.snprintf(ptr, (IntPtr)bytes.Length, format, stringArg) :
-                            Interop.libc.snprintf(ptr, (IntPtr)bytes.Length, format, (int)arg);
+                            Interop.Sys.SNPrintF(ptr, (ulong)bytes.Length, format, stringArg) :
+                            Interop.Sys.SNPrintF(ptr, (ulong)bytes.Length, format, (int)arg);
                         if (length != neededLength)
                         {
                             throw new InvalidOperationException(SR.InvalidOperation_PrintF);

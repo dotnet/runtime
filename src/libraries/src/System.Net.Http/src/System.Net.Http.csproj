@@ -167,17 +167,17 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Pipe.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Pipe.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.poll.cs">
-      <Link>Common\Interop\Unix\libc\Interop.poll.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Poll.cs">
+      <Link>Common\Interop\Unix\libc\Interop.Poll.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.printf.cs">
       <Link>Common\Interop\Unix\libc\Interop.printf.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.read.cs">
-      <Link>Common\Interop\Unix\libc\Interop.read.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Read.cs">
+      <Link>Common\Interop\Unix\libc\Interop.Read.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.write.cs">
-      <Link>Common\Interop\Unix\libc\Interop.write.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Write.cs">
+      <Link>Common\Interop\Unix\libc\Interop.Write.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.libcurl.cs">
       <Link>Common\Interop\Unix\libcurl\Interop.libcurl.cs</Link>

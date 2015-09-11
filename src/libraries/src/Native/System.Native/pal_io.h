@@ -22,6 +22,14 @@ struct FileStatus
     int64_t BirthTime; // time the file was created
 };
 
+
+/************
+ * The values below in the header are fixed and correct for managed callers to use forever. 
+ * We must never change them. The implementation must either static_assert that they are equal 
+ * to the native equivalent OR convert them appropriately.
+ */
+
+
 /**
  * Constants for interpreting the permissions encoded in FileStatus.Mode.
  * Both the names (without the PAL_ prefix and numeric values are specified by POSIX.1.2008
@@ -205,6 +213,33 @@ enum class SysConfName : int32_t
 };
 
 /**
+ * Constants passed to and from poll describing what to poll for and what 
+ * kind of data was received from poll.
+ */
+enum class PollFlags : int16_t
+{
+    PAL_POLLIN   = 0x0001,  /* any readable data available */
+    PAL_POLLOUT  = 0x0004,  /* data can be written without blocked */
+    PAL_POLLERR  = 0x0008,  /* an error occurred */
+    PAL_POLLHUP  = 0x0010,  /* the file descriptor hung up */
+    PAL_POLLNVAL = 0x0020,  /* the requested events were invalid */
+};
+
+/**
+ * Constants passed to posix_advise to give hints to the kernel about the type of I/O
+ * operations that will occur.
+ */
+enum class FileAdvice : int32_t
+{
+    PAL_POSIX_FADV_NORMAL       = 0,    /* no special advice, the default value */
+    PAL_POSIX_FADV_RANDOM       = 1,    /* random I/O access */
+    PAL_POSIX_FADV_SEQUENTIAL   = 2,    /* sequential I/O access */
+    PAL_POSIX_FADV_WILLNEED     = 3,    /* will need specified pages */
+    PAL_POSIX_FADV_DONTNEED     = 4,    /* dont need the specified pages */
+    PAL_POSIX_FADV_NOREUSE      = 5,    /* data will only be acessed once */
+};
+
+/**
  * Our intermediate dirent struct that only gives back the data we need
  */
 struct DirectoryEntry
@@ -212,6 +247,16 @@ struct DirectoryEntry
     NodeType    InodeType;          // The inode type as described in the NodeType enum
     const char* Name;               // Address of the name of the inode
     int32_t     NameLength;         // Length (in chars) of the inode name
+};
+
+/**
+ * Our intermediate pollfd struct to normalize the data types
+ */
+struct PollFD
+{
+    int32_t FD;         // The file descriptor to poll
+    int16_t Events;     // The events to poll for
+    int16_t REvents;    // The events that occurred which triggered the poll
 };
 
 /**
@@ -404,6 +449,7 @@ int32_t MkFifo(
 
 /**
  * Flushes all modified data and attribtues of the specified File Descriptor to the storage medium.
+ * 
  * Returns 0 for success; on fail, -1 is returned and errno is set.
  */
 extern "C"
@@ -411,6 +457,7 @@ int32_t FSync(int32_t fd);
 
 /**
  * Changes the advisory lock status on a given File Descriptor
+ * 
  * Returns 0 on success; otherwise, -1 is returned and errno is set
  */
 extern "C"
@@ -418,6 +465,7 @@ int32_t FLock(int32_t fd, LockOperations operation);
 
 /** 
  * Changes the current working directory to be the specified path.
+ * 
  * Returns 0 on success; otherwise, returns -1 and errno is set
  */
 extern "C"
@@ -425,6 +473,7 @@ int32_t ChDir(const char* path);
 
 /**
  * Checks the access permissions of the current calling user on the specified path for the specified mode.
+ * 
  * Returns -1 if the path cannot be found or the if desired access is not granted and errno is set; otherwise, returns 0.
  */
 extern "C"
@@ -432,6 +481,7 @@ int32_t Access(const char* path, AccessMode mode);
 
 /**
  * Tests whether a pathname matches a specified pattern.
+ * 
  * Returns 0 if the string matches; returns FNM_NOMATCH if the call succeeded but the
  * string does not match; otherwise, returns a non-zero error code.
  */
@@ -440,6 +490,7 @@ int32_t FnMatch(const char* pattern, const char* path, FnMatchFlags flags);
 
 /**
  * Seek to a specified location within a seekable stream
+ * 
  * On success, the resulting offet, in bytes, from the begining of the stream; otherwise,
  * returns -1 and errno is set.
  */
@@ -448,6 +499,7 @@ int64_t LSeek(int32_t fd, int64_t offset, SeekWhence whence);
 
 /**
  * Creates a hard-link at link pointing to source.
+ * 
  * Returns 0 on success; otherwise, returns -1 and errno is set.
  */
 extern "C"
@@ -456,6 +508,7 @@ int32_t Link(const char* source, const char* linkTarget);
 /**
  * Creates a file name that adheres to the specified template, creates the file on disk with
  * 0600 permissions, and returns an open r/w File Descriptor on the file. 
+ * 
  * Returns a valid File Descriptor on success; otherwise, returns -1 and errno is set.
  */
 extern "C"
@@ -563,3 +616,69 @@ extern "C"
 int32_t FTruncate(
     int32_t fd,
     int64_t length);
+
+/**
+ * Examines one or more file descriptors for the specified state(s) and blocks until the state(s) occur or the timeout ellapses. 
+ *
+ * Returns the number of descriptors ready, if any; if the timeout ellapses, returns 0; otherwise, returns -1 and errno is set.
+ */
+extern "C"
+int32_t Poll(PollFD* pollData, uint32_t numberOfPollFds, int32_t timeout);
+
+/**
+ * Notifies the OS kernel that the specified file will be accessed in a particular way soon; this allows the kernel to
+ * potentially optimize the access pattern of the file.
+ *
+ * Returns 0 on success; otherwise, the error code is returned and errno is NOT set.
+ */
+extern "C"
+int32_t PosixFAdvise(int32_t fd, int64_t offset, int64_t length, FileAdvice advice);
+
+/**
+ * Reads the number of bytes specified into the provided buffer from the specified, opened file descriptor.
+ *
+ * Returns the number of bytes read on success; otherwise, -1 is returned an errno is set.
+ * 
+ * Note - on fail. the position of the stream may change depending on the platform; consult man 2 read for more info
+ */
+extern "C"
+int64_t Read(int32_t fd, void* buffer, uint64_t count);
+
+/**
+ * Takes a path to a symbolic link and attempts to place the link target path into the buffer. If the buffer is too
+ * small, the path will be truncated. No matter what, the buffer will not be null terminated. 
+ *
+ * Returns the number of bytes placed into the buffer on success; otherwise, -1 is returned and errno is set.
+ */
+extern "C"
+int64_t ReadLink(const char* path, char* buffer, uint64_t bufferSize);
+
+/**
+ * Renames a file, moving to the correct destination if necessary. There are many edge cases to this call, check man 2 rename for more info
+ *
+ * Returns 0 on succes; otherwise, returns -1 and errno is set.
+ */
+extern "C"
+int32_t Rename(const char* oldPath, const char* newPath);
+
+/**
+ * Deletes the specified empty directory.
+ *
+ * Returns 0 on success; otherwise, returns -1 and errno is set.
+ */
+extern "C"
+int32_t RmDir(const char* path);
+
+/**
+ * Forces a write of all modified I/O buffers to their storage mediums.
+ */
+extern "C"
+void Sync();
+
+/**
+ * Writes the specified buffer to the provided open file descriptor
+ *
+ * Returns the number of bytes written on success; otherwise, returns -1 and sets errno
+ */
+extern "C"
+int64_t Write(int32_t fd, const void* buffer, uint64_t bufferSize);

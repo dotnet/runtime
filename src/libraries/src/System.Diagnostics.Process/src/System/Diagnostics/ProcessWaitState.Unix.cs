@@ -287,20 +287,20 @@ namespace System.Diagnostics
             {
                 // Try to get the state of the (child) process
                 int status;
-                int waitResult = Interop.libc.waitpid(_processId, out status,
-                    blockingAllowed ? Interop.libc.WaitPidOptions.None : Interop.libc.WaitPidOptions.WNOHANG);
+                int waitResult = Interop.Sys.WaitPid(_processId, out status,
+                    blockingAllowed ? Interop.Sys.WaitPidOptions.None : Interop.Sys.WaitPidOptions.WNOHANG);
 
                 if (waitResult == _processId)
                 {
                     // Process has exited
-                    if (Interop.libc.WIFEXITED(status))
+                    if (Interop.Sys.WIfExited(status))
                     {
-                        _exitCode = Interop.libc.WEXITSTATUS(status);
+                        _exitCode = Interop.Sys.WExitStatus(status);
                     }
-                    else if (Interop.libc.WIFSIGNALED(status))
+                    else if (Interop.Sys.WIfSignaled(status))
                     {
                         const int ExitCodeSignalOffset = 128;
-                        _exitCode = ExitCodeSignalOffset + Interop.libc.WTERMSIG(status);
+                        _exitCode = ExitCodeSignalOffset + Interop.Sys.WTermSig(status);
                     }
                     SetExited();
                     return;
@@ -327,7 +327,7 @@ namespace System.Diagnostics
                         // able to get an exit code, but we'll at least be able 
                         // to determine if the process is still running (assuming
                         // there's not a race on its id).
-                        int killResult = Interop.Sys.Kill(_processId, Interop.Sys.Signals.None); // 0 means don't send a signal
+                        int killResult = Interop.Sys.Kill(_processId, Interop.Sys.Signals.None); // None means don't send a signal
                         if (killResult == 0)
                         {
                             // Process is still running.  This could also be a defunct process that has completed

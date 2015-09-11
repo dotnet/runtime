@@ -169,7 +169,7 @@ namespace System.Net.Http
                 {
                     VerboseTrace("Writing to wakeup pipe");
                     byte b = 1;
-                    while ((Interop.CheckIo((long)Interop.libc.write(_requestWakeupPipeFd, &b, (IntPtr)1)))) ;
+                    while ((Interop.CheckIo((long)Interop.Sys.Write(_requestWakeupPipeFd, &b, 1)))) ;
                 }
             }
 
@@ -188,7 +188,7 @@ namespace System.Net.Http
                 const int ClearBufferSize = 64; // sufficiently large to clear the pipe in any normal case
                 byte* clearBuf = stackalloc byte[ClearBufferSize];
                 long bytesRead;
-                while (Interop.CheckIo(bytesRead = (long)Interop.libc.read(_wakeupRequestedPipeFd, clearBuf, (IntPtr)ClearBufferSize))) ;
+                while (Interop.CheckIo(bytesRead = (long)Interop.Sys.Read(_wakeupRequestedPipeFd, clearBuf, (ulong)ClearBufferSize))) ;
                 VerboseTraceIf(bytesRead > 1, "Read more than one byte from wakeup pipe: " + bytesRead);
             }
 
