@@ -33,6 +33,8 @@ namespace System.Diagnostics.ProcessTests
                 }
                 catch (InvalidOperationException) { } // in case it was never started
             }
+
+            base.Dispose(disposing);
         }
 
         protected Process CreateProcess(Func<int> method = null)
