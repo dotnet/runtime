@@ -3,14 +3,15 @@
 # This file invokes cmake and generates the build system for gcc.
 #
 
-if [ $# -lt 4 -o $# -gt 5 ]
+if [ $# -lt 4 -o $# -gt 6 ]
 then
   echo "Usage..."
-  echo "gen-buildsys-clang.sh <path to top level CMakeLists.txt> <ClangMajorVersion> <ClangMinorVersion> <Architecture> [build flavor]"
+  echo "gen-buildsys-clang.sh <path to top level CMakeLists.txt> <ClangMajorVersion> <ClangMinorVersion> <Architecture> [build flavor] [coverage]"
   echo "Specify the path to the top level CMake file - <ProjectK>/src/NDP"
   echo "Specify the clang version to use, split into major and minor version"
   echo "Specify the target architecture." 
   echo "Optionally specify the build configuration (flavor.) Defaults to DEBUG." 
+  echo "Optionally specify 'coverage' to enable code coverage build."
   exit 1
 fi
 
@@ -33,16 +34,24 @@ else
 fi
 
 build_arch="$4"
+buildtype=DEBUG
+code_coverage=OFF
 
-# Possible build types are DEBUG, RELEASE, RELWITHDEBINFO, MINSIZEREL.
-# Default to DEBUG
-if [ -z "$5" ]
-then
-  echo "Defaulting to DEBUG build."
-  buildtype="DEBUG"
-else
-  buildtype="$5"
-fi
+for i in "${@:5}"; do
+    upperI="$(echo $i | awk '{print toupper($0)}')"
+    case $upperI in
+      # Possible build types are DEBUG, RELEASE, RELWITHDEBINFO, MINSIZEREL.
+      DEBUG | RELEASE | RELWITHDEBINFO | MINSIZEREL)
+      buildtype=$upperI
+      ;;
+      COVERAGE)
+      echo "Code coverage is turned on for this build."
+      code_coverage=ON
+      ;;
+      *)
+      echo "Ignoring unknown arg '$i'"
+    esac
+done
 
 OS=`uname`
 
@@ -119,5 +128,6 @@ cmake \
   "-DCMAKE_NM=$llvm_nm" \
   "-DCMAKE_OBJDUMP=$llvm_objdump" \
   "-DCMAKE_BUILD_TYPE=$buildtype" \
+  "-DCMAKE_ENABLE_CODE_COVERAGE=$code_coverage" \
   $cmake_extra_defines \
   "$1"
