@@ -2471,7 +2471,7 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 
 	/* Header */
 	version = *p;
-	g_assert (version == 4);
+	g_assert (version == 3);
 	p ++;
 	/* func_encoding = *p; */
 	p ++;
@@ -2510,9 +2510,9 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 
 	code_start = amodule->methods [table [(pos * 2)]];
 	if (pos + 1 == fde_count) {
-		/* The +1 entry in the table contains the offset to the end of the last method */
-		int offset = table [(pos + 1) * 2];
-		code_end = amodule->mono_eh_frame + offset;
+		/* The +1 entry in the table contains the length of the last method */
+		int len = table [(pos + 1) * 2];
+		code_end = code_start + len;
 	} else {
 		code_end = amodule->methods [table [(pos + 1) * 2]];
 	}
