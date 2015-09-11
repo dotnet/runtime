@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -29,7 +29,7 @@
       <Project>{D04A73AE-E418-4ACD-A132-7688435BE8B5}</Project>
       <Name>System.Security.Cryptography.Primitives</Name>
     </ProjectReference>
-  </ItemGroup>      
+  </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="System\Security\SecureString.Windows.cs" />
     <Compile Include="System\Security\SafeBSTRHandle.cs" />
@@ -63,47 +63,20 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
       <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.MemoryMappedProtections.cs">
-      <Link>Common\Interop\Unix\Interop.MemoryMappedProtections.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MLock.cs">
+      <Link>Common\Interop\Unix\Interop.MLock.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.mlock.cs">
-      <Link>Common\Interop\Unix\Interop.mlock.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MProtect.cs">
+      <Link>Common\Interop\Unix\Interop.MProtect.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.mprotect.cs">
-      <Link>Common\Interop\Unix\Interop.mprotect.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MMap.cs">
+      <Link>Common\Interop\Unix\Interop.MMap.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.mmap.cs">
-      <Link>Common\Interop\Unix\Interop.mmap.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MUnmap.cs">
+      <Link>Common\Interop\Unix\Interop.MUnmap.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.munmap.cs">
-      <Link>Common\Interop\Unix\Interop.munmap.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.sysconf.cs">
-      <Link>Common\Interop\Unix\Interop.sysconf.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsFreeBSD)' == 'true' ">
-    <Compile Include="$(CommonPath)\Interop\FreeBSD\libc\Interop.MemoryMappedFlags.cs">
-      <Link>Common\Interop\FreeBSD\Interop.MemoryMappedFlags.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\FreeBSD\libc\Interop.SysConfNames.cs">
-      <Link>Common\Interop\FreeBSD\Interop.SysConfNames.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.MemoryMappedFlags.cs">
-      <Link>Common\Interop\Linux\Interop.MemoryMappedFlags.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.SysConfNames.cs">
-      <Link>Common\Interop\Linux\Interop.SysConfNames.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
-    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.MemoryMappedFlags.cs">
-      <Link>Common\Interop\OSX\Interop.MemoryMappedFlags.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.SysConfNames.cs">
-      <Link>Common\Interop\OSX\Interop.SysConfNames.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SysConf.cs">
+      <Link>Common\Interop\Unix\Interop.SysConf.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

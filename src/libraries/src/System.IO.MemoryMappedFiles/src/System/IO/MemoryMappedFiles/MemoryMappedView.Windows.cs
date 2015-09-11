@@ -26,7 +26,8 @@ namespace System.IO.MemoryMappedFiles
             // extra memory we allocate before the start of the requested view. MapViewOfFile will also round the 
             // capacity of the view to the nearest multiple of the system page size.  Once again, we hide this 
             // from the user by preventing them from writing to any memory that they did not request.
-            ulong nativeSize, extraMemNeeded, newOffset;
+            ulong nativeSize;
+            long extraMemNeeded, newOffset;
             ValidateSizeAndOffset(
                 size, offset, GetSystemPageAllocationGranularity(), 
                 out nativeSize, out extraMemNeeded, out newOffset);
@@ -69,7 +70,7 @@ namespace System.IO.MemoryMappedFiles
             // This is because, VirtualQuery function(that internally invokes VirtualQueryEx function) returns the attributes 
             // and size of the region of pages with matching attributes starting from base address.
             // VirtualQueryEx: http://msdn.microsoft.com/en-us/library/windows/desktop/aa366907(v=vs.85).aspx
-            if (((viewInfo.State & Interop.mincore.MemOptions.MEM_RESERVE) != 0) || (viewSize < nativeSize))
+            if (((viewInfo.State & Interop.mincore.MemOptions.MEM_RESERVE) != 0) || ((ulong)viewSize < (ulong)nativeSize))
             {
                 IntPtr tempHandle = Interop.mincore.VirtualAlloc(
                     viewHandle, (UIntPtr)(nativeSize != MemoryMappedFile.DefaultSize ? nativeSize : viewSize), 
@@ -88,15 +89,15 @@ namespace System.IO.MemoryMappedFiles
             // if the user specified DefaultSize as the size, we need to get the actual size
             if (size == MemoryMappedFile.DefaultSize)
             {
-                size = (long)(viewSize - extraMemNeeded);
+                size = (long)(viewSize - (ulong)extraMemNeeded);
             }
             else
             {
                 Debug.Assert(viewSize >= (ulong)size, "viewSize < size");
             }
 
-            viewHandle.Initialize((ulong)size + extraMemNeeded);
-            return new MemoryMappedView(viewHandle, (long)extraMemNeeded, size, access);
+            viewHandle.Initialize((ulong)size + (ulong)extraMemNeeded);
+            return new MemoryMappedView(viewHandle, extraMemNeeded, size, access);
         }
 
         // Flushes the changes such that they are in sync with the FileStream bits (ones obtained

@@ -578,7 +578,7 @@ namespace System.IO
                 SeekCore(value, SeekOrigin.Begin);
             }
 
-            SysCall<long, int>((fd, length, _) => Interop.libc.ftruncate(fd, length), value);
+            SysCall<long, int>((fd, length, _) => Interop.Sys.FTruncate(fd, length), value);
 
             // Return file pointer to where it was before setting length
             if (origPos != value)

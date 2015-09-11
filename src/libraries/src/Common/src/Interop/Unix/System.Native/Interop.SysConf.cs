@@ -5,12 +5,15 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class libc
+    internal static partial class Sys
     {
-        internal static class SysConfNames
+        internal enum SysConfName
         {
-            internal const int _SC_CLK_TCK  = 2;
-            internal const int _SC_PAGESIZE = 30;
+            _SC_CLK_TCK = 1,
+            _SC_PAGESIZE = 2,
         }
+
+        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        internal static extern long SysConf(SysConfName name);
     }
 }

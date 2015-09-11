@@ -231,8 +231,8 @@ namespace System.Security
         /// <summary>SafeBuffer for managing memory meant to be kept confidential.</summary>
         private sealed class ProtectedBuffer : SafeBuffer
         {
-            private static readonly int s_pageSize = 
-                Interop.libc.sysconf(Interop.libc.SysConfNames._SC_PAGESIZE);
+            private static readonly long s_pageSize = 
+                Interop.Sys.SysConf(Interop.Sys.SysConfName._SC_PAGESIZE);
 
             internal ProtectedBuffer() : base(true) { }
 
@@ -247,33 +247,33 @@ namespace System.Security
                 // grows, this will significantly help in avoiding unnecessary recreations
                 // of the buffer.
                 Debug.Assert(s_pageSize > 0);
-                bytes = RoundUpToPageSize(bytes);
-                Debug.Assert(bytes % s_pageSize == 0);
+                ulong nativeBytes = RoundUpToPageSize(bytes);
+                Debug.Assert((long)nativeBytes % s_pageSize == 0);
 
                 ProtectedBuffer buffer = new ProtectedBuffer();
                 IntPtr ptr = IntPtr.Zero;
                 try
                 {
                     // Allocate the page(s) for the buffer.
-                    ptr = Interop.libc.mmap(
+                    ptr = Interop.Sys.MMap(
                         IntPtr.Zero,
-                        (IntPtr)bytes,
-                        Interop.libc.MemoryMappedProtections.PROT_READ | Interop.libc.MemoryMappedProtections.PROT_WRITE,
-                        Interop.libc.MemoryMappedFlags.MAP_ANONYMOUS | Interop.libc.MemoryMappedFlags.MAP_PRIVATE, 0,
+                        nativeBytes,
+                        Interop.Sys.MemoryMappedProtections.PROT_READ | Interop.Sys.MemoryMappedProtections.PROT_WRITE,
+                        Interop.Sys.MemoryMappedFlags.MAP_ANONYMOUS | Interop.Sys.MemoryMappedFlags.MAP_PRIVATE, 0,
                         0);
-                    if (ptr == IntPtr.Zero)
+                    if (ptr == IntPtr.Zero) // note that shim uses null pointer, not non-null MAP_FAILED sentinel
                         throw CreateExceptionFromErrno();
 
                     // Lock the pages into memory to minimize the chances that the pages get
                     // swapped out, making the contents available on disk.
-                    if (Interop.libc.mlock(ptr, (IntPtr)bytes) != 0)
+                    if (Interop.Sys.MLock(ptr, nativeBytes) != 0)
                         throw CreateExceptionFromErrno();
                 }
                 catch
                 {
                     // Something failed; release the allocation
                     if (ptr != IntPtr.Zero)
-                        Interop.libc.munmap(ptr, (IntPtr)bytes); // ignore any errors
+                        Interop.Sys.MUnmap(ptr, nativeBytes); // ignore any errors
                     throw;
                 }
 
@@ -286,14 +286,14 @@ namespace System.Security
             internal void Protect()
             {
                 // Make the pages unreadable/writable; attempts to read/write this memory will result in seg faults.
-                ChangeProtection(Interop.libc.MemoryMappedProtections.PROT_NONE);
+                ChangeProtection(Interop.Sys.MemoryMappedProtections.PROT_NONE);
             }
 
             internal ProtectOnDispose Unprotect()
             {
                 // Make the pages readable/writable; attempts to read/write this memory will succeed.
                 // Then return a disposable that will re-protect the memory when done with it.
-                ChangeProtection(Interop.libc.MemoryMappedProtections.PROT_READ | Interop.libc.MemoryMappedProtections.PROT_WRITE);
+                ChangeProtection(Interop.Sys.MemoryMappedProtections.PROT_READ | Interop.Sys.MemoryMappedProtections.PROT_WRITE);
                 return new ProtectOnDispose(this);
             }
 
@@ -313,13 +313,13 @@ namespace System.Security
                 }
             }
 
-            private unsafe void ChangeProtection(Interop.libc.MemoryMappedProtections prots)
+            private unsafe void ChangeProtection(Interop.Sys.MemoryMappedProtections prots)
             {
                 byte* ptr = null;
                 try
                 {
                     AcquirePointer(ref ptr);
-                    if (Interop.libc.mprotect((IntPtr)ptr, (IntPtr)ByteLength, prots) != 0)
+                    if (Interop.Sys.MProtect((IntPtr)ptr, ByteLength, prots) != 0)
                         throw CreateExceptionFromErrno();
                 }
                 finally
@@ -372,15 +372,15 @@ namespace System.Security
                 IntPtr h = handle;
                 if (h != IntPtr.Zero)
                 {
-                    IntPtr len = (IntPtr)ByteLength;
-                    success &= Interop.libc.mprotect(h, len, 
-                        Interop.libc.MemoryMappedProtections.PROT_READ | Interop.libc.MemoryMappedProtections.PROT_WRITE) == 0;
+                    ulong len = ByteLength;
+                    success &= Interop.Sys.MProtect(h, len, 
+                        Interop.Sys.MemoryMappedProtections.PROT_READ | Interop.Sys.MemoryMappedProtections.PROT_WRITE) == 0;
                     if (success)
                     {
-                        ZeroMemory((byte*)h, ByteLength);
-                        success &= (Interop.libc.munlock(h, len) == 0);
+                        ZeroMemory((byte*)h, len);
+                        success &= (Interop.Sys.MUnlock(h, len) == 0);
                     }
-                    success &= (Interop.libc.munmap(h, len) == 0);
+                    success &= (Interop.Sys.MUnmap(h, len) == 0);
                 }
 
                 return success;
@@ -400,11 +400,16 @@ namespace System.Security
                     (Exception)new InvalidOperationException(errorInfo.GetErrorMessage());
             }
 
-            private static int RoundUpToPageSize(int bytes)
+            private static ulong RoundUpToPageSize(int bytes)
             {
-                return bytes > 0 ?
+                long nativeBytes = bytes > 0 ?
                     (bytes + (s_pageSize - 1)) & ~(s_pageSize - 1) :
                     s_pageSize;
+
+                Debug.Assert(nativeBytes > 0 && nativeBytes <= uint.MaxValue);
+                Debug.Assert((nativeBytes % s_pageSize) == 0);
+
+                return (ulong)nativeBytes;
             }
         }
 
