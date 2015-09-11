@@ -5,7 +5,7 @@
 
 #include <sys/socket.h>
 
-#ifdef HOST_IOS
+#if defined (HOST_IOS) || defined (HOST_WATCHOS) || defined (HOST_APPLETVOS)
 // The iOS SDK does not provide the net/route.h header but using the Darwin version works fine.
 #include "../../support/ios/net/route.h"
 #else
