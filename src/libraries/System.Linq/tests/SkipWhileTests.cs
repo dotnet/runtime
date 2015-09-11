@@ -165,7 +165,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        [OuterLoop]
+        [ActiveIssue("Valid test but too intensive to enable even in OuterLoop")]
         public void IndexSkipWhileOverflowBeyondIntMaxValueElements()
         {
             var skipped = new FastInfiniteEnumerator().SkipWhile((e, i) => true);
