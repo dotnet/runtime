@@ -40,8 +40,17 @@ namespace System.IO.FileSystem.Tests
         {
             string path = GetTestFileName();
             DirectoryInfo testDir = Directory.CreateDirectory(Path.Combine(TestDirectory, path));
-            testDir.Attributes = attributes;
-            Assert.Equal(testDir.FullName, new DirectoryInfo(TestDirectory).CreateSubdirectory(path).FullName);
+            FileAttributes original = testDir.Attributes;
+
+            try
+            {
+                testDir.Attributes = attributes;
+                Assert.Equal(testDir.FullName, new DirectoryInfo(TestDirectory).CreateSubdirectory(path).FullName);
+            }
+            finally
+            {
+                testDir.Attributes = original;
+            }
         }
 
         [Fact]
