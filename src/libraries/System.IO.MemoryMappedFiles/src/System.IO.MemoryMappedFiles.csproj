@@ -122,17 +122,14 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.IOErrors.cs">
       <Link>Common\Interop\Unix\Interop.IOErrors.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.MemoryMappedProtections.cs">
-      <Link>Common\Interop\Unix\Interop.MemoryMappedProtections.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MMap.cs">
+      <Link>Common\Interop\Unix\Interop.MMap.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.mmap.cs">
-      <Link>Common\Interop\Unix\Interop.mmap.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MUnmap.cs">
+      <Link>Common\Interop\Unix\Interop.MUnmap.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.munmap.cs">
-      <Link>Common\Interop\Unix\Interop.munmap.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.msync.cs">
-      <Link>Common\Interop\Unix\Interop.msync.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MSync.cs">
+      <Link>Common\Interop\Unix\Interop.MSync.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Open.cs">
       <Link>Common\Interop\Unix\Interop.Open.cs</Link>
@@ -143,43 +140,22 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Permissions.cs">
       <Link>Common\Interop\Unix\Interop.Permissions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.sysconf.cs">
-      <Link>Common\Interop\Unix\Interop.sysconf.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SysConf.cs">
+      <Link>Common\Interop\Unix\Interop.SysConf.cs</Link>
     </Compile>
     <Compile Include="Microsoft\Win32\SafeMemoryMappedFileHandle.Unix.cs" />
     <Compile Include="Microsoft\Win32\SafeMemoryMappedViewHandle.Unix.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFile.Unix.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedView.Unix.cs" />
-  </ItemGroup>
-  <!-- Linux -->
-  <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
-    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFile.Unix.BackingObject_Memory.cs" />
-    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedView.Unix.MADV_DONTFORK.cs" />
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.ftruncate.cs">
-      <Link>Common\Interop\Unix\Interop.ftruncate.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.FTruncate.cs">
+      <Link>Common\Interop\Unix\Interop.FTruncate.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\Interop.Libraries.cs">
-      <Link>Common\Interop\Linux\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.MemoryMappedFlags.cs">
-      <Link>Common\Interop\Linux\Interop.MemoryMappedFlags.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.MemoryMappedSyncFlags.cs">
-      <Link>Common\Interop\Linux\Interop.MemoryMappedSyncFlags.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.madvise.cs">
-      <Link>Common\Interop\Linux\Interop.madvise.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MAdvise.cs">
+      <Link>Common\Interop\Unix\Interop.MAdvise.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.ShmOpen.cs">
       <Link>Common\Interop\Unix\Interop.ShmOpen.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.SysConfNames.cs">
-      <Link>Common\Interop\Linux\Interop.SysConfNames.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <!-- OSX -->
-  <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
-    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFile.Unix.BackingObject_File.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEUid.cs">
       <Link>Common\Interop\Unix\Interop.GetEUid.cs</Link>
     </Compile>
@@ -188,18 +164,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Unlink.cs">
       <Link>Common\Interop\Unix\Interop.Unlink.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
-      <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.MemoryMappedFlags.cs">
-      <Link>Common\Interop\OSX\Interop.MemoryMappedFlags.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.MemoryMappedSyncFlags.cs">
-      <Link>Common\Interop\OSX\Interop.MemoryMappedSyncFlags.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.SysConfNames.cs">
-      <Link>Common\Interop\OSX\Interop.SysConfNames.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\PersistedFiles.Names.Unix.cs">
       <Link>Common\System\IO\PersistedFiles.Names.Unix.cs</Link>

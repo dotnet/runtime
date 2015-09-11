@@ -1,0 +1,36 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
+using System.Runtime.InteropServices;
+
+internal static partial class Interop
+{
+
+    internal static partial class Sys
+    {
+        [Flags]
+        internal enum MemoryMappedProtections
+        {
+            PROT_NONE = 0x0,
+            PROT_READ = 0x1,
+            PROT_WRITE = 0x2,
+            PROT_EXEC = 0x4
+        }
+
+        [Flags]
+        internal enum MemoryMappedFlags
+        {
+            MAP_SHARED = 0x01,
+            MAP_PRIVATE = 0x02,
+            MAP_ANONYMOUS = 0x10,
+        }
+
+        // NOTE: Shim returns null pointer on failure, not non-null MAP_FAILED sentinel.
+        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        internal static extern IntPtr MMap(
+            IntPtr addr, ulong len, 
+            MemoryMappedProtections prot, MemoryMappedFlags flags,
+            int fd, long offset);
+    }
+}

@@ -160,7 +160,7 @@ int32_t ConvertOpenFlags(int32_t flags)
             ret = O_WRONLY;
             break;
         default:
-            assert(!"Unknown access mode.");
+            assert(!"Unknown Open access mode.");
             return -1;
     }
     
@@ -173,7 +173,7 @@ int32_t ConvertOpenFlags(int32_t flags)
           | PAL_O_SYNC
           ))
     {
-        assert(!"Unknown flag.");
+        assert(!"Unknown Open flag.");
         return -1;
     }
  
@@ -188,6 +188,7 @@ int32_t ConvertOpenFlags(int32_t flags)
     if (flags & PAL_O_SYNC)
         ret |= O_SYNC;
  
+    assert(ret != -1);
     return ret;
 }
 
@@ -195,7 +196,7 @@ extern "C"
 int32_t Open(const char* path, int32_t flags, int32_t mode)
 {
     flags = ConvertOpenFlags(flags);
-    if (flags < 0)
+    if (flags == -1)
     {
         errno = EINVAL;
         return -1;
@@ -219,14 +220,19 @@ int32_t Unlink(const char* path)
 extern "C"
 int32_t ShmOpen(const char* name, int32_t flags, int32_t mode)
 {
+#if HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP
     flags = ConvertOpenFlags(flags);
-    if (flags < 0)
+    if (flags == -1)
     {
         errno = EINVAL;
         return -1;
     }
     
     return shm_open(name, flags, mode);
+#else
+    errno = ENOTSUP;
+    return -1;
+#endif
 }
 
 extern "C"
@@ -442,4 +448,183 @@ extern "C"
 int32_t MksTemps(char* pathTemplate, int32_t suffixLength)
 {
     return mkstemps(pathTemplate, suffixLength);
+}
+
+static
+int32_t ConvertMMapProtection(int32_t protection)
+{
+    if (protection == PAL_PROT_NONE)
+        return PROT_NONE;
+
+    if (protection & ~(PAL_PROT_READ | PAL_PROT_WRITE | PAL_PROT_EXEC))
+    {
+        assert(!"Unknown protection.");
+        return -1;
+    }
+    
+    int32_t ret = 0;
+    if (protection & PAL_PROT_READ)
+        ret |= PROT_READ;
+    if (protection & PAL_PROT_WRITE)
+        ret |= PROT_WRITE;
+    if (protection & PAL_PROT_EXEC)
+        ret |= PROT_EXEC;   
+    
+    assert(ret != -1);
+    return ret;
+}
+
+static 
+int32_t ConvertMMapFlags(int32_t flags)
+{
+    if (flags & ~(PAL_MAP_SHARED | PAL_MAP_PRIVATE | PAL_MAP_ANONYMOUS))
+    {
+        assert(!"Unknown MMap flag.");
+        return -1;
+    }
+    
+    int32_t ret = 0;
+    if (flags & PAL_MAP_PRIVATE)
+       ret |= MAP_PRIVATE;
+    if (flags & PAL_MAP_SHARED)
+       ret |= MAP_SHARED;
+    if (flags & PAL_MAP_ANONYMOUS)
+       ret |= MAP_ANON;
+
+    assert(ret != -1);
+    return ret;
+}
+
+static 
+int32_t ConvertMSyncFlags(int32_t flags)
+{
+    if (flags & ~(PAL_MS_SYNC | PAL_MS_ASYNC | PAL_MS_INVALIDATE))
+    {
+        assert(!"Unknown MSync flag.");
+        return -1;
+    }
+    
+    int32_t ret = 0;
+    if (flags & PAL_MS_SYNC)
+       ret |= MS_SYNC;
+    if (flags & PAL_MS_ASYNC)
+       ret |= MS_ASYNC;
+    if (flags & PAL_MS_INVALIDATE)
+       ret |= MS_INVALIDATE;
+    
+    assert(ret != -1);
+    return ret;
+}
+
+extern "C"
+void* MMap(
+   void* address,
+   uint64_t length,
+   int32_t protection,  // bitwise OR of PAL_PROT_*
+   int32_t flags,       // bitwise OR of PAL_MAP_*, but PRIVATE and SHARED are mutually exclusive.
+   int32_t fd,
+   int64_t offset)
+{  
+    protection = ConvertMMapProtection(protection);
+    flags = ConvertMMapFlags(flags);
+    
+    if (flags == -1 || protection == -1)
+    {
+        errno = EINVAL;
+        return nullptr;
+    }
+
+    void* ret = mmap(address, length, protection, flags, fd, offset);
+    if (ret == MAP_FAILED)
+    {
+        return nullptr;
+    }
+
+    assert(ret != nullptr); 
+    return ret;
+}
+   
+extern "C"
+int32_t MUnmap(void *address, uint64_t length)
+{
+    return munmap(address, length);
+}
+
+extern "C"
+int32_t MAdvise(void* address, uint64_t length, MemoryAdvice advice)
+{
+    switch (advice)
+    {
+        case MemoryAdvice::PAL_MADV_DONTFORK:
+#ifdef MADV_DONTFORK
+            return madvise(address, length, MADV_DONTFORK);
+#else
+            errno = ENOTSUP;
+            return -1;
+#endif
+    }
+
+    assert(!"Unknown MemoryAdvice");
+    errno = EINVAL;
+    return -1;
+}
+
+extern "C"
+int32_t MLock(void* address, uint64_t length)
+{
+    return mlock(address, length);
+}
+    
+extern "C"
+int32_t MUnlock(void* address, uint64_t length)
+{
+    return munlock(address, length);
+}
+    
+extern "C"
+int32_t MProtect(void* address, uint64_t length, int32_t protection)
+{
+    protection = ConvertMMapProtection(protection);
+    if (protection == -1)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    return mprotect(address, length, protection);
+}
+
+extern "C"
+int32_t MSync(void* address, uint64_t length, int32_t flags)
+{
+    flags = ConvertMSyncFlags(flags);
+    if (flags == -1)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+    
+    return msync(address, length, flags);
+}
+    
+extern "C"
+int64_t SysConf(SysConfName name)
+{
+    switch (name)
+    {
+        case SysConfName::PAL_SC_CLK_TCK:
+            return sysconf(_SC_CLK_TCK);
+        case SysConfName::PAL_SC_PAGESIZE:
+            return sysconf(_SC_PAGESIZE);
+    } 
+
+    assert(!"Unknown SysConfName");
+    errno = EINVAL;
+    return -1;
+}
+    
+extern "C"
+int32_t FTruncate(int32_t fd, int64_t length)
+{
+    return ftruncate(fd, length);
 }

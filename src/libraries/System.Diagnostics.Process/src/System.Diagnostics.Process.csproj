@@ -240,8 +240,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.readlink.cs">
       <Link>Common\Interop\Unix\Interop.readlink.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.sysconf.cs">
-      <Link>Common\Interop\Unix\Interop.sysconf.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SysConf.cs">
+      <Link>Common\Interop\Unix\Interop.SysConf.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.waitpid.cs">
       <Link>Common\Interop\Unix\Interop.waitpid.cs</Link>
@@ -278,9 +278,6 @@
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.PathConfNames.cs">
       <Link>Common\Interop\Linux\Interop.PathConfNames.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.SysConfNames.cs">
-      <Link>Common\Interop\Linux\Interop.SysConfNames.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
     <Compile Include="System\Diagnostics\Process.OSX.cs" />
@@ -297,9 +294,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.PathConfNames.cs">
       <Link>Common\Interop\OSX\Interop.PathConfNames.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.SysConfNames.cs">
-      <Link>Common\Interop\OSX\Interop.SysConfNames.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
