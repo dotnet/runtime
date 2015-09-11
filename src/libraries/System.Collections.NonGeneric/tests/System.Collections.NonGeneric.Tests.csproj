@@ -89,6 +89,7 @@
     <Compile Include="Hashtable\PropertyValuesTests.cs" />
     <Compile Include="Hashtable\RemoveTests.cs" />
     <Compile Include="Hashtable\SynchronizedTests.cs" />
+    <Compile Include="Queue\Queue_Clear.cs" />
     <Compile Include="Queue\Queue_Clone.cs" />
     <Compile Include="Queue\Queue_Contains.cs" />
     <Compile Include="Queue\Queue_ctor.cs" />
