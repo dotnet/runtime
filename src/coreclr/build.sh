@@ -2,11 +2,12 @@
 
 usage()
 {
-    echo "Usage: $0 [BuildArch] [BuildType] [clean] [verbose] [cross] [clangx.y] [skipmscorlib]"
+    echo "Usage: $0 [BuildArch] [BuildType] [clean] [verbose] [coverage] [cross] [clangx.y] [skipmscorlib]"
     echo "BuildArch can be: x64, ARM"
     echo "BuildType can be: Debug, Release"
     echo "clean - optional argument to force a clean build."
     echo "verbose - optional argument to enable verbose build output."
+    echo "coverage - optional argument to enable code coverage build (currently supported only for Linux and OSX)."
     echo "clangx.y - optional argument to build using clang version x.y."
     echo "cross - optional argument to signify cross compilation,"
     echo "      - will use ROOTFS_DIR environment variable if set."
@@ -61,8 +62,8 @@ build_coreclr()
     cd "$__IntermediatesDir"
 
     # Regenerate the CMake solution
-    echo "Invoking cmake with arguments: \"$__ProjectRoot\" $__CMakeArgs"
-    "$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__CMakeArgs
+    echo "Invoking cmake with arguments: \"$__ProjectRoot\" $__BuildType $__CodeCoverage"
+    "$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__BuildType $__CodeCoverage
 
     # Check that the makefiles were created.
 
@@ -184,7 +185,7 @@ case $OSName in
 esac
 __MSBuildBuildArch=x64
 __BuildType=Debug
-__CMakeArgs=DEBUG
+__CodeCoverage=
 
 # Set the various build properties here so that CMake and MSBuild can pick them up
 __ProjectDir="$__ProjectRoot"
@@ -230,7 +231,9 @@ for i in "$@"
         ;;
         release)
         __BuildType=Release
-        __CMakeArgs=RELEASE
+        ;;
+        coverage)
+        __CodeCoverage=Coverage
         ;;
         clean)
         __CleanBuild=1
