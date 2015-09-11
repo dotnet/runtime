@@ -59,7 +59,7 @@ namespace System.Diagnostics
 
             private static void WriteToSyslog(string message)
             {
-                Interop.libc.syslog(Interop.libc.LOG_USER | Interop.libc.LOG_DEBUG, "%s", message);
+                Interop.Sys.SysLog(Interop.Sys.SysLogPriority.LOG_USER | Interop.Sys.SysLogPriority.LOG_DEBUG, "%s", message);
             }
 
             private static void WriteToFile(string filePath, string message)
@@ -94,7 +94,7 @@ namespace System.Diagnostics
                             while (bufCount > 0)
                             {
                                 int bytesWritten;
-                                while (Interop.CheckIo(bytesWritten = (int)Interop.libc.write((int)fileHandle.DangerousGetHandle(), buf + totalBytesWritten, new IntPtr(bufCount)))) ;
+                                while (Interop.CheckIo(bytesWritten = (int)Interop.Sys.Write((int)fileHandle.DangerousGetHandle(), buf + totalBytesWritten, (ulong)bufCount))) ;
                                 bufCount -= bytesWritten;
                                 totalBytesWritten += bytesWritten;
                             }

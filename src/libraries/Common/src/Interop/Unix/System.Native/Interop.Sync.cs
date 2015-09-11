@@ -6,12 +6,12 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class libc
+    internal static partial class Sys
     {
         /// <summary>
-        /// Flushes the OS-wide file buffer(s)
+        /// Forces a write of all modified I/O buffers to their storage mediums.
         /// </summary>
-        [DllImport(Interop.Libraries.Libc)]
-        internal extern static void sync();
+        [DllImport(Libraries.SystemNative)]
+        internal static extern void Sync();
     }
 }

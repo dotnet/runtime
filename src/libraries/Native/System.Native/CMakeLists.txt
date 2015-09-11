@@ -5,6 +5,8 @@ set(NATIVE_SOURCES
     pal_io.cpp
     pal_mount.cpp
     pal_process.cpp
+    pal_string.cpp
+    pal_time.cpp
     pal_uid.cpp
     ../Common/pal_utilities.cpp
 )

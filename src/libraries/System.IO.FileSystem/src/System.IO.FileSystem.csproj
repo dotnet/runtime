@@ -288,21 +288,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Permissions.cs">
       <Link>Common\Interop\Unix\Interop.Permissions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.read.cs">
-      <Link>Common\Interop\Unix\Interop.read.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.rename.cs">
-      <Link>Common\Interop\Unix\Interop.rename.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.rmdir.cs">
-      <Link>Common\Interop\Unix\Interop.remove.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.write.cs">
-      <Link>Common\Interop\Unix\Interop.write.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.utime.cs">
-      <Link>Common\Interop\Unix\Interop.utime.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Unlink.cs">
       <Link>Common\Interop\Unix\Interop.Unlink.cs</Link>
     </Compile>
@@ -342,6 +327,21 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Link.cs">
       <Link>Common\Interop\Unix\Interop.Link.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Read.cs">
+      <Link>Common\Interop\Unix\Interop.Read.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Rename.cs">
+      <Link>Common\Interop\Unix\Interop.Rename.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.RmDir.cs">
+      <Link>Common\Interop\Unix\Interop.RmDir.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Write.cs">
+      <Link>Common\Interop\Unix\Interop.Write.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.UTime.cs">
+      <Link>Common\Interop\Unix\Interop.UTime.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeDirectoryHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeDirectoryHandle.Unix.cs</Link>
     </Compile>
@@ -355,8 +355,8 @@
     <Compile Include="$(CommonPath)\Interop\FreeBSD\libc\Interop.PathConfNames.cs">
       <Link>Common\Interop\FreeBSD\Interop.PathConfNames.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.posix_fadvise.cs">
-      <Link>Common\Interop\Unix\Interop.posix_fadvise.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.PosixFAdvise.cs">
+      <Link>Common\Interop\Unix\Interop.PosixFAdvise.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\FreeBSD\Interop.Libraries.cs">
       <Link>Common\Interop\FreeBSD\Interop.Libraries.cs</Link>
@@ -371,8 +371,8 @@
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.PathConfNames.cs">
       <Link>Common\Interop\Linux\Interop.PathConfNames.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.posix_fadvise.cs">
-      <Link>Common\Interop\Unix\Interop.posix_fadvise.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.PosixFAdvise.cs">
+      <Link>Common\Interop\Unix\Interop.PosixFAdvise.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- OSX -->

@@ -31,6 +31,13 @@ int32_t ForkAndExecProcess(
     int32_t* stderrFd);       // [out] if redirectStderr, the parent's fd for the child's stderr
 
 
+/************
+ * The values below in the header are fixed and correct for managed callers to use forever. 
+ * We must never change them. The implementation must either static_assert that they are equal 
+ * to the native equivalent OR convert them appropriately.
+ */
+
+
 /**
  * These values differ from OS to OS, so make a constant contract.
  * These values apply for the current process only
@@ -53,6 +60,59 @@ enum class Signals : int32_t
 {
     PAL_None = 0,       /* error check and don't send signal */
     PAL_SIGKILL = 9,    /* kill the specified process */
+};
+
+/**
+ * Constants for passing to waitpid determining how waitpid behaves
+ */
+enum class WaitPidOptions : int32_t
+{
+    PAL_None        = 0,    /* no options */
+    PAL_WNOHANG     = 1,    /* don't block waiting */
+    PAL_WUNTRACED   = 2,    /* report status of stopped children */
+};
+
+/**
+ * Constants for passing to the first parameter of syslog.
+ * These are a combination of flags where the lower bits are
+ * the priority and the higher bits are the facility. The lower
+ * bits cannot be OR'd together; they must be OR'd with the higer bits.
+ *
+ * These values keep their original definition and are taken from syslog.h
+ */
+enum class SysLogPriority : int32_t
+{
+    // Priorities
+    PAL_LOG_EMERG       = 0,        /* system is unusable */
+    PAL_LOG_ALERT       = 1,        /* action must be taken immediately */
+    PAL_LOG_CRIT        = 2,        /* critical conditions */
+    PAL_LOG_ERR         = 3,        /* error conditions */
+    PAL_LOG_WARNING     = 4,        /* warning conditions */
+    PAL_LOG_NOTICE      = 5,        /* normal but significant condition */
+    PAL_LOG_INFO        = 6,        /* informational */
+    PAL_LOG_DEBUG       = 7,        /* debug-level messages */
+    // Facilities
+    PAL_LOG_KERN        = (0<<3),   /* kernel messages */
+    PAL_LOG_USER        = (1<<3),   /* random user-level messages */
+    PAL_LOG_MAIL        = (2<<3),   /* mail system */
+    PAL_LOG_DAEMON      = (3<<3),   /* system daemons */
+    PAL_LOG_AUTH        = (4<<3),   /* authorization messages */
+    PAL_LOG_SYSLOG      = (5<<3),   /* messages generated internally by syslogd */
+    PAL_LOG_LPR         = (6<<3),   /* line printer subsystem */
+    PAL_LOG_NEWS        = (7<<3),   /* network news subsystem */
+    PAL_LOG_UUCP        = (8<<3),   /* UUCP subsystem */
+    PAL_LOG_CRON        = (9<<3),   /* clock daemon */
+    PAL_LOG_AUTHPRIV    = (10<<3),  /* authorization messages (private) */
+    PAL_LOG_FTP         = (11<<3),  /* ftp daemon */
+    // Between FTP and Local is reserved for system use
+    PAL_LOG_LOCAL0      = (16<<3),  /* reserved for local use */
+    PAL_LOG_LOCAL1      = (17<<3),  /* reserved for local use */
+    PAL_LOG_LOCAL2      = (18<<3),  /* reserved for local use */
+    PAL_LOG_LOCAL3      = (19<<3),  /* reserved for local use */
+    PAL_LOG_LOCAL4      = (20<<3),  /* reserved for local use */
+    PAL_LOG_LOCAL5      = (21<<3),  /* reserved for local use */
+    PAL_LOG_LOCAL6      = (22<<3),  /* reserved for local use */
+    PAL_LOG_LOCAL7      = (23<<3),  /* reserved for local use */
 };
 
 /**
@@ -107,3 +167,37 @@ int32_t GetPid();
  */
 extern "C"
 int32_t GetSid(int32_t pid);
+
+/**
+ * Write a message to the system logger, which in turn writes the message to the system console, log files, etc. 
+ * See man 3 syslog for more info
+ */
+ extern "C"
+ void SysLog(SysLogPriority priority, const char* message, const char* arg1);
+
+/**
+ * Waits for child process(s) or gathers resource utilization information about child processes
+ *
+ * The return value from WaitPid can very greatly. 
+ * 1) returns the process id of a terminating or stopped child process
+ * 2) if no children are waiting, -1 is returned and errno is set to ECHILD
+ * 3) if WNOHANG is specified and there are no stopped or exited children, 0 is returned
+ * 4) on error, -1 is returned and errno is set
+ */
+extern "C"
+int32_t WaitPid(int32_t pid, int32_t* status, WaitPidOptions options);
+
+/**
+ * The four functions below are wrappers around the platform-specific macros of the same name.
+ */
+extern "C"
+int32_t WExitStatus(int32_t status);
+
+extern "C"
+bool WIfExited(int32_t status);
+
+extern "C"
+bool WIfSignaled(int32_t status);
+
+extern "C"
+int32_t WTermSig(int32_t status);
