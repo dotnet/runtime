@@ -733,7 +733,7 @@ int _wapi_setsockopt(guint32 fd, int level, int optname,
 		socklen_t type_len = sizeof (type);
 
 		if (!getsockopt (fd, level, SO_TYPE, &type, &type_len)) {
-			if (type == SOCK_DGRAM)
+			if (type == SOCK_DGRAM || type == SOCK_STREAM)
 				setsockopt (fd, level, SO_REUSEPORT, tmp_val, optlen);
 		}
 	}
