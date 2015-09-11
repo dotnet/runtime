@@ -4,13 +4,11 @@
 using System;
 using System.Runtime.InteropServices;
 
-using size_t = System.IntPtr;
-
 internal static partial class Interop
 {
-    internal static partial class libc
+    internal static partial class Sys
     {
-        [DllImport(Libraries.Libc, SetLastError = true)]
-        internal static extern int msync(IntPtr addr, size_t len, MemoryMappedSyncFlags flags);
+        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        internal static extern int MProtect(IntPtr addr, ulong len, MemoryMappedProtections prot);
     }
 }

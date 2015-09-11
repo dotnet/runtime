@@ -362,7 +362,7 @@ namespace System.Diagnostics
         {
             // Look up the number of ticks per second in the system's configuration,
             // then use that to convert to a TimeSpan
-            int ticksPerSecond = Interop.libc.sysconf(Interop.libc.SysConfNames._SC_CLK_TCK);
+            long ticksPerSecond = Interop.Sys.SysConf(Interop.Sys.SysConfName._SC_CLK_TCK);
             if (ticksPerSecond <= 0)
             {
                 throw new Win32Exception();

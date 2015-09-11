@@ -153,6 +153,58 @@ enum class SeekWhence : int32_t
 };
 
 /**
+ * Constants for protection argument to MMap or MProtect.
+ */
+enum
+{
+    PAL_PROT_NONE  = 0, // pages may not be accessed (unless combined with one of below)
+    PAL_PROT_READ  = 1, // pages may be read
+    PAL_PROT_WRITE = 2, // pages may be written
+    PAL_PROT_EXEC  = 4, // pages may be executed
+};
+
+/**
+ * Constants for flags argument passed to MMap.
+ */
+enum
+{
+    // shared/private are mutually exclusive
+    PAL_MAP_SHARED  = 0x01,    // shared mapping
+    PAL_MAP_PRIVATE = 0x02,    // private copy-on-write-mapping
+    
+    PAL_MAP_ANONYMOUS = 0x10,  // mapping is not backed by any file
+};
+
+/**
+ * Constants for flags argument passed to MSync.
+ */
+enum
+{
+    // sync/async are mutually exclusive
+    PAL_MS_ASYNC = 0x01,       // request sync, but don't block on completion
+    PAL_MS_SYNC  = 0x02,       // block until sync completes
+        
+    PAL_MS_INVALIDATE = 0x10,  // cause other mappings of the same file to be updated
+};
+
+/**
+ * Advice argument to MAdvise.
+ */
+enum class MemoryAdvice : int32_t
+{
+    PAL_MADV_DONTFORK = 1, // don't map pages in to forked process
+};
+
+/**
+ * Name argument to SysConf.
+ */
+enum class SysConfName : int32_t
+{
+    PAL_SC_CLK_TCK  = 1,  // Number of clock ticks per second
+    PAL_SC_PAGESIZE = 2,  // Size of a page in bytes
+};
+
+/**
  * Our intermediate dirent struct that only gives back the data we need
  */
 struct DirectoryEntry
@@ -408,3 +460,106 @@ int32_t Link(const char* source, const char* linkTarget);
  */
 extern "C"
 int32_t MksTemps(char* pathTemplate, int32_t suffixLength);
+
+/**
+ * Map file or device into memory. Implemented as shim to mmap(2).
+ *
+ * Returns 0 for success, nullptr for failure. Sets errno on failure.
+ *
+ * Note that null failure result is a departure from underlying
+ * mmap(2) using non-null sentinel.
+ */
+extern "C"
+void* MMap(
+    void* address, 
+    uint64_t length, 
+    int32_t protection,  // bitwise OR of PAL_PROT_*
+    int32_t flags,       // bitwise OR of PAL_MAP_*, but PRIVATE and SHARED are mutually exclusive.
+    int32_t fd, 
+    int64_t offset);
+
+/**
+ * Unmap file or device from memory. Implemented as shim to mmap(2).
+ *
+ * Returns 0 for success, -1 for failure. Sets errno on failure.
+ */
+extern "C"
+int32_t MUnmap(
+    void *address,
+    uint64_t length);
+
+/**
+ * Give advice about use of memory. Implemented as shim to madvise(2).
+ *
+ * Returns 0 for success, -1 for failure. Sets errno on failure.
+ */
+extern "C"
+int32_t MAdvise(
+    void* address,
+    uint64_t length,
+    MemoryAdvice advice);
+
+/**
+ * Lock memory from being swapped out. Implemented as shim to mlock(2).
+ *
+ * Returns 0 for success, -1 for failure. Sets errno on failure.
+ */
+extern "C"
+int32_t MLock(
+    void* address,
+    uint64_t length);
+    
+/**
+ * Unlock memory, allowing it to be swapped out. Implemented as shim to munlock(2).
+ *
+ * Returns 0 for success, -1 for failure. Sets errno on failure.
+ */
+extern "C"
+int32_t MUnlock(
+    void* address,
+    uint64_t length);
+
+/**
+ * Set protection on a region of memory. Implemented as shim to mprotect(2).
+ *
+ * Returns 0 for success, -1 for failure. Sets errno on failure.
+ */
+extern "C"
+int32_t MProtect(
+    void* address,
+    uint64_t length,
+    int32_t protection);
+
+/**
+ * Sycnhronize a file with a memory map. Implemented as shim to mmap(2).
+ *
+ * Returns 0 for success, -1 for failure. Sets errno on failure.
+ */
+ extern "C"
+ int32_t MSync(
+     void* address,
+     uint64_t length,
+     int32_t flags);
+ 
+/**
+ * Get system configuration value. Implemented as shim to sysconf(3).
+ *
+ * Returns configuration value.
+ *
+ * Sets errno to EINVAL and returns -1 if name is invalid, but make
+ * note that -1 can also be a meaningful successful return value, in
+ * which case errno is unchanged.
+ */
+extern "C"
+int64_t SysConf(
+    SysConfName name);
+    
+/**
+ * Truncate a file to given length. Implemented as shim to ftruncate(2).
+ *
+ * Returns 0 for success, -1 for failure. Sets errno on failure.
+ */
+extern "C"
+int32_t FTruncate(
+    int32_t fd,
+    int64_t length);
