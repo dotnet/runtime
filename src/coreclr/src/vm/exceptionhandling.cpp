@@ -5066,7 +5066,16 @@ VOID PALAPI HandleHardwareException(PAL_SEHException* ex)
 #endif // WIN64EXCEPTIONS
             {
                 GCX_COOP();     // Must be cooperative to modify frame chain.
-                fef.InitAndLink(&ex->ContextRecord);
+                CONTEXT context = ex->ContextRecord;
+                if (IsIPInMarkedJitHelper(controlPc))
+                {
+                    // For JIT helpers, we need to set the frame to point to the
+                    // managed code that called the helper, otherwise the stack
+                    // walker would skip all the managed frames upto the next
+                    // explicit frame.
+                    Thread::VirtualUnwindLeafCallFrame(&context);
+                }
+                fef.InitAndLink(&context);
             }
 
 #ifdef _AMD64_
