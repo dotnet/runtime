@@ -19,10 +19,13 @@ namespace Internal.Cryptography
     //
     internal sealed class HMACCommon
     {
-        public HMACCommon(String hashAlgorithmId, byte[] key, int BlockSize)
+        public HMACCommon(string hashAlgorithmId, byte[] key, int blockSize)
         {
+            Debug.Assert(!string.IsNullOrEmpty(hashAlgorithmId));
+            Debug.Assert(blockSize > 0 || blockSize == -1);
+
             _hashAlgorithmId = hashAlgorithmId;
-            _blockSize = BlockSize;
+            _blockSize = blockSize;
             ChangeKey(key);
         }
 
@@ -36,7 +39,9 @@ namespace Internal.Cryptography
 
         public void ChangeKey(byte[] key)
         {
-            if (key.Length > _blockSize)
+            // If _blockSize is -1 the key isn't going to be extractable by the object holder,
+            // so there's no point in recalculating it in managed code.
+            if (key.Length > _blockSize && _blockSize > 0)
             {
                 // Perform RFC 2104, section 2 key adjustment.
                 if (_lazyHashProvider == null)

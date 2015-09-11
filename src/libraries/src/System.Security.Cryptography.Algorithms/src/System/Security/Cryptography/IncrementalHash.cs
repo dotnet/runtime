@@ -200,7 +200,7 @@ namespace System.Security.Cryptography
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, "hashAlgorithm");
 
-            return new IncrementalHash(hashAlgorithm, new HMACCommon(hashAlgorithm.Name, key));
+            return new IncrementalHash(hashAlgorithm, new HMACCommon(hashAlgorithm.Name, key, -1));
         }
     }
 }
