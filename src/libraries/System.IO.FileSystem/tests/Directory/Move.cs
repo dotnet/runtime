@@ -131,7 +131,7 @@ namespace System.IO.FileSystem.Tests
         {
             string testDir = GetTestFilePath();
             Directory.CreateDirectory(testDir);
-            Assert.All((IOInputs.GetPathsLongerThanMaxLongPath()), (path) =>
+            Assert.All((IOInputs.GetPathsLongerThanMaxLongPath(GetTestFilePath())), (path) =>
             {
                 Assert.Throws<PathTooLongException>(() => Move(testDir, path));
                 Assert.Throws<PathTooLongException>(() => Move(path, testDir));
@@ -149,7 +149,7 @@ namespace System.IO.FileSystem.Tests
             string testDir = GetTestFilePath();
             Directory.CreateDirectory(testDir);
             Assert.True(Directory.Exists(testDir), "test directory should exist");
-            Assert.All((IOInputs.GetPathsLongerThanMaxDirectory()), (path) =>
+            Assert.All((IOInputs.GetPathsLongerThanMaxDirectory(GetTestFilePath())), (path) =>
             {
                 string baseDestinationPath = Path.GetDirectoryName(path);
                 if (!Directory.Exists(baseDestinationPath))
