@@ -40,6 +40,17 @@ namespace System.Security.Cryptography
         public HMACSHA512() { }
         public HMACSHA512(byte[] key) { }
     }
+    public sealed partial class IncrementalHash : IDisposable
+    {
+        private IncrementalHash() { }
+        public HashAlgorithmName AlgorithmName { get { return default(HashAlgorithmName); } }
+        public void AppendData(byte[] data) { }
+        public void AppendData(byte[] data, int offset, int count) { }
+        public byte[] GetHashAndReset() { return default(byte[]); }
+        public void Dispose() { }
+        public static IncrementalHash CreateHash(HashAlgorithmName hashAlgorithm) { return default(IncrementalHash); }
+        public static IncrementalHash CreateHMAC(HashAlgorithmName hashAlgorithm, byte[] key) { return default(IncrementalHash); }
+    }
     public abstract partial class MD5 : System.Security.Cryptography.HashAlgorithm
     {
         protected MD5() { }
