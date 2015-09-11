@@ -9,6 +9,7 @@
 #include "locale.hpp"
 
 #include <unicode/dtfmtsym.h>
+#include <unicode/smpdtfmt.h>
 #include <unicode/dtptngen.h>
 #include <unicode/locdspnm.h>
 
@@ -245,7 +246,7 @@ CalendarDataResult GetMonthDayPattern(Locale& locale, UChar* sMonthDay, int32_t 
 	if (U_FAILURE(err))
 		return GetCalendarDataResult(err);
 
-	UnicodeString monthDayPattern = generator->getBestPattern(UnicodeString("MMMMd"), err);
+	UnicodeString monthDayPattern = generator->getBestPattern(UnicodeString(UDAT_MONTH_DAY), err);
 	if (U_FAILURE(err))
 		return GetCalendarDataResult(err);
 
@@ -295,6 +296,30 @@ extern "C" CalendarDataResult GetCalendarInfo(const UChar* localeName, CalendarI
 			assert(false);
 			return UnknownError;
 	}
+}
+
+/*
+Function:
+InvokeCallbackForDatePattern
+
+Gets the ICU date pattern for the specified locale and EStyle and invokes the callback with the result.
+*/
+bool InvokeCallbackForDatePattern(Locale& locale, DateFormat::EStyle style, EnumCalendarInfoCallback callback, const void* context)
+{
+	LocalPointer<DateFormat> dateFormat(DateFormat::createDateInstance(style, locale));
+	if (dateFormat.isNull())
+		return false;
+
+	// cast to SimpleDateFormat so we can call toPattern()  
+	SimpleDateFormat* sdf = dynamic_cast<SimpleDateFormat*>(dateFormat.getAlias());
+	if (sdf == NULL)
+		return false;
+
+	UnicodeString pattern;
+	sdf->toPattern(pattern);
+
+	callback(pattern.getTerminatedBuffer(), context);
+	return true;
 }
 
 /*
@@ -451,14 +476,17 @@ extern "C" int32_t EnumCalendarInfo(
 	switch (dataType)
 	{
 		case ShortDates:
-			return InvokeCallbackForDateTimePattern(locale, "Mdyyyy", callback, context);
+			// ShortDates to map kShort and kMedium in ICU, but also adding the "yMd" skeleton as well, as this
+			// closely matches what is used on Windows
+			return InvokeCallbackForDateTimePattern(locale, UDAT_YEAR_NUM_MONTH_DAY, callback, context) &&
+				InvokeCallbackForDatePattern(locale, DateFormat::kShort, callback, context) &&
+				InvokeCallbackForDatePattern(locale, DateFormat::kMedium, callback, context);
 		case LongDates:
-			// TODO: need to replace the "EEEE"s with "dddd"s for .net
-			// Also, "LLLL"s to "MMMM"s
-			// Also, "G"s to "g"s
-			return InvokeCallbackForDateTimePattern(locale, "eeeeMMMMddyyyy", callback, context);
+			// LongDates map to kFull and kLong in ICU.
+			return InvokeCallbackForDatePattern(locale, DateFormat::kFull, callback, context) &&
+				InvokeCallbackForDatePattern(locale, DateFormat::kLong, callback, context);
 		case YearMonths:
-			return InvokeCallbackForDateTimePattern(locale, "yyyyMMMM", callback, context);
+			return InvokeCallbackForDateTimePattern(locale, UDAT_YEAR_MONTH, callback, context);
 		case DayNames:
 			return EnumWeekdays(locale, calendarId, DateFormatSymbols::STANDALONE, DateFormatSymbols::WIDE, callback, context);
 		case AbbrevDayNames:
