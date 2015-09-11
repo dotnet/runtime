@@ -159,7 +159,7 @@ public class TermInfo
     {
         // This file (available by default on OS X) is called out specifically since it contains a format where it has %i
         // but only one variable instead of two. Make sure we don't break in this case
-        TermInfoVerification("emu", "\u001Br1", "\u001Bs1", 0);
+        TermInfoVerification("emu", "\u001Br1;", "\u001Bs1;", 0);
     }
 
     [Fact]
