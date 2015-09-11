@@ -262,8 +262,26 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~PlatformID.Linux)]
-        public static void BufferSizeRoundtripping()
+        [PlatformSpecific(PlatformID.OSX)]
+        public static void OSX_BufferSizeNotSupported()
+        {
+            int desiredBufferSize = 10;
+            string pipeName = GetUniquePipeName();
+            using (var server = new NamedPipeServerStream(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous, desiredBufferSize, desiredBufferSize))
+            using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.Out))
+            {
+                Task clientConnect = client.ConnectAsync();
+                server.WaitForConnection();
+                clientConnect.Wait();
+
+                Assert.Throws<PlatformNotSupportedException>(() => server.InBufferSize);
+                Assert.Throws<PlatformNotSupportedException>(() => client.OutBufferSize);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public static void Windows_BufferSizeRoundtripping()
         {
             int desiredBufferSize = 10;
             string pipeName = GetUniquePipeName();
