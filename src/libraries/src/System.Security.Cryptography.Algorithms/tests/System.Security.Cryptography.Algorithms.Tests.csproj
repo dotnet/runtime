@@ -33,6 +33,7 @@
     <Compile Include="HmacSha384Tests.cs" />
     <Compile Include="HmacSha512Tests.cs" />
     <Compile Include="HmacTests.cs" />
+    <Compile Include="IncrementalHashTests.cs" />
     <Compile Include="MD5Tests.cs" />
     <Compile Include="RandomNumberGeneratorTests.cs" />
     <Compile Include="ReusabilityTests.cs" />
