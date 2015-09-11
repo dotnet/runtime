@@ -17,7 +17,7 @@
 #include <signal.h>
 #endif
 
-#ifdef HOST_WATCHOS
+#if defined (HOST_WATCHOS) || defined (HOST_APPLETVOS)
 #include <libunwind.h>
 #endif
 
@@ -324,6 +324,15 @@ typedef struct {
 #define MONO_CONTEXT_GET_BP(ctx) (gpointer)((ctx)->regs [ARMREG_FP])
 #define MONO_CONTEXT_GET_SP(ctx) (gpointer)((ctx)->regs [ARMREG_SP])
 
+#if defined (HOST_APPLETVOS)
+
+#define MONO_CONTEXT_GET_CURRENT(ctx) do { \
+	fprintf (stderr, "MONO_CONTEXT_GET_CURRENT: Not implemented"); \
+	g_error ("MONO_CONTEXT_GET_CURRENT: Not implemented"); \
+} while (0);
+
+#else
+
 #define MONO_CONTEXT_GET_CURRENT(ctx)	do { 	\
 	__asm__ __volatile__(			\
 		"mov x16, %0\n" \
@@ -357,6 +366,8 @@ typedef struct {
 		: "memory"			 \
 	); \
 } while (0)
+
+#endif
 
 #define MONO_ARCH_HAS_MONO_CONTEXT 1
 
