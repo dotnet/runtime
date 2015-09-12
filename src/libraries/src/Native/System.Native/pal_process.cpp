@@ -330,13 +330,13 @@ int32_t WExitStatus(int32_t status)
 }
 
 extern "C"
-bool WIfExited(int32_t status)
+int32_t WIfExited(int32_t status)
 {
     return WIFEXITED(status);
 }
 
 extern "C"
-bool WIfSignaled(int32_t status)
+int32_t WIfSignaled(int32_t status)
 {
     return WIFSIGNALED(status);
 }

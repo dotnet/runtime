@@ -194,10 +194,10 @@ extern "C"
 int32_t WExitStatus(int32_t status);
 
 extern "C"
-bool WIfExited(int32_t status);
+int32_t WIfExited(int32_t status);
 
 extern "C"
-bool WIfSignaled(int32_t status);
+int32_t WIfSignaled(int32_t status);
 
 extern "C"
 int32_t WTermSig(int32_t status);
