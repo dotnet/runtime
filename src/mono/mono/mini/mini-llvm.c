@@ -5149,12 +5149,13 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				icall_name = "mono_threads_state_poll";
 
 				if (ctx->cfg->compile_aot) {
-					callee = get_plt_entry (ctx, llvm_sig, MONO_PATCH_INFO_INTERNAL_METHOD, icall_name);
+					callee = get_callee (ctx, llvm_sig, MONO_PATCH_INFO_INTERNAL_METHOD, icall_name);
 				} else {
 					callee = LLVMAddFunction (ctx->module, icall_name, llvm_sig);
 					LLVMAddGlobalMapping (ctx->lmodule->ee, callee, resolve_patch (ctx->cfg, MONO_PATCH_INFO_INTERNAL_METHOD, icall_name));
 				}
-				ctx->lmodule->state_poll = callee;
+				if (!ctx->lmodule->llvm_only)
+					ctx->lmodule->state_poll = callee;
 			}
 			//
 			// FIXME: This can use the PreserveAll cconv to avoid clobbering registers.
