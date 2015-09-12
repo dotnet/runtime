@@ -13,11 +13,17 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <stdint.h>
+#include <stddef.h>
 #include <stdio.h>
-#include <tchar.h>
+#include <wchar.h>
 #include <assert.h>
 #include <stdarg.h>
+#include <memory.h>
 
 #include <new>
+
+#ifndef WIN32
+#include <pthread.h>
+#endif
 
 using namespace std;
