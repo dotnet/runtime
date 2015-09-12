@@ -159,7 +159,7 @@ namespace System.Security.Cryptography
                 {
                     int nid = s_supportedAlgorithms[i].Nid;
                     SafeEcKeyHandle key = Interop.libcrypto.EC_KEY_new_by_curve_name(nid);
-                    if (key == null)
+                    if (key == null || key.IsInvalid)
                         throw Interop.libcrypto.CreateOpenSslCryptographicException();
 
                     if (!Interop.libcrypto.EC_KEY_generate_key(key))
