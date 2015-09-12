@@ -206,7 +206,7 @@ emit_memcpy (guint8 *code, int size, int dreg, int doffset, int sreg, int soffse
 	}
 #ifdef __mono_ppc64__
 	/* the hardware has multiple load/store units and the move is long
-	   enough to use more then one regiester, then use load/load/store/store
+	   enough to use more then one register, then use load/load/store/store
 	   to execute 2 instructions per cycle. */
 	if ((cpu_hw_caps & PPC_MULTIPLE_LS_UNITS) && (dreg != ppc_r11) && (sreg != ppc_r11)) { 
 		while (size >= 16) {
@@ -872,18 +872,19 @@ enum {
 	RegTypeBase,
 	RegTypeFP,
 	RegTypeStructByVal,
-	RegTypeStructByAddr
+	RegTypeStructByAddr,
+	RegTypeFPStructByVal,  // For the v2 ABI, floats should be passed in FRs instead of GRs.  Only valid for ABI v2!
 };
 
 typedef struct {
 	gint32  offset;
 	guint32 vtsize; /* in param area */
 	guint8  reg;
-	guint8  vtregs; /* number of registers used to pass a RegTypeStructByVal */
+	guint8  vtregs; /* number of registers used to pass a RegTypeStructByVal/RegTypeFPStructByVal */
 	guint8  regtype : 4; /* 0 general, 1 basereg, 2 floating point register, see RegType* */
-	guint8  size    : 4; /* 1, 2, 4, 8, or regs used by RegTypeStructByVal */
+	guint8  size    : 4; /* 1, 2, 4, 8, or regs used by RegTypeStructByVal/RegTypeFPStructByVal */
 	guint8  bytes   : 4; /* size in bytes - only valid for
-				RegTypeStructByVal if the struct fits
+				RegTypeStructByVal/RegTypeFPStructByVal if the struct fits
 				in one word, otherwise it's 0*/
 } ArgInfo;
 
@@ -939,7 +940,7 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 	(*gr) ++;
 }
 
-#if defined(__APPLE__) || defined(__mono_ppc64__)
+#if defined(__APPLE__) || (defined(__mono_ppc64__) && !PPC_PASS_SMALL_FLOAT_STRUCTS_IN_FR_REGS)
 static gboolean
 has_only_a_r48_field (MonoClass *klass)
 {
@@ -1076,9 +1077,7 @@ get_call_info (MonoMethodSignature *sig)
 		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_TYPEDBYREF: {
 			gint size;
-			MonoClass *klass;
-
-			klass = mono_class_from_mono_type (sig->params [i]);
+			MonoClass *klass = mono_class_from_mono_type (sig->params [i]);
 			if (simpletype->type == MONO_TYPE_TYPEDBYREF)
 				size = sizeof (MonoTypedRef);
 			else if (is_pinvoke)
@@ -1086,7 +1085,7 @@ get_call_info (MonoMethodSignature *sig)
 			else
 			    size = mono_class_value_size (klass, NULL);
 
-#if defined(__APPLE__) || defined(__mono_ppc64__)
+#if defined(__APPLE__) || (defined(__mono_ppc64__) && !PPC_PASS_SMALL_FLOAT_STRUCTS_IN_FR_REGS)
 			if ((size == 4 || size == 8) && has_only_a_r48_field (klass)) {
 				cinfo->args [n].size = size;
 
@@ -1119,24 +1118,57 @@ get_call_info (MonoMethodSignature *sig)
 				int align_size = size;
 				int nregs = 0;
 				int rest = PPC_LAST_ARG_REG - gr + 1;
-				int n_in_regs;
+				int n_in_regs = 0;
 
-				align_size += (sizeof (gpointer) - 1);
-				align_size &= ~(sizeof (gpointer) - 1);
-				nregs = (align_size + sizeof (gpointer) -1 ) / sizeof (gpointer);
-				n_in_regs = MIN (rest, nregs);
-				if (n_in_regs < 0)
-					n_in_regs = 0;
-#ifdef __APPLE__
-				/* FIXME: check this */
-				if (size >= 3 && size % 4 != 0)
-					n_in_regs = 0;
+#if PPC_PASS_SMALL_FLOAT_STRUCTS_IN_FR_REGS
+				int mbr_cnt = 0;
+				int mbr_size = 0;
+				gboolean is_all_floats = mini_type_is_hfa (sig->params [i], &mbr_cnt, &mbr_size);
+
+				if (is_all_floats && (mbr_cnt <= 8)) {
+					rest = PPC_LAST_FPARG_REG - fr + 1;
+				}
+				// Pass small (<= 8 member) structures entirely made up of either float or double members
+				// in FR registers.  There have to be at least mbr_cnt registers left.
+				if (is_all_floats &&
+					 (rest >= mbr_cnt) &&
+					 (mbr_cnt <= 8)) {
+					nregs = mbr_cnt;
+					n_in_regs = MIN (rest, nregs);
+					cinfo->args [n].regtype = RegTypeFPStructByVal;
+					cinfo->args [n].vtregs = n_in_regs;
+					cinfo->args [n].size = mbr_size;
+					cinfo->args [n].vtsize = nregs - n_in_regs;
+					cinfo->args [n].reg = fr;
+					fr += n_in_regs;
+					if (mbr_size == 4) {
+						// floats
+						FP_ALSO_IN_REG (gr += (n_in_regs+1)/2);
+					} else {
+						// doubles
+						FP_ALSO_IN_REG (gr += (n_in_regs));
+					}
+				} else
 #endif
-				cinfo->args [n].regtype = RegTypeStructByVal;
-				cinfo->args [n].vtregs = n_in_regs;
-				cinfo->args [n].size = n_in_regs;
-				cinfo->args [n].vtsize = nregs - n_in_regs;
-				cinfo->args [n].reg = gr;
+				{
+					align_size += (sizeof (gpointer) - 1);
+					align_size &= ~(sizeof (gpointer) - 1);
+					nregs = (align_size + sizeof (gpointer) -1 ) / sizeof (gpointer);
+					n_in_regs = MIN (rest, nregs);
+					if (n_in_regs < 0)
+						n_in_regs = 0;
+#ifdef __APPLE__
+					/* FIXME: check this */
+					if (size >= 3 && size % 4 != 0)
+						n_in_regs = 0;
+#endif
+					cinfo->args [n].regtype = RegTypeStructByVal;
+					cinfo->args [n].vtregs = n_in_regs;
+					cinfo->args [n].size = n_in_regs;
+					cinfo->args [n].vtsize = nregs - n_in_regs;
+					cinfo->args [n].reg = gr;
+					gr += n_in_regs;
+				}
 
 #ifdef __mono_ppc64__
 				if (nregs == 1 && is_pinvoke)
@@ -1144,7 +1176,6 @@ get_call_info (MonoMethodSignature *sig)
 				else
 #endif
 					cinfo->args [n].bytes = 0;
-				gr += n_in_regs;
 				cinfo->args [n].offset = PPC_STACK_PARAM_OFFSET + stack_size;
 				/*g_print ("offset for arg %d at %d\n", n, PPC_STACK_PARAM_OFFSET + stack_size);*/
 				stack_size += nregs * sizeof (gpointer);
@@ -1605,6 +1636,17 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			ins->inst_p1 = mono_mempool_alloc (cfg->mempool, sizeof (ArgInfo));
 			memcpy (ins->inst_p1, ainfo, sizeof (ArgInfo));
 			MONO_ADD_INS (cfg->cbb, ins);
+		} else if (ainfo->regtype == RegTypeFPStructByVal) {
+			/* this is further handled in mono_arch_emit_outarg_vt () */
+			MONO_INST_NEW (cfg, ins, OP_OUTARG_VT);
+			ins->opcode = OP_OUTARG_VT;
+			ins->sreg1 = in->dreg;
+			ins->klass = in->klass;
+			ins->inst_p0 = call;
+			ins->inst_p1 = mono_mempool_alloc (cfg->mempool, sizeof (ArgInfo));
+			memcpy (ins->inst_p1, ainfo, sizeof (ArgInfo));
+			MONO_ADD_INS (cfg->cbb, ins);
+			cfg->flags |= MONO_CFG_HAS_FPOUT;
 		} else if (ainfo->regtype == RegTypeBase) {
 			if (!t->byref && ((t->type == MONO_TYPE_I8) || (t->type == MONO_TYPE_U8))) {
 				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI8_MEMBASE_REG, ppc_r1, ainfo->offset, in->dreg);
@@ -1708,17 +1750,36 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		} else
 #endif
 			for (i = 0; i < ainfo->vtregs; ++i) {
+	 			dreg = mono_alloc_ireg (cfg);
+#if G_BYTE_ORDER == G_BIG_ENDIAN
 				int antipadding = 0;
 				if (ainfo->bytes) {
 					g_assert (i == 0);
 					antipadding = sizeof (gpointer) - ainfo->bytes;
 				}
-				dreg = mono_alloc_ireg (cfg);
 				MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, src->dreg, soffset);
 				if (antipadding)
 					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHR_UN_IMM, dreg, dreg, antipadding * 8);
+#else
+				MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, src->dreg, soffset);
+#endif
 				mono_call_inst_add_outarg_reg (cfg, call, dreg, ainfo->reg + i, FALSE);
 				soffset += sizeof (gpointer);
+			}
+		if (ovf_size != 0)
+			mini_emit_memcpy (cfg, ppc_r1, doffset + soffset, src->dreg, soffset, ovf_size * sizeof (gpointer), 0);
+	} else if (ainfo->regtype == RegTypeFPStructByVal) {
+		soffset = 0;
+		for (i = 0; i < ainfo->vtregs; ++i) {
+			int tmpr = mono_alloc_freg (cfg);
+			if (ainfo->size == 4)
+				MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADR4_MEMBASE, tmpr, src->dreg, soffset);
+			else // ==8
+				MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADR8_MEMBASE, tmpr, src->dreg, soffset);
+			dreg = mono_alloc_freg (cfg);
+			MONO_EMIT_NEW_UNALU (cfg, OP_FMOVE, dreg, tmpr);
+			mono_call_inst_add_outarg_reg (cfg, call, dreg, ainfo->reg+i, TRUE);
+			soffset += ainfo->size;
 			}
 		if (ovf_size != 0)
 			mini_emit_memcpy (cfg, ppc_r1, doffset + soffset, src->dreg, soffset, ovf_size * sizeof (gpointer), 0);
@@ -1890,6 +1951,7 @@ mono_arch_instrument_epilog_full (MonoCompile *cfg, void *func, void *p, gboolea
 		if (enable_arguments) {
 			/* FIXME: get the actual address  */
 			ppc_mr (code, ppc_r4, ppc_r3);
+			// FIXME: Support the new v2 ABI!
 		}
 		break;
 	case SAVE_NONE:
@@ -3882,6 +3944,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_ldptr (code, ppc_r2, 8, ins->sreg1);
 			ppc_mtlr (code, ppc_r0);
 #else
+#if (_CALL_ELF == 2)
+			if (ins->flags & MONO_INST_HAS_METHOD) {
+			  // Not a global entry point
+			} else {
+				 // Need to set up r12 with function entry address for global entry point
+				 if (ppc_r12 != ins->sreg1) {
+					 ppc_mr(code,ppc_r12,ins->sreg1);
+				 }
+			}
+#endif
 			ppc_mtlr (code, ins->sreg1);
 #endif
 			ppc_blrl (code);
@@ -5030,6 +5102,25 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					ppc_stfs (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
 				else
 					g_assert_not_reached ();
+			 } else if (ainfo->regtype == RegTypeFPStructByVal) {
+				int doffset = inst->inst_offset;
+				int soffset = 0;
+				int cur_reg;
+				int size = 0;
+				g_assert (ppc_is_imm16 (inst->inst_offset));
+				g_assert (ppc_is_imm16 (inst->inst_offset + ainfo->vtregs * sizeof (gpointer)));
+				/* FIXME: what if there is no class? */
+				if (sig->pinvoke && mono_class_from_mono_type (inst->inst_vtype))
+					size = mono_class_native_size (mono_class_from_mono_type (inst->inst_vtype), NULL);
+				for (cur_reg = 0; cur_reg < ainfo->vtregs; ++cur_reg) {
+					if (ainfo->size == 4) {
+						ppc_stfs (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
+					} else {
+						ppc_stfd (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
+					}
+					soffset += ainfo->size;
+					doffset += ainfo->size;
+				}
 			} else if (ainfo->regtype == RegTypeStructByVal) {
 				int doffset = inst->inst_offset;
 				int soffset = 0;
@@ -5059,9 +5150,21 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 #ifdef __mono_ppc64__
 						if (ainfo->bytes) {
 							g_assert (cur_reg == 0);
+#if G_BYTE_ORDER == G_BIG_ENDIAN
 							ppc_sldi (code, ppc_r0, ainfo->reg,
-									(sizeof (gpointer) - ainfo->bytes) * 8);
+						                         (sizeof (gpointer) - ainfo->bytes) * 8);
 							ppc_stptr (code, ppc_r0, doffset, inst->inst_basereg);
+#else
+							if (mono_class_native_size (inst->klass, NULL) == 1) {
+							  ppc_stb (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
+							} else if (mono_class_native_size (inst->klass, NULL) == 2) {
+								ppc_sth (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
+							} else if (mono_class_native_size (inst->klass, NULL) == 4) {  // WDS -- maybe <=4?
+								ppc_stw (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
+							} else {
+								ppc_stptr (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);  // WDS -- Better way?
+							}
+#endif
 						} else
 #endif
 						{
@@ -6039,3 +6142,16 @@ mono_arch_opcode_supported (int opcode)
 		return FALSE;
 	}
 }
+
+
+#if 0
+// FIXME: To get the test case  finally_block_ending_in_dead_bb  to work properly we need to define the following
+// (in mini-ppc.h) and then implement the fuction mono_arch_create_handler_block_trampoline.
+//  #define MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD 1
+
+gpointer
+mono_arch_create_handler_block_trampoline (void)
+{
+	. . .
+}
+#endif
