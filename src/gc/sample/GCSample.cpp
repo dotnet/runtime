@@ -36,7 +36,8 @@
 //  be reported. There are number of other callbacks that GC calls to optionally allow the execution engine to do its 
 //  own bookkeeping.
 //
-//  For now, the sample GC environment has some cruft in it to decouple the GC from Windows and rest of CoreCLR. It is something we would like to clean up.
+//  For now, the sample GC environment has some cruft in it to decouple the GC from Windows and rest of CoreCLR. 
+//  It is something we would like to clean up.
 //
 
 #include "common.h"
