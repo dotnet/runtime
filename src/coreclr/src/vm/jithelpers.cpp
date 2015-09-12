@@ -3360,7 +3360,7 @@ NOINLINE HCIMPL3(VOID, JIT_Unbox_Nullable_Framed, void * destPtr, MethodTable* t
     HELPER_METHOD_FRAME_BEGIN_1(objRef);
     if (!Nullable::UnBox(destPtr, objRef, typeMT))
     {
-        COMPlusThrow(kInvalidCastException);
+        COMPlusThrowInvalidCastException(&objRef, TypeHandle(typeMT));
     }
     HELPER_METHOD_FRAME_END();
 }
@@ -3398,15 +3398,16 @@ NOINLINE HCIMPL2(LPVOID, JIT_Unbox_Helper_Framed, CORINFO_CLASS_HANDLE type, Obj
 
     LPVOID result = NULL;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-    if (TypeHandle(type).IsEquivalentTo(obj->GetTypeHandle()))
+    OBJECTREF objRef = ObjectToOBJECTREF(obj);
+    HELPER_METHOD_FRAME_BEGIN_RET_1(objRef);
+    if (TypeHandle(type).IsEquivalentTo(objRef->GetTypeHandle()))
     {
         // the structures are equivalent
-        result = obj->GetData();
+        result = objRef->GetData();
     }
     else
     {
-        COMPlusThrow(kInvalidCastException);
+        COMPlusThrowInvalidCastException(&objRef, TypeHandle(type));
     }
     HELPER_METHOD_FRAME_END();
 
