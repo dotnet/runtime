@@ -235,6 +235,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal(3, count);
         }
 
+        [ActiveIssue(2893, PlatformID.OSX)]
         [Fact]
         public static void ImportPkcs12File_Chain_VerifyContents()
         {
