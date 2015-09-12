@@ -12,9 +12,9 @@ namespace System.IO.FileSystem.Tests
         public delegate void SetTime(string path, DateTime time);
         public delegate DateTime GetTime(string path);
 
-        public IEnumerable<Tuple<SetTime, GetTime, DateTimeKind>> TimeFunctions()
+        public IEnumerable<Tuple<SetTime, GetTime, DateTimeKind>> TimeFunctions(bool requiresRoundtripping = false)
         {
-            if (IOInputs.SupportsCreationTime)
+            if (IOInputs.SupportsGettingCreationTime && (!requiresRoundtripping || IOInputs.SupportsSettingCreationTime))
             {
                 yield return Tuple.Create<SetTime, GetTime, DateTimeKind>(
                     ((path, time) => Directory.SetCreationTime(path, time)),
@@ -68,7 +68,7 @@ namespace System.IO.FileSystem.Tests
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
 
-            Assert.All(TimeFunctions(), (tuple) =>
+            Assert.All(TimeFunctions(requiresRoundtripping: true), (tuple) =>
             {
                 DateTime dt = new DateTime(2014, 12, 1, 12, 0, 0, tuple.Item3);
                 tuple.Item1(testDir.FullName, dt);
@@ -107,7 +107,7 @@ namespace System.IO.FileSystem.Tests
             Assert.Equal(DateTime.FromFileTime(0).Ticks, new DirectoryInfo(path).LastAccessTime.Ticks);
             Assert.Equal(DateTime.FromFileTime(0).Ticks, Directory.GetLastWriteTime(path).Ticks);
             Assert.Equal(DateTime.FromFileTime(0).Ticks, new DirectoryInfo(path).LastWriteTime.Ticks);
-            if (IOInputs.SupportsCreationTime)
+            if (IOInputs.SupportsGettingCreationTime)
             {
                 Assert.Equal(DateTime.FromFileTime(0).Ticks, Directory.GetCreationTime(path).Ticks);
                 Assert.Equal(DateTime.FromFileTime(0).Ticks, new DirectoryInfo(path).CreationTime.Ticks);
@@ -118,7 +118,7 @@ namespace System.IO.FileSystem.Tests
             Assert.Equal(DateTime.FromFileTimeUtc(0).Ticks, new DirectoryInfo(path).LastAccessTimeUtc.Ticks);
             Assert.Equal(DateTime.FromFileTimeUtc(0).Ticks, Directory.GetLastWriteTimeUtc(path).Ticks);
             Assert.Equal(DateTime.FromFileTimeUtc(0).Ticks, new DirectoryInfo(path).LastWriteTimeUtc.Ticks);
-            if (IOInputs.SupportsCreationTime)
+            if (IOInputs.SupportsGettingCreationTime)
             {
                 Assert.Equal(DateTime.FromFileTimeUtc(0).Ticks, Directory.GetCreationTimeUtc(path).Ticks);
                 Assert.Equal(DateTime.FromFileTimeUtc(0).Ticks, new DirectoryInfo(path).CreationTimeUtc.Ticks);
@@ -136,7 +136,7 @@ namespace System.IO.FileSystem.Tests
             Assert.Throws<FileNotFoundException>(() => new DirectoryInfo(path).LastAccessTime);
             Assert.Throws<FileNotFoundException>(() => Directory.GetLastWriteTime(path));
             Assert.Throws<FileNotFoundException>(() => new DirectoryInfo(path).LastWriteTime);
-            if (IOInputs.SupportsCreationTime)
+            if (IOInputs.SupportsGettingCreationTime)
             {
                 Assert.Throws<FileNotFoundException>(() => Directory.GetCreationTime(path));
                 Assert.Throws<FileNotFoundException>(() => new DirectoryInfo(path).CreationTime);
@@ -147,7 +147,7 @@ namespace System.IO.FileSystem.Tests
             Assert.Throws<FileNotFoundException>(() => new DirectoryInfo(path).LastAccessTimeUtc);
             Assert.Throws<FileNotFoundException>(() => Directory.GetLastWriteTimeUtc(path));
             Assert.Throws<FileNotFoundException>(() => new DirectoryInfo(path).LastWriteTimeUtc);
-            if (IOInputs.SupportsCreationTime)
+            if (IOInputs.SupportsGettingCreationTime)
             {
                 Assert.Throws<FileNotFoundException>(() => Directory.GetCreationTimeUtc(path));
                 Assert.Throws<FileNotFoundException>(() => new DirectoryInfo(path).CreationTimeUtc);
