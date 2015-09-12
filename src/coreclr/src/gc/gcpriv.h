@@ -1277,7 +1277,7 @@ public:
     // context - we don't actually use the ptr/limit from it so I am
     // making this explicit by not passing in the alloc_context.
     PER_HEAP
-    CObjectHeader* allocate_large_object (size_t size, __int64& alloc_bytes);
+    CObjectHeader* allocate_large_object (size_t size, INT64& alloc_bytes);
 
 #ifdef FEATURE_STRUCTALIGN
     PER_HEAP
@@ -3467,7 +3467,7 @@ protected:
 
     // the # of bytes allocates since the last full compacting GC.
     PER_HEAP
-    unsigned __int64 loh_alloc_since_cg;
+    UINT64 loh_alloc_since_cg;
 
     PER_HEAP
     BOOL elevation_requested;
