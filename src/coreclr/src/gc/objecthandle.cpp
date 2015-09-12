@@ -1841,7 +1841,7 @@ void DestroyWinRTWeakHandle(OBJECTHANDLE handle)
     // runtime, since if we are pointing at a managed object, we should not be using a HNDTYPE_WEAK_WINRT
     // but rather a HNDTYPE_WEAK_SHORT or HNDTYPE_WEAK_LONG.
     IWeakReference* pWinRTWeakReference = reinterpret_cast<IWeakReference*>(HndGetHandleExtraInfo(handle));
-    if (pWinRTWeakReference != nullptr)
+    if (pWinRTWeakReference != NULL)
     {
         pWinRTWeakReference->Release();
     }
