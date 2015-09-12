@@ -170,8 +170,8 @@ struct alloc_context
 
     BYTE*          alloc_ptr;
     BYTE*          alloc_limit;
-    __int64        alloc_bytes; //Number of bytes allocated on SOH by this context
-    __int64        alloc_bytes_loh; //Number of bytes allocated on LOH by this context
+    INT64          alloc_bytes; //Number of bytes allocated on SOH by this context
+    INT64          alloc_bytes_loh; //Number of bytes allocated on LOH by this context
 #if defined(FEATURE_SVR_GC)
     SVR::GCHeap*   alloc_heap;
     SVR::GCHeap*   home_heap;
