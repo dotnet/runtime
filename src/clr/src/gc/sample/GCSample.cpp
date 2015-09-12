@@ -69,8 +69,8 @@ Object * AllocateObject(MethodTable * pMT)
     else
     {
         pObject = GCHeap::GetGCHeap()->Alloc(acontext, size, 0);
-        if (pObject == nullptr)
-            return nullptr;
+        if (pObject == NULL)
+            return NULL;
     }
 
     pObject->SetMethodTable(pMT);
@@ -193,12 +193,12 @@ int main(int argc, char* argv[])
 
     // Allocate instance of MyObject
     Object * pObj = AllocateObject(pMyMethodTable);
-    if (pObj == nullptr)
+    if (pObj == NULL)
         return -1;
 
     // Create strong handle and store the object into it
     OBJECTHANDLE oh = CreateGlobalHandle(pObj);
-    if (oh == nullptr)
+    if (oh == NULL)
         return -1;
 
     for (int i = 0; i < 1000000; i++)
@@ -207,7 +207,7 @@ int main(int argc, char* argv[])
 
         // Allocate more instances of the same object
         Object * p = AllocateObject(pMyMethodTable);
-        if (p == nullptr)
+        if (p == NULL)
             return -1;
 
         Object * pAfter = ((My *)ObjectFromHandle(oh))->m_pOther1;
@@ -221,7 +221,7 @@ int main(int argc, char* argv[])
 
     // Create weak handle that points to our object
     OBJECTHANDLE ohWeak = CreateGlobalWeakHandle(ObjectFromHandle(oh));
-    if (ohWeak == nullptr)
+    if (ohWeak == NULL)
         return -1;
 
     // Destroy the strong handle so that nothing will be keeping out object alive
