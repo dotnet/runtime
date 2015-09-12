@@ -19,7 +19,7 @@ internal static partial class Interop
             internal byte* Shell;
         };
 
-        [DllImport(Libraries.SystemNative, SetLastError = true)]
-        internal static extern unsafe int GetPwUid(int uid, out Passwd pwd, byte* buf, long bufLen, out IntPtr result);
+        [DllImport(Libraries.SystemNative, SetLastError = false)]
+        internal static extern unsafe int GetPwUidR(int uid, out Passwd pwd, byte* buf, long bufLen);
     }
 }

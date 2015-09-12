@@ -44,7 +44,7 @@ internal static partial class Interop
         [DllImport(Libraries.SystemNative, SetLastError = false)]
         internal static extern int GetDirentSize();
 
-        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        [DllImport(Libraries.SystemNative, SetLastError = false)]
         private static unsafe extern int ReadDirR(SafeDirectoryHandle dir, byte* buffer, int bufferSize, out InternalDirectoryEntry outputEntry);
 
         [DllImport(Libraries.SystemNative, SetLastError = true)]
