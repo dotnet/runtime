@@ -1386,7 +1386,7 @@ void DEBUG_LogScanningStatistics(HandleTable *pTable, DWORD level)
         // for each generation we've collected,  dump the current stats
         for (int i = 0; i <= pTable->_DEBUG_iMaxGen; i++)
         {
-            __int64 totalBlocksScanned = pTable->_DEBUG_TotalBlocksScanned[i];
+            INT64 totalBlocksScanned = pTable->_DEBUG_TotalBlocksScanned[i];
 
             // dump the generation number and the number of blocks scanned
             LOG((LF_GC, level,     "--------------------------------------------------------------\n"));
