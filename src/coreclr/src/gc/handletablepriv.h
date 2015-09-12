@@ -529,10 +529,10 @@ struct HandleTable
      */
 #ifdef _DEBUG
     int     _DEBUG_iMaxGen;
-    __int64 _DEBUG_TotalBlocksScanned            [MAXSTATGEN];
-    __int64 _DEBUG_TotalBlocksScannedNonTrivially[MAXSTATGEN];
-    __int64 _DEBUG_TotalHandleSlotsScanned       [MAXSTATGEN];
-    __int64 _DEBUG_TotalHandlesActuallyScanned   [MAXSTATGEN];
+    INT64   _DEBUG_TotalBlocksScanned            [MAXSTATGEN];
+    INT64   _DEBUG_TotalBlocksScannedNonTrivially[MAXSTATGEN];
+    INT64   _DEBUG_TotalHandleSlotsScanned       [MAXSTATGEN];
+    INT64   _DEBUG_TotalHandlesActuallyScanned   [MAXSTATGEN];
 #endif
 
     /*
