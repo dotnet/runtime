@@ -146,28 +146,27 @@ namespace System.IO
             {
                 // Call getpwuid_r to get the passwd struct
                 Interop.Sys.Passwd passwd;
-                IntPtr result;
-                int rv = Interop.Sys.GetPwUid(Interop.Sys.GetEUid(), out passwd, buf, bufLen, out result);
+                int error = Interop.Sys.GetPwUidR(Interop.Sys.GetEUid(), out passwd, buf, bufLen);
 
                 // If the call succeeds, give back the home directory path retrieved
-                if (rv == 0)
+                if (error == 0)
                 {
-                    if (result == IntPtr.Zero)
-                    {
-                        // Current user's entry could not be found
-                        path = null; // we'll still return true, as false indicates the buffer was too small
-                    }
-                    else
-                    {
-                        Debug.Assert(result == (IntPtr)(&passwd));
-                        Debug.Assert(passwd.HomeDirectory != null);
-                        path = Marshal.PtrToStringAnsi((IntPtr)passwd.HomeDirectory);
-                    }
+                    Debug.Assert(passwd.HomeDirectory != null);
+                    path = Marshal.PtrToStringAnsi((IntPtr)passwd.HomeDirectory);
                     return true;
                 }
 
+                // If the current user's entry could not be found, give back null
+                // path, but still return true as false indicates the buffer was
+                // too small.
+                if (error == -1)
+                {
+                    path = null;
+                    return false;
+                }
+
                 // If the call failed because it was interrupted, try again.
-                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                var errorInfo = new Interop.ErrorInfo(error);
                 if (errorInfo.Error == Interop.Error.EINTR)
                     continue;
 
@@ -183,6 +182,5 @@ namespace System.IO
                 throw new IOException(errorInfo.GetErrorMessage(), errorInfo.RawErrno);
             }
         }
-
     }
 }
