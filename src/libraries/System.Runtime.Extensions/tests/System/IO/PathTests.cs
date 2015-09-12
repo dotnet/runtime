@@ -277,6 +277,7 @@ public static class PathTests
     [InlineData("./tmp/", "./tmp")]
     [InlineData("/home/someuser/sometempdir/", "/home/someuser/sometempdir/")]
     [InlineData("/home/someuser/some tempdir/", "/home/someuser/some tempdir/")]
+    [InlineData("/tmp/", null)]
     public static void GetTempPath_SetEnvVar_Unix(string expected, string newTempPath)
     {
         GetTempPath_SetEnvVar("TMPDIR", expected, newTempPath);
@@ -295,7 +296,7 @@ public static class PathTests
         }
         finally
         {
-            Environment.SetEnvironmentVariable(envVar, null);
+            Environment.SetEnvironmentVariable(envVar, original);
             Assert.Equal(original, Path.GetTempPath());
         }
     }
