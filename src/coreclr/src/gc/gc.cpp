@@ -2305,7 +2305,7 @@ size_t      gc_heap::fgn_last_alloc = 0;
 
 int         gc_heap::generation_skip_ratio = 100;
 
-unsigned __int64 gc_heap::loh_alloc_since_cg = 0;
+UINT64      gc_heap::loh_alloc_since_cg = 0;
 
 BOOL        gc_heap::elevation_requested = FALSE;
 
@@ -4664,7 +4664,7 @@ BOOL gc_heap::unprotect_segment (heap_segment* seg)
 #endif //_MSC_VER
 #elif defined(_TARGET_AMD64_) 
 #ifdef _MSC_VER
-extern "C" unsigned __int64 __rdtsc();
+extern "C" UINT64 __rdtsc();
 #pragma intrinsic(__rdtsc)
     static SSIZE_T get_cycle_count()
     {
@@ -7247,11 +7247,11 @@ void gc_heap::copy_brick_card_table(BOOL heap_expand)
     }
     //check if we need to turn on card_bundles.
 #ifdef MULTIPLE_HEAPS
-    // use __int64 arithmetic here because of possible overflow on 32p
-    unsigned __int64 th = (unsigned __int64)MH_TH_CARD_BUNDLE*gc_heap::n_heaps;
+    // use INT64 arithmetic here because of possible overflow on 32p
+    UINT64 th = (UINT64)MH_TH_CARD_BUNDLE*gc_heap::n_heaps;
 #else
-    // use __int64 arithmetic here because of possible overflow on 32p
-    unsigned __int64 th = (unsigned __int64)SH_TH_CARD_BUNDLE;
+    // use INT64 arithmetic here because of possible overflow on 32p
+    UINT64 th = (UINT64)SH_TH_CARD_BUNDLE;
 #endif //MULTIPLE_HEAPS
     if (reserved_memory >= th)
     {
@@ -9503,11 +9503,11 @@ HRESULT gc_heap::initialize_gc (size_t segment_size,
 #ifdef CARD_BUNDLE
     //check if we need to turn on card_bundles.
 #ifdef MULTIPLE_HEAPS
-    // use __int64 arithmetic here because of possible overflow on 32p
-    unsigned __int64 th = (unsigned __int64)MH_TH_CARD_BUNDLE*number_of_heaps;
+    // use INT64 arithmetic here because of possible overflow on 32p
+    UINT64 th = (UINT64)MH_TH_CARD_BUNDLE*number_of_heaps;
 #else
-    // use __int64 arithmetic here because of possible overflow on 32p
-    unsigned __int64 th = (unsigned __int64)SH_TH_CARD_BUNDLE;
+    // use INT64 arithmetic here because of possible overflow on 32p
+    UINT64 th = (UINT64)SH_TH_CARD_BUNDLE;
 #endif //MULTIPLE_HEAPS
 
     if ((can_use_write_watch() && reserved_memory >= th))
@@ -12164,19 +12164,19 @@ BOOL gc_heap::retry_full_compact_gc (size_t size)
 {
     size_t seg_size = get_large_seg_size (size);
 
-    if (loh_alloc_since_cg >= (2 * (unsigned __int64)seg_size))
+    if (loh_alloc_since_cg >= (2 * (UINT64)seg_size))
     {
         return TRUE;
     }
 
 #ifdef MULTIPLE_HEAPS
-    unsigned __int64 total_alloc_size = 0;
+    UINT64 total_alloc_size = 0;
     for (int i = 0; i < n_heaps; i++)
     {
         total_alloc_size += g_heaps[i]->loh_alloc_since_cg;
     }
 
-    if (total_alloc_size >= (2 * (unsigned __int64)seg_size))
+    if (total_alloc_size >= (2 * (UINT64)seg_size))
     {
         return TRUE;
     }
@@ -30034,7 +30034,7 @@ BOOL gc_heap::ephemeral_gen_fit_p (gc_tuning_point tp)
     }
 }
 
-CObjectHeader* gc_heap::allocate_large_object (size_t jsize, __int64& alloc_bytes)
+CObjectHeader* gc_heap::allocate_large_object (size_t jsize, INT64& alloc_bytes)
 {
     //create a new alloc context because gen3context is shared.
     alloc_context acontext;
