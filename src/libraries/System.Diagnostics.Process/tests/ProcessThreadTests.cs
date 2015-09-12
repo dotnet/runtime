@@ -13,6 +13,7 @@ namespace System.Diagnostics.ProcessTests
 {
     public class ProcessThreadTests : ProcessTestBase
     {
+        [ActiveIssue(3202, PlatformID.OSX)]
         [Fact]
         public void TestCommonPriorityAndTimeProperties()
         {

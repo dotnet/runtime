@@ -655,6 +655,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.NotNull(exported);
         }
 
+        [ActiveIssue(2893, PlatformID.OSX)]
         [Fact]
         public static void ExportUnrelatedPfx()
         {
