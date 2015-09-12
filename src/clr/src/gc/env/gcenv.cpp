@@ -260,11 +260,11 @@ Thread * GetThread()
     return pCurrentThread;
 }
 
-Thread * g_pThreadList = nullptr;
+Thread * g_pThreadList = NULL;
 
 Thread * ThreadStore::GetThreadList(Thread * pThread)
 {
-    if (pThread == nullptr)
+    if (pThread == NULL)
         return g_pThreadList;
 
     return pThread->m_pNext;
