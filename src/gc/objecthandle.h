@@ -412,7 +412,7 @@ inline void DestroyRefcountedHandle(OBJECTHANDLE handle)
 inline OBJECTHANDLE CreateWinRTWeakHandle(HHANDLETABLE table, OBJECTREF object, IWeakReference* pWinRTWeakReference)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(pWinRTWeakReference != nullptr);
+    _ASSERTE(pWinRTWeakReference != NULL);
     return HndCreateHandle(table, HNDTYPE_WEAK_WINRT, object, reinterpret_cast<LPARAM>(pWinRTWeakReference));
 }
 
