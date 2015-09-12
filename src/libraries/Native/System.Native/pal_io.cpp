@@ -310,32 +310,29 @@ int32_t ReadDirR(DIR* dir, void* buffer, int32_t bufferSize, DirectoryEntry* out
         return ERANGE;
     }
 
-    // On successful cal to readdir_r, result and &entry should point to the same
-    // data; a NULL temp pointer but return of 0 means that we reached the end of the 
-    // directory stream; finally, a NULL temp pointer with a positive return value
-    // means an error occurred.
     dirent* result = nullptr;
     dirent* entry = (dirent*)buffer;
-    int ret = readdir_r(dir, entry, &result);
-    if (ret == 0)
+    int error = readdir_r(dir, entry, &result);
+
+    // positive error number returned -> failure
+    if (error != 0)
     {
-        if (result != nullptr)
-        {
-            assert(result == entry);
-            ConvertDirent(*entry, outputEntry);
-        }
-        else
-        {
-            ret = -1; // errno values are positive so signal the end-of-stream with a non-error value
-            *outputEntry = { };
-        }
-    }
-    else
-    {
-        *outputEntry = { };
+        assert(error > 0);
+        *outputEntry = { }; // managed out param must be initialized
+        return error;
     }
 
-    return ret;
+    // 0 returned with null result -> end-of-stream
+    if (result == nullptr)
+    {
+        *outputEntry = { }; // managed out param must be initialized
+        return -1;          // shim convention for end-of-stream
+    }
+
+    // 0 returned with non-null result (guaranteed to be set to entry arg) -> success
+    assert(result == entry);
+    ConvertDirent(*entry, outputEntry);
+    return 0;
 }
 
 extern "C" 
