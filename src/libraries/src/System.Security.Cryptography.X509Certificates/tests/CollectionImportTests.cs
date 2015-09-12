@@ -235,7 +235,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal(3, count);
         }
 
-        [ActiveIssue(2893, PlatformID.OSX)]
         [Fact]
         public static void ImportPkcs12File_Chain_VerifyContents()
         {
@@ -244,33 +243,41 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             int count = certs.Count;
             Assert.Equal(3, count);
 
-            // Verify that the read ordering is consistent across the platforms
+            const string leafCertSubject = "test.local";
+
+            // TODO (#3207): Make this test be order-required once ordering is guaranteed on all platforms.
             string[] expectedSubjects =
             {
                 "MS Passport Test Sub CA",
                 "MS Passport Test Root CA",
-                "test.local",
+                leafCertSubject,
             };
 
-            string[] actualSubjects = certs.OfType<X509Certificate2>().
-                Select(cert => cert.GetNameInfo(X509NameType.SimpleName, false)).
-                ToArray();
+            string[] actualSubjects = new string[certs.Count];
 
-            Assert.Equal(expectedSubjects, actualSubjects);
-
-            // And verify that we have private keys when we expect them
-            bool[] expectedHasPrivateKeys =
+            for (int i = 0; i < certs.Count; i++)
             {
-                false,
-                false,
-                true,
-            };
+                X509Certificate2 cert = certs[i];
+                string subject = cert.GetNameInfo(X509NameType.SimpleName, false);
+                actualSubjects[i] = subject;
 
-            bool[] actualHasPrivateKeys = certs.OfType<X509Certificate2>().
-                Select(cert => cert.HasPrivateKey).
-                ToArray();
+                bool shouldHavePrivateKey = StringComparer.Ordinal.Equals(leafCertSubject, subject);
 
-            Assert.Equal(expectedHasPrivateKeys, actualHasPrivateKeys);
+                if (shouldHavePrivateKey)
+                {
+                    Assert.True(cert.HasPrivateKey, "Certificate '" + subject + "' HasPrivateKey");
+                }
+                else
+                {
+                    Assert.False(cert.HasPrivateKey, "Certificate '" + subject + "' HasPrivateKey");
+                }
+            }
+
+            // Confirm we saw each cert we expected.
+            foreach (string expectedSubject in expectedSubjects)
+            {
+                Assert.Contains(expectedSubject, actualSubjects);
+            }
         }
     }
 }
