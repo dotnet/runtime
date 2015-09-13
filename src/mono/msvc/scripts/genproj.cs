@@ -977,6 +977,14 @@ public class Driver {
 			string library = project.Attribute ("library").Value;
 			var profile = project.Element ("profile").Value;
 
+			// Skip facades for now, the tool doesn't know how to deal with them yet.
+			if (dir.Contains ("Facades"))
+				continue;
+
+			// These are currently broken, skip until they're fixed.
+			if (dir.StartsWith ("mcs") || dir.Contains ("Microsoft.Web.Infrastructure"))
+				continue;
+
 			//
 			// Do only class libraries for now
 			//
