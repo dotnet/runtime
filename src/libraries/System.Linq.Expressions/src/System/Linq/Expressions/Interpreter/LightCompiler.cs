@@ -1187,6 +1187,19 @@ namespace System.Linq.Expressions.Interpreter
                         Compile(node.Operand);
                         _instructions.EmitDecrement(node.Type);
                         break;
+                    case ExpressionType.UnaryPlus:
+                        Compile(node.Operand);
+                        break;
+                    case ExpressionType.IsTrue:
+                        Compile(node.Operand);
+                        _instructions.EmitLoad(true);
+                        _instructions.EmitEqual(typeof(bool));
+                        break;
+                    case ExpressionType.IsFalse:
+                        Compile(node.Operand);
+                        _instructions.EmitLoad(false);
+                        _instructions.EmitEqual(typeof(bool));
+                        break;
                     default:
                         throw new PlatformNotSupportedException(SR.Format(SR.UnsupportedExpressionType, node.NodeType));
                 }
