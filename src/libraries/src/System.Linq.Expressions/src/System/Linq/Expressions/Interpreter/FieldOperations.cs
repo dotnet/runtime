@@ -52,7 +52,14 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            frame.Push(_field.GetValue(frame.Pop()));
+            object self = frame.Pop();
+
+            if (self == null)
+            {
+                throw new NullReferenceException();
+            }
+
+            frame.Push(_field.GetValue(self));
             return +1;
         }
     }
@@ -77,6 +84,12 @@ namespace System.Linq.Expressions.Interpreter
         {
             object value = frame.Pop();
             object self = frame.Pop();
+
+            if (self == null)
+            {
+                throw new NullReferenceException();
+            }
+
             _field.SetValue(self, value);
             return +1;
         }
