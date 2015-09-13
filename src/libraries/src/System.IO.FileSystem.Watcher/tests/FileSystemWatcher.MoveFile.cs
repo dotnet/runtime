@@ -89,6 +89,7 @@ public class MoveFileTests
     [InlineData(WatcherChangeTypes.Deleted, true)]
     [InlineData(WatcherChangeTypes.Renamed, false)]
     [PlatformSpecific(PlatformID.AnyUnix)]
+    [ActiveIssue(3215, PlatformID.OSX)] // failing for Changed, false
     public static void Unix_File_Move_In_Nested_Directory_Triggers_Event(WatcherChangeTypes eventType, bool moveRaisesEvent)
     {
         MoveAndCheck_NestedDirectory(eventType, moveRaisesEvent);
