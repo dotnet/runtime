@@ -178,7 +178,9 @@ public class CreatedTests
         }
     }
 
-    [Fact, ActiveIssue(1477, PlatformID.Windows)]
+    [Fact]
+    [ActiveIssue(1477, PlatformID.Windows)]
+    [ActiveIssue(3215, PlatformID.OSX)]
     public static void FileSystemWatcher_Created_WatcherDoesntFollowSymLinkToFile()
     {
         using (var dir = Utility.CreateTestDirectory())

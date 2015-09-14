@@ -146,6 +146,7 @@ public static class TimeZoneInfoTests
         VerifyConvertException<Exception>(time1, new String('a', 256)); // long string
     }
 
+    [ActiveIssue(3211, PlatformID.OSX)]
     [Fact]
     public static void NearMinMaxDateTimeOffsetConvertTest()
     {
@@ -329,6 +330,7 @@ public static class TimeZoneInfoTests
         VerifyConvert(time1, TimeZoneInfo.Utc.Id, time1.ToUniversalTime());
     }
 
+    [ActiveIssue(3211, PlatformID.OSX)]
     [Fact]
     public static void NearMinMaxDateTimeConvertTest()
     {
