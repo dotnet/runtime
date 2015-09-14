@@ -1267,12 +1267,51 @@ void ExceptionTracker::InitializeCrawlFrameForExplicitFrame(CrawlFrame* pcfThisF
     pcfThisFrame->pCurGSCookie   = NULL;
 }
 
+// This method will initialize the RegDisplay in the CrawlFrame with the correct state for current and caller context
+// See the long description of contexts and their validity in ExceptionTracker::InitializeCrawlFrame for details.
+void ExceptionTracker::InitializeCurrentContextForCrawlFrame(CrawlFrame* pcfThisFrame, PT_DISPATCHER_CONTEXT pDispatcherContext,  StackFrame sfEstablisherFrame)
+{
+    CONTRACTL
+    {
+        MODE_ANY;
+        NOTHROW;
+        GC_NOTRIGGER;
+        PRECONDITION(IsInFirstPass());
+    }
+    CONTRACTL_END;
+
+    if (IsInFirstPass())
+    {
+        REGDISPLAY *pRD = pcfThisFrame->pRD;
+        
+        INDEBUG(memset(pRD->pCurrentContext, 0xCC, sizeof(*(pRD->pCurrentContext))));
+        // Ensure that clients can tell the current context isn't valid.
+        SetIP(pRD->pCurrentContext, 0);
+
+        *(pRD->pCallerContext)      = *(pDispatcherContext->ContextRecord);
+        pRD->IsCallerContextValid   = TRUE;
+
+        pRD->SP = sfEstablisherFrame.SP;
+        pRD->ControlPC = pDispatcherContext->ControlPc;
+
+#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)    
+        pcfThisFrame->pRD->IsCallerSPValid = TRUE;
+        
+        // Assert our first pass assumptions for the Arm/Arm64
+        _ASSERTE(sf.SP == GetSP(pDispatcherContext->ContextRecord));
+#endif // defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)    
+
+    }
+
+    EH_LOG((LL_INFO100, "ExceptionTracker::InitializeCurrentContextForCrawlFrame: DispatcherContext->ControlPC = %p; IP in DispatcherContext->ContextRecord = %p.\n",
+                pDispatcherContext->ControlPc, GetIP(pDispatcherContext->ContextRecord)));
+}
+
 // static
 void ExceptionTracker::InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pThread, StackFrame sf, REGDISPLAY* pRD,
                                             PDISPATCHER_CONTEXT pDispatcherContext, DWORD_PTR ControlPCForEHSearch,
-                                            UINT_PTR* puMethodStartPC
-                                            ARM_ARG(ExceptionTracker *pCurrentTracker) 
-                                            ARM64_ARG(ExceptionTracker *pCurrentTracker))
+                                            UINT_PTR* puMethodStartPC,
+                                            ExceptionTracker *pCurrentTracker)
 {
     CONTRACTL
     {
@@ -1284,72 +1323,78 @@ void ExceptionTracker::InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pT
 
     INDEBUG(memset(pcfThisFrame, 0xCC, sizeof(*pcfThisFrame)));
     pcfThisFrame->pRD = pRD;
+
 #ifdef FEATURE_INTERPRETER
     pcfThisFrame->pFrame = NULL;
 #endif // FEATURE_INTERPRETER
 
-#if defined(_TARGET_AMD64_)
+    // Initialize the RegDisplay from DC->ContextRecord. DC->ControlPC always contains the IP
+    // in the frame for which the personality routine was invoked.
+    //
+    // <AMD64>
+    //
+    // During 1st pass, DC->ContextRecord contains the context of the caller of the frame for which personality
+    // routine was invoked. On the other hand, in the 2nd pass, it contains the context of the frame for which
+    // personality routine was invoked.
+    //
+    // </AMD64>
+    //
+    // <ARM and ARM64>
+    //
+    // In the first pass on ARM & ARM64:
+    //
+    // 1) EstablisherFrame (passed as 'sf' to this method) represents the SP at the time
+    //    the current managed method was invoked and thus, is the SP of the caller. This is
+    //    the value of DispatcherContext->EstablisherFrame as well.
+    // 2) DispatcherContext->ControlPC is the pc in the current managed method for which personality
+    //    routine has been invoked.
+    // 3) DispatcherContext->ContextRecord contains the context record of the caller (and thus, IP
+    //    in the caller). Most of the times, these values will be distinct. However, recursion
+    //    may result in them being the same (case "run2" of baseservices\Regression\V1\Threads\functional\CS_TryFinally.exe
+    //    is an example). In such a case, we ensure that EstablisherFrame value is the same as
+    //    the SP in DispatcherContext->ContextRecord (which is (1) above).
+    //
+    // In second pass on ARM & ARM64:
+    //
+    // 1) EstablisherFrame (passed as 'sf' to this method) represents the SP at the time
+    //    the current managed method was invoked and thus, is the SP of the caller. This is
+    //    the value of DispatcherContext->EstablisherFrame as well.
+    // 2) DispatcherContext->ControlPC is the pc in the current managed method for which personality
+    //    routine has been invoked.
+    // 3) DispatcherContext->ContextRecord contains the context record of the current managed method
+    //    for which the personality routine is invoked.
+    //
+    // </ARM and ARM64>
     pThread->InitRegDisplay(pcfThisFrame->pRD, pDispatcherContext->ContextRecord, true);
 
-    if (pDispatcherContext->ControlPc != (UINT_PTR)GetIP(pDispatcherContext->ContextRecord))
-    {
-        INDEBUG(memset(pRD->pCurrentContext, 0xCC, sizeof(*(pRD->pCurrentContext))));
-        // Ensure that clients can tell the current context isn't valid.
-        SetIP(pRD->pCurrentContext, 0);
-
-        *(pRD->pCallerContext)      = *(pDispatcherContext->ContextRecord);
-        pRD->IsCallerContextValid   = TRUE;
-
-        pcfThisFrame->pRD->SP = sf.SP;
-        pcfThisFrame->pRD->ControlPC = pDispatcherContext->ControlPc;
-    }
-#elif defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
-    pThread->InitRegDisplay(pcfThisFrame->pRD, pDispatcherContext->ContextRecord, true);
-
+    // The "if" check below is trying to determine when we have a valid current context in DC->ContextRecord and whether, or not,
+    // RegDisplay needs to be fixed up to set SP and ControlPC to have the values for the current frame for which personality routine
+    // is invoked.
+    //
+    // We do this based upon the current pass for the exception tracker as this will also handle the case when current frame
+    // and its caller have the same return address (i.e. ControlPc). This can happen in cases when, due to certain JIT optimizations, the following callstack
+    //
+    // A -> B -> A -> C
+    //
+    // Could get transformed to the one below when B is inlined in the first (left-most) A resulting in:
+    //
+    // A -> A -> C
+    //
+    // In this case, during 1st pass, when personality routine is invoked for the second A, DC->ControlPc could have the same
+    // value as DC->ContextRecord->Rip even though the DC->ContextRecord actually represents caller context (of first A).
+    // As a result, we will not initialize the value of SP and controlPC in RegDisplay for the current frame (frame for 
+    // which personality routine was invoked - second A in the optimized scenario above) resulting in frame specific lookup (e.g. 
+    // GenericArgType) to happen incorrectly (against first A).
+    //
+    // Thus, we should always use the pass identification in ExceptionTracker to determine when we need to perform the fixup below.
     if (pCurrentTracker->IsInFirstPass())
     {
-        // In the first pass on ARM & ARM64:
-        //
-        // 1) EstablisherFrame (passed as 'sf' to this method) represents the SP at the time
-        //    the current managed method was invoked and thus, is the SP of the caller. This is
-        //    the value of DispatcherContext->EstablisherFrame as well.
-        // 2) DispatcherContext->ControlPC is the pc in the current managed method for which personality
-        //    routine has been invoked.
-        // 3) DispatcherContext->ContextRecord contains the context record of the caller (and thus, IP
-        //    in the caller). Most of the times, these values will be distinct. However, recursion
-        //    may result in them being the same (case "run2" of baseservices\Regression\V1\Threads\functional\CS_TryFinally.exe
-        //    is an example). In such a case, we ensure that EstablisherFrame value is the same as
-        //    the SP in DispatcherContext->ContextRecord (which is (1) above).
-        
-        // Based upon this, ensure that clients can tell the current context isn't valid.
-        INDEBUG(memset(pRD->pCurrentContext, 0xCC, sizeof(*(pRD->pCurrentContext))));
-        SetIP(pRD->pCurrentContext, 0);
-
-        // Assert that our assumption (1) above is true
-        _ASSERTE(sf.SP == GetSP(pDispatcherContext->ContextRecord));
-        
-        // Setup the caller context
-        *(pRD->pCallerContext)      = *(pDispatcherContext->ContextRecord);
-        pRD->IsCallerContextValid   = TRUE;
-        pcfThisFrame->pRD->SP = sf.SP;
-        pcfThisFrame->pRD->IsCallerSPValid = TRUE;
-
-        EH_LOG((LL_INFO100, "ExceptionTracker::InitializeCrawlFrame: DispatcherContext->ControlPC = %p; IP in DispatcherContext->ContextRecord = %p.\n",
-                pDispatcherContext->ControlPc, GetIP(pDispatcherContext->ContextRecord)));
-        pcfThisFrame->pRD->ControlPC = pDispatcherContext->ControlPc;
+        pCurrentTracker->InitializeCurrentContextForCrawlFrame(pcfThisFrame, pDispatcherContext, sf);
     }
+#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)    
     else
     {
-        // In second pass on ARM & ARM64:
-        //
-        // 1) EstablisherFrame (passed as 'sf' to this method) represents the SP at the time
-        //    the current managed method was invoked and thus, is the SP of the caller. This is
-        //    the value of DispatcherContext->EstablisherFrame as well.
-        // 2) DispatcherContext->ControlPC is the pc in the current managed method for which personality
-        //    routine has been invoked.
-        // 3) DispatcherContext->ContextRecord contains the context record of the current managed method
-        //    for which the personality routine is invoked.
-        // Assert that our assumption (3) above is true
+        // See the comment above the call to InitRegDisplay for this assertion.
         _ASSERTE(pDispatcherContext->ControlPc == GetIP(pDispatcherContext->ContextRecord));
 
         // Simply setup the callerSP during the second pass in the caller context.
@@ -1406,7 +1451,7 @@ void ExceptionTracker::InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pT
             pcfThisFrame->isIPadjusted = true;
         }
     }
-#endif // _TARGET_AMD64_  || _TARGET_ARM_ || _TARGET_ARM64_
+#endif // _TARGET_ARM_ || _TARGET_ARM64_
 
     pcfThisFrame->codeInfo.Init(ControlPCForEHSearch);
     
@@ -1561,9 +1606,7 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
 
     DWORD_PTR ControlPc = pDispatcherContext->ControlPc;
 
-    ExceptionTracker::InitializeCrawlFrame(&cfThisFrame, pThread, sf, &regdisp, pDispatcherContext, ControlPc, &uMethodStartPC
-                                           ARM_ARG(this)
-                                           ARM64_ARG(this));
+    ExceptionTracker::InitializeCrawlFrame(&cfThisFrame, pThread, sf, &regdisp, pDispatcherContext, ControlPc, &uMethodStartPC, this);
 
 #ifdef _TARGET_AMD64_
     uCallerSP = EECodeManager::GetCallerSp(cfThisFrame.pRD);
@@ -1753,9 +1796,7 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
         {
             // If crawlframe is dirty, it implies that it got modified as part of explicit frame processing. Thus, we shall
             // reinitialize it here.
-            ExceptionTracker::InitializeCrawlFrame(&cfThisFrame, pThread, sf, &regdisp, pDispatcherContext, ControlPc, &uMethodStartPC
-                                                   ARM_ARG(this)
-                                                   ARM64_ARG(this));
+            ExceptionTracker::InitializeCrawlFrame(&cfThisFrame, pThread, sf, &regdisp, pDispatcherContext, ControlPc, &uMethodStartPC, this);
         }
 
         if (fIsFrameLess)
