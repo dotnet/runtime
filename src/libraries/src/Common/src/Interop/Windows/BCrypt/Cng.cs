@@ -9,6 +9,8 @@ using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Runtime.InteropServices;
 
+using Internal.Cryptography;
+
 namespace Internal.NativeCrypto
 {
     internal static partial class BCryptNative
@@ -210,7 +212,7 @@ namespace Internal.NativeCrypto
         private static Exception CreateCryptographicException(NTSTATUS ntStatus)
         {
             int hr = ((int)ntStatus) | 0x01000000;
-            return new CryptographicException(hr);
+            return hr.ToCryptographicException();
         }
     }
 
