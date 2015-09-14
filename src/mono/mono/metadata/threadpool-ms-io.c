@@ -290,6 +290,7 @@ wait_callback (gint fd, gint events, gpointer user_data)
 		MonoGHashTable *states;
 		MonoMList *list = NULL;
 		gpointer k;
+		gboolean remove_fd = FALSE;
 
 		g_assert (user_data);
 		states = user_data;
@@ -311,14 +312,23 @@ wait_callback (gint fd, gint events, gpointer user_data)
 				mono_threadpool_ms_enqueue_work_item (((MonoObject*) sockares)->vtable->domain, (MonoObject*) sockares);
 		}
 
-		mono_g_hash_table_replace (states, GINT_TO_POINTER (fd), list);
+		remove_fd = (events & EVENT_ERR) == EVENT_ERR;
+		if (!remove_fd) {
+			mono_g_hash_table_replace (states, GINT_TO_POINTER (fd), list);
 
-		events = get_events (list);
+			events = get_events (list);
 
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_THREADPOOL, "io threadpool: res fd %3d, events = %2s | %2s",
-			fd, (events & EVENT_IN) ? "RD" : "..", (events & EVENT_OUT) ? "WR" : "..");
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_THREADPOOL, "io threadpool: res fd %3d, events = %2s | %2s | %2s",
+				fd, (events & EVENT_IN) ? "RD" : "..", (events & EVENT_OUT) ? "WR" : "..", (events & EVENT_ERR) ? "ERR" : "...");
 
-		threadpool_io->backend.register_fd (fd, events, FALSE);
+			threadpool_io->backend.register_fd (fd, events, FALSE);
+		} else {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_THREADPOOL, "io threadpool: err fd %d", fd);
+
+			mono_g_hash_table_remove (states, GINT_TO_POINTER (fd));
+
+			threadpool_io->backend.remove_fd (fd);
+		}
 	}
 }
 
@@ -368,8 +378,8 @@ selector_thread (gpointer data)
 
 				events = get_events (list);
 
-				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_THREADPOOL, "io threadpool: %3s fd %3d, events = %2s | %2s",
-					exists ? "mod" : "add", fd, (events & EVENT_IN) ? "RD" : "..", (events & EVENT_OUT) ? "WR" : "..");
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_THREADPOOL, "io threadpool: %3s fd %3d, events = %2s | %2s | %2s",
+					exists ? "mod" : "add", fd, (events & EVENT_IN) ? "RD" : "..", (events & EVENT_OUT) ? "WR" : "..", (events & EVENT_ERR) ? "ERR" : "...");
 
 				threadpool_io->backend.register_fd (fd, events, !exists);
 
