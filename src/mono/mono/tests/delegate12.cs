@@ -32,6 +32,11 @@ class MainClass
 		if (del2 () != "Derived method")
 			return 22;
 
+		if (!del1.Equals (del2))
+			return 30;
+		if (!del2.Equals (del1))
+			return 31;
+
 		return 0;
 	}
 
