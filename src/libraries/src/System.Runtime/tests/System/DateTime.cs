@@ -326,6 +326,49 @@ public static unsafe class DateTimeTests
         Assert.Equal(july28Formats.OrderBy(t => t), actualJuly28Formats.OrderBy(t => t));
     }
 
+
+    [Theory]
+    [InlineData("fi-FI")]
+    [InlineData("nb-NO")]
+    [InlineData("nb-SJ")]
+    public static void TestDateTimeParsingWithSpecialCultures(string cultureName)
+    {
+        // Test DateTime parsing with cultures which has the date separator and time separator are same
+
+        CultureInfo ci;
+        try
+        {
+            ci = new CultureInfo(cultureName);
+        }
+        catch (CultureNotFoundException)
+        {
+            // ignore un-supported culture in current platform
+            return;
+        }
+
+        DateTime date = DateTime.Now;
+
+        // truncate the milliseconds as it is not showing in time formatting patterns
+        date = new DateTime(date.Year, date.Month, date.Day, date.Hour, date.Minute, date.Second);
+        string dateString = date.ToString(ci.DateTimeFormat.ShortDatePattern, ci);
+
+        DateTime parsedDate;
+        Assert.True(DateTime.TryParse(dateString, ci, DateTimeStyles.None, out parsedDate));
+        Assert.Equal(date.Date, parsedDate);
+
+        dateString = date.ToString(ci.DateTimeFormat.LongDatePattern, ci);
+        Assert.True(DateTime.TryParse(dateString, ci, DateTimeStyles.None, out parsedDate));
+        Assert.Equal(date.Date, parsedDate);
+
+        dateString = date.ToString(ci.DateTimeFormat.FullDateTimePattern, ci);
+        Assert.True(DateTime.TryParse(dateString, ci, DateTimeStyles.None, out parsedDate));
+        Assert.Equal(date, parsedDate);
+
+        dateString = date.ToString(ci.DateTimeFormat.LongTimePattern, ci);
+        Assert.True(DateTime.TryParse(dateString, ci, DateTimeStyles.None, out parsedDate));
+        Assert.Equal(date.TimeOfDay, parsedDate.TimeOfDay);
+    }
+
     [Fact]
     public static void TestGetDateTimeFormats_FormatSpecifier_InvalidFormat()
     {
