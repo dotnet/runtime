@@ -131,8 +131,7 @@ C_ASSERT (HANDLE_HANDLES_PER_MASK * 2 == HANDLE_HANDLES_PER_BLOCK);
 /*
  * we need byte packing for the handle table layout to work
  */
-#include <pshpack1.h>
-
+#pragma pack(push,1)
 
 
 /*
@@ -306,7 +305,7 @@ typedef SPTR(struct TableSegment) PTR_TableSegment;
 /*
  * restore default packing
  */
-#include <poppack.h>
+#pragma pack(pop)
 
 
 /*
