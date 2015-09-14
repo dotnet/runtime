@@ -327,6 +327,54 @@ public static unsafe class DateTimeTests
     }
 
     [Fact]
+    public static void TestDateTimeParsingWithSpecialCultures()
+    {
+        // Test DateTime parsing with cultures which has the date separator and time separator are same
+        string[] cultureNames = new string[]
+        {
+            "fi-FI",
+            "nb-NO",
+            "nb-SJ"
+        };
+
+        foreach (string s in cultureNames)
+        {
+            CultureInfo ci;
+            try
+            {
+                ci = new CultureInfo(s);
+            }
+            catch (CultureNotFoundException)
+            {
+                // ignore un-supported culture in current platform
+                continue;
+            }
+
+            DateTime date = DateTime.Now;
+
+            // truncate the milliseconds as it is not showing in time formatting patterns
+            date = new DateTime(date.Year, date.Month, date.Day, date.Hour, date.Minute, date.Second);
+            string dateString = date.ToString(ci.DateTimeFormat.ShortDatePattern, ci);
+
+            DateTime parsedDate;
+            Assert.True(DateTime.TryParse(dateString, ci, DateTimeStyles.None, out parsedDate));
+            Assert.Equal(date.Date, parsedDate);
+
+            dateString = date.ToString(ci.DateTimeFormat.LongDatePattern, ci);
+            Assert.True(DateTime.TryParse(dateString, ci, DateTimeStyles.None, out parsedDate));
+            Assert.Equal(date.Date, parsedDate);
+
+            dateString = date.ToString(ci.DateTimeFormat.FullDateTimePattern, ci);
+            Assert.True(DateTime.TryParse(dateString, ci, DateTimeStyles.None, out parsedDate));
+            Assert.Equal(date, parsedDate);
+
+            dateString = date.ToString(ci.DateTimeFormat.LongTimePattern, ci);
+            Assert.True(DateTime.TryParse(dateString, ci, DateTimeStyles.None, out parsedDate));
+            Assert.Equal(date.TimeOfDay, parsedDate.TimeOfDay);
+        }
+    }
+
+    [Fact]
     public static void TestGetDateTimeFormats_FormatSpecifier_InvalidFormat()
     {
         DateTime july28 = new DateTime(2009, 7, 28, 5, 23, 15);
