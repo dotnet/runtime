@@ -162,7 +162,7 @@ namespace System.IO
                 if (error == -1)
                 {
                     path = null;
-                    return false;
+                    return true;
                 }
 
                 // If the call failed because it was interrupted, try again.

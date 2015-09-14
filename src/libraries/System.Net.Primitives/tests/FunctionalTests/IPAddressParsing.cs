@@ -82,6 +82,7 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.Throws<FormatException>(() => { IPAddress.Parse("Fe08::/64"); });
         }
 
+        [ActiveIssue(3213, PlatformID.OSX)]
         [Fact]
         public void ParseIPv6_ScopeId_Success()
         {
