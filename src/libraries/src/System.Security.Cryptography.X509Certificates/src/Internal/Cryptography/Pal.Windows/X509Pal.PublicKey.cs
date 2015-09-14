@@ -36,6 +36,7 @@ namespace Internal.Cryptography.Pal
                         return new RSACng(cngKey);
                     }
 
+#if !NETNATIVE
                 case AlgId.CALG_DSS_SIGN:
                     {
                         byte[] keyBlob = ConstructDSSPublicKeyCspBlob(encodedKeyValue, encodedParameters);
@@ -43,6 +44,7 @@ namespace Internal.Cryptography.Pal
                         dsa.ImportCspBlob(keyBlob);
                         return dsa;
                     }
+#endif
 
                 default:
                     throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);

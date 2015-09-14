@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
@@ -39,9 +40,17 @@ namespace Internal.Cryptography.Pal
             {
                 // ProviderType being non-zero signifies that this is a CAPI key.
 
+#if NETNATIVE
+                // In .NET Native (UWP) we don't have access to CAPI, so it's CNG-or-nothing.
+                // But we don't expect to get here, so it shouldn't be a problem.
+
+                Debug.Fail("A CAPI provider type code was specified");
+                return null;
+#else
                 // We never want to stomp over certificate private keys.
                 cspParameters.Flags |= CspProviderFlags.UseExistingKey;
                 return new RSACryptoServiceProvider(cspParameters);
+#endif
             }
         }
 
