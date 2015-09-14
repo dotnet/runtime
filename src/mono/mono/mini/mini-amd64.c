@@ -501,6 +501,9 @@ typedef enum {
 	ArgOnStack,
 	ArgValuetypeInReg,
 	ArgValuetypeAddrInIReg,
+	/* gsharedvt argument passed by addr */
+	ArgGSharedVtInReg,
+	ArgGSharedVtOnStack,
 	ArgNone /* only in pair_storage */
 } ArgStorage;
 
@@ -523,7 +526,6 @@ typedef struct {
 	guint32 reg_usage;
 	guint32 freg_usage;
 	gboolean need_stack_align;
-	gboolean vtype_retaddr;
 	/* The index of the vret arg in the argument list */
 	int vret_arg_index;
 	ArgInfo ret;
@@ -801,7 +803,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 		/* Allways pass in memory */
 		ainfo->offset = *stack_size;
 		*stack_size += ALIGN_TO (size, 8);
-		ainfo->storage = ArgOnStack;
+		ainfo->storage = is_return ? ArgValuetypeAddrInIReg : ArgOnStack;
 
 		g_free (fields);
 		return;
@@ -848,7 +850,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 		if (info->native_size > 16) {
 			ainfo->offset = *stack_size;
 			*stack_size += ALIGN_TO (info->native_size, 8);
-			ainfo->storage = ArgOnStack;
+			ainfo->storage = is_return ? ArgValuetypeAddrInIReg : ArgOnStack;
 
 			g_free (fields);
 			return;
@@ -859,7 +861,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 			break;
 		default:
 			if (is_return) {
-				ainfo->storage = ArgOnStack;
+				ainfo->storage = ArgValuetypeAddrInIReg;
 				ainfo->offset = *stack_size;
 				*stack_size += ALIGN_TO (info->native_size, 8);
 			}
@@ -985,7 +987,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 				*stack_size += ALIGN_TO (info->native_size, 8);
 			else
 				*stack_size += nquads * sizeof(mgreg_t);
-			ainfo->storage = ArgOnStack;
+			ainfo->storage = is_return ? ArgValuetypeAddrInIReg : ArgOnStack;
 		}
 	}
 }
@@ -1062,6 +1064,10 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			cinfo->ret.reg = AMD64_RAX;
 			break;
 		}
+		if (mini_is_gsharedvt_type (ret_type)) {
+			cinfo->ret.storage = ArgValuetypeAddrInIReg;
+			break;
+		}
 		/* fall through */
 #if defined( __native_client_codegen__ )
 	case MONO_TYPE_TYPEDBYREF:
@@ -1070,18 +1076,20 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		guint32 tmp_gr = 0, tmp_fr = 0, tmp_stacksize = 0;
 
 		add_valuetype (sig, &cinfo->ret, ret_type, TRUE, &tmp_gr, &tmp_fr, &tmp_stacksize);
-		if (cinfo->ret.storage == ArgOnStack) {
-			cinfo->vtype_retaddr = TRUE;
-			/* The caller passes the address where the value is stored */
-		}
+		g_assert (cinfo->ret.storage != ArgInIReg);
 		break;
 	}
 #if !defined( __native_client_codegen__ )
 	case MONO_TYPE_TYPEDBYREF:
 		/* Same as a valuetype with size 24 */
-		cinfo->vtype_retaddr = TRUE;
+		cinfo->ret.storage = ArgValuetypeAddrInIReg;
 		break;
 #endif
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
+		g_assert (mini_is_gsharedvt_type (ret_type));
+		cinfo->ret.storage = ArgValuetypeAddrInIReg;
+		break;
 	case MONO_TYPE_VOID:
 		break;
 	default:
@@ -1096,7 +1104,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 	 * are sometimes made using calli without sig->hasthis set, like in the delegate
 	 * invoke wrappers.
 	 */
-	if (cinfo->vtype_retaddr && !is_pinvoke && (sig->hasthis || (sig->param_count > 0 && MONO_TYPE_IS_REFERENCE (mini_get_underlying_type (sig->params [0]))))) {
+	if (cinfo->ret.storage == ArgValuetypeAddrInIReg && !is_pinvoke && (sig->hasthis || (sig->param_count > 0 && MONO_TYPE_IS_REFERENCE (mini_get_underlying_type (sig->params [0]))))) {
 		if (sig->hasthis) {
 			add_general (&gr, &stack_size, cinfo->args + 0);
 		} else {
@@ -1104,14 +1112,17 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			pstart = 1;
 		}
 		add_general (&gr, &stack_size, &cinfo->ret);
+		cinfo->ret.storage = ArgValuetypeAddrInIReg;
 		cinfo->vret_arg_index = 1;
 	} else {
 		/* this */
 		if (sig->hasthis)
 			add_general (&gr, &stack_size, cinfo->args + 0);
 
-		if (cinfo->vtype_retaddr)
+		if (cinfo->ret.storage == ArgValuetypeAddrInIReg) {
 			add_general (&gr, &stack_size, &cinfo->ret);
+			cinfo->ret.storage = ArgValuetypeAddrInIReg;
+		}
 	}
 
 	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (n == 0)) {
@@ -1177,6 +1188,15 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 				add_general (&gr, &stack_size, ainfo);
 				break;
 			}
+			if (mini_is_gsharedvt_type (ptype)) {
+				/* gsharedvt arguments are passed by ref */
+				add_general (&gr, &stack_size, ainfo);
+				if (ainfo->storage == ArgInIReg)
+					ainfo->storage = ArgGSharedVtInReg;
+				else
+					ainfo->storage = ArgGSharedVtOnStack;
+				break;
+			}
 			/* fall through */
 		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_TYPEDBYREF:
@@ -1192,6 +1212,16 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			break;
 		case MONO_TYPE_R8:
 			add_float (&fr, &stack_size, ainfo, TRUE);
+			break;
+		case MONO_TYPE_VAR:
+		case MONO_TYPE_MVAR:
+			/* gsharedvt arguments are passed by ref */
+			g_assert (mini_is_gsharedvt_type (ptype));
+			add_general (&gr, &stack_size, ainfo);
+			if (ainfo->storage == ArgInIReg)
+				ainfo->storage = ArgGSharedVtInReg;
+			else
+				ainfo->storage = ArgGSharedVtOnStack;
 			break;
 		default:
 			g_assert_not_reached ();
@@ -1654,7 +1684,7 @@ mono_arch_fill_argument_info (MonoCompile *cfg)
 		case ArgInIReg:
 		case ArgInFloatSSEReg:
 		case ArgInDoubleSSEReg:
-			if ((MONO_TYPE_ISSTRUCT (sig_ret) && !mono_class_from_mono_type (sig_ret)->enumtype) || ((sig_ret->type == MONO_TYPE_TYPEDBYREF) && cinfo->vtype_retaddr)) {
+			if ((MONO_TYPE_ISSTRUCT (sig_ret) && !mono_class_from_mono_type (sig_ret)->enumtype) || ((sig_ret->type == MONO_TYPE_TYPEDBYREF) && cinfo->ret.storage == ArgValuetypeAddrInIReg)) {
 				cfg->vret_addr->opcode = OP_REGVAR;
 				cfg->vret_addr->inst_c0 = cinfo->ret.reg;
 			}
@@ -1764,25 +1794,23 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		case ArgInIReg:
 		case ArgInFloatSSEReg:
 		case ArgInDoubleSSEReg:
-			if ((MONO_TYPE_ISSTRUCT (sig_ret) && !mono_class_from_mono_type (sig_ret)->enumtype) || ((sig_ret->type == MONO_TYPE_TYPEDBYREF) && cinfo->vtype_retaddr)) {
-				/* The register is volatile */
-				cfg->vret_addr->opcode = OP_REGOFFSET;
-				cfg->vret_addr->inst_basereg = cfg->frame_reg;
-				if (cfg->arch.omit_fp) {
-					cfg->vret_addr->inst_offset = offset;
-					offset += 8;
-				} else {
-					offset += 8;
-					cfg->vret_addr->inst_offset = -offset;
-				}
-				if (G_UNLIKELY (cfg->verbose_level > 1)) {
-					printf ("vret_addr =");
-					mono_print_ins (cfg->vret_addr);
-				}
+			cfg->ret->opcode = OP_REGVAR;
+			cfg->ret->inst_c0 = cinfo->ret.reg;
+			break;
+		case ArgValuetypeAddrInIReg:
+			/* The register is volatile */
+			cfg->vret_addr->opcode = OP_REGOFFSET;
+			cfg->vret_addr->inst_basereg = cfg->frame_reg;
+			if (cfg->arch.omit_fp) {
+				cfg->vret_addr->inst_offset = offset;
+				offset += 8;
+			} else {
+				offset += 8;
+				cfg->vret_addr->inst_offset = -offset;
 			}
-			else {
-				cfg->ret->opcode = OP_REGVAR;
-				cfg->ret->inst_c0 = cinfo->ret.reg;
+			if (G_UNLIKELY (cfg->verbose_level > 1)) {
+				printf ("vret_addr =");
+				mono_print_ins (cfg->vret_addr);
 			}
 			break;
 		case ArgValuetypeInReg:
@@ -1860,7 +1888,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			 * are volatile across calls.
 			 * FIXME: Optimize this.
 			 */
-			if ((ainfo->storage == ArgInIReg) || (ainfo->storage == ArgInFloatSSEReg) || (ainfo->storage == ArgInDoubleSSEReg) || (ainfo->storage == ArgValuetypeInReg))
+			if ((ainfo->storage == ArgInIReg) || (ainfo->storage == ArgInFloatSSEReg) || (ainfo->storage == ArgInDoubleSSEReg) || (ainfo->storage == ArgValuetypeInReg) || (ainfo->storage == ArgGSharedVtInReg))
 				inreg = FALSE;
 
 			ins->opcode = OP_REGOFFSET;
@@ -1869,12 +1897,14 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			case ArgInIReg:
 			case ArgInFloatSSEReg:
 			case ArgInDoubleSSEReg:
+			case ArgGSharedVtInReg:
 				if (inreg) {
 					ins->opcode = OP_REGVAR;
 					ins->dreg = ainfo->reg;
 				}
 				break;
 			case ArgOnStack:
+			case ArgGSharedVtOnStack:
 				g_assert (!cfg->arch.omit_fp);
 				ins->opcode = OP_REGOFFSET;
 				ins->inst_basereg = cfg->frame_reg;
@@ -1947,7 +1977,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 		cfg->ret_var_is_local = TRUE;
 
 	sig_ret = mini_get_underlying_type (sig->ret);
-	if ((cinfo->ret.storage != ArgValuetypeInReg) && MONO_TYPE_ISSTRUCT (sig_ret)) {
+	if (cinfo->ret.storage == ArgValuetypeAddrInIReg) {
 		cfg->vret_addr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_ARG);
 		if (G_UNLIKELY (cfg->verbose_level > 1)) {
 			printf ("vret_addr = ");
@@ -2078,6 +2108,9 @@ arg_storage_to_llvm_arg_storage (MonoCompile *cfg, ArgStorage storage)
 		return LLVMArgInIReg;
 	case ArgNone:
 		return LLVMArgNone;
+	case ArgGSharedVtInReg:
+	case ArgGSharedVtOnStack:
+		return LLVMArgGSharedVt;
 	default:
 		g_assert_not_reached ();
 		return LLVMArgNone;
@@ -2166,6 +2199,10 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 			linfo->args [i].storage = LLVMArgVtypeInReg;
 			for (j = 0; j < 2; ++j)
 				linfo->args [i].pair_storage [j] = arg_storage_to_llvm_arg_storage (cfg, ainfo->pair_storage [j]);
+			break;
+		case ArgGSharedVtInReg:
+		case ArgGSharedVtOnStack:
+			linfo->args [i].storage = LLVMArgGSharedVt;
 			break;
 		default:
 			cfg->exception_message = g_strdup ("ainfo->storage");
@@ -2273,6 +2310,8 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		case ArgOnStack:
 		case ArgValuetypeInReg:
 		case ArgValuetypeAddrInIReg:
+		case ArgGSharedVtInReg:
+		case ArgGSharedVtOnStack:
 			if (ainfo->storage == ArgOnStack && call->tail_call) {
 				MonoInst *call_inst = (MonoInst*)call;
 				cfg->args [i]->flags |= MONO_INST_VOLATILE;
@@ -2637,7 +2676,7 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 			pindex = 1;
 	}
 
-	if (dinfo->cinfo->vtype_retaddr)
+	if (dinfo->cinfo->ret.storage == ArgValuetypeAddrInIReg)
 		p->regs [greg ++] = PTR_TO_GREG(ret);
 
 	for (i = pindex; i < sig->param_count; i++) {
@@ -2783,7 +2822,7 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 			/* Fall through */
 		}
 	case MONO_TYPE_VALUETYPE:
-		if (dinfo->cinfo->vtype_retaddr) {
+		if (dinfo->cinfo->ret.storage == ArgValuetypeAddrInIReg) {
 			/* Nothing to do */
 		} else {
 			ArgInfo *ainfo = &dinfo->cinfo->ret;
@@ -8642,3 +8681,9 @@ mono_arch_opcode_supported (int opcode)
 		return FALSE;
 	}
 }
+
+#if defined(ENABLE_GSHAREDVT)
+
+#include "../../../mono-extensions/mono/mini/mini-amd64-gsharedvt.c"
+
+#endif /* !MONOTOUCH */
