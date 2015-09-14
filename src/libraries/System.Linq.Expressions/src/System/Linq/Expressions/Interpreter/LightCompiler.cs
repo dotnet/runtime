@@ -1215,6 +1215,7 @@ namespace System.Linq.Expressions.Interpreter
                 _instructions.EmitBranch(computed);
 
                 _instructions.MarkLabel(notNull);
+                _instructions.EmitLoadLocal(temp.Index);
                 _instructions.EmitCall(node.Method);
 
                 _instructions.MarkLabel(computed);
