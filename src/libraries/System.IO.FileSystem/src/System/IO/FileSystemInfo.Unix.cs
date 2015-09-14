@@ -170,7 +170,7 @@ namespace System.IO
             {
                 EnsureStatInitialized();
                 return (_fileStatus.Flags & Interop.Sys.FileStatusFlags.HasBirthTime) != 0 ?
-                    DateTimeOffset.FromUnixTimeSeconds(_fileStatus.BirthTime) :
+                    DateTimeOffset.FromUnixTimeSeconds(_fileStatus.BirthTime).ToLocalTime() :
                     default(DateTimeOffset);
             }
             set
