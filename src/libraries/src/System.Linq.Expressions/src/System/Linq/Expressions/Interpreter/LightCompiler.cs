@@ -1191,14 +1191,8 @@ namespace System.Linq.Expressions.Interpreter
                         Compile(node.Operand);
                         break;
                     case ExpressionType.IsTrue:
-                        Compile(node.Operand);
-                        _instructions.EmitLoad(true);
-                        _instructions.EmitEqual(typeof(bool));
-                        break;
                     case ExpressionType.IsFalse:
-                        Compile(node.Operand);
-                        _instructions.EmitLoad(false);
-                        _instructions.EmitEqual(typeof(bool));
+                        EmitUnaryBoolCheck(node);
                         break;
                     default:
                         throw new PlatformNotSupportedException(SR.Format(SR.UnsupportedExpressionType, node.NodeType));
@@ -1236,6 +1230,42 @@ namespace System.Linq.Expressions.Interpreter
             else
             {
                 _instructions.EmitCall(node.Method);
+            }
+        }
+
+        private void EmitUnaryBoolCheck(UnaryExpression node)
+        {
+            Compile(node.Operand);
+            if (node.IsLifted)
+            {
+                LocalDefinition temp = _locals.DefineLocal(
+                    Expression.Parameter(node.Operand.Type),
+                    _instructions.Count
+                );
+                var notNull = _instructions.MakeLabel();
+                var computed = _instructions.MakeLabel();
+
+                _instructions.EmitStoreLocal(temp.Index);
+                _instructions.EmitLoadLocal(temp.Index);
+                _instructions.EmitLoad(null, typeof(object));
+                _instructions.EmitEqual(typeof(object));
+                _instructions.EmitBranchFalse(notNull);
+
+                _instructions.EmitLoad(null, typeof(object));
+                _instructions.EmitBranch(computed);
+
+                _instructions.MarkLabel(notNull);
+                _instructions.EmitLoadLocal(temp.Index);
+                _instructions.EmitLoad(node.NodeType == ExpressionType.IsTrue);
+                _instructions.EmitEqual(typeof(bool));
+
+                _instructions.MarkLabel(computed);
+                _locals.UndefineLocal(temp, _instructions.Count);
+            }
+            else
+            {
+                _instructions.EmitLoad(node.NodeType == ExpressionType.IsTrue);
+                _instructions.EmitEqual(typeof(bool));
             }
         }
 
