@@ -220,6 +220,9 @@ typedef struct MonoCompileArch {
 #define PARAM_REGS 6
 #endif
 
+typedef struct {
+} GSharedVtCallInfo;
+
 /* Structure used by the sequence points in AOTed code */
 typedef struct {
 	gpointer ss_tramp_addr;
