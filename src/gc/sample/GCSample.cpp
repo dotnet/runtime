@@ -234,5 +234,7 @@ int main(int argc, char* argv[])
     // Verify that the weak handle got cleared by the GC
     assert(ObjectFromHandle(ohWeak) == NULL);
 
+    printf("Done\n");
+
     return 0;
 }

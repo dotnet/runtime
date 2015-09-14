@@ -10,6 +10,11 @@
 #define FEATURE_REDHAWK 1
 #define FEATURE_CONSERVATIVE_GC 1
 
+#ifndef _MSC_VER
+#define __stdcall
+#define __forceinline inline
+#endif
+
 #ifndef _INC_WINDOWS
 
 // -----------------------------------------------------------------------------------------------------------
@@ -99,7 +104,7 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #define E_INVALIDARG            0x80070057
 
 #define NOERROR                 0x0
-#define ERROR_TIMEOUT             1460
+#define ERROR_TIMEOUT           1460
 
 #define TRUE true
 #define FALSE false
@@ -129,6 +134,13 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 
 #define INVALID_HANDLE_VALUE    ((HANDLE)-1)
 
+#ifndef WIN32
+#define  _vsnprintf vsnprintf
+#define sprintf_s snprintf
+#endif
+
+#ifdef WIN32
+
 #pragma pack(push, 8)
 
 typedef struct _RTL_CRITICAL_SECTION {
@@ -148,6 +160,14 @@ typedef struct _RTL_CRITICAL_SECTION {
 
 #pragma pack(pop)
 
+#else
+
+typedef struct _RTL_CRITICAL_SECTION {
+    pthread_mutex_t mutex;
+} CRITICAL_SECTION, RTL_CRITICAL_SECTION, *PRTL_CRITICAL_SECTION;
+
+#endif
+
 typedef struct _MEMORYSTATUSEX {
   DWORD     dwLength;
   DWORD     dwMemoryLoad;
@@ -160,10 +180,10 @@ typedef struct _MEMORYSTATUSEX {
   DWORDLONG ullAvailExtendedVirtual;
 } MEMORYSTATUSEX, *LPMEMORYSTATUSEX;
 
-typedef DWORD (__stdcall *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
-
 #define WINBASEAPI extern "C"
 #define WINAPI __stdcall
+
+typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(PVOID lpThreadParameter);
 
 WINBASEAPI
 void 
@@ -271,14 +291,37 @@ WINAPI
 FlushFileBuffers(
          HANDLE hFile);
 
+#ifdef _MSC_VER
+
 extern "C" VOID
 _mm_pause (
     VOID
     );
 
+extern "C" VOID
+_mm_mfence (
+    VOID
+    );
+
 #pragma intrinsic(_mm_pause)
+#pragma intrinsic(_mm_mfence)
 
 #define YieldProcessor _mm_pause
+#define MemoryBarrier _mm_mfence
+
+#else // _MSC_VER
+
+WINBASEAPI 
+VOID
+WINAPI
+YieldProcessor();
+
+WINBASEAPI
+VOID
+WINAPI
+MemoryBarrier();
+
+#endif // _MSC_VER
 
 #endif // _INC_WINDOWS
 
@@ -1003,7 +1046,7 @@ public:
         GCSTRESS_UNIQUE             = 16,   // GC only on a unique stack trace
     };
    
-    int     GetHeapVerifyLevel();
+    int     GetHeapVerifyLevel()                  { return 0; }
     bool    IsHeapVerifyEnabled()                 { return GetHeapVerifyLevel() != 0; }
 
     GCStressFlags GetGCStressLevel()        const { return GCSTRESS_NONE; }
@@ -1066,7 +1109,9 @@ public:
 
         case Config_COUNT:
         default:
+#ifdef _MSC_VER
 #pragma warning(suppress:4127) // Constant conditional expression in ASSERT below
+#endif
             ASSERT(!"Unknown config value type");
             return 0;
         }
@@ -1169,7 +1214,6 @@ public:
     bool Set();
     bool Reset();
     uint32_t Wait(uint32_t dwMilliseconds, bool bAlertable);
-    HANDLE GetOSEvent();
 
 private:
     HANDLE  m_hEvent;
@@ -1270,9 +1314,9 @@ public:
     }
 };
 
-inline bool FitsInU1(unsigned __int64 val)
+inline bool FitsInU1(uint64_t val)
 {
-    return val == (unsigned __int64)(unsigned __int8)val;
+    return val == (uint64_t)(uint8_t)val;
 }
 
 // -----------------------------------------------------------------------------------------------------------

@@ -9441,7 +9441,7 @@ HRESULT gc_heap::initialize_gc (size_t segment_size,
         // GCLogFileSize in MBs.
         gc_log_file_size = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_GCLogFileSize);
 
-        if (gc_log_file_size < 0 || gc_log_file_size > 500)
+        if (gc_log_file_size > 500)
         {
             CloseHandle (gc_log);
             return E_FAIL;

@@ -183,13 +183,6 @@ uint32_t CLREventStatic::Wait(uint32_t dwMilliseconds, bool bAlertable)
     return result;
 }
 
-HANDLE CLREventStatic::GetOSEvent()
-{
-    if (!m_fInitialized)
-        return INVALID_HANDLE_VALUE;
-    return m_hEvent;
-}
-
 bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t dwSwitchCount)
 {
     SwitchToThread();
