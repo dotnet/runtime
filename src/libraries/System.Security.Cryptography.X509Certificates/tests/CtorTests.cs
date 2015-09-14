@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -106,7 +107,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void InvalidCertificateBlob()
         {
-            Assert.Throws<CryptographicException>(() => new X509Certificate2(new byte[] { 0x01, 0x02, 0x03 }));
+            CryptographicException ex = Assert.ThrowsAny<CryptographicException>(
+                () => new X509Certificate2(new byte[] { 0x01, 0x02, 0x03 }));
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Assert.Equal(unchecked((int)0x80092009), ex.HResult);
+                // TODO (3233): Test that Message is also set correctly
+                //Assert.Equal("Cannot find the requested object.", ex.Message);
+            }
+            else // Any Unix
+            {
+                Assert.Equal(0x0D07803A, ex.HResult);
+                Assert.Equal("error:0D07803A:asn1 encoding routines:ASN1_ITEM_EX_D2I:nested asn1 error", ex.Message);
+            }
         }
     }
 }
