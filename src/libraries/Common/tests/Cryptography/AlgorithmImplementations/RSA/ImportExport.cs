@@ -192,7 +192,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             using (RSA rsa = RSAFactory.Create())
             {
                 rsa.ImportParameters(imported);
-                Assert.Throws<CryptographicException>(() => rsa.ExportParameters(true));
+                Assert.ThrowsAny<CryptographicException>(() => rsa.ExportParameters(true));
             }
         }
 
@@ -206,7 +206,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             using (RSA rsa = RSAFactory.Create())
             {
-                Assert.Throws<CryptographicException>(() => rsa.ImportParameters(imported));
+                Assert.ThrowsAny<CryptographicException>(() => rsa.ImportParameters(imported));
             }
         }
 
@@ -220,7 +220,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             using (RSA rsa = RSAFactory.Create())
             {
-                Assert.Throws<CryptographicException>(() => rsa.ImportParameters(imported));
+                Assert.ThrowsAny<CryptographicException>(() => rsa.ImportParameters(imported));
             }
         }
 
@@ -234,7 +234,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             using (RSA rsa = RSAFactory.Create())
             {
-                Assert.Throws<CryptographicException>(() => rsa.ImportParameters(imported));
+                Assert.ThrowsAny<CryptographicException>(() => rsa.ImportParameters(imported));
             }
         }
 

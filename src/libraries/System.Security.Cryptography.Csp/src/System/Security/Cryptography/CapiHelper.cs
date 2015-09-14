@@ -885,7 +885,7 @@ namespace Internal.NativeCrypto
             if (!Interop.CryptImportKey(saveProvHandle, keyBlob, keyBlob.Length, SafeKeyHandle.InvalidHandle, dwCapiFlags, out hKey))
             {
                 int hr = Marshal.GetHRForLastWin32Error();
-                throw new CryptographicException(hr);
+                throw hr.ToCryptographicException();
             }
 
             safeKeyHandle = hKey;
@@ -933,10 +933,10 @@ namespace Internal.NativeCrypto
 
             // Validate the RSA structure first.
             if (rsaParameters.Modulus == null)
-                throw new CryptographicException(NTE_BAD_DATA);
+                throw NTE_BAD_DATA.ToCryptographicException();
 
             if (rsaParameters.Exponent == null || rsaParameters.Exponent.Length > 4)
-                throw new CryptographicException(NTE_BAD_DATA);
+                throw NTE_BAD_DATA.ToCryptographicException();
 
             int modulusLength = rsaParameters.Modulus.Length;
             int halfModulusLength = (modulusLength + 1) / 2;
@@ -945,22 +945,22 @@ namespace Internal.NativeCrypto
             if (rsaParameters.P != null)
             {
                 if (rsaParameters.P.Length != halfModulusLength)
-                    throw new CryptographicException(NTE_BAD_DATA);
+                    throw NTE_BAD_DATA.ToCryptographicException();
 
                 if (rsaParameters.Q == null || rsaParameters.Q.Length != halfModulusLength)
-                    throw new CryptographicException(NTE_BAD_DATA);
+                    throw NTE_BAD_DATA.ToCryptographicException();
 
                 if (rsaParameters.DP == null || rsaParameters.DP.Length != halfModulusLength)
-                    throw new CryptographicException(NTE_BAD_DATA);
+                    throw NTE_BAD_DATA.ToCryptographicException();
 
                 if (rsaParameters.DQ == null || rsaParameters.DQ.Length != halfModulusLength)
-                    throw new CryptographicException(NTE_BAD_DATA);
+                    throw NTE_BAD_DATA.ToCryptographicException();
 
                 if (rsaParameters.InverseQ == null || rsaParameters.InverseQ.Length != halfModulusLength)
-                    throw new CryptographicException(NTE_BAD_DATA);
+                    throw NTE_BAD_DATA.ToCryptographicException();
 
                 if (rsaParameters.D == null || rsaParameters.D.Length != modulusLength)
-                    throw new CryptographicException(NTE_BAD_DATA);
+                    throw NTE_BAD_DATA.ToCryptographicException();
             }
 
             bool isPrivate = (rsaParameters.P != null && rsaParameters.P.Length != 0);
@@ -1057,7 +1057,7 @@ namespace Internal.NativeCrypto
             {
                 // For compat reasons, we throw an E_FAIL CrytoException if CAPI returns a smaller blob than expected.
                 // For compat reasons, we ignore the extra bits if the CAPI returns a larger blob than expected.
-                throw new CryptographicException(E_FAIL);
+                throw E_FAIL.ToCryptographicException();
             }
         }
 
@@ -1248,14 +1248,14 @@ namespace Internal.NativeCrypto
                 if (!Interop.CryptSignHash(hHash, (KeySpec)keyNumber, null, CryptSignAndVerifyHashFlags.None, null, ref cbSignature))
                 {
                     int hr = Marshal.GetHRForLastWin32Error();
-                    throw new CryptographicException(hr);
+                    throw hr.ToCryptographicException();
                 }
 
                 byte[] signature = new byte[cbSignature];
                 if (!Interop.CryptSignHash(hHash, (KeySpec)keyNumber, null, CryptSignAndVerifyHashFlags.None, signature, ref cbSignature))
                 {
                     int hr = Marshal.GetHRForLastWin32Error();
-                    throw new CryptographicException(hr);
+                    throw hr.ToCryptographicException();
                 }
 
                 switch (calgKey)
@@ -1309,7 +1309,7 @@ namespace Internal.NativeCrypto
             if (!Interop.CryptCreateHash(hProv, calgHash, SafeKeyHandle.InvalidHandle, CryptCreateHashFlags.None, out hHash))
             {
                 int hr = Marshal.GetHRForLastWin32Error();
-                throw new CryptographicException(hr);
+                throw hr.ToCryptographicException();
             }
 
             try
@@ -1319,15 +1319,15 @@ namespace Internal.NativeCrypto
                 if (!Interop.CryptGetHashParam(hHash, CryptHashProperty.HP_HASHSIZE, out dwHashSize, ref cbHashSize, 0))
                 {
                     int hr = Marshal.GetHRForLastWin32Error();
-                    throw new CryptographicException(hr);
+                    throw hr.ToCryptographicException();
                 }
                 if (dwHashSize != hash.Length)
-                    throw new CryptographicException(unchecked((int)CryptKeyError.NTE_BAD_HASH));
+                    throw unchecked((int)CryptKeyError.NTE_BAD_HASH).ToCryptographicException();
 
                 if (!Interop.CryptSetHashParam(hHash, CryptHashProperty.HP_HASHVAL, hash, 0))
                 {
                     int hr = Marshal.GetHRForLastWin32Error();
-                    throw new CryptographicException(hr);
+                    throw hr.ToCryptographicException();
                 }
 
                 SafeHashHandle hHashPermanent = hHash;
