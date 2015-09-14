@@ -43,7 +43,7 @@ namespace Internal.Cryptography
 
         public static CryptographicException ToCryptographicException(this ErrorCode errorCode)
         {
-            return new CryptographicException((int)errorCode);
+            return ((int)errorCode).ToCryptographicException();
         }
 
         public static SafeNCryptProviderHandle OpenStorageProvider(this CngProvider provider)

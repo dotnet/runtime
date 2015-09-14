@@ -118,6 +118,12 @@
     <Compile Include="$(CommonPath)\Internal\Cryptography\HashProviderCng.cs">
       <Link>Internal\Cryptography\HashProviderCng.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Internal\Cryptography\Windows\CryptoThrowHelper.cs">
+      <Link>Internal\Cryptography\Windows\CryptoThrowHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
+      <Link>Internal\Windows\mincore\Interop.FormatMessage.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\Security\Cryptography\RNGCryptoServiceProvider.Unix.cs" />

@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.Cng.Tests
         {
             using (CngKey key = CngKey.Import(TestData.Key_ECDiffieHellmanP256, CngKeyBlobFormat.GenericPublicBlob))
             {
-                Assert.Throws<CryptographicException>(() => key.GetProperty("DOES NOT EXIST", CngPropertyOptions.CustomProperty));
+                Assert.ThrowsAny<CryptographicException>(() => key.GetProperty("DOES NOT EXIST", CngPropertyOptions.CustomProperty));
             }
         }
 
@@ -42,7 +42,7 @@ namespace System.Security.Cryptography.Cng.Tests
             {
                 const string propertyName = "CustomNullProperty";
                 CngProperty p = new CngProperty(propertyName, null, CngPropertyOptions.CustomProperty);
-                Assert.Throws<CryptographicException>(() => key.SetProperty(p));
+                Assert.ThrowsAny<CryptographicException>(() => key.SetProperty(p));
             }
         }
 
