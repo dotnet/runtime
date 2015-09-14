@@ -2152,7 +2152,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 			linfo->ret.pair_storage [j] = arg_storage_to_llvm_arg_storage (cfg, cinfo->ret.pair_storage [j]);
 	}
 
-	if (MONO_TYPE_ISSTRUCT (sig_ret) && cinfo->ret.storage == ArgInIReg) {
+	if (cinfo->ret.storage == ArgValuetypeAddrInIReg) {
 		/* Vtype returned using a hidden argument */
 		linfo->ret.storage = LLVMArgVtypeRetAddr;
 		linfo->vret_arg_index = cinfo->vret_arg_index;
