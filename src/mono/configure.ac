@@ -3970,7 +3970,7 @@ echo "
 
    Libraries:
 	.NET 4.6:        $with_profile4_x
-	MonoDroid:       $with_monodroid
+	Xamarin.Android: $with_monodroid
 	Xamarin.iOS:     $with_monotouch
 	Xamarin.WatchOS: $with_monotouch_watch
 	Xamarin.TVOS:    $with_monotouch_tv
