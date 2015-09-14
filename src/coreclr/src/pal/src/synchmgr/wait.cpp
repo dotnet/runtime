@@ -347,6 +347,26 @@ DWORD CorUnix::InternalWaitForMultipleObjectsEx(
         goto WFMOExIntExit;
     }
 
+    if (fWAll)
+    {
+        // For a wait-all operation, check for duplicate wait objects in the array. This just uses a brute-force O(n^2)
+        // algorithm, but since MAXIMUM_WAIT_OBJECTS is small, the worst case is not so bad, and the average case would involve
+        // significantly fewer items.
+        for (DWORD i = 0; i < nCount - 1; ++i)
+        {
+            IPalObject *const objectToCheck = ppIPalObjs[i];
+            for (DWORD j = i + 1; j < nCount; ++j)
+            {
+                if (ppIPalObjs[j] == objectToCheck)
+                {
+                    ERROR("Duplicate handle provided for a wait-all operation [error=%u]\n", ERROR_INVALID_PARAMETER);
+                    pThread->SetLastError(ERROR_INVALID_PARAMETER);
+                    goto WFMOExIntCleanup;
+                }
+            }
+        }
+    }
+
     palErr = g_pSynchronizationManager->GetSynchWaitControllersForObjects(
         pThread, ppIPalObjs, nCount, ppISyncWaitCtrlrs);    
     if (NO_ERROR != palErr)
