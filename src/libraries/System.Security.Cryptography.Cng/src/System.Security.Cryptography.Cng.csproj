@@ -110,6 +110,9 @@
      <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\BCryptAlgorithmCache.cs">
        <Link>Internal\Windows\BCrypt\BCryptAlgorithmCache.cs</Link>
      </Compile>
+     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
+       <Link>Internal\Windows\mincore\Interop.FormatMessage.cs</Link>
+     </Compile>
      <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeBCryptHandle.cs">
        <Link>Microsoft\Win32\SafeHandles\SafeBCryptHandle.cs</Link>
      </Compile>
@@ -118,6 +121,9 @@
      </Compile>
      <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeBCryptAlgorithmHandle.cs">
        <Link>Microsoft\Win32\SafeHandles\SafeBCryptAlgorithmHandle.cs</Link>
+     </Compile>
+     <Compile Include="$(CommonPath)\Internal\Cryptography\Windows\CryptoThrowHelper.cs">
+       <Link>Internal\Cryptography\Windows\CryptoThrowHelper.cs</Link>
      </Compile>
      <Compile Include="$(CommonPath)\Internal\Cryptography\HashProvider.cs">
        <Link>Internal\Cryptography\HashProvider.cs</Link>
