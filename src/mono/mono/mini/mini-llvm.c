@@ -4741,31 +4741,20 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			builder = ctx->builder = create_builder (ctx);
 			LLVMPositionBuilderAtEnd (builder, poll_bb);
 
-			MonoMethodSignature *sig = mono_metadata_signature_alloc (mono_get_corlib (), 0);
-			sig->ret = &mono_get_void_class ()->byval_arg;
-			icall_name = "mono_threads_state_poll";
-			llvm_sig = sig_to_llvm_sig (ctx, sig);
+			callee = ctx->lmodule->state_poll;
+			if (!callee) {
+				MonoMethodSignature *sig = mono_metadata_signature_alloc (mono_get_corlib (), 0);
+				sig->ret = &mono_get_void_class ()->byval_arg;
+				llvm_sig = sig_to_llvm_sig (ctx, sig);
+				icall_name = "mono_threads_state_poll";
 
-			if (ctx->cfg->compile_aot) {
-				callee = ctx->lmodule->state_poll;
-				if (!callee) {
-					MonoMethodSignature *sig = mono_metadata_signature_alloc (mono_get_corlib (), 0);
-					sig->ret = &mono_get_void_class ()->byval_arg;
-					llvm_sig = sig_to_llvm_sig (ctx, sig);
-
+				if (ctx->cfg->compile_aot) {
 					callee = get_plt_entry (ctx, llvm_sig, MONO_PATCH_INFO_INTERNAL_METHOD, icall_name);
-				}
-			} else {
-				callee = ctx->lmodule->state_poll;
-				if (!callee) {
-					MonoMethodSignature *sig = mono_metadata_signature_alloc (mono_get_corlib (), 0);
-					sig->ret = &mono_get_void_class ()->byval_arg;
-					llvm_sig = sig_to_llvm_sig (ctx, sig);
-
+				} else {
 					callee = LLVMAddFunction (ctx->module, icall_name, llvm_sig);
 					LLVMAddGlobalMapping (ctx->lmodule->ee, callee, resolve_patch (ctx->cfg, MONO_PATCH_INFO_INTERNAL_METHOD, icall_name));
-					ctx->lmodule->state_poll = callee;
 				}
+				ctx->lmodule->state_poll = callee;
 			}
 			//
 			// FIXME: This can use the PreserveAll cconv to avoid clobbering registers.
