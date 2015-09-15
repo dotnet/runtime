@@ -270,8 +270,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.FTruncate.cs">
       <Link>Common\Interop\Unix\Interop.FTruncate.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getcwd.cs">
-      <Link>Common\Interop\Unix\Interop.getcwd.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetCwd.cs">
+      <Link>Common\Interop\Unix\Interop.GetCwd.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Open.cs">
       <Link>Common\Interop\Unix\Interop.Open.cs</Link>
@@ -282,8 +282,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MkDir.cs">
       <Link>Common\Interop\Unix\Interop.MkDir.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.pathconf.cs">
-      <Link>Common\Interop\Unix\Interop.pathconf.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.PathConf.cs">
+      <Link>Common\Interop\Unix\Interop.PathConf.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Permissions.cs">
       <Link>Common\Interop\Unix\Interop.Permissions.cs</Link>
@@ -352,9 +352,6 @@
     <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseSensitive.cs">
       <Link>Common\System\IO\PathInternal.CaseSensitive.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\FreeBSD\libc\Interop.PathConfNames.cs">
-      <Link>Common\Interop\FreeBSD\Interop.PathConfNames.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.PosixFAdvise.cs">
       <Link>Common\Interop\Unix\Interop.PosixFAdvise.cs</Link>
     </Compile>
@@ -368,9 +365,6 @@
     <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseSensitive.cs">
       <Link>Common\System\IO\PathInternal.CaseSensitive.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.PathConfNames.cs">
-      <Link>Common\Interop\Linux\Interop.PathConfNames.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.PosixFAdvise.cs">
       <Link>Common\Interop\Unix\Interop.PosixFAdvise.cs</Link>
     </Compile>
@@ -379,9 +373,6 @@
   <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
     <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseInsensitive.cs">
       <Link>Common\System\IO\PathInternal.CaseInsensitive.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.PathConfNames.cs">
-      <Link>Common\Interop\OSX\Interop.PathConfNames.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
       <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>

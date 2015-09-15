@@ -111,6 +111,36 @@ enum SysLogPriority : int32_t
 };
 
 /**
+ * Constants to pass into pathconf.
+ *
+ * Note - these differ per OS so these values are the PAL-specific
+ *        values; they must be converted to the correct platform
+ *        values before passing to pathconf.
+ */
+enum PathConfName : int32_t
+{
+    PAL_PC_LINK_MAX = 1,
+    PAL_PC_MAX_CANON = 2,
+    PAL_PC_MAX_INPUT = 3,
+    PAL_PC_NAME_MAX = 4,
+    PAL_PC_PATH_MAX = 5,
+    PAL_PC_PIPE_BUF = 6,
+    PAL_PC_CHOWN_RESTRICTED = 7,
+    PAL_PC_NO_TRUNC = 8,
+    PAL_PC_VDISABLE = 9,
+};
+
+/**
+ * Constants for passing to GetPriority and SetPriority.
+ */
+enum PriorityWhich : int32_t
+{
+    PAL_PRIO_PROCESS = 0,
+    PAL_PRIO_PGRP = 1,
+    PAL_PRIO_USER = 2,
+};
+
+/**
  * The current and maximum resource values for the current process.
  * These values are depict the resource according to the above enum.
  */
@@ -180,3 +210,39 @@ extern "C" int32_t WIfExited(int32_t status);
 extern "C" int32_t WIfSignaled(int32_t status);
 
 extern "C" int32_t WTermSig(int32_t status);
+
+/**
+ * Gets the configurable limit or variable for system path or file descriptor options.
+ *
+ * Returns the requested variable value on success; if the variable does not have a limit, -1 is returned and errno
+ * is not set; otherwise, -1 is returned and errno is set.
+ */
+extern "C" int64_t PathConf(const char* path, PathConfName name);
+
+/**
+ * Gets the current (or default, on failure) Maximum Path allowed by the system.
+ *
+ * This is called out explicitly, rather than using PathConf, since the default value changes depending on the platform.
+ */
+extern "C" int64_t GetMaximumPath();
+
+/**
+ * Gets the priority (nice value) of a certain execution group.
+ *
+ * Returns the nice value (from -20 to 20) of the group on success; otherwise, returns -1. Unfortunately, -1 is also a
+ * valid nice value, meaning we can't use that value to determine valid output or not. Errno is set on failure so 
+ * we need to reset errno before a call and check the value if we get -1.
+ */
+extern "C" int32_t GetPriority(PriorityWhich which, int32_t who);
+
+/**
+ * Sets the priority (nice value) of a certain execution group.
+ *
+ * Returns 0 on success; otherwise, -1 and errno is set.
+ */
+extern "C" int32_t SetPriority(PriorityWhich which, int32_t who, int32_t nice);
+
+/**
+ * Gets the current working directory of the currently executing process.
+ */
+extern "C" char* GetCwd(char* buffer, int32_t bufferSize);
