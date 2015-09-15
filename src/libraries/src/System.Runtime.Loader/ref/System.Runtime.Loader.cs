@@ -5,6 +5,14 @@
 // ------------------------------------------------------------------------------
 
 
+namespace System.Reflection.Metadata
+{
+    public static partial class AssemblyExtensions
+    {
+        [CLSCompliant(false)] // out byte* blob
+        public unsafe static bool TryGetRawMetadata(this System.Reflection.Assembly assembly, out byte* blob, out int length) { blob = default(byte*); length = default(int); return default(bool); }
+    }
+}
 namespace System.Runtime.Loader
 {
     public abstract partial class AssemblyLoadContext
