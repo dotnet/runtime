@@ -36,6 +36,7 @@ fi
 build_arch="$4"
 buildtype=DEBUG
 code_coverage=OFF
+build_tests=OFF
 
 for i in "${@:5}"; do
     upperI="$(echo $i | awk '{print toupper($0)}')"
@@ -47,6 +48,10 @@ for i in "${@:5}"; do
       COVERAGE)
       echo "Code coverage is turned on for this build."
       code_coverage=ON
+      ;;
+      INCLUDE_TESTS)
+      echo "Including tests directory in build."
+      build_tests=ON
       ;;
       *)
       echo "Ignoring unknown arg '$i'"
@@ -129,5 +134,6 @@ cmake \
   "-DCMAKE_OBJDUMP=$llvm_objdump" \
   "-DCMAKE_BUILD_TYPE=$buildtype" \
   "-DCMAKE_ENABLE_CODE_COVERAGE=$code_coverage" \
+  "-DCLR_CMAKE_BUILD_TESTS=$build_tests" \
   $cmake_extra_defines \
   "$1"
