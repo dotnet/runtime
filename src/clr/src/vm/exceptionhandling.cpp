@@ -1298,7 +1298,7 @@ void ExceptionTracker::InitializeCurrentContextForCrawlFrame(CrawlFrame* pcfThis
         pcfThisFrame->pRD->IsCallerSPValid = TRUE;
         
         // Assert our first pass assumptions for the Arm/Arm64
-        _ASSERTE(sf.SP == GetSP(pDispatcherContext->ContextRecord));
+        _ASSERTE(sfEstablisherFrame.SP == GetSP(pDispatcherContext->ContextRecord));
 #endif // defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)    
 
     }
