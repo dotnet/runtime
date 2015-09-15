@@ -25,5 +25,24 @@ namespace Tests.ExpressionCompiler.Array
             object y = x.Compile()(2);
             Assert.Equal("System.Double[,]", y.ToString());
         }
+
+        [Fact]
+        public static void ArrayBoundsVectorNegativeThrowsOverflowException()
+        {
+            Expression<Func<int, int[]>> e = a => new int[a];
+            Func<int, int[]> f = e.Compile();
+
+            Assert.Throws<OverflowException>(() => f(-1));
+        }
+
+        [Fact]
+        public static void ArrayBoundsMultiDimensionalNegativeThrowsOverflowException()
+        {
+            Expression<Func<int, int, int[,]>> e = (a, b) => new int[a, b];
+            Func<int, int, int[,]> f = e.Compile();
+
+            Assert.Throws<OverflowException>(() => f(-1, 1));
+            Assert.Throws<OverflowException>(() => f(1, -1));
+        }
     }
 }
