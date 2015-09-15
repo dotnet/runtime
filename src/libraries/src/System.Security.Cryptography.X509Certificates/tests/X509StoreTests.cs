@@ -32,7 +32,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             using (X509Store store = new X509Store(Guid.NewGuid().ToString("N"), StoreLocation.CurrentUser))
             {
-                Assert.Throws<CryptographicException>(() => store.Open(OpenFlags.OpenExistingOnly));
+                Assert.ThrowsAny<CryptographicException>(() => store.Open(OpenFlags.OpenExistingOnly));
             }
         }
 
@@ -49,7 +49,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 // functionality.
                 if (!store.Certificates.Contains(cert))
                 {
-                    Assert.Throws<CryptographicException>(() => store.Add(cert));
+                    Assert.ThrowsAny<CryptographicException>(() => store.Add(cert));
                 }
             }
         }
@@ -77,7 +77,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 if (toAdd != null)
                 {
-                    Assert.Throws<CryptographicException>(() => store.Add(toAdd));
+                    Assert.ThrowsAny<CryptographicException>(() => store.Add(toAdd));
                 }
             }
         }
@@ -101,7 +101,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 if (store.Certificates.Contains(cert))
                 {
-                    Assert.Throws<CryptographicException>(() => store.Remove(cert));
+                    Assert.ThrowsAny<CryptographicException>(() => store.Remove(cert));
                 }
             }
         }
@@ -122,7 +122,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
             using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
             {
-                Assert.Throws<CryptographicException>(() => store.Add(cert));
+                Assert.ThrowsAny<CryptographicException>(() => store.Add(cert));
             }
         }
 
@@ -132,7 +132,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
             using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
             {
-                Assert.Throws<CryptographicException>(() => store.Remove(cert));
+                Assert.ThrowsAny<CryptographicException>(() => store.Remove(cert));
             }
         }
     }

@@ -56,11 +56,11 @@ namespace Internal.Cryptography.Pal
                         {
                             int cbEncoded = 0;
                             if (!Interop.crypt32.CertSerializeCertificateStoreElement(pCertContext, 0, null, ref cbEncoded))
-                                throw new CryptographicException(Marshal.GetHRForLastWin32Error());
+                                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
 
                             byte[] pbEncoded = new byte[cbEncoded];
                             if (!Interop.crypt32.CertSerializeCertificateStoreElement(pCertContext, 0, pbEncoded, ref cbEncoded))
-                                throw new CryptographicException(Marshal.GetHRForLastWin32Error());
+                                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
 
                             return pbEncoded;
                         }
@@ -77,14 +77,14 @@ namespace Internal.Cryptography.Pal
                             CRYPTOAPI_BLOB dataBlob = new CRYPTOAPI_BLOB(0, (byte*)null);
 
                             if (!Interop.crypt32.PFXExportCertStore(_certStore, ref dataBlob, password, PFXExportFlags.EXPORT_PRIVATE_KEYS | PFXExportFlags.REPORT_NOT_ABLE_TO_EXPORT_PRIVATE_KEY))
-                                throw new CryptographicException(Marshal.GetHRForLastWin32Error());
+                                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
 
                             byte[] pbEncoded = new byte[dataBlob.cbData];
                             fixed (byte* ppbEncoded = pbEncoded)
                             {
                                 dataBlob.pbData = ppbEncoded;
                                 if (!Interop.crypt32.PFXExportCertStore(_certStore, ref dataBlob, password, PFXExportFlags.EXPORT_PRIVATE_KEYS | PFXExportFlags.REPORT_NOT_ABLE_TO_EXPORT_PRIVATE_KEY))
-                                    throw new CryptographicException(Marshal.GetHRForLastWin32Error());
+                                    throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
                             }
 
                             return pbEncoded;
@@ -108,14 +108,14 @@ namespace Internal.Cryptography.Pal
             {
                 CRYPTOAPI_BLOB blob = new CRYPTOAPI_BLOB(0, null);
                 if (!Interop.crypt32.CertSaveStore(_certStore, CertEncodingType.All, dwSaveAs, CertStoreSaveTo.CERT_STORE_SAVE_TO_MEMORY, ref blob, 0))
-                    throw new CryptographicException(Marshal.GetLastWin32Error());
+                    throw Marshal.GetLastWin32Error().ToCryptographicException();
 
                 byte[] exportedData = new byte[blob.cbData];
                 fixed (byte* pExportedData = exportedData)
                 {
                     blob.pbData = pExportedData;
                     if (!Interop.crypt32.CertSaveStore(_certStore, CertEncodingType.All, dwSaveAs, CertStoreSaveTo.CERT_STORE_SAVE_TO_MEMORY, ref blob, 0))
-                        throw new CryptographicException(Marshal.GetLastWin32Error());
+                        throw Marshal.GetLastWin32Error().ToCryptographicException();
                 }
                 return exportedData;
             }

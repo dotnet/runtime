@@ -55,11 +55,11 @@ namespace Internal.Cryptography.Pal
         {
             int cbDecoded = 0;
             if (!Interop.crypt32.CryptDecodeObject(CertEncodingType.All, lpszStructType, encodedKeyValue, encodedKeyValue.Length, CryptDecodeObjectFlags.None, null, ref cbDecoded))
-                throw new CryptographicException(Marshal.GetLastWin32Error());
+                throw Marshal.GetLastWin32Error().ToCryptographicException();
 
             byte[] keyBlob = new byte[cbDecoded];
             if (!Interop.crypt32.CryptDecodeObject(CertEncodingType.All, lpszStructType, encodedKeyValue, encodedKeyValue.Length, CryptDecodeObjectFlags.None, keyBlob, ref cbDecoded))
-                throw new CryptographicException(Marshal.GetLastWin32Error());
+                throw Marshal.GetLastWin32Error().ToCryptographicException();
 
             return keyBlob;
         }
@@ -76,7 +76,7 @@ namespace Internal.Cryptography.Pal
 
             int cbKey = p.Length;
             if (cbKey == 0)
-                throw new CryptographicException(ErrorCode.NTE_BAD_PUBLIC_KEY);
+                throw ErrorCode.NTE_BAD_PUBLIC_KEY.ToCryptographicException();
 
             const int DSS_Q_LEN = 20;
             int capacity = 8 /* sizeof(CAPI.BLOBHEADER) */ + 8 /* sizeof(CAPI.DSSPUBKEY) */ +
@@ -101,7 +101,7 @@ namespace Internal.Cryptography.Pal
             // rgbQ[20]
             int cb = q.Length;
             if (cb == 0 || cb > DSS_Q_LEN)
-                throw new CryptographicException(ErrorCode.NTE_BAD_PUBLIC_KEY);
+                throw ErrorCode.NTE_BAD_PUBLIC_KEY.ToCryptographicException();
 
             bw.Write(q);
             if (DSS_Q_LEN > cb)
@@ -110,7 +110,7 @@ namespace Internal.Cryptography.Pal
             // rgbG[cbKey]
             cb = g.Length;
             if (cb == 0 || cb > cbKey)
-                throw new CryptographicException(ErrorCode.NTE_BAD_PUBLIC_KEY);
+                throw ErrorCode.NTE_BAD_PUBLIC_KEY.ToCryptographicException();
 
             bw.Write(g);
             if (cbKey > cb)
@@ -119,7 +119,7 @@ namespace Internal.Cryptography.Pal
             // rgbY[cbKey]
             cb = decodedKeyValue.Length;
             if (cb == 0 || cb > cbKey)
-                throw new CryptographicException(ErrorCode.NTE_BAD_PUBLIC_KEY);
+                throw ErrorCode.NTE_BAD_PUBLIC_KEY.ToCryptographicException();
 
             bw.Write(decodedKeyValue);
             if (cbKey > cb)
