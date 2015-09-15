@@ -72,7 +72,7 @@ namespace Internal.Cryptography.Pal
                 int dwErrorCode = Marshal.GetLastWin32Error();
                 if (dwErrorCode == ErrorCode.CRYPT_E_NOT_FOUND)
                     return null;
-                throw new CryptographicException(dwErrorCode);
+                throw dwErrorCode.ToCryptographicException();
             }
 
             unsafe
@@ -81,7 +81,7 @@ namespace Internal.Cryptography.Pal
                 fixed (byte* pPrivateKey = privateKey)
                 {
                     if (!Interop.crypt32.CertGetCertificateContextProperty(_certContext, CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID, privateKey, ref cbData))
-                        throw new CryptographicException(Marshal.GetLastWin32Error());
+                        throw Marshal.GetLastWin32Error().ToCryptographicException();
                     CRYPT_KEY_PROV_INFO* pKeyProvInfo = (CRYPT_KEY_PROV_INFO*)pPrivateKey;
 
                     CspParameters cspParameters = new CspParameters();
