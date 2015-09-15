@@ -31,6 +31,7 @@ Learn about CoreCLR and .NET Core
 
 The best ways to learn about CoreCLR are to try out the product instructions and to read the "Book of the Runtime" architecture documents that describe the inner workings of the product. New devs to the CLR team are encouraged to read these documents before making substative changes to the product. They are equally useful for open source contributors.
 
+- [.NET Core Roadmap](https://github.com/dotnet/core/blob/master/roadmap.md)
 - [Product instructions](Documentation/README.md)
 - [Introduction to the Common Language Runtime](Documentation/botr/intro-to-clr.md)
 - [Book of the Runtime](Documentation/README.md#book-of-the-runtime)
