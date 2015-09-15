@@ -16,19 +16,18 @@ internal class pow1
         //Check if the test is being executed on ARM
         bool isProcessorArm = false;
 
+        string processorArchEnvVar = null;
+
 #if CORECLR 
-        if (TestLibrary.Env.GetEnvVariable("PROCESSOR_ARCHITECTURE").Equals(
-                   "ARM", StringComparison.CurrentCultureIgnoreCase))
-        {
-            isProcessorArm = true;
-        }
+        processorArchEnvVar = TestLibrary.Env.GetEnvVariable("PROCESSOR_ARCHITECTURE");
 #else
-        if (Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE").Equals(
-            "ARM", StringComparison.CurrentCultureIgnoreCase))
+        processorArchEnvVar = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
+#endif
+
+        if ((processorArchEnvVar != null) && processorArchEnvVar.Equals("ARM", StringComparison.CurrentCultureIgnoreCase))
         {
             isProcessorArm = true;
         }
-#endif
 
         x = 0;
         y = 0;
