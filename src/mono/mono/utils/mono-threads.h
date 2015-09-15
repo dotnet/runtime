@@ -145,7 +145,23 @@ and reduce the number of casts drastically.
 #define MONO_THREADS_PLATFORM_REQUIRES_UNIFIED_SUSPEND 0
 #define USE_WINDOWS_BACKEND
 
+#else
+#error "no backend support for current platform"
+#endif /* defined (USE_COOP_GC) */
+
+#if defined (_POSIX_VERSION) || defined (__native_client__)
+#if defined (__MACH__) && !defined (USE_SIGNALS_ON_MACH)
+#define USE_MACH_SYSCALL_ABORT
+#else
+#define USE_POSIX_SYSCALL_ABORT
 #endif
+
+#elif HOST_WIN32
+#define USE_WINDOWS_SYSCALL_ABORT
+
+#else
+#error "no syscall abort support for current platform"
+#endif /* defined (_POSIX_VERSION) || defined (__native_client__) */
 
 enum {
 	STATE_STARTING				= 0x00,
@@ -200,13 +216,12 @@ typedef struct {
 
 	MonoSemType resume_semaphore;
 
-	/* only needed by the posix backend */ 
-#if defined(USE_POSIX_BACKEND)
+	/* only needed by the posix backend */
+#if defined(USE_POSIX_BACKEND) || defined(USE_POSIX_SYSCALL_ABORT)
 	MonoSemType finish_resume_semaphore;
 	gboolean syscall_break_signal;
 	gboolean suspend_can_continue;
 	int signal;
-
 #endif
 
 	/*In theory, only the posix backend needs this, but having it on mach/win32 simplifies things a lot.*/
@@ -480,6 +495,8 @@ This is called very early in the runtime, it cannot access any runtime facilitie
 
 */
 void mono_threads_init_platform (void); //ok
+
+void mono_threads_init_abort_syscall (void);
 
 /*
 This begins async suspend. This function must do the following:

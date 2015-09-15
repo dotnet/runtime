@@ -194,12 +194,6 @@ mono_threads_finish_try_blocking (void* cookie)
 	mono_threads_finish_blocking (cookie);
 }
 
-void
-mono_threads_core_abort_syscall (MonoThreadInfo *info)
-{
-	g_error ("FIXME");
-}
-
 gboolean
 mono_threads_core_begin_async_resume (MonoThreadInfo *info)
 {
@@ -220,22 +214,6 @@ mono_threads_core_check_suspend_result (MonoThreadInfo *info)
 {
 	/* Async suspend can't async fail on coop */
 	return TRUE;
-}
-
-gboolean
-mono_threads_core_needs_abort_syscall (void)
-{
-	/*
-	Small digression.
-	Syscall abort can't be handled by the suspend machinery even though it's kind of implemented
-	in a similar way (with, like, signals).
-
-	So, having it here is wrong, it should be on mono-threads-(mach|posix|windows).
-	Ideally we would slice this in (coop|preemp) and target. Then have this file set:
-	mono-threads-mach, mono-threads-mach-preempt and mono-threads-mach-coop.
-	More files, less ifdef hell.
-	*/
-	return FALSE;
 }
 
 void
