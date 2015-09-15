@@ -97,9 +97,8 @@ mono_network_get_data (char* name, MonoNetworkData data, MonoNetworkError *error
 
 		char *ptr;
 		buf [sizeof (buf) - 1] = 0;
-		/* FIXME: This might potentially cause a buffer overflow for cname. */
 		if ((ptr = strchr (buf, ':')) == NULL ||
-				(*ptr++ = 0, sscanf (buf, "%s", cname) != 1))
+				(*ptr++ = 0, sscanf (buf, "%250s", cname) != 1))
 			goto out;
 
 		if (strcmp (name, cname) != 0) continue;
