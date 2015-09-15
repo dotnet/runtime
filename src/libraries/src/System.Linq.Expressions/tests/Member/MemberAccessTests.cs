@@ -218,7 +218,7 @@ namespace Tests.ExpressionCompiler.MemberAccess
             }
         }
 
-        [Fact]
+        [Fact] // [Issue(3217, "https://github.com/dotnet/corefx/issues/3217")]
         public static void CheckMemberAccessClassInstanceFieldNullReferenceTest()
         {
             Expression<Func<int>> e =
@@ -242,7 +242,7 @@ namespace Tests.ExpressionCompiler.MemberAccess
             Assert.NotNull(err);
         }
 
-        [Fact]
+        [Fact] // [Issue(3217, "https://github.com/dotnet/corefx/issues/3217")]
         public static void CheckMemberAccessClassInstancePropertyNullReferenceTest()
         {
             Expression<Func<int>> e =
