@@ -9,40 +9,33 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
 {
     public static class TestControl
     {
-        public static class Fail
-        {
-            public static bool WinHttpOpen { get; set; }
-            public static bool WinHttpReadData { get; set; }
-            public static bool WinHttpWriteData { get; set; }
-        }
+        public static ApiControl WinHttpOpen { get; private set; }
+        public static ApiControl WinHttpReadData { get; private set; }
+        public static ApiControl WinHttpReceiveResponse { get; private set; }
+        public static ApiControl WinHttpWriteData { get; private set; }
+        
+        public static int LastWin32Error { get; set; }
         
         public static bool WinHttpAutomaticProxySupport { get; set; }
-
         public static bool WinHttpDecompressionSupport { get; set; }
-
-        public static int LastWin32Error { get; set; }
 
         public static bool PACFileNotDetectedOnNetwork { get; set; }
 
-        public static int ResponseDelayTime { get; set; }
-
-        public static AutoResetEvent ResponseDelayCompletedEvent { get; internal set; }
-        
         public static X509Certificate2Collection CurrentUserCertificateStore{ get; set; }
 
         public static void Reset()
         {
+            WinHttpOpen = new ApiControl();
+            WinHttpReadData = new ApiControl();
+            WinHttpReceiveResponse = new ApiControl();
+            WinHttpWriteData = new ApiControl();
+            
             WinHttpAutomaticProxySupport = true;
             WinHttpDecompressionSupport = true;
-
+            
             LastWin32Error = 0;
-            Fail.WinHttpOpen = false;
-            Fail.WinHttpReadData = false;
-            Fail.WinHttpWriteData = false;
-
+            
             PACFileNotDetectedOnNetwork = false;
-            ResponseDelayTime = 0;
-            ResponseDelayCompletedEvent = new AutoResetEvent(true);
             
             CurrentUserCertificateStore = new X509Certificate2Collection();
         }
@@ -53,6 +46,52 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             FakeRegistry.Reset();
             TestControl.Reset();
             TestServer.Reset();
+        }
+    }
+
+    public sealed class ApiControl : IDisposable
+    {
+        private bool _disposed = false;
+        private ManualResetEvent _callbackCompletionEvent;
+        
+        public ApiControl()
+        {
+            ErrorWithApiCall = false;
+            ErrorOnCompletion = false;
+            Delay = 0;
+            
+            _callbackCompletionEvent = new ManualResetEvent(true);
+        }
+        
+        public bool ErrorWithApiCall { get; set; }
+        public bool ErrorOnCompletion { get; set; }
+        public int Delay { get; set; }
+
+        public void Pause()
+        {
+            _callbackCompletionEvent.Reset();
+        }
+
+        public void Resume()
+        {
+            _callbackCompletionEvent.Set();
+        }
+
+        public void Wait()
+        {
+            _callbackCompletionEvent.WaitOne();
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+
+            _callbackCompletionEvent.Dispose();
         }
     }
 }
