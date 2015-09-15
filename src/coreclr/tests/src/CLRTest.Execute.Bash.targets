@@ -128,7 +128,23 @@ CLRTestExitCode=$?
     <GenerateParamList ArgumentItems="@(BashCLRTestExecutionScriptArgument)">
       <Output TaskParameter="ParamList" PropertyName="_CLRTestParamList"/>
     </GenerateParamList>
-    
+
+    <!-- If a test has precommands or postcommands but no bash-specific ones,
+         we will skip running that test. In order to enable the test on Unix,
+         the corresponding bash versions (_BashCLRTest[Pre|Post]Commands) of
+         the commands should be specified. -->
+    <PropertyGroup>
+      <ShouldSkipTest>false</ShouldSkipTest>
+      <ShouldSkipTest Condition="('$(_CLRTestPreCommands)' != '' AND '$(_BashCLRTestPreCommands)' == '') 
+                              OR ('$(_CLRTestPostCommands)' != '' AND '$(_BashCLRTestPostCommands)' == '')"
+                      >true</ShouldSkipTest>
+
+      <SkipTest>
+echo "Skipping this test due to presence of pre- or post-commands that are not bash-specific."
+exit 2 # Exit code indicating skip
+      </SkipTest>
+    </PropertyGroup>
+
     <PropertyGroup>
       <!--
       This generates the script portion to parse all of the command line arguments.
@@ -166,18 +182,30 @@ done
 
 $(BashCLRTestArgPrep)
       ]]></BashCLRTestArgPrep>
+
+      <_CLRTestExecutionScriptText Condition="$(ShouldSkipTest)">
+        <![CDATA[
+$(SkipTest)
+        ]]>
+      </_CLRTestExecutionScriptText>
+
       <!-- NOTE! semicolons must be escaped with %3B boooo -->
-      <_CLRTestExecutionScriptText><![CDATA[
+      <_CLRTestExecutionScriptText Condition="!$(ShouldSkipTest)">
+        <![CDATA[
+# The __TestEnv variable may be used to specify something to run before the test.
+$__TestEnv
+
 $(BashCLRTestArgPrep)
 $(BashCLRTestExitCodePrep)
-# Precommands
-$(_CLRTestPreCommands)
+# PreCommands
+$(_BashCLRTestPreCommands)
 # Launch
 $(BashCLRTestLaunchCmds)
 # PostCommands
-$(_CLRTestPostCommands)
+$(_BashCLRTestPostCommands)
 $(BashCLRTestExitCodeCheck)
-      ]]></_CLRTestExecutionScriptText>
+      ]]>
+      </_CLRTestExecutionScriptText>
 
     </PropertyGroup>
 
