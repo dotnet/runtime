@@ -1238,29 +1238,17 @@ namespace System.Linq.Expressions.Interpreter
             Compile(node.Operand);
             if (node.IsLifted)
             {
-                LocalDefinition temp = _locals.DefineLocal(
-                    Expression.Parameter(node.Operand.Type),
-                    _instructions.Count
-                );
                 var notNull = _instructions.MakeLabel();
                 var computed = _instructions.MakeLabel();
 
-                _instructions.EmitStoreLocal(temp.Index);
-                _instructions.EmitLoadLocal(temp.Index);
-                _instructions.EmitLoad(null, typeof(object));
-                _instructions.EmitEqual(typeof(object));
-                _instructions.EmitBranchFalse(notNull);
-
-                _instructions.EmitLoad(null, typeof(object));
+                _instructions.EmitCoalescingBranch(notNull);
                 _instructions.EmitBranch(computed);
 
                 _instructions.MarkLabel(notNull);
-                _instructions.EmitLoadLocal(temp.Index);
                 _instructions.EmitLoad(node.NodeType == ExpressionType.IsTrue);
                 _instructions.EmitEqual(typeof(bool));
 
                 _instructions.MarkLabel(computed);
-                _locals.UndefineLocal(temp, _instructions.Count);
             }
             else
             {
