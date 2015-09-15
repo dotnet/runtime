@@ -104,7 +104,7 @@ set UseRoslynCompiler=true
 if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles%\MSBuild\14.0\Bin\MSBuild.exe"
 if not exist %_msbuildexe% echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions. && exit /b 1
 
-::Building Native part of  Tests
+::Building Native part of Tests
 setlocal
 
 echo Commencing build of native test components for %__BuildArch%/%__BuildType%
@@ -171,7 +171,7 @@ exit /b %ERRORLEVEL%
 :build
 
 %_buildprefix% %_msbuildexe% "%__ProjectFilesDir%\build.proj" %__MSBCleanBuildArgs% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=normal;LogFile="%__TestManagedBuildLog%";Append %* %_buildpostfix%
-IF ERRORLEVEL 1 echo Test build failed. Refer !__TestManagedBuildLog! for details && exit /b 1
+IF ERRORLEVEL 1 echo Test build failed. Refer to !__TestManagedBuildLog! for details && exit /b 1
 exit /b 0
 
 :Usage
