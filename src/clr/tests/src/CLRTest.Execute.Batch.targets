@@ -184,6 +184,10 @@ setlocal
 pushd %~dp0
 $(BatchCLRTestArgPrep)
 $(BatchCLRTestExitCodePrep)
+
+REM The __TestEnv variable may be used to specify something to run before the test.
+IF NOT "%__TestEnv%"=="" call %__TestEnv%
+
 REM Precommands
 $(_CLRTestPreCommands)
 REM Launch
