@@ -66,11 +66,9 @@ echo Actual: $CLRTestExitCode
 if [ ! $CLRTestExitCode == $CLRTestExpectedExitCode ]
 then
   echo END EXECUTION - FAILED
-  echo FAILED
   exit 1
 else
   echo END EXECUTION - PASSED
-  echo PASSED
   exit 0
 fi
       ]]></BashCLRTestExitCodeCheck>
@@ -103,7 +101,7 @@ fi
       <_CLRTestRunFile Condition="'$(_CLRTestNeedsProjectToRun)' != 'True'">"$(AssemblyName).exe"</_CLRTestRunFile>
 
       <!-- TODO: make this better? -->
-      <_CLRTestRunFile Condition=" '$(CLRTestIsHosted)'=='true' And !$(_CLRTestNeedsProjectToRun) ">"$Core_Root\mono" $(_CLRTestRunFile)</_CLRTestRunFile>
+      <_CLRTestRunFile Condition=" '$(CLRTestIsHosted)'=='true' And !$(_CLRTestNeedsProjectToRun) ">"$Core_Root/corerun" $(_CLRTestRunFile)</_CLRTestRunFile>
 
       <BashCLRTestLaunchCmds Condition=" '$(BashCLRTestLaunchCmds)'=='' "><![CDATA[
 echo $(_CLRTestRunFile) $CLRTestExecutionArguments $Host_Args
@@ -180,8 +178,14 @@ $(BashCLRTestLaunchCmds)
 $(_CLRTestPostCommands)
 $(BashCLRTestExitCodeCheck)
       ]]></_CLRTestExecutionScriptText>
+
     </PropertyGroup>
-    <!-- Write the file -->
+
+    <!-- Write the file.
+         Note: under the hood, this will rely on Environment.NewLine for line 
+         endings. This means that if the scripts are being generated on Windows,
+         the line endings will need to be changed from CR-LF to Unix (LF) line 
+         endings before running the scripts on Unix platforms. -->
     <WriteLinesToFile
       File="$(OutputPath)\$(AssemblyName).sh"
       Lines="$(_CLRTestExecutionScriptText)"
