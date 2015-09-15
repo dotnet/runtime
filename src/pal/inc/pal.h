@@ -3442,6 +3442,15 @@ size_t
 PALAPI
 PAL_GetLogicalProcessorCacheSizeFromOS();
 
+typedef BOOL (*ReadMemoryWordCallback)(SIZE_T address, SIZE_T *value);
+
+PALIMPORT BOOL PALAPI PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers);
+
+PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, 
+                                                 KNONVOLATILE_CONTEXT_POINTERS *contextPointers, 
+                                                 DWORD pid, 
+                                                 ReadMemoryWordCallback readMemCallback);
+
 #define GetLogicalProcessorCacheSizeFromOS PAL_GetLogicalProcessorCacheSizeFromOS
 
 #ifdef PLATFORM_UNIX

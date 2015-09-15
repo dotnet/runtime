@@ -36,6 +36,10 @@ HRESULT STDMETHODCALLTYPE ShimDataTarget::QueryInterface(
     {
         *pInterface = static_cast<ICorDebugMutableDataTarget *>(this);
     }
+    else if (InterfaceId == IID_ICorDebugDataTarget4)
+    {
+        *pInterface = static_cast<ICorDebugDataTarget4 *>(this);
+    }
     else
     {
         *pInterface = NULL;
@@ -71,9 +75,15 @@ ULONG STDMETHODCALLTYPE ShimDataTarget::Release()
 //
 // Return Value: 
 //     The OS PID of the process this data target is representing.
-DWORD ShimDataTarget::GetPid()
+HRESULT STDMETHODCALLTYPE ShimDataTarget::GetPid(DWORD *pdwProcessId)
 {
-    return m_processId;
+    if (pdwProcessId == NULL)  
+    {
+        return E_INVALIDARG;
+    }
+
+    *pdwProcessId = m_processId;
+    return S_OK;
 }
 
 //---------------------------------------------------------------------------------------
