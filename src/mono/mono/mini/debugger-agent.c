@@ -4803,7 +4803,7 @@ mono_debugger_agent_user_break (void)
 		mono_loader_unlock ();
 
 		process_event (EVENT_KIND_USER_BREAK, NULL, 0, &ctx, events, suspend_policy);
-	} else {
+	} else if (debug_options.native_debugger_break) {
 		G_BREAKPOINT ();
 	}
 }

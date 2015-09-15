@@ -1947,6 +1947,10 @@ typedef struct {
 	 * Check for pinvoke calling convention mismatches.
 	 */
 	gboolean check_pinvoke_callconv;
+	/*
+	 * Translate Debugger.Break () into a native breakpoint signal
+	 */
+	gboolean native_debugger_break;
 } MonoDebugOptions;
 
 enum {
