@@ -134,7 +134,6 @@ Build the rest of the Framework out of the corefx directory on your Mac.
 
     dotnet-mbp:corefx richlander$ ./build.sh
 
-It's also possible to add `-t:rebuild` to build.sh to force it to delete the previously built assemblies.
 
 For the purposes of this demo, you need to copy a few required assemblies to the demo folder.
 
