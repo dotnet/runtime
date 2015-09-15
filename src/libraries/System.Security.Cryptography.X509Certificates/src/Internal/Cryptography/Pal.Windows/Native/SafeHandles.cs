@@ -5,6 +5,7 @@ using Microsoft.Win32.SafeHandles;
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 
 namespace Internal.Cryptography.Pal.Native
 {
@@ -111,6 +112,27 @@ namespace Internal.Cryptography.Pal.Native
                 fixed (byte* pProvInfoAsBytes = provInfoAsBytes)
                 {
                     CRYPT_KEY_PROV_INFO* pProvInfo = (CRYPT_KEY_PROV_INFO*)pProvInfoAsBytes;
+
+                    // For UWP the key was opened in a CNG-only context, so it can/should be deleted via CngKey.Delete.
+                    // In all other contexts, the key was loaded into CAPI, so deleting it via CryptAcquireContext is
+                    // the correct action.
+#if NETNATIVE
+                    string providerName = Marshal.PtrToStringUni((IntPtr)(pProvInfo->pwszProvName));
+                    string keyContainerName = Marshal.PtrToStringUni((IntPtr)(pProvInfo->pwszContainerName));
+
+                    try
+                    {
+                        using (CngKey cngKey = CngKey.Open(keyContainerName, new CngProvider(providerName)))
+                        {
+                            cngKey.Delete();
+                        }
+                    }
+                    catch (CryptographicException)
+                    {
+                        // While leaving the file on disk is undesirable, an inability to perform this cleanup
+                        // should not manifest itself to a user.
+                    }
+#else
                     CryptAcquireContextFlags flags = (pProvInfo->dwFlags & CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET) | CryptAcquireContextFlags.CRYPT_DELETEKEYSET;
                     IntPtr hProv;
                     bool success = Interop.advapi32.CryptAcquireContext(out hProv, pProvInfo->pwszContainerName, pProvInfo->pwszProvName, pProvInfo->dwProvType, flags);
@@ -118,6 +140,7 @@ namespace Internal.Cryptography.Pal.Native
                     // Called CryptAcquireContext solely for the side effect of deleting the key containers. When called with these flags, no actual
                     // hProv is returned (so there's nothing to clean up.)
                     Debug.Assert(hProv == IntPtr.Zero);
+#endif
                 }
             }
         }

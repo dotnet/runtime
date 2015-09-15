@@ -6,6 +6,7 @@ using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {
+#if !NETNATIVE
     /// <summary>
     /// @todo: This is a stub DSACryptoServiceProvider that allows the rest of the X509 code to compile. Once the DSACryptoServiceProvider contract has been
     /// brought up, delete this file and add a reference to the DSA contract to the X509 .csproj file.
@@ -38,5 +39,6 @@ namespace System.Security.Cryptography
 
         private byte[] _cspBlob;
     }
+#endif
 }
 
