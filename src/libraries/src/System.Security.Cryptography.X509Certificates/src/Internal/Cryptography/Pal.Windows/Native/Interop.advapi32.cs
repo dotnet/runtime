@@ -11,9 +11,11 @@ namespace Internal.Cryptography.Pal.Native
     {
         public static class advapi32
         {
+#if !NETNATIVE
             [DllImport(Libraries.Advapi32, SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "CryptAcquireContextW")]
             [return: MarshalAs(UnmanagedType.Bool)]
             public static extern unsafe bool CryptAcquireContext(out IntPtr psafeProvHandle, char* pszContainer, char* pszProvider, int dwProvType, CryptAcquireContextFlags dwFlags);
+#endif
         }
     }
 }
