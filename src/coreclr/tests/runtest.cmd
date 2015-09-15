@@ -38,7 +38,7 @@ if /i "%__VSVersion%" == "vs2015" set __VSProductVersion=140
 
 :: Check presence of VS
 if defined VS%__VSProductVersion%COMNTOOLS goto CheckMSbuild
-echo InVisual Studio 2013+ (Community is free) is a pre-requisite to build this repository.
+echo Visual Studio 2013+ (Community is free) is a pre-requisite to build this repository.
 exit /b 1
 
 :CheckMSBuild
@@ -54,7 +54,7 @@ set UseRoslynCompiler=true
 if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles%\MSBuild\14.0\Bin\MSBuild.exe"
 if not exist %_msbuildexe% echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions. && exit /b 1
 
-:: Set the environment for the  build- Vs cmd prompt
+:: Set the environment for the  build- VS cmd prompt
 call "!VS%__VSProductVersion%COMNTOOLS!\VsDevCmd.bat"
 
 if not defined VSINSTALLDIR echo Error: runtest.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions. && exit /b 1
@@ -67,7 +67,7 @@ if not defined __BinDir    set  __BinDir=%__ProjectFilesDir%..\bin\Product\%__Bu
 if not defined __TestWorkingDir set __TestWorkingDir=%__ProjectFilesDir%..\bin\tests\%__BuildOS%.%__BuildArch%.%__BuildType%
 if not defined __LogsDir        set  __LogsDir=%__ProjectFilesDir%..\bin\Logs
 
-:: Default global test environmet variables
+:: Default global test environment variables
 if not defined XunitTestBinBase       set  XunitTestBinBase=%__TestWorkingDir%\
 if not defined XunitTestReportDirBase set  XunitTestReportDirBase=%XunitTestBinBase%\Reports\
 if defined Core_Root goto  :CheckTestEnv 
@@ -155,7 +155,7 @@ echo BuildArch is x64, x86
 echo BuildType can be: Debug, Release
 echo SkipWrapperGeneration- Optional parameter - this will run the same set of tests as the last time it was run
 echo Exclude- Optional parameter - this will exclude individual tests from running, specified by ExcludeList ItemGroup in an .targets file.
-echo TestEnv- Optional parameter - this will run a custom script to set custom test envirommnent settings.
+echo TestEnv- Optional parameter - this will run a custom script to set custom test environment settings.
 echo VSVersion- optional argument to use VS2013 or VS2015  (default VS2015)
 echo CORE_ROOT The path to the runtime  
 exit /b 1
