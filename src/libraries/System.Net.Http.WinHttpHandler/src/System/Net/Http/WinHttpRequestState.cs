@@ -1,0 +1,127 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
+using System.Diagnostics;
+using System.Net.Security;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading;
+using System.Threading.Tasks;
+
+using SafeWinHttpHandle = Interop.WinHttp.SafeWinHttpHandle;
+
+namespace System.Net.Http
+{
+    internal sealed class WinHttpRequestState : IDisposable
+    {
+        // TODO (Issue 2506): The current locking mechanism doesn't allow any two WinHttp functions executing at
+        // the same time for the same handle. Enahnce locking to prevent only WinHttpCloseHandle being called
+        // during other API execution. E.g. using a Reader/Writer model or, even better, Interlocked functions.
+
+        // The _lock object must be used during the execution of any WinHttp function to ensure no race conditions with 
+        // calling WinHttpCloseHandle.
+        private readonly object _lock = new object();
+
+        // A GCHandle for this operation object.
+        // This is owned by the callback and will be deallocated when the sessionHandle has been closed.
+        private GCHandle _operationHandle = new GCHandle();
+        
+        private volatile bool _disposed = false; // To detect redundant calls.
+        
+        public WinHttpRequestState()
+        {
+            TransportContext = new WinHttpTransportContext();
+            _operationHandle = GCHandle.Alloc(this);
+        }
+
+        public static WinHttpRequestState FromIntPtr(IntPtr gcHandle)
+        {
+            GCHandle stateHandle = GCHandle.FromIntPtr(gcHandle);
+            return (WinHttpRequestState)stateHandle.Target;
+        }        
+
+        public IntPtr ToIntPtr()
+        {
+            return GCHandle.ToIntPtr(_operationHandle);
+        }
+        
+        public object Lock
+        {
+            get
+            {
+                return _lock;
+            }
+        }
+
+        public TaskCompletionSource<HttpResponseMessage> Tcs { get; set; }
+
+        public CancellationToken CancellationToken { get; set; }
+
+        public HttpRequestMessage RequestMessage { get; set; }
+
+        public WinHttpHandler Handler { get; set; }
+
+        public SafeWinHttpHandle RequestHandle { get; set; }
+
+        public Exception SavedException { get; set; }
+
+        public bool CheckCertificateRevocationList { get; set; }
+
+        public Func<
+            HttpRequestMessage,
+            X509Certificate2,
+            X509Chain,
+            SslPolicyErrors,
+            bool> ServerCertificateValidationCallback { get; set; }
+
+        public WinHttpTransportContext TransportContext { get; private set; }
+
+        public WindowsProxyUsePolicy WindowsProxyUsePolicy { get; set; }
+
+        public IWebProxy Proxy { get; set; }
+
+        public ICredentials ServerCredentials { get; set; }
+
+        public ICredentials DefaultProxyCredentials { get; set; }
+
+        public bool PreAuthenticate { get; set; }
+        
+        public HttpStatusCode LastStatusCode { get; set; }
+
+        public bool RetryRequest { get; set; }
+        
+        // Important: do not hold _lock while signaling completion of any of below TaskCompletionSources.
+        public TaskCompletionSource<bool> TcsSendRequest { get; set; }
+        public TaskCompletionSource<bool> TcsWriteToRequestStream { get; set; }
+        public TaskCompletionSource<bool> TcsInternalWriteDataToRequestStream { get; set; }
+        public TaskCompletionSource<bool> TcsReceiveResponseHeaders { get; set; }
+        public TaskCompletionSource<int> TcsReadFromResponseStream { get; set; }
+        
+        #region IDisposable Members
+        private void Dispose(bool disposing)
+        {
+            // Since there is no finalizer and this class is sealed, the disposing parameter should be TRUE.
+            Debug.Assert(disposing, "WinHttpRequestState.Dispose() should have disposing=TRUE");
+            
+            if (_disposed)
+            {
+                return;
+            }
+            
+            _disposed = true;
+            
+            if (_operationHandle.IsAllocated)
+            {
+                _operationHandle.Free();
+            }
+        }
+
+        public void Dispose()
+        {
+            // No need to suppress finalization since the finalizer is not overridden and the class is sealed.
+            Dispose(true);
+        }
+        #endregion
+    }
+}
