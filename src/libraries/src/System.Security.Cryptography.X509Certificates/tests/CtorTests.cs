@@ -16,24 +16,24 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 IntPtr h = c.Handle;
                 object ignored;
                 Assert.Equal(IntPtr.Zero, h);
-                Assert.Throws<CryptographicException>(() => c.GetCertHash());
-                Assert.Throws<CryptographicException>(() => c.GetKeyAlgorithm());
-                Assert.Throws<CryptographicException>(() => c.GetKeyAlgorithmParameters());
-                Assert.Throws<CryptographicException>(() => c.GetKeyAlgorithmParametersString());
-                Assert.Throws<CryptographicException>(() => c.GetPublicKey());
-                Assert.Throws<CryptographicException>(() => c.GetSerialNumber());
-                Assert.Throws<CryptographicException>(() => ignored = c.Issuer);
-                Assert.Throws<CryptographicException>(() => ignored = c.Subject);
-                Assert.Throws<CryptographicException>(() => ignored = c.RawData);
-                Assert.Throws<CryptographicException>(() => ignored = c.Thumbprint);
-                Assert.Throws<CryptographicException>(() => ignored = c.SignatureAlgorithm);
-                Assert.Throws<CryptographicException>(() => ignored = c.HasPrivateKey);
-                Assert.Throws<CryptographicException>(() => ignored = c.Version);
-                Assert.Throws<CryptographicException>(() => ignored = c.Archived);
-                Assert.Throws<CryptographicException>(() => c.Archived = false);
-                Assert.Throws<CryptographicException>(() => c.FriendlyName = "Hi");
-                Assert.Throws<CryptographicException>(() => ignored = c.SubjectName);
-                Assert.Throws<CryptographicException>(() => ignored = c.IssuerName);
+                Assert.ThrowsAny<CryptographicException>(() => c.GetCertHash());
+                Assert.ThrowsAny<CryptographicException>(() => c.GetKeyAlgorithm());
+                Assert.ThrowsAny<CryptographicException>(() => c.GetKeyAlgorithmParameters());
+                Assert.ThrowsAny<CryptographicException>(() => c.GetKeyAlgorithmParametersString());
+                Assert.ThrowsAny<CryptographicException>(() => c.GetPublicKey());
+                Assert.ThrowsAny<CryptographicException>(() => c.GetSerialNumber());
+                Assert.ThrowsAny<CryptographicException>(() => ignored = c.Issuer);
+                Assert.ThrowsAny<CryptographicException>(() => ignored = c.Subject);
+                Assert.ThrowsAny<CryptographicException>(() => ignored = c.RawData);
+                Assert.ThrowsAny<CryptographicException>(() => ignored = c.Thumbprint);
+                Assert.ThrowsAny<CryptographicException>(() => ignored = c.SignatureAlgorithm);
+                Assert.ThrowsAny<CryptographicException>(() => ignored = c.HasPrivateKey);
+                Assert.ThrowsAny<CryptographicException>(() => ignored = c.Version);
+                Assert.ThrowsAny<CryptographicException>(() => ignored = c.Archived);
+                Assert.ThrowsAny<CryptographicException>(() => c.Archived = false);
+                Assert.ThrowsAny<CryptographicException>(() => c.FriendlyName = "Hi");
+                Assert.ThrowsAny<CryptographicException>(() => ignored = c.SubjectName);
+                Assert.ThrowsAny<CryptographicException>(() => ignored = c.IssuerName);
             }
         }
 
@@ -90,7 +90,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 {
                     IntPtr h = c.Handle;
                     Assert.Equal(IntPtr.Zero, h);
-                    Assert.Throws<CryptographicException>(() => c.GetCertHash());
+                    Assert.ThrowsAny<CryptographicException>(() => c.GetCertHash());
                 }
             }
 
@@ -99,7 +99,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 {
                     IntPtr h = c.Handle;
                     Assert.Equal(IntPtr.Zero, h);
-                    Assert.Throws<CryptographicException>(() => c.GetCertHash());
+                    Assert.ThrowsAny<CryptographicException>(() => c.GetCertHash());
                 }
             }
         }

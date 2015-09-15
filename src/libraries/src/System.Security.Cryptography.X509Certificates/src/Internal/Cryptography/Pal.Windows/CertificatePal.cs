@@ -29,7 +29,7 @@ namespace Internal.Cryptography.Pal
 
             SafeCertContextHandle safeCertContextHandle = Interop.crypt32.CertDuplicateCertificateContext(handle);
             if (safeCertContextHandle.IsInvalid)
-                throw new CryptographicException(ErrorCode.HRESULT_INVALID_HANDLE);
+                throw ErrorCode.HRESULT_INVALID_HANDLE.ToCryptographicException();
 
             CRYPTOAPI_BLOB dataBlob;
             int cbData = 0;
@@ -64,11 +64,11 @@ namespace Internal.Cryptography.Pal
             {
                 int cbData = 0;
                 if (!Interop.crypt32.CertGetCertificateContextProperty(_certContext, CertContextPropId.CERT_SHA1_HASH_PROP_ID, null, ref cbData))
-                    throw new CryptographicException(Marshal.GetHRForLastWin32Error());
+                    throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
 
                 byte[] thumbprint = new byte[cbData];
                 if (!Interop.crypt32.CertGetCertificateContextProperty(_certContext, CertContextPropId.CERT_SHA1_HASH_PROP_ID, thumbprint, ref cbData))
-                    throw new CryptographicException(Marshal.GetHRForLastWin32Error());
+                    throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
                 return thumbprint;
             }
         }
@@ -143,14 +143,14 @@ namespace Internal.Cryptography.Pal
                         CERT_CHAIN_PARA chainPara = new CERT_CHAIN_PARA();
                         chainPara.cbSize = sizeof(CERT_CHAIN_PARA);
                         if (!Interop.crypt32.CertGetCertificateChain(ChainEngine.HCCE_CURRENT_USER, _certContext, (FILETIME*)null, SafeCertStoreHandle.InvalidHandle, ref chainPara, CertChainFlags.None, IntPtr.Zero, out certChainContext))
-                            throw new CryptographicException(Marshal.GetHRForLastWin32Error());
+                            throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
                         if (!Interop.crypt32.CertGetCertificateContextProperty(_certContext, CertContextPropId.CERT_PUBKEY_ALG_PARA_PROP_ID, null, ref cbData))
-                            throw new CryptographicException(Marshal.GetHRForLastWin32Error());
+                            throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
                     }
 
                     byte[] keyAlgorithmParameters = new byte[cbData];
                     if (!Interop.crypt32.CertGetCertificateContextProperty(_certContext, CertContextPropId.CERT_PUBKEY_ALG_PARA_PROP_ID, keyAlgorithmParameters, ref cbData))
-                        throw new CryptographicException(Marshal.GetHRForLastWin32Error());
+                        throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
 
                     return keyAlgorithmParameters;
                 }
@@ -278,7 +278,7 @@ namespace Internal.Cryptography.Pal
                     CRYPTOAPI_BLOB blob = new CRYPTOAPI_BLOB(0, (byte*)null);
                     CRYPTOAPI_BLOB* pValue = value ? &blob : (CRYPTOAPI_BLOB*)null;
                     if (!Interop.crypt32.CertSetCertificateContextProperty(_certContext, CertContextPropId.CERT_ARCHIVED_PROP_ID, CertSetPropertyFlags.None, pValue))
-                        throw new CryptographicException(Marshal.GetLastWin32Error());
+                        throw Marshal.GetLastWin32Error().ToCryptographicException();
                     return;
                 }
             }
@@ -309,7 +309,7 @@ namespace Internal.Cryptography.Pal
                     {
                         CRYPTOAPI_BLOB blob = new CRYPTOAPI_BLOB(checked(2 * (friendlyName.Length + 1)), (byte*)pFriendlyName);
                         if (!Interop.crypt32.CertSetCertificateContextProperty(_certContext, CertContextPropId.CERT_FRIENDLY_NAME_PROP_ID, CertSetPropertyFlags.None, &blob))
-                            throw new CryptographicException(Marshal.GetLastWin32Error());
+                            throw Marshal.GetLastWin32Error().ToCryptographicException();
                     }
                     finally
                     {
@@ -381,11 +381,11 @@ namespace Internal.Cryptography.Pal
 
             int cchCount = Interop.crypt32.CertGetNameString(_certContext, certNameType, certNameFlags, ref strType, null, 0);
             if (cchCount == 0)
-                throw new CryptographicException(Marshal.GetLastWin32Error());
+                throw Marshal.GetLastWin32Error().ToCryptographicException();
 
             StringBuilder sb = new StringBuilder(cchCount);
             if (Interop.crypt32.CertGetNameString(_certContext, certNameType, certNameFlags, ref strType, sb, cchCount) == 0)
-                throw new CryptographicException(Marshal.GetLastWin32Error());
+                throw Marshal.GetLastWin32Error().ToCryptographicException();
 
             return sb.ToString();
         }
@@ -518,12 +518,12 @@ namespace Internal.Cryptography.Pal
 
             int cchCount = Interop.crypt32.CertGetNameString(_certContext, CertNameType.CERT_NAME_RDN_TYPE, flags, ref stringType, null, 0);
             if (cchCount == 0)
-                throw new CryptographicException(Marshal.GetHRForLastWin32Error());
+                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
 
             StringBuilder sb = new StringBuilder(cchCount);
             cchCount = Interop.crypt32.CertGetNameString(_certContext, CertNameType.CERT_NAME_RDN_TYPE, flags, ref stringType, sb, cchCount);
             if (cchCount == 0)
-                throw new CryptographicException(Marshal.GetHRForLastWin32Error());
+                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
 
             return sb.ToString();
         }

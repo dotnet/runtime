@@ -35,11 +35,11 @@ namespace Internal.Cryptography.Pal
 
                     int cchDecoded = Interop.crypt32.CertNameToStr(CertEncodingType.All, ref nameBlob, dwStrType, null, 0);
                     if (cchDecoded == 0)
-                        throw new CryptographicException(ErrorCode.CERT_E_INVALID_NAME);
+                        throw ErrorCode.CERT_E_INVALID_NAME.ToCryptographicException();
 
                     StringBuilder sb = new StringBuilder(cchDecoded);
                     if (Interop.crypt32.CertNameToStr(CertEncodingType.All, ref nameBlob, dwStrType, sb, cchDecoded) == 0)
-                        throw new CryptographicException(ErrorCode.CERT_E_INVALID_NAME);
+                        throw ErrorCode.CERT_E_INVALID_NAME.ToCryptographicException();
 
                     return sb.ToString();
                 }
@@ -54,11 +54,11 @@ namespace Internal.Cryptography.Pal
 
             int cbEncoded = 0;
             if (!Interop.crypt32.CertStrToName(CertEncodingType.All, distinguishedName, dwStrType, IntPtr.Zero, null, ref cbEncoded, IntPtr.Zero))
-                throw new CryptographicException(Marshal.GetLastWin32Error());
+                throw Marshal.GetLastWin32Error().ToCryptographicException();
 
             byte[] encodedName = new byte[cbEncoded];
             if (!Interop.crypt32.CertStrToName(CertEncodingType.All, distinguishedName, dwStrType, IntPtr.Zero, encodedName, ref cbEncoded, IntPtr.Zero))
-                throw new CryptographicException(Marshal.GetLastWin32Error());
+                throw Marshal.GetLastWin32Error().ToCryptographicException();
 
             return encodedName;
         }

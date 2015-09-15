@@ -149,7 +149,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void X509Cert2CreateFromEmptyPfx()
         {
-            Assert.Throws<CryptographicException>(() => new X509Certificate2(TestData.EmptyPfx));
+            Assert.ThrowsAny<CryptographicException>(() => new X509Certificate2(TestData.EmptyPfx));
         }
 
         [Fact]
@@ -176,26 +176,26 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [ActiveIssue(2635)]
         public static void X509Certificate2FromPkcs7DerFile()
         {
-            Assert.Throws<CryptographicException>(() => new X509Certificate2(Path.Combine("TestData", "singlecert.p7b")));
+            Assert.ThrowsAny<CryptographicException>(() => new X509Certificate2(Path.Combine("TestData", "singlecert.p7b")));
         }
 
         [Fact]
         [ActiveIssue(2635)]
         public static void X509Certificate2FromPkcs7PemFile()
         {
-            Assert.Throws<CryptographicException>(() => new X509Certificate2(Path.Combine("TestData", "singlecert.p7c")));
+            Assert.ThrowsAny<CryptographicException>(() => new X509Certificate2(Path.Combine("TestData", "singlecert.p7c")));
         }
 
         [Fact]
         public static void X509Certificate2FromPkcs7DerBlob()
         {
-            Assert.Throws<CryptographicException>(() => new X509Certificate2(TestData.Pkcs7SingleDerBytes));
+            Assert.ThrowsAny<CryptographicException>(() => new X509Certificate2(TestData.Pkcs7SingleDerBytes));
         }
 
         [Fact]
         public static void X509Certificate2FromPkcs7PemBlob()
         {
-            Assert.Throws<CryptographicException>(() => new X509Certificate2(TestData.Pkcs7SinglePemBytes));
+            Assert.ThrowsAny<CryptographicException>(() => new X509Certificate2(TestData.Pkcs7SinglePemBytes));
         }
 
         [Fact]
@@ -215,14 +215,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 // causing ObjectDisposedExceptions.
                 h = c.Handle;
                 Assert.Equal(IntPtr.Zero, h);
-                Assert.Throws<CryptographicException>(() => c.GetCertHash());
-                Assert.Throws<CryptographicException>(() => c.GetKeyAlgorithm());
-                Assert.Throws<CryptographicException>(() => c.GetKeyAlgorithmParameters());
-                Assert.Throws<CryptographicException>(() => c.GetKeyAlgorithmParametersString());
-                Assert.Throws<CryptographicException>(() => c.GetPublicKey());
-                Assert.Throws<CryptographicException>(() => c.GetSerialNumber());
-                Assert.Throws<CryptographicException>(() => c.Issuer);
-                Assert.Throws<CryptographicException>(() => c.Subject);
+                Assert.ThrowsAny<CryptographicException>(() => c.GetCertHash());
+                Assert.ThrowsAny<CryptographicException>(() => c.GetKeyAlgorithm());
+                Assert.ThrowsAny<CryptographicException>(() => c.GetKeyAlgorithmParameters());
+                Assert.ThrowsAny<CryptographicException>(() => c.GetKeyAlgorithmParametersString());
+                Assert.ThrowsAny<CryptographicException>(() => c.GetPublicKey());
+                Assert.ThrowsAny<CryptographicException>(() => c.GetSerialNumber());
+                Assert.ThrowsAny<CryptographicException>(() => c.Issuer);
+                Assert.ThrowsAny<CryptographicException>(() => c.Subject);
             }
         }
 

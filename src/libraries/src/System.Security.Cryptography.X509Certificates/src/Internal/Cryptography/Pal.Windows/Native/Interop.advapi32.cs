@@ -5,18 +5,17 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace Internal.Cryptography.Pal.Native
+using Internal.Cryptography.Pal.Native;
+
+internal static partial class Interop
 {
-    internal static partial class Interop
+    public static class advapi32
     {
-        public static class advapi32
-        {
 #if !NETNATIVE
-            [DllImport(Libraries.Advapi32, SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "CryptAcquireContextW")]
-            [return: MarshalAs(UnmanagedType.Bool)]
-            public static extern unsafe bool CryptAcquireContext(out IntPtr psafeProvHandle, char* pszContainer, char* pszProvider, int dwProvType, CryptAcquireContextFlags dwFlags);
+        [DllImport(Libraries.Advapi32, SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "CryptAcquireContextW")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern unsafe bool CryptAcquireContext(out IntPtr psafeProvHandle, char* pszContainer, char* pszProvider, int dwProvType, CryptAcquireContextFlags dwFlags);
 #endif
-        }
     }
 }
 
