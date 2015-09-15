@@ -56,7 +56,7 @@ echo BEGIN EXECUTION]]>
       </BashCLRTestExitCodePrep>
     
       <BashCLRTestArgPrep Condition=" '$(CLRTestExecutionArguments)'!='' ">
-<![CDATA[CLRTestExecutionArguments=$(CLRTestExecutionArguments)]]>
+<![CDATA[CLRTestExecutionArguments="$(CLRTestExecutionArguments)"]]>
       </BashCLRTestArgPrep>
     
       <!-- By default, be prepared to do a full check -->
