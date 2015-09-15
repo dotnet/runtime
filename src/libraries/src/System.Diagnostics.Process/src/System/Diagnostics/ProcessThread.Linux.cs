@@ -17,7 +17,7 @@ namespace System.Diagnostics
             get
             {
                 Interop.procfs.ParsedStat stat = GetStat();
-                return Interop.libc.GetThreadPriorityFromNiceValue((int)stat.nice);
+                return Interop.Sys.GetThreadPriorityFromNiceValue((int)stat.nice);
             }
             set
             {

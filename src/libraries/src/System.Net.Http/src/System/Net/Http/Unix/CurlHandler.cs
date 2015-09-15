@@ -527,7 +527,7 @@ namespace System.Net.Http
 
             // Create the message and trace it out
             string msg = string.Format("[{0, -30}]{1, -16}: {2}", memberName, ids, text);
-            Interop.libc.printf("%s\n", msg);
+            Interop.Sys.PrintF("%s\n", msg);
         }
 
         [Conditional(VerboseDebuggingConditional)]

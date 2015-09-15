@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <limits>
+#include <limits.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <sys/resource.h>
@@ -52,6 +53,11 @@ static_assert(PAL_LOG_LOCAL4 == LOG_LOCAL4, "");
 static_assert(PAL_LOG_LOCAL5 == LOG_LOCAL5, "");
 static_assert(PAL_LOG_LOCAL6 == LOG_LOCAL6, "");
 static_assert(PAL_LOG_LOCAL7 == LOG_LOCAL7, "");
+
+// Validate that out PriorityWhich values are correct for the platform
+static_assert(PAL_PRIO_PROCESS == static_cast<int>(PRIO_PROCESS), "");
+static_assert(PAL_PRIO_PGRP == static_cast<int>(PRIO_PGRP), "");
+static_assert(PAL_PRIO_USER == static_cast<int>(PRIO_USER), "");
 
 enum
 {
@@ -322,4 +328,84 @@ extern "C" int32_t WIfSignaled(int32_t status)
 extern "C" int32_t WTermSig(int32_t status)
 {
     return WTERMSIG(status);
+}
+
+extern "C" int64_t PathConf(const char* path, PathConfName name)
+{
+    int32_t confValue = -1;
+    switch (name)
+    {
+        case PAL_PC_LINK_MAX:
+            confValue = _PC_LINK_MAX;
+            break;
+        case PAL_PC_MAX_CANON:
+            confValue = _PC_MAX_CANON;
+            break;
+        case PAL_PC_MAX_INPUT:
+            confValue = _PC_MAX_INPUT;
+            break;
+        case PAL_PC_NAME_MAX:
+            confValue = _PC_NAME_MAX;
+            break;
+        case PAL_PC_PATH_MAX:
+            confValue = _PC_PATH_MAX;
+            break;
+        case PAL_PC_PIPE_BUF:
+            confValue = _PC_PIPE_BUF;
+            break;
+        case PAL_PC_CHOWN_RESTRICTED:
+            confValue = _PC_CHOWN_RESTRICTED;
+            break;
+        case PAL_PC_NO_TRUNC:
+            confValue = _PC_NO_TRUNC;
+            break;
+        case PAL_PC_VDISABLE:
+            confValue = _PC_VDISABLE;
+            break;
+    }
+
+    if (confValue == -1)
+    {
+        assert(false && "Unknown PathConfName");
+        errno = EINVAL;
+        return -1;
+    }
+
+    return pathconf(path, confValue);
+}
+
+extern "C" int64_t GetMaximumPath()
+{
+    int64_t result = pathconf("/", _PC_PATH_MAX);
+    if (result == -1)
+    {
+        result = PATH_MAX;
+    }
+
+    return result;
+}
+
+extern "C" int32_t GetPriority(PriorityWhich which, int32_t who)
+{
+    // GetPriority uses errno 0 to show succes to make sure we don't have a stale value
+    errno = 0;
+    return getpriority(which, static_cast<id_t>(who));
+}
+
+extern "C" int32_t SetPriority(PriorityWhich which, int32_t who, int32_t nice)
+{
+    return setpriority(which, static_cast<id_t>(who), nice);
+}
+
+extern "C" char* GetCwd(char* buffer, int32_t bufferSize)
+{
+    assert(bufferSize >= 0);
+
+    if (bufferSize < 0)
+    {
+        errno = EINVAL;
+        return nullptr;
+    }
+
+    return getcwd(buffer, UnsignedCast(bufferSize));
 }

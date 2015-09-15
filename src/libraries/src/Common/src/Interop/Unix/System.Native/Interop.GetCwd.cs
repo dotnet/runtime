@@ -4,19 +4,20 @@
 using System;
 using System.Runtime.InteropServices;
 
-using size_t  = System.IntPtr;
-
 internal static partial class Interop
 {
-    internal static partial class libc
+    internal static partial class Sys
     {
-        internal static unsafe string getcwd()
-        {
-            const int StackLimit = 256;
+        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        private static unsafe extern byte* GetCwd(byte* buffer, int bufferLength);
 
+        internal static unsafe string GetCwd()
+        {      
+            const int StackLimit = 256;
+       
             // First try to get the path into a buffer on the stack
             byte* stackBuf = stackalloc byte[StackLimit];
-            string result = getcwd(stackBuf, StackLimit);
+            string result = GetCwdHelper(stackBuf, StackLimit);
             if (result != null)
             {
                 return result;
@@ -24,7 +25,7 @@ internal static partial class Interop
 
             // If that was too small, try increasing large buffer sizes
             // until we get one that works or until we hit MaxPath.
-            int maxPath = Interop.libc.MaxPath;
+            int maxPath = Interop.Sys.MaxPath;
             if (StackLimit < maxPath)
             {
                 int bufferSize = StackLimit;
@@ -34,7 +35,7 @@ internal static partial class Interop
                     var buf = new byte[Math.Min(bufferSize, maxPath)];
                     fixed (byte* ptr = buf)
                     {
-                        result = getcwd(ptr, buf.Length);
+                        result = GetCwdHelper(ptr, buf.Length);
                         if (result != null)
                         {
                             return result;
@@ -48,10 +49,10 @@ internal static partial class Interop
             throw Interop.GetExceptionForIoErrno(new ErrorInfo(Interop.Error.ENAMETOOLONG));
         }
 
-        private static unsafe string getcwd(byte* ptr, int bufferSize)
+        private static unsafe string GetCwdHelper(byte* ptr, int bufferSize)
         {
             // Call the real getcwd
-            byte* result = getcwd(ptr, (size_t)bufferSize);
+            byte* result = GetCwd(ptr, bufferSize);
 
             // If it returned non-null, the null-terminated path is in the buffer
             if (result != null)
@@ -68,8 +69,5 @@ internal static partial class Interop
             }
             throw Interop.GetExceptionForIoErrno(errorInfo);
         }
-
-        [DllImport(Libraries.Libc, SetLastError = true)]
-        private static extern unsafe byte* getcwd(byte* buf, size_t bufSize);
     }
 }

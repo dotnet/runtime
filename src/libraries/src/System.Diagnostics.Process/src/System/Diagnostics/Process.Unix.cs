@@ -132,7 +132,7 @@ namespace System.Diagnostics
                 EnsureState(State.HaveId);
 
                 int pri = 0;
-                int errno = Interop.libc.getpriority(Interop.libc.PriorityWhich.PRIO_PROCESS, _processId, out pri);
+                int errno = Interop.Sys.GetPriority(Interop.Sys.PriorityWhich.PRIO_PROCESS, _processId, out pri);
                 if (errno != 0)
                 {
                     throw new Win32Exception(errno); // match Windows exception
@@ -161,7 +161,7 @@ namespace System.Diagnostics
                     default: throw new Win32Exception(); // match Windows exception
                 }
 
-                int result = Interop.libc.setpriority(Interop.libc.PriorityWhich.PRIO_PROCESS, _processId, pri);
+                int result = Interop.Sys.SetPriority(Interop.Sys.PriorityWhich.PRIO_PROCESS, _processId, pri);
                 if (result == -1)
                 {
                     throw new Win32Exception(); // match Windows exception
