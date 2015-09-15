@@ -811,6 +811,24 @@ interface ICorDebugDataTarget3 : IUnknown
 };
 
 /*
+ * Data target that knows how to obtain debugee's process id. 
+ * Debugee is not necessarily a living process at that time or on the same machine.
+ */
+[
+    object,
+    uuid(E799DC06-E099-4713-BDD9-906D3CC02CF2),
+    local,
+    pointer_default(unique)
+]
+interface ICorDebugDataTarget4 : IUnknown
+{
+    /*
+    * gives back a process id
+    */
+    HRESULT GetPid([out] DWORD *pdwProcessId);
+};
+
+/*
  * Mutable extension to the data target.  This version of ICorDebugDataTarget 
  * can be implemented by targets that wish to support modification of the target 
  * process (such as for live invasive debugging).
@@ -878,6 +896,7 @@ interface ICorDebugMutableDataTarget : ICorDebugDataTarget
                                   [in] CORDB_CONTINUE_STATUS continueStatus);
 
 };
+
 
 /*
  * Interface used by the data access services layer to locate metadata 
