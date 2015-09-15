@@ -6,11 +6,9 @@
 |**Release**|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_corefx_linux_release/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx_linux_release/)|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_corefx_windows_release/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx_windows_release/)|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_corefx_mac_release/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx_mac_release/)|
 |**Coverage Report**||[![Coverage Status](http://dotnet-ci.cloudapp.net/job/dotnet_corefx_coverage_windows/lastStableBuild/Code_Coverage_Report/badge_combined.svg)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx_coverage_windows/lastStableBuild/Code_Coverage_Report/)||
 
-The corefx repo contains the library implementation (called "CoreFX") for [.NET Core](http://github.com/dotnet/core). It includes System.Collections, System.IO, System.Xml and many other components. It builds and runs on Windows. You can ['watch'](https://github.com/dotnet/corefx/subscription) the repo to see Linux and Mac support being added over the next few months.
+The corefx repo contains the library implementation (called "CoreFX") for [.NET Core](http://github.com/dotnet/core). It includes System.Collections, System.IO, System.Xml and many other [components](#net-core-library-components). You can see more information in [Documentation](Documentation/README.md). 
 
-You can also see more information in the [Documentation README](Documentation/README.md). 
-
-.NET Core is a modular implementation of .NET that can be used as the base stack for a wide variety of scenarios, today scaling from console utilities to web apps in the cloud.  You can learn more about .NET Core and how and where you can use it in the [.NET Core is open source][.NET Core oss] and [Introducing .NET Core][Introducing .NET Core] blog posts.
+.NET Core is a modular implementation of .NET that can be used as the base stack for a wide variety of scenarios, today scaling from console utilities to web apps in the cloud.  You can learn more about .NET Core and how and where you can use it in the [.NET Core is open source][.NET Core oss] and [Introducing .NET Core][Introducing .NET Core] blog posts. The [.NET Core Roadmap](https://github.com/dotnet/core/blob/master/roadmap.md) describes where the team is headed.
 
 The [.NET Core Runtime repo](https://github.com/dotnet/coreclr) contains the  runtime implementation (called "CoreCLR") for .NET Core. It includes RyuJIT, the .NET GC, native interop and many other components.
 
