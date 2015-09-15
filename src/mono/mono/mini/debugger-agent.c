@@ -268,7 +268,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 41
+#define MINOR_VERSION 42
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -325,6 +325,7 @@ typedef enum {
 	ERR_NO_INVOCATION = 104,
 	ERR_ABSENT_INFORMATION = 105,
 	ERR_NO_SEQ_POINT_AT_IL_OFFSET = 106,
+	ERR_INVOKE_ABORTED = 107,
 	ERR_LOADER_ERROR = 200, /*XXX extend the protocol to pass this information down the pipe */
 } ErrorCode;
 
@@ -6735,6 +6736,11 @@ invoke_method (void)
 			err = do_invoke_method (tls, &buf, invoke, p, &p);
 		}
 
+		if (tls->abort_requested) {
+			if (CHECK_PROTOCOL_VERSION (2, 42))
+				err = ERR_INVOKE_ABORTED;
+		}
+
 		/* Start suspending before sending the reply */
 		if (mindex == invoke->nmethods - 1) {
 			if (!(invoke->flags & INVOKE_FLAG_SINGLE_THREADED)) {
@@ -7051,6 +7057,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		g_assert (tls);
 
 		if (tls->abort_requested) {
+			DEBUG_PRINTF (1, "Abort already requested.\n");
 			mono_loader_unlock ();
 			break;
 		}
