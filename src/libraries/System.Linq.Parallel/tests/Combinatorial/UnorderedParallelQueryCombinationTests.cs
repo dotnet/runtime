@@ -6,7 +6,6 @@ using Xunit;
 
 namespace System.Linq.Parallel.Tests
 {
-    [Trait("category", "outerloop")]
     public partial class ParallelQueryCombinationTests
     {
         [Theory]
