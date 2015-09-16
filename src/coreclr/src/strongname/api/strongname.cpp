@@ -2631,8 +2631,8 @@ BOOLEAN RehashModules (SN_LOAD_CTX *pLoadCtx, LPCWSTR wszFilePath) {
     DWORD               cbNewFileHash = 0;
     DWORD               cchDirectory;
     DWORD               cchFullFile;
-    CHAR                szFullFile[MAX_PATH + 1];
-    WCHAR               wszFullFile[MAX_PATH + 1];
+    CHAR                szFullFile[MAX_LONGPATH + 1];
+    WCHAR               wszFullFile[MAX_LONGPATH + 1];
     LPCWSTR             pszSlash;
     DWORD               cchFile;
     IMDInternalImport  *pMetaDataImport = NULL;
@@ -2641,8 +2641,8 @@ BOOLEAN RehashModules (SN_LOAD_CTX *pLoadCtx, LPCWSTR wszFilePath) {
     // look for linked files).
     if (((pszSlash = wcsrchr(wszFilePath, W('\\'))) != NULL) || ((pszSlash = wcsrchr(wszFilePath, W('/'))) != NULL)) {
         cchDirectory = (DWORD) (pszSlash - wszFilePath + 1);
-        cchDirectory = WszWideCharToMultiByte(CP_UTF8, 0, wszFilePath, cchDirectory, szFullFile, MAX_PATH, NULL, NULL);
-        if (cchDirectory >= MAX_PATH) {
+        cchDirectory = WszWideCharToMultiByte(CP_UTF8, 0, wszFilePath, cchDirectory, szFullFile, MAX_LONGPATH, NULL, NULL);
+        if (cchDirectory >= MAX_LONGPATH) {
             SNLOG((W("Assembly directory name too long\n")));
             hr = ERROR_BUFFER_OVERFLOW;
             goto Error;
@@ -2712,8 +2712,8 @@ BOOLEAN RehashModules (SN_LOAD_CTX *pLoadCtx, LPCWSTR wszFilePath) {
             cbNewFileHash = cbFileHash;
         }
 
-        cchFullFile = WszMultiByteToWideChar(CP_UTF8, 0, szFullFile, -1, wszFullFile, MAX_PATH);
-        if (cchFullFile == 0 || cchFullFile >= MAX_PATH) {
+        cchFullFile = WszMultiByteToWideChar(CP_UTF8, 0, szFullFile, -1, wszFullFile, MAX_LONGPATH);
+        if (cchFullFile == 0 || cchFullFile >= MAX_LONGPATH) {
             pMetaDataImport->EnumClose(&hFileEnum);
             SNLOG((W("Assembly directory name too long\n")));
             hr = ERROR_BUFFER_OVERFLOW;
@@ -3104,7 +3104,7 @@ HRESULT ReadRegistryConfig()
 HRESULT ReadVerificationRecords()
 {
     HKEYHolder hKey;
-    WCHAR      wszSubKey[MAX_PATH + 1];
+    WCHAR      wszSubKey[MAX_PATH_FNAME + 1];
     DWORD      cchSubKey;
     SN_VER_REC *pVerificationRecords = NULL;
     HRESULT    hr = S_OK;
@@ -3117,7 +3117,7 @@ HRESULT ReadVerificationRecords()
     // just opened.
     for (DWORD i = 0; ; i++) {
         // Get the name of the next subkey.
-        cchSubKey = MAX_PATH + 1;
+        cchSubKey = MAX_PATH_FNAME + 1;
         FILETIME sFiletime;
         if (WszRegEnumKeyEx(hKey, i, wszSubKey, &cchSubKey, NULL, NULL, NULL, &sFiletime) != ERROR_SUCCESS)
             break;
@@ -3270,7 +3270,7 @@ HRESULT ReadReplacementKeys(HKEY hKey, SN_REPLACEMENT_KEY_REC **ppReplacementRec
 HRESULT ReadRevocationRecordsFromKey(REGSAM samDesired, SN_REVOCATION_REC **ppRevocationRecords)
 {
     HKEYHolder          hKey;
-    WCHAR               wszSubKey[MAX_PATH + 1];
+    WCHAR               wszSubKey[MAX_PATH_FNAME + 1];
     DWORD               cchSubKey;
     HRESULT             hr = S_OK;
 
@@ -3282,7 +3282,7 @@ HRESULT ReadRevocationRecordsFromKey(REGSAM samDesired, SN_REVOCATION_REC **ppRe
     // just opened.
     for (DWORD i = 0; ; i++) {
         // Read the next subkey
-        cchSubKey = MAX_PATH + 1; // reset size of buffer, as the following call changes it
+        cchSubKey = MAX_PATH_FNAME + 1; // reset size of buffer, as the following call changes it
         if (WszRegEnumKeyEx(hKey, i, wszSubKey, &cchSubKey, NULL, NULL, NULL, NULL) != ERROR_SUCCESS)
             break;
         
@@ -4114,7 +4114,7 @@ HRESULT VerifySignature(__in SN_LOAD_CTX *pLoadCtx, DWORD dwInFlags, PublicKeyBl
     // Read the public key used to sign the assembly from the assembly metadata.
     // Also get the assembly name, we might need this if we fail the
     // verification and need to look up a verification disablement entry.
-    WCHAR           wszSimpleAssemblyName[MAX_PATH + 1];
+    WCHAR           wszSimpleAssemblyName[MAX_PATH_FNAME + 1];
     SString         strFullyQualifiedAssemblyName;
     BOOL            bSuccess = FALSE;
 #if STRONGNAME_IN_VM

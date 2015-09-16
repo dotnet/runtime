@@ -2292,7 +2292,7 @@ struct MSLAYOUT DebuggerIPCEvent
         struct MSLAYOUT
         {
             CONNID     connectionId;
-            EmbeddedIPCString<MAX_PATH> wzConnectionName;
+            EmbeddedIPCString<MAX_LONGPATH> wzConnectionName;
         } CreateConnection;
 
         struct MSLAYOUT

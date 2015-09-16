@@ -9409,7 +9409,7 @@ HRESULT gc_heap::initialize_gc (size_t segment_size,
             FILE_ATTRIBUTE_NORMAL,
             NULL);
 #else // FEATURE_REDHAWK
-        char logfile_name[MAX_PATH+1];
+        char logfile_name[MAX_LONGPATH+1];
         if (temp_logfile_name != 0)
         {
             int ret;

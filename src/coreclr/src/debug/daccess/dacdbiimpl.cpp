@@ -1247,8 +1247,8 @@ bool DacDbiInterfaceImpl::GetMetaDataFileInfoFromPEFile(VMPTR_PEFile vmPEFile,
     if (pPEFile == NULL)
         return false;
 
-    WCHAR wszFilePath[MAX_PATH] = {0};
-    DWORD cchFilePath = MAX_PATH;
+    WCHAR wszFilePath[MAX_LONGPATH] = {0};
+    DWORD cchFilePath = MAX_LONGPATH;
     bool ret = ClrDataAccess::GetMetaDataFileInfoFromPEFile(pPEFile,
                                                             dwTimeStamp,
                                                             dwSize,
@@ -1284,8 +1284,8 @@ bool DacDbiInterfaceImpl::GetILImageInfoFromNgenPEFile(VMPTR_PEFile vmPEFile,
         return false;
     }
 
-    WCHAR wszFilePath[MAX_PATH] = {0};
-    DWORD cchFilePath = MAX_PATH;
+    WCHAR wszFilePath[MAX_LONGPATH] = {0};
+    DWORD cchFilePath = MAX_LONGPATH;
     bool ret = ClrDataAccess::GetILImageInfoFromNgenPEFile(pPEFile,
                                                            dwTimeStamp,
                                                            dwSize,

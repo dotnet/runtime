@@ -289,8 +289,8 @@ ParseURLW(
 #ifdef DEBUG
     if (hr==S_OK)
     {
-        WCHAR rgchDebugProtocol[MAX_PATH];
-        WCHAR rgchDebugSuffix[MAX_PATH];
+        WCHAR rgchDebugProtocol[MAX_PATH_FNAME];
+        WCHAR rgchDebugSuffix[MAX_PATH_FNAME];
 
         // (+ 1) for null terminator.
 
