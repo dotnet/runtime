@@ -45,18 +45,18 @@ DataTargetAdapter::~DataTargetAdapter()
 // Standard impl of IUnknown::QueryInterface
 HRESULT STDMETHODCALLTYPE
 DataTargetAdapter::QueryInterface(
-    REFIID InterfaceId,
+    REFIID interfaceId,
     PVOID* pInterface)
 {
-    if (InterfaceId == IID_IUnknown)
+    if (interfaceId == IID_IUnknown)
     {
         *pInterface = static_cast<IUnknown *>(static_cast<ICorDebugDataTarget *>(this));
     }
-    else if (InterfaceId == IID_ICorDebugDataTarget)
+    else if (interfaceId == IID_ICorDebugDataTarget)
     {
         *pInterface = static_cast<ICorDebugDataTarget *>(this);
     }
-    else if (InterfaceId == IID_ICorDebugMutableDataTarget)
+    else if (interfaceId == IID_ICorDebugMutableDataTarget)
     {
         // Note that we always implement the mutable interface, even though our underlying target
         // may return E_NOTIMPL for all the functions on this interface.  There is no reliable way
@@ -65,8 +65,8 @@ DataTargetAdapter::QueryInterface(
     }
     else
     {
-        *pInterface = NULL;
-        return E_NOINTERFACE;
+        // For ICorDebugDataTarget4 and other interfaces directly implemented by the legacy data target.
+        return m_pLegacyTarget->QueryInterface(interfaceId, pInterface);
     }
 
     AddRef();
