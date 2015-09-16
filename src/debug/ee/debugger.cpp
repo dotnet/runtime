@@ -6708,7 +6708,7 @@ DebuggerLaunchSetting Debugger::GetDbgJITDebugLaunchSetting()
 
     DebuggerLaunchSetting setting = DLS_ASK_USER;
 
-    DWORD cchDbgFormat = MAX_PATH;
+    DWORD cchDbgFormat = MAX_LONGPATH;
     INDEBUG(DWORD cchOldDbgFormat = cchDbgFormat);
 
 #if defined(DACCESS_COMPILE)

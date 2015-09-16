@@ -340,7 +340,7 @@ void ConsoleArgs::CleanUpArgs()
 bool ConsoleArgs::GetFullFileName(LPCWSTR szSource, __out_ecount(cchFilenameBuffer) LPWSTR filenameBuffer, DWORD cchFilenameBuffer, bool fOutputFilename)
 {
 #ifdef PLATFORM_UNIX
-    WCHAR tempBuffer[MAX_PATH];
+    WCHAR tempBuffer[MAX_LONGPATH];
     memset(filenameBuffer, 0, cchFilenameBuffer * sizeof(WCHAR));
     if (!PathCanonicalizeW(tempBuffer, szSource) ||
         StringCchCopyW(filenameBuffer, cchFilenameBuffer, tempBuffer) != S_OK)
@@ -882,7 +882,7 @@ void ConsoleArgs::ProcessResponseArgs()
     HRESULT hr;
     b_tree *response_files = NULL;
 
-    WCHAR szFilename[MAX_PATH];
+    WCHAR szFilename[MAX_LONGPATH];
 
     for (WStrList * listCurArg = m_listArgs;
          listCurArg != NULL && !m_errorOccured;
@@ -901,7 +901,7 @@ void ConsoleArgs::ProcessResponseArgs()
         }
 
         // Check for duplicates
-        if (!GetFullFileName(&szArg[1], szFilename, MAX_PATH, false))
+        if (!GetFullFileName(&szArg[1], szFilename, MAX_LONGPATH, false))
             continue;
 
         

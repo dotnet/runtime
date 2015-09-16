@@ -521,7 +521,7 @@ HRESULT SymReader::VerifyPEDebugInfo(const WCHAR* szFileName)
     // Replace the extension with ildb
     if (_wsplitpath_s( fullpath, drive, COUNTOF(drive), dir, COUNTOF(dir), fname, COUNTOF(fname), NULL, 0 ))
         IfFailGo(HrFromWin32(ERROR_BAD_FORMAT));
-    if (_wmakepath_s(m_szStoredSymbolName, MAX_PATH, drive, dir, fname, W("ildb") ))
+    if (_wmakepath_s(m_szStoredSymbolName, MAX_LONGPATH, drive, dir, fname, W("ildb") ))
         IfFailGo(HrFromWin32(ERROR_BAD_FORMAT));
 
     // It looks valid, make sure to set the return code
