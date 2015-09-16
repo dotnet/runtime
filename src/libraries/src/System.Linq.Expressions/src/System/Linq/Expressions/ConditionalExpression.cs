@@ -5,6 +5,8 @@ using System;
 using System.Dynamic.Utils;
 using System.Diagnostics;
 
+using AstUtils = System.Linq.Expressions.Utils;
+
 namespace System.Linq.Expressions
 {
     /// <summary>
@@ -81,7 +83,8 @@ namespace System.Linq.Expressions
 
         internal virtual Expression GetFalse()
         {
-            return Expression.Empty();
+            // Using a singleton here to ensure a stable object identity for IfFalse, which Update relies on.
+            return AstUtils.Empty();
         }
 
         /// <summary>

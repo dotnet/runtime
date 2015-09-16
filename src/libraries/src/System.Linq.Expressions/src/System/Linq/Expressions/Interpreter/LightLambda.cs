@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -10,9 +11,8 @@ using System.Runtime.CompilerServices;
 using System.Security;
 using System.Text;
 using System.Threading;
-using System.Dynamic.Utils;
 
-using AstUtils = System.Linq.Expressions.Interpreter.Utils;
+using AstUtils = System.Linq.Expressions.Utils;
 
 namespace System.Linq.Expressions.Interpreter
 {
