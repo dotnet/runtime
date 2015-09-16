@@ -2566,6 +2566,8 @@ public:
     }
 
 
+    void SyncManagedExceptionState(bool fIsDebuggerThread);
+
     //---------------------------------------------------------------
     // Per-thread information used by handler
     //---------------------------------------------------------------
