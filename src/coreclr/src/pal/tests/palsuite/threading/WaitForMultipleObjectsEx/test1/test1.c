@@ -174,6 +174,35 @@ BOOL WaitForMultipleObjectsExTest()
     return bRet;
 }
 
+BOOL WaitMultipleDuplicateHandleTest()
+{
+    BOOL testResult = TRUE;
+    const HANDLE eventHandle = CreateEvent(NULL, TRUE, TRUE, NULL);
+    HANDLE eventHandles[] = {eventHandle, eventHandle};
+
+    // WaitAny - Wait for any of the events (no error expected)
+    DWORD result = WaitForMultipleObjects(sizeof(eventHandles) / sizeof(eventHandles[0]), eventHandles, FALSE, 0);
+    if (result != WAIT_OBJECT_0)
+    {
+        Trace("WaitMultipleDuplicateHandleTest:WaitAny failed (%x)\n", GetLastError());
+        testResult = FALSE;
+    }
+
+    // WaitAll - Wait for all of the events (error expected)
+    result = WaitForMultipleObjects(sizeof(eventHandles) / sizeof(eventHandles[0]), eventHandles, TRUE, 0);
+    if (result != WAIT_FAILED)
+    {
+        Trace("WaitMultipleDuplicateHandleTest:WaitAll failed: call unexpectedly succeeded\n");
+        testResult = FALSE;
+    }
+    else if (GetLastError() != ERROR_INVALID_PARAMETER)
+    {
+        Trace("WaitMultipleDuplicateHandleTest:WaitAll failed: unexpected last error (%x)\n");
+        testResult = FALSE;
+    }
+
+    return testResult;
+}
 
 int __cdecl main(int argc, char **argv)
 {
@@ -186,6 +215,11 @@ int __cdecl main(int argc, char **argv)
     if(!WaitForMultipleObjectsExTest())
     {
         Fail ("Test failed\n");
+    }
+
+    if (!WaitMultipleDuplicateHandleTest())
+    {
+        Fail("Test failed\n");
     }
 
     PAL_Terminate();
