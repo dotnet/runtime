@@ -189,7 +189,9 @@ TODO: Talk about initializing strutures before use
 #include <corhdr.h>
 #include <specstrings.h>
 
+// For System V on the CLR type system number of registers to pass in and return a struct is the same.
 #define SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS   2
+#define SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_RETURN_IN_REGISTERS SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS
 #define SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS       16
 
 // System V struct passing
@@ -219,7 +221,7 @@ struct SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR
     }
 
     bool                        canPassInRegisters;
-    unsigned int                numberEightBytes;
+    unsigned int                eightByteCount;
     SystemVClassificationType   eightByteClassifications[SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
     unsigned int                eightByteSizes[SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
     unsigned int                eightByteOffsets[SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
@@ -228,7 +230,7 @@ struct SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR
     void Initialize()
     {
         canPassInRegisters = false;
-        numberEightBytes = false;
+        eightByteCount = 0;
 
         for (int i = 0; i < SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS; i++)
         {
