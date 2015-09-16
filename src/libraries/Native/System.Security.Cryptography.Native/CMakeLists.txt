@@ -13,7 +13,7 @@ add_definitions(-DPIC=1)
 
 find_library(CRYPTO NAMES crypto)
 if(CRYPTO STREQUAL CRYPTO-NOTFOUND)
-    message(WARNING "Cannot find libcrypto, skipping build for System.Security.Cryptography.Native. .NET cryptography is not expected to function. Try installing libssl-dev (or the appropriate package for your platform)")
+    message(SEND_ERROR "!!! Cannot find libcrypto and System.Security.Cryptography.Native cannot build without it. Try installing libssl-dev (or the appropriate package for your platform) !!!")
     return()
 endif()
 
