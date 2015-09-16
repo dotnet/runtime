@@ -4,13 +4,14 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Dynamic.Utils;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Threading;
-using System.Dynamic.Utils;
-using AstUtils = System.Linq.Expressions.Interpreter.Utils;
 using System.Runtime.CompilerServices;
+using System.Threading;
+
+using AstUtils = System.Linq.Expressions.Utils;
 
 namespace System.Linq.Expressions.Interpreter
 {
@@ -516,16 +517,6 @@ namespace System.Linq.Expressions.Interpreter
         Read = 1,
         Write = 2,
         ReadWrite = Read | Write,
-    }
-
-    internal static class Utils
-    {
-        private static readonly DefaultExpression s_voidInstance = Expression.Empty();
-
-        public static DefaultExpression Empty()
-        {
-            return s_voidInstance;
-        }
     }
 
     internal sealed class ListEqualityComparer<T> : EqualityComparer<ICollection<T>>
