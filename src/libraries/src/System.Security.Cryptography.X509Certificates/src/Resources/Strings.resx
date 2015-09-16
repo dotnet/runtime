@@ -204,6 +204,12 @@
   <data name="InvalidOperation_EnumNotStarted" xml:space="preserve">
     <value>Enumeration has not started.  Call MoveNext.</value>
   </data>
+  <data name="InvalidPublicKeyInX509" xml:space="preserve">
+    <value>Cannot obtain public key from X509Certificate. Public Key ASN.1 is in an unexpected format.</value>
+  </data>
+  <data name="NotSupported_ECDsa_Csp" xml:space="preserve">
+    <value>CryptoApi ECDsa keys are not supported.</value>
+  </data>
   <data name="NotSupported_Export_MultiplePrivateCerts" xml:space="preserve">
     <value>Only one certificate with a private key can be exported in a single PFX.</value>
   </data>

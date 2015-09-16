@@ -22,6 +22,42 @@ namespace Internal.Cryptography.Pal
 
         public RSA GetRSAPrivateKey()
         {
+            return GetPrivateKey<RSA>(
+                delegate (CspParameters csp)
+                {
+#if NETNATIVE
+                    // In .NET Native (UWP) we don't have access to CAPI, so it's CNG-or-nothing.
+                    // But we don't expect to get here, so it shouldn't be a problem.
+    
+                    Debug.Fail("A CAPI provider type code was specified");
+                    return null;
+#else
+                    return new RSACryptoServiceProvider(csp);
+#endif
+                },
+                delegate (CngKey cngKey)
+                {
+                    return new RSACng(cngKey);
+                }
+            );
+        }
+
+        public ECDsa GetECDsaPrivateKey()
+        {
+            return GetPrivateKey<ECDsa>(
+                delegate (CspParameters csp)
+                {
+                    throw new NotSupportedException(SR.NotSupported_ECDsa_Csp);
+                },
+                delegate (CngKey cngKey)
+                {
+                    return new ECDsaCng(cngKey);
+                }
+            );
+        }
+
+        private T GetPrivateKey<T>(Func<CspParameters, T> createCsp, Func<CngKey, T> createCng) where T : AsymmetricAlgorithm
+        {
             CspParameters cspParameters = GetPrivateKey();
             if (cspParameters == null)
                 return null;
@@ -34,22 +70,21 @@ namespace Internal.Cryptography.Pal
                 string keyStorageProvider = cspParameters.ProviderName;
                 string keyName = cspParameters.KeyContainerName;
                 CngKey cngKey = CngKey.Open(keyName, new CngProvider(keyStorageProvider));
-                return new RSACng(cngKey);
+                return createCng(cngKey);
             }
             else
             {
                 // ProviderType being non-zero signifies that this is a CAPI key.
-
 #if NETNATIVE
                 // In .NET Native (UWP) we don't have access to CAPI, so it's CNG-or-nothing.
                 // But we don't expect to get here, so it shouldn't be a problem.
-
+    
                 Debug.Fail("A CAPI provider type code was specified");
                 return null;
 #else
                 // We never want to stomp over certificate private keys.
                 cspParameters.Flags |= CspProviderFlags.UseExistingKey;
-                return new RSACryptoServiceProvider(cspParameters);
+                return createCsp(cspParameters);
 #endif
             }
         }

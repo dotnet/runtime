@@ -9,7 +9,7 @@ namespace Internal.Cryptography.Pal
 {
     internal interface IX509Pal
     {
-        AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters);
+        AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters, ICertificatePal certificatePal);
         String X500DistinguishedNameDecode(byte[] encodedDistinguishedName, X500DistinguishedNameFlags flag);
         byte[] X500DistinguishedNameEncode(String distinguishedName, X500DistinguishedNameFlags flag);
         String X500DistinguishedNameFormat(byte[] encodedDistinguishedName, bool multiLine);
