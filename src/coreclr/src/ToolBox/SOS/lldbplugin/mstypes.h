@@ -50,6 +50,7 @@ typedef int HRESULT;
 #define S_FALSE                          (HRESULT)0x00000001
 #define E_NOTIMPL                        (HRESULT)0x80004001
 #define E_FAIL                           (HRESULT)0x80004005
+#define E_INVALIDARG                     (HRESULT)0x80070057
 
 #define MAX_PATH                         260 
 

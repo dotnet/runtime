@@ -734,9 +734,34 @@ DebugClient::GetModuleBase(
 //----------------------------------------------------------------------------
 
 HRESULT 
+DebugClient::GetCurrentProcessId(
+    PULONG id)
+{
+    if (id == NULL)  
+    {
+        return E_INVALIDARG;
+    }
+
+    lldb::SBProcess process = GetCurrentProcess();
+    if (!process.IsValid())
+    {
+        *id = 0;
+        return E_FAIL;
+    }
+
+    *id = process.GetProcessID();
+    return S_OK;
+}
+
+HRESULT 
 DebugClient::GetCurrentThreadId(
     PULONG id)
 {
+    if (id == NULL)  
+    {
+        return E_INVALIDARG;
+    }
+
     lldb::SBThread thread = GetCurrentThread();
     if (!thread.IsValid())
     {
@@ -778,6 +803,11 @@ HRESULT
 DebugClient::GetCurrentThreadSystemId(
     PULONG sysId)
 {
+    if (sysId == NULL)  
+    {
+        return E_INVALIDARG;
+    }
+
     lldb::SBThread thread = GetCurrentThread();
     if (!thread.IsValid())
     {
@@ -807,6 +837,11 @@ DebugClient::GetThreadIdBySystemId(
 
     lldb::SBProcess process;
     lldb::SBThread thread;
+
+    if (threadId == NULL)  
+    {
+        return E_INVALIDARG;
+    }
 
     process = GetCurrentProcess();
     if (!process.IsValid())
@@ -850,7 +885,7 @@ DebugClient::GetThreadContextById(
     DT_CONTEXT *dtcontext;
     HRESULT hr = E_FAIL;
 
-    if (contextSize < sizeof(DT_CONTEXT))
+    if (context == NULL || contextSize < sizeof(DT_CONTEXT))
     {
         goto exit;
     }
