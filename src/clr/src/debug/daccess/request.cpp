@@ -1269,7 +1269,7 @@ ClrDataAccess::GetMethodDescName(CLRDATA_ADDRESS methodDesc, unsigned int count,
             Module* pModule = pMD->GetModule();
             if (pModule)
             {
-                WCHAR path[MAX_PATH];
+                WCHAR path[MAX_LONGPATH];
                 COUNT_T nChars = 0;
                 if (pModule->GetPath().DacGetUnicode(NumItems(path), path, &nChars) &&
                     nChars > 0 && nChars <= NumItems(path))

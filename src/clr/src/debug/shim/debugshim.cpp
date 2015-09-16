@@ -84,10 +84,10 @@ STDMETHODIMP CLRDebuggingImpl::OpenVirtualProcess(
     HMODULE hDac = NULL;
     DWORD dbiTimestamp;
     DWORD dbiSizeOfImage;
-    WCHAR dbiName[MAX_PATH];
+    WCHAR dbiName[MAX_PATH_FNAME];
     DWORD dacTimestamp;
     DWORD dacSizeOfImage;
-    WCHAR dacName[MAX_PATH];
+    WCHAR dacName[MAX_PATH_FNAME];
     CLR_DEBUGGING_VERSION version;
     BOOL versionSupportedByCaller = FALSE;
     
@@ -126,11 +126,11 @@ STDMETHODIMP CLRDebuggingImpl::OpenVirtualProcess(
                             &dbiTimestamp,
                             &dbiSizeOfImage,
                             dbiName,
-                            MAX_PATH,
+                            MAX_PATH_FNAME,
                             &dacTimestamp,
                             &dacSizeOfImage,
                             dacName,
-                            MAX_PATH);
+                            MAX_PATH_FNAME);
         }
 
         // If we need to fetch either the process info or the flags info then we need to find

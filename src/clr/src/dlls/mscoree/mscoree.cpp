@@ -792,8 +792,8 @@ BOOL PAL_GetPALDirectory(__out_ecount(cchBuffer) LPWSTR pbuffer,
 
     HRESULT hr = S_OK;
 
-    WCHAR pPath[MAX_PATH];
-    DWORD dwPath = MAX_PATH;
+    WCHAR pPath[MAX_LONGPATH];
+    DWORD dwPath = MAX_LONGPATH;
 
 #ifndef CROSSGEN_COMPILE
     _ASSERTE(g_pMSCorEE != NULL);
@@ -1163,7 +1163,7 @@ ErrExit:
     {
         // no runtime info, probably loaded directly (e.g. from Fusion)
         // just look next to ourselves.
-        WCHAR wszPath[MAX_PATH];
+        WCHAR wszPath[MAX_LONGPATH];
         DWORD dwLength = WszGetModuleFileName(g_hThisInst, wszPath,NumItems(wszPath));
             
 
