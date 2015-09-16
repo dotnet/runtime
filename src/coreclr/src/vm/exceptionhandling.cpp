@@ -658,15 +658,9 @@ UINT_PTR ExceptionTracker::FinishSecondPass(
     {
         pThread->SafeSetLastThrownObject(NULL);
     }
-    pThread->SafeUpdateLastThrownObject();
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    // Since the catch clause has successfully executed and we are exiting it, reset the corruption severity
-    // in the ThreadExceptionState for the last active exception. This will ensure that when the next exception
-    // gets thrown/raised, EH tracker wont pick up an invalid value.
-    CEHelper::ResetLastActiveCorruptionSeverityPostCatchHandler();
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
+    // Sync managed exception state, for the managed thread, based upon any active exception tracker
+    pThread->SyncManagedExceptionState(false);
 
     //
     // If we are aborting, we should not resume execution.  Instead, we raise another
@@ -2932,7 +2926,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                                 // 3) CallerSP is intact
                                 _ASSERTE(GetSP(pCurRegDisplay->pCallerContext) == GetRegdisplaySP(pCurRegDisplay));
 #endif // _TARGET_ARM_ || _TARGET_ARM64_
-                                 {
+                                {
                                     // CallHandler expects to be in COOP mode.
                                     GCX_COOP();
                                     dwResult = CallHandler(dwFilterStartPC, sf, &EHClause, pMD, Filter ARM_ARG(pCurRegDisplay->pCallerContext) ARM64_ARG(pCurRegDisplay->pCallerContext));
@@ -2959,6 +2953,10 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                                     impersonating = FALSE;
                                 }
 #endif // !FEATURE_PAL 
+
+                                // We had an exception in filter invocation that remained unhandled.
+                                // Sync managed exception state, for the managed thread, based upon the active exception tracker.
+                                pThread->SyncManagedExceptionState(false);
 
                                 // we've returned from the filter abruptly, now out of managed code
                                 m_EHClauseInfo.SetManagedCodeEntered(FALSE);
