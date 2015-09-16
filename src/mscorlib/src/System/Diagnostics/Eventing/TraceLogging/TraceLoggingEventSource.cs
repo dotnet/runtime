@@ -339,6 +339,11 @@ namespace System.Diagnostics.Tracing
         /// Must not be null. Note that the eventTypes object should be created once and
         /// saved. It should not be recreated for each event.
         /// </param>
+        /// <param name="activityID">
+        /// A pointer to the activity ID GUID to log 
+        /// </param>
+        /// <param name="childActivityID">
+        /// A pointer to the child activity ID to log (can be null) </param>
         /// <param name="values">
         /// The values to include in the event. Must not be null. The number and types of
         /// the values must match the number and types of the fields described by the
@@ -393,6 +398,12 @@ namespace System.Diagnostics.Tracing
         /// Information about the event and the types of the values in the event.
         /// Must not be null. Note that the eventTypes object should be created once and
         /// saved. It should not be recreated for each event.
+        /// </param>
+        /// <param name="activityID">
+        /// A pointer to the activity ID GUID to log 
+        /// </param>
+        /// <param name="childActivityID">
+        /// A pointer to the child activity ID to log (can be null)
         /// </param>
         /// <param name="values">
         /// The values to include in the event. Must not be null. The number and types of
@@ -496,6 +507,12 @@ namespace System.Diagnostics.Tracing
         /// Must not be null. Note that the eventTypes object should be created once and
         /// saved. It should not be recreated for each event.
         /// </param>
+        /// <param name="activityID">
+        /// A pointer to the activity ID GUID to log 
+        /// </param>
+        /// <param name="childActivityID">
+        /// A pointer to the child activity ID to log (can be null)
+        /// </param> 
         /// <param name="data">
         /// The previously serialized values to include in the event. Must not be null.
         /// The number and types of the values must match the number and types of the 
@@ -691,6 +708,7 @@ namespace System.Diagnostics.Tracing
         {
             EventWrittenEventArgs eventCallbackArgs = new EventWrittenEventArgs(this);
             eventCallbackArgs.EventName = eventName;
+            eventCallbackArgs.m_level = (EventLevel) eventDescriptor.Level;
             eventCallbackArgs.m_keywords = (EventKeywords) eventDescriptor.Keywords;
             eventCallbackArgs.m_opcode = (EventOpcode) eventDescriptor.Opcode;
             eventCallbackArgs.m_tags = tags;
@@ -706,7 +724,7 @@ namespace System.Diagnostics.Tracing
                 eventCallbackArgs.PayloadNames = new ReadOnlyCollection<string>((IList<string>)payload.Keys);
             }
 
-            DisptachToAllListeners(-1, pActivityId, eventCallbackArgs);
+            DispatchToAllListeners(-1, pActivityId, eventCallbackArgs);
         }
 
 #if !ES_BUILD_PCL
@@ -782,7 +800,7 @@ namespace System.Diagnostics.Tracing
             {
                 for (int i = 1; i < value.Length; i++)
                 {
-                    if (value[i] != ' ')        // Skp spaces between bytes.  
+                    if (value[i] != ' ')        // Skip spaces between bytes.  
                     {
                         if (!(i + 1 < value.Length))
                             throw new ArgumentException(Environment.GetResourceString("EvenHexDigits"), "traits");
@@ -791,7 +809,7 @@ namespace System.Diagnostics.Tracing
                     }
                 }
             }
-            else if (' ' <= firstChar)      // Is it alphabetic (excludes digits and most punctuation. 
+            else if ('A' <= firstChar || ' ' == firstChar)  // Is it alphabetic or space (excludes digits and most punctuation). 
                 metaData.AddRange(Encoding.UTF8.GetBytes(value));
             else
                 throw new ArgumentException(Environment.GetResourceString("IllegalValue", value), "traits");
