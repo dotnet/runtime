@@ -98,7 +98,10 @@ namespace System.Diagnostics.Tracing
 
         public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
         {
-            throw new System.NotSupportedException();
+            for (int i = 0; i < Keys.Count; i++)
+            {
+                yield return new KeyValuePair<string, object>(this.m_names[i], this.m_values[i]);
+            }
         }
 
         IEnumerator IEnumerable.GetEnumerator()
