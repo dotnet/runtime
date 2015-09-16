@@ -1067,9 +1067,3 @@ ves_icall_System_Diagnostics_Process_GetProcessData (int pid, gint32 data_type, 
 	return res;
 }
 
-void
-ves_icall_System_Diagnostics_Process_ProcessAsyncReader_RemoveFromIOThreadPool (HANDLE handle)
-{
-	mono_threadpool_ms_io_remove_socket (GPOINTER_TO_INT (handle));
-}
-

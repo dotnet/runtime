@@ -205,9 +205,6 @@ ICALL(PROCESS_14M, "Times", ves_icall_System_Diagnostics_Process_Times)
 ICALL(PROCESS_15, "WaitForExit_internal(intptr,int)", ves_icall_System_Diagnostics_Process_WaitForExit_internal)
 ICALL(PROCESS_16, "WaitForInputIdle_internal(intptr,int)", ves_icall_System_Diagnostics_Process_WaitForInputIdle_internal)
 
-ICALL_TYPE (PROCESSREADER, "System.Diagnostics.Process/ProcessAsyncReader", PROCESSREADER_1)
-ICALL (PROCESSREADER_1, "RemoveFromIOThreadPool", ves_icall_System_Diagnostics_Process_ProcessAsyncReader_RemoveFromIOThreadPool)
-
 ICALL_TYPE (PROCESSHANDLE, "System.Diagnostics.Process/ProcessWaitHandle", PROCESSHANDLE_1)
 ICALL (PROCESSHANDLE_1, "ProcessHandle_close(intptr)", ves_icall_System_Diagnostics_Process_ProcessHandle_close)
 ICALL (PROCESSHANDLE_2, "ProcessHandle_duplicate(intptr)", ves_icall_System_Diagnostics_Process_ProcessHandle_duplicate)
@@ -370,6 +367,10 @@ ICALL(MONOIO_33, "get_VolumeSeparatorChar", ves_icall_System_IO_MonoIO_get_Volum
 ICALL_TYPE(IOPATH, "System.IO.Path", IOPATH_1)
 ICALL(IOPATH_1, "get_temp_path", ves_icall_System_IO_get_temp_path)
 
+ICALL_TYPE(IOSELECTOR, "System.IOSelector", IOSELECTOR_1)
+ICALL(IOSELECTOR_1, "Add", ves_icall_System_IOSelector_Add)
+ICALL(IOSELECTOR_2, "Remove", ves_icall_System_IOSelector_Remove)
+
 ICALL_TYPE(MATH, "System.Math", MATH_19)
 ICALL(MATH_19, "Abs(double)", ves_icall_System_Math_Abs_double)
 ICALL(MATH_20, "Abs(single)", ves_icall_System_Math_Abs_single)
@@ -441,7 +442,6 @@ ICALL(SOCK_18, "SetSocketOption_internal(intptr,System.Net.Sockets.SocketOptionL
 ICALL(SOCK_19, "Shutdown_internal(intptr,System.Net.Sockets.SocketShutdown,int&)", ves_icall_System_Net_Sockets_Socket_Shutdown_internal)
 ICALL(SOCK_20, "Socket_internal(System.Net.Sockets.AddressFamily,System.Net.Sockets.SocketType,System.Net.Sockets.ProtocolType,int&)", ves_icall_System_Net_Sockets_Socket_Socket_internal)
 ICALL(SOCK_21a, "cancel_blocking_socket_operation", icall_cancel_blocking_socket_operation)
-ICALL(SOCK_22, "socket_pool_queue", icall_append_io_job)
 
 ICALL_TYPE(SOCKEX, "System.Net.Sockets.SocketException", SOCKEX_1)
 ICALL(SOCKEX_1, "WSAGetLastError_internal", ves_icall_System_Net_Sockets_SocketException_WSAGetLastError_internal)
