@@ -13,8 +13,8 @@ struct FileStatus
 {
     int32_t Flags;     // flags for testing if some members are present (see FileStatusFlags)
     int32_t Mode;      // file mode (see S_I* constants above for bit values)
-    int32_t Uid;       // user ID of owner
-    int32_t Gid;       // group ID of owner
+    uint32_t Uid;      // user ID of owner
+    uint32_t Gid;      // group ID of owner
     int64_t Size;      // total size, in bytes
     int64_t ATime;     // time of last access
     int64_t MTime;     // time of last modification
@@ -107,7 +107,7 @@ enum
 /**
  * Constants from dirent.h for the inode type returned from readdir variants
  */
-enum class NodeType : int16_t
+enum NodeType : int32_t
 {
     PAL_DT_UNKNOWN  =  0,   // Unknown file type
     PAL_DT_FIFO     =  1,   // Named Pipe
@@ -123,7 +123,7 @@ enum class NodeType : int16_t
 /**
  * Constants from sys/file.h for lock types
  */
-enum class LockOperations : int32_t
+enum LockOperations : int32_t
 {
     PAL_LOCK_SH = 1,    /* shared lock */
     PAL_LOCK_EX = 2,    /* exclusive lock */
@@ -134,7 +134,7 @@ enum class LockOperations : int32_t
 /** 
  * Constants for changing the access permissions of a path
  */
-enum class AccessMode : int32_t
+enum AccessMode : int32_t
 {
     PAL_F_OK = 0,   /* Check for existence */
     PAL_X_OK = 1,   /* Check for execute */
@@ -145,7 +145,7 @@ enum class AccessMode : int32_t
 /**
  * Flags to pass to fnmatch for what type of pattern matching to do
  */
-enum class FnMatchFlags : int32_t
+enum FnMatchFlags : int32_t
 {
     PAL_FNM_NONE = 0,
 };
@@ -153,7 +153,7 @@ enum class FnMatchFlags : int32_t
 /**
  * Constants passed to lseek telling the OS where to seek from
  */
-enum class SeekWhence : int32_t
+enum SeekWhence : int32_t
 {
     PAL_SEEK_SET = 0,   /* seek from the beginning of the stream */
     PAL_SEEK_CUR = 1,   /* seek from the current position */
@@ -198,7 +198,7 @@ enum
 /**
  * Advice argument to MAdvise.
  */
-enum class MemoryAdvice : int32_t
+enum MemoryAdvice : int32_t
 {
     PAL_MADV_DONTFORK = 1, // don't map pages in to forked process
 };
@@ -206,7 +206,7 @@ enum class MemoryAdvice : int32_t
 /**
  * Name argument to SysConf.
  */
-enum class SysConfName : int32_t
+enum SysConfName : int32_t
 {
     PAL_SC_CLK_TCK  = 1,  // Number of clock ticks per second
     PAL_SC_PAGESIZE = 2,  // Size of a page in bytes
@@ -216,7 +216,7 @@ enum class SysConfName : int32_t
  * Constants passed to and from poll describing what to poll for and what 
  * kind of data was received from poll.
  */
-enum class PollFlags : int16_t
+enum PollFlags : int16_t
 {
     PAL_POLLIN   = 0x0001,  /* any readable data available */
     PAL_POLLOUT  = 0x0004,  /* data can be written without blocked */
@@ -229,7 +229,7 @@ enum class PollFlags : int16_t
  * Constants passed to posix_advise to give hints to the kernel about the type of I/O
  * operations that will occur.
  */
-enum class FileAdvice : int32_t
+enum FileAdvice : int32_t
 {
     PAL_POSIX_FADV_NORMAL       = 0,    /* no special advice, the default value */
     PAL_POSIX_FADV_RANDOM       = 1,    /* random I/O access */
@@ -244,9 +244,9 @@ enum class FileAdvice : int32_t
  */
 struct DirectoryEntry
 {
-    NodeType    InodeType;          // The inode type as described in the NodeType enum
     const char* Name;               // Address of the name of the inode
     int32_t     NameLength;         // Length (in chars) of the inode name
+    NodeType    InodeType;          // The inode type as described in the NodeType enum
 };
 
 /**
@@ -642,7 +642,7 @@ int32_t PosixFAdvise(int32_t fd, int64_t offset, int64_t length, FileAdvice advi
  * Note - on fail. the position of the stream may change depending on the platform; consult man 2 read for more info
  */
 extern "C"
-int64_t Read(int32_t fd, void* buffer, uint64_t count);
+int32_t Read(int32_t fd, void* buffer, int32_t bufferSize);
 
 /**
  * Takes a path to a symbolic link and attempts to place the link target path into the buffer. If the buffer is too
@@ -651,7 +651,7 @@ int64_t Read(int32_t fd, void* buffer, uint64_t count);
  * Returns the number of bytes placed into the buffer on success; otherwise, -1 is returned and errno is set.
  */
 extern "C"
-int64_t ReadLink(const char* path, char* buffer, uint64_t bufferSize);
+int32_t ReadLink(const char* path, char* buffer, int32_t bufferSize);
 
 /**
  * Renames a file, moving to the correct destination if necessary. There are many edge cases to this call, check man 2 rename for more info
@@ -681,4 +681,4 @@ void Sync();
  * Returns the number of bytes written on success; otherwise, returns -1 and sets errno
  */
 extern "C"
-int64_t Write(int32_t fd, const void* buffer, uint64_t bufferSize);
+int32_t Write(int32_t fd, const void* buffer, int32_t bufferSize);

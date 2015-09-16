@@ -10,9 +10,9 @@
  */
 struct MountPointInformation
 {
-    int64_t AvailableFreeSpace;
-    int64_t TotalFreeSpace;
-    int64_t TotalSize;
+    uint64_t AvailableFreeSpace;
+    uint64_t TotalFreeSpace;
+    uint64_t TotalSize;
 };
 
 /**
@@ -26,7 +26,7 @@ typedef void (*MountPointFound)(const char* name);
  * Gets the space information for the given mount point and populates the input struct with the data.
  */
 extern "C"
-int GetSpaceInfoForMountPoint(
+int32_t GetSpaceInfoForMountPoint(
     const char*             name, 
     MountPointInformation*  mpi);
 
@@ -40,7 +40,7 @@ int GetSpaceInfoForMountPoint(
  * back, depending on what the platform gives us, and let C# reason on it in an easy way.
  */
 extern "C"
-int GetFormatInfoForMountPoint(
+int32_t GetFormatInfoForMountPoint(
     const char* name,
     char*       formatNameBuffer,
     int32_t     bufferLength,
@@ -52,4 +52,4 @@ int GetFormatInfoForMountPoint(
  * as much as possible.
  */
 extern "C"
-int GetAllMountPoints(MountPointFound onFound);
+int32_t GetAllMountPoints(MountPointFound onFound);

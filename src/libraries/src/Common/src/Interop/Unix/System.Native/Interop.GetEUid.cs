@@ -9,6 +9,6 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [DllImport(Libraries.SystemNative)]
-        internal static extern int GetEUid();
+        internal static extern uint GetEUid();
     }
 }

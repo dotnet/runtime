@@ -94,7 +94,7 @@ namespace System.Diagnostics
                             while (bufCount > 0)
                             {
                                 int bytesWritten;
-                                while (Interop.CheckIo(bytesWritten = (int)Interop.Sys.Write((int)fileHandle.DangerousGetHandle(), buf + totalBytesWritten, (ulong)bufCount))) ;
+                                while (Interop.CheckIo(bytesWritten = Interop.Sys.Write((int)fileHandle.DangerousGetHandle(), buf + totalBytesWritten, bufCount))) ;
                                 bufCount -= bytesWritten;
                                 totalBytesWritten += bytesWritten;
                             }

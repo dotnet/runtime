@@ -24,7 +24,7 @@
  * the same value so that callers cannot not take a dependency on
  * being able to distinguish between them.
  */
-enum class Error : int32_t
+enum Error : int32_t
 {
     PAL_SUCCESS          = 0,
 

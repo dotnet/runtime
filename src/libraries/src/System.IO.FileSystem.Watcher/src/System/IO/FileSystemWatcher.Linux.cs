@@ -763,10 +763,10 @@ namespace System.IO
                         try
                         {
                             _bufferAvailable = (int)SysCall((fd, thisRef, _) => {
-                                long result;
+                                int result;
                                 fixed (byte* buf = thisRef._buffer)
                                 {
-                                    result = (long)Interop.Sys.Read(fd, buf, (ulong)thisRef._buffer.Length);
+                                    result = Interop.Sys.Read(fd, buf, thisRef._buffer.Length);
                                 }
                                 Debug.Assert(result <= thisRef._buffer.Length);
                                 return result;

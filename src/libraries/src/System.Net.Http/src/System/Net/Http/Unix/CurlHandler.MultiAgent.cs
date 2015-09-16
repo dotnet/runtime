@@ -187,8 +187,8 @@ namespace System.Net.Http
                 // subsequently clearing out more of the pipe.
                 const int ClearBufferSize = 64; // sufficiently large to clear the pipe in any normal case
                 byte* clearBuf = stackalloc byte[ClearBufferSize];
-                long bytesRead;
-                while (Interop.CheckIo(bytesRead = (long)Interop.Sys.Read(_wakeupRequestedPipeFd, clearBuf, (ulong)ClearBufferSize))) ;
+                int bytesRead;
+                while (Interop.CheckIo(bytesRead = Interop.Sys.Read(_wakeupRequestedPipeFd, clearBuf, ClearBufferSize))) ;
                 VerboseTraceIf(bytesRead > 1, "Read more than one byte from wakeup pipe: " + bytesRead);
             }
 

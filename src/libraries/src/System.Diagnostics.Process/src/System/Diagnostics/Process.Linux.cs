@@ -153,7 +153,7 @@ namespace System.Diagnostics
             {
                 // Read from procfs the symbolic link to this process' executable
                 byte[] buffer = new byte[pathLen + 1]; // +1 for null termination
-                int resultLength = (int)Interop.Sys.ReadLink(Interop.procfs.SelfExeFilePath, buffer, (ulong)pathLen);
+                int resultLength = Interop.Sys.ReadLink(Interop.procfs.SelfExeFilePath, buffer, pathLen);
 
                 // If we got one, null terminate it (readlink doesn't do this) and return the string
                 if (resultLength > 0)

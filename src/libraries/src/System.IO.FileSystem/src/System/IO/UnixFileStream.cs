@@ -693,7 +693,7 @@ namespace System.IO
             {
                 bytesRead = (int)SysCall((fd, ptr, len) =>
                 {
-                    long result = (long)Interop.Sys.Read(fd, (byte*)ptr, (ulong)len);
+                    int result = Interop.Sys.Read(fd, (byte*)ptr, len);
                     Debug.Assert(result <= len);
                     return result;
                 }, (IntPtr)(bufPtr + offset), count);
@@ -836,7 +836,7 @@ namespace System.IO
                 {
                     int bytesWritten = (int)SysCall((fd, ptr, len) =>
                     {
-                        long result = (long)Interop.Sys.Write(fd, (byte*)ptr, (ulong)len);
+                        int result = Interop.Sys.Write(fd, (byte*)ptr, len);
                         Debug.Assert(result <= len);
                         return result;
                     }, (IntPtr)(bufPtr + offset), count);

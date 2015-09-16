@@ -67,9 +67,9 @@ internal static partial class Interop
         [StructLayout(LayoutKind.Sequential)]
         internal struct MountPointInformation
         {
-            internal long AvailableFreeSpace;
-            internal long TotalFreeSpace;
-            internal long TotalSize;
+            internal ulong AvailableFreeSpace;
+            internal ulong TotalFreeSpace;
+            internal ulong TotalSize;
         }
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
