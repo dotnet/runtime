@@ -124,12 +124,12 @@
     <Compile Include="Ternary\TernaryArrayTests.cs" />
     <Compile Include="Ternary\TernaryNullableTests.cs" />
     <Compile Include="Ternary\TernaryTests.cs" />
+    <Compile Include="Unary\UnaryArithmeticNegateNullableOneOffTests.cs" />
     <Compile Include="Unary\UnaryArithmeticNegateNullableTests.cs" />
     <Compile Include="Unary\UnaryArithmeticNegateTests.cs" />
     <Compile Include="Unary\UnaryBitwiseNotNullableTests.cs" />
     <Compile Include="Unary\UnaryBitwiseNotTests.cs" />
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
     <ProjectReference Include="..\src\System.Linq.Expressions.csproj">
       <Project>{aef718e9-d4fc-418f-a7ae-ed6b2c7b3787}</Project>
