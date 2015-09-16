@@ -618,6 +618,7 @@ namespace System.IO
             // we can just go directly into the user's buffer, if they asked
             // for more data than we'd otherwise buffer.
             int numBytesAvailable = _readLength - _readPos;
+            bool readFromOS = false;
             if (numBytesAvailable == 0)
             {
                 // If we're not able to seek, then we're not able to rewind the stream (i.e. flushing
@@ -626,9 +627,8 @@ namespace System.IO
                 if (!_parent.CanSeek || (count >= _bufferLength))
                 {
                     // Read directly into the user's buffer
-                    int bytesRead = ReadCore(array, offset, count);
-                    _readPos = _readLength = 0; // reset after the read just in case read experiences an exception
-                    return bytesRead;
+                    _readPos = _readLength = 0;
+                    return ReadCore(array, offset, count);
                 }
                 else
                 {
@@ -639,16 +639,36 @@ namespace System.IO
                     {
                         return 0;
                     }
+
+                    // Note that we did an OS read as part of this Read, so that later
+                    // we don't try to do one again if what's in the buffer doesn't
+                    // meet the user's request.
+                    readFromOS = true;
                 }
             }
 
-            // Now that we know there's data in the buffer, read from it into
-            // the user's buffer.
-            int bytesToRead = Math.Min(numBytesAvailable, count);
-            Buffer.BlockCopy(GetBuffer(), _readPos, array, offset, bytesToRead);
-            _readPos += bytesToRead;
+            // Now that we know there's data in the buffer, read from it into the user's buffer.
+            Debug.Assert(numBytesAvailable > 0, "Data must be in the buffer to be here");
+            int bytesRead = Math.Min(numBytesAvailable, count);
+            Buffer.BlockCopy(GetBuffer(), _readPos, array, offset, bytesRead);
+            _readPos += bytesRead;
 
-            return bytesToRead;
+            // We may not have had enough data in the buffer to completely satisfy the user's request.
+            // While Read doesn't require that we return as much data as the user requested (any amount
+            // up to the requested count is fine), FileStream on Windows tries to do so by doing a 
+            // subsequent read from the file if we tried to satisfy the request with what was in the 
+            // buffer but the buffer contained less than the requested count. To be consistent with that 
+            // behavior, we do the same thing here on Unix.  Note that we may still get less the requested 
+            // amount, as the OS may give us back fewer than we request, either due to reaching the end of 
+            // file, or due to its own whims.
+            if (!readFromOS && bytesRead < count)
+            {
+                Debug.Assert(_readPos == _readLength, "bytesToRead should only be < count if numBytesAvailable < count");
+                _readPos = _readLength = 0; // no data left in the read buffer
+                bytesRead += ReadCore(array, offset + bytesRead, count - bytesRead);
+            }
+
+            return bytesRead;
         }
 
         /// <summary>Unbuffered, reads a block of bytes from the stream and writes the data in a given buffer.</summary>
