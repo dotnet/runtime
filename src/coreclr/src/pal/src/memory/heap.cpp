@@ -201,13 +201,13 @@ PALAPI
 HeapAlloc(
     IN HANDLE hHeap,
     IN DWORD dwFlags,
-    IN SIZE_T dwBytes)
+    IN SIZE_T numberOfBytes)
 {
     BYTE *pMem;
 
     PERF_ENTRY(HeapAlloc);
-    ENTRY("HeapAlloc (hHeap=%p, dwFlags=%#x, dwBytes=%u)\n",
-          hHeap, dwFlags, dwBytes);
+    ENTRY("HeapAlloc (hHeap=%p, dwFlags=%#x, numberOfBytes=%u)\n",
+          hHeap, dwFlags, numberOfBytes);
 
 #ifdef __APPLE__
     if (hHeap == NULL)
@@ -236,11 +236,11 @@ HeapAlloc(
     {
         CPalThread *pthrCurrent = InternalGetCurrentThread();
         pthrCurrent->suspensionInfo.EnterUnsafeRegion();
-        pMem = (BYTE *)malloc_zone_malloc((malloc_zone_t *)hHeap, dwBytes);
+        pMem = (BYTE *)malloc_zone_malloc((malloc_zone_t *)hHeap, numberOfBytes);
         pthrCurrent->suspensionInfo.LeaveUnsafeRegion();
     }
 #else // __APPLE__
-    pMem = (BYTE *) PAL_malloc(dwBytes);
+    pMem = (BYTE *) PAL_malloc(numberOfBytes);
 #endif // __APPLE__ else
 
     if (pMem == NULL)
@@ -255,7 +255,7 @@ HeapAlloc(
     /* If the HEAP_ZERO_MEMORY flag is set initialize to zero */
     if (dwFlags == HEAP_ZERO_MEMORY)
     {
-        memset(pMem, 0, dwBytes);
+        memset(pMem, 0, numberOfBytes);
     }
 
     LOGEXIT("HeapAlloc returning LPVOID %p\n", pMem);
@@ -347,13 +347,13 @@ HeapReAlloc(
     IN HANDLE hHeap,
     IN DWORD dwFlags,
     IN LPVOID lpmem,
-    IN SIZE_T dwBytes)
+    IN SIZE_T numberOfBytes)
 {
     BYTE *pMem = NULL;
 
     PERF_ENTRY(HeapReAlloc);
-    ENTRY("HeapReAlloc (hHeap=%p, dwFlags=%#x, lpmem=%p, dwBytes=%u)\n",
-          hHeap, dwFlags, lpmem, dwBytes);
+    ENTRY("HeapReAlloc (hHeap=%p, dwFlags=%#x, lpmem=%p, numberOfBytes=%u)\n",
+          hHeap, dwFlags, lpmem, numberOfBytes);
 
 #ifdef __APPLE__
     if (hHeap == NULL)
@@ -387,11 +387,11 @@ HeapReAlloc(
     {
         CPalThread *pthrCurrent = InternalGetCurrentThread();
         pthrCurrent->suspensionInfo.EnterUnsafeRegion();
-        pMem = (BYTE *) malloc_zone_realloc((malloc_zone_t *)hHeap, lpmem, dwBytes);
+        pMem = (BYTE *) malloc_zone_realloc((malloc_zone_t *)hHeap, lpmem, numberOfBytes);
         pthrCurrent->suspensionInfo.LeaveUnsafeRegion();
     }
 #else // __APPLE__
-    pMem = (BYTE *) PAL_realloc(lpmem, dwBytes);
+    pMem = (BYTE *) PAL_realloc(lpmem, numberOfBytes);
 #endif // __APPLE__ else
 
     if (pMem == NULL)
