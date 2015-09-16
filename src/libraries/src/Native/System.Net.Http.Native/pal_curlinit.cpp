@@ -7,10 +7,9 @@
 #include <pthread.h>
 #include <curl/curl.h>
 
-extern "C"
-int32_t EnsureCurlIsInitialized()
+extern "C" int32_t EnsureCurlIsInitialized()
 {
-    static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;    
+    static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
     static bool initializationAttempted = false;
     static int32_t errorCode = -1;
 
@@ -23,6 +22,6 @@ int32_t EnsureCurlIsInitialized()
         }
     }
     pthread_mutex_unlock(&lock);
- 
+
     return errorCode;
 }

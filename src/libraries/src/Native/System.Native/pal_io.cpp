@@ -19,15 +19,14 @@
 #include <syslog.h>
 #include <unistd.h>
 
-
 #if HAVE_STAT64
-#    define stat_ stat64
-#    define fstat_ fstat64
-#    define lstat_ lstat64
+#define stat_ stat64
+#define fstat_ fstat64
+#define lstat_ lstat64
 #else
-#   define stat_ stat
-#   define fstat_ fstat
-#   define lstat_ lstat
+#define stat_ stat
+#define fstat_ fstat
+#define lstat_ lstat
 #endif
 
 // These numeric values are specified by POSIX.
@@ -51,14 +50,14 @@ static_assert(PAL_S_ISGID == S_ISGID, "");
 // are common to our current targets.  If these static asserts fail,
 // ConvertFileStatus needs to be updated to twiddle mode bits
 // accordingly.
-static_assert(PAL_S_IFMT  == S_IFMT,  "");
+static_assert(PAL_S_IFMT == S_IFMT, "");
 static_assert(PAL_S_IFIFO == S_IFIFO, "");
 static_assert(PAL_S_IFCHR == S_IFCHR, "");
 static_assert(PAL_S_IFDIR == S_IFDIR, "");
 static_assert(PAL_S_IFREG == S_IFREG, "");
 static_assert(PAL_S_IFLNK == S_IFLNK, "");
 
-// Validate that our enum for inode types is the same as what is 
+// Validate that our enum for inode types is the same as what is
 // declared by the dirent.h header on the local system.
 static_assert(PAL_DT_UNKNOWN == DT_UNKNOWN, "");
 static_assert(PAL_DT_FIFO == DT_FIFO, "");
@@ -88,33 +87,32 @@ static_assert(PAL_SEEK_CUR == SEEK_CUR, "");
 static_assert(PAL_SEEK_END == SEEK_END, "");
 
 // Validate our PollFlags enum values are correct for the platform
-static_assert(PAL_POLLIN   == POLLIN, "");
-static_assert(PAL_POLLOUT  == POLLOUT, "");
-static_assert(PAL_POLLERR  == POLLERR, "");
-static_assert(PAL_POLLHUP  == POLLHUP, "");
+static_assert(PAL_POLLIN == POLLIN, "");
+static_assert(PAL_POLLOUT == POLLOUT, "");
+static_assert(PAL_POLLERR == POLLERR, "");
+static_assert(PAL_POLLHUP == POLLHUP, "");
 static_assert(PAL_POLLNVAL == POLLNVAL, "");
 
 // Validate our FileAdvice enum values are correct for the platform
 #if HAVE_POSIX_ADVISE
-static_assert(PAL_POSIX_FADV_NORMAL       == POSIX_FADV_NORMAL, "");
-static_assert(PAL_POSIX_FADV_RANDOM       == POSIX_FADV_RANDOM, "");
-static_assert(PAL_POSIX_FADV_SEQUENTIAL   == POSIX_FADV_SEQUENTIAL, "");
-static_assert(PAL_POSIX_FADV_WILLNEED     == POSIX_FADV_WILLNEED, "");
-static_assert(PAL_POSIX_FADV_DONTNEED     == POSIX_FADV_DONTNEED, "");
-static_assert(PAL_POSIX_FADV_NOREUSE      == POSIX_FADV_NOREUSE, "");
-#endif 
+static_assert(PAL_POSIX_FADV_NORMAL == POSIX_FADV_NORMAL, "");
+static_assert(PAL_POSIX_FADV_RANDOM == POSIX_FADV_RANDOM, "");
+static_assert(PAL_POSIX_FADV_SEQUENTIAL == POSIX_FADV_SEQUENTIAL, "");
+static_assert(PAL_POSIX_FADV_WILLNEED == POSIX_FADV_WILLNEED, "");
+static_assert(PAL_POSIX_FADV_DONTNEED == POSIX_FADV_DONTNEED, "");
+static_assert(PAL_POSIX_FADV_NOREUSE == POSIX_FADV_NOREUSE, "");
+#endif
 
-static
-void ConvertFileStatus(const struct stat_& src, FileStatus* dst)
+static void ConvertFileStatus(const struct stat_& src, FileStatus* dst)
 {
-    dst->Flags  = FILESTATUS_FLAGS_NONE;
-    dst->Mode   = static_cast<int32_t>(src.st_mode);
-    dst->Uid    = src.st_uid;
-    dst->Gid    = src.st_gid;
-    dst->Size   = src.st_size;
-    dst->ATime  = src.st_atime;
-    dst->MTime  = src.st_mtime;
-    dst->CTime  = src.st_ctime;
+    dst->Flags = FILESTATUS_FLAGS_NONE;
+    dst->Mode = static_cast<int32_t>(src.st_mode);
+    dst->Uid = src.st_uid;
+    dst->Gid = src.st_gid;
+    dst->Size = src.st_size;
+    dst->ATime = src.st_atime;
+    dst->MTime = src.st_mtime;
+    dst->CTime = src.st_ctime;
 
 #if HAVE_STAT_BIRTHTIME
     dst->BirthTime = src.st_birthtime;
@@ -124,22 +122,20 @@ void ConvertFileStatus(const struct stat_& src, FileStatus* dst)
 #endif
 }
 
-extern "C"
-int32_t Stat(const char* path, FileStatus* output)
+extern "C" int32_t Stat(const char* path, FileStatus* output)
 {
     struct stat_ result;
     int ret = stat_(path, &result);
 
-     if (ret == 0)
-     {
+    if (ret == 0)
+    {
         ConvertFileStatus(result, output);
-     }
+    }
 
     return ret;
 }
 
-extern "C"
-int32_t FStat(int32_t fd, FileStatus* output)
+extern "C" int32_t FStat(int32_t fd, FileStatus* output)
 {
     struct stat_ result;
     int ret = fstat_(fd, &result);
@@ -152,8 +148,7 @@ int32_t FStat(int32_t fd, FileStatus* output)
     return ret;
 }
 
-extern "C"
-int32_t LStat(const char* path, FileStatus* output)
+extern "C" int32_t LStat(const char* path, FileStatus* output)
 {
     struct stat_ result;
     int ret = lstat_(path, &result);
@@ -166,39 +161,31 @@ int32_t LStat(const char* path, FileStatus* output)
     return ret;
 }
 
-static 
-int32_t ConvertOpenFlags(int32_t flags)
+static int32_t ConvertOpenFlags(int32_t flags)
 {
     int32_t ret;
     switch (flags & PAL_O_ACCESS_MODE_MASK)
     {
-        case PAL_O_RDONLY: 
+        case PAL_O_RDONLY:
             ret = O_RDONLY;
             break;
         case PAL_O_RDWR:
             ret = O_RDWR;
             break;
-        case PAL_O_WRONLY: 
+        case PAL_O_WRONLY:
             ret = O_WRONLY;
             break;
         default:
             assert(false && "Unknown Open access mode.");
             return -1;
     }
-    
-    if (flags 
-        & ~(PAL_O_ACCESS_MODE_MASK
-          | PAL_O_CLOEXEC 
-          | PAL_O_CREAT 
-          | PAL_O_EXCL 
-          | PAL_O_TRUNC 
-          | PAL_O_SYNC
-          ))
+
+    if (flags & ~(PAL_O_ACCESS_MODE_MASK | PAL_O_CLOEXEC | PAL_O_CREAT | PAL_O_EXCL | PAL_O_TRUNC | PAL_O_SYNC))
     {
         assert(false && "Unknown Open flag.");
         return -1;
     }
- 
+
     if (flags & PAL_O_CLOEXEC)
         ret |= O_CLOEXEC;
     if (flags & PAL_O_CREAT)
@@ -209,13 +196,12 @@ int32_t ConvertOpenFlags(int32_t flags)
         ret |= O_TRUNC;
     if (flags & PAL_O_SYNC)
         ret |= O_SYNC;
- 
+
     assert(ret != -1);
     return ret;
 }
 
-extern "C"
-int32_t Open(const char* path, int32_t flags, int32_t mode)
+extern "C" int32_t Open(const char* path, int32_t flags, int32_t mode)
 {
     flags = ConvertOpenFlags(flags);
     if (flags == -1)
@@ -223,24 +209,21 @@ int32_t Open(const char* path, int32_t flags, int32_t mode)
         errno = EINVAL;
         return -1;
     }
-    
+
     return open(path, flags, static_cast<mode_t>(mode));
 }
 
-extern "C"
-int32_t Close(int32_t fd)
+extern "C" int32_t Close(int32_t fd)
 {
     return close(fd);
 }
 
-extern "C"
-int32_t Unlink(const char* path)
+extern "C" int32_t Unlink(const char* path)
 {
     return unlink(path);
 }
 
-extern "C"
-int32_t ShmOpen(const char* name, int32_t flags, int32_t mode)
+extern "C" int32_t ShmOpen(const char* name, int32_t flags, int32_t mode)
 {
 #if HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP
     flags = ConvertOpenFlags(flags);
@@ -249,7 +232,7 @@ int32_t ShmOpen(const char* name, int32_t flags, int32_t mode)
         errno = EINVAL;
         return -1;
     }
-    
+
     return shm_open(name, flags, static_cast<mode_t>(mode));
 #else
     (void)name, (void)flags, (void)mode;
@@ -258,17 +241,15 @@ int32_t ShmOpen(const char* name, int32_t flags, int32_t mode)
 #endif
 }
 
-extern "C"
-int32_t ShmUnlink(const char* name)
+extern "C" int32_t ShmUnlink(const char* name)
 {
     return shm_unlink(name);
 }
 
-static
-void ConvertDirent(const dirent& entry, DirectoryEntry* outputEntry)
+static void ConvertDirent(const dirent& entry, DirectoryEntry* outputEntry)
 {
     // We use Marshal.PtrToStringAnsi on the managed side, which takes a pointer to
-    // the start of the unmanaged string. Give the caller back a pointer to the 
+    // the start of the unmanaged string. Give the caller back a pointer to the
     // location of the start of the string that exists in their own byte buffer.
     outputEntry->Name = entry.d_name;
     outputEntry->InodeType = static_cast<NodeType>(entry.d_type);
@@ -280,8 +261,7 @@ void ConvertDirent(const dirent& entry, DirectoryEntry* outputEntry)
 #endif
 }
 
-extern "C" 
-int32_t GetDirentSize()
+extern "C" int32_t GetDirentSize()
 {
     // dirent should be under 2k in size
     static_assert(sizeof(dirent) < 2048, "");
@@ -289,18 +269,17 @@ int32_t GetDirentSize()
 }
 
 // To reduce the number of string copies, this function calling pattern works as follows:
-// 1) The managed code calls GetDirentSize() to get the platform-specific 
+// 1) The managed code calls GetDirentSize() to get the platform-specific
 //    size of the dirent struct.
 // 2) The managed code creates a byte[] buffer of the size of the native dirent
-//    and passes a pointer to this buffer to this function. 
+//    and passes a pointer to this buffer to this function.
 // 3) This function passes input byte[] buffer to the OS to fill with dirent data
 //    which makes the 1st strcpy.
 // 4) The ConvertDirent function will set a pointer to the start of the inode name
-//    in the byte[] buffer so the managed code and find it and copy it out of the 
+//    in the byte[] buffer so the managed code and find it and copy it out of the
 //    buffer into a managed string that the caller of the framework can use, making
-//    the 2nd and final strcpy. 
-extern "C" 
-int32_t ReadDirR(DIR* dir, void* buffer, int32_t bufferSize, DirectoryEntry* outputEntry)
+//    the 2nd and final strcpy.
+extern "C" int32_t ReadDirR(DIR* dir, void* buffer, int32_t bufferSize, DirectoryEntry* outputEntry)
 {
     assert(buffer != nullptr);
     assert(dir != nullptr);
@@ -320,15 +299,15 @@ int32_t ReadDirR(DIR* dir, void* buffer, int32_t bufferSize, DirectoryEntry* out
     if (error != 0)
     {
         assert(error > 0);
-        *outputEntry = { }; // managed out param must be initialized
+        *outputEntry = {}; // managed out param must be initialized
         return error;
     }
 
     // 0 returned with null result -> end-of-stream
     if (result == nullptr)
     {
-        *outputEntry = { }; // managed out param must be initialized
-        return -1;          // shim convention for end-of-stream
+        *outputEntry = {}; // managed out param must be initialized
+        return -1;         // shim convention for end-of-stream
     }
 
     // 0 returned with non-null result (guaranteed to be set to entry arg) -> success
@@ -337,43 +316,39 @@ int32_t ReadDirR(DIR* dir, void* buffer, int32_t bufferSize, DirectoryEntry* out
     return 0;
 }
 
-extern "C" 
-DIR* OpenDir(const char* path)
+extern "C" DIR* OpenDir(const char* path)
 {
     return opendir(path);
 }
 
-extern "C" 
-int32_t CloseDir(DIR* dir)
+extern "C" int32_t CloseDir(DIR* dir)
 {
     return closedir(dir);
 }
 
-extern "C"
-int32_t Pipe(int32_t pipeFds[2], int32_t flags)
+extern "C" int32_t Pipe(int32_t pipeFds[2], int32_t flags)
 {
     switch (flags)
     {
-    case 0:
-        break;
-    case PAL_O_CLOEXEC:
-        flags = O_CLOEXEC;
-        break;
-    default:
-        assert(false && "Unknown flag.");
-        errno = EINVAL;
-        return -1;
+        case 0:
+            break;
+        case PAL_O_CLOEXEC:
+            flags = O_CLOEXEC;
+            break;
+        default:
+            assert(false && "Unknown flag.");
+            errno = EINVAL;
+            return -1;
     }
 
 #if HAVE_PIPE2
     return pipe2(pipeFds, flags);
 #else
-    return pipe(pipeFds); // CLOEXEC intentionally ignored on platforms without pipe2.
+    return pipe(pipeFds);         // CLOEXEC intentionally ignored on platforms without pipe2.
 #endif
 }
 
-extern "C"
-int32_t FcntlCanGetSetPipeSz()
+extern "C" int32_t FcntlCanGetSetPipeSz()
 {
 #if defined(F_GETPIPE_SZ) && defined(F_SETPIPE_SZ)
     return true;
@@ -382,8 +357,7 @@ int32_t FcntlCanGetSetPipeSz()
 #endif
 }
 
-extern "C"
-int32_t FcntlGetPipeSz(int32_t fd)
+extern "C" int32_t FcntlGetPipeSz(int32_t fd)
 {
 #ifdef F_GETPIPE_SZ
     return fcntl(fd, F_GETPIPE_SZ);
@@ -394,8 +368,7 @@ int32_t FcntlGetPipeSz(int32_t fd)
 #endif
 }
 
-extern "C"
-int32_t FcntlSetPipeSz(int32_t fd, int32_t size)
+extern "C" int32_t FcntlSetPipeSz(int32_t fd, int32_t size)
 {
 #ifdef F_SETPIPE_SZ
     return fcntl(fd, F_SETPIPE_SZ, size);
@@ -406,74 +379,62 @@ int32_t FcntlSetPipeSz(int32_t fd, int32_t size)
 #endif
 }
 
-extern "C"
-int32_t MkDir(const char* path, int32_t mode)
+extern "C" int32_t MkDir(const char* path, int32_t mode)
 {
     return mkdir(path, static_cast<mode_t>(mode));
 }
 
-extern "C"
-int32_t ChMod(const char* path, int32_t mode)
+extern "C" int32_t ChMod(const char* path, int32_t mode)
 {
     return chmod(path, static_cast<mode_t>(mode));
 }
 
-extern "C"
-int32_t MkFifo(const char* path, int32_t mode)
+extern "C" int32_t MkFifo(const char* path, int32_t mode)
 {
     return mkfifo(path, static_cast<mode_t>(mode));
 }
 
-extern "C"
-int32_t FSync(int32_t fd)
+extern "C" int32_t FSync(int32_t fd)
 {
     return fsync(fd);
 }
 
-extern "C"
-int32_t FLock(int32_t fd, LockOperations operation)
+extern "C" int32_t FLock(int32_t fd, LockOperations operation)
 {
     return flock(fd, operation);
 }
 
-extern "C"
-int32_t ChDir(const char* path)
+extern "C" int32_t ChDir(const char* path)
 {
     return chdir(path);
 }
 
-extern "C"
-int32_t Access(const char* path, AccessMode mode)
+extern "C" int32_t Access(const char* path, AccessMode mode)
 {
     return access(path, mode);
 }
 
-extern "C"
-int32_t FnMatch(const char* pattern, const char* path, FnMatchFlags flags)
+extern "C" int32_t FnMatch(const char* pattern, const char* path, FnMatchFlags flags)
 {
     return fnmatch(pattern, path, flags);
 }
 
-extern "C"
-int64_t LSeek(int32_t fd, int64_t offset, SeekWhence whence)
+extern "C" int64_t LSeek(int32_t fd, int64_t offset, SeekWhence whence)
 {
     return lseek(fd, offset, whence);
 }
 
-extern "C"
-int32_t Link(const char* source, const char* linkTarget)
+extern "C" int32_t Link(const char* source, const char* linkTarget)
 {
     return link(source, linkTarget);
 }
 
-extern "C"
-int32_t MksTemps(char* pathTemplate, int32_t suffixLength)
+extern "C" int32_t MksTemps(char* pathTemplate, int32_t suffixLength)
 {
     return mkstemps(pathTemplate, suffixLength);
 }
 
-static
-int32_t ConvertMMapProtection(int32_t protection)
+static int32_t ConvertMMapProtection(int32_t protection)
 {
     if (protection == PAL_PROT_NONE)
         return PROT_NONE;
@@ -483,79 +444,75 @@ int32_t ConvertMMapProtection(int32_t protection)
         assert(false && "Unknown protection.");
         return -1;
     }
-    
+
     int32_t ret = 0;
     if (protection & PAL_PROT_READ)
         ret |= PROT_READ;
     if (protection & PAL_PROT_WRITE)
         ret |= PROT_WRITE;
     if (protection & PAL_PROT_EXEC)
-        ret |= PROT_EXEC;   
-    
+        ret |= PROT_EXEC;
+
     assert(ret != -1);
     return ret;
 }
 
-static 
-int32_t ConvertMMapFlags(int32_t flags)
+static int32_t ConvertMMapFlags(int32_t flags)
 {
     if (flags & ~(PAL_MAP_SHARED | PAL_MAP_PRIVATE | PAL_MAP_ANONYMOUS))
     {
         assert(false && "Unknown MMap flag.");
         return -1;
     }
-    
+
     int32_t ret = 0;
     if (flags & PAL_MAP_PRIVATE)
-       ret |= MAP_PRIVATE;
+        ret |= MAP_PRIVATE;
     if (flags & PAL_MAP_SHARED)
-       ret |= MAP_SHARED;
+        ret |= MAP_SHARED;
     if (flags & PAL_MAP_ANONYMOUS)
-       ret |= MAP_ANON;
+        ret |= MAP_ANON;
 
     assert(ret != -1);
     return ret;
 }
 
-static 
-int32_t ConvertMSyncFlags(int32_t flags)
+static int32_t ConvertMSyncFlags(int32_t flags)
 {
     if (flags & ~(PAL_MS_SYNC | PAL_MS_ASYNC | PAL_MS_INVALIDATE))
     {
         assert(false && "Unknown MSync flag.");
         return -1;
     }
-    
+
     int32_t ret = 0;
     if (flags & PAL_MS_SYNC)
-       ret |= MS_SYNC;
+        ret |= MS_SYNC;
     if (flags & PAL_MS_ASYNC)
-       ret |= MS_ASYNC;
+        ret |= MS_ASYNC;
     if (flags & PAL_MS_INVALIDATE)
-       ret |= MS_INVALIDATE;
-    
+        ret |= MS_INVALIDATE;
+
     assert(ret != -1);
     return ret;
 }
 
-extern "C"
-void* MMap(
-   void* address,
-   uint64_t length,
-   int32_t protection,  // bitwise OR of PAL_PROT_*
-   int32_t flags,       // bitwise OR of PAL_MAP_*, but PRIVATE and SHARED are mutually exclusive.
-   int32_t fd,
-   int64_t offset)
-{ 
+extern "C" void* MMap(void* address,
+                      uint64_t length,
+                      int32_t protection, // bitwise OR of PAL_PROT_*
+                      int32_t flags,      // bitwise OR of PAL_MAP_*, but PRIVATE and SHARED are mutually exclusive.
+                      int32_t fd,
+                      int64_t offset)
+{
     if (length > SIZE_MAX)
     {
         errno = ERANGE;
         return nullptr;
     }
- 
+
     protection = ConvertMMapProtection(protection);
     flags = ConvertMMapFlags(flags);
-    
+
     if (flags == -1 || protection == -1)
     {
         errno = EINVAL;
@@ -568,24 +525,22 @@ void* MMap(
         return nullptr;
     }
 
-    assert(ret != nullptr); 
+    assert(ret != nullptr);
     return ret;
 }
-   
-extern "C"
-int32_t MUnmap(void *address, uint64_t length)
+
+extern "C" int32_t MUnmap(void* address, uint64_t length)
 {
     if (length > SIZE_MAX)
     {
         errno = ERANGE;
         return -1;
-    }  
+    }
 
     return munmap(address, static_cast<size_t>(length));
 }
 
-extern "C"
-int32_t MAdvise(void* address, uint64_t length, MemoryAdvice advice)
+extern "C" int32_t MAdvise(void* address, uint64_t length, MemoryAdvice advice)
 {
     if (length > SIZE_MAX)
     {
@@ -610,8 +565,7 @@ int32_t MAdvise(void* address, uint64_t length, MemoryAdvice advice)
     return -1;
 }
 
-extern "C"
-int32_t MLock(void* address, uint64_t length)
+extern "C" int32_t MLock(void* address, uint64_t length)
 {
     if (length > SIZE_MAX)
     {
@@ -621,9 +575,8 @@ int32_t MLock(void* address, uint64_t length)
 
     return mlock(address, static_cast<size_t>(length));
 }
-    
-extern "C"
-int32_t MUnlock(void* address, uint64_t length)
+
+extern "C" int32_t MUnlock(void* address, uint64_t length)
 {
     if (length > SIZE_MAX)
     {
@@ -633,9 +586,8 @@ int32_t MUnlock(void* address, uint64_t length)
 
     return munlock(address, static_cast<size_t>(length));
 }
-    
-extern "C"
-int32_t MProtect(void* address, uint64_t length, int32_t protection)
+
+extern "C" int32_t MProtect(void* address, uint64_t length, int32_t protection)
 {
     if (length > SIZE_MAX)
     {
@@ -653,8 +605,7 @@ int32_t MProtect(void* address, uint64_t length, int32_t protection)
     return mprotect(address, static_cast<size_t>(length), protection);
 }
 
-extern "C"
-int32_t MSync(void* address, uint64_t length, int32_t flags)
+extern "C" int32_t MSync(void* address, uint64_t length, int32_t flags)
 {
     if (length > SIZE_MAX)
     {
@@ -668,12 +619,11 @@ int32_t MSync(void* address, uint64_t length, int32_t flags)
         errno = EINVAL;
         return -1;
     }
-    
+
     return msync(address, static_cast<size_t>(length), flags);
 }
-    
-extern "C"
-int64_t SysConf(SysConfName name)
+
+extern "C" int64_t SysConf(SysConfName name)
 {
     switch (name)
     {
@@ -681,15 +631,14 @@ int64_t SysConf(SysConfName name)
             return sysconf(_SC_CLK_TCK);
         case PAL_SC_PAGESIZE:
             return sysconf(_SC_PAGESIZE);
-    } 
+    }
 
     assert(false && "Unknown SysConfName");
     errno = EINVAL;
     return -1;
 }
-    
-extern "C"
-int32_t FTruncate(int32_t fd, int64_t length)
+
+extern "C" int32_t FTruncate(int32_t fd, int64_t length)
 {
     return ftruncate(fd, length);
 }
@@ -701,16 +650,14 @@ void ConvertPollFDPalToPlatform(const PollFD& pal, pollfd& native)
     native.revents = pal.REvents;
 }
 
-static
-void ConvertPollFDPlatformToPal(const pollfd& native, PollFD& pal)
+static void ConvertPollFDPlatformToPal(const pollfd& native, PollFD& pal)
 {
     pal.FD = native.fd;
     pal.Events = native.events;
     pal.REvents = native.revents;
 }
 
-extern "C"
-int32_t Poll(PollFD* pollData, uint32_t numberOfPollFds, int32_t timeout)
+extern "C" int32_t Poll(PollFD* pollData, uint32_t numberOfPollFds, int32_t timeout)
 {
     assert(numberOfPollFds <= 2);
 
@@ -737,8 +684,7 @@ int32_t Poll(PollFD* pollData, uint32_t numberOfPollFds, int32_t timeout)
     return result;
 }
 
-extern "C"
-int32_t PosixFAdvise(int32_t fd, int64_t offset, int64_t length, FileAdvice advice)
+extern "C" int32_t PosixFAdvise(int32_t fd, int64_t offset, int64_t length, FileAdvice advice)
 {
 #if HAVE_POSIX_ADVISE
     return posix_fadvise(fd, offset, length, advice);
@@ -750,8 +696,7 @@ int32_t PosixFAdvise(int32_t fd, int64_t offset, int64_t length, FileAdvice advi
 #endif
 }
 
-extern "C"
-int32_t Read(int32_t fd, void* buffer, int32_t bufferSize)
+extern "C" int32_t Read(int32_t fd, void* buffer, int32_t bufferSize)
 {
     assert(buffer != nullptr || bufferSize == 0);
     assert(bufferSize >= 0);
@@ -767,8 +712,7 @@ int32_t Read(int32_t fd, void* buffer, int32_t bufferSize)
     return static_cast<int32_t>(count);
 }
 
-extern "C"
-int32_t ReadLink(const char* path, char* buffer, int32_t bufferSize)
+extern "C" int32_t ReadLink(const char* path, char* buffer, int32_t bufferSize)
 {
     assert(buffer != nullptr || bufferSize == 0);
     assert(bufferSize >= 0);
@@ -784,26 +728,22 @@ int32_t ReadLink(const char* path, char* buffer, int32_t bufferSize)
     return static_cast<int32_t>(count);
 }
 
-extern "C"
-int32_t Rename(const char* oldPath, const char* newPath)
+extern "C" int32_t Rename(const char* oldPath, const char* newPath)
 {
     return rename(oldPath, newPath);
 }
 
-extern "C"
-int32_t RmDir(const char* path)
+extern "C" int32_t RmDir(const char* path)
 {
     return rmdir(path);
 }
 
-extern "C"
-void Sync()
+extern "C" void Sync()
 {
     sync();
 }
 
-extern "C"
-int32_t Write(int32_t fd, const void* buffer, int32_t bufferSize)
+extern "C" int32_t Write(int32_t fd, const void* buffer, int32_t bufferSize)
 {
     assert(buffer != nullptr || bufferSize == 0);
     assert(bufferSize >= 0);
