@@ -5,9 +5,11 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Threading;
+using Xunit;
 
 namespace System.Linq.Parallel.Tests
 {
+    [OuterLoop]
     public partial class ParallelQueryCombinationTests
     {
         private const int DefaultStart = 8;
