@@ -506,16 +506,22 @@ namespace System.Net.Http
             {
                 VerboseTrace("messageResult: " + messageResult, easy: completedOperation);
 
-                if (completedOperation._responseMessage.StatusCode != HttpStatusCode.Unauthorized && completedOperation._handler.PreAuthenticate)
+                if (completedOperation._responseMessage.StatusCode != HttpStatusCode.Unauthorized)
                 {
-                    ulong availedAuth;
-                    if (Interop.libcurl.curl_easy_getinfo(completedOperation._easyHandle, CURLINFO.CURLINFO_HTTPAUTH_AVAIL, out availedAuth) == CURLcode.CURLE_OK)
+                    if (completedOperation._handler.PreAuthenticate)
                     {
-                        // TODO: fix locking in AddCredentialToCache
-                        completedOperation._handler.AddCredentialToCache(
-                            completedOperation._requestMessage.RequestUri, availedAuth, completedOperation._networkCredential);
+                        ulong availedAuth;
+                        if (Interop.libcurl.curl_easy_getinfo(completedOperation._easyHandle, CURLINFO.CURLINFO_HTTPAUTH_AVAIL, out availedAuth) == CURLcode.CURLE_OK)
+                        {
+                            // TODO: fix locking in AddCredentialToCache
+                            completedOperation._handler.AddCredentialToCache(
+                               completedOperation._requestMessage.RequestUri, availedAuth, completedOperation._networkCredential);
+                        }
+                        // Ignore errors: no need to fail for the sake of putting the credentials into the cache
                     }
-                    // Ignore errors: no need to fail for the sake of putting the credentials into the cache
+
+                    completedOperation._handler.AddResponseCookies(
+                        completedOperation._requestMessage.RequestUri, completedOperation._responseMessage);
                 }
 
                 switch (messageResult)
@@ -564,6 +570,10 @@ namespace System.Net.Http
                                 if (!response.Headers.TryAddWithoutValidation(headerName, headerValue))
                                 {
                                     response.Content.Headers.TryAddWithoutValidation(headerName, headerValue);
+                                }
+                                else if (easy._isRedirect && string.Equals(headerName, HttpKnownHeaderNames.Location, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    HandleRedirectLocationHeader(easy, headerValue);
                                 }
                             }
                         }

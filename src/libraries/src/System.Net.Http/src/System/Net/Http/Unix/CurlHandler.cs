@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 using CURLAUTH = Interop.libcurl.CURLAUTH;
 using CURLcode = Interop.libcurl.CURLcode;
@@ -58,7 +59,7 @@ namespace System.Net.Http
         private DecompressionMethods _automaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
         private bool _preAuthenticate = HttpHandlerDefaults.DefaultPreAuthenticate;
         private CredentialCache _credentialCache = null; // protected by LockObject
-        private CookieContainer _cookieContainer = null;
+        private CookieContainer _cookieContainer = new CookieContainer();
         private bool _useCookie = HttpHandlerDefaults.DefaultUseCookies;
         private bool _automaticRedirection = HttpHandlerDefaults.DefaultAutomaticRedirection;
         private int _maxAutomaticRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
@@ -223,7 +224,7 @@ namespace System.Net.Http
         {
             get
             {
-                return LazyInitializer.EnsureInitialized(ref _cookieContainer);
+                return _cookieContainer;
             }
 
             set
@@ -285,6 +286,11 @@ namespace System.Net.Http
             if (request.Headers.TransferEncodingChunked.GetValueOrDefault() && (request.Content == null))
             {
                 throw new InvalidOperationException(SR.net_http_chunked_not_allowed_with_empty_content);
+            }
+
+            if (_useCookie && _cookieContainer == null)
+            {
+                throw new InvalidOperationException(SR.net_http_invalid_cookiecontainer);
             }
 
             // TODO: Check that SendAsync is not being called again for same request object.
@@ -396,6 +402,34 @@ namespace System.Net.Http
                     {
                         Debug.Assert(_credentialCache != null, "Expected non-null credential cache");
                         _credentialCache.Add(serverUri, s_authenticationSchemes[i], nc);
+                    }
+                }
+            }
+        }
+
+        private void AddResponseCookies(Uri serverUri, HttpResponseMessage response)
+        {
+            if (!_useCookie)
+            {
+                return;
+            }
+
+            if (response.Headers.Contains(HttpKnownHeaderNames.SetCookie))
+            {
+                IEnumerable<string> cookieHeaders = response.Headers.GetValues(HttpKnownHeaderNames.SetCookie);
+                foreach (var cookieHeader in cookieHeaders)
+                {
+                    try
+                    {
+                        _cookieContainer.SetCookies(serverUri, cookieHeader);
+                    }
+                    catch (CookieException e)
+                    {
+                        string msg = string.Format("Malformed cookie: SetCookies Failed with {0}, server: {1}, cookie:{2}",
+                                                   e.Message,
+                                                   serverUri.OriginalString,
+                                                   cookieHeader);
+                        VerboseTrace(msg);
                     }
                 }
             }
@@ -554,17 +588,6 @@ namespace System.Net.Http
                 {
                     response.StatusCode = (HttpStatusCode)statusCode;
 
-                    // For security reasons, we drop the server credential if it is a
-                    // NetworkCredential.  But we allow credentials in a CredentialCache
-                    // since they are specifically tied to URI's.
-                    if ((response.StatusCode == HttpStatusCode.Redirect) && !(state._handler.Credentials is CredentialCache))
-                    {
-                        state.SetCurlOption(CURLoption.CURLOPT_HTTPAUTH, CURLAUTH.None);
-                        state.SetCurlOption(CURLoption.CURLOPT_USERNAME, IntPtr.Zero);
-                        state.SetCurlOption(CURLoption.CURLOPT_PASSWORD, IntPtr.Zero);
-                        state._networkCredential = null;
-                    }
-
                     int codeEndIndex = codeStartIndex + StatusCodeLength;
 
                     int reasonPhraseIndex = codeEndIndex + 1;
@@ -575,6 +598,10 @@ namespace System.Net.Http
                         int reasonPhraseEnd = newLineCharIndex >= 0 ? newLineCharIndex : responseHeaderLength;
                         response.ReasonPhrase = responseHeader.Substring(reasonPhraseIndex, reasonPhraseEnd - reasonPhraseIndex);
                     }
+                    state._isRedirect = state._handler.AutomaticRedirection &&
+                         (response.StatusCode == HttpStatusCode.Redirect ||
+                         response.StatusCode == HttpStatusCode.RedirectKeepVerb ||
+                         response.StatusCode == HttpStatusCode.RedirectMethod) ;
                 }
             }
 
@@ -604,6 +631,33 @@ namespace System.Net.Http
             statusCode = (c100 - '0') * 100 + (c10 - '0') * 10 + (c1 - '0');
 
             return true;
+        }
+
+        private static void HandleRedirectLocationHeader(EasyRequest state, string locationValue)
+        {
+            Debug.Assert(state._isRedirect);
+            Debug.Assert(state._handler.AutomaticRedirection);
+
+            string location = locationValue.Trim();
+            //only for absolute redirects
+            Uri forwardUri;
+            if (Uri.TryCreate(location, UriKind.RelativeOrAbsolute, out forwardUri) && forwardUri.IsAbsoluteUri)
+            {
+                NetworkCredential newCredential = GetCredentials(state._handler.Credentials as CredentialCache, forwardUri);
+                state.SetCredentialsOptions(newCredential);
+
+                // reset proxy - it is possible that the proxy has different credentials for the new URI
+                state.SetProxyOptions(forwardUri);
+
+                if (state._handler._useCookie)
+                {
+                    // reset cookies.
+                    state.SetCurlOption(CURLoption.CURLOPT_COOKIE, IntPtr.Zero);
+
+                    // set cookies again
+                    state.SetCookieOption(forwardUri);
+                }
+            }
         }
 
         private static void SetChunkedModeForSend(HttpRequestMessage request)
