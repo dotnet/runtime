@@ -38,8 +38,8 @@ UINT GetCLRMBRTLStyle()
     WRAPPER_NO_CONTRACT;
 
     UINT mbStyle = 0;
-    WCHAR buff[MAX_PATH];                        
-    if(SUCCEEDED(UtilLoadStringRC(IDS_RTL, buff, MAX_PATH, true))) {
+    WCHAR buff[MAX_LONGPATH];                        
+    if(SUCCEEDED(UtilLoadStringRC(IDS_RTL, buff, MAX_LONGPATH, true))) {
         if(wcscmp(buff, W("RTL_True")) == 0) {
             mbStyle = 0x00080000 |0x00100000; // MB_RIGHT || MB_RTLREADING
         }
@@ -152,8 +152,8 @@ int MessageBoxImpl(
         ACTCTX ctx = { sizeof(ACTCTX) };
         ctx.dwFlags = 0;
         StackSString manifestPath;  // Point this at %windir%\WindowsShell.manifest, for comctl32 version 6.
-        UINT numChars = WszGetWindowsDirectory(manifestPath.OpenUnicodeBuffer(MAX_PATH), MAX_PATH);
-        if (numChars == 0 || numChars >= MAX_PATH)
+        UINT numChars = WszGetWindowsDirectory(manifestPath.OpenUnicodeBuffer(MAX_PATH_FNAME), MAX_PATH_FNAME);
+        if (numChars == 0 || numChars >= MAX_PATH_FNAME)
         {
             _ASSERTE(0);  // How did this fail?
         }
@@ -359,7 +359,7 @@ int UtilMessageBoxNonLocalizedVA(
         formattedMessage.VPrintf(lpText, args);
        
         // Try to get filename of Module and add it to title
-        if (showFileNameInTitle && WszGetModuleFileName(NULL, fileName.OpenUnicodeBuffer(MAX_PATH), MAX_PATH))
+        if (showFileNameInTitle && WszGetModuleFileName(NULL, fileName.OpenUnicodeBuffer(MAX_LONGPATH), MAX_LONGPATH))
         {           
             LPCWSTR wszName = NULL;
             size_t cchName = 0;

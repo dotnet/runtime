@@ -6631,7 +6631,7 @@ ClrDataAccess::GetMetaDataFromHost(PEFile* peFile,
 {
     DWORD imageTimestamp, imageSize, dataSize;
     void* buffer = NULL;
-    WCHAR uniPath[MAX_PATH] = {0};
+    WCHAR uniPath[MAX_LONGPATH] = {0};
     bool isAlt = false;
     bool isNGEN = false;
     DAC_INSTANCE* inst = NULL;
@@ -6735,7 +6735,7 @@ ClrDataAccess::GetMetaDataFromHost(PEFile* peFile,
         
 #if defined(FEATURE_CORESYSTEM)
         const WCHAR* ilExtension[] = {W("dll"), W("winmd")};
-        WCHAR ngenImageName[MAX_PATH] = {0};
+        WCHAR ngenImageName[MAX_LONGPATH] = {0};
         if (wcscpy_s(ngenImageName, NumItems(ngenImageName), uniPath) != 0)
         {
             goto ErrExit;

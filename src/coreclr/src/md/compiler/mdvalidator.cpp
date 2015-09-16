@@ -5404,10 +5404,10 @@ HRESULT RegMeta::ValidateFile(RID rid)
     else
     {
         ULONG L = (ULONG)strlen(szName);
-        if(L >= MAX_PATH)
+        if(L >= MAX_PATH_FNAME)
         {
             // Name too long
-            REPORT_ERROR2(VLDTR_E_TD_NAMETOOLONG, L, (ULONG)(MAX_PATH-1));
+            REPORT_ERROR2(VLDTR_E_TD_NAMETOOLONG, L, (ULONG)(MAX_PATH_FNAME-1));
             SetVldtrCode(&hrSave, VLDTR_S_ERR);
         }
         // Check for duplicates based on Name.

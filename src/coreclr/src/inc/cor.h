@@ -144,7 +144,7 @@ typedef UNALIGNED void const *UVCP_CONSTANT;
 // Constant for connection id and task id
 #define INVALID_CONNECTION_ID   0x0
 #define INVALID_TASK_ID         0x0 
-#define MAX_CONNECTION_NAME     MAX_PATH
+#define MAX_CONNECTION_NAME     MAX_LONGPATH
 
 //*****************************************************************************
 //*****************************************************************************

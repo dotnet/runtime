@@ -437,7 +437,7 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebuggerForSingleFile(
 {
     INTERNAL_DAC_CALLBACK(this);
 
-    ULONG32 cchLocalImagePath = MAX_PATH;
+    ULONG32 cchLocalImagePath = MAX_LONGPATH;
     ULONG32 cchLocalImagePathRequired;
     NewArrayHolder<WCHAR> pwszLocalFilePath = NULL;
     IMDInternalImport * pMDII = NULL;
@@ -7592,7 +7592,7 @@ void CordbProcess::VerifyControlBlock()
     }
 
 #ifdef _DEBUG
-    char buf[MAX_PATH];
+    char buf[MAX_LONGPATH];
     DWORD len = GetEnvironmentVariableA("CORDBG_NotCompatibleTest", buf, sizeof(buf));
     _ASSERTE(len < sizeof(buf));
 

@@ -1839,10 +1839,10 @@ HMODULE ShimProcess::GetDacModule()
 #ifdef FEATURE_PAL
     // For now on Unix we'll just search for DAC in the default location.
     // Debugger can always control it by setting LD_LIBRARY_PATH env var.
-    WCHAR wszAccessDllPath[MAX_PATH] = MAKEDLLNAME_W(W("mscordaccore"));
+    WCHAR wszAccessDllPath[MAX_LONGPATH] = MAKEDLLNAME_W(W("mscordaccore"));
 
 #else    
-    WCHAR wszAccessDllPath[MAX_PATH];
+    WCHAR wszAccessDllPath[MAX_LONGPATH];
     //
     // Load the access DLL from the same directory as the the current CLR Debugging Services DLL.
     //

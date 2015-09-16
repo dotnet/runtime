@@ -731,15 +731,15 @@ void Zapper::LoadAndInitializeJITForNgen(LPCWSTR pwzJitName, OUT HINSTANCE* phJi
     HRESULT hr = E_FAIL;
 
 #ifdef FEATURE_MERGE_JIT_AND_ENGINE
-    WCHAR CoreClrFolder[MAX_PATH + 1];
+    WCHAR CoreClrFolder[MAX_LONGPATH + 1];
     extern HINSTANCE g_hThisInst;
-    if (WszGetModuleFileName(g_hThisInst, CoreClrFolder, MAX_PATH))
+    if (WszGetModuleFileName(g_hThisInst, CoreClrFolder, MAX_LONGPATH))
     {
         WCHAR *filePtr = wcsrchr(CoreClrFolder, W('\\'));
         if (filePtr)
         {
             filePtr[1] = W('\0');
-            wcscat_s(CoreClrFolder, MAX_PATH, pwzJitName);
+            wcscat_s(CoreClrFolder, MAX_LONGPATH, pwzJitName);
             *phJit = ::WszLoadLibrary(CoreClrFolder);
             if (*phJit == NULL)
             {
@@ -1462,8 +1462,8 @@ void Zapper::PrintAssemblyVersionInfo(IAssemblyName *pName, SString &s)
     //
 
     WCHAR szGuid[64];
-    WCHAR path[MAX_PATH];
-    DWORD cPath = MAX_PATH;
+    WCHAR path[MAX_LONGPATH];
+    DWORD cPath = MAX_LONGPATH;
 
     IfFailThrow(QueryNativeAssemblyInfo(pName, path, &cPath));
 
@@ -2213,8 +2213,8 @@ void Zapper::CreatePdbInCurrentDomain(BSTR pAssemblyPathOrName, BSTR pNativeImag
         // Now is a good time to make sure pNativeImagePath is the same native image
         // fusion loaded
         {
-            WCHAR wzZapImagePath[MAX_PATH] = {0};
-            DWORD dwZapImagePathLength = MAX_PATH;
+            WCHAR wzZapImagePath[MAX_LONGPATH] = {0};
+            DWORD dwZapImagePathLength = MAX_LONGPATH;
 
             hr = E_FAIL;
             if (m_pEECompileInfo->CheckAssemblyZap(hAssembly, wzZapImagePath, &dwZapImagePathLength))
@@ -2386,8 +2386,8 @@ void Zapper::ComputeDependenciesInCurrentDomain(LPCWSTR pAssemblyString, CORCOMP
     // Check if we have a native image already, and if so get its GUID
     //
 
-    WCHAR zapManifestPath[MAX_PATH];
-    DWORD cZapManifestPath = MAX_PATH;
+    WCHAR zapManifestPath[MAX_LONGPATH];
+    DWORD cZapManifestPath = MAX_LONGPATH;
     if (pNativeImageSig &&
         m_pEECompileInfo->CheckAssemblyZap(hAssembly, zapManifestPath, &cZapManifestPath))
     {
@@ -2821,8 +2821,8 @@ Exit:
 #ifdef FEATURE_FUSION
 BOOL Zapper::CheckAssemblyUpToDate(CORINFO_ASSEMBLY_HANDLE hAssembly, CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig)
 {
-    WCHAR zapManifestPath[MAX_PATH];
-    DWORD cZapManifestPath = MAX_PATH;
+    WCHAR zapManifestPath[MAX_LONGPATH];
+    DWORD cZapManifestPath = MAX_LONGPATH;
 
     if (!m_pEECompileInfo->CheckAssemblyZap(
         hAssembly,
@@ -2861,7 +2861,7 @@ BOOL Zapper::TryToInstallFromRepository(CORINFO_ASSEMBLY_HANDLE hAssembly, CORCO
     // First see if the NI is available in a folder named "NGen" under the CLR location.
     // This folder is used by CBS to store build lab generated NIs.  Moving files out of
     // this folder might confuse CBS, so we hard link NIs from this folder into the NIC.
-    WCHAR wszNGenPath[MAX_PATH];
+    WCHAR wszNGenPath[MAX_LONGPATH];
     DWORD dwNGenPathLen = COUNTOF(wszNGenPath);
     IfFailThrow(GetInternalSystemDirectory(wszNGenPath, &dwNGenPathLen));
 
@@ -3099,8 +3099,8 @@ void Zapper::InstallFromRepository(LPCWSTR lpszNativeImage,
         PrintFusionCacheEntry(LogLevel_Info, pName);
     }
 
-    WCHAR zapManifestPath[MAX_PATH];
-    DWORD cPath = MAX_PATH;
+    WCHAR zapManifestPath[MAX_LONGPATH];
+    DWORD cPath = MAX_LONGPATH;
     IfFailThrow(pAssemblyLocation->GetPath(zapManifestPath, &cPath));
 
     if (pNativeImageSig)
@@ -3209,7 +3209,7 @@ void Zapper::GetOutputFolder()
        will move the files to the NIC preserving the security attributes.
        Now other users cannot use the ngen images, which is bad.
     */
-    WCHAR tempFolder[MAX_PATH];
+    WCHAR tempFolder[MAX_LONGPATH];
     DWORD tempFolderLen = NumItems(tempFolder);
     IfFailThrow(GetCachePath(ASM_CACHE_ZAP, tempFolder, &tempFolderLen));
 
