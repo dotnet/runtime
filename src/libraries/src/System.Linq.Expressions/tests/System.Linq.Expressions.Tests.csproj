@@ -71,6 +71,7 @@
     <Compile Include="Cast\CastTests.cs" />
     <Compile Include="Cast\IsNullableTests.cs" />
     <Compile Include="Cast\IsTests.cs" />
+    <Compile Include="Conditional\ConditionalOneOffTests.cs" />
     <Compile Include="Constant\ConstantArrayTests.cs" />
     <Compile Include="Constant\ConstantNullableTests.cs" />
     <Compile Include="Constant\ConstantTests.cs" />
@@ -129,7 +130,6 @@
     <Compile Include="Unary\UnaryBitwiseNotNullableTests.cs" />
     <Compile Include="Unary\UnaryBitwiseNotTests.cs" />
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
     <ProjectReference Include="..\src\System.Linq.Expressions.csproj">
       <Project>{aef718e9-d4fc-418f-a7ae-ed6b2c7b3787}</Project>

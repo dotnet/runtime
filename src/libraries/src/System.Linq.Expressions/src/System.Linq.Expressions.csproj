@@ -115,6 +115,7 @@
     <Compile Include="System\Linq\Expressions\TryExpression.cs" />
     <Compile Include="System\Linq\Expressions\TypeBinaryExpression.cs" />
     <Compile Include="System\Linq\Expressions\UnaryExpression.cs" />
+    <Compile Include="System\Linq\Expressions\Utils.cs" />
     <Compile Include="System\Linq\IQueryable.cs" />
     <Compile Include="System\Runtime\CompilerServices\IRuntimeVariables.cs" />
     <None Include="project.json" />
