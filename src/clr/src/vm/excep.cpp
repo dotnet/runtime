@@ -12234,18 +12234,18 @@ BOOL CEHelper::ShouldTreatActiveExceptionAsNonCorrupting()
 //
 // Note: This method must be called once the exception trackers have been adjusted post catch-block execution.
 /* static */
-void CEHelper::ResetLastActiveCorruptionSeverityPostCatchHandler()
+void CEHelper::ResetLastActiveCorruptionSeverityPostCatchHandler(Thread *pThread)
 {
     CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(GetThread() != NULL);
+        PRECONDITION(pThread != NULL);
     }
     CONTRACTL_END;
 
-    ThreadExceptionState *pCurTES = GetThread()->GetExceptionState();
+    ThreadExceptionState *pCurTES = pThread->GetExceptionState();
 
     // By this time, we would have set the correct exception tracker for the active exception domain,
     // if applicable. An example is throwing and catching an exception within a catch block. We will update
