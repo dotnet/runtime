@@ -200,4 +200,32 @@ namespace Tests.ExpressionCompiler
     public class BaseClass
     {
     }
+
+    public class FC
+    {
+        public int II;
+        public static int SI;
+        public const int CI = 42;
+        public static readonly int RI = 42;
+    }
+
+    public struct FS
+    {
+        public int II;
+        public static int SI;
+        public const int CI = 42;
+        public static readonly int RI = 42;
+    }
+
+    public class PC
+    {
+        public int II { get; set; }
+        public static int SI { get; set; }
+    }
+
+    public struct PS
+    {
+        public int II { get; set; }
+        public static int SI { get; set; }
+    }
 }
