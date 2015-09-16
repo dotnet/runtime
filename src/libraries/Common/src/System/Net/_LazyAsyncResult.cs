@@ -12,8 +12,8 @@ namespace System.Net
     // that want to take advantage of lazy allocated event handles.
     internal class LazyAsyncResult : IAsyncResult
     {
-        private const int c_HighBit = unchecked((int)0x80000000);
-        private const int c_ForceAsyncCount = 50;
+        private const int HighBit = unchecked((int)0x80000000);
+        private const int ForceAsyncCount = 50;
 
         // This is to avoid user mistakes when they queue another async op from a callback the completes sync.
         [ThreadStatic]
@@ -29,13 +29,14 @@ namespace System.Net
                     threadContext = new ThreadContext();
                     s_ThreadContext = threadContext;
                 }
+
                 return threadContext;
             }
         }
 
         private class ThreadContext
         {
-            internal int m_NestedIOCount;
+            internal int _nestedIOCount;
         }
 
 #if DEBUG
@@ -150,11 +151,11 @@ namespace System.Net
                 // The user has access to this object.  Lock-in CompletedSynchronously.
                 if (_intCompleted == 0)
                 {
-                    Interlocked.CompareExchange(ref _intCompleted, c_HighBit, 0);
+                    Interlocked.CompareExchange(ref _intCompleted, HighBit, 0);
                 }
 
                 // Because InternalWaitForCompletion() tries to dispose this event, it's
-                // possible for m_Event to become null immediately after being set, but only if
+                // possible for _event to become null immediately after being set, but only if
                 // IsCompleted has become true.  Therefore it's possible for this property
                 // to give different (set) events to different callers when IsCompleted is true.
                 asyncEvent = (ManualResetEvent)_event;
@@ -163,7 +164,7 @@ namespace System.Net
                     LazilyCreateEvent(out asyncEvent);
                 }
 
-                GlobalLog.Print("LazyAsyncResult#" + Logging.HashString(this) + "::get_AsyncWaitHandle() m_Event:" + Logging.HashString(_event));
+                GlobalLog.Print("LazyAsyncResult#" + Logging.HashString(this) + "::get_AsyncWaitHandle() _event:" + Logging.HashString(_event));
                 return asyncEvent;
             }
         }
@@ -187,7 +188,7 @@ namespace System.Net
                 {
                     waitHandle.Dispose();
                     waitHandle = (ManualResetEvent)_event;
-                    // There's a chance here that m_Event became null.  But the only way is if another thread completed
+                    // There's a chance here that _event became null.  But the only way is if another thread completed
                     // in InternalWaitForCompletion and disposed it.  If we're in InternalWaitForCompletion, we now know
                     // IsCompleted is set, so we can avoid the wait when waitHandle comes back null.  AsyncWaitHandle
                     // will try again in this case.
@@ -199,7 +200,10 @@ namespace System.Net
                 // This should be very rare, but doing this will reduce the chance of deadlock.
                 _event = null;
                 if (waitHandle != null)
+                {
                     waitHandle.Dispose();
+                }
+                    
                 throw;
             }
         }
@@ -232,8 +236,9 @@ namespace System.Net
                 int result = _intCompleted;
                 if (result == 0)
                 {
-                    result = Interlocked.CompareExchange(ref _intCompleted, c_HighBit, 0);
+                    result = Interlocked.CompareExchange(ref _intCompleted, HighBit, 0);
                 }
+
                 GlobalLog.Print("LazyAsyncResult#" + Logging.HashString(this) + "::get_CompletedSynchronously() returns: " + ((result > 0) ? "true" : "false"));
                 return result > 0;
             }
@@ -259,9 +264,10 @@ namespace System.Net
                 int result = _intCompleted;
                 if (result == 0)
                 {
-                    result = Interlocked.CompareExchange(ref _intCompleted, c_HighBit, 0);
+                    result = Interlocked.CompareExchange(ref _intCompleted, HighBit, 0);
                 }
-                return (result & ~c_HighBit) != 0;
+
+                return (result & ~HighBit) != 0;
             }
         }
 
@@ -270,7 +276,7 @@ namespace System.Net
         {
             get
             {
-                return (_intCompleted & ~c_HighBit) != 0;
+                return (_intCompleted & ~HighBit) != 0;
             }
         }
 
@@ -342,12 +348,14 @@ namespace System.Net
             _ProtectState = false;
 #endif
 
-            if ((_intCompleted & ~c_HighBit) == 0 && (Interlocked.Increment(ref _intCompleted) & ~c_HighBit) == 1)
+            if ((_intCompleted & ~HighBit) == 0 && (Interlocked.Increment(ref _intCompleted) & ~HighBit) == 1)
             {
                 // DBNull.Value is used to guarantee that the first caller wins,
                 // even if the result was set to null.
                 if (_result == DBNull.Value)
+                {
                     _result = result;
+                }
 
                 ManualResetEvent asyncEvent = (ManualResetEvent)_event;
                 if (asyncEvent != null)
@@ -390,17 +398,17 @@ namespace System.Net
             ThreadContext threadContext = CurrentThreadContext;
             try
             {
-                ++threadContext.m_NestedIOCount;
+                ++threadContext._nestedIOCount;
                 if (_asyncCallback != null)
                 {
                     GlobalLog.Print("LazyAsyncResult#" + Logging.HashString(this) + "::Complete() invoking callback");
 
-                    if (threadContext.m_NestedIOCount >= c_ForceAsyncCount)
+                    if (threadContext._nestedIOCount >= ForceAsyncCount)
                     {
                         GlobalLog.Print("LazyAsyncResult::Complete *** OFFLOADED the user callback ***");
                         Task.Factory.StartNew(
-                            s => WorkerThreadComplete(s), 
-                            null,
+                            s => WorkerThreadComplete(s),
+                            this,
                             CancellationToken.None,
                             TaskCreationOptions.DenyChildAttach,
                             TaskScheduler.Default);
@@ -419,9 +427,9 @@ namespace System.Net
             }
             finally
             {
-                --threadContext.m_NestedIOCount;
+                --threadContext._nestedIOCount;
 
-                // Never call this method unless interlocked m_IntCompleted check has succeeded (like in this case)
+                // Never call this method unless interlocked _intCompleted check has succeeded (like in this case)
                 if (!offloaded)
                 {
                     Cleanup();
@@ -430,15 +438,18 @@ namespace System.Net
         }
 
         // Only called in the above method
-        private void WorkerThreadComplete(object state)
+        private static void WorkerThreadComplete(object state)
         {
+            Debug.Assert(state is LazyAsyncResult);
+            LazyAsyncResult thisPtr = (LazyAsyncResult)state;
+
             try
             {
-                _asyncCallback(this);
+                thisPtr._asyncCallback(thisPtr);
             }
             finally
             {
-                Cleanup();
+                thisPtr.Cleanup();
             }
         }
 
@@ -473,7 +484,7 @@ namespace System.Net
             {
                 try
                 {
-                    GlobalLog.Print("LazyAsyncResult#" + Logging.HashString(this) + "::InternalWaitForCompletion() Waiting for completion m_Event#" + Logging.HashString(waitHandle));
+                    GlobalLog.Print("LazyAsyncResult#" + Logging.HashString(this) + "::InternalWaitForCompletion() Waiting for completion _event#" + Logging.HashString(waitHandle));
                     waitHandle.WaitOne(Timeout.Infinite);
                 }
                 catch (ObjectDisposedException)
@@ -486,7 +497,7 @@ namespace System.Net
                     // We also want to dispose the event although we can't unless we did wait on it here.
                     if (createdByMe && !_userEvent)
                     {
-                        // Does m_UserEvent need to be volatile (or m_Event set via Interlocked) in order
+                        // Does _userEvent need to be volatile (or _event set via Interlocked) in order
                         // to avoid giving a user a disposed event?
                         ManualResetEvent oldEvent = (ManualResetEvent)_event;
                         _event = null;
@@ -498,8 +509,8 @@ namespace System.Net
                 }
             }
 
-            // A race condition exists because InvokeCallback sets m_IntCompleted before m_Result (so that m_Result
-            // can benefit from the synchronization of m_IntCompleted).  That means you can get here before m_Result got
+            // A race condition exists because InvokeCallback sets _intCompleted before _result (so that _result
+            // can benefit from the synchronization of _intCompleted).  That means you can get here before _result got
             // set (although rarely - once every eight hours of stress).  Handle that case with a spin-lock.
 
             SpinWait sw = new SpinWait();
@@ -518,7 +529,7 @@ namespace System.Net
         // It completes the result but doesn't do any of the notifications.
         internal void InternalCleanup()
         {
-            if ((_intCompleted & ~c_HighBit) == 0 && (Interlocked.Increment(ref _intCompleted) & ~c_HighBit) == 1)
+            if ((_intCompleted & ~HighBit) == 0 && (Interlocked.Increment(ref _intCompleted) & ~HighBit) == 1)
             {
                 // Set no result so that just in case there are waiters, they don't hang in the spin lock.
                 _result = null;

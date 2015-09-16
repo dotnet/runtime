@@ -38,12 +38,16 @@ namespace System.Net
         internal bool IsCompatible(AsyncCallback callback)
         {
             if (callback == null || _savedCallback == null)
+            {
                 return false;
+            }
 
             // Delegates handle this ok.  AsyncCallback is sealed and immutable, so if this succeeds, we are safe to use
             // the passed-in instance.
             if (!object.Equals(_savedCallback, callback))
+            {
                 return false;
+            }
 
             return true;
         }
@@ -253,6 +257,7 @@ namespace System.Net
             {
                 return false;
             }
+
             _Flags |= StateFlags.PostBlockFinished;
 
             ExecutionContext cachedContext = null;
@@ -270,6 +275,7 @@ namespace System.Net
             {
                 return false;
             }
+
             _Flags |= StateFlags.PostBlockFinished;
 
             // Need a copy of this ref argument since it can be used in many of these calls simultaneously.
@@ -351,6 +357,7 @@ namespace System.Net
                 {
                     cachedContext = ExecutionContext.Capture();
                 }
+
                 if (cachedContext != null)
                 {
                     if (!returnContext)
