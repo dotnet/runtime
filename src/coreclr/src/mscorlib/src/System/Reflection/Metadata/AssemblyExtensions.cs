@@ -33,7 +33,14 @@ namespace System.Reflection.Metadata
 
             blob = null;
             length = 0;
-            return InternalTryGetRawMetadata((RuntimeAssembly)assembly, ref blob, ref length);
+
+            var runtimeAssembly = assembly as RuntimeAssembly;
+            if (runtimeAssembly == null)
+            {
+                return false;
+            }
+
+            return InternalTryGetRawMetadata(runtimeAssembly, ref blob, ref length);
         }
     }
 }
