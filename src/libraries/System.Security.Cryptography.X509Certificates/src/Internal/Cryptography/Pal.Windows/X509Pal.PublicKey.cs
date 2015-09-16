@@ -106,6 +106,10 @@ namespace Internal.Cryptography.Pal
 
         private static byte[] ExportKeyBlob(SafeBCryptKeyHandle bCryptKeyHandle, CngKeyBlobFormat blobFormat)
         {
+#if NETNATIVE
+            // BCryptExportKey() not in the UWP api list.
+            throw new PlatformNotSupportedException();
+#else
             string blobFormatString = blobFormat.Format;
 
             int numBytesNeeded = 0;
@@ -120,6 +124,7 @@ namespace Internal.Cryptography.Pal
 
             Array.Resize(ref keyBlob, numBytesNeeded);
             return keyBlob;
+#endif //NETNATIVE
         }
 
         private static byte[] DecodeKeyBlob(CryptDecodeObjectStructType lpszStructType, byte[] encodedKeyValue)
