@@ -2,6 +2,7 @@
   "dependencies": {
     "System.Console": "4.0.0-beta-*",
     "System.IO": "4.0.10",
+    "System.Reflection": "4.0.0",
     "System.Runtime": "4.0.20",
     "System.Threading.Tasks": "4.0.10"
   },
