@@ -56,10 +56,10 @@ namespace Mono.Linker.Steps {
 			switch (assembly.MainModule.Kind) {
 			case ModuleKind.Dll:
 				ProcessLibrary (Context, assembly);
-				return;
+				break;
 			default:
 				ProcessExecutable (assembly);
-				return;
+				break;
 			}
 		}
 
@@ -79,13 +79,19 @@ namespace Mono.Linker.Steps {
 		{
 			SetAction (context, assembly, AssemblyAction.Copy);
 
+			context.Annotations.Push (assembly);
+
 			foreach (TypeDefinition type in assembly.MainModule.Types)
 				MarkType (context, type);
+
+			context.Annotations.Pop ();
 		}
 
 		static void MarkType (LinkContext context, TypeDefinition type)
 		{
 			context.Annotations.Mark (type);
+
+			context.Annotations.Push (type);
 
 			if (type.HasFields)
 				MarkFields (context, type.Fields);
@@ -94,14 +100,20 @@ namespace Mono.Linker.Steps {
 			if (type.HasNestedTypes)
 				foreach (var nested in type.NestedTypes)
 					MarkType (context, nested);
+
+			context.Annotations.Pop ();
 		}
 
 		void ProcessExecutable (AssemblyDefinition assembly)
 		{
 			SetAction (Context, assembly, AssemblyAction.Link);
 
+			Annotations.Push (assembly);
+
 			Annotations.Mark (assembly.EntryPoint.DeclaringType);
 			MarkMethod (Context, assembly.EntryPoint, MethodAction.Parse);
+
+			Annotations.Pop ();
 		}
 
 		static void MarkFields (LinkContext context, ICollection fields)

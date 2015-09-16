@@ -29,6 +29,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
 
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -49,6 +51,26 @@ namespace Mono.Linker {
 		readonly Dictionary<AssemblyDefinition, ISymbolReader> symbol_readers = new Dictionary<AssemblyDefinition, ISymbolReader> ();
 
 		readonly Dictionary<object, Dictionary<IMetadataTokenProvider, object>> custom_annotations = new Dictionary<object, Dictionary<IMetadataTokenProvider, object>> ();
+
+		readonly Stack<object> dependency_stack = new Stack<object> ();
+		System.Xml.XmlWriter writer;
+		GZipStream zipStream;
+
+		public void PrepareDependenciesDump ()
+		{
+			System.Xml.XmlWriterSettings settings = new System.Xml.XmlWriterSettings();
+			settings.Indent = true;
+			settings.IndentChars = "\t";
+			var depsFile = File.OpenWrite ("linker-dependencies.xml.gz");
+			zipStream = new GZipStream (depsFile, CompressionMode.Compress);
+
+			writer = System.Xml.XmlWriter.Create (zipStream, settings);
+			writer.WriteStartDocument ();
+			writer.WriteStartElement ("dependencies");
+			writer.WriteStartAttribute ("version");
+			writer.WriteString ("1.0");
+			writer.WriteEndAttribute ();
+		}
 
 		public AssemblyAction GetAction (AssemblyDefinition assembly)
 		{
@@ -86,6 +108,7 @@ namespace Mono.Linker {
 		public void Mark (IMetadataTokenProvider provider)
 		{
 			marked.Add (provider);
+			AddDependency (provider);
 		}
 
 		public bool IsMarked (IMetadataTokenProvider provider)
@@ -236,6 +259,64 @@ namespace Mono.Linker {
 			slots = new Dictionary<IMetadataTokenProvider, object> ();
 			custom_annotations.Add (key, slots);
 			return slots;
+		}
+
+		public void AddDependency (object o)
+		{
+			if (writer == null)
+				return;
+
+			KeyValuePair<object, object> pair = new KeyValuePair<object, object> (dependency_stack.Count > 0 ? dependency_stack.Peek () : null, o);
+			writer.WriteStartElement ("edge");
+			writer.WriteAttributeString ("b", TokenString (pair.Key));
+			writer.WriteAttributeString ("e", TokenString (pair.Value));
+			writer.WriteEndElement ();
+		}
+
+		public void Push (object o)
+		{
+			if (writer == null)
+				return;
+
+			if (dependency_stack.Count > 0)
+				AddDependency (o);
+			dependency_stack.Push (o);
+		}
+
+		public void Pop ()
+		{
+			if (writer == null)
+				return;
+
+			dependency_stack.Pop ();
+		}
+
+		string TokenString (object o)
+		{
+			if (o == null)
+				return "N:null";
+
+			if (o is IMetadataTokenProvider)
+				return (o as IMetadataTokenProvider).MetadataToken.TokenType + ":" + o;
+
+			return "Other:" + o;
+		}
+
+		public void SaveDependencies ()
+		{
+			if (writer == null)
+				return;
+
+			writer.WriteEndElement ();
+			writer.WriteEndDocument ();
+			writer.Flush ();
+			writer.Close ();
+			zipStream.Close ();
+
+			writer.Dispose ();
+			zipStream.Dispose ();
+			writer = null;
+			zipStream = null;
 		}
 	}
 }
