@@ -9,28 +9,29 @@
 * Passwd struct 
 */
 struct Passwd {
-	char*   Name;
-	char*   Password; 
-	int32_t UserId;
-	int32_t GroupId;
-	char*   UserInfo;
-	char*   HomeDirectory;
-	char*   Shell;
+	char*    Name;
+	char*    Password; 
+	uint32_t UserId;
+	uint32_t GroupId;
+	char*    UserInfo;
+	char*    HomeDirectory;
+	char*    Shell;
 };
 
 /**
 * Gets a password structure for the given uid. 
 * Implemented as shim to getpwuid_r(3).
 *
-* Returns 0 for success, -1 for failure. Sets errno on failure.
+* Returns 0 for success, -1 if no entry found, positive error 
+* number for any other failure.
+*
 */
 extern "C"
-int32_t GetPwUid(
-	int32_t  uid,
+int32_t GetPwUidR(
+	uint32_t uid,
 	Passwd*  pwd,
 	char*    buf,
-	int64_t  buflen,
-	Passwd** result);
+	int32_t  buflen);
 
 /**
 * Gets and returns the effective user's identity.
@@ -39,7 +40,7 @@ int32_t GetPwUid(
 * Always succeeds.
 */
 extern "C"
-int32_t GetEUid();
+uint32_t GetEUid();
 
 /**
 * Gets and returns the effective group's identity.
@@ -48,4 +49,4 @@ int32_t GetEUid();
 * Always succeeds.
 */
 extern "C"
-int32_t GetEGid();
+uint32_t GetEGid();

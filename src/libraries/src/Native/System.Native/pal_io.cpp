@@ -3,6 +3,7 @@
 
 #include "pal_config.h"
 #include "pal_io.h"
+#include "pal_utilities.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -59,55 +60,55 @@ static_assert(PAL_S_IFLNK == S_IFLNK, "");
 
 // Validate that our enum for inode types is the same as what is 
 // declared by the dirent.h header on the local system.
-static_assert((int)NodeType::PAL_DT_UNKNOWN == DT_UNKNOWN, "");
-static_assert((int)NodeType::PAL_DT_FIFO == DT_FIFO, "");
-static_assert((int)NodeType::PAL_DT_CHR == DT_CHR, "");
-static_assert((int)NodeType::PAL_DT_DIR == DT_DIR, "");
-static_assert((int)NodeType::PAL_DT_BLK == DT_BLK, "");
-static_assert((int)NodeType::PAL_DT_REG == DT_REG, "");
-static_assert((int)NodeType::PAL_DT_LNK == DT_LNK, "");
-static_assert((int)NodeType::PAL_DT_SOCK == DT_SOCK, "");
-static_assert((int)NodeType::PAL_DT_WHT == DT_WHT, "");
+static_assert(PAL_DT_UNKNOWN == DT_UNKNOWN, "");
+static_assert(PAL_DT_FIFO == DT_FIFO, "");
+static_assert(PAL_DT_CHR == DT_CHR, "");
+static_assert(PAL_DT_DIR == DT_DIR, "");
+static_assert(PAL_DT_BLK == DT_BLK, "");
+static_assert(PAL_DT_REG == DT_REG, "");
+static_assert(PAL_DT_LNK == DT_LNK, "");
+static_assert(PAL_DT_SOCK == DT_SOCK, "");
+static_assert(PAL_DT_WHT == DT_WHT, "");
 
 // Validate that our Lock enum value are correct for the platform
-static_assert((int)LockOperations::PAL_LOCK_SH == LOCK_SH, "");
-static_assert((int)LockOperations::PAL_LOCK_EX == LOCK_EX, "");
-static_assert((int)LockOperations::PAL_LOCK_NB == LOCK_NB, "");
-static_assert((int)LockOperations::PAL_LOCK_UN == LOCK_UN, "");
+static_assert(PAL_LOCK_SH == LOCK_SH, "");
+static_assert(PAL_LOCK_EX == LOCK_EX, "");
+static_assert(PAL_LOCK_NB == LOCK_NB, "");
+static_assert(PAL_LOCK_UN == LOCK_UN, "");
 
 // Validate our AccessMode enum values are correct for the platform
-static_assert((int)AccessMode::PAL_F_OK == F_OK, "");
-static_assert((int)AccessMode::PAL_X_OK == X_OK, "");
-static_assert((int)AccessMode::PAL_W_OK == W_OK, "");
-static_assert((int)AccessMode::PAL_R_OK == R_OK, "");
+static_assert(PAL_F_OK == F_OK, "");
+static_assert(PAL_X_OK == X_OK, "");
+static_assert(PAL_W_OK == W_OK, "");
+static_assert(PAL_R_OK == R_OK, "");
 
 // Validate our SeekWhence enum values are correct for the platform
-static_assert((int)SeekWhence::PAL_SEEK_SET == SEEK_SET, "");
-static_assert((int)SeekWhence::PAL_SEEK_CUR == SEEK_CUR, "");
-static_assert((int)SeekWhence::PAL_SEEK_END == SEEK_END, "");
+static_assert(PAL_SEEK_SET == SEEK_SET, "");
+static_assert(PAL_SEEK_CUR == SEEK_CUR, "");
+static_assert(PAL_SEEK_END == SEEK_END, "");
 
 // Validate our PollFlags enum values are correct for the platform
-static_assert((short)PollFlags::PAL_POLLIN   == POLLIN, "");
-static_assert((short)PollFlags::PAL_POLLOUT  == POLLOUT, "");
-static_assert((short)PollFlags::PAL_POLLERR  == POLLERR, "");
-static_assert((short)PollFlags::PAL_POLLHUP  == POLLHUP, "");
-static_assert((short)PollFlags::PAL_POLLNVAL == POLLNVAL, "");
+static_assert(PAL_POLLIN   == POLLIN, "");
+static_assert(PAL_POLLOUT  == POLLOUT, "");
+static_assert(PAL_POLLERR  == POLLERR, "");
+static_assert(PAL_POLLHUP  == POLLHUP, "");
+static_assert(PAL_POLLNVAL == POLLNVAL, "");
 
 // Validate our FileAdvice enum values are correct for the platform
 #if HAVE_POSIX_ADVISE
-static_assert((int)FileAdvice::PAL_POSIX_FADV_NORMAL       == POSIX_FADV_NORMAL, "");
-static_assert((int)FileAdvice::PAL_POSIX_FADV_RANDOM       == POSIX_FADV_RANDOM, "");
-static_assert((int)FileAdvice::PAL_POSIX_FADV_SEQUENTIAL   == POSIX_FADV_SEQUENTIAL, "");
-static_assert((int)FileAdvice::PAL_POSIX_FADV_WILLNEED     == POSIX_FADV_WILLNEED, "");
-static_assert((int)FileAdvice::PAL_POSIX_FADV_DONTNEED     == POSIX_FADV_DONTNEED, "");
-static_assert((int)FileAdvice::PAL_POSIX_FADV_NOREUSE      == POSIX_FADV_NOREUSE, "");
+static_assert(PAL_POSIX_FADV_NORMAL       == POSIX_FADV_NORMAL, "");
+static_assert(PAL_POSIX_FADV_RANDOM       == POSIX_FADV_RANDOM, "");
+static_assert(PAL_POSIX_FADV_SEQUENTIAL   == POSIX_FADV_SEQUENTIAL, "");
+static_assert(PAL_POSIX_FADV_WILLNEED     == POSIX_FADV_WILLNEED, "");
+static_assert(PAL_POSIX_FADV_DONTNEED     == POSIX_FADV_DONTNEED, "");
+static_assert(PAL_POSIX_FADV_NOREUSE      == POSIX_FADV_NOREUSE, "");
 #endif 
 
 static
 void ConvertFileStatus(const struct stat_& src, FileStatus* dst)
 {
     dst->Flags  = FILESTATUS_FLAGS_NONE;
-    dst->Mode   = src.st_mode;
+    dst->Mode   = static_cast<int32_t>(src.st_mode);
     dst->Uid    = src.st_uid;
     dst->Gid    = src.st_gid;
     dst->Size   = src.st_size;
@@ -181,7 +182,7 @@ int32_t ConvertOpenFlags(int32_t flags)
             ret = O_WRONLY;
             break;
         default:
-            assert(!"Unknown Open access mode.");
+            assert(false && "Unknown Open access mode.");
             return -1;
     }
     
@@ -194,7 +195,7 @@ int32_t ConvertOpenFlags(int32_t flags)
           | PAL_O_SYNC
           ))
     {
-        assert(!"Unknown Open flag.");
+        assert(false && "Unknown Open flag.");
         return -1;
     }
  
@@ -223,7 +224,7 @@ int32_t Open(const char* path, int32_t flags, int32_t mode)
         return -1;
     }
     
-    return open(path, flags, mode);
+    return open(path, flags, static_cast<mode_t>(mode));
 }
 
 extern "C"
@@ -249,8 +250,9 @@ int32_t ShmOpen(const char* name, int32_t flags, int32_t mode)
         return -1;
     }
     
-    return shm_open(name, flags, mode);
+    return shm_open(name, flags, static_cast<mode_t>(mode));
 #else
+    (void)name, (void)flags, (void)mode;
     errno = ENOTSUP;
     return -1;
 #endif
@@ -269,7 +271,7 @@ void ConvertDirent(const dirent& entry, DirectoryEntry* outputEntry)
     // the start of the unmanaged string. Give the caller back a pointer to the 
     // location of the start of the string that exists in their own byte buffer.
     outputEntry->Name = entry.d_name;
-    outputEntry->InodeType = (NodeType)entry.d_type;
+    outputEntry->InodeType = static_cast<NodeType>(entry.d_type);
 
 #if HAVE_DIRENT_NAME_LEN
     outputEntry->NameLength = entry.d_namlen;
@@ -283,7 +285,7 @@ int32_t GetDirentSize()
 {
     // dirent should be under 2k in size
     static_assert(sizeof(dirent) < 2048, "");
-    return static_cast<int32_t>(sizeof(dirent));
+    return sizeof(dirent);
 }
 
 // To reduce the number of string copies, this function calling pattern works as follows:
@@ -304,14 +306,14 @@ int32_t ReadDirR(DIR* dir, void* buffer, int32_t bufferSize, DirectoryEntry* out
     assert(dir != nullptr);
     assert(outputEntry != nullptr);
 
-    if (bufferSize < sizeof(dirent))
+    if (bufferSize < static_cast<int32_t>(sizeof(dirent)))
     {
-        assert(!"Buffer size too small; use GetDirentSize to get required buffer size");
+        assert(false && "Buffer size too small; use GetDirentSize to get required buffer size");
         return ERANGE;
     }
 
     dirent* result = nullptr;
-    dirent* entry = (dirent*)buffer;
+    dirent* entry = static_cast<dirent*>(buffer);
     int error = readdir_r(dir, entry, &result);
 
     // positive error number returned -> failure
@@ -358,7 +360,7 @@ int32_t Pipe(int32_t pipeFds[2], int32_t flags)
         flags = O_CLOEXEC;
         break;
     default:
-        assert(!"Unknown flag.");
+        assert(false && "Unknown flag.");
         errno = EINVAL;
         return -1;
     }
@@ -386,6 +388,7 @@ int32_t FcntlGetPipeSz(int32_t fd)
 #ifdef F_GETPIPE_SZ
     return fcntl(fd, F_GETPIPE_SZ);
 #else
+    (void)fd;
     errno = ENOTSUP;
     return -1;
 #endif
@@ -397,6 +400,7 @@ int32_t FcntlSetPipeSz(int32_t fd, int32_t size)
 #ifdef F_SETPIPE_SZ
     return fcntl(fd, F_SETPIPE_SZ, size);
 #else
+    (void)fd, (void)size;
     errno = ENOTSUP;
     return -1;
 #endif
@@ -405,19 +409,19 @@ int32_t FcntlSetPipeSz(int32_t fd, int32_t size)
 extern "C"
 int32_t MkDir(const char* path, int32_t mode)
 {
-    return mkdir(path, mode);
+    return mkdir(path, static_cast<mode_t>(mode));
 }
 
 extern "C"
 int32_t ChMod(const char* path, int32_t mode)
 {
-    return chmod(path, mode);
+    return chmod(path, static_cast<mode_t>(mode));
 }
 
 extern "C"
 int32_t MkFifo(const char* path, int32_t mode)
 {
-    return mkfifo(path, mode);
+    return mkfifo(path, static_cast<mode_t>(mode));
 }
 
 extern "C"
@@ -429,7 +433,7 @@ int32_t FSync(int32_t fd)
 extern "C"
 int32_t FLock(int32_t fd, LockOperations operation)
 {
-    return flock(fd, (int32_t)operation);
+    return flock(fd, operation);
 }
 
 extern "C"
@@ -441,19 +445,19 @@ int32_t ChDir(const char* path)
 extern "C"
 int32_t Access(const char* path, AccessMode mode)
 {
-    return access(path, (int32_t)mode);
+    return access(path, mode);
 }
 
 extern "C"
 int32_t FnMatch(const char* pattern, const char* path, FnMatchFlags flags)
 {
-    return fnmatch(pattern, path, (int32_t)flags);
+    return fnmatch(pattern, path, flags);
 }
 
 extern "C"
 int64_t LSeek(int32_t fd, int64_t offset, SeekWhence whence)
 {
-    return lseek(fd, offset, (int32_t)whence);
+    return lseek(fd, offset, whence);
 }
 
 extern "C"
@@ -476,7 +480,7 @@ int32_t ConvertMMapProtection(int32_t protection)
 
     if (protection & ~(PAL_PROT_READ | PAL_PROT_WRITE | PAL_PROT_EXEC))
     {
-        assert(!"Unknown protection.");
+        assert(false && "Unknown protection.");
         return -1;
     }
     
@@ -497,7 +501,7 @@ int32_t ConvertMMapFlags(int32_t flags)
 {
     if (flags & ~(PAL_MAP_SHARED | PAL_MAP_PRIVATE | PAL_MAP_ANONYMOUS))
     {
-        assert(!"Unknown MMap flag.");
+        assert(false && "Unknown MMap flag.");
         return -1;
     }
     
@@ -518,7 +522,7 @@ int32_t ConvertMSyncFlags(int32_t flags)
 {
     if (flags & ~(PAL_MS_SYNC | PAL_MS_ASYNC | PAL_MS_INVALIDATE))
     {
-        assert(!"Unknown MSync flag.");
+        assert(false && "Unknown MSync flag.");
         return -1;
     }
     
@@ -542,7 +546,13 @@ void* MMap(
    int32_t flags,       // bitwise OR of PAL_MAP_*, but PRIVATE and SHARED are mutually exclusive.
    int32_t fd,
    int64_t offset)
-{  
+{ 
+    if (length > SIZE_MAX)
+    {
+        errno = ERANGE;
+        return nullptr;
+    }
+ 
     protection = ConvertMMapProtection(protection);
     flags = ConvertMMapFlags(flags);
     
@@ -552,7 +562,7 @@ void* MMap(
         return nullptr;
     }
 
-    void* ret = mmap(address, length, protection, flags, fd, offset);
+    void* ret = mmap(address, static_cast<size_t>(length), protection, flags, fd, offset);
     if (ret == MAP_FAILED)
     {
         return nullptr;
@@ -565,24 +575,37 @@ void* MMap(
 extern "C"
 int32_t MUnmap(void *address, uint64_t length)
 {
-    return munmap(address, length);
+    if (length > SIZE_MAX)
+    {
+        errno = ERANGE;
+        return -1;
+    }  
+
+    return munmap(address, static_cast<size_t>(length));
 }
 
 extern "C"
 int32_t MAdvise(void* address, uint64_t length, MemoryAdvice advice)
 {
+    if (length > SIZE_MAX)
+    {
+        errno = ERANGE;
+        return -1;
+    }
+
     switch (advice)
     {
-        case MemoryAdvice::PAL_MADV_DONTFORK:
+        case PAL_MADV_DONTFORK:
 #ifdef MADV_DONTFORK
-            return madvise(address, length, MADV_DONTFORK);
+            return madvise(address, static_cast<size_t>(length), MADV_DONTFORK);
 #else
+            (void)address, (void)length, (void)advice;
             errno = ENOTSUP;
             return -1;
 #endif
     }
 
-    assert(!"Unknown MemoryAdvice");
+    assert(false && "Unknown MemoryAdvice");
     errno = EINVAL;
     return -1;
 }
@@ -590,18 +613,36 @@ int32_t MAdvise(void* address, uint64_t length, MemoryAdvice advice)
 extern "C"
 int32_t MLock(void* address, uint64_t length)
 {
-    return mlock(address, length);
+    if (length > SIZE_MAX)
+    {
+        errno = ERANGE;
+        return -1;
+    }
+
+    return mlock(address, static_cast<size_t>(length));
 }
     
 extern "C"
 int32_t MUnlock(void* address, uint64_t length)
 {
-    return munlock(address, length);
+    if (length > SIZE_MAX)
+    {
+        errno = ERANGE;
+        return -1;
+    }
+
+    return munlock(address, static_cast<size_t>(length));
 }
     
 extern "C"
 int32_t MProtect(void* address, uint64_t length, int32_t protection)
 {
+    if (length > SIZE_MAX)
+    {
+        errno = ERANGE;
+        return -1;
+    }
+
     protection = ConvertMMapProtection(protection);
     if (protection == -1)
     {
@@ -609,12 +650,18 @@ int32_t MProtect(void* address, uint64_t length, int32_t protection)
         return -1;
     }
 
-    return mprotect(address, length, protection);
+    return mprotect(address, static_cast<size_t>(length), protection);
 }
 
 extern "C"
 int32_t MSync(void* address, uint64_t length, int32_t flags)
 {
+    if (length > SIZE_MAX)
+    {
+        errno = ERANGE;
+        return -1;
+    }
+
     flags = ConvertMSyncFlags(flags);
     if (flags == -1)
     {
@@ -622,7 +669,7 @@ int32_t MSync(void* address, uint64_t length, int32_t flags)
         return -1;
     }
     
-    return msync(address, length, flags);
+    return msync(address, static_cast<size_t>(length), flags);
 }
     
 extern "C"
@@ -630,13 +677,13 @@ int64_t SysConf(SysConfName name)
 {
     switch (name)
     {
-        case SysConfName::PAL_SC_CLK_TCK:
+        case PAL_SC_CLK_TCK:
             return sysconf(_SC_CLK_TCK);
-        case SysConfName::PAL_SC_PAGESIZE:
+        case PAL_SC_PAGESIZE:
             return sysconf(_SC_PAGESIZE);
     } 
 
-    assert(!"Unknown SysConfName");
+    assert(false && "Unknown SysConfName");
     errno = EINVAL;
     return -1;
 }
@@ -672,7 +719,7 @@ int32_t Poll(PollFD* pollData, uint32_t numberOfPollFds, int32_t timeout)
 
     // Convert our standardized pollfd to the native one
     pollfd fds[2];
-    for (int i = 0; i < numberOfPollFds; i++)
+    for (uint32_t i = 0; i < numberOfPollFds; i++)
     {
         ConvertPollFDPalToPlatform(pollData[i], fds[i]);
     }
@@ -681,7 +728,7 @@ int32_t Poll(PollFD* pollData, uint32_t numberOfPollFds, int32_t timeout)
     int32_t result = poll(fds, numberOfPollFds, timeout);
     if (result > 0) // We only have result data if the result is positive
     {
-        for (int i = 0; i < numberOfPollFds; i++)
+        for (uint32_t i = 0; i < numberOfPollFds; i++)
         {
             ConvertPollFDPlatformToPal(fds[i], pollData[i]);
         }
@@ -694,24 +741,47 @@ extern "C"
 int32_t PosixFAdvise(int32_t fd, int64_t offset, int64_t length, FileAdvice advice)
 {
 #if HAVE_POSIX_ADVISE
-    return posix_fadvise(fd, offset, length, (int)advice);
+    return posix_fadvise(fd, offset, length, advice);
 #else
     // Not supported on this platform; however, we don't want to #error here since
     // currently, this isn't used on platforms where it isn't supported.
+    (void)fd, (void)offset, (void)length, (void)advice;
     return ENOTSUP;
 #endif
 }
 
 extern "C"
-int64_t Read(int32_t fd, void* buffer, uint64_t count)
+int32_t Read(int32_t fd, void* buffer, int32_t bufferSize)
 {
-    return read(fd, buffer, count);
+    assert(buffer != nullptr || bufferSize == 0);
+    assert(bufferSize >= 0);
+
+    if (bufferSize < 0)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    ssize_t count = read(fd, buffer, UnsignedCast(bufferSize));
+    assert(count >= -1 && count <= bufferSize);
+    return static_cast<int32_t>(count);
 }
 
 extern "C"
-int64_t ReadLink(const char* path, char* buffer, uint64_t bufferSize)
+int32_t ReadLink(const char* path, char* buffer, int32_t bufferSize)
 {
-    return readlink(path, buffer, bufferSize);
+    assert(buffer != nullptr || bufferSize == 0);
+    assert(bufferSize >= 0);
+
+    if (bufferSize < 0)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    ssize_t count = readlink(path, buffer, static_cast<size_t>(bufferSize));
+    assert(count >= -1 && count <= bufferSize);
+    return static_cast<int32_t>(count);
 }
 
 extern "C"
@@ -733,7 +803,18 @@ void Sync()
 }
 
 extern "C"
-int64_t Write(int32_t fd, const void* buffer, uint64_t bufferSize)
+int32_t Write(int32_t fd, const void* buffer, int32_t bufferSize)
 {
-    return write(fd, buffer, bufferSize);
+    assert(buffer != nullptr || bufferSize == 0);
+    assert(bufferSize >= 0);
+
+    if (bufferSize < 0)
+    {
+        errno = ERANGE;
+        return -1;
+    }
+
+    ssize_t count = write(fd, buffer, UnsignedCast(bufferSize));
+    assert(count >= -1 && count <= bufferSize);
+    return static_cast<int32_t>(count);
 }

@@ -42,7 +42,7 @@ int32_t ForkAndExecProcess(
  * These values differ from OS to OS, so make a constant contract.
  * These values apply for the current process only
  */
-enum class RLimitResources : int32_t
+enum RLimitResources : int32_t
 {
     PAL_RLIMIT_CPU          = 0,        // CPU limit in seconds
     PAL_RLIMIT_FSIZE        = 1,        // Largest file that can be created, in bytes
@@ -56,18 +56,16 @@ enum class RLimitResources : int32_t
     PAL_RLIMIT_NOFILE       = 9,        // Number of open files
 };
 
-enum class Signals : int32_t
+enum Signals : int32_t
 {
-    PAL_None = 0,       /* error check and don't send signal */
     PAL_SIGKILL = 9,    /* kill the specified process */
 };
 
 /**
  * Constants for passing to waitpid determining how waitpid behaves
  */
-enum class WaitPidOptions : int32_t
+enum WaitPidOptions : int32_t
 {
-    PAL_None        = 0,    /* no options */
     PAL_WNOHANG     = 1,    /* don't block waiting */
     PAL_WUNTRACED   = 2,    /* report status of stopped children */
 };
@@ -80,7 +78,7 @@ enum class WaitPidOptions : int32_t
  *
  * These values keep their original definition and are taken from syslog.h
  */
-enum class SysLogPriority : int32_t
+enum SysLogPriority : int32_t
 {
     // Priorities
     PAL_LOG_EMERG       = 0,        /* system is unusable */

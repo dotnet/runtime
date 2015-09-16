@@ -14,4 +14,4 @@
  * On failure, returns a negative value.
  */
 extern "C"
-int32_t SNPrintF(char* string, uint64_t size, const char* format, ...);
+int32_t SNPrintF(char* string, int32_t size, const char* format, ...);

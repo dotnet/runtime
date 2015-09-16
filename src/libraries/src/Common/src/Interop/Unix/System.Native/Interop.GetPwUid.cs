@@ -12,14 +12,14 @@ internal static partial class Interop
         {
             internal byte* Name;
             internal byte* Password;
-            internal int   UserId;
-            internal int   GroupId;
+            internal uint  UserId;
+            internal uint  GroupId;
             internal byte* UserInfo;
             internal byte* HomeDirectory;
             internal byte* Shell;
         };
 
         [DllImport(Libraries.SystemNative, SetLastError = false)]
-        internal static extern unsafe int GetPwUidR(int uid, out Passwd pwd, byte* buf, long bufLen);
+        internal static extern unsafe int GetPwUidR(uint uid, out Passwd pwd, byte* buf, int bufLen);
     }
 }

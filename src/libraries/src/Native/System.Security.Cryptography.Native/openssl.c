@@ -4,6 +4,7 @@
 //
 
 #include <assert.h>
+#include <limits.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
@@ -339,17 +340,24 @@ GetAsn1StringBytes(
     unsigned char* pBuf,
     int cBuf)
 {
-    if (!asn1)
+    if (!asn1 || cBuf < 0)
     {
         return 0;
     }
 
-    if (!pBuf || cBuf < asn1->length)
+    int length = asn1->length;
+    assert(length >= 0);
+    if (length < 0)
     {
-        return -asn1->length;
+        return 0;
     }
 
-    memcpy(pBuf, asn1->data, asn1->length);
+    if (!pBuf || cBuf < length)
+    {
+        return -length;
+    }
+
+    memcpy(pBuf, asn1->data, (unsigned int)length);
     return 1;
 }
 
@@ -371,17 +379,30 @@ GetX509NameRawBytes(
     unsigned char* pBuf,
     int cBuf)
 {
-    if (!x509Name || !x509Name->bytes)
+    if (!x509Name || !x509Name->bytes || cBuf < 0)
     {
         return 0;
     }
 
-    if (!pBuf || cBuf < x509Name->bytes->length)
+// length is size_t on some platforms and int on others, so the comparisons
+// are not tautological everywhere. We can let the compiler optimize away
+// any part of the check that is.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wtautological-compare"
+    if (x509Name->bytes->length < 0 || x509Name->bytes->length > INT_MAX)
     {
-        return -x509Name->bytes->length;
+        assert(!"Huge/negative-length X509_NAME");
+        return 0;
     }
+#pragma clang diagnostic pop
 
-    memcpy(pBuf, x509Name->bytes->data, x509Name->bytes->length);
+    int length = (int)(x509Name->bytes->length);
+    if (!pBuf || cBuf < length)
+    {
+        return -length;
+    }
+    
+    memcpy(pBuf, x509Name->bytes->data, (unsigned int)length);
     return 1;
 }
 
@@ -992,6 +1013,8 @@ static
 void
 LockingCallback(int mode, int n, const char* file, int line)
 {
+    (void)file, (void)line; // deliberately unused parameters
+
     int result;
     if (mode & CRYPTO_LOCK)
     {
@@ -1043,7 +1066,7 @@ EnsureOpenSslInitialized()
     }
 
     // Create the locks array
-    g_locks = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t) * numLocks);
+    g_locks = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t) * (unsigned int)numLocks);
     if (g_locks == NULL)
     {
         assert(!"malloc failed.");

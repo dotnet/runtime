@@ -18,6 +18,6 @@ internal static partial class Interop
         /// Returns the number of bytes placed into the buffer on success; otherwise, -1 is returned
         /// </returns>
         [DllImport(Libraries.SystemNative, SetLastError = true)]
-        internal static unsafe extern long ReadLink(string path, byte[] buffer, ulong bufferSize);
+        internal static unsafe extern int ReadLink(string path, byte[] buffer, int bufferSize);
     }
 }

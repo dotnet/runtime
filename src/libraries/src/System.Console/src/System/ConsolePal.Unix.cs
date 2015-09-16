@@ -289,8 +289,8 @@ namespace System
         {
             fixed (byte* bufPtr = buffer)
             {
-                long result;
-                while (Interop.CheckIo(result = (long)Interop.Sys.Read(fd, (byte*)bufPtr + offset, (ulong)count))) ;
+                int result;
+                while (Interop.CheckIo(result = Interop.Sys.Read(fd, (byte*)bufPtr + offset, count))) ;
                 Debug.Assert(result <= count);
                 return (int)result;
             }
@@ -308,7 +308,7 @@ namespace System
                 while (count > 0)
                 {
                     int bytesWritten;
-                    while (Interop.CheckIo(bytesWritten = (int)Interop.Sys.Write(fd, bufPtr + offset, (ulong)count))) ;
+                    while (Interop.CheckIo(bytesWritten = Interop.Sys.Write(fd, bufPtr + offset, count))) ;
                     count -= bytesWritten;
                     offset += bytesWritten;
                 }
@@ -1021,8 +1021,8 @@ namespace System
                     fixed (byte* ptr = bytes)
                     {
                         int length = stringArg != null ?
-                            Interop.Sys.SNPrintF(ptr, (ulong)bytes.Length, format, stringArg) :
-                            Interop.Sys.SNPrintF(ptr, (ulong)bytes.Length, format, (int)arg);
+                            Interop.Sys.SNPrintF(ptr, bytes.Length, format, stringArg) :
+                            Interop.Sys.SNPrintF(ptr, bytes.Length, format, (int)arg);
                         if (length != neededLength)
                         {
                             throw new InvalidOperationException(SR.InvalidOperation_PrintF);
