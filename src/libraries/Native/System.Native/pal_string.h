@@ -7,11 +7,10 @@
 
 /**
  * snprintf is difficult to represent in C# due to the argument list, so the C# PInvoke
- * layer will have multiple overloads pointing to this function 
+ * layer will have multiple overloads pointing to this function
  *
- * Returns the number of characters (excluding null terminator) written to the buffer on 
- * success; if the return value is equal to the size then the result may have been truncated. 
+ * Returns the number of characters (excluding null terminator) written to the buffer on
+ * success; if the return value is equal to the size then the result may have been truncated.
  * On failure, returns a negative value.
  */
-extern "C"
-int32_t SNPrintF(char* string, int32_t size, const char* format, ...);
+extern "C" int32_t SNPrintF(char* string, int32_t size, const char* format, ...);

@@ -17,9 +17,7 @@
 #define STRING_BUFFER_SIZE 8192
 #endif
 
-
-static
-int32_t GetMountInfo(MountPointFound onFound)
+static int32_t GetMountInfo(MountPointFound onFound)
 {
 #if HAVE_MNTINFO
     // getmntinfo returns pointers to OS-internal structs, so we don't need to worry about free'ing the object
@@ -41,7 +39,7 @@ int32_t GetMountInfo(MountPointFound onFound)
     {
         // The _r version of getmntent needs all buffers to be passed in; however, we don't know how big of a string
         // buffer we will need, so pick something that seems like it will be big enough.
-        char buffer[STRING_BUFFER_SIZE] = { };
+        char buffer[STRING_BUFFER_SIZE] = {};
         mntent entry;
         while (getmntent_r(fp, &entry, buffer, STRING_BUFFER_SIZE) != nullptr)
         {
@@ -50,7 +48,8 @@ int32_t GetMountInfo(MountPointFound onFound)
 
         result = endmntent(fp);
         assert(result == 1); // documented to always return 1
-        result = 0; // We need to standardize a success return code between our implementations, so settle on 0 for success
+        result =
+            0; // We need to standardize a success return code between our implementations, so settle on 0 for success
     }
 
     return result;
@@ -58,26 +57,22 @@ int32_t GetMountInfo(MountPointFound onFound)
 
 #endif
 
-extern "C"
-int32_t GetAllMountPoints(MountPointFound onFound)
+extern "C" int32_t GetAllMountPoints(MountPointFound onFound)
 {
     return GetMountInfo(onFound);
 }
 
-extern "C"
-int32_t GetSpaceInfoForMountPoint(
-    const char*             name,
-    MountPointInformation*  mpi)
+extern "C" int32_t GetSpaceInfoForMountPoint(const char* name, MountPointInformation* mpi)
 {
     assert(name != nullptr);
     assert(mpi != nullptr);
 
-    struct statfs stats = { };
+    struct statfs stats = {};
     int result = statfs(name, &stats);
     if (result == 0)
     {
         // Note that f_bsize has a signed integer type on some platforms but musn't be negative.
-        // Also, upcast here (some platforms have smaller types) to 64-bit before multiplying to 
+        // Also, upcast here (some platforms have smaller types) to 64-bit before multiplying to
         // avoid overflow.
         uint64_t bsize = UnsignedCast(stats.f_bsize);
 
@@ -87,18 +82,14 @@ int32_t GetSpaceInfoForMountPoint(
     }
     else
     {
-        *mpi = { };
+        *mpi = {};
     }
 
     return result;
 }
 
-extern "C"
-int32_t GetFormatInfoForMountPoint(
-    const char* name, 
-    char*       formatNameBuffer, 
-    int32_t     bufferLength, 
-    int64_t*    formatType)
+extern "C" int32_t
+GetFormatInfoForMountPoint(const char* name, char* formatNameBuffer, int32_t bufferLength, int64_t* formatType)
 {
     assert((formatNameBuffer != nullptr) && (formatType != nullptr));
     assert(bufferLength > 0);
@@ -124,7 +115,6 @@ int32_t GetFormatInfoForMountPoint(
         *formatType = stats.f_type;
         SafeStringCopy(formatNameBuffer, bufferLength, "");
 #endif
-
     }
     else
     {

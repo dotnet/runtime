@@ -10,8 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 
-extern "C"
-int32_t SNPrintF(char* string, int32_t size, const char* format, ...)
+extern "C" int32_t SNPrintF(char* string, int32_t size, const char* format, ...)
 {
     assert(string != nullptr || size == 0);
     assert(size >= 0);

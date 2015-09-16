@@ -7,16 +7,13 @@
 #include <assert.h>
 #include <utime.h>
 
-
-static
-void ConvertUTimBuf(const UTimBuf& pal, utimbuf& native)
+static void ConvertUTimBuf(const UTimBuf& pal, utimbuf& native)
 {
     native.actime = pal.AcTime;
     native.modtime = pal.ModTime;
 }
 
-extern "C"
-int32_t UTime(const char* path, UTimBuf* times)
+extern "C" int32_t UTime(const char* path, UTimBuf* times)
 {
     assert(times != nullptr);
 
