@@ -15,6 +15,11 @@ using Internal.Cryptography.Pal.Native;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
+using SafeBCryptKeyHandle = Microsoft.Win32.SafeHandles.SafeBCryptKeyHandle;
+using SafeNCryptKeyHandle = Microsoft.Win32.SafeHandles.SafeNCryptKeyHandle;
+
+using NTSTATUS = Interop.BCrypt.NTSTATUS;
+
 namespace Internal.Cryptography.Pal
 {
     /// <summary>
@@ -23,8 +28,13 @@ namespace Internal.Cryptography.Pal
     /// </summary>
     internal sealed partial class X509Pal : IX509Pal
     {
-        public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters)
+        public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters, ICertificatePal certificatePal)
         {
+            if (oid.Value == Oids.Ecc)
+            {
+                return DecodeECDsaPublicKey((CertificatePal)certificatePal);
+            }
+
             int algId = OidInfo.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_OID_KEY, oid.Value, OidGroup.PublicKeyAlgorithm, fallBackToAllGroups: true).AlgId;
             switch (algId)
             {
@@ -49,6 +59,67 @@ namespace Internal.Cryptography.Pal
                 default:
                     throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
             }
+        }
+
+        private static ECDsa DecodeECDsaPublicKey(CertificatePal certificatePal)
+        {
+            using (SafeBCryptKeyHandle bCryptKeyHandle = ImportPublicKeyInfo(certificatePal.CertContext))
+            {
+                CngKeyBlobFormat blobFormat = CngKeyBlobFormat.EccPublicBlob;
+                byte[] keyBlob = ExportKeyBlob(bCryptKeyHandle, blobFormat);
+                using (CngKey cngKey = CngKey.Import(keyBlob, blobFormat))
+                {
+                    return new ECDsaCng(cngKey);
+                }
+            }
+        }
+
+        private static SafeBCryptKeyHandle ImportPublicKeyInfo(SafeCertContextHandle certContext)
+        {
+#if NETNATIVE
+            // CryptImportPublicKeyInfoEx2() not in the UWP api list.
+            throw new PlatformNotSupportedException();
+#else
+            unsafe
+            {
+                SafeBCryptKeyHandle bCryptKeyHandle;
+                bool mustRelease = false;
+                certContext.DangerousAddRef(ref mustRelease);
+                try
+                {
+                    unsafe
+                    {
+                        bool success = Interop.crypt32.CryptImportPublicKeyInfoEx2(CertEncodingType.X509_ASN_ENCODING, &(certContext.CertContext->pCertInfo->SubjectPublicKeyInfo), 0, null, out bCryptKeyHandle);
+                        if (!success)
+                            throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
+                        return bCryptKeyHandle;
+                    }
+                }
+                finally
+                {
+                    if (mustRelease)
+                        certContext.DangerousRelease();
+                }
+            }
+#endif //NETNATIVE
+        }
+
+        private static byte[] ExportKeyBlob(SafeBCryptKeyHandle bCryptKeyHandle, CngKeyBlobFormat blobFormat)
+        {
+            string blobFormatString = blobFormat.Format;
+
+            int numBytesNeeded = 0;
+            NTSTATUS ntStatus = Interop.BCrypt.BCryptExportKey(bCryptKeyHandle, IntPtr.Zero, blobFormatString, null, 0, out numBytesNeeded, 0);
+            if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+                throw new CryptographicException(Interop.mincore.GetMessage((int)ntStatus));
+
+            byte[] keyBlob = new byte[numBytesNeeded];
+            ntStatus = Interop.BCrypt.BCryptExportKey(bCryptKeyHandle, IntPtr.Zero, blobFormatString, keyBlob, keyBlob.Length, out numBytesNeeded, 0);
+            if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+                throw new CryptographicException(Interop.mincore.GetMessage((int)ntStatus));
+
+            Array.Resize(ref keyBlob, numBytesNeeded);
+            return keyBlob;
         }
 
         private static byte[] DecodeKeyBlob(CryptDecodeObjectStructType lpszStructType, byte[] encodedKeyValue)
