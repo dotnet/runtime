@@ -1,14 +1,19 @@
 {
   "locked": true,
-  "version": -9996,
+  "version": 1,
   "targets": {
     "DNXCore,Version=v5.0": {
       "System.Private.Uri/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/dnxcore50/_._": {}
+        },
         "runtime": {
           "lib/DNXCore50/System.Private.Uri.dll": {}
         }
       },
       "System.Runtime/4.0.20": {
+        "type": "package",
         "dependencies": {
           "System.Private.Uri": "4.0.0"
         },
@@ -23,26 +28,25 @@
   },
   "libraries": {
     "System.Private.Uri/4.0.0": {
+      "type": "package",
       "serviceable": true,
       "sha512": "CtuxaCKcRIvPcsqquVl3mPp79EDZPMr2UogfiFCxCs+t2z1VjbpQsKNs1GHZ8VQetqbk1mr0V1yAfMe6y8CHDA==",
       "files": [
-        "System.Private.Uri.4.0.0.nupkg",
-        "System.Private.Uri.4.0.0.nupkg.sha512",
-        "System.Private.Uri.nuspec",
         "lib/DNXCore50/System.Private.Uri.dll",
         "lib/netcore50/System.Private.Uri.dll",
         "ref/dnxcore50/_._",
         "ref/netcore50/_._",
-        "runtimes/win8-aot/lib/netcore50/System.Private.Uri.dll"
+        "runtimes/win8-aot/lib/netcore50/System.Private.Uri.dll",
+        "System.Private.Uri.4.0.0.nupkg",
+        "System.Private.Uri.4.0.0.nupkg.sha512",
+        "System.Private.Uri.nuspec"
       ]
     },
     "System.Runtime/4.0.20": {
+      "type": "package",
       "serviceable": true,
       "sha512": "X7N/9Bz7jVPorqdVFO86ns1sX6MlQM+WTxELtx+Z4VG45x9+LKmWH0GRqjgKprUnVuwmfB9EJ9DQng14Z7/zwg==",
       "files": [
-        "System.Runtime.4.0.20.nupkg",
-        "System.Runtime.4.0.20.nupkg.sha512",
-        "System.Runtime.nuspec",
         "lib/DNXCore50/System.Runtime.dll",
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -50,8 +54,6 @@
         "lib/netcore50/System.Runtime.dll",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
-        "ref/dotnet/System.Runtime.dll",
-        "ref/dotnet/System.Runtime.xml",
         "ref/dotnet/de/System.Runtime.xml",
         "ref/dotnet/es/System.Runtime.xml",
         "ref/dotnet/fr/System.Runtime.xml",
@@ -59,6 +61,8 @@
         "ref/dotnet/ja/System.Runtime.xml",
         "ref/dotnet/ko/System.Runtime.xml",
         "ref/dotnet/ru/System.Runtime.xml",
+        "ref/dotnet/System.Runtime.dll",
+        "ref/dotnet/System.Runtime.xml",
         "ref/dotnet/zh-hans/System.Runtime.xml",
         "ref/dotnet/zh-hant/System.Runtime.xml",
         "ref/MonoAndroid10/_._",
@@ -66,7 +70,10 @@
         "ref/net46/_._",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "runtimes/win8-aot/lib/netcore50/System.Runtime.dll"
+        "runtimes/win8-aot/lib/netcore50/System.Runtime.dll",
+        "System.Runtime.4.0.20.nupkg",
+        "System.Runtime.4.0.20.nupkg.sha512",
+        "System.Runtime.nuspec"
       ]
     }
   },

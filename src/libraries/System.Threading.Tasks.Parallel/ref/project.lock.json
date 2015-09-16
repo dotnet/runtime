@@ -1,9 +1,10 @@
 {
   "locked": true,
-  "version": -9996,
+  "version": 1,
   "targets": {
     ".NETPlatform,Version=v5.0": {
       "System.Collections.Concurrent/4.0.0": {
+        "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0",
           "System.Threading.Tasks": "4.0.0"
@@ -13,11 +14,13 @@
         }
       },
       "System.Runtime/4.0.0": {
+        "type": "package",
         "compile": {
           "ref/dotnet/System.Runtime.dll": {}
         }
       },
       "System.Threading.Tasks/4.0.0": {
+        "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0"
         },
@@ -29,12 +32,9 @@
   },
   "libraries": {
     "System.Collections.Concurrent/4.0.0": {
+      "type": "package",
       "sha512": "1f5SWoX7UlFkvUt7A8JoG5lXgZDw4cRAcKG8Eaxa+3Sq6e/UgVWl2YWew1evJv+p+edNNlIIorDfREKcoEDHGw==",
       "files": [
-        "License.rtf",
-        "System.Collections.Concurrent.4.0.0.nupkg",
-        "System.Collections.Concurrent.4.0.0.nupkg.sha512",
-        "System.Collections.Concurrent.nuspec",
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
         "lib/net45/_._",
@@ -42,8 +42,7 @@
         "lib/wpa81/_._",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
-        "ref/dotnet/System.Collections.Concurrent.dll",
-        "ref/dotnet/System.Collections.Concurrent.xml",
+        "License.rtf",
         "ref/dotnet/de/System.Collections.Concurrent.xml",
         "ref/dotnet/es/System.Collections.Concurrent.xml",
         "ref/dotnet/fr/System.Collections.Concurrent.xml",
@@ -51,13 +50,13 @@
         "ref/dotnet/ja/System.Collections.Concurrent.xml",
         "ref/dotnet/ko/System.Collections.Concurrent.xml",
         "ref/dotnet/ru/System.Collections.Concurrent.xml",
+        "ref/dotnet/System.Collections.Concurrent.dll",
+        "ref/dotnet/System.Collections.Concurrent.xml",
         "ref/dotnet/zh-hans/System.Collections.Concurrent.xml",
         "ref/dotnet/zh-hant/System.Collections.Concurrent.xml",
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
         "ref/net45/_._",
-        "ref/netcore50/System.Collections.Concurrent.dll",
-        "ref/netcore50/System.Collections.Concurrent.xml",
         "ref/netcore50/de/System.Collections.Concurrent.xml",
         "ref/netcore50/es/System.Collections.Concurrent.xml",
         "ref/netcore50/fr/System.Collections.Concurrent.xml",
@@ -65,21 +64,23 @@
         "ref/netcore50/ja/System.Collections.Concurrent.xml",
         "ref/netcore50/ko/System.Collections.Concurrent.xml",
         "ref/netcore50/ru/System.Collections.Concurrent.xml",
+        "ref/netcore50/System.Collections.Concurrent.dll",
+        "ref/netcore50/System.Collections.Concurrent.xml",
         "ref/netcore50/zh-hans/System.Collections.Concurrent.xml",
         "ref/netcore50/zh-hant/System.Collections.Concurrent.xml",
         "ref/win8/_._",
         "ref/wpa81/_._",
         "ref/xamarinios10/_._",
-        "ref/xamarinmac20/_._"
+        "ref/xamarinmac20/_._",
+        "System.Collections.Concurrent.4.0.0.nupkg",
+        "System.Collections.Concurrent.4.0.0.nupkg.sha512",
+        "System.Collections.Concurrent.nuspec"
       ]
     },
     "System.Runtime/4.0.0": {
+      "type": "package",
       "sha512": "Uq9epame8hEqJlj4KaWb67dDJvj4IM37jRFGVeFbugRdPz48bR0voyBhrbf3iSa2tAmlkg4lsa6BUOL9iwlMew==",
       "files": [
-        "License.rtf",
-        "System.Runtime.4.0.0.nupkg",
-        "System.Runtime.4.0.0.nupkg.sha512",
-        "System.Runtime.nuspec",
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
         "lib/net45/_._",
@@ -88,8 +89,7 @@
         "lib/wpa81/_._",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
-        "ref/dotnet/System.Runtime.dll",
-        "ref/dotnet/System.Runtime.xml",
+        "License.rtf",
         "ref/dotnet/de/System.Runtime.xml",
         "ref/dotnet/es/System.Runtime.xml",
         "ref/dotnet/fr/System.Runtime.xml",
@@ -97,13 +97,13 @@
         "ref/dotnet/ja/System.Runtime.xml",
         "ref/dotnet/ko/System.Runtime.xml",
         "ref/dotnet/ru/System.Runtime.xml",
+        "ref/dotnet/System.Runtime.dll",
+        "ref/dotnet/System.Runtime.xml",
         "ref/dotnet/zh-hans/System.Runtime.xml",
         "ref/dotnet/zh-hant/System.Runtime.xml",
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
         "ref/net45/_._",
-        "ref/netcore50/System.Runtime.dll",
-        "ref/netcore50/System.Runtime.xml",
         "ref/netcore50/de/System.Runtime.xml",
         "ref/netcore50/es/System.Runtime.xml",
         "ref/netcore50/fr/System.Runtime.xml",
@@ -111,22 +111,24 @@
         "ref/netcore50/ja/System.Runtime.xml",
         "ref/netcore50/ko/System.Runtime.xml",
         "ref/netcore50/ru/System.Runtime.xml",
+        "ref/netcore50/System.Runtime.dll",
+        "ref/netcore50/System.Runtime.xml",
         "ref/netcore50/zh-hans/System.Runtime.xml",
         "ref/netcore50/zh-hant/System.Runtime.xml",
         "ref/win8/_._",
         "ref/wp80/_._",
         "ref/wpa81/_._",
         "ref/xamarinios10/_._",
-        "ref/xamarinmac20/_._"
+        "ref/xamarinmac20/_._",
+        "System.Runtime.4.0.0.nupkg",
+        "System.Runtime.4.0.0.nupkg.sha512",
+        "System.Runtime.nuspec"
       ]
     },
     "System.Threading.Tasks/4.0.0": {
+      "type": "package",
       "sha512": "dA3y1B6Pc8mNt9obhEWWGGpvEakS51+nafXpmM/Z8IF847GErLXGTjdfA+AYEKszfFbH7SVLWUklXhYeeSQ1lw==",
       "files": [
-        "License.rtf",
-        "System.Threading.Tasks.4.0.0.nupkg",
-        "System.Threading.Tasks.4.0.0.nupkg.sha512",
-        "System.Threading.Tasks.nuspec",
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
         "lib/net45/_._",
@@ -135,8 +137,7 @@
         "lib/wpa81/_._",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
-        "ref/dotnet/System.Threading.Tasks.dll",
-        "ref/dotnet/System.Threading.Tasks.xml",
+        "License.rtf",
         "ref/dotnet/de/System.Threading.Tasks.xml",
         "ref/dotnet/es/System.Threading.Tasks.xml",
         "ref/dotnet/fr/System.Threading.Tasks.xml",
@@ -144,13 +145,13 @@
         "ref/dotnet/ja/System.Threading.Tasks.xml",
         "ref/dotnet/ko/System.Threading.Tasks.xml",
         "ref/dotnet/ru/System.Threading.Tasks.xml",
+        "ref/dotnet/System.Threading.Tasks.dll",
+        "ref/dotnet/System.Threading.Tasks.xml",
         "ref/dotnet/zh-hans/System.Threading.Tasks.xml",
         "ref/dotnet/zh-hant/System.Threading.Tasks.xml",
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
         "ref/net45/_._",
-        "ref/netcore50/System.Threading.Tasks.dll",
-        "ref/netcore50/System.Threading.Tasks.xml",
         "ref/netcore50/de/System.Threading.Tasks.xml",
         "ref/netcore50/es/System.Threading.Tasks.xml",
         "ref/netcore50/fr/System.Threading.Tasks.xml",
@@ -158,13 +159,18 @@
         "ref/netcore50/ja/System.Threading.Tasks.xml",
         "ref/netcore50/ko/System.Threading.Tasks.xml",
         "ref/netcore50/ru/System.Threading.Tasks.xml",
+        "ref/netcore50/System.Threading.Tasks.dll",
+        "ref/netcore50/System.Threading.Tasks.xml",
         "ref/netcore50/zh-hans/System.Threading.Tasks.xml",
         "ref/netcore50/zh-hant/System.Threading.Tasks.xml",
         "ref/win8/_._",
         "ref/wp80/_._",
         "ref/wpa81/_._",
         "ref/xamarinios10/_._",
-        "ref/xamarinmac20/_._"
+        "ref/xamarinmac20/_._",
+        "System.Threading.Tasks.4.0.0.nupkg",
+        "System.Threading.Tasks.4.0.0.nupkg.sha512",
+        "System.Threading.Tasks.nuspec"
       ]
     }
   },

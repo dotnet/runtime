@@ -1,6 +1,6 @@
 {
   "locked": true,
-  "version": -9996,
+  "version": 1,
   "targets": {
     ".NETPlatform,Version=v5.0": {}
   },
