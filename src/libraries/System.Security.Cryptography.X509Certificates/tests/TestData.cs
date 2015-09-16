@@ -1073,6 +1073,66 @@ WQndXd9du7pKZJi5yiJbbjaLlJE7/CTeayvZomsZK5VzBLiVMekC/8kbVLI3uyKL
             "6B0E06FB33354871B89D278BC4655F0D86769C447AF6955CF65D320833A454B6" +
             "183F685CF2424A853854835FD1E82CF2AC11D6A8ED636A").HexToByteArray();
 
+        internal static readonly ECDsaCngKeyValues ECDsaCng256PublicKey = 
+            new ECDsaCngKeyValues()
+            {
+                QX = "448d98ee08aeba0d8b40f3c6dbd500e8b69f07c70c661771655228ea5a178a91".HexToByteArray(),
+                QY = "0ef5cb1759f6f2e062021d4f973f5bb62031be87ae915cff121586809e3219af".HexToByteArray(),
+                D = "692837e9cf613c0e290462a6f08faadcc7002398f75598d5554698a0cb51cf47".HexToByteArray(),
+            };
+    
+        internal static readonly byte[] ECDsa256Certificate =
+             ("308201223081c9a00302010202106a3c9e85ba6af1ac4f08111d8bdda340300906072a8648ce3d0401301431123010060355"
+            + "04031309456332353655736572301e170d3135303931303231333533305a170d3136303931303033333533305a3014311230"
+            + "10060355040313094563323536557365723059301306072a8648ce3d020106082a8648ce3d03010703420004448d98ee08ae"
+            + "ba0d8b40f3c6dbd500e8b69f07c70c661771655228ea5a178a910ef5cb1759f6f2e062021d4f973f5bb62031be87ae915cff"
+            + "121586809e3219af300906072a8648ce3d04010349003046022100f221063dca71955d17c8f0e0f63a144c4065578fd9f68e"
+            + "1ae6a7683e209ea742022100ed1db6a8be27cfb20ab43e0ca061622ceff26f7249a0f791e4d6be1a4e52adfa").HexToByteArray();
+    
+        internal static readonly ECDsaCngKeyValues ECDsaCng384PublicKey =
+            new ECDsaCngKeyValues()
+            {
+                QX = "c59eca607aa5559e6b2f8ac2eeb12d9ab47f420feabeb444c3f71520d7f2280439979323ab5a67344811d296fef6d1bd".HexToByteArray(),
+                QY = "d15f307cc6cc6c8baeeeb168bfb02c34d6eb0621efb3d06ad31c06b29eaf6ec2ec67bf288455e729d82e5a6439f70901".HexToByteArray(),
+                D = "f55ba33e28cea32a014e2fe1213bb4d41cef361f1fee022116b15be50feb96bc946b10a46a9a7a94176787e0928a3e1d".HexToByteArray(),
+            };
+    
+        internal static readonly byte[] ECDsa384Certificate =
+             ("3082015f3081e6a00302010202101e78eb573e70a2a64744672296988ad7300906072a8648ce3d0401301431123010060355"
+            + "04031309456333383455736572301e170d3135303931303231333634365a170d3136303931303033333634365a3014311230"
+            + "10060355040313094563333834557365723076301006072a8648ce3d020106052b8104002203620004c59eca607aa5559e6b"
+            + "2f8ac2eeb12d9ab47f420feabeb444c3f71520d7f2280439979323ab5a67344811d296fef6d1bdd15f307cc6cc6c8baeeeb1"
+            + "68bfb02c34d6eb0621efb3d06ad31c06b29eaf6ec2ec67bf288455e729d82e5a6439f70901300906072a8648ce3d04010369"
+            + "003066023100a8fbaeeae61953897eae5f0beeeffaca48e89bc0cb782145f39f4ba5b03390ce6a28e432e664adf5ebc6a802"
+            + "040b238b023100dcc19109383b9482fdda68f40a63ee41797dbb8f25c0284155cc4238d682fbb3fb6e86ea0933297e850a26"
+            + "16f6c39bbf").HexToByteArray();
+    
+        internal static readonly ECDsaCngKeyValues ECDsaCng521PublicKey =
+            new ECDsaCngKeyValues()
+            {
+                QX = "0134af29d1fe5e581fd2ff6194263abcb6f8cb4d9c08bdb384ede9b8663ae2f4e1af6c85eacc69dc768fbfcd856630792e05484cefb1fefb693081dc6490dac579c0".HexToByteArray(),
+                QY = "00bfe103f53cbcb039873b1a3e81a9da9abd71995e722318367281d30b35a338bf356662342b653eff38e85881863b7128ddbb856d8ae158365550bb6330b93d4ef0".HexToByteArray(),
+                D = "0153603164bcef5c9f62388d06dcbf5681479be4397c07ff6f44bb848465e3397537d5f61abc7bc9266d4df6bae1df4847fcfd3dabdda37a2fe549b821ea858d088d".HexToByteArray(),
+            };
+    
+        internal static readonly byte[] ECDsa521Certificate =
+             ("308201a93082010ca00302010202102c3134fe79bb9daa48df6431f4c1e4f3300906072a8648ce3d04013014311230100603"
+            + "5504031309456335323155736572301e170d3135303931303231333832305a170d3136303931303033333832305a30143112"
+            + "30100603550403130945633532315573657230819b301006072a8648ce3d020106052b8104002303818600040134af29d1fe"
+            + "5e581fd2ff6194263abcb6f8cb4d9c08bdb384ede9b8663ae2f4e1af6c85eacc69dc768fbfcd856630792e05484cefb1fefb"
+            + "693081dc6490dac579c000bfe103f53cbcb039873b1a3e81a9da9abd71995e722318367281d30b35a338bf356662342b653e"
+            + "ff38e85881863b7128ddbb856d8ae158365550bb6330b93d4ef0300906072a8648ce3d040103818b0030818702420090bdf5"
+            + "dfb328501910da4b02ba3ccd41f2bb073608c55f0f2b2e1198496c59b44db9e516a6a63ba7841d22cf590e39d3f09636d0eb"
+            + "cd59a92c105f499e1329615602414285111634719b9bbd10eb7d08655b2fa7d7eb5e225bfdafef15562ae2f9f0c6a943a7bd"
+            + "f0e39223d807b5e2e617a8e424294d90869567326531bcad0f893a0f3a").HexToByteArray();
+    
+        internal struct ECDsaCngKeyValues
+        {
+            public byte[] QX;
+            public byte[] QY;
+            public byte[] D;
+        }
+    
         internal static string NormalizeX500String(string expected)
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
