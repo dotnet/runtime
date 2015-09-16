@@ -2311,54 +2311,58 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		case ArgValuetypeInReg:
 		case ArgValuetypeAddrInIReg:
 		case ArgGSharedVtInReg:
-		case ArgGSharedVtOnStack:
+		case ArgGSharedVtOnStack: {
+			if (ainfo->storage == ArgOnStack && !MONO_TYPE_ISSTRUCT (t) && !call->tail_call)
+				/* Already emitted above */
+				break;
 			if (ainfo->storage == ArgOnStack && call->tail_call) {
 				MonoInst *call_inst = (MonoInst*)call;
 				cfg->args [i]->flags |= MONO_INST_VOLATILE;
 				EMIT_NEW_ARGSTORE (cfg, call_inst, i, in);
-			} else if ((i >= sig->hasthis) && (MONO_TYPE_ISSTRUCT(t))) {
-				guint32 align;
-				guint32 size;
+				break;
+			}
 
-				if (t->type == MONO_TYPE_TYPEDBYREF) {
-					size = sizeof (MonoTypedRef);
-					align = sizeof (gpointer);
-				}
+			guint32 align;
+			guint32 size;
+
+			if (t->type == MONO_TYPE_TYPEDBYREF) {
+				size = sizeof (MonoTypedRef);
+				align = sizeof (gpointer);
+			}
+			else {
+				if (sig->pinvoke)
+					size = mono_type_native_stack_size (t, &align);
 				else {
-					if (sig->pinvoke)
-						size = mono_type_native_stack_size (t, &align);
-					else {
-						/* 
-						 * Other backends use mono_type_stack_size (), but that
-						 * aligns the size to 8, which is larger than the size of
-						 * the source, leading to reads of invalid memory if the
-						 * source is at the end of address space.
-						 */
-						size = mono_class_value_size (mono_class_from_mono_type (t), &align);
-					}
-				}
-				g_assert (in->klass);
-
-				if (ainfo->storage == ArgOnStack && size >= 10000) {
-					/* Avoid asserts in emit_memcpy () */
-					cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
-					cfg->exception_message = g_strdup_printf ("Passing an argument of size '%d'.", size);
-					/* Continue normally */
-				}
-
-				if (size > 0) {
-					MONO_INST_NEW (cfg, arg, OP_OUTARG_VT);
-					arg->sreg1 = in->dreg;
-					arg->klass = mono_class_from_mono_type (t);
-					arg->backend.size = size;
-					arg->inst_p0 = call;
-					arg->inst_p1 = mono_mempool_alloc (cfg->mempool, sizeof (ArgInfo));
-					memcpy (arg->inst_p1, ainfo, sizeof (ArgInfo));
-
-					MONO_ADD_INS (cfg->cbb, arg);
+					/*
+					 * Other backends use mono_type_stack_size (), but that
+					 * aligns the size to 8, which is larger than the size of
+					 * the source, leading to reads of invalid memory if the
+					 * source is at the end of address space.
+					 */
+					size = mono_class_value_size (mono_class_from_mono_type (t), &align);
 				}
 			}
+
+			if (size >= 10000) {
+				/* Avoid asserts in emit_memcpy () */
+				cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
+				cfg->exception_message = g_strdup_printf ("Passing an argument of size '%d'.", size);
+				/* Continue normally */
+			}
+
+			if (size > 0) {
+				MONO_INST_NEW (cfg, arg, OP_OUTARG_VT);
+				arg->sreg1 = in->dreg;
+				arg->klass = mono_class_from_mono_type (t);
+				arg->backend.size = size;
+				arg->inst_p0 = call;
+				arg->inst_p1 = mono_mempool_alloc (cfg->mempool, sizeof (ArgInfo));
+				memcpy (arg->inst_p1, ainfo, sizeof (ArgInfo));
+
+				MONO_ADD_INS (cfg->cbb, arg);
+			}
 			break;
+		}
 		default:
 			g_assert_not_reached ();
 		}
@@ -2372,49 +2376,50 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (n == sig->sentinelpos))
 		emit_sig_cookie (cfg, call, cinfo);
 
-	sig_ret = mini_get_underlying_type (sig->ret);
-	if (sig_ret && MONO_TYPE_ISSTRUCT (sig_ret)) {
-		MonoInst *vtarg;
-
-		if (cinfo->ret.storage == ArgValuetypeInReg) {
-			if (cinfo->ret.pair_storage [0] == ArgInIReg && cinfo->ret.pair_storage [1] == ArgNone) {
-				/*
-				 * Tell the JIT to use a more efficient calling convention: call using
-				 * OP_CALL, compute the result location after the call, and save the 
-				 * result there.
-				 */
-				call->vret_in_reg = TRUE;
-				/* 
-				 * Nullify the instruction computing the vret addr to enable 
-				 * future optimizations.
-				 */
-				if (call->vret_var)
-					NULLIFY_INS (call->vret_var);
-			} else {
-				if (call->tail_call)
-					NOT_IMPLEMENTED;
-				/*
-				 * The valuetype is in RAX:RDX after the call, need to be copied to
-				 * the stack. Push the address here, so the call instruction can
-				 * access it.
-				 */
-				if (!cfg->arch.vret_addr_loc) {
-					cfg->arch.vret_addr_loc = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
-					/* Prevent it from being register allocated or optimized away */
-					((MonoInst*)cfg->arch.vret_addr_loc)->flags |= MONO_INST_VOLATILE;
-				}
-
-				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, ((MonoInst*)cfg->arch.vret_addr_loc)->dreg, call->vret_var->dreg);
+	switch (cinfo->ret.storage) {
+	case ArgValuetypeInReg:
+		if (cinfo->ret.pair_storage [0] == ArgInIReg && cinfo->ret.pair_storage [1] == ArgNone) {
+			/*
+			 * Tell the JIT to use a more efficient calling convention: call using
+			 * OP_CALL, compute the result location after the call, and save the
+			 * result there.
+			 */
+			call->vret_in_reg = TRUE;
+			/*
+			 * Nullify the instruction computing the vret addr to enable
+			 * future optimizations.
+			 */
+			if (call->vret_var)
+				NULLIFY_INS (call->vret_var);
+		} else {
+			if (call->tail_call)
+				NOT_IMPLEMENTED;
+			/*
+			 * The valuetype is in RAX:RDX after the call, need to be copied to
+			 * the stack. Push the address here, so the call instruction can
+			 * access it.
+			 */
+			if (!cfg->arch.vret_addr_loc) {
+				cfg->arch.vret_addr_loc = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+				/* Prevent it from being register allocated or optimized away */
+				((MonoInst*)cfg->arch.vret_addr_loc)->flags |= MONO_INST_VOLATILE;
 			}
-		}
-		else {
-			MONO_INST_NEW (cfg, vtarg, OP_MOVE);
-			vtarg->sreg1 = call->vret_var->dreg;
-			vtarg->dreg = mono_alloc_preg (cfg);
-			MONO_ADD_INS (cfg->cbb, vtarg);
 
-			mono_call_inst_add_outarg_reg (cfg, call, vtarg->dreg, cinfo->ret.reg, FALSE);
+			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, ((MonoInst*)cfg->arch.vret_addr_loc)->dreg, call->vret_var->dreg);
 		}
+		break;
+	case ArgValuetypeAddrInIReg: {
+		MonoInst *vtarg;
+		MONO_INST_NEW (cfg, vtarg, OP_MOVE);
+		vtarg->sreg1 = call->vret_var->dreg;
+		vtarg->dreg = mono_alloc_preg (cfg);
+		MONO_ADD_INS (cfg->cbb, vtarg);
+
+		mono_call_inst_add_outarg_reg (cfg, call, vtarg->dreg, cinfo->ret.reg, FALSE);
+		break;
+	}
+	default:
+		break;
 	}
 
 	if (cfg->method->save_lmf) {
@@ -2433,7 +2438,8 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 	ArgInfo *ainfo = (ArgInfo*)ins->inst_p1;
 	int size = ins->backend.size;
 
-	if (ainfo->storage == ArgValuetypeInReg) {
+	switch (ainfo->storage) {
+	case ArgValuetypeInReg: {
 		MonoInst *load;
 		int part;
 
@@ -2460,7 +2466,9 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 
 			add_outarg_reg (cfg, call, ainfo->pair_storage [part], ainfo->pair_regs [part], load);
 		}
-	} else if (ainfo->storage == ArgValuetypeAddrInIReg) {
+		break;
+	}
+	case ArgValuetypeAddrInIReg: {
 		MonoInst *vtaddr, *load;
 		vtaddr = mono_compile_create_var (cfg, &ins->klass->byval_arg, OP_LOCAL);
 		
@@ -2484,7 +2492,16 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		} else {
 			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, AMD64_RSP, ainfo->offset, load->dreg);
 		}
-	} else {
+		break;
+	}
+	case ArgGSharedVtInReg:
+		/* Pass by addr */
+		mono_call_inst_add_outarg_reg (cfg, call, src->dreg, ainfo->reg, FALSE);
+		break;
+	case ArgGSharedVtOnStack:
+		g_assert_not_reached ();
+		break;
+	default:
 		if (size == 8) {
 			int dreg = mono_alloc_ireg (cfg);
 
