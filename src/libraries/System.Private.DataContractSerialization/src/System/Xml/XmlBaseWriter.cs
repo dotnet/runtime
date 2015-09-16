@@ -10,7 +10,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.Serialization;
 using System.Collections.Generic;
-
+using System.Threading.Tasks;
 
 namespace System.Xml
 {
@@ -64,6 +64,14 @@ namespace System.Xml
                 ThrowClosed();
 
             _writer.Flush();
+        }
+
+        public override Task FlushAsync()
+        {
+            if (IsClosed)
+                ThrowClosed();
+
+            return _writer.FlushAsync();
         }
 
         public override void Close()
@@ -348,6 +356,70 @@ namespace System.Xml
             }
         }
 
+        protected override Task WriteEndAttributeAsync()
+        {
+            if (IsClosed)
+                ThrowClosed();
+
+            if (_writeState != WriteState.Attribute)
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.XmlInvalidWriteState, "WriteEndAttribute", WriteState.ToString())));
+
+            return WriteEndAttributeAsyncImpl();
+        }
+
+        private async Task WriteEndAttributeAsyncImpl()
+        {
+            await FlushBase64Async().ConfigureAwait(false);
+            try
+            {
+                if (_isXmlAttribute)
+                {
+                    if (_attributeLocalName == "lang")
+                    {
+                        _nsMgr.AddLangAttribute(_attributeValue);
+                    }
+                    else if (_attributeLocalName == "space")
+                    {
+                        if (_attributeValue == "preserve")
+                        {
+                            _nsMgr.AddSpaceAttribute(XmlSpace.Preserve);
+                        }
+                        else if (_attributeValue == "default")
+                        {
+                            _nsMgr.AddSpaceAttribute(XmlSpace.Default);
+                        }
+                        else
+                        {
+                            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.Format(SR.XmlInvalidXmlSpace, _attributeValue)));
+                        }
+                    }
+                    else
+                    {
+                        // XmlTextWriter specifically allows for other localNames
+                    }
+                    _isXmlAttribute = false;
+                    _attributeLocalName = null;
+                    _attributeValue = null;
+                }
+
+                if (_isXmlnsAttribute)
+                {
+                    _nsMgr.AddNamespaceIfNotDeclared(_attributeLocalName, _attributeValue, null);
+                    _isXmlnsAttribute = false;
+                    _attributeLocalName = null;
+                    _attributeValue = null;
+                }
+                else
+                {
+                    await _writer.WriteEndAttributeAsync().ConfigureAwait(false);
+                }
+            }
+            finally
+            {
+                _writeState = WriteState.Element;
+            }
+        }
+
         public override void WriteComment(string text)
         {
             if (IsClosed)
@@ -456,10 +528,72 @@ namespace System.Xml
             element.LocalName = localName;
         }
 
+        private void PreStartElementAsyncCheck(string prefix, string localName, string ns, XmlDictionaryString xNs)
+        {
+            if (IsClosed)
+                ThrowClosed();
+
+            if (_documentState == DocumentState.Epilog)
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.XmlOnlyOneRoot)));
+            if (localName == null)
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException("localName"));
+            if (localName.Length == 0)
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.Format(SR.InvalidLocalNameEmpty), "localName"));
+            if (_writeState == WriteState.Attribute)
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.XmlInvalidWriteState, "WriteStartElement", WriteState.ToString())));
+        }
+
+        private async Task StartElementAndWriteStartElementAsync(string prefix, string localName, string namespaceUri)
+        {
+            prefix = await StartElementAsync(prefix, localName, namespaceUri, null).ConfigureAwait(false);
+            await _writer.WriteStartElementAsync(prefix, localName).ConfigureAwait(false);
+        }
+
+        private async Task<string> StartElementAsync(string prefix, string localName, string ns, XmlDictionaryString xNs)
+        {
+            await FlushBase64Async().ConfigureAwait(false);
+            await AutoCompleteAsync(WriteState.Element).ConfigureAwait(false);
+            Element element = EnterScope();
+            if (ns == null)
+            {
+                if (prefix == null)
+                    prefix = string.Empty;
+
+                ns = _nsMgr.LookupNamespace(prefix);
+
+                if (ns == null)
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.Format(SR.XmlUndefinedPrefix, prefix), "prefix"));
+            }
+            else if (prefix == null)
+            {
+                prefix = _nsMgr.LookupPrefix(ns);
+
+                if (prefix == null)
+                {
+                    prefix = string.Empty;
+                    _nsMgr.AddNamespace(string.Empty, ns, xNs);
+                }
+            }
+            else
+            {
+                _nsMgr.AddNamespaceIfNotDeclared(prefix, ns, xNs);
+            }
+            element.Prefix = prefix;
+            element.LocalName = localName;
+
+            return prefix;
+        }
+
         public override void WriteStartElement(string prefix, string localName, string namespaceUri)
         {
             StartElement(ref prefix, localName, namespaceUri, null);
             _writer.WriteStartElement(prefix, localName);
+        }
+
+        public override Task WriteStartElementAsync(string prefix, string localName, string namespaceUri)
+        {
+            PreStartElementAsyncCheck(prefix, localName, namespaceUri, null);
+            return StartElementAndWriteStartElementAsync(prefix, localName, namespaceUri);
         }
 
         public override void WriteStartElement(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri)
@@ -489,6 +623,38 @@ namespace System.Xml
             {
                 Element element = _elements[_depth];
                 _writer.WriteEndElement(element.Prefix, element.LocalName);
+            }
+
+            ExitScope();
+            _writeState = WriteState.Content;
+        }
+
+        public override Task WriteEndElementAsync()
+        {
+            if (IsClosed)
+                ThrowClosed();
+
+            if (_depth == 0)
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.XmlInvalidDepth, "WriteEndElement", _depth.ToString(CultureInfo.InvariantCulture))));
+
+            return WriteEndElementAsyncImpl();
+        }
+
+        private async Task WriteEndElementAsyncImpl()
+        {
+            if (_writeState == WriteState.Attribute)
+                await WriteEndAttributeAsync().ConfigureAwait(false);
+
+            FlushBase64();
+            if (_writeState == WriteState.Element)
+            {
+                _nsMgr.DeclareNamespaces(_writer);
+                await _writer.WriteEndStartElementAsync(true).ConfigureAwait(false);
+            }
+            else
+            {
+                Element element = _elements[_depth];
+                await _writer.WriteEndElementAsync(element.Prefix, element.LocalName).ConfigureAwait(false);
             }
 
             ExitScope();
@@ -535,6 +701,11 @@ namespace System.Xml
             }
         }
 
+        private Task FlushElementAsync()
+        {
+            return _writeState == WriteState.Element ? AutoCompleteAsync(WriteState.Content) : Task.CompletedTask;
+        }
+
         protected void StartComment()
         {
             FlushElement();
@@ -549,6 +720,13 @@ namespace System.Xml
             FlushElement();
             if (_depth == 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.XmlIllegalOutsideRoot)));
+        }
+
+        protected async Task StartContentAsync()
+        {
+            await FlushElementAsync().ConfigureAwait(false);
+            if (_depth == 0)
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.XmlIllegalOutsideRoot)));
         }
 
         protected void StartContent(char ch)
@@ -610,10 +788,25 @@ namespace System.Xml
             _writeState = writeState;
         }
 
+        private async Task AutoCompleteAsync(WriteState writeState)
+        {
+            if (_writeState == WriteState.Element)
+            {
+                await EndStartElementAsync().ConfigureAwait(false);
+            }
+            _writeState = writeState;
+        }
+
         private void EndStartElement()
         {
             _nsMgr.DeclareNamespaces(_writer);
             _writer.WriteEndStartElement(false);
+        }
+
+        private Task EndStartElementAsync()
+        {
+            _nsMgr.DeclareNamespaces(_writer);
+            return _writer.WriteEndStartElementAsync(false);
         }
 
         public override string LookupPrefix(string ns)
@@ -1346,6 +1539,76 @@ namespace System.Xml
             }
         }
 
+        public override Task WriteBase64Async(byte[] buffer, int offset, int count)
+        {
+            if (IsClosed)
+                ThrowClosed();
+
+            if (buffer == null)
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException("buffer"));
+
+            // Not checking upper bound because it will be caught by "count".  This is what XmlTextWriter does.
+            if (offset < 0)
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException("offset", SR.Format(SR.ValueMustBeNonNegative)));
+
+            if (count < 0)
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException("count", SR.Format(SR.ValueMustBeNonNegative)));
+            if (count > buffer.Length - offset)
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException("count", SR.Format(SR.SizeExceedsRemainingBufferSpace, buffer.Length - offset)));
+
+            return WriteBase64AsyncImpl(buffer, offset, count);
+        }
+
+        private async Task WriteBase64AsyncImpl(byte[] buffer, int offset, int count)
+        { 
+            if (count > 0)
+            {
+                if (_trailByteCount > 0)
+                {
+                    while (_trailByteCount < 3 && count > 0)
+                    {
+                        _trailBytes[_trailByteCount++] = buffer[offset++];
+                        count--;
+                    }
+                }
+
+                int totalByteCount = _trailByteCount + count;
+                int actualByteCount = totalByteCount - (totalByteCount % 3);
+
+                if (_trailBytes == null)
+                {
+                    _trailBytes = new byte[3];
+                }
+
+                if (actualByteCount >= 3)
+                {
+                    if (_attributeValue != null)
+                    {
+                        WriteAttributeText(XmlConverter.Base64Encoding.GetString(_trailBytes, 0, _trailByteCount));
+                        WriteAttributeText(XmlConverter.Base64Encoding.GetString(buffer, offset, actualByteCount - _trailByteCount));
+                    }
+                    if (!_isXmlnsAttribute)
+                    {
+                        await StartContentAsync().ConfigureAwait(false);
+                        await _writer.WriteBase64TextAsync(_trailBytes, _trailByteCount, buffer, offset, actualByteCount - _trailByteCount).ConfigureAwait(false);
+                        EndContent();
+                    }
+                    _trailByteCount = (totalByteCount - actualByteCount);
+                    if (_trailByteCount > 0)
+                    {
+                        int trailOffset = offset + count - _trailByteCount;
+                        for (int i = 0; i < _trailByteCount; i++)
+                            _trailBytes[i] = buffer[trailOffset++];
+                    }
+                }
+                else
+                {
+                    Buffer.BlockCopy(buffer, offset, _trailBytes, _trailByteCount, count);
+                    _trailByteCount += count;
+                }
+            }
+        }
+
 
         public override bool CanCanonicalize
         {
@@ -1376,6 +1639,11 @@ namespace System.Xml
             }
         }
 
+        private Task FlushBase64Async()
+        {
+            return _trailByteCount > 0? FlushTrailBytesAsync() : Task.CompletedTask;
+        }
+
         private void FlushTrailBytes()
         {
             if (_attributeValue != null)
@@ -1385,6 +1653,20 @@ namespace System.Xml
             {
                 StartContent();
                 _writer.WriteBase64Text(_trailBytes, _trailByteCount, _trailBytes, 0, 0);
+                EndContent();
+            }
+            _trailByteCount = 0;
+        }
+
+        private async Task FlushTrailBytesAsync()
+        {
+            if (_attributeValue != null)
+                WriteAttributeText(XmlConverter.Base64Encoding.GetString(_trailBytes, 0, _trailByteCount));
+
+            if (!_isXmlnsAttribute)
+            {
+                await StartContentAsync().ConfigureAwait(false);
+                await _writer.WriteBase64TextAsync(_trailBytes, _trailByteCount, _trailBytes, 0, 0).ConfigureAwait(false);
                 EndContent();
             }
             _trailByteCount = 0;
