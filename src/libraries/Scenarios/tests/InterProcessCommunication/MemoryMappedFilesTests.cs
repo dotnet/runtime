@@ -10,7 +10,6 @@ namespace InterProcessCommunication.Tests
 {
     public class MemoryMappedFilesTests : RemoteExecutorTestBase
     {
-        [ActiveIssue(2498, PlatformID.AnyUnix)]
         [Fact]
         public void DataShared()
         {
