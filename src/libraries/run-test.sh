@@ -137,7 +137,7 @@ create_test_overlay()
 	echo "Corefx binaries not found at $CoreFxBins"
 	exit 1
   fi
-  find $CoreFxBins -name '*.dll' -and -not -name "*Test*" -exec cp '{}' "$OverlayDir" ";"
+  find $CoreFxBins -path "*ToolRuntime*" -prune -o -name '*.dll' -and -not -name "*Test*" -exec cp '{}' "$OverlayDir" ";"
 
   # Then the native CoreFX binaries
   if [ ! -d $CoreFxNativeBins ]
