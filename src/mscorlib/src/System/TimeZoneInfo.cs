@@ -1748,7 +1748,7 @@ namespace System {
                 endTime = rule.IsEndDateMarkerForEndOfYear() ? new DateTime(daylightTime.End.Year + 1, 1, 1, 0, 0, 0).AddTicks(-1) : daylightTime.End + (invalidAtStart ? -rule.DaylightDelta : TimeSpan.Zero);
             }
 
-            Boolean isDst = CheckIsDst(startTime, time, endTime, false);
+            Boolean isDst = CheckIsDst(startTime, time, endTime, false, rule);
 
             // If this date was previously converted from a UTC date and we were able to detect that the local
             // DateTime would be ambiguous, this data is stored in the DateTime to resolve this ambiguity. 
@@ -1864,7 +1864,7 @@ namespace System {
                 ambiguousEnd = startTime - daylightTime.Delta;
             }
 
-            Boolean isDst = CheckIsDst(startTime, time, endTime, ignoreYearAdjustment);
+            Boolean isDst = CheckIsDst(startTime, time, endTime, ignoreYearAdjustment, rule);
 
             // See if the resulting local time becomes ambiguous. This must be captured here or the
             // DateTime will not be able to round-trip back to UTC accurately.
@@ -1900,7 +1900,7 @@ namespace System {
         }
 
 
-        static private Boolean CheckIsDst(DateTime startTime, DateTime time, DateTime endTime,bool ignoreYearAdjustment) {
+        static private Boolean CheckIsDst(DateTime startTime, DateTime time, DateTime endTime,bool ignoreYearAdjustment, AdjustmentRule rule) {
             Boolean isDst;
 
             if (!ignoreYearAdjustment) {
@@ -1922,6 +1922,11 @@ namespace System {
                 // In southern hemisphere, the daylight saving time starts later in the year, and ends in the beginning of next year.
                 // Note, the summer in the southern hemisphere begins late in the year.
                 isDst = (time < endTime || time >= startTime);
+            }
+            else if (rule.NoDaylightTransitions) {
+                // In NoDaylightTransitions AdjustmentRules, the startTime is always before the endTime,
+                // and both the start and end times are inclusive
+                isDst = (time >= startTime && time <= endTime);
             }
             else {
                 // In northern hemisphere, the daylight saving time starts in the middle of the year.
