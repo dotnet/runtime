@@ -62,10 +62,10 @@ You can see the currently installed DNX versions with `dnvm list` (your display 
 	dnvm list
 
 ```
-Active Version              Runtime Arch Location             Alias
------- -------              ------- ---- --------             -----
-  *    1.0.0-beta7-12364    coreclr x64  ~/.dnx/runtimes
-       1.0.0-beta7-12364    mono         ~/.dnx/runtimes      default
+Active Version              Runtime Architecture OperatingSystem Alias
+------ -------              ------- ------------ --------------- -----
+  *    1.0.0-beta8-15613    coreclr x64          linux           
+       1.0.0-beta8-15613    mono                 linux/osx       default
 ```
 
 Write your App
@@ -111,12 +111,12 @@ Run your App
 
 You need to restore packages for your app, based on your project.json, with `dnu restore`. You will need to run this command under the Mono DNX. Make sure that you are using that one.
 
-	dnvm use 1.0.0-beta7-12364 -r mono
+	dnvm use 1.0.0-beta8-15613 -r mono
 	dnu restore
 
 You can run your app with .NET Core, although make sure to switch to that DNX.
 
-    dnvm use 1.0.0-beta7-12364 -r coreclr
+    dnvm use 1.0.0-beta8-15613 -r coreclr
 	dnx run
 
 	Hello, Linux
