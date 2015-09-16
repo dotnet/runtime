@@ -15,43 +15,41 @@
 #include <unistd.h>
 
 // Validate that our Signals enum values are correct for the platform
-static_assert(static_cast<int>(Signals::PAL_None) == 0, "");
-static_assert(static_cast<int>(Signals::PAL_SIGKILL) == SIGKILL, "");
+static_assert(PAL_SIGKILL == SIGKILL, "");
 
 // Validate that our WaitPidOptions enum values are correct for the platform
-static_assert(static_cast<int>(WaitPidOptions::PAL_None)        == 0, "");
-static_assert(static_cast<int>(WaitPidOptions::PAL_WNOHANG)     == WNOHANG, "");
-static_assert(static_cast<int>(WaitPidOptions::PAL_WUNTRACED)   == WUNTRACED, "");
+static_assert(PAL_WNOHANG     == WNOHANG, "");
+static_assert(PAL_WUNTRACED   == WUNTRACED, "");
 
 // Validate that our SysLogPriority values are correct for the platform
-static_assert(static_cast<int>(SysLogPriority::PAL_LOG_EMERG)       == LOG_EMERG, "");
-static_assert(static_cast<int>(SysLogPriority::PAL_LOG_ALERT)       == LOG_ALERT, "");
-static_assert(static_cast<int>(SysLogPriority::PAL_LOG_CRIT)        == LOG_CRIT, "");
-static_assert(static_cast<int>(SysLogPriority::PAL_LOG_ERR)         == LOG_ERR, "");
-static_assert(static_cast<int>(SysLogPriority::PAL_LOG_WARNING)     == LOG_WARNING, "");
-static_assert(static_cast<int>(SysLogPriority::PAL_LOG_NOTICE)      == LOG_NOTICE, "");
-static_assert(static_cast<int>(SysLogPriority::PAL_LOG_INFO)        == LOG_INFO, "");
-static_assert(static_cast<int>(SysLogPriority::PAL_LOG_DEBUG)       == LOG_DEBUG, "");
-static_assert(static_cast<int>(SysLogPriority::PAL_LOG_KERN)        == LOG_KERN, "");
-static_assert(static_cast<int>(SysLogPriority::PAL_LOG_USER)        == LOG_USER, "");
-static_assert(static_cast<int>(SysLogPriority::PAL_LOG_MAIL)        == LOG_MAIL, "");
-static_assert(static_cast<int>(SysLogPriority::PAL_LOG_DAEMON)      == LOG_DAEMON, "");
-static_assert(static_cast<int>(SysLogPriority::PAL_LOG_AUTH)        == LOG_AUTH, "");
-static_assert(static_cast<int>(SysLogPriority::PAL_LOG_SYSLOG)      == LOG_SYSLOG, "");
-static_assert(static_cast<int>(SysLogPriority::PAL_LOG_LPR)         == LOG_LPR, "");
-static_assert(static_cast<int>(SysLogPriority::PAL_LOG_NEWS)        == LOG_NEWS, "");
-static_assert(static_cast<int>(SysLogPriority::PAL_LOG_UUCP)        == LOG_UUCP, "");
-static_assert(static_cast<int>(SysLogPriority::PAL_LOG_CRON)        == LOG_CRON, "");
-static_assert(static_cast<int>(SysLogPriority::PAL_LOG_AUTHPRIV)    == LOG_AUTHPRIV, "");
-static_assert(static_cast<int>(SysLogPriority::PAL_LOG_FTP)         == LOG_FTP, "");
-static_assert(static_cast<int>(SysLogPriority::PAL_LOG_LOCAL0)      == LOG_LOCAL0, "");
-static_assert(static_cast<int>(SysLogPriority::PAL_LOG_LOCAL1)      == LOG_LOCAL1, "");
-static_assert(static_cast<int>(SysLogPriority::PAL_LOG_LOCAL2)      == LOG_LOCAL2, "");
-static_assert(static_cast<int>(SysLogPriority::PAL_LOG_LOCAL3)      == LOG_LOCAL3, "");
-static_assert(static_cast<int>(SysLogPriority::PAL_LOG_LOCAL4)      == LOG_LOCAL4, "");
-static_assert(static_cast<int>(SysLogPriority::PAL_LOG_LOCAL5)      == LOG_LOCAL5, "");
-static_assert(static_cast<int>(SysLogPriority::PAL_LOG_LOCAL6)      == LOG_LOCAL6, "");
-static_assert(static_cast<int>(SysLogPriority::PAL_LOG_LOCAL7)      == LOG_LOCAL7, "");
+static_assert(PAL_LOG_EMERG        == LOG_EMERG, "");
+static_assert(PAL_LOG_ALERT        == LOG_ALERT, "");
+static_assert(PAL_LOG_CRIT         == LOG_CRIT, "");
+static_assert(PAL_LOG_ERR          == LOG_ERR, "");
+static_assert(PAL_LOG_WARNING      == LOG_WARNING, "");
+static_assert(PAL_LOG_NOTICE       == LOG_NOTICE, "");
+static_assert(PAL_LOG_INFO         == LOG_INFO, "");
+static_assert(PAL_LOG_DEBUG        == LOG_DEBUG, "");
+static_assert(PAL_LOG_KERN         == LOG_KERN, "");
+static_assert(PAL_LOG_USER         == LOG_USER, "");
+static_assert(PAL_LOG_MAIL         == LOG_MAIL, "");
+static_assert(PAL_LOG_DAEMON       == LOG_DAEMON, "");
+static_assert(PAL_LOG_AUTH         == LOG_AUTH, "");
+static_assert(PAL_LOG_SYSLOG       == LOG_SYSLOG, "");
+static_assert(PAL_LOG_LPR          == LOG_LPR, "");
+static_assert(PAL_LOG_NEWS         == LOG_NEWS, "");
+static_assert(PAL_LOG_UUCP         == LOG_UUCP, "");
+static_assert(PAL_LOG_CRON         == LOG_CRON, "");
+static_assert(PAL_LOG_AUTHPRIV     == LOG_AUTHPRIV, "");
+static_assert(PAL_LOG_FTP          == LOG_FTP, "");
+static_assert(PAL_LOG_LOCAL0       == LOG_LOCAL0, "");
+static_assert(PAL_LOG_LOCAL1       == LOG_LOCAL1, "");
+static_assert(PAL_LOG_LOCAL2       == LOG_LOCAL2, "");
+static_assert(PAL_LOG_LOCAL3       == LOG_LOCAL3, "");
+static_assert(PAL_LOG_LOCAL4       == LOG_LOCAL4, "");
+static_assert(PAL_LOG_LOCAL5       == LOG_LOCAL5, "");
+static_assert(PAL_LOG_LOCAL6       == LOG_LOCAL6, "");
+static_assert(PAL_LOG_LOCAL7       == LOG_LOCAL7, "");
 
 enum
 {
@@ -94,7 +92,7 @@ int32_t ForkAndExecProcess(
         nullptr == stdinFd || nullptr == stdoutFd || nullptr == stderrFd ||
         nullptr == childPid)
     {
-        assert(!"null argument.");
+        assert(false && "null argument.");
         errno = EINVAL;
         success = false;
         goto done;
@@ -104,7 +102,7 @@ int32_t ForkAndExecProcess(
         (redirectStdout & ~1) != 0 ||
         (redirectStderr & ~1) != 0)
     {
-        assert(!"Boolean redirect* inputs must be 0 or 1.");
+        assert(false && "Boolean redirect* inputs must be 0 or 1.");
         errno = EINVAL;
         success = false;
         goto done;
@@ -115,7 +113,7 @@ int32_t ForkAndExecProcess(
         (redirectStdout && pipe(stdoutFds) != 0) ||
         (redirectStderr && pipe(stderrFds) != 0))
     {
-        assert(!"pipe() failed.");
+        assert(false && "pipe() failed.");
         success = false;
         goto done;
     }
@@ -123,7 +121,7 @@ int32_t ForkAndExecProcess(
     // Fork the child process
     if ((processId = fork()) == -1)
     {
-        assert(!"fork() failed.");
+        assert(false && "fork() failed.");
         success = false;
         goto done;
     }
@@ -154,7 +152,7 @@ int32_t ForkAndExecProcess(
         }
 
         // Finally, execute the new process.  execve will not return if it's successful.
-        execve(filename, (char**)argv, (char**)envp);
+        execve(filename, argv, envp);
         _exit(errno != 0 ? errno : EXIT_FAILURE); // execve failed
     }
 
@@ -194,29 +192,29 @@ int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
 {
     switch (value)
     {
-        case RLimitResources::PAL_RLIMIT_CPU:
+        case PAL_RLIMIT_CPU:
             return RLIMIT_CPU;
-        case RLimitResources::PAL_RLIMIT_FSIZE:
+        case PAL_RLIMIT_FSIZE:
             return RLIMIT_FSIZE;
-        case RLimitResources::PAL_RLIMIT_DATA:
+        case PAL_RLIMIT_DATA:
             return RLIMIT_DATA;
-        case RLimitResources::PAL_RLIMIT_STACK:
+        case PAL_RLIMIT_STACK:
             return RLIMIT_STACK;
-        case RLimitResources::PAL_RLIMIT_CORE:
+        case PAL_RLIMIT_CORE:
             return RLIMIT_CORE;
-        case RLimitResources::PAL_RLIMIT_AS:
+        case PAL_RLIMIT_AS:
             return RLIMIT_AS;
-        case RLimitResources::PAL_RLIMIT_RSS:
+        case PAL_RLIMIT_RSS:
             return RLIMIT_RSS;
-        case RLimitResources::PAL_RLIMIT_MEMLOCK:
+        case PAL_RLIMIT_MEMLOCK:
             return RLIMIT_MEMLOCK;
-        case RLimitResources::PAL_RLIMIT_NPROC:
+        case PAL_RLIMIT_NPROC:
             return RLIMIT_NPROC;
-        case RLimitResources::PAL_RLIMIT_NOFILE:
+        case PAL_RLIMIT_NOFILE:
             return RLIMIT_NOFILE;
     }
 
-    assert(!"Unknown RLIMIT value");
+    assert(false && "Unknown RLIMIT value");
     return -1;
 }
 

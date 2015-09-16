@@ -18,6 +18,6 @@ internal static partial class Interop
         /// Note - on fail. the position of the stream may change depending on the platform; consult man 2 read for more info
         /// </returns>
         [DllImport(Libraries.SystemNative, SetLastError = true)]
-        internal static unsafe extern long Read(int fd, byte* buffer, ulong count);
+        internal static unsafe extern int Read(int fd, byte* buffer, int count);
     }
 }

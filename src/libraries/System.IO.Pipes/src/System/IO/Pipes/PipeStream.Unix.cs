@@ -333,7 +333,7 @@ namespace System.IO.Pipes
             {
                 return (int)SysCall(_handle, (fd, ptr, len, _) =>
                 {
-                    long result = (long)Interop.Sys.Read(fd, (byte*)ptr, (ulong)len);
+                    int result = Interop.Sys.Read(fd, (byte*)ptr, len);
                     Debug.Assert(result <= len);
                     return result;
                 }, (IntPtr)(bufPtr + offset), count);
@@ -395,7 +395,7 @@ namespace System.IO.Pipes
 
                             // Read it.
                             Debug.Assert((fds[0].REvents & Interop.Sys.PollFlags.POLLIN) != 0);
-                            long result = Interop.Sys.Read(fd, (byte*)ptr, (ulong)len);
+                            int result = Interop.Sys.Read(fd, (byte*)ptr, len);
                             Debug.Assert(result <= len);
                             return result;
                         }, (IntPtr)(bufPtr + offset), count, cancellation.Poll.DangerousGetHandle());
@@ -430,7 +430,7 @@ namespace System.IO.Pipes
                 {
                     int bytesWritten = (int)SysCall(_handle, (fd, ptr, len, _) =>
                     {
-                        long result = (long)Interop.Sys.Write(fd, (byte*)ptr, (ulong)len);
+                        int result = Interop.Sys.Write(fd, (byte*)ptr, len);
                         Debug.Assert(result <= len);
                         return result;
                     }, (IntPtr)(bufPtr + offset), count);

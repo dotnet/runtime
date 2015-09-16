@@ -82,7 +82,7 @@ namespace System.IO
             {
                 Interop.Sys.MountPointInformation mpi = default(Interop.Sys.MountPointInformation);
                 CheckStatfsResultAndThrowIfNecessary(Interop.Sys.GetSpaceInfoForMountPoint(Name, out mpi));
-                return mpi.AvailableFreeSpace;
+                return checked((long)mpi.AvailableFreeSpace);
             }
         }
 
@@ -93,7 +93,7 @@ namespace System.IO
             {
                 Interop.Sys.MountPointInformation mpi = default(Interop.Sys.MountPointInformation);
                 CheckStatfsResultAndThrowIfNecessary(Interop.Sys.GetSpaceInfoForMountPoint(Name, out mpi));
-                return mpi.TotalFreeSpace;
+                return checked((long)mpi.TotalFreeSpace);
             } 
         }
 
@@ -104,7 +104,7 @@ namespace System.IO
             {
                 Interop.Sys.MountPointInformation mpi = default(Interop.Sys.MountPointInformation);
                 CheckStatfsResultAndThrowIfNecessary(Interop.Sys.GetSpaceInfoForMountPoint(Name, out mpi));
-                return mpi.TotalSize;
+                return checked((long)mpi.TotalSize);
             }
         }
 

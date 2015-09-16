@@ -17,6 +17,6 @@ internal static partial class Interop
         /// Returns the number of bytes written on success; otherwise, returns -1 and sets errno
         /// </returns>
         [DllImport(Libraries.SystemNative, SetLastError = true)]
-        internal static unsafe extern long Write(int fd, byte* buffer, ulong bufferSize);
+        internal static unsafe extern int Write(int fd, byte* buffer, int bufferSize);
     }
 }
