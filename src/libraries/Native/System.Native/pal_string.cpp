@@ -3,17 +3,26 @@
 
 #include "pal_config.h"
 #include "pal_string.h"
+#include "pal_utilities.h"
 
-#include <cstdarg>
+#include <assert.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 
 extern "C"
-int32_t SNPrintF(char* string, uint64_t size, const char* format, ...)
+int32_t SNPrintF(char* string, int32_t size, const char* format, ...)
 {
+    assert(string != nullptr || size == 0);
+    assert(size >= 0);
+    assert(format != nullptr);
+
+    if (size < 0)
+        return -1;
+
     va_list arguments;
     va_start(arguments, format);
-    int result = vsnprintf(string, size, format, arguments);
+    int result = vsnprintf(string, UnsignedCast(size), format, arguments);
     va_end(arguments);
     return result;
 }

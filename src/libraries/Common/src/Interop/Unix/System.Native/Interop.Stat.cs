@@ -18,8 +18,8 @@ internal static partial class Interop
         {
             internal FileStatusFlags Flags;
             internal int Mode;
-            internal int Uid;
-            internal int Gid;
+            internal uint Uid;
+            internal uint Gid;
             internal long Size;
             internal long ATime;
             internal long MTime;

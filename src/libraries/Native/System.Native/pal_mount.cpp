@@ -17,10 +17,11 @@
 #define STRING_BUFFER_SIZE 8192
 #endif
 
-#if HAVE_MNTINFO
 
-int GetMountInfo(MountPointFound onFound)
+static
+int32_t GetMountInfo(MountPointFound onFound)
 {
+#if HAVE_MNTINFO
     // getmntinfo returns pointers to OS-internal structs, so we don't need to worry about free'ing the object
     struct statfs* mounts = nullptr;
     int count = getmntinfo(&mounts, 0);
@@ -34,8 +35,6 @@ int GetMountInfo(MountPointFound onFound)
 
 #else
 
-int GetMountInfo(MountPointFound onFound)
-{
     int result = -1;
     FILE* fp = setmntent("/proc/mounts", MNTOPT_RO);
     if (fp != nullptr)
@@ -60,13 +59,13 @@ int GetMountInfo(MountPointFound onFound)
 #endif
 
 extern "C"
-int GetAllMountPoints(MountPointFound onFound)
+int32_t GetAllMountPoints(MountPointFound onFound)
 {
     return GetMountInfo(onFound);
 }
 
 extern "C"
-int GetSpaceInfoForMountPoint(
+int32_t GetSpaceInfoForMountPoint(
     const char*             name,
     MountPointInformation*  mpi)
 {
@@ -77,9 +76,14 @@ int GetSpaceInfoForMountPoint(
     int result = statfs(name, &stats);
     if (result == 0)
     {
-        mpi->AvailableFreeSpace = stats.f_bsize * stats.f_bavail;
-        mpi->TotalFreeSpace = stats.f_bsize * stats.f_bfree;
-        mpi->TotalSize = stats.f_bsize * stats.f_blocks;
+        // Note that f_bsize has a signed integer type on some platforms but musn't be negative.
+        // Also, upcast here (some platforms have smaller types) to 64-bit before multiplying to 
+        // avoid overflow.
+        uint64_t bsize = UnsignedCast(stats.f_bsize);
+
+        mpi->AvailableFreeSpace = bsize * stats.f_bavail;
+        mpi->TotalFreeSpace = bsize * stats.f_bfree;
+        mpi->TotalSize = bsize * stats.f_blocks;
     }
     else
     {
@@ -90,7 +94,7 @@ int GetSpaceInfoForMountPoint(
 }
 
 extern "C"
-int GetFormatInfoForMountPoint(
+int32_t GetFormatInfoForMountPoint(
     const char* name, 
     char*       formatNameBuffer, 
     int32_t     bufferLength, 
@@ -118,7 +122,7 @@ int GetFormatInfoForMountPoint(
 #else
         assert(formatType != nullptr);
         *formatType = stats.f_type;
-        *formatNameBuffer = '\0';
+        SafeStringCopy(formatNameBuffer, bufferLength, "");
 #endif
 
     }
