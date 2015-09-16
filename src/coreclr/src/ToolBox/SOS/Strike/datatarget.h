@@ -4,7 +4,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information. 
 //
 
-class DataTarget : public ICLRDataTarget
+class DataTarget : public ICLRDataTarget, ICorDebugDataTarget4
 {
 private:
     LONG m_ref;                         // Reference count.
@@ -82,4 +82,9 @@ public:
         /* [size_is][in] */ BYTE *inBuffer,
         /* [in] */ ULONG32 outBufferSize,
         /* [size_is][out] */ BYTE *outBuffer);
+
+    // ICorDebugDataTarget4
+
+    virtual HRESULT STDMETHODCALLTYPE GetPid(
+        /* [out] */ DWORD *pdwProcessId);
 };
