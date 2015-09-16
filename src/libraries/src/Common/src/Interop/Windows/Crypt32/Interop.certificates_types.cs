@@ -3,9 +3,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography.X509Certificates;
-
-using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
@@ -16,12 +13,12 @@ internal static partial class Interop
             internal const uint AUTHTYPE_CLIENT = 1;
             internal const uint AUTHTYPE_SERVER = 2;
         }
-        
+
         internal static partial class CertChainPolicyIgnoreFlags
         {
             internal const uint CERT_CHAIN_POLICY_IGNORE_NOT_TIME_VALID_FLAG = 0x00000001;
-            internal const uint CERT_CHAIN_POLICY_IGNORE_CTL_NOT_TIME_VALID_FLAG  = 0x00000002;
-            internal const uint CERT_CHAIN_POLICY_IGNORE_NOT_TIME_NESTED_FLAG  = 0x00000004;
+            internal const uint CERT_CHAIN_POLICY_IGNORE_CTL_NOT_TIME_VALID_FLAG = 0x00000002;
+            internal const uint CERT_CHAIN_POLICY_IGNORE_NOT_TIME_NESTED_FLAG = 0x00000004;
             internal const uint CERT_CHAIN_POLICY_IGNORE_INVALID_BASIC_CONSTRAINTS_FLAG = 0x00000008;
             internal const uint CERT_CHAIN_POLICY_ALLOW_UNKNOWN_CA_FLAG = 0x00000010;
             internal const uint CERT_CHAIN_POLICY_IGNORE_WRONG_USAGE_FLAG = 0x00000020;
@@ -34,8 +31,8 @@ internal static partial class Interop
 
             internal const uint CERT_CHAIN_POLICY_IGNORE_ALL =
                 CERT_CHAIN_POLICY_IGNORE_NOT_TIME_VALID_FLAG |
-                CERT_CHAIN_POLICY_IGNORE_CTL_NOT_TIME_VALID_FLAG  |
-                CERT_CHAIN_POLICY_IGNORE_NOT_TIME_NESTED_FLAG  |
+                CERT_CHAIN_POLICY_IGNORE_CTL_NOT_TIME_VALID_FLAG |
+                CERT_CHAIN_POLICY_IGNORE_NOT_TIME_NESTED_FLAG |
                 CERT_CHAIN_POLICY_IGNORE_INVALID_BASIC_CONSTRAINTS_FLAG |
                 CERT_CHAIN_POLICY_ALLOW_UNKNOWN_CA_FLAG |
                 CERT_CHAIN_POLICY_IGNORE_WRONG_USAGE_FLAG |
@@ -58,7 +55,7 @@ internal static partial class Interop
             internal const int CERT_CHAIN_POLICY_MICROSOFT_ROOT = 7;
             internal const int CERT_CHAIN_POLICY_EV = 8;
         }
-        
+
         internal static partial class CertChainPolicyErrors
         {
             // Base Policy errors (CERT_CHAIN_POLICY_BASE).
@@ -74,7 +71,7 @@ internal static partial class Interop
 
             // Basic Constraints Policy errors (CERT_CHAIN_POLICY_BASIC_CONSTRAINTS).
             internal const uint TRUST_E_BASIC_CONSTRAINTS = 0x80096019;
- 
+
             // Authenticode Policy errors (CERT_CHAIN_POLICY_AUTHENTICODE and CERT_CHAIN_POLICY_AUTHENTICODE_TS).
             internal const uint CERT_E_CRITICAL = 0x800B0105;
             internal const uint CERT_E_VALIDITYPERIODNESTING = 0x800B0102;
@@ -83,12 +80,12 @@ internal static partial class Interop
             internal const uint CERT_E_PURPOSE = 0x800B0106;
             internal const uint CERT_E_REVOKED = 0x800B010C;
             internal const uint CERT_E_REVOCATION_FAILURE = 0x800B010E;
- 
+
             // SSL Policy errors (CERT_CHAIN_POLICY_SSL).
             internal const uint CERT_E_CN_NO_MATCH = 0x800B010F;
             internal const uint CERT_E_ROLE = 0x800B0103;
         }
-        
+
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal struct CERT_CONTEXT
         {
@@ -115,7 +112,7 @@ internal static partial class Interop
             public uint dwFlags;
             public SSL_EXTRA_CERT_CHAIN_POLICY_PARA* pvExtraPolicyPara;
         }
-       
+
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal unsafe struct CERT_CHAIN_POLICY_STATUS
         {

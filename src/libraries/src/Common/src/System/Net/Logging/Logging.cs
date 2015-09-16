@@ -52,6 +52,7 @@ namespace System.Net
                     object o = new Object();
                     Interlocked.CompareExchange(ref s_InternalSyncObject, o, null);
                 }
+
                 return s_InternalSyncObject;
             }
         }
@@ -64,6 +65,7 @@ namespace System.Net
                 {
                     InitializeLogging();
                 }
+
                 return s_LoggingEnabled;
             }
         }
@@ -81,10 +83,12 @@ namespace System.Net
                 {
                     InitializeLogging();
                 }
+
                 if (!s_LoggingEnabled)
                 {
                     return null;
                 }
+
                 return s_WebTraceSource;
             }
         }
@@ -97,10 +101,12 @@ namespace System.Net
                 {
                     InitializeLogging();
                 }
+
                 if (!s_LoggingEnabled)
                 {
                     return null;
                 }
+
                 return s_TraceSourceHttpName;
             }
         }
@@ -113,10 +119,12 @@ namespace System.Net
                 {
                     InitializeLogging();
                 }
+
                 if (!s_LoggingEnabled)
                 {
                     return null;
                 }
+
                 return s_HttpListenerTraceSource;
             }
         }
@@ -129,10 +137,12 @@ namespace System.Net
                 {
                     InitializeLogging();
                 }
+
                 if (!s_LoggingEnabled)
                 {
                     return null;
                 }
+
                 return s_SocketsTraceSource;
             }
         }
@@ -145,10 +155,12 @@ namespace System.Net
                 {
                     InitializeLogging();
                 }
+
                 if (!s_LoggingEnabled)
                 {
                     return null;
                 }
+
                 return s_CacheTraceSource;
             }
         }
@@ -161,10 +173,12 @@ namespace System.Net
                 {
                     InitializeLogging();
                 }
+
                 if (!s_LoggingEnabled)
                 {
                     return null;
                 }
+
                 return s_WebSocketsTraceSource;
             }
         }
@@ -212,6 +226,7 @@ namespace System.Net
                         Close();
                         loggingEnabled = false;
                     }
+
                     s_LoggingEnabled = loggingEnabled;
                     s_LoggingInitialized = true;
                 }
@@ -224,22 +239,27 @@ namespace System.Net
             {
                 s_WebTraceSource.Close();
             }
+
             if (s_HttpListenerTraceSource != null)
             {
                 s_HttpListenerTraceSource.Close();
             }
+
             if (s_SocketsTraceSource != null)
             {
                 s_SocketsTraceSource.Close();
             }
+
             if (s_WebSocketsTraceSource != null)
             {
                 s_WebSocketsTraceSource.Close();
             }
+
             if (s_CacheTraceSource != null)
             {
                 s_CacheTraceSource.Close();
             }
+
             if (s_TraceSourceHttpName != null)
             {
                 s_TraceSourceHttpName.Close();
@@ -253,14 +273,17 @@ namespace System.Net
             {
                 return false;
             }
+
             if (!s_LoggingInitialized)
             {
                 InitializeLogging();
             }
+
             if (traceSource == null || !traceSource.Switch.ShouldTrace(traceLevel))
             {
                 return false;
             }
+
             return true;
         }
 
@@ -304,6 +327,7 @@ namespace System.Net
             {
                 return;
             }
+
             Enter(traceSource, GetObjectName(obj) + "#" + Logging.HashString(obj), method, param);
         }
 
@@ -313,6 +337,7 @@ namespace System.Net
             {
                 return;
             }
+
             Enter(traceSource, GetObjectName(obj) + "#" + Logging.HashString(obj), method, paramObject);
         }
 
@@ -322,6 +347,7 @@ namespace System.Net
             {
                 return;
             }
+
             Enter(traceSource, obj + "::" + method + "(" + param + ")");
         }
 
@@ -331,11 +357,13 @@ namespace System.Net
             {
                 return;
             }
+
             string paramObjectValue = "";
             if (paramObject != null)
             {
                 paramObjectValue = GetObjectName(paramObject) + "#" + Logging.HashString(paramObject);
             }
+
             Enter(traceSource, obj + "::" + method + "(" + paramObjectValue + ")");
         }
 
@@ -345,6 +373,7 @@ namespace System.Net
             {
                 return;
             }
+
             Enter(traceSource, method + "(" + parameters + ")");
         }
 
@@ -364,11 +393,13 @@ namespace System.Net
             {
                 return;
             }
+
             string retValue = "";
             if (retObject != null)
             {
                 retValue = GetObjectName(retObject) + "#" + Logging.HashString(retObject);
             }
+
             Exit(traceSource, obj, method, retValue);
         }
 
@@ -378,11 +409,13 @@ namespace System.Net
             {
                 return;
             }
+
             string retValue = "";
             if (retObject != null)
             {
                 retValue = GetObjectName(retObject) + "#" + Logging.HashString(retObject);
             }
+
             Exit(traceSource, obj, method, retValue);
         }
 
@@ -392,6 +425,7 @@ namespace System.Net
             {
                 return;
             }
+
             Exit(traceSource, GetObjectName(obj) + "#" + Logging.HashString(obj), method, retValue);
         }
 
@@ -401,10 +435,12 @@ namespace System.Net
             {
                 return;
             }
+
             if (!string.IsNullOrEmpty(retValue))
             {
                 retValue = "\t-> " + retValue;
             }
+
             Exit(traceSource, obj + "::" + method + "() " + retValue);
         }
 
@@ -414,6 +450,7 @@ namespace System.Net
             {
                 return;
             }
+
             Exit(traceSource, method + "() " + parameters);
         }
 
@@ -423,6 +460,7 @@ namespace System.Net
             {
                 return;
             }
+
             PrintLine(traceSource, TraceEventType.Verbose, 0, "Exiting " + msg);
             // Trace.CorrelationManager.StopLogicalOperation();
         }
@@ -439,6 +477,7 @@ namespace System.Net
             {
                 infoLine += Environment.NewLine + e.StackTrace;
             }
+
             PrintLine(traceSource, TraceEventType.Error, 0, infoLine);
         }
 
@@ -448,6 +487,7 @@ namespace System.Net
             {
                 return;
             }
+
             PrintLine(traceSource, TraceEventType.Information, 0, msg);
         }
 
@@ -457,6 +497,7 @@ namespace System.Net
             {
                 return;
             }
+
             PrintLine(traceSource, TraceEventType.Information, 0,
                                    GetObjectName(obj) + "#" + Logging.HashString(obj)
                                    + " - " + msg);
@@ -468,6 +509,7 @@ namespace System.Net
             {
                 return;
             }
+
             PrintLine(traceSource, TraceEventType.Information, 0,
                                    GetObjectName(obj) + "#" + Logging.HashString(obj)
                                    + "::" + method + "(" + param + ")");
@@ -479,6 +521,7 @@ namespace System.Net
             {
                 return;
             }
+
             PrintLine(traceSource, TraceEventType.Warning, 0, msg);
         }
 
@@ -488,6 +531,7 @@ namespace System.Net
             {
                 return;
             }
+
             PrintLine(traceSource, TraceEventType.Warning, 0,
                                    GetObjectName(obj) + "#" + Logging.HashString(obj)
                                    + "::" + method + "() - " + msg);
@@ -499,6 +543,7 @@ namespace System.Net
             {
                 return;
             }
+
             PrintLine(traceSource, TraceEventType.Error, 0, msg);
         }
 
@@ -508,6 +553,7 @@ namespace System.Net
             {
                 return;
             }
+
             PrintLine(traceSource, TraceEventType.Error, 0,
                                    GetObjectName(obj) + "#" + Logging.HashString(obj)
                                    + "::" + method + "() - " + msg);
@@ -524,6 +570,7 @@ namespace System.Net
             {
                 return;
             }
+
             byte[] buffer = new byte[length];
             Marshal.Copy(bufferPtr, buffer, 0, length);
             Dump(traceSource, obj, method, buffer, 0, length);
@@ -535,16 +582,19 @@ namespace System.Net
             {
                 return;
             }
+
             if (buffer == null)
             {
                 PrintLine(traceSource, TraceEventType.Verbose, 0, "(null)");
                 return;
             }
+
             if (offset > buffer.Length)
             {
                 PrintLine(traceSource, TraceEventType.Verbose, 0, "(offset out of range)");
                 return;
             }
+
             PrintLine(traceSource, TraceEventType.Verbose, 0, "Data from " + GetObjectName(obj) + "#" + Logging.HashString(obj) + "::" + method);
             int maxDumpSize = GetMaxDumpSizeSetting(traceSource);
             if (length > maxDumpSize)
@@ -552,10 +602,12 @@ namespace System.Net
                 PrintLine(traceSource, TraceEventType.Verbose, 0, "(printing " + maxDumpSize.ToString(NumberFormatInfo.InvariantInfo) + " out of " + length.ToString(NumberFormatInfo.InvariantInfo) + ")");
                 length = maxDumpSize;
             }
+
             if ((length < 0) || (length > buffer.Length - offset))
             {
                 length = buffer.Length - offset;
             }
+
             do
             {
                 int n = Math.Min(length, 16);
@@ -564,10 +616,12 @@ namespace System.Net
                 {
                     disp += string.Format(CultureInfo.CurrentCulture, "{0:X2}", buffer[offset + i]) + ((i == 7) ? '-' : ' ');
                 }
+
                 for (int i = n; i < 16; ++i)
                 {
                     disp += "   ";
                 }
+
                 disp += ": ";
                 for (int i = 0; i < n; ++i)
                 {
@@ -575,6 +629,7 @@ namespace System.Net
                                 ? '.'
                                 : (char)(buffer[offset + i]);
                 }
+
                 PrintLine(traceSource, TraceEventType.Verbose, 0, disp);
                 offset += n;
                 length -= n;
@@ -626,10 +681,12 @@ namespace System.Net
             {
                 return string.Empty;
             }
+
             if (exception.InnerException == null)
             {
                 return exception.Message;
             }
+
             return exception.Message + " (" + ExceptionMessage(exception.InnerException) + ")";
         }
 
