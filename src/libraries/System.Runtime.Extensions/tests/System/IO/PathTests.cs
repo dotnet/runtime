@@ -472,6 +472,19 @@ public static class PathTests
     }
 
     [PlatformSpecific(PlatformID.Windows)]
+    [Theory]
+    [InlineData(@"C:\", @"C:\")]
+    [InlineData(@"C:\.", @"C:\")]
+    [InlineData(@"C:\..", @"C:\")]
+    [InlineData(@"C:\..\..", @"C:\")]
+    [InlineData(@"C:\A\..", @"C:\")]
+    [InlineData(@"C:\..\..\A\..", @"C:\")]
+    public static void GetFullPath_Windows_RelativeRoot(string path, string expected)
+    {
+        Assert.Equal(Path.GetFullPath(path), expected);
+    }
+
+    [PlatformSpecific(PlatformID.Windows)]
     [Fact]
     public static void GetFullPath_Windows_StrangeButLegalPaths()
     {

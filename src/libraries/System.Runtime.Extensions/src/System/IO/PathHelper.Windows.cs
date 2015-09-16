@@ -212,7 +212,7 @@ namespace System.IO
             else
             {
                 StringBuilder finalBuffer = new StringBuilder(m_capacity + 1);
-                int result = Interop.mincore.GetFullPathName(m_sb.ToString(), m_capacity + 1, finalBuffer, IntPtr.Zero);
+                int result = Interop.mincore.GetFullPathName(m_sb.ToString(), m_capacity + 1, finalBuffer);
 
                 // If success, the return buffer length does not account for the terminating null character.
                 // If in-sufficient buffer, the return buffer length does account for the path + the terminating null character.
@@ -220,7 +220,7 @@ namespace System.IO
                 if (result > m_maxPath)
                 {
                     finalBuffer.Length = result;
-                    result = Interop.mincore.GetFullPathName(m_sb.ToString(), result, finalBuffer, IntPtr.Zero);
+                    result = Interop.mincore.GetFullPathName(m_sb.ToString(), result, finalBuffer);
                 }
 
                 // Fullpath is genuinely long
