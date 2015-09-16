@@ -13,7 +13,7 @@ namespace Internal.Cryptography.Pal
 {
     internal class OpenSslX509Encoder : IX509Pal
     {
-        public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters)
+        public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters, ICertificatePal certificatePal)
         {
             switch (oid.Value)
             {

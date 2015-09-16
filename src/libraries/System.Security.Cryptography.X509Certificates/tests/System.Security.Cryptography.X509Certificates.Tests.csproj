@@ -33,6 +33,10 @@
       <Project>{81A05E2E-E3AE-4246-B4E6-DD5F31FB71F9}</Project>
       <Name>System.Security.Cryptography.Algorithms</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\System.Security.Cryptography.Cng\src\System.Security.Cryptography.Cng.csproj">
+      <Project>{4C1BD451-6A99-45E7-9339-79C77C42EE9E}</Project>
+      <Name>System.Security.Cryptography.Cng</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CertTests.cs" />

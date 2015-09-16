@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.IO;
 using Test.Cryptography;
 using Xunit;
 
@@ -124,6 +125,50 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(expectedModulus, rsaParameters.Modulus);
                 Assert.Equal(expectedExponent, rsaParameters.Exponent);
             }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public static void TestKey_ECDsaCng256()
+        {
+            TestKey_ECDsaCng(TestData.ECDsa256Certificate, TestData.ECDsaCng256PublicKey);
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public static void TestKey_ECDsaCng384()
+        {
+            TestKey_ECDsaCng(TestData.ECDsa384Certificate, TestData.ECDsaCng384PublicKey);
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public static void TestKey_ECDsaCng521()
+        {
+            TestKey_ECDsaCng(TestData.ECDsa521Certificate, TestData.ECDsaCng521PublicKey);
+        }
+
+        private static void TestKey_ECDsaCng(byte[] certBytes, TestData.ECDsaCngKeyValues expected)
+        {
+#if !NETNATIVE
+            using (X509Certificate2 cert = new X509Certificate2(certBytes))
+            {
+                ECDsaCng e = (ECDsaCng)(cert.GetECDsaPublicKey());
+                CngKey k = e.Key;
+                byte[] blob = k.Export(CngKeyBlobFormat.EccPublicBlob);
+                using (BinaryReader br = new BinaryReader(new MemoryStream(blob)))
+                {
+                    int magic = br.ReadInt32();
+                    int cbKey = br.ReadInt32();
+                    Assert.Equal(expected.QX.Length, cbKey);
+
+                    byte[] qx = br.ReadBytes(cbKey);
+                    byte[] qy = br.ReadBytes(cbKey);
+                    Assert.Equal<byte>(expected.QX, qx);
+                    Assert.Equal<byte>(expected.QY, qy);
+                }
+            }
+#endif //!NETNATIVE
         }
     }
 }
