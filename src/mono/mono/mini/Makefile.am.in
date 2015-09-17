@@ -649,12 +649,13 @@ checktests: $(regtests)
 rcheck: mono $(regtests)
 if NACL_CODEGEN
 	for i in $(regtests); do echo "running test $$i"; $(MINI_RUNTIME) $$i --exclude 'NaClDisable' || exit 1; done
-elif JENKINS_URL
+else
 	-($(MINI_RUNTIME) --regression $(regtests); echo $$? > regressionexitcode.out) | $(srcdir)/emitnunit.pl
 	exit $$(cat regressionexitcode.out)
-else
-	$(MINI_RUNTIME) --regression $(regtests)
 endif
+
+rcheck2: mono $(regtests)
+	$(MINI_RUNTIME) --regression $(regtests)
 
 check-seq-points: mono $(regtests)
 	rm -f TestResults_op_il_seq_point.xml
