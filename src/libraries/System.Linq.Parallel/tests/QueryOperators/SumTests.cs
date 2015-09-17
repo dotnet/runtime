@@ -1,13 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using Xunit;
 
-namespace Test
+namespace System.Linq.Parallel.Tests
 {
     public class SumTests
     {
@@ -59,8 +57,8 @@ namespace Test
         }
 
         [Theory]
-        [MemberData("SumData", (object)(new int[] { 2 }))]
-        public static void Sum_Int_Overflow(Labeled<ParallelQuery<int>> labeled, int count, int sum)
+        [MemberData("Ranges", (object)(new int[] { 2 }), MemberType = typeof(UnorderedSources))]
+        public static void Sum_Int_Overflow(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Functions.AssertThrowsWrapped<OverflowException>(() => labeled.Item.Select(x => x == 0 ? int.MaxValue : x).Sum());
             Functions.AssertThrowsWrapped<OverflowException>(() => labeled.Item.Select(x => x == 0 ? int.MaxValue : (int?)x).Sum());
@@ -108,8 +106,8 @@ namespace Test
         }
 
         [Theory]
-        [MemberData("SumData", (object)(new int[] { 2 }))]
-        public static void Sum_Long_Overflow(Labeled<ParallelQuery<int>> labeled, int count, int sum)
+        [MemberData("Ranges", (object)(new int[] { 2 }), MemberType = typeof(UnorderedSources))]
+        public static void Sum_Long_Overflow(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Functions.AssertThrowsWrapped<OverflowException>(() => labeled.Item.Select(x => x == 0 ? long.MaxValue : x).Sum());
             Functions.AssertThrowsWrapped<OverflowException>(() => labeled.Item.Select(x => x == 0 ? long.MaxValue : (long?)x).Sum());
@@ -139,13 +137,49 @@ namespace Test
         }
 
         [Theory]
-        [MemberData("SumData", (object)(new int[] { 2 }))]
-        public static void Sum_Float_Overflow(Labeled<ParallelQuery<int>> labeled, int count, int sum)
+        [MemberData("Ranges", (object)(new int[] { 2 }), MemberType = typeof(UnorderedSources))]
+        public static void Sum_Float_Overflow(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            Assert.True(float.IsInfinity(labeled.Item.Select(x => float.MaxValue).Sum()));
-            Assert.True(float.IsInfinity(labeled.Item.Select(x => (float?)float.MaxValue).Sum().Value));
-            Assert.True(float.IsInfinity(labeled.Item.Sum(x => float.MinValue)));
-            Assert.True(float.IsInfinity(labeled.Item.Sum(x => (float?)float.MaxValue).Value));
+            Assert.Equal(float.PositiveInfinity, labeled.Item.Select(x => float.MaxValue).Sum());
+            Assert.Equal(float.PositiveInfinity, labeled.Item.Select(x => (float?)float.MaxValue).Sum().Value);
+            Assert.Equal(float.PositiveInfinity, labeled.Item.Sum(x => float.MaxValue));
+            Assert.Equal(float.PositiveInfinity, labeled.Item.Sum(x => (float?)float.MaxValue).Value);
+            Assert.Equal(float.PositiveInfinity, labeled.Item.Select(x => float.PositiveInfinity).Sum());
+            Assert.Equal(float.PositiveInfinity, labeled.Item.Select(x => (float?)float.PositiveInfinity).Sum().Value);
+            Assert.Equal(float.PositiveInfinity, labeled.Item.Sum(x => float.PositiveInfinity));
+            Assert.Equal(float.PositiveInfinity, labeled.Item.Sum(x => (float?)float.PositiveInfinity).Value);
+
+            Assert.Equal(float.NegativeInfinity, labeled.Item.Select(x => float.MinValue).Sum());
+            Assert.Equal(float.NegativeInfinity, labeled.Item.Select(x => (float?)float.MinValue).Sum().Value);
+            Assert.Equal(float.NegativeInfinity, labeled.Item.Sum(x => float.MinValue));
+            Assert.Equal(float.NegativeInfinity, labeled.Item.Sum(x => (float?)float.MinValue).Value);
+            Assert.Equal(float.NegativeInfinity, labeled.Item.Select(x => float.NegativeInfinity).Sum());
+            Assert.Equal(float.NegativeInfinity, labeled.Item.Select(x => (float?)float.NegativeInfinity).Sum().Value);
+            Assert.Equal(float.NegativeInfinity, labeled.Item.Sum(x => float.NegativeInfinity));
+            Assert.Equal(float.NegativeInfinity, labeled.Item.Sum(x => (float?)float.NegativeInfinity).Value);
+        }
+
+        [Theory]
+        [MemberData("Ranges", (object)(new int[] { 2 }), MemberType = typeof(UnorderedSources))]
+        public static void Sum_Float_NaN(Labeled<ParallelQuery<int>> labeled, int count)
+        {
+            Assert.Equal(float.NaN, labeled.Item.Select(x => x == 0 ? float.NaN : x).Sum());
+            Assert.Equal(float.NaN, labeled.Item.Select(x => (float?)(x == 0 ? float.NaN : x)).Sum().Value);
+            Assert.Equal(float.NaN, labeled.Item.Sum(x => x == 0 ? float.NaN : x));
+            Assert.Equal(float.NaN, labeled.Item.Sum(x => (float?)(x == 0 ? float.NaN : x)).Value);
+            Assert.Equal(float.NaN, labeled.Item.Select(x => x == 0 ? float.NaN : x).Sum());
+            Assert.Equal(float.NaN, labeled.Item.Select(x => (float?)(x == 0 ? float.NaN : x)).Sum().Value);
+            Assert.Equal(float.NaN, labeled.Item.Sum(x => x == 0 ? float.NaN : x));
+            Assert.Equal(float.NaN, labeled.Item.Sum(x => (float?)(x == 0 ? float.NaN : x)).Value);
+
+            Assert.Equal(float.NaN, labeled.Item.Select(x => x == 0 ? float.NaN : -x).Sum());
+            Assert.Equal(float.NaN, labeled.Item.Select(x => (float?)(x == 0 ? float.NaN : x)).Sum().Value);
+            Assert.Equal(float.NaN, labeled.Item.Sum(x => x == 0 ? float.NaN : -x));
+            Assert.Equal(float.NaN, labeled.Item.Sum(x => (float?)(x == 0 ? float.NaN : -x)).Value);
+            Assert.Equal(float.NaN, labeled.Item.Select(x => x == 0 ? float.NaN : x).Sum());
+            Assert.Equal(float.NaN, labeled.Item.Select(x => (float?)(x == 0 ? float.NaN : x)).Sum().Value);
+            Assert.Equal(float.NaN, labeled.Item.Sum(x => x == 0 ? float.NaN : x));
+            Assert.Equal(float.NaN, labeled.Item.Sum(x => (float?)(x == 0 ? float.NaN : x)).Value);
         }
 
         [Theory]
@@ -188,13 +222,49 @@ namespace Test
         }
 
         [Theory]
-        [MemberData("SumData", (object)(new int[] { 2 }))]
-        public static void Sum_Double_Overflow(Labeled<ParallelQuery<int>> labeled, int count, int sum)
+        [MemberData("Ranges", (object)(new int[] { 2 }), MemberType = typeof(UnorderedSources))]
+        public static void Sum_Double_Overflow(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            Assert.True(double.IsInfinity(labeled.Item.Select(x => double.MaxValue).Sum()));
-            Assert.True(double.IsInfinity(labeled.Item.Select(x => (double?)double.MaxValue).Sum().Value));
-            Assert.True(double.IsInfinity(labeled.Item.Sum(x => double.MinValue)));
-            Assert.True(double.IsInfinity(labeled.Item.Sum(x => (double?)double.MaxValue).Value));
+            Assert.Equal(double.PositiveInfinity, labeled.Item.Select(x => double.MaxValue).Sum());
+            Assert.Equal(double.PositiveInfinity, labeled.Item.Select(x => (double?)double.MaxValue).Sum().Value);
+            Assert.Equal(double.PositiveInfinity, labeled.Item.Sum(x => double.MaxValue));
+            Assert.Equal(double.PositiveInfinity, labeled.Item.Sum(x => (double?)double.MaxValue).Value);
+            Assert.Equal(double.PositiveInfinity, labeled.Item.Select(x => double.PositiveInfinity).Sum());
+            Assert.Equal(double.PositiveInfinity, labeled.Item.Select(x => (double?)double.PositiveInfinity).Sum().Value);
+            Assert.Equal(double.PositiveInfinity, labeled.Item.Sum(x => double.PositiveInfinity));
+            Assert.Equal(double.PositiveInfinity, labeled.Item.Sum(x => (double?)double.PositiveInfinity).Value);
+
+            Assert.Equal(double.NegativeInfinity, labeled.Item.Select(x => double.MinValue).Sum());
+            Assert.Equal(double.NegativeInfinity, labeled.Item.Select(x => (double?)double.MinValue).Sum().Value);
+            Assert.Equal(double.NegativeInfinity, labeled.Item.Sum(x => double.MinValue));
+            Assert.Equal(double.NegativeInfinity, labeled.Item.Sum(x => (double?)double.MinValue).Value);
+            Assert.Equal(double.NegativeInfinity, labeled.Item.Select(x => double.NegativeInfinity).Sum());
+            Assert.Equal(double.NegativeInfinity, labeled.Item.Select(x => (double?)double.NegativeInfinity).Sum().Value);
+            Assert.Equal(double.NegativeInfinity, labeled.Item.Sum(x => double.NegativeInfinity));
+            Assert.Equal(double.NegativeInfinity, labeled.Item.Sum(x => (double?)double.NegativeInfinity).Value);
+        }
+
+        [Theory]
+        [MemberData("Ranges", (object)(new int[] { 2 }), MemberType = typeof(UnorderedSources))]
+        public static void Sum_Double_NaN(Labeled<ParallelQuery<int>> labeled, int count)
+        {
+            Assert.Equal(double.NaN, labeled.Item.Select(x => x == 0 ? double.NaN : x).Sum());
+            Assert.Equal(double.NaN, labeled.Item.Select(x => (double?)(x == 0 ? double.NaN : x)).Sum().Value);
+            Assert.Equal(double.NaN, labeled.Item.Sum(x => x == 0 ? double.NaN : x));
+            Assert.Equal(double.NaN, labeled.Item.Sum(x => (double?)(x == 0 ? double.NaN : x)).Value);
+            Assert.Equal(double.NaN, labeled.Item.Select(x => x == 0 ? double.NaN : x).Sum());
+            Assert.Equal(double.NaN, labeled.Item.Select(x => (double?)(x == 0 ? double.NaN : x)).Sum().Value);
+            Assert.Equal(double.NaN, labeled.Item.Sum(x => x == 0 ? double.NaN : x));
+            Assert.Equal(double.NaN, labeled.Item.Sum(x => (double?)(x == 0 ? double.NaN : x)).Value);
+
+            Assert.Equal(double.NaN, labeled.Item.Select(x => x == 0 ? double.NaN : -x).Sum());
+            Assert.Equal(double.NaN, labeled.Item.Select(x => (double?)(x == 0 ? double.NaN : x)).Sum().Value);
+            Assert.Equal(double.NaN, labeled.Item.Sum(x => x == 0 ? double.NaN : -x));
+            Assert.Equal(double.NaN, labeled.Item.Sum(x => (double?)(x == 0 ? double.NaN : -x)).Value);
+            Assert.Equal(double.NaN, labeled.Item.Select(x => x == 0 ? double.NaN : x).Sum());
+            Assert.Equal(double.NaN, labeled.Item.Select(x => (double?)(x == 0 ? double.NaN : x)).Sum().Value);
+            Assert.Equal(double.NaN, labeled.Item.Sum(x => x == 0 ? double.NaN : x));
+            Assert.Equal(double.NaN, labeled.Item.Sum(x => (double?)(x == 0 ? double.NaN : x)).Value);
         }
 
         [Theory]
@@ -236,8 +306,8 @@ namespace Test
         }
 
         [Theory]
-        [MemberData("SumData", (object)(new int[] { 2 }))]
-        public static void Sum_Decimal_Overflow(Labeled<ParallelQuery<int>> labeled, int count, int sum)
+        [MemberData("Ranges", (object)(new int[] { 2 }), MemberType = typeof(UnorderedSources))]
+        public static void Sum_Decimal_Overflow(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Functions.AssertThrowsWrapped<OverflowException>(() => labeled.Item.Select(x => x == 0 ? decimal.MaxValue : x).Sum());
             Functions.AssertThrowsWrapped<OverflowException>(() => labeled.Item.Select(x => x == 0 ? decimal.MaxValue : (decimal?)x).Sum());

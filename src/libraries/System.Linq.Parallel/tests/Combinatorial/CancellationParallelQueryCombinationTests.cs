@@ -1,14 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Linq;
 using System.Threading;
 using Xunit;
 
-namespace Test
+namespace System.Linq.Parallel.Tests
 {
-    [Trait("category", "outerloop")]
     public partial class ParallelQueryCombinationTests
     {
         [Theory]
@@ -186,6 +183,99 @@ namespace Test
             cs.Cancel();
 
             Functions.AssertIsCanceled(cs, () => operation.Item(DefaultStart, DefaultSize, source.Append(WithCancellation(cs.Token)).Item).Min());
+        }
+
+        [Theory]
+        [MemberData("UnaryOperators")]
+        [MemberData("BinaryOperators")]
+        public static void SequenceEqual_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
+        {
+            CancellationTokenSource cs = new CancellationTokenSource();
+            cs.Cancel();
+
+            Functions.AssertIsCanceled(cs, () => operation.Item(DefaultStart, DefaultSize, source.Append(WithCancellation(cs.Token)).Item).SequenceEqual(ParallelEnumerable.Range(0, 2)));
+            Functions.AssertIsCanceled(cs, () => ParallelEnumerable.Range(0, 2).SequenceEqual(operation.Item(DefaultStart, DefaultSize, source.Append(WithCancellation(cs.Token)).Item)));
+        }
+
+        [Theory]
+        [MemberData("UnaryOperators")]
+        [MemberData("BinaryOperators")]
+        public static void Single_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
+        {
+            CancellationTokenSource cs = new CancellationTokenSource();
+            cs.Cancel();
+
+            Functions.AssertIsCanceled(cs, () => operation.Item(DefaultStart, DefaultSize, source.Append(WithCancellation(cs.Token)).Item).Single());
+            Functions.AssertIsCanceled(cs, () => operation.Item(DefaultStart, DefaultSize, source.Append(WithCancellation(cs.Token)).Item).Single(x => false));
+        }
+
+        [Theory]
+        [MemberData("UnaryOperators")]
+        [MemberData("BinaryOperators")]
+        public static void SingleOrDefault_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
+        {
+            CancellationTokenSource cs = new CancellationTokenSource();
+            cs.Cancel();
+
+            Functions.AssertIsCanceled(cs, () => operation.Item(DefaultStart, DefaultSize, source.Append(WithCancellation(cs.Token)).Item).SingleOrDefault());
+            Functions.AssertIsCanceled(cs, () => operation.Item(DefaultStart, DefaultSize, source.Append(WithCancellation(cs.Token)).Item).SingleOrDefault(x => false));
+        }
+
+        [Theory]
+        [MemberData("UnaryOperators")]
+        [MemberData("BinaryOperators")]
+        public static void Sum_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
+        {
+            CancellationTokenSource cs = new CancellationTokenSource();
+            cs.Cancel();
+
+            Functions.AssertIsCanceled(cs, () => operation.Item(DefaultStart, DefaultSize, source.Append(WithCancellation(cs.Token)).Item).Sum());
+        }
+
+        [Theory]
+        [MemberData("UnaryOperators")]
+        [MemberData("BinaryOperators")]
+        public static void ToArray_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
+        {
+            CancellationTokenSource cs = new CancellationTokenSource();
+            cs.Cancel();
+
+            Functions.AssertIsCanceled(cs, () => operation.Item(DefaultStart, DefaultSize, source.Append(WithCancellation(cs.Token)).Item).ToArray());
+        }
+
+        [Theory]
+        [MemberData("UnaryOperators")]
+        [MemberData("BinaryOperators")]
+        public static void ToDictionary_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
+        {
+            CancellationTokenSource cs = new CancellationTokenSource();
+            cs.Cancel();
+
+            Functions.AssertIsCanceled(cs, () => operation.Item(DefaultStart, DefaultSize, source.Append(WithCancellation(cs.Token)).Item).ToDictionary(x => x));
+            Functions.AssertIsCanceled(cs, () => operation.Item(DefaultStart, DefaultSize, source.Append(WithCancellation(cs.Token)).Item).ToDictionary(x => x, y => y));
+        }
+
+        [Theory]
+        [MemberData("UnaryOperators")]
+        [MemberData("BinaryOperators")]
+        public static void ToList_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
+        {
+            CancellationTokenSource cs = new CancellationTokenSource();
+            cs.Cancel();
+
+            Functions.AssertIsCanceled(cs, () => operation.Item(DefaultStart, DefaultSize, source.Append(WithCancellation(cs.Token)).Item).ToList());
+        }
+
+        [Theory]
+        [MemberData("UnaryOperators")]
+        [MemberData("BinaryOperators")]
+        public static void ToLookup_OperationCanceledException_PreCanceled(LabeledOperation source, LabeledOperation operation)
+        {
+            CancellationTokenSource cs = new CancellationTokenSource();
+            cs.Cancel();
+
+            Functions.AssertIsCanceled(cs, () => operation.Item(DefaultStart, DefaultSize, source.Append(WithCancellation(cs.Token)).Item).ToLookup(x => x));
+            Functions.AssertIsCanceled(cs, () => operation.Item(DefaultStart, DefaultSize, source.Append(WithCancellation(cs.Token)).Item).ToLookup(x => x, y => y));
         }
     }
 }

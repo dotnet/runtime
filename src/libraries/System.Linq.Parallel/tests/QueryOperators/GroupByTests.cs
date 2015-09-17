@@ -1,12 +1,10 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using Xunit;
 
-namespace Test
+namespace System.Linq.Parallel.Tests
 {
     public class GroupByTests
     {
@@ -146,7 +144,7 @@ namespace Test
         [MemberData("Ranges", (object)(new int[] { 1024, 1024 * 16 }), MemberType = typeof(UnorderedSources))]
         public static void GroupBy_Unordered_CustomComparator_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            GroupBy_Unordered(labeled, count);
+            GroupBy_Unordered_CustomComparator(labeled, count);
         }
 
         [Theory]
@@ -176,7 +174,7 @@ namespace Test
         [MemberData("Ranges", (object)(new int[] { 1024, 1024 * 16 }), MemberType = typeof(Sources))]
         public static void GroupBy_CustomComparator_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            GroupBy(labeled, count);
+            GroupBy_CustomComparator(labeled, count);
         }
 
         [Theory]

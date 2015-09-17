@@ -1,14 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using Xunit;
 
-namespace Test
+namespace System.Linq.Parallel.Tests
 {
     public class ExchangeTests
     {
@@ -65,6 +63,21 @@ namespace Test
                 foreach (ParallelMergeOptions option in Options)
                 {
                     yield return new object[] { labeled, count, option };
+                }
+            }
+        }
+
+        /// <summary>
+        /// Return merge option combinations, for testing multiple calls to WithMergeOptions
+        /// </summary>
+        /// <returns>Entries for test data.</returns>
+        public static IEnumerable<object[]> AllMergeOptions_Multiple()
+        {
+            foreach (ParallelMergeOptions first in Options)
+            {
+                foreach (ParallelMergeOptions second in Options)
+                {
+                    yield return new object[] { first, second };
                 }
             }
         }
@@ -161,6 +174,13 @@ namespace Test
             ParallelQuery<int> query = labeled.Item;
 
             Assert.Throws<ArgumentException>(() => query.WithMergeOptions((ParallelMergeOptions)4));
+        }
+
+        [Theory]
+        [MemberData("AllMergeOptions_Multiple")]
+        public static void WithMergeOptions_Multiple(ParallelMergeOptions first, ParallelMergeOptions second)
+        {
+            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Range(0, 1).WithMergeOptions(first).WithMergeOptions(second));
         }
 
         [Fact]

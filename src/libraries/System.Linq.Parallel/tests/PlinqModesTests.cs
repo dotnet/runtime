@@ -1,14 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Test
+namespace System.Linq.Parallel.Tests
 {
     public static class PlinqModesTests
     {
@@ -67,23 +65,23 @@ namespace Test
         }
 
         /// <summary>
-        /// Get a a combination of partitioned data sources, degree of parallelism, expected resulting dop, 
+        /// Get a a combination of partitioned data sources, degree of parallelism, expected resulting dop,
         /// query to execute on the data source, and mode of execution.
         /// </summary>
         /// <param name="dop">A set of the desired degrees of parallelism to be employed.</param>
         /// <returns>Entries for test data.
         /// The first element is the Labeled{ParallelQuery{int}} data source,
-        /// the second is the desired dop, 
+        /// the second is the desired dop,
         /// the third is the expected resulting dop,
-        /// the fourth is the query to execute on the data source, 
+        /// the fourth is the query to execute on the data source,
         /// and the fifth is the execution mode.</returns>
         public static IEnumerable<object[]> WithExecutionModeQueryData(int[] dops)
         {
             foreach (int dop in dops)
             {
                 // Use data sources that have a fixed set of elements in each partition (no load balancing between the partitions).
-                // PLINQ will assign a Task to each partition, and no other task will process that partition. As a result, we can 
-                // verify that we get a known number of tasks doing the processing. (This doesn't guarantee that such tasks are 
+                // PLINQ will assign a Task to each partition, and no other task will process that partition. As a result, we can
+                // verify that we get a known number of tasks doing the processing. (This doesn't guarantee that such tasks are
                 // running in parallel, but it's "good enough".  If PLINQ's implementation is ever changed to proactively exit
                 // tasks and spawn replicas to continue the processing, ala Parallel.For*, this test will need to be updated.)
                 int count = 3 * dop; // 3 chosen arbitrarily as a small value; any positive value will do
@@ -118,13 +116,31 @@ namespace Test
             }
         }
 
+        /// <summary>
+        /// Return execution mode combinations, for testing multiple calls to WithExecutionMode
+        /// </summary>
+        /// <returns>Entries for test data.
+        /// Both entries are a ParallelExecutionMode in a Cartesian join.</returns>
+        public static IEnumerable<object[]> AllExecutionModes_Multiple()
+        {
+            ParallelExecutionMode[] modes = new[] { ParallelExecutionMode.Default, ParallelExecutionMode.ForceParallelism };
+
+            foreach (ParallelMergeOptions first in modes)
+            {
+                foreach (ParallelMergeOptions second in modes)
+                {
+                    yield return new object[] { first, second };
+                }
+            }
+        }
+
         // Check that some queries run in parallel by default, and some require forcing.
         [Theory]
         [MemberData("WithExecutionModeQueryData", new int[] { 1, 4 })] // DOP of 1 to verify sequential and 4 to verify parallel
         public static void WithExecutionMode(
-            Labeled<ParallelQuery<int>> labeled, 
+            Labeled<ParallelQuery<int>> labeled,
             int requestedDop, int expectedDop,
-            Labeled<Action<UsedTaskTracker, ParallelQuery<int>>> operation, 
+            Labeled<Action<UsedTaskTracker, ParallelQuery<int>>> operation,
             ParallelExecutionMode mode)
         {
             UsedTaskTracker tracker = new UsedTaskTracker();
@@ -138,6 +154,13 @@ namespace Test
         {
             ParallelQuery<int> query = labeled.Item;
             Assert.Throws<ArgumentException>(() => query.WithExecutionMode((ParallelExecutionMode)2));
+        }
+
+        [Theory]
+        [MemberData("AllExecutionModes_Multiple")]
+        public static void WithExecutionMode_Multiple(ParallelExecutionMode first, ParallelExecutionMode second)
+        {
+            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Range(0, 1).WithExecutionMode(first).WithExecutionMode(second));
         }
 
         [Fact]
