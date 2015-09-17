@@ -264,13 +264,19 @@ ves_icall_System_Math_Pow (gdouble x, gdouble y)
 		result = PInfinity.d;
 
 #if defined (__linux__) && SIZEOF_VOID_P == 4
-	/* On Linux 32bits, Math.Pow (-1, Double.MaxValue) would return NaN instead of 1 */
-	if (isnan (result) && isminusone (x) && (y > 9007199254740991.0 || y < -9007199254740991.0))
-		result = POne.d;
-
-	/* On Linux 32bits, Math.Pow (Double.MinValue, Double.MinValue) would return NaN instead of 0 */
-	if (isnan (result) && x < -9007199254740991.0 && y < -9007199254740991.0)
-		result = 0.0;
+	/* On Linux 32bits, some tests erroneously return NaN */
+	if (isnan (result)) {
+		if (isminusone (x) && (y > 9007199254740991.0 || y < -9007199254740991.0)) {
+			/* Math.Pow (-1, Double.MaxValue) and Math.Pow (-1, Double.MinValue) should return 1 */
+			result = POne.d;
+		} else if (x < -9007199254740991.0 && y < -9007199254740991.0) {
+			/* Math.Pow (Double.MinValue, Double.MinValue) should return 0 */
+			result = 0.0;
+		} else if (x < -9007199254740991.0 && y > 9007199254740991.0) {
+			/* Math.Pow (Double.MinValue, Double.MaxValue) should return Double.PositiveInfinity */
+			result = PInfinity.d;
+		}
+	}
 #endif
 
 	return result == -0.0 ? 0 : result;
