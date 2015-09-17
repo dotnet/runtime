@@ -131,6 +131,24 @@ namespace System.Linq.Expressions
 
     #region Specialized Subclasses
 
+    internal class InstanceMethodCallExpression : MethodCallExpression, IArgumentProvider
+    {
+        private readonly Expression _instance;
+
+        public InstanceMethodCallExpression(MethodInfo method, Expression instance)
+            : base(method)
+        {
+            Debug.Assert(instance != null);
+
+            _instance = instance;
+        }
+
+        internal override Expression GetInstance()
+        {
+            return _instance;
+        }
+    }
+
     internal class MethodCallExpressionN : MethodCallExpression, IArgumentProvider
     {
         private IList<Expression> _arguments;
@@ -168,15 +186,13 @@ namespace System.Linq.Expressions
         }
     }
 
-    internal class InstanceMethodCallExpressionN : MethodCallExpression, IArgumentProvider
+    internal class InstanceMethodCallExpressionN : InstanceMethodCallExpression, IArgumentProvider
     {
         private IList<Expression> _arguments;
-        private readonly Expression _instance;
 
         public InstanceMethodCallExpressionN(MethodInfo method, Expression instance, IList<Expression> args)
-            : base(method)
+            : base(method, instance)
         {
-            _instance = instance;
             _arguments = args;
         }
 
@@ -191,11 +207,6 @@ namespace System.Linq.Expressions
             {
                 return _arguments.Count;
             }
-        }
-
-        internal override Expression GetInstance()
-        {
-            return _instance;
         }
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
@@ -497,16 +508,11 @@ namespace System.Linq.Expressions
         }
     }
 
-    internal class InstanceMethodCallExpression0 : MethodCallExpression, IArgumentProvider
+    internal class InstanceMethodCallExpression0 : InstanceMethodCallExpression, IArgumentProvider
     {
-        private readonly Expression _instance;
-
         public InstanceMethodCallExpression0(MethodInfo method, Expression instance)
-            : base(method)
+            : base(method, instance)
         {
-            Debug.Assert(instance != null);
-
-            _instance = instance;
         }
 
         public override Expression GetArgument(int index)
@@ -520,11 +526,6 @@ namespace System.Linq.Expressions
             {
                 return 0;
             }
-        }
-
-        internal override Expression GetInstance()
-        {
-            return _instance;
         }
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
@@ -541,17 +542,13 @@ namespace System.Linq.Expressions
         }
     }
 
-    internal class InstanceMethodCallExpression1 : MethodCallExpression, IArgumentProvider
+    internal class InstanceMethodCallExpression1 : InstanceMethodCallExpression, IArgumentProvider
     {
-        private readonly Expression _instance;
         private object _arg0;                // storage for the 1st argument or a readonly collection.  See IArgumentProvider
 
         public InstanceMethodCallExpression1(MethodInfo method, Expression instance, Expression arg0)
-            : base(method)
+            : base(method, instance)
         {
-            Debug.Assert(instance != null);
-
-            _instance = instance;
             _arg0 = arg0;
         }
 
@@ -572,11 +569,6 @@ namespace System.Linq.Expressions
             }
         }
 
-        internal override Expression GetInstance()
-        {
-            return _instance;
-        }
-
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
             return ReturnReadOnly(this, ref _arg0);
@@ -595,18 +587,14 @@ namespace System.Linq.Expressions
         }
     }
 
-    internal class InstanceMethodCallExpression2 : MethodCallExpression, IArgumentProvider
+    internal class InstanceMethodCallExpression2 : InstanceMethodCallExpression, IArgumentProvider
     {
-        private readonly Expression _instance;
         private object _arg0;                // storage for the 1st argument or a readonly collection.  See IArgumentProvider
         private readonly Expression _arg1;   // storage for the 2nd argument
 
         public InstanceMethodCallExpression2(MethodInfo method, Expression instance, Expression arg0, Expression arg1)
-            : base(method)
+            : base(method, instance)
         {
-            Debug.Assert(instance != null);
-
-            _instance = instance;
             _arg0 = arg0;
             _arg1 = arg1;
         }
@@ -629,11 +617,6 @@ namespace System.Linq.Expressions
             }
         }
 
-        internal override Expression GetInstance()
-        {
-            return _instance;
-        }
-
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
             return ReturnReadOnly(this, ref _arg0);
@@ -652,18 +635,14 @@ namespace System.Linq.Expressions
         }
     }
 
-    internal class InstanceMethodCallExpression3 : MethodCallExpression, IArgumentProvider
+    internal class InstanceMethodCallExpression3 : InstanceMethodCallExpression, IArgumentProvider
     {
-        private readonly Expression _instance;
         private object _arg0;                       // storage for the 1st argument or a readonly collection.  See IArgumentProvider
         private readonly Expression _arg1, _arg2;   // storage for the 2nd - 3rd argument
 
         public InstanceMethodCallExpression3(MethodInfo method, Expression instance, Expression arg0, Expression arg1, Expression arg2)
-            : base(method)
+            : base(method, instance)
         {
-            Debug.Assert(instance != null);
-
-            _instance = instance;
             _arg0 = arg0;
             _arg1 = arg1;
             _arg2 = arg2;
@@ -686,11 +665,6 @@ namespace System.Linq.Expressions
             {
                 return 3;
             }
-        }
-
-        internal override Expression GetInstance()
-        {
-            return _instance;
         }
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
