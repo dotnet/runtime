@@ -2,7 +2,7 @@ project(System.Net.Http.Native)
 
 find_library(CURL NAMES curl)
 if(CURL STREQUAL CURL-NOTFOUND)
-    message(WARNING "Cannot find libcurl, skipping build for System.Net.Http.Native. .NET HttpClient is not expected to function. Try installing libcurl4-dev (or the appropriate package for your platform)")
+    message(SEND_ERROR "!!! Cannot find libcurl and System.Net.Http.Native cannot build without it. Try installing libcurl4-openssl-dev (or the appropriate package for your platform) !!!")
     return()
 endif()
 
