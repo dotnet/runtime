@@ -1890,18 +1890,11 @@ NOINLINE LPVOID COMPlusEndCatchWorker(Thread * pThread)
 
     pExInfo->UnwindExInfo(esp);
     
-    // This will set the last thrown to be either null if we have handled all the exceptions in the nested chain or
-    // to whatever the current exception is.
+    // Prepare to sync managed exception state
     //
     // In a case when we're nested inside another catch block, the domain in which we're executing may not be the
     // same as the one the domain of the throwable that was just made the current throwable above. Therefore, we
     // make a special effort to preserve the domain of the throwable as we update the the last thrown object.
-    pThread->SafeUpdateLastThrownObject();
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    // Since the catch clause has successfully executed and we are exiting it, reset the corruption severity
-    // in the ThreadExceptionState for the last active exception. This will ensure that when the next exception
-    // gets thrown/raised, EH tracker wont pick up an invalid value.
     //
     // This function (COMPlusEndCatch) can also be called by the in-proc debugger helper thread on x86 when
     // an attempt to SetIP takes place to set IP outside the catch clause. In such a case, managed thread object
@@ -1910,13 +1903,10 @@ NOINLINE LPVOID COMPlusEndCatchWorker(Thread * pThread)
     // This behaviour (of debugger doing SetIP) is not allowed on 64bit since the catch clauses are implemented
     // as a seperate funclet and it's just not allowed to set the IP across EH scopes, such as from inside a catch 
     // clause to outside of the catch clause.
-
     bool fIsDebuggerHelperThread = (g_pDebugInterface == NULL) ? false : g_pDebugInterface->ThisIsHelperThread();
-    if (fIsDebuggerHelperThread == false)
-    {
-        CEHelper::ResetLastActiveCorruptionSeverityPostCatchHandler();
-    }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
+
+    // Sync managed exception state, for the managed thread, based upon any active exception tracker
+    pThread->SyncManagedExceptionState(fIsDebuggerHelperThread);
 
     LOG((LF_EH, LL_INFO1000, "COMPlusPEndCatch: esp=%p\n", esp));
    
@@ -2241,7 +2231,8 @@ int COMPlusThrowCallbackHelper(IJitManager *pJitManager,
                                ThrowCallbackType* pData,
                                EE_ILEXCEPTION_CLAUSE  *EHClausePtr,
                                DWORD nestingLevel,
-                               OBJECTREF throwable
+                               OBJECTREF throwable,
+                               Thread *pThread
                               )
 {
     CONTRACTL
@@ -2292,6 +2283,10 @@ int COMPlusThrowCallbackHelper(IJitManager *pJitManager,
             impersonating = FALSE;
         }
 
+        // We had an exception in filter invocation that remained unhandled.
+        // Sync managed exception state, for the managed thread, based upon the active exception tracker.
+        pThread->SyncManagedExceptionState(false);
+        
         //
         // Swallow exception.  Treat as exception continue search.
         //
@@ -2702,7 +2697,8 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
                                                    pData,
                                                    &EHClause,
                                                    nestingLevel,
-                                                   throwable);
+                                                   throwable,
+                                                   pThread);
 
             pExInfo->m_EHClauseInfo.SetManagedCodeEntered(FALSE);
 
