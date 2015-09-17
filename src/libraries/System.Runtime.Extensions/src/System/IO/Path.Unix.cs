@@ -17,9 +17,9 @@ namespace System.IO
 
         private static readonly char[] InvalidFileNameChars = { '\0', '/' };
 
-        private static readonly int MaxPath = Interop.libc.MaxPath;
+        private static readonly int MaxPath = Interop.Sys.MaxPath;
         private static readonly int MaxLongPath = MaxPath;
-        private static readonly int MaxComponentLength = Interop.libc.MaxName;
+        private static readonly int MaxComponentLength = Interop.Sys.MaxName;
 
         private static bool IsDirectoryOrVolumeSeparator(char c)
         {
@@ -51,7 +51,7 @@ namespace System.IO
                 // Expand with current directory if necessary
                 if (!IsPathRooted(path))
                 {
-                    path = Combine(Interop.libc.getcwd(), path);
+                    path = Combine(Interop.Sys.GetCwd(), path);
                 }
             }
 

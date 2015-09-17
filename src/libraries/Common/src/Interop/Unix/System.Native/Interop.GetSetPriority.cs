@@ -7,20 +7,20 @@ using System.Reflection;
 
 internal static partial class Interop
 {
-    internal static partial class libc
+    internal static partial class Sys
     {
-        /// <summary>
-        /// Gets the priority (nice value) of a certain execution group
-        /// </summary>
-        /// <param name="which">The execution group to retrieve the nice value for</param>
-        /// <param name="who">The id of the group</param>
-        /// <returns>
-        /// Returns the nice value (from -20 to 20) of the group on success; on failure,
-        /// returns -1. To actually determine success or failure, clear errno before calling 
-        /// (which should be done automatically by the runtime) and check errno after the call.
-        /// </returns>
-        [DllImport(Libraries.Libc, SetLastError = true)]
-        private static extern int getpriority(PriorityWhich which, int who);
+        internal enum PriorityWhich : int
+        {
+            PRIO_PROCESS    = 0,
+            PRIO_PGRP       = 1,
+            PRIO_USER       = 2,
+        }
+
+        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        private static extern int GetPriority(PriorityWhich which, int who);
+
+        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        internal static extern int SetPriority(PriorityWhich which, int who, int nice);
 
         /// <summary>
         /// Wrapper around getpriority since getpriority can return from -20 to 20; therefore,
@@ -28,25 +28,12 @@ internal static partial class Interop
         /// getpriority call to act more naturally where the return value is the actual error
         /// value (or 0 if success) instead of forcing the caller to retrieve the last error.
         /// </summary>
-        /// <param name="which"></param>
-        /// <param name="who"></param>
-        /// <param name="priority"></param>
-        /// <returns></returns>
-        internal static int getpriority(PriorityWhich which, int who, out int priority)
+        /// <returns>Returns 0 on success; otherwise, returns the errno value</returns>
+        internal static int GetPriority(PriorityWhich which, int who, out int priority)
         {
-            priority = getpriority(which, who);
+            priority = GetPriority(which, who);
             return Marshal.GetLastWin32Error();
         }
-
-        /// <summary>
-        /// Sets the priority (nice value) of the specified execution group.
-        /// </summary>
-        /// <param name="which">The execution group to change the priority of</param>
-        /// <param name="who">The ID of the group</param>
-        /// <param name="prio">The new priority</param>
-        /// <returns>Returns 0 on success, -1 on failure</returns>
-        [DllImport(Libraries.Libc, SetLastError = true)]
-        internal static extern int setpriority(PriorityWhich which, int who, int prio);
 
         internal static System.Diagnostics.ThreadPriorityLevel GetThreadPriorityFromNiceValue(int nice)
         {
