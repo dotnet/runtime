@@ -15,6 +15,11 @@ namespace Microsoft.Win32.SafeHandles
 }
 namespace System.Security.Cryptography.X509Certificates
 {
+    public static partial class ECDsaCertificateExtensions
+    {
+        public static System.Security.Cryptography.ECDsa GetECDsaPrivateKey(this System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { return default(System.Security.Cryptography.ECDsa); }
+        public static System.Security.Cryptography.ECDsa GetECDsaPublicKey(this System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { return default(System.Security.Cryptography.ECDsa); }
+    }
     [System.FlagsAttribute]
     public enum OpenFlags
     {
