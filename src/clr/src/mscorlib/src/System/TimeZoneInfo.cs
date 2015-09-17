@@ -2307,8 +2307,12 @@ namespace System {
                     rawData = File.ReadAllBytes(tzFilePath);
                     if (string.IsNullOrEmpty(id))
                     {
-                        // UNIXTODO: optimzation - see if tzFilePath is a symlink, and use 'readlink' to get the id 
-                        id = FindTimeZoneId(rawData);
+                        id = FindTimeZoneIdUsingReadLink(tzFilePath);
+
+                        if (string.IsNullOrEmpty(id))
+                        {
+                            id = FindTimeZoneId(rawData);
+                        }
                     }
                     return true;
                 }
@@ -2317,6 +2321,34 @@ namespace System {
                 catch (UnauthorizedAccessException) { }
             }
             return false;
+        }
+
+        /// <summary>
+        /// Finds the time zone id by using 'readlink' on the path to see if tzFilePath is
+        /// a symlink to a file 
+        /// </summary>
+        private static string FindTimeZoneIdUsingReadLink(string tzFilePath)
+        {
+            string id = null;
+
+            StringBuilder symlinkPathBuilder = StringBuilderCache.Acquire(Path.MaxPath);
+            bool result = Interop.GlobalizationInterop.ReadLink(tzFilePath, symlinkPathBuilder, (uint)symlinkPathBuilder.Capacity);
+            if (result)
+            {
+                string symlinkPath = StringBuilderCache.GetStringAndRelease(symlinkPathBuilder);
+                // time zone Ids have to point under the time zone directory
+                string timeZoneDirectory = GetTimeZoneDirectory();
+                if (symlinkPath.StartsWith(timeZoneDirectory))
+                {
+                    id = symlinkPath.Substring(timeZoneDirectory.Length);
+                }
+            }
+            else
+            {
+                StringBuilderCache.Release(symlinkPathBuilder);
+            }
+
+            return id;
         }
 
         /// <summary>
