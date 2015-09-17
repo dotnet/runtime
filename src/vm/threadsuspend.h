@@ -197,6 +197,9 @@ public:
     static HRESULT SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason);
     static void    ResumeRuntime(BOOL bFinishedGC, BOOL SuspendSucceded);
 
+    // Initialize thread suspension support
+    static void    Initialize();
+
 private:
     static CLREvent * g_pGCSuspendEvent;
 
