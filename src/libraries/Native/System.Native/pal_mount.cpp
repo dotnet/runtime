@@ -71,14 +71,17 @@ extern "C" int32_t GetSpaceInfoForMountPoint(const char* name, MountPointInforma
     int result = statfs(name, &stats);
     if (result == 0)
     {
-        // Note that f_bsize has a signed integer type on some platforms but musn't be negative.
+        // Note that these have signed integer types on some platforms but musn't be negative.
         // Also, upcast here (some platforms have smaller types) to 64-bit before multiplying to
         // avoid overflow.
         uint64_t bsize = UnsignedCast(stats.f_bsize);
+        uint64_t bavail = UnsignedCast(stats.f_bavail);
+        uint64_t bfree = UnsignedCast(stats.f_bfree);
+        uint64_t blocks = UnsignedCast(stats.f_blocks);
 
-        mpi->AvailableFreeSpace = bsize * stats.f_bavail;
-        mpi->TotalFreeSpace = bsize * stats.f_bfree;
-        mpi->TotalSize = bsize * stats.f_blocks;
+        mpi->AvailableFreeSpace = bsize * bavail;
+        mpi->TotalFreeSpace = bsize * bfree;
+        mpi->TotalSize = bsize * blocks;
     }
     else
     {

@@ -3,9 +3,11 @@
 
 #include "pal_config.h"
 #include "pal_process.h"
+#include "pal_utilities.h"
 
 #include <assert.h>
 #include <errno.h>
+#include <limits>
 #include <signal.h>
 #include <stdlib.h>
 #include <sys/resource.h>
@@ -214,23 +216,24 @@ static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
 // Because RLIM_INFINITY is different per-platform, use the max value of a uint64 (which is RLIM_INFINITY on Ubuntu)
 // to signify RLIM_INIFINITY; on OS X, where RLIM_INFINITY is slightly lower, we'll translate it to the correct value
 // here.
-static uint64_t ConvertFromManagedRLimitInfinityToPalIfNecessary(uint64_t value)
+static rlim_t ConvertFromManagedRLimitInfinityToPalIfNecessary(uint64_t value)
 {
-    if (value == UINT64_MAX)
+    // rlim_t type can vary per platform, so we also treat anything outside its range as infinite.
+    if (value == UINT64_MAX || value > std::numeric_limits<rlim_t>::max())
         return RLIM_INFINITY;
-    else
-        return value;
+
+    return static_cast<rlim_t>(value);
 }
 
 // Because RLIM_INFINITY is different per-platform, use the max value of a uint64 (which is RLIM_INFINITY on Ubuntu)
 // to signify RLIM_INIFINITY; on OS X, where RLIM_INFINITY is slightly lower, we'll translate it to the correct value
 // here.
-static uint64_t ConvertFromNativeRLimitInfinityToManagedIfNecessary(uint64_t value)
+static uint64_t ConvertFromNativeRLimitInfinityToManagedIfNecessary(rlim_t value)
 {
     if (value == RLIM_INFINITY)
         return UINT64_MAX;
-    else
-        return value;
+
+    return UnsignedCast(value);
 }
 
 static void ConvertFromRLimitManagedToPal(const RLimit& pal, rlimit& native)
