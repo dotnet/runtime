@@ -1,0 +1,18 @@
+---
+Language:        Cpp
+# BasedOnStyle:  LLVM
+AlignEscapedNewlinesLeft: false
+AlignAfterOpenBracket: true
+AllowShortFunctionsOnASingleLine: false
+AlwaysBreakTemplateDeclarations: true
+BinPackArguments: false
+BinPackParameters: false
+BreakBeforeBraces: Allman
+ColumnLimit:     120
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+IndentCaseLabels: true
+IndentWidth: 4
+PointerAlignment: Left
+TabWidth:    4
+...
+
