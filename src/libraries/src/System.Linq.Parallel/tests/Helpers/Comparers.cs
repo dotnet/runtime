@@ -1,10 +1,9 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
 
-namespace Test
+namespace System.Linq.Parallel.Tests
 {
     internal class FailingEqualityComparer<T> : IEqualityComparer<T>
     {
@@ -60,7 +59,7 @@ namespace Test
 
         public int Compare(int x, int y)
         {
-            return -x.CompareTo(y);
+            return y.CompareTo(x);
         }
     }
 
@@ -120,6 +119,24 @@ namespace Test
         public int CompareTo(DelegatedComparable<T> other)
         {
             return _comparer.Compare(Value, other.Value);
+        }
+    }
+
+    internal struct NotComparable
+    {
+        private readonly int _value;
+
+        public int Value
+        {
+            get
+            {
+                return _value;
+            }
+        }
+
+        public NotComparable(int x)
+        {
+            _value = x;
         }
     }
 }
