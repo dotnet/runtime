@@ -22,7 +22,6 @@ int __cdecl main(int argc, char *argv[])
     char* szSrcExisting = "src_existing.tmp";
     char* szDest = "src_dest.tmp";
     FILE* tempFile = NULL;
-    DWORD temp;
     int retCode;
     
     if (0 != PAL_Initialize(argc,argv))
@@ -69,6 +68,17 @@ int __cdecl main(int argc, char *argv[])
             "file %s with error %u\n", szSrcExisting, GetLastError());
     }
 
+    // Check the file attributes to make sure SetFileAttributes() above actually succeeded
+    DWORD fileAttributes = GetFileAttributesA(szSrcExisting);
+    if (fileAttributes == INVALID_FILE_ATTRIBUTES)
+    {
+        Fail("CopyFileA: Failed to get file attributes for source file, %u\n", GetLastError());
+    }
+    if ((fileAttributes & FILE_ATTRIBUTE_READONLY) == 0)
+    {
+        Fail("CopyFileA: SetFileAttributes(read-only) on source file returned success but did not make it read-only.\n");
+    }
+
     /* copy the file */
     bRc = CopyFileA(szSrcExisting,szDest,TRUE);
     if(!bRc)
@@ -78,7 +88,8 @@ int __cdecl main(int argc, char *argv[])
     
   
     /* try to get file attributes of destination file */
-    if (GetFileAttributesA(szDest) == -1)
+    fileAttributes = GetFileAttributesA(szDest);
+    if (fileAttributes == INVALID_FILE_ATTRIBUTES)
     {
         Fail("CopyFileA: GetFileAttributes of destination file "
             "failed with error code %ld. \n",
@@ -86,8 +97,7 @@ int __cdecl main(int argc, char *argv[])
     }
 
     /* verify attributes of destination file to source file*/                    
-    temp = GetFileAttributesA(szDest);
-    if((temp & FILE_ATTRIBUTE_READONLY) != FILE_ATTRIBUTE_READONLY)
+    if((fileAttributes & FILE_ATTRIBUTE_READONLY) != FILE_ATTRIBUTE_READONLY)
     {
         Fail("CopyFileA : The file attributes of the "
             "destination file do not match the file "
