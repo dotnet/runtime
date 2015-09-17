@@ -323,7 +323,8 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
 #error don't know how to unwind on this platform
 #endif
 
-
+// These methods are only used on the AMD64 build
+#ifdef _AMD64_
 #ifdef __LINUX__
 
 
@@ -539,6 +540,7 @@ BOOL PAL_VirtualUnwindOutOfProc(CONTEXT *context,
 }
 
 #endif // !__LINUX__
+#endif // _AMD64_
 
 /*++
 Function:
