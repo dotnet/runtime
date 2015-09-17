@@ -37,6 +37,7 @@ set(NATIVEGLOBALIZATION_SOURCES
     localeNumberData.cpp
     localeStringData.cpp
     normalization.cpp
+    timeZoneInfo.cpp
 )
 
 include_directories(${UTYPES_H})
