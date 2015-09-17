@@ -384,19 +384,29 @@ GetX509NameRawBytes(
         return 0;
     }
 
-// length is size_t on some platforms and int on others, so the comparisons
-// are not tautological everywhere. We can let the compiler optimize away
-// any part of the check that is.
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wtautological-compare"
-    if (x509Name->bytes->length < 0 || x509Name->bytes->length > INT_MAX)
+    /* 
+     * length is size_t on some platforms and int on others, so the comparisons
+     * are not tautological everywhere. We can let the compiler optimize away
+     * any part of the check that is. We split the size checks into two checks
+     * so we can get around the warnings on Linux where the Length is unsigned
+     * whereas Length is signed on OS X. The first check makes sure the variable 
+     * value is less than INT_MAX in it's native format; once we know it is not
+     * too large, we can safely cast to an int to make sure it is not negative
+     */
+    if (x509Name->bytes->length > INT_MAX)
     {
-        assert(!"Huge/negative-length X509_NAME");
+        assert(0 && "Huge length X509_NAME");
         return 0;
     }
-#pragma clang diagnostic pop
 
     int length = (int)(x509Name->bytes->length);
+
+    if (length < 0)
+    {
+        assert(0 && "Negative length X509_NAME");
+        return 0;
+    }
+
     if (!pBuf || cBuf < length)
     {
         return -length;
@@ -1027,7 +1037,7 @@ LockingCallback(int mode, int n, const char* file, int line)
 
     if (result != 0)
     {
-        assert(!"LockingCallback failed.");
+        assert(0 && "LockingCallback failed.");
     }
 }
 
@@ -1060,7 +1070,7 @@ EnsureOpenSslInitialized()
     numLocks = CRYPTO_num_locks();
     if (numLocks <= 0)
     {
-        assert(!"CRYPTO_num_locks returned invalid value.");
+        assert(0 && "CRYPTO_num_locks returned invalid value.");
         ret = 1;
         goto done;
     }
@@ -1069,7 +1079,7 @@ EnsureOpenSslInitialized()
     g_locks = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t) * (unsigned int)numLocks);
     if (g_locks == NULL)
     {
-        assert(!"malloc failed.");
+        assert(0 && "malloc failed.");
         ret = 2;
         goto done;
     }
@@ -1079,7 +1089,7 @@ EnsureOpenSslInitialized()
     {
         if (pthread_mutex_init(&g_locks[locksInitialized], NULL) != 0)
         {
-            assert(!"pthread_mutex_init failed.");
+            assert(0 && "pthread_mutex_init failed.");
             ret = 3;
             goto done;
         }
@@ -1098,7 +1108,7 @@ done:
             {
                 if (pthread_mutex_destroy(&g_locks[i]) != 0)
                 {
-                    assert(!"Unable to pthread_mutex_destroy while cleaning up.");
+                    assert(0 && "Unable to pthread_mutex_destroy while cleaning up.");
                 }
             }
             free(g_locks);
