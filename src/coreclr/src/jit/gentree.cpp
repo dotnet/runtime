@@ -10166,6 +10166,18 @@ LNG_ADD_CHKOVF:
                             goto LNG_OVF;
                         }
                         if ((ltemp/lval2) != lval1) goto LNG_OVF;
+#ifdef UNIX_AMD64_ABI
+                        // There is a clang 3.5 optimizer bug that in case of lval1 and lval2 equal
+                        // of 0x80000000 (MIN_LONG) the above expression (ltemp / lval2) results
+                        // in 0x80000000 (MIN_LONG. This causes an overflowing mul expression 
+                        // to be repalced with a 0, instead of throwing an overflow exception.
+                        // The following extra check fixes the issue. If the bug is fixed in later releases 
+                        // of clang this fix becomes dead code since the goto above will trigger.
+                        // In debug builds the expression result is correct - 0.
+                        // The lval1 and lval2 are checked to be non-zeroes above.
+                        // If multiplication of 2 non-zeroes results in a zero results, it must be an overflow.
+                        if (ltemp == 0) goto LNG_OVF;
+#endif // UNIX_AMD64_ABI
                     }
                 }
             }
