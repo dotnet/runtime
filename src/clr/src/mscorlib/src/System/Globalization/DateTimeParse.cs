@@ -2410,23 +2410,34 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                         }
                     }
 
-                    if (raw.hasSameDateAndTimeSeparators && (dtok.dtt == DTT.YearEnd || dtok.dtt == DTT.YearSpace || dtok.dtt == DTT.YearDateSep))
+                    if (raw.hasSameDateAndTimeSeparators)
                     {
-                        // When time and date separators are same and we are hitting a year number while the first parsed part of the string was recognized 
-                        // as part of time (and not a date) DS.T_Nt, DS.T_NNt then change the state to be a date so we try to parse it as a date instead
-                        if (dps == DS.T_Nt)
+                        if (dtok.dtt == DTT.YearEnd || dtok.dtt == DTT.YearSpace || dtok.dtt == DTT.YearDateSep)
                         {
-                            dps = DS.D_Nd;
-                        }
-                        if (dps == DS.T_NNt)
-                        {
-                            dps = DS.D_NNd;
-
-                            // we have the case of Serbia have dates in forms 'd.M.yyyy.' so we can expect '.' after the year number. 
-                            // changing the token to YearSpace instead of YearDateSep will make the parsing not failing this case.
-                            if (dtok.dtt == DTT.YearDateSep)
+                            // When time and date separators are same and we are hitting a year number while the first parsed part of the string was recognized 
+                            // as part of time (and not a date) DS.T_Nt, DS.T_NNt then change the state to be a date so we try to parse it as a date instead
+                            if (dps == DS.T_Nt)
                             {
-                                dtok.dtt = DTT.YearSpace;
+                                dps = DS.D_Nd;
+                            }
+                            if (dps == DS.T_NNt)
+                            {
+                                dps = DS.D_NNd;
+                            }
+                        }
+
+                        bool atEnd = str.AtEnd();
+                        if (dateParsingStates[(int)dps][(int)dtok.dtt] == DS.ERROR || atEnd)
+                        {
+                            switch (dtok.dtt)
+                            {
+                                // we have the case of Serbia have dates in forms 'd.M.yyyy.' so we can expect '.' after the date parts. 
+                                // changing the token to end with space instead of Date Separator will avoid failing the parsing.
+
+                                case DTT.YearDateSep: dtok.dtt = atEnd ? DTT.YearEnd : DTT.YearSpace; break;
+                                case DTT.NumDatesep: dtok.dtt = atEnd ? DTT.NumEnd : DTT.NumSpace; break;
+                                case DTT.NumTimesep: dtok.dtt = atEnd ? DTT.NumEnd : DTT.NumSpace; break;
+                                case DTT.MonthDatesep: dtok.dtt = atEnd ? DTT.MonthEnd : DTT.MonthSpace; break;
                             }
                         }
                     }
@@ -4353,6 +4364,11 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 return (true);
             }
             return (false);
+        }
+
+        internal bool AtEnd()
+        {
+            return Index < len ? false : true;
         }
 
         internal bool Advance(int count) {
