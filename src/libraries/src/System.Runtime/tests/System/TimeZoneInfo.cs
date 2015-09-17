@@ -1787,6 +1787,20 @@ public static class TimeZoneInfoTests
         }
     }
 
+    [Fact]
+    public static void TestDaylightTransitionsExactTime()
+    {
+        TimeZoneInfo zone = TimeZoneInfo.FindSystemTimeZoneById(s_strPacific);
+
+        DateTime after = new DateTime(2011, 11, 6, 9, 0, 0, 0, DateTimeKind.Utc);
+        DateTime mid = after.AddTicks(-1);
+        DateTime before = after.AddTicks(-2);
+
+        Assert.Equal(TimeSpan.FromHours(-7), zone.GetUtcOffset(before));
+        Assert.Equal(TimeSpan.FromHours(-7), zone.GetUtcOffset(mid));
+        Assert.Equal(TimeSpan.FromHours(-8), zone.GetUtcOffset(after));
+    }
+
     //
     //  Helper Methods
     //
