@@ -859,7 +859,7 @@ public:
     void static SetupCorruptionSeverityForActiveExceptionInUnwindPass(Thread *pCurThread, PTR_ExceptionTracker pEHTracker, BOOL fIsFirstPass, 
                                                                      DWORD dwExceptionCode);
 #endif // WIN64EXCEPTIONS
-    void static ResetLastActiveCorruptionSeverityPostCatchHandler();
+    void static ResetLastActiveCorruptionSeverityPostCatchHandler(Thread *pThread);
 };
 
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
