@@ -21,7 +21,7 @@
  * inadvertently defeat the compiler's narrowing conversion warnings
  * (which we treat as error).
  */
-template<typename T>
+template <typename T>
 inline typename std::make_unsigned<T>::type UnsignedCast(T value)
 {
     assert(value >= 0);

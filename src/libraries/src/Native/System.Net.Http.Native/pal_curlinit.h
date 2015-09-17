@@ -6,7 +6,7 @@
 #include "pal_types.h"
 
 /**
- * Initializes curl. 
+ * Initializes curl.
  *
  * Thread-safe and idempotent. Must be called before using any other curl function.
  * EnsureOpenSSLIsInitialized from System.Security.Cryptography.Native must already
@@ -14,5 +14,4 @@
  *
  * Returns 0 on success and non-zero on failure.
  */
-extern "C"
-int32_t EnsureCurlIsInitialized();
+extern "C" int32_t EnsureCurlIsInitialized();

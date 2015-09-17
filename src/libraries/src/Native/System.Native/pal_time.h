@@ -12,9 +12,8 @@ struct UTimBuf
 };
 
 /**
- * Sets the last access and last modified time of a file 
+ * Sets the last access and last modified time of a file
  *
  * Returns 0 on success; otherwise, returns -1 and errno is set.
  */
-extern "C"
-int32_t UTime(const char* path, UTimBuf* time);
+extern "C" int32_t UTime(const char* path, UTimBuf* time);

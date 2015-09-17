@@ -11,6 +11,11 @@ insert_final_newline = true
 indent_style = space
 indent_size = 4
 
+# C++ Files
+[*.{cpp,h,in}]
+curly_bracket_next_line = true
+indent_brace_style = Allman
+
 # Xml project files
 [*.{csproj,vcxproj,vcxproj.filters,proj,nativeproj,locproj}]
 indent_size = 2
