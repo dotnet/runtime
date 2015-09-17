@@ -5626,7 +5626,7 @@ void DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContex
             // That's why we have to make do with context we can obtain from Frames explicitly stored in Thread object. 
             // It suffices for managed debugging stackwalk. 
             REGDISPLAY tmpRd = {};
-            CONTEXT tmpContext = {};
+            T_CONTEXT tmpContext = {};
             FillRegDisplay(&tmpRd, &tmpContext);
             
             // Going through thread Frames and looking for first (deepest one) one that 
