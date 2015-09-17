@@ -101,6 +101,9 @@ int g_signalPipe[2] = { 0, 0 };
 
 DWORD g_dwExternalSignalHandlerThreadId = 0;
 
+// Activation function that gets called when an activation is injected into a thread.
+PAL_ActivationFunction g_activationFunction = NULL;
+
 /* public function definitions ************************************************/
 
 /*++
@@ -566,6 +569,28 @@ static void sigbus_handler(int code, siginfo_t *siginfo, void *context)
 }
 
 /*++
+Function:
+    PAL_SetActivationFunction
+
+    Register an activation function that gets called when an activation is injected
+    into a thread.
+
+Parameters:
+    pActivationFunction - activation function
+
+Return value:
+    None
+--*/
+PALIMPORT
+VOID
+PALAPI
+PAL_SetActivationFunction(
+    IN PAL_ActivationFunction pActivationFunction)
+{
+    g_activationFunction = pActivationFunction;
+}
+
+/*++
 Function :
     inject_activation_handler
 
@@ -582,8 +607,7 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
     // Only accept activations from the current process
     if (siginfo->si_pid == getpid())
     {
-        PAL_ActivationFunction activation = (PAL_ActivationFunction)siginfo->si_value.sival_ptr;
-        if (activation != NULL)
+        if (g_activationFunction != NULL)
         {
             native_context_t *ucontext = (native_context_t *)context;
 
@@ -593,7 +617,7 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
                 &winContext, 
                 CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT);
 
-            activation(&winContext);
+            g_activationFunction(&winContext);
 
             // Activation function may have modified the context, so update it.
             CONTEXTToNativeContext(&winContext, ucontext);
@@ -613,12 +637,9 @@ Parameters :
 
 (no return value)
 --*/
-void InjectActivationInternal(CorUnix::CPalThread* pThread, PAL_ActivationFunction activationFunction)
+void InjectActivationInternal(CorUnix::CPalThread* pThread)
 {
-#if HAVE_PTHREAD_SIGQUEUE
-    sigval value;
-    value.sival_ptr = (void*)activationFunction;
-    int status = pthread_sigqueue(pThread->GetPThreadSelf(), INJECT_ACTIVATION_SIGNAL, value);
+    int status = pthread_kill(pThread->GetPThreadSelf(), INJECT_ACTIVATION_SIGNAL);
     if (status != 0)
     {
         // Failure to send the signal is fatal. There are only two cases when sending
@@ -626,20 +647,17 @@ void InjectActivationInternal(CorUnix::CPalThread* pThread, PAL_ActivationFuncti
         // if the thread doesn't exist anymore.
         abort();
     }
-#else
-    ASSERT("InjectActivationInternal not yet implemented on this platform!");
-#endif
 }
 
 /*++
 Function:
 PAL_InjectActivation
 
-Interrupt the specified thread and have it call the activation function passed in
+Interrupt the specified thread and have it call an activation function registered
+using the PAL_SetActivationFunction
 
 Parameters:
 hThread            - handle of the target thread
-activationFunction - function to call 
 
 Return: 
 TRUE if it succeeded, FALSE otherwise.
@@ -647,11 +665,10 @@ TRUE if it succeeded, FALSE otherwise.
 BOOL
 PALAPI
 PAL_InjectActivation(
-    IN HANDLE hThread,
-    IN PAL_ActivationFunction pActivationFunction)
+    IN HANDLE hThread)
 {
     PERF_ENTRY(PAL_InjectActivation);
-    ENTRY("PAL_InjectActivation(hThread=%p, pActivationFunction=%p)\n", hThread, pActivationFunction);
+    ENTRY("PAL_InjectActivation(hThread=%p)\n", hThread);
 
     CPalThread *pCurrentThread;
     CPalThread *pTargetThread;
@@ -669,7 +686,7 @@ PAL_InjectActivation(
 
     if (palError == NO_ERROR)
     {
-        InjectActivationInternal(pTargetThread, pActivationFunction);
+        InjectActivationInternal(pTargetThread);
     }
     else
     {

@@ -5448,11 +5448,16 @@ FlushProcessWriteBuffers();
 typedef void (*PAL_ActivationFunction)(CONTEXT *context);
 
 PALIMPORT
+VOID
+PALAPI
+PAL_SetActivationFunction(
+    IN PAL_ActivationFunction pActivationFunction);
+
+PALIMPORT
 BOOL
 PALAPI
 PAL_InjectActivation(
-    IN HANDLE hThread,
-    IN PAL_ActivationFunction pActivationFunction
+    IN HANDLE hThread
 );
 
 #define VER_PLATFORM_WIN32_WINDOWS        1
