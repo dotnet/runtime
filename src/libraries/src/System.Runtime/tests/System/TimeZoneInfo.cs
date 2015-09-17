@@ -10,6 +10,8 @@ using Xunit;
 public static class TimeZoneInfoTests
 {
     private static readonly bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+    private static readonly bool s_isOSX = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+
     private static String s_strPacific = s_isWindows ? "Pacific Standard Time" : "America/Los_Angeles";
     private static String s_strSydney = s_isWindows ? "AUS Eastern Standard Time" : "Australia/Sydney";
     private static String s_strGMT = s_isWindows ? "GMT Standard Time" : "Europe/London";
@@ -146,7 +148,6 @@ public static class TimeZoneInfoTests
         VerifyConvertException<Exception>(time1, new String('a', 256)); // long string
     }
 
-    [ActiveIssue(3211, PlatformID.OSX)]
     [Fact]
     public static void NearMinMaxDateTimeOffsetConvertTest()
     {
@@ -173,18 +174,10 @@ public static class TimeZoneInfoTests
         VerifyConvert(DateTime.MaxValue.AddHours(-19.5), s_strPacific, s_strSydney, DateTime.MaxValue.AddHours(-0.5));
 
         VerifyConvert(DateTime.MinValue, s_strSydney, s_strPacific, DateTime.MinValue);
-        if (s_isWindows)
-        {
-            VerifyConvert(DateTime.MinValue.AddHours(19), s_strSydney, s_strPacific, DateTime.MinValue);
-            VerifyConvert(DateTime.MinValue.AddHours(19.5), s_strSydney, s_strPacific, DateTime.MinValue.AddHours(0.5));
-        }
-        else
-        {
-            // for early times, IANA uses local mean time (LMT), which is based on the solar time.
-            // The Pacific Standard Time LMT is UTC-07:53.  For Sydney, LMT is UTC+10:04.
-            VerifyConvert(DateTime.MinValue.AddHours(17).AddMinutes(57), s_strSydney, s_strPacific, DateTime.MinValue);
-            VerifyConvert(DateTime.MinValue.AddHours(17.5).AddMinutes(57), s_strSydney, s_strPacific, DateTime.MinValue.AddHours(0.5));
-        }
+
+        TimeSpan earlyTimesDifference = GetEarlyTimesOffset(s_strSydney) - GetEarlyTimesOffset(s_strPacific);
+        VerifyConvert(DateTime.MinValue + earlyTimesDifference, s_strSydney, s_strPacific, DateTime.MinValue);
+        VerifyConvert(DateTime.MinValue.AddHours(0.5) + earlyTimesDifference, s_strSydney, s_strPacific, DateTime.MinValue.AddHours(0.5));
     }
 
     [Fact]
@@ -330,7 +323,6 @@ public static class TimeZoneInfoTests
         VerifyConvert(time1, TimeZoneInfo.Utc.Id, time1.ToUniversalTime());
     }
 
-    [ActiveIssue(3211, PlatformID.OSX)]
     [Fact]
     public static void NearMinMaxDateTimeConvertTest()
     {
@@ -344,21 +336,13 @@ public static class TimeZoneInfoTests
         DateTime utcMinValue = DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc);
         VerifyConvert(utcMinValue, s_strPacific, DateTime.MinValue);
 
-        if (s_isWindows)
-        {
-            VerifyConvert(utcMinValue.AddHours(8), s_strPacific, DateTime.MinValue);
-            VerifyConvert(utcMinValue.AddHours(8.5), s_strPacific, DateTime.MinValue.AddHours(0.5));
-            VerifyConvert(utcMinValue, s_strSydney, DateTime.MinValue.AddHours(11));
-        }
-        else
-        {
-            // for early times, IANA uses local mean time (LMT), which is based on the solar time.
-            // The Pacific Standard Time LMT is UTC-07:53.
-            VerifyConvert(utcMinValue.AddHours(8).AddMinutes(-7), s_strPacific, DateTime.MinValue);
-            VerifyConvert(utcMinValue.AddHours(8.5).AddMinutes(-7), s_strPacific, DateTime.MinValue.AddHours(0.5));
-            // For Sydney, LMT is UTC+10:04.
-            VerifyConvert(utcMinValue, s_strSydney, DateTime.MinValue.AddHours(10).AddMinutes(4));
-        }
+        TimeSpan earlyTimesOffsetPacific = GetEarlyTimesOffset(s_strPacific);
+        earlyTimesOffsetPacific = earlyTimesOffsetPacific.Negate(); // Pacific is behind UTC, so negate for a positive value
+        VerifyConvert(utcMinValue + earlyTimesOffsetPacific, s_strPacific, DateTime.MinValue);
+        VerifyConvert(utcMinValue.AddHours(0.5) + earlyTimesOffsetPacific, s_strPacific, DateTime.MinValue.AddHours(0.5));
+
+        TimeSpan earlyTimesOffsetSydney = GetEarlyTimesOffset(s_strSydney);
+        VerifyConvert(utcMinValue, s_strSydney, DateTime.MinValue + earlyTimesOffsetSydney);
     }
 
     [Fact]
@@ -1916,5 +1900,51 @@ public static class TimeZoneInfoTests
     {
         bool ret = tz.IsAmbiguousTime(dt);
         Assert.True(expectedAmbiguous == ret, String.Format("Test with the zone {0} and date {1} failed", tz.Id, dt));
+    }
+
+    /// <summary>
+    /// Gets the offset for the time zone for early times (close to DateTime.MinValue).
+    /// </summary>
+    /// <remarks>
+    /// Windows uses the current daylight savings rules for early times.
+    /// 
+    /// OSX has V1 tzfiles, which means for early times it uses the first standard offset in the tzfile.
+    /// For Pacific Standard Time it is UTC-8.  For Sydney, it is UTC+10.
+    /// 
+    /// Other Unix distros use V2 tzfiles, which use local mean time (LMT), which is based on the solar time.
+    /// The Pacific Standard Time LMT is UTC-07:53.  For Sydney, LMT is UTC+10:04.
+    /// </remarks>
+    private static TimeSpan GetEarlyTimesOffset(string timeZoneId)
+    {
+        if (timeZoneId == s_strPacific)
+        {
+            if (s_isWindows || s_isOSX)
+            {
+                return TimeSpan.FromHours(-8);
+            }
+            else
+            {
+                return new TimeSpan(7, 53, 0).Negate();
+            }
+        }
+        else if (timeZoneId == s_strSydney)
+        {
+            if (s_isWindows)
+            {
+                return TimeSpan.FromHours(11);
+            }
+            else if (s_isOSX)
+            {
+                return TimeSpan.FromHours(10);
+            }
+            else
+            {
+                return new TimeSpan(10, 4, 0);
+            }
+        }
+        else
+        {
+            throw new NotSupportedException(string.Format("The timeZoneId '{0}' is not supported by GetEarlyTimesOffset.", timeZoneId));
+        }
     }
 }
