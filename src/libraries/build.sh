@@ -3,7 +3,7 @@
 usage()
 {
     echo "Usage: $0 [managed] [native] [BuildArch] [BuildType] [clean] [verbose] [clangx.y]"
-    echo "manged - optional argument to build the managed code"
+    echo "managed - optional argument to build the managed code"
     echo "native - optional argument to build the native code"
     echo "The following arguments affect native builds only:"
     echo "BuildArch can be: x64, arm"
@@ -30,6 +30,7 @@ clean()
     echo "Cleaning previous output for the selected configuration"
     rm -rf "$__BinDir"
     rm -rf "$__IntermediatesDir"
+    setup_dirs
 }
 
 # Check the system to ensure the right pre-reqs are in place
