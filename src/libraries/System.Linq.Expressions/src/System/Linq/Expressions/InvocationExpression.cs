@@ -14,16 +14,14 @@ namespace System.Linq.Expressions
     /// Represents an expression that applies a delegate or lambda expression to a list of argument expressions.
     /// </summary>
     [DebuggerTypeProxy(typeof(Expression.InvocationExpressionProxy))]
-    public sealed class InvocationExpression : Expression, IArgumentProvider
+    public class InvocationExpression : Expression, IArgumentProvider
     {
-        private IList<Expression> _arguments;
         private readonly Expression _lambda;
         private readonly Type _returnType;
 
-        internal InvocationExpression(Expression lambda, IList<Expression> arguments, Type returnType)
+        internal InvocationExpression(Expression lambda, Type returnType)
         {
             _lambda = lambda;
-            _arguments = arguments;
             _returnType = returnType;
         }
 
@@ -59,7 +57,7 @@ namespace System.Linq.Expressions
         /// </summary>
         public ReadOnlyCollection<Expression> Arguments
         {
-            get { return ReturnReadOnly(ref _arguments); }
+            get { return GetOrMakeArguments(); }
         }
 
         /// <summary>
@@ -80,16 +78,21 @@ namespace System.Linq.Expressions
             return Expression.Invoke(expression, arguments);
         }
 
-        public Expression GetArgument(int index)
+        internal virtual ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
-            return _arguments[index];
+            throw ContractUtils.Unreachable;
         }
 
-        public int ArgumentCount
+        public virtual Expression GetArgument(int index)
+        {
+            throw ContractUtils.Unreachable;
+        }
+
+        public virtual int ArgumentCount
         {
             get
             {
-                return _arguments.Count;
+                throw ContractUtils.Unreachable;
             }
         }
 
@@ -101,12 +104,9 @@ namespace System.Linq.Expressions
             return visitor.VisitInvocation(this);
         }
 
-        internal InvocationExpression Rewrite(Expression lambda, Expression[] arguments)
+        internal virtual InvocationExpression Rewrite(Expression lambda, Expression[] arguments)
         {
-            Debug.Assert(lambda != null);
-            Debug.Assert(arguments == null || arguments.Length == _arguments.Count);
-
-            return Expression.Invoke(lambda, arguments ?? _arguments);
+            throw ContractUtils.Unreachable;
         }
 
         internal LambdaExpression LambdaOperand
@@ -117,6 +117,43 @@ namespace System.Linq.Expressions
                     ? (LambdaExpression)((UnaryExpression)_lambda).Operand
                     : (_lambda as LambdaExpression);
             }
+        }
+    }
+
+    internal class InvocationExpressionN : InvocationExpression
+    {
+        private IList<Expression> _arguments;
+
+        public InvocationExpressionN(Expression lambda, IList<Expression> arguments, Type returnType)
+            : base(lambda, returnType)
+        {
+            _arguments = arguments;
+        }
+
+        internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
+        {
+            return ReturnReadOnly(ref _arguments);
+        }
+
+        public override Expression GetArgument(int index)
+        {
+            return _arguments[index];
+        }
+
+        public override int ArgumentCount
+        {
+            get
+            {
+                return _arguments.Count;
+            }
+        }
+
+        internal override InvocationExpression Rewrite(Expression lambda, Expression[] arguments)
+        {
+            Debug.Assert(lambda != null);
+            Debug.Assert(arguments == null || arguments.Length == _arguments.Count);
+
+            return Expression.Invoke(lambda, arguments ?? _arguments);
         }
     }
 
@@ -178,7 +215,7 @@ namespace System.Linq.Expressions
             var args = arguments.ToReadOnly();
             var mi = GetInvokeMethod(expression);
             ValidateArgumentTypes(mi, ExpressionType.Invoke, ref args);
-            return new InvocationExpression(expression, args, mi.ReturnType);
+            return new InvocationExpressionN(expression, args, mi.ReturnType);
         }
 
         /// <summary>

@@ -504,7 +504,7 @@ namespace System.Linq.Expressions.Compiler
 
                 if (cr.Rewrite || spiller._lambdaRewrite != RewriteAction.None)
                 {
-                    node = new InvocationExpression(lambda, cr[0, -1], node.Type);
+                    node = node.Rewrite(lambda, cr[0, -1]);
                 }
 
                 Result result = cr.Finish(node);
@@ -524,7 +524,7 @@ namespace System.Linq.Expressions.Compiler
                 RequireNoRefArgs(Expression.GetInvokeMethod(node.Expression));
             }
 
-            return cr.Finish(cr.Rewrite ? new InvocationExpression(cr[0], cr[1, -1], node.Type) : expr);
+            return cr.Finish(cr.Rewrite ? node.Rewrite(cr[0], cr[1, -1]) : expr);
         }
 
         // NewExpression
