@@ -26,7 +26,6 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test3()
         {
             RegionInfo riUS = new RegionInfo("en-US");
