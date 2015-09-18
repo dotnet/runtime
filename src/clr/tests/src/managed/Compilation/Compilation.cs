@@ -14,11 +14,11 @@ class Program
     static int Main(string[] args)
     {
         Console.WriteLine("Starting the test");
-        string codeFile = @"helloWorld.cs";
+        string codeFile = @"HelloWorld.cs";
 
         var sourceTree = new List<SyntaxTree>(){SyntaxFactory.ParseSyntaxTree(File.ReadAllText(codeFile))};
 
-        string mscorlibFile = Path.Combine(Environment.GetEnvironmentVariable("Core_root"), "mscorlib.dll");
+        string mscorlibFile = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "mscorlib.dll");
         Console.WriteLine("Using reference to: {0}", mscorlibFile);
         var reference = new List<MetadataReference>(){ MetadataReference.CreateFromFile(mscorlibFile)};
 

@@ -1,0 +1,11 @@
+Interop/NativeCallable/NativeCallableTest.sh
+JIT/Directed/coverage/oldtests/callipinvoke.sh
+JIT/Directed/coverage/oldtests/Desktop/callipinvoke_il_d.sh
+JIT/Directed/coverage/oldtests/Desktop/callipinvoke_il_r.sh
+JIT/Directed/IL/PInvokeTail/TailWinApi.sh
+JIT/Directed/pinvoke/jump.sh
+JIT/Directed/pinvoke/sysinfo_il.sh
+JIT/Regression/clr-x64-JIT/v2.1/b173569/b173569.sh
+managed/Compilation/Compilation.sh
+readytorun/mainv1.sh
+readytorun/mainv2.sh

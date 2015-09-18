@@ -27,7 +27,7 @@ if /i "%1" == "vs2015" (set __VSVersion=%1&shift&goto Arg_Loop)
 
 if /i "%1" == "/?"      (goto Usage)
 
-set Core_Root=%1
+set CORE_ROOT=%1
 shift 
 :ArgsDone
 :: Check prerequisites
@@ -70,16 +70,16 @@ if not defined __LogsDir        set  __LogsDir=%__ProjectFilesDir%..\bin\Logs
 :: Default global test environment variables
 if not defined XunitTestBinBase       set  XunitTestBinBase=%__TestWorkingDir%\
 if not defined XunitTestReportDirBase set  XunitTestReportDirBase=%XunitTestBinBase%\Reports\
-if defined Core_Root goto  :CheckTestEnv 
+if defined CORE_ROOT goto  :CheckTestEnv 
 
 set noCore_RootSet=true
-set Core_Root=%__BinDir%
+set CORE_ROOT=%__BinDir%
 
 :CheckTestEnv 
 ::Check if the test Binaries are built
 if not exist %XunitTestBinBase% echo Error: Ensure the Test Binaries are built and are present at %XunitTestBinBase%, Run - buildtest.cmd %__BuildArch% %__BuildType% to build the tests first. && exit /b 1
-if "%Core_Root%" == ""             echo Error: Ensure you have done a successful build of the Product and Run - runtest BuildArch BuildType {path to product binaries}. && exit /b 1
-if not exist %Core_Root%\coreclr.dll echo Error: Ensure you have done a successful build of the Product and %Core_Root% contains runtime binaries. && exit /b 1
+if "%CORE_ROOT%" == ""             echo Error: Ensure you have done a successful build of the Product and Run - runtest BuildArch BuildType {path to product binaries}. && exit /b 1
+if not exist %CORE_ROOT%\coreclr.dll echo Error: Ensure you have done a successful build of the Product and %CORE_ROOT% contains runtime binaries. && exit /b 1
 if not "%__Exclude%"==""           (if not exist %__Exclude% echo Error: Exclusion .targets file not found && exit /b 1) 
 if not "%__TestEnv%"==""           (if not exist %__TestEnv% echo Error: Test Environment script not found && exit /b 1) 
 if not exist %__LogsDir%           md  %__LogsDir%
@@ -90,7 +90,7 @@ set __TestRunBuildLog=%__LogsDir%\TestRunResults_%__BuildOS%__%__BuildArch%__%__
 set __TestRunHtmlLog=%__LogsDir%\TestRun_%__BuildOS%__%__BuildArch%__%__BuildType%.html
 set __TestRunXmlLog=%__LogsDir%\TestRun_%__BuildOS%__%__BuildArch%__%__BuildType%.xml
 
-echo Core_Root that will be used is: %Core_Root%
+echo CORE_ROOT that will be used is: %CORE_ROOT%
 echo Starting The Test Run ...
 if  "%__SkipWrapperGeneration%"=="true" goto :preptests
 
@@ -121,12 +121,12 @@ set _buildprefix=
 set _buildpostfix=
 set _buildappend=
 if not "%noCore_RootSet%"=="true" goto :runtests 
-set Core_Root=%XunitTestBinBase%\Tests\Core_Root
-echo Using Default Core_Root as %Core_Root%
-echo Copying Built binaries from  %__BinDir% to %Core_Root%
-if exist %Core_Root% rd /s /q %Core_Root%
-md %Core_Root%
-xcopy /s %__BinDir% %Core_Root%
+set CORE_ROOT=%XunitTestBinBase%\Tests\Core_Root
+echo Using Default CORE_ROOT as %CORE_ROOT%
+echo Copying Built binaries from  %__BinDir% to %CORE_ROOT%
+if exist %CORE_ROOT% rd /s /q %CORE_ROOT%
+md %CORE_ROOT%
+xcopy /s %__BinDir% %CORE_ROOT%
 call :runtests 
 if ERRORLEVEL 1 (
     echo Test Run failed. Refer to the following"
