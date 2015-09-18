@@ -21,7 +21,7 @@ There are several issues to keep in mind when making a change.
 
 Managed Code Compatibility
 --------------------------
-Please review [Breaking Changes](https://github.com/dotnet/corefx/blob/master/Documentation/coding-guidelines/breaking-changes.md) before making changes to managed code. Please pay the most attention to changes that affect the [Public Contract](https://github.com/dotnet/corefx/blob/master/Documentation/breaking-changes.md#bucket-1-public-contract).
+Please review [Breaking Changes](https://github.com/dotnet/corefx/blob/master/Documentation/coding-guidelines/breaking-changes.md) before making changes to managed code. Please pay the most attention to changes that affect the [Public Contract](https://github.com/dotnet/corefx/blob/master/Documentation/coding-guidelines/breaking-changes.md#bucket-1-public-contract).
 
 Typos
 -----
