@@ -12,6 +12,11 @@
     <RestorePackages>true</RestorePackages>
     <NoWarn>1718</NoWarn>
   </PropertyGroup>
+  <!-- Performance tests require v5.0 portable tools -->
+  <PropertyGroup Condition="'$(RunPerfTestsForProject)' == 'true'">
+    <TargetFrameworkVersion>v5.0</TargetFrameworkVersion>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
@@ -88,6 +93,24 @@
     <Compile Include="System\ValueType.cs" />
     <Compile Include="System\Version.cs" />
     <Compile Include="System\WeakReference.cs" />
+  </ItemGroup>
+  <!-- Performance Tests -->
+  <ItemGroup Condition="'$(RunPerfTestsForProject)' == 'true'">
+    <Compile Include="Performance\Perf.Boolean.cs" />
+    <Compile Include="Performance\Perf.Enum.cs" />
+    <Compile Include="Performance\Perf.Guid.cs" />
+    <Compile Include="Performance\Perf.Object.cs" />
+    <Compile Include="Performance\Perf.String.cs" />
+    <Compile Include="Performance\Perf.TimeSpan.cs" />
+    <Compile Include="Performance\Perf.Type.cs" />
+    <Compile Include="Performance\Perf.UInt32.cs" />
+    <Compile Include="Performance\Perf.DateTime.cs" />
+    <Compile Include="Performance\Perf.Int32.cs" />
+    <Compile Include="Performance\Perf.IntPtr.cs" />
+    <Compile Include="Performance\Perf.StringBuilder.cs" />
+    <Compile Include="$(CommonTestPath)\Performance\PerfUtils.cs">
+      <Link>Common\Performance\PerfUtils.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

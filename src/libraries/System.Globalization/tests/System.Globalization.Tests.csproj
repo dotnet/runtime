@@ -10,6 +10,11 @@
     <AssemblyName>System.Globalization.Tests</AssemblyName>
     <RestorePackages>true</RestorePackages>
   </PropertyGroup>
+  <!-- Performance tests require v5.0 portable tools -->
+  <PropertyGroup Condition="'$(RunPerfTestsForProject)' == 'true'">
+    <TargetFrameworkVersion>v5.0</TargetFrameworkVersion>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
@@ -169,6 +174,14 @@
     <Compile Include="TextInfo\TextInfoToUpper2.cs" />
     <Compile Include="UnicodeCategory\UnicodeCategoryTests.cs" />
     <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs" />
+  </ItemGroup>
+  <!-- Performance Tests -->
+  <ItemGroup Condition="'$(RunPerfTestsForProject)' == 'true'">
+    <Compile Include="Performance\Perf.CultureInfo.cs" />
+    <Compile Include="Performance\Perf.StringBuilder.cs" />
+    <Compile Include="$(CommonTestPath)\Performance\PerfUtils.cs">
+      <Link>Common\Performance\PerfUtils.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
