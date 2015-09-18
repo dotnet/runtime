@@ -32,6 +32,12 @@ DataTarget::QueryInterface(
         AddRef();
         return S_OK;
     }
+    if (InterfaceId == IID_ICorDebugDataTarget4)
+    {
+        *Interface = (ICorDebugDataTarget4*)this;
+        AddRef();
+        return S_OK;
+    }
     else
     {
         *Interface = NULL;
@@ -187,4 +193,11 @@ DataTarget::Request(
     /* [size_is][out] */ BYTE *outBuffer)
 {
     return E_NOTIMPL;
+}
+
+HRESULT STDMETHODCALLTYPE 
+DataTarget::GetPid(
+    /* [out] */ DWORD *pdwProcessId)
+{
+    return g_ExtSystem->GetCurrentProcessId(pdwProcessId);
 }

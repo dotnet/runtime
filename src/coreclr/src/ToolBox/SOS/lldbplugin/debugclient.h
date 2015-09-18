@@ -145,6 +145,9 @@ public:
     // IDebugSystemObjects
     //----------------------------------------------------------------------------
 
+    HRESULT GetCurrentProcessId(
+        PULONG id);
+
     HRESULT GetCurrentThreadId(
         PULONG id);
 
