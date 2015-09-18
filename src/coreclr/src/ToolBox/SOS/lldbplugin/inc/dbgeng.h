@@ -367,6 +367,9 @@ typedef class IDebugSymbols* PDEBUG_SYMBOLS;
 class IDebugSystemObjects 
 {
 public:
+    virtual HRESULT GetCurrentProcessId(
+        PULONG id) = 0;
+
     // Controls implicit thread used by the
     // debug engine.  The debuggers current
     // thread is just a piece of data held
