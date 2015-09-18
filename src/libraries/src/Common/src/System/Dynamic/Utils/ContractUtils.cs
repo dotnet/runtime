@@ -46,6 +46,15 @@ namespace System.Dynamic.Utils
             }
         }
 
+        public static void RequiresNotEmptyList<T>(IReadOnlyList<T> collection, string paramName)
+        {
+            RequiresNotNull(collection, paramName);
+            if (collection.Count == 0)
+            {
+                throw new ArgumentException(Strings.NonEmptyCollectionRequired, paramName);
+            }
+        }
+
         /// <summary>
         /// Requires the array and all its items to be non-null.
         /// </summary>
