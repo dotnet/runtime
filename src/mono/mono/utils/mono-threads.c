@@ -417,7 +417,7 @@ mono_threads_unregister_current_thread (MonoThreadInfo *info)
 MonoThreadInfo*
 mono_thread_info_current_unchecked (void)
 {
-	return thread_info_key ? (MonoThreadInfo*)mono_native_tls_get_value (thread_info_key) : NULL;
+	return mono_threads_inited ? (MonoThreadInfo*)mono_native_tls_get_value (thread_info_key) : NULL;
 }
 
 
@@ -573,8 +573,6 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 	res = mono_native_tls_alloc (&thread_info_key, (void *) unregister_thread);
 	res = mono_native_tls_alloc (&thread_exited_key, (void *) thread_exited_dtor);
 #endif
-
-	g_assert (thread_info_key);
 
 	g_assert (res);
 
