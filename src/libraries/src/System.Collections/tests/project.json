@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "Microsoft.DotNet.xunit.performance": "1.0.0-*",
     "System.Collections": "4.0.10",
     "System.Console": "4.0.0-beta-*",
     "System.Globalization": "4.0.10",
@@ -9,7 +10,7 @@
     "System.Runtime.Extensions": "4.0.10",
     "System.Threading": "4.0.10",
     "System.Threading.Tasks": "4.0.10",
-    "xunit": "2.1.0-beta3-*",
+    "xunit": "2.1.0-rc1-*",
     "xunit.netcore.extensions": "1.0.0-prerelease-*"
   },
   "frameworks": {

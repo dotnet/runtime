@@ -10,7 +10,7 @@
 
   <!-- Build Tools Versions -->
   <PropertyGroup>
-    <BuildToolsVersion>1.0.25-prerelease-00094</BuildToolsVersion>
+    <BuildToolsVersion>1.0.25-prerelease-00095</BuildToolsVersion>
     <DnxVersion>1.0.0-beta7</DnxVersion>
     <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'!='Unix'">dnx-coreclr-win-x86.$(DnxVersion)</DnxPackageName>
     <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'=='Unix'">dnx-mono.$(DnxVersion)</DnxPackageName>
@@ -260,6 +260,11 @@
     <SignAppxPackageExeFullPath>$(_WindowsKitBinPath)\signtool.exe</SignAppxPackageExeFullPath>
     <MakePriExtensionPath>$(_WindowsPhoneKitBinPath)\x86\MrmEnvironmentExtDl.dll</MakePriExtensionPath>
     <MakePriExtensionPath_x64>$(_WindowsPhoneKitBinPath)\x64\MrmEnvironmentExtDl.dll</MakePriExtensionPath_x64>
+  </PropertyGroup>
+  
+  <!-- Perf test setup - Required until v5.0 is mandatory across CoreFX-->
+  <PropertyGroup>
+    <RunPerfTestsForProject Condition="'$(Performance)' == 'true' and '$(OS)' == 'Windows_NT' and Exists('$(MSBuildProgramFiles32)\MSBuild\Microsoft\Portable\v5.0\Microsoft.Portable.CSharp.targets')" >true</RunPerfTestsForProject>
   </PropertyGroup>
 
   <Import Project="$(RoslynPropsFile)"

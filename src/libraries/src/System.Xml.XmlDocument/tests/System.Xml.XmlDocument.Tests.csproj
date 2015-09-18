@@ -10,6 +10,11 @@
     <AssemblyName>System.Xml.XmlDocument.Tests</AssemblyName>
     <RootNamespace>System.Xml.XmlDocument.UnitTests</RootNamespace>
   </PropertyGroup>
+  <!-- Performance tests require v5.0 portable tools -->
+  <PropertyGroup Condition="'$(RunPerfTestsForProject)' == 'true'">
+    <TargetFrameworkVersion>v5.0</TargetFrameworkVersion>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
@@ -99,6 +104,15 @@
     <Compile Include="XmlProcessingInstructionTests\DataTests.cs" />
     <Compile Include="XmlProcessingInstructionTests\TargetTests.cs" />
     <Compile Include="XmlTextTests\SplitTextTests.cs" />
+  </ItemGroup>
+  <!-- Performance Tests -->
+  <ItemGroup Condition="'$(RunPerfTestsForProject)' == 'true'">
+    <Compile Include="Performance\Perf.XmlDocument.cs" />
+    <Compile Include="Performance\Perf.XmlNode.cs" />
+    <Compile Include="Performance\Perf.XmlNodeList.cs" />
+    <Compile Include="$(CommonTestPath)\Performance\PerfUtils.cs">
+      <Link>Common\Performance\PerfUtils.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Xml.XmlDocument.csproj">
