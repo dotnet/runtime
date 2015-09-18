@@ -8,10 +8,14 @@
 
 #include "locale.hpp"
 
-#include "unicode/dcfmtsym.h" //decimal
-#include "unicode/dtfmtsym.h" //date
+#include "unicode/dcfmtsym.h" //decimal symbols
+#include "unicode/dtfmtsym.h" //date symbols
+#include "unicode/smpdtfmt.h" //date format
 #include "unicode/localpointer.h"
 
+// invariant character definitions used by ICU
+#define UCHAR_SPACE                ((UChar)0x0020) // space 
+#define UCHAR_NBSPACE              ((UChar)0x00A0) // space
 
 // Enum that corresponds to managed enum CultureData.LocaleStringData.
 // The numeric values of the enum members match their Win32 counterparts. 
@@ -41,6 +45,7 @@ enum LocaleStringData : int32_t
 	Iso3166CountryName = 0x0000005A,
 	NaNSymbol = 0x00000069,
 	PositiveInfinitySymbol = 0x0000006a,
+	ParentName = 0x0000006d,
 	PercentSymbol = 0x00000076,
 	PerMilleSymbol = 0x00000077
 };
@@ -224,6 +229,22 @@ extern "C" int32_t GetLocaleInfoString(const UChar* localeName, LocaleStringData
 		case PositiveInfinitySymbol:
 			status = GetLocaleInfoDecimalFormatSymbol(locale, DecimalFormatSymbols::kInfinitySymbol, value, valueLength);
 			break;
+		case ParentName:
+		{
+			// ICU supports lang[-script][-region][-variant] so up to 4 parents including invariant locale
+			char localeNameTemp[ULOC_FULLNAME_CAPACITY];
+
+			uloc_getParent(locale.getName(), localeNameTemp, ULOC_FULLNAME_CAPACITY, &status);
+			if (U_SUCCESS(status))
+			{
+				status = u_charsToUChars_safe(localeNameTemp, value, valueLength);
+				if (U_SUCCESS(status))
+				{
+					FixupLocaleName(value, valueLength);
+				}
+			}
+			break;
+		}
 		case PercentSymbol:
 			status = GetLocaleInfoDecimalFormatSymbol(locale, DecimalFormatSymbols::kPercentSymbol, value, valueLength);
 			break;
@@ -232,11 +253,92 @@ extern "C" int32_t GetLocaleInfoString(const UChar* localeName, LocaleStringData
 			break;
 		default:
 			status = U_UNSUPPORTED_ERROR;
-			assert(false);
 			break;
 	};
 
-	assert(status != U_BUFFER_OVERFLOW_ERROR);
+	return UErrorCodeToBool(status);
+}
+
+/*
+Function:
+NormalizeTimePattern
+
+Convert an ICU non-localized time pattern to .NET format
+*/
+void NormalizeTimePattern(const UnicodeString *srcPattern, UnicodeString *destPattern)
+{
+	// An srcPattern example: "h:mm:ss a"
+	// A destPattern example: "h:mm:ss tt"
+	destPattern->remove();
+
+	bool amPmAdded = false;
+	for (int i = 0; i <= srcPattern->length() - 1; i++)
+	{
+		UChar ch = srcPattern->charAt(i);
+		switch (ch)
+		{
+		case ':':
+		case '.':
+		case 'H':
+		case 'h':
+		case 'm':
+		case 's':
+			destPattern->append(ch);
+			break;
+
+		case UCHAR_SPACE:
+		case UCHAR_NBSPACE:
+			destPattern->append(UCHAR_SPACE);
+			break;
+
+		case 'a': // AM/PM
+			if (!amPmAdded)
+			{
+				amPmAdded = true;
+				destPattern->append("tt"); 
+			}
+			break;
+		}
+	}
+}
+
+/*
+PAL Function:
+GetLocaleTimeFormat
+
+Obtains time format information.
+Returns 1 for success, 0 otherwise
+*/
+extern "C" int32_t GetLocaleTimeFormat(const UChar* localeName, int shortFormat, UChar* value, int32_t valueLength)
+{
+	Locale locale = GetLocale(localeName);
+	if (locale.isBogus())
+	{
+		return UErrorCodeToBool(U_ILLEGAL_ARGUMENT_ERROR);
+	}
+
+	DateFormat::EStyle style = (shortFormat != 0) ? DateFormat::kShort : DateFormat::kMedium;
+	LocalPointer<DateFormat> dateFormat(DateFormat::createTimeInstance(style, locale));
+	if (dateFormat == NULL || !dateFormat.isValid())
+	{
+		return UErrorCodeToBool(U_MEMORY_ALLOCATION_ERROR);
+	}
+
+	// cast to SimpleDateFormat so we can call toPattern()
+	SimpleDateFormat* sdf = dynamic_cast<SimpleDateFormat*>(dateFormat.getAlias());
+	if (sdf == NULL)
+	{
+		return UErrorCodeToBool(U_INTERNAL_PROGRAM_ERROR);
+	}
+
+	UnicodeString icuPattern;
+	sdf->toPattern(icuPattern);
+
+	UnicodeString dotnetPattern;
+	NormalizeTimePattern(&icuPattern, &dotnetPattern);
+
+	UErrorCode status = U_ZERO_ERROR;
+	dotnetPattern.extract(value, valueLength, status);
 
 	return UErrorCodeToBool(status);
 }

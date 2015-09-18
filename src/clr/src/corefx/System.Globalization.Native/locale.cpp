@@ -14,7 +14,21 @@
 #include "unicode/localpointer.h"
 #include "unicode/ulocdata.h"
 
-inline int32_t UErrorCodeToBool(UErrorCode code) { return U_SUCCESS(code) ? 1 : 0; }
+int32_t UErrorCodeToBool(UErrorCode status) 
+{ 
+	if (U_SUCCESS(status))
+	{
+		return 1;
+	}
+
+	// assert errors that should never occur
+	assert(status != U_BUFFER_OVERFLOW_ERROR);
+	assert(status != U_INTERNAL_PROGRAM_ERROR);
+
+	// add possible SetLastError support here
+
+	return 0;
+}
 
 Locale GetLocale(const UChar* localeName, bool canonize)
 {
@@ -50,6 +64,22 @@ UErrorCode u_charsToUChars_safe(const char *str, UChar* value, int32_t valueLeng
 	return U_ZERO_ERROR;
 }
 
+void FixupLocaleName(UChar* value, int32_t valueLength)
+{
+	for (int i = 0; i < valueLength; i++)
+	{
+		if (value[i] == (UChar)'\0')
+		{
+			break;
+		}
+		else if (value[i] == (UChar)'_')
+		{
+			value[i] = (UChar)'-';
+		}
+	}
+}
+
+
 extern "C" int32_t GetLocaleName(const UChar* localeName, UChar* value, int32_t valueLength)
 {
 	Locale locale = GetLocale(localeName, true);
@@ -60,26 +90,13 @@ extern "C" int32_t GetLocaleName(const UChar* localeName, UChar* value, int32_t 
 		return UErrorCodeToBool(U_ILLEGAL_ARGUMENT_ERROR);
 	}
 
-	if (strlen(locale.getISO3Language()) == 0)
-	{
-		// unknown language; language is required (script and country optional)
-		return UErrorCodeToBool(U_ILLEGAL_ARGUMENT_ERROR);
-	}
+	// other validation done on managed side
 
 	UErrorCode status = u_charsToUChars_safe(locale.getName(), value, valueLength);
 	if (U_SUCCESS(status))
 	{
-		// replace underscores with hyphens to interop with existing .NET code
-		for (UChar* ch = value; *ch != (UChar)'\0'; ch++)
-		{
-			if (*ch == (UChar)'_')
-			{
-				*ch = (UChar)'-';
-			}
-		}
+		FixupLocaleName(value, valueLength);
 	}
-
-	assert(status != U_BUFFER_OVERFLOW_ERROR);
 
 	return UErrorCodeToBool(status);
 }

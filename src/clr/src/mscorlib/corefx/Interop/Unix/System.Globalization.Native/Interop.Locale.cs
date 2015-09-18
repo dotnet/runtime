@@ -19,6 +19,14 @@ internal static partial class Interop
 
         [DllImport(Libraries.GlobalizationInterop, CharSet = CharSet.Unicode)]
         [return: MarshalAs(UnmanagedType.Bool)]
+        internal unsafe static extern bool GetLocaleTimeFormat(string localeName, bool shortFormat, StringBuilder value, int valueLength);
+
+        [DllImport(Libraries.GlobalizationInterop, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal unsafe static extern bool GetLocaleInfoInt(string localeName, uint localeNumberData, ref int value);
+
+        [DllImport(Libraries.GlobalizationInterop, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal unsafe static extern bool GetLocaleInfoGroupingSizes(string localeName, uint localeGroupingData, ref int primaryGroupSize, ref int secondaryGroupSize);
     }
 }
