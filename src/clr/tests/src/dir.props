@@ -12,9 +12,4 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
 
-  <!-- Enable alternative JIT for testing if specified -->
-  <PropertyGroup>
-    <_CLRTestPreCommands>IF NOT "%__TestEnv%"=="" call %__TestEnv%</_CLRTestPreCommands>
-  </PropertyGroup>
- 
 </Project>

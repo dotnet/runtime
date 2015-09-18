@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #ifndef _PLATFORMDEFINES__H
 #define _PLATFORMDEFINES__H
@@ -14,7 +15,6 @@
 //
 #ifdef WINDOWS
 #include <windows.h>
-#include <string.h>
 
 #define FS_SEPERATOR L"\\"
 #define PATH_DELIMITER L";"
@@ -25,8 +25,22 @@ typedef unsigned error_t;
 typedef HANDLE THREAD_ID;
 
 #else // !WINDOWS
-#include <CoreClr.h>
 #include <pthread.h>
+
+typedef char16_t WCHAR;
+typedef unsigned long DWORD;
+typedef int BOOL;
+typedef WCHAR *LPWSTR, *PWSTR;
+typedef const WCHAR *LPCWSTR, *PCWSTR;
+
+#ifndef TRUE
+#define TRUE 1
+#endif
+
+#ifndef FALSE
+#define FALSE 0
+#endif
+
 #define WINAPI   _cdecl
 #ifndef __stdcall
 #if __i386__
@@ -63,7 +77,6 @@ typedef void* ULONG_PTR;
 typedef unsigned error_t;
 typedef void* LPVOID;
 typedef char BYTE;
-typedef long long __int64;
 typedef WCHAR OLECHAR;
 #endif
 
