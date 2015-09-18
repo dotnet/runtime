@@ -8252,6 +8252,13 @@ retry_for_debugger:
 
 #if defined(FEATURE_HIJACK) && defined(PLATFORM_UNIX)
 
+// This function is called by PAL to check if the specified instruction pointer
+// is in a function where we can safely inject activation. 
+BOOL PALAPI CheckActivationSafePoint(SIZE_T ip)
+{
+    return ExecutionManager::IsManagedCode(ip);
+}
+
 // This function is called when a GC is pending. It tries to ensure that the current
 // thread is taken to a GC-safe place as quickly as possible. It does this by doing 
 // one of the following:
@@ -8276,8 +8283,9 @@ void PALAPI HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext)
 
     PCODE ip = GetIP(interruptedContext);
 
-    if (ExecutionManager::IsManagedCode(ip) != TRUE)
-        return;
+    // This function can only be called when the interrupted thread is in 
+    // an activation safe point.
+    _ASSERTE(CheckActivationSafePoint(ip));
 
     Thread::WorkingOnThreadContextHolder workingOnThreadContext(pThread);
     if (!workingOnThreadContext.Acquired())
@@ -8383,7 +8391,7 @@ bool Thread::InjectGcSuspension()
 void ThreadSuspend::Initialize()
 {
 #if defined(FEATURE_HIJACK) && defined(PLATFORM_UNIX)
-    ::PAL_SetActivationFunction(HandleGCSuspensionForInterruptedThread);
+    ::PAL_SetActivationFunction(HandleGCSuspensionForInterruptedThread, CheckActivationSafePoint);
 #endif
 }
 

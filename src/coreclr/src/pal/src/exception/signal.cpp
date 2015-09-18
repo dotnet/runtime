@@ -101,9 +101,6 @@ int g_signalPipe[2] = { 0, 0 };
 
 DWORD g_dwExternalSignalHandlerThreadId = 0;
 
-// Activation function that gets called when an activation is injected into a thread.
-PAL_ActivationFunction g_activationFunction = NULL;
-
 /* public function definitions ************************************************/
 
 /*++
@@ -569,28 +566,6 @@ static void sigbus_handler(int code, siginfo_t *siginfo, void *context)
 }
 
 /*++
-Function:
-    PAL_SetActivationFunction
-
-    Register an activation function that gets called when an activation is injected
-    into a thread.
-
-Parameters:
-    pActivationFunction - activation function
-
-Return value:
-    None
---*/
-PALIMPORT
-VOID
-PALAPI
-PAL_SetActivationFunction(
-    IN PAL_ActivationFunction pActivationFunction)
-{
-    g_activationFunction = pActivationFunction;
-}
-
-/*++
 Function :
     inject_activation_handler
 
@@ -609,6 +584,8 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
     {
         if (g_activationFunction != NULL)
         {
+            _ASSERTE(g_safeActivationCheckFunction != NULL);
+
             native_context_t *ucontext = (native_context_t *)context;
 
             CONTEXT winContext;
@@ -617,7 +594,10 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
                 &winContext, 
                 CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT);
 
-            g_activationFunction(&winContext);
+            if (g_safeActivationCheckFunction(winContext.Rip))
+            {
+                g_activationFunction(&winContext);
+            }
 
             // Activation function may have modified the context, so update it.
             CONTEXTToNativeContext(&winContext, ucontext);
@@ -637,7 +617,7 @@ Parameters :
 
 (no return value)
 --*/
-void InjectActivationInternal(CorUnix::CPalThread* pThread)
+PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
 {
     int status = pthread_kill(pThread->GetPThreadSelf(), INJECT_ACTIVATION_SIGNAL);
     if (status != 0)
@@ -647,62 +627,8 @@ void InjectActivationInternal(CorUnix::CPalThread* pThread)
         // if the thread doesn't exist anymore.
         abort();
     }
-}
 
-/*++
-Function:
-PAL_InjectActivation
-
-Interrupt the specified thread and have it call an activation function registered
-using the PAL_SetActivationFunction
-
-Parameters:
-hThread            - handle of the target thread
-
-Return: 
-TRUE if it succeeded, FALSE otherwise.
---*/
-BOOL
-PALAPI
-PAL_InjectActivation(
-    IN HANDLE hThread)
-{
-    PERF_ENTRY(PAL_InjectActivation);
-    ENTRY("PAL_InjectActivation(hThread=%p)\n", hThread);
-
-    CPalThread *pCurrentThread;
-    CPalThread *pTargetThread;
-    IPalObject *pobjThread = NULL;
-
-    pCurrentThread = InternalGetCurrentThread();
-
-    PAL_ERROR palError = InternalGetThreadDataFromHandle(
-        pCurrentThread,
-        hThread,
-        0,
-        &pTargetThread,
-        &pobjThread
-        );
-
-    if (palError == NO_ERROR)
-    {
-        InjectActivationInternal(pTargetThread);
-    }
-    else
-    {
-        pCurrentThread->SetLastError(palError);
-    }
-
-    if (pobjThread != NULL)
-    {
-        pobjThread->ReleaseReference(pCurrentThread);
-    }
-
-    BOOL success = (palError == NO_ERROR);
-    LOGEXIT("PAL_InjectActivation returns:d\n", success);
-    PERF_EXIT(PAL_InjectActivation);
-
-    return success;
+    return NO_ERROR;
 }
 
 /*++
