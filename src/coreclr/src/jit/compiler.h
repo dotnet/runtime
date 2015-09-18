@@ -1971,7 +1971,17 @@ public:
     //-------------------------------------------------------------------------
 
     GenTreePtr              gtFoldExpr       (GenTreePtr    tree);
-    GenTreePtr              gtFoldExprConst  (GenTreePtr    tree);
+    GenTreePtr              
+#ifdef __clang__
+        // TODO-Amd64-Unix: Remove this when the clang optimizer is fixed and/or the method implementation is refactored in a simpler code.
+        // This is a workaround for a bug in the clang-3.5 optimizer. The issue is that in release build the optimizer is mistyping 
+        // (or just wrongly decides to use 32 bit operation for a corner case of MIN_LONG) the args of the (ltemp / lval2)
+        // to int (it does a 32 bit div operation instead of 64 bit) - see the implementation of the method in gentree.cpp. 
+        // For the case of lval1 and lval2 equal to MIN_LONG (0x8000000000000000) this results in raising a SIGFPE. 
+        // The method implementation is rather complex. Disable optimizations for now.
+    __attribute__((optnone))
+#endif // __clang__
+                            gtFoldExprConst(GenTreePtr      tree);
     GenTreePtr              gtFoldExprSpecial(GenTreePtr    tree);
     GenTreePtr              gtFoldExprCompare(GenTreePtr    tree);
 

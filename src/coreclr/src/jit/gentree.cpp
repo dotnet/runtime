@@ -10141,8 +10141,10 @@ LNG_ADD_CHKOVF:
 
         case GT_MUL:
             ltemp = lval1 * lval2;
+
             if (tree->gtOverflow() && lval2 != 0)
             {
+
                 if (tree->gtFlags & GTF_UNSIGNED)
                 {
                     UINT64 ultemp = ltemp;
@@ -10165,19 +10167,15 @@ LNG_ADD_CHKOVF:
                         {
                             goto LNG_OVF;
                         }
+
+                        // TODO-Amd64-Unix: Remove the code that disables optimizations for this method when the clang 
+                        // optimizer is fixed and/or the method implementation is refactored in a simpler code.
+                        // There is a bug in the clang-3.5 optimizer. The issue is that in release build the optimizer is mistyping 
+                        // (or just wrongly decides to use 32 bit operation for a corner case of MIN_LONG) the args of the (ltemp / lval2)
+                        // to int (it does a 32 bit div operation instead of 64 bit.)
+                        // For the case of lval1 and lval2 equal to MIN_LONG (0x8000000000000000) this results in raising a SIGFPE.
+                        // Optimizations disabled for now. See compiler.h.
                         if ((ltemp/lval2) != lval1) goto LNG_OVF;
-#ifdef UNIX_AMD64_ABI
-                        // There is a clang 3.5 optimizer bug that in case of lval1 and lval2 equal
-                        // of 0x80000000 (MIN_LONG) the above expression (ltemp / lval2) results
-                        // in 0x80000000 (MIN_LONG. This causes an overflowing mul expression 
-                        // to be repalced with a 0, instead of throwing an overflow exception.
-                        // The following extra check fixes the issue. If the bug is fixed in later releases 
-                        // of clang this fix becomes dead code since the goto above will trigger.
-                        // In debug builds the expression result is correct - 0.
-                        // The lval1 and lval2 are checked to be non-zeroes above.
-                        // If multiplication of 2 non-zeroes results in a zero results, it must be an overflow.
-                        if (ltemp == 0) goto LNG_OVF;
-#endif // UNIX_AMD64_ABI
                     }
                 }
             }
