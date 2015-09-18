@@ -1691,6 +1691,8 @@ void InitThreadManager()
     // Randomize OBJREF_HASH to handle hash collision.
     Thread::OBJREF_HASH = OBJREF_TABSIZE - (DbgGetEXETimeStamp()%10);
 #endif // _DEBUG
+
+    ThreadSuspend::Initialize();
 }
 
 

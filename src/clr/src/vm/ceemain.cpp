@@ -1160,7 +1160,7 @@ void EEStartupHelper(COINITIEE fFlags)
 #endif // PROFILING_SUPPORTED
 
         InitializeExceptionHandling();
-    
+
         //
         // Install our global exception filter
         //
