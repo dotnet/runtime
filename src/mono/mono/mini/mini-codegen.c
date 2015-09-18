@@ -2754,9 +2754,6 @@ mini_type_is_hfa (MonoType *t, int *out_nfields, int *out_esize)
 				return FALSE;
 			prev_ftype = ftype;
 			nfields += nested_nfields;
-			// FIXME: Nested float structs are aligned to 8 bytes
-			if (ftype->type == MONO_TYPE_R4)
-				return FALSE;
 		} else {
 			if (!(!ftype->byref && (ftype->type == MONO_TYPE_R4 || ftype->type == MONO_TYPE_R8)))
 				return FALSE;
