@@ -24,8 +24,9 @@ namespace System.Numerics
             for (int i = left.Length - 1; i >= 0; i--)
             {
                 ulong value = (carry << 32) | left[i];
-                quotient[i] = (uint)(value / right);
-                carry = value % right;
+                ulong digit = value / right;
+                quotient[i] = (uint)digit;
+                carry = value - digit * right;
             }
             remainder = (uint)carry;
 
@@ -45,8 +46,9 @@ namespace System.Numerics
             for (int i = left.Length - 1; i >= 0; i--)
             {
                 ulong value = (carry << 32) | left[i];
-                quotient[i] = (uint)(value / right);
-                carry = value % right;
+                ulong digit = value / right;
+                quotient[i] = (uint)digit;
+                carry = value - digit * right;
             }
 
             return quotient;
@@ -247,7 +249,7 @@ namespace System.Numerics
 
             // Repairs the dividend, if the last subtract was too much
 
-            ulong carry = 0L;
+            ulong carry = 0UL;
 
             for (int i = 0; i < rightLength; i++)
             {
@@ -272,7 +274,7 @@ namespace System.Numerics
             // Combines a subtract and a multiply operation, which is naturally
             // more efficient than multiplying and then subtracting...
 
-            ulong carry = 0L;
+            ulong carry = 0UL;
 
             for (int i = 0; i < rightLength; i++)
             {
