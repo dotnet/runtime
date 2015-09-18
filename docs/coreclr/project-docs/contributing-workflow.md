@@ -30,7 +30,7 @@ Typos are embarrassing! We will accept most PRs that fix typos. In order to make
 Coding Style Changes
 --------------------
 
-We intend to bring dotnet/corefx in to full conformance with the style guidelines described in [Coding Style](https://github.com/dotnet/corefx/blob/master/Documentation/coding-style.md). We plan to do that with tooling, in a holistic way. In the meantime, please:
+We intend to bring dotnet/corefx in to full conformance with the style guidelines described in [Coding Style](https://github.com/dotnet/corefx/blob/master/Documentation/coding-guidelines/coding-style.md). We plan to do that with tooling, in a holistic way. In the meantime, please:
 
 * **DO NOT** send PRs for style changes. 
 * **DO** give priority to the current style of the project or file you're changing even if it diverges from the general guidelines.
