@@ -779,17 +779,7 @@ namespace System.Linq.Expressions
         {
             ContractUtils.RequiresNotNull(expressions, "expressions");
 
-            switch (expressions.Length)
-            {
-                case 2: return Block(expressions[0], expressions[1]);
-                case 3: return Block(expressions[0], expressions[1], expressions[2]);
-                case 4: return Block(expressions[0], expressions[1], expressions[2], expressions[3]);
-                case 5: return Block(expressions[0], expressions[1], expressions[2], expressions[3], expressions[4]);
-                default:
-                    ContractUtils.RequiresNotEmpty(expressions, "expressions");
-                    RequiresCanRead(expressions, "expressions");
-                    return new BlockN(expressions.Copy());
-            }
+            return GetOptimizedBlockExpression(expressions);
         }
 
         /// <summary>
@@ -935,6 +925,21 @@ namespace System.Linq.Expressions
                     throw Error.DuplicateVariable(v);
                 }
                 set.Add(v);
+            }
+        }
+
+        private static BlockExpression GetOptimizedBlockExpression(IReadOnlyList<Expression> expressions)
+        {
+            switch (expressions.Count)
+            {
+                case 2: return Block(expressions[0], expressions[1]);
+                case 3: return Block(expressions[0], expressions[1], expressions[2]);
+                case 4: return Block(expressions[0], expressions[1], expressions[2], expressions[3]);
+                case 5: return Block(expressions[0], expressions[1], expressions[2], expressions[3], expressions[4]);
+                default:
+                    ContractUtils.RequiresNotEmptyList(expressions, "expressions");
+                    RequiresCanRead(expressions, "expressions");
+                    return new BlockN(expressions.ToArray());
             }
         }
     }
