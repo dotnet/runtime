@@ -8370,7 +8370,7 @@ bool Thread::InjectGcSuspension()
     hThread = GetThreadHandle();
     if (hThread != INVALID_HANDLE_VALUE && hThread != SWITCHOUT_HANDLE_VALUE)
     {
-        ::PAL_InjectActivation(hThread, HandleGCSuspensionForInterruptedThread);
+        ::PAL_InjectActivation(hThread);
         return true;
     }
 
@@ -8378,6 +8378,14 @@ bool Thread::InjectGcSuspension()
 }
 
 #endif // FEATURE_HIJACK && PLATFORM_UNIX
+
+// Initialize thread suspension support
+void ThreadSuspend::Initialize()
+{
+#if defined(FEATURE_HIJACK) && defined(PLATFORM_UNIX)
+    ::PAL_SetActivationFunction(HandleGCSuspensionForInterruptedThread);
+#endif
+}
 
 #ifdef _DEBUG
 BOOL Debug_IsLockedViaThreadSuspension()
