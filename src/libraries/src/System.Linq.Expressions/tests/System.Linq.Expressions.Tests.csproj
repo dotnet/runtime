@@ -133,6 +133,12 @@
     <Compile Include="Unary\UnaryArithmeticNegateTests.cs" />
     <Compile Include="Unary\UnaryBitwiseNotNullableTests.cs" />
     <Compile Include="Unary\UnaryBitwiseNotTests.cs" />
+    <Compile Include="Unary\UnaryIsFalseNullableTests.cs" />
+    <Compile Include="Unary\UnaryIsFalseTests.cs" />
+    <Compile Include="Unary\UnaryIsTrueNullableTests.cs" />
+    <Compile Include="Unary\UnaryIsTrueTests.cs" />
+    <Compile Include="Unary\UnaryUnaryPlusNullableTests.cs" />
+    <Compile Include="Unary\UnaryUnaryPlusTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Linq.Expressions.csproj">
