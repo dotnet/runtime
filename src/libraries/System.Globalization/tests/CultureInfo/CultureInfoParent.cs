@@ -10,7 +10,6 @@ namespace System.Globalization.Tests
     public class CultureInfoParent
     {
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)] 
         public void PosTest1()
         {
             CultureInfo myExpectParentCulture = new CultureInfo("en");

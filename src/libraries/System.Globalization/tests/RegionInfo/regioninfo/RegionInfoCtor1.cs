@@ -51,7 +51,6 @@ namespace System.Globalization.Tests
 
         // NegTest1:culture specifies neutral culture 1
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void NegTest1()
         {
             CultureInfo myCultur = new CultureInfo("en");

@@ -9,13 +9,30 @@ namespace System.Globalization.Tests
 {
     public class CultureInfoConstructor2
     {
-        [Fact]
-        public void TestDiffCulture()
+        [Theory]
+        [InlineData("")]
+        [InlineData("en")]
+        [InlineData("de-DE")]
+        [InlineData("de-DE_phoneb")]
+        public void TestDiffCulture(string localeName)
         {
-            CultureInfo myCulture = new CultureInfo("");
-            CultureInfo myCultureEn = new CultureInfo("en");
-            CultureInfo myCultureFr = new CultureInfo("fr-FR");
-            CultureInfo myCultureDe = new CultureInfo("de-DE");
+            CultureInfo myCulture = new CultureInfo(localeName);
+        }
+
+        [PlatformSpecific(PlatformID.AnyUnix)] //todo: Win10 also has these semantics
+        [InlineData("en-US-CUSTOM")]
+        [InlineData("xx-XX")]
+        public void TestCustomCulture(string localeName)
+        {
+            CultureInfo myCulture = new CultureInfo(localeName);
+        }
+
+        [PlatformSpecific(PlatformID.Windows)] //todo: remove this test for Win10, as it should work with TestCustomCulture test above
+        [InlineData("en-US-CUSTOM")]
+        [InlineData("xx-XX")]
+        public void TestCustomCultureWindows(string localeName)
+        {
+            Assert.Throws<ArgumentNullException>(() => { CultureInfo myCulture = new CultureInfo(localeName); });
         }
 
         [Fact]
@@ -26,6 +43,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [InlineData("NotAValidCulture")]
+        [InlineData("en-US@x=1")] // don't support ICU keywords
         public void TestInvalidCulture(string cultureName)
         {
             Assert.Throws<CultureNotFoundException>(() => { CultureInfo myCulture = new CultureInfo(cultureName); });

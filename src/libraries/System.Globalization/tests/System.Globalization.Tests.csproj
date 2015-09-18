@@ -18,6 +18,8 @@
   <ItemGroup>
     <Compile Include="CompareInfo.cs" />
     <Compile Include="CompareInfo.TestData.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoCurrencySymbol.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoNegativeInfinitySymbol.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoNumberDecimalDigits.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoNumberGroupSizes.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoNumberNegativePattern.cs" />
@@ -49,7 +51,6 @@
     <Compile Include="CultureInfo\CultureInfoNativeName.cs" />
     <Compile Include="CultureInfo\CultureInfoParent.cs" />
     <Compile Include="CultureInfo\CultureInfoReadOnly.cs" />
-    <Compile Include="CultureInfo\CultureInfoTextInfo.cs" />
     <Compile Include="CultureInfo\CultureInfoToString.cs" />
     <Compile Include="CultureInfo\CultureInfoTwoLetterISOLanguageName.cs" />
     <Compile Include="CultureInfo\CurrentCulture.cs" />
