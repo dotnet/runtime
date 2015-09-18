@@ -25,7 +25,7 @@ interface ICLRDataTarget;
  * for dbgeng (watson, windbg, etc.) and for any other 3rd parties since 
  * it is a documented API for dump generation.
  */
-class DataTargetAdapter : public ICorDebugMutableDataTarget 
+class DataTargetAdapter : public ICorDebugMutableDataTarget
 {
 public:
     // Create an adapter over the supplied legacy data target interface
