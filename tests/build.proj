@@ -25,9 +25,4 @@
 
   <!-- Override RestorePackages from dir.traversal.targets and do a batch restore -->
   <Target Name="RestorePackages" DependsOnTargets="BatchRestorePackages" />
-
-  <!-- Override clean from dir.traversal.targets and just remove the full BinDir -->
-  <Target Name="Clean">
-    <RemoveDir Directories="$(PackagesDir)" />
-  </Target>
 </Project>
