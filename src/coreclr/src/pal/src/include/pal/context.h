@@ -371,7 +371,6 @@ BOOL
 CONTEXT_SetThreadContext(
     DWORD dwProcessId,
     pthread_t self,
-    DWORD dwLwpId,
     CONST CONTEXT *lpContext
     );
 
@@ -393,7 +392,6 @@ BOOL
 CONTEXT_GetThreadContext(
          DWORD dwProcessId,
          pthread_t self,
-         DWORD dwLwpId,
          LPCONTEXT lpContext);
 
 #if HAVE_MACH_EXCEPTIONS

@@ -20,6 +20,7 @@ Abstract:
 --*/
 
 #include "pal/corunix.hpp"
+#include "pal/context.h"
 #include "pal/thread.hpp"
 #include "pal/mutex.hpp"
 #include "pal/handlemgr.hpp"
@@ -84,6 +85,11 @@ can't be suspended. */
 pthread_mutex_t ptmEndThread;
 pthread_cond_t ptcEndThread;
 static int iEndingThreads = 0;
+
+// Activation function that gets called when an activation is injected into a thread.
+PAL_ActivationFunction g_activationFunction = NULL;
+// Function to check if an activation can be safely injected at a specified context
+PAL_SafeActivationCheckFunction g_safeActivationCheckFunction = NULL;
 
 void
 ThreadCleanupRoutine(
@@ -1364,7 +1370,7 @@ GetThreadTimes(
     pthrTarget->Lock(pthrCurrent);
 	
     mach_port_t mhThread;
-    mhThread = pthread_mach_thread_np(pthrTarget->GetPThreadSelf());
+    mhThread = pthrTarget->GetMachPortSelf();
 	
 	kern_return_t status;
 	status = thread_info(
@@ -1466,6 +1472,9 @@ CPalThread::ThreadEntry(
 
     pThread->m_threadId = THREADSilentGetCurrentThreadId();
     pThread->m_pthreadSelf = pthread_self();
+#if HAVE_MACH_THREADS
+    pThread->m_machPortSelf = pthread_mach_thread_np(pThread->m_pthreadSelf);
+#endif
 #if HAVE_THREAD_SELF
     pThread->m_dwLwpId = (DWORD) thread_self();
 #elif HAVE__LWP_SELF
@@ -1638,6 +1647,9 @@ CorUnix::CreateThreadData(
 
     pThread->m_threadId = THREADSilentGetCurrentThreadId();
     pThread->m_pthreadSelf = pthread_self();
+#if HAVE_MACH_THREADS
+    pThread->m_machPortSelf = pthread_mach_thread_np(pThread->m_pthreadSelf);
+#endif
 #if HAVE_THREAD_SELF
     pThread->m_dwLwpId = (DWORD) thread_self();
 #elif HAVE__LWP_SELF
@@ -2491,7 +2503,92 @@ PAL_GetStackLimit()
 #endif
 }
 
+PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread);
+
+/*++
+Function:
+    PAL_SetActivationFunction
+
+    Register an activation function that gets called when an activation is injected
+    into a thread.
+
+Parameters:
+    pActivationFunction - activation function
+    pSafeActivationCheckFunction - function to check if an activation can be safely
+                                   injected at a specified context
+Return value:
+    None
+--*/
+PALIMPORT
+VOID
+PALAPI
+PAL_SetActivationFunction(
+    IN PAL_ActivationFunction pActivationFunction,
+    IN PAL_SafeActivationCheckFunction pSafeActivationCheckFunction)
+{
+    g_activationFunction = pActivationFunction;
+    g_safeActivationCheckFunction = pSafeActivationCheckFunction;
+}
+
+/*++
+Function:
+PAL_InjectActivation
+
+Interrupt the specified thread and have it call an activation function registered
+using the PAL_SetActivationFunction
+
+Parameters:
+hThread            - handle of the target thread
+
+Return:
+TRUE if it succeeded, FALSE otherwise.
+--*/
+BOOL
+PALAPI
+PAL_InjectActivation(
+    IN HANDLE hThread)
+{
+    PERF_ENTRY(PAL_InjectActivation);
+    ENTRY("PAL_InjectActivation(hThread=%p)\n", hThread);
+
+    CPalThread *pCurrentThread;
+    CPalThread *pTargetThread;
+    IPalObject *pobjThread = NULL;
+
+    pCurrentThread = InternalGetCurrentThread();
+
+    PAL_ERROR palError = InternalGetThreadDataFromHandle(
+        pCurrentThread,
+        hThread,
+        0,
+        &pTargetThread,
+        &pobjThread
+        );
+
+    if (palError == NO_ERROR)
+    {
+        palError = InjectActivationInternal(pTargetThread);
+    }
+
+    if (palError == NO_ERROR)
+    {
+        pCurrentThread->SetLastError(palError);
+    }
+
+    if (pobjThread != NULL)
+    {
+        pobjThread->ReleaseReference(pCurrentThread);
+    }
+
+    BOOL success = (palError == NO_ERROR);
+    LOGEXIT("PAL_InjectActivation returns:d\n", success);
+    PERF_EXIT(PAL_InjectActivation);
+
+    return success;
+}
+
 #if HAVE_MACH_EXCEPTIONS
+
 extern mach_port_t s_ExceptionPort;
 extern mach_port_t s_TopExceptionPort;
 

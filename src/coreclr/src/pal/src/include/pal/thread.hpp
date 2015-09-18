@@ -314,6 +314,10 @@ namespace CorUnix
         DWORD m_dwLwpId;
         pthread_t m_pthreadSelf;        
 
+#if HAVE_MACH_THREADS
+        mach_port_t m_machPortSelf;
+#endif 
+
         //
         // Start info
         //
@@ -394,6 +398,9 @@ namespace CorUnix
             m_threadId(0),
             m_dwLwpId(0),
             m_pthreadSelf(0),
+#if HAVE_MACH_THREADS
+            m_machPortSelf(0),
+#endif            
             m_lpStartAddress(NULL),
             m_lpStartParameter(NULL),
             m_bCreateSuspended(FALSE),
@@ -547,6 +554,16 @@ namespace CorUnix
         {
             return m_pthreadSelf;
         };
+
+#if HAVE_MACH_THREADS
+        mach_port_t
+        GetMachPortSelf(
+            void
+            )
+        {
+            return m_machPortSelf;
+        };
+#endif
 
         LPTHREAD_START_ROUTINE
         GetStartAddress(
@@ -745,6 +762,9 @@ WaitForEndingThreads(
     );
 
 extern int free_threads_spinlock;
+
+extern PAL_ActivationFunction g_activationFunction;
+extern PAL_SafeActivationCheckFunction g_safeActivationCheckFunction;
 
 /*++
 Macro:
