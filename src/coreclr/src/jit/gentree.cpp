@@ -10141,8 +10141,10 @@ LNG_ADD_CHKOVF:
 
         case GT_MUL:
             ltemp = lval1 * lval2;
+
             if (tree->gtOverflow() && lval2 != 0)
             {
+
                 if (tree->gtFlags & GTF_UNSIGNED)
                 {
                     UINT64 ultemp = ltemp;
@@ -10165,6 +10167,14 @@ LNG_ADD_CHKOVF:
                         {
                             goto LNG_OVF;
                         }
+
+                        // TODO-Amd64-Unix: Remove the code that disables optimizations for this method when the clang 
+                        // optimizer is fixed and/or the method implementation is refactored in a simpler code.
+                        // There is a bug in the clang-3.5 optimizer. The issue is that in release build the optimizer is mistyping 
+                        // (or just wrongly decides to use 32 bit operation for a corner case of MIN_LONG) the args of the (ltemp / lval2)
+                        // to int (it does a 32 bit div operation instead of 64 bit.)
+                        // For the case of lval1 and lval2 equal to MIN_LONG (0x8000000000000000) this results in raising a SIGFPE.
+                        // Optimizations disabled for now. See compiler.h.
                         if ((ltemp/lval2) != lval1) goto LNG_OVF;
                     }
                 }
