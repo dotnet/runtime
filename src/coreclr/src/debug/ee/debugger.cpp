@@ -15406,7 +15406,11 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
 #if defined(_TARGET_X86_)
         filterContext->Eax = (DWORD)pDE;
 #elif defined(_TARGET_AMD64_)
+#ifdef UNIX_AMD64_ABI
+        filterContext->Rdi = (SIZE_T)pDE;
+#else // UNIX_AMD64_ABI
         filterContext->Rcx = (SIZE_T)pDE;
+#endif // !UNIX_AMD64_ABI
 #elif defined(_TARGET_ARM_)
         filterContext->R0 = (DWORD)pDE;
 #else
