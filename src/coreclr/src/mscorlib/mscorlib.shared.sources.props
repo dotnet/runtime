@@ -134,6 +134,7 @@
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\InvalidComObjectException.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeArrayRankMismatchException.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeArrayTypeMismatchException.cs" />
+    <InteropSources Condition="'$(FeatureCoreClr)'=='true'"  Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeCallableAttribute.cs" />
     <InteropSources Condition="'$(FeatureCominterop)' != 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NonPortable.cs" />
     <InteropSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\DispatchWrapper.cs" />
     <InteropSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ExtensibleClassFactory.cs" />
