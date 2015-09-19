@@ -1287,10 +1287,18 @@ public:
         if (token != mdTokenNil)
         {
             _ASSERTE(TypeFromToken(token) == mdtMethodDef || TypeFromToken(token) == mdtMemberRef);
-
-            pTable->EncodeModule(
-                (TypeFromToken(token) == mdtMethodDef) ? ENCODE_METHOD_ENTRY_DEF_TOKEN : ENCODE_METHOD_ENTRY_REF_TOKEN,
-                referencingModule, pSigBuilder);
+            
+            // It's a NativeCallable method , then encode it as ENCODE_METHOD_NATIVE_ENTRY
+            if (pTable->GetCompileInfo()->IsNativeCallableMethod(handle))
+            {
+                pTable->EncodeModule(ENCODE_METHOD_NATIVE_ENTRY, referencingModule, pSigBuilder);
+            }
+            else
+            {
+                pTable->EncodeModule(
+                    (TypeFromToken(token) == mdtMethodDef) ? ENCODE_METHOD_ENTRY_DEF_TOKEN : ENCODE_METHOD_ENTRY_REF_TOKEN,
+                    referencingModule, pSigBuilder);
+            }
 
             pSigBuilder->AppendData(RidFromToken(token));
         }
