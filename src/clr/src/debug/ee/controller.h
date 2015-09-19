@@ -896,6 +896,7 @@ inline void VerifyExecutableAddress(const BYTE* address)
 // TODO: : when can we apply this to x86?
 #if defined(_WIN64)   
 #if defined(_DEBUG) 
+#ifndef FEATURE_PAL    
     MEMORY_BASIC_INFORMATION mbi;
     
     if (sizeof(mbi) == ClrVirtualQuery(address, &mbi, sizeof(mbi)))
@@ -913,6 +914,7 @@ inline void VerifyExecutableAddress(const BYTE* address)
                 ("VEA: address (0x%p) is not on an executable page.", address));
         }
     }
+#endif // !FEATURE_PAL    
 #endif // _DEBUG   
 #endif // _WIN64
 }
