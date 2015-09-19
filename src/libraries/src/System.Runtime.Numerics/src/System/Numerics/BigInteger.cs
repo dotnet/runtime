@@ -990,26 +990,20 @@ namespace System.Numerics
             if (value._bits == null)
                 return Math.Log((double)value._sign, baseValue);
 
-            Double c = 0, d = 0.5D;
-            const Double log2 = 0.69314718055994529D;
+            ulong h = value._bits[value._bits.Length - 1];
+            ulong m = value._bits.Length > 1 ? value._bits[value._bits.Length - 2] : 0;
+            ulong l = value._bits.Length > 2 ? value._bits[value._bits.Length - 3] : 0;
 
-            int uintLength = Length(value._bits);
-            int topbits = BitLengthOfUInt(value._bits[uintLength - 1]);
-            int bitlen = (uintLength - 1) * kcbitUint + topbits;
-            uint indbit = (uint)(1 << (topbits - 1));
+            // measure the exact bit count
+            int c = NumericsHelpers.CbitHighZero((uint)h);
+            int b = value._bits.Length * 32 - c;
 
-            for (int index = uintLength - 1; index >= 0; --index)
-            {
-                while (indbit != 0)
-                {
-                    if ((value._bits[index] & indbit) != 0)
-                        c += d;
-                    d *= 0.5;
-                    indbit >>= 1;
-                }
-                indbit = 0x80000000;
-            }
-            return (Math.Log(c) + log2 * bitlen) / Math.Log(baseValue);
+            // extract most significant bits
+            ulong x = (h << 32 + c) | (m << c) | (l >> 32 - c);
+
+            // let v = value, b = bit count, x = v/2^b-64
+            // log ( v/2^b-64 * 2^b-64 ) = log ( x ) + log ( 2^b-64 )
+            return Math.Log(x, baseValue) + (b - 64) / Math.Log(baseValue, 2);
         }
 
 
