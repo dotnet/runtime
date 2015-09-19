@@ -9014,8 +9014,19 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
     MethodDesc * pMD = GetMethod(ftn);
 
     pResult->accessType = IAT_VALUE;
-    pResult->addr = (void *) pMD->GetMultiCallableAddrOfCode();
 
+
+#ifndef CROSSGEN_COMPILE
+    // If LDFTN target has [NativeCallable] attribute , then create a UMEntryThunk.
+    if (pMD->HasNativeCallableAttribute())
+    {
+        pResult->addr = (void*)COMDelegate::ConvertToCallback(pMD);
+    }
+    else
+#endif //CROSSGEN_COMPILE
+    {
+        pResult->addr = (void *)pMD->GetMultiCallableAddrOfCode();
+    }
     EE_TO_JIT_TRANSITION();
 }
 
@@ -13335,6 +13346,9 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
+        // ENCODE_METHOD_NATIVECALLABLE_HANDLE is same as ENCODE_METHOD_ENTRY_DEF_TOKEN 
+        // except for AddrOfCode
+    case ENCODE_METHOD_NATIVE_ENTRY:
     case ENCODE_METHOD_ENTRY_DEF_TOKEN:
         {
             mdToken MethodDef = TokenFromRid(CorSigUncompressData(pBlob), mdtMethodDef);
@@ -13390,7 +13404,14 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             }
 
         MethodEntry:
-            result = pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY);
+            if (kind == ENCODE_METHOD_NATIVE_ENTRY)
+            {
+                result = COMDelegate::ConvertToCallback(pMD);
+            }
+            else
+            {
+                result = pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY);
+            }
 
         #ifndef _TARGET_ARM_
             if (CORCOMPILE_IS_PCODE_TAGGED(result))
