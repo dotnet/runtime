@@ -35,7 +35,7 @@ extern gfHostConfig:dword
 extern NDirect__IsHostHookEnabled:proc
 endif
 extern UMThunkStubRareDisableWorker:proc
-
+extern ReversePInvokeBadTransition:proc
 
 ;
 ; METHODDESC_REGISTER: UMEntryThunk*
@@ -188,6 +188,10 @@ HaveThread:
 
         mov             r12, rax                ; r12 <- Thread*
 
+        ;FailFast if a native callable method invoked via ldftn and calli.
+        cmp             dword ptr [r12 + OFFSETOF__Thread__m_fPreemptiveGCDisabled], 1
+        jz              InvalidTransition
+
         ;
         ; disable preemptive GC
         ;
@@ -279,6 +283,10 @@ DoThreadSetup:
         
         jmp             HaveThread
         
+InvalidTransition:
+        ; ReversePInvokeBadTransition will failfast
+        call            ReversePInvokeBadTransition
+
 DoTrapReturningThreadsTHROW:
 
         mov             [rbp + UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET +  0h], rcx

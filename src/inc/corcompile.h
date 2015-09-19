@@ -724,6 +724,7 @@ enum CORCOMPILE_FIXUP_BLOB_KIND
     ENCODE_CHECK_FIELD_OFFSET,
 
     ENCODE_DELEGATE_CTOR,
+    ENCODE_METHOD_NATIVE_ENTRY,                     /* NativeCallable method token */
 
     ENCODE_MODULE_HANDLE      = 0x50,               /* Module token */
     ENCODE_STATIC_FIELD_ADDRESS,                    /* For accessing a static field */
@@ -1891,6 +1892,9 @@ class ICorCompileInfo
     // Takes a stub and blits it into the buffer, resetting the reference count
     // to 1 on the clone. The buffer has to be large enough to hold the stub object and the code
     virtual HRESULT GetStubClone(void *pStub, BYTE *pBuffer, DWORD dwBufferSize) = 0;
+
+    // true if the method has [NativeCallableAttribute]
+    virtual BOOL IsNativeCallableMethod(CORINFO_METHOD_HANDLE handle) = 0;
 
 #ifdef CLR_STANDALONE_BINDER
     virtual HRESULT GetMetadataRvaInfo(
