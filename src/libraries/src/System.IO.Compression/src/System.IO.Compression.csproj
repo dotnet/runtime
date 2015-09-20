@@ -15,12 +15,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseECMAKey Condition="'$(UseECMAKey)'==''">true</UseECMAKey>
     <PackageTargetFramework>dotnet</PackageTargetFramework>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' ">
-    <PackageTargetRuntime>win7</PackageTargetRuntime>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' ">
-    <PackageTargetRuntime>unix</PackageTargetRuntime>
+    <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU'" />
