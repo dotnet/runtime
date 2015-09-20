@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace System.Net.Http.Tests
+namespace System.Net.Http.Functional.Tests
 {
     public class HttpClientHandlerTest
     {

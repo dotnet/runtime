@@ -8,7 +8,7 @@ using System.Net.Http;
 
 using Xunit;
 
-namespace System.Net.Http.Tests
+namespace System.Net.Http.Functional.Tests
 {
     public class HttpMethodTest
     {
