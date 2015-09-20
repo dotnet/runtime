@@ -66,7 +66,25 @@ namespace System.Net.Http.Tests
         {
             _output = output;
         }
-        
+
+        [Fact]
+        public void MaxRequestContentBufferSize_Get_ReturnsZero()
+        {
+            using (var handler = new HttpClientHandler())
+            {
+                Assert.Equal(0, handler.MaxRequestContentBufferSize);
+            }
+        }
+
+        [Fact]
+        public void MaxRequestContentBufferSize_Set_ThrowsPlatformNotSupportedException()
+        {
+            using (var handler = new HttpClientHandler())
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => handler.MaxRequestContentBufferSize = 1024);
+            }
+        }
+
         [Fact]
         public async void SendAsync_SimpleGet_Success()
         {
