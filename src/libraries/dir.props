@@ -234,6 +234,15 @@
 
     <TargetsUnix Condition="'$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsFreeBSD)' == 'true'">true</TargetsUnix>
   </PropertyGroup>
+  <!-- Make some assumptions based on TargetsPlatform -->
+  <PropertyGroup Condition="'$(UseUnixPackageTargetRuntimeDefaults)' == 'true' OR '$(UsePackageTargetRuntimeDefaults)' == 'true'">
+    <PackageTargetRuntime Condition=" '$(TargetsLinux)' == 'true'  AND '$(PackageTargetRuntime)' == ''">linux</PackageTargetRuntime>
+    <PackageTargetRuntime Condition=" '$(TargetsOSX)' == 'true'  AND '$(PackageTargetRuntime)' == ''">osx</PackageTargetRuntime>
+    <PackageTargetRuntime Condition=" '$(TargetsUnix)' == 'true' AND '$(PackageTargetRuntime)' == ''">unix</PackageTargetRuntime>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(UseWindowsPackageTargetRuntimeDefault)' == 'true' OR '$(UsePackageTargetRuntimeDefaults)' == 'true'">
+    <PackageTargetRuntime Condition=" '$(TargetsWindows)' == 'true' AND '$(PackageTargetRuntime)' == ''">win7</PackageTargetRuntime>
+  </PropertyGroup>
 
   <PropertyGroup>
     <!-- Don't run tests if we're building another platform's binaries on Windows -->
