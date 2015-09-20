@@ -446,8 +446,6 @@ namespace System.Net.Http
                 Debug.Assert(!((_remainingDataCount > 0) && (_pendingReadRequest != null)), "We can't have both remaining data and a pending request.");
                 Debug.Assert(!((_completed != null) && (_pendingReadRequest != null)), "We can't both be completed and have a pending request.");
                 Debug.Assert(_pendingReadRequest == null || !_pendingReadRequest.Task.IsCompleted, "A pending read request must not have been completed yet.");
-
-                Debug.Assert(!_disposed || _completed != null, "If disposed, the stream must also be completed.");
             }
 
             /// <summary>State associated with a pending read request.</summary>
