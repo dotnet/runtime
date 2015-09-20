@@ -128,8 +128,9 @@ namespace System.Net.Http
 
         public long MaxRequestContentBufferSize
         {
-            get { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
-            set { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
+            // See comments in HttpClientHandler.Windows.cs.  This behavior matches.
+            get { return 0; }
+            set { throw new PlatformNotSupportedException(); }
         }
 
         #endregion Properties
