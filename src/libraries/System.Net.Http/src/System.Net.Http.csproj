@@ -8,6 +8,8 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Net.Http</AssemblyName>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
+    <PackageTargetFramework>dotnet</PackageTargetFramework>
+    <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
   </PropertyGroup>
   
   <!-- Help VS understand available configurations -->
