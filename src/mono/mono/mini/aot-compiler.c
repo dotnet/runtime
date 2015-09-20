@@ -6158,7 +6158,7 @@ emit_trampolines (MonoAotCompile *acfg)
 	int tramp_type;
 #endif
 
-	if (!mono_aot_mode_is_full (&acfg->aot_opts) || REALLY_LLVMONLY)
+	if (!mono_aot_mode_is_full (&acfg->aot_opts) || acfg->aot_opts.llvm_only)
 		return;
 	
 	g_assert (acfg->image->assembly);
@@ -6574,10 +6574,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->bind_to_runtime_version = TRUE;
 		} else if (str_begins_with (arg, "full")) {
 			opts->mode = MONO_AOT_MODE_FULL;
-			if (REALLY_LLVMONLY) {
-				opts->llvm = TRUE;
-				opts->llvm_only = TRUE;
-			}
+			opts->llvm = TRUE;
+			opts->llvm_only = TRUE;
 		} else if (str_begins_with (arg, "hybrid")) {
 			opts->mode = MONO_AOT_MODE_HYBRID;			
 		} else if (str_begins_with (arg, "threads=")) {
@@ -7410,8 +7408,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 	mono_llvm_emit_aot_module (tempbc, g_path_get_basename (acfg->image->name));
 	g_free (tempbc);
 
-#ifdef TARGET_MACH
-	if (FALSE && acfg->aot_opts.llvm_only) {
+	if (acfg->aot_opts.llvm_only) {
 		/* Use the stock clang from xcode */
 		// FIXME: arch
 		// FIXME: -O2
@@ -7424,7 +7421,6 @@ emit_llvm_file (MonoAotCompile *acfg)
 			return FALSE;
 		return TRUE;
 	}
-#endif
 
 	/*
 	 * FIXME: Experiment with adding optimizations, the -std-compile-opts set takes
@@ -8413,7 +8409,7 @@ emit_got (MonoAotCompile *acfg)
 {
 	char symbol [256];
 
-	if (!acfg->has_jitted_code && REALLY_LLVMONLY)
+	if (!acfg->has_jitted_code || acfg->aot_opts.llvm_only)
 		return;
 
 	/* Don't make GOT global so accesses to it don't need relocations */
@@ -8560,7 +8556,7 @@ emit_mem_end (MonoAotCompile *acfg)
 {
 	char symbol [128];
 
-	if (!acfg->has_jitted_code && REALLY_LLVMONLY)
+	if (!acfg->has_jitted_code || acfg->aot_opts.llvm_only)
 		return;
 
 	sprintf (symbol, "mem_end");
@@ -9115,6 +9111,9 @@ compile_asm (MonoAotCompile *acfg)
 
 	/* replace the ; flags separators with spaces */
 	g_strdelimit (ld_flags, ";", ' ');
+
+	if (acfg->aot_opts.llvm_only)
+		ld_flags = g_strdup_printf ("%s %s", ld_flags, "-lstdc++");
 
 #ifdef LD_NAME
 	command = g_strdup_printf ("%s -o \"%s\" %s \"%s.o\" %s", LD_NAME, tmp_outfile_name, llvm_ofile, acfg->tmpfname, ld_flags);

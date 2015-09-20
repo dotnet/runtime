@@ -3007,7 +3007,7 @@ emit_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef builder
 
 	if (cfg->compile_aot) {
 		/* Use a dummy personality function */
-		personality = LLVMGetNamedFunction (module, "mono_personality");
+		personality = LLVMGetNamedFunction (module, "__gxx_personality_v0");
 		g_assert (personality);
 	} else {
 		personality = LLVMGetNamedFunction (module, "mono_personality");
@@ -5344,7 +5344,7 @@ mono_llvm_check_method_supported (MonoCompile *cfg)
 {
 	int i, j;
 
-	if (REALLY_LLVMONLY)
+	if (cfg->llvm_only)
 		return;
 
 	if (cfg->method->save_lmf) {
@@ -5518,10 +5518,10 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		LLVMSetLinkage (method, LLVMPrivateLinkage);
 	}
 
-	if (cfg->method->save_lmf && !REALLY_LLVMONLY)
+	if (cfg->method->save_lmf && !cfg->llvm_only)
 		LLVM_FAILURE (ctx, "lmf");
 
-	if (sig->pinvoke && cfg->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE && !REALLY_LLVMONLY)
+	if (sig->pinvoke && cfg->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE && !cfg->llvm_only)
 		LLVM_FAILURE (ctx, "pinvoke signature");
 
 	header = cfg->header;
@@ -6161,6 +6161,7 @@ add_intrinsics (LLVMModuleRef module)
 
 	/* EH intrinsics */
 	{
+		AddFunc (module, "__gxx_personality_v0", LLVMVoidType (), NULL, 0);
 		AddFunc (module, "mono_personality", LLVMVoidType (), NULL, 0);
 
 		AddFunc (module, "llvm_resume_unwind_trampoline", LLVMVoidType (), NULL, 0);
@@ -6602,13 +6603,13 @@ emit_aot_file_info (MonoLLVMModule *lmodule)
 	 * for symbols defined in the .s file emitted by the aot compiler.
 	 */
 	eltype = eltypes [tindex];
-	if (!lmodule->has_jitted_code && REALLY_LLVMONLY)
+	if (!lmodule->has_jitted_code && lmodule->llvm_only)
 		fields [tindex ++] = LLVMConstNull (eltype);
 	else
 		fields [tindex ++] = AddJitGlobal (lmodule, eltype, "jit_got");
 	fields [tindex ++] = lmodule->got_var;
 	/* llc defines this directly */
-	if (TRUE) //(!lmodule->llvm_only)
+	if (!lmodule->llvm_only)
 		fields [tindex ++] = LLVMAddGlobal (lmodule->module, eltype, lmodule->eh_frame_symbol);
 	else
 		fields [tindex ++] = LLVMConstNull (eltype);

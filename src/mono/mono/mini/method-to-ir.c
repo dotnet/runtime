@@ -9694,7 +9694,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			} else {
 				emit_instrumentation_call (cfg, mono_profiler_method_leave);
 
-				if (cfg->lmf_var && cfg->cbb->in_count && !REALLY_LLVMONLY)
+				if (cfg->lmf_var && cfg->cbb->in_count && !cfg->llvm_only)
 					emit_pop_lmf (cfg);
 
 				if (cfg->ret) {
@@ -13089,7 +13089,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 	}
 
-	if (cfg->lmf_var && cfg->method == method && !(cfg->llvm_only && REALLY_LLVMONLY)) {
+	if (cfg->lmf_var && cfg->method == method && !cfg->llvm_only) {
 		cfg->cbb = init_localsbb;
 		emit_push_lmf (cfg);
 	}

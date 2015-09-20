@@ -695,7 +695,7 @@ register_icall_no_wrapper (gpointer func, const char *name, const char *sigstr)
 {
 	MonoMethodSignature *sig;
 
-	if (REALLY_LLVMONLY)
+	if (mono_llvm_only)
 		avoid_wrapper = TRUE;
 
 	if (sigstr)

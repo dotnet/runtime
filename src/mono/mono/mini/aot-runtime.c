@@ -3651,10 +3651,10 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 
 	if (!code) {
 		/* JITted method */
-		if (mono_llvm_only && REALLY_LLVMONLY) {
+		if (mono_llvm_only) {
 			if (!method)
 				method = mono_get_method (image, token, NULL);
-			printf ("%s\n", mono_method_full_name (method, 1));
+			printf ("AOT method not found: %s\n", mono_method_full_name (method, 1));
 			g_assert_not_reached ();
 		}
 
@@ -4743,7 +4743,7 @@ mono_aot_get_trampoline_full (const char *name, MonoTrampInfo **out_tinfo)
 {
 	MonoAotModule *amodule = get_mscorlib_aot_module ();
 
-	if (mono_llvm_only && REALLY_LLVMONLY) {
+	if (mono_llvm_only) {
 		*out_tinfo = NULL;
 		return no_trampolines;
 	}
@@ -5056,7 +5056,7 @@ mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampo
 	static gboolean inited;
 	static guint32 num_trampolines;
 
-	if (!mono_llvm_only && REALLY_LLVMONLY)
+	if (!mono_llvm_only)
 		return no_specific_trampoline;
 
 	if (!inited) {
@@ -5239,7 +5239,7 @@ mono_aot_get_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem
 	int i, index, real_count;
 	MonoAotModule *amodule;
 
-	if (mono_llvm_only && REALLY_LLVMONLY)
+	if (mono_llvm_only)
 		return no_imt_thunk;
 
 	real_count = 0;
