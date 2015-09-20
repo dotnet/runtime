@@ -17,16 +17,52 @@ namespace System.Numerics.Tests
             byte[] tempByteArray1;
             byte[] tempByteArray2;
 
-            tempByteArray1 = new byte[] { (byte)0, (byte)0, (byte)0, (byte)0, (byte)1 };
-            tempByteArray2 = new byte[] { (byte)0 };
+            tempByteArray1 = new byte[] { 0, 0, 0, 0, 1 };
+            tempByteArray2 = new byte[] { 0 };
             VerifyGCDString(Print(tempByteArray1) + Print(tempByteArray2) + "bGCD");
 
-            tempByteArray1 = new byte[] { (byte)0, (byte)0, (byte)0, (byte)0, (byte)41 };
-            tempByteArray2 = new byte[] { (byte)0 };
+            tempByteArray1 = new byte[] { 0, 0, 0, 0, 41 };
+            tempByteArray2 = new byte[] { 0 };
             VerifyGCDString(Print(tempByteArray1) + Print(tempByteArray2) + "bGCD");
 
-            tempByteArray1 = new byte[] { (byte)0, (byte)0, (byte)0, (byte)0, (byte)2 };
-            tempByteArray2 = new byte[] { (byte)0 };
+            tempByteArray1 = new byte[] { 0, 0, 0, 0, 2 };
+            tempByteArray2 = new byte[] { 0 };
+            VerifyGCDString(Print(tempByteArray1) + Print(tempByteArray2) + "bGCD");
+
+            tempByteArray1 = new byte[] { 0, 0, 0, 0, 2 };
+            tempByteArray2 = new byte[] { 0 };
+            VerifyGCDString(Print(tempByteArray1) + Print(tempByteArray2) + "bGCD");
+
+            tempByteArray1 = new byte[] { 255, 255, 255, 255, 1 };
+            tempByteArray2 = new byte[] { 255, 255, 255, 255, 0 };
+            VerifyGCDString(Print(tempByteArray1) + Print(tempByteArray2) + "bGCD");
+
+            tempByteArray1 = new byte[] { 255, 255, 255, 255, 1 };
+            tempByteArray2 = new byte[] { 255, 255, 255, 255, 1 };
+            VerifyGCDString(Print(tempByteArray1) + Print(tempByteArray2) + "bGCD");
+
+            tempByteArray1 = new byte[] { 255, 255, 255, 255, 255, 255, 255, 255, 1 };
+            tempByteArray2 = new byte[] { 255, 255, 255, 255, 255, 255, 255, 255, 0 };
+            VerifyGCDString(Print(tempByteArray1) + Print(tempByteArray2) + "bGCD");
+
+            tempByteArray1 = new byte[] { 255, 255, 255, 255, 255, 255, 255, 255, 1 };
+            tempByteArray2 = new byte[] { 255, 255, 255, 255, 255, 255, 255, 255, 1 };
+            VerifyGCDString(Print(tempByteArray1) + Print(tempByteArray2) + "bGCD");
+
+            tempByteArray1 = new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 };
+            tempByteArray2 = new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 1 };
+            VerifyGCDString(Print(tempByteArray1) + Print(tempByteArray2) + "bGCD");
+
+            tempByteArray1 = new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 };
+            tempByteArray2 = new byte[] { 0, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 254 };
+            VerifyGCDString(Print(tempByteArray1) + Print(tempByteArray2) + "bGCD");
+
+            tempByteArray1 = new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 };
+            tempByteArray2 = new byte[] { 0, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255, 0 };
+            VerifyGCDString(Print(tempByteArray1) + Print(tempByteArray2) + "bGCD");
+
+            tempByteArray1 = new byte[] { 0, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255, 0 };
+            tempByteArray2 = new byte[] { 0, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 254 };
             VerifyGCDString(Print(tempByteArray1) + Print(tempByteArray2) + "bGCD");
         }
 

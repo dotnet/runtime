@@ -1069,11 +1069,10 @@ namespace System.Numerics
 
             if (rightBits.Length == 2)
             {
-                if (leftBits.Length > 2)
-                    leftBits = BigIntegerCalculator.Remainder(leftBits, rightBits);
+                uint[] tempBits = BigIntegerCalculator.Remainder(leftBits, rightBits);
 
                 ulong left = ((ulong)rightBits[1] << 32) | rightBits[0];
-                ulong right = ((ulong)leftBits[1] << 32) | leftBits[0];
+                ulong right = ((ulong)tempBits[1] << 32) | tempBits[0];
 
                 return BigIntegerCalculator.Gcd(left, right);
             }
