@@ -780,6 +780,7 @@ struct _MonoDelegate {
 	MonoObject *target;
 	MonoMethod *method;
 	gpointer delegate_trampoline;
+	gpointer rgctx;
 	/* 
 	 * If non-NULL, this points to a memory location which stores the address of 
 	 * the compiled code of the method, or NULL if it is not yet compiled.
