@@ -6,8 +6,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{C85CF035-7804-41FF-9557-48B7C948B58D}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>System.Net.Http.Tests</RootNamespace>
-    <AssemblyName>System.Net.Http.Tests</AssemblyName>
+    <AssemblyName>System.Net.Http.Functional.Tests</AssemblyName>
     <UnsupportedPlatforms>FreeBSD</UnsupportedPlatforms>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU' " />
@@ -25,9 +24,22 @@
     <Compile Include="$(CommonTestPath)\Streams\DelegateStream.cs">
       <Link>Common\Streams\DelegateStream.cs</Link>
     </Compile>
+    <Compile Include="ByteArrayContentTest.cs" />
+    <Compile Include="DelegatingHandlerTest.cs" />
+    <Compile Include="FormUrlEncodedContentTest.cs" />
     <Compile Include="HttpClientHandlerTest.cs" />
     <Compile Include="HttpClientTest.cs" />
+    <Compile Include="HttpContentTest.cs" />
+    <Compile Include="HttpMessageInvokerTest.cs" />
     <Compile Include="HttpMethodTest.cs" />
+    <Compile Include="HttpRequestMessageTest.cs" />
+    <Compile Include="HttpResponseMessageTest.cs" />
+    <Compile Include="MessageProcessingHandlerTest.cs" />
+    <Compile Include="MultipartContentTest.cs" />
+    <Compile Include="MultipartFormDataContentTest.cs" />
+    <Compile Include="ResponseStreamTest.cs" />
+    <Compile Include="StreamContentTest.cs" />
+    <Compile Include="StringContentTest.cs" />
     <Compile Include="XunitTestAssemblyAtrributes.cs" />
   </ItemGroup>
   <ItemGroup>
