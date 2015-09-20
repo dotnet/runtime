@@ -173,8 +173,7 @@ namespace System.Numerics
             if (right.GetLength() > 0)
             {
                 // Euclid's step
-                if (left.GetLength() > 2)
-                    left.Reduce(ref right);
+                left.Reduce(ref right);
 
                 uint[] xBits = right.GetBits();
                 uint[] yBits = left.GetBits();
