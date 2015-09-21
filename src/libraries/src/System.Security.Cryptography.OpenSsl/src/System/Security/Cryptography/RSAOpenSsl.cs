@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Threading;
 
@@ -73,6 +72,38 @@ namespace System.Security.Cryptography
             _key = new Lazy<SafeRsaHandle>(() => rsaHandle);
         }
 
+        /// <summary>
+        /// Create an ECDsaOpenSsl from an <see cref="SafeEvpPKeyHandle"/> whose value is an existing
+        /// OpenSSL <c>EVP_PKEY*</c> wrapping an <c>RSA*</c>
+        /// </summary>
+        /// <param name="pkeyHandle">A SafeHandle for an OpenSSL <c>EVP_PKEY*</c></param>
+        /// <exception cref="ArgumentNullException"><paramref name="pkeyHandle"/> is <c>null</c></exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="pkeyHandle"/> <see cref="Runtime.InteropServices.SafeHandle.IsInvalid" />
+        /// </exception>
+        /// <exception cref="CryptographicException"><paramref name="pkeyHandle"/> is not a valid enveloped <c>RSA*</c></exception>
+        public RSAOpenSsl(SafeEvpPKeyHandle pkeyHandle)
+        {
+            if (pkeyHandle == null)
+                throw new ArgumentNullException("pkeyHandle");
+            if (pkeyHandle.IsInvalid)
+                throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, "pkeyHandle");
+
+            // If rsa is valid it has already been up-ref'd, so we can just use this handle as-is.
+            SafeRsaHandle rsa = Interop.libcrypto.EVP_PKEY_get1_RSA(pkeyHandle);
+
+            if (rsa.IsInvalid)
+            {
+                throw Interop.libcrypto.CreateOpenSslCryptographicException();
+            }
+
+            _legalKeySizesValue = new[] { s_legalKeySizes };
+
+            // Set base.KeySize rather than this.KeySize to avoid an unnecessary Lazy<> allocation.
+            base.KeySize = BitsPerByte * Interop.libcrypto.RSA_size(rsa);
+            _key = new Lazy<SafeRsaHandle>(() => rsa);
+        }
+
         public override int KeySize
         {
             set
@@ -85,6 +116,35 @@ namespace System.Security.Cryptography
                 FreeKey();
                 base.KeySize = value;
                 _key = new Lazy<SafeRsaHandle>(GenerateKey);
+            }
+        }
+
+        /// <summary>
+        /// Obtain a SafeHandle version of an EVP_PKEY* which wraps an RSA* equivalent
+        /// to the current key for this instance.
+        /// </summary>
+        /// <returns>A SafeHandle for the RSA key in OpenSSL</returns>
+        public SafeEvpPKeyHandle DuplicateKeyHandle()
+        {
+            SafeRsaHandle currentKey = _key.Value;
+            SafeEvpPKeyHandle pkeyHandle = Interop.libcrypto.EVP_PKEY_new();
+
+            try
+            {
+                // Wrapping our key in an EVP_PKEY will up_ref our key.
+                // When the EVP_PKEY is Disposed it will down_ref the key.
+                // So everything should be copacetic.
+                if (!Interop.libcrypto.EVP_PKEY_set1_RSA(pkeyHandle, currentKey))
+                {
+                    throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                }
+
+                return pkeyHandle;
+            }
+            catch
+            {
+                pkeyHandle.Dispose();
+                throw;
             }
         }
 
