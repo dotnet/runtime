@@ -7,6 +7,7 @@ if PLATFORM_DARWIN
 test_ldflags = -framework CoreFoundation -framework Foundation
 endif
 
+AUTOMAKE_OPTIONS = parallel-tests
 
 if !CROSS_COMPILE
 if !HOST_WIN32
@@ -39,6 +40,14 @@ test_conc_hashtable_LDFLAGS = $(test_ldflags)
 noinst_PROGRAMS = test-sgen-qsort test-memfuncs test-mono-linked-list-set test-conc-hashtable
 
 TESTS = test-sgen-qsort test-memfuncs test-mono-linked-list-set test-conc-hashtable
+
+.NOTPARALLEL:
+
+check-local:
+	if grep -q "# FAIL:  0\|tests passed" test-suite.log; then successbool=True && failures=0; else successbool=False && failures=1; fi; \
+	echo "<?xml version='1.0' encoding='utf-8'?><test-results failures='$$failures' total='1' not-run='0' name='unit-tests.dummy' date='$$(date +%F)' time='$$(date +%T)'><test-suite name='MonoTests.unit-tests' success='$$successbool' time='0'><results><test-case name='MonoTests.unit-tests.100percentsuccess' executed='True' success='$$successbool' time='0'>" > TestResult-unit-tests.xml; \
+	if [ $$failures -ne 0 ]; then echo "<failure><message>"'<![CDATA[' >> TestResult-unit-tests.xml && cat test-suite.log >> TestResult-unit-tests.xml && echo "]]></message><stack-trace></stack-trace></failure>" >> TestResult-unit-tests.xml; fi; \
+	echo "</test-case></results></test-suite></test-results>" >> TestResult-unit-tests.xml
 
 endif SUPPORT_BOEHM
 endif !HOST_WIN32
