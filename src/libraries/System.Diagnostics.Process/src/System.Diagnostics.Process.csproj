@@ -227,9 +227,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Close.cs">
       <Link>Common\Interop\Unix\Interop.Close.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.FileDescriptors.cs">
-      <Link>Common\Interop\Unix\Interop.FileDescriptors.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gethostname.cs">
       <Link>Common\Interop\Unix\Interop.gethostname.cs</Link>
     </Compile>

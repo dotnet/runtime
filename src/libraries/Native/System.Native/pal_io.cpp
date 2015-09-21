@@ -218,6 +218,11 @@ extern "C" int32_t Close(int32_t fd)
     return close(fd);
 }
 
+extern "C" int32_t Dup(int oldfd)
+{
+	return dup(oldfd);
+}
+
 extern "C" int32_t Unlink(const char* path)
 {
     return unlink(path);
