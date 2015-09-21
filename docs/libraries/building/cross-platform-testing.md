@@ -26,8 +26,8 @@ instructions assume you are building for Linux, but are easily modifiable for OS
 3. A Linux build of CoreFX.  On Windows, run `build.cmd /p:OSGroup=Linux`.  It
    is okay to build a Debug version of CoreFX and run it on top of a release
    CoreCLR (which is exactly what we do in Jenkins).
-4. A Linux build of the native CoreFX components.  On Linux, run ./build.sh from
-   src/Native in your CoreFX enlistment.
+4. A Linux build of the native CoreFX components.  On Linux, run './build.sh native' from
+   the root of your CoreFX enlistment.
 
 After building all the projects, we need to copy the files we built on Windows
 over to our Linux machine.  The easiest way to do this is to mount a windows
