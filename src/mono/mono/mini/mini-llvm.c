@@ -5723,6 +5723,9 @@ mono_llvm_check_method_supported (MonoCompile *cfg)
 {
 	int i, j;
 
+	if (cfg->llvm_only)
+		return;
+
 	if (cfg->method->save_lmf) {
 		cfg->exception_message = g_strdup ("lmf");
 		cfg->disable_llvm = TRUE;
@@ -5894,7 +5897,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		LLVMSetLinkage (method, LLVMPrivateLinkage);
 	}
 
-	if (cfg->method->save_lmf)
+	if (cfg->method->save_lmf && !cfg->llvm_only)
 		LLVM_FAILURE (ctx, "lmf");
 
 	if (sig->pinvoke && cfg->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE)
