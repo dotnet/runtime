@@ -203,5 +203,6 @@ void mono_init_delegate (MonoDelegate *del, MonoObject *target, MonoMethod *meth
 
 void mono_init_delegate_virtual (MonoDelegate *del, MonoObject *target, MonoMethod *method);
 
-#endif /* __MONO_JIT_ICALLS_H__ */
+MonoObject* mono_get_assembly_object (MonoImage *image);
 
+#endif /* __MONO_JIT_ICALLS_H__ */

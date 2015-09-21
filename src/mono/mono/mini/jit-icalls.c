@@ -1518,3 +1518,9 @@ mono_init_delegate_virtual (MonoDelegate *del, MonoObject *target, MonoMethod *m
 	if (mono_method_needs_static_rgctx_invoke (method, FALSE))
 		del->rgctx = mini_method_get_rgctx (method);
 }
+
+MonoObject*
+mono_get_assembly_object (MonoImage *image)
+{
+	return (MonoObject*)mono_assembly_get_object (mono_domain_get (), image->assembly);
+}
