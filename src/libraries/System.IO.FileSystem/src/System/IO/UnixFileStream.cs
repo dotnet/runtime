@@ -105,8 +105,19 @@ namespace System.IO
                 throw;
             }
 
-            // Perform additional configurations on the stream based on the provided FileOptions
-            PostOpenConfigureStreamFromOptions();
+            // These provide hints around how the file will be accessed.
+            Interop.Sys.FileAdvice fadv =
+                _options == FileOptions.RandomAccess ? Interop.Sys.FileAdvice.POSIX_FADV_RANDOM :
+                _options == FileOptions.SequentialScan ? Interop.Sys.FileAdvice.POSIX_FADV_SEQUENTIAL :
+                0;
+
+            if (fadv != 0)
+            {
+                SysCall<Interop.Sys.FileAdvice, int>(
+                    (fd, advice, _) => Interop.Sys.PosixFAdvise(fd, 0, 0, advice),
+                    fadv,
+                    ignoreNotSupported: true); // just a hint.
+            }
 
             // Jump to the end of the file if opened as Append.
             if (_mode == FileMode.Append)
@@ -114,9 +125,6 @@ namespace System.IO
                 _appendStart = SeekCore(0, SeekOrigin.End);
             }
         }
-
-        /// <summary>Performs additional configuration of the opened stream based on provided options.</summary>
-        partial void PostOpenConfigureStreamFromOptions();
 
         /// <summary>Initializes a stream from an already open file handle (file descriptor).</summary>
         /// <param name="handle">The handle to the file.</param>
@@ -1034,7 +1042,8 @@ namespace System.IO
         private long SysCall<TArg1, TArg2>(
             Func<int, TArg1, TArg2, long> sysCall,
             TArg1 arg1 = default(TArg1), TArg2 arg2 = default(TArg2),
-            bool throwOnError = true)
+            bool throwOnError = true,
+            bool ignoreNotSupported = false)
         {
             SafeFileHandle handle = _fileHandle;
 
@@ -1062,7 +1071,7 @@ namespace System.IO
                         {
                             continue;
                         }
-                        else if (throwOnError)
+                        else if (throwOnError && !(ignoreNotSupported && errorInfo.Error == Interop.Error.ENOTSUP))
                         {
                             throw Interop.GetExceptionForIoErrno(errorInfo, _path, isDirectory: false);
                         }
