@@ -25,6 +25,7 @@
     <Compile Include="AesContractTests.cs" />
     <Compile Include="AesModeTests.cs" />
     <Compile Include="DecryptorReusability.cs" />
+    <Compile Include="DesTests.cs" />
     <Compile Include="HashAlgorithmTest.cs" />
     <Compile Include="InvalidUsageTests.cs" />
     <Compile Include="HmacMD5Tests.cs" />
@@ -36,6 +37,7 @@
     <Compile Include="IncrementalHashTests.cs" />
     <Compile Include="MD5Tests.cs" />
     <Compile Include="RandomNumberGeneratorTests.cs" />
+    <Compile Include="RC2Tests.cs" />
     <Compile Include="ReusabilityTests.cs" />
     <Compile Include="Rfc2202HmacTests.cs" />
     <Compile Include="Rfc2898Tests.cs" />
@@ -44,6 +46,7 @@
     <Compile Include="Sha256Tests.cs" />
     <Compile Include="Sha384Tests.cs" />
     <Compile Include="Sha512Tests.cs" />
+    <Compile Include="TripleDesTests.cs" />
     <Compile Include="$(CommonTestPath)\Cryptography\ByteUtils.cs">
       <Link>CommonTest\Cryptography\ByteUtils.cs</Link>
     </Compile>

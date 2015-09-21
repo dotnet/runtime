@@ -3,6 +3,8 @@
 
 using System.IO;
 
+using Internal.Cryptography;
+
 namespace System.Security.Cryptography
 {
     public abstract class RSA : AsymmetricAlgorithm
@@ -26,7 +28,7 @@ namespace System.Security.Cryptography
             {
                 if (null != _legalKeySizesValue)
                 {
-                    return (KeySizes[])_legalKeySizesValue.Clone();
+                    return _legalKeySizesValue.CloneKeySizesArray();
                 }
                 else
                 {
