@@ -257,7 +257,7 @@ internal static partial class Interop
             }
 
             SslContext context = Marshal.PtrToStructure<SslContext>(sslContextPtr);
-            Disconnect(sslContextPtr, context.sslPtr);          
+            Disconnect(context.sslPtr);
             Marshal.FreeHGlobal(sslContextPtr);
             sslContextPtr = IntPtr.Zero;
         }
@@ -311,7 +311,7 @@ internal static partial class Interop
         }
 
         //TODO See if SSL_CTX_Set_quite_shutdown can be used
-        private static void Disconnect(IntPtr sslContextPtr, IntPtr sslPtr)
+        private static void Disconnect(IntPtr sslPtr)
         {
             if (IntPtr.Zero != sslPtr)
             {
@@ -326,12 +326,7 @@ internal static partial class Interop
                 }
 
                 libssl.SSL_free(sslPtr);
-            }
-
-            if (IntPtr.Zero != sslContextPtr)
-            {
-                libssl.SSL_CTX_free(sslContextPtr);
-            }
+            }         
         }
 
         //TODO should we check Bio should retry?
