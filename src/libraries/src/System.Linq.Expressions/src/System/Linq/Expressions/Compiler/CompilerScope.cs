@@ -496,14 +496,16 @@ namespace System.Linq.Expressions.Compiler
             get
             {
                 CompilerScope s = this;
-                while (true)
+                while (s != null)
                 {
                     var lambda = s.Node as LambdaExpression;
                     if (lambda != null)
                     {
                         return lambda.Name;
                     }
+                    s = s._parent;
                 }
+                throw ContractUtils.Unreachable;
             }
         }
     }
