@@ -651,6 +651,12 @@ struct MonoBasicBlock {
 	guint has_call_handler : 1;
 	/* Whenever this bblock starts a try block */
 	guint try_start : 1;
+
+#ifdef COMPILE_LLVM
+	/* The offset of the CIL instruction in this bblock which ends a try block */
+	intptr_t try_end;
+#endif
+
 	/*
 	 * If this is set, extend the try range started by this bblock by an arch specific
 	 * number of bytes to encompass the end of the previous bblock (e.g. a Monitor.Enter
@@ -1092,6 +1098,8 @@ typedef struct {
 	 * Stores if we need to run a chained exception in Windows.
 	 */
 	gboolean mono_win_chained_exception_needs_run;
+
+	guint32 thrown_exc;
 } MonoJitTlsData;
 
 /*
@@ -2672,6 +2680,8 @@ MonoJitInfo* mini_jit_info_table_find_ext       (MonoDomain *domain, char *addr,
 void     mono_resume_unwind                     (MonoContext *ctx) MONO_LLVM_INTERNAL;
 
 MonoJitInfo * mono_find_jit_info                (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev_ji, MonoContext *ctx, MonoContext *new_ctx, char **trace, MonoLMF **lmf, int *native_offset, gboolean *managed);
+
+MonoJitInfo * mono_get_jit_info_llvm_sparse     (gpointer opaque_amodule, int method_index);
 
 typedef gboolean (*MonoExceptionFrameWalk)      (MonoMethod *method, gpointer ip, size_t native_offset, gboolean managed, gpointer user_data);
 MONO_API gboolean mono_exception_walk_trace     (MonoException *ex, MonoExceptionFrameWalk func, gpointer user_data);

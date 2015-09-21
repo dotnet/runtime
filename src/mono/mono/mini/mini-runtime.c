@@ -75,6 +75,10 @@
 #include "mini-gc.h"
 #include "debugger-agent.h"
 
+#ifdef MONO_ARCH_LLVM_SUPPORTED
+	#include "mini-llvm-cpp.h"
+#endif
+
 static guint32 default_opt = 0;
 static gboolean default_opt_set = FALSE;
 
@@ -3249,6 +3253,18 @@ register_icalls (void)
 	register_icall (mono_jit_thread_attach, "mono_jit_thread_attach", "ptr ptr", TRUE);
 	register_icall (mono_jit_set_domain, "mono_jit_set_domain", "void ptr", TRUE);
 	register_icall (mono_domain_get, "mono_domain_get", "ptr", TRUE);
+
+#ifdef MONO_ARCH_LLVM_SUPPORTED
+	register_icall (mono_llvm_throw_exception, "mono_llvm_throw_exception", "void object ptr", TRUE);
+	register_icall (mono_llvm_rethrow_exception, "mono_llvm_rethrow_exception", "void object ptr", TRUE);
+	register_icall (mono_llvm_match_exception, "mono_llvm_match_exception", "int ptr int", TRUE);
+	register_icall (mono_llvm_clear_exception, "mono_llvm_clear_exception", NULL, TRUE);
+	register_icall (mono_llvm_load_exception, "mono_llvm_load_exception", "object", TRUE);
+	register_icall (mono_llvm_set_unhandled_exception_handler, "mono_llvm_set_unhandled_exception_handler", NULL, TRUE);
+
+	// FIXME: This is broken
+	register_icall (mono_debug_personality, "mono_debug_personality", "int int int ptr ptr ptr", TRUE);
+#endif
 
 	register_dyn_icall (mono_get_throw_exception (), "mono_arch_throw_exception", "void object", TRUE);
 	register_dyn_icall (mono_get_rethrow_exception (), "mono_arch_rethrow_exception", "void object", TRUE);

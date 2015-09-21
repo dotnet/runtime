@@ -48,6 +48,7 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/object-internals.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/profiler.h>
@@ -953,25 +954,6 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	return TRUE;
 }
 
-static MonoArray *
-glist_to_array (GList *list, MonoClass *eclass) 
-{
-	MonoDomain *domain = mono_domain_get ();
-	MonoArray *res;
-	int len, i;
-
-	if (!list)
-		return NULL;
-
-	len = g_list_length (list);
-	res = mono_array_new (domain, eclass, len);
-
-	for (i = 0; list; list = list->next, i++)
-		mono_array_set (res, gpointer, i, list->data);
-
-	return res;
-}
-
 static MonoClass*
 get_exception_catch_class (MonoJitExceptionInfo *ei, MonoJitInfo *ji, MonoContext *ctx)
 {
@@ -1158,7 +1140,7 @@ setup_stack_trace (MonoException *mono_ex, GSList *dynamic_methods, MonoArray *i
 {
 	if (mono_ex && !initial_trace_ips) {
 		*trace_ips = g_list_reverse (*trace_ips);
-		MONO_OBJECT_SETREF (mono_ex, trace_ips, glist_to_array (*trace_ips, mono_defaults.int_class));
+		MONO_OBJECT_SETREF (mono_ex, trace_ips, mono_glist_to_array (*trace_ips, mono_defaults.int_class));
 		MONO_OBJECT_SETREF (mono_ex, native_trace_ips, build_native_trace ());
 		if (dynamic_methods) {
 			/* These methods could go away anytime, so save a reference to them in the exception object */

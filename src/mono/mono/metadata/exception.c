@@ -11,7 +11,9 @@
  * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
  */
 
+#include <glib.h>
 #include <mono/metadata/exception.h>
+
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/appdomain.h>
@@ -903,3 +905,4 @@ mono_error_set_pending_exception (MonoError *error)
 	if (ex)
 		mono_set_pending_exception (ex);
 }
+

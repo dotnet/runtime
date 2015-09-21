@@ -2491,7 +2491,7 @@ is_thumb_code (MonoAotModule *amodule, guint8 *code)
  */
 static MonoJitInfo*
 decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain, 
-						   MonoMethod *method, guint8 *code, 
+						   MonoMethod *method, guint8 *code, guint32 code_len,
 						   MonoJitExceptionInfo *clauses, int num_clauses,
 						   MonoJitInfoFlags flags,
 						   GSList **nesting,
@@ -2501,21 +2501,21 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 	guint8 *fde, *cie, *code_start, *code_end;
 	int version, fde_count;
 	gint32 *table;
-	int i, pos, left, right, code_len;
+	int i, pos, left, right;
 	MonoJitExceptionInfo *ei;
 	guint32 fde_len, ei_len, nested_len, nindex;
 	gpointer *type_info;
 	MonoJitInfo *jinfo;
 	MonoLLVMFDEInfo info;
 
-	// FIXME:
 	if (!amodule->mono_eh_frame) {
-		jinfo = mono_domain_alloc0_lock_free (domain, mono_jit_info_size (flags, 0, 0));
-		mono_jit_info_init (jinfo, method, code, 1, flags, 0, 0);
+		jinfo = mono_domain_alloc0_lock_free (domain, mono_jit_info_size (flags, num_clauses, 0));
+		mono_jit_info_init (jinfo, method, code, code_len, flags, num_clauses, 0);
+		memcpy (jinfo->clauses, clauses, num_clauses * sizeof (MonoJitExceptionInfo));
 		return jinfo;
 	}
 
-	g_assert (amodule->mono_eh_frame);
+	g_assert (amodule->mono_eh_frame && code);
 
 	p = amodule->mono_eh_frame;
 
@@ -2568,7 +2568,8 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 	} else {
 		code_end = amodule->methods [table [(pos + 1) * 2]];
 	}
-	code_len = code_end - code_start;
+	if (!code_len)
+		code_len = code_end - code_start;
 
 	g_assert (code >= code_start && code < code_end);
 
@@ -2683,8 +2684,8 @@ alloc0_jit_info_data (MonoDomain *domain, int size, gboolean async_context)
  */
 static MonoJitInfo*
 decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain, 
-							 MonoMethod *method, guint8* ex_info, guint8 *addr,
-							 guint8 *code, guint32 code_len)
+							 MonoMethod *method, guint8* ex_info,
+							 guint8 *code, guint32 code_len, gboolean skeleton)
 {
 	int i, buf_len, num_clauses, len;
 	MonoJitInfo *jinfo;
@@ -2762,6 +2763,8 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 			if (decode_value (p, &p))
 				ei->data.catch_class = decode_klass_ref (amodule, p, &p);
 
+			ei->clause_index = i;
+
 			/* Read the list of nesting clauses */
 			while (TRUE) {
 				int nesting_index = decode_value (p, &p);
@@ -2771,12 +2774,15 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 			}
 		}
 
-		jinfo = decode_llvm_mono_eh_frame (amodule, domain, method, code, clauses, num_clauses, flags, nesting, &this_reg, &this_offset);
+		jinfo = decode_llvm_mono_eh_frame (amodule, domain, method, code, code_len, clauses, num_clauses, flags, nesting, &this_reg, &this_offset);
 
 		g_free (clauses);
 		for (i = 0; i < num_clauses; ++i)
 			g_slist_free (nesting [i]);
 		g_free (nesting);
+ 		// Fields are NULL
+ 		if (skeleton)
+ 			return jinfo;
 	} else {
 		len = mono_jit_info_size (flags, num_clauses, num_holes);
 		jinfo = alloc0_jit_info_data (domain, len, async);
@@ -2938,6 +2944,26 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 	}
 
 	return jinfo;
+}
+
+MonoJitInfo*
+mono_get_jit_info_llvm_sparse (gpointer opaque_amodule, int method_index)
+{
+	MonoAotModule *amodule = (MonoAotModule *)opaque_amodule;
+	guint8 *ex_info = &amodule->blob [mono_aot_get_offset (amodule->ex_info_offsets, method_index)];
+	guint8 *code = amodule->methods [method_index];
+	int code_len;
+
+	if (method_index == amodule->sorted_methods_len - 1) {
+		code_len = amodule->llvm_code_end - code;
+	} else {
+		code_len = (guint8*)amodule->methods [method_index + 1] - code;
+	}
+
+	// FIXME: This allocates a jit_info in the domain pool that isn't in the table,
+	// and so won't be freed.
+	return decode_exception_debug_info (amodule, mono_domain_get (), NULL, ex_info,
+					code, code_len, TRUE);
 }
 
 static gboolean
@@ -3216,7 +3242,7 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 
 	//printf ("F: %s\n", mono_method_full_name (method, TRUE));
 
-	jinfo = decode_exception_debug_info (amodule, domain, method, ex_info, addr, code, code_len);
+	jinfo = decode_exception_debug_info (amodule, domain, method, ex_info, code, code_len, FALSE);
 
 	g_assert ((guint8*)addr >= (guint8*)jinfo->code_start);
 

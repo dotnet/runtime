@@ -717,17 +717,6 @@ fullaot-tmp/%.dylib: $(CLASS)/%
 llvmfullaotcheck:
 	$(MAKE) fullaotcheck LLVM=1
 
-FULLAOT_LIBS = \
-	mscorlib.dll \
-	System.Core.dll \
-	System.dll \
-	Mono.Posix.dll \
-	System.Configuration.dll \
-	System.Security.dll \
-	System.Xml.dll \
-	Mono.Security.dll \
-	Mono.Simd.dll
-
 llvmonlycheck: mono $(fullaot_regtests)
 	rm -rf fullaot-tmp
 	mkdir fullaot-tmp

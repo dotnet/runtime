@@ -6908,3 +6908,23 @@ mono_array_addr_with_size (MonoArray *array, int size, uintptr_t idx)
 	return ((char*)(array)->vector) + size * idx;
 }
 
+
+MonoArray *
+mono_glist_to_array (GList *list, MonoClass *eclass) 
+{
+	MonoDomain *domain = mono_domain_get ();
+	MonoArray *res;
+	int len, i;
+
+	if (!list)
+		return NULL;
+
+	len = g_list_length (list);
+	res = mono_array_new (domain, eclass, len);
+
+	for (i = 0; list; list = list->next, i++)
+		mono_array_set (res, gpointer, i, list->data);
+
+	return res;
+}
+

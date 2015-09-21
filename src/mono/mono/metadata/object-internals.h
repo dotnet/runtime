@@ -1640,6 +1640,9 @@ mono_error_raise_exception (MonoError *target_error);
 void
 mono_error_set_pending_exception (MonoError *error);
 
+MonoArray *
+mono_glist_to_array (GList *list, MonoClass *eclass);
+
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
 
 
