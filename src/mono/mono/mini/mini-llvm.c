@@ -3244,18 +3244,6 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	return;
 }
 
-static void
-emit_unreachable_ret (EmitContext *ctx, LLVMBuilderRef builder)
-{
-	LLVMTypeRef typ = LLVMGetReturnType (LLVMTypeOf (ctx->lmethod));
-	if (typ == LLVMVoidType ()) {
-		LLVMBuildRetVoid (builder);
-	} else {
-		LLVMValueRef value = LLVMConstNull (typ);
-		LLVMBuildRet (builder, value);
-	}
-}
-
 static LLVMValueRef
 emit_throw (EmitContext *ctx, MonoBasicBlock *bb, gboolean rethrow, LLVMValueRef exc)
 {
@@ -3296,7 +3284,7 @@ emit_throw (EmitContext *ctx, MonoBasicBlock *bb, gboolean rethrow, LLVMValueRef
 		call = emit_call (ctx, bb, &ctx->builder, callee, args, 2);
 	}
 
-	emit_unreachable_ret (ctx, ctx->builder);
+	LLVMBuildUnreachable (ctx->builder);
 
 	ctx->builder = create_builder (ctx);
 
