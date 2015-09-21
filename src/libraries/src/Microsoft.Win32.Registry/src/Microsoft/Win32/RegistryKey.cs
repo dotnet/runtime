@@ -1202,9 +1202,7 @@ namespace Microsoft.Win32
                         // make sure the string is null terminated before processing the data
                         if (blob.Length > 0 && blob[blob.Length - 1] != (char)0)
                         {
-                            char[] newBlob = new char[blob.Length + 1];
-                            Array.Copy(blob, 0, newBlob, 0, blob.Length);
-                            blob = newBlob;
+                            Array.Resize(ref blob, blob.Length + 1);
                         }
 
                         var strings = new List<String>();
