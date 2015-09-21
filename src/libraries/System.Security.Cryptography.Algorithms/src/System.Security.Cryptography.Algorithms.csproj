@@ -33,6 +33,8 @@
   <ItemGroup>
     <Compile Include="System\Security\Cryptography\Aes.cs" />
     <Compile Include="System\Security\Cryptography\DeriveBytes.cs" />
+    <Compile Include="System\Security\Cryptography\DES.cs" />
+    <Compile Include="System\Security\Cryptography\DSAParameters.cs" />
     <Compile Include="System\Security\Cryptography\ECDsa.cs" />
     <Compile Include="System\Security\Cryptography\MD5.cs" />
     <Compile Include="System\Security\Cryptography\SHA1.cs" />
@@ -46,6 +48,7 @@
     <Compile Include="System\Security\Cryptography\HMACSHA512.cs" />
     <Compile Include="System\Security\Cryptography\IncrementalHash.cs" />
     <Compile Include="System\Security\Cryptography\RandomNumberGenerator.cs" />
+    <Compile Include="System\Security\Cryptography\RC2.cs" />
     <Compile Include="System\Security\Cryptography\Rfc2898DeriveBytes.cs" />
     <Compile Include="System\Security\Cryptography\RSA.cs" />
     <Compile Include="System\Security\Cryptography\RSAEncryptionPadding.cs" />
@@ -53,6 +56,7 @@
     <Compile Include="System\Security\Cryptography\RSAParameters.cs" />
     <Compile Include="System\Security\Cryptography\RSASignaturePadding.cs" />
     <Compile Include="System\Security\Cryptography\RSASignaturePaddingMode.cs" />
+    <Compile Include="System\Security\Cryptography\TripleDES.cs" />
     <Compile Include="Internal\Cryptography\AesImplementation.cs" />
     <Compile Include="Internal\Cryptography\AesNativeCryptoTransform.cs" />
     <Compile Include="Internal\Cryptography\Helpers.cs" />
