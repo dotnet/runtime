@@ -14,6 +14,11 @@ namespace Internal.Cryptography
             return (byte[])(src.Clone());
         }
 
+        public static KeySizes[] CloneKeySizesArray(this KeySizes[] src)
+        {
+            return (KeySizes[])(src.Clone());
+        }
+
         public static bool UsesIv(this CipherMode cipherMode)
         {
             return cipherMode != CipherMode.ECB;
@@ -64,6 +69,27 @@ namespace Internal.Cryptography
                 arr[offset + 2] = (byte)(i >> 8);
                 arr[offset + 3] = (byte)i;
             }
+        }
+
+        public static byte[] FixupKeyParity(this byte[] key)
+        {
+            byte[] oddParityKey = new byte[key.Length];
+            for (int index = 0; index < key.Length; index++)
+            {
+                // Get the bits we are interested in
+                oddParityKey[index] = (byte)(key[index] & 0xfe);
+
+                // Get the parity of the sum of the previous bits
+                byte tmp1 = (byte)((oddParityKey[index] & 0xF) ^ (oddParityKey[index] >> 4));
+                byte tmp2 = (byte)((tmp1 & 0x3) ^ (tmp1 >> 2));
+                byte sumBitsMod2 = (byte)((tmp2 & 0x1) ^ (tmp2 >> 1));
+                
+                // We need to set the last bit in oddParityKey[index] to the negation
+                // of the last bit in sumBitsMod2
+                if (sumBitsMod2 == 0)
+                    oddParityKey[index] |= 1;
+            }
+            return oddParityKey;
         }
     }
 }
