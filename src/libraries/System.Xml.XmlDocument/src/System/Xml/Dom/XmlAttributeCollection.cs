@@ -204,7 +204,7 @@ namespace System.Xml
             Debug.Assert(offset != -1); // the if statement above guarantees that the ref node is in the collection
 
             int dupoff = RemoveDuplicateAttribute(newNode);
-            if (dupoff >= 0 && dupoff < offset)
+            if (dupoff >= 0 && dupoff <= offset)
                 offset--;
             InsertNodeAt(offset + 1, newNode);
 
