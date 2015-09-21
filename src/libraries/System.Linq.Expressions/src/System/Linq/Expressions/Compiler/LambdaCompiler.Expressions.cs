@@ -202,7 +202,7 @@ namespace System.Linq.Expressions.Compiler
             List<WriteBack> wb = EmitArguments(lambda.Type.GetMethod("Invoke"), invoke);
 
             // 2. Create the nested LambdaCompiler
-            var inner = new LambdaCompiler(this, lambda);
+            var inner = new LambdaCompiler(this, lambda, invoke);
 
             // 3. Emit the body
             // if the inlined lambda is the last expression of the whole lambda,
