@@ -13,6 +13,7 @@
 #include <openssl/asn1.h>
 #include <openssl/bio.h>
 #include <openssl/evp.h>
+#include <openssl/rand.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 
@@ -1007,6 +1008,27 @@ GetPkcs7Certificates(
     return 0;
 }
 
+/*
+Function:
+GetRandomBytes
+
+Puts num cryptographically strong pseudo-random bytes into buf.
+
+Return values:
+Returns a bool to managed code.
+1 for success
+0 for failure
+*/
+int
+GetRandomBytes(
+    unsigned char* buf, 
+    int num)
+{
+    int ret = RAND_bytes(buf, num);
+
+    return ret == 1;
+}
+
 // Lock used to make sure EnsureopenSslInitialized itself is thread safe
 static pthread_mutex_t g_initLock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -1057,6 +1079,7 @@ EnsureOpenSslInitialized()
     int ret = 0;
     int numLocks = 0;
     int locksInitialized = 0;
+    int randPollResult = 0;
 
     pthread_mutex_lock(&g_initLock);
 
@@ -1097,6 +1120,15 @@ EnsureOpenSslInitialized()
 
     // Initialize the callback
     CRYPTO_set_locking_callback(LockingCallback);
+
+    // Initialize the random number generator seed
+    randPollResult = RAND_poll();
+    if (randPollResult < 1)
+    {
+        assert(0 && "RAND_poll() failed.");
+        ret = 4;
+        goto done;
+    }
 
 done:
     if (ret != 0)
