@@ -73,8 +73,17 @@ namespace Microsoft.Win32.SafeHandles
             // to retry, as the descriptor could actually have been closed, been subsequently reassigned, and
             // be in use elsewhere in the process.  Instead, we simply check whether the call was successful.
             int fd = (int)handle;
-            Debug.Assert(fd >= 0);
-            return Interop.Sys.Close(fd) == 0;
+            Debug.Assert(fd >= 0, "Negative file descriptor");
+            int result = Interop.Sys.Close(fd);
+#if DEBUG
+            if (result != 0)
+            {
+                Debug.Fail(string.Format(
+                    "Close failed with result {0} and errno {1}", 
+                    result, Interop.Sys.GetLastErrorInfo().RawErrno));
+            }
+#endif
+            return result == 0;
         }
 
         public override bool IsInvalid
