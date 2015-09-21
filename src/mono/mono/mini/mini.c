@@ -3390,6 +3390,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 					printf ("LLVM failed for '%s': %s\n", method->name, cfg->exception_message);
 					//g_free (nm);
 				}
+				if (cfg->llvm_only) {
+					cfg->disable_aot = TRUE;
+					return cfg;
+				}
 				mono_destroy_compile (cfg);
 				try_llvm = FALSE;
 				goto restart_compile;
@@ -3904,6 +3908,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 				//nm = mono_method_full_name (cfg->method, TRUE);
 				printf ("LLVM failed for '%s': %s\n", method->name, cfg->exception_message);
 				//g_free (nm);
+			}
+			if (cfg->llvm_only) {
+				cfg->disable_aot = TRUE;
+				return cfg;
 			}
 			mono_destroy_compile (cfg);
 			try_llvm = FALSE;
