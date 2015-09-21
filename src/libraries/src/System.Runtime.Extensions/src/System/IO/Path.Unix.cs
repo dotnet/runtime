@@ -183,15 +183,12 @@ namespace System.IO
             return path.Length > 0 && path[0] == DirectorySeparatorChar;
         }
 
-        private static unsafe byte[] CreateCryptoRandomByteArray(int byteLength)
+        private static byte[] CreateCryptoRandomByteArray(int byteLength)
         {
             var arr = new byte[byteLength];
-            fixed (byte* buf = arr)
+            if (!Interop.Crypto.GetRandomBytes(arr, arr.Length))
             {
-                if (Interop.libcrypto.RAND_pseudo_bytes(buf, arr.Length) == -1)
-                {
-                    throw new InvalidOperationException(SR.InvalidOperation_Cryptography);
-                }
+                throw new InvalidOperationException(SR.InvalidOperation_Cryptography);
             }
             return arr;
         }
