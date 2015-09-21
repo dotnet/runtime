@@ -32,13 +32,13 @@ namespace System.Globalization.Tests
         [InlineData("xx-XX")]
         public void TestCustomCultureWindows(string localeName)
         {
-            Assert.Throws<ArgumentNullException>(() => { CultureInfo myCulture = new CultureInfo(localeName); });
+            Assert.Throws<ArgumentNullException>(() => new CultureInfo(localeName));
         }
 
         [Fact]
         public void TestNullCulture()
         {
-            Assert.Throws<ArgumentNullException>(() => { CultureInfo myCulture = new CultureInfo(null); });
+            Assert.Throws<ArgumentNullException>(() => new CultureInfo(null));
         }
 
         [Theory]
@@ -46,7 +46,7 @@ namespace System.Globalization.Tests
         [InlineData("en-US@x=1")] // don't support ICU keywords
         public void TestInvalidCulture(string cultureName)
         {
-            Assert.Throws<CultureNotFoundException>(() => { CultureInfo myCulture = new CultureInfo(cultureName); });
+            Assert.Throws<CultureNotFoundException>(() => new CultureInfo(cultureName));
         }
     }
 }
