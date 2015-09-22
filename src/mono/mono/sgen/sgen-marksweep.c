@@ -2497,6 +2497,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 
 	collector->major_ops_serial.copy_or_mark_object = major_copy_or_mark_object_canonical;
 	collector->major_ops_serial.scan_object = major_scan_object_with_evacuation;
+	collector->major_ops_serial.drain_gray_stack = drain_gray_stack;
 	if (is_concurrent) {
 		collector->major_ops_concurrent_start.copy_or_mark_object = major_copy_or_mark_object_concurrent_canonical;
 		collector->major_ops_concurrent_start.scan_object = major_scan_object_no_mark_concurrent_start;
@@ -2505,9 +2506,6 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 		collector->major_ops_concurrent_finish.scan_object = major_scan_object_no_evacuation;
 		collector->major_ops_concurrent_finish.scan_vtype = major_scan_vtype_concurrent_finish;
 	}
-
-	if (!is_concurrent)
-		collector->drain_gray_stack = drain_gray_stack;
 
 #ifdef HEAVY_STATISTICS
 	mono_counters_register ("Optimized copy", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_optimized_copy);
