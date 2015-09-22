@@ -164,19 +164,8 @@ namespace System.Collections.Concurrent.Tests
                 producer1.Add(100);
             });
 
-            int ignored, index, timeout = 5000;
-            index = BlockingCollection<int>.TryTakeFromAny(producerArray, out ignored, timeout);
-            if (index != 1)
-            {
-                Assert.False(true, String.Format("Test_Bug914998:  >Failed, TryTakeFromAny failed and returned {0} expected 1", index));
-            }
-        }
-
-        [Fact]
-        public static void TestConstruction()
-        {
-            Test0_Construction(-1);
-            Test0_Construction(10);
+            int ignored;
+            Assert.Equal(1, BlockingCollection<int>.TryTakeFromAny(producerArray, out ignored, 5000));
         }
 
         [Fact]
@@ -186,40 +175,14 @@ namespace System.Collections.Concurrent.Tests
             DebuggerAttributes.ValidateDebuggerTypeProxyProperties(new BlockingCollection<int>());
         }
 
-        [Fact]
-        public static void TestAddTake()
-        {
-            Test1_AddTake(1, 1, -1);
-            Test1_AddTake(5, 3, 1);
-        }
-
-        [Fact]
-        [OuterLoop]
-        public static void TestAddTake01()
-        {
-            Test1_AddTake(10, 10, 10);
-            Test1_AddTake(10, 10, 9);
-        }
-
-        [Fact]
-        public static void TestConcurrentAdd()
-        {
-            Test2_ConcurrentAdd(2, 1024);
-            Test2_ConcurrentAdd(8, 512);
-        }
-
-        [Fact]
-        public static void TestConcurrentAddTake()
-        {
-            Test3_ConcurrentAddTake(8, 1024);
-        }
-
         /// <summary>
         /// Tests the default BlockingCollection constructor which initializes a BlockingQueue
         /// </summary>
         /// <param name="boundedCapacity"></param>
-        /// <returns></returns>
-        private static void Test0_Construction(int boundedCapacity)
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(10)]
+        public static void TestConstruction(int boundedCapacity)
         {
             BlockingCollection<int> blockingQueue;
             if (boundedCapacity != -1)
@@ -253,19 +216,32 @@ namespace System.Collections.Concurrent.Tests
         /// <param name="numOfAdds">The number of elements to add to the BlockingCollection.</param>
         /// <param name="numOfTakes">The number of elements to Take from the BlockingCollection.</param>
         /// <param name="boundedCapacity">The bounded capacity of the BlockingCollection, -1 is unbounded.</param>
-        /// <returns>True if test succeeded, false otherwise.</returns>
-        private static void Test1_AddTake(int numOfAdds, int numOfTakes, int boundedCapacity)
+        [Theory]
+        [InlineData(1, 1, -1)]
+        [InlineData(5, 3, 1)]
+        public static void TestAddTake(int numOfAdds, int numOfTakes, int boundedCapacity)
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>(boundedCapacity);
             AddAnyTakeAny(numOfAdds, numOfTakes, boundedCapacity, blockingCollection, null, -1);
         }
 
-        /// <summary> Launch some threads performing Add operation and makes sure that all items added are 
+        [Theory]
+        [InlineData(10, 10, 10)]
+        [InlineData(10, 10, 9)]
+        [OuterLoop]
+        public static void TestAddTake_Longrunning(int numOfAdds, int numOfTakes, int boundedCapacity)
+        {
+            TestAddTake(numOfAdds, numOfTakes, boundedCapacity);
+        }
+
+        /// <summary> Launch some threads performing Add operation and makes sure that all items added are
         /// present in the collection.</summary>
         /// <param name="numOfThreads">Number of producer threads.</param>
         /// <param name="numOfElementsPerThread">Number of elements added per thread.</param>
-        /// <returns>True if test succeeded, false otherwise.</returns>
-        private static void Test2_ConcurrentAdd(int numOfThreads, int numOfElementsPerThread)
+        [Theory]
+        [InlineData(2, 1024)]
+        [InlineData(8, 512)]
+        public static void TestConcurrentAdd(int numOfThreads, int numOfElementsPerThread)
         {
             ManualResetEvent mre = new ManualResetEvent(false);
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
@@ -282,9 +258,7 @@ namespace System.Collections.Concurrent.Tests
 
                     for (int j = startOfSequence; j < endOfSequence; ++j)
                     {
-                        if (!blockingCollection.TryAdd(j))
-                            Assert.False(true,
-                                String.Format("Test2_ConcurrentAdd(numOfThreads={0}, numOfElementsPerThread={1}): > test failed - TryAdd returned false unexpectedly", numOfThreads, numOfElementsPerThread));
+                        Assert.True(blockingCollection.TryAdd(j));
                     }
                 }, i, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
             }
@@ -293,10 +267,7 @@ namespace System.Collections.Concurrent.Tests
             Task.WaitAll(threads);
 
             int expectedCount = numOfThreads * numOfElementsPerThread;
-            if (blockingCollection.Count != expectedCount)
-            {
-                Assert.False(true, String.Format("Test2_ConcurrentAdd: > test failed - expected count = {0}, actual = {1}", expectedCount, blockingCollection.Count));
-            }
+            Assert.Equal(expectedCount, blockingCollection.Count);
             List<int> sortedElementsInCollection = new List<int>(blockingCollection);
             sortedElementsInCollection.Sort();
             VerifyElementsAreMembersOfSequence(sortedElementsInCollection, 0, expectedCount - 1);
@@ -306,8 +277,9 @@ namespace System.Collections.Concurrent.Tests
         /// are consumed by consumers with no element lost nor consumed more than once.</summary>
         /// <param name="threads">Total number of producer and consumer threads.</param>
         /// <param name="numOfElementsPerThread">Number of elements to Add/Take per thread.</param>
-        /// <returns>True if test succeeded, false otherwise.</returns>
-        private static void Test3_ConcurrentAddTake(int numOfThreads, int numOfElementsPerThread)
+        [Theory]
+        [InlineData(8, 1024)]
+        private static void TestConcurrentAddTake(int numOfThreads, int numOfElementsPerThread)
         {
             //If numOfThreads is not an even number, make it even.
             if ((numOfThreads % 2) != 0)
@@ -330,8 +302,7 @@ namespace System.Collections.Concurrent.Tests
                         mre.WaitOne();
                         for (int j = startOfSequence; j < endOfSequence; ++j)
                         {
-                            Assert.True(blockingCollection.TryAdd(j), 
-                                String.Format("Test3_ConcurrentAddTake(numOfThreads={0}, numOfElementsPerThread={1}): > test failed - TryAdd returned false unexpectedly", numOfThreads, numOfElementsPerThread));
+                            Assert.True(blockingCollection.TryAdd(j));
                         }
                     }, i, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
                 }
@@ -611,17 +582,12 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
-        [Fact]
-        public static void TestCopyTo()
-        {
-            Test9_CopyTo(0);
-            Test9_CopyTo(8);
-        }
-
         /// <summary>Validates that BlockingCollection.CopyTo() produces same results as IConcurrentCollection.CopyTo().</summary>
         /// <param name="indexOfInsertion">The zero-based index in the array at which copying begins.</param>
-        /// <returns>True if test succeeded, false otherwise.</returns>
-        private static void Test9_CopyTo(int indexOfInsertion)
+        [Theory]
+        [InlineData(0)]
+        [InlineData(8)]
+        public static void TestCopyTo(int indexOfInsertion)
         {
             ConcurrentStackCollection<int> concurrentCollection = new ConcurrentStackCollection<int>();
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
@@ -640,17 +606,7 @@ namespace System.Collections.Concurrent.Tests
             blockingCollection.CopyTo(arrBlockingCollection, indexOfInsertion);
             concurrentCollection.CopyTo(arrConcurrentCollection, indexOfInsertion);
 
-            for (int i = 0; i < arrBlockingCollection.Length; ++i)
-            {
-                if (arrBlockingCollection[i] != arrConcurrentCollection[i])
-                {
-                    Assert.False(true, String.Format("Test9_CopyTo(indexOfInsertion={3}): > test failed - Array elements mismatch: arrBlockingCollection[{2}]={0}, arrConcurrentCollection[{2}]={1}",
-                                        arrBlockingCollection[i],
-                                        arrConcurrentCollection[i],
-                                        i,
-                                        indexOfInsertion));
-                }
-            }
+            Assert.Equal(arrConcurrentCollection, arrBlockingCollection);
         }
 
         /// <summary>Validates BlockingCollection.Count.</summary>
@@ -733,21 +689,6 @@ namespace System.Collections.Concurrent.Tests
                 "Test13_IsSynchronized_SyncRoot: > test failed - IsSynchronized should be false");
         }
 
-        [Fact]
-        public static void TestAddAnyTakeAny()
-        {
-            Test14_AddAnyTakeAny(1, 1, 16, 0, -1);
-            Test14_AddAnyTakeAny(10, 10, 16, 14, 10);
-        }
-
-        [Fact]
-        [OuterLoop]
-        public static void TestAddAnyTakeAny01()
-        {
-            Test14_AddAnyTakeAny(10, 9, 16, 15, -1);
-            Test14_AddAnyTakeAny(10, 10, 16, 1, 9);
-        }
-
         /// <summary>Initializes an array of blocking collections such that all are full except one in case of Adds and
         /// all are empty except one (the same blocking collection) in case of Takes.
         /// Adds "numOfAdds" elements to the BlockingCollection and then takes "numOfTakes" elements and checks
@@ -758,8 +699,10 @@ namespace System.Collections.Concurrent.Tests
         /// <param name="numOfBlockingCollections">Length of BlockingCollections array.</param>
         /// <param name="indexOfBlockingCollectionUnderTest">Index of the BlockingCollection that will accept the operations.</param>
         /// <param name="boundedCapacity">The bounded capacity of the BlockingCollection under test.</param>
-        /// <returns>True if test succeeds, false otherwise.</returns>
-        private static void Test14_AddAnyTakeAny(int numOfAdds,
+        [Theory]
+        [InlineData(1, 1, 16, 0, -1)]
+        [InlineData(10, 10, 16, 14, 10)]
+        public static void TestAddAnyTakeAny(int numOfAdds,
                                                  int numOfTakes,
                                                  int numOfBlockingCollections,
                                                  int indexOfBlockingCollectionUnderTest,
@@ -771,19 +714,23 @@ namespace System.Collections.Concurrent.Tests
             AddAnyTakeAny(numOfAdds, numOfTakes, boundedCapacity, blockingCollection, blockingCollections, indexOfBlockingCollectionUnderTest);
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(10, 9, 16, 15, -1)]
+        [InlineData(10, 10, 16, 1, 9)]
         [OuterLoop]
-        public static void TestConcurrentAddAnyTakeAny()
+        public static void TestAddAnyTakeAny_Longrunning(int numOfAdds, int numOfTakes, int numOfBlockingCollections, int indexOfBlockingCollectionUnderTest, int boundedCapacity)
         {
-            Test15_ConcurrentAddAnyTakeAny(4, 2048, 2, 64);
+            TestAddAnyTakeAny(numOfAdds, numOfTakes, numOfBlockingCollections, indexOfBlockingCollectionUnderTest, boundedCapacity);
         }
 
         /// <summary>Launch threads/2 producers and threads/2 consumers then makes sure that all elements produced
         /// are consumed by consumers with no element lost nor consumed more than once.</summary>
         /// <param name="threads">Total number of producer and consumer threads.</param>
         /// <param name="numOfElementsPerThread">Number of elements to Add/Take per thread.</param>
-        /// <returns>True if test succeeded, false otherwise.</returns>
-        private static void Test15_ConcurrentAddAnyTakeAny(int numOfThreads, int numOfElementsPerThread, int numOfCollections, int boundOfCollections)
+        [Theory]
+        [InlineData(4, 2048, 2, 64)]
+        [OuterLoop]
+        private static void TestConcurrentAddAnyTakeAny(int numOfThreads, int numOfElementsPerThread, int numOfCollections, int boundOfCollections)
         {
             //If numOfThreads is not an even number, make it even.
             if ((numOfThreads % 2) != 0)
@@ -814,16 +761,7 @@ namespace System.Collections.Concurrent.Tests
                         mre.WaitOne();
                         for (int j = startOfSequence; j < endOfSequence; ++j)
                         {
-                            int indexOfCollection = BlockingCollection<int>.AddToAny(blockingCollections, j);
-                            if (indexOfCollection < 0)
-                            {
-                                Console.WriteLine("Test15_ConcurrentAddAnyTakeAny(numOfThreads={0}, numOfElementsPerThread={1},numOfCollections={2},boundOfCollections={3})",
-                                    numOfThreads,
-                                    numOfElementsPerThread,
-                                    numOfCollections,
-                                    boundOfCollections);
-                                Assert.False(true, String.Format(" > test failed - AddToAny returned {0} unexpectedly", indexOfCollection));
-                            }
+                            Assert.InRange(BlockingCollection<int>.AddToAny(blockingCollections, j), 0, int.MaxValue);
                         }
                     }, i, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
                 }
@@ -836,20 +774,8 @@ namespace System.Collections.Concurrent.Tests
                         for (int j = 0; j < numOfElementsPerThread; ++j)
                         {
                             int item = -1;
-                            int indexOfCollection = BlockingCollection<int>.TakeFromAny(blockingCollections, out item);
-                            if (indexOfCollection < 0)
-                            {
-                                Console.WriteLine("Test15_ConcurrentAddAnyTakeAny(numOfThreads={0}, numOfElementsPerThread={1},numOfCollections={2},boundOfCollections={3})",
-                                    numOfThreads,
-                                    numOfElementsPerThread,
-                                    numOfCollections,
-                                    boundOfCollections);
-                                Assert.False(true, String.Format(" > test failed - TakeFromAny returned {0} unexpectedly", indexOfCollection));
-                            }
-                            else
-                            {
-                                removedElements.Add(item);
-                            }
+                            Assert.InRange(BlockingCollection<int>.TakeFromAny(blockingCollections, out item), 0, int.MaxValue);
+                            removedElements.Add(item);
                         }
 
                         //The elements are added later in this loop to removedElementsFromAllThreads List<int> and not in 
@@ -870,20 +796,7 @@ namespace System.Collections.Concurrent.Tests
             Task.WaitAll(threads);
 
             int expectedCount = 0;
-            int blockingCollectionIndex = 0;
-            foreach (BlockingCollection<int> blockingCollection in blockingCollections)
-            {
-                if (blockingCollection.Count != expectedCount)
-                {
-                    Console.WriteLine("* Test15_ConcurrentAddAnyTakeAny(numOfThreads={0}, numOfElementsPerThread={1},numOfCollections={2},boundOfCollections={3})",
-                                    numOfThreads,
-                                    numOfElementsPerThread,
-                                    numOfCollections,
-                                    boundOfCollections);
-                    Assert.False(true, String.Format(" > test failed - expected count = {0}, actual = {1}, blockingCollectionIndex = {2}", expectedCount, blockingCollection.Count, blockingCollectionIndex));
-                }
-                blockingCollectionIndex++;
-            }
+            Assert.All(blockingCollections, c => Assert.Equal(expectedCount, c.Count));
 
             int[] arrayOfRemovedElementsFromAllThreads = (int[])(removedElementsFromAllThreads.ToArray());
             List<int> sortedElementsInCollection = new List<int>(arrayOfRemovedElementsFromAllThreads);
@@ -1105,14 +1018,9 @@ namespace System.Collections.Concurrent.Tests
                     {
                         numOfTrueTryAdds++;
                     }
-                    else if (i < expectedNumOfSuccessfulTryAdds)
+                    else
                     {
-                        Console.WriteLine("AddAnyTakeAny: numOfAdds: {0}, numOfTakes: {1}, boundCapacity: {2}, indexOfBlockingCollectionUnderTest: {3}",
-                            numOfAdds,
-                            numOfTakes,
-                            boundedCapacity,
-                            indexOfBlockingCollectionUnderTest);
-                        Assert.False(true, String.Format(" > test failed - TryAddToAny returned #{0} while it should return #{1}", indexOfCollectionThatAcceptedTheOperation, indexOfBlockingCollectionUnderTest));
+                        Assert.InRange(i, expectedNumOfSuccessfulTryAdds, int.MaxValue);
                     }
                 }
                 if (i < expectedNumOfSuccessfulTryAdds)
@@ -1120,26 +1028,8 @@ namespace System.Collections.Concurrent.Tests
                     concurrentCollection.TryAdd(numberToAdd);
                 }
             }
-            if (numOfTrueTryAdds != expectedNumOfSuccessfulTryAdds)
-            {
-                Console.WriteLine("AddAnyTakeAny: numOfAdds: {0}, numOfTakes: {1}, boundCapacity: {2}, indexOfBlockingCollectionUnderTest: {3}",
-                            numOfAdds,
-                            numOfTakes,
-                            boundedCapacity,
-                            indexOfBlockingCollectionUnderTest);
-                Assert.False(true, String.Format(" > test failed - expected #{0} calls to TryAdd will return true while actual is #{1}", expectedNumOfSuccessfulTryAdds, numOfTrueTryAdds));
-            }
-            if (concurrentCollection.Count != blockingCollection.Count)
-            {
-                Console.WriteLine("AddAnyTakeAny: numOfAdds: {0}, numOfTakes: {1}, boundCapacity: {2}, indexOfBlockingCollectionUnderTest: {3}",
-                            numOfAdds,
-                            numOfTakes,
-                            boundedCapacity,
-                            indexOfBlockingCollectionUnderTest);
-                Assert.False(true, String.Format(" > test failed - collections count differs: blockingCollection = {0}, concurrentCollection = {1}",
-                                    blockingCollection.Count,
-                                    concurrentCollection.Count));
-            }
+            Assert.Equal(expectedNumOfSuccessfulTryAdds, numOfTrueTryAdds);
+            Assert.Equal(blockingCollection.Count, concurrentCollection.Count);
             int itemFromBlockingCollection;
             int itemFromConcurrentCollection;
             int numOfTrueTryTakes = 0;
@@ -1179,56 +1069,20 @@ namespace System.Collections.Concurrent.Tests
                     }
                     else if (i < expectedNumOfSuccessfulTryTakes)
                     {
-                        Console.WriteLine("AddAnyTakeAny: numOfAdds: {0}, numOfTakes: {1}, boundCapacity: {2}, indexOfBlockingCollectionUnderTest: {3}",
-                            numOfAdds,
-                            numOfTakes,
-                            boundedCapacity,
-                            indexOfBlockingCollectionUnderTest);
-                        Assert.False(true, String.Format(" > test failed - TryTakeFromAny returned #{0} while it should return #{1}", indexOfCollectionThatAcceptedTheOperation, indexOfBlockingCollectionUnderTest));
+                        Assert.InRange(i, expectedNumOfSuccessfulTryTakes, int.MaxValue);
                     }
 
                 }
                 if (i < expectedNumOfSuccessfulTryTakes)
                 {
                     concurrentCollection.TryTake(out itemFromConcurrentCollection);
-                    if (itemFromBlockingCollection != itemFromConcurrentCollection)
-                    {
-                        Console.WriteLine("AddAnyTakeAny: numOfAdds: {0}, numOfTakes: {1}, boundCapacity: {2}, indexOfBlockingCollectionUnderTest: {3}",
-                            numOfAdds,
-                            numOfTakes,
-                            boundedCapacity,
-                            indexOfBlockingCollectionUnderTest);
-                        Assert.False(true, String.Format(" > test failed - Taken elements differ : itemFromBlockingCollection = {0}, itemFromConcurrentCollection = {1}",
-                                            itemFromBlockingCollection,
-                                            itemFromConcurrentCollection));
-                    }
+                    Assert.Equal(itemFromBlockingCollection, itemFromConcurrentCollection);
                 }
-
             }
-            if (numOfTrueTryTakes != expectedNumOfSuccessfulTryTakes)
-            {
-                Console.WriteLine("AddAnyTakeAny: numOfAdds: {0}, numOfTakes: {1}, boundCapacity: {2}, indexOfBlockingCollectionUnderTest: {3}",
-                            numOfAdds,
-                            numOfTakes,
-                            boundedCapacity,
-                            indexOfBlockingCollectionUnderTest);
-                Assert.False(true, String.Format(" > test failed - expected #{0} calls to TryTake will return true while actual is #{1}", expectedNumOfSuccessfulTryTakes, numOfTrueTryTakes));
-            }
+            Assert.Equal(expectedNumOfSuccessfulTryTakes, numOfTrueTryTakes);
             int expectedCount = expectedNumOfSuccessfulTryAdds - expectedNumOfSuccessfulTryTakes;
             expectedCount = (expectedCount < 0) ? 0 : expectedCount;
-
-            if (blockingCollection.Count != expectedCount)
-            {
-                Console.WriteLine("AddAnyTakeAny: numOfAdds: {0}, numOfTakes: {1}, boundCapacity: {2}, indexOfBlockingCollectionUnderTest: {3}",
-                            numOfAdds,
-                            numOfTakes,
-                            boundedCapacity,
-                            indexOfBlockingCollectionUnderTest);
-                Assert.False(true, String.Format(" > test failed - count is not as expected: expected = {0}, actual = {1}",
-                    expectedCount,
-                    blockingCollection.Count));
-
-            }
+            Assert.Equal(expectedCount, blockingCollection.Count);
 
             //Test the new behavior of TryTakeFromAny after Dev10 to return false if all collections are completed, this is the same as before
             // except it was throwing when the timeout is -1, now will return false immediately
@@ -1238,10 +1092,7 @@ namespace System.Collections.Concurrent.Tests
             collectionsArray[1].CompleteAdding();
             int result;
             int index = BlockingCollection<int>.TryTakeFromAny(collectionsArray, out result, Timeout.Infinite);
-            if (index != -1)
-            {
-                Assert.False(true, " > test failed - TryTakeFromAny succeeded and expected failure because all collections are completed");
-            }
+            Assert.Equal(-1, index);
         }
 
         /// <summary>Constructs and returns an unbounded blocking collection.</summary>
@@ -1287,35 +1138,11 @@ namespace System.Collections.Concurrent.Tests
         /// <param name="start">The start of the sequence.</param>
         /// <param name="end">The end of the sequence.</param>
         /// <returns></returns>
-        private static void VerifyElementsAreMembersOfSequence(IEnumerable sortedElementsInCollection, int start, int end)
+        private static void VerifyElementsAreMembersOfSequence(IEnumerable<int> sortedElementsInCollection, int start, int end)
         {
             int current = start;
-            bool elementsAreMembersOfSequence = true;
-
-            foreach (int element in sortedElementsInCollection)
-            {
-                if (element != current)
-                {
-                    elementsAreMembersOfSequence = false;
-                }
-                current++;
-            }
-            if ((current - 1) != end)
-            {
-                if ((current - 1) < end)
-                {
-                    Assert.False(true, String.Format("VerifyElementsAreMembersOfSequence: > test failed - the collection contains less elements than expected: actual={0}, expected{1}",
-                                        current - start,
-                                        end - start + 1));
-                }
-            }
-            if (!elementsAreMembersOfSequence)
-            {
-                StringBuilder builder = new StringBuilder("VerifyElementsAreMembersOfSequence: > test failed - elements are not properly added");
-                foreach (int element in sortedElementsInCollection)
-                    builder.AppendFormat(" > {0}, ", element);
-                Assert.False(true, builder.ToString());
-            }
+            Assert.All(sortedElementsInCollection, elem => Assert.Equal(current++, elem));
+            Assert.Equal(end, current - 1);
         }
 
         /// <summary>This is a Stack implementing IConcurrentCollection to be used in the tests of BlockingCollection.</summary>

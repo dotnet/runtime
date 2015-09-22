@@ -13,17 +13,6 @@ namespace SortedSetTests
     {
         #region Helper Methods
 
-        private static void HandleResult(string testName, bool result)
-        {
-            HandleResult(testName, result, null);
-        }
-
-        private static void HandleResult(string testName, bool result, string failMessage)
-        {
-            if (!result)
-                Assert.True(false, testName + " FAILED! " + failMessage);
-        }
-
         private static void ContainsExpected(string testName, SortedSet<int> theSet1, int[] expectedArray, int expectedCount)
         {
             SortedSet<int> expected = new SortedSet<int>(expectedArray);
@@ -70,14 +59,7 @@ namespace SortedSetTests
             set2.Add(5);
             set2.Add(10);
             set1.SymmetricExceptWith(set2);
-            if (set1.Count == 0)
-            {
-                HandleResult("TestSortedSetCountAssumptions - symmetric except", true);
-            }
-            else
-            {
-                HandleResult("TestSortedSetCountAssumptions - symmetric except", false);
-            }
+            Assert.Equal(0, set1.Count);
             set1.Clear();
             set2.Clear();
 
@@ -86,14 +68,7 @@ namespace SortedSetTests
             set1.Add(7);
             set2.Add(5);
             set2.Add(10);
-            if (!set1.IsSubsetOf(set2))
-            {
-                HandleResult("TestSortedSetCountAssumptions - subset", true);
-            }
-            else
-            {
-                HandleResult("TestSortedSetCountAssumptions - subset", false);
-            }
+            Assert.False(set1.IsSubsetOf(set2));
             set1.Clear();
             set2.Clear();
 
@@ -103,14 +78,7 @@ namespace SortedSetTests
             set2.Add(5);
             set2.Add(10);
             set2.Add(11);
-            if (!set1.IsProperSubsetOf(set2))
-            {
-                HandleResult("TestSortedSetCountAssumptions - proper subset", true);
-            }
-            else
-            {
-                HandleResult("TestSortedSetCountAssumptions - proper subset", false);
-            }
+            Assert.False(set1.IsProperSubsetOf(set2));
 
             set1.Clear();
             set2.Clear();
@@ -119,14 +87,7 @@ namespace SortedSetTests
             set1.Add(5);
             set2.Add(5);
             set2.Add(10);
-            if (set1.IsSupersetOf(set2))
-            {
-                HandleResult("TestSortedSetCountAssumptions - superset", true);
-            }
-            else
-            {
-                HandleResult("TestSortedSetCountAssumptions - superset", false);
-            }
+            Assert.True(set1.IsSupersetOf(set2));
             set1.Clear();
             set2.Clear();
 
@@ -136,14 +97,7 @@ namespace SortedSetTests
             set1.Add(6);
             set2.Add(5);
             set2.Add(10);
-            if (set1.IsProperSupersetOf(set2))
-            {
-                HandleResult("TestSortedSetCountAssumptions - proper superset", true);
-            }
-            else
-            {
-                HandleResult("TestSortedSetCountAssumptions - proper superset", false);
-            }
+            Assert.True(set1.IsProperSupersetOf(set2));
             set1.Clear();
             set2.Clear();
 
@@ -151,14 +105,7 @@ namespace SortedSetTests
             set1.Add(5);
             set2.Add(5);
             set2.Add(10);
-            if (set1.SetEquals(set2))
-            {
-                HandleResult("TestSortedSetCountAssumptions - set equals 1", true);
-            }
-            else
-            {
-                HandleResult("TestSortedSetCountAssumptions - set equals 1", false);
-            }
+            Assert.True(set1.SetEquals(set2));
             set1.Clear();
             set2.Clear();
 
@@ -167,14 +114,7 @@ namespace SortedSetTests
             set1.Add(7);
             set2.Add(5);
             set2.Add(10);
-            if (!set1.SetEquals(set2))
-            {
-                HandleResult("TestSortedSetCountAssumptions - set equals 2", true);
-            }
-            else
-            {
-                HandleResult("TestSortedSetCountAssumptions - set equals 2", false);
-            }
+            Assert.False(set1.SetEquals(set2));
 
             set1.Clear();
             set2.Clear();
@@ -218,24 +158,8 @@ namespace SortedSetTests
             int[] elements = new int[] { -4, -3, -2, -1, 0, 1, 2, 3, 4 };
 
             s_sortedSet = new SortedSet<int>(elements);
-            int count = s_sortedSet.RemoveWhere(RemoveIt);
-            if (count == 0)
-            {
-                HandleResult("TestRemoveWhereZero 1", true);
-            }
-            else
-            {
-                HandleResult("TestRemoveWhereZero 1", false, String.Format("Expected count = 0 but was {0}", count));
-            }
-
-            if (s_foundZero)
-            {
-                HandleResult("TestRemoveWhereZero 2", true);
-            }
-            else
-            {
-                HandleResult("TestRemoveWhereZero 2", false, String.Format("Regression! Didn't find zero"));
-            }
+            Assert.Equal(0, s_sortedSet.RemoveWhere(RemoveIt));
+            Assert.True(s_foundZero);
         }
 
         private static bool RemoveIt(int i)
@@ -287,38 +211,7 @@ namespace SortedSetTests
             //set.TrimExcess();
             set.Clear();
 
-            int count = set.Count;
-            if (count == 0)
-            {
-                HandleResult("TestTrimExcessPostCondition", true);
-            }
-            else
-            {
-                HandleResult("TestTrimExcessPostCondition", false);
-            }
-        }
-
-        //private static SortedSet<int> s_sortedSet;
-
-        private static void TestRemoveWhereBug()
-        {
-            s_sortedSet = new SortedSet<int>(new int[] { 5 });
-            int ret = s_sortedSet.RemoveWhere(RemoveThe5_returnTrue);
-
-            if (ret == 0)
-            {
-                HandleResult("TestRemoveWhereBug", true);
-            }
-            else
-            {
-                HandleResult("TestRemoveWhereBug", false, String.Format("Expected number removed == 0 but was {0}", ret));
-            }
-        }
-
-        private static bool RemoveThe5_returnTrue(int unused)
-        {
-            s_sortedSet.Remove(5);
-            return true;
+            Assert.Equal(0, set.Count);
         }
 
         [Fact]
@@ -326,16 +219,7 @@ namespace SortedSetTests
         {
             SortedSet<ValueItem> SortedSet = new SortedSet<ValueItem>();
             SortedSet.Add(new ValueItem(34));
-            bool result = SortedSet.SetEquals(new ValueItem(-43));
-
-            if (!result)
-            {
-                HandleResult("TestSetEqualsThrows 1", true);
-            }
-            else
-            {
-                HandleResult("TestSetEqualsThrows 1", false);
-            }
+            Assert.False(SortedSet.SetEquals(new ValueItem(-43)));
 
             SortedSet.Add(new ValueItem(56));
             SortedSet.Add(new ValueItem(-12));
@@ -343,25 +227,11 @@ namespace SortedSetTests
 
             HashSet<ValueItem> HashSet = new HashSet<ValueItem>(SortedSet);
 
-            if (SortedSet.SetEquals(HashSet))
-            {
-                HandleResult("TestSetEqualsThrows 2", true);
-            }
-            else
-            {
-                HandleResult("TestSetEqualsThrows 2", false);
-            }
+            Assert.True(SortedSet.SetEquals(HashSet));
 
             IList<ValueItem> List = new List<ValueItem>(HashSet);
 
-            if (SortedSet.SetEquals(List))
-            {
-                HandleResult("TestSetEqualsThrows 3", true);
-            }
-            else
-            {
-                HandleResult("TestSetEqualsThrows 3", false);
-            }
+            Assert.True(SortedSet.SetEquals(List));
         }
 
         // the following empty set tests check whether set throws
@@ -369,15 +239,7 @@ namespace SortedSetTests
         public static void TestContainsEmptySet()
         {
             SortedSet<int> SortedSet = new SortedSet<int>();
-            bool result = SortedSet.Contains(3);
-            if (!result)
-            {
-                HandleResult("TestContainsEmptySet", true);
-            }
-            else
-            {
-                HandleResult("TestContainsEmptySet", false);
-            }
+            Assert.False(SortedSet.Contains(3));
         }
 
         [Fact]
@@ -386,15 +248,7 @@ namespace SortedSetTests
             List<int> list = new List<int>();
             list.Add(3);
             SortedSet<int> SortedSet = new SortedSet<int>();
-            bool result = SortedSet.IsProperSupersetOf(list);
-            if (!result)
-            {
-                HandleResult("TestProperSupersetEmptySet", true);
-            }
-            else
-            {
-                HandleResult("TestProperSupersetEmptySet", false);
-            }
+            Assert.False(SortedSet.IsProperSupersetOf(list));
         }
 
         [Fact]
@@ -403,15 +257,7 @@ namespace SortedSetTests
             List<int> list = new List<int>();
             list.Add(3);
             SortedSet<int> SortedSet = new SortedSet<int>();
-            bool result = SortedSet.IsSupersetOf(list);
-            if (!result)
-            {
-                HandleResult("TestSupersetEmptySet", true);
-            }
-            else
-            {
-                HandleResult("TestSupersetEmptySet", false);
-            }
+            Assert.False(SortedSet.IsSupersetOf(list));
         }
 
         [Fact]
@@ -420,15 +266,7 @@ namespace SortedSetTests
             List<int> list = new List<int>();
             list.Add(3);
             SortedSet<int> SortedSet = new SortedSet<int>();
-            bool result = SortedSet.IsProperSubsetOf(list);
-            if (result)
-            {
-                HandleResult("TestProperSubsetEmptySet", true);
-            }
-            else
-            {
-                HandleResult("TestProperSubsetEmptySet", false);
-            }
+            Assert.True(SortedSet.IsProperSubsetOf(list));
         }
 
         [Fact]
@@ -438,7 +276,6 @@ namespace SortedSetTests
             list.Add(3);
             SortedSet<int> SortedSet = new SortedSet<int>();
             SortedSet.SymmetricExceptWith(list);
-            HandleResult("TestSymmetricExceptEmptySet", true);
         }
 
         [Fact]
@@ -447,15 +284,7 @@ namespace SortedSetTests
             List<int> list = new List<int>();
             list.Add(3);
             SortedSet<int> SortedSet = new SortedSet<int>();
-            bool result = SortedSet.IsSubsetOf(list);
-            if (result)
-            {
-                HandleResult("TestSubsetEmptySet", true);
-            }
-            else
-            {
-                HandleResult("TestSubsetEmptySet", false);
-            }
+            Assert.True(SortedSet.IsSubsetOf(list));
         }
 
         [Fact]
@@ -464,15 +293,7 @@ namespace SortedSetTests
             List<int> list = new List<int>();
             list.Add(3);
             SortedSet<int> SortedSet = new SortedSet<int>();
-            bool result = SortedSet.SetEquals(list);
-            if (!result)
-            {
-                HandleResult("TestSetEqualsEmptySet", true);
-            }
-            else
-            {
-                HandleResult("TestSetEqualsEmptySet", false);
-            }
+            Assert.False(SortedSet.SetEquals(list));
         }
 
         [Fact]
@@ -491,8 +312,6 @@ namespace SortedSetTests
             set_of_sets.IntersectWith(list_of_empty_set);
 
             set_of_sets.CopyTo(new SortedSet<int>[1], 0, 1);
-
-            HandleResult("TestCopyToWithSetOfSet_Int", true);
         }
 
         [Fact]
@@ -503,24 +322,8 @@ namespace SortedSetTests
             SortedSet = new SortedSet<int>();
             SortedSet2 = new SortedSet<int>(new int[] { -123, -12, -1, 0, 1, 12, 123 });
             SortedSet.UnionWith(SortedSet2);
-
-            if (SortedSet.Count == 7)
-            {
-                HandleResult("TestUnionWithEmpty_Int 1", true);
-            }
-            else
-            {
-                HandleResult("TestUnionWithEmpty_Int 1", false, String.Format("Expected count={0} but was {1}", 7, SortedSet.Count));
-            }
-
-            if (SortedSet.SetEquals(SortedSet2))
-            {
-                HandleResult("TestUnionWithEmpty_Int 2", true);
-            }
-            else
-            {
-                HandleResult("TestUnionWithEmpty_Int 2", false, "Expected SortedSet1.SetEquals(SortedSet2) but was false");
-            }
+            Assert.Equal(7, SortedSet.Count);
+            Assert.True(SortedSet.SetEquals(SortedSet2));
         }
 
         [Fact]
@@ -539,24 +342,9 @@ namespace SortedSetTests
             SortedSet = new SortedSet<DummyClass>();
             SortedSet2 = new SortedSet<DummyClass>(new DummyClass[] { c1, c2, c3, c4, c5, c6, c7 });
             SortedSet.UnionWith(SortedSet2);
+            Assert.Equal(7, SortedSet.Count);
 
-            if (SortedSet.Count == 7)
-            {
-                HandleResult("TestUnionWithEmpty_Object 1", true);
-            }
-            else
-            {
-                HandleResult("TestUnionWithEmpty_Object 1", false);
-            }
-
-            if (SortedSet.SetEquals(SortedSet2))
-            {
-                HandleResult("TestUnionWithEmpty_Object 2", true);
-            }
-            else
-            {
-                HandleResult("TestUnionWithEmpty_Object 2", false);
-            }
+            Assert.True(SortedSet.SetEquals(SortedSet2));
         }
 
         [Fact]
@@ -569,15 +357,7 @@ namespace SortedSetTests
             int count = SortedSet.Count;
 
             SortedSet.UnionWith(SortedSet);
-
-            if (SortedSet.Count == count)
-            {
-                HandleResult("TestUnionWithSelf", true);
-            }
-            else
-            {
-                HandleResult("TestUnionWithSelf", false, String.Format("Expected count={0} but was {1}", 7, SortedSet.Count));
-            }
+            Assert.Equal(count, SortedSet.Count);
         }
 
         [Fact]
@@ -589,15 +369,7 @@ namespace SortedSetTests
             SortedSet.UnionWith(new int[] { -123, -12, -1, 0, 1, 12, 123 });
 
             SortedSet.ExceptWith(SortedSet);
-
-            if (SortedSet.Count == 0)
-            {
-                HandleResult("TestExceptWithSelf", true);
-            }
-            else
-            {
-                HandleResult("TestExceptWithSelf", false, String.Format("Expected count={0} but was {1}", 7, SortedSet.Count));
-            }
+            Assert.Equal(0, SortedSet.Count);
         }
 
         [Fact]
@@ -609,15 +381,7 @@ namespace SortedSetTests
             SortedSet.UnionWith(new int[] { -123, -12, -1, 0, 1, 12, 123 });
 
             SortedSet.SymmetricExceptWith(SortedSet);
-
-            if (SortedSet.Count == 0)
-            {
-                HandleResult("TestSymmetricExceptWithSelf", true);
-            }
-            else
-            {
-                HandleResult("TestSymmetricExceptWithSelf", false, String.Format("Expected count={0} but was {1}", 7, SortedSet.Count));
-            }
+            Assert.Equal(0, SortedSet.Count);
         }
 
         [Fact]
@@ -628,16 +392,7 @@ namespace SortedSetTests
             SortedSet = new SortedSet<int>();
             int[] empty = new int[] { };
 
-            bool result = SortedSet.IsProperSubsetOf(empty);
-
-            if (!result)
-            {
-                HandleResult("TestIsProperSubsetOfEmptySet", true);
-            }
-            else
-            {
-                HandleResult("TestIsProperSubsetOfEmptySet", false, "Empty set isn't a subset of itself");
-            }
+            Assert.False(SortedSet.IsProperSubsetOf(empty));
         }
 
         [Fact]
@@ -650,15 +405,7 @@ namespace SortedSetTests
             SortedSet<int> SortedSet = new SortedSet<int>(new IntAbsComparer());
             SortedSet.Add(-7);
             SortedSet.SymmetricExceptWith(list);
-
-            if (SortedSet.Count == 2)
-            {
-                HandleResult("TestSymmetricExceptEC", true);
-            }
-            else
-            {
-                HandleResult("TestSymmetricExceptEC", false, String.Format("Expected count = 2 but was {0}. This is an EqualityComparer regression.", SortedSet.Count));
-            }
+            Assert.Equal(2, SortedSet.Count);
         }
 
         [Fact]
@@ -670,15 +417,7 @@ namespace SortedSetTests
             SortedSet.Add(-7);
             SortedSet.Add(5);
             SortedSet.IntersectWith(other);
-
-            if (SortedSet.Count == 2)
-            {
-                HandleResult("TestIntersectEC", true);
-            }
-            else
-            {
-                HandleResult("TestIntersectEC", false, String.Format("Expected count = 2 but was {0}. This is an EqualityComparer regression.", SortedSet.Count));
-            }
+            Assert.Equal(2, SortedSet.Count);
         }
 
         [Fact]
@@ -689,16 +428,7 @@ namespace SortedSetTests
             SortedSet<int> SortedSet = new SortedSet<int>(new IntAbsComparer());
             SortedSet.Add(5);
             SortedSet.Add(7);
-            bool result = SortedSet.IsSubsetOf(other);
-
-            if (result)
-            {
-                HandleResult("TestSubsetEC", true);
-            }
-            else
-            {
-                HandleResult("TestSubsetEC", false, String.Format("Expected isSubset = true but was false, this is an Equality comparer regression"));
-            }
+            Assert.True(SortedSet.IsSubsetOf(other));
         }
 
         [Fact]
@@ -708,16 +438,7 @@ namespace SortedSetTests
 
             SortedSet<int> SortedSet = new SortedSet<int>(new IntAbsComparer());
             SortedSet.Add(5);
-            bool result = SortedSet.IsSubsetOf(other);
-
-            if (result)
-            {
-                HandleResult("TestProperSubsetEC", true);
-            }
-            else
-            {
-                HandleResult("TestSubsetEC", false, String.Format("Expected isSubset = true but was false, this is an Equality comparer regression"));
-            }
+            Assert.True(SortedSet.IsSubsetOf(other));
         }
 
         private class IntAbsComparer : IEqualityComparer<int>, IComparer<int>
@@ -837,15 +558,7 @@ namespace SortedSetTests
             theSet.Add(3);
 
             //theSet.TrimExcess();
-
-            if (theSet.Count == 3)
-            {
-                HandleResult("TestTrimExcess_Int 1", true);
-            }
-            else
-            {
-                HandleResult("TestTrimExcess_Int 1", false, String.Format("Expected set count to be 3 but was {0}", theSet.Count));
-            }
+            Assert.Equal(3, theSet.Count);
 
             theSet = new SortedSet<int>();
             for (int i = 0; i < 200; i++)
@@ -853,14 +566,7 @@ namespace SortedSetTests
                 theSet.Add(i);
             }
 
-            if (theSet.Count == 200)
-            {
-                HandleResult("TestTrimExcess_Int 2", true);
-            }
-            else
-            {
-                HandleResult("TestTrimExcess_Int 2", false, String.Format("Expected set count to be 200 but was {0}", theSet.Count));
-            }
+            Assert.Equal(200, theSet.Count);
         }
 
         [Fact]
@@ -871,32 +577,9 @@ namespace SortedSetTests
             theSet.Add(2);
             theSet.Add(3);
 
-            if (theSet.Overlaps(new int[] { 1, 2, 3 }))
-            {
-                HandleResult("TestOverlaps_Int 1", true);
-            }
-            else
-            {
-                HandleResult("TestOverlaps_Int 1", false);
-            }
-
-            if (theSet.Overlaps(new int[] { 2 }))
-            {
-                HandleResult("TestOverlaps_Int 2", true);
-            }
-            else
-            {
-                HandleResult("TestOverlaps_Int 2", false);
-            }
-
-            if (!theSet.Overlaps(new int[] { 4, 8, 9 }))
-            {
-                HandleResult("TestOverlaps_Int 3", true);
-            }
-            else
-            {
-                HandleResult("TestOverlaps_Int 3", false);
-            }
+            Assert.True(theSet.Overlaps(new int[] { 1, 2, 3 }));
+            Assert.True(theSet.Overlaps(new int[] { 2 }));
+            Assert.False(theSet.Overlaps(new int[] { 4, 8, 9 }));
         }
 
         [Fact]
@@ -930,35 +613,9 @@ namespace SortedSetTests
             setOfSets2.Add(set2);
             setOfSets2.Add(set22);
 
-            // should be true
-            if (setOfSets1.IsSubsetOf(setOfSets2))
-            {
-                HandleResult("TestSetsOfSortedSets_Int 1", true);
-            }
-            else
-            {
-                HandleResult("TestSetsOfSortedSets_Int 1", false);
-            }
-
-            // should be false
-            if (!setOfSets1.IsProperSubsetOf(setOfSets2))
-            {
-                HandleResult("TestSetsOfSortedSets_Int 2", true);
-            }
-            else
-            {
-                HandleResult("TestSetsOfSortedSets_Int 2", false);
-            }
-
-            // should be true
-            if (setOfSets1.SetEquals(setOfSets2))
-            {
-                HandleResult("TestSetsOfSortedSets_Int 3", true);
-            }
-            else
-            {
-                HandleResult("TestSetsOfSortedSets_Int 3", true);
-            }
+            Assert.True(setOfSets1.IsSubsetOf(setOfSets2));
+            Assert.False(setOfSets1.IsProperSubsetOf(setOfSets2));
+            Assert.True(setOfSets1.SetEquals(setOfSets2));
         }
 
         [Fact]
@@ -974,42 +631,11 @@ namespace SortedSetTests
             set1.Add(2);
             set1.Add(5);
 
-            if (set1.Count == 8)
-            {
-                HandleResult("TestCtors_Int 1", true);
-            }
-            else
-            {
-                HandleResult("TestCtors_Int 1", false, String.Format("expected count == 8 but was {0}", set1.Count));
-            }
-
+            Assert.Equal(8, set1.Count);
             SortedSet<int> set2 = new SortedSet<int>(set1);
-            if (set2.Count == 8)
-            {
-                HandleResult("TestCtors_Int 2", true);
-            }
-            else
-            {
-                HandleResult("TestCtors_Int 2", false, String.Format("expected count == 8 but was {0}", set1.Count));
-            }
-
-            if (set2.SetEquals(set1))
-            {
-                HandleResult("TestCtors_Int 3", true);
-            }
-            else
-            {
-                HandleResult("TestCtors_Int 3", false, "sets aren't equal");
-            }
-
-            if (set1.SetEquals(set2))
-            {
-                HandleResult("TestCtors_Int 4", true);
-            }
-            else
-            {
-                HandleResult("TestCtors_Int 4", false, "sets aren't equal");
-            }
+            Assert.Equal(8, set2.Count);
+            Assert.True(set2.SetEquals(set1));
+            Assert.True(set1.SetEquals(set2));
         }
 
         [Fact]
@@ -1018,21 +644,7 @@ namespace SortedSetTests
             var comparer = new IntAbsComparer();
             SortedSet<int> sortedSet = new SortedSet<int>(new int[] { -5, 7, 5, 10, -10 }, comparer);
             Assert.Equal(3, sortedSet.Count); //"Expect them to be the same."
-            int[] containeditems = { 5, 7, 10 };
-
-            foreach (var item in containeditems)
-            {
-                bool found = false;
-                foreach (var isit in sortedSet)
-                {
-                    if (comparer.Equals(item, isit))
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-                Assert.True(found, "Item was not found in the sortedSet. Item: " + item);
-            }
+            Assert.All(new[] { 5, 7, 10 }, item => Assert.Contains(item, sortedSet, comparer));
 
             Assert.True(sortedSet.Add(-13)); //"Should be able to add item not in set."
             Assert.False(sortedSet.Add(13)); //"Should not be able to add item in set."
@@ -1076,21 +688,7 @@ namespace SortedSetTests
             int[] expectedOrder = new int[] { 1, -15, 28, -40, -42, 666, 777777, -777778 };
             Assert.Equal(expectedOrder.Length, theSet1.Count); //"Expected to be the same size."
             //Checking that the items in the set are sorted correctly using the Comparer given.
-            for (int i = 0; i < expectedOrder.Length; i++)
-            {
-                int index = 0;
-                foreach (var item in theSet1)
-                {
-                    if (index != i)
-                    {
-                        index++;
-                        continue;
-                    }
-
-                    Assert.Equal(expectedOrder[i], item); //"Item should be equal at the setIndex: " + index + " expectedIndex: " + i
-                    break;
-                }
-            }
+            Assert.Equal(expectedOrder, theSet1);
 
             Assert.Equal(1, theSet1.Min); //"Expected the correct min."
             Assert.Equal(-777778, theSet1.Max); //"Expected the correct Max."
@@ -1115,40 +713,17 @@ namespace SortedSetTests
             theSet.Add(1);
             theSet.Add(2);
             theSet.Add(3);
-
-            // check
-            if (theSet.SetEquals(expected))
-            {
-                HandleResult("TestAddAndRemove_Int 1", true);
-            }
-            else
-            {
-                HandleResult("TestAddAndRemove_Int 1", false);
-            }
+            Assert.True(theSet.SetEquals(expected));
 
             theSet.Remove(2);
             expected.Remove(2);
             // check
-            if (theSet.SetEquals(expected))
-            {
-                HandleResult("TestAddAndRemove_Int 2", true);
-            }
-            else
-            {
-                HandleResult("TestAddAndRemove_Int 2", false);
-            }
+            Assert.True(theSet.SetEquals(expected));
 
             theSet.Add(2);
             expected.Add(2);
             // check
-            if (theSet.SetEquals(expected))
-            {
-                HandleResult("TestAddAndRemove_Int 3", true);
-            }
-            else
-            {
-                HandleResult("TestAddAndRemove_Int 3", false);
-            }
+            Assert.True(theSet.SetEquals(expected));
         }
 
         [Fact]
@@ -1160,15 +735,7 @@ namespace SortedSetTests
             theSet.Add(-44);
             theSet.Add(234);
 
-            bool result = theSet.Add(-44);
-            if (!result)
-            {
-                HandleResult("TestDuplicateAdds_Int 1", true);
-            }
-            else
-            {
-                HandleResult("TestDuplicateAdds_Int 1", false, "able to add twice");
-            }
+            Assert.False(theSet.Add(-44));
 
             SortedSet<int> theSet2 = new SortedSet<int>();
 
@@ -1176,14 +743,7 @@ namespace SortedSetTests
             theSet2.Add(-44);
             theSet2.Add(234);
 
-            if (theSet.SetEquals(theSet2))
-            {
-                HandleResult("TestDuplicateAdds_Int 2 ", true);
-            }
-            else
-            {
-                HandleResult("TestDuplicateAdds_Int 2", false);
-            }
+            Assert.True(theSet.SetEquals(theSet2));
         }
 
         [Fact]
@@ -1197,14 +757,7 @@ namespace SortedSetTests
             theSet.Add(30);
 
             theSet.Clear();
-            if (theSet.Count == 0)
-            {
-                HandleResult("TestClear_Int 1", true);
-            }
-            else
-            {
-                HandleResult("TestClear_Int 1", false, "clear didn't work");
-            }
+            Assert.Equal(0, theSet.Count);
         }
 
         [Fact]
@@ -1217,27 +770,10 @@ namespace SortedSetTests
             theSet.Add(666);
             theSet.Add(-17);
 
-            int count = theSet.Count;
-            if (count == 3)
-            {
-                HandleResult("TestCount_Int 1", true);
-            }
-            else
-            {
-                HandleResult("TestCount_Int 1", false, String.Format("expected count = {0} but was {1}", 3, count));
-            }
+            Assert.Equal(3, theSet.Count);
 
             theSet.Clear();
-            count = theSet.Count;
-
-            if (count == 0)
-            {
-                HandleResult("TestCount_Int 2", true);
-            }
-            else
-            {
-                HandleResult("TestCount_Int 2", false, String.Format("Expected count = {0}, but was {1}", 0, count));
-            }
+            Assert.Equal(0, theSet.Count);
         }
 
         [Fact]
@@ -1259,15 +795,7 @@ namespace SortedSetTests
             theSet.CopyTo(copyToArray);
 
             SortedSet<int> expected = new SortedSet<int>(new int[] { 666, 890, 777777 });
-
-            if (expected.SetEquals(copyToArray))
-            {
-                HandleResult("TestCopyToSimple_Int", true);
-            }
-            else
-            {
-                HandleResult("TestCopyToSimple_Int", false);
-            }
+            Assert.True(expected.SetEquals(copyToArray));
         }
 
         [Fact]
@@ -1287,26 +815,10 @@ namespace SortedSetTests
 
             // should have 0 (default int) in first element
             int[] expectedArray = { 0, 15, 777777, 666, 890 };
-            string testName = "TestCopyToWithStartIndex_Int 1";
 
             SortedSet<int> expected = new SortedSet<int>(expectedArray);
-            if (expected.SetEquals(expectedArray))
-            {
-                HandleResult(testName, true);
-            }
-            else
-            {
-                HandleResult(testName, false, "elements not equal to expected");
-            }
-
-            if (copyToArray[0] == 0)
-            {
-                HandleResult("TestCopyToWithStartIndex_Int 2", true);
-            }
-            else
-            {
-                HandleResult("TestCopyToWithStartIndex_Int 2", false, "zero not in first position");
-            }
+            Assert.True(expected.SetEquals(expectedArray));
+            Assert.Equal(0, copyToArray[0]);
         }
 
         [Fact]
@@ -1337,16 +849,7 @@ namespace SortedSetTests
             theSet.Add(666);
             theSet.Add(-17);
 
-            int numRemoved = theSet.RemoveWhere(i => { return i > 100; });
-            if (numRemoved == 1)
-            {
-                HandleResult("TestRemoveWhere_Int 1", true);
-            }
-            else
-            {
-                HandleResult("TestRemoveWhere_Int 1", false, String.Format("expected numRemoved = {0} but was {1}", 1, numRemoved));
-            }
-
+            Assert.Equal(1, theSet.RemoveWhere(i => { return i > 100; }));
             string testName = "TestRemoveWhere_Int 2";
             int[] expectedArray = { 60, -17 };
             int expectedCount = 2;
@@ -1365,28 +868,13 @@ namespace SortedSetTests
             SortedSet<int> theSet2 = new SortedSet<int>();
             theSet2.Add(666);
             theSet2.Add(15);
-
-            if (theSet1.IsSupersetOf(theSet2))
-            {
-                HandleResult("TestSuperset_Int 1", true);
-            }
-            else
-            {
-                HandleResult("TestSuperset_Int 1", false);
-            }
+            Assert.True(theSet1.IsSupersetOf(theSet2));
 
             SortedSet<int> theSet3 = new SortedSet<int>();
             theSet3.Add(666);
             theSet3.Add(17);
 
-            if (!theSet1.IsSupersetOf(theSet3))
-            {
-                HandleResult("TestSuperset_Int 2", true);
-            }
-            else
-            {
-                HandleResult("TestSuperset_Int 2", false);
-            }
+            Assert.False(theSet1.IsSupersetOf(theSet3));
         }
 
         [Fact]
@@ -1402,27 +890,13 @@ namespace SortedSetTests
             theSet2.Add(666);
             theSet2.Add(15);
 
-            if (theSet1.IsProperSupersetOf(theSet2))
-            {
-                HandleResult("TestProperSuperset_Int 1", true);
-            }
-            else
-            {
-                HandleResult("TestProperSuperset_Int 1", false);
-            }
+            Assert.True(theSet1.IsProperSupersetOf(theSet2));
 
             SortedSet<int> theSet3 = new SortedSet<int>();
             theSet3.Add(666);
             theSet3.Add(17);
 
-            if (!theSet1.IsProperSupersetOf(theSet3))
-            {
-                HandleResult("TestProperSuperset_Int 2", true);
-            }
-            else
-            {
-                HandleResult("TestProperSuperset_Int 2", false);
-            }
+            Assert.False(theSet1.IsProperSupersetOf(theSet3));
 
             SortedSet<int> theSet4 = new SortedSet<int>();
             theSet4.Add(15);
@@ -1430,14 +904,7 @@ namespace SortedSetTests
             theSet4.Add(777777);
             theSet4.Add(42);
 
-            if (!theSet1.IsProperSupersetOf(theSet4))
-            {
-                HandleResult("TestProperSuperset_Int 3", true);
-            }
-            else
-            {
-                HandleResult("TestProperSuperset_Int 3", false);
-            }
+            Assert.False(theSet1.IsProperSupersetOf(theSet4));
         }
 
         [Fact]
@@ -1454,46 +921,18 @@ namespace SortedSetTests
             theList.Add(15);
             theList.Add(15);
 
-            if (theSet1.IsProperSupersetOf(theList))
-            {
-                HandleResult("TestProperSupersetWithEnumerable_Int 1", true);
-            }
-            else
-            {
-                HandleResult("TestProperSupersetWithEnumerable_Int 1", false);
-            }
+            Assert.True(theSet1.IsProperSupersetOf(theList));
 
             theList.Add(42);
             theList.Add(42);
-            if (theSet1.IsProperSupersetOf(theList))
-            {
-                HandleResult("TestProperSupersetWithEnumerable_Int 2", true);
-            }
-            else
-            {
-                HandleResult("TestProperSupersetWithEnumerable_Int 2", false);
-            }
+            Assert.True(theSet1.IsProperSupersetOf(theList));
 
             theList.Add(777777);
-            if (!theSet1.IsProperSupersetOf(theList))
-            {
-                HandleResult("TestProperSupersetWithEnumerable_Int 3", true);
-            }
-            else
-            {
-                HandleResult("TestProperSupersetWithEnumerable_Int 3", false);
-            }
+            Assert.False(theSet1.IsProperSupersetOf(theList));
 
             theList.Add(2342325);
             theList.Add(352);
-            if (!theSet1.IsProperSupersetOf(theList))
-            {
-                HandleResult("TestProperSupersetWithEnumerable_Int 4", true);
-            }
-            else
-            {
-                HandleResult("TestProperSupersetWithEnumerable_Int 4", false);
-            }
+            Assert.False(theSet1.IsProperSupersetOf(theList));
         }
 
         [Fact]
@@ -1511,14 +950,7 @@ namespace SortedSetTests
             theSet2.Add(666);
             theSet2.Add(777);
 
-            if (theSet1.SetEquals(theSet2))
-            {
-                HandleResult("TestEquality_Int 1", true);
-            }
-            else
-            {
-                HandleResult("TestEquality_Int 1", false);
-            }
+            Assert.True(theSet1.SetEquals(theSet2));
 
             List<int> theList = new List<int>();
             theList.Add(15);
@@ -1526,14 +958,7 @@ namespace SortedSetTests
             theList.Add(777);
             theList.Add(42);
 
-            if (theSet1.SetEquals(theList))
-            {
-                HandleResult("TestEquality_Int 2", true);
-            }
-            else
-            {
-                HandleResult("TestEquality_Int 2", false);
-            }
+            Assert.True(theSet1.SetEquals(theList));
         }
 
         [Fact]
@@ -1599,14 +1024,7 @@ namespace SortedSetTests
             expected.Add(777777);
             expected.Add(-234);
 
-            if (theSet1.SetEquals(expected))
-            {
-                HandleResult("TestExcept_Int 1", true);
-            }
-            else
-            {
-                HandleResult("TestExcept_Int 1", false);
-            }
+            Assert.True(theSet1.SetEquals(expected));
 
             string testName = "TestExcept_Int 2";
             int expectedCount = 2;
@@ -1631,26 +1049,10 @@ namespace SortedSetTests
 
             set1.SymmetricExceptWith(set2);
             // set1 should now have 4, 54, 92, 293
-            int count = set1.Count;
-            if (count == 4)
-            {
-                HandleResult("TestSymmetricExcept_Int 1", true);
-            }
-            else
-            {
-                HandleResult("TestSymmetricExcept_Int 1", false, String.Format("expected count == 4 but was {0}", count));
-            }
+            Assert.Equal(4, set1.Count);
 
             // make sure set2 count didn't change, don't want to modify it.
-            count = set2.Count;
-            if (count == 4)
-            {
-                HandleResult("TestSymmetricExcept_Int 2", true);
-            }
-            else
-            {
-                HandleResult("TestSymmetricExcept_Int 2", false, String.Format("expected count == 4 but was {0}", count));
-            }
+            Assert.Equal(4, set2.Count);
 
             string testName = "TestSymmetricExcept_Int 3";
             int expectedCount = 4;
@@ -1698,14 +1100,7 @@ namespace SortedSetTests
             theList.Add(7);
 
             set2.SymmetricExceptWith(theList);
-            if (set2.Count == 0)
-            {
-                HandleResult("TestSymmetricWithEnumerable_Int 2", true);
-            }
-            else
-            {
-                HandleResult("TestSymmetricWithEnumerable_Int 2", false, String.Format("expected count = 0 but was {0}", set2.Count));
-            }
+            Assert.Equal(0, set2.Count);
 
             SortedSet<int> set3 = new SortedSet<int>();
             set3.Add(4);
@@ -1741,27 +1136,13 @@ namespace SortedSetTests
             theSet2.Add(666);
             theSet2.Add(15);
 
-            if (theSet2.IsSubsetOf(theSet1))
-            {
-                HandleResult("TestSubset_Int 1", true);
-            }
-            else
-            {
-                HandleResult("TestSubset_Int 1", false);
-            }
+            Assert.True(theSet2.IsSubsetOf(theSet1));
 
             SortedSet<int> theSet3 = new SortedSet<int>();
             theSet3.Add(666);
             theSet3.Add(17);
 
-            if (!theSet3.IsSubsetOf(theSet1))
-            {
-                HandleResult("TestSubset_Int 2", true);
-            }
-            else
-            {
-                HandleResult("TestSubset_Int 2", false);
-            }
+            Assert.False(theSet3.IsSubsetOf(theSet1));
         }
 
         [Fact]
@@ -1777,14 +1158,7 @@ namespace SortedSetTests
             theList.Add(777777);
             theList.Add(42);
 
-            if (theSet.IsSubsetOf(theList))
-            {
-                HandleResult("TestSubsetWithEnumerable_Int 1", true);
-            }
-            else
-            {
-                HandleResult("TestSubsetWithEnumerable_Int 1", false);
-            }
+            Assert.True(theSet.IsSubsetOf(theList));
 
             List<int> theList2 = new List<int>();
             theList.Add(222);
@@ -1792,14 +1166,7 @@ namespace SortedSetTests
             theList.Add(777777);
             theList.Add(42);
 
-            if (!theSet.IsSubsetOf(theList2))
-            {
-                HandleResult("TestSubsetWithEnumerable_Int 2", true);
-            }
-            else
-            {
-                HandleResult("TestSubsetWithEnumerable_Int 2", false);
-            }
+            Assert.False(theSet.IsSubsetOf(theList2));
         }
 
         [Fact]
@@ -1815,27 +1182,13 @@ namespace SortedSetTests
             theSet2.Add(666);
             theSet2.Add(15);
 
-            if (theSet2.IsProperSubsetOf(theSet1))
-            {
-                HandleResult("TestProperSubset_Int 1", true);
-            }
-            else
-            {
-                HandleResult("TestProperSubset_Int 1", false);
-            }
+            Assert.True(theSet2.IsProperSubsetOf(theSet1));
 
             SortedSet<int> theSet3 = new SortedSet<int>();
             theSet3.Add(666);
             theSet3.Add(17);
 
-            if (!theSet3.IsProperSubsetOf(theSet1))
-            {
-                HandleResult("TestProperSubset_Int 2", true);
-            }
-            else
-            {
-                HandleResult("TestProperSubset_Int 2", false);
-            }
+            Assert.False(theSet3.IsProperSubsetOf(theSet1));
 
             SortedSet<int> theSet4 = new SortedSet<int>();
             theSet4.Add(15);
@@ -1843,14 +1196,7 @@ namespace SortedSetTests
             theSet4.Add(777777);
             theSet4.Add(42);
 
-            if (!theSet4.IsProperSubsetOf(theSet1))
-            {
-                HandleResult("TestProperSubset_Int 3", true);
-            }
-            else
-            {
-                HandleResult("TestProperSubset_Int 3", false);
-            }
+            Assert.False(theSet4.IsProperSubsetOf(theSet1));
         }
 
         [Fact]
@@ -1869,78 +1215,32 @@ namespace SortedSetTests
             theList.Add(42);
             theList.Add(42);    // duplicate
 
-            if (!theSet.IsProperSubsetOf(theList))
-            {
-                HandleResult("TestProperSubsetWithEnumerable_Int 1", true);
-            }
-            else
-            {
-                HandleResult("TestProperSubsetWithEnumerable_Int 1", false);
-            }
+            Assert.False(theSet.IsProperSubsetOf(theList));
 
             theList.Add(943);
             theList.Add(15);    // duplicate
 
-            if (theSet.IsProperSubsetOf(theList))
-            {
-                HandleResult("TestProperSubsetWithEnumerable_Int 2", true);
-            }
-            else
-            {
-                HandleResult("TestProperSubsetWithEnumerable_Int 2", false);
-            }
+            Assert.True(theSet.IsProperSubsetOf(theList));
 
             theList.Remove(15);
             theList.Remove(666);
 
-            if (!theSet.IsProperSubsetOf(theList))
-            {
-                HandleResult("TestProperSubsetWithEnumerable_Int 3", true);
-            }
-            else
-            {
-                HandleResult("TestProperSubsetWithEnumerable_Int 3", false);
-            }
+            Assert.False(theSet.IsProperSubsetOf(theList));
         }
 
         [Fact]
         public static void TestEmptyBehavior_Int()
         {
             SortedSet<int> theSet1 = new SortedSet<int>();
-            bool result = theSet1.Remove(333);
-            if (!result)
-            {
-                HandleResult("TestEmptyBehavior_Int 1", true);
-            }
-            else
-            {
-                HandleResult("TestEmptyBehavior_Int 1", false, "able to remove element from an empty set");
-            }
-
-            result = theSet1.Contains(213);
-            if (!result)
-            {
-                HandleResult("TestEmptyBehavior_Int 2", true);
-            }
-            else
-            {
-                HandleResult("TestEmptyBehavior_Int 2", false, "found an element in an empty set");
-            }
+            Assert.False(theSet1.Remove(333));
+            Assert.False(theSet1.Contains(213));
 
             SortedSet<int> anotherSet = new SortedSet<int>();
             anotherSet.Add(-23);
             anotherSet.Add(543);
 
             theSet1.IntersectWith(anotherSet);
-            int count = theSet1.Count;
-            if (count == 0)
-            {
-                HandleResult("TestEmptyBehavior_Int 3", true);
-            }
-            else
-            {
-                HandleResult("TestEmptyBehavior_Int 3", false, String.Format("expected count = 0 but was {0}", count));
-            }
+            Assert.Equal(0, theSet1.Count);
         }
 
         [Fact]
@@ -1960,30 +1260,8 @@ namespace SortedSetTests
             theSet.Add(-452);
             theSet.Add(0);
 
-            int count = theSet.Count;
-            if (count == 10)
-            {
-                HandleResult("TestResizing_Int 1", true);
-            }
-            else
-            {
-                HandleResult("TestResizing_Int 1", false, String.Format("expected count = 10 but was {0}", count));
-            }
-
-            // check a sample of elements to see if they're still there
-            bool result = theSet.Contains(-1);
-            result &= theSet.Contains(75);
-            result &= theSet.Contains(-452);
-            result &= theSet.Contains(0);
-
-            if (result)
-            {
-                HandleResult("TestResizing_Int 2", true);
-            }
-            else
-            {
-                HandleResult("TestResizing_Int 2", false, "didn't contain some elements after resizing");
-            }
+            Assert.Equal(10, theSet.Count);
+            Assert.All(new[] { -1, 75, -452, 0 }, item => Assert.Contains(item, theSet));
         }
 
         [Fact]
@@ -1999,27 +1277,13 @@ namespace SortedSetTests
             list1.Add(2);
             list1.Add(3);
 
-            if (!theSet.IsSubsetOf(list1))
-            {
-                HandleResult("TestMultipleSetOps 1", true);
-            }
-            else
-            {
-                HandleResult("TestMultipleSetOps 1", false);
-            }
+            Assert.False(theSet.IsSubsetOf(list1));
 
             List<int> list2 = new List<int>();
             list2.Add(1);
             list2.Add(2);
 
-            if (!theSet.IsSubsetOf(list2))
-            {
-                HandleResult("TestMultipleSetOps 2", true);
-            }
-            else
-            {
-                HandleResult("TestMultipleSetOps 2", false);
-            }
+            Assert.False(theSet.IsSubsetOf(list2));
         }
 
         [Fact]
@@ -2078,32 +1342,9 @@ namespace SortedSetTests
             theSet.Add(c2);
             theSet.Add(c3);
 
-            if (theSet.Overlaps(new DummyClass[] { c1, c2, c3 }))
-            {
-                HandleResult("TestOverlaps_Object 1", true);
-            }
-            else
-            {
-                HandleResult("TestOverlaps_Object 1", false);
-            }
-
-            if (theSet.Overlaps(new DummyClass[] { c2 }))
-            {
-                HandleResult("TestOverlaps_Object 2", true);
-            }
-            else
-            {
-                HandleResult("TestOverlaps_Object 2", false);
-            }
-
-            if (!theSet.Overlaps(new DummyClass[] { c4, c5, c6 }))
-            {
-                HandleResult("TestOverlaps_Object 3", true);
-            }
-            else
-            {
-                HandleResult("TestOverlaps_Object 3", false);
-            }
+            Assert.True(theSet.Overlaps(new DummyClass[] { c1, c2, c3 }));
+            Assert.True(theSet.Overlaps(new DummyClass[] { c2 }));
+            Assert.False(theSet.Overlaps(new DummyClass[] { c4, c5, c6 }));
         }
 
         [Fact]
@@ -2144,35 +1385,9 @@ namespace SortedSetTests
             setOfSets2.Add(set2);
             setOfSets2.Add(set22);
 
-            // should be true
-            if (setOfSets1.IsSubsetOf(setOfSets2))
-            {
-                HandleResult("TestSetsOfSortedSets_Object 1", true);
-            }
-            else
-            {
-                HandleResult("TestSetsOfSortedSets_Object 1", false);
-            }
-
-            // should be false
-            if (!setOfSets1.IsProperSubsetOf(setOfSets2))
-            {
-                HandleResult("TestSetsOfSortedSets_Object 2", true);
-            }
-            else
-            {
-                HandleResult("TestSetsOfSortedSets_Object 2", false);
-            }
-
-            // should be true
-            if (setOfSets1.SetEquals(setOfSets2))
-            {
-                HandleResult("TestSetsOfSortedSets_Object 3", true);
-            }
-            else
-            {
-                HandleResult("TestSetsOfSortedSets_Object 3", false);
-            }
+            Assert.True(setOfSets1.IsSubsetOf(setOfSets2));
+            Assert.False(setOfSets1.IsProperSubsetOf(setOfSets2));
+            Assert.True(setOfSets1.SetEquals(setOfSets2));
         }
 
         [Fact]
@@ -2197,42 +1412,13 @@ namespace SortedSetTests
             set1.Add(c7);
             set1.Add(c8);
 
-            if (set1.Count == 8)
-            {
-                HandleResult("TestCtors_Object 1", true);
-            }
-            else
-            {
-                HandleResult("TestCtors_Object 1", false, String.Format("expected count == 8 but was {0}", set1.Count));
-            }
+            Assert.Equal(8, set1.Count);
 
             SortedSet<DummyClass> set2 = new SortedSet<DummyClass>(set1);
-            if (set2.Count == 8)
-            {
-                HandleResult("TestCtors_Object 2", true);
-            }
-            else
-            {
-                HandleResult("TestCtors_Object 2", false, String.Format("expected count == 8 but was {0}", set1.Count));
-            }
 
-            if (set2.SetEquals(set1))
-            {
-                HandleResult("TestCtors_Object 3", true);
-            }
-            else
-            {
-                HandleResult("TestCtors_Object 3", false, "sets aren't equal");
-            }
-
-            if (set1.SetEquals(set2))
-            {
-                HandleResult("TestCtors_Object 4", true);
-            }
-            else
-            {
-                HandleResult("TestCtors_Object 4", false, "...sets aren't equal");
-            }
+            Assert.Equal(8, set2.Count);
+            Assert.True(set2.SetEquals(set1));
+            Assert.True(set1.SetEquals(set2));
         }
 
         [Fact]
@@ -2254,39 +1440,17 @@ namespace SortedSetTests
             theSet.Add(c2);
             theSet.Add(c3);
 
-            // check
-            if (theSet.SetEquals(expected))
-            {
-                HandleResult("TestAddAndRemove_Object 1", true);
-            }
-            else
-            {
-                HandleResult("TestAddAndRemove_Object 1", false);
-            }
+            Assert.True(theSet.SetEquals(expected));
 
             theSet.Remove(c2);
             expected.Remove(c2);
             // check
-            if (theSet.SetEquals(expected))
-            {
-                HandleResult("TestAddAndRemove_Object 2", true);
-            }
-            else
-            {
-                HandleResult("TestAddAndRemove_Object 2", false);
-            }
+            Assert.True(theSet.SetEquals(expected));
 
             theSet.Add(c2);
             expected.Add(c2);
             // check
-            if (theSet.SetEquals(expected))
-            {
-                HandleResult("TestAddAndRemove_Object 3", true);
-            }
-            else
-            {
-                HandleResult("TestAddAndRemove_Object 3", false);
-            }
+            Assert.True(theSet.SetEquals(expected));
         }
 
         [Fact]
@@ -2303,29 +1467,15 @@ namespace SortedSetTests
             theSet.Add(c2);
             theSet.Add(c3);
 
-            bool result = theSet.Add(c2);
-            if (!result)
-            {
-                HandleResult("TestDuplicateAdds_Object 1", true);
-            }
-            else
-            {
-                HandleResult("TestDuplicateAdds_Object 1", false, "added twice");
-            }
+            Assert.False(theSet.Add(c2));
+
             SortedSet<DummyClass> theSet2 = new SortedSet<DummyClass>();
 
             theSet2.Add(c1);
             theSet2.Add(c2);
             theSet2.Add(c3);
 
-            if (theSet.SetEquals(theSet2))
-            {
-                HandleResult("TestDuplicateAdds_Object 2", true);
-            }
-            else
-            {
-                HandleResult("TestDuplicateAdds_Object 2", false);
-            }
+            Assert.True(theSet.SetEquals(theSet2));
         }
 
         [Fact]
@@ -2333,16 +1483,7 @@ namespace SortedSetTests
         {
             SortedSet<DummyClass> theSet = new SortedSet<DummyClass>();
             theSet.Add(null);
-            bool result = theSet.Contains(null);
-            if (result)
-            {
-                HandleResult("TestNullAdds_Object 1", true);
-            }
-            else
-            {
-                HandleResult("TestNullAdds_Object 1", false, "didn't add null element");
-                return; // rest of test is irrelevant 
-            }
+            Assert.True(theSet.Contains(null));
 
             String expectedStr = ",,";
 
@@ -2354,15 +1495,8 @@ namespace SortedSetTests
                 resultStr += ",";
                 count++;
             }
-
-            if (expectedStr.Equals(resultStr) && count == 1)
-            {
-                HandleResult("TestNullAdds_Object 2", true);
-            }
-            else
-            {
-                HandleResult("TestNullAdds_Object 2", false, "not sure null was added");
-            }
+            Assert.Equal(1, count);
+            Assert.Equal(expectedStr, resultStr);
         }
 
         [Fact]
@@ -2380,14 +1514,7 @@ namespace SortedSetTests
             theSet.Add(c3);
 
             theSet.Clear();
-            if (theSet.Count == 0)
-            {
-                HandleResult("TestClear_Object 1", true);
-            }
-            else
-            {
-                HandleResult("TestClear_Object 1", false, "clear didn't work");
-            }
+            Assert.Equal(0, theSet.Count);
         }
 
         [Fact]
@@ -2404,28 +1531,10 @@ namespace SortedSetTests
             theSet.Add(c2);
             theSet.Add(c3);
 
-            int count = theSet.Count;
-            if (count == 3)
-            {
-                HandleResult("TestCount_Object 1", true);
-            }
-            else
-            {
-                HandleResult("TestCount_Object 1", false, String.Format("Expected count = 3 but was  {0}", count));
-            }
-
+            Assert.Equal(3, theSet.Count);
 
             theSet.Clear();
-            count = theSet.Count;
-
-            if (count == 0)
-            {
-                HandleResult("TestCount_Object 2", true);
-            }
-            else
-            {
-                HandleResult("TestCount_Object 2", false, String.Format("Expected count = 0 but was {0}", count));
-            }
+            Assert.Equal(0, theSet.Count);
         }
 
         [Fact]
@@ -2455,10 +1564,7 @@ namespace SortedSetTests
                 final += d.Name + " ";
             }
 
-            if (final != "De Bump Bump De Bump Bump ")
-                HandleResult("TestReverse_Object", false);
-            else
-                HandleResult("TestReverse_Object", true);
+            Assert.Equal("De Bump Bump De Bump Bump ", final);
         }
 
         [Fact]
@@ -2548,15 +1654,7 @@ namespace SortedSetTests
             theSet.Add(c2);
             theSet.Add(c3);
 
-            int numRemoved = theSet.RemoveWhere(MyPredicate_Object);
-            if (numRemoved == 1)
-            {
-                HandleResult("TestRemoveWhere_Object 1", true);
-            }
-            else
-            {
-                HandleResult("TestRemoveWhere_Object 1", false, String.Format("expected numRemoved = 1 but actually was {0}", numRemoved));
-            }
+            Assert.Equal(1, theSet.RemoveWhere(MyPredicate_Object));
 
             DummyClass[] expectedArray = { c2, c3 };
             int expectedCount = 2;
@@ -2589,27 +1687,13 @@ namespace SortedSetTests
             theSet2.Add(c2);
             theSet2.Add(c1);
 
-            if (theSet1.IsSupersetOf(theSet2))
-            {
-                HandleResult("TestSuperset_Object 1", true);
-            }
-            else
-            {
-                HandleResult("TestSuperset_Object 1", false);
-            }
+            Assert.True(theSet1.IsSupersetOf(theSet2));
 
             SortedSet<DummyClass> theSet3 = new SortedSet<DummyClass>();
             theSet3.Add(c2);
             theSet3.Add(c5);
 
-            if (!theSet1.IsSupersetOf(theSet3))
-            {
-                HandleResult("TestSuperset_Object 2", true);
-            }
-            else
-            {
-                HandleResult("TestSuperset_Object 2", false);
-            }
+            Assert.False(theSet1.IsSupersetOf(theSet3));
         }
 
         [Fact]
@@ -2632,27 +1716,13 @@ namespace SortedSetTests
             theSet2.Add(c2);
             theSet2.Add(c1);
 
-            if (theSet1.IsProperSupersetOf(theSet2))
-            {
-                HandleResult("TestProperSuperset_Object 1", true);
-            }
-            else
-            {
-                HandleResult("TestProperSuperset_Object 1", false);
-            }
+            Assert.True(theSet1.IsProperSupersetOf(theSet2));
 
             SortedSet<DummyClass> theSet3 = new SortedSet<DummyClass>();
             theSet3.Add(c2);
             theSet3.Add(c5);
 
-            if (!theSet1.IsProperSupersetOf(theSet3))
-            {
-                HandleResult("TestProperSuperset_Object 2", true);
-            }
-            else
-            {
-                HandleResult("TestProperSuperset_Object 2", false);
-            }
+            Assert.False(theSet1.IsProperSupersetOf(theSet3));
 
             SortedSet<DummyClass> theSet4 = new SortedSet<DummyClass>();
             theSet4.Add(c1);
@@ -2660,14 +1730,7 @@ namespace SortedSetTests
             theSet4.Add(c3);
             theSet4.Add(c4);
 
-            if (!theSet1.IsProperSupersetOf(theSet4))
-            {
-                HandleResult("TestProperSuperset_Object 3", true);
-            }
-            else
-            {
-                HandleResult("TestProperSuperset_Object 3", false);
-            }
+            Assert.False(theSet1.IsProperSupersetOf(theSet4));
         }
 
         [Fact]
@@ -2691,46 +1754,18 @@ namespace SortedSetTests
             theList.Add(c1);
             theList.Add(c1);
 
-            if (theSet1.IsProperSupersetOf(theList))
-            {
-                HandleResult("TestProperSupersetWithEnumerable_Object 1", true);
-            }
-            else
-            {
-                HandleResult("TestProperSupersetWithEnumerable_Object 1", false);
-            }
+            Assert.True(theSet1.IsProperSupersetOf(theList));
 
             theList.Add(c4);
             theList.Add(c4);
-            if (theSet1.IsProperSupersetOf(theList))
-            {
-                HandleResult("TestProperSupersetWithEnumerable_Object 2", true);
-            }
-            else
-            {
-                HandleResult("TestProperSupersetWithEnumerable_Object 2", false);
-            }
+            Assert.True(theSet1.IsProperSupersetOf(theList));
 
             theList.Add(c3);
-            if (!theSet1.IsProperSupersetOf(theList))
-            {
-                HandleResult("TestProperSupersetWithEnumerable_Object 3", true);
-            }
-            else
-            {
-                HandleResult("TestProperSupersetWithEnumerable_Object 3", false);
-            }
+            Assert.False(theSet1.IsProperSupersetOf(theList));
 
             theList.Add(c5);
             theList.Add(c6);
-            if (!theSet1.IsProperSupersetOf(theList))
-            {
-                HandleResult("TestProperSupersetWithEnumerable_Object 4", true);
-            }
-            else
-            {
-                HandleResult("TestProperSupersetWithEnumerable_Object 4", false);
-            }
+            Assert.False(theSet1.IsProperSupersetOf(theList));
         }
 
         [Fact]
@@ -2753,14 +1788,7 @@ namespace SortedSetTests
             theSet2.Add(c2);
             theSet2.Add(c3);
 
-            if (theSet1.SetEquals(theSet2))
-            {
-                HandleResult("TestEquality_Object 1", true);
-            }
-            else
-            {
-                HandleResult("TestEquality_Object 1", false);
-            }
+            Assert.True(theSet1.SetEquals(theSet2));
 
             List<DummyClass> theList = new List<DummyClass>();
             theList.Add(c1);
@@ -2768,14 +1796,7 @@ namespace SortedSetTests
             theList.Add(c3);
             theList.Add(c4);
 
-            if (theSet1.SetEquals(theList))
-            {
-                HandleResult("TestEquality_Object 2", true);
-            }
-            else
-            {
-                HandleResult("TestEquality_Object 2", false);
-            }
+            Assert.True(theSet1.SetEquals(theList));
         }
 
         [Fact]
@@ -2858,14 +1879,7 @@ namespace SortedSetTests
             expected.Add(c2);
             expected.Add(c4);
 
-            if (theSet1.SetEquals(expected))
-            {
-                HandleResult("TestExcept_Object 1", true);
-            }
-            else
-            {
-                HandleResult("TestExcept_Object 1", false);
-            }
+            Assert.True(theSet1.SetEquals(expected));
         }
 
         [Fact]
@@ -2892,26 +1906,10 @@ namespace SortedSetTests
 
             set1.SymmetricExceptWith(set2);
             // set1 should now have c1, c4, c5, c6
-            int count = set1.Count;
-            if (count == 4)
-            {
-                HandleResult("TestSymmetricExcept_Object 1", true);
-            }
-            else
-            {
-                HandleResult("TestSymmetricExcept_Object 1", false, String.Format("expected count == c1 but was {0}", count));
-            }
+            Assert.Equal(4, set1.Count);
 
             // make sure set2 count didn't change, don't want to modify it.
-            count = set2.Count;
-            if (count == 4)
-            {
-                HandleResult("TestSymmetricExcept_Object 2", true);
-            }
-            else
-            {
-                HandleResult("TestSymmetricExcept_Object 2", false, String.Format("expected count == c1 but was {0}", count));
-            }
+            Assert.Equal(4, set2.Count);
 
             DummyClass[] expectedArray = { c1, c4, c5, c6 };
             int expectedCount = 4;
@@ -2952,14 +1950,7 @@ namespace SortedSetTests
             controlSet.Add(c1);
             controlSet.Add(c5);
             controlSet.Add(c3);
-            if (set1.SetEquals(controlSet))
-            {
-                HandleResult("TestSymmetricWithEnumerator_Object 1", true);
-            }
-            else
-            {
-                HandleResult("TestSymmetricWithEnumerator_Object 1", false);
-            }
+            Assert.True(set1.SetEquals(controlSet));
 
             DummyClass[] expectedArray = { c1, c5, c3 };
             int expectedCount = 3;
@@ -2981,14 +1972,7 @@ namespace SortedSetTests
             theList.Add(c2);
 
             set2.SymmetricExceptWith(theList);
-            if (set2.Count == 0)
-            {
-                HandleResult("TestSymmetricWithEnumerator_Object 3", true);
-            }
-            else
-            {
-                HandleResult("TestSymmetricWithEnumerator_Object 3", false, String.Format("expected count = 0 but was {0}", set2.Count));
-            }
+            Assert.Equal(0, set2.Count);
 
             SortedSet<DummyClass> set3 = new SortedSet<DummyClass>();
             set3.Add(c1);
@@ -3006,14 +1990,7 @@ namespace SortedSetTests
 
             SortedSet<DummyClass> controlSet2 = new SortedSet<DummyClass>();
             controlSet2.Add(c1);
-            if (set3.SetEquals(controlSet2))
-            {
-                HandleResult("TestSymmetricWithEnumerator_Object 4", true);
-            }
-            else
-            {
-                HandleResult("TestSymmetricWithEnumerator_Object 4", false);
-            }
+            Assert.True(set3.SetEquals(controlSet2));
         }
 
         [Fact]
@@ -3035,27 +2012,13 @@ namespace SortedSetTests
             theSet2.Add(c2);
             theSet2.Add(c1);
 
-            if (theSet2.IsSubsetOf(theSet1))
-            {
-                HandleResult("TestSubset_Object 1", true);
-            }
-            else
-            {
-                HandleResult("TestSubset_Object 1", false);
-            }
+            Assert.True(theSet2.IsSubsetOf(theSet1));
 
             SortedSet<DummyClass> theSet3 = new SortedSet<DummyClass>();
             theSet3.Add(c2);
             theSet3.Add(c5);
 
-            if (!theSet3.IsSubsetOf(theSet1))
-            {
-                HandleResult("TestSubset_Object 2", true);
-            }
-            else
-            {
-                HandleResult("TestSubset_Object 2", false);
-            }
+            Assert.False(theSet3.IsSubsetOf(theSet1));
         }
 
         [Fact]
@@ -3077,14 +2040,7 @@ namespace SortedSetTests
             theList.Add(c3);
             theList.Add(c4);
 
-            if (theSet.IsSubsetOf(theList))
-            {
-                HandleResult("TestSubsetWithEnumerable_Object 1", true);
-            }
-            else
-            {
-                HandleResult("TestSubsetWithEnumerable_Object 1", false);
-            }
+            Assert.True(theSet.IsSubsetOf(theList));
 
             List<DummyClass> theList2 = new List<DummyClass>();
             theList.Add(c5);
@@ -3092,14 +2048,7 @@ namespace SortedSetTests
             theList.Add(c3);
             theList.Add(c4);
 
-            if (!theSet.IsSubsetOf(theList2))
-            {
-                HandleResult("TestSubsetWithEnumerable_Object 2", true);
-            }
-            else
-            {
-                HandleResult("TestSubsetWithEnumerable_Object 2", false);
-            }
+            Assert.False(theSet.IsSubsetOf(theList2));
         }
 
         [Fact]
@@ -3121,27 +2070,13 @@ namespace SortedSetTests
             theSet2.Add(c2);
             theSet2.Add(c1);
 
-            if (theSet2.IsProperSubsetOf(theSet1))
-            {
-                HandleResult("TestProperSubset_Object 1", true);
-            }
-            else
-            {
-                HandleResult("TestProperSubset_Object 1", false);
-            }
+            Assert.True(theSet2.IsProperSubsetOf(theSet1));
 
             SortedSet<DummyClass> theSet3 = new SortedSet<DummyClass>();
             theSet3.Add(c2);
             theSet3.Add(c5);
 
-            if (!theSet3.IsProperSubsetOf(theSet1))
-            {
-                HandleResult("TestProperSubset_Object 2", true);
-            }
-            else
-            {
-                HandleResult("TestProperSubset_Object 2", false);
-            }
+            Assert.False(theSet3.IsProperSubsetOf(theSet1));
 
             SortedSet<DummyClass> theSet4 = new SortedSet<DummyClass>();
             theSet4.Add(c1);
@@ -3149,14 +2084,7 @@ namespace SortedSetTests
             theSet4.Add(c3);
             theSet4.Add(c4);
 
-            if (!theSet4.IsProperSubsetOf(theSet1))
-            {
-                HandleResult("TestProperSubset_Object 3", true);
-            }
-            else
-            {
-                HandleResult("TestProperSubset_Object 3", false);
-            }
+            Assert.False(theSet4.IsProperSubsetOf(theSet1));
         }
 
         [Fact]
@@ -3181,38 +2109,17 @@ namespace SortedSetTests
             theList.Add(c4);
             theList.Add(c4);    // duplicate
 
-            if (!theSet.IsProperSubsetOf(theList))
-            {
-                HandleResult("TestProperSubsetWithEnumerable_Object 1", true);
-            }
-            else
-            {
-                HandleResult("TestProperSubsetWithEnumerable_Object 1", false);
-            }
+            Assert.False(theSet.IsProperSubsetOf(theList));
 
             theList.Add(c5);
             theList.Add(c1);    // duplicate
 
-            if (theSet.IsProperSubsetOf(theList))
-            {
-                HandleResult("TestProperSubsetWithEnumerable_Object 2", true);
-            }
-            else
-            {
-                HandleResult("TestProperSubsetWithEnumerable_Object 2", false);
-            }
+            Assert.True(theSet.IsProperSubsetOf(theList));
 
             theList.Remove(c1);
             theList.Remove(c2);
 
-            if (!theSet.IsProperSubsetOf(theList))
-            {
-                HandleResult("TestProperSubsetWithEnumerable_Object 3", true);
-            }
-            else
-            {
-                HandleResult("TestProperSubsetWithEnumerable_Object 3", false);
-            }
+            Assert.False(theSet.IsProperSubsetOf(theList));
         }
 
         [Fact]
@@ -3224,25 +2131,9 @@ namespace SortedSetTests
             DummyClass c4 = new DummyClass("c4");
 
             SortedSet<DummyClass> theSet1 = new SortedSet<DummyClass>();
-            bool result = theSet1.Remove(c1);
-            if (!result)
-            {
-                HandleResult("TestEmptyBehavior_Object 1", true);
-            }
-            else
-            {
-                HandleResult("TestEmptyBehavior_Object 1", false, "able to remove element from an empty set");
-            }
+            Assert.False(theSet1.Remove(c1));
 
-            result = theSet1.Contains(c4);
-            if (!result)
-            {
-                HandleResult("TestEmptyBehavior_Object 2", true);
-            }
-            else
-            {
-                HandleResult("TestEmptyBehavior_Object 2", false, "found an element in an empty set");
-            }
+            Assert.False(theSet1.Contains(c4));
 
             SortedSet<DummyClass> anotherSet = new SortedSet<DummyClass>();
             anotherSet.Add(c2);
@@ -3250,15 +2141,7 @@ namespace SortedSetTests
 
 
             theSet1.IntersectWith(anotherSet);
-            int count = theSet1.Count;
-            if (count == 0)
-            {
-                HandleResult("TestEmptyBehavior_Object 3", true);
-            }
-            else
-            {
-                HandleResult("TestEmptyBehavior_Object 3", false, String.Format("expected count = 0 but was {0}", count));
-            }
+            Assert.Equal(0, theSet1.Count);
         }
 
         [Fact]
@@ -3289,30 +2172,9 @@ namespace SortedSetTests
             theSet.Add(c9);
             theSet.Add(c10);
 
-            int count = theSet.Count;
-            if (count == 10)
-            {
-                HandleResult("TestResizing_Object 1", true);
-            }
-            else
-            {
-                HandleResult("TestResizing_Object 1", false, String.Format("expected count = 10 but was {0}", count));
-            }
+            Assert.Equal(10, theSet.Count);
 
-            // check a sample of elements to see if they're still there
-            bool result = theSet.Contains(c6);
-            result &= theSet.Contains(c2);
-            result &= theSet.Contains(c7);
-            result &= theSet.Contains(c10);
-
-            if (result)
-            {
-                HandleResult("TestResizing_Object 2", true);
-            }
-            else
-            {
-                HandleResult("TestResizing_Object 2", false, "didn't contain some elements after resizing");
-            }
+            Assert.All(new[] { c6, c2, c7, c10 }, item => Assert.Contains(item, theSet));
         }
 
         [Fact]
@@ -3333,27 +2195,13 @@ namespace SortedSetTests
             list1.Add(c2);
             list1.Add(c3);
 
-            if (!theSet.IsSubsetOf(list1))
-            {
-                HandleResult("TestMultipleSubsets_Object 1", true);
-            }
-            else
-            {
-                HandleResult("TestMultipleSubsets_Object 1", false);
-            }
+            Assert.False(theSet.IsSubsetOf(list1));
 
             List<DummyClass> list2 = new List<DummyClass>();
             list2.Add(c1);
             list2.Add(c2);
 
-            if (!theSet.IsSubsetOf(list2))
-            {
-                HandleResult("TestMultipleSubsets_Object 2", true);
-            }
-            else
-            {
-                HandleResult("TestMultipleSubsets_Object 2", false);
-            }
+            Assert.False(theSet.IsSubsetOf(list2));
         }
 
         #endregion

@@ -1218,33 +1218,12 @@ namespace LinkedList_LinkedList_ICollectionTTests
             //[] MoveNext
             if (!atEnd || _moveNextAtEndThrowsOnModifiedCollection)
             {
-                try
-                {
-                    genericIEnumerator.MoveNext();
-                    Assert.True(false); //"Err_5048ajed IEnumerator<T>.MoveNext()"
-                }
-                catch (InvalidOperationException) { }
-                try
-                {
-                    iEnumerator.MoveNext();
-                    Assert.True(false); //"Err_548aied IEnumerator.MoveNext()"
-                }
-                catch (InvalidOperationException) { }
+                Assert.Throws<InvalidOperationException>(() => genericIEnumerator.MoveNext());
+                Assert.Throws<InvalidOperationException>(() => iEnumerator.MoveNext());
             }
 
-            //[] Reset
-            try
-            {
-                genericIEnumerator.Reset();
-                Assert.True(false); //"Err_6412aied IEnumerator<T>.Reset()"
-            }
-            catch (InvalidOperationException) { }
-            try
-            {
-                iEnumerator.Reset();
-                Assert.True(false); //"Err_0215aheiud IEnumerator.Reset()"
-            }
-            catch (InvalidOperationException) { }
+            Assert.Throws<InvalidOperationException>(() => genericIEnumerator.Reset());
+            Assert.Throws<InvalidOperationException>(() => iEnumerator.Reset());
         }
 
         private bool IsUniqueItem(T[] items, T item)

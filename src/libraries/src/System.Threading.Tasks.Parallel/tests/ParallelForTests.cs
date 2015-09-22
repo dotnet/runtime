@@ -761,12 +761,7 @@ namespace System.Threading.Tasks.Test
 
             // And check that the use of OrderablePartitioner w/o dynamic support is rejected
             var mop = Partitioner.Create(baselist, false);
-            try
-            {
-                Parallel.ForEach(mop, delegate (int item, ParallelLoopState state, long index) { });
-                Assert.False(true, "TestParallelForPaths:    > FAILED.  Expected use of OrderablePartitioner w/o dynamic support to throw.");
-            }
-            catch { }
+            Assert.Throws<InvalidOperationException>(() => Parallel.ForEach(mop, delegate (int item, ParallelLoopState state, long index) { }));
         }
 
         [Fact]

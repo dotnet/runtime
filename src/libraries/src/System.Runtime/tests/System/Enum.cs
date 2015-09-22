@@ -198,89 +198,24 @@ public static unsafe class EnumTests
     {
         EI32 e = (EI32)0x3f06;
 
-        try
-        {
-            e.HasFlag(null);
-            Assert.True(false, "HasFlag should have thrown.");
-        }
-        catch (ArgumentNullException)
-        {
-        }
+        Assert.Throws<ArgumentNullException>(() => e.HasFlag(null));
+        Assert.Throws<ArgumentException>(() => e.HasFlag((EI32a)0x2));
 
-        try
-        {
-            e.HasFlag((EI32a)0x2);
-            Assert.True(false, "HasFlag should have thrown.");
-        }
-        catch (ArgumentException)
-        {
-        }
-
-        bool b;
-
-        b = e.HasFlag((EI32)(0x3000));
-        Assert.True(b);
-
-        b = e.HasFlag((EI32)(0x1000));
-        Assert.True(b);
-
-        b = e.HasFlag((EI32)(0x0000));
-        Assert.True(b);
-
-        b = e.HasFlag((EI32)(0x0010));
-        Assert.False(b);
-
-        b = e.HasFlag((EI32)(0x3f06));
-        Assert.True(b);
-
-        b = e.HasFlag((EI32)(0x3f16));
-        Assert.False(b);
+        Assert.True(e.HasFlag((EI32)(0x3000)));
+        Assert.True(e.HasFlag((EI32)(0x1000)));
+        Assert.True(e.HasFlag((EI32)(0x0000)));
+        Assert.False(e.HasFlag((EI32)(0x0010)));
+        Assert.True(e.HasFlag((EI32)(0x3f06)));
+        Assert.False(e.HasFlag((EI32)(0x3f16)));
     }
 
     [Fact]
     public static void TestToObject()
     {
-        Object o;
-        o = 3;
-
-        try
-        {
-            Enum.ToObject(null, o);
-            Assert.True(false, "ToObject() should have thrown.");
-        }
-        catch (ArgumentNullException)
-        {
-        }
-
-        o = null;
-        try
-        {
-            Enum.ToObject(typeof(EI8), o);
-            Assert.True(false, "ToObject() should have thrown.");
-        }
-        catch (ArgumentNullException)
-        {
-        }
-
-        o = 1;
-        try
-        {
-            Enum.ToObject(typeof(Enum), o);
-            Assert.True(false, "ToObject() should have thrown.");
-        }
-        catch (ArgumentException)
-        {
-        }
-
-        try
-        {
-            o = "Hello";
-            Enum.ToObject(typeof(EI8), o);
-            Assert.True(false, "ToObject() should have thrown.");
-        }
-        catch (ArgumentException)
-        {
-        }
+        Assert.Throws<ArgumentNullException>(() => Enum.ToObject(null, 3));
+        Assert.Throws<ArgumentNullException>(() => Enum.ToObject(typeof(EI8), null));
+        Assert.Throws<ArgumentException>(() => Enum.ToObject(typeof(Enum), 1));
+        Assert.Throws<ArgumentException>(() => Enum.ToObject(typeof(EI8), "Hello"));
 
         TestToObjectVerifySuccess<EI8, sbyte>(42);
         TestToObjectVerifySuccess<EI8, EI8>((EI8)0x42);
@@ -340,81 +275,31 @@ public static unsafe class EnumTests
     public static void TestCompareTo()
     {
         EI8 e = EI8.One;
-        int result;
 
         // Special case: All values are "greater than" null.
-        Object other = null;
-        result = e.CompareTo(other);
-        Assert.Equal(result, 1);
+        Assert.Equal(1, e.CompareTo(null));
 
-        try
-        {
-            sbyte b = 1;
-            result = e.CompareTo(b);
-            Assert.True(false, "CompareTo should have failed.");
-        }
-        catch (ArgumentException)
-        {
-        }
+        Assert.Throws<ArgumentException>(() => e.CompareTo((sbyte)1));
 
-        other = EI8.One;
-        result = e.CompareTo(other);
-        Assert.Equal(result, 0);
-        other = (EI8)(0);
-        result = e.CompareTo(other);
-        Assert.True(result > 0);
-        other = (EI8)(2);
-        result = e.CompareTo(other);
-        Assert.True(result < 0);
+        Assert.Equal(0, e.CompareTo(EI8.One));
+        Assert.InRange(e.CompareTo((EI8)0), 1, int.MaxValue);
+        Assert.InRange(e.CompareTo((EI8)2), int.MinValue, -1);
     }
 
     [Fact]
     public static void TestGetUnderlyingType()
     {
-        Type t;
+        Assert.Throws<ArgumentNullException>(() => Enum.GetUnderlyingType(null));
+        Assert.Throws<ArgumentException>(() => Enum.GetUnderlyingType(typeof(Enum)));
 
-        try
-        {
-            Enum.GetUnderlyingType(null);
-            Assert.True(false, "GetUnderlyingType should have thrown.");
-        }
-        catch (ArgumentNullException)
-        {
-        }
-
-        try
-        {
-            Enum.GetUnderlyingType(typeof(Enum));
-            Assert.True(false, "GetUnderlyingType should have thrown.");
-        }
-        catch (ArgumentException)
-        {
-        }
-
-        t = Enum.GetUnderlyingType(typeof(EI8));
-        Assert.Equal(t, typeof(SByte));
-
-        t = Enum.GetUnderlyingType(typeof(EU8));
-        Assert.Equal(t, typeof(Byte));
-
-        t = Enum.GetUnderlyingType(typeof(EI16));
-        Assert.Equal(t, typeof(Int16));
-
-        t = Enum.GetUnderlyingType(typeof(EU16));
-        Assert.Equal(t, typeof(UInt16));
-
-        t = Enum.GetUnderlyingType(typeof(EI32));
-        Assert.Equal(t, typeof(Int32));
-
-        t = Enum.GetUnderlyingType(typeof(EU32));
-        Assert.Equal(t, typeof(UInt32));
-
-        t = Enum.GetUnderlyingType(typeof(EI64));
-        Assert.Equal(t, typeof(Int64));
-
-        t = Enum.GetUnderlyingType(typeof(EU64));
-        Assert.Equal(t, typeof(UInt64));
-
+        Assert.Equal(typeof(SByte), Enum.GetUnderlyingType(typeof(EI8)));
+        Assert.Equal(typeof(Byte), Enum.GetUnderlyingType(typeof(EU8)));
+        Assert.Equal(typeof(Int16), Enum.GetUnderlyingType(typeof(EI16)));
+        Assert.Equal(typeof(UInt16), Enum.GetUnderlyingType(typeof(EU16)));
+        Assert.Equal(typeof(Int32), Enum.GetUnderlyingType(typeof(EI32)));
+        Assert.Equal(typeof(UInt32), Enum.GetUnderlyingType(typeof(EU32)));
+        Assert.Equal(typeof(Int64), Enum.GetUnderlyingType(typeof(EI64)));
+        Assert.Equal(typeof(UInt64), Enum.GetUnderlyingType(typeof(EU64)));
     }
 
     private enum EI8 : sbyte

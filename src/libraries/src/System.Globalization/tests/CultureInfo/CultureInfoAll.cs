@@ -21,28 +21,23 @@ namespace System.Globalization.Tests
         {
             Assert.True(EnumSystemLocalesEx(EnumLocales, LOCALE_WINDOWS, IntPtr.Zero, IntPtr.Zero), "EnumSystemLocalesEx has failed");
 
-            foreach (CultureInfo ci in cultures)
-            {
-                Validate(ci);
-            }
+            Assert.All(cultures, Validate);
         }
 
         private void Validate(CultureInfo ci)
         {
-            string val = GetLocaleInfo(ci, LOCALE_SENGLISHDISPLAYNAME);
-            Assert.True(ci.EnglishName.Equals(val), String.Format("Expected {0} and got {1}", ci.EnglishName, val));
+            Assert.Equal(ci.EnglishName, GetLocaleInfo(ci, LOCALE_SENGLISHDISPLAYNAME));
 
             // si-LK has some special case when running on Win7 so we just ignore this one
-            val = ci.Name.Length == 0 ? "Invariant Language (Invariant Country)" : GetLocaleInfo(ci, LOCALE_SNATIVEDISPLAYNAME);
-            Assert.True(ci.Name.Equals("si-LK", StringComparison.OrdinalIgnoreCase) || ci.NativeName.Equals(val), String.Format("Expected {0} and got {1}", val, ci.NativeName));
+            if (!ci.Name.Equals("si-LK", StringComparison.OrdinalIgnoreCase))
+            {
+                Assert.Equal(ci.Name.Length == 0 ? "Invariant Language (Invariant Country)" : GetLocaleInfo(ci, LOCALE_SNATIVEDISPLAYNAME), ci.NativeName);
+            }
 
             // zh-Hans and zh-Hant has different behavior on different platform
-            val = GetLocaleInfo(ci, LOCALE_SPARENT);
-            Assert.True(val.Equals("zh-Hans", StringComparison.OrdinalIgnoreCase) || val.Equals("zh-Hant", StringComparison.OrdinalIgnoreCase) ||
-                          ci.Parent.Name.Equals(val), String.Format("Expected {0} and got {1} as parent of {2}", val, ci.Parent.Name, ci));
+            Assert.Contains(GetLocaleInfo(ci, LOCALE_SPARENT), new[] { "zh-Hans", "zh-Hant", ci.Parent.Name }, StringComparer.OrdinalIgnoreCase);
 
-            val = GetLocaleInfo(ci, LOCALE_SISO639LANGNAME);
-            Assert.True(ci.TwoLetterISOLanguageName.Equals(val), String.Format("Expected {0} and got {1}", val, ci.TwoLetterISOLanguageName));
+            Assert.Equal(ci.TwoLetterISOLanguageName, GetLocaleInfo(ci, LOCALE_SISO639LANGNAME));
 
             ValidateDTFI(ci);
             ValidateNFI(ci);
@@ -55,30 +50,24 @@ namespace System.Globalization.Tests
             Calendar cal = dtfi.Calendar;
             int calId = GetCalendarId(cal);
 
-            Assert.Equal<string>(GetDayNames(ci, calId, CAL_SABBREVDAYNAME1), dtfi.AbbreviatedDayNames);
-            Assert.Equal<string>(GetDayNames(ci, calId, CAL_SDAYNAME1), dtfi.DayNames);
-            Assert.Equal<string>(GetMonthNames(ci, calId, CAL_SMONTHNAME1), dtfi.MonthNames);
-            Assert.Equal<string>(GetMonthNames(ci, calId, CAL_SABBREVMONTHNAME1), dtfi.AbbreviatedMonthNames);
-            Assert.Equal<string>(GetMonthNames(ci, calId, CAL_SMONTHNAME1 | LOCALE_RETURN_GENITIVE_NAMES), dtfi.MonthGenitiveNames);
-            Assert.Equal<string>(GetMonthNames(ci, calId, CAL_SABBREVMONTHNAME1 | LOCALE_RETURN_GENITIVE_NAMES), dtfi.AbbreviatedMonthGenitiveNames);
-            Assert.Equal<string>(GetDayNames(ci, calId, CAL_SSHORTESTDAYNAME1), dtfi.ShortestDayNames);
+            Assert.Equal(GetDayNames(ci, calId, CAL_SABBREVDAYNAME1), dtfi.AbbreviatedDayNames);
+            Assert.Equal(GetDayNames(ci, calId, CAL_SDAYNAME1), dtfi.DayNames);
+            Assert.Equal(GetMonthNames(ci, calId, CAL_SMONTHNAME1), dtfi.MonthNames);
+            Assert.Equal(GetMonthNames(ci, calId, CAL_SABBREVMONTHNAME1), dtfi.AbbreviatedMonthNames);
+            Assert.Equal(GetMonthNames(ci, calId, CAL_SMONTHNAME1 | LOCALE_RETURN_GENITIVE_NAMES), dtfi.MonthGenitiveNames);
+            Assert.Equal(GetMonthNames(ci, calId, CAL_SABBREVMONTHNAME1 | LOCALE_RETURN_GENITIVE_NAMES), dtfi.AbbreviatedMonthGenitiveNames);
+            Assert.Equal(GetDayNames(ci, calId, CAL_SSHORTESTDAYNAME1), dtfi.ShortestDayNames);
+            Assert.Equal(GetLocaleInfo(ci, LOCALE_S1159), dtfi.AMDesignator, StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(GetLocaleInfo(ci, LOCALE_S2359), dtfi.PMDesignator, StringComparer.OrdinalIgnoreCase);
 
-            Assert.True(GetLocaleInfo(ci, LOCALE_S1159).Equals(dtfi.AMDesignator, StringComparison.OrdinalIgnoreCase), String.Format("Failed with AMDesignator for culture {0}", ci));
-            Assert.True(GetLocaleInfo(ci, LOCALE_S2359).Equals(dtfi.PMDesignator, StringComparison.OrdinalIgnoreCase), String.Format("Failed with PMDesignator for culture {0}", ci));
+            Assert.Equal(calId, GetDefaultcalendar(ci));
 
-            Assert.True(GetDefaultcalendar(ci) == calId, String.Format("Default calendar not matching for culture {0}. we got {1} and expected {2}", ci, GetDefaultcalendar(ci), calId));
-
-            int dayOfWeek = ConvertFirstDayOfWeekMonToSun(GetLocaleInfoAsInt(ci, LOCALE_IFIRSTDAYOFWEEK));
-            Assert.True(dayOfWeek == (int)dtfi.FirstDayOfWeek, String.Format("FirstDayOfWeek is not matching for culture {0}. we got {1} and expected {2}", ci, dayOfWeek, dtfi.FirstDayOfWeek));
-            Assert.True(GetLocaleInfoAsInt(ci, LOCALE_IFIRSTWEEKOFYEAR) == (int)dtfi.CalendarWeekRule, String.Format("CalendarWeekRule is not matching for culture {0}. we got {1} and expected {2}", ci, GetLocaleInfoAsInt(ci, LOCALE_IFIRSTWEEKOFYEAR), dtfi.CalendarWeekRule));
-            string monthDay = GetCalendarInfo(ci, calId, CAL_SMONTHDAY, true);
-            Assert.True(monthDay == dtfi.MonthDayPattern, String.Format("MonthDayPattern is not matching for culture {0}. we got '{1}' and expected '{2}'", ci, monthDay, dtfi.MonthDayPattern));
-            string rfc1123Pattern = "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'";
-            Assert.True(rfc1123Pattern == dtfi.RFC1123Pattern, String.Format("RFC1123Pattern is not matching for culture {0}. we got '{1}' and expected '{2}'", ci, dtfi.RFC1123Pattern, rfc1123Pattern));
-            string sortableDateTimePattern = "yyyy'-'MM'-'dd'T'HH':'mm':'ss";
-            Assert.True(sortableDateTimePattern == dtfi.SortableDateTimePattern, String.Format("SortableDateTimePattern is not matching for culture {0}. we got '{1}' and expected '{2}'", ci, dtfi.SortableDateTimePattern, sortableDateTimePattern));
-            string universalSortableDateTimePattern = "yyyy'-'MM'-'dd HH':'mm':'ss'Z'";
-            Assert.True(universalSortableDateTimePattern == dtfi.UniversalSortableDateTimePattern, String.Format("SortableDateTimePattern is not matching for culture {0}. we got '{1}' and expected '{2}'", ci, dtfi.UniversalSortableDateTimePattern, universalSortableDateTimePattern));
+            Assert.Equal((int)dtfi.FirstDayOfWeek, ConvertFirstDayOfWeekMonToSun(GetLocaleInfoAsInt(ci, LOCALE_IFIRSTDAYOFWEEK)));
+            Assert.Equal((int)dtfi.CalendarWeekRule, GetLocaleInfoAsInt(ci, LOCALE_IFIRSTWEEKOFYEAR));
+            Assert.Equal(dtfi.MonthDayPattern, GetCalendarInfo(ci, calId, CAL_SMONTHDAY, true));
+            Assert.Equal("ddd, dd MMM yyyy HH':'mm':'ss 'GMT'", dtfi.RFC1123Pattern);
+            Assert.Equal("yyyy'-'MM'-'dd'T'HH':'mm':'ss", dtfi.SortableDateTimePattern);
+            Assert.Equal("yyyy'-'MM'-'dd HH':'mm':'ss'Z'", dtfi.UniversalSortableDateTimePattern);
 
             string longDatePattern1 = GetCalendarInfo(ci, calId, CAL_SLONGDATE)[0];
             string longDatePattern2 = ReescapeWin32String(GetLocaleInfo(ci, LOCALE_SLONGDATE));
@@ -86,113 +75,58 @@ namespace System.Globalization.Tests
             string longTimePattern2 = ReescapeWin32String(GetLocaleInfo(ci, LOCALE_STIMEFORMAT));
             string fullDateTimePattern = longDatePattern1 + " " + longTimePattern1;
             string fullDateTimePattern1 = longDatePattern2 + " " + longTimePattern2;
-            Assert.True(fullDateTimePattern == dtfi.FullDateTimePattern || fullDateTimePattern1 == dtfi.FullDateTimePattern, String.Format("FullDateTimePattern is not matching for culture {0}. we got '{1}' or '{2}' and expected '{3}'", ci, fullDateTimePattern, fullDateTimePattern1, dtfi.FullDateTimePattern));
-            Assert.True(longDatePattern1 == dtfi.LongDatePattern || longDatePattern2 == dtfi.LongDatePattern, String.Format("LongDatePattern is not matching for culture {0}. we got '{1}' or '{2}' and expected '{3}'", ci, longDatePattern1, longDatePattern2, dtfi.LongDatePattern));
-            Assert.True(longTimePattern1 == dtfi.LongTimePattern || longTimePattern2 == dtfi.LongTimePattern, String.Format("LongTimePattern is not matching for culture {0}. we got '{1}' or '{2}' and expected '{3}'", ci, longTimePattern1, longTimePattern1, dtfi.LongTimePattern));
+            Assert.Contains(dtfi.FullDateTimePattern, new[] { fullDateTimePattern, fullDateTimePattern1 });
+            Assert.Contains(dtfi.LongDatePattern, new[] { longDatePattern1, longDatePattern2 });
+            Assert.Contains(dtfi.LongTimePattern, new[] { longTimePattern1, longTimePattern2 });
 
-            string shortTimePattern1 = GetTimeFormats(ci, TIME_NOSECONDS)[0];
-            string shortTimePattern2 = ReescapeWin32String(GetLocaleInfo(ci, LOCALE_SSHORTTIME));
-            Assert.True(shortTimePattern1 == dtfi.ShortTimePattern || shortTimePattern2 == dtfi.ShortTimePattern, String.Format("ShortTimePattern is not matching for culture {0}. we got '{1}' or '{2}' and expected '{3}'", ci, shortTimePattern1, shortTimePattern1, dtfi.ShortTimePattern));
+            Assert.Contains(dtfi.ShortTimePattern, new[] { GetTimeFormats(ci, TIME_NOSECONDS)[0], ReescapeWin32String(GetLocaleInfo(ci, LOCALE_SSHORTTIME)) });
+            Assert.Contains(dtfi.ShortDatePattern, new[] { GetCalendarInfo(ci, calId, CAL_SSHORTDATE)[0], ReescapeWin32String(GetLocaleInfo(ci, LOCALE_SSHORTDATE)) });
 
-            string shortDatePattern1 = GetCalendarInfo(ci, calId, CAL_SSHORTDATE)[0];
-            string shortDatePattern2 = ReescapeWin32String(GetLocaleInfo(ci, LOCALE_SSHORTDATE));
-            Assert.True(shortDatePattern1 == dtfi.ShortDatePattern || shortDatePattern2 == dtfi.ShortDatePattern, String.Format("LongDatePattern is not matching for culture {0}. we got '{1}' or '{2}' and expected '{3}'", ci, shortDatePattern1, shortDatePattern2, dtfi.ShortDatePattern));
+            Assert.Contains(dtfi.YearMonthPattern, new[] { GetCalendarInfo(ci, calId, CAL_SYEARMONTH)[0], ReescapeWin32String(GetLocaleInfo(ci, LOCALE_SYEARMONTH)) });
 
-            string yearMonthPattern1 = GetCalendarInfo(ci, calId, CAL_SYEARMONTH)[0];
-            string yearMonthPattern2 = ReescapeWin32String(GetLocaleInfo(ci, LOCALE_SYEARMONTH));
-            Assert.True(yearMonthPattern1 == dtfi.YearMonthPattern || yearMonthPattern2 == dtfi.YearMonthPattern, String.Format("YearMonthPattern is not matching for culture {0}. we got '{1}' or '{2}' and expected '{3}'", ci, yearMonthPattern1, yearMonthPattern2, dtfi.YearMonthPattern));
-
-            string[] eraNames = GetCalendarInfo(ci, calId, CAL_SERASTRING);
-            Assert.True(eraNames[0].Equals(dtfi.GetEraName(1), StringComparison.OrdinalIgnoreCase), String.Format("Era 1 Name with culture {0} and calendar {1} is wrong. got {2} and expected {3}", ci, cal, dtfi.GetEraName(1), eraNames[0]));
-
-            if (cal is JapaneseCalendar)
-            {
-                Assert.True(eraNames[1].Equals(dtfi.GetEraName(2), StringComparison.OrdinalIgnoreCase), String.Format("Era 2 Name with culture {0} and calendar {1} is wrong. got {2} and expected {3}", ci, cal, dtfi.GetEraName(2), eraNames[1]));
-                Assert.True(eraNames[2].Equals(dtfi.GetEraName(3), StringComparison.OrdinalIgnoreCase), String.Format("Era 3 Name with culture {0} and calendar {1} is wrong. got {2} and expected {3}", ci, cal, dtfi.GetEraName(3), eraNames[2]));
-                Assert.True(eraNames[3].Equals(dtfi.GetEraName(4), StringComparison.OrdinalIgnoreCase), String.Format("Era 4 Name with culture {0} and calendar {1} is wrong. got {2} and expected {3}", ci, cal, dtfi.GetEraName(4), eraNames[3]));
-            }
-
-            string[] abbreviatedEraNames = GetCalendarInfo(ci, calId, CAL_SABBREVERASTRING);
-            Assert.True(abbreviatedEraNames[0].Equals(dtfi.GetAbbreviatedEraName(1), StringComparison.OrdinalIgnoreCase), String.Format("Abbreviated Era 1 Name with culture {0} and calendar {1} is wrong. got {2} and expected {3}", ci, cal, dtfi.GetAbbreviatedEraName(1), abbreviatedEraNames[0]));
-
-            if (cal is JapaneseCalendar)
-            {
-                Assert.True(abbreviatedEraNames[1].Equals(dtfi.GetAbbreviatedEraName(2), StringComparison.OrdinalIgnoreCase), String.Format("Abbreviated Era 1 Name with culture {0} and calendar {1} is wrong. got {2} and expected {3}", ci, cal, dtfi.GetAbbreviatedEraName(2), abbreviatedEraNames[1]));
-                Assert.True(abbreviatedEraNames[2].Equals(dtfi.GetAbbreviatedEraName(3), StringComparison.OrdinalIgnoreCase), String.Format("Abbreviated Era 1 Name with culture {0} and calendar {1} is wrong. got {2} and expected {3}", ci, cal, dtfi.GetAbbreviatedEraName(3), abbreviatedEraNames[2]));
-                Assert.True(abbreviatedEraNames[3].Equals(dtfi.GetAbbreviatedEraName(4), StringComparison.OrdinalIgnoreCase), String.Format("Abbreviated Era 1 Name with culture {0} and calendar {1} is wrong. got {2} and expected {3}", ci, cal, dtfi.GetAbbreviatedEraName(4), abbreviatedEraNames[3]));
-            }
+            int eraNameIndex = 1;
+            Assert.All(GetCalendarInfo(ci, calId, CAL_SERASTRING), eraName => Assert.Equal(dtfi.GetEraName(eraNameIndex++), eraName, StringComparer.OrdinalIgnoreCase));
+            eraNameIndex = 1;
+            Assert.All(GetCalendarInfo(ci, calId, CAL_SABBREVERASTRING), eraName => Assert.Equal(dtfi.GetAbbreviatedEraName(eraNameIndex++), eraName, StringComparer.OrdinalIgnoreCase));
         }
 
         private void ValidateNFI(CultureInfo ci)
         {
             NumberFormatInfo nfi = ci.NumberFormat;
-            string val = GetLocaleInfo(ci, LOCALE_SPOSITIVESIGN);
-            if (String.IsNullOrEmpty(val)) val = "+";
-            Assert.True(val.Equals(nfi.PositiveSign), String.Format("Wrong PositiveSign with culturer '{0}'. got '{1}' and expected '{2}' ", ci, val, nfi.PositiveSign));
 
-            val = GetLocaleInfo(ci, LOCALE_SNEGATIVESIGN);
-            Assert.True(val.Equals(nfi.NegativeSign), String.Format("Wrong NegativeSign with culturer '{0}'. got '{1}' and expected '{2}' ", ci, val, nfi.NegativeSign));
+            Assert.Equal(string.IsNullOrEmpty(GetLocaleInfo(ci, LOCALE_SPOSITIVESIGN)) ? "+" : GetLocaleInfo(ci, LOCALE_SPOSITIVESIGN), nfi.PositiveSign);
+            Assert.Equal(GetLocaleInfo(ci, LOCALE_SNEGATIVESIGN), nfi.NegativeSign);
+            Assert.Equal(GetLocaleInfo(ci, LOCALE_SDECIMAL), nfi.NumberDecimalSeparator);
+            Assert.Equal(GetLocaleInfo(ci, LOCALE_SDECIMAL), nfi.PercentDecimalSeparator);
+            Assert.Equal(GetLocaleInfo(ci, LOCALE_STHOUSAND), nfi.NumberGroupSeparator);
+            Assert.Equal(GetLocaleInfo(ci, LOCALE_STHOUSAND), nfi.PercentGroupSeparator);
 
-            val = GetLocaleInfo(ci, LOCALE_SDECIMAL);
-            Assert.True(val.Equals(nfi.NumberDecimalSeparator), String.Format("Wrong NumberDecimalSeparator with culturer '{0}'. got '{1}' and expected '{2}' ", ci, val, nfi.NumberDecimalSeparator));
-            Assert.True(val.Equals(nfi.PercentDecimalSeparator), String.Format("Wrong PercentDecimalSeparator with culturer '{0}'. got '{1}' and expected '{2}' ", ci, val, nfi.PercentDecimalSeparator));
+            Assert.Equal(GetLocaleInfo(ci, LOCALE_SMONTHOUSANDSEP), nfi.CurrencyGroupSeparator);
+            Assert.Equal(GetLocaleInfo(ci, LOCALE_SMONDECIMALSEP), nfi.CurrencyDecimalSeparator);
+            Assert.Equal(GetLocaleInfo(ci, LOCALE_SCURRENCY), nfi.CurrencySymbol);
 
-            val = GetLocaleInfo(ci, LOCALE_STHOUSAND);
-            Assert.True(val.Equals(nfi.NumberGroupSeparator), String.Format("Wrong NumberGroupSeparator with culturer '{0}'. got '{1}' and expected '{2}' ", ci, val, nfi.NumberGroupSeparator));
-            Assert.True(val.Equals(nfi.PercentGroupSeparator), String.Format("Wrong PercentGroupSeparator with culturer '{0}'. got '{1}' and expected '{2}' ", ci, val, nfi.PercentGroupSeparator));
+            Assert.Equal(GetLocaleInfoAsInt(ci, LOCALE_IDIGITS), nfi.NumberDecimalDigits);
+            Assert.Equal(GetLocaleInfoAsInt(ci, LOCALE_IDIGITS), nfi.PercentDecimalDigits);
 
-            val = GetLocaleInfo(ci, LOCALE_SMONTHOUSANDSEP);
-            Assert.True(val.Equals(nfi.CurrencyGroupSeparator), String.Format("Wrong CurrencyGroupSeparator with culturer '{0}'. got '{1}' and expected '{2}' ", ci, val, nfi.CurrencyGroupSeparator));
+            Assert.Equal(GetLocaleInfoAsInt(ci, LOCALE_ICURRDIGITS), nfi.CurrencyDecimalDigits);
+            Assert.Equal(GetLocaleInfoAsInt(ci, LOCALE_ICURRENCY), nfi.CurrencyPositivePattern);
+            Assert.Equal(GetLocaleInfoAsInt(ci, LOCALE_INEGCURR), nfi.CurrencyNegativePattern);
+            Assert.Equal(GetLocaleInfoAsInt(ci, LOCALE_INEGNUMBER), nfi.NumberNegativePattern);
 
-            val = GetLocaleInfo(ci, LOCALE_SMONDECIMALSEP);
-            Assert.True(val.Equals(nfi.CurrencyDecimalSeparator), String.Format("Wrong CurrencyDecimalSeparator with culturer '{0}'. got '{1}' and expected '{2}' ", ci, val, nfi.CurrencyDecimalSeparator));
+            Assert.Equal(ConvertWin32GroupString(GetLocaleInfo(ci, LOCALE_SMONGROUPING)), nfi.CurrencyGroupSizes);
 
-            val = GetLocaleInfo(ci, LOCALE_SCURRENCY);
-            Assert.True(val.Equals(nfi.CurrencySymbol), String.Format("Wrong CurrencySymbol with culturer '{0}'. got '{1}' and expected '{2}' ", ci, val, nfi.CurrencySymbol));
+            Assert.Equal(GetLocaleInfo(ci, LOCALE_SNAN), nfi.NaNSymbol);
+            Assert.Equal(GetLocaleInfo(ci, LOCALE_SNEGINFINITY), nfi.NegativeInfinitySymbol);
 
-            int decValue = GetLocaleInfoAsInt(ci, LOCALE_IDIGITS);
-            Assert.True(decValue == nfi.NumberDecimalDigits, String.Format("Wrong NumberDecimalDigits with culturer '{0}'. got '{1}' and expected '{2}' ", ci, decValue, nfi.NumberDecimalDigits));
-            Assert.True(decValue == nfi.PercentDecimalDigits, String.Format("Wrong PercentDecimalDigits with culturer '{0}'. got '{1}' and expected '{2}' ", ci, decValue, nfi.PercentDecimalDigits));
+            Assert.Equal(ConvertWin32GroupString(GetLocaleInfo(ci, LOCALE_SGROUPING)), nfi.NumberGroupSizes);
+            Assert.Equal(ConvertWin32GroupString(GetLocaleInfo(ci, LOCALE_SGROUPING)), nfi.PercentGroupSizes);
 
-            decValue = GetLocaleInfoAsInt(ci, LOCALE_ICURRDIGITS);
-            Assert.True(decValue == nfi.CurrencyDecimalDigits, String.Format("Wrong CurrencyDecimalDigits with culturer '{0}'. got '{1}' and expected '{2}' ", ci, decValue, nfi.CurrencyDecimalDigits));
+            Assert.Equal(GetLocaleInfoAsInt(ci, LOCALE_INEGATIVEPERCENT), nfi.PercentNegativePattern);
+            Assert.Equal(GetLocaleInfoAsInt(ci, LOCALE_IPOSITIVEPERCENT), nfi.PercentPositivePattern);
 
-            decValue = GetLocaleInfoAsInt(ci, LOCALE_ICURRENCY);
-            Assert.True(decValue == nfi.CurrencyPositivePattern, String.Format("Wrong CurrencyPositivePattern with culturer '{0}'. got '{1}' and expected '{2}' ", ci, decValue, nfi.CurrencyPositivePattern));
-
-            decValue = GetLocaleInfoAsInt(ci, LOCALE_INEGCURR);
-            Assert.True(decValue == nfi.CurrencyNegativePattern, String.Format("Wrong CurrencyNegativePattern with culturer '{0}'. got '{1}' and expected '{2}' ", ci, decValue, nfi.CurrencyNegativePattern));
-
-            decValue = GetLocaleInfoAsInt(ci, LOCALE_INEGNUMBER);
-            Assert.True(decValue == nfi.NumberNegativePattern, String.Format("Wrong NumberNegativePattern with culturer '{0}'. got '{1}' and expected '{2}' ", ci, decValue, nfi.NumberNegativePattern));
-
-            val = GetLocaleInfo(ci, LOCALE_SMONGROUPING);
-            Assert.Equal<int>(ConvertWin32GroupString(val), nfi.CurrencyGroupSizes);
-
-            val = GetLocaleInfo(ci, LOCALE_SNAN);
-            Assert.True(val.Equals(nfi.NaNSymbol), String.Format("Wrong NaNSymbol with culturer '{0}'. got '{1}' and expected '{2}' ", ci, val, nfi.NaNSymbol));
-
-            val = GetLocaleInfo(ci, LOCALE_SNEGINFINITY);
-            Assert.True(val.Equals(nfi.NegativeInfinitySymbol), String.Format("Wrong NegativeInfinitySymbol with culturer '{0}'. got '{1}' and expected '{2}' ", ci, val, nfi.NegativeInfinitySymbol));
-
-            val = GetLocaleInfo(ci, LOCALE_SGROUPING);
-            Assert.Equal<int>(ConvertWin32GroupString(val), nfi.NumberGroupSizes);
-            Assert.Equal<int>(ConvertWin32GroupString(val), nfi.PercentGroupSizes);
-
-            decValue = GetLocaleInfoAsInt(ci, LOCALE_INEGATIVEPERCENT);
-            Assert.True(decValue == nfi.PercentNegativePattern, String.Format("Wrong PercentNegativePattern with culturer '{0}'. got '{1}' and expected '{2}' ", ci, decValue, nfi.PercentNegativePattern));
-
-            decValue = GetLocaleInfoAsInt(ci, LOCALE_IPOSITIVEPERCENT);
-            Assert.True(decValue == nfi.PercentPositivePattern, String.Format("Wrong PercentPositivePattern with culturer '{0}'. got '{1}' and expected '{2}' ", ci, decValue, nfi.PercentPositivePattern));
-
-            val = GetLocaleInfo(ci, LOCALE_SPERCENT);
-            Assert.True(val.Equals(nfi.PercentSymbol), String.Format("Wrong PercentSymbol with culturer '{0}'. got '{1}' and expected '{2}' ", ci, val, nfi.PercentSymbol));
-
-            val = GetLocaleInfo(ci, LOCALE_SPERMILLE);
-            Assert.True(val.Equals(nfi.PerMilleSymbol), String.Format("Wrong PerMilleSymbol with culturer '{0}'. got '{1}' and expected '{2}' ", ci, val, nfi.PerMilleSymbol));
-
-            val = GetLocaleInfo(ci, LOCALE_SPOSINFINITY);
-            Assert.True(val.Equals(nfi.PositiveInfinitySymbol), String.Format("Wrong PositiveInfinitySymbol with culturer '{0}'. got '{1}' and expected '{2}' ", ci, val, nfi.PositiveInfinitySymbol));
+            Assert.Equal(GetLocaleInfo(ci, LOCALE_SPERCENT), nfi.PercentSymbol);
+            Assert.Equal(GetLocaleInfo(ci, LOCALE_SPERMILLE), nfi.PerMilleSymbol);
+            Assert.Equal(GetLocaleInfo(ci, LOCALE_SPOSINFINITY), nfi.PositiveInfinitySymbol);
         }
 
         private void ValidateRegionInfo(CultureInfo ci)
@@ -201,24 +135,14 @@ namespace System.Globalization.Tests
                 return;
 
             RegionInfo ri = new RegionInfo(ci.Name);
-            string val = GetLocaleInfo(ci, LOCALE_SCURRENCY);
-            Assert.True(val.Equals(ri.CurrencySymbol), String.Format("Wrong CurrencySymbol with culturer '{0}'. got '{1}' and expected '{2}' ", ci, val, ri.CurrencySymbol));
 
-            val = GetLocaleInfo(ci, LOCALE_SENGLISHCOUNTRYNAME);
-            Assert.True(val.Equals(ri.EnglishName), String.Format("Wrong EnglishName with culturer '{0}'. got '{1}' and expected '{2}' ", ci, val, ri.EnglishName));
-
-            int decValue = GetLocaleInfoAsInt(ci, LOCALE_IMEASURE);
-            Assert.True((decValue == 0) == ri.IsMetric, String.Format("Wrong IsMetric with culturer '{0}'. got '{1}' and expected '{2}' ", ci, decValue, ri.IsMetric));
-
-            val = GetLocaleInfo(ci, LOCALE_SINTLSYMBOL);
-            Assert.True(val.Equals(ri.ISOCurrencySymbol), String.Format("Wrong ISOCurrencySymbol with culturer '{0}'. got '{1}' and expected '{2}' ", ci, val, ri.ISOCurrencySymbol));
-
-            val = GetLocaleInfo(ci, LOCALE_SISO3166CTRYNAME);
-            Assert.True(val.Equals(ri.Name, StringComparison.OrdinalIgnoreCase) || ci.Name.Equals(ri.Name, StringComparison.OrdinalIgnoreCase), String.Format("Wrong Name with culturer '{0}'. got '{1}' and expected '{2}' ", ci, val, ri.Name));
-            Assert.True(val.Equals(ri.TwoLetterISORegionName, StringComparison.OrdinalIgnoreCase), String.Format("Wrong TwoLetterISORegionName with culturer '{0}'. got '{1}' and expected '{2}' ", ci, val, ri.TwoLetterISORegionName));
-
-            val = GetLocaleInfo(ci, LOCALE_SNATIVECOUNTRYNAME);
-            Assert.True(val.Equals(ri.NativeName, StringComparison.OrdinalIgnoreCase), String.Format("Wrong NativeName with culturer '{0}'. got '{1}' and expected '{2}' ", ci, val, ri.NativeName));
+            Assert.Equal(GetLocaleInfo(ci, LOCALE_SCURRENCY), ri.CurrencySymbol);
+            Assert.Equal(GetLocaleInfo(ci, LOCALE_SENGLISHCOUNTRYNAME), ri.EnglishName);
+            Assert.Equal(GetLocaleInfoAsInt(ci, LOCALE_IMEASURE) == 0, ri.IsMetric);
+            Assert.Equal(GetLocaleInfo(ci, LOCALE_SINTLSYMBOL), ri.ISOCurrencySymbol);
+            Assert.Equal(GetLocaleInfo(ci, LOCALE_SISO3166CTRYNAME), ri.Name, StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(GetLocaleInfo(ci, LOCALE_SISO3166CTRYNAME), ri.TwoLetterISORegionName, StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(GetLocaleInfo(ci, LOCALE_SNATIVECOUNTRYNAME), ri.NativeName, StringComparer.OrdinalIgnoreCase);
         }
 
         private int[] ConvertWin32GroupString(String win32Str)
@@ -273,10 +197,7 @@ namespace System.Globalization.Tests
         private string[] GetTimeFormats(CultureInfo ci, uint flags)
         {
             _timePatterns = new List<string>();
-            if (!EnumTimeFormatsEx(EnumTimeFormats, ci.Name, flags, IntPtr.Zero))
-            {
-                Assert.True(false, String.Format("EnumTimeFormatsEx failed with culture {0} and flags {1}", ci, flags));
-            }
+            Assert.True(EnumTimeFormatsEx(EnumTimeFormats, ci.Name, flags, IntPtr.Zero), String.Format("EnumTimeFormatsEx failed with culture {0} and flags {1}", ci, flags));
 
             return _timePatterns.ToArray();
         }
@@ -425,7 +346,7 @@ namespace System.Globalization.Tests
             }
             else
             {
-                Assert.True(false, String.Format("Got a calendar {0} which we cannot map its Id", cal));
+                throw new KeyNotFoundException(String.Format("Got a calendar {0} which we cannot map its Id", cal));
             }
 
             return calId;
@@ -441,10 +362,7 @@ namespace System.Globalization.Tests
 
         private string GetLocaleInfo(CultureInfo ci, uint lctype)
         {
-            if (GetLocaleInfoEx(ci.Name, lctype, sb, 400) <= 0)
-            {
-                Assert.True(false, String.Format("GetLocaleInfoEx failed when calling with lctype {0} and culture {1}", lctype, ci));
-            }
+            Assert.True(GetLocaleInfoEx(ci.Name, lctype, sb, 400) > 0, String.Format("GetLocaleInfoEx failed when calling with lctype {0} and culture {1}", lctype, ci));
             return sb.ToString();
         }
 
@@ -452,10 +370,8 @@ namespace System.Globalization.Tests
         {
             if (GetCalendarInfoEx(ci.Name, calendar, IntPtr.Zero, calType, sb, 400, IntPtr.Zero) <= 0)
             {
-                if (throwInFail)
-                    Assert.True(false, String.Format("GetCalendarInfoEx failed when calling with caltype {0} and culture {1} and calendar Id {2}", calType, ci, calendar));
-                else
-                    return "";
+                Assert.False(throwInFail, String.Format("GetCalendarInfoEx failed when calling with caltype {0} and culture {1} and calendar Id {2}", calType, ci, calendar));
+                return "";
             }
             return ReescapeWin32String(sb.ToString());
         }
@@ -471,10 +387,7 @@ namespace System.Globalization.Tests
         private int[] GetOptionalCalendars(CultureInfo ci)
         {
             _optionalCals = new List<int>();
-            if (!EnumCalendarInfoExEx(EnumCalendarsCallback, ci.Name, ENUM_ALL_CALENDARS, null, CAL_ICALINTVALUE, IntPtr.Zero))
-            {
-                Assert.True(false, "EnumCalendarInfoExEx has been failed.");
-            }
+            Assert.True(EnumCalendarInfoExEx(EnumCalendarsCallback, ci.Name, ENUM_ALL_CALENDARS, null, CAL_ICALINTVALUE, IntPtr.Zero), "EnumCalendarInfoExEx has been failed.");
 
             return _optionalCals.ToArray();
         }
@@ -490,10 +403,7 @@ namespace System.Globalization.Tests
         {
             _calPatterns = new List<string>();
 
-            if (!EnumCalendarInfoExEx(EnumCalendarInfoCallback, ci.Name, (uint)calId, null, calType, IntPtr.Zero))
-            {
-                Assert.True(false, "EnumCalendarInfoExEx has been failed in GetCalendarInfo.");
-            }
+            Assert.True(EnumCalendarInfoExEx(EnumCalendarInfoCallback, ci.Name, (uint)calId, null, calType, IntPtr.Zero), "EnumCalendarInfoExEx has been failed in GetCalendarInfo.");
 
             return _calPatterns.ToArray();
         }
@@ -512,8 +422,7 @@ namespace System.Globalization.Tests
         private int GetLocaleInfoAsInt(CultureInfo ci, uint lcType)
         {
             int data = 0;
-            if (GetLocaleInfoEx(ci.Name, lcType | LOCALE_RETURN_NUMBER, ref data, sizeof(int)) <= 0)
-                Assert.True(false, String.Format("GetLocaleInfoEx failed with culture {0} and lcType {1}.", ci, lcType));
+            Assert.True(GetLocaleInfoEx(ci.Name, lcType | LOCALE_RETURN_NUMBER, ref data, sizeof(int)) > 0, String.Format("GetLocaleInfoEx failed with culture {0} and lcType {1}.", ci, lcType));
 
             return data;
         }

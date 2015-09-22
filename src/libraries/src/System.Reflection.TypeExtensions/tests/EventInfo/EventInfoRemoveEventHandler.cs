@@ -72,45 +72,23 @@ namespace System.Reflection.Compatibility.UnitTests
         [Fact]
         public void NegTest2()
         {
-            try
-            {
-                TestClass1 tc1 = new TestClass1();
-                Type tpA = tc1.GetType();
-                EventInfo eventinfo = tpA.GetEvent("Event1");
-                TestClass2 tc2 = new TestClass2();
-                eventinfo.RemoveEventHandler(tc2, new TestForEvent1(tc1.method1));
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                // TargetException is not defined in the OOB or Win8P, but using string comparison still seems to work
-                if (!e.GetType().FullName.Contains("TargetException"))
-                {
-                    Assert.False(true);
-                }
-            }
+            TestClass1 tc1 = new TestClass1();
+            Type tpA = tc1.GetType();
+            EventInfo eventinfo = tpA.GetEvent("Event1");
+            TestClass2 tc2 = new TestClass2();
+            Exception e = Assert.ThrowsAny<Exception>(() => eventinfo.RemoveEventHandler(tc2, new TestForEvent1(tc1.method1)));
+            Assert.Contains("TargetException", e.GetType().FullName);
         }
 
         // Negative Test 3:add to Event handler to the not static event and the target is null
         [Fact]
         public void NegTest3()
         {
-            try
-            {
-                TestClass1 tc1 = new TestClass1();
-                Type tpA = tc1.GetType();
-                EventInfo eventinfo = tpA.GetEvent("Event1");
-                eventinfo.RemoveEventHandler(null, new TestForEvent1(tc1.method1));
-                Assert.False(true);
-            }
-            catch (Exception e)
-            {
-                // TargetException is not defined in the OOB or Win8P, but using string comparison still seems to work
-                if (!e.GetType().FullName.Contains("TargetException"))
-                {
-                    Assert.False(true);
-                }
-            }
+            TestClass1 tc1 = new TestClass1();
+            Type tpA = tc1.GetType();
+            EventInfo eventinfo = tpA.GetEvent("Event1");
+            Exception e = Assert.ThrowsAny<Exception>(() => eventinfo.RemoveEventHandler(null, new TestForEvent1(tc1.method1)));
+            Assert.Contains("TargetException", e.GetType().FullName);
         }
 
         public class TestClass1

@@ -27,6 +27,8 @@ public class TupleTests
         {
             if (values.Length == 0)
                 throw new ArgumentOutOfRangeException("values", "You must provide at least one value");
+            if (values.Length > 10)
+                throw new ArgumentOutOfRangeException("values", "You must provide at most 10 values");
 
             _nItems = values.Length;
             switch (_nItems)
@@ -76,19 +78,12 @@ public class TupleTests
                         (T5)values[4], (T6)values[5], (T7)values[6], new Tuple<T8, T9, T10>((T8)values[7], (T9)values[8], (T10)values[9]));
                     Tuple = Tuple10;
                     break;
-                default:
-                    Assert.True(false, "Must specify between 1 and 10 values (inclusive).");
-                    break;
             }
         }
 
         private void VerifyItem(int itemPos, object Item1, object Item2)
         {
-            if (!object.Equals(Item1, Item2))
-            {
-                Assert.True(false,
-                    string.Format("Tuple{0}.{1} has unexpected value {2}, expected {3}", _nItems, itemPos, Item1.ToString(), Item2.ToString()));
-            }
+            Assert.True(object.Equals(Item1, Item2));
         }
 
         public void TestConstructor(params object[] expectedValue)
@@ -174,8 +169,7 @@ public class TupleTests
                     VerifyItem(10, Tuple10.Rest.Item3, expectedValue[9]);
                     break;
                 default:
-                    Assert.True(false, "Must specify between 1 and 10 expected values (inclusive).");
-                    break;
+                    throw new ArgumentException("Must specify between 1 and 10 expected values (inclusive).");
             }
         }
 

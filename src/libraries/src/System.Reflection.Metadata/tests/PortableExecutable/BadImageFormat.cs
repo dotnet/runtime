@@ -21,7 +21,7 @@ namespace System.Reflection.Metadata.Tests
                 0x00,
             });
 
-            AssertEx.Throws<BadImageFormatException>(() => new PEHeaders(pe), "Invalid number of sections in declared in PE header.");
+            Assert.Throws<BadImageFormatException>(() => new PEHeaders(pe));
         }
     }
 }

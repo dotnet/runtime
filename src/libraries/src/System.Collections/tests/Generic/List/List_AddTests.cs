@@ -434,14 +434,7 @@ namespace List_List_AddTests
         {
             IList nullableBoolList = new List<bool?>();
             nullableBoolList.Add(true); // works
-            try
-            {
-                nullableBoolList.Add(null); // should not fail
-            }
-            catch (ArgumentException)
-            {
-                Assert.True(false); //"Error: DDB 125706 repro, bug is not fixed."
-            }
+            nullableBoolList.Add(null);
         }
     }
     /// <summary>

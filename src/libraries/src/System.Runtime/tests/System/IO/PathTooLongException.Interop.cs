@@ -14,10 +14,7 @@ public partial class PathTooLongException_Interop_40100_Tests
         int hr = HResults.COR_E_PATHTOOLONG;
         var e = Marshal.GetExceptionForHR(hr);
         var ptle = e as PathTooLongException;
-        if (ptle == null)
-        {
-            Assert.True(false, String.Format("Expected PathTooLongException for hr 0x{0:X8} but got {1}.", hr, e.GetType()));
-        }
+        Assert.NotNull(ptle);
         Utility.ValidateExceptionProperties(ptle, hResult: hr, validateMessage: false);
     }
 }

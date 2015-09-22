@@ -41,18 +41,8 @@ namespace System.Reflection.Extensions.Tests
                 methods.Add("Void Finalize()");
                 methods.Add("System.Object MemberwiseClone()");
 
-                foreach (MethodInfo mi in type.AsType().GetRuntimeMethods())
-                {
-                    if (methods.Remove(mi.ToString()))
-                        continue;
-
-                    Assert.False(true, String.Format("Type: {0}, Method: {1} is not expected", type, mi));
-                }
-
-                foreach (String methodName in methods)
-                {
-                    Assert.False(true, String.Format("Method: {0} cannot be found", methodName));
-                }
+                Assert.All(type.AsType().GetRuntimeMethods(), m => Assert.True(methods.Remove(m.ToString())));
+                Assert.Empty(methods);
             }
         }
 
@@ -79,18 +69,8 @@ namespace System.Reflection.Extensions.Tests
                 if (type.GetDeclaredField("NewFieldNames") != null)
                     fields.AddRange((IEnumerable<String>)type.GetDeclaredField("NewFieldNames").GetValue(null));
 
-                foreach (FieldInfo fi in type.AsType().GetRuntimeFields())
-                {
-                    if (fields.Remove(fi.Name))
-                        continue;
-
-                    Assert.False(true, String.Format("Type: {0}, Field: {1} is not expected", type, fi));
-                }
-
-                foreach (String fieldName in fields)
-                {
-                    Assert.False(true, String.Format("Field: {0} cannot be found", fieldName));
-                }
+                Assert.All(type.AsType().GetRuntimeFields(), f => Assert.True(fields.Remove(f.Name)));
+                Assert.Empty(fields);
             }
         }
 

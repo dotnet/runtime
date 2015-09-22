@@ -217,79 +217,50 @@ public class FileVersionInfoTest
     private void VerifyVersionInfo(String filePath, MyFVI expected)
     {
         FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(filePath);
-        TestStringProperty("Comments", fvi.Comments, expected.Comments);
-        TestStringProperty("CompanyName", fvi.CompanyName, expected.CompanyName);
-        TestProperty<int>("FileBuildPart", fvi.FileBuildPart, expected.FileBuildPart);
-        TestStringProperty("FileDescription", fvi.FileDescription, expected.FileDescription);
-        TestProperty<int>("FileMajorPart", fvi.FileMajorPart, expected.FileMajorPart);
-        TestProperty<int>("FileMinorPart", fvi.FileMinorPart, expected.FileMinorPart);
-        TestStringProperty("FileName", fvi.FileName, expected.FileName);
-        TestProperty<int>("FilePrivatePart", fvi.FilePrivatePart, expected.FilePrivatePart);
-        TestStringProperty("FileVersion", fvi.FileVersion, expected.FileVersion);
-        TestStringProperty("InternalName", fvi.InternalName, expected.InternalName);
-        TestProperty<bool>("IsDebug", fvi.IsDebug, expected.IsDebug);
-        TestProperty<bool>("IsPatched", fvi.IsPatched, expected.IsPatched);
-        TestProperty<bool>("IsPrivateBuild", fvi.IsPrivateBuild, expected.IsPrivateBuild);
-        TestProperty<bool>("IsPreRelease", fvi.IsPreRelease, expected.IsPreRelease);
-        TestProperty<bool>("IsSpecialBuild", fvi.IsSpecialBuild, expected.IsSpecialBuild);
-        TestStringProperty("Language", fvi.Language, expected.Language, expected.Language2, false);
-        TestStringProperty("LegalCopyright", fvi.LegalCopyright, expected.LegalCopyright, false);
-        TestStringProperty("LegalTrademarks", fvi.LegalTrademarks, expected.LegalTrademarks);
-        TestStringProperty("OriginalFilename", fvi.OriginalFilename, expected.OriginalFilename);
-        TestStringProperty("PrivateBuild", fvi.PrivateBuild, expected.PrivateBuild);
-        TestProperty<int>("ProductBuildPart", fvi.ProductBuildPart, expected.ProductBuildPart);
-        TestProperty<int>("ProductMajorPart", fvi.ProductMajorPart, expected.ProductMajorPart);
-        TestProperty<int>("ProductMinorPart", fvi.ProductMinorPart, expected.ProductMinorPart);
-        TestStringProperty("ProductName", fvi.ProductName, expected.ProductName, false);
-        TestProperty<int>("ProductPrivatePart", fvi.ProductPrivatePart, expected.ProductPrivatePart);
-        TestStringProperty("ProductVersion", fvi.ProductVersion, expected.ProductVersion, false);
-        TestStringProperty("SpecialBuild", fvi.SpecialBuild, expected.SpecialBuild);
+        Assert.Equal(expected.Comments, fvi.Comments);
+        Assert.Equal(expected.CompanyName, fvi.CompanyName);
+        Assert.Equal(expected.FileBuildPart, fvi.FileBuildPart);
+        Assert.Equal(expected.FileDescription, fvi.FileDescription);
+        Assert.Equal(expected.FileMajorPart, fvi.FileMajorPart);
+        Assert.Equal(expected.FileMinorPart, fvi.FileMinorPart);
+        Assert.Equal(expected.FileName, fvi.FileName);
+        Assert.Equal(expected.FilePrivatePart, fvi.FilePrivatePart);
+        Assert.Equal(expected.FileVersion, fvi.FileVersion);
+        Assert.Equal(expected.InternalName, fvi.InternalName);
+        Assert.Equal(expected.IsDebug, fvi.IsDebug);
+        Assert.Equal(expected.IsPatched, fvi.IsPatched);
+        Assert.Equal(expected.IsPrivateBuild, fvi.IsPrivateBuild);
+        Assert.Equal(expected.IsPreRelease, fvi.IsPreRelease);
+        Assert.Equal(expected.IsSpecialBuild, fvi.IsSpecialBuild);
+        Assert.Contains(fvi.Language, new[] { expected.Language, expected.Language2 });
+        Assert.Equal(expected.LegalCopyright, fvi.LegalCopyright);
+        Assert.Equal(expected.LegalTrademarks, fvi.LegalTrademarks);
+        Assert.Equal(expected.OriginalFilename, fvi.OriginalFilename);
+        Assert.Equal(expected.PrivateBuild, fvi.PrivateBuild);
+        Assert.Equal(expected.ProductBuildPart, fvi.ProductBuildPart);
+        Assert.Equal(expected.ProductMajorPart, fvi.ProductMajorPart);
+        Assert.Equal(expected.ProductMinorPart, fvi.ProductMinorPart);
+        Assert.Equal(expected.ProductName, fvi.ProductName);
+        Assert.Equal(expected.ProductPrivatePart, fvi.ProductPrivatePart);
+        Assert.Equal(expected.ProductVersion, fvi.ProductVersion);
+        Assert.Equal(expected.SpecialBuild, fvi.SpecialBuild);
 
         //ToString
         String nl = Environment.NewLine;
-        TestStringProperty("ToString()", fvi.ToString(),
-                 "File:             " + fvi.FileName + nl +
-                 "InternalName:     " + fvi.InternalName + nl +
-                 "OriginalFilename: " + fvi.OriginalFilename + nl +
-                 "FileVersion:      " + fvi.FileVersion + nl +
-                 "FileDescription:  " + fvi.FileDescription + nl +
-                 "Product:          " + fvi.ProductName + nl +
-                 "ProductVersion:   " + fvi.ProductVersion + nl +
-                 "Debug:            " + fvi.IsDebug.ToString() + nl +
-                 "Patched:          " + fvi.IsPatched.ToString() + nl +
-                 "PreRelease:       " + fvi.IsPreRelease.ToString() + nl +
-                 "PrivateBuild:     " + fvi.IsPrivateBuild.ToString() + nl +
-                 "SpecialBuild:     " + fvi.IsSpecialBuild.ToString() + nl +
-                 "Language:         " + fvi.Language + nl,
-                               false);
-    }
-
-    private void TestStringProperty(String propertyName, String actual, String expected)
-    {
-        TestStringProperty(propertyName, actual, expected, true);
-    }
-
-    private void TestStringProperty(String propertyName, String actual, String expected, bool testOnNonEnglishPlatform)
-    {
-        TestStringProperty(propertyName, actual, expected, null, true);
-    }
-
-    private void TestStringProperty(String propertyName, String actual, String expected, String alternate, bool testOnNonEnglishPlatform)
-    {
-        if (testOnNonEnglishPlatform || CultureInfo.CurrentCulture.Name == "en-US")
-        {
-            if ((actual == null && expected != null) ||
-                (actual != null && !actual.Equals(expected) && !actual.Equals(alternate)))
-            {
-                Assert.True(false, string.Format("Error - Property '{0}' incorrect.  Expected == {1}, Actual == {2}, Alternate == {3}",
-                    propertyName, GetUnicodeString(expected), GetUnicodeString(actual), GetUnicodeString(alternate)));
-            }
-        }
-    }
-
-    private void TestProperty<T>(String propertyName, T actual, T expected)
-    {
-        Assert.Equal(expected, actual);
+        Assert.Equal("File:             " + fvi.FileName + nl +
+                  "InternalName:     " + fvi.InternalName + nl +
+                  "OriginalFilename: " + fvi.OriginalFilename + nl +
+                  "FileVersion:      " + fvi.FileVersion + nl +
+                  "FileDescription:  " + fvi.FileDescription + nl +
+                  "Product:          " + fvi.ProductName + nl +
+                  "ProductVersion:   " + fvi.ProductVersion + nl +
+                  "Debug:            " + fvi.IsDebug.ToString() + nl +
+                  "Patched:          " + fvi.IsPatched.ToString() + nl +
+                  "PreRelease:       " + fvi.IsPreRelease.ToString() + nl +
+                  "PrivateBuild:     " + fvi.IsPrivateBuild.ToString() + nl +
+                  "SpecialBuild:     " + fvi.IsSpecialBuild.ToString() + nl +
+                  "Language:         " + fvi.Language + nl,
+                    fvi.ToString());
     }
 
     internal class MyFVI

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using Tests.Collections;
 
 namespace Test
 {
@@ -71,10 +72,7 @@ namespace Test
             // Creating ObservableCollection with empty IEnumerable.
             actualCol = new ObservableCollection<string>(new string[] { });
             Assert.Equal(0, actualCol.Count);
-            foreach (var item in actualCol)
-            {
-                Assert.True(false, "Should not be able to iterate over an empty collection.");
-            }
+            Assert.Empty(actualCol);
         }
 
         /// <summary>

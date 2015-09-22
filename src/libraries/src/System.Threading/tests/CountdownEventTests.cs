@@ -36,26 +36,15 @@ namespace System.Threading.Tests
         // Validates init, set, reset state transitions.
         private static void RunCountdownEventTest0_StateTrans(int initCount, int increms, bool takeAllAtOnce)
         {
-            string methodParameters = string.Format("RunCountdownEventTest0_StateTrans(initCount={0}, increms={1}, takeAllAtOnce={2})", initCount, increms, takeAllAtOnce);
-
             CountdownEvent ev = new CountdownEvent(initCount);
 
-            // Check initial count.
-            if (ev.InitialCount != initCount)
-            {
-                Debug.WriteLine(methodParameters);
-                Assert.True(false, string.Format("  > error: initial count wrong, saw {0} expected {1}", ev.InitialCount, initCount));
-            }
+            Assert.Equal(initCount, ev.InitialCount);
 
             // Increment (optionally).
-            for (int i = 0; i < increms; i++)
+            for (int i = 1; i < increms + 1; i++)
             {
                 ev.AddCount();
-                if (ev.CurrentCount != initCount + i + 1)
-                {
-                    Debug.WriteLine(methodParameters);
-                    Assert.True(false, string.Format("  > error: after incrementing, count is wrong, saw {0}, expect {1}", ev.CurrentCount, initCount + i + 1));
-                }
+                Assert.Equal(initCount + i, ev.CurrentCount);
             }
 
             // Decrement until it hits 0.
@@ -67,34 +56,17 @@ namespace System.Threading.Tests
             {
                 for (int i = 0; i < initCount + increms; i++)
                 {
-                    if (ev.IsSet)
-                    {
-                        Debug.WriteLine(methodParameters);
-                        Assert.True(false, string.Format("  > error: latch is set after {0} signals", i));
-                    }
+                    Assert.False(ev.IsSet, string.Format("  > error: latch is set after {0} signals", i));
                     ev.Signal();
                 }
             }
 
-            // Check the status.
-            if (!ev.IsSet)
-            {
-                Debug.WriteLine(methodParameters);
-                Assert.True(false, string.Format("  > error: latch was not set after all signals received"));
-            }
-            if (ev.CurrentCount != 0)
-            {
-                Debug.WriteLine(methodParameters);
-                Assert.True(false, string.Format("  > error: latch count wasn't 0 after all signals received"));
-            }
+            Assert.True(ev.IsSet);
+            Assert.Equal(0, ev.CurrentCount);
 
             // Now reset the event and check its count.
             ev.Reset();
-            if (ev.CurrentCount != ev.InitialCount)
-            {
-                Debug.WriteLine(methodParameters);
-                Assert.True(false, string.Format("  > error: latch count wasn't correctly reset"));
-            }
+            Assert.Equal(ev.InitialCount, ev.CurrentCount);
         }
 
         // Tries some simple timeout cases.
@@ -102,23 +74,9 @@ namespace System.Threading.Tests
         {
             // Wait on the event.
             CountdownEvent ev = new CountdownEvent(999);
-            if (ev.Wait(ms))
-            {
-                Debug.WriteLine("RunCountdownEventTest1_SimpleTimeout(ms={0})", ms);
-                Assert.True(false, string.Format("  > error: wait returned true, yet it was supposed to timeout"));
-            }
-
-            if (ev.IsSet)
-            {
-                Debug.WriteLine("RunCountdownEventTest1_SimpleTimeout(ms={0})", ms);
-                Assert.True(false, string.Format("  > error: event says it was set...  shouldn't be"));
-            }
-
-            if (ev.WaitHandle.WaitOne(ms))
-            {
-                Debug.WriteLine("RunCountdownEventTest1_SimpleTimeout(ms={0})", ms);
-                Assert.True(false, string.Format("  > error: WaitHandle.Wait returned true, yet it was supposed to timeout"));
-            }
+            Assert.False(ev.Wait(ms));
+            Assert.False(ev.IsSet);
+            Assert.False(ev.WaitHandle.WaitOne(ms));
         }
         [Fact]
         public static void RunCountdownEventTest2_Exceptions()

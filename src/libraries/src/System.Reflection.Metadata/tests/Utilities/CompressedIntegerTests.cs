@@ -34,13 +34,13 @@ namespace System.Reflection.Metadata.Tests
             // These examples are straight from the CLI spec.
             // Test that our compression routine (written below for test purposes) encodes them the same way. 
 
-            AssertEx.Equal(CompressUnsignedInteger(0x03), new byte[] { 0x03 });
-            AssertEx.Equal(CompressUnsignedInteger(0x7F), new byte[] { 0x7f });
-            AssertEx.Equal(CompressUnsignedInteger(0x80), new byte[] { 0x80, 0x80 });
-            AssertEx.Equal(CompressUnsignedInteger(0x2E57), new byte[] { 0xAE, 0x57 });
-            AssertEx.Equal(CompressUnsignedInteger(0x3FFF), new byte[] { 0xBF, 0xFF });
-            AssertEx.Equal(CompressUnsignedInteger(0x4000), new byte[] { 0xC0, 0x00, 0x40, 0x00 });
-            AssertEx.Equal(CompressUnsignedInteger(0x1FFFFFFF), new byte[] { 0xDF, 0xFF, 0xFF, 0xFF });
+            Assert.Equal(CompressUnsignedInteger(0x03), new byte[] { 0x03 });
+            Assert.Equal(CompressUnsignedInteger(0x7F), new byte[] { 0x7f });
+            Assert.Equal(CompressUnsignedInteger(0x80), new byte[] { 0x80, 0x80 });
+            Assert.Equal(CompressUnsignedInteger(0x2E57), new byte[] { 0xAE, 0x57 });
+            Assert.Equal(CompressUnsignedInteger(0x3FFF), new byte[] { 0xBF, 0xFF });
+            Assert.Equal(CompressUnsignedInteger(0x4000), new byte[] { 0xC0, 0x00, 0x40, 0x00 });
+            Assert.Equal(CompressUnsignedInteger(0x1FFFFFFF), new byte[] { 0xDF, 0xFF, 0xFF, 0xFF });
         }
 
         [Fact]
@@ -103,14 +103,14 @@ namespace System.Reflection.Metadata.Tests
         {
             // These examples are straight from the CLI spec.
             // Test that our compression routine (written below for test purposes) encodes them the same way. 
-            AssertEx.Equal(CompressSignedInteger(3), new byte[] { 0x06 });
-            AssertEx.Equal(CompressSignedInteger(-3), new byte[] { 0x7b });
-            AssertEx.Equal(CompressSignedInteger(64), new byte[] { 0x80, 0x80 });
-            AssertEx.Equal(CompressSignedInteger(-64), new byte[] { 0x01 });
-            AssertEx.Equal(CompressSignedInteger(8192), new byte[] { 0xC0, 0x00, 0x40, 0x00 });
-            AssertEx.Equal(CompressSignedInteger(-8192), new byte[] { 0x80, 0x01 });
-            AssertEx.Equal(CompressSignedInteger(268435455), new byte[] { 0xDF, 0xFF, 0xFF, 0xFE });
-            AssertEx.Equal(CompressSignedInteger(-268435456), new byte[] { 0xC0, 0x00, 0x00, 0x01 });
+            Assert.Equal(CompressSignedInteger(3), new byte[] { 0x06 });
+            Assert.Equal(CompressSignedInteger(-3), new byte[] { 0x7b });
+            Assert.Equal(CompressSignedInteger(64), new byte[] { 0x80, 0x80 });
+            Assert.Equal(CompressSignedInteger(-64), new byte[] { 0x01 });
+            Assert.Equal(CompressSignedInteger(8192), new byte[] { 0xC0, 0x00, 0x40, 0x00 });
+            Assert.Equal(CompressSignedInteger(-8192), new byte[] { 0x80, 0x01 });
+            Assert.Equal(CompressSignedInteger(268435455), new byte[] { 0xDF, 0xFF, 0xFF, 0xFE });
+            Assert.Equal(CompressSignedInteger(-268435456), new byte[] { 0xC0, 0x00, 0x00, 0x01 });
         }
 
         [Fact]
