@@ -2,9 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.IO;
-using System.Threading;
+using System.Runtime.InteropServices;
 
 using Microsoft.Win32.SafeHandles;
 using Internal.Cryptography;
@@ -41,25 +40,66 @@ namespace System.Security.Cryptography
 
             SafeEcKeyHandle ecKeyHandle = SafeEcKeyHandle.DuplicateHandle(handle);
 
-            int nid = Interop.libcrypto.EcKeyGetCurveName(ecKeyHandle);
-            int keySize = 0;
-            for (int i = 0; i < s_supportedAlgorithms.Length; i++)
+            // Set base.KeySize rather than this.KeySize to avoid an unnecessary Lazy<> allocation.
+            base.KeySize = GetKeySize(ecKeyHandle);
+            _key = new Lazy<SafeEcKeyHandle>(() => ecKeyHandle);
+        }
+
+        /// <summary>
+        /// Create an ECDsaOpenSsl from an <see cref="SafeEvpPKeyHandle"/> whose value is an existing
+        /// OpenSSL <c>EVP_PKEY*</c> wrapping an <c>EC_KEY*</c>
+        /// </summary>
+        /// <param name="pkeyHandle">A SafeHandle for an OpenSSL <c>EVP_PKEY*</c></param>
+        /// <exception cref="ArgumentNullException"><paramref name="pkeyHandle"/> is <c>null</c></exception>
+        /// <exception cref="ArgumentException"><paramref name="pkeyHandle"/> <see cref="SafeHandle.IsInvalid" /></exception>
+        /// <exception cref="CryptographicException"><paramref name="pkeyHandle"/> is not a valid enveloped <c>EC_KEY*</c></exception>
+        public ECDsaOpenSsl(SafeEvpPKeyHandle pkeyHandle)
+        {
+            if (pkeyHandle == null)
+                throw new ArgumentNullException("pkeyHandle");
+            if (pkeyHandle.IsInvalid)
+                throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, "pkeyHandle");
+
+            // If ecKey is valid it has already been up-ref'd, so we can just use this handle as-is.
+            SafeEcKeyHandle ecKey = Interop.libcrypto.EVP_PKEY_get1_EC_KEY(pkeyHandle);
+
+            if (ecKey.IsInvalid)
             {
-                if (s_supportedAlgorithms[i].Nid == nid)
-                {
-                    keySize = s_supportedAlgorithms[i].KeySize;
-                    break;
-                }
-            }
-            if (keySize == 0)
-            {
-                string curveNameOid = Interop.libcrypto.OBJ_obj2txt_helper(Interop.libcrypto.OBJ_nid2obj(nid));
-                throw new NotSupportedException(SR.Format(SR.Cryptography_UnsupportedEcKeyAlgorithm, curveNameOid));
+                throw Interop.libcrypto.CreateOpenSslCryptographicException();
             }
 
             // Set base.KeySize rather than this.KeySize to avoid an unnecessary Lazy<> allocation.
-            base.KeySize = keySize;
-            _key = new Lazy<SafeEcKeyHandle>(() => ecKeyHandle);
+            base.KeySize = GetKeySize(ecKey);
+            _key = new Lazy<SafeEcKeyHandle>(() => ecKey);
+        }
+
+        /// <summary>
+        /// Obtain a SafeHandle version of an EVP_PKEY* which wraps an EC_KEY* equivalent
+        /// to the current key for this instance.
+        /// </summary>
+        /// <returns>A SafeHandle for the EC_KEY key in OpenSSL</returns>
+        public SafeEvpPKeyHandle DuplicateKeyHandle()
+        {
+            SafeEcKeyHandle currentKey = _key.Value;
+            SafeEvpPKeyHandle pkeyHandle = Interop.libcrypto.EVP_PKEY_new();
+
+            try
+            {
+                // Wrapping our key in an EVP_PKEY will up_ref our key.
+                // When the EVP_PKEY is Disposed it will down_ref the key.
+                // So everything should be copacetic.
+                if (!Interop.libcrypto.EVP_PKEY_set1_EC_KEY(pkeyHandle, currentKey))
+                {
+                    throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                }
+
+                return pkeyHandle;
+            }
+            catch
+            {
+                pkeyHandle.Dispose();
+                throw;
+            }
         }
 
         public override int KeySize
@@ -148,6 +188,29 @@ namespace System.Security.Cryptography
                     handle.Dispose();
                 }
             }
+        }
+
+        private static int GetKeySize(SafeEcKeyHandle ecKeyHandle)
+        {
+            int nid = Interop.libcrypto.EcKeyGetCurveName(ecKeyHandle);
+            int keySize = 0;
+
+            for (int i = 0; i < s_supportedAlgorithms.Length; i++)
+            {
+                if (s_supportedAlgorithms[i].Nid == nid)
+                {
+                    keySize = s_supportedAlgorithms[i].KeySize;
+                    break;
+                }
+            }
+
+            if (keySize == 0)
+            {
+                string curveNameOid = Interop.libcrypto.OBJ_obj2txt_helper(Interop.libcrypto.OBJ_nid2obj(nid));
+                throw new NotSupportedException(SR.Format(SR.Cryptography_UnsupportedEcKeyAlgorithm, curveNameOid));
+            }
+
+            return keySize;
         }
 
         private SafeEcKeyHandle GenerateKey()

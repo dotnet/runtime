@@ -3,7 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-
+using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -28,7 +28,7 @@ internal static partial class Interop
         internal static extern SafePkcs12Handle PKCS12_create(
             string pass,
             string name,
-            SafeEvpPkeyHandle pkey,
+            SafeEvpPKeyHandle pkey,
             SafeX509Handle cert,
             SafeX509StackHandle ca,
             int nid_key,
@@ -39,6 +39,6 @@ internal static partial class Interop
 
         [DllImport(Libraries.LibCrypto, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool PKCS12_parse(SafePkcs12Handle p12, string pass, out SafeEvpPkeyHandle pkey, out SafeX509Handle cert, out SafeX509StackHandle ca);
+        internal static extern bool PKCS12_parse(SafePkcs12Handle p12, string pass, out SafeEvpPKeyHandle pkey, out SafeX509Handle cert, out SafeX509StackHandle ca);
     }
 }
