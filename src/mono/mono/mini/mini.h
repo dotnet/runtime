@@ -652,7 +652,7 @@ struct MonoBasicBlock {
 	/* Whenever this bblock starts a try block */
 	guint try_start : 1;
 
-#ifdef COMPILE_LLVM
+#ifdef ENABLE_LLVM
 	/* The offset of the CIL instruction in this bblock which ends a try block */
 	intptr_t try_end;
 #endif
@@ -1099,6 +1099,9 @@ typedef struct {
 	 */
 	gboolean mono_win_chained_exception_needs_run;
 
+	/* 
+	 * The current exception in flight
+	 */
 	guint32 thrown_exc;
 } MonoJitTlsData;
 
