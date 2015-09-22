@@ -2797,6 +2797,8 @@ Compiler::fgWalkResult  Compiler::fgWalkTreePost(GenTreePtr    *pTree,
  * Has this block been added to throw an inlined exception
  * Returns true if the block was added to throw one of:
  *    range-check exception
+ *    argument exception (used by feature SIMD)
+ *    argument range-check exception (used by feature SIMD)
  *    divide by zero exception  (Not used on X86/X64)
  *    null reference exception (Not currently used)
  *    overflow exception
@@ -2834,7 +2836,12 @@ bool                Compiler::fgIsThrowHlpBlk(BasicBlock * block)
         {
             return add->acdKind == SCK_RNGCHK_FAIL ||
                    add->acdKind == SCK_DIV_BY_ZERO ||
-                   add->acdKind == SCK_OVERFLOW;
+                   add->acdKind == SCK_OVERFLOW
+#ifndef RYUJIT_CTPBUILD
+                   || add->acdKind == SCK_ARG_EXCPN
+                   || add->acdKind == SCK_ARG_RNG_EXCPN
+#endif //!RYUJIT_CTPBUILD
+                   ;
         }
     }
 
@@ -2855,6 +2862,17 @@ unsigned            Compiler::fgThrowHlpBlkStkLevel(BasicBlock *block)
     {
         if  (block == add->acdDstBlk)
         {
+            // Compute assert cond separately as assert macro cannot have conditional compilation directives.
+            bool cond = (add->acdKind == SCK_RNGCHK_FAIL ||
+                         add->acdKind == SCK_DIV_BY_ZERO ||
+                         add->acdKind == SCK_OVERFLOW
+#ifndef RYUJIT_CTPBUILD
+                         || add->acdKind == SCK_ARG_EXCPN
+                         || add->acdKind == SCK_ARG_RNG_EXCPN
+#endif //!RYUJIT_CTPBUILD
+                        );
+            assert(cond);
+
             assert(add->acdKind == SCK_RNGCHK_FAIL ||
                    add->acdKind == SCK_DIV_BY_ZERO ||
                    add->acdKind == SCK_OVERFLOW);
