@@ -293,6 +293,13 @@ extern "C" int32_t Open(const char* path, int32_t flags, int32_t mode);
 extern "C" int32_t Close(int32_t fd);
 
 /**
+ * Duplicates a file descriptor.
+ *
+ * Returns the duplication descriptor for success, -1 for failure. Sets errno on failure.
+ */
+extern "C" int32_t Dup(int32_t oldfd);
+
+/**
  * Delete an entry from the file system. Implemented as shim to unlink(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.

@@ -3,7 +3,7 @@
 
 internal static partial class Interop
 {
-    internal static partial class libc
+    internal static partial class Sys
     {
         internal static class FileDescriptors
         {
