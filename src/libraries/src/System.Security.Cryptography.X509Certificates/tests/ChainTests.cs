@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.IO;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -39,6 +40,31 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(microsoftDotCom, chain.ChainElements[0].Certificate);
                 Assert.Equal(microsoftDotComIssuer, chain.ChainElements[1].Certificate);
                 Assert.Equal(microsoftDotComRoot, chain.ChainElements[2].Certificate);
+            }
+        }
+
+        /// <summary>
+        /// Tests that when a certificate chain has a root certification which is not trusted by the trust provider,
+        /// Build returns false and a ChainStatus returns UntrustedRoot
+        /// </summary>
+        [Fact]
+        [OuterLoop]
+        public static void BuildChainExtraStoreUntrustedRoot()
+        {
+            using (var testCert = new X509Certificate2(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword))
+            {
+                X509Certificate2Collection collection = new X509Certificate2Collection();
+                collection.Import(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword, X509KeyStorageFlags.DefaultKeySet);
+
+                X509Chain chain = new X509Chain();
+                chain.ChainPolicy.ExtraStore.AddRange(collection);
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = new DateTime(2015, 9, 22, 12, 25, 0);
+
+                bool valid = chain.Build(testCert);
+
+                Assert.False(valid);
+                Assert.Contains(chain.ChainStatus, s => s.Status == X509ChainStatusFlags.UntrustedRoot);
             }
         }
     }
