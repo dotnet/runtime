@@ -24,6 +24,7 @@
 #include "classnames.h"
 #include "system.h"
 #include "string.h"
+#include "sstring.h"
 #include "eeconfig.h"
 #include "assemblynative.hpp"
 #include "generics.h"
@@ -288,34 +289,29 @@ FCIMPL0(StringObject*, SystemNative::_GetModuleFileName)
 {
     FCALL_CONTRACT;
 
-    WCHAR wszFile[MAX_LONGPATH];
-    STRINGREF   refRetVal   = NULL;
-    LPCWSTR pFileName = NULL;
-    DWORD lgth = 0;
+    STRINGREF   refRetVal = NULL;
 
+    HELPER_METHOD_FRAME_BEGIN_RET_1(refRetVal);
     if (g_pCachedModuleFileName)
     {
-        pFileName = g_pCachedModuleFileName;
-        lgth = (DWORD)wcslen(pFileName);
+        refRetVal = StringObject::NewString(g_pCachedModuleFileName);
     }
     else
     {
-        HELPER_METHOD_FRAME_BEGIN_RET_1(refRetVal);
-        lgth = WszGetModuleFileName(NULL, wszFile, MAX_LONGPATH);
+        SString wszFilePathString;
+
+        WCHAR * wszFile = wszFilePathString.OpenUnicodeBuffer(MAX_LONGPATH);
+        DWORD lgth = WszGetModuleFileName(NULL, wszFile, MAX_LONGPATH);
         if (!lgth)
         {
             COMPlusThrowWin32();
         }
-        HELPER_METHOD_FRAME_END();
-        pFileName = wszFile;
-    }
+        wszFilePathString.CloseBuffer(lgth);
 
-    if(lgth)
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_1(refRetVal);
-        refRetVal = StringObject::NewString(pFileName, lgth);
-        HELPER_METHOD_FRAME_END();
+        refRetVal = StringObject::NewString(wszFilePathString.GetUnicode());
     }
+    HELPER_METHOD_FRAME_END();
+
     return (StringObject*)OBJECTREFToObject(refRetVal);
 }
 FCIMPLEND
@@ -347,14 +343,16 @@ FCIMPL0(StringObject*, SystemNative::GetRuntimeDirectory)
 {
     FCALL_CONTRACT;
 
-    wchar_t wszFile[MAX_LONGPATH+1];
     STRINGREF   refRetVal   = NULL;
     DWORD dwFile = MAX_LONGPATH+1;
 
     HELPER_METHOD_FRAME_BEGIN_RET_1(refRetVal);
+    SString wszFilePathString;
 
+    WCHAR * wszFile = wszFilePathString.OpenUnicodeBuffer(dwFile);
     HRESULT hr = GetInternalSystemDirectory(wszFile, &dwFile);
-
+    wszFilePathString.CloseBuffer(dwFile);
+    
     if(FAILED(hr))
         COMPlusThrowHR(hr);
 

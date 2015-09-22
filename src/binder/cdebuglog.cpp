@@ -334,7 +334,6 @@ namespace BINDER_SPACE
         CombinePath(g_BinderVariables->logPath, sCategory, logFilePath);
         CombinePath(logFilePath, m_applicationName, logFilePath);
         CombinePath(logFilePath, m_logFileName, logFilePath);
-        CanonicalizePath(logFilePath);
 
         BINDER_LOG_STRING(L"logFilePath", logFilePath);
 
