@@ -1006,6 +1006,15 @@ typedef InlineSString<512> StackSString;
 // be needed is small and it's preferable not to take up the stack space.
 typedef InlineSString<32>  SmallStackSString;
 
+// To be used specifically for path strings.
+#ifdef _DEBUG
+// This is a smaller version for debug builds to exercise the buffer allocation path
+typedef InlineSString<32> PathString;
+#else
+// Set it to the current MAX_PATH
+typedef InlineSString<260> PathString;
+#endif
+
 // ================================================================================
 // Quick macro to create an SString around a literal string.
 // usage:
