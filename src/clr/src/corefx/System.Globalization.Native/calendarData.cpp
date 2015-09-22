@@ -23,6 +23,8 @@
 #define ISLAMIC_UMALQURA_NAME "islamic-umalqura"
 #define ROC_NAME "roc"
 
+#define JAPANESE_LOCALE_AND_CALENDAR "ja_JP@calendar=japanese"
+
 /*
 * These values should be kept in sync with System.Globalization.CalendarId
 */
@@ -519,7 +521,7 @@ Gets the latest era in the Japanese calendar.
 extern "C" int32_t GetLatestJapaneseEra()
 {
 	UErrorCode err = U_ZERO_ERROR;
-	Locale japaneseLocale("ja_JP@calendar=japanese");
+	Locale japaneseLocale(JAPANESE_LOCALE_AND_CALENDAR);
 	LocalPointer<Calendar> calendar(Calendar::createInstance(japaneseLocale, err));
 
 	if (U_FAILURE(err))
@@ -540,8 +542,12 @@ extern "C" int32_t GetJapaneseEraStartDate(
 	int32_t* startMonth,
 	int32_t* startDay)
 {
+	*startYear = -1;
+	*startMonth = -1;
+	*startDay = -1;
+
 	UErrorCode err = U_ZERO_ERROR;
-	Locale japaneseLocale("ja_JP@calendar=japanese");
+	Locale japaneseLocale(JAPANESE_LOCALE_AND_CALENDAR);
 	LocalPointer<Calendar> calendar(Calendar::createInstance(japaneseLocale, err));
 	if (U_FAILURE(err))
 		return false;
