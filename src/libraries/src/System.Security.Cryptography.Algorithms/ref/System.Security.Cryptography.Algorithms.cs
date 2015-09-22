@@ -20,6 +20,16 @@ namespace System.Security.Cryptography
         public abstract byte[] GetBytes(int cb);
         public abstract void Reset();
     }
+    public abstract class DES : System.Security.Cryptography.SymmetricAlgorithm
+    {
+        protected DES() {}
+        public override byte[] Key { get { return default(byte[]); } set { } }
+        public override System.Security.Cryptography.KeySizes[] LegalBlockSizes { get { return default(System.Security.Cryptography.KeySizes[]); } }
+        public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { return default(System.Security.Cryptography.KeySizes[]); } }
+        public static System.Security.Cryptography.DES Create() { return default(System.Security.Cryptography.DES); }
+        public static bool IsSemiWeakKey(byte[] rgbKey) { return default(bool); }
+        public static bool IsWeakKey(byte[] rgbKey) { return default(bool); }
+    }
     public abstract partial class ECDsa : System.Security.Cryptography.AsymmetricAlgorithm
     {
         protected ECDsa() {}
@@ -77,6 +87,15 @@ namespace System.Security.Cryptography
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public abstract void GetBytes(byte[] data);
+    }
+    public abstract class RC2 : System.Security.Cryptography.SymmetricAlgorithm
+    {
+        protected RC2() {}
+        public virtual int EffectiveKeySize { get { return default(int); } set { } }
+        public override int KeySize { get { return default(int); } set { } }
+        public override System.Security.Cryptography.KeySizes[] LegalBlockSizes { get { return default(System.Security.Cryptography.KeySizes[]); } }
+        public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { return default(System.Security.Cryptography.KeySizes[]); } }
+        public static System.Security.Cryptography.RC2 Create() { return default(System.Security.Cryptography.RC2); }
     }
     public partial class Rfc2898DeriveBytes : System.Security.Cryptography.DeriveBytes
     {
@@ -181,5 +200,14 @@ namespace System.Security.Cryptography
     {
         protected SHA512() { }
         public static System.Security.Cryptography.SHA512 Create() { return default(System.Security.Cryptography.SHA512); }
+    }
+    public abstract class TripleDES : System.Security.Cryptography.SymmetricAlgorithm
+    {
+        protected TripleDES() {}
+        public override byte[] Key { get { return default(byte[]); } set { } }
+        public override System.Security.Cryptography.KeySizes[] LegalBlockSizes { get { return default(System.Security.Cryptography.KeySizes[]); } }
+        public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { return default(System.Security.Cryptography.KeySizes[]); } }
+        public static System.Security.Cryptography.TripleDES Create() { return default(System.Security.Cryptography.TripleDES); }
+        public static bool IsWeakKey(byte[] rgbKey) { return default(bool); }
     }
 }
