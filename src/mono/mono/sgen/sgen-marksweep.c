@@ -1210,7 +1210,7 @@ static void major_scan_object_with_evacuation (GCObject *start, mword desc, Sgen
 #include "sgen-marksweep-drain-gray-stack.h"
 
 static gboolean
-drain_gray_stack (ScanCopyContext ctx)
+drain_gray_stack (SgenGrayQueue *queue)
 {
 	gboolean evacuation = FALSE;
 	int i;
@@ -1222,9 +1222,9 @@ drain_gray_stack (ScanCopyContext ctx)
 	}
 
 	if (evacuation)
-		return drain_gray_stack_with_evacuation (ctx);
+		return drain_gray_stack_with_evacuation (queue);
 	else
-		return drain_gray_stack_no_evacuation (ctx);
+		return drain_gray_stack_no_evacuation (queue);
 }
 
 #include "sgen-marksweep-scan-object-concurrent.h"

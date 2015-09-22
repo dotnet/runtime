@@ -647,7 +647,7 @@ struct _SgenMajorCollector {
 	void (*finish_nursery_collection) (void);
 	void (*start_major_collection) (void);
 	void (*finish_major_collection) (ScannedObjectCounts *counts);
-	gboolean (*drain_gray_stack) (ScanCopyContext ctx);
+	gboolean (*drain_gray_stack) (SgenGrayQueue *ctx);
 	gboolean (*ptr_is_in_non_pinned_space) (char *ptr, char **start);
 	gboolean (*ptr_is_from_pinned_alloc) (char *ptr);
 	void (*report_pinned_memory_usage) (void);

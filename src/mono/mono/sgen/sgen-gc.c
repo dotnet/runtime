@@ -549,7 +549,7 @@ sgen_drain_gray_stack (int max_objs, ScanCopyContext ctx)
 	GrayQueue *queue = ctx.queue;
 
 	if (current_collection_generation == GENERATION_OLD && major_collector.drain_gray_stack)
-		return major_collector.drain_gray_stack (ctx);
+		return major_collector.drain_gray_stack (queue);
 
 	do {
 		int i;
