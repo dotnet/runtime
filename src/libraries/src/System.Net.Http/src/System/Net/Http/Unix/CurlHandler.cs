@@ -108,6 +108,14 @@ namespace System.Net.Http
             }
         }
 
+        internal bool SupportsRedirectConfiguration
+        {
+            get
+            {
+                return true;
+            }
+        }
+
         internal bool UseProxy
         {
             get
