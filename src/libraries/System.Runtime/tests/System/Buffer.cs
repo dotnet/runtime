@@ -34,41 +34,10 @@ public static unsafe class BufferTests
         Assert.Equal(b2[3], 0x3c);
         Assert.Equal(b2[4], 0x5e);
 
-        try
-        {
-            Buffer.BlockCopy(new String[3], 0, new int[3], 0, 0);
-            Assert.True(false, "BlockCopy should have thrown.");  //Array not primitive
-        }
-        catch (ArgumentException)
-        {
-        }
-
-        try
-        {
-            Buffer.BlockCopy(new byte[3], 3, new byte[3], 0, 1);
-            Assert.True(false, "BlockCopy should have thrown.");  // Buffer overrun
-        }
-        catch (ArgumentException)
-        {
-        }
-
-        try
-        {
-            Buffer.BlockCopy(new byte[3], 0, new byte[3], 3, 1);
-            Assert.True(false, "BlockCopy should have thrown.");  // Buffer overrun
-        }
-        catch (ArgumentException)
-        {
-        }
-
-        try
-        {
-            Buffer.BlockCopy(new byte[3], 0, new byte[3], 4, 0);  // Buffer overrun
-            Assert.True(false, "BlockCopy should have thrown.");
-        }
-        catch (ArgumentException)
-        {
-        }
+        Assert.Throws<ArgumentException>(() => Buffer.BlockCopy(new String[3], 0, new int[3], 0, 0));
+        Assert.Throws<ArgumentException>(() => Buffer.BlockCopy(new byte[3], 3, new byte[3], 0, 1));
+        Assert.Throws<ArgumentException>(() => Buffer.BlockCopy(new byte[3], 0, new byte[3], 3, 1));
+        Assert.Throws<ArgumentException>(() => Buffer.BlockCopy(new byte[3], 0, new byte[3], 4, 0));
     }
 
     public static IEnumerable<object[]> ByteLengthTestData

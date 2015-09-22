@@ -266,13 +266,14 @@ namespace LinkedList_LinkedList_ICollectionTests
             {
                 itemArray = Array.CreateInstance(invalidArrayTypes[i], _collection.Count);
                 tempItemArray = (Array)itemArray.Clone();
-                try
+                if (i == 0)
                 {
-                    _collection.CopyTo(itemArray, 0);
-                    Assert.True(false, "Err_46387ueiacgz: Exception not thrown invalid array type: " + invalidArrayTypes[i]);
+                    Assert.Throws<ArrayTypeMismatchException>(() => _collection.CopyTo(itemArray, 0));
                 }
-                catch (ArrayTypeMismatchException) { }
-                catch (ArgumentException) { }
+                else
+                {
+                    Assert.Throws<ArgumentException>(() => _collection.CopyTo(itemArray, 0));
+                }
                 VerifyItems(itemArray, tempItemArray);
             }
         }
@@ -507,12 +508,7 @@ namespace LinkedList_LinkedList_ICollectionTests
             bool _moveNextAtEndThrowsOnModifiedCollection = true;
             if (!atEnd || _moveNextAtEndThrowsOnModifiedCollection)
             {
-                try
-                {
-                    enumerator.MoveNext();
-                    Assert.True(false); //"Err_2507poaq: MoveNext() should have thrown an exception on a modified collection"
-                }
-                catch (InvalidOperationException) { }
+                Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
             }
             else
             {
@@ -520,13 +516,7 @@ namespace LinkedList_LinkedList_ICollectionTests
                 Assert.False(enumerator.MoveNext()); //"Err_3923lgtk: MoveNext() should have returned false at the end of the collection"
             }
 
-            //[] Verify Reset()
-            try
-            {
-                enumerator.Reset();
-                Assert.True(false); //"Err_1087pypa: Reset() should have thrown an exception on a modified collection"
-            }
-            catch (InvalidOperationException) { }
+            Assert.Throws<InvalidOperationException>(() => enumerator.Reset());
         }
 
         private void VerifyItems(Object[] actualItems, Object[] expectedItems)

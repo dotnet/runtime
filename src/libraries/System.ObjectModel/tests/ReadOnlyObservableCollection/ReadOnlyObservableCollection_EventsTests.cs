@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using Tests.Collections;
 
 namespace Test
 {
@@ -116,10 +117,7 @@ namespace Test
             Guid[] anArray = { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
             ObservableCollection<Guid> collection = new ObservableCollection<Guid>(anArray);
             ReadOnlyObservableCollection<Guid> readonlyCol = new ReadOnlyObservableCollection<Guid>(collection);
-            ((INotifyCollectionChanged)readonlyCol).CollectionChanged += (o, e) =>
-            {
-                Assert.True(false, "Should not have thrown collection changed event when removing items from invalid indices");
-            };
+            ((INotifyCollectionChanged)readonlyCol).CollectionChanged += (o, e) => { throw new ShouldNotBeInvokedException(); };
 
             int[] iArrInvalidValues = new Int32[] { -1, -2, -100, -1000, -10000, -100000, -1000000, -10000000, -100000000, -1000000000, Int32.MinValue };
             foreach (var index in iArrInvalidValues)
@@ -167,10 +165,7 @@ namespace Test
             string[] anArray = new string[] { "one", "two", "three", "four" };
             ObservableCollection<string> collection = new ObservableCollection<string>(anArray);
             ReadOnlyObservableCollection<string> readonlyCol = new ReadOnlyObservableCollection<string>(collection);
-            ((INotifyCollectionChanged)readonlyCol).CollectionChanged += (o, e) =>
-            {
-                Assert.True(false, "Should not have thrown collection changed event when removing items from invalid indices");
-            };
+            ((INotifyCollectionChanged)readonlyCol).CollectionChanged += (o, e) => { throw new ShouldNotBeInvokedException(); };
 
             int validIndex = 2;
             int[] iArrInvalidValues = new Int32[] { -1, -2, -100, -1000, -10000, -100000, -1000000, -10000000, -100000000, -1000000000, Int32.MinValue };
@@ -219,10 +214,7 @@ namespace Test
             Guid[] anArray = { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
             ObservableCollection<Guid> collection = new ObservableCollection<Guid>(anArray);
             ReadOnlyObservableCollection<Guid> readonlyCol = new ReadOnlyObservableCollection<Guid>(collection);
-            ((INotifyCollectionChanged)readonlyCol).CollectionChanged += (o, e) =>
-            {
-                Assert.True(false, "Should not have thrown collection changed event when removing items from invalid indices");
-            };
+            ((INotifyCollectionChanged)readonlyCol).CollectionChanged += (o, e) => { throw new ShouldNotBeInvokedException(); };
 
             Guid itemToInsert = Guid.NewGuid();
             int[] iArrInvalidValues = new Int32[] { -1, -2, -100, -1000, -10000, -100000, -1000000, -10000000, -100000000, -1000000000, Int32.MinValue };
@@ -485,18 +477,7 @@ namespace Test
             if (hasDuplicates)
                 return;
 
-            // ensuring that the item is not in the collection.
-            for (int i = 0; i < readOnlyCol.Count; i++)
-            {
-                if (itemToRemove == readOnlyCol[i])
-                {
-                    string itemsInCollection = "";
-                    foreach (var item in readOnlyCol)
-                        itemsInCollection += item + ", ";
-
-                    Assert.True(false, "Found item (" + itemToRemove + ") that should not be in the collection because we tried to remove it. Collection: " + itemsInCollection);
-                }
-            }
+            Assert.DoesNotContain(itemToRemove, collection);
 
             readOnlyCollectionChange.CollectionChanged -= Collection_CollectionChanged;
             readOnlyPropertyChanged.PropertyChanged -= Collection_PropertyChanged;

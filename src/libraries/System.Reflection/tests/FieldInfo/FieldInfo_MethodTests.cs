@@ -78,13 +78,7 @@ namespace System.Reflection.Tests
 
             // In Win8p Instead of TargetException , generic Exception is thrown.
             // Refer http://msdn.microsoft.com/en-us/library/system.reflection.fieldinfo.getvalue.aspx
-
-            try
-            {
-                string retValue = (String)fi.GetValue(null);
-                Assert.False(true, "Exception expected.");
-            }
-            catch (Exception) { }
+            Assert.ThrowsAny<Exception>(() => fi.GetValue(null));
         }
 
         //Verify GetValue method does not throw Exception when null is passed for static fields
@@ -204,12 +198,7 @@ namespace System.Reflection.Tests
 
             // In Win8p Instead of TargetException , generic Exception is thrown.
             // Refer http://msdn.microsoft.com/en-us/library/system.reflection.fieldinfo.getvalue.aspx
-            try
-            {
-                fi.SetValue(null, (object)newfieldValue);
-                Assert.False(true, "Exception expected.");
-            }
-            catch (Exception) { }
+            Assert.ThrowsAny<Exception>(() => fi.SetValue(null, (object)newfieldValue));
         }
 
         //Verify SetValue method does not throw Exception when null is passed for static fields
@@ -249,13 +238,7 @@ namespace System.Reflection.Tests
 
             // In Win8p Instead of TargetException, generic Exception is thrown.
             // Refer http://msdn.microsoft.com/en-us/library/system.reflection.fieldinfo.setvalue.aspx
-
-            try
-            {
-                fi.SetValue(null, (object)newfieldValue);
-                Assert.False(true, "Exception expected");
-            }
-            catch (Exception) { }
+            Assert.ThrowsAny<Exception>(() => fi.SetValue(null, (object)newfieldValue));
         }
 
         //Verify Equals method when two Fieldinfo objects are equal

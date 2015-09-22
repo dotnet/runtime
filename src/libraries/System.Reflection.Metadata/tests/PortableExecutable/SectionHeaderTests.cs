@@ -54,15 +54,15 @@ namespace System.Reflection.Metadata.Tests.PortableExecutable
 
             var header = new SectionHeader(ref reader);
 
-            AssertEx.AreEqual(name, header.Name);
-            AssertEx.AreEqual(virtualSize, header.VirtualSize);
-            AssertEx.AreEqual(virtualAddress, header.VirtualAddress);
-            AssertEx.AreEqual(sizeOfRawData, header.SizeOfRawData);
-            AssertEx.AreEqual(ptrToRawData, header.PointerToRawData);
-            AssertEx.AreEqual(ptrToLineNumbers, header.PointerToLineNumbers);
-            AssertEx.AreEqual(numRelocations, header.NumberOfRelocations);
-            AssertEx.AreEqual(numLineNumbers, header.NumberOfLineNumbers);
-            AssertEx.AreEqual(characteristics, header.SectionCharacteristics);
+            Assert.Equal(name, header.Name);
+            Assert.Equal(virtualSize, header.VirtualSize);
+            Assert.Equal(virtualAddress, header.VirtualAddress);
+            Assert.Equal(sizeOfRawData, header.SizeOfRawData);
+            Assert.Equal(ptrToRawData, header.PointerToRawData);
+            Assert.Equal(ptrToLineNumbers, header.PointerToLineNumbers);
+            Assert.Equal(numRelocations, header.NumberOfRelocations);
+            Assert.Equal(numLineNumbers, header.NumberOfLineNumbers);
+            Assert.Equal(characteristics, header.SectionCharacteristics);
         }
 
         private static byte[] PadSectionName(string name)

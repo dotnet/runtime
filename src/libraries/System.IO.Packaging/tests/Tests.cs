@@ -12,10 +12,10 @@ namespace System.IO.Packaging.Tests
 {
     public class Tests
     {
-        private string Mime_MediaTypeNames_Text_Xml = "text/xml";
-        private string Mime_MediaTypeNames_Image_Jpeg = "image/jpeg"; // System.Net.Mime.MediaTypeNames.Image.Jpeg
-        private static string s_DocumentXml = @"<Hello>Test</Hello>";
-        private static string s_ResourceXml = @"<Resource>Test</Resource>";
+        private const string Mime_MediaTypeNames_Text_Xml = "text/xml";
+        private const string Mime_MediaTypeNames_Image_Jpeg = "image/jpeg"; // System.Net.Mime.MediaTypeNames.Image.Jpeg
+        private const string s_DocumentXml = @"<Hello>Test</Hello>";
+        private const string s_ResourceXml = @"<Resource>Test</Resource>";
 
         private static FileInfo GetFileSavedWithGuidName(string test, string name)
         {
@@ -1628,29 +1628,12 @@ namespace System.IO.Packaging.Tests
                 ms.Write(ba, 0, ba.Length);
                 using (Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite))
                 {
-                    try
-                    {
-                        PackageRelationship docPackageRelationship =
-                                      package
-                                      .GetRelationshipsByType(DocumentRelationshipType)
-                                      .FirstOrDefault();
-                        if (docPackageRelationship != null)
-                        {
-                            Uri documentUri = new Uri("/worddummy/document.xml", UriKind.Relative);
-                            PackagePart documentPart = package.GetPart(documentUri);
+                    PackageRelationship docPackageRelationship =
+                        package.GetRelationshipsByType(DocumentRelationshipType).FirstOrDefault();
+                    Assert.NotNull(docPackageRelationship);
 
-                            //  Load the document XML in the part into an XDocument instance.
-                            var xDoc = XDocument.Load(XmlReader.Create(documentPart.GetStream()));
-                            Assert.NotNull(xDoc);
-                        }
-                    }
-                    catch (InvalidOperationException)
-                    {
-                    }
-                    catch (Exception)
-                    {
-                        Assert.True(false);
-                    }
+                    Uri documentUri = new Uri("/worddummy/document.xml", UriKind.Relative);
+                    Assert.Throws<InvalidOperationException>(() => package.GetPart(documentUri));
                 }
             }
         }
@@ -1667,29 +1650,16 @@ namespace System.IO.Packaging.Tests
                 ms.Write(ba, 0, ba.Length);
                 using (Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite))
                 {
-                    try
-                    {
-                        PackageRelationship docPackageRelationship =
-                                      package
-                                      .GetRelationshipsByType(DocumentRelationshipType)
-                                      .FirstOrDefault();
-                        if (docPackageRelationship != null)
-                        {
-                            Uri documentUri = new Uri("/word/document.xml", UriKind.Relative);
-                            PackagePart documentPart = package.GetPart(documentUri);
+                    PackageRelationship docPackageRelationship =
+                        package.GetRelationshipsByType(DocumentRelationshipType).FirstOrDefault();
+                    Assert.NotNull(docPackageRelationship);
 
-                            //  Load the document XML in the part into an XDocument instance.
-                            var xDoc = XDocument.Load(XmlReader.Create(documentPart.GetStream()));
-                            Assert.NotNull(xDoc);
-                        }
-                    }
-                    catch (InvalidOperationException)
-                    {
-                    }
-                    catch (Exception)
-                    {
-                        Assert.True(false);
-                    }
+                    Uri documentUri = new Uri("/word/document.xml", UriKind.Relative);
+                    PackagePart documentPart = package.GetPart(documentUri);
+
+                    //  Load the document XML in the part into an XDocument instance.
+                    var xDoc = XDocument.Load(XmlReader.Create(documentPart.GetStream()));
+                    Assert.NotNull(xDoc);
                 }
             }
         }
@@ -1707,46 +1677,34 @@ namespace System.IO.Packaging.Tests
                 ms.Write(ba, 0, ba.Length);
                 using (Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite))
                 {
-                    try
-                    {
-                        PackageRelationship docPackageRelationship =
-                                      package
-                                      .GetRelationshipsByType(DocumentRelationshipType)
-                                      .FirstOrDefault();
-                        if (docPackageRelationship != null)
-                        {
-                            Uri documentUri =
-                                PackUriHelper
-                                .ResolvePartUri(
-                                   new Uri("/", UriKind.Relative),
-                                         docPackageRelationship.TargetUri);
-                            PackagePart documentPart =
-                                package.GetPart(documentUri);
+                    PackageRelationship docPackageRelationship =
+                                  package
+                                  .GetRelationshipsByType(DocumentRelationshipType)
+                                  .FirstOrDefault();
 
-                            //  Load the document XML in the part into an XDocument instance.
-                            var xDoc = XDocument.Load(XmlReader.Create(documentPart.GetStream()));
+                    Assert.NotNull(docPackageRelationship);
+                    Uri documentUri =
+                        PackUriHelper
+                        .ResolvePartUri(
+                           new Uri("/", UriKind.Relative),
+                                 docPackageRelationship.TargetUri);
+                    PackagePart documentPart =
+                        package.GetPart(documentUri);
 
-                            //  Find the styles part. There will only be one.
-                            PackageRelationship styleRelation =
-                              documentPart.GetRelationshipsByType(StylesRelationshipType)
-                              .FirstOrDefault();
-                            if (styleRelation != null)
-                            {
-                                Uri styleUri = PackUriHelper.ResolvePartUri(documentUri, styleRelation.TargetUri);
-                                PackagePart stylePart = package.GetPart(styleUri);
+                    //  Load the document XML in the part into an XDocument instance.
+                    var xDoc = XDocument.Load(XmlReader.Create(documentPart.GetStream()));
 
-                                //  Load the style XML in the part into an XDocument instance.
-                                var styleDoc = XDocument.Load(XmlReader.Create(stylePart.GetStream()));
-                            }
-                        }
-                    }
-                    catch (InvalidOperationException)
-                    {
-                    }
-                    catch (Exception)
-                    {
-                        Assert.True(false);
-                    }
+                    //  Find the styles part. There will only be one.
+                    PackageRelationship styleRelation =
+                      documentPart.GetRelationshipsByType(StylesRelationshipType)
+                      .FirstOrDefault();
+                    Assert.NotNull(styleRelation);
+
+                    Uri styleUri = PackUriHelper.ResolvePartUri(documentUri, styleRelation.TargetUri);
+                    PackagePart stylePart = package.GetPart(styleUri);
+
+                    //  Load the style XML in the part into an XDocument instance.
+                    var styleDoc = XDocument.Load(XmlReader.Create(stylePart.GetStream()));
                 }
             }
         }
@@ -1779,30 +1737,8 @@ namespace System.IO.Packaging.Tests
                                                 TargetMode.Internal,
                                                 packageRelationshipType);
 
-                    try
-                    {
-                        // do it again
-                        packagePartDocument = package.CreatePart(partUriDocument, Mime_MediaTypeNames_Text_Xml);
-
-                        // Copy the data to the Document Part
-                        using (Stream partStream = packagePartDocument.GetStream())
-                        using (StreamWriter sw = new StreamWriter(partStream))
-                        {
-                            sw.Write(s_DocumentXml);
-                        }
-
-                        // Add a Package Relationship to the Document Part
-                        package.CreateRelationship(packagePartDocument.Uri,
-                                                    TargetMode.Internal,
-                                                    packageRelationshipType);
-                    }
-                    catch (InvalidOperationException)
-                    {
-                    }
-                    catch (Exception)
-                    {
-                        Assert.True(false);
-                    }
+                    // do it again
+                    Assert.Throws<InvalidOperationException>(() => package.CreatePart(partUriDocument, Mime_MediaTypeNames_Text_Xml));
                 }
             }
         }
@@ -1865,24 +1801,14 @@ namespace System.IO.Packaging.Tests
             var docName = "plain.docx";
             var ba = File.ReadAllBytes(docName);
 
-            try
+            using (MemoryStream ms = new MemoryStream())
             {
-                using (MemoryStream ms = new MemoryStream())
+                ms.Write(ba, 0, ba.Length);
+                using (Package package = Package.Open(ms, FileMode.Open, FileAccess.ReadWrite))
                 {
-                    ms.Write(ba, 0, ba.Length);
-                    using (Package package = Package.Open(ms, FileMode.Open, FileAccess.ReadWrite))
-                    {
-                        var partCount = package.GetParts().Count();
-                        Assert.Equal(10, partCount);
-                    }
+                    var partCount = package.GetParts().Count();
+                    Assert.Equal(10, partCount);
                 }
-            }
-            catch (IOException)
-            {
-            }
-            catch (Exception e)
-            {
-                Assert.True(false, "Caught exception: " + e.ToString());
             }
         }
 
@@ -1926,39 +1852,14 @@ namespace System.IO.Packaging.Tests
             var docName = "plain.docx";
             var fiGuidName = GetFileSavedWithGuidName("T011_PackageOpen", docName);
             var documentPath = "document.xml";
-            var packageRelationshipType = "http://packageRelType";
 
             Uri partUriDocument = PackUriHelper.CreatePartUri(
                                       new Uri(documentPath, UriKind.Relative));
 
-            try
+            using (Package package = Package.Open(fiGuidName.FullName, FileMode.Open, FileAccess.Read))
             {
-                using (Package package = Package.Open(fiGuidName.FullName, FileMode.Open, FileAccess.Read))
-                {
-                    PackagePart packagePartDocument =
-                        package.CreatePart(partUriDocument,
-                                       Mime_MediaTypeNames_Text_Xml,
-                                       CompressionOption.Normal);
-
-                    // Copy the data to the Document Part
-                    using (Stream partStream = packagePartDocument.GetStream())
-                    using (StreamWriter sw = new StreamWriter(partStream))
-                    {
-                        sw.Write(s_DocumentXml);
-                    }
-
-                    // Add a Package Relationship to the Document Part
-                    package.CreateRelationship(packagePartDocument.Uri,
-                                               TargetMode.Internal,
-                                               packageRelationshipType);
-                }
-            }
-            catch (IOException)
-            {
-            }
-            catch (Exception)
-            {
-                Assert.True(false);
+                Assert.Throws<IOException>(() =>
+                    package.CreatePart(partUriDocument, Mime_MediaTypeNames_Text_Xml, CompressionOption.Normal));
             }
             fiGuidName.Delete();
         }
@@ -2042,66 +1943,56 @@ namespace System.IO.Packaging.Tests
         [Fact]
         public void T006_CreateExternalRelationshipInvalidUri()
         {
+            var documentPath = "document.xml";
+            var resourcePath = "resources.xml";
+
+            var packageRelationshipType = "http://packageRelType";
+            var ResourceRelationshipType = "http://resourceRelType";
+
+            FileInfo packagePath2 = null;
             try
             {
-                var documentPath = "document.xml";
-                var resourcePath = "resources.xml";
+                packagePath2 = GetGuidNameForNewFile("T006_CreateExternalRelationshipInvalidUri", ".docx");
+                Uri partUriDocument2 = PackUriHelper.CreatePartUri(
+                                          new Uri(documentPath, UriKind.Relative));
+                Uri partUriResource2 = PackUriHelper.CreatePartUri(
+                          new Uri(resourcePath, UriKind.Relative));
 
-                var packageRelationshipType = "http://packageRelType";
-                var ResourceRelationshipType = "http://resourceRelType";
+                using (Package package = Package.Open(packagePath2.FullName, FileMode.Create))
+                {
+                    // Add the Document part to the Package
+                    PackagePart packagePartDocument =
+                        package.CreatePart(partUriDocument2,
+                                       Mime_MediaTypeNames_Text_Xml,
+                                       CompressionOption.Normal);
 
-				FileInfo packagePath2 = null;
-				try
-				{
-					packagePath2 = GetGuidNameForNewFile("T006_CreateExternalRelationshipInvalidUri", ".docx");
-					Uri partUriDocument2 = PackUriHelper.CreatePartUri(
-											  new Uri(documentPath, UriKind.Relative));
-					Uri partUriResource2 = PackUriHelper.CreatePartUri(
-							  new Uri(resourcePath, UriKind.Relative));
+                    // Copy the data to the Document Part
+                    var fiDocumentPath = GetGuidNameForNewFile("T006_CreateExternalRelationshipInvalidUri", ".xml");
+                    File.WriteAllText(fiDocumentPath.FullName, s_DocumentXml);
+                    using (FileStream fileStream = new FileStream(fiDocumentPath.FullName, FileMode.Open, FileAccess.Read))
+                    using (Stream partStream = packagePartDocument.GetStream())
+                    {
+                        CopyStream(fileStream, partStream);
+                    }
+                    fiDocumentPath.Delete();
 
-					using (Package package = Package.Open(packagePath2.FullName, FileMode.Create))
-					{
-						// Add the Document part to the Package
-						PackagePart packagePartDocument =
-							package.CreatePart(partUriDocument2,
-										   Mime_MediaTypeNames_Text_Xml,
-										   CompressionOption.Normal);
+                    // Add a Package Relationship to the Document Part
+                    package.CreateRelationship(packagePartDocument.Uri,
+                                               TargetMode.Internal,
+                                               packageRelationshipType);
 
-						// Copy the data to the Document Part
-						var fiDocumentPath = GetGuidNameForNewFile("T006_CreateExternalRelationshipInvalidUri", ".xml");
-						File.WriteAllText(fiDocumentPath.FullName, s_DocumentXml);
-						using (FileStream fileStream = new FileStream(fiDocumentPath.FullName, FileMode.Open, FileAccess.Read))
-						using (Stream partStream = packagePartDocument.GetStream())
-						{
-							CopyStream(fileStream, partStream);
-						}
-						fiDocumentPath.Delete();
+                    Uri uri = new Uri(@"c:/resources/image1.jpg", UriKind.Absolute);
 
-						// Add a Package Relationship to the Document Part
-						package.CreateRelationship(packagePartDocument.Uri,
-												   TargetMode.Internal,
-												   packageRelationshipType);
-
-						Uri uri = new Uri("a b c d e", UriKind.Absolute);
-
-						// Add external relationship
-						packagePartDocument.CreateRelationship(uri,
-															   TargetMode.External,
-															   ResourceRelationshipType);
-					}
-				}
-				finally
-				{
-					if (packagePath2 != null && packagePath2.Exists)
-						packagePath2.Delete();
-				}
+                    // Internal relationships cannot use absolute Uris
+                    Assert.Throws<ArgumentException>(() => packagePartDocument.CreateRelationship(uri,
+                                                                TargetMode.Internal,
+                                                                ResourceRelationshipType));
+                }
             }
-            catch (UriFormatException)
+            finally
             {
-            }
-            catch (Exception)
-            {
-                Assert.True(false);
+                if (packagePath2 != null && packagePath2.Exists)
+                    packagePath2.Delete();
             }
         }
 
@@ -2412,43 +2303,42 @@ namespace System.IO.Packaging.Tests
                   .GetRelationshipsByType(DocumentRelationshipType)
                   .FirstOrDefault();
 
-                if (docPackageRelationship != null)
+                Assert.NotNull(docPackageRelationship);
+
+                Uri documentUri =
+                    PackUriHelper
+                    .ResolvePartUri(
+                       new Uri("/", UriKind.Relative),
+                             docPackageRelationship.TargetUri);
+
+                var mainPart = package.GetPart(documentUri);
+
+                Assert.Throws<IOException>(() =>
                 {
-                    Uri documentUri =
-                        PackUriHelper
-                        .ResolvePartUri(
-                           new Uri("/", UriKind.Relative),
-                                 docPackageRelationship.TargetUri);
-
-                    var mainPart = package.GetPart(documentUri);
-
-                    Assert.Throws<IOException>(() =>
+                    using (Stream partStream = mainPart.GetStream(FileMode.Create, FileAccess.Read))
                     {
-                        using (Stream partStream = mainPart.GetStream(FileMode.Create, FileAccess.Read))
-                        {
-                            XDocument xd = XDocument.Load(partStream);
-                            Assert.True(xd.DescendantNodes().Count() != 0);
-                        }
-                    });
-
-                    // opening in create mode clears the part, so no data in it.
-                    Assert.Throws<XmlException>(() =>
-                    {
-                        using (Stream partStream = mainPart.GetStream(FileMode.Create, FileAccess.ReadWrite))
-                        {
-                            XDocument xd = XDocument.Load(partStream);
-                            Assert.True(xd.DescendantNodes().Count() != 0);
-                        }
-                    });
-
-                    using (Stream partStream = mainPart.GetStream(FileMode.Create, FileAccess.ReadWrite))
-                    using (StreamWriter sw = new StreamWriter(partStream))
-                    {
-                        sw.Write(s_DocumentXml);
+                        XDocument xd = XDocument.Load(partStream);
+                        Assert.Equal(0, xd.DescendantNodes().Count());
                     }
+                });
+
+                // opening in create mode clears the part, so no data in it.
+                Assert.Throws<XmlException>(() =>
+                {
+                    using (Stream partStream = mainPart.GetStream(FileMode.Create, FileAccess.ReadWrite))
+                    {
+                        XDocument xd = XDocument.Load(partStream);
+                        Assert.Equal(0, xd.DescendantNodes().Count());
+                    }
+                });
+
+                using (Stream partStream = mainPart.GetStream(FileMode.Create, FileAccess.ReadWrite))
+                using (StreamWriter sw = new StreamWriter(partStream))
+                {
+                    sw.Write(s_DocumentXml);
                 }
             }
-			tempGuidName.Delete();
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -2465,30 +2355,30 @@ namespace System.IO.Packaging.Tests
                   .GetRelationshipsByType(DocumentRelationshipType)
                   .FirstOrDefault();
 
-                if (docPackageRelationship != null)
+                Assert.NotNull(docPackageRelationship);
+
+                Uri documentUri =
+                    PackUriHelper
+                    .ResolvePartUri(
+                       new Uri("/", UriKind.Relative),
+                             docPackageRelationship.TargetUri);
+
+                var mainPart = package.GetPart(documentUri);
+
+                using (Stream partStream = mainPart.GetStream(FileMode.OpenOrCreate, FileAccess.Read))
                 {
-                    Uri documentUri =
-                        PackUriHelper
-                        .ResolvePartUri(
-                           new Uri("/", UriKind.Relative),
-                                 docPackageRelationship.TargetUri);
+                    XDocument xd = XDocument.Load(partStream);
+                    Assert.Equal(13, xd.DescendantNodes().Count());
+                }
 
-                    var mainPart = package.GetPart(documentUri);
-
-                    using (Stream partStream = mainPart.GetStream(FileMode.OpenOrCreate, FileAccess.Read))
-                    {
-                        XDocument xd = XDocument.Load(partStream);
-                        Assert.True(xd.DescendantNodes().Count() != 0);
-                    }
-
-                    using (Stream partStream = mainPart.GetStream(FileMode.OpenOrCreate, FileAccess.Write))
-                    using (StreamWriter sw = new StreamWriter(partStream))
-                    {
-                        sw.Write(s_DocumentXml);
-                    }
+                using (Stream partStream = mainPart.GetStream(FileMode.OpenOrCreate, FileAccess.Write))
+                using (StreamWriter sw = new StreamWriter(partStream))
+                {
+                    sw.Write(s_DocumentXml);
                 }
             }
-			tempGuidName.Delete();
+
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -2505,31 +2395,30 @@ namespace System.IO.Packaging.Tests
                   .GetRelationshipsByType(DocumentRelationshipType)
                   .FirstOrDefault();
 
-                if (docPackageRelationship != null)
+                Assert.NotNull(docPackageRelationship);
+
+                Uri documentUri =
+                    PackUriHelper
+                    .ResolvePartUri(
+                       new Uri("/", UriKind.Relative),
+                             docPackageRelationship.TargetUri);
+
+                var mainPart = package.GetPart(documentUri);
+
+                using (Stream partStream = mainPart.GetStream(FileMode.OpenOrCreate, FileAccess.ReadWrite))
                 {
-                    Uri documentUri =
-                        PackUriHelper
-                        .ResolvePartUri(
-                           new Uri("/", UriKind.Relative),
-                                 docPackageRelationship.TargetUri);
+                    XDocument xd = XDocument.Load(partStream);
+                    Assert.Equal(13, xd.DescendantNodes().Count());
+                }
 
-                    var mainPart = package.GetPart(documentUri);
-
-
-                    using (Stream partStream = mainPart.GetStream(FileMode.OpenOrCreate, FileAccess.ReadWrite))
-                    {
-                        XDocument xd = XDocument.Load(partStream);
-                        Assert.True(xd.DescendantNodes().Count() != 0);
-                    }
-
-                    using (Stream partStream = mainPart.GetStream(FileMode.Create, FileAccess.ReadWrite))
-                    using (StreamWriter sw = new StreamWriter(partStream))
-                    {
-                        sw.Write(s_DocumentXml);
-                    }
+                using (Stream partStream = mainPart.GetStream(FileMode.Create, FileAccess.ReadWrite))
+                using (StreamWriter sw = new StreamWriter(partStream))
+                {
+                    sw.Write(s_DocumentXml);
                 }
             }
-			tempGuidName.Delete();
+
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -2546,31 +2435,30 @@ namespace System.IO.Packaging.Tests
                   .GetRelationshipsByType(DocumentRelationshipType)
                   .FirstOrDefault();
 
-                if (docPackageRelationship != null)
+                Assert.NotNull(docPackageRelationship);
+
+                Uri documentUri =
+                    PackUriHelper
+                    .ResolvePartUri(
+                       new Uri("/", UriKind.Relative),
+                             docPackageRelationship.TargetUri);
+
+                var mainPart = package.GetPart(documentUri);
+
+                using (Stream partStream = mainPart.GetStream(FileMode.Open, FileAccess.ReadWrite))
                 {
-                    Uri documentUri =
-                        PackUriHelper
-                        .ResolvePartUri(
-                           new Uri("/", UriKind.Relative),
-                                 docPackageRelationship.TargetUri);
+                    XDocument xd = XDocument.Load(partStream);
+                    Assert.Equal(13, xd.DescendantNodes().Count());
+                }
 
-                    var mainPart = package.GetPart(documentUri);
-
-
-                    using (Stream partStream = mainPart.GetStream(FileMode.Open, FileAccess.ReadWrite))
-                    {
-                        XDocument xd = XDocument.Load(partStream);
-                        Assert.True(xd.DescendantNodes().Count() != 0);
-                    }
-
-                    using (Stream partStream = mainPart.GetStream(FileMode.Open, FileAccess.ReadWrite))
-                    using (StreamWriter sw = new StreamWriter(partStream))
-                    {
-                        sw.Write(s_DocumentXml);
-                    }
+                using (Stream partStream = mainPart.GetStream(FileMode.Open, FileAccess.ReadWrite))
+                using (StreamWriter sw = new StreamWriter(partStream))
+                {
+                    sw.Write(s_DocumentXml);
                 }
             }
-			tempGuidName.Delete();
+
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -2587,31 +2475,29 @@ namespace System.IO.Packaging.Tests
                   .GetRelationshipsByType(DocumentRelationshipType)
                   .FirstOrDefault();
 
-                if (docPackageRelationship != null)
+                Assert.NotNull(docPackageRelationship);
+                Uri documentUri =
+                    PackUriHelper
+                    .ResolvePartUri(
+                       new Uri("/", UriKind.Relative),
+                             docPackageRelationship.TargetUri);
+
+                var mainPart = package.GetPart(documentUri);
+
+                using (Stream partStream = mainPart.GetStream(FileMode.Open, FileAccess.Read))
                 {
-                    Uri documentUri =
-                        PackUriHelper
-                        .ResolvePartUri(
-                           new Uri("/", UriKind.Relative),
-                                 docPackageRelationship.TargetUri);
+                    XDocument xd = XDocument.Load(partStream);
+                    Assert.Equal(13, xd.DescendantNodes().Count());
+                }
 
-                    var mainPart = package.GetPart(documentUri);
-
-
-                    using (Stream partStream = mainPart.GetStream(FileMode.Open, FileAccess.Read))
-                    {
-                        XDocument xd = XDocument.Load(partStream);
-                        Assert.True(xd.DescendantNodes().Count() != 0);
-                    }
-
-                    using (Stream partStream = mainPart.GetStream(FileMode.Open, FileAccess.Write))
-                    using (StreamWriter sw = new StreamWriter(partStream))
-                    {
-                        sw.Write(s_DocumentXml);
-                    }
+                using (Stream partStream = mainPart.GetStream(FileMode.Open, FileAccess.Write))
+                using (StreamWriter sw = new StreamWriter(partStream))
+                {
+                    sw.Write(s_DocumentXml);
                 }
             }
-			tempGuidName.Delete();
+
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -2656,40 +2542,38 @@ namespace System.IO.Packaging.Tests
                   .GetRelationshipsByType(DocumentRelationshipType)
                   .FirstOrDefault();
 
-                if (docPackageRelationship != null)
-                {
-                    Uri documentUri =
+                Assert.NotNull(docPackageRelationship);
+                Uri documentUri =
                         PackUriHelper
                         .ResolvePartUri(
                            new Uri("/", UriKind.Relative),
                                  docPackageRelationship.TargetUri);
 
-                    var mainPart = package.GetPart(documentUri);
+                var mainPart = package.GetPart(documentUri);
 
+                using (Stream partStream = mainPart.GetStream(FileMode.OpenOrCreate, FileAccess.Read))
+                {
+                    XDocument xd = XDocument.Load(partStream);
+                    Assert.Equal(13, xd.DescendantNodes().Count());
+                }
 
+                using (Stream partStream = mainPart.GetStream(FileMode.OpenOrCreate, FileAccess.Write))
+                using (StreamWriter sw = new StreamWriter(partStream))
+                {
+                    sw.Write(s_DocumentXml);
+                }
+
+                Assert.Throws<XmlException>(() =>
+                {
                     using (Stream partStream = mainPart.GetStream(FileMode.OpenOrCreate, FileAccess.Read))
                     {
                         XDocument xd = XDocument.Load(partStream);
-                        Assert.True(xd.DescendantNodes().Count() != 0);
+                        Assert.Equal(0, xd.DescendantNodes().Count());
                     }
-
-                    using (Stream partStream = mainPart.GetStream(FileMode.OpenOrCreate, FileAccess.Write))
-                    using (StreamWriter sw = new StreamWriter(partStream))
-                    {
-                        sw.Write(s_DocumentXml);
-                    }
-
-                    Assert.Throws<XmlException>(() =>
-                    {
-                        using (Stream partStream = mainPart.GetStream(FileMode.OpenOrCreate, FileAccess.Read))
-                        {
-                            XDocument xd = XDocument.Load(partStream);
-                            Assert.True(xd.DescendantNodes().Count() != 0);
-                        }
-                    });
-                }
+                });
             }
-			tempGuidName.Delete();
+
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -2706,37 +2590,35 @@ namespace System.IO.Packaging.Tests
                   .GetRelationshipsByType(DocumentRelationshipType)
                   .FirstOrDefault();
 
-                if (docPackageRelationship != null)
-                {
-                    Uri documentUri =
+                Assert.NotNull(docPackageRelationship);
+                Uri documentUri =
                         PackUriHelper
                         .ResolvePartUri(
                            new Uri("/", UriKind.Relative),
                                  docPackageRelationship.TargetUri);
 
-                    var mainPart = package.GetPart(documentUri);
+                var mainPart = package.GetPart(documentUri);
 
+                using (Stream partStream = mainPart.GetStream(FileMode.Open, FileAccess.Read))
+                {
+                    XDocument xd = XDocument.Load(partStream);
+                    Assert.Equal(13, xd.DescendantNodes().Count());
+                }
 
-                    using (Stream partStream = mainPart.GetStream(FileMode.Open, FileAccess.Read))
-                    {
-                        XDocument xd = XDocument.Load(partStream);
-                        Assert.True(xd.DescendantNodes().Count() != 0);
-                    }
+                using (Stream partStream = mainPart.GetStream(FileMode.Create, FileAccess.Write))
+                using (StreamWriter sw = new StreamWriter(partStream))
+                {
+                    sw.Write(s_DocumentXml);
+                }
 
-                    using (Stream partStream = mainPart.GetStream(FileMode.Create, FileAccess.Write))
-                    using (StreamWriter sw = new StreamWriter(partStream))
-                    {
-                        sw.Write(s_DocumentXml);
-                    }
-
-                    using (Stream partStream = mainPart.GetStream(FileMode.Open, FileAccess.ReadWrite))
-                    {
-                        XDocument xd = XDocument.Load(partStream);
-                        Assert.True(xd.DescendantNodes().Count() != 0);
-                    }
+                using (Stream partStream = mainPart.GetStream(FileMode.Open, FileAccess.ReadWrite))
+                {
+                    XDocument xd = XDocument.Load(partStream);
+                    Assert.Equal(2, xd.DescendantNodes().Count());
                 }
             }
-			tempGuidName.Delete();
+
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -2767,40 +2649,39 @@ namespace System.IO.Packaging.Tests
                   .GetRelationshipsByType(DocumentRelationshipType)
                   .FirstOrDefault();
 
-                if (docPackageRelationship != null)
-                {
-                    Uri documentUri =
+                Assert.NotNull(docPackageRelationship);
+                Uri documentUri =
                         PackUriHelper
                         .ResolvePartUri(
                            new Uri("/", UriKind.Relative),
                                  docPackageRelationship.TargetUri);
 
-                    var mainPart = package.GetPart(documentUri);
+                var mainPart = package.GetPart(documentUri);
 
-                    using (Stream partStream = mainPart.GetStream(FileMode.OpenOrCreate, FileAccess.Read))
-                    {
-                        XDocument xd = XDocument.Load(partStream);
-                        Assert.True(xd.DescendantNodes().Count() != 0);
-                    }
-                    Assert.Throws<IOException>(() =>
-                    {
-                        using (Stream partStream = mainPart.GetStream(FileMode.OpenOrCreate, FileAccess.Write))
-                        using (StreamWriter sw = new StreamWriter(partStream))
-                        {
-                            sw.Write(s_DocumentXml);
-                        }
-                    });
-                    Assert.Throws<IOException>(() =>
-                    {
-                        using (Stream partStream = mainPart.GetStream(FileMode.OpenOrCreate, FileAccess.ReadWrite))
-                        using (StreamWriter sw = new StreamWriter(partStream))
-                        {
-                            sw.Write(s_DocumentXml);
-                        }
-                    });
+                using (Stream partStream = mainPart.GetStream(FileMode.OpenOrCreate, FileAccess.Read))
+                {
+                    XDocument xd = XDocument.Load(partStream);
+                    Assert.Equal(13, xd.DescendantNodes().Count());
                 }
+                Assert.Throws<IOException>(() =>
+                {
+                    using (Stream partStream = mainPart.GetStream(FileMode.OpenOrCreate, FileAccess.Write))
+                    using (StreamWriter sw = new StreamWriter(partStream))
+                    {
+                        sw.Write(s_DocumentXml);
+                    }
+                });
+                Assert.Throws<IOException>(() =>
+                {
+                    using (Stream partStream = mainPart.GetStream(FileMode.OpenOrCreate, FileAccess.ReadWrite))
+                    using (StreamWriter sw = new StreamWriter(partStream))
+                    {
+                        sw.Write(s_DocumentXml);
+                    }
+                });
             }
-			tempGuidName.Delete();
+
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -2817,35 +2698,34 @@ namespace System.IO.Packaging.Tests
                   .GetRelationshipsByType(DocumentRelationshipType)
                   .FirstOrDefault();
 
-                if (docPackageRelationship != null)
-                {
-                    Uri documentUri =
+                Assert.NotNull(docPackageRelationship);
+                Uri documentUri =
                         PackUriHelper
                         .ResolvePartUri(
                            new Uri("/", UriKind.Relative),
                                  docPackageRelationship.TargetUri);
 
-                    var mainPart = package.GetPart(documentUri);
+                var mainPart = package.GetPart(documentUri);
 
-                    Assert.Throws<IOException>(() =>
+                Assert.Throws<IOException>(() =>
+                {
+                    using (Stream partStream = mainPart.GetStream(FileMode.Create, FileAccess.Write))
+                    using (StreamWriter sw = new StreamWriter(partStream))
                     {
-                        using (Stream partStream = mainPart.GetStream(FileMode.Create, FileAccess.Write))
-                        using (StreamWriter sw = new StreamWriter(partStream))
-                        {
-                            sw.Write(s_DocumentXml);
-                        }
-                    });
-                    Assert.Throws<IOException>(() =>
+                        sw.Write(s_DocumentXml);
+                    }
+                });
+                Assert.Throws<IOException>(() =>
+                {
+                    using (Stream partStream = mainPart.GetStream(FileMode.Create, FileAccess.ReadWrite))
+                    using (StreamWriter sw = new StreamWriter(partStream))
                     {
-                        using (Stream partStream = mainPart.GetStream(FileMode.Create, FileAccess.ReadWrite))
-                        using (StreamWriter sw = new StreamWriter(partStream))
-                        {
-                            sw.Write(s_DocumentXml);
-                        }
-                    });
-                }
+                        sw.Write(s_DocumentXml);
+                    }
+                });
             }
-			tempGuidName.Delete();
+
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -2862,27 +2742,26 @@ namespace System.IO.Packaging.Tests
                   .GetRelationshipsByType(DocumentRelationshipType)
                   .FirstOrDefault();
 
-                if (docPackageRelationship != null)
-                {
-                    Uri documentUri =
+                Assert.NotNull(docPackageRelationship);
+                Uri documentUri =
                         PackUriHelper
                         .ResolvePartUri(
                            new Uri("/", UriKind.Relative),
                                  docPackageRelationship.TargetUri);
 
-                    var mainPart = package.GetPart(documentUri);
+                var mainPart = package.GetPart(documentUri);
 
-                    Assert.Throws<IOException>(() =>
+                Assert.Throws<IOException>(() =>
+                {
+                    using (Stream partStream = mainPart.GetStream(FileMode.Create, FileAccess.Read))
+                    using (StreamWriter sw = new StreamWriter(partStream))
                     {
-                        using (Stream partStream = mainPart.GetStream(FileMode.Create, FileAccess.Read))
-                        using (StreamWriter sw = new StreamWriter(partStream))
-                        {
-                            sw.Write(s_DocumentXml);
-                        }
-                    });
-                }
+                        sw.Write(s_DocumentXml);
+                    }
+                });
             }
-			tempGuidName.Delete();
+
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -2899,28 +2778,27 @@ namespace System.IO.Packaging.Tests
                   .GetRelationshipsByType(DocumentRelationshipType)
                   .FirstOrDefault();
 
-                if (docPackageRelationship != null)
-                {
-                    Uri documentUri =
+                Assert.NotNull(docPackageRelationship);
+                Uri documentUri =
                         PackUriHelper
                         .ResolvePartUri(
                            new Uri("/", UriKind.Relative),
                                  docPackageRelationship.TargetUri);
 
-                    var mainPart = package.GetPart(documentUri);
+                var mainPart = package.GetPart(documentUri);
 
-                    // can't open a part for ReadWrite when the package is open for Read
-                    Assert.Throws<IOException>(() =>
+                // can't open a part for ReadWrite when the package is open for Read
+                Assert.Throws<IOException>(() =>
+                {
+                    using (Stream partStream = mainPart.GetStream(FileMode.Open, FileAccess.ReadWrite))
+                    using (StreamWriter sw = new StreamWriter(partStream))
                     {
-                        using (Stream partStream = mainPart.GetStream(FileMode.Open, FileAccess.ReadWrite))
-                        using (StreamWriter sw = new StreamWriter(partStream))
-                        {
-                            sw.Write(s_DocumentXml);
-                        }
-                    });
-                }
+                        sw.Write(s_DocumentXml);
+                    }
+                });
             }
-			tempGuidName.Delete();
+
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -2937,27 +2815,26 @@ namespace System.IO.Packaging.Tests
                   .GetRelationshipsByType(DocumentRelationshipType)
                   .FirstOrDefault();
 
-                if (docPackageRelationship != null)
-                {
-                    Uri documentUri =
+                Assert.NotNull(docPackageRelationship);
+                Uri documentUri =
                         PackUriHelper
                         .ResolvePartUri(
                            new Uri("/", UriKind.Relative),
                                  docPackageRelationship.TargetUri);
 
-                    var mainPart = package.GetPart(documentUri);
+                var mainPart = package.GetPart(documentUri);
 
-                    Assert.Throws<IOException>(() =>
+                Assert.Throws<IOException>(() =>
+                {
+                    using (Stream partStream = mainPart.GetStream(FileMode.Open, FileAccess.Write))
+                    using (StreamWriter sw = new StreamWriter(partStream))
                     {
-                        using (Stream partStream = mainPart.GetStream(FileMode.Open, FileAccess.Write))
-                        using (StreamWriter sw = new StreamWriter(partStream))
-                        {
-                            sw.Write(s_DocumentXml);
-                        }
-                    });
-                }
+                        sw.Write(s_DocumentXml);
+                    }
+                });
             }
-			tempGuidName.Delete();
+
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -2974,24 +2851,23 @@ namespace System.IO.Packaging.Tests
                   .GetRelationshipsByType(DocumentRelationshipType)
                   .FirstOrDefault();
 
-                if (docPackageRelationship != null)
-                {
-                    Uri documentUri =
+                Assert.NotNull(docPackageRelationship);
+                Uri documentUri =
                         PackUriHelper
                         .ResolvePartUri(
                            new Uri("/", UriKind.Relative),
                                  docPackageRelationship.TargetUri);
 
-                    var mainPart = package.GetPart(documentUri);
-                    using (var mainPartStream = mainPart.GetStream(FileMode.Open, FileAccess.Read))
-                    {
-                        var xd = XDocument.Load(mainPartStream);
-                        var count = xd.DescendantNodes().Count();
-                        Assert.True(count != 0);
-                    }
+                var mainPart = package.GetPart(documentUri);
+                using (var mainPartStream = mainPart.GetStream(FileMode.Open, FileAccess.Read))
+                {
+                    var xd = XDocument.Load(mainPartStream);
+                    var count = xd.DescendantNodes().Count();
+                    Assert.Equal(13, count);
                 }
             }
-			tempGuidName.Delete();
+
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -3017,7 +2893,7 @@ namespace System.IO.Packaging.Tests
                 using (Stream partStream = packagePartDocument.GetStream(FileMode.OpenOrCreate, FileAccess.ReadWrite))
                 {
                     XDocument xd = XDocument.Load(partStream);
-                    Assert.True(xd.DescendantNodes().Count() != 0);
+                    Assert.Equal(2, xd.DescendantNodes().Count());
                 }
             }
 			tempGuidName.Delete();
@@ -3099,7 +2975,7 @@ namespace System.IO.Packaging.Tests
                 using (Stream partStream = packagePartDocument.GetStream(FileMode.Open, FileAccess.ReadWrite))
                 {
                     XDocument xd = XDocument.Load(partStream);
-                    Assert.True(xd.DescendantNodes().Count() != 0);
+                    Assert.Equal(2, xd.DescendantNodes().Count());
                 }
             }
 			tempGuidName.Delete();
@@ -3130,7 +3006,7 @@ namespace System.IO.Packaging.Tests
                     using (Stream partStream = packagePartDocument.GetStream(FileMode.Create, FileAccess.Read))
                     {
                         XDocument xd = XDocument.Load(partStream);
-                        Assert.True(xd.DescendantNodes().Count() != 0);
+                        Assert.Equal(0, xd.DescendantNodes().Count());
                     }
                 });
             }
@@ -3160,7 +3036,7 @@ namespace System.IO.Packaging.Tests
                 using (Stream partStream = packagePartDocument.GetStream(FileMode.Open, FileAccess.ReadWrite))
                 {
                     XDocument xd = XDocument.Load(partStream);
-                    Assert.True(xd.DescendantNodes().Count() != 0);
+                    Assert.Equal(2, xd.DescendantNodes().Count());
                 }
             }
 			tempGuidName.Delete();
@@ -3220,7 +3096,7 @@ namespace System.IO.Packaging.Tests
                 using (Stream partStream = packagePartDocument.GetStream(FileMode.OpenOrCreate, FileAccess.Read | FileAccess.Write))
                 {
                     XDocument xd = XDocument.Load(partStream);
-                    Assert.True(xd.DescendantNodes().Count() != 0);
+                    Assert.Equal(2, xd.DescendantNodes().Count());
                 }
             }
 			tempGuidName.Delete();
@@ -3249,7 +3125,7 @@ namespace System.IO.Packaging.Tests
                 using (Stream partStream = packagePartDocument.GetStream(FileMode.OpenOrCreate, FileAccess.ReadWrite))
                 {
                     XDocument xd = XDocument.Load(partStream);
-                    Assert.True(xd.DescendantNodes().Count() != 0);
+                    Assert.Equal(2, xd.DescendantNodes().Count());
                 }
             }
 			tempGuidName.Delete();
@@ -3278,7 +3154,7 @@ namespace System.IO.Packaging.Tests
                 using (Stream partStream = packagePartDocument.GetStream(FileMode.OpenOrCreate, FileAccess.Read))
                 {
                     XDocument xd = XDocument.Load(partStream);
-                    Assert.True(xd.DescendantNodes().Count() != 0);
+                    Assert.Equal(2, xd.DescendantNodes().Count());
                 }
             }
 			tempGuidName.Delete();
@@ -3307,7 +3183,7 @@ namespace System.IO.Packaging.Tests
                 using (Stream partStream = packagePartDocument.GetStream(FileMode.Open, FileAccess.Read | FileAccess.Write))
                 {
                     XDocument xd = XDocument.Load(partStream);
-                    Assert.True(xd.DescendantNodes().Count() != 0);
+                    Assert.Equal(2, xd.DescendantNodes().Count());
                 }
             }
 			tempGuidName.Delete();
@@ -3336,7 +3212,7 @@ namespace System.IO.Packaging.Tests
                 using (Stream partStream = packagePartDocument.GetStream(FileMode.Open, FileAccess.ReadWrite))
                 {
                     XDocument xd = XDocument.Load(partStream);
-                    Assert.True(xd.DescendantNodes().Count() != 0);
+                    Assert.Equal(2, xd.DescendantNodes().Count());
                 }
             }
 			tempGuidName.Delete();
@@ -3411,7 +3287,7 @@ namespace System.IO.Packaging.Tests
                 {
                     // just created the part, so nothing in it.
                     // but can't write, as expected.
-                    Assert.True(partStream.Length == 0);
+                    Assert.Equal(0, partStream.Length);
                 }
             }
 			tempGuidName.Delete();
@@ -3473,14 +3349,6 @@ namespace System.IO.Packaging.Tests
                 {
                     Stream partStream = packagePartDocument.GetStream(FileMode.Append, FileAccess.Read);
                 });
-
-                // Copy the data to the Document Part
-
-                //using (Stream partStream = packagePartDocument.GetStream(FileMode.Create, FileAccess.Read))
-                //using (StreamWriter sw = new StreamWriter(partStream))
-                //{
-                //    sw.Write(s_DocumentXml);
-                //}
             }
 			tempGuidName.Delete();
         }
@@ -3493,27 +3361,10 @@ namespace System.IO.Packaging.Tests
             {
                 Package package = Package.Open(tempGuidName.FullName, FileMode.Create, FileAccess.Read);
             });
-            //using ()
-            //{
-            //    Uri uri = PackUriHelper.CreatePartUri(new Uri("dummy.xml", UriKind.Relative));
-
-            //    // Add a part to the Package
-            //    PackagePart packagePartDocument =
-            //        package.CreatePart(uri,
-            //                        Mime_MediaTypeNames_Text_Xml,
-            //                        CompressionOption.Normal);
-
-            //    // Copy the data to the Document Part
-            //    using (Stream partStream = packagePartDocument.GetStream(FileMode.Create, FileAccess.Read))
-            //    using (StreamWriter sw = new StreamWriter(partStream))
-            //    {
-            //        sw.Write(s_DocumentXml);
-            //    }
-            //}
-			tempGuidName.Delete();
+            tempGuidName.Delete();
         }
 
-        const string DocumentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
+        private const string DocumentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
     }
 
     public static class MyExtensions

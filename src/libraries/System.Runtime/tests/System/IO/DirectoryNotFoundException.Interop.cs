@@ -16,10 +16,7 @@ public partial class DirectoryNotFoundException_Interop_40100_Tests
         {
             var e = Marshal.GetExceptionForHR(hr);
             var dnfe = e as DirectoryNotFoundException;
-            if (dnfe == null)
-            {
-                Assert.True(false, String.Format("Expected DirectoryNotFoundException for hr 0x{0:X8} but got {1}.", hr, e.GetType()));
-            }
+            Assert.NotNull(dnfe);
 
             // Don't validate the message.  Currently .NET Native does not produce HR-specific messages
             Utility.ValidateExceptionProperties(dnfe, hResult: hr, validateMessage: false);

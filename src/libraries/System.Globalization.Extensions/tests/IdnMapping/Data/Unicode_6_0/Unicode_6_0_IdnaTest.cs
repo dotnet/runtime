@@ -69,8 +69,7 @@ namespace System.Globalization.Extensions.Tests
                 if (i + 1 < escaped.Length && escaped[i] == '\\' && escaped[i + 1] == 'u')
                 {
                     // Verify that the escaped sequence is not malformed
-                    if (i + 5 >= escaped.Length)
-                        Assert.False(true, "There was a problem converting to literal string on Line " + lineNumber);
+                    Assert.True(i + 5 < escaped.Length, "There was a problem converting to literal string on Line " + lineNumber);
 
                     var codepoint = Convert.ToInt32(escaped.Substring(i + 2, 4), 16);
                     sb.Append((char)codepoint);

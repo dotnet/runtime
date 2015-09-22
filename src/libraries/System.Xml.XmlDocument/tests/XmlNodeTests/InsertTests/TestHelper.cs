@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Xunit;
+using System;
 using System.Xml;
 
 namespace XmlDocumentTests.XmlNodeTests.InsertTests
@@ -35,8 +36,7 @@ namespace XmlDocumentTests.XmlNodeTests.InsertTests
                 case XmlNodeType.SignificantWhitespace:
                     return doc.CreateSignificantWhitespace("	");
                 default:
-                    Assert.True(false, "Wrong XmlNodeType: '" + nodeType + "'");
-                    return null;
+                    throw new ArgumentException("Wrong XmlNodeType: '" + nodeType + "'");
             }
         }
 
@@ -77,8 +77,7 @@ namespace XmlDocumentTests.XmlNodeTests.InsertTests
                 case InsertType.Append:
                     return new InsertFrontOrEnd(AppendChild);
                 default:
-                    Assert.True(false, "Not supported InsertType='" + insertType + "'");
-                    return null;
+                    throw new ArgumentException("Not supported InsertType='" + insertType + "'");
             }
         }
 
@@ -93,8 +92,7 @@ namespace XmlDocumentTests.XmlNodeTests.InsertTests
                 case InsertType.InsertAfter:
                     return new InsertBeforeOrAfter(InsertAfter);
                 default:
-                    Assert.True(false, "Not supported InsertType '" + insertType + "'");
-                    return null;
+                    throw new ArgumentException("Not supported InsertType '" + insertType + "'");
             }
         }
 
@@ -138,8 +136,7 @@ namespace XmlDocumentTests.XmlNodeTests.InsertTests
                     Assert.Null(newChild.NextSibling);
                     break;
                 default:
-                    Assert.True(false, "Wrong insert type: '" + insertType + "'");
-                    break;
+                    throw new ArgumentException("Wrong insert type: '" + insertType + "'");
             }
         }
 
@@ -164,8 +161,7 @@ namespace XmlDocumentTests.XmlNodeTests.InsertTests
                     next = newChild;
                     break;
                 default:
-                    Assert.True(false, "Wrong InsertType: '" + insertType + "'");
-                    break;
+                    throw new ArgumentException("Wrong InsertType: '" + insertType + "'");
             }
 
             Assert.NotNull(prev);

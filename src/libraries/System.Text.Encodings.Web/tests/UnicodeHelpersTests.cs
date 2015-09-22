@@ -97,26 +97,7 @@ namespace Microsoft.Framework.WebEncoders
         [Fact]
         public void IsCharacterDefined()
         {
-            // Arrange
-            bool[] definedChars = ReadListOfDefinedCharacters();
-            List<string> errors = new List<string>();
-
-            // Act & assert
-            for (int i = 0; i <= Char.MaxValue; i++)
-            {
-                bool expected = definedChars[i];
-                bool actual = UnicodeHelpers.IsCharacterDefined((char)i);
-                if (expected != actual)
-                {
-                    string message = String.Format(CultureInfo.InvariantCulture, "Character U+{0:X4}: expected = {1}, actual = {2}", i, expected, actual);
-                    errors.Add(message);
-                }
-            }
-
-            if (errors.Count > 0)
-            {
-                Assert.True(false, String.Join(Environment.NewLine, errors));
-            }
+            Assert.All(ReadListOfDefinedCharacters().Select((defined, idx) => new { defined, idx }), c => Assert.Equal(c.defined, UnicodeHelpers.IsCharacterDefined((char)c.idx)));
         }
 
         private static bool[] ReadListOfDefinedCharacters()

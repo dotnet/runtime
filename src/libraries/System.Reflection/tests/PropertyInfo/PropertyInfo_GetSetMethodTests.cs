@@ -123,17 +123,14 @@ namespace System.Reflection.Tests
 
             Assert.NotNull(pi);
 
-
-            MethodInfo mi = pi.GetMethod;
-            if (getter && mi == null)
+            if (getter)
             {
-                Assert.False(true);
+                Assert.NotNull(pi.GetMethod);
             }
 
-            mi = pi.SetMethod;
-            if (setter && mi == null)
+            if (setter)
             {
-                Assert.False(true, String.Format("Error! Type: {0}, Property: {1} should contain Setter", type, propertyName));
+                Assert.NotNull(pi.SetMethod);
             }
         }
     }

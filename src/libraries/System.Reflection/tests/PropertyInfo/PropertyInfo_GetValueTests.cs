@@ -237,13 +237,7 @@ namespace System.Reflection.Tests
 
             // In Win8p instead of TargetException , generic Exception is thrown
             // Refer http://msdn.microsoft.com/en-us/library/b05d59ty.aspx
-
-            try
-            {
-                var value = pi.GetValue(null, new Object[] { "1", "2" });
-                Assert.False(true, "TargetException expected.");
-            }
-            catch (Exception) { }
+            Assert.ThrowsAny<Exception>(() => pi.GetValue(null, new Object[] { "1", "2" }));
         }
 
 

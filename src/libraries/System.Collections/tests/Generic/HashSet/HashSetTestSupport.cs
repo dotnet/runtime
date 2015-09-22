@@ -4,8 +4,11 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Xunit;
+using System.Linq;
+using System.Threading;
 using Tests.HashSet_HashSetTestSupport;
+using TestSupport.Collections;
+using Xunit;
 
 namespace Tests
 {
@@ -130,8 +133,8 @@ namespace Tests
                 Assert.Equal(set.Comparer, comparerToUse); //"Error in resulting HashSet: comparer does not match"
                                                            //Comparing the set contents.
 
-                var setComparer = new HashSetComparer<T>(comparerToUse);
-                Assert.True(setComparer.Equals(contents, set)); //"Expected both sets to be the same."
+                Assert.All(set, item => Assert.Contains(item, contents, comparerToUse));
+                Assert.All(contents, item => Assert.Contains(item, set, comparerToUse));
             }
 
             #region Private Test Methods
@@ -281,14 +284,12 @@ namespace Tests
                 //[] Call Clear several time on a collection with some items alread... then add some _items
                 _collection.Clear();
                 Assert.Equal(0, _collection.Count); //"Should not have any items in the collection."
-                foreach (var item in _collection)
-                    Assert.True(false); //"Should not be able to iterate over a collection that has been cleared."
+                Assert.Empty(_collection);
 
                 _collection.Clear();
                 _collection.Clear();
                 Assert.Equal(0, _collection.Count); //"Should not have any items in the collection."
-                foreach (var item in _collection)
-                    Assert.True(false); //"Should not be able to iterate over a collection that has been cleared."
+                Assert.Empty(_collection);
 
                 _items = AddItemsToCollection(_collection, 16);
 
@@ -1015,8 +1016,7 @@ namespace Tests
         {
             public int x;
 
-            private static int s_nextIndex = 1;
-            private static object s_nextIndexLock = new object();
+            private static int s_nextIndex = 0;
 
             public Item(int y)
             {
@@ -1025,15 +1025,7 @@ namespace Tests
 
             public static Item GenerateNext()
             {
-                int current;
-
-                lock (s_nextIndexLock)
-                {
-                    current = s_nextIndex;
-                    s_nextIndex++;
-                }
-
-                return new Item(current);
+                return new Item(Interlocked.Increment(ref s_nextIndex));
             }
         }
         public class ItemEqualityComparer : IEqualityComparer<Item>
@@ -1057,8 +1049,7 @@ namespace Tests
             public int x;
             public int y;
 
-            private static int s_nextIndex = 1;
-            private static object s_nextIndexLock = new object();
+            private static int s_nextIndex = 0;
 
             public ValueItem(int x2, int y2)
             {
@@ -1070,13 +1061,8 @@ namespace Tests
             {
                 int xVal, yVal;
 
-                lock (s_nextIndexLock)
-                {
-                    xVal = s_nextIndex;
-                    s_nextIndex++;
-                    yVal = s_nextIndex;
-                    s_nextIndex++;
-                }
+                xVal = Interlocked.Increment(ref s_nextIndex);
+                yVal = Interlocked.Increment(ref s_nextIndex);
 
                 return new ValueItem(xVal, yVal);
             }
@@ -1179,87 +1165,7 @@ namespace Tests
                 return (x.y);
             }
         }
-        public class HashSetComparer<T> : IEqualityComparer<ICollection<T>>
-        {
-            private readonly IEqualityComparer<T> _comparer;
 
-            public HashSetComparer()
-                : this(EqualityComparer<T>.Default)
-            { }
-
-            public HashSetComparer(IEqualityComparer<T> comparer)
-            {
-                if (comparer == null)
-                    _comparer = EqualityComparer<T>.Default;
-                else
-                    _comparer = comparer;
-            }
-
-            public bool Equals(ICollection<T> expected, ICollection<T> actual)
-            {
-                //make sure the same number of items
-                Assert.Equal(expected.Count, actual.Count); //"Error: Expected count does not equal "
-
-                //make sure each item in x is also in y
-                foreach (T item in expected)
-                {
-                    bool found = false;
-                    foreach (T isit in actual)
-                    {
-                        if (_comparer.Equals(isit, item))
-                        {
-                            found = true;
-                            break;
-                        }
-                    }
-
-                    if (!found)
-                    {
-                        Console.WriteLine("expected set: ");
-                        foreach (var e in expected)
-                            Console.WriteLine(e.ToString());
-                        Console.WriteLine("actual set: ");
-                        foreach (var e in actual)
-                            Console.WriteLine(e.ToString());
-                        Assert.True(false, String.Format("Error: Item ({0}) from Expected set not found in Actual HashSet", item));
-                    }
-                }
-
-                //make sure each item in y is also in x
-                foreach (T item in actual)
-                {
-                    bool found = false;
-
-                    foreach (T isit in expected)
-                    {
-                        if (_comparer.Equals(isit, item))
-                        {
-                            found = true;
-                            break;
-                        }
-                    }
-
-                    if (!found)
-                    {
-                        Console.WriteLine("expected set: ");
-                        foreach (var e in expected)
-                            Console.WriteLine(e.ToString());
-                        Console.WriteLine("actual set: ");
-                        foreach (var e in actual)
-                            Console.WriteLine(e.ToString());
-                        Assert.True(false, String.Format("Error: Item ({0}) found in Actual HashSet NOT in Expected", item));
-                    }
-                }
-
-                return true;
-            }
-
-            //don't expect to actually use this, but need to live up to contract
-            public int GetHashCode(ICollection<T> x)
-            {
-                return 0;
-            }
-        }
         internal class SetEqualityComparer<U> : IEqualityComparer<HashSet<U>>
         {
             private IEqualityComparer<U> _comparer;

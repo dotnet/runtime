@@ -15,6 +15,7 @@ using CoreFXTestLibrary;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -817,20 +818,11 @@ namespace System.Threading.Tasks.Test.Unit
         {
             List<int> duplicates;
             List<int> processedIndexes = Consolidate(out duplicates);
-            if (duplicates.Count > 0)
-            {
-                StringBuilder builder = new StringBuilder();
-                foreach (var dupe in duplicates)
-                    builder.Append(dupe.ToString() + ", ");
-                Assert.False(true, String.Format("Threadlocal invariant is broken, see duplicate occurance.  " + builder.ToString()));
-            }
+            Assert.Empty(duplicates);
 
-            for (int i = 0; i < _parameters.Count; i++)
-            {
-                // If result[i] != 0 then the body for that index was executed. 
-                // We expect the threadlocal list to also contain the same index
-                Assert.False(processedIndexes.Contains(i) != (_results[i] != 0), String.Format("Threadlocal invariant is broken, results not in sync with processed index {0}", i));
-            }
+            // If result[i] != 0 then the body for that index was executed.
+            // We expect the threadlocal list to also contain the same index
+            Assert.All(Enumerable.Range(0, _parameters.Count), idx => Assert.Equal(processedIndexes.Contains(idx), _results[idx] != 0));
         }
 
         #endregion

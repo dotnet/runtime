@@ -20,9 +20,9 @@ namespace System.Diagnostics.Contracts.Tests
         [Fact]
         public static void EmptyInputReturnsFalse()
         {
-            Assert.False(Contract.Exists(Enumerable.Empty<int>(), i => { Assert.True(false, "Should never be invoked"); return true; }));
-            Assert.False(Contract.Exists(-2, -2, i => { Assert.True(false, "Should never be invoked"); return true; }));
-            Assert.False(Contract.Exists(1, 1, i => { Assert.True(false, "Should never be invoked"); return true; }));
+            Assert.False(Contract.Exists(Enumerable.Empty<int>(), i => { throw new ShouldNotBeInvokedException(); }));
+            Assert.False(Contract.Exists(-2, -2, i => { throw new ShouldNotBeInvokedException(); }));
+            Assert.False(Contract.Exists(1, 1, i => { throw new ShouldNotBeInvokedException(); }));
         }
 
         [Fact]

@@ -46,10 +46,7 @@ public partial class FileLoadException_Interop_40100_Tests
             var e = Marshal.GetExceptionForHR(hr);
             Assert.IsType<FileLoadException>(e);
             var fle = e as FileLoadException;
-            if (fle == null)
-            {
-                Assert.True(false, String.Format("Expected FileLoadException for hr 0x{0:X8} but got {1}.", hr, e.GetType()));
-            }
+            Assert.NotNull(fle);
             // Don't validate the message.  Currently .NET Native does not produce HR-specific messages
             Utility.ValidateExceptionProperties(fle, hResult: hr, validateMessage: false);
             Assert.Equal(null, fle.FileName);

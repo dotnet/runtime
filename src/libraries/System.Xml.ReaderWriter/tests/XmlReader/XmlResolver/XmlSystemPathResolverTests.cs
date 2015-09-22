@@ -4,6 +4,7 @@
 using Xunit;
 using System;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Xml;
@@ -50,15 +51,7 @@ namespace XMLTests.ReaderWriter.XmlResolverTests
 
         private static string GetNonExistentFileName()
         {
-            for (int i = 0; i < k_getUniqueFileNameAttempts; ++i)
-            {
-                string fileName = Path.GetRandomFileName();
-                if (!File.Exists(fileName))
-                    return fileName;
-            }
-
-            Assert.True(false, "Test infrastructure error: Failed to get non-existent file name.");
-            return null;
+            return Enumerable.Range(0, k_getUniqueFileNameAttempts).Select(x => Path.GetRandomFileName()).First(fileName => !File.Exists(fileName));
         }
 
         [Fact]
@@ -75,32 +68,13 @@ namespace XMLTests.ReaderWriter.XmlResolverTests
             // Due to different shipping behavior in different products, different exceptions may be thrown
             // when an invalid path is specified on different platforms. We try to catch all the types
             // that can be thrown here to verify that more exception types are not introduced inadvertently.
-            try
-            {
-                XmlReader.Create(path);
-            }
-            catch (ArgumentException)
-            {
-            }
-            catch (AggregateException)
-            {
-            }
-            catch (FileNotFoundException)
-            {
-            }
-            catch (FormatException)
-            {
-            }
-            catch (UnauthorizedAccessException)
-            {
-            }
-            catch (XmlException)
-            {
-            }
-            catch (Exception e)
-            {
-                Assert.True(false, string.Format("Unexpected exception: {0}", e));
-            }
+            Exception e = Assert.ThrowsAny<Exception>(() => XmlReader.Create(path));
+            Assert.True(e is ArgumentException
+                || e is AggregateException
+                || e is FileNotFoundException
+                || e is FormatException
+                || e is UnauthorizedAccessException
+                || e is XmlException);
         }
 
         [Fact]
