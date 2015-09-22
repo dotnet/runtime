@@ -14,7 +14,7 @@ namespace System.Net
         public static unsafe uint Ipv4AddressToString(byte[] address, StringBuilder buffer)
         {
             Debug.Assert(address != null);
-            Debug.Assert(address.Length == IPAddressParser.IPv4AddressBytes);
+            Debug.Assert(address.Length == IPAddressParserStatics.IPv4AddressBytes);
             Debug.Assert(buffer != null);
             Debug.Assert(buffer.Capacity >= IPAddressParser.INET_ADDRSTRLEN);
 
@@ -32,7 +32,7 @@ namespace System.Net
         public static unsafe uint Ipv6AddressToString(byte[] address, uint scopeId, StringBuilder buffer)
         {
             Debug.Assert(address != null);
-            Debug.Assert(address.Length == IPAddressParser.IPv6AddressBytes);
+            Debug.Assert(address.Length == IPAddressParserStatics.IPv6AddressBytes);
             Debug.Assert(buffer != null);
             Debug.Assert(buffer.Capacity >= IPAddressParser.INET6_ADDRSTRLEN);
 
@@ -42,8 +42,8 @@ namespace System.Net
                 sin6_scope_id = scopeId
             };
 
-            Debug.Assert(sizeof(Interop.libc.in6_addr) == IPAddressParser.IPv6AddressBytes);
-            for (int i = 0; i < IPAddressParser.IPv6AddressBytes; i++)
+            Debug.Assert(sizeof(Interop.libc.in6_addr) == IPAddressParserStatics.IPv6AddressBytes);
+            for (int i = 0; i < IPAddressParserStatics.IPv6AddressBytes; i++)
             {
                 sockaddr.sin6_addr.s6_addr[i] = address[i];
             }
@@ -56,7 +56,7 @@ namespace System.Net
         {
             Debug.Assert(ipString != null);
             Debug.Assert(bytes != null);
-            Debug.Assert(bytes.Length == IPAddressParser.IPv4AddressBytes);
+            Debug.Assert(bytes.Length == IPAddressParserStatics.IPv4AddressBytes);
 
             port = 0;
 
@@ -175,7 +175,7 @@ namespace System.Net
         {
             Debug.Assert(ipString != null);
             Debug.Assert(bytes != null);
-            Debug.Assert(bytes.Length == IPAddressParser.IPv6AddressBytes);
+            Debug.Assert(bytes.Length == IPAddressParserStatics.IPv6AddressBytes);
 
             string host, port;
             if (!TryPreprocessIPv6Address(ipString, out host, out port))
@@ -207,8 +207,8 @@ namespace System.Net
 
             Interop.libc.sockaddr_in6* sockaddr = (Interop.libc.sockaddr_in6*)addrinfo->ai_addr;
 
-            Debug.Assert(sizeof(Interop.libc.in6_addr) == IPAddressParser.IPv6AddressBytes);
-            for (int i = 0; i < IPAddressParser.IPv6AddressBytes; i++)
+            Debug.Assert(sizeof(Interop.libc.in6_addr) == IPAddressParserStatics.IPv6AddressBytes);
+            for (int i = 0; i < IPAddressParserStatics.IPv6AddressBytes; i++)
             {
                 bytes[i] = sockaddr->sin6_addr.s6_addr[i];
             }
