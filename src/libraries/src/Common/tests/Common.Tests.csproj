@@ -29,6 +29,9 @@
     <Compile Include="..\src\System\IO\PathInternal.cs">
       <Link>Common\System\IO\PathInternal.cs</Link>
     </Compile>
+    <Compile Include="..\src\System\IO\PathInternal.CaseSensitivity.cs">
+      <Link>Common\System\IO\PathInternal.CaseSensitivity.cs</Link>
+    </Compile>
     <Compile Include="..\src\System\IO\StringBuilderCache.cs">
       <Link>Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>
@@ -48,9 +51,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\IO\PathInternal.CaseSensitive.cs">
-      <Link>Common\System\IO\PathInternal.CaseSensitive.cs</Link>
-    </Compile>
     <Compile Include="Tests\System\IO\PathInternal.Windows.Tests.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetFullPathNameW.cs">
       <Link>Common\Interop\Windows\mincore\Interop.GetFullPathNameW.cs</Link>
@@ -59,9 +59,6 @@
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="..\src\System\IO\PathInternal.Unix.cs">
       <Link>Common\System\IO\PathInternal.Unix.cs</Link>
-    </Compile>
-    <Compile Include="..\src\System\IO\PathInternal.CaseInsensitive.cs">
-      <Link>Common\System\IO\PathInternal.CaseInsensitive.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.PathConf.cs">
       <Link>Common\Interop\Unix\Interop.PathConf.cs</Link>

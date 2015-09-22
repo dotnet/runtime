@@ -57,8 +57,6 @@ namespace System.IO
                                                            NotifyFilters.Security |
                                                            NotifyFilters.Size);
 
-        internal static bool CaseSensitive { get; set; }
-
 #if DEBUG
         static FileSystemWatcher()
         {
@@ -81,7 +79,6 @@ namespace System.IO
         {
             _directory = string.Empty;
             _filter = "*.*";
-            CaseSensitive = false;
         }
 
         /// <devdoc>
@@ -110,7 +107,6 @@ namespace System.IO
 
             _directory = path;
             _filter = filter;
-            CaseSensitive = false;
         }
 
         /// <devdoc>
@@ -180,7 +176,7 @@ namespace System.IO
                     // the case-sensitive representation.
                     _filter = "*.*";
                 }
-                else if (!string.Equals(_filter, value, CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase))
+                else if (!string.Equals(_filter, value, PathInternal.StringComparison))
                 {
                     _filter = value;
                 }
@@ -260,7 +256,7 @@ namespace System.IO
             set
             {
                 value = (value == null) ? string.Empty : value;
-                if (!string.Equals(_directory, value, CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase))
+                if (!string.Equals(_directory, value, PathInternal.StringComparison))
                 {
                     if (!Directory.Exists(value))
                     {
