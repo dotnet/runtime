@@ -68,7 +68,6 @@
     <Compile Include="ElementAtOrDefaultTests.cs" />
     <Compile Include="ElementAtTests.cs" />
     <Compile Include="SequenceEqualTests.cs" />
-    <Compile Include="LegacyTests\GroupByTests.cs" />
     <Compile Include="GroupJoinTests.cs" />
     <Compile Include="LegacyTests\Helper.cs" />
     <Compile Include="JoinTests.cs" />
