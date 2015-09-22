@@ -5075,8 +5075,10 @@ mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampo
 	static gboolean inited;
 	static guint32 num_trampolines;
 
-	if (!mono_llvm_only)
+	if (mono_llvm_only) {
+		*code_len = 1;
 		return no_specific_trampoline;
+	}
 
 	if (!inited) {
 		mono_aot_lock ();
