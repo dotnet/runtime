@@ -131,8 +131,6 @@ _Unwind_Reason_Code
 mono_debug_personality (int a, _Unwind_Action b,
 	uint64_t c, struct _Unwind_Exception *d, struct _Unwind_Context *e);
 
-extern void (*unhandled_exception)();
-
 void
 mono_llvm_set_unhandled_exception_handler (void);
 

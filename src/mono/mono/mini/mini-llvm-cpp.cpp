@@ -71,7 +71,7 @@ mono_llvm_cpp_rethrow_exception (gint32 *exc)
 	throw exc;
 }
 
-void (*unhandled_exception)() = default_mono_llvm_unhandled_exception;
+static void (*unhandled_exception)() = default_mono_llvm_unhandled_exception;
 
 void
 mono_llvm_set_unhandled_exception_handler (void)
