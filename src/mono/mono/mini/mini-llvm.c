@@ -2051,6 +2051,33 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 	ctx->builder = builder = create_builder (ctx);
 	LLVMPositionBuilderAtEnd (builder, ex_bb);
 
+	if (ctx->cfg->llvm_only) {
+		static LLVMTypeRef sig;
+
+		args [0] = LLVMConstInt (LLVMInt32Type (), exc_class->type_token - MONO_TOKEN_TYPE_DEF, FALSE);
+		args [1] = get_mono_sentinel_exception (ctx);
+
+		if (!sig)
+			sig = LLVMFunctionType2 (LLVMVoidType (), LLVMInt32Type (), LLVMTypeOf (args [1]), FALSE);
+		callee = get_callee (ctx, sig, MONO_PATCH_INFO_INTERNAL_METHOD, "mono_throw_corlib_exception");
+
+		LLVMBuildBr (builder, ex2_bb);
+
+		ctx->builder = builder = create_builder (ctx);
+		LLVMPositionBuilderAtEnd (ctx->builder, ex2_bb);
+
+		emit_call (ctx, bb, &builder, callee, args, 2);
+		LLVMBuildUnreachable (builder);
+
+		ctx->builder = builder = create_builder (ctx);
+		LLVMPositionBuilderAtEnd (ctx->builder, noex_bb);
+
+		ctx->bblocks [bb->block_num].end_bblock = noex_bb;
+
+		ctx->ex_index ++;
+		return;
+	}
+
 	callee = ctx->lmodule->throw_corlib_exception;
 	if (!callee) {
 		LLVMTypeRef sig;

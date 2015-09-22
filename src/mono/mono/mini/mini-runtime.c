@@ -699,9 +699,6 @@ register_icall_no_wrapper (gpointer func, const char *name, const char *sigstr)
 {
 	MonoMethodSignature *sig;
 
-	if (mono_llvm_only)
-		avoid_wrapper = TRUE;
-
 	if (sigstr)
 		sig = mono_create_icall_signature (sigstr);
 	else
@@ -3460,15 +3457,16 @@ register_icalls (void)
 
 	register_icall (mono_debugger_agent_user_break, "mono_debugger_agent_user_break", "void", FALSE);
 
-	register_icall (mono_aot_init_llvm_method, "mono_aot_init_llvm_method", "void ptr int", FALSE);
-	register_icall (mono_aot_init_gshared_method_this, "mono_aot_init_gshared_method_this", "void ptr int object", FALSE);
-	register_icall (mono_aot_init_gshared_method_rgctx, "mono_aot_init_gshared_method_rgctx", "void ptr int ptr", FALSE);
+	register_icall (mono_aot_init_llvm_method, "mono_aot_init_llvm_method", "void ptr int", TRUE);
+	register_icall (mono_aot_init_gshared_method_this, "mono_aot_init_gshared_method_this", "void ptr int object", TRUE);
+	register_icall (mono_aot_init_gshared_method_rgctx, "mono_aot_init_gshared_method_rgctx", "void ptr int ptr", TRUE);
 
 	register_icall_no_wrapper (mono_resolve_iface_call, "mono_resolve_iface_call", "ptr object int ptr ptr");
 	register_icall_no_wrapper (mono_resolve_vcall, "mono_resolve_vcall", "ptr object int ptr");
 	register_icall (mono_init_delegate, "mono_init_delegate", "void object object ptr", TRUE);
 	register_icall (mono_init_delegate_virtual, "mono_init_delegate_virtual", "void object object ptr", TRUE);
 	register_icall (mono_get_assembly_object, "mono_get_assembly_object", "object ptr", TRUE);
+	register_icall (mono_throw_corlib_exception, "mono_throw_corlib_exception", "void int ptr", FALSE);
 
 #ifdef TARGET_IOS
 	register_icall (pthread_getspecific, "pthread_getspecific", "ptr ptr", TRUE);

@@ -17,7 +17,9 @@
 #endif
 
 #include "jit-icalls.h"
+#include "mini-llvm-cpp.h"
 #include <mono/utils/mono-error-internals.h>
+
 void*
 mono_ldftn (MonoMethod *method)
 {
@@ -1523,4 +1525,15 @@ MonoObject*
 mono_get_assembly_object (MonoImage *image)
 {
 	return (MonoObject*)mono_assembly_get_object (mono_domain_get (), image->assembly);
+}
+
+void
+mono_throw_corlib_exception (guint32 ex_token_index, gint32 *exc_tag)
+{
+	guint32 ex_token = MONO_TOKEN_TYPE_DEF | ex_token_index;
+	MonoException *ex;
+
+	ex = mono_exception_from_token (mono_defaults.exception_class->image, ex_token);
+
+	mono_llvm_throw_exception (ex, exc_tag);
 }
