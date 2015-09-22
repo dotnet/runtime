@@ -6,8 +6,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{17D5CC82-F72C-4DD2-B6DB-DE7FB2F19C34}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>System.Net.Http.WinHttpHandler.Tests</RootNamespace>
-    <AssemblyName>System.Net.Http.WinHttpHandler.Tests</AssemblyName>
+    <AssemblyName>System.Net.Http.WinHttpHandler.Functional.Tests</AssemblyName>
     <UnsupportedPlatforms>Linux;OSX;FreeBSD</UnsupportedPlatforms>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU' " />
