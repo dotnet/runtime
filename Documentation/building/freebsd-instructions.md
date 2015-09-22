@@ -22,11 +22,12 @@ Install the following packages for the toolchain:
 - llvm37 (includes LLVM 3.7, Clang 3.7 and LLDB 3.7)
 - libunwind
 - gettext
+- icu
 
 To install the packages you need:
 
 ```sh
-janhenke@freebsd-frankfurt:~ % sudo pkg install bash cmake libunwind gettext llvm37
+janhenke@freebsd-frankfurt:~ % sudo pkg install bash cmake libunwind gettext llvm37 icu
 ```
 
 The command above will install Clang and LLVM 3.7. For information on building CoreCLR with other versions, see section on [Clang/LLVM versions](#note-on-clangllvm-versions).
