@@ -2506,7 +2506,6 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 		collector->major_ops_concurrent_finish.scan_vtype = major_scan_vtype_concurrent_finish;
 	}
 
-#if !defined (FIXED_HEAP) && !defined (SGEN_PARALLEL_MARK)
 	if (!is_concurrent)
 		collector->drain_gray_stack = drain_gray_stack;
 
@@ -2525,7 +2524,6 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	mono_counters_register ("Gray stack drain loops", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_drain_loops);
 	mono_counters_register ("Gray stack prefetch fills", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_drain_prefetch_fills);
 	mono_counters_register ("Gray stack prefetch failures", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_drain_prefetch_fill_failures);
-#endif
 #endif
 
 #ifdef SGEN_HEAVY_BINARY_PROTOCOL
