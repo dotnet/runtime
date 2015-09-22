@@ -194,9 +194,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.ASN1.cs">
       <Link>Interop\Unix\libcrypto\Interop.ASN1.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.EvpPkey.cs">
-      <Link>Interop\Unix\libcrypto\Interop.EvpPkey.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.Pkcs7.cs">
       <Link>Interop\Unix\libcrypto\Interop.Pkcs7.cs</Link>
     </Compile>
@@ -218,11 +215,8 @@
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\X509ExtensionSafeHandles.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\X509ExtensionSafeHandles.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeEvpPkeyHandle.Unix.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeEvpPkeyHandle.Unix.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafePkcs7Handle.Unix.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeEvpPkeyHandle.Unix.cs</Link>
+      <Link>Common\Microsoft\Win32\SafeHandles\SafePkcs7Handle.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeBioHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeBioHandle.Unix.cs</Link>
