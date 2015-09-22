@@ -45,17 +45,20 @@ namespace Internal.Cryptography.Pal
             TimeSpan remainingDownloadTime = timeout;
             X509Certificate2 leaf = new X509Certificate2(cert.Handle);
             List<X509Certificate2> downloaded = new List<X509Certificate2>();
+            List<X509Certificate2> systemTrusted = new List<X509Certificate2>();
 
             List<X509Certificate2> candidates = OpenSslX509ChainProcessor.FindCandidates(
                 leaf,
                 extraStore,
                 downloaded,
+                systemTrusted,
                 ref remainingDownloadTime);
 
             IChainPal chain = OpenSslX509ChainProcessor.BuildChain(
                 leaf,
                 candidates,
                 downloaded,
+                systemTrusted,
                 applicationPolicy,
                 certificatePolicy,
                 revocationMode,
