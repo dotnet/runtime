@@ -4,8 +4,8 @@
 namespace System.Net
 {
     internal enum SecurityStatus
-    {
-        // Success / Informational
+    {        
+        NotSet = 0,
         OK,
         ContinueNeeded,
         CompleteNeeded,

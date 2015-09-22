@@ -23,12 +23,8 @@ namespace System.Net.Security
     //
     internal class SecureChannel
     {
-        //also used as a lock object
-        internal const string SecurityPackage = "Microsoft Unified Security Protocol Provider";
-
         // When reading a frame from the wire first read this many bytes for the header.
         internal const int ReadHeaderSize = 5;
-
         private SafeFreeCredentials _credentialsHandle;
         private SafeDeleteContext _securityContext;
         private readonly string _destination;

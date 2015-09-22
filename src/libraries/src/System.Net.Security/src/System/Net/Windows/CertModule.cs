@@ -2,17 +2,18 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.Win32.SafeHandles;
-using System.Net.Security;
-using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
+using System.Net.Security;
 using System.Security.Principal;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net
 {   
     internal partial class CertModule : CertInterface
     {
+
         private static readonly object s_syncObject = new object();
 
         private static volatile X509Store s_myCertStoreEx;
@@ -187,6 +188,7 @@ namespace System.Net
         internal override X509Store EnsureStoreOpened(bool isMachineStore)
         {
             X509Store store = isMachineStore ? s_myMachineCertStoreEx : s_myCertStoreEx;
+
             if (store == null)
             {
                 lock (s_syncObject)

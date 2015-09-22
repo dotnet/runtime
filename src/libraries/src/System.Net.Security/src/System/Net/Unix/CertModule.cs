@@ -48,7 +48,6 @@ namespace System.Net
                     }
                 }
             }
-
             return sslPolicyErrors;
         }
 
@@ -58,6 +57,7 @@ namespace System.Net
         internal override X509Certificate2 GetRemoteCertificate(SafeDeleteContext securityContext, out X509Certificate2Collection remoteCertificateStore)
         {
             remoteCertificateStore = null;
+            bool gotReference = false;
 
             if (securityContext == null)
             {
@@ -70,14 +70,26 @@ namespace System.Net
             try
             {
                 int errorCode = SSPIWrapper.QueryContextRemoteCertificate(GlobalSSPI.SSPISecureChannel, securityContext, out remoteContext);
+
                 if (remoteContext != null && !remoteContext.IsInvalid)
                 {
+                    remoteContext.DangerousAddRef(ref gotReference);
                     result = new X509Certificate2(remoteContext.DangerousGetHandle());
                 }
             }
             finally
             {
-				//TODO: Fetch remoteCertificateStore, if applicable for unix
+                if (gotReference)
+                {
+                    remoteContext.DangerousRelease();
+                }
+
+                if (remoteContext != null)
+                {
+                    remoteContext.Dispose();
+                }
+
+                // TODO (Issue #3362) Fetch remoteCertificateStore, if applicable for unix
 				remoteCertificateStore = new X509Certificate2Collection();
             }
 
@@ -96,7 +108,7 @@ namespace System.Net
         //
         internal override string[] GetRequestCertificateAuthorities(SafeDeleteContext securityContext)
         {
-			//TODO populate issuers
+            // TODO (Issue #3362) populate issuers
             string[] issuers = Array.Empty<string>();          
 
             return issuers;
@@ -104,7 +116,7 @@ namespace System.Net
 
         internal override X509Store EnsureStoreOpened(bool isMachineStore)
         {
-            // TODO: fix implementation
+            // TODO (Issue #3362) do the implementation
             return null;
         }
 

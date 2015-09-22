@@ -9,7 +9,7 @@ namespace System.Net
 {
     internal static class CertWrapper
     {
-        static CertInterface certModule = new CertModule();
+        private static CertInterface certModule = new CertModule();
 
         internal static SslPolicyErrors VerifyCertificateProperties(X509Chain chain, X509Certificate2 certificate, bool checkCertName, bool isServer, string hostName)
         {

@@ -112,6 +112,7 @@ namespace System.Net.Security
 
         protected override bool ReleaseHandle()
         {
+
             if (_certHandle != null)
             {
                 _certHandle.Dispose();
@@ -141,7 +142,7 @@ namespace System.Net.Security
         //
         // Static cache will return the target handle if found the reference in the table.
         //
-        internal SafeFreeCredentials _Target;
+        internal SafeFreeCredentials Target;
 
         internal static SafeCredentialReference CreateReference(SafeFreeCredentials target)
         {
@@ -159,19 +160,19 @@ namespace System.Net.Security
             // its dispose should be postponed
             bool ignore = false;
             target.DangerousAddRef(ref ignore);
-            _Target = target;
+            Target = target;
             SetHandle(new IntPtr(0));   // make this handle valid
         }
 
         protected override bool ReleaseHandle()
         {
-            SafeFreeCredentials target = _Target;
+            SafeFreeCredentials target = Target;
             if (target != null)
             {
                 target.DangerousRelease();
             }
 
-            _Target = null;
+            Target = null;
             return true;
         }
     }
@@ -222,6 +223,6 @@ namespace System.Net.Security
 
     internal abstract class SafeFreeContextBufferChannelBinding : ChannelBinding
     {
-        // TODO: To be implemented
+        // TODO (Issue #3362) To be implemented
     }
 }
