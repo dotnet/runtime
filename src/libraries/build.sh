@@ -2,7 +2,7 @@
 
 usage()
 {
-    echo "Usage: $0 [managed] [native] [BuildArch] [BuildType] [clean] [verbose] [clangx.y]"
+    echo "Usage: $0 [managed] [native] [BuildArch] [BuildType] [clean] [verbose] [clangx.y] [platform]"
     echo "managed - optional argument to build the managed code"
     echo "native - optional argument to build the native code"
     echo "The following arguments affect native builds only:"
@@ -11,6 +11,7 @@ usage()
     echo "clean - optional argument to force a clean build."
     echo "verbose - optional argument to enable verbose build output."
     echo "clangx.y - optional argument to build using clang version x.y."
+    echo "platform can be: Windows, Linux, OSX, FreeBSD"
 
     exit 1
 }
@@ -196,26 +197,27 @@ __buildnative=false
 OSName=$(uname -s)
 case $OSName in
     Linux)
-        __BuildOS=Linux
+        __HostOS=Linux
         ;;
 
     Darwin)
-        __BuildOS=OSX
+        __HostOS=OSX
         ;;
 
     FreeBSD)
-        __BuildOS=FreeBSD
+        __HostOS=FreeBSD
         ;;
 
     *)
         echo "Unsupported OS $OSName detected, configuring as if for Linux"
-        __BuildOS=Linux
+        __HostOS=Linux
         ;;
 esac
+__BuildOS=$__HostOS
 __BuildType=Debug
 __CMakeArgs=DEBUG
 
-case $__BuildOS in
+case $__HostOS in
     FreeBSD)
         __monoroot=/usr/local
         ;;
@@ -284,6 +286,18 @@ for i in "$@"
             __ClangMajorVersion=3
             __ClangMinorVersion=7
             ;;
+        windows)
+            __BuildOS=Windows_NT
+            ;;
+        linux)
+            __BuildOS=Linux
+            ;;
+        osx)
+            __BuildOS=OSX
+            ;;
+        freebsd)
+            __BuildOS=FreeBSD
+            ;;
         *)
           __UnprocessedBuildArgs="$__UnprocessedBuildArgs $i"
     esac
@@ -294,6 +308,13 @@ done
 if [ "$__buildmanaged" = false -a "$__buildnative" = false ]; then
     __buildmanaged=true
     __buildnative=true
+fi
+
+# Disable the native build when targeting Windows.
+
+if [ "$__BuildOS" != "$__HostOS" ]; then
+    echo "Warning: cross compiling native components is not yet supported"
+    __buildnative=false
 fi
 
 # Set the remaining variables based upon the determined build configuration
