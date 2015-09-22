@@ -16,8 +16,8 @@ namespace System.Net
     {
         public Exception GetException(SecurityStatus status)
         {
-            // TODO: To be implemented
-            throw new Exception("status = " + status);
+            // TODO (Issue #3362) To be implemented
+            return new Exception("status = " + status);
         }
 
         public void VerifyPackageInfo()
@@ -27,7 +27,15 @@ namespace System.Net
         public SafeFreeCredentials AcquireCredentialsHandle(X509Certificate certificate,
             SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
-            return new SafeFreeCredentials(certificate, protocols, policy);
+            SafeFreeCredentials retVal = new SafeFreeCredentials(certificate, protocols, policy);
+            if (null != retVal)
+            {
+                // Caller does a ref count decrement
+                bool ignore = false;
+                retVal.DangerousAddRef(ref ignore);
+                // TODO (Issue #3362) retVal is not getting released now, need to be fixed.
+            }
+            return retVal;
         }
 
         public SecurityStatus AcceptSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteContext context,
@@ -52,8 +60,7 @@ namespace System.Net
         public SecurityStatus EncryptMessage(SafeDeleteContext securityContext, byte[] buffer, int size, int headerSize, int trailerSize, out int resultSize)
         {
             // Unencrypted data starts at an offset of headerSize
-            return EncryptDecryptHelper(securityContext, buffer, headerSize, size, headerSize, trailerSize, true,
-                out resultSize);
+            return EncryptDecryptHelper(securityContext, buffer, headerSize, size, headerSize, trailerSize, true, out resultSize);
         }
 
         public SecurityStatus DecryptMessage(SafeDeleteContext securityContext, byte[] buffer, ref int offset, ref int count)
@@ -70,6 +77,7 @@ namespace System.Net
         public int QueryContextChannelBinding(SafeDeleteContext phContext, ChannelBindingKind attribute,
             out SafeFreeContextBufferChannelBinding refHandle)
         {
+            // TODO (Issue #3362) To be implemented
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
 
@@ -137,6 +145,7 @@ namespace System.Net
 
         public int QueryContextIssuerList(SafeDeleteContext securityContext, out Object issuerList)
         {
+            // TODO (Issue #3362) To be implemented
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
 
@@ -176,7 +185,6 @@ namespace System.Net
             Debug.Assert(!credential.IsInvalid);
             bool gotCredReference = false;
             bool gotContextReference = false;
-            GCHandle inputHandle = new GCHandle();
 
             try
             {
@@ -208,10 +216,15 @@ namespace System.Net
                 }
                 else
                 {
-                    inputHandle = GCHandle.Alloc(inputBuffer.token, GCHandleType.Pinned);
-                    inputPtr = Marshal.UnsafeAddrOfPinnedArrayElement(inputBuffer.token, inputBuffer.offset);
-                    done = Interop.OpenSsl.DoSslHandshake(context.DangerousGetHandle(), inputPtr, inputBuffer.size, out outputPtr, out outputSize);
-                }           
+                    unsafe
+                    {
+                        fixed (byte* tokenPtr = inputBuffer.token)
+                        {
+                            inputPtr = new IntPtr(tokenPtr + inputBuffer.offset);
+                            done = Interop.OpenSsl.DoSslHandshake(context.DangerousGetHandle(), inputPtr, inputBuffer.size, out outputPtr, out outputSize);
+                        }
+                    }
+                }
 
                 outputBuffer.size = outputSize;
                 outputBuffer.offset = 0;
@@ -219,25 +232,27 @@ namespace System.Net
                 {
                     outputBuffer.token = new byte[outputBuffer.size];
                     Marshal.Copy(outputPtr, outputBuffer.token, 0, outputBuffer.size);
-                    Marshal.FreeHGlobal(outputPtr);
                 }
                 else
                 {
                     outputBuffer.token = null;
-                }      
+                }
+
+                if (outputPtr != IntPtr.Zero)
+                {
+                     Marshal.FreeHGlobal(outputPtr);
+                     outputPtr = IntPtr.Zero;
+                }
 
                 return done ? SecurityStatus.OK : SecurityStatus.ContinueNeeded;
             }
-            catch
+            catch (Exception ex)
             {
-                return SecurityStatus.InternalError;
+                Debug.Fail("Exception Caught. - " + ex);
+                return SecurityStatus.InternalError;             
             }
             finally
             {
-                if (inputHandle.IsAllocated)
-                {
-                    inputHandle.Free();
-                }
                 if (gotContextReference)
                 {
                     context.DangerousRelease();
@@ -253,33 +268,34 @@ namespace System.Net
         private SecurityStatus EncryptDecryptHelper(SafeDeleteContext securityContext, byte[] buffer, int offset, int size, int headerSize, int trailerSize, bool encrypt, out int resultSize)
         {
             bool gotReference = false;
-            GCHandle inputHandle = new GCHandle();
             resultSize = 0;
             try
             {
                 securityContext.DangerousAddRef(ref gotReference);
-                inputHandle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-                IntPtr inputPtr = Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0);
-                if (encrypt)
+
+                unsafe
                 {
-                    resultSize = Interop.OpenSsl.Encrypt(securityContext.DangerousGetHandle(), inputPtr, offset, size, buffer.Length);
+                    fixed (byte* bufferPtr = buffer)
+                    {
+                        IntPtr inputPtr = new IntPtr(bufferPtr);
+
+                        IntPtr scHandle = securityContext.DangerousGetHandle();
+
+                        resultSize = encrypt ?
+                            Interop.OpenSsl.Encrypt(scHandle, inputPtr, offset, size, buffer.Length) :
+                            Interop.OpenSsl.Decrypt(scHandle, inputPtr, size);
+                    }
                 }
-                else
-                {
-                    resultSize = Interop.OpenSsl.Decrypt(securityContext.DangerousGetHandle(), inputPtr, size);
-                }
+
                 return ((size == 0) || (resultSize > 0)) ? SecurityStatus.OK : SecurityStatus.ContextExpired;
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.Fail("Exception Caught. - " + ex);
                 return SecurityStatus.InternalError;
             }
             finally
             {
-                if (inputHandle.IsAllocated)
-                {
-                    inputHandle.Free();
-                }
                 if (gotReference)
                 {
                     securityContext.DangerousRelease();

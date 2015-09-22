@@ -23,12 +23,12 @@
     <Compile Include="System\Net\_SecurityBuffer.cs" />
     <Compile Include="System\Net\_SecurityBufferType.cs" />
     <Compile Include="System\Net\_SecureChannel.cs" />
-	<Compile Include="System\Net\SSPIInterface.cs" />
+    <Compile Include="System\Net\SSPIInterface.cs" />
     <Compile Include="System\Net\_SSPIWrapper.cs" />
-	<Compile Include="System\Net\GlobalSSPI.cs" />
-	<Compile Include="System\Net\SecurityStatus.cs" />
-	<Compile Include="System\Net\CertInterface.cs" />
-	<Compile Include="System\Net\CertWrapper.cs" />
+    <Compile Include="System\Net\GlobalSSPI.cs" />
+    <Compile Include="System\Net\SecurityStatus.cs" />
+    <Compile Include="System\Net\CertInterface.cs" />
+    <Compile Include="System\Net\CertWrapper.cs" />
     <Compile Include="System\Net\_SslSessionsCache.cs" />
     <Compile Include="System\Net\SecureProtocols\SslStream.cs" />
     <Compile Include="System\Net\SecureProtocols\AuthenticatedStream.cs" />
@@ -126,18 +126,18 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">  
-	<Compile Include="System\Net\SecurityContextTokenHandle.cs" />
-	<Compile Include="System\Net\Windows\CertModule.cs" />
-	<Compile Include="System\Net\Windows\NegotiationInfo.cs" />
-	<Compile Include="System\Net\Windows\SecSizes.cs" />
-	<Compile Include="System\Net\Windows\SecurityPackageInfoClass.cs" />
-	<Compile Include="System\Net\Windows\SslConnectionInfo.cs" />
-	<Compile Include="System\Net\Windows\StreamSizes.cs" />
-	<Compile Include="System\Net\Windows\UnmanagedCertificateContext.cs" />
+    <Compile Include="System\Net\SecurityContextTokenHandle.cs" />
+    <Compile Include="System\Net\Windows\CertModule.cs" />
+    <Compile Include="System\Net\Windows\NegotiationInfo.cs" />
+    <Compile Include="System\Net\Windows\SecSizes.cs" />
+    <Compile Include="System\Net\Windows\SecurityPackageInfoClass.cs" />
+    <Compile Include="System\Net\Windows\SslConnectionInfo.cs" />
+    <Compile Include="System\Net\Windows\StreamSizes.cs" />
+    <Compile Include="System\Net\Windows\UnmanagedCertificateContext.cs" />
     <Compile Include="System\Net\SecureProtocols\_SecuritySafeHandles.Windows.cs" />
     <Compile Include="System\Net\Windows\SSPISecureChannelType.cs" />
-	 <!-- Interop -->
-	<Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+    <!-- Interop -->
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates.cs">
@@ -161,13 +161,13 @@
   </ItemGroup>
   
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
-	<Compile Include="System\Net\Unix\CertModule.cs" />
-	<Compile Include="System\Net\Unix\SecuritySafeHandles.cs" />
-	<Compile Include="System\Net\Unix\SslConnectionInfo.cs" />
-	<Compile Include="System\Net\Unix\SSPISecureChannelType.cs" />	
-	<Compile Include="System\Net\Unix\StreamSizes.cs" />
-	<!-- Interop -->
-	<Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+    <Compile Include="System\Net\Unix\CertModule.cs" />
+    <Compile Include="System\Net\Unix\SecuritySafeHandles.cs" />
+    <Compile Include="System\Net\Unix\SslConnectionInfo.cs" />
+    <Compile Include="System\Net\Unix\SSPISecureChannelType.cs" />	
+    <Compile Include="System\Net\Unix\StreamSizes.cs" />
+    <!-- Interop -->
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libssl\Interop.libssl.cs">
