@@ -5,9 +5,10 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class libcrypto
+    internal static partial class Crypto
     {
-        [DllImport(Libraries.LibCrypto)]
-        internal static extern unsafe int RAND_pseudo_bytes(byte* buf, int num);
+        [DllImport(Libraries.CryptoNative)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool GetRandomBytes(byte[] buf, int num);
     }
 }
