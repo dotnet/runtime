@@ -4,7 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-
+using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -96,9 +96,6 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative, CharSet = CharSet.Ansi)]
         internal static extern string GetX509RootStorePath();
-
-        [DllImport(Libraries.CryptoNative)]
-        internal static extern int UpRefEvpPkey(SafeEvpPkeyHandle handle);
 
         [DllImport(Libraries.CryptoNative)]
         private static extern int GetPkcs7Certificates(SafePkcs7Handle p7, out SafeSharedX509StackHandle certs);

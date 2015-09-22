@@ -11,6 +11,7 @@ namespace Internal.Cryptography.Pal
     internal class CollectionBackedStoreProvider : IStorePal
     {
         private readonly X509Certificate2[] _certs;
+        private static readonly SafeEvpPKeyHandle InvalidPKeyHandle = new SafeEvpPKeyHandle(IntPtr.Zero, false);
 
         internal CollectionBackedStoreProvider(X509Certificate2 cert)
         {
@@ -100,18 +101,18 @@ namespace Internal.Cryptography.Pal
                 }
 
                 SafeX509Handle privateCertHandle;
-                SafeEvpPkeyHandle privateCertKeyHandle;
+                SafeEvpPKeyHandle privateCertKeyHandle;
 
                 if (privateCert != null)
                 {
                     OpenSslX509CertificateReader pal = (OpenSslX509CertificateReader)privateCert.Pal;
                     privateCertHandle = pal.SafeHandle;
-                    privateCertKeyHandle = pal.PrivateKeyHandle ?? SafeEvpPkeyHandle.InvalidHandle;
+                    privateCertKeyHandle = pal.PrivateKeyHandle ?? InvalidPKeyHandle;
                 }
                 else
                 {
                     privateCertHandle = SafeX509Handle.InvalidHandle;
-                    privateCertKeyHandle = SafeEvpPkeyHandle.InvalidHandle;
+                    privateCertKeyHandle = InvalidPKeyHandle;
                 }
 
                 using (SafePkcs12Handle pkcs12 = Interop.libcrypto.PKCS12_create(

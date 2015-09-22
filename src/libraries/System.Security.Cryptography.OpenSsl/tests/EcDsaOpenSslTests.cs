@@ -1,14 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Collections.Generic;
-using System.Security.Cryptography;
 using System.Runtime.InteropServices;
-
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.EcDsaOpenSsl.Tests
@@ -147,6 +141,95 @@ namespace System.Security.Cryptography.EcDsaOpenSsl.Tests
                 e.KeySize = 224;
                 Assert.Equal(224, e.KeySize);
                 e.Exercise();
+            }
+        }
+
+        [Fact]
+        public static void VerifyDuplicateKey_ValidHandle()
+        {
+            byte[] data = ByteUtils.RepeatByte(0x71, 11);
+
+            using (ECDsaOpenSsl first = new ECDsaOpenSsl())
+            using (SafeEvpPKeyHandle firstHandle = first.DuplicateKeyHandle())
+            {
+                using (ECDsa second = new ECDsaOpenSsl(firstHandle))
+                {
+                    byte[] signed = second.SignData(data, HashAlgorithmName.SHA512);
+                    Assert.True(first.VerifyData(data, signed, HashAlgorithmName.SHA512));
+                }
+            }
+        }
+
+        [Fact]
+        public static void VerifyDuplicateKey_DistinctHandles()
+        {
+            using (ECDsaOpenSsl first = new ECDsaOpenSsl())
+            using (SafeEvpPKeyHandle firstHandle = first.DuplicateKeyHandle())
+            using (SafeEvpPKeyHandle firstHandle2 = first.DuplicateKeyHandle())
+            {
+                Assert.NotSame(firstHandle, firstHandle2);
+            }
+        }
+
+        [Fact]
+        public static void VerifyDuplicateKey_RefCounts()
+        {
+            byte[] data = ByteUtils.RepeatByte(0x74, 11);
+            byte[] signature;
+            ECDsa second;
+
+            using (ECDsaOpenSsl first = new ECDsaOpenSsl())
+            using (SafeEvpPKeyHandle firstHandle = first.DuplicateKeyHandle())
+            {
+                signature = first.SignData(data, HashAlgorithmName.SHA384);
+                second = new ECDsaOpenSsl(firstHandle);
+            }
+
+            // Now show that second still works, despite first and firstHandle being Disposed.
+            using (second)
+            {
+                Assert.True(second.VerifyData(data, signature, HashAlgorithmName.SHA384));
+            }
+        }
+
+        [Fact]
+        public static void VerifyDuplicateKey_NullHandle()
+        {
+            SafeEvpPKeyHandle pkey = null;
+            Assert.Throws<ArgumentNullException>(() => new RSAOpenSsl(pkey));
+        }
+
+        [Fact]
+        public static void VerifyDuplicateKey_InvalidHandle()
+        {
+            using (ECDsaOpenSsl ecdsa = new ECDsaOpenSsl())
+            {
+                SafeEvpPKeyHandle pkey = ecdsa.DuplicateKeyHandle();
+
+                using (pkey)
+                {
+                }
+
+                Assert.Throws<ArgumentException>(() => new ECDsaOpenSsl(pkey));
+            }
+        }
+
+        [Fact]
+        public static void VerifyDuplicateKey_NeverValidHandle()
+        {
+            using (SafeEvpPKeyHandle pkey = new SafeEvpPKeyHandle(IntPtr.Zero, false))
+            {
+                Assert.Throws<ArgumentException>(() => new ECDsaOpenSsl(pkey));
+            }
+        }
+
+        [Fact]
+        public static void VerifyDuplicateKey_RsaHandle()
+        {
+            using (RSAOpenSsl rsa = new RSAOpenSsl())
+            using (SafeEvpPKeyHandle pkey = rsa.DuplicateKeyHandle())
+            {
+                Assert.ThrowsAny<CryptographicException>(() => new ECDsaOpenSsl(pkey));
             }
         }
 
