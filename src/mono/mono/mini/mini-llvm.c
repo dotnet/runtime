@@ -4874,7 +4874,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_ATOMIC_STORE_U8:
 		case OP_ATOMIC_STORE_R4:
 		case OP_ATOMIC_STORE_R8: {
-			LLVM_FAILURE (ctx, "atomic mono.load intrinsic");
+			LLVM_FAILURE (ctx, "atomic mono.store intrinsic");
 
 			int size;
 			gboolean sext, zext;
