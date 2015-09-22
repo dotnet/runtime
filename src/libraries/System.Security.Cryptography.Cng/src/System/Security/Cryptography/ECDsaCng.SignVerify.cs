@@ -38,7 +38,7 @@ namespace System.Security.Cryptography
 
             unsafe
             {
-                byte[] signature = CngAsymmetricAlgorithmCore.SignHash(Key, hash, AsymmetricPaddingMode.None, null, estimatedSize);
+                byte[] signature = Key.SignHash(hash, AsymmetricPaddingMode.None, null, estimatedSize);
                 return signature;
             }
         }
@@ -55,7 +55,7 @@ namespace System.Security.Cryptography
 
             unsafe
             {
-                bool verified = CngAsymmetricAlgorithmCore.VerifyHash(Key, hash, signature, AsymmetricPaddingMode.None, null);
+                bool verified = Key.VerifyHash(hash, signature, AsymmetricPaddingMode.None, null);
                 return verified;
             }
         }
