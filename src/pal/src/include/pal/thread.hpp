@@ -115,6 +115,12 @@ namespace CorUnix
     InitializeEndingThreadsData(
         void
         );
+
+    BOOL
+    GetThreadTimesInternal(
+        IN HANDLE hThread,
+        OUT LPFILETIME lpKernelTime,
+        OUT LPFILETIME lpUserTime);
         
 #ifdef FEATURE_PAL_SXS
 #if HAVE_MACH_EXCEPTIONS
