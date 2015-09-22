@@ -22,7 +22,7 @@ namespace System.Net.Http
 
         public virtual bool SupportsRedirectConfiguration
         {
-            get { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
+            get { return _curlHandler.SupportsRedirectConfiguration; }
         }
 
         public bool UseCookies
