@@ -32,7 +32,7 @@ namespace System.Security.Cryptography
                     delegate (AsymmetricPaddingMode paddingMode, void* pPaddingInfo)
                     {
                         int estimatedSize = KeySize / 8;
-                        signature = CngAsymmetricAlgorithmCore.SignHash(Key, hash, paddingMode, pPaddingInfo, estimatedSize);
+                        signature = Key.SignHash(hash, paddingMode, pPaddingInfo, estimatedSize);
                     }
                 );
                 return signature;
@@ -55,7 +55,7 @@ namespace System.Security.Cryptography
                 SignOrVerify(padding, hashAlgorithm, hash,
                     delegate (AsymmetricPaddingMode paddingMode, void* pPaddingInfo)
                     {
-                        verified = CngAsymmetricAlgorithmCore.VerifyHash(Key, hash, signature, paddingMode, pPaddingInfo);
+                        verified = Key.VerifyHash(hash, signature, paddingMode, pPaddingInfo);
                     }
                 );
                 return verified;

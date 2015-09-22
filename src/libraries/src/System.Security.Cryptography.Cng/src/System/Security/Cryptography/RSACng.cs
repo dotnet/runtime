@@ -49,7 +49,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Cryptography_ArgRSAaRequiresRSAKey, "key");
 
             _legalKeySizesValue = s_legalKeySizes;
-            Key = CngAsymmetricAlgorithmCore.Duplicate(key);
+            Key = CngAlgorithmCore.Duplicate(key);
         }
 
         protected override void Dispose(bool disposing)
@@ -57,7 +57,7 @@ namespace System.Security.Cryptography
             _core.Dispose();
         }
 
-        private CngAsymmetricAlgorithmCore _core;
+        private CngAlgorithmCore _core;
 
         // See https://msdn.microsoft.com/en-us/library/windows/desktop/bb931354(v=vs.85).aspx
         private static readonly KeySizes[] s_legalKeySizes = 
