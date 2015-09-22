@@ -7,12 +7,12 @@ using System.Text;
 
 internal static partial class Interop
 {
-    internal static partial class GlobalizationInterop
+    internal static partial class GlobalizationNative
     {
-        [DllImport(Libraries.GlobalizationInterop, CharSet = CharSet.Unicode)]
+        [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode)]
         internal static extern int IsNormalized(NormalizationForm normalizationForm, string src, int srcLen);
 
-        [DllImport(Libraries.GlobalizationInterop, CharSet = CharSet.Unicode)]
+        [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode)]
         internal static extern int NormalizeString(NormalizationForm normalizationForm, string src, int srcLen, [Out] char[] dstBuffer, int dstBufferCapacity);
     }
 }

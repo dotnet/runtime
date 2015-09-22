@@ -27,7 +27,7 @@ namespace System
                 throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, "value");
             }
 
-            int ret = Interop.GlobalizationInterop.IsNormalized(normalizationForm, value, value.Length);
+            int ret = Interop.GlobalizationNative.IsNormalized(normalizationForm, value, value.Length);
 
             if (ret == -1)
             {
@@ -60,7 +60,7 @@ namespace System
 
             for (int attempts = 2; attempts > 0; attempts--)
             {
-                int realLen = Interop.GlobalizationInterop.NormalizeString(normalizationForm, value, value.Length, buf, buf.Length);
+                int realLen = Interop.GlobalizationNative.NormalizeString(normalizationForm, value, value.Length, buf, buf.Length);
 
                 if (realLen == -1)
                 {
