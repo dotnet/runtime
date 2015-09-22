@@ -5327,7 +5327,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 			if (!values [sreg1])
 				/* Can happen with values in EH clauses */
-				LLVM_FAILURE (ctx, "incoming phi sreg1");
+				continue;
+			//LLVM_FAILURE (ctx, "incoming phi sreg1");
 
 			if (phi->opcode == OP_VPHI) {
 				g_assert (LLVMTypeOf (ctx->addresses [sreg1]) == LLVMTypeOf (values [phi->dreg]));
