@@ -20,11 +20,12 @@ Install the following packages for the toolchain:
 - cmake 
 - llvm-3.5 
 - clang-3.5 
-- lldb-3.6  
+- lldb-3.6
 - lldb-3.6-dev 
 - libunwind8 
-- libunwind8-dev  
+- libunwind8-dev
 - gettext
+- libicu-dev
 
 In order to get lldb-3.6 on Ubuntu 14.04, we need to add an additional package source:
 
@@ -36,7 +37,7 @@ ellismg@linux:~$ sudo apt-get update
 
 Then install the packages you need:
 
-`ellismg@linux:~$ sudo apt-get install cmake llvm-3.5 clang-3.5 lldb-3.6 lldb-3.6-dev libunwind8 libunwind8-dev gettext`
+`ellismg@linux:~$ sudo apt-get install cmake llvm-3.5 clang-3.5 lldb-3.6 lldb-3.6-dev libunwind8 libunwind8-dev gettext libicu-dev`
 
 You now have all the required components.
 
