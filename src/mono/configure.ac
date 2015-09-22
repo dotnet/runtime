@@ -2599,9 +2599,10 @@ if test "x$enable_llvm" = "xyes"; then
 
    # The output of --cflags seems to include optimizations flags too
    LLVM_CFLAGS=`$LLVM_CONFIG --cflags | sed -e 's/-O2//g' | sed -e 's/-O0//g' | sed -e 's/-fomit-frame-pointer//g' | sed -e 's/-fPIC//g'`
+   LLVM_CXXFLAGS=`$LLVM_CONFIG --cxxflags | sed -e 's/-O2//g' | sed -e 's/-O0//g' | sed -e 's/-fomit-frame-pointer//g' | sed -e 's/-fPIC//g'`
    # LLVM is compiled with -fno-rtti, so we need this too, since our classes inherit
    # from LLVM classes.
-   LLVM_CXXFLAGS="`$LLVM_CONFIG --cxxflags` -fno-rtti -fexceptions"
+   LLVM_CXXFLAGS="$LLVM_CXXFLAGS -fno-rtti -fexceptions"
    LLVM_LDFLAGS=`$LLVM_CONFIG --ldflags`
    # This might include empty lines
    LLVM_SYSTEM_LIBS=`$LLVM_CONFIG --system-libs 2>/dev/null | grep -- -`
