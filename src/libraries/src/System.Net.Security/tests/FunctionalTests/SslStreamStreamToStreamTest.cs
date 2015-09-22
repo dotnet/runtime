@@ -29,7 +29,8 @@ namespace System.Net.Security.Tests
                 auth[0] = client.AuthenticateAsClientAsync(certificate.Subject);
                 auth[1] = server.AuthenticateAsServerAsync(certificate);
 
-                Task.WaitAll(auth);
+                bool finished = Task.WaitAll(auth, TimeSpan.FromSeconds(3));
+                Assert.True(finished, "Handshake completed in the allotted time");
             }
         }
 
