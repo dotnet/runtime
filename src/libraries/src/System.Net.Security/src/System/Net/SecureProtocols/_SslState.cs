@@ -584,7 +584,7 @@ namespace System.Net.Security
                     asyncRequest = new AsyncProtocolRequest(lazyResult);
                     asyncRequest.Buffer = null;
 #if DEBUG
-                    lazyResult._DebugAsyncChain = asyncRequest;
+                    lazyResult._debugAsyncChain = asyncRequest;
 #endif
                 }
 

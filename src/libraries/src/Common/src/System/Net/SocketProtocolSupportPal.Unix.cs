@@ -10,8 +10,8 @@ namespace System.Net
 {
     internal class SocketProtocolSupportPal
     {
-        private static bool s_ipV4 = true;
-        private static bool s_ipV6 = true;
+        private static bool s_ipv4 = true;
+        private static bool s_ipv6 = true;
 
         private static bool s_initialized;
         private static readonly object s_initializedLock = new object();
@@ -21,7 +21,7 @@ namespace System.Net
             get
             {
                 EnsureInitialized();
-                return s_ipV6;
+                return s_ipv6;
             }
         }
 
@@ -30,7 +30,7 @@ namespace System.Net
             get
             {
                 EnsureInitialized();
-                return s_ipV4;
+                return s_ipv4;
             }
         }
 
@@ -42,8 +42,8 @@ namespace System.Net
                 {
                     if (!s_initialized)
                     {
-                        s_ipV4 = IsProtocolSupported(AddressFamily.InterNetwork);
-                        s_ipV6 = IsProtocolSupported(AddressFamily.InterNetworkV6);
+                        s_ipv4 = IsProtocolSupported(AddressFamily.InterNetwork);
+                        s_ipv6 = IsProtocolSupported(AddressFamily.InterNetworkV6);
 
                         Volatile.Write(ref s_initialized, true);
                     }

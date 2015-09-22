@@ -16,6 +16,12 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
+
+  <PropertyGroup>
+    <!-- SYSTEM_NET_PRIMITIVES_DLL is required to allow source-level code sharing for types defined within the 
+         System.Net.Internals namespace. -->
+    <DefineConstants>$(DefineConstants);SYSTEM_NET_PRIMITIVES_DLL</DefineConstants>
+  </PropertyGroup>
   
   <ItemGroup>
     <CompileItem Include="IPAddressPalTest.cs" />
@@ -39,9 +45,6 @@
     <CompileItem Include="..\..\src\System\Net\NetworkInformation\NetworkInformationException.cs" >
       <Link>ProductionCode\System\Net\NetworkInformation\NetworkInformationException.cs</Link>
     </CompileItem>
-    <CompileItem Include="..\..\src\System\Net\Sockets\SocketAddress.cs" >
-      <Link>ProductionCode\System\Net\Sockets\SocketAddress.cs</Link>
-    </CompileItem>
     <CompileItem Include="..\..\src\System\Net\SocketException.cs" >
       <Link>ProductionCode\System\Net\SocketException.cs</Link>
     </CompileItem>
@@ -56,6 +59,12 @@
     </CompileItem>
     <CompileItem Include="$(CommonPath)\System\Net\InternalException.cs" >
       <Link>ProductionCode\Common\System\Net\InternalException.cs</Link>
+    </CompileItem>
+    <CompileItem Include="$(CommonPath)\System\Net\IPAddressParserStatics.cs" >
+      <Link>ProductionCode\Common\System\Net\IPAddressParserStatics.cs</Link>
+    </CompileItem>
+    <CompileItem Include="$(CommonPath)\System\Net\SocketAddress.cs" >
+      <Link>Common\System\Net\SocketAddress.cs</Link>
     </CompileItem>
     <CompileItem Include="$(CommonPath)\System\Net\TcpValidationHelpers.cs" >
       <Link>ProductionCode\Common\System\Net\TcpValidationHelpers.cs</Link>
@@ -76,15 +85,15 @@
     <CompileItem Include="..\..\src\System\Net\HostInformationPal.Windows.cs" >
       <Link>ProductionCode\System\Net\HostInformationPal.Windows.cs</Link>
     </CompileItem>
-    <CompileItem Include="..\..\src\System\Net\SocketAddressPal.Windows.cs" >
-      <Link>ProductionCode\System\Net\SocketAddressPal.Windows.cs</Link>
-    </CompileItem>
     <CompileItem Include="..\..\src\System\Net\SocketException.Windows.cs" >
       <Link>ProductionCode\System\Net\SocketException.Windows.cs</Link>
     </CompileItem>
 
     <CompileItem Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs" >
       <Link>Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs</Link>
+    </CompileItem>
+    <CompileItem Include="$(CommonPath)\System\Net\SocketAddressPal.Windows.cs" >
+      <Link>Common\System\Net\SocketAddressPal.Windows.cs</Link>
     </CompileItem>
 
     <CompileItem Include="$(CommonPath)\Interop\Windows\IpHlpApi\Interop.ErrorCodes.cs" >
@@ -132,11 +141,12 @@
     <CompileItem Include="..\..\src\System\Net\HostInformationPal.Unix.cs" >
       <Link>ProductionCode\System\Net\HostInformationPal.Unix.cs</Link>
     </CompileItem>
-    <CompileItem Include="..\..\src\System\Net\SocketAddressPal.Unix.cs" >
-      <Link>ProductionCode\System\Net\SocketAddressPal.Unix.cs</Link>
-    </CompileItem>
     <CompileItem Include="..\..\src\System\Net\SocketException.Unix.cs" >
       <Link>ProductionCode\System\Net\SocketException.Unix.cs</Link>
+    </CompileItem>
+
+    <CompileItem Include="$(CommonPath)\System\Net\SocketAddressPal.Unix.cs" >
+      <Link>Common\System\Net\SocketAddressPal.Unix.cs</Link>
     </CompileItem>
 
     <CompileItem Include="$(CommonPath)\Interop\Interop.CheckedAccess.cs" >
@@ -162,12 +172,12 @@
     </CompileItem>
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' ">
-    <CompileItem Include="$(CommonPath)\Interop\Unix\libc\Interop.addrinfo.cs" >
-      <Link>ProductionCode\Common\Interop\Unix\libc\Interop.addrinfo.cs</Link>
+  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
+    <CompileItem Include="$(CommonPath)\Interop\Linux\libc\Interop.addrinfo.cs" >
+      <Link>ProductionCode\Common\Interop\Linux\libc\Interop.addrinfo.cs</Link>
     </CompileItem>
-    <CompileItem Include="$(CommonPath)\Interop\Unix\libc\Interop.sockaddr.cs" >
-      <Link>ProductionCode\Common\Interop\Unix\libc\Interop.sockaddr.cs</Link>
+    <CompileItem Include="$(CommonPath)\Interop\Linux\libc\Interop.sockaddr.cs" >
+      <Link>ProductionCode\Common\Interop\Linux\libc\Interop.sockaddr.cs</Link>
     </CompileItem>
   </ItemGroup>
 

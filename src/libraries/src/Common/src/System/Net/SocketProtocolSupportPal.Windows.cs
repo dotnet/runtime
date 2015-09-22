@@ -13,18 +13,18 @@ namespace System.Net
 {
     internal class SocketProtocolSupportPal
     {
-        private static bool s_IpV4 = true;
-        private static bool s_IpV6 = true;
+        private static bool s_ipv4 = true;
+        private static bool s_ipv6 = true;
 
-        private static bool s_Initialized;
-        private static readonly object s_InitializedLock = new object();
+        private static bool s_initialized;
+        private static readonly object s_initializedLock = new object();
 
         public static bool OSSupportsIPv6
         {
             get
             {
                 EnsureInitialized();
-                return s_IpV6;
+                return s_ipv6;
             }
         }
 
@@ -33,22 +33,22 @@ namespace System.Net
             get
             {
                 EnsureInitialized();
-                return s_IpV4;
+                return s_ipv4;
             }
         }
 
         private static void EnsureInitialized()
         {
-            if (!Volatile.Read(ref s_Initialized))
+            if (!Volatile.Read(ref s_initialized))
             {
-                lock (s_InitializedLock)
+                lock (s_initializedLock)
                 {
-                    if (!s_Initialized)
+                    if (!s_initialized)
                     {
-                        s_IpV4 = IsProtocolSupported(AddressFamily.InterNetwork);
-                        s_IpV6 = IsProtocolSupported(AddressFamily.InterNetworkV6);
+                        s_ipv4 = IsProtocolSupported(AddressFamily.InterNetwork);
+                        s_ipv6 = IsProtocolSupported(AddressFamily.InterNetworkV6);
 
-                        Volatile.Write(ref s_Initialized, true);
+                        Volatile.Write(ref s_initialized, true);
                     }
                 }
             }

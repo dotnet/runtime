@@ -3,10 +3,8 @@
 
 namespace System.Net
 {
-    //
-    // This class is used by the BeginMultipleSend() API
+    // This class is used by the Socket.BeginMultipleSend() API
     // to allow a user to send multiple buffers on a socket.
-    //
     internal class BufferOffsetSize
     {
         internal byte[] Buffer;
@@ -30,6 +28,7 @@ namespace System.Net
                 offset = 0;
                 buffer = newBuffer;
             }
+
             Buffer = buffer;
             Offset = offset;
             Size = size;
@@ -47,5 +46,5 @@ namespace System.Net
         }
 #endif
 
-    } // class BufferOffsetSize
-} // namespace System.Net
+    }
+}

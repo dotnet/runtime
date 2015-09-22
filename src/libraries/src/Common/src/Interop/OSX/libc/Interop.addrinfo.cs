@@ -25,6 +25,18 @@ internal static partial class Interop
         public const int EAI_FAMILY = 5;   // 'ai_family' not supported.
         public const int EAI_NONAME = 8;   // NAME or SERVICE is unknown.
 
+        public const int SOCK_STREAM = 1;
+        public const int SOCK_DGRAM = 2;
+        public const int SOCK_RAW = 3;
+        public const int SOCK_RDM = 4;
+        public const int SOCK_SEQPACKET = 5;
+
+        public const int PF_UNSPEC = 0;
+        public const int PF_UNIX = 1;
+        public const int PF_INET = 2;
+        public const int PF_INET6 = 30;
+
+#pragma warning disable 169, 649
         public unsafe struct addrinfo
         {
             public int ai_flags;
@@ -36,5 +48,6 @@ internal static partial class Interop
             public sockaddr* ai_addr;
             public addrinfo* ai_next;
         }
+#pragma warning restore 169, 649
     }
 }

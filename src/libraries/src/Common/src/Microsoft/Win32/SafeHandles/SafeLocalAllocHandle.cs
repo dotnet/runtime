@@ -10,6 +10,17 @@ namespace Microsoft.Win32.SafeHandles
     {
         private SafeLocalAllocHandle() : base(true) { }
 
+        internal static SafeLocalAllocHandle LocalAlloc(int cb)
+        {
+            SafeLocalAllocHandle result = Interop.mincore_obsolete.LocalAlloc(Interop.mincore_obsolete.LMEM_FIXED, (UIntPtr)cb);
+            if (result.IsInvalid)
+            {
+                result.SetHandleAsInvalid();
+                throw new OutOfMemoryException();
+            }
+            return result;
+        }
+        
         // 0 is an Invalid Handle
         internal SafeLocalAllocHandle(IntPtr handle) : base(true)
         {
