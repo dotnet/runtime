@@ -1922,6 +1922,12 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException
 
 	if (!code)
 		code = mono_jit_compile_method_inner (method, target_domain, opt, ex);
+
+	if (!code && mono_llvm_only) {
+		printf ("AOT method not found in llvmonly mode: %s\n", mono_method_full_name (method, 1));
+		g_assert_not_reached ();
+	}
+
 	if (!code)
 		return NULL;
 

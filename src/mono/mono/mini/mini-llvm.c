@@ -5617,6 +5617,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			gboolean rethrow = (ins->opcode == OP_RETHROW);
 			emit_throw (ctx, bb, rethrow, lhs);
 			has_terminator = TRUE;
+			ctx->unreachable [bb->block_num] = TRUE;
 			break;
 		}
 		case OP_CALL_HANDLER: {
@@ -6175,6 +6176,31 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					LLVM_FAILURE (ctx, "incoming phi arg type mismatch");
 				g_assert (LLVMTypeOf (values [sreg1]) == LLVMTypeOf (values [phi->dreg]));
 				LLVMAddIncoming (values [phi->dreg], &values [sreg1], &in_bb, 1);
+			}
+		}
+	}
+
+	/* Nullify empty phi instructions */
+	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+		GSList *l, *ins_list;
+
+		ins_list = bblocks [bb->block_num].phi_nodes;
+
+		for (l = ins_list; l; l = l->next) {
+			PhiNode *node = l->data;
+			MonoInst *phi = node->phi;
+			LLVMValueRef phi_ins = values [phi->dreg];
+			int sreg1 = node->sreg;
+			LLVMBasicBlockRef in_bb;
+
+			if (!phi_ins)
+				/* Already removed */
+				continue;
+
+			if (LLVMCountIncoming (phi_ins) == 0) {
+				mono_llvm_replace_uses_of (phi_ins, LLVMConstNull (LLVMTypeOf (phi_ins)));
+				LLVMInstructionEraseFromParent (phi_ins);
+				values [phi->dreg] = NULL;
 			}
 		}
 	}
