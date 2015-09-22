@@ -90,8 +90,8 @@ namespace System.Net.Http
 
         public bool UseDefaultCredentials
         {
-            get { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
-            set { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
+            get { return _curlHandler.UseDefaultCredentials; }
+            set { _curlHandler.UseDefaultCredentials = value; }
         }
 
         public ICredentials Credentials
