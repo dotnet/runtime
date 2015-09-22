@@ -164,7 +164,7 @@ namespace BINDER_SPACE
             }
             else
             {
-                PathString fullAssemblyPath;
+                SString fullAssemblyPath;
                 WCHAR *pwzFullAssemblyPath = fullAssemblyPath.OpenUnicodeBuffer(MAX_LONGPATH);
                 DWORD dwCCFullAssemblyPath = MAX_LONGPATH + 1; // SString allocates extra byte for null.
 
@@ -184,9 +184,6 @@ namespace BINDER_SPACE
                 {
                     assemblyPath.Set(fullAssemblyPath);
                 }
-
-                // Now turn this path into our canonical representation
-                CanonicalizePath(assemblyPath);
             }
 
             return hr;
