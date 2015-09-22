@@ -87,7 +87,7 @@ namespace System.IO
             String newDirs = Path.Combine(FullPath, path);
             String fullPath = Path.GetFullPath(newDirs);
 
-            if (0 != String.Compare(FullPath, 0, fullPath, 0, FullPath.Length, PathInternal.GetComparison()))
+            if (0 != String.Compare(FullPath, 0, fullPath, 0, FullPath.Length, PathInternal.StringComparison))
             {
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidSubPath, path, DisplayPath), "path");
             }
@@ -398,7 +398,7 @@ namespace System.IO
             if (PathInternal.IsDirectoryTooLong(fullDestDirName))
                 throw new PathTooLongException(SR.IO_PathTooLong);
 
-            StringComparison pathComparison = PathInternal.GetComparison();
+            StringComparison pathComparison = PathInternal.StringComparison;
             if (String.Equals(fullSourcePath, fullDestDirName, pathComparison))
                 throw new IOException(SR.IO_SourceDestMustBeDifferent);
 
