@@ -183,11 +183,11 @@ extern void mono_context_get_current (void *);
 #define MONO_CONTEXT_GET_CURRENT(ctx)	\
 	__asm__ __volatile__(	\
 		"movq $0x0,  %%nacl:0x00(%%r15, %0, 1)\n"	\
-		"movq %%rbx, %%nacl:0x08(%%r15, %0, 1)\n"	\
-		"movq %%rcx, %%nacl:0x10(%%r15, %0, 1)\n"	\
-		"movq %%rdx, %%nacl:0x18(%%r15, %0, 1)\n"	\
-		"movq %%rbp, %%nacl:0x20(%%r15, %0, 1)\n"	\
-		"movq %%rsp, %%nacl:0x28(%%r15, %0, 1)\n"	\
+		"movq %%rcx, %%nacl:0x08(%%r15, %0, 1)\n"	\
+		"movq %%rdx, %%nacl:0x10(%%r15, %0, 1)\n"	\
+		"movq %%rbx, %%nacl:0x18(%%r15, %0, 1)\n"	\
+		"movq %%rsp, %%nacl:0x20(%%r15, %0, 1)\n"	\
+		"movq %%rbp, %%nacl:0x28(%%r15, %0, 1)\n"	\
 		"movq %%rsi, %%nacl:0x30(%%r15, %0, 1)\n"	\
 		"movq %%rdi, %%nacl:0x38(%%r15, %0, 1)\n"	\
 		"movq %%r8,  %%nacl:0x40(%%r15, %0, 1)\n"	\
@@ -204,14 +204,15 @@ extern void mono_context_get_current (void *);
 		: "a" ((int64_t)&(ctx))	\
 		: "rdx", "memory")
 #else
+
 #define MONO_CONTEXT_GET_CURRENT(ctx)	\
 	__asm__ __volatile__(	\
 		"movq $0x0,  0x00(%0)\n"	\
-		"movq %%rbx, 0x08(%0)\n"	\
-		"movq %%rcx, 0x10(%0)\n"	\
-		"movq %%rdx, 0x18(%0)\n"	\
-		"movq %%rbp, 0x20(%0)\n"	\
-		"movq %%rsp, 0x28(%0)\n"	\
+		"movq %%rcx, 0x08(%0)\n"	\
+		"movq %%rdx, 0x10(%0)\n"	\
+		"movq %%rbx, 0x18(%0)\n"	\
+		"movq %%rsp, 0x20(%0)\n"	\
+		"movq %%rbp, 0x28(%0)\n"	\
 		"movq %%rsi, 0x30(%0)\n"	\
 		"movq %%rdi, 0x38(%0)\n"	\
 		"movq %%r8,  0x40(%0)\n"	\
