@@ -161,7 +161,7 @@ namespace System.Globalization
         /// </remarks>
         private static string NormalizeDatePattern(string input)
         {
-            StringBuilder destination = new StringBuilder(input.Length);
+            StringBuilder destination = StringBuilderCache.Acquire(input.Length);
 
             int index = 0;
             while (index < input.Length)
@@ -237,7 +237,7 @@ namespace System.Globalization
                 }
             }
 
-            return destination.ToString();
+            return StringBuilderCache.GetStringAndRelease(destination);
         }
 
         private static void NormalizeDayOfWeek(string input, StringBuilder destination, ref int index)
