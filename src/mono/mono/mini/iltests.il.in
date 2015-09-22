@@ -2781,4 +2781,20 @@ END:
     IL_001d:  ldc.i4.1
     IL_001e:  ret
   } // end of method Tests::test_0_fceq_r4
+
+  .method public static int32 test_0_switch_loop () cil managed
+  {
+	.maxstack 16
+	.locals init (valuetype Tests/TailCallStruct V_0, int32 V_1)
+	ldc.i4.0
+	ldloc.0
+	ldloc.1
+	brtrue L_1
+	L_0:
+	ldc.i4.4
+	switch (L_0)
+	L_1:
+	pop
+	ret
+  }
 }
