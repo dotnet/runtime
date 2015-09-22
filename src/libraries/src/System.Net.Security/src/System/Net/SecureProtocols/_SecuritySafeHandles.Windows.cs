@@ -219,6 +219,7 @@ namespace System.Net.Security
         }
 #endif
 
+        #if false //TODO if not used in Nego Stream as well, please remove it.
         public unsafe static int AcquireCredentialsHandle(
             string package,
             Interop.Secur32.CredentialUse intent,
@@ -326,6 +327,7 @@ namespace System.Net.Security
 
             return errorCode;
         }
+        #endif
 
         public unsafe static int AcquireCredentialsHandle(
             string package,
