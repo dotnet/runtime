@@ -852,8 +852,8 @@ arch_emit_direct_call (MonoAotCompile *acfg, const char *target, gboolean extern
 {
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 	/* Need to make sure this is exactly 5 bytes long */
-	emit_byte (acfg, '\xe8');
-	emit_symbol_diff (acfg, target, ".", -4);
+	emit_unset_mode (acfg);
+	fprintf (acfg->fp, "call %s\n", target);
 	*call_size = 5;
 #elif defined(TARGET_ARM)
 	emit_unset_mode (acfg);
