@@ -53,7 +53,11 @@ internal static partial class Interop
             internal static int SSL3_RT_MAX_ENCRYPTED_LENGTH = (SSL3_RT_MAX_ENCRYPTED_OVERHEAD +
                                                                 SSL3_RT_MAX_COMPRESSED_LENGTH);
             internal const int HEADER_SIZE = 5;
-            internal const int TRAILER_SIZE = 16;
+            // TODO: Trailer size requirement is changing based on protocol
+            //       SSL3/TLS1.0 - 68, TLS1.1 - 37 and TLS1.2 - 24
+            //       Current usage is only to compute max input buffer size for
+            //       encryption and so setting to the max
+            internal const int TRAILER_SIZE = 68;
         }
 
         internal static class SslErrorCode
