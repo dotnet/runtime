@@ -15136,7 +15136,8 @@ HRESULT Debugger::InitAppDomainIPC(void)
     } hEnsureCleanup(this);
 
     DWORD dwStrLen = 0;
-    WCHAR szExeName[MAX_LONGPATH];
+    SString szExeNamePathString;
+    WCHAR * szExeName = szExeNamePathString.OpenUnicodeBuffer(MAX_LONGPATH);
     int i;
 
     // all fields in the object can be zero initialized.
@@ -15188,6 +15189,7 @@ HRESULT Debugger::InitAppDomainIPC(void)
                                     szExeName,
                                     MAX_LONGPATH);
 
+    szExeNamePathString.CloseBuffer(dwStrLen);
     // If we couldn't get the name, then use a nice default.
     if (dwStrLen == 0)
     {

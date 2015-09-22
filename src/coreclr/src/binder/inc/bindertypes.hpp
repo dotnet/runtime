@@ -32,8 +32,6 @@ class PEAssembly;
 
 namespace BINDER_SPACE
 {
-    typedef InlineSString<512> PathString;
-
     class AssemblyVersion;
     class AssemblyName;
     class Assembly;
