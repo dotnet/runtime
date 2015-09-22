@@ -26,17 +26,17 @@ namespace System
     {
         public static Stream OpenStandardInput()
         {
-            return new UnixConsoleStream(Interop.Devices.stdin, FileAccess.Read);
+            return new UnixConsoleStream(SafeFileHandle.Open(() => Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDIN_FILENO)), FileAccess.Read);
         }
 
         public static Stream OpenStandardOutput()
         {
-            return new UnixConsoleStream(Interop.Devices.stdout, FileAccess.Write);
+            return new UnixConsoleStream(SafeFileHandle.Open(() => Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDOUT_FILENO)), FileAccess.Write);
         }
 
         public static Stream OpenStandardError()
         {
-            return new UnixConsoleStream(Interop.Devices.stderr, FileAccess.Write);
+            return new UnixConsoleStream(SafeFileHandle.Open(() => Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDERR_FILENO)), FileAccess.Write);
         }
 
         public static Encoding InputEncoding
@@ -324,22 +324,14 @@ namespace System
             internal readonly int _handleType;
 
             /// <summary>Initialize the stream.</summary>
-            /// <param name="devPath">A path to a "/dev/std*" file.</param>
+            /// <param name="handle">The file handle wrapped by this stream.</param>
             /// <param name="access">FileAccess.Read or FileAccess.Write.</param>
-            internal UnixConsoleStream(string devPath, FileAccess access)
+            internal UnixConsoleStream(SafeFileHandle handle, FileAccess access)
                 : base(access)
             {
-                Debug.Assert(devPath != null && devPath.StartsWith("/dev/std"));
-                Debug.Assert(access == FileAccess.Read || access == FileAccess.Write);
-                
-                // Open the file descriptor for this stream
-                Interop.Sys.OpenFlags flags = 0;
-                switch (access)
-                {
-                    case FileAccess.Read: flags = Interop.Sys.OpenFlags.O_RDONLY; break;
-                    case FileAccess.Write: flags = Interop.Sys.OpenFlags.O_WRONLY; break;
-                }
-                _handle = SafeFileHandle.Open(devPath, flags, 0);
+                Debug.Assert(handle != null, "Expected non-null console handle");
+                Debug.Assert(!handle.IsInvalid, "Expected valid console handle");
+                _handle = handle;
 
                 // Determine the type of the descriptor (e.g. regular file, character file, pipe, etc.)
                 bool gotFd = false;
