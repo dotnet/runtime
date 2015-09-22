@@ -13,12 +13,12 @@ namespace System.Security.Cryptography
     {
         protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
         {
-            return CngAsymmetricAlgorithmCore.HashData(data, offset, count, hashAlgorithm);
+            return CngCommon.HashData(data, offset, count, hashAlgorithm);
         }
 
         protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
         {
-            return CngAsymmetricAlgorithmCore.HashData(data, hashAlgorithm);
+            return CngCommon.HashData(data, hashAlgorithm);
         }
     }
 }
