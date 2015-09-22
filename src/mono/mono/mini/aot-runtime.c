@@ -3677,13 +3677,6 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 
 	if (!code) {
 		/* JITted method */
-		if (mono_llvm_only) {
-			if (!method)
-				method = mono_get_method (image, token, NULL);
-			printf ("AOT method not found: %s\n", mono_method_full_name (method, 1));
-			g_assert_not_reached ();
-		}
-
 		if (amodule->methods [method_index] == GINT_TO_POINTER (-1)) {
 			if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT)) {
 				char *full_name;
