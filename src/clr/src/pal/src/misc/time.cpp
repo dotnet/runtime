@@ -27,11 +27,14 @@ Abstract:
 #include <sys/time.h>
 #include <errno.h>
 #include <string.h>
+#include <sched.h>
 
 #if HAVE_MACH_ABSOLUTE_TIME
 #include <mach/mach_time.h>
 static mach_timebase_info_data_t s_TimebaseInfo;
 #endif
+
+using namespace CorUnix;
 
 SET_DEFAULT_DEBUG_CHANNEL(MISC);
 
@@ -281,17 +284,43 @@ QueryPerformanceFrequency(
     return retval;
 }
 
+/*++
+Function:
+  QueryThreadCycleTime
+
+Puts the execution time (in nanoseconds) for the thread pointed to by ThreadHandle, into the unsigned long
+pointed to by CycleTime. ThreadHandle must refer to the current thread. Returns TRUE on success, FALSE on
+failure.
+--*/
+
 BOOL
 PALAPI
 QueryThreadCycleTime(
-IN HANDLE ThreadHandle,
-OUT PULONG64 CycleTime)
+    IN HANDLE ThreadHandle,
+    OUT PULONG64 CycleTime
+    )
 {
-    // UNIXTODO: Implement this!
-    ERROR("Needs Implementation!!!");
-    return FALSE;
-}
 
+    ULONG64 calcTime;
+    FILETIME kernelTime, userTime;
+    BOOL retval = TRUE;
+
+    if(!GetThreadTimesInternal(ThreadHandle, &kernelTime, &userTime))
+    {
+        ASSERT("Could not get cycle time for current thread");
+        retval = FALSE;
+        goto EXIT;
+    }
+
+    calcTime = ((ULONG64)kernelTime.dwHighDateTime << 32);
+    calcTime += (ULONG64)kernelTime.dwLowDateTime;
+    calcTime += ((ULONG64)userTime.dwHighDateTime << 32);
+    calcTime += (ULONG64)userTime.dwLowDateTime;
+    *CycleTime = calcTime;
+
+EXIT:
+    return retval;
+}
 
 /*++
 Function:
