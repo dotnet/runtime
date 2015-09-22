@@ -116,7 +116,8 @@ mono_llvm_throw_exception (MonoException *e, gint32 *exc_tag);
 // temporarily stubbing it out. The real solution is to partition this header at
 // some point.
 gint32
-mono_llvm_match_exception (gpointer _cpp_safe_amodule, guint32 aot_method_index);
+mono_llvm_match_exception (gpointer amodule, guint32 aot_method_index,
+	guint32 region_start, guint32 region_end);
 
 void 
 mono_llvm_clear_exception (void);
