@@ -94,8 +94,11 @@ mono_exceptions_init (void)
 	if (mono_aot_only) {
 		restore_context_func = mono_aot_get_trampoline ("restore_context");
 		call_filter_func = mono_aot_get_trampoline ("call_filter");
-		throw_exception_func = mono_aot_get_trampoline ("throw_exception");
-		rethrow_exception_func = mono_aot_get_trampoline ("rethrow_exception");
+
+		if (!mono_llvm_only) {
+			throw_exception_func = mono_aot_get_trampoline ("throw_exception");
+			rethrow_exception_func = mono_aot_get_trampoline ("rethrow_exception");
+		}
 	} else {
 		MonoTrampInfo *info;
 
