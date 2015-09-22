@@ -17505,6 +17505,10 @@ unsigned            Compiler::acdHelper(SpecialCodeKind codeKind)
     switch (codeKind)
     {
     case SCK_RNGCHK_FAIL: return CORINFO_HELP_RNGCHKFAIL;
+#ifndef RYUJIT_CTPBUILD
+    case SCK_ARG_EXCPN: return CORINFO_HELP_THROW_ARGUMENTEXCEPTION;
+    case SCK_ARG_RNG_EXCPN: return CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION;
+#endif //!RYUJIT_CTPBUILD
     case SCK_DIV_BY_ZERO: return CORINFO_HELP_THROWDIVZERO;
     case SCK_ARITH_EXCPN: return CORINFO_HELP_OVERFLOW;
     default: assert(!"Bad codeKind"); return 0;
@@ -17618,8 +17622,10 @@ BasicBlock*         Compiler::fgAddCodeRef(BasicBlock*      srcBlk,
         case SCK_PAUSE_EXEC:    msg = " for PAUSE_EXEC";    break;
         case SCK_DIV_BY_ZERO:   msg = " for DIV_BY_ZERO";   break;
         case SCK_OVERFLOW:      msg = " for OVERFLOW";      break;
+#ifndef RYUJIT_CTPBUILD
         case SCK_ARG_EXCPN:     msg = " for ARG_EXCPN";     break;
         case SCK_ARG_RNG_EXCPN: msg = " for ARG_RNG_EXCPN"; break;
+#endif //!RYUJIT_CTPBUILD
         default:                msg = " for ??";            break;
         }
 
