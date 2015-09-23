@@ -144,6 +144,9 @@
   <data name="Argument_InvalidCharSequenceNoIndex" xml:space="preserve">
     <value>String contains invalid Unicode code points.</value>
   </data>
+  <data name="Argument_InvalidNormalizationForm" xml:space="preserve">
+    <value>Invalid normalization form.</value>
+  </data>
   <data name="Arg_OutOfMemoryException" xml:space="preserve">
     <value>Insufficient memory to continue the execution of the program.</value>
   </data>

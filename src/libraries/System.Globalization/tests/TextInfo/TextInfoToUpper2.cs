@@ -73,7 +73,6 @@ namespace System.Globalization.Tests
 
         // PosTest6: normal string ToUpper and TextInfo is Turkish CultureInfo's
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)] 
         public void TestTrTRNormalString()
         {
             string strA = "H\u0131!";
@@ -87,7 +86,6 @@ namespace System.Globalization.Tests
 
         // PosTest7: normal string with special symbols and TextInfo is Turkish CultureInfo's
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)] 
         public void TestTrTRStringWithSymbols()
         {
             string strA = "H\u0131\n\0Hi\u0009!";
