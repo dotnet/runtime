@@ -96,11 +96,11 @@ internal static class IOInputs
             yield return slashes + new string(slash, 5);
             yield return slashes + "S";
             yield return slashes + "S ";
-            yield return slashes + "Server";
-            yield return slashes + "Server " + slash;
-            yield return slashes + "Server " + new string(slash, 2);
-            yield return slashes + "Server" + slash + " ";
-            yield return slashes + "Server" + slash + slash + " ";
+            yield return slashes + "LOCALHOST";
+            yield return slashes + "LOCALHOST " + slash;
+            yield return slashes + "LOCALHOST " + new string(slash, 2);
+            yield return slashes + "LOCALHOST" + slash + " ";
+            yield return slashes + "LOCALHOST" + slash + slash + " ";
         }
     }
 
@@ -112,7 +112,7 @@ internal static class IOInputs
             yield return deviceName;
             yield return Path.Combine(root, deviceName);
             yield return Path.Combine(root, "Directory", deviceName);
-            yield return Path.Combine(new string(Path.DirectorySeparatorChar, 2), "Server", deviceName);
+            yield return Path.Combine(new string(Path.DirectorySeparatorChar, 2), "LOCALHOST", deviceName);
         }
     }
 
@@ -179,7 +179,7 @@ internal static class IOInputs
             yield return @"file:///C|/My Documents/ALetter.html";
             yield return @"\\?\";
             yield return @"\\?\UNC\";
-            yield return @"\\?\UNC\Server";
+            yield return @"\\?\UNC\LOCALHOST";
 
             /* Bug 1011730.  CoreCLR checks : before invalid characters and throws NotSupportedException for these.
             yield return @"\\?\C:";
@@ -212,9 +212,9 @@ internal static class IOInputs
         yield return String.Format(@"C:\{0}\Filename.txt", component);
         yield return String.Format(@"C:\{0}\Filename.txt\", component);
         yield return String.Format(@"\\{0}\Share", component);
-        yield return String.Format(@"\\Server\{0}", component);
-        yield return String.Format(@"\\Server\{0}\FileName.txt", component);
-        yield return String.Format(@"\\Server\Share\{0}", component);
+        yield return String.Format(@"\\LOCALHOST\{0}", component);
+        yield return String.Format(@"\\LOCALHOST\{0}\FileName.txt", component);
+        yield return String.Format(@"\\LOCALHOST\Share\{0}", component);
     }
 
     public static IEnumerable<string> GetPathsLongerThanMaxDirectory(string rootPath)

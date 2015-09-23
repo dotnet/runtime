@@ -11,7 +11,6 @@ namespace System.Globalization.Extensions.Tests
     public class StringNormalization
     {
         [Fact]
-        [ActiveIssue(810, PlatformID.AnyUnix)]
         public void NormalizeTest()
         {
             string composed = "\u00C4\u00C7"; // "ÄÇ"
@@ -52,7 +51,6 @@ namespace System.Globalization.Extensions.Tests
         }
 
         [Fact]
-        [ActiveIssue(810, PlatformID.AnyUnix)]
         public void ExceptionsTest()
         {
             string fi = "\uFB01";
@@ -66,11 +64,14 @@ namespace System.Globalization.Extensions.Tests
 
             // "Expected to throw with invalid codepoint"
             Assert.Throws<ArgumentException>(() => invalidCodepoint.Normalize());
+            Assert.Throws<ArgumentException>(() => invalidCodepoint.IsNormalized());
             // "Expected to throw with invalid surrogate pair"
             Assert.Throws<ArgumentException>(() => invalidSurrogate.Normalize());
+            Assert.Throws<ArgumentException>(() => invalidSurrogate.IsNormalized());
 
             //  "Expected ArgumentNullException when passing null string"
             Assert.Throws<ArgumentNullException>(() => StringNormalizationExtensions.Normalize(null));
+            Assert.Throws<ArgumentNullException>(() => StringNormalizationExtensions.IsNormalized(null));
         }
     }
 }

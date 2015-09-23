@@ -111,7 +111,7 @@ namespace System.Runtime.Serialization
 
         private void Rehash()
         {
-            int size = GetPrime(m_objs.Length * 2);
+            int size = GetPrime(m_objs.Length + 1); // The lookup does an inherent doubling
             int[] oldIds = m_ids;
             object[] oldObjs = m_objs;
             m_ids = new int[size];
@@ -138,30 +138,9 @@ namespace System.Runtime.Serialization
                 if (prime >= min) return prime;
             }
 
-            //outside of our predefined table. 
-            //compute the hard way. 
-            for (int i = (min | 1); i < Int32.MaxValue; i += 2)
-            {
-                if (IsPrime(i))
-                    return i;
-            }
             return min;
         }
 
-        private static bool IsPrime(int candidate)
-        {
-            if ((candidate & 1) != 0)
-            {
-                int limit = (int)Math.Sqrt(candidate);
-                for (int divisor = 3; divisor <= limit; divisor += 2)
-                {
-                    if ((candidate % divisor) == 0)
-                        return false;
-                }
-                return true;
-            }
-            return (candidate == 2);
-        }
 
         /// <SecurityNote>
         /// Review - Static fields are marked SecurityCritical or readonly to prevent
@@ -171,6 +150,9 @@ namespace System.Runtime.Serialization
         {
             3, 7, 17, 37, 89, 197, 431, 919, 1931, 4049, 8419, 17519, 36353,
             75431, 156437, 324449, 672827, 1395263, 2893249, 5999471,
+            11998949, 23997907, 47995853, 95991737, 191983481, 383966977, 767933981, 1535867969,
+            2146435069, 0X7FEFFFFF
+            // 0X7FEFFFFF is not prime, but it is the largest possible array size. There's nowhere to go from here.
         };
     }
 }

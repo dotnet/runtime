@@ -123,6 +123,10 @@ namespace System
             // Copy our buffer into our new string, which will be the appropriate size
             return new string(cBuffer, 0, iLength);
         }
+
+        // -----------------------------
+        // ---- PAL layer ends here ----
+        // -----------------------------
     }
 }
 
