@@ -35,7 +35,8 @@
     <Compile Include="IntersectTests.cs" />
     <Compile Include="LastOrDefaultTests.cs" />
     <Compile Include="LastTests.cs" />
-    <Compile Include="MinMaxTests.cs" />
+    <Compile Include="MaxTests.cs" />
+    <Compile Include="MinTests.cs" />
     <Compile Include="Performance\CastPerf.cs" />
     <Compile Include="Performance\LinqPerformanceCore.cs" />
     <Compile Include="Performance\OrderByThenByPerf.cs" />
@@ -72,8 +73,6 @@
     <Compile Include="LegacyTests\Helper.cs" />
     <Compile Include="JoinTests.cs" />
     <Compile Include="LongCountTests.cs" />
-    <Compile Include="LegacyTests\MaxTests.cs" />
-    <Compile Include="LegacyTests\MinTests.cs" />
     <Compile Include="OfTypeTests.cs" />
     <Compile Include="OrderByDescendingTests.cs" />
     <Compile Include="OrderByTests.cs" />
