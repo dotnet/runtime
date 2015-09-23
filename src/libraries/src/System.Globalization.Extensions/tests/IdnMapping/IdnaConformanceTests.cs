@@ -34,7 +34,6 @@ namespace System.Globalization.Extensions.Tests
         /// Tests positive cases for GetAscii. 
         /// </summary>
         [Fact]
-        [ActiveIssue(810, PlatformID.AnyUnix)]
         public void TestAsciiPositive()
         {
             foreach (var entry in Factory.GetDataset())
@@ -56,7 +55,7 @@ namespace System.Globalization.Extensions.Tests
         /// There are some others that failed which have been commented out and marked in the dataset as "GETUNICODE DOES FAILS ON WINDOWS 8.1"
         /// </summary>
         [Fact]
-        [ActiveIssue(810, PlatformID.AnyUnix)]
+        [ActiveIssue(3406, PlatformID.AnyUnix)]
         public void TestUnicodePositive()
         {
             foreach (var entry in Factory.GetDataset())
@@ -86,7 +85,6 @@ namespace System.Globalization.Extensions.Tests
         /// from the 6.0\IdnaTest.txt.  To find them, search for "GETASCII DOES NOT FAIL ON WINDOWS 8.1"
         /// </remarks>
         [Fact]
-        [ActiveIssue(810, PlatformID.AnyUnix)]
         public void TestAsciiNegative()
         {
             foreach (var entry in Factory.GetDataset())
@@ -107,7 +105,7 @@ namespace System.Globalization.Extensions.Tests
         /// from the 6.0\IdnaTest.txt.  To find them, search for "GETUNICODE DOES NOT FAIL ON WINDOWS 8.1"
         /// </remarks>
         [Fact]
-        [ActiveIssue(810, PlatformID.AnyUnix)]
+        [ActiveIssue(3406, PlatformID.AnyUnix)]
         public void TestUnicodeNegative()
         {
             foreach (var entry in Factory.GetDataset())
