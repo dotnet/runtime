@@ -22,7 +22,6 @@ namespace System.Globalization.Extensions.Tests
         }
 
         [Fact]
-        [ActiveIssue(810, PlatformID.AnyUnix)]
         public static void GetUnicodeThrows()
         {
             IdnMapping idnMapping = new IdnMapping();
