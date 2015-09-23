@@ -272,7 +272,6 @@ BOOL
 CONTEXT_GetThreadContext(
          DWORD dwProcessId,
          pthread_t self,
-         DWORD dwLwpId,
          LPCONTEXT lpContext)
 {    
     BOOL ret = FALSE;
@@ -343,7 +342,6 @@ BOOL
 CONTEXT_SetThreadContext(
            DWORD dwProcessId,
            pthread_t self,
-           DWORD dwLwpId,
            CONST CONTEXT *lpContext)
 {
     BOOL ret = FALSE;
@@ -999,7 +997,6 @@ BOOL
 CONTEXT_GetThreadContext(
          DWORD dwProcessId,
          pthread_t self,
-         DWORD dwLwpId,
          LPCONTEXT lpContext)
 {
     BOOL ret = FALSE;
@@ -1232,7 +1229,6 @@ BOOL
 CONTEXT_SetThreadContext(
            DWORD dwProcessId,
            pthread_t self,
-           DWORD dwLwpId,
            CONST CONTEXT *lpContext)
 {
     BOOL ret = FALSE;

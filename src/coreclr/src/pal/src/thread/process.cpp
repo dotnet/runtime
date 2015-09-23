@@ -4043,8 +4043,7 @@ CorUnix::CPalThread *PROCThreadFromMachPort(mach_port_t hTargetThread)
     pThread = pGThreadList;
     while (pThread)
     {
-        pthread_t pPThread = pThread->GetPThreadSelf();
-        mach_port_t hThread = pthread_mach_thread_np(pPThread);
+        mach_port_t hThread = pThread->GetMachPortSelf();
         if (hThread == hTargetThread)
             break;
 
