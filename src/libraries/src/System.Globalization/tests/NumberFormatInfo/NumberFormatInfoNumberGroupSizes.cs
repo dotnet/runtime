@@ -69,7 +69,7 @@ namespace System.Globalization.Tests
         [Theory]
         [InlineData("en-US", 3, 0)]
         [InlineData("ur-IN", 3, 2)]
-        [ActiveIssue(3243, PlatformID.OSX)]
+        [ActiveIssue(3243)]
         public void TestNumberGroupSizesLocale(string locale, int primaryGroupSize, int secondaryGroupSize)
         {
             CultureInfo myTestCulture = new CultureInfo(locale);

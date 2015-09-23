@@ -65,8 +65,8 @@ namespace System.Globalization.Tests
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                // note for Win10 this returns FirstFourDayWeek, not FirstFullWeek
-                Assert.Equal(CalendarWeekRule.FirstFullWeek, actual);
+                // note for Win10 this returns FirstFourDayWeek, not FirstFullWeek, this should be cleaned up as part of #3243
+                Assert.True(actual == CalendarWeekRule.FirstFullWeek || actual == CalendarWeekRule.FirstFourDayWeek);
             }
             else
             {
