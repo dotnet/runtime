@@ -6138,6 +6138,12 @@ mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, Mo
 
 #ifndef DISABLE_JIT
 
+static G_GNUC_UNUSED void
+unaligned_stack (MonoMethod *method)
+{
+	g_assert_not_reached ();
+}
+
 /*
  * Stack frame layout:
  * 
@@ -6291,6 +6297,23 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		MONO_BB_FOR_EACH_INS (bb, ins)
 			max_offset += ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
 	}
+
+	/* stack alignment check */
+	/*
+	if (!cfg->compile_aot) {
+		guint8 *buf [16];
+		ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_SP);
+		code = mono_arm_emit_load_imm (code, ARMREG_IP, MONO_ARCH_FRAME_ALIGNMENT -1);
+		ARM_AND_REG_REG (code, ARMREG_LR, ARMREG_LR, ARMREG_IP);
+		ARM_CMP_REG_IMM (code, ARMREG_LR, 0, 0);
+		buf [0] = code;
+		ARM_B_COND (code, ARMCOND_EQ, 0);
+		code = mono_arm_emit_load_imm (code, ARMREG_R0, (guint32)cfg->method);
+		code = mono_arm_emit_load_imm (code, ARMREG_LR, (guint32)unaligned_stack);
+		code = emit_call_reg (code, ARMREG_LR);
+		arm_patch (buf [0], code);
+	}
+	*/
 
 	/* store runtime generic context */
 	if (cfg->rgctx_var) {
