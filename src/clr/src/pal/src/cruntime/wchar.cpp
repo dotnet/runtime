@@ -1450,7 +1450,7 @@ PAL_wcsncat( wchar_16 * strDest, const wchar_16 *strSource, size_t count )
 static BOOL MISC_CRT_WCSTOD_IsValidCharacter( WCHAR c )
 {
     if ( c == '+' || c == '-' || c == '.' || ( c >= '0' && c <= '9' ) || 
-         c == 'e' || c == 'E' || c == 'd' || c == 'd' )
+         c == 'e' || c == 'E' || c == 'd' || c == 'D' )
     {
         return TRUE;
     }
