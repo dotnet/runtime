@@ -163,7 +163,25 @@ namespace System.Linq.Tests
             IEnumerable<int> source = null;
             Func<int, int> selector = i => i + 1;
 
-            Assert.Throws<ArgumentNullException>(() => source.Select(selector));
+            Assert.Throws<ArgumentNullException>("source", () => source.Select(selector));
+        }
+
+        [Fact]
+        public void Select_SelectorIsNull_ArgumentNullExceptionThrown_Indexed()
+        {
+            IEnumerable<int> source = Enumerable.Range(1, 10);
+            Func<int, int, int> selector = null;
+
+            Assert.Throws<ArgumentNullException>("selector", () => source.Select(selector));
+        }
+
+        [Fact]
+        public void Select_SourceIsNull_ArgumentNullExceptionThrown_Indexed()
+        {
+            IEnumerable<int> source = null;
+            Func<int, int, int> selector = (e, i) => i + 1;
+
+            Assert.Throws<ArgumentNullException>("source", () => source.Select(selector));
         }
 
         [Fact]
@@ -172,9 +190,8 @@ namespace System.Linq.Tests
             IEnumerable<int> source = Enumerable.Range(1, 10);
             Func<int, int> selector = null;
 
-            Assert.Throws<ArgumentNullException>(() => source.Select(selector));
+            Assert.Throws<ArgumentNullException>("selector", () => source.Select(selector));
         }
-
         [Fact]
         public void Select_SourceIsAnArray_ExecutionIsDeferred()
         {
