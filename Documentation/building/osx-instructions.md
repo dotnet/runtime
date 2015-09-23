@@ -49,6 +49,10 @@ Mono
 
 [Mono](http://www.mono-project.com/) is needed in order to run NuGet.exe and to build CoreFX. NuGet will add .NET Core support at some point soon. You can download it from the [Mono downloads](http://www.mono-project.com/docs/getting-started/install/mac/) page.
 
+ICU
+---
+ICU (International Components for Unicode) is also required to build and run. It can be obtained via [Homebrew](http://brew.sh/) with `brew install icu4c`.
+
 Demo directory
 --------------
 

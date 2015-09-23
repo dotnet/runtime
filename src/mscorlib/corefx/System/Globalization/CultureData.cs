@@ -56,6 +56,8 @@ namespace System.Globalization
     internal partial class CultureData
     {
         const int undef = -1;
+        const int LOCALE_CUSTOM_UNSPECIFIED = 0x1000;
+        const int LOCALE_CUSTOM_DEFAULT = 0x0c00;
 
         // Override flag
         private String sRealName; // Name you passed in (ie: en-US, en, or de-DE_phoneb)
@@ -450,8 +452,7 @@ namespace System.Globalization
                     invariant.sPerMille = "\x2030";               // PerMille(‰) symbol
 
                     // Currency
-                    // TODO: CoreFX #846 Put sCurrency back to its correct Invariant value.
-                    invariant.sCurrency = "$"; // "\x00a4";         // local monetary symbol "¤: for international monetary symbol
+                    invariant.sCurrency = "\x00a4";         // local monetary symbol "¤: for international monetary symbol
                     invariant.sIntlMonetarySymbol = "XDR";                  // international monetary symbol (RegionInfo)
                     invariant.iCurrencyDigits = 2;                      // # local monetary fractional digits
                     invariant.iCurrency = 0;                      // positive currency format
@@ -471,7 +472,6 @@ namespace System.Globalization
                     invariant.saShortTimes = new String[] { "HH:mm", "hh:mm tt", "H:mm", "h:mm tt" }; // short time format
                     invariant.saDurationFormats = new String[] { "HH:mm:ss" };                             // time duration format
 
-
                     // Calendar specific data
                     invariant.iFirstDayOfWeek = 0;                      // first day of week
                     invariant.iFirstWeekOfYear = 0;                      // first week of year
@@ -484,9 +484,9 @@ namespace System.Globalization
                     // Text information
                     invariant.iReadingLayout = 0;
 
-                    // These are desktop only, not coreclr
-
+                    // Language
                     invariant.iLanguage = 0x007f;                 // locale ID (0409) - NO sort information
+
                     // Remember it
                     s_Invariant = invariant;
                 }
@@ -1956,6 +1956,11 @@ namespace System.Globalization
             return -1;
         }
 
+        private static bool IsCustomCultureId(int cultureId)
+        {
+            return (cultureId == LOCALE_CUSTOM_DEFAULT || cultureId == LOCALE_CUSTOM_UNSPECIFIED);
+        }
+
         internal void GetNFIValues(NumberFormatInfo nfi)
         {
             if (this.IsInvariantCulture)
@@ -2157,6 +2162,8 @@ namespace System.Globalization
             NegativeMonetaryNumberFormat = 0x0000001C,
             /// <summary>type of calendar specifier (coresponds to LOCALE_ICALENDARTYPE)</summary>
             CalendarType = 0x00001009,
+            /// <summary>first day of week specifier (coresponds to LOCALE_IFIRSTDAYOFWEEK)</summary>
+            FirstDayOfWeek = 0x0000100C,
             /// <summary>first week of year specifier (coresponds to LOCALE_IFIRSTWEEKOFYEAR)</summary>
             FirstWeekOfYear = 0x0000100D,
             /// <summary>
