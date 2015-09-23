@@ -11,7 +11,6 @@ namespace System.Globalization.Tests
     {
         // PosTest1:Return the property EngLishName in RegionInfo object 1
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)] 
         public void PosTest1()
         {
             RegionInfo regionInfo = new RegionInfo("en-US");
@@ -21,7 +20,6 @@ namespace System.Globalization.Tests
 
         // PosTest2:Return the property EngLishName in RegionInfo object 2
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)] 
         public void PosTest2()
         {
             RegionInfo regionInfo = new RegionInfo("US");
@@ -31,17 +29,15 @@ namespace System.Globalization.Tests
 
         // PosTest3:Return the property EngLishName in RegionInfo object 3
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)] 
         public void PosTest3()
         {
             RegionInfo regionInfo = new RegionInfo("CN");
-            string strVal = regionInfo.EnglishName;  
+            string strVal = regionInfo.EnglishName;
             Assert.True(strVal == "China" || strVal == "People's Republic of China");
         }
 
         // PosTest4:Return the property EngLishName in RegionInfo object 4
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)] 
         public void PosTest4()
         {
             RegionInfo regionInfo = new RegionInfo("zh-CN");

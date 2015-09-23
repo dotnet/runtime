@@ -24,7 +24,6 @@ namespace System.Globalization.Tests
 
         // PosTest2: Verify the TextInfo is not same  CultureInfo's
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)] 
         public void TestFrFRGetHashCode()
         {
             TextInfo textInfoFrance = new CultureInfo("fr-FR").TextInfo;

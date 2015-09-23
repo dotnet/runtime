@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -7,59 +7,57 @@ using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class NumberFormatInfoCurrencyPositivePattern
+    public class NumberFormatInfoNumberNegativePattern
     {
-        // PosTest1: Verify default value of property CurrencyPositivePattern
+        // TestDefault: Verify default value of property NumberNegativePattern
         [Fact]
         public void TestDefault()
         {
             NumberFormatInfo nfi = new NumberFormatInfo();
-
-            int expected = nfi.CurrencyPositivePattern;
-            Assert.Equal(0, expected);
+            int expected = nfi.NumberNegativePattern;
+            Assert.Equal(1, expected);
         }
 
-        // PosTest2: Verify set value of property CurrencyPositivePattern
+        // TestSetValue: Verify set value of property NumberNegativePattern
         [Fact]
         public void TestSetValue()
         {
             NumberFormatInfo nfi = new NumberFormatInfo();
-            for (int i = 0; i <= 3; i++)
+            for (int i = 0; i <= 4; i++)
             {
-                nfi.CurrencyPositivePattern = i;
-                Assert.Equal(i, nfi.CurrencyPositivePattern);
+                nfi.NumberNegativePattern = i;
+                Assert.Equal(i, nfi.NumberNegativePattern);
             }
         }
 
-        // TestArgumentOutOfRange: ArgumentOutOfRangeException is thrown
+        // TestArgumentOutOfRangeException: ArgumentOutOfRangeException is thrown
         [Fact]
-        public void TestArgumentOutOfRange()
+        public void TestArgumentOutOfRangeException()
         {
             VerificationHelper<ArgumentOutOfRangeException>(-1);
-            VerificationHelper<ArgumentOutOfRangeException>(4);
+            VerificationHelper<ArgumentOutOfRangeException>(5);
         }
 
-        // TestInvalidOperation: InvalidOperationException is thrown
+        // TestInvalidOperationException: InvalidOperationException is thrown
         [Fact]
-        public void TestInvalidOperation()
+        public void TestInvalidOperationException()
         {
             NumberFormatInfo nfi = new NumberFormatInfo();
             NumberFormatInfo nfiReadOnly = NumberFormatInfo.ReadOnly(nfi);
             Assert.Throws<InvalidOperationException>(() =>
             {
-                nfiReadOnly.CurrencyPositivePattern = 1;
+                nfiReadOnly.NumberNegativePattern = 1;
             });
         }
 
-        // TestCurrencyPositivePatternLocale: Verify value of property CurrencyPositivePattern for specific locales
+        // TestNumberNegativePatternLocale: Verify value of property NumberNegativePattern for specific locales
         [Theory]
-        [InlineData("en-US", 0)]
-        [InlineData("fr-FR", 3)]
-        public void TestCurrencyPositivePatternLocale(string locale, int expected)
+        [InlineData("en-US", 1)]
+        public void TestNumberNegativePatternLocale(string locale, int expected)
         {
             CultureInfo myTestCulture = new CultureInfo(locale);
             NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int actual = nfi.CurrencyPositivePattern;
+            int actual = nfi.NumberNegativePattern;
             Assert.Equal(expected, actual);
         }
 
@@ -68,8 +66,8 @@ namespace System.Globalization.Tests
             NumberFormatInfo nfi = new NumberFormatInfo();
             Assert.Throws<T>(() =>
             {
-                nfi.CurrencyPositivePattern = i;
-                int actual = nfi.CurrencyPositivePattern;
+                nfi.NumberNegativePattern = i;
+                int actual = nfi.NumberNegativePattern;
             });
         }
     }

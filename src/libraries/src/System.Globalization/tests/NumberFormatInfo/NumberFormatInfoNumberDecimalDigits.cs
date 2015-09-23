@@ -1,33 +1,33 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class NumberFormatInfoCurrencyPositivePattern
+    public class NumberFormatInfoNumberDecimalDigits
     {
-        // PosTest1: Verify default value of property CurrencyPositivePattern
+        // PosTest1: Verify property NumberDecimalDigits default value
         [Fact]
-        public void TestDefault()
+        public void PosTest1()
         {
             NumberFormatInfo nfi = new NumberFormatInfo();
-
-            int expected = nfi.CurrencyPositivePattern;
-            Assert.Equal(0, expected);
+            Assert.Equal(2, nfi.NumberDecimalDigits);
         }
 
-        // PosTest2: Verify set value of property CurrencyPositivePattern
+        // PosTest2: Verify set value of property NumberDecimalDigits
         [Fact]
-        public void TestSetValue()
+        public void PosTest2()
         {
             NumberFormatInfo nfi = new NumberFormatInfo();
-            for (int i = 0; i <= 3; i++)
+
+            for (int i = 0; i < 100; i++)
             {
-                nfi.CurrencyPositivePattern = i;
-                Assert.Equal(i, nfi.CurrencyPositivePattern);
+                nfi.NumberDecimalDigits = i;
+                Assert.Equal(i, nfi.NumberDecimalDigits);
             }
         }
 
@@ -36,7 +36,7 @@ namespace System.Globalization.Tests
         public void TestArgumentOutOfRange()
         {
             VerificationHelper<ArgumentOutOfRangeException>(-1);
-            VerificationHelper<ArgumentOutOfRangeException>(4);
+            VerificationHelper<ArgumentOutOfRangeException>(100);
         }
 
         // TestInvalidOperation: InvalidOperationException is thrown
@@ -47,19 +47,21 @@ namespace System.Globalization.Tests
             NumberFormatInfo nfiReadOnly = NumberFormatInfo.ReadOnly(nfi);
             Assert.Throws<InvalidOperationException>(() =>
             {
-                nfiReadOnly.CurrencyPositivePattern = 1;
+                nfiReadOnly.NumberDecimalDigits = 1;
             });
         }
 
-        // TestCurrencyPositivePatternLocale: Verify value of property CurrencyPositivePattern for specific locales
+        // TestCurrencyNumberDecimalDigitsLocale: Verify value of property NumberDecimalDigits for specific locales
         [Theory]
-        [InlineData("en-US", 0)]
-        [InlineData("fr-FR", 3)]
-        public void TestCurrencyPositivePatternLocale(string locale, int expected)
+        [InlineData("en-US", 2, 3)]
+        public void TestCurrencyNumberDecimalDigitsLocale(string locale, int expectedWindows, int expectedIcu)
         {
             CultureInfo myTestCulture = new CultureInfo(locale);
             NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int actual = nfi.CurrencyPositivePattern;
+            int actual = nfi.NumberDecimalDigits;
+            int expected = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? expectedWindows : expectedIcu;
+
+            // todo: determine if Windows version needs to support "accounting" currency explictly which contains parenthesis
             Assert.Equal(expected, actual);
         }
 
@@ -68,8 +70,8 @@ namespace System.Globalization.Tests
             NumberFormatInfo nfi = new NumberFormatInfo();
             Assert.Throws<T>(() =>
             {
-                nfi.CurrencyPositivePattern = i;
-                int actual = nfi.CurrencyPositivePattern;
+                nfi.NumberDecimalDigits = i;
+                int actual = nfi.NumberDecimalDigits;
             });
         }
     }

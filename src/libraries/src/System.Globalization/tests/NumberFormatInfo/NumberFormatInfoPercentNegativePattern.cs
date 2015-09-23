@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -8,26 +8,26 @@ using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class NumberFormatInfoCurrencyDecimalDigits
+    public class NumberFormatInfoPercentNegativePattern
     {
-        // PosTest1: Verify property CurrencyDecimalDigits default value
+        // PosTest1: Verify default value of property PercentNegativePattern
         [Fact]
-        public void PosTest1()
+        public void TestDefault()
         {
             NumberFormatInfo nfi = new NumberFormatInfo();
-            Assert.Equal(2, nfi.CurrencyDecimalDigits);
+            int expected = nfi.PercentNegativePattern;
+            Assert.Equal(0, expected);
         }
 
-        // PosTest2: Verify set value of property CurrencyDecimalDigits
+        // PosTest2: Verify set value of property PercentNegativePattern
         [Fact]
-        public void PosTest2()
+        public void TestSetValue()
         {
             NumberFormatInfo nfi = new NumberFormatInfo();
-
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i <= 11; i++)
             {
-                nfi.CurrencyDecimalDigits = i;
-                Assert.Equal(i, nfi.CurrencyDecimalDigits);
+                nfi.PercentNegativePattern = i;
+                Assert.Equal(i, nfi.PercentNegativePattern);
             }
         }
 
@@ -36,7 +36,7 @@ namespace System.Globalization.Tests
         public void TestArgumentOutOfRange()
         {
             VerificationHelper<ArgumentOutOfRangeException>(-1);
-            VerificationHelper<ArgumentOutOfRangeException>(100);
+            VerificationHelper<ArgumentOutOfRangeException>(12);
         }
 
         // TestInvalidOperation: InvalidOperationException is thrown
@@ -47,32 +47,32 @@ namespace System.Globalization.Tests
             NumberFormatInfo nfiReadOnly = NumberFormatInfo.ReadOnly(nfi);
             Assert.Throws<InvalidOperationException>(() =>
             {
-                nfiReadOnly.CurrencyDecimalDigits = 1;
+                nfiReadOnly.PercentNegativePattern = 1;
             });
         }
 
-        // TestCurrencyDecimalDigitsLocale1: Verify value of property CurrencyDecimalDigits for specific locale
+        // TestPercentNegativePatternLocale: Verify value of property PercentNegativePattern for specific locales
         [Theory]
-        [InlineData("en-US", 2)]
-        public void TestCurrencyDecimalDigitsLocale1(string locale, int expected)
+        [InlineData("en-US", 0, 1)]
+        public void TestPercentNegativePatternLocale(string locale, int expectedWindows, int expectedIcu)
         {
             CultureInfo myTestCulture = new CultureInfo(locale);
             NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int actual = nfi.CurrencyDecimalDigits;
+            int actual = nfi.PercentNegativePattern;
+            int expected = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? expectedWindows : expectedIcu;
+            // todo: determine why some values are different
             Assert.Equal(expected, actual);
         }
 
-        // TestCurrencyDecimalDigitsLocale2: Verify value of property CurrencyDecimalDigits for specific locale
+        // TestPercentNegativePatternLocale2: Verify value of property PercentNegativePattern for specific locales
         [Theory]
-        [InlineData("ko", 0, 2)]
-        public void TestCurrencyDecimalDigitsLocale2(string locale, int expectedWindows, int expectedIcu)
+        [InlineData("en-MY", 1)]
+        [InlineData("tr", 2)]
+        public void TestPercentNegativePatternLocale2(string locale, int expected)
         {
             CultureInfo myTestCulture = new CultureInfo(locale);
             NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int actual = nfi.CurrencyDecimalDigits;
-            int expected = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? expectedWindows : expectedIcu;
-
-            // todo: determine why some values are different
+            int actual = nfi.PercentNegativePattern;
             Assert.Equal(expected, actual);
         }
 
@@ -81,8 +81,8 @@ namespace System.Globalization.Tests
             NumberFormatInfo nfi = new NumberFormatInfo();
             Assert.Throws<T>(() =>
             {
-                nfi.CurrencyDecimalDigits = i;
-                int actual = nfi.CurrencyDecimalDigits;
+                nfi.PercentNegativePattern = i;
+                int actual = nfi.PercentNegativePattern;
             });
         }
     }

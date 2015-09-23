@@ -12,7 +12,6 @@ namespace System.Globalization.CalendarsTests
         #region Positive Test Cases
         // PosTest1: Call MaxSupportedDateTime to get max supported date time
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void PosTest1()
         {
             DateTime actual = new JapaneseCalendar().MaxSupportedDateTime;
