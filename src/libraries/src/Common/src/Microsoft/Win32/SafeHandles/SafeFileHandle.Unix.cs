@@ -99,8 +99,8 @@ namespace Microsoft.Win32.SafeHandles
             if (result != 0)
             {
                 Debug.Fail(string.Format(
-                    "Close failed with result {0} and errno {1}", 
-                    result, Interop.Sys.GetLastErrorInfo().RawErrno));
+                    "Close failed with result {0} and error {1}", 
+                    result, Interop.Sys.GetLastErrorInfo()));
             }
 #endif
             return result == 0;
