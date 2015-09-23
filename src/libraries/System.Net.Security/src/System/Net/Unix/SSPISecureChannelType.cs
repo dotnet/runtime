@@ -184,8 +184,15 @@ namespace System.Net
 
                 if ((null == context) || context.IsInvalid)
                 {
-                    long options = GetOptions(credential.Protocols);               
-                    IntPtr contextPtr = Interop.OpenSsl.AllocateSslContext(options, credential.CertHandle, isServer, remoteCertRequired);                 
+                    long options = GetOptions(credential.Protocols);
+
+                    IntPtr contextPtr = Interop.OpenSsl.AllocateSslContext(
+                        options,
+                        credential.CertHandle,
+                        credential.CertKeyHandle,
+                        isServer,
+                        remoteCertRequired);                 
+
                     context = new SafeDeleteContext(contextPtr, credential);
                 }
 

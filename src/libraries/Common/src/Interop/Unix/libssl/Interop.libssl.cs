@@ -3,6 +3,8 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
@@ -121,10 +123,10 @@ internal static partial class Interop
         internal static extern unsafe IntPtr d2i_X509(IntPtr certPtr, ref byte* bufPtr, int len);
 
         [DllImport(Interop.Libraries.LibSsl, EntryPoint = "SSL_CTX_use_certificate")]
-        internal static extern int SSL_CTX_use_certificate(IntPtr ssl, IntPtr certPtr);
+        internal static extern int SSL_CTX_use_certificate(IntPtr ssl, SafeX509Handle certPtr);
 
         [DllImport(Interop.Libraries.LibSsl, EntryPoint = "SSL_CTX_use_PrivateKey")]
-        internal static extern int SSL_CTX_use_PrivateKey(IntPtr ssl, IntPtr certPtr);
+        internal static extern int SSL_CTX_use_PrivateKey(IntPtr ssl, SafeEvpPKeyHandle keyPtr);
 
         [DllImport(Interop.Libraries.LibSsl, EntryPoint = "SSL_CTX_check_private_key")]
         internal static extern int SSL_CTX_check_private_key(IntPtr ssl);
