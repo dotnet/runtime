@@ -99,11 +99,8 @@ namespace System.Globalization
         [System.Security.SecurityCritical]  // auto-generated
         private void SetName(string name)
         {
-            // when creating region by culture name, we keep the region name as the culture name so regions
-            // created by custom culture names can be differentiated from built in regions.
-            this.m_name = name.Equals(this.m_cultureData.SREGIONNAME, StringComparison.OrdinalIgnoreCase) ?
-                                this.m_cultureData.SREGIONNAME :
-                                this.m_cultureData.CultureName;
+            // Use the name of the region we found
+            this.m_name = this.m_cultureData.SREGIONNAME;
         }
 
         ////////////////////////////////////////////////////////////////////////

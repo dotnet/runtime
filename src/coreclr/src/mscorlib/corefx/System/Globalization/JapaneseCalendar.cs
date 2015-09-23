@@ -124,49 +124,6 @@ namespace System.Globalization
             return japaneseEraInfo;
         }
 
-        private static EraInfo[] GetJapaneseEras()
-        {
-            int erasCount = GetJapaneseEraCount();
-            if (erasCount < 4)
-            {
-                return null;
-            }
-
-            EraInfo[] eras = new EraInfo[erasCount];
-            int lastMaxYear = GregorianCalendar.MaxYear;
-
-            for (int i = erasCount; i > 0; i--)
-            {
-                DateTimeOffset dateOffset;
-
-                string eraName;
-                string abbreviatedEraName;
-
-                if (!GetJapaneseEraInfo(i, out dateOffset, out eraName, out abbreviatedEraName))
-                {
-                    return null;
-                }
-
-                DateTime dt = new DateTime(dateOffset.Ticks);
-
-                eras[erasCount - i] = new EraInfo(i, dt.Year, dt.Month, dt.Day, dt.Year - 1, 1, lastMaxYear - dt.Year + 1,
-                                                   eraName, abbreviatedEraName, GetJapaneseEnglishEraName(i));    // era #4 start year/month/day, yearOffset, minEraYear
-
-                lastMaxYear = dt.Year;
-            }
-
-            return eras;
-        }
-
-        private static string[] JapaneseErasEnglishNames = new String[] { "M", "T", "S", "H" };
-
-        private static string GetJapaneseEnglishEraName(int era)
-        {
-            Debug.Assert(era > 0);
-            return era <= JapaneseErasEnglishNames.Length ? JapaneseErasEnglishNames[era - 1] : " ";
-        }
-
-
         internal static volatile Calendar s_defaultInstance;
         internal GregorianCalendarHelper helper;
 
