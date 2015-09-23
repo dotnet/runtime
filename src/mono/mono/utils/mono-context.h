@@ -17,10 +17,6 @@
 #include <signal.h>
 #endif
 
-#if defined (HOST_WATCHOS) || defined (HOST_APPLETVOS)
-#include <libunwind.h>
-#endif
-
 /*
  * General notes about mono-context.
  * Each arch defines a MonoContext struct with all GPR regs + IP/PC.
@@ -256,26 +252,6 @@ typedef struct {
 #if defined(HOST_WATCHOS)
 
 #define MONO_CONTEXT_GET_CURRENT(ctx) do { \
-	unw_context_t uctx; \
-	unw_cursor_t c; \
-	unw_word_t data; \
-	g_assert (unw_getcontext (&uctx) == 0); \
-	g_assert (unw_init_local (&c, &uctx) == 0); \
-	for (int reg = 0; reg < 13; ++reg) { \
-		unw_get_reg (&c, (unw_regnum_t) UNW_ARM_R0 + reg, &data); \
-		ctx.regs[reg] = data; \
-	} \
-	unw_get_reg (&c, UNW_ARM_SP, &data); \
-	ctx.regs[ARMREG_SP] = data; \
-	unw_get_reg (&c, UNW_ARM_LR, &data); \
-	ctx.regs[ARMREG_LR] = data; \
-	unw_get_reg (&c, UNW_ARM_IP, &data); \
-	ctx.regs[ARMREG_PC] = data; \
-	ctx.pc = ctx.regs[ARMREG_PC]; \
-	for (int reg = 0; reg < 16; ++reg) { \
-		unw_get_reg (&c, (unw_regnum_t) UNW_ARM_D0 + reg, &data); \
-		ctx.fregs[reg] = data; \
-	} \
 } while (0);
 
 #else
