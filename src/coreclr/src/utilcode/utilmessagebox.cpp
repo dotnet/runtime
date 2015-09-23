@@ -247,6 +247,9 @@ int MessageBoxImpl(
         if (hr == S_OK) {
             result = nButtonPressed;
         }
+        else {
+            result = IDOK;
+        }
 
         _ASSERTE(result == IDOK || result == IDRETRY || result == IDIGNORE);
     }
