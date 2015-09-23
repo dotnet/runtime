@@ -26,5 +26,9 @@ namespace System.Net
             return certModule.GetRequestCertificateAuthorities(securityContext);
         }
 
+        internal static X509Store EnsureStoreOpened(bool isMachineStore)
+        {
+            return certModule.EnsureStoreOpened(isMachineStore);
+        }
     }
 }

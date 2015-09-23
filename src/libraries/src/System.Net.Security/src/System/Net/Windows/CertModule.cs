@@ -4,12 +4,20 @@
 using Microsoft.Win32.SafeHandles;
 using System.Net.Security;
 using System.Runtime.InteropServices;
+using System.Security;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Principal;
 
 namespace System.Net
 {   
     internal partial class CertModule : CertInterface
     {
+        private static readonly object s_syncObject = new object();
+
+        private static volatile X509Store s_myCertStoreEx;
+        private static volatile X509Store s_myMachineCertStoreEx;
+
         #region internal Methods
         internal override SslPolicyErrors VerifyRemoteCertName(X509Chain chain, bool isServer, string hostName)
         {
@@ -154,6 +162,69 @@ namespace System.Net
             return issuers;
         }
 
+        //
+        // Security: We temporarily reset thread token to open the cert store under process account.
+        //
+        internal override X509Store EnsureStoreOpened(bool isMachineStore)
+        {
+            X509Store store = isMachineStore ? s_myMachineCertStoreEx : s_myCertStoreEx;
+            if (store == null)
+            {
+                lock (s_syncObject)
+                {
+                    store = isMachineStore ? s_myMachineCertStoreEx : s_myCertStoreEx;
+                    if (store == null)
+                    {
+                        // NOTE: that if this call fails we won't keep track and the next time we enter we will try to open the store again.
+                        StoreLocation storeLocation = isMachineStore ? StoreLocation.LocalMachine : StoreLocation.CurrentUser;
+                        store = new X509Store(StoreName.My, storeLocation);
+                        try
+                        {
+                            // For app-compat We want to ensure the store is opened under the **process** account.
+                            try
+                            {
+                                WindowsIdentity.RunImpersonated(SafeAccessTokenHandle.InvalidHandle, () =>
+                                {
+                                    store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
+                                    GlobalLog.Print("SecureChannel::EnsureStoreOpened() storeLocation:" + storeLocation + " returned store:" + store.GetHashCode().ToString("x"));
+                                });
+                            }
+                            catch
+                            {
+                                throw;
+                            }
+
+                            if (isMachineStore)
+                            {
+                                s_myMachineCertStoreEx = store;
+                            }
+                            else
+                            {
+                                s_myCertStoreEx = store;
+                            }
+
+                            return store;
+                        }
+                        catch (Exception exception)
+                        {
+                            if (exception is CryptographicException || exception is SecurityException)
+                            {
+                                GlobalLog.Assert("SecureChannel::EnsureStoreOpened()", "Failed to open cert store, location:" + storeLocation + " exception:" + exception);
+                                return null;
+                            }
+
+                            if (Logging.On)
+                            {
+                                Logging.PrintError(Logging.Web, SR.Format(SR.net_log_open_store_failed, storeLocation, exception));
+                            }
+
+                            throw;
+                        }
+                    }
+                }
+            }
+            return store;
+        }
         #endregion
 
         #region Private Methods

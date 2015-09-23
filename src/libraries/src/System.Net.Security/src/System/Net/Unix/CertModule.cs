@@ -68,6 +68,12 @@ namespace System.Net
             return issuers;
         }
 
+        internal override X509Store EnsureStoreOpened(bool isMachineStore)
+        {
+            // TODO: fix implementation
+            return null;
+        }
+
         #endregion
      
     }
