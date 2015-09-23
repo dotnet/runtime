@@ -785,7 +785,7 @@ PERFReadSetting(  )
     //more code is required to deal with corrupted input file.
     BOOL ret;
     unsigned int index;
-    char line[256 /* PAL_PERF_MAX_INPUT */]; // just use it. can define a new one like MAX_LINE=1024;
+    char line[PAL_PERF_MAX_INPUT];
     char * ptr;
     char function_name[PAL_PERF_MAX_FUNCTION_NAME];  //no function can be longer than 127 bytes.
 

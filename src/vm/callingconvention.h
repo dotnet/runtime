@@ -1282,6 +1282,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
 #ifdef FEATURE_INTERPRETER
      BYTE callconv = CallConv();
      switch (callconv)
+     {
      case IMAGE_CEE_CS_CALLCONV_C:
      case IMAGE_CEE_CS_CALLCONV_STDCALL:
            numRegistersUsed = NUM_ARGUMENT_REGISTERS;
