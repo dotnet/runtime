@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Fact]
         public static void VerifyDefaults()
         {
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 Assert.Equal(128, aes.BlockSize);
                 Assert.Equal(256, aes.KeySize);
@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Fact]
         public static void LegalBlockSizes()
         {
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 KeySizes[] blockSizes = aes.LegalBlockSizes;
 
@@ -42,7 +42,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Fact]
         public static void LegalKeySizes()
         {
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 KeySizes[] keySizes = aes.LegalKeySizes;
 
@@ -64,7 +64,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [InlineData(536870928)] // number of bits overflows and wraps around to a valid size
         public static void InvalidKeySizes(int invalidKeySize)
         {
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 // Test KeySize property
                 Assert.Throws<CryptographicException>(() => aes.KeySize = invalidKeySize);
@@ -92,7 +92,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [InlineData(536870928)] // number of bits overflows and wraps around to default BlockSize
         public static void InvalidIVSizes(int invalidIvSize)
         {
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 aes.GenerateKey();
                 byte[] key = aes.Key;
@@ -113,7 +113,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Fact]
         public static void VerifyKeyGeneration_Default()
         {
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 VerifyKeyGeneration(aes);
             }
@@ -122,7 +122,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Fact]
         public static void VerifyKeyGeneration_128()
         {
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 aes.KeySize = 128;
                 VerifyKeyGeneration(aes);
@@ -132,7 +132,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Fact]
         public static void VerifyKeyGeneration_192()
         {
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 aes.KeySize = 192;
                 VerifyKeyGeneration(aes);
@@ -142,7 +142,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Fact]
         public static void VerifyKeyGeneration_256()
         {
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 aes.KeySize = 256;
                 VerifyKeyGeneration(aes);
@@ -152,7 +152,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Fact]
         public static void VerifyIVGeneration()
         {
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 int blockSize = aes.BlockSize;
                 aes.GenerateIV();
@@ -172,7 +172,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Fact]
         public static void ValidateEncryptorProperties()
         {
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 ValidateTransformProperties(aes, aes.CreateEncryptor());
             }
@@ -181,7 +181,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Fact]
         public static void ValidateDecryptorProperties()
         {
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 ValidateTransformProperties(aes, aes.CreateDecryptor());
             }
@@ -193,7 +193,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             byte[] key;
             byte[] iv;
 
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 aes.GenerateKey();
                 aes.GenerateIV();
@@ -202,7 +202,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 iv = aes.IV;
             }
 
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 aes.Mode = CipherMode.CBC;
 
@@ -218,7 +218,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 Assert.Throws<CryptographicException>(() => aes.CreateDecryptor(key, null));
             }
 
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 aes.Mode = CipherMode.ECB;
 
@@ -244,7 +244,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Fact]
         public static void ValidateOffsetAndCount()
         {
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 aes.GenerateKey();
                 aes.GenerateIV();
