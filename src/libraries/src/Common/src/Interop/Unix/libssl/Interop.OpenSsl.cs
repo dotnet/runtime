@@ -149,6 +149,11 @@ internal static partial class Interop
 
             if (retVal != count)
             {
+                int error = GetSslError(context.sslPtr, retVal, "");
+                if (libssl.SslErrorCode.SSL_ERROR_ZERO_RETURN == error)
+                {
+                    return 0; // indicate end-of-file
+                }
                 throw CreateSslException("OpenSsl::Encrypt failed");
             }
 
@@ -189,6 +194,11 @@ internal static partial class Interop
 
             if (retVal != count)
             {
+                int error = GetSslError(context.sslPtr, retVal, "");
+                if (libssl.SslErrorCode.SSL_ERROR_ZERO_RETURN == error)
+                {
+                    return 0; // indicate end-of-file
+                }
                 throw CreateSslException("OpenSsl::Decrypt failed");
             }
             return retVal;
