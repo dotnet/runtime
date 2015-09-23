@@ -1,3 +1,8 @@
+//
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+//
+
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
@@ -6,315 +11,239 @@ using System.Text;
 namespace System.Globalization
 {
     internal partial class CultureData
-    {       
+    {
+        // Win32 constants
+        const string LOCALE_NAME_SYSTEM_DEFAULT = @"!x-sys-default-locale";
+        
+        // ICU constants
+        const int ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY = 100; // max size of keyword or value
+        const int ICU_ULOC_FULLNAME_CAPACITY = 157;           // max size of locale name
+        const string ICU_COLLATION_KEYWORD = "@collation=";
+
         /// <summary>
-        /// Check with the OS to see if this is a valid culture.
-        /// If so we populate a limited number of fields.  If its not valid we return false.
-        ///
-        /// The fields we populate:
-        ///
-        /// sWindowsName -- The name that windows thinks this culture is, ie:
-        ///                            en-US if you pass in en-US
-        ///                            de-DE_phoneb if you pass in de-DE_phoneb
-        ///                            fj-FJ if you pass in fj (neutral, on a pre-Windows 7 machine)
-        ///                            fj if you pass in fj (neutral, post-Windows 7 machine)
-        ///
-        /// sRealName -- The name you used to construct the culture, in pretty form
-        ///                       en-US if you pass in EN-us
-        ///                       en if you pass in en
-        ///                       de-DE_phoneb if you pass in de-DE_phoneb
-        ///
-        /// sSpecificCulture -- The specific culture for this culture
-        ///                             en-US for en-US
-        ///                             en-US for en
-        ///                             de-DE_phoneb for alt sort
-        ///                             fj-FJ for fj (neutral)
-        ///
-        /// sName -- The IETF name of this culture (ie: no sort info, could be neutral)
-        ///                en-US if you pass in en-US
-        ///                en if you pass in en
-        ///                de-DE if you pass in de-DE_phoneb
-        ///
-        /// bNeutral -- TRUE if it is a neutral locale
-        ///
-        /// For a neutral we just populate the neutral name, but we leave the windows name pointing to the
-        /// windows locale that's going to provide data for us.
+        /// This method uses the sRealName field (which is initialized by the constructor before this is called) to
+        /// initialize the rest of the state of CultureData based on the underlying OS globalization library.
         /// </summary>
         private unsafe bool InitCultureData()
         {
-            // TODO: Implement this fully.
+            Contract.Assert(this.sRealName != null);
 
-            // For now, just use all of the Invariant's data
-            CultureData invariant = CultureData.Invariant;
+            string alternateSortName = string.Empty;
+            string realNameBuffer = null;
+            int index;
 
-            this.sRealName = invariant.sRealName;
-            this.sWindowsName = invariant.sWindowsName;
+            bool useSystemDefault = (this.sRealName == LOCALE_NAME_SYSTEM_DEFAULT);
+            if (!useSystemDefault) //ICU uses null to obtain the default (system) locale
+            {
+                realNameBuffer = this.sRealName;
 
-            // Identity
-            this.sName = invariant.sName;
-            this.sParent = invariant.sParent;
-            this.bNeutral = invariant.bNeutral;
-            this.sEnglishDisplayName = invariant.sEnglishDisplayName;
-            this.sNativeDisplayName = invariant.sNativeDisplayName;
-            this.sSpecificCulture = invariant.sSpecificCulture;
+                // Basic validation
+                if (realNameBuffer.Contains("@"))
+                {
+                    return false; // don't allow ICU variants to come in directly
+                }
 
-            // Language
-            this.sISO639Language = invariant.sISO639Language;
-            this.sLocalizedLanguage = invariant.sLocalizedLanguage;
-            this.sEnglishLanguage = invariant.sEnglishLanguage;
-            this.sNativeLanguage = invariant.sNativeLanguage;
+                // Replace _ (alternate sort) with @collation= for ICU
+                index = realNameBuffer.IndexOf('_');
+                if (index > 0)
+                {
+                    if (index >= (realNameBuffer.Length - 1) // must have characters after _
+                        || realNameBuffer.Substring(index + 1).Contains("_")) // only one _ allowed
+                    {
+                        return false; // fail
+                    }
+                    alternateSortName = realNameBuffer.Substring(index + 1);
+                    realNameBuffer = realNameBuffer.Substring(0, index) + ICU_COLLATION_KEYWORD + alternateSortName;
+                }
+            }
 
-            // Region
-            this.sRegionName = invariant.sRegionName;
-            this.sEnglishCountry = invariant.sEnglishCountry;
-            this.sNativeCountry = invariant.sNativeCountry;
-            this.sISO3166CountryName = invariant.sISO3166CountryName;
+            // Get the locale name from ICU
+            StringBuilder sb = StringBuilderCache.Acquire(ICU_ULOC_FULLNAME_CAPACITY);
+            if (!Interop.GlobalizationInterop.GetLocaleName(realNameBuffer, sb, sb.Capacity))
+            {
+                StringBuilderCache.Release(sb);
+                return false; // fail
+            }
 
-            // Numbers
-            this.sPositiveSign = invariant.sPositiveSign;
-            this.sNegativeSign = invariant.sNegativeSign;
-            this.saNativeDigits = invariant.saNativeDigits;
-            this.iDigits = invariant.iDigits;
-            this.iNegativeNumber = invariant.iNegativeNumber;
-            this.waGrouping = invariant.waGrouping;
-            this.sDecimalSeparator = invariant.sDecimalSeparator;
-            this.sThousandSeparator = invariant.sThousandSeparator;
-            this.sNaN = invariant.sNaN;
-            this.sPositiveInfinity = invariant.sPositiveInfinity;
-            this.sNegativeInfinity = invariant.sNegativeInfinity;
+            // Success - use the locale name returned which may be different than realNameBuffer (casing)
+            this.sWindowsName = StringBuilderCache.GetStringAndRelease(sb); // the name passed to subsequent ICU calls
 
-            // Percent
-            this.iNegativePercent = invariant.iNegativePercent;
-            this.iPositivePercent = invariant.iPositivePercent;
-            this.sPercent = invariant.sPercent;
-            this.sPerMille = invariant.sPerMille;
+            // Replace the ICU collation keyword with an _
+            index = realNameBuffer.IndexOf(ICU_COLLATION_KEYWORD);
+            if (index >= 0)
+            {
+                this.sName = this.sWindowsName.Substring(0, index) + "_" + alternateSortName;
+            }
+            else
+            {
+                this.sName = this.sWindowsName;
+            }
 
-            // Currency
-            this.sCurrency = invariant.sCurrency;
-            this.sIntlMonetarySymbol = invariant.sIntlMonetarySymbol;
-            this.iCurrencyDigits = invariant.iCurrencyDigits;
-            this.iCurrency = invariant.iCurrency;
-            this.iNegativeCurrency = invariant.iNegativeCurrency;
-            this.waMonetaryGrouping = invariant.waMonetaryGrouping;
-            this.sMonetaryDecimal = invariant.sMonetaryDecimal;
-            this.sMonetaryThousand = invariant.sMonetaryThousand;
+            this.sRealName = this.sName;
+            this.sSpecificCulture = this.sRealName; // we don't attempt to find a non-neutral locale if a neutral is passed in (unlike win32)
 
-            // Misc
-            this.iMeasure = invariant.iMeasure;
-            this.sListSeparator = invariant.sListSeparator;
+            this.iLanguage = this.ILANGUAGE;
+            if (this.iLanguage == 0)
+            {
+                if (useSystemDefault)
+                {
+                    this.iLanguage = LOCALE_CUSTOM_DEFAULT;
+                }
+                else
+                {
+                    this.iLanguage = LOCALE_CUSTOM_UNSPECIFIED;
+                }
+            }
 
-            // Time
-            this.sAM1159 = invariant.sAM1159;
-            this.sPM2359 = invariant.sPM2359;
-            this.saLongTimes = invariant.saLongTimes;
-            this.saShortTimes = invariant.saShortTimes;
-            this.saDurationFormats = invariant.saDurationFormats;
+            this.bNeutral = (this.SISO3166CTRYNAME.Length == 0);
 
-            // Calendar specific data
-            this.iFirstDayOfWeek = invariant.iFirstDayOfWeek;
-            this.iFirstWeekOfYear = invariant.iFirstWeekOfYear;
-            this.waCalendars = invariant.waCalendars;
-
-            // Store for specific data about each calendar
-            this.calendars = invariant.calendars;
-
-            // Text information
-            this.iReadingLayout = invariant.iReadingLayout;
+            // Remove the sort from sName unless custom culture
+            if (!this.bNeutral)
+            {
+                if (!IsCustomCultureId(this.iLanguage))
+                {
+                    this.sName = this.sWindowsName.Substring(0, index);
+                }
+            }
 
             return true;
         }
-
+ 
         private string GetLocaleInfo(LocaleStringData type)
         {
-            // TODO: Implement this fully.
-            return GetLocaleInfo("", type);
+            Contract.Assert(this.sWindowsName != null, "[CultureData.GetLocaleInfo] Expected this.sWindowsName to be populated already");
+            return GetLocaleInfo(this.sWindowsName, type);
         }
 
         // For LOCALE_SPARENT we need the option of using the "real" name (forcing neutral names) instead of the
         // "windows" name, which can be specific for downlevel (< windows 7) os's.
         private string GetLocaleInfo(string localeName, LocaleStringData type)
-        {                        
-            // TODO: Implement this fully.            
-            switch(type)
+        {
+            Contract.Assert(localeName != null, "[CultureData.GetLocaleInfo] Expected localeName to be not be null");
+
+            switch (type)
             {
-                case LocaleStringData.LocalizedDisplayName:
-                    return "Invariant Language (Invariant Country)";
-                case LocaleStringData.EnglishDisplayName:
-                    return "Invariant Language (Invariant Country)";
-                case LocaleStringData.NativeDisplayName:
-                    return "Invariant Language (Invariant Country)";
-                case LocaleStringData.LocalizedLanguageName:
-                    return "Invariant Language";
-                case LocaleStringData.EnglishLanguageName:
-                    return "Invariant Language";
-                case LocaleStringData.NativeLanguageName:
-                    return "Invariant Language";
-                case LocaleStringData.EnglishCountryName:
-                    return "Invariant Country";
-                case LocaleStringData.NativeCountryName:
-                    return "Invariant Country";
-                case LocaleStringData.ListSeparator:
-                    return ",";
-                case LocaleStringData.DecimalSeparator:
-                    return ".";
-                case LocaleStringData.ThousandSeparator:
-                    return ",";
-                case LocaleStringData.Digits:
-                    return "3;0";
-                case LocaleStringData.MonetarySymbol:
-                    return "$"; // TODO: CoreFX #846 Restore to the original value "\x00a4"
-                case LocaleStringData.Iso4217MonetarySymbol:
-                    return "XDR";
-                case LocaleStringData.MonetaryDecimalSeparator:
-                    return ".";
-                case LocaleStringData.MonetaryThousandSeparator:
-                    return ",";
-                case LocaleStringData.AMDesignator:
-                    return "AM";
-                case LocaleStringData.PMDesignator:
-                    return "PM";
-                case LocaleStringData.PositiveSign:
-                    return "+";
-                case LocaleStringData.NegativeSign:
-                    return "-";
-                case LocaleStringData.Iso639LanguageName:
-                    return "iv";
-                case LocaleStringData.Iso3166CountryName:
-                    return "IV";
-                case LocaleStringData.NaNSymbol:
-                    return "NaN";
-                case LocaleStringData.PositiveInfinitySymbol:
-                    return "Infinity";
                 case LocaleStringData.NegativeInfinitySymbol:
-                    return "-Infinity";
-                case LocaleStringData.ParentName:
-                    return "";
-                case LocaleStringData.PercentSymbol:
-                    return "%";
-                case LocaleStringData.PerMilleSymbol:
-                    return "\u2030";
-                default:
-                    Contract.Assert(false, "Unmatched case in GetLocaleInfo(LocaleStringData)");
-                    throw new NotImplementedException();
+                    // not an equivalent in ICU; prefix the PositiveInfinitySymbol with NegativeSign
+                    return GetLocaleInfo(localeName, LocaleStringData.NegativeSign) +
+                        GetLocaleInfo(localeName, LocaleStringData.PositiveInfinitySymbol);
             }
+
+            StringBuilder sb = StringBuilderCache.Acquire(ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY);
+
+            bool result = Interop.GlobalizationInterop.GetLocaleInfoString(localeName, (uint)type, sb, sb.Capacity);
+            if (!result)
+            {
+                // Failed, just use empty string
+                StringBuilderCache.Release(sb);
+                Contract.Assert(false, "[CultureData.GetLocaleInfo(LocaleStringData)] Failed");
+                return String.Empty;
+            }
+            return StringBuilderCache.GetStringAndRelease(sb);
         }
 
         private int GetLocaleInfo(LocaleNumberData type)
         {
-            // TODO: Implement this fully.
+            Contract.Assert(this.sWindowsName != null, "[CultureData.GetLocaleInfo(LocaleNumberData)] Expected this.sWindowsName to be populated already");
+
             switch (type)
             {
-                case LocaleNumberData.LanguageId:
-                    return 127;
-                case LocaleNumberData.MeasurementSystem:
-                    return 0;
-                case LocaleNumberData.FractionalDigitsCount:
-                    return 2;
-                case LocaleNumberData.NegativeNumberFormat:
-                    return 1;
-                case LocaleNumberData.MonetaryFractionalDigitsCount:
-                    return 2;
-                case LocaleNumberData.PositiveMonetaryNumberFormat:
-                    return 0;
-                case LocaleNumberData.NegativeMonetaryNumberFormat:
-                    return 0;
                 case LocaleNumberData.CalendarType:
-                    return 1;
-                case LocaleNumberData.FirstWeekOfYear:
+                    // returning 0 will cause the first supported calendar to be returned, which is the preferred calendar
                     return 0;
-                case LocaleNumberData.ReadingLayout:
-                    return 0;
-                case LocaleNumberData.NegativePercentFormat:
-                    return 0;
-                case LocaleNumberData.PositivePercentFormat:
-                    return 0;
-                default:
-                    Contract.Assert(false, "Unmatched case in GetLocaleInfo(LocaleNumberData)");
-                    throw new NotImplementedException();
             }
+            
+
+            int value = 0;
+            bool result = Interop.GlobalizationInterop.GetLocaleInfoInt(this.sWindowsName, (uint)type, ref value);
+            if (!result)
+            {
+                // Failed, just use 0
+                Contract.Assert(false, "[CultureData.GetLocaleInfo(LocaleNumberData)] failed");
+            }
+
+            return value;
         }
 
         private int[] GetLocaleInfo(LocaleGroupingData type)
         {
-            // TODO: Implement this fully.
-            switch (type)
+            Contract.Assert(this.sWindowsName != null, "[CultureData.GetLocaleInfo(LocaleGroupingData)] Expected this.sWindowsName to be populated already");
+
+            int primaryGroupingSize = 0;
+            int secondaryGroupingSize = 0;
+            bool result = Interop.GlobalizationInterop.GetLocaleInfoGroupingSizes(this.sWindowsName, (uint)type, ref primaryGroupingSize, ref secondaryGroupingSize);
+            if (!result)
             {
-                case LocaleGroupingData.Digit:
-                    return new int[] { 3 };
-                case LocaleGroupingData.Monetary:
-                    return new int[] { 3 };
-                default:
-                    Contract.Assert(false, "Unmatched case in GetLocaleInfo(LocaleGroupingData)");
-                    throw new NotImplementedException();
+                Contract.Assert(false, "[CultureData.GetLocaleInfo(LocaleGroupingData type)] failed");
             }
+
+            if (secondaryGroupingSize == 0)
+            {
+                return new int[] { primaryGroupingSize };
+            }
+
+            return new int[] { primaryGroupingSize, secondaryGroupingSize };
         }
 
         private string GetTimeFormatString()
         {
-            // TODO: Implement this fully.
-            return "HH:mm:ss";
+            return GetTimeFormatString(false);
+        }
+
+        private string GetTimeFormatString(bool shortFormat)
+        {
+            Contract.Assert(this.sWindowsName != null, "[CultureData.GetTimeFormatString(bool shortFormat)] Expected this.sWindowsName to be populated already");
+
+            StringBuilder sb = StringBuilderCache.Acquire(ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY);
+
+            bool result = Interop.GlobalizationInterop.GetLocaleTimeFormat(this.sWindowsName, shortFormat, sb, sb.Capacity);
+            if (!result)
+            {
+                // Failed, just use empty string
+                StringBuilderCache.Release(sb);
+                Contract.Assert(false, "[CultureData.GetTimeFormatString(bool shortFormat)] Failed");
+                return String.Empty;
+            }
+            return StringBuilderCache.GetStringAndRelease(sb);
         }
 
         private int GetFirstDayOfWeek()
         {
-            // TODO: Implement this fully.
-            return 0;
+            return this.GetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
         }
 
         private String[] GetTimeFormats()
         {
-            // TODO: Implement this fully.
-            return new string[] { "HH:mm:ss" };
+            string format = GetTimeFormatString(false);
+            return new string[] { format };
         }
 
         private String[] GetShortTimeFormats()
         {
-            // TODO: Implement this fully.
-            return new string[] { "HH:mm", "hh:mm tt", "H:mm", "h:mm tt" };
+            string format = GetTimeFormatString(true);
+            return new string[] { format };
         }
 
-        // Enumerate all system cultures and then try to find out which culture has 
-        // region name match the requested region name
         private static CultureData GetCultureDataFromRegionName(String regionName)
         {
-            // TODO: Implement this fully.
-            if (regionName == "")
-            {
-                return CultureInfo.InvariantCulture.m_cultureData;
-            }
-
-            throw new NotImplementedException();
+            // no support to lookup by region name, other than the hard-coded list in CultureData
+            return null;
         }
 
         private static string GetLanguageDisplayName(string cultureName)
         {
-            // TODO: Implement this fully.
-            if (cultureName == "")
-            {
-                return "Invariant Language";
-            }
-
-            throw new NotImplementedException();
+            return new CultureInfo(cultureName).m_cultureData.GetLocaleInfo(cultureName, LocaleStringData.LocalizedDisplayName);
         }
 
         private static string GetRegionDisplayName(string isoCountryCode)
         {
-            // TODO: Implement this fully.
-            return "";
+            // use the fallback which is to return NativeName
+            return null;
         }
 
         private static CultureInfo GetUserDefaultCulture()
         {
-            // TODO: Implement this fully.
-            return CultureInfo.InvariantCulture;
+            return new CultureInfo(LOCALE_NAME_SYSTEM_DEFAULT);
         }
-
-        private static bool IsCustomCultureId(int cultureId)
-        {
-            // TODO: Implement this fully.
-            return false;
-        }
-
-        // PAL methods end here.
     }
 }
