@@ -932,6 +932,7 @@ mono_arch_init (void)
 #if defined(ENABLE_GSHAREDVT)
 	mono_aot_register_jit_icall ("mono_arm_start_gsharedvt_call", mono_arm_start_gsharedvt_call);
 #endif
+	mono_aot_register_jit_icall ("mono_arm_unaligned_stack", mono_arm_unaligned_stack);
 
 #if defined(__ARM_EABI__)
 	eabi_supported = TRUE;
@@ -6028,6 +6029,7 @@ mono_arch_register_lowlevel_calls (void)
 	/* The signature doesn't matter */
 	mono_register_jit_icall (mono_arm_throw_exception, "mono_arm_throw_exception", mono_create_icall_signature ("void"), TRUE);
 	mono_register_jit_icall (mono_arm_throw_exception_by_token, "mono_arm_throw_exception_by_token", mono_create_icall_signature ("void"), TRUE);
+	mono_register_jit_icall (mono_arm_unaligned_stack, "mono_arm_unaligned_stack", mono_create_icall_signature ("void"), TRUE);
 
 #ifndef MONO_CROSS_COMPILE
 	if (mono_arm_have_tls_get ()) {
@@ -6136,13 +6138,13 @@ mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, Mo
 	}
 }
 
-#ifndef DISABLE_JIT
-
-static G_GNUC_UNUSED void
-unaligned_stack (MonoMethod *method)
+void
+mono_arm_unaligned_stack (MonoMethod *method)
 {
 	g_assert_not_reached ();
 }
+
+#ifndef DISABLE_JIT
 
 /*
  * Stack frame layout:
@@ -6300,7 +6302,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	/* stack alignment check */
 	/*
-	if (!cfg->compile_aot) {
+	{
 		guint8 *buf [16];
 		ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_SP);
 		code = mono_arm_emit_load_imm (code, ARMREG_IP, MONO_ARCH_FRAME_ALIGNMENT -1);
@@ -6308,8 +6310,12 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		ARM_CMP_REG_IMM (code, ARMREG_LR, 0, 0);
 		buf [0] = code;
 		ARM_B_COND (code, ARMCOND_EQ, 0);
-		code = mono_arm_emit_load_imm (code, ARMREG_R0, (guint32)cfg->method);
-		code = mono_arm_emit_load_imm (code, ARMREG_LR, (guint32)unaligned_stack);
+		if (cfg->compile_aot)
+			ARM_MOV_REG_IMM8 (code, ARMREG_R0, 0);
+		else
+			code = mono_arm_emit_load_imm (code, ARMREG_R0, (guint32)cfg->method);
+		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, "mono_arm_unaligned_stack");
+		code = emit_call_seq (cfg, code);
 		code = emit_call_reg (code, ARMREG_LR);
 		arm_patch (buf [0], code);
 	}

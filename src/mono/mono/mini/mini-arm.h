@@ -359,4 +359,7 @@ mono_arm_is_hard_float (void);
 gboolean
 mono_arm_have_tls_get (void);
 
+void
+mono_arm_unaligned_stack (MonoMethod *method);
+
 #endif /* __MONO_MINI_ARM_H__ */
