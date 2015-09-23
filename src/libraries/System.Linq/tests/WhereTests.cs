@@ -519,6 +519,20 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void WhereSelectSelect_Array_ReturnsExpectedValues()
+        {
+            int[] source = new[] { 1, 2, 3, 4, 5 };
+            Func<int, bool> evenPredicate = (value) => value % 2 == 0;
+            Func<int, int> addSelector = (value) => value + 1;
+
+            IEnumerable<int> result = source.Where(evenPredicate).Select(i => i).Select(addSelector);
+
+            Assert.Equal(2, result.Count());
+            Assert.Equal(3, result.ElementAt(0));
+            Assert.Equal(5, result.ElementAt(1));
+        }
+
+        [Fact]
         public void WhereSelect_List_ReturnsExpectedValues()
         {
             List<int> source = new List<int> { 1, 2, 3, 4, 5 };
@@ -526,6 +540,20 @@ namespace System.Linq.Tests
             Func<int, int> addSelector = (value) => value + 1;
 
             IEnumerable<int> result = source.Where(evenPredicate).Select(addSelector);
+
+            Assert.Equal(2, result.Count());
+            Assert.Equal(3, result.ElementAt(0));
+            Assert.Equal(5, result.ElementAt(1));
+        }
+
+        [Fact]
+        public void WhereSelectSelect_List_ReturnsExpectedValues()
+        {
+            List<int> source = new List<int> { 1, 2, 3, 4, 5 };
+            Func<int, bool> evenPredicate = (value) => value % 2 == 0;
+            Func<int, int> addSelector = (value) => value + 1;
+
+            IEnumerable<int> result = source.Where(evenPredicate).Select(i => i).Select(addSelector);
 
             Assert.Equal(2, result.Count());
             Assert.Equal(3, result.ElementAt(0));
@@ -547,6 +575,20 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void WhereSelectSelect_IReadOnlyCollection_ReturnsExpectedValues()
+        {
+            IReadOnlyCollection<int> source = new ReadOnlyCollection<int>(new List<int> { 1, 2, 3, 4, 5 });
+            Func<int, bool> evenPredicate = (value) => value % 2 == 0;
+            Func<int, int> addSelector = (value) => value + 1;
+
+            IEnumerable<int> result = source.Where(evenPredicate).Select(i => i).Select(addSelector);
+
+            Assert.Equal(2, result.Count());
+            Assert.Equal(3, result.ElementAt(0));
+            Assert.Equal(5, result.ElementAt(1));
+        }
+
+        [Fact]
         public void WhereSelect_ICollection_ReturnsExpectedValues()
         {
             ICollection<int> source = new LinkedList<int>(new List<int> { 1, 2, 3, 4, 5 });
@@ -561,6 +603,20 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void WhereSelectSelect_ICollection_ReturnsExpectedValues()
+        {
+            ICollection<int> source = new LinkedList<int>(new List<int> { 1, 2, 3, 4, 5 });
+            Func<int, bool> evenPredicate = (value) => value % 2 == 0;
+            Func<int, int> addSelector = (value) => value + 1;
+
+            IEnumerable<int> result = source.Where(evenPredicate).Select(i => i).Select(addSelector);
+
+            Assert.Equal(2, result.Count());
+            Assert.Equal(3, result.ElementAt(0));
+            Assert.Equal(5, result.ElementAt(1));
+        }
+
+        [Fact]
         public void WhereSelect_IEnumerable_ReturnsExpectedValues()
         {
             IEnumerable<int> source = Enumerable.Range(1, 5);
@@ -568,6 +624,20 @@ namespace System.Linq.Tests
             Func<int, int> addSelector = (value) => value + 1;
 
             IEnumerable<int> result = source.Where(evenPredicate).Select(addSelector);
+
+            Assert.Equal(2, result.Count());
+            Assert.Equal(3, result.ElementAt(0));
+            Assert.Equal(5, result.ElementAt(1));
+        }
+
+        [Fact]
+        public void WhereSelectSelect_IEnumerable_ReturnsExpectedValues()
+        {
+            IEnumerable<int> source = Enumerable.Range(1, 5);
+            Func<int, bool> evenPredicate = (value) => value % 2 == 0;
+            Func<int, int> addSelector = (value) => value + 1;
+
+            IEnumerable<int> result = source.Where(evenPredicate).Select(i => i).Select(addSelector);
 
             Assert.Equal(2, result.Count());
             Assert.Equal(3, result.ElementAt(0));
