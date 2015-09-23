@@ -5446,12 +5446,14 @@ PALAPI
 FlushProcessWriteBuffers();
 
 typedef void (*PAL_ActivationFunction)(CONTEXT *context);
+typedef BOOL (*PAL_SafeActivationCheckFunction)(SIZE_T ip);
 
 PALIMPORT
 VOID
 PALAPI
 PAL_SetActivationFunction(
-    IN PAL_ActivationFunction pActivationFunction);
+    IN PAL_ActivationFunction pActivationFunction,
+    IN PAL_SafeActivationCheckFunction pSafeActivationCheckFunction);
 
 PALIMPORT
 BOOL

@@ -435,7 +435,6 @@ GetThreadContext(
             ret = CONTEXT_GetThreadContext(
                 GetCurrentProcessId(),
                 pTargetThread->GetPThreadSelf(),
-                pTargetThread->GetLwpId(),
                 lpContext
                 );
         }
@@ -498,7 +497,6 @@ SetThreadContext(
             ret = CONTEXT_SetThreadContext(
                 GetCurrentProcessId(),
                 pTargetThread->GetPThreadSelf(),
-                pTargetThread->GetLwpId(),
                 lpContext
                 );
         }
