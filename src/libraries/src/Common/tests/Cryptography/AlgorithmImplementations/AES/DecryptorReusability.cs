@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             byte[] output1 = new byte[expectedPlainText.Length];
             byte[] output2 = new byte[expectedPlainText.Length];
 
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 aes.Key = new byte[16];
                 aes.IV = new byte[] { 0x00, 0x3f, 0x7e, 0xbd, 0xfc, 0x3b, 0x7a, 0xb9, 0xf8, 0x37, 0x76, 0xb5, 0xf4, 0x33, 0x72, 0xb1 };

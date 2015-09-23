@@ -35,6 +35,10 @@
     <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\AES\DecryptorReusability.cs">
       <Link>CommonTest\AlgorithmImplementations\AES\DecryptorReusability.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\AES\AesFactory.cs">
+      <Link>CommonTest\AlgorithmImplementations\AES\AesFactory.cs</Link>
+    </Compile>
+    <Compile Include="AesProvider.cs" />
     <Compile Include="DesTests.cs" />
     <Compile Include="HashAlgorithmTest.cs" />
     <Compile Include="InvalidUsageTests.cs" />

@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Fact]
         public static void RandomKeyRoundtrip_Default()
         {
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 RandomKeyRoundtrip(aes);
             }
@@ -22,7 +22,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Fact]
         public static void RandomKeyRoundtrip_128()
         {
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 aes.KeySize = 128;
 
@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Fact]
         public static void RandomKeyRoundtrip_192()
         {
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 aes.KeySize = 192;
 
@@ -44,7 +44,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Fact]
         public static void RandomKeyRoundtrip_256()
         {
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 aes.KeySize = 256;
 
@@ -107,7 +107,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 0x48, 0xb4, 0x30, 0x6b, 0x08, 0xe0, 0x89, 0x3b
             };
 
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 aes.Mode = CipherMode.CBC;
                 aes.Padding = PaddingMode.None;
@@ -327,7 +327,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
             byte[] decryptedBytes;
 
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 aes.Mode = CipherMode.ECB;
                 aes.Key = s_aes256Key;
@@ -377,7 +377,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             byte[] key = new byte[s_aes192Key.Length];
             Buffer.BlockCopy(s_aes256Key, 0, key, 0, key.Length);
 
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 aes.Mode = CipherMode.ECB;
                 aes.Key = key;
@@ -401,7 +401,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             byte[] decryptedBytes;
             byte[] expectedAnswer;
 
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 aes.Padding = PaddingMode.Zeros;
 
@@ -444,7 +444,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             byte[] decrypted;
             byte[] decrypted2;
 
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 aes.Mode = CipherMode.CBC;
                 aes.Key = s_aes256Key;
@@ -512,7 +512,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         {
             byte[] decryptedBytes;
 
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 aes.Mode = mode;
                 aes.Key = key;
@@ -546,7 +546,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             byte[] liveEncryptBytes;
             byte[] liveDecryptBytes;
 
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 aes.Mode = cipherMode;
                 aes.Padding = paddingMode;

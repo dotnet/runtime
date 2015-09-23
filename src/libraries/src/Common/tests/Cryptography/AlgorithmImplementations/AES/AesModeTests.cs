@@ -29,7 +29,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
         private static void SupportsMode(CipherMode mode)
         {
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 aes.Mode = mode;
                 Assert.Equal(mode, aes.Mode);
@@ -43,7 +43,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
         private static void DoesNotSupportMode(CipherMode mode)
         {
-            using (Aes aes = Aes.Create())
+            using (Aes aes = AesFactory.Create())
             {
                 // One of the following should throw:
                 // aes.Mode = invalidMode
