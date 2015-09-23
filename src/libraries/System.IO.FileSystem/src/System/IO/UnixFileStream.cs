@@ -418,8 +418,8 @@ namespace System.IO
                         // name will be removed immediatly.
                         int result = Interop.Sys.Unlink(_path);
                         Debug.Assert(result == 0,
-                            string.Format("unlink on {0} failed with result {1} and errno {2}",
-                                _path, result, Marshal.GetLastWin32Error()));
+                            string.Format("unlink on {0} failed with result {1} and error {2}",
+                                _path, result, Interop.Sys.GetLastErrorInfo()));
                     }
                 }
             }
