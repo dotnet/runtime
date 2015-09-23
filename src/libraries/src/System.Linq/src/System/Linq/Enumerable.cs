@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Linq
@@ -46,11 +47,16 @@ namespace System.Linq
             if (selector == null) throw Error.ArgumentNull("selector");
             Iterator<TSource> iterator = source as Iterator<TSource>;
             if (iterator != null) return iterator.Select(selector);
-            TSource[] array = source as TSource[];
-            if (array != null) return new WhereSelectArrayIterator<TSource, TResult>(array, null, selector);
-            List<TSource> list = source as List<TSource>;
-            if (list != null) return new WhereSelectListIterator<TSource, TResult>(list, null, selector);
-            return new WhereSelectEnumerableIterator<TSource, TResult>(source, null, selector);
+            IList<TSource> ilist = source as IList<TSource>;
+            if (ilist != null)
+            {
+                TSource[] array = source as TSource[];
+                if (array != null) return new SelectArrayIterator<TSource, TResult>(array, selector);
+                List<TSource> list = source as List<TSource>;
+                if (list != null) return new SelectListIterator<TSource, TResult>(list, selector);
+                return new SelectIListIterator<TSource, TResult>(ilist, selector);
+            }
+            return new SelectEnumerableIterator<TSource, TResult>(source, selector);
         }
 
         public static IEnumerable<TResult> Select<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, int, TResult> selector)
@@ -113,9 +119,15 @@ namespace System.Linq
 
             public abstract bool MoveNext();
 
-            public abstract IEnumerable<TResult> Select<TResult>(Func<TSource, TResult> selector);
+            public virtual IEnumerable<TResult> Select<TResult>(Func<TSource, TResult> selector)
+            {
+                return new SelectEnumerableIterator<TSource, TResult>(this, selector);
+            }
 
-            public abstract IEnumerable<TSource> Where(Func<TSource, bool> predicate);
+            public virtual IEnumerable<TSource> Where(Func<TSource, bool> predicate)
+            {
+                return new WhereEnumerableIterator<TSource>(this, predicate);
+            }
 
             object IEnumerator.Current
             {
@@ -135,12 +147,14 @@ namespace System.Linq
 
         internal class WhereEnumerableIterator<TSource> : Iterator<TSource>
         {
-            private IEnumerable<TSource> _source;
-            private Func<TSource, bool> _predicate;
+            private readonly IEnumerable<TSource> _source;
+            private readonly Func<TSource, bool> _predicate;
             private IEnumerator<TSource> _enumerator;
 
             public WhereEnumerableIterator(IEnumerable<TSource> source, Func<TSource, bool> predicate)
             {
+                Debug.Assert(source != null);
+                Debug.Assert(predicate != null);
                 _source = source;
                 _predicate = predicate;
             }
@@ -197,12 +211,14 @@ namespace System.Linq
 
         internal class WhereArrayIterator<TSource> : Iterator<TSource>
         {
-            private TSource[] _source;
-            private Func<TSource, bool> _predicate;
+            private readonly TSource[] _source;
+            private readonly Func<TSource, bool> _predicate;
             private int _index;
 
             public WhereArrayIterator(TSource[] source, Func<TSource, bool> predicate)
             {
+                Debug.Assert(source != null);
+                Debug.Assert(predicate != null);
                 _source = source;
                 _predicate = predicate;
             }
@@ -244,12 +260,14 @@ namespace System.Linq
 
         internal class WhereListIterator<TSource> : Iterator<TSource>
         {
-            private List<TSource> _source;
-            private Func<TSource, bool> _predicate;
+            private readonly List<TSource> _source;
+            private readonly Func<TSource, bool> _predicate;
             private List<TSource>.Enumerator _enumerator;
 
             public WhereListIterator(List<TSource> source, Func<TSource, bool> predicate)
             {
+                Debug.Assert(source != null);
+                Debug.Assert(predicate != null);
                 _source = source;
                 _predicate = predicate;
             }
@@ -296,13 +314,16 @@ namespace System.Linq
 
         internal class WhereSelectEnumerableIterator<TSource, TResult> : Iterator<TResult>
         {
-            private IEnumerable<TSource> _source;
-            private Func<TSource, bool> _predicate;
-            private Func<TSource, TResult> _selector;
+            private readonly IEnumerable<TSource> _source;
+            private readonly Func<TSource, bool> _predicate;
+            private readonly Func<TSource, TResult> _selector;
             private IEnumerator<TSource> _enumerator;
 
             public WhereSelectEnumerableIterator(IEnumerable<TSource> source, Func<TSource, bool> predicate, Func<TSource, TResult> selector)
             {
+                Debug.Assert(source != null);
+                Debug.Assert(predicate != null);
+                Debug.Assert(selector != null);
                 _source = source;
                 _predicate = predicate;
                 _selector = selector;
@@ -335,7 +356,7 @@ namespace System.Linq
                         while (_enumerator.MoveNext())
                         {
                             TSource item = _enumerator.Current;
-                            if (_predicate == null || _predicate(item))
+                            if (_predicate(item))
                             {
                                 current = _selector(item);
                                 return true;
@@ -351,22 +372,20 @@ namespace System.Linq
             {
                 return new WhereSelectEnumerableIterator<TSource, TResult2>(_source, _predicate, CombineSelectors(_selector, selector));
             }
-
-            public override IEnumerable<TResult> Where(Func<TResult, bool> predicate)
-            {
-                return new WhereEnumerableIterator<TResult>(this, predicate);
-            }
         }
 
-        internal class WhereSelectArrayIterator<TSource, TResult> : Iterator<TResult>, IArrayProvider<TResult>
+        internal class WhereSelectArrayIterator<TSource, TResult> : Iterator<TResult>
         {
-            private TSource[] _source;
-            private Func<TSource, bool> _predicate;
-            private Func<TSource, TResult> _selector;
+            private readonly TSource[] _source;
+            private readonly Func<TSource, bool> _predicate;
+            private readonly Func<TSource, TResult> _selector;
             private int _index;
 
             public WhereSelectArrayIterator(TSource[] source, Func<TSource, bool> predicate, Func<TSource, TResult> selector)
             {
+                Debug.Assert(source != null);
+                Debug.Assert(predicate != null);
+                Debug.Assert(selector != null);
                 _source = source;
                 _predicate = predicate;
                 _selector = selector;
@@ -385,7 +404,7 @@ namespace System.Linq
                     {
                         TSource item = _source[_index];
                         _index++;
-                        if (_predicate == null || _predicate(item))
+                        if (_predicate(item))
                         {
                             current = _selector(item);
                             return true;
@@ -400,34 +419,20 @@ namespace System.Linq
             {
                 return new WhereSelectArrayIterator<TSource, TResult2>(_source, _predicate, CombineSelectors(_selector, selector));
             }
-
-            public override IEnumerable<TResult> Where(Func<TResult, bool> predicate)
-            {
-                return new WhereEnumerableIterator<TResult>(this, predicate);
-            }
-
-            public TResult[] ToArray()
-            {
-                if (_predicate != null && _source.Length != 0) return null;
-
-                var results = new TResult[_source.Length];
-                for (int i = 0; i < results.Length; i++)
-                {
-                    results[i] = _selector(_source[i]);
-                }
-                return results;
-            }
         }
 
-        internal class WhereSelectListIterator<TSource, TResult> : Iterator<TResult>, IArrayProvider<TResult>
+        internal class WhereSelectListIterator<TSource, TResult> : Iterator<TResult>
         {
-            private List<TSource> _source;
-            private Func<TSource, bool> _predicate;
-            private Func<TSource, TResult> _selector;
+            private readonly List<TSource> _source;
+            private readonly Func<TSource, bool> _predicate;
+            private readonly Func<TSource, TResult> _selector;
             private List<TSource>.Enumerator _enumerator;
 
             public WhereSelectListIterator(List<TSource> source, Func<TSource, bool> predicate, Func<TSource, TResult> selector)
             {
+                Debug.Assert(source != null);
+                Debug.Assert(predicate != null);
+                Debug.Assert(selector != null);
                 _source = source;
                 _predicate = predicate;
                 _selector = selector;
@@ -450,7 +455,7 @@ namespace System.Linq
                         while (_enumerator.MoveNext())
                         {
                             TSource item = _enumerator.Current;
-                            if (_predicate == null || _predicate(item))
+                            if (_predicate(item))
                             {
                                 current = _selector(item);
                                 return true;
@@ -466,16 +471,221 @@ namespace System.Linq
             {
                 return new WhereSelectListIterator<TSource, TResult2>(_source, _predicate, CombineSelectors(_selector, selector));
             }
+        }
 
-            public override IEnumerable<TResult> Where(Func<TResult, bool> predicate)
+        internal sealed class SelectEnumerableIterator<TSource, TResult> : Iterator<TResult>
+        {
+            private readonly IEnumerable<TSource> _source;
+            private readonly Func<TSource, TResult> _selector;
+            private IEnumerator<TSource> _enumerator;
+
+            public SelectEnumerableIterator(IEnumerable<TSource> source, Func<TSource, TResult> selector)
             {
-                return new WhereEnumerableIterator<TResult>(this, predicate);
+                Debug.Assert(source != null);
+                Debug.Assert(selector != null);
+                _source = source;
+                _selector = selector;
+            }
+
+            public override Iterator<TResult> Clone()
+            {
+                return new SelectEnumerableIterator<TSource, TResult>(_source, _selector);
+            }
+
+            public override void Dispose()
+            {
+                if (_enumerator != null)
+                {
+                    _enumerator.Dispose();
+                    _enumerator = null;
+                }
+                base.Dispose();
+            }
+
+            public override bool MoveNext()
+            {
+                switch (state)
+                {
+                    case 1:
+                        _enumerator = _source.GetEnumerator();
+                        state = 2;
+                        goto case 2;
+                    case 2:
+                        while (_enumerator.MoveNext())
+                        {
+                            current = _selector(_enumerator.Current);
+                            return true;
+                        }
+                        Dispose();
+                        break;
+                }
+                return false;
+            }
+
+            public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector)
+            {
+                return new SelectEnumerableIterator<TSource, TResult2>(_source, CombineSelectors(_selector, selector));
+            }
+        }
+
+
+        internal sealed class SelectArrayIterator<TSource, TResult> : Iterator<TResult>, IArrayProvider<TResult>
+        {
+            private readonly TSource[] _source;
+            private readonly Func<TSource, TResult> _selector;
+            private int _index;
+
+            public SelectArrayIterator(TSource[] source, Func<TSource, TResult> selector)
+            {
+                Debug.Assert(source != null);
+                Debug.Assert(selector != null);
+                _source = source;
+                _selector = selector;
+            }
+
+            public override Iterator<TResult> Clone()
+            {
+                return new SelectArrayIterator<TSource, TResult>(_source, _selector);
+            }
+
+            public override bool MoveNext()
+            {
+                if (state == 1 && _index < _source.Length)
+                {
+                    current = _selector(_source[_index++]);
+                    return true;
+                }
+                Dispose();
+                return false;
+            }
+
+            public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector)
+            {
+                return new SelectArrayIterator<TSource, TResult2>(_source, CombineSelectors(_selector, selector));
             }
 
             public TResult[] ToArray()
             {
-                if (_predicate != null && _source.Count != 0) return null;
+                var results = new TResult[_source.Length];
+                for (int i = 0; i < results.Length; i++)
+                {
+                    results[i] = _selector(_source[i]);
+                }
+                return results;
+            }
+        }
 
+        internal sealed class SelectListIterator<TSource, TResult> : Iterator<TResult>, IArrayProvider<TResult>
+        {
+            private readonly List<TSource> _source;
+            private readonly Func<TSource, TResult> _selector;
+            private List<TSource>.Enumerator _enumerator;
+
+            public SelectListIterator(List<TSource> source, Func<TSource, TResult> selector)
+            {
+                Debug.Assert(source != null);
+                Debug.Assert(selector != null);
+                _source = source;
+                _selector = selector;
+            }
+
+            public override Iterator<TResult> Clone()
+            {
+                return new SelectListIterator<TSource, TResult>(_source, _selector);
+            }
+
+            public override bool MoveNext()
+            {
+                switch (state)
+                {
+                    case 1:
+                        _enumerator = _source.GetEnumerator();
+                        state = 2;
+                        goto case 2;
+                    case 2:
+                        if (_enumerator.MoveNext())
+                        {
+                            current = _selector(_enumerator.Current);
+                            return true;
+                        }
+                        Dispose();
+                        break;
+                }
+                return false;
+            }
+
+            public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector)
+            {
+                return new SelectListIterator<TSource, TResult2>(_source, CombineSelectors(_selector, selector));
+            }
+
+            public TResult[] ToArray()
+            {
+                var results = new TResult[_source.Count];
+                for (int i = 0; i < results.Length; i++)
+                {
+                    results[i] = _selector(_source[i]);
+                }
+                return results;
+            }
+        }
+
+        internal sealed class SelectIListIterator<TSource, TResult> : Iterator<TResult>, IArrayProvider<TResult>
+        {
+            private readonly IList<TSource> _source;
+            private readonly Func<TSource, TResult> _selector;
+            private IEnumerator<TSource> _enumerator;
+
+            public SelectIListIterator(IList<TSource> source, Func<TSource, TResult> selector)
+            {
+                Debug.Assert(source != null);
+                Debug.Assert(selector != null);
+                _source = source;
+                _selector = selector;
+            }
+
+            public override Iterator<TResult> Clone()
+            {
+                return new SelectIListIterator<TSource, TResult>(_source, _selector);
+            }
+
+            public override bool MoveNext()
+            {
+                switch (state)
+                {
+                    case 1:
+                        _enumerator = _source.GetEnumerator();
+                        state = 2;
+                        goto case 2;
+                    case 2:
+                        if (_enumerator.MoveNext())
+                        {
+                            current = _selector(_enumerator.Current);
+                            return true;
+                        }
+                        Dispose();
+                        break;
+                }
+                return false;
+            }
+            
+            public override void Dispose()
+            {
+                if (_enumerator != null)
+                {
+                    _enumerator.Dispose();
+                    _enumerator = null;
+                }
+                base.Dispose();
+            }
+
+            public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector)
+            {
+                return new SelectIListIterator<TSource, TResult2>(_source, CombineSelectors(_selector, selector));
+            }
+
+            public TResult[] ToArray()
+            {
                 var results = new TResult[_source.Count];
                 for (int i = 0; i < results.Length; i++)
                 {
@@ -1007,12 +1217,7 @@ namespace System.Linq
         {
             if (source == null) throw Error.ArgumentNull("source");
             IArrayProvider<TSource> arrayProvider = source as IArrayProvider<TSource>;
-            if (arrayProvider != null)
-            {
-                TSource[] array = arrayProvider.ToArray();
-                if (array != null) return array;
-            }
-            return new Buffer<TSource>(source).ToArray();
+            return arrayProvider != null ? arrayProvider.ToArray() : new Buffer<TSource>(source).ToArray();
         }
 
         public static List<TSource> ToList<TSource>(this IEnumerable<TSource> source)
@@ -1477,16 +1682,6 @@ namespace System.Linq
                 state = -1; // Don't reset current
             }
 
-            public override IEnumerable<TResult> Select<TResult>(Func<int, TResult> selector)
-            {
-                return new WhereSelectEnumerableIterator<int, TResult>(this, null, selector);
-            }
-
-            public override IEnumerable<int> Where(Func<int, bool> predicate)
-            {
-                return new WhereEnumerableIterator<int>(this, predicate);
-            }
-
             public int[] ToArray()
             {
                 int[] array = new int[_end - _start];
@@ -1538,16 +1733,6 @@ namespace System.Linq
                 }
                 state = -1;
                 return false;
-            }
-
-            public override IEnumerable<TSelected> Select<TSelected>(Func<TResult, TSelected> selector)
-            {
-                return new WhereSelectEnumerableIterator<TResult, TSelected>(this, null, selector);
-            }
-
-            public override IEnumerable<TResult> Where(Func<TResult, bool> predicate)
-            {
-                return new WhereEnumerableIterator<TResult>(this, predicate);
             }
 
             public TResult[] ToArray()
@@ -2875,14 +3060,14 @@ namespace System.Linq
     }
 
     /// <summary>
-    /// An iterator that can (or sometimes can) produce an array through an optimized path.
+    /// An iterator that can produce an array through an optimized path.
     /// </summary>
     internal interface IArrayProvider<TElement>
     {
         /// <summary>
-        /// Produce an array of the sequence through an optimized path, if possible.
+        /// Produce an array of the sequence through an optimized path.
         /// </summary>
-        /// <returns>The array, or null if an optimized path isn't possible, and default behavior should be used.</returns>
+        /// <returns>The array.</returns>
         TElement[] ToArray();
     }
 
@@ -3545,15 +3730,13 @@ namespace System.Linq
             if (iterator != null)
             {
                 TElement[] array = iterator.ToArray();
-                if (array != null)
-                {
-                    items = array;
-                    count = array.Length;
-                    return;
-                }
+                items = array;
+                count = array.Length;
             }
-
-            items = EnumerableHelpers.ToArray(source, out count);
+            else
+            {
+                items = EnumerableHelpers.ToArray(source, out count);
+            }
         }
 
         internal TElement[] ToArray()
