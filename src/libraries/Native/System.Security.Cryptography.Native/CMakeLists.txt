@@ -19,6 +19,7 @@ endif()
 
 set(NATIVECRYPTO_SOURCES
     openssl.c
+    pal_hmac.cpp
 )
 
 add_library(System.Security.Cryptography.Native

@@ -9,25 +9,31 @@ namespace System.Globalization.Tests
 {
     public class TextInfoCultureName
     {
-        // PosTest1: Verify the en-US TextInfo
-        [Fact]
-        public void TestEnUSTextInfo()
+        // TestTextInfoCultureName: Verify the TextInfo from specific locales
+        [Theory]
+        [InlineData("en-US")]
+        [InlineData("fr-FR")]
+        public void TestTextInfoCultureName(string localeName)
         {
-            CultureInfo ci = new CultureInfo("en-US");
-            TextInfo textInfoUS = ci.TextInfo;
-            String cultureName = ci.Name;
-            Assert.Equal(cultureName, textInfoUS.CultureName);
+            Assert.Equal(localeName, new CultureInfo(localeName).TextInfo.CultureName);
         }
 
-        // PosTest2: Verify the fr-FR CultureInfo's TextInfo
-        [Fact]
-        public void TestFrFRTextInfo()
+        // TestTextInfoCasingCultureName: Verify the TextInfo from mismatched casing
+        [Theory]
+        [InlineData("EN-us", "en-US")]
+        [InlineData("FR-fr", "fr-FR")]
+        public void TestTextInfoCasingCultureName(string localeName, string expectedLocaleName)
         {
-            CultureInfo ci = new CultureInfo("fr-FR");
-            TextInfo textInfoFrance = ci.TextInfo;
-            String cultureName = ci.Name;
+            Assert.Equal(expectedLocaleName, new CultureInfo(localeName).TextInfo.CultureName);
+        }
 
-            Assert.Equal(cultureName, textInfoFrance.CultureName);
+        // TestInvariantCultureName: Verify the invariant TextInfo
+        [Fact]
+        public void TestInvariantCultureName()
+        {
+            CultureInfo ci = CultureInfo.InvariantCulture;
+            string localeName = ci.Name;
+            Assert.Equal(ci.TextInfo.CultureName, localeName);
         }
     }
 }

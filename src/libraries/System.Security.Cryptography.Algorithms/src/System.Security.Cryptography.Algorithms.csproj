@@ -157,26 +157,17 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.RAND.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.RAND.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Hmac.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Hmac.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeEvpCipherCtxHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeEvpCipherCtxHandle.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeEvpMdCtxHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeEvpMdCtxHandle.Unix.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsFreeBSD)' == 'true' ">
-    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.HMAC.cs">
-      <Link>Common\Interop\Unix\libcrypto\Interop.HMAC.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
-    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.HMAC.cs">
-      <Link>Common\Interop\Unix\libcrypto\Interop.HMAC.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
-    <Compile Include="$(CommonPath)\Interop\OSX\libcrypto\Interop.HMAC.cs">
-      <Link>Common\Interop\OSX\libcrypto\Interop.HMAC.cs</Link>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHmacCtxHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeHmacCtxHandle.Unix.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

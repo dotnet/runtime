@@ -141,8 +141,7 @@ namespace System.IO
                 // need to do the string compare, otherwise we compare rightlength characters
                 // and the end of both strings.
                 if (name.Length >= rightLength && 
-                    string.Compare(expression, 1, name, name.Length - rightLength, rightLength, 
-                        FileSystemWatcher.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase) == 0)
+                    string.Compare(expression, 1, name, name.Length - rightLength, rightLength, PathInternal.StringComparison) == 0)
                 {
                     return true;
                 }
@@ -431,7 +430,7 @@ namespace System.IO
                         //  Finally, check if the expression char matches the name char
                         //
                         
-                        if (FileSystemWatcher.CaseSensitive ? 
+                        if (PathInternal.IsCaseSensitive ? 
                             (exprChar == nameChar) : 
                             (char.ToUpperInvariant(exprChar) == char.ToUpperInvariant(nameChar)))
                         {

@@ -3,6 +3,7 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -30,17 +31,17 @@ namespace System.Globalization.Tests
             }
         }
 
-        //  NegTest1: ArgumentOutOfRangeException is not thrown
+        // TestArgumentOutOfRange: ArgumentOutOfRangeException is thrown
         [Fact]
-        public void NegTest1()
+        public void TestArgumentOutOfRange()
         {
             VerificationHelper<ArgumentOutOfRangeException>(-1);
             VerificationHelper<ArgumentOutOfRangeException>(100);
         }
 
-        // NegTest2: InvalidOperationException is not thrown
+        // TestInvalidOperation: InvalidOperationException is thrown
         [Fact]
-        public void NegTest2()
+        public void TestInvalidOperation()
         {
             NumberFormatInfo nfi = new NumberFormatInfo();
             NumberFormatInfo nfiReadOnly = NumberFormatInfo.ReadOnly(nfi);
@@ -48,6 +49,31 @@ namespace System.Globalization.Tests
             {
                 nfiReadOnly.CurrencyDecimalDigits = 1;
             });
+        }
+
+        // TestCurrencyDecimalDigitsLocale1: Verify value of property CurrencyDecimalDigits for specific locale
+        [Theory]
+        [InlineData("en-US", 2)]
+        public void TestCurrencyDecimalDigitsLocale1(string locale, int expected)
+        {
+            CultureInfo myTestCulture = new CultureInfo(locale);
+            NumberFormatInfo nfi = myTestCulture.NumberFormat;
+            int actual = nfi.CurrencyDecimalDigits;
+            Assert.Equal(expected, actual);
+        }
+
+        // TestCurrencyDecimalDigitsLocale2: Verify value of property CurrencyDecimalDigits for specific locale
+        [Theory]
+        [InlineData("ko", 0, 2)]
+        public void TestCurrencyDecimalDigitsLocale2(string locale, int expectedWindows, int expectedIcu)
+        {
+            CultureInfo myTestCulture = new CultureInfo(locale);
+            NumberFormatInfo nfi = myTestCulture.NumberFormat;
+            int actual = nfi.CurrencyDecimalDigits;
+            int expected = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? expectedWindows : expectedIcu;
+
+            // todo: determine why some values are different
+            Assert.Equal(expected, actual);
         }
 
         private void VerificationHelper<T>(int i) where T : Exception
