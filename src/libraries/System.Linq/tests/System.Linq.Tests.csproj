@@ -74,7 +74,6 @@
     <Compile Include="LegacyTests\Helper.cs" />
     <Compile Include="JoinTests.cs" />
     <Compile Include="LongCountTests.cs" />
-    <Compile Include="LegacyTests\MinTests.cs" />
     <Compile Include="OfTypeTests.cs" />
     <Compile Include="OrderByDescendingTests.cs" />
     <Compile Include="OrderByTests.cs" />
