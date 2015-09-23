@@ -45,7 +45,7 @@ namespace System.Security.Cryptography
             if (key.AlgorithmGroup != CngAlgorithmGroup.ECDsa)
                 throw new ArgumentException(SR.Cryptography_ArgECDsaRequiresECDsaKey, "key");
 
-            Key = CngAsymmetricAlgorithmCore.Duplicate(key);
+            Key = CngAlgorithmCore.Duplicate(key);
         }
 
         public override KeySizes[] LegalKeySizes
@@ -61,7 +61,7 @@ namespace System.Security.Cryptography
             _core.Dispose();
         }
 
-        private CngAsymmetricAlgorithmCore _core;
+        private CngAlgorithmCore _core;
 
         // See https://msdn.microsoft.com/en-us/library/windows/desktop/bb931354(v=vs.85).aspx
         private static readonly KeySizes[] s_legalKeySizes =

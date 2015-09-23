@@ -9,7 +9,7 @@ namespace System.Globalization.Tests
 {
     public class NumberFormatInfoCurrencyDecimalSeparator
     {
-        // PosTest1: Verify default value of property CurrencyDecimalSeparator
+        // TestDefaultValue: Verify default value of property CurrencyDecimalSeparator
         [Fact]
         public void TestDefaultValue()
         {
@@ -17,7 +17,7 @@ namespace System.Globalization.Tests
             Assert.Equal(".", nfi.CurrencyDecimalSeparator);
         }
 
-        // PosTest2: Verify set value of property CurrencyDecimalSeparator
+        // TestSetValue: Verify set value of property CurrencyDecimalSeparator
         [Fact]
         public void TestSetValue()
         {
@@ -27,7 +27,7 @@ namespace System.Globalization.Tests
             Assert.Equal(testStr, nfi.CurrencyDecimalSeparator);
         }
 
-        // NegTest1: ArgumentNullException is not thrown
+        // TestNull: ArgumentNullException is thrown
         [Fact]
         public void TestNull()
         {
@@ -39,7 +39,7 @@ namespace System.Globalization.Tests
             });
         }
 
-        // NegTest2: InvalidOperationException is not thrown
+        // TestInvalidOperation: InvalidOperationException is thrown
         [Fact]
         public void TestInvalidOperation()
         {
@@ -52,7 +52,7 @@ namespace System.Globalization.Tests
             });
         }
 
-        // NegTest3: ArgumentException is not thrown
+        // TestEmptyString: ArgumentException is thrown
         [Fact]
         public void TestEmptyString()
         {

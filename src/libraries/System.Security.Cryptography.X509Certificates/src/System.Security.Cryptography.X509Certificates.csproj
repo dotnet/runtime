@@ -195,11 +195,17 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.d2i.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.d2i.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.EcKey.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.EcKey.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.ERR.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.ERR.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.EvpPkey.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.EvpPkey.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.EvpPkey.EcKey.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.EvpPkey.EcKey.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.EvpPkey.Rsa.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.EvpPkey.Rsa.cs</Link>
@@ -260,6 +266,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeBioHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeBioHandle.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeEcKeyHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeEcKeyHandle.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafePkcs12Handle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafePkcs12Handle.Unix.cs</Link>
