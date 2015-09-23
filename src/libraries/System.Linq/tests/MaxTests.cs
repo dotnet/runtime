@@ -41,6 +41,12 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void NullInt32Source()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).Max());
+        }
+
+        [Fact]
         public void EmptyInt32()
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<int>().Max());
@@ -90,6 +96,12 @@ namespace System.Linq.Tests
             Assert.Equal(-10, minusTen.Max());
             Assert.Equal(1000, thousand.Max());
             Assert.Equal(long.MaxValue, thousand.Concat(Enumerable.Repeat(long.MaxValue, 1)).Max());
+        }
+
+        [Fact]
+        public void NullInt64Source()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<long>)null).Max());
         }
 
         [Fact]
@@ -229,6 +241,12 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void NullDoubleSource()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<double>)null).Max());
+        }
+
+        [Fact]
         public void EmptyDouble()
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<double>().Max());
@@ -308,6 +326,12 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void NullDecimalSource()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<decimal>)null).Max());
+        }
+
+        [Fact]
         public void EmptyDecimal()
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<decimal>().Max());
@@ -356,6 +380,12 @@ namespace System.Linq.Tests
             Assert.Equal(1000, thousand.Max());
             Assert.Equal(int.MaxValue, thousand.Concat(Enumerable.Repeat((int?)int.MaxValue, 1)).Max());
             Assert.Null(Enumerable.Repeat(default(int?), 100).Max());
+        }
+
+        [Fact]
+        public void NullNullableInt32Source()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int?>)null).Max());
         }
 
         [Fact]
@@ -408,6 +438,12 @@ namespace System.Linq.Tests
             Assert.Equal(1000, thousand.Max());
             Assert.Equal(long.MaxValue, thousand.Concat(Enumerable.Repeat((long?)long.MaxValue, 1)).Max());
             Assert.Null(Enumerable.Repeat(default(long?), 100).Max());
+        }
+
+        [Fact]
+        public void NullNullableInt64Source()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<long?>)null).Max());
         }
 
         [Fact]
@@ -567,6 +603,12 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void NullNullableDoubleSource()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<double?>)null).Max());
+        }
+
+        [Fact]
         public void EmptyNullableDouble()
         {
             Assert.Null(Enumerable.Empty<double?>().Max());
@@ -667,6 +709,12 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void NullNullableDecimalSource()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<decimal?>)null).Max());
+        }
+
+        [Fact]
         public void EmptyNullableDecimal()
         {
             Assert.Null(Enumerable.Empty<decimal?>().Max());
@@ -763,7 +811,18 @@ namespace System.Linq.Tests
             Assert.Equal(new DateTime(2000, 12, 31), newYearsEve.Max());
             Assert.Equal(new DateTime(3000, 1, 1), threeThousand.Max());
             Assert.Equal(DateTime.MaxValue, threeThousand.Concat(Enumerable.Repeat(DateTime.MaxValue, 1)).Max());
+        }
+
+        [Fact]
+        public void EmptyDateTime()
+        {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<DateTime>().Max());
+        }
+
+        [Fact]
+        public void NullDateTimeSource()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<DateTime>)null).Max());
         }
 
         [Fact]
@@ -775,6 +834,12 @@ namespace System.Linq.Tests
             Assert.Equal("9", nine.Max());
             Assert.Equal("Victor", agents.Max());
             Assert.Equal("Victor", confusedAgents.Max());
+        }
+
+        [Fact]
+        public void NullStringSource()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<string>)null).Max());
         }
 
         [Fact]
@@ -833,7 +898,25 @@ namespace System.Linq.Tests
             Assert.Equal(-10, minusTen.Max(x => x));
             Assert.Equal(1000, thousand.Max(x => x));
             Assert.Equal(int.MaxValue, thousand.Concat(Enumerable.Repeat(int.MaxValue, 1)).Max(x => x));
+        }
+
+        [Fact]
+        public void EmptyInt32WithSelector()
+        {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<int>().Max(x => x));
+        }
+
+        [Fact]
+        public void NullInt32SourceWithSelector()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).Max(i => i));
+        }
+
+        [Fact]
+        public void Int32SourceWithNullSelector()
+        {
+            Func<int, int> selector = null;
+            Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<int>().Max(selector));
         }
 
         [Fact]
@@ -859,7 +942,25 @@ namespace System.Linq.Tests
             Assert.Equal(-10, minusTen.Max(x => x));
             Assert.Equal(1000, thousand.Max(x => x));
             Assert.Equal(long.MaxValue, thousand.Concat(Enumerable.Repeat(long.MaxValue, 1)).Max(x => x));
+        }
+
+        [Fact]
+        public void EmptyInt64WithSelector()
+        {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<long>().Max(x => x));
+        }
+
+        [Fact]
+        public void NullInt64SourceWithSelector()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<long>)null).Max(i => i));
+        }
+
+        [Fact]
+        public void Int64SourceWithNullSelector()
+        {
+            Func<long, long> selector = null;
+            Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<long>().Max(selector));
         }
 
         [Fact]
@@ -884,7 +985,6 @@ namespace System.Linq.Tests
             Assert.Equal(-10F, minusTen.Max(x => x));
             Assert.Equal(1000F, thousand.Max(x => x));
             Assert.Equal(float.MaxValue, thousand.Concat(Enumerable.Repeat(float.MaxValue, 1)).Max(x => x));
-            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<float>().Max(x => x));
         }
 
         [Fact]
@@ -898,6 +998,19 @@ namespace System.Linq.Tests
             };
 
             Assert.Equal(100.45f, source.Select(e => e.num).Max());
+        }
+
+        [Fact]
+        public void NullSingleSourceWithSelector()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<float>)null).Max(i => i));
+        }
+
+        [Fact]
+        public void SingleSourceWithNullSelector()
+        {
+            Func<float, float> selector = null;
+            Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<float>().Max(selector));
         }
 
         [Fact]
@@ -917,7 +1030,25 @@ namespace System.Linq.Tests
             Assert.Equal(-10D, minusTen.Max(x => x));
             Assert.Equal(1000D, thousand.Max(x => x));
             Assert.Equal(double.MaxValue, thousand.Concat(Enumerable.Repeat(double.MaxValue, 1)).Max(x => x));
+        }
+
+        [Fact]
+        public void EmptyDoubleWithSelector()
+        {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<double>().Max(x => x));
+        }
+
+        [Fact]
+        public void NullDoubleSourceWithSelector()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<double>)null).Max(i => i));
+        }
+
+        [Fact]
+        public void DoubleSourceWithNullSelector()
+        {
+            Func<double, double> selector = null;
+            Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<double>().Max(selector));
         }
 
         [Fact]
@@ -942,7 +1073,25 @@ namespace System.Linq.Tests
             Assert.Equal(-10M, minusTen.Max(x => x));
             Assert.Equal(1000M, thousand.Max(x => x));
             Assert.Equal(decimal.MaxValue, thousand.Concat(Enumerable.Repeat(decimal.MaxValue, 1)).Max(x => x));
+        }
+
+        [Fact]
+        public void EmptyDecimalWithSelector()
+        {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<decimal>().Max(x => x));
+        }
+
+        [Fact]
+        public void NullDecimalSourceWithSelector()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<decimal>)null).Max(i => i));
+        }
+
+        [Fact]
+        public void DecimalSourceWithNullSelector()
+        {
+            Func<decimal, decimal> selector = null;
+            Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<decimal>().Max(selector));
         }
 
         [Fact]
@@ -967,8 +1116,26 @@ namespace System.Linq.Tests
             Assert.Equal(-10, minusTen.Max(x => x));
             Assert.Equal(1000, thousand.Max(x => x));
             Assert.Equal(int.MaxValue, thousand.Concat(Enumerable.Repeat((int?)int.MaxValue, 1)).Max(x => x));
-            Assert.Null(Enumerable.Empty<int?>().Max(x => x));
             Assert.Null(Enumerable.Repeat(default(int?), 100).Max(x => x));
+        }
+
+        [Fact]
+        public void EmptyNullableInt32WithSelector()
+        {
+            Assert.Null(Enumerable.Empty<int?>().Max(x => x));
+        }
+
+        [Fact]
+        public void NullNullableInt32SourceWithSelector()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int?>)null).Max(i => i));
+        }
+
+        [Fact]
+        public void NullableInt32SourceWithNullSelector()
+        {
+            Func<int?, int?> selector = null;
+            Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<int?>().Max(selector));
         }
 
         [Fact]
@@ -994,8 +1161,26 @@ namespace System.Linq.Tests
             Assert.Equal(-10, minusTen.Max(x => x));
             Assert.Equal(1000, thousand.Max(x => x));
             Assert.Equal(long.MaxValue, thousand.Concat(Enumerable.Repeat((long?)long.MaxValue, 1)).Max(x => x));
-            Assert.Null(Enumerable.Empty<long?>().Max(x => x));
             Assert.Null(Enumerable.Repeat(default(long?), 100).Max(x => x));
+        }
+
+        [Fact]
+        public void EmptyNullableInt64WithSelector()
+        {
+            Assert.Null(Enumerable.Empty<long?>().Max(x => x));
+        }
+
+        [Fact]
+        public void NullNullableInt64SourceWithSelector()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<long?>)null).Max(i => i));
+        }
+
+        [Fact]
+        public void NullableInt64SourceWithNullSelector()
+        {
+            Func<long?, long?> selector = null;
+            Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<long?>().Max(selector));
         }
 
         [Fact]
@@ -1020,8 +1205,26 @@ namespace System.Linq.Tests
             Assert.Equal(-10F, minusTen.Max(x => x));
             Assert.Equal(1000F, thousand.Max(x => x));
             Assert.Equal(float.MaxValue, thousand.Concat(Enumerable.Repeat((float?)float.MaxValue, 1)).Max(x => x));
-            Assert.Null(Enumerable.Empty<float?>().Max(x => x));
             Assert.Null(Enumerable.Repeat(default(float?), 100).Max(x => x));
+        }
+
+        [Fact]
+        public void EmptyNullableSingleWithSelector()
+        {
+            Assert.Null(Enumerable.Empty<float?>().Max(x => x));
+        }
+
+        [Fact]
+        public void NullNullableSingleSourceWithSelector()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<float?>)null).Max(i => i));
+        }
+
+        [Fact]
+        public void NullableSingleSourceWithNullSelector()
+        {
+            Func<float?, float?> selector = null;
+            Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<float?>().Max(selector));
         }
 
         [Fact]
@@ -1047,8 +1250,26 @@ namespace System.Linq.Tests
             Assert.Equal(-10D, minusTen.Max(x => x));
             Assert.Equal(1000D, thousand.Max(x => x));
             Assert.Equal(double.MaxValue, thousand.Concat(Enumerable.Repeat((double?)double.MaxValue, 1)).Max(x => x));
-            Assert.Null(Enumerable.Empty<double?>().Max(x => x));
             Assert.Null(Enumerable.Repeat(default(double?), 100).Max(x => x));
+        }
+
+        [Fact]
+        public void EmptyNullableDoubleWithSelector()
+        {
+            Assert.Null(Enumerable.Empty<double?>().Max(x => x));
+        }
+
+        [Fact]
+        public void NullNullableDoubleSourceWithSelector()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<double?>)null).Max(i => i));
+        }
+
+        [Fact]
+        public void NullableDoubleSourceWithNullSelector()
+        {
+            Func<double?, double?> selector = null;
+            Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<double?>().Max(selector));
         }
 
         [Fact]
@@ -1073,8 +1294,26 @@ namespace System.Linq.Tests
             Assert.Equal(-10M, minusTen.Max(x => x));
             Assert.Equal(1000M, thousand.Max(x => x));
             Assert.Equal(decimal.MaxValue, thousand.Concat(Enumerable.Repeat((decimal?)decimal.MaxValue, 1)).Max(x => x));
-            Assert.Null(Enumerable.Empty<decimal?>().Max(x => x));
             Assert.Null(Enumerable.Repeat(default(decimal?), 100).Max(x => x));
+        }
+
+        [Fact]
+        public void EmptyNullableDecimalWithSelector()
+        {
+            Assert.Null(Enumerable.Empty<decimal?>().Max(x => x));
+        }
+
+        [Fact]
+        public void NullNullableDecimalSourceWithSelector()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<decimal?>)null).Max(i => i));
+        }
+
+        [Fact]
+        public void NullableDecimalSourceWithNullSelector()
+        {
+            Func<decimal?, decimal?> selector = null;
+            Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<decimal?>().Max(selector));
         }
 
         [Fact]
@@ -1146,7 +1385,25 @@ namespace System.Linq.Tests
             Assert.Equal(new DateTime(2000, 12, 31), newYearsEve.Max(x => x));
             Assert.Equal(new DateTime(3000, 1, 1), threeThousand.Max(x => x));
             Assert.Equal(DateTime.MaxValue, threeThousand.Concat(Enumerable.Repeat(DateTime.MaxValue, 1)).Max(x => x));
-            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<DateTime>().Max(x => x));
+        }
+
+        [Fact]
+        public void EmptyNullableDateTimeWithSelector()
+        {
+            Assert.Null(Enumerable.Empty<DateTime?>().Max(x => x));
+        }
+
+        [Fact]
+        public void NullNullableDateTimeSourceWithSelector()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<DateTime?>)null).Max(i => i));
+        }
+
+        [Fact]
+        public void NullableDateTimeSourceWithNullSelector()
+        {
+            Func<DateTime?, DateTime?> selector = null;
+            Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<DateTime?>().Max(selector));
         }
 
         [Fact]
@@ -1158,7 +1415,24 @@ namespace System.Linq.Tests
             Assert.Equal("9", nine.Max(x => x));
             Assert.Equal("Victor", agents.Max(x => x));
             Assert.Equal("Victor", confusedAgents.Max(x => x));
+        }
+
+        public void EmptyStringSourceWithSelector()
+        {
             Assert.Null(Enumerable.Empty<string>().Max(x => x));
+        }
+
+        [Fact]
+        public void NullStringSourceWithSelector()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<string>)null).Max(i => i));
+        }
+
+        [Fact]
+        public void StringSourceWithNullSelector()
+        {
+            Func<string, string> selector = null;
+            Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<string>().Max(selector));
         }
 
         [Fact]
@@ -1171,6 +1445,7 @@ namespace System.Linq.Tests
             };
             Assert.Equal("Tim", source.Max(e => e.name));
         }
+
         [Fact]
         public void EmptyBoolean()
         {
