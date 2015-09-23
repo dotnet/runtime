@@ -3,6 +3,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
@@ -69,7 +70,7 @@ namespace System.Globalization
             this.sWindowsName = StringBuilderCache.GetStringAndRelease(sb); // the name passed to subsequent ICU calls
 
             // Replace the ICU collation keyword with an _
-            index = realNameBuffer.IndexOf(ICU_COLLATION_KEYWORD);
+            index = realNameBuffer.IndexOf(ICU_COLLATION_KEYWORD, StringComparison.Ordinal);
             if (index >= 0)
             {
                 this.sName = this.sWindowsName.Substring(0, index) + "_" + alternateSortName;
