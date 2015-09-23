@@ -268,7 +268,7 @@ namespace System.Net
                 {
                     resultSize = Interop.OpenSsl.Decrypt(securityContext.DangerousGetHandle(), inputPtr, size);
                 }
-                return SecurityStatus.OK;
+                return ((size == 0) || (resultSize > 0)) ? SecurityStatus.OK : SecurityStatus.ContextExpired;
             }
             catch
             {
