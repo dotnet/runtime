@@ -64,6 +64,7 @@ internal static partial class Interop
         {
             internal const int SSL_ERROR_WANT_READ = 2;
             internal const int SSL_ERROR_SYSCALL = 5;
+            internal const int SSL_ERROR_ZERO_RETURN = 6;
         }
 
         internal static class SslState
