@@ -99,7 +99,9 @@ namespace System.IO
                 Interop.Sys.LockOperations lockOperation = (share == FileShare.None) ? Interop.Sys.LockOperations.LOCK_EX : Interop.Sys.LockOperations.LOCK_SH;
                 SysCall<Interop.Sys.LockOperations, int>((fd, op, _) => Interop.Sys.FLock(fd, op), lockOperation | Interop.Sys.LockOperations.LOCK_NB);
 
-                // These provide hints around how the file will be accessed.
+                // These provide hints around how the file will be accessed.  Specifying both RandomAccess
+                // and Sequential together doesn't make sense as they are two competing options on the same spectrum,
+                // so if both are specified, we prefer RandomAccess (behavior on Windows is unspecified if both are provided).
                 Interop.Sys.FileAdvice fadv =
                     (_options & FileOptions.RandomAccess) != 0 ? Interop.Sys.FileAdvice.POSIX_FADV_RANDOM :
                     (_options & FileOptions.SequentialScan) != 0 ? Interop.Sys.FileAdvice.POSIX_FADV_SEQUENTIAL :
