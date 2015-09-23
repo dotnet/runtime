@@ -80,7 +80,6 @@
     <Compile Include="LegacyTests\SelectManyTests.cs" />
     <Compile Include="LegacyTests\SelectTests.cs" />
     <Compile Include="SingleOrDefaultTests.cs" />
-    <Compile Include="LegacyTests\SumTests.cs" />
     <Compile Include="TakeTests.cs" />
     <Compile Include="TakeWhileTests.cs" />
     <Compile Include="ThenByDescendingTests.cs" />
