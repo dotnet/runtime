@@ -1294,6 +1294,9 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean ad
 	if (code && !ji->has_generic_jit_info && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED))
 		return code;
 
+	if (mono_llvm_only)
+		return mono_jit_compile_method (method);
+
 	mono_domain_lock (domain);
 	code = g_hash_table_lookup (domain_jit_info (domain)->jump_trampoline_hash, method);
 	mono_domain_unlock (domain);
