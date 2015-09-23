@@ -25,7 +25,6 @@ namespace System.Net.Security
     {
         //also used as a lock object
         internal const string SecurityPackage = "Microsoft Unified Security Protocol Provider";
-        private static readonly object s_syncObject = new object();
 
         // When reading a frame from the wire first read this many bytes for the header.
         internal const int ReadHeaderSize = 5;

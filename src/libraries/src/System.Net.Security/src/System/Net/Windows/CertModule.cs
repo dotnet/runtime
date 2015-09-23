@@ -4,12 +4,16 @@
 using Microsoft.Win32.SafeHandles;
 using System.Net.Security;
 using System.Runtime.InteropServices;
+using System.Security;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Principal;
 
 namespace System.Net
 {   
     internal partial class CertModule : CertInterface
     {
+        private static readonly object s_syncObject = new object();
 
         private static volatile X509Store s_myCertStoreEx;
         private static volatile X509Store s_myMachineCertStoreEx;
