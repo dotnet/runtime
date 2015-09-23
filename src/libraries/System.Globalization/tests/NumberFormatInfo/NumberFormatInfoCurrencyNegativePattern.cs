@@ -65,10 +65,17 @@ namespace System.Globalization.Tests
             CultureInfo myTestCulture = new CultureInfo(locale);
             NumberFormatInfo nfi = myTestCulture.NumberFormat;
             int actual = nfi.CurrencyNegativePattern;
-            int expected = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? expectedWindows : expectedIcu;
 
-            // todo: determine if Windows version needs to support "accounting" currency explictly which contains parenthesis
-            Assert.Equal(expected, actual);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // todo: determine if Windows version needs to support "accounting" currency explictly which contains parenthesis
+                // Windows 10 uses ICU data here, this should be cleaned up as part of #3243
+                Assert.True(actual == expectedWindows || actual == expectedIcu);
+            }
+            else
+            {
+                Assert.Equal(expectedIcu, actual);
+            }
         }
 
         // TestCurrencyNegativePatternLocale2: Verify value of property CurrencyNegativePattern for specific locales

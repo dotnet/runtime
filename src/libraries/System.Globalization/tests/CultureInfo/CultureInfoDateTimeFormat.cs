@@ -53,9 +53,15 @@ namespace System.Globalization.Tests
         {
             CultureInfo myTestCulture = new CultureInfo(locale);
             DateTimeFormatInfo dtf = myTestCulture.DateTimeFormat;
-            string expected = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? expectedWindows : expectedIcu;
-            // todo: determine why Windows uses ":" instead of "."
-            Assert.Equal(expected, dtf.ShortTimePattern);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // Windows 10 uses ICU data here, this should be cleaned up as part of #3243
+                Assert.True(dtf.ShortTimePattern == expectedWindows || dtf.ShortTimePattern == expectedIcu);
+            }
+            else
+            {
+                Assert.Equal(expectedIcu, dtf.ShortTimePattern);
+            }
         }
 
         [Theory]
@@ -73,9 +79,15 @@ namespace System.Globalization.Tests
         {
             CultureInfo myTestCulture = new CultureInfo(locale);
             DateTimeFormatInfo dtf = myTestCulture.DateTimeFormat;
-            string expected = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? expectedWindows : expectedIcu;
-            // todo: determine why Windows uses ":" instead of "."
-            Assert.Equal(expected, dtf.LongTimePattern);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // Windows 10 uses ICU data here, this should be cleaned up as part of #3243
+                Assert.True(dtf.LongTimePattern == expectedWindows || dtf.LongTimePattern == expectedIcu);
+            }
+            else
+            {
+                Assert.Equal(expectedIcu, dtf.LongTimePattern);
+            }
         }
 
         [Fact]
