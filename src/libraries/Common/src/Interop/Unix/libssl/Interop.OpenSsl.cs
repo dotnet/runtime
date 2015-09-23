@@ -141,11 +141,11 @@ internal static partial class Interop
 
         }
 
-        internal static int Encrypt(IntPtr handlePtr, IntPtr buffer, int count, int bufferCapacity)
+        internal static int Encrypt(IntPtr handlePtr, IntPtr buffer, int offset, int count, int bufferCapacity)
         {
             SslContext context = Marshal.PtrToStructure<SslContext>(handlePtr);  
 
-            var retVal = libssl.SSL_write(context.sslPtr, buffer, count);
+            var retVal = libssl.SSL_write(context.sslPtr, new IntPtr(buffer.ToInt64() + offset), count);
 
             if (retVal != count)
             {

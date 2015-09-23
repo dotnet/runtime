@@ -59,7 +59,8 @@ namespace System.Net
 
         public SecurityStatus EncryptMessage(SafeDeleteContext securityContext, byte[] buffer, int size, int headerSize, int trailerSize, out int resultSize)
         {
-            return EncryptDecryptHelper(securityContext, buffer, 0, size, headerSize, trailerSize, true,
+            // Unencrypted data starts at an offset of headerSize
+            return EncryptDecryptHelper(securityContext, buffer, headerSize, size, headerSize, trailerSize, true,
                 out resultSize);
         }
 
@@ -259,10 +260,10 @@ namespace System.Net
             {
                 securityContext.DangerousAddRef(ref gotReference);
                 inputHandle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-                IntPtr inputPtr = Marshal.UnsafeAddrOfPinnedArrayElement(buffer, offset);
+                IntPtr inputPtr = Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0);
                 if (encrypt)
                 {
-                    resultSize = Interop.OpenSsl.Encrypt(securityContext.DangerousGetHandle(), inputPtr, size, buffer.Length);
+                    resultSize = Interop.OpenSsl.Encrypt(securityContext.DangerousGetHandle(), inputPtr, offset, size, buffer.Length);
                 }
                 else
                 {

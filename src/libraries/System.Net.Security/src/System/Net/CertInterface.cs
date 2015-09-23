@@ -15,5 +15,7 @@ namespace System.Net
 
         internal abstract string[] GetRequestCertificateAuthorities(SafeDeleteContext securityContext);
 
+        internal abstract X509Store EnsureStoreOpened(bool isMachineStore);
+
     }
 }
