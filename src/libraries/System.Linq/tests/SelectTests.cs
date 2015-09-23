@@ -10,7 +10,152 @@ namespace System.Linq.Tests
 {
     public class SelectTests
     {
-        #region Null arguments
+        [Fact]
+        public void SameResultsRepeatCallsStringQuery()
+        {
+            var q1 = from x1 in new string[] { "Alen", "Felix", null, null, "X", "Have Space", "Clinton", "" }
+                     select x1; ;
+
+            var q2 = from x2 in new int[] { 55, 49, 9, -100, 24, 25, -1, 0 }
+                     select x2;
+
+            var q = from x3 in q1
+                    from x4 in q2
+                    select new { a1 = x3, a2 = x4 };
+
+            Assert.Equal(q.Select(e => e.a1), q.Select(e => e.a1));
+        }
+
+        [Fact]
+        public void SingleElement()
+        {
+            var source = new[]
+            {
+                new  { name = "Prakash", custID = 98088 }
+            };
+            string[] expected = { "Prakash" };
+
+            Assert.Equal(expected, source.Select(e => e.name));
+        }
+
+        [Fact]
+        public void SelectProperty()
+        {
+            var source = new []{
+                new { name="Prakash", custID=98088 },
+                new { name="Bob", custID=29099 },
+                new { name="Chris", custID=39033 },
+                new { name=(string)null, custID=30349 },
+                new { name="Prakash", custID=39030 }
+            };
+            string[] expected = { "Prakash", "Bob", "Chris", null, "Prakash" };
+            Assert.Equal(expected, source.Select(e => e.name));
+        }
+
+        [Fact]
+        public void EmptyWithIndexedSelector()
+        {
+            Assert.Equal(Enumerable.Empty<int>(), Enumerable.Empty<string>().Select((s, i) => s.Length + i));
+        }
+
+        [Fact]
+        public void SingleElementIndexedSelector()
+        {
+            var source = new[]
+            {
+                new  { name = "Prakash", custID = 98088 }
+            };
+            string[] expected = { "Prakash" };
+
+            Assert.Equal(expected, source.Select((e, index) => e.name));
+        }
+
+        [Fact]
+        public void SelectPropertyPassingIndex()
+        {
+            var source = new[]{
+                new { name="Prakash", custID=98088 },
+                new { name="Bob", custID=29099 },
+                new { name="Chris", custID=39033 },
+                new { name=(string)null, custID=30349 },
+                new { name="Prakash", custID=39030 }
+            };
+            string[] expected = { "Prakash", "Bob", "Chris", null, "Prakash" };
+            Assert.Equal(expected, source.Select((e, i) => e.name));
+        }
+
+        [Fact]
+        public void SelectPropertyUsingIndex()
+        {
+            var source = new[]{
+                new { name="Prakash", custID=98088 },
+                new { name="Bob", custID=29099 },
+                new { name="Chris", custID=39033 }
+            };
+            string[] expected = { "Prakash", null, null };
+            Assert.Equal(expected, source.Select((e, i) => i == 0 ? e.name : null));
+        }
+
+        [Fact]
+        public void SelectPropertyPassingIndexOnLast()
+        {
+            var source = new[]{
+                new { name="Prakash", custID=98088},
+                new { name="Bob", custID=29099 },
+                new { name="Chris", custID=39033 },
+                new { name="Robert", custID=39033 },
+                new { name="Allen", custID=39033 },
+                new { name="Chuck", custID=39033 }
+            };
+            string[] expected = { null, null, null, null, null, "Chuck" };
+            Assert.Equal(expected, source.Select((e, i) => i == 5 ? e.name : null));
+        }
+
+        private sealed class FastInfiniteEnumerator : IEnumerable<int>, IEnumerator<int>
+        {
+            public IEnumerator<int> GetEnumerator()
+            {
+                return this;
+            }
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return this;
+            }
+            public bool MoveNext()
+            {
+                return true;
+            }
+            public void Reset()
+            {
+            }
+            object IEnumerator.Current
+            {
+                get { return 0; }
+            }
+            public void Dispose()
+            {
+            }
+            public int Current
+            {
+                get { return 0; }
+            }
+        }
+
+
+        [Fact]
+        [OuterLoop]
+        public void Overflow()
+        {
+            var selected = new FastInfiniteEnumerator().Select((e, i) => e);
+            using (var en = selected.GetEnumerator())
+                Assert.Throws<OverflowException>(() =>
+                {
+                    while (en.MoveNext())
+                    {
+
+                    }
+                });
+        }
 
         [Fact]
         public void Select_SourceIsNull_ArgumentNullExceptionThrown()
@@ -18,7 +163,25 @@ namespace System.Linq.Tests
             IEnumerable<int> source = null;
             Func<int, int> selector = i => i + 1;
 
-            Assert.Throws<ArgumentNullException>(() => source.Select(selector));
+            Assert.Throws<ArgumentNullException>("source", () => source.Select(selector));
+        }
+
+        [Fact]
+        public void Select_SelectorIsNull_ArgumentNullExceptionThrown_Indexed()
+        {
+            IEnumerable<int> source = Enumerable.Range(1, 10);
+            Func<int, int, int> selector = null;
+
+            Assert.Throws<ArgumentNullException>("selector", () => source.Select(selector));
+        }
+
+        [Fact]
+        public void Select_SourceIsNull_ArgumentNullExceptionThrown_Indexed()
+        {
+            IEnumerable<int> source = null;
+            Func<int, int, int> selector = (e, i) => i + 1;
+
+            Assert.Throws<ArgumentNullException>("source", () => source.Select(selector));
         }
 
         [Fact]
@@ -27,13 +190,8 @@ namespace System.Linq.Tests
             IEnumerable<int> source = Enumerable.Range(1, 10);
             Func<int, int> selector = null;
 
-            Assert.Throws<ArgumentNullException>(() => source.Select(selector));
+            Assert.Throws<ArgumentNullException>("selector", () => source.Select(selector));
         }
-
-        #endregion
-
-        #region Deferred execution
-
         [Fact]
         public void Select_SourceIsAnArray_ExecutionIsDeferred()
         {
@@ -133,10 +291,6 @@ namespace System.Linq.Tests
             IEnumerable<int> query = source.Select(d => d).Select(d => d());
             Assert.False(funcCalled);
         }
-
-        #endregion
-
-        #region Expected return value
 
         [Fact]
         public void Select_SourceIsAnArray_ReturnsExpectedValues()
@@ -418,10 +572,6 @@ namespace System.Linq.Tests
             Assert.False(wasSelectorCalled);
         }
 
-        #endregion
-
-        #region Exceptions
-
         [Fact]
         public void Select_ExceptionThrownFromSelector_ExceptionPropagatedToTheCaller()
         {
@@ -630,8 +780,6 @@ namespace System.Linq.Tests
             source.Add(6);
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
         }
-
-        #endregion
 
         [Fact]
         public void Select_GetEnumeratorCalledTwice_DifferentInstancesReturned()
