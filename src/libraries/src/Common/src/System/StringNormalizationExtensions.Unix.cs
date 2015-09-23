@@ -11,21 +11,7 @@ namespace System
         [SecurityCritical]
         public static bool IsNormalized(this string value, NormalizationForm normalizationForm)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException("value");
-            }
-
-            if (normalizationForm != NormalizationForm.FormC && normalizationForm != NormalizationForm.FormD &&
-                normalizationForm != NormalizationForm.FormKC && normalizationForm != NormalizationForm.FormKD)
-            {
-                throw new ArgumentException(SR.Argument_InvalidNormalizationForm, "normalizationForm");
-            }
-
-            if (HasInvalidUnicodeSequence(value))
-            {
-                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, "value");
-            }
+            ValidateArguments(value, normalizationForm);
 
             int ret = Interop.GlobalizationNative.IsNormalized(normalizationForm, value, value.Length);
 
@@ -40,21 +26,7 @@ namespace System
         [SecurityCritical]
         public static string Normalize(this string value, NormalizationForm normalizationForm)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException("value");
-            }
-
-            if (normalizationForm != NormalizationForm.FormC && normalizationForm != NormalizationForm.FormD &&
-                normalizationForm != NormalizationForm.FormKC && normalizationForm != NormalizationForm.FormKD)
-            {
-                throw new ArgumentException(SR.Argument_InvalidNormalizationForm, "normalizationForm");
-            }
-
-            if (HasInvalidUnicodeSequence(value))
-            {
-                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, "value");
-            }
+            ValidateArguments(value, normalizationForm);
 
             char[] buf = new char[value.Length];
 
@@ -82,6 +54,25 @@ namespace System
         // ---- PAL layer ends here ----
         // -----------------------------
 
+        private static void ValidateArguments(string value, NormalizationForm normalizationForm)
+        {
+            if (value == null)
+            {
+                throw new ArgumentNullException("value");
+            }
+
+            if (normalizationForm != NormalizationForm.FormC && normalizationForm != NormalizationForm.FormD &&
+                normalizationForm != NormalizationForm.FormKC && normalizationForm != NormalizationForm.FormKD)
+            {
+                throw new ArgumentException(SR.Argument_InvalidNormalizationForm, "normalizationForm");
+            }
+
+            if (HasInvalidUnicodeSequence(value))
+            {
+                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, "value");
+            }
+        }
+
         /// <summary>
         /// ICU does not signal an error during normalization if the input string has invalid unicode,
         /// unlike Windows (which uses the ERROR_NO_UNICODE_TRANSLATION error value to signal an error).
@@ -93,17 +84,20 @@ namespace System
         {
             for (int i = 0; i < s.Length; i++)
             {
-                if (s[i] == '\uFFFE')
+                char c = s[i];
+
+                if (c == '\uFFFE')
                 {
                     return true;
                 }
 
-                if (char.IsLowSurrogate(s[i]))
+                // If we see low surrogate before a high one, the string is invalid.
+                if (char.IsLowSurrogate(c))
                 {
                     return true;
                 }
 
-                if (char.IsHighSurrogate(s[i]))
+                if (char.IsHighSurrogate(c))
                 {
                     if (i + 1 >= s.Length || !char.IsLowSurrogate(s[i + 1]))
                     {
