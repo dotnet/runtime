@@ -230,7 +230,7 @@ extern "C" int64_t GetMaximumPath();
  * Gets the priority (nice value) of a certain execution group.
  *
  * Returns the nice value (from -20 to 20) of the group on success; otherwise, returns -1. Unfortunately, -1 is also a
- * valid nice value, meaning we can't use that value to determine valid output or not. Errno is set on failure so 
+ * valid nice value, meaning we can't use that value to determine valid output or not. Errno is set on failure so
  * we need to reset errno before a call and check the value if we get -1.
  */
 extern "C" int32_t GetPriority(PriorityWhich which, int32_t who);

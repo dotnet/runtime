@@ -220,7 +220,7 @@ extern "C" int32_t Close(int32_t fd)
 
 extern "C" int32_t Dup(int oldfd)
 {
-	return dup(oldfd);
+    return dup(oldfd);
 }
 
 extern "C" int32_t Unlink(const char* path)
