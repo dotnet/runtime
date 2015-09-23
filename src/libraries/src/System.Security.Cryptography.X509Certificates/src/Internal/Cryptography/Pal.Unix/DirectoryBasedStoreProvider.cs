@@ -313,7 +313,7 @@ namespace Internal.Cryptography.Pal
                 Interop.Sys.FileStatus stat;
 
                 Debug.Assert(Interop.Sys.Stat(destinationFilename, out stat) == 0);
-                Debug.Assert((stat.Mode & (int)requiredPermissions) != 0, "Created PFX has insufficient permissions to function");
+                Debug.Assert((stat.Mode & (int)requiredPermissions) == (int)requiredPermissions, "Created PFX has insufficient permissions to function");
                 Debug.Assert((stat.Mode & (int)forbiddenPermissions) == 0, "Created PFX has too broad of permissions");
 #endif
             }

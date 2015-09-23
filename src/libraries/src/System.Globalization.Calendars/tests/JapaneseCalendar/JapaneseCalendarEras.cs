@@ -15,7 +15,6 @@ namespace System.Globalization.CalendarsTests
 
         #region Positive Test Cases
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void PosTest1()
         {
             int[] actual = new JapaneseCalendar().Eras;

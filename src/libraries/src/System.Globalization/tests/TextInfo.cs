@@ -11,7 +11,6 @@ public class TextInfoTests
     [InlineData("")]
     [InlineData("en-US")]
     [InlineData("fr")]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void ToUpper(string localeName)
     {
         TextInfo ti = new CultureInfo(localeName).TextInfo;
@@ -58,7 +57,6 @@ public class TextInfoTests
     [InlineData("")]
     [InlineData("en-US")]
     [InlineData("fr")]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void ToLower(string localeName)
     {
         TextInfo ti = new CultureInfo(localeName).TextInfo;
@@ -106,7 +104,6 @@ public class TextInfoTests
     [InlineData("tr-TR")]
     [InlineData("az")]
     [InlineData("az-Latn-AZ")]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void TurkishICasing(string localeName)
     {
         TextInfo ti = new CultureInfo(localeName).TextInfo;
@@ -128,8 +125,7 @@ public class TextInfoTests
     [InlineData("")]
     [InlineData("en-US")]
     [InlineData("fr-FR")]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
-    public static void NoUnicodeSpecalCases(string localeName)
+    public static void NoUnicodeSpecialCases(string localeName)
     {
         // Unicode defines some codepoints which expand into multiple codepoints
         // when cased (see SpecialCasing.txt from UNIDATA for some examples).  We have never done

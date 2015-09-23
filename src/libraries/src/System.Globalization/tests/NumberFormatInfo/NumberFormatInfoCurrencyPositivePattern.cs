@@ -31,17 +31,17 @@ namespace System.Globalization.Tests
             }
         }
 
-        // NegTest1: ArgumentOutOfRangeException is not thrown
+        // TestArgumentOutOfRange: ArgumentOutOfRangeException is thrown
         [Fact]
-        public void NegTest1()
+        public void TestArgumentOutOfRange()
         {
             VerificationHelper<ArgumentOutOfRangeException>(-1);
             VerificationHelper<ArgumentOutOfRangeException>(4);
         }
 
-        // NegTest2: InvalidOperationException is not thrown
+        // TestInvalidOperation: InvalidOperationException is thrown
         [Fact]
-        public void NegTest2()
+        public void TestInvalidOperation()
         {
             NumberFormatInfo nfi = new NumberFormatInfo();
             NumberFormatInfo nfiReadOnly = NumberFormatInfo.ReadOnly(nfi);
@@ -51,13 +51,25 @@ namespace System.Globalization.Tests
             });
         }
 
+        // TestCurrencyPositivePatternLocale: Verify value of property CurrencyPositivePattern for specific locales
+        [Theory]
+        [InlineData("en-US", 0)]
+        [InlineData("fr-FR", 3)]
+        public void TestCurrencyPositivePatternLocale(string locale, int expected)
+        {
+            CultureInfo myTestCulture = new CultureInfo(locale);
+            NumberFormatInfo nfi = myTestCulture.NumberFormat;
+            int actual = nfi.CurrencyPositivePattern;
+            Assert.Equal(expected, actual);
+        }
+
         private void VerificationHelper<T>(int i) where T : Exception
         {
             NumberFormatInfo nfi = new NumberFormatInfo();
             Assert.Throws<T>(() =>
             {
                 nfi.CurrencyPositivePattern = i;
-                int actual = nfi.CurrencyNegativePattern;
+                int actual = nfi.CurrencyPositivePattern;
             });
         }
     }

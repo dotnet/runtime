@@ -49,6 +49,12 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Globalization.Native\Interop.Normalization.cs">
+      <Link>Common\Interop\Unix\System.Globalization.Native\Interop.Normalization.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Globalization\IdnMapping.Unix.cs">
       <Link>Common\System\Globalization\IdnMapping.Unix.cs</Link>
     </Compile>

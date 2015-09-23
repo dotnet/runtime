@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
 
@@ -180,10 +181,14 @@ public class FileSystemWatcherTests
         watcher.Filter = "abc.dll";
         Assert.Equal("abc.dll", watcher.Filter);
 
-        // expect no change for OrdinalIgnoreCase-equal strings
-        // it's unclear why desktop does this but preserve it for compat        
-        watcher.Filter = "ABC.DLL";
-        Assert.Equal("abc.dll", watcher.Filter);
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || // expect no change for OrdinalIgnoreCase-equal strings
+            RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            // expect no change for OrdinalIgnoreCase-equal strings
+            // it's unclear why desktop does this but preserve it for compat        
+            watcher.Filter = "ABC.DLL";
+            Assert.Equal("abc.dll", watcher.Filter);
+        }
 
         // We can make this setting by first changing to another value then back.
         watcher.Filter = null;
@@ -396,12 +401,15 @@ public class FileSystemWatcherTests
         watcher.Path = currentDir;
         Assert.Equal(currentDir, watcher.Path);
 
-        // expect no change for OrdinalIgnoreCase-equal strings
-        watcher.Path = currentDir.ToUpperInvariant();
-        Assert.Equal(currentDir, watcher.Path);
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || // expect no change for OrdinalIgnoreCase-equal strings
+            RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            watcher.Path = currentDir.ToUpperInvariant();
+            Assert.Equal(currentDir, watcher.Path);
 
-        watcher.Path = currentDir.ToLowerInvariant();
-        Assert.Equal(currentDir, watcher.Path);
+            watcher.Path = currentDir.ToLowerInvariant();
+            Assert.Equal(currentDir, watcher.Path);
+        }
 
         // expect a change for same "full-path" but different string path, FSW does not normalize
         string currentDirRelative = currentDir +
