@@ -1,7 +1,7 @@
 C# Coding Style
 ===============
 
-For C++ files (*.cpp and *.h), we use clang-format (version 3.6+) to ensure code styling. After changing any Cpp or H file and before merging, be sure to run ./formatCode.sh from within the Native directory; this script will ensure that all native code files adhere to the coding style guidelines.
+For C++ files (*.cpp and *.h), we use clang-format (version 3.6+) to ensure code styling. After changing any Cpp or H file and before merging, be sure to run src/Native/format-code.sh; this script will ensure that all native code files adhere to the coding style guidelines.
 
 For non code files (xml etc) our current best guidance is consistency. When editing files, keep new code and changes consistent with the style in the files. For new files, it should conform to the style for that component. Last, if there's a completely new component, anything that is reasonably broadly accepted is fine.
 
