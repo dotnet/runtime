@@ -335,6 +335,7 @@ public static unsafe class DateTimeTests
     [InlineData("sr-Latn-ME")]
     [InlineData("sr-Latn-RS")]
     [InlineData("sr-Latn-XK")]
+    [ActiveIssue(3391, PlatformID.AnyUnix)]
     public static void TestDateTimeParsingWithSpecialCultures(string cultureName)
     {
         // Test DateTime parsing with cultures which has the date separator and time separator are same
