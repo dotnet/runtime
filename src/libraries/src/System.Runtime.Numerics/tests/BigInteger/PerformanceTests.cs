@@ -102,6 +102,20 @@ namespace System.Numerics.Tests
 
         [Theory]
         [ActiveIssue("PerformanceTest")]
+        [InlineData(1000000, 16, 16)]
+        [InlineData(1000000, 64, 64)]
+        [InlineData(100000, 256, 256)]
+        [InlineData(100000, 1024, 1024)]
+        [InlineData(10000, 4096, 4096)]
+        [InlineData(1000, 16384, 16384)]
+        [InlineData(100, 65536, 65536)]
+        public void GreatestCommonDivisor(int count, int leftBits, int rightBits)
+        {
+            RunBenchmark(count, leftBits, rightBits, (l, r) => BigInteger.GreatestCommonDivisor(l, r));
+        }
+
+        [Theory]
+        [ActiveIssue("PerformanceTest")]
         [InlineData(100000, 16, 16, 16)]
         [InlineData(10000, 64, 64, 64)]
         [InlineData(1000, 256, 256, 256)]
@@ -129,7 +143,7 @@ namespace System.Numerics.Tests
 
             long result = RunBenchmark(count, i => operation(left[i], right[i]));
 
-            _output.WriteLine("({1:N0}, {2:N0}) : {3:N0} ms / {0:N0} ops", count, leftBits, rightBits, result);
+            _output.WriteLine("({1:N0}; {2:N0}) : {3:N0} ms / {0:N0} ops", count, leftBits, rightBits, result);
         }
 
         private void RunBenchmark(int count, int leftBits, int rightBits, int otherBits, Action<BigInteger, BigInteger, BigInteger> operation)
@@ -140,7 +154,7 @@ namespace System.Numerics.Tests
 
             long result = RunBenchmark(count, i => operation(left[i], right[i], other[i]));
 
-            _output.WriteLine("({1:N0}, {2:N0}, {3:N0}) : {4:N0} ms / {0:N0} ops", count, leftBits, rightBits, otherBits, result);
+            _output.WriteLine("({1:N0}; {2:N0}; {3:N0}) : {4:N0} ms / {0:N0} ops", count, leftBits, rightBits, otherBits, result);
         }
 
         private const int MAX_SEED = 10;
