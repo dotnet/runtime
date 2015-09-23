@@ -204,9 +204,8 @@ namespace System.Globalization
         {
             Contract.Assert(this.sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected this.sWindowsName to be populated by already");
 
-            const uint LOCALE_IFIRSTDAYOFWEEK = 0x0000100C;
-
-            int result = Interop.mincore.GetLocaleInfoExInt(this.sWindowsName, LOCALE_IFIRSTDAYOFWEEK | (!UseUserOverride ? LOCALE_NOUSEROVERRIDE : 0));
+            int result = Interop.mincore.GetLocaleInfoExInt(this.sWindowsName, 
+                LocaleNumberData.FirstDayOfWeek | (!UseUserOverride ? LOCALE_NOUSEROVERRIDE : 0));
 
             // Win32 and .NET disagree on the numbering for days of the week, so we have to convert.
             return ConvertFirstDayOfWeekMonToSun(result);
@@ -279,14 +278,6 @@ namespace System.Globalization
         private static CultureInfo GetUserDefaultCulture()
         {
             return (CultureInfo)WinRTInterop.Callbacks.GetUserDefaultCulture(); 
-        }
-
-        private static bool IsCustomCultureId(int cultureId)
-        {
-            const int LOCALE_CUSTOM_DEFAULT = 0x0c00;
-            const int LOCALE_CUSTOM_UNSPECIFIED = 0x1000;
-
-            return (cultureId == LOCALE_CUSTOM_DEFAULT || cultureId == LOCALE_CUSTOM_UNSPECIFIED);
         }
 
         // PAL methods end here.

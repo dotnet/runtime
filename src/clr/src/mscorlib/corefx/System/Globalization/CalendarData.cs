@@ -146,11 +146,11 @@ namespace System.Globalization
             }
 
             // Check for null genitive names (in case unmanaged side skips it for non-gregorian calendars, etc)
-            if (this.saMonthGenitiveNames == null || String.IsNullOrEmpty(this.saMonthGenitiveNames[0]))
+            if (this.saMonthGenitiveNames == null || this.saMonthGenitiveNames.Length == 0 || String.IsNullOrEmpty(this.saMonthGenitiveNames[0]))
                 this.saMonthGenitiveNames = this.saMonthNames;              // Genitive month names (same as month names for invariant)
-            if (this.saAbbrevMonthGenitiveNames == null || String.IsNullOrEmpty(this.saAbbrevMonthGenitiveNames[0]))
+            if (this.saAbbrevMonthGenitiveNames == null || this.saAbbrevMonthGenitiveNames.Length == 0 || String.IsNullOrEmpty(this.saAbbrevMonthGenitiveNames[0]))
                 this.saAbbrevMonthGenitiveNames = this.saAbbrevMonthNames;    // Abbreviated genitive month names (same as abbrev month names for invariant)
-            if (this.saLeapYearMonthNames == null || String.IsNullOrEmpty(this.saLeapYearMonthNames[0]))
+            if (this.saLeapYearMonthNames == null || this.saLeapYearMonthNames.Length == 0 || String.IsNullOrEmpty(this.saLeapYearMonthNames[0]))
                 this.saLeapYearMonthNames = this.saMonthNames;
 
             InitializeEraNames(localeName, calendarId);
@@ -301,6 +301,65 @@ namespace System.Globalization
                     this.saAbbrevEraNames = this.saEraNames;
                     break;
             }
+        }
+
+        internal static CalendarData GetCalendarData(CalendarId calendarId)
+        {
+            //
+            // Get a calendar.
+            // Unfortunately we depend on the locale in the OS, so we need a locale
+            // no matter what.  So just get the appropriate calendar from the 
+            // appropriate locale here
+            //
+
+            // Get a culture name
+            // TODO: NLS Arrowhead Arrowhead - note that this doesn't handle the new calendars (lunisolar, etc)
+            String culture = CalendarIdToCultureName(calendarId);
+
+            // Return our calendar
+            return CultureInfo.GetCultureInfo(culture).m_cultureData.GetCalendar(calendarId);
+        }
+
+        private static String CalendarIdToCultureName(CalendarId calendarId)
+        {
+            switch (calendarId)
+            {
+                case CalendarId.GREGORIAN_US:
+                    return "fa-IR";             // "fa-IR" Iran
+
+                case CalendarId.JAPAN:
+                    return "ja-JP";             // "ja-JP" Japan
+
+                case CalendarId.TAIWAN:
+                    return "zh-TW";             // zh-TW Taiwan
+
+                case CalendarId.KOREA:
+                    return "ko-KR";             // "ko-KR" Korea
+
+                case CalendarId.HIJRI:
+                case CalendarId.GREGORIAN_ARABIC:
+                case CalendarId.UMALQURA:
+                    return "ar-SA";             // "ar-SA" Saudi Arabia
+
+                case CalendarId.THAI:
+                    return "th-TH";             // "th-TH" Thailand
+
+                case CalendarId.HEBREW:
+                    return "he-IL";             // "he-IL" Israel
+
+                case CalendarId.GREGORIAN_ME_FRENCH:
+                    return "ar-DZ";             // "ar-DZ" Algeria
+
+                case CalendarId.GREGORIAN_XLIT_ENGLISH:
+                case CalendarId.GREGORIAN_XLIT_FRENCH:
+                    return "ar-IQ";             // "ar-IQ"; Iraq
+
+                default:
+                    // Default to gregorian en-US
+                    break;
+            }
+
+            return "en-US";
         }
     }
 }
