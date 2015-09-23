@@ -74,26 +74,33 @@ namespace Microsoft.Win32.SafeHandles
 
         private void SetHandle(int fd)
         {
-            Debug.Assert(fd >= 0);
             SetHandle((IntPtr)fd);
-            Debug.Assert(!IsInvalid);
+            Debug.Assert(!IsInvalid, "File descriptor is invalid");
         }
 
         [System.Security.SecurityCritical]
         protected override bool ReleaseHandle()
         {
-            // Close the handle. Although close is documented to potentially fail with EINTR, we never want
+            int fd = (int)handle;
+
+            // When the SafeFileHandle was opened, we likely issued an flock on the created descriptor in order to add 
+            // an advisory lock.  This lock should be removed via closing the file descriptor, but close can be
+            // interrupted, and we don't retry closes.  As such, we could end up leaving the file locked,
+            // which could prevent subsequent usage of the file until this process dies.  To avoid that, we proactively
+            // try to release the lock before we close the handle. (If it's not locked, there's no behavioral
+            // problem trying to unlock it.)
+            Interop.Sys.FLock(fd, Interop.Sys.LockOperations.LOCK_UN); // ignore any errors
+
+            // Close the descriptor. Although close is documented to potentially fail with EINTR, we never want
             // to retry, as the descriptor could actually have been closed, been subsequently reassigned, and
             // be in use elsewhere in the process.  Instead, we simply check whether the call was successful.
-            int fd = (int)handle;
-            Debug.Assert(fd >= 0, "Negative file descriptor");
             int result = Interop.Sys.Close(fd);
 #if DEBUG
             if (result != 0)
             {
                 Debug.Fail(string.Format(
-                    "Close failed with result {0} and errno {1}", 
-                    result, Interop.Sys.GetLastErrorInfo().RawErrno));
+                    "Close failed with result {0} and error {1}", 
+                    result, Interop.Sys.GetLastErrorInfo()));
             }
 #endif
             return result == 0;
