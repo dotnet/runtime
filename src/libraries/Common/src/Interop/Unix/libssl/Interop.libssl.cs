@@ -131,5 +131,8 @@ internal static partial class Interop
 
         [DllImport(Interop.Libraries.LibSsl, EntryPoint = "BIO_ctrl_pending")]
         internal static extern int BIO_ctrl_pending(IntPtr bio);
+
+        [DllImport(Interop.Libraries.LibSsl, EntryPoint = "SSL_CTX_set_quiet_shutdown")]
+        internal static extern void SSL_CTX_set_quiet_shutdown(IntPtr ssl, int mode);
     }
 }

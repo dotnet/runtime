@@ -49,6 +49,8 @@ internal static partial class Interop
 
                 libssl.SSL_CTX_ctrl(contextPtr, libssl.SSL_CTRL_OPTIONS, options, IntPtr.Zero);
 
+                libssl.SSL_CTX_set_quiet_shutdown(contextPtr, 1);
+
                 sslContext.sslPtr = libssl.SSL_new(contextPtr);
 
                 libssl.SSL_CTX_free(contextPtr);     
@@ -310,19 +312,14 @@ internal static partial class Interop
             return method;
         }
 
-        //TODO See if SSL_CTX_Set_quite_shutdown can be used
         private static void Disconnect(IntPtr sslPtr)
         {
             if (IntPtr.Zero != sslPtr)
             {
                 int retVal = libssl.SSL_shutdown(sslPtr);
-                if (0 == retVal)
+                if (retVal < 0)
                 {
-                    retVal = libssl.SSL_shutdown(sslPtr);
-                    if (retVal < 0)
-                    {
-                        libssl.SSL_get_error(sslPtr, retVal);
-                    }
+                    libssl.SSL_get_error(sslPtr, retVal);
                 }
 
                 libssl.SSL_free(sslPtr);
