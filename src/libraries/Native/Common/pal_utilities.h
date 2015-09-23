@@ -13,6 +13,34 @@
 #include <type_traits>
 
 /**
+ * ResultOf<T> is shorthand for typename std::result_of<T>::type.
+ * Equivalent to C++14 std::result_of_t.
+ */
+template <typename T>
+using ResultOf = typename std::result_of<T>::type;
+
+/**
+ * EnableIf<B, T> is shorthand for typename std::enable_of<B, T>::type.
+ * Equivalent to C++14 std::enable_if_t.
+ */
+template <bool B, typename T = void>
+using EnableIf = typename std::enable_if<B, T>::type;
+
+/**
+ * NonVoidResultOf<F> evaluates to non-void return type of F.
+ * Causes substitution failure if F returns void.
+ */
+template <typename F>
+using NonVoidResultOf = EnableIf<!std::is_void<ResultOf<F>>::value, ResultOf<F>>;
+
+/**
+ * ReplaceVoid<F, T> evaluates to T if F returns void.
+ * Causes substitution failure if F does not return void.
+ */
+template <typename F, typename T>
+using ReplaceVoidResultOf = EnableIf<std::is_void<ResultOf<F>>::value, T>;
+
+/**
  * Cast a positive value typed as a signed integer to the
  * appropriately sized unsigned integer type.
  *

@@ -115,7 +115,7 @@ namespace Internal.Cryptography
         private sealed class HmacHashProvider : HashProvider
         {
             private readonly int _hashSize;
-            private Interop.libcrypto.HMAC_CTX _hmacCtx;
+            private SafeHmacCtxHandle _hmacCtx;
 
             public unsafe HmacHashProvider(IntPtr algorithmEvp, byte[] key)
             {
@@ -130,7 +130,8 @@ namespace Internal.Cryptography
 
                 fixed (byte* keyPtr = key)
                 {
-                    Check(Interop.libcrypto.HMAC_Init(out _hmacCtx, keyPtr, key.Length, algorithmEvp));
+                    _hmacCtx = Interop.Crypto.HmacCreate(keyPtr, key.Length, algorithmEvp);
+                    Interop.libcrypto.CheckValidOpenSslHandle(_hmacCtx);
                 }
             }
 
@@ -138,23 +139,21 @@ namespace Internal.Cryptography
             {
                 fixed (byte* md = data)
                 {
-                    Check(Interop.libcrypto.HMAC_Update(ref _hmacCtx, md + offset, count));
+                    Check(Interop.Crypto.HmacUpdate(_hmacCtx, md + offset, count));
                 }
             }
 
             public sealed override unsafe byte[] FinalizeHashAndReset()
             {
                 byte* md = stackalloc byte[Interop.libcrypto.EVP_MAX_MD_SIZE];
-                uint length = Interop.libcrypto.EVP_MAX_MD_SIZE;
-                Check(Interop.libcrypto.HMAC_Final(ref _hmacCtx, md, ref length));
+                int length = Interop.libcrypto.EVP_MAX_MD_SIZE;
+                Check(Interop.Crypto.HmacFinal(_hmacCtx, md, ref length));
                 Debug.Assert(length == _hashSize);
 
-                // HMAC_Init_ex with all NULL values keeps the key and algorithm (and engine) intact,
-                // but resets the values for another computation.
-                Check(Interop.libcrypto.HMAC_Init_ex(ref _hmacCtx, null, 0, IntPtr.Zero, IntPtr.Zero));
+                Check(Interop.Crypto.HmacReset(_hmacCtx));
 
-                byte[] result = new byte[(int)length];
-                Marshal.Copy((IntPtr)md, result, 0, (int)length);
+                byte[] result = new byte[length];
+                Marshal.Copy((IntPtr)md, result, 0, length);
                 return result;
             }
 
@@ -165,7 +164,14 @@ namespace Internal.Cryptography
 
             public sealed override void Dispose(bool disposing)
             {
-                Interop.libcrypto.HMAC_CTX_cleanup(ref _hmacCtx);
+                if (disposing)
+                {
+                    if (_hmacCtx != null)
+                    {
+                        _hmacCtx.Dispose();
+                        _hmacCtx = null;
+                    }
+                }
             }
         }
 
