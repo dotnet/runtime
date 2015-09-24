@@ -72,6 +72,22 @@ mono_mach_arch_mcontext_to_thread_state (void *context, thread_state_t state)
 	*arch_state = ctx->__ss;
 }
 
+void
+mono_mach_arch_thread_state_to_mono_context (thread_state_t state, MonoContext *context)
+{
+	x86_thread_state32_t *arch_state = (x86_thread_state32_t *) state;
+	context->eax = arch_state->__eax;
+	context->ebx = arch_state->__ebx;
+	context->ecx = arch_state->__ecx;
+	context->edx = arch_state->__edx;
+	context->ebp = arch_state->__ebp;
+	context->esp = arch_state->__esp;
+	context->esi = arch_state->__edi;
+	context->edi = arch_state->__esi;
+	context->eip = arch_state->__eip;
+}
+
+
 int
 mono_mach_arch_get_thread_state_size ()
 {

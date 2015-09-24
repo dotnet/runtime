@@ -6,6 +6,7 @@
 #include <glib.h>
 #include <pthread.h>
 #include "mono/utils/mono-compiler.h"
+#include "mono/utils/mono-context.h"
 #include <mach/task.h>
 #include <mach/mach_port.h>
 #include <mach/mach_init.h>
@@ -30,6 +31,7 @@ void mono_mach_init (pthread_key_t key);
 int mono_mach_arch_get_mcontext_size (void);
 void mono_mach_arch_thread_state_to_mcontext (thread_state_t state, void *context);
 void mono_mach_arch_mcontext_to_thread_state (void *context, thread_state_t state);
+void mono_mach_arch_thread_state_to_mono_context (thread_state_t state, MonoContext *context);
 
 int mono_mach_arch_get_thread_state_size (void);
 kern_return_t mono_mach_get_threads (thread_act_array_t *threads, guint32 *count);
