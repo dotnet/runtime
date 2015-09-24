@@ -3,6 +3,7 @@
 
 internal static partial class Interop
 {
+    // TODO: Unify ErrorCodes.
     internal static partial class IpHlpApi
     {
         public const uint ERROR_SUCCESS = 0;

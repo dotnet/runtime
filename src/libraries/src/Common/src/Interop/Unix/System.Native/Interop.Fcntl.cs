@@ -20,6 +20,12 @@ internal static partial class Interop
 
             [DllImport(Libraries.SystemNative)]
             private static extern int FcntlCanGetSetPipeSz();
+
+            [DllImport(Libraries.SystemNative, EntryPoint="FcntlGetIsNonBlocking", SetLastError=true)]
+            internal static extern int GetIsNonBlocking(int fd);
+
+            [DllImport(Libraries.SystemNative, EntryPoint="FcntlSetIsNonBlocking", SetLastError=true)]
+            internal static extern int SetIsNonBlocking(int fd, int isNonBlocking);
         }
     }
 }

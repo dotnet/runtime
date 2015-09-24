@@ -1,0 +1,530 @@
+﻿<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <AssemblyName>System.Net.Sockets</AssemblyName>
+    <AssemblyVersion>4.0.10.0</AssemblyVersion>
+    <OutputType>Library</OutputType>
+    <ProjectGuid>{43311AFB-D7C4-4E5A-B1DE-855407F90D1B}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);FEATURE_CORECLR</DefineConstants>
+  </PropertyGroup>
+  <!-- Help VS understand available configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
+
+  <PropertyGroup>
+    <!-- SYSTEM_NET_SOCKETS_DLL is required to allow source-level code sharing for types defined within the 
+         System.Net.Internals namespace. -->
+    <DefineConstants>$(DefineConstants);SYSTEM_NET_SOCKETS_DLL</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System\Net\DnsAPMExtensions.cs"/>
+    <Compile Include="System\Net\StartIPOptions.cs"/>
+    <Compile Include="System\Net\SocketPerfCounters.cs"/>
+
+    <Compile Include="System\Net\Sockets\IOControlCode.cs" />
+    <Compile Include="System\Net\Sockets\IPPacketInformation.cs" />
+    <Compile Include="System\Net\Sockets\IPProtectionLevel.cs" />
+    <Compile Include="System\Net\Sockets\LingerOption.cs" />
+    <Compile Include="System\Net\Sockets\MulticastOption.cs" />
+    <Compile Include="System\Net\Sockets\NetworkStream.cs" />
+    <Compile Include="System\Net\Sockets\ProtocolType.cs" />
+    <Compile Include="System\Net\Sockets\SelectMode.cs" />
+    <Compile Include="System\Net\Sockets\SendPacketsElement.cs" />
+    <Compile Include="System\Net\Sockets\Socket.cs" />
+    <Compile Include="System\Net\Sockets\SocketAsyncEventArgs.cs" />
+    <Compile Include="System\Net\Sockets\SocketAsyncOperation.cs" />
+    <Compile Include="System\Net\Sockets\SocketFlags.cs" />
+    <Compile Include="System\Net\Sockets\SocketInformation.cs" />
+    <Compile Include="System\Net\Sockets\SocketInformationOptions.cs" />
+    <Compile Include="System\Net\Sockets\SocketOptionLevel.cs" />
+    <Compile Include="System\Net\Sockets\SocketOptionName.cs" />
+    <Compile Include="System\Net\Sockets\SocketShutdown.cs" />
+    <Compile Include="System\Net\Sockets\TCPClient.cs" />
+    <Compile Include="System\Net\Sockets\TCPListener.cs" />
+    <Compile Include="System\Net\Sockets\TransmitFileFlags.cs" />
+    <Compile Include="System\Net\Sockets\UDPClient.cs" />
+    <Compile Include="System\Net\Sockets\UdpReceiveResult.cs" />
+    <Compile Include="System\Net\Sockets\_AcceptOverlappedAsyncResult.cs" />
+    <Compile Include="System\Net\Sockets\_BaseOverlappedAsyncResult.cs" />
+    <Compile Include="System\Net\Sockets\_ConnectOverlappedAsyncResult.cs" />
+    <Compile Include="System\Net\Sockets\_DisconnectOverlappedAsyncResult.cs" />
+    <Compile Include="System\Net\Sockets\_MultipleConnectAsync.cs" />
+    <Compile Include="System\Net\Sockets\_OverlappedAsyncResult.cs" />
+    <Compile Include="System\Net\Sockets\_ReceiveMessageOverlappedAsyncResult.cs" />
+    <Compile Include="System\Net\Sockets\TransportType.cs" />
+    
+    <!-- Logging -->
+    <Compile Include="$(CommonPath)\System\Net\Shims\TraceSource.cs">
+      <Link>Common\System\Net\Shims\TraceSource.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\Logging.cs">
+      <Link>Common\System\Net\Logging\Logging.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\GlobalLog.cs">
+      <Link>Common\System\Net\Logging\GlobalLog.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\EventSourceLogging.cs">
+      <Link>Common\System\Net\Logging\EventSourceLogging.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
+      <Link>Common\System\Net\InternalException.cs</Link>
+    </Compile>
+
+    <!-- Debug only --> 
+    <Compile Include="$(CommonPath)\System\Net\DebugSafeHandle.cs">
+      <Link>Common\System\Net\DebugSafeHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\DebugSafeHandleMinusOneIsInvalid.cs">
+      <Link>Common\System\Net\DebugSafeHandleMinusOneIsInvalid.cs</Link>
+    </Compile>
+
+    <!-- System.Net common -->
+    <Compile Include="$(CommonPath)\System\Net\_ContextAwareResult.cs">
+      <Link>Common\System\Net\_ContextAwareResult.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\_LazyAsyncResult.cs">
+      <Link>Common\System\Net\_LazyAsyncResult.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Shims\ExecutionContext.cs">
+      <Link>Common\System\Net\Shims\ExecutionContext.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Shims\DBNull.cs">
+      <Link>Common\System\Net\Shims\DBNull.cs</Link>
+    </Compile>
+    
+    <Compile Include="$(CommonPath)\System\Net\_BufferOffsetSize.cs">
+      <Link>Common\System\Net\_BufferOffsetSize.cs</Link>
+    </Compile>
+
+    <Compile Include="$(CommonPath)\System\Net\ByteOrder.cs">
+      <Link>Common\System\Net\ByteOrder.cs</Link>
+    </Compile>
+
+    <Compile Include="$(CommonPath)\System\Net\IPEndPointStatics.cs">
+      <Link>Common\System\Net\IPEndPointStatics.cs</Link>
+    </Compile>
+
+    <Compile Include="$(CommonPath)\System\Net\IPAddressParserStatics.cs" >
+      <Link>Common\System\Net\IPAddressParserStatics.cs</Link>
+    </Compile>
+
+    <Compile Include="$(CommonPath)\System\Net\ExceptionCheck.cs">
+      <Link>Common\System\Net\ExceptionCheck.cs</Link>
+    </Compile>
+
+    <Compile Include="$(CommonPath)\System\Net\RangeValidationHelpers.cs">
+      <Link>Common\System\Net\RangeValidationHelpers.cs</Link>
+    </Compile>
+
+    <Compile Include="$(CommonPath)\System\Net\SafeCloseSocket.cs">
+      <Link>Common\System\Net\SafeCloseSocket.cs</Link>
+    </Compile>
+
+    <Compile Include="$(CommonPath)\System\Net\SocketAddress.cs">
+      <Link>Common\System\Net\SocketAddress.cs</Link>
+    </Compile>
+
+    <Compile Include="$(CommonPath)\System\Net\TcpValidationHelpers.cs">
+      <Link>Common\System\Net\TcpValidationHelpers.cs</Link>
+    </Compile>
+
+    <Compile Include="$(CommonPath)\System\Net\_Win32.cs">
+      <Link>Common\System\Net\_Win32.cs</Link>
+    </Compile>
+    
+    <!-- System.Net.Internals -->
+    <Compile Include="$(CommonPath)\System\Net\Internals\IPEndPointExtensions.cs">
+      <Link>Common\System\Net\Internals\IPEndPointExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Internals\IPAddressExtensions.cs">
+      <Link>Common\System\Net\Internals\IPAddressExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Internals\SocketExceptionFactory.cs">
+      <Link>Common\System\Net\Internals\SocketExceptionFactory.cs</Link>
+    </Compile>
+
+    <!-- TODO: move this into sockets from interop -->
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\SocketType.cs">
+      <Link>Interop\Windows\Winsock\SocketType.cs</Link>
+    </Compile>    
+
+    <!-- Common -->
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleMinusOneIsInvalid.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleMinusOneIsInvalid.cs</Link>
+    </Compile>
+    
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+    <Compile Include="System\Net\Sockets\_AcceptOverlappedAsyncResult.Windows.cs" />
+    <Compile Include="System\Net\Sockets\_BaseOverlappedAsyncResult.Windows.cs" />
+    <Compile Include="System\Net\Sockets\_ConnectOverlappedAsyncResult.Windows.cs" />
+    <Compile Include="System\Net\Sockets\_OverlappedAsyncResult.Windows.cs" />
+    <Compile Include="System\Net\Sockets\_DynamicWinsockMethods.cs" />
+    <Compile Include="System\Net\Sockets\_ReceiveMessageOverlappedAsyncResult.Windows.cs" />
+    <Compile Include="System\Net\Sockets\SendPacketsElementFlags.Windows.cs" />
+    <Compile Include="System\Net\Sockets\Socket.Windows.cs" />
+    <Compile Include="System\Net\Sockets\SocketAsyncEventArgs.Windows.cs" />
+    <Compile Include="System\Net\Sockets\SocketPal.Windows.cs" />
+
+    <Compile Include="$(CommonPath)\System\Net\SafeCloseSocket.Windows.cs">
+      <Link>Common\System\Net\SafeCloseSocket.Windows.cs</Link>
+    </Compile>    
+    <Compile Include="$(CommonPath)\System\Net\SocketAddressPal.Windows.cs">
+      <Link>Common\System\Net\SocketAddressPal.Windows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\SocketProtocolSupportPal.Windows.cs">
+      <Link>Common\System\Net\SocketProtocolSupportPal.Windows</Link>
+    </Compile>
+
+    <!-- Interop -->
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore_obsolete\Interop.LocalAlloc.SafeOverlappedFree.cs">
+      <Link>Interop\Windows\mincore_obsolete\Interop.LocalAlloc.SafeOverlappedFree.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore_obsolete\Interop.LocalFree.cs" >
+      <Link>Common\Interop\Windows\mincore_obsolete\Interop.LocalFree.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.accept.cs">
+      <Link>Interop\Windows\Winsock\Interop.accept.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.bind.cs">
+      <Link>Interop\Windows\Winsock\Interop.bind.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.closesocket.cs">
+      <Link>Interop\Windows\Winsock\Interop.closesocket.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.getpeername.cs">
+      <Link>Interop\Windows\Winsock\Interop.getpeername.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.getsockname.cs">
+      <Link>Interop\Windows\Winsock\Interop.getsockname.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.getsockopt.cs">
+      <Link>Interop\Windows\Winsock\Interop.getsockopt.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.ioctlsocket.cs">
+      <Link>Interop\Windows\Winsock\Interop.ioctlsocket.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.listen.cs">
+      <Link>Interop\Windows\Winsock\Interop.listen.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.recv.cs">
+      <Link>Interop\Windows\Winsock\Interop.recv.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.recvfrom.cs">
+      <Link>Interop\Windows\Winsock\Interop.recvfrom.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.select.cs">
+      <Link>Interop\Windows\Winsock\Interop.select.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.send.cs">
+      <Link>Interop\Windows\Winsock\Interop.send.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.sendto.cs">
+      <Link>Interop\Windows\Winsock\Interop.sendto.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.setsockopt.cs">
+      <Link>Interop\Windows\Winsock\Interop.setsockopt.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.shutdown.cs">
+      <Link>Interop\Windows\Winsock\Interop.shutdown.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WinsockBSD.cs">
+      <Link>Interop\Windows\Winsock\Interop.WinsockBSD.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WinsockAsync.cs">
+      <Link>Interop\Windows\Winsock\Interop.WinsockAsync.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSAConnect.cs">
+      <Link>Interop\Windows\Winsock\Interop.WSAConnect.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSAEnumNetworkEvents.cs">
+      <Link>Interop\Windows\Winsock\Interop.WSAEnumNetworkEvents.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSAEventSelect.cs">
+      <Link>Interop\Windows\Winsock\Interop.WSAEventSelect.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSAGetOverlappedResult.cs">
+      <Link>Interop\Windows\Winsock\Interop.WSAGetOverlappedResult.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSAIoctl.cs">
+      <Link>Interop\Windows\Winsock\Interop.WSAIoctl.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSARecv.cs">
+      <Link>Interop\Windows\Winsock\Interop.WSARecv.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSARecvFrom.cs">
+      <Link>Interop\Windows\Winsock\Interop.WSARecvFrom.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSASend.cs">
+      <Link>Interop\Windows\Winsock\Interop.WSASend.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSASendTo.cs">
+      <Link>Interop\Windows\Winsock\Interop.WSASendTo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSASocketW.cs">
+      <Link>Interop\Windows\Winsock\Interop.WSASocketW.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSASocketW.SafeCloseSocket.cs">
+      <Link>Interop\Windows\Winsock\Interop.WSASocketW.SafeCloseSocket.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\ProtocolFamily.cs">
+      <Link>Interop\Windows\Winsock\ProtocolFamily.cs</Link>
+    </Compile>    
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\SafeNativeOverlapped.cs">
+      <Link>Interop\Windows\Winsock\SafeNativeOverlapped.cs</Link>
+    </Compile>    
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\SafeOverlappedFree.cs">
+      <Link>Interop\Windows\Winsock\SafeOverlappedFree.cs</Link>
+    </Compile>    
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\WSABuffer.cs">
+      <Link>Interop\Windows\Winsock\WSABuffer.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <Compile Include="System\Net\Sockets\_AcceptOverlappedAsyncResult.Unix.cs" />
+    <Compile Include="System\Net\Sockets\_BaseOverlappedAsyncResult.Unix.cs" />
+    <Compile Include="System\Net\Sockets\_ConnectOverlappedAsyncResult.Unix.cs" />
+    <Compile Include="System\Net\Sockets\_OverlappedAsyncResult.Unix.cs" />
+    <Compile Include="System\Net\Sockets\_ReceiveMessageOverlappedAsyncResult.Unix.cs" />
+    <Compile Include="System\Net\Sockets\BufferList.cs" />
+    <Compile Include="System\Net\Sockets\SendPacketsElementFlags.Unix.cs" />
+    <Compile Include="System\Net\Sockets\Socket.Unix.cs" />
+    <Compile Include="System\Net\Sockets\SocketAsyncContext.Unix.cs" />
+    <Compile Include="System\Net\Sockets\SocketAsyncEngine.Unix.cs" />
+    <Compile Include="System\Net\Sockets\SocketAsyncEventArgs.Unix.cs" />
+    <Compile Include="System\Net\Sockets\SocketPal.Unix.cs" />
+
+    <Compile Include="$(CommonPath)\System\Net\SafeCloseSocket.Unix.cs">
+      <Link>Common\System\Net\SafeCloseSocket.Unix.cs</Link>
+    </Compile>    
+    <Compile Include="$(CommonPath)\System\Net\SocketAddressPal.Unix.cs">
+      <Link>Common\System\Net\SocketAddressPal.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\SocketProtocolSupportPal.Unix.cs">
+      <Link>Common\System\Net\SocketProtocolSupportPal.Unix</Link>
+    </Compile>
+
+    <Compile Include="$(CommonPath)\Interop\Interop.CheckedAccess.cs" >
+      <Link>Common\Interop\Interop.CheckedAccess.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs" >
+      <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.accept.cs">
+      <Link>Interop\Unix\libc\Interop.accept.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.bind.cs">
+      <Link>Interop\Unix\libc\Interop.bind.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.connect.cs">
+      <Link>Interop\Unix\libc\Interop.connect.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getpeername.cs">
+      <Link>Interop\Unix\libc\Interop.getpeername.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getsockname.cs">
+      <Link>Interop\Unix\libc\Interop.getsockname.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getsockopt.cs">
+      <Link>Interop\Unix\libc\Interop.getsockopt.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.ioctl.cs">
+      <Link>Interop\Unix\libc\Interop.ioctl.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.iovec.cs">
+      <Link>Interop\Unix\libc\Interop.iovec.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.linger.cs">
+      <Link>Interop\Unix\libc\Interop.linger.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.listen.cs">
+      <Link>Interop\Unix\libc\Interop.listen.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.recv.cs">
+      <Link>Interop\Unix\libc\Interop.recv.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.recvfrom.cs">
+      <Link>Interop\Unix\libc\Interop.recvfrom.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.recvmsg.cs">
+      <Link>Interop\Unix\libc\Interop.recvmsg.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.select.cs">
+      <Link>Interop\Unix\libc\Interop.select.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.send.cs">
+      <Link>Interop\Unix\libc\Interop.send.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.sendmsg.cs">
+      <Link>Interop\Unix\libc\Interop.sendmsg.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.sendto.cs">
+      <Link>Interop\Unix\libc\Interop.sendto.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.setsockopt.cs">
+      <Link>Interop\Unix\libc\Interop.setsockopt.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.shutdown.cs">
+      <Link>Interop\Unix\libc\Interop.shutdown.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.socket.cs">
+      <Link>Interop\Unix\libc\Interop.socket.cs</Link>
+    </Compile>
+
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Close.cs">
+      <Link>Interop\Unix\System.Native\Interop.Close.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Fcntl.cs">
+      <Link>Interop\Unix\System.Native\Interop.Fcntl.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
+    <Compile Include="System\Net\Sockets\SocketAsyncEngineBackend.Linux.cs" />
+    <Compile Include="System\Net\Sockets\SocketPal.Linux.cs" />
+
+    <Compile Include="$(CommonPath)\Interop\Linux\Interop.Libraries.cs">
+      <Link>Interop\Linux\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.IOControlCodes.cs">
+      <Link>Interop\Linux\libc\Interop.IOControlCodes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.SocketFlags.cs">
+      <Link>Interop\Linux\libc\Interop.SocketFlags.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.SocketOptionLevel.cs">
+      <Link>Interop\Linux\libc\Interop.SocketOptionLevel.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.SocketOptionName.cs">
+      <Link>Interop\Linux\libc\Interop.SocketOptionName.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.addrinfo.cs">
+      <Link>Interop\Linux\libc\Interop.addrinfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.cmsghdr.cs">
+      <Link>Interop\Linux\libc\Interop.cmsghdr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.epoll_create1.cs">
+      <Link>Interop\Linux\libc\Interop.epoll_create1.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.epoll_ctl.cs">
+      <Link>Interop\Linux\libc\Interop.epoll_ctl.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.epoll_event.cs">
+      <Link>Interop\Linux\libc\Interop.epoll_event.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.epoll_wait.cs">
+      <Link>Interop\Linux\libc\Interop.epoll_wait.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.fd_set.cs">
+      <Link>Interop\Linux\libc\Interop.fd_set.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.in_pktinfo.cs">
+      <Link>Interop\Linux\libc\Interop.in_pktinfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.in6_pktinfo.cs">
+      <Link>Interop\Linux\libc\Interop.in6_pktinfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.ip_mreqn.cs">
+      <Link>Interop\Linux\libc\Interop.ip_mreqn.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.ipv6_mreq.cs">
+      <Link>Interop\Linux\libc\Interop.ipv6_mreq.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.msghdr.cs">
+      <Link>Interop\Linux\libc\Interop.msghdr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.sockaddr.cs">
+      <Link>Interop\Linux\libc\Interop.sockaddr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.timeval.cs">
+      <Link>Interop\Linux\libc\Interop.timeval.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
+    <Compile Include="System\Net\Sockets\SocketAsyncEngineBackend.OSX.cs" />
+    <Compile Include="System\Net\Sockets\SocketPal.OSX.cs" />
+
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
+      <Link>Interop\OSX\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.IOControlCodes.cs">
+      <Link>Interop\OSX\libc\Interop.IOControlCodes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.SocketFlags.cs">
+      <Link>Interop\OSX\libc\Interop.SocketFlags.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.SocketOptionLevel.cs">
+      <Link>Interop\OSX\libc\Interop.SocketOptionLevel.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.SocketOptionName.cs">
+      <Link>Interop\OSX\libc\Interop.SocketOptionName.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.addrinfo.cs">
+      <Link>Interop\OSX\libc\Interop.addrinfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.cmsghdr.cs">
+      <Link>Interop\OSX\libc\Interop.cmsghdr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.fd_set.cs">
+      <Link>Interop\OSX\libc\Interop.fd_set.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.in_pktinfo.cs">
+      <Link>Interop\OSX\libc\Interop.in_pktinfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.in6_pktinfo.cs">
+      <Link>Interop\OSX\libc\Interop.in6_pktinfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.ip_mreqn.cs">
+      <Link>Interop\OSX\libc\Interop.ip_mreqn.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.ipv6_mreq.cs">
+      <Link>Interop\OSX\libc\Interop.ipv6_mreq.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.kqueue.cs">
+      <Link>Interop\OSX\libc\Interop.kqueue.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.kevent64.cs">
+      <Link>Interop\OSX\libc\Interop.kevent.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.msghdr.cs">
+      <Link>Interop\OSX\libc\Interop.msghdr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.sockaddr.cs">
+      <Link>Interop\OSX\libc\Interop.sockaddr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.timespec.cs">
+      <Link>Interop\OSX\libc\Interop.timespec.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.timeval.cs">
+      <Link>Interop\OSX\libc\Interop.timeval.cs</Link>
+    </Compile>
+  </ItemGroup>
+   
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />  
+</Project>
+

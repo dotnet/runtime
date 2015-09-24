@@ -11,8 +11,8 @@ namespace System.Net
 {
     internal class Logging
     {
-        private static volatile bool s_LoggingEnabled = true;
-        private static volatile bool s_LoggingInitialized;
+        private static volatile bool s_loggingEnabled = true;
+        private static volatile bool s_loggingInitialized;
 
         private const int DefaultMaxDumpSize = 1024;
         private const bool DefaultUseProtocolTextOnly = false;
@@ -30,30 +30,29 @@ namespace System.Net
         private const string TraceSourceCacheName = "System.Net.Cache";
         private const string TraceSourceHttpName = "System.Net.Http";
 
-        private static TraceSource s_WebTraceSource;
-        private static TraceSource s_HttpListenerTraceSource;
-        private static TraceSource s_SocketsTraceSource;
-        private static TraceSource s_WebSocketsTraceSource;
-        private static TraceSource s_CacheTraceSource;
-        private static TraceSource s_TraceSourceHttpName;
+        private static TraceSource s_webTraceSource;
+        private static TraceSource s_httpListenerTraceSource;
+        private static TraceSource s_socketsTraceSource;
+        private static TraceSource s_webSocketsTraceSource;
+        private static TraceSource s_cacheTraceSource;
+        private static TraceSource s_traceSourceHttpName;
 
         private Logging()
         {
         }
 
-        private static object s_InternalSyncObject;
-
+        private static object s_internalSyncObject;
         private static object InternalSyncObject
         {
             get
             {
-                if (s_InternalSyncObject == null)
+                if (s_internalSyncObject == null)
                 {
                     object o = new Object();
-                    Interlocked.CompareExchange(ref s_InternalSyncObject, o, null);
+                    Interlocked.CompareExchange(ref s_internalSyncObject, o, null);
                 }
 
-                return s_InternalSyncObject;
+                return s_internalSyncObject;
             }
         }
 
@@ -61,12 +60,12 @@ namespace System.Net
         {
             get
             {
-                if (!s_LoggingInitialized)
+                if (!s_loggingInitialized)
                 {
                     InitializeLogging();
                 }
 
-                return s_LoggingEnabled;
+                return s_loggingEnabled;
             }
         }
 
@@ -79,17 +78,17 @@ namespace System.Net
         {
             get
             {
-                if (!s_LoggingInitialized)
+                if (!s_loggingInitialized)
                 {
                     InitializeLogging();
                 }
 
-                if (!s_LoggingEnabled)
+                if (!s_loggingEnabled)
                 {
                     return null;
                 }
 
-                return s_WebTraceSource;
+                return s_webTraceSource;
             }
         }
 
@@ -97,17 +96,17 @@ namespace System.Net
         {
             get
             {
-                if (!s_LoggingInitialized)
+                if (!s_loggingInitialized)
                 {
                     InitializeLogging();
                 }
 
-                if (!s_LoggingEnabled)
+                if (!s_loggingEnabled)
                 {
                     return null;
                 }
 
-                return s_TraceSourceHttpName;
+                return s_traceSourceHttpName;
             }
         }
 
@@ -115,17 +114,17 @@ namespace System.Net
         {
             get
             {
-                if (!s_LoggingInitialized)
+                if (!s_loggingInitialized)
                 {
                     InitializeLogging();
                 }
 
-                if (!s_LoggingEnabled)
+                if (!s_loggingEnabled)
                 {
                     return null;
                 }
 
-                return s_HttpListenerTraceSource;
+                return s_httpListenerTraceSource;
             }
         }
 
@@ -133,17 +132,17 @@ namespace System.Net
         {
             get
             {
-                if (!s_LoggingInitialized)
+                if (!s_loggingInitialized)
                 {
                     InitializeLogging();
                 }
 
-                if (!s_LoggingEnabled)
+                if (!s_loggingEnabled)
                 {
                     return null;
                 }
 
-                return s_SocketsTraceSource;
+                return s_socketsTraceSource;
             }
         }
 
@@ -151,17 +150,17 @@ namespace System.Net
         {
             get
             {
-                if (!s_LoggingInitialized)
+                if (!s_loggingInitialized)
                 {
                     InitializeLogging();
                 }
 
-                if (!s_LoggingEnabled)
+                if (!s_loggingEnabled)
                 {
                     return null;
                 }
 
-                return s_CacheTraceSource;
+                return s_cacheTraceSource;
             }
         }
 
@@ -169,17 +168,17 @@ namespace System.Net
         {
             get
             {
-                if (!s_LoggingInitialized)
+                if (!s_loggingInitialized)
                 {
                     InitializeLogging();
                 }
 
-                if (!s_LoggingEnabled)
+                if (!s_loggingEnabled)
                 {
                     return null;
                 }
 
-                return s_WebSocketsTraceSource;
+                return s_webSocketsTraceSource;
             }
         }
 
@@ -198,26 +197,26 @@ namespace System.Net
         {
             lock (InternalSyncObject)
             {
-                if (!s_LoggingInitialized)
+                if (!s_loggingInitialized)
                 {
                     bool loggingEnabled = false;
-                    s_WebTraceSource = new NclTraceSource(TraceSourceWebName);
-                    s_HttpListenerTraceSource = new NclTraceSource(TraceSourceHttpListenerName);
-                    s_SocketsTraceSource = new NclTraceSource(TraceSourceSocketsName);
-                    s_WebSocketsTraceSource = new NclTraceSource(TraceSourceWebSocketsName);
-                    s_CacheTraceSource = new NclTraceSource(TraceSourceCacheName);
-                    s_TraceSourceHttpName = new NclTraceSource(TraceSourceHttpName);
+                    s_webTraceSource = new NclTraceSource(TraceSourceWebName);
+                    s_httpListenerTraceSource = new NclTraceSource(TraceSourceHttpListenerName);
+                    s_socketsTraceSource = new NclTraceSource(TraceSourceSocketsName);
+                    s_webSocketsTraceSource = new NclTraceSource(TraceSourceWebSocketsName);
+                    s_cacheTraceSource = new NclTraceSource(TraceSourceCacheName);
+                    s_traceSourceHttpName = new NclTraceSource(TraceSourceHttpName);
 
                     GlobalLog.Print("Initalizating tracing");
 
                     try
                     {
-                        loggingEnabled = (s_WebTraceSource.Switch.ShouldTrace(TraceEventType.Critical) ||
-                                          s_HttpListenerTraceSource.Switch.ShouldTrace(TraceEventType.Critical) ||
-                                          s_SocketsTraceSource.Switch.ShouldTrace(TraceEventType.Critical) ||
-                                          s_WebSocketsTraceSource.Switch.ShouldTrace(TraceEventType.Critical) ||
-                                          s_CacheTraceSource.Switch.ShouldTrace(TraceEventType.Critical) ||
-                                          s_TraceSourceHttpName.Switch.ShouldTrace(TraceEventType.Critical));
+                        loggingEnabled = (s_webTraceSource.Switch.ShouldTrace(TraceEventType.Critical) ||
+                                          s_httpListenerTraceSource.Switch.ShouldTrace(TraceEventType.Critical) ||
+                                          s_socketsTraceSource.Switch.ShouldTrace(TraceEventType.Critical) ||
+                                          s_webSocketsTraceSource.Switch.ShouldTrace(TraceEventType.Critical) ||
+                                          s_cacheTraceSource.Switch.ShouldTrace(TraceEventType.Critical) ||
+                                          s_traceSourceHttpName.Switch.ShouldTrace(TraceEventType.Critical));
                     }
                     catch (SecurityException)
                     {
@@ -227,54 +226,54 @@ namespace System.Net
                         loggingEnabled = false;
                     }
 
-                    s_LoggingEnabled = loggingEnabled;
-                    s_LoggingInitialized = true;
+                    s_loggingEnabled = loggingEnabled;
+                    s_loggingInitialized = true;
                 }
             }
         }
 
         private static void Close()
         {
-            if (s_WebTraceSource != null)
+            if (s_webTraceSource != null)
             {
-                s_WebTraceSource.Close();
+                s_webTraceSource.Close();
             }
 
-            if (s_HttpListenerTraceSource != null)
+            if (s_httpListenerTraceSource != null)
             {
-                s_HttpListenerTraceSource.Close();
+                s_httpListenerTraceSource.Close();
             }
 
-            if (s_SocketsTraceSource != null)
+            if (s_socketsTraceSource != null)
             {
-                s_SocketsTraceSource.Close();
+                s_socketsTraceSource.Close();
             }
 
-            if (s_WebSocketsTraceSource != null)
+            if (s_webSocketsTraceSource != null)
             {
-                s_WebSocketsTraceSource.Close();
+                s_webSocketsTraceSource.Close();
             }
 
-            if (s_CacheTraceSource != null)
+            if (s_cacheTraceSource != null)
             {
-                s_CacheTraceSource.Close();
+                s_cacheTraceSource.Close();
             }
 
-            if (s_TraceSourceHttpName != null)
+            if (s_traceSourceHttpName != null)
             {
-                s_TraceSourceHttpName.Close();
+                s_traceSourceHttpName.Close();
             }
         }
 
         // Confirms logging is enabled, given current logging settings
         private static bool ValidateSettings(TraceSource traceSource, TraceEventType traceLevel)
         {
-            if (!s_LoggingEnabled)
+            if (!s_loggingEnabled)
             {
                 return false;
             }
 
-            if (!s_LoggingInitialized)
+            if (!s_loggingInitialized)
             {
                 InitializeLogging();
             }
@@ -383,6 +382,7 @@ namespace System.Net
             {
                 return;
             }
+
             // Trace.CorrelationManager.StartLogicalOperation();
             PrintLine(traceSource, TraceEventType.Verbose, 0, msg);
         }

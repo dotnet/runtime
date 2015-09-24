@@ -8,8 +8,8 @@ using System.Threading.Tasks;
 
 namespace System.Net
 {
-    // LazyAsyncResult - Base class for all IAsyncResult classes
-    // that want to take advantage of lazy allocated event handles.
+    // LazyAsyncResult - Base class for all IAsyncResult classes that want to take advantage of
+    // lazily-allocated event handles.
     internal class LazyAsyncResult : IAsyncResult
     {
         private const int HighBit = unchecked((int)0x80000000);
@@ -17,17 +17,17 @@ namespace System.Net
 
         // This is to avoid user mistakes when they queue another async op from a callback the completes sync.
         [ThreadStatic]
-        private static ThreadContext s_ThreadContext;
+        private static ThreadContext s_threadContext;
 
         private static ThreadContext CurrentThreadContext
         {
             get
             {
-                ThreadContext threadContext = s_ThreadContext;
+                ThreadContext threadContext = s_threadContext;
                 if (threadContext == null)
                 {
                     threadContext = new ThreadContext();
-                    s_ThreadContext = threadContext;
+                    s_threadContext = threadContext;
                 }
 
                 return threadContext;
@@ -40,13 +40,10 @@ namespace System.Net
         }
 
 #if DEBUG
-        internal object _DebugAsyncChain = null;           // Optionally used to track chains of async calls.
-        private bool _ProtectState;                 // Used by ContextAwareResult to prevent some calls.
+        internal object _debugAsyncChain = null;    // Optionally used to track chains of async calls.
+        private bool _protectState;                 // Used by ContextAwareResult to prevent some calls.
 #endif
 
-        //
-        // class members
-        //
         private object _asyncObject;               // Caller's async object.
         private object _asyncState;                // Caller's state object.
         private AsyncCallback _asyncCallback;      // Caller's callback method.
@@ -59,7 +56,6 @@ namespace System.Net
         private bool _userEvent;                   // True if the event has been (or is about to be) handed to the user
 
         private object _event;                     // Lazy allocated event to be returned in the IAsyncResult for the client to wait on.
-
 
         internal LazyAsyncResult(object myObject, object myState, AsyncCallback myCallBack)
         {
@@ -126,7 +122,9 @@ namespace System.Net
         }
 
         // Interface property to return a WaitHandle that can be waited on for I/O completion.
+        //
         // This property implements lazy event creation.
+        //
         // If this is used, the event cannot be disposed because it is under the control of the
         // application.  Internal should use InternalWaitForCompletion instead - never AsyncWaitHandle.
         public WaitHandle AsyncWaitHandle
@@ -137,7 +135,7 @@ namespace System.Net
 
 #if DEBUG
                 // Can't be called when state is protected.
-                if (_ProtectState)
+                if (_protectState)
                 {
                     throw new InvalidOperationException("get_AsyncWaitHandle called in protected state");
                 }
@@ -188,6 +186,7 @@ namespace System.Net
                 {
                     waitHandle.Dispose();
                     waitHandle = (ManualResetEvent)_event;
+
                     // There's a chance here that _event became null.  But the only way is if another thread completed
                     // in InternalWaitForCompletion and disposed it.  If we're in InternalWaitForCompletion, we now know
                     // IsCompleted is set, so we can avoid the wait when waitHandle comes back null.  AsyncWaitHandle
@@ -213,7 +212,7 @@ namespace System.Net
         protected void DebugProtectState(bool protect)
         {
 #if DEBUG
-            _ProtectState = protect;
+            _protectState = protect;
 #endif
         }
 
@@ -226,7 +225,7 @@ namespace System.Net
 
 #if DEBUG
                 // Can't be called when state is protected.
-                if (_ProtectState)
+                if (_protectState)
                 {
                     throw new InvalidOperationException("get_CompletedSynchronously called in protected state");
                 }
@@ -253,7 +252,7 @@ namespace System.Net
 
 #if DEBUG
                 // Can't be called when state is protected.
-                if (_ProtectState)
+                if (_protectState)
                 {
                     throw new InvalidOperationException("get_IsCompleted called in protected state");
                 }
@@ -345,7 +344,7 @@ namespace System.Net
 
 #if DEBUG
             // Always safe to ask for the state now.
-            _ProtectState = false;
+            _protectState = false;
 #endif
 
             if ((_intCompleted & ~HighBit) == 0 && (Interlocked.Increment(ref _intCompleted) & ~HighBit) == 1)
@@ -375,23 +374,22 @@ namespace System.Net
             }
         }
 
-        // A method for completing the IO with a result and invoking the user's callback.
+        // Completes the IO with a result and invoking the user's callback.
         internal void InvokeCallback(object result)
         {
             ProtectedInvokeCallback(result, IntPtr.Zero);
         }
 
-        // A method for completing the IO without a result and invoking the user's callback.
+        // Completes the IO without a result and invoking the user's callback.
         internal void InvokeCallback()
         {
             ProtectedInvokeCallback(null, IntPtr.Zero);
         }
 
+        // NOTE: THIS METHOD MUST NOT BE CALLED DIRECTLY.
         //
-        //  MUST NOT BE CALLED DIRECTLY
-        //  A protected method that does callback job and it is guaranteed to be called exactly once.
-        //  A derived overriding method must call the base class somewhere or the completion is lost.
-        //
+        // This method does the callback's job and is guaranteed to be called exactly once.
+        // A derived overriding method must call the base class somewhere or the completion is lost.
         protected virtual void Complete(IntPtr userToken)
         {
             bool offloaded = false;
@@ -429,7 +427,7 @@ namespace System.Net
             {
                 --threadContext._nestedIOCount;
 
-                // Never call this method unless interlocked _intCompleted check has succeeded (like in this case)
+                // Never call this method unless interlocked _intCompleted check has succeeded (like in this case).
                 if (!offloaded)
                 {
                     Cleanup();
@@ -437,7 +435,7 @@ namespace System.Net
             }
         }
 
-        // Only called in the above method
+        // Only called by the above method.
         private static void WorkerThreadComplete(object state)
         {
             Debug.Assert(state is LazyAsyncResult);
@@ -454,6 +452,7 @@ namespace System.Net
         }
 
         // Custom instance cleanup method.
+        //
         // Derived types override this method to release unmanaged resources associated with an IO request.
         protected virtual void Cleanup()
         {

@@ -8,14 +8,14 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System;
 
+#if SYSTEM_NET_PRIMITIVES_DLL
 namespace System.Net
+#else
+namespace System.Net.Internals
+#endif
 {
-    /// <devdoc>
-    ///    <para>
-    ///       This class is used when subclassing EndPoint, and provides indication
-    ///       on how to format the memory buffers that the platform uses for network addresses.
-    ///    </para>
-    /// </devdoc>
+    // This class is used when subclassing EndPoint, and provides indication
+    // on how to format the memory buffers that the platform uses for network addresses.
     public class SocketAddress
     {
         internal const int IPv6AddressSize = SocketAddressPal.IPv6AddressSize;
@@ -94,7 +94,7 @@ namespace System.Net
             : this(ipAddress.AddressFamily,
                 ((ipAddress.AddressFamily == AddressFamily.InterNetwork) ? IPv4AddressSize : IPv6AddressSize))
         {
-            // No Port
+            // No Port.
             SocketAddressPal.SetPort(Buffer, 0);
 
             if (ipAddress.AddressFamily == AddressFamily.InterNetworkV6)
@@ -103,8 +103,16 @@ namespace System.Net
             }
             else
             {
+#if SYSTEM_NET_PRIMITIVES_DLL
+                uint address = unchecked((uint)ipAddress.Address);
+#else
+                byte[] ipAddressBytes = ipAddress.GetAddressBytes();
+                Debug.Assert(ipAddressBytes.Length == 4);
+                uint address = ipAddressBytes.NetworkBytesToNetworkUInt32(0);
+#endif
+
                 Debug.Assert(ipAddress.AddressFamily == AddressFamily.InterNetwork);
-                SocketAddressPal.SetIPv4Address(Buffer, (uint)ipAddress.Address);
+                SocketAddressPal.SetIPv4Address(Buffer, address);
             }
         }
 
@@ -120,7 +128,7 @@ namespace System.Net
             {
                 Debug.Assert(Size >= IPv6AddressSize);
 
-                byte[] address = new byte[IPAddressParser.IPv6AddressBytes];
+                byte[] address = new byte[IPAddressParserStatics.IPv6AddressBytes];
                 uint scope;
                 SocketAddressPal.GetIPv6Address(Buffer, address, out scope);
 
@@ -134,7 +142,11 @@ namespace System.Net
             }
             else
             {
+#if SYSTEM_NET_PRIMITIVES_DLL
                 throw new SocketException(SocketError.AddressFamilyNotSupported);
+#else
+                throw new SocketException((int)SocketError.AddressFamilyNotSupported);
+#endif
             }
         }
 
@@ -145,7 +157,7 @@ namespace System.Net
             return new IPEndPoint(address, port);
         }
 
-        // For ReceiveFrom we need to pin address size, using reserved Buffer space
+        // For ReceiveFrom we need to pin address size, using reserved Buffer space.
         internal void CopyAddressSizeIntoBuffer()
         {
             Buffer[Buffer.Length - IntPtr.Size] = unchecked((byte)(InternalSize));
@@ -154,17 +166,10 @@ namespace System.Net
             Buffer[Buffer.Length - IntPtr.Size + 3] = unchecked((byte)(InternalSize >> 24));
         }
 
-        // Can be called after the above method did work
+        // Can be called after the above method did work.
         internal int GetAddressSizeOffset()
         {
             return Buffer.Length - IntPtr.Size;
-        }
-
-        // For ReceiveFrom we need to update the address size upon IO return
-        internal unsafe void SetSize(IntPtr ptr)
-        {
-            // Apparently it must be less or equal the original value since ReceiveFrom cannot reallocate the address buffer
-            InternalSize = *(int*)ptr;
         }
 
         public override bool Equals(object comparand)
