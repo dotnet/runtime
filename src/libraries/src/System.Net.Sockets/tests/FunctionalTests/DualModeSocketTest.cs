@@ -18,6 +18,7 @@ namespace System.Net.Sockets.Tests
         //       merged into corefx.
         private const int DummySendToThrowsIssue = 123456;
         private const int DummyOSXPacketInfoIssue = 123457;
+        private const int DummyLoopbackV6Issue = 123456;
 
         private const int TestPortBase = 7200;  // to 7300
         private readonly ITestOutputHelper _log;
@@ -137,6 +138,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue(DummyLoopbackV6Issue, PlatformID.AnyUnix)]
         public void DualModeSocket_ConnectAsyncDnsEndPointToV6Host_Success()
         {
             DualModeConnectAsync_DnsEndPointToHost_Helper(IPAddress.IPv6Loopback, false, TestPortBase + 11);
