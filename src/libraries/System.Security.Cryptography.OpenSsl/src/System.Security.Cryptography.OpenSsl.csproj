@@ -51,8 +51,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.EvpPkey.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.EvpPkey.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.EvpPkey.ECDsa.cs">
-      <Link>Common\Interop\Unix\libcrypto\Interop.EvpPkey.Rsa.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.EvpPkey.EcKey.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.EvpPkey.EcKey.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.EvpPkey.Rsa.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.EvpPkey.Rsa.cs</Link>
