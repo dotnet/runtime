@@ -3421,7 +3421,7 @@ public:
     // to return the string values to the runtime for deletion.
     // this avoid leaking the memory in the JIT.
     virtual void freeStringConfigValue(
-        wchar_t *value
+        __in_z wchar_t *value
         ) = 0;
 #endif // !RYUJIT_CTPBUILD
 };
