@@ -78,7 +78,6 @@
     <Compile Include="OrderByTests.cs" />
     <Compile Include="SelectManyTests.cs" />
     <Compile Include="SingleOrDefaultTests.cs" />
-    <Compile Include="LegacyTests\SumTests.cs" />
     <Compile Include="TakeTests.cs" />
     <Compile Include="TakeWhileTests.cs" />
     <Compile Include="ThenByDescendingTests.cs" />
