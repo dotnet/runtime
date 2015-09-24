@@ -6262,8 +6262,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	/* the stack used in the pushed regs */
-	if (prev_sp_offset & 4)
-		alloc_size += 4;
+	alloc_size += ALIGN_TO (prev_sp_offset, MONO_ARCH_FRAME_ALIGNMENT) - prev_sp_offset;
 	cfg->stack_usage = alloc_size;
 	if (alloc_size) {
 		if ((i = mono_arm_is_rotated_imm8 (alloc_size, &rot_amount)) >= 0) {
