@@ -1,6 +1,6 @@
 # Making your libraries compatible with .NET Core and other .NET Platforms
 
-Want to make your libraries multi-platform? Want to see how much work is required to make your application compatible with other .NET platforms? The [**.NET Portability Analyzer**](https://visualstudiogallery.msdn.microsoft.com/1177943e-cfb7-4822-a8a6-e56c7905292b) is a tool that provides you with a detailed report ([example report](http://dotnet.github.io/port-to-core/Moq4_ApiPortabilityAnalysis.htm)) on how portable your code is across .NET platforms by analyzing assemblies. The Portability Analyzer is offered as a Visual Studio Extension and as a console app.
+Want to make your libraries multi-platform? Want to see how much work is required to make your application compatible with other .NET platforms? The [**.NET Portability Analyzer**](http://github.com/microsoft/dotnet-apiport) is a tool that provides you with a detailed report ([example report](http://dotnet.github.io/port-to-core/Moq4_ApiPortabilityAnalysis.htm)) on how portable your code is across .NET platforms by analyzing assemblies. The Portability Analyzer is offered as a Visual Studio Extension and as a console app.
 
 ## New Targets
 
@@ -22,11 +22,11 @@ After running the analysis, you will see your .NET Portability Report. Only type
 
 ![](../images/portability_report.png)
 
-Don't want to use Visual Studio? You can also use the Portability Analyzer from the Command Prompt. Download the command-line analyzer [here](http://www.microsoft.com/en-us/download/details.aspx?id=42678).
+Don't want to use Visual Studio? You can also use the Portability Analyzer from the Command Prompt. Download the command-line analyzer [here](http://github.com/microsoft/dotnet-apiport/releases).
 
-- Type the following command to analyze the current directory: ```\...\ApiPort.exe .  ```
-- To analyze a specific list of .dlls type the following command: ```\...\ApiPort.exe first.dll second.dll third.dll ```
+- Type the following command to analyze the current directory: `ApiPort.exe analyze -f . `
+- To analyze a specific list of .dlls type the following command: `ApiPort.exe analyze -f first.dll -f second.dll -f third.dll`
 
 Your .NET Portability Report will be saved as an Excel .xlsx file in your current directory. The **Details** tab in the Excel Workbook will contain more info.
 
-For more info on the .NET Portability Analyzer, read [this article](http://blogs.msdn.com/b/dotnet/archive/2014/08/06/leveraging-existing-code-across-net-platforms.aspx).
+For more info on the .NET Portability Analyzer, read the [documentation](https://github.com/Microsoft/dotnet-apiport/blob/master/docs/HowTo/Introduction.md).
