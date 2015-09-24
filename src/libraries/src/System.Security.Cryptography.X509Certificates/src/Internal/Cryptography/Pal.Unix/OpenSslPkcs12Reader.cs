@@ -3,7 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-
+using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography.Pal
@@ -11,7 +11,7 @@ namespace Internal.Cryptography.Pal
     internal sealed class OpenSslPkcs12Reader : IDisposable
     {
         private readonly SafePkcs12Handle _pkcs12Handle;
-        private SafeEvpPkeyHandle _evpPkeyHandle;
+        private SafeEvpPKeyHandle _evpPkeyHandle;
         private SafeX509Handle _x509Handle;
         private SafeX509StackHandle _caStackHandle;
 

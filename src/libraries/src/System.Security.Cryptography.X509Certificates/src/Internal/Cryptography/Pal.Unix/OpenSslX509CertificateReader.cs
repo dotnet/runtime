@@ -18,7 +18,7 @@ namespace Internal.Cryptography.Pal
         private static DateTimeFormatInfo s_validityDateTimeFormatInfo;
 
         private SafeX509Handle _cert;
-        private SafeEvpPkeyHandle _privateKey;
+        private SafeEvpPKeyHandle _privateKey;
         private X500DistinguishedName _subjectName;
         private X500DistinguishedName _issuerName;
 
@@ -228,12 +228,12 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        internal void SetPrivateKey(SafeEvpPkeyHandle privateKey)
+        internal void SetPrivateKey(SafeEvpPKeyHandle privateKey)
         {
             _privateKey = privateKey;
         }
 
-        internal SafeEvpPkeyHandle PrivateKeyHandle
+        internal SafeEvpPKeyHandle PrivateKeyHandle
         {
             get { return _privateKey; }
         }
@@ -322,7 +322,7 @@ namespace Internal.Cryptography.Pal
 
             if (_privateKey != null)
             {
-                SafeEvpPkeyHandle keyHandle = SafeEvpPkeyHandle.DuplicateHandle(_privateKey);
+                SafeEvpPKeyHandle keyHandle = _privateKey.DuplicateHandle();
                 duplicate.SetPrivateKey(keyHandle);
             }
 
