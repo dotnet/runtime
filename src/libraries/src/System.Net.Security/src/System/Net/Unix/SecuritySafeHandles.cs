@@ -147,8 +147,19 @@ namespace System.Net.Security
     internal sealed class SafeDeleteContext : SafeHandle
     {
 #endif
-        public SafeDeleteContext(IntPtr handle) : base(handle, true)
+        private readonly SafeFreeCredentials _credential;
+
+        public SafeDeleteContext(IntPtr handle, SafeFreeCredentials credential) : base(handle, true)
         {
+            Debug.Assert((null != credential) && !credential.IsInvalid, "Invalid credential used in SafeDeleteContext");
+
+            // When a credential handle is first associated with the context we keep credential
+            // ref count bumped up to ensure ordered finalization. The certificate handle and
+            // key handle are used in the SSL data structures and should survive the lifetime of
+            // the SSL context
+            bool ignore = false;
+            _credential = credential;
+            _credential.DangerousAddRef(ref ignore);
         }
 
         public override bool IsInvalid
@@ -161,10 +172,9 @@ namespace System.Net.Security
 
         protected override bool ReleaseHandle()
         {
-            if (IntPtr.Zero != handle)
-            {
-                Interop.OpenSsl.FreeSslContext(handle);
-            }
+            Interop.OpenSsl.FreeSslContext(handle);
+            Debug.Assert((null != _credential) && !_credential.IsInvalid, "Invalid credential saved in SafeDeleteContext");
+            _credential.DangerousRelease();
             return true;
         }
 
