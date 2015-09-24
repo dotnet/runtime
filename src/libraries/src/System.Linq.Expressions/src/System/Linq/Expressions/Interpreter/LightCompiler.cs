@@ -2138,13 +2138,6 @@ namespace System.Linq.Expressions.Interpreter
             }
             else
             {
-                if (!node.Method.IsStatic)
-                {
-                    // emit null check, our instructions don't always do this when they're
-                    // calling via a delegate.  
-                    _instructions.EmitNullCheck(node.Arguments.Count);
-                }
-
                 if (updaters == null)
                 {
                     _instructions.EmitCall(node.Method, parameters);
