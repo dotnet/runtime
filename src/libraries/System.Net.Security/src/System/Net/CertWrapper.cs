@@ -11,9 +11,9 @@ namespace System.Net
     {
         static CertInterface certModule = new CertModule();
 
-        internal static SslPolicyErrors VerifyRemoteCertName(X509Chain chain, bool isServer, string hostName)
+        internal static SslPolicyErrors VerifyCertificateProperties(X509Chain chain, X509Certificate2 certificate, bool checkCertName, bool isServer, string hostName)
         {
-            return certModule.VerifyRemoteCertName(chain, isServer, hostName);
+            return certModule.VerifyCertificateProperties(chain, certificate, checkCertName, isServer, hostName);
         }
 
         internal static X509Certificate2 GetRemoteCertificate(SafeDeleteContext securityContext, out X509Certificate2Collection remoteCertificateStore)
