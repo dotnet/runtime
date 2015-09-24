@@ -11,7 +11,7 @@ namespace System.Net
     {
         internal abstract  X509Certificate2 GetRemoteCertificate(SafeDeleteContext securityContext, out X509Certificate2Collection remoteCertificateStore);
 
-        internal abstract SslPolicyErrors VerifyRemoteCertName(X509Chain chain, bool isServer, string hostName);
+        internal abstract SslPolicyErrors VerifyCertificateProperties(X509Chain chain, X509Certificate2 certificate, bool checkCertName, bool isServer, string hostName);
 
         internal abstract string[] GetRequestCertificateAuthorities(SafeDeleteContext securityContext);
 

@@ -19,44 +19,63 @@ namespace System.Net
         private static volatile X509Store s_myMachineCertStoreEx;
 
         #region internal Methods
-        internal override SslPolicyErrors VerifyRemoteCertName(X509Chain chain, bool isServer, string hostName)
+        internal override SslPolicyErrors VerifyCertificateProperties(X509Chain chain, X509Certificate2 certificate, bool checkCertName, bool isServer, string hostName)
         {
             SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
 
-            unsafe
+            if (!chain.Build(certificate)       // Build failed on handle or on policy.
+                && chain.SafeHandle.DangerousGetHandle() == IntPtr.Zero)   // Build failed to generate a valid handle.
             {
-                uint status = 0;
+                throw new CryptographicException(Marshal.GetLastWin32Error());
+            }
 
-                var eppStruct = new Interop.Crypt32.SSL_EXTRA_CERT_CHAIN_POLICY_PARA()
+            if (checkCertName)
+            {
+                unsafe
                 {
-                    cbSize = (uint)Marshal.SizeOf<Interop.Crypt32.SSL_EXTRA_CERT_CHAIN_POLICY_PARA>(),
-                    dwAuthType = isServer ? Interop.Crypt32.AuthType.AUTHTYPE_SERVER : Interop.Crypt32.AuthType.AUTHTYPE_CLIENT,
-                    fdwChecks = 0,
-                    pwszServerName = null
-                };
+                    uint status = 0;
 
-                var cppStruct = new Interop.Crypt32.CERT_CHAIN_POLICY_PARA()
-                {
-                    cbSize = (uint)Marshal.SizeOf<Interop.Crypt32.CERT_CHAIN_POLICY_PARA>(),
-                    dwFlags = 0,
-                    pvExtraPolicyPara = &eppStruct
-                };
-
-                fixed (char* namePtr = hostName)
-                {
-                    eppStruct.pwszServerName = namePtr;
-                    cppStruct.dwFlags |= (Interop.Crypt32.CertChainPolicyIgnoreFlags.CERT_CHAIN_POLICY_IGNORE_ALL &
-                                        ~Interop.Crypt32.CertChainPolicyIgnoreFlags.CERT_CHAIN_POLICY_IGNORE_INVALID_NAME_FLAG);
-
-                    SafeX509ChainHandle chainContext = chain.SafeHandle;
-
-                    status = Verify(chainContext, ref cppStruct);
-
-                    if (status == Interop.Crypt32.CertChainPolicyErrors.CERT_E_CN_NO_MATCH)
+                    var eppStruct = new Interop.Crypt32.SSL_EXTRA_CERT_CHAIN_POLICY_PARA()
                     {
-                        sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNameMismatch;
+                        cbSize = (uint) Marshal.SizeOf<Interop.Crypt32.SSL_EXTRA_CERT_CHAIN_POLICY_PARA>(),
+                        dwAuthType =
+                            isServer
+                                ? Interop.Crypt32.AuthType.AUTHTYPE_SERVER
+                                : Interop.Crypt32.AuthType.AUTHTYPE_CLIENT,
+                        fdwChecks = 0,
+                        pwszServerName = null
+                    };
+
+                    var cppStruct = new Interop.Crypt32.CERT_CHAIN_POLICY_PARA()
+                    {
+                        cbSize = (uint) Marshal.SizeOf<Interop.Crypt32.CERT_CHAIN_POLICY_PARA>(),
+                        dwFlags = 0,
+                        pvExtraPolicyPara = &eppStruct
+                    };
+
+                    fixed (char* namePtr = hostName)
+                    {
+                        eppStruct.pwszServerName = namePtr;
+                        cppStruct.dwFlags |= (Interop.Crypt32.CertChainPolicyIgnoreFlags.CERT_CHAIN_POLICY_IGNORE_ALL &
+                                              ~Interop.Crypt32.CertChainPolicyIgnoreFlags
+                                                  .CERT_CHAIN_POLICY_IGNORE_INVALID_NAME_FLAG);
+
+                        SafeX509ChainHandle chainContext = chain.SafeHandle;
+
+                        status = Verify(chainContext, ref cppStruct);
+
+                        if (status == Interop.Crypt32.CertChainPolicyErrors.CERT_E_CN_NO_MATCH)
+                        {
+                            sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNameMismatch;
+                        }
                     }
                 }
+            }
+
+            X509ChainStatus[] chainStatusArray = chain.ChainStatus;
+            if (chainStatusArray != null && chainStatusArray.Length != 0)
+            {
+                sslPolicyErrors |= SslPolicyErrors.RemoteCertificateChainErrors;
             }
 
             return sslPolicyErrors;
