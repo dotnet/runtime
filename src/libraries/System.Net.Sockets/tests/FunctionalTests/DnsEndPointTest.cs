@@ -11,6 +11,10 @@ namespace System.Net.Sockets.Tests
 {
     public class DnsEndPointTest
     {
+        // TODO: These constants are fill-ins for issues that need to be opened
+        //       once this code is merged into corefx/master.
+        private const int DummyLoopbackV6Issue = 123456;
+
         private const int TestPortBase = 7080;
         private readonly ITestOutputHelper _log;
 
@@ -107,6 +111,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         [Trait("IPv4", "true")]
         [Trait("IPv6", "true")]
+        [ActiveIssue(DummyLoopbackV6Issue, PlatformID.AnyUnix)]
         public void Socket_StaticConnectAsync_Success()
         {
             Assert.True(Capability.IPv4Support() && Capability.IPv6Support());
