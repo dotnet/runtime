@@ -59,7 +59,7 @@ private:
 
 //--------------------------------------------------------------------------------
 // safe variant helper
-void SafeVariantClear(VARIANT* pVar);
+void SafeVariantClear(_Inout_ VARIANT* pVar);
 
 class VariantHolder
 {

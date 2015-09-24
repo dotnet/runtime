@@ -777,7 +777,7 @@ public:
 
     wchar_t *getStringConfigValue(const wchar_t *name);
 
-    void freeStringConfigValue(wchar_t *value);
+    void freeStringConfigValue(__in_z wchar_t *value);
 };
 
 #endif // __ZAPINFO_H__
