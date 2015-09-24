@@ -8,13 +8,8 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class WhereTests
+    public class WhereTests : EnumerableTests
     {
-        private static bool IsEven(int num)
-        {
-            return num % 2 == 0;
-        }
-
         #region Null arguments
 
         [Fact]
@@ -24,8 +19,8 @@ namespace System.Linq.Tests
             Func<int, bool> simplePredicate = (value) => true;
             Func<int, int, bool> complexPredicate = (value, index) => true;
 
-            Assert.Throws<ArgumentNullException>(() => source.Where(simplePredicate));
-            Assert.Throws<ArgumentNullException>(() => source.Where(complexPredicate));
+            Assert.Throws<ArgumentNullException>("source", () => source.Where(simplePredicate));
+            Assert.Throws<ArgumentNullException>("source", () => source.Where(complexPredicate));
         }
 
         [Fact]
@@ -35,8 +30,8 @@ namespace System.Linq.Tests
             Func<int, bool> simplePredicate = null;
             Func<int, int, bool> complexPredicate = null;
 
-            Assert.Throws<ArgumentNullException>(() => source.Where(simplePredicate));
-            Assert.Throws<ArgumentNullException>(() => source.Where(complexPredicate));
+            Assert.Throws<ArgumentNullException>("predicate", () => source.Where(simplePredicate));
+            Assert.Throws<ArgumentNullException>("predicate", () => source.Where(complexPredicate));
         }
 
         #endregion
@@ -383,7 +378,13 @@ namespace System.Linq.Tests
             Assert.Equal(0, result.Count());
             Assert.False(wasSelectorCalled);
         }
-        
+
+        [Fact]
+        public void Where_EmptyEnumerable_ReturnsNoElementsWithIndex()
+        {
+            Assert.Empty(Enumerable.Empty<int>().Where((e, i) => true));
+        }
+
         [Fact]
         public void Where_Array_CurrentIsDefaultOfTAfterEnumeration()
         {
@@ -755,59 +756,6 @@ namespace System.Linq.Tests
             Assert.Equal(2, enumerator.Current);
         }
 
-        /// <summary>
-        /// Test enumerator - returns int values from 1 to 5 inclusive.
-        /// </summary>
-        private class TestEnumerator : IEnumerable<int>, IEnumerator<int>
-        {
-            private int _current = 0;
-
-            public virtual int Current { get { return _current; } }
-
-            object IEnumerator.Current { get { return Current; } }
-
-            public void Dispose() { }
-
-            public virtual IEnumerator<int> GetEnumerator()
-            {
-                return this;
-            }
-
-            public virtual bool MoveNext()
-            {
-                return _current++ < 5;
-            }
-
-            public void Reset()
-            {
-                throw new NotImplementedException();
-            }
-
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return GetEnumerator();
-            }
-        }
-
-        /// <summary>
-        /// A test enumerator that throws an InvalidOperationException when invoking Current after MoveNext has been called exactly once.
-        /// </summary>
-        private class ThrowsOnCurrentEnumerator : TestEnumerator
-        {
-            public override int Current
-            {
-                get
-                {
-                    var current = base.Current;
-                    if (current == 1)
-                    {
-                        throw new InvalidOperationException();
-                    }
-                    return current;
-                }
-            }
-        }
-
         [Fact]
         public void Where_SourceThrowsOnCurrent()
         {
@@ -822,23 +770,6 @@ namespace System.Linq.Tests
             // Ensure subsequent MoveNext calls succeed
             Assert.True(enumerator.MoveNext());
             Assert.Equal(2, enumerator.Current);
-        }
-
-        /// <summary>
-        /// A test enumerator that throws an InvalidOperationException when invoking MoveNext after MoveNext has been called exactly once.
-        /// </summary>
-        private class ThrowsOnMoveNext : TestEnumerator
-        {
-            public override bool MoveNext()
-            {
-                bool baseReturn = base.MoveNext();
-                if (base.Current == 1)
-                {
-                    throw new InvalidOperationException();
-                }
-
-                return baseReturn;
-            }
         }
 
         [Fact]
@@ -859,24 +790,6 @@ namespace System.Linq.Tests
             // Ensure subsequent MoveNext calls succeed
             Assert.True(enumerator.MoveNext());
             Assert.Equal(2, enumerator.Current);
-        }
-
-        /// <summary>
-        /// A test enumerator that throws an InvalidOperationException when GetEnumerator is called for the first time.
-        /// </summary>
-        private class ThrowsOnGetEnumerator : TestEnumerator
-        {
-            private int getEnumeratorCallCount;
-
-            public override IEnumerator<int> GetEnumerator()
-            {
-                if (getEnumeratorCallCount++ == 0)
-                {
-                    throw new InvalidOperationException();
-                }
-
-                return base.GetEnumerator();
-            }
         }
 
         [Fact]
@@ -940,6 +853,7 @@ namespace System.Linq.Tests
                 Assert.NotSame(enumerator1, enumerator2);
             }
         }
+
         [Fact]
         public void SameResultsRepeatCallsIntQuery()
         {
@@ -1074,41 +988,11 @@ namespace System.Linq.Tests
             Assert.Equal(source.Skip(source.Length - 1), source.Where((e, i) => i == source.Length - 1));
         }
 
-        private sealed class FastInfiniteEnumerator : IEnumerable<int>, IEnumerator<int>
-        {
-            public IEnumerator<int> GetEnumerator()
-            {
-                return this;
-            }
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return this;
-            }
-            public bool MoveNext()
-            {
-                return true;
-            }
-            public void Reset()
-            {
-            }
-            object IEnumerator.Current
-            {
-                get { return 0; }
-            }
-            public void Dispose()
-            {
-            }
-            public int Current
-            {
-                get { return 0; }
-            }
-        }
-
         [Fact]
         [OuterLoop]
         public void IndexOverflows()
         {
-            var infiniteWhere = new FastInfiniteEnumerator().Where((e, i) => true);
+            var infiniteWhere = new FastInfiniteEnumerator<int>().Where((e, i) => true);
             using (var en = infiniteWhere.GetEnumerator())
                 Assert.Throws<OverflowException>(() =>
                 {
@@ -1116,6 +1000,63 @@ namespace System.Linq.Tests
                     {
                     }
                 });
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerate()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Where(i => true);
+            // Don't insist on this behaviour, but check its correct if it happens
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerateArray()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).ToArray().Where(i => true);
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerateList()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).ToList().Where(i => true);
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerateIndexed()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Where((e, i) => true);
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerateWhereSelect()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Where(i => true).Select(i => i);
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerateWhereSelectArray()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).ToArray().Where(i => true).Select(i => i);
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerateWhereSelectList()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).ToList().Where(i => true).Select(i => i);
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
         }
     }
 }

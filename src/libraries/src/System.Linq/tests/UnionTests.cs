@@ -7,37 +7,8 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class UnionTests
-    {
-        // Class which is passed as an argument for EqualityComparer
-        private class AnagramEqualityComparer : IEqualityComparer<string>
-        {
-            public bool Equals(string x, string y)
-            {
-                if (ReferenceEquals(x, y)) return true;
-                if (x == null | y == null) return false;
-                int length = x.Length;
-                if (length != y.Length) return false;
-                using (var en = x.OrderBy(i => i).GetEnumerator())
-                {
-                    foreach (char c in y.OrderBy(i => i))
-                    {
-                        en.MoveNext();
-                        if (c != en.Current) return false;
-                    }
-                }
-                return true;
-            }
-
-            public int GetHashCode(string obj)
-            {
-                int hash = 0;
-                foreach (char c in obj)
-                    hash ^= (int)c;
-                return hash;
-            }
-        }
-        
+    public class UnionTests : EnumerableTests
+    {        
         [Fact]
         public void SameResultsRepeatCallsIntQuery()
         {
@@ -65,9 +36,7 @@ namespace System.Linq.Tests
         {
             int[] first = { };
             int[] second = { };
-            int[] expected = { };
-
-            Assert.Equal(expected, first.Union(second));
+            Assert.Empty(first.Union(second));
         }
 
         [Fact]
@@ -98,6 +67,24 @@ namespace System.Linq.Tests
             string[] second = null;
 
             var ane = Assert.Throws<ArgumentNullException>("second", () => first.Union(second, new AnagramEqualityComparer()));
+        }
+
+        [Fact]
+        public void FirstNullNoComparer()
+        {
+            string[] first = null;
+            string[] second = { "ttaM", "Charlie", "Bbo" };
+
+            var ane = Assert.Throws<ArgumentNullException>("first", () => first.Union(second));
+        }
+
+        [Fact]
+        public void SecondNullNoComparer()
+        {
+            string[] first = { "Bob", "Robert", "Tim", "Matt", "miT" };
+            string[] second = null;
+
+            var ane = Assert.Throws<ArgumentNullException>("second", () => first.Union(second));
         }
 
         [Fact]
@@ -208,6 +195,15 @@ namespace System.Linq.Tests
             string[] expected = { "Bob", "Robert", "Tim", "Matt", "miT", "ttaM", "Charlie", "Bbo" };
 
             Assert.Equal(expected, first.Union(second, null));
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerate()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Union(Enumerable.Range(0, 3));
+            // Don't insist on this behaviour, but check its correct if it happens
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
         }
     }
 }

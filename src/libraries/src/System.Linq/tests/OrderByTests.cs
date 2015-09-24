@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class OrderByTests
+    public class OrderByTests : EnumerableTests
     {
         private class BadComparer1 : IComparer<int>
         {
@@ -23,14 +23,6 @@ namespace System.Linq.Tests
             {
                 return -1;
             }
-        }
-
-        private struct Record
-        {
-#pragma warning disable 0649
-            public string Name;
-            public int Score;
-#pragma warning restore 0649
         }
 
         [Fact]
@@ -58,9 +50,7 @@ namespace System.Linq.Tests
         public void SourceEmpty()
         {
             int[] source = { };
-            int[] expected = { };
-
-            Assert.Equal(expected, source.OrderBy(e => e));
+            Assert.Empty(source.OrderBy(e => e));
         }
 
         //FIXME: This will hang with a larger source. Do we want to deal with that case?
@@ -94,17 +84,17 @@ namespace System.Linq.Tests
         [Fact]
         public void KeySelectorCalled()
         {
-            Record[] source = new Record[]
+            var source = new[]
             {
-                new Record{ Name = "Tim", Score = 90 },
-                new Record{ Name = "Robert", Score = 45 },
-                new Record{ Name = "Prakash", Score = 99 }
+                new { Name = "Tim", Score = 90 },
+                new { Name = "Robert", Score = 45 },
+                new { Name = "Prakash", Score = 99 }
             };
-            Record[] expected = new Record[]
+            var expected = new[]
             {
-                new Record{ Name = "Prakash", Score = 99 },
-                new Record{ Name = "Robert", Score = 45 },
-                new Record{ Name = "Tim", Score = 90 }
+                new { Name = "Prakash", Score = 99 },
+                new { Name = "Robert", Score = 45 },
+                new { Name = "Tim", Score = 90 }
             };
 
             Assert.Equal(expected, source.OrderBy(e => e.Name, null));
@@ -140,23 +130,23 @@ namespace System.Linq.Tests
         [Fact]
         public void SameKeysVerifySortStable()
         {
-            Record[] source = new Record[]
+            var source = new[]
             {
-                new Record{ Name = "Tim", Score = 90 },
-                new Record{ Name = "Robert", Score = 90 },
-                new Record{ Name = "Prakash", Score = 90 },
-                new Record{ Name = "Jim", Score = 90 },
-                new Record{ Name = "John", Score = 90 },
-                new Record{ Name = "Albert", Score = 90 },
+                new { Name = "Tim", Score = 90 },
+                new { Name = "Robert", Score = 90 },
+                new { Name = "Prakash", Score = 90 },
+                new { Name = "Jim", Score = 90 },
+                new { Name = "John", Score = 90 },
+                new { Name = "Albert", Score = 90 },
             };
-            Record[] expected = new Record[]
+            var expected = new[]
             {
-                new Record{ Name = "Tim", Score = 90 },
-                new Record{ Name = "Robert", Score = 90 },
-                new Record{ Name = "Prakash", Score = 90 },
-                new Record{ Name = "Jim", Score = 90 },
-                new Record{ Name = "John", Score = 90 },
-                new Record{ Name = "Albert", Score = 90 },
+                new { Name = "Tim", Score = 90 },
+                new { Name = "Robert", Score = 90 },
+                new { Name = "Prakash", Score = 90 },
+                new { Name = "Jim", Score = 90 },
+                new { Name = "John", Score = 90 },
+                new { Name = "Albert", Score = 90 },
             };
 
             Assert.Equal(expected, source.OrderBy(e => e.Score));
@@ -165,51 +155,63 @@ namespace System.Linq.Tests
         [Fact]
         public void OrderedToArray()
         {
-            Record[] source = new Record[]
+            var source = new []
             {
-                new Record{ Name = "Tim", Score = 90 },
-                new Record{ Name = "Robert", Score = 90 },
-                new Record{ Name = "Prakash", Score = 90 },
-                new Record{ Name = "Jim", Score = 90 },
-                new Record{ Name = "John", Score = 90 },
-                new Record{ Name = "Albert", Score = 90 },
+                new { Name = "Tim", Score = 90 },
+                new { Name = "Robert", Score = 90 },
+                new { Name = "Prakash", Score = 90 },
+                new { Name = "Jim", Score = 90 },
+                new { Name = "John", Score = 90 },
+                new { Name = "Albert", Score = 90 },
             };
-            Record[] expected = new Record[]
+            var expected = new []
             {
-                new Record{ Name = "Tim", Score = 90 },
-                new Record{ Name = "Robert", Score = 90 },
-                new Record{ Name = "Prakash", Score = 90 },
-                new Record{ Name = "Jim", Score = 90 },
-                new Record{ Name = "John", Score = 90 },
-                new Record{ Name = "Albert", Score = 90 },
+                new { Name = "Tim", Score = 90 },
+                new { Name = "Robert", Score = 90 },
+                new { Name = "Prakash", Score = 90 },
+                new { Name = "Jim", Score = 90 },
+                new { Name = "John", Score = 90 },
+                new { Name = "Albert", Score = 90 },
             };
 
             Assert.Equal(expected, source.OrderBy(e => e.Score).ToArray());
         }
 
         [Fact]
+        public void EmptyOrderedToArray()
+        {
+            Assert.Empty(Enumerable.Empty<int>().OrderBy(e => e).ToArray());
+        }
+
+        [Fact]
         public void OrderedToList()
         {
-            Record[] source = new Record[]
+            var source = new[]
             {
-                new Record { Name = "Tim", Score = 90 },
-                new Record { Name = "Robert", Score = 90 },
-                new Record { Name = "Prakash", Score = 90 },
-                new Record { Name = "Jim", Score = 90 },
-                new Record { Name = "John", Score = 90 },
-                new Record { Name = "Albert", Score = 90 },
+                new { Name = "Tim", Score = 90 },
+                new { Name = "Robert", Score = 90 },
+                new { Name = "Prakash", Score = 90 },
+                new { Name = "Jim", Score = 90 },
+                new { Name = "John", Score = 90 },
+                new { Name = "Albert", Score = 90 },
             };
-            Record[] expected = new Record[]
+            var expected = new[]
             {
-                new Record { Name = "Tim", Score = 90 },
-                new Record { Name = "Robert", Score = 90 },
-                new Record { Name = "Prakash", Score = 90 },
-                new Record { Name = "Jim", Score = 90 },
-                new Record { Name = "John", Score = 90 },
-                new Record { Name = "Albert", Score = 90 },
+                new { Name = "Tim", Score = 90 },
+                new { Name = "Robert", Score = 90 },
+                new { Name = "Prakash", Score = 90 },
+                new { Name = "Jim", Score = 90 },
+                new { Name = "John", Score = 90 },
+                new { Name = "Albert", Score = 90 },
             };
 
             Assert.Equal(expected, source.OrderBy(e => e.Score).ToList());
+        }
+
+        [Fact]
+        public void EmptyOrderedToList()
+        {
+            Assert.Empty(Enumerable.Empty<int>().OrderBy(e => e).ToList());
         }
 
         //FIXME: This will hang with a larger source. Do we want to deal with that case?
@@ -219,7 +221,7 @@ namespace System.Linq.Tests
             int[] source = { 1 };
             int[] expected = { 1 };
 
-            Assert.Equal(expected, source.OrderBy((e) => e, new BadComparer1()));
+            Assert.Equal(expected, source.OrderBy(e => e, new BadComparer1()));
         }
 
         private class ExtremeComparer : IComparer<int>
@@ -245,7 +247,14 @@ namespace System.Linq.Tests
         public void NullSource()
         {
             IEnumerable<int> source = null;
-            Assert.Throws<ArgumentNullException>(() => source.OrderBy(i => i));
+            Assert.Throws<ArgumentNullException>("source", () => source.OrderBy(i => i));
+        }
+
+        [Fact]
+        public void NullKeySelector()
+        {
+            Func<DateTime, int> keySelector = null;
+            Assert.Throws<ArgumentNullException>("keySelector", () => Enumerable.Empty<DateTime>().OrderBy(keySelector));
         }
     }
 }

@@ -1,17 +1,17 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Linq.Tests.Helpers;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class ReverseTests
+    public class ReverseTests : EnumerableTests
     {
         [Fact]
         public void InvalidArguments()
         {
-            Assert.Throws<ArgumentNullException>(() => Enumerable.Reverse<string>(null));
+            Assert.Throws<ArgumentNullException>("source", () => Enumerable.Reverse<string>(null));
         }
 
         [Theory]
@@ -67,6 +67,15 @@ namespace System.Linq.Tests
             int?[] expected = new int?[] { 9, null, 100, 9, 0, null, 5, 0, -10 };
             
             Assert.Equal(expected, source.Reverse());
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerate()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Reverse();
+            // Don't insist on this behaviour, but check its correct if it happens
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
         }
     }
 }

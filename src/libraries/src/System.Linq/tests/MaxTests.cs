@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class MaxTests
+    public class MaxTests : EnumerableTests
     {
         [Fact]
         public void SameResultsRepeatCallsIntQuery()
