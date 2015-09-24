@@ -229,17 +229,7 @@ namespace Tests.ExpressionCompiler.MemberAccess
                     Enumerable.Empty<ParameterExpression>());
             Func<int> f = e.Compile();
 
-            var err = default(Exception);
-            try
-            {
-                f();
-            }
-            catch (NullReferenceException ex)
-            {
-                err = ex;
-            }
-
-            Assert.NotNull(err);
+            Assert.Throws<NullReferenceException>(()=>f());
         }
 
         [Fact] // [Issue(3217, "https://github.com/dotnet/corefx/issues/3217")]
@@ -255,17 +245,7 @@ namespace Tests.ExpressionCompiler.MemberAccess
                     Enumerable.Empty<ParameterExpression>());
             Func<int> f = e.Compile();
 
-            var err = default(Exception);
-            try
-            {
-                f();
-            }
-            catch (NullReferenceException ex)
-            {
-                err = ex;
-            }
-
-            Assert.NotNull(err);
+            Assert.Throws<NullReferenceException>(() => f());
         }
 
         [Fact] // [Issue(3217, "https://github.com/dotnet/corefx/issues/3217")]
@@ -279,17 +259,7 @@ namespace Tests.ExpressionCompiler.MemberAccess
                     Enumerable.Empty<ParameterExpression>());
             Func<int> f = e.Compile();
 
-            var err = default(Exception);
-            try
-            {
-                f();
-            }
-            catch (NullReferenceException ex)
-            {
-                err = ex;
-            }
-
-            Assert.NotNull(err);
+            Assert.Throws<NullReferenceException>(() => f());
         }
 
         [Fact] // [Issue(3217, "https://github.com/dotnet/corefx/issues/3217")]
@@ -304,17 +274,7 @@ namespace Tests.ExpressionCompiler.MemberAccess
                     Enumerable.Empty<ParameterExpression>());
             Func<int> f = e.Compile();
 
-            var err = default(Exception);
-            try
-            {
-                f();
-            }
-            catch (NullReferenceException ex)
-            {
-                err = ex;
-            }
-
-            Assert.NotNull(err);
+            Assert.Throws<NullReferenceException>(() => f());
         }
 
         [Fact] // [Issue(3217, "https://github.com/dotnet/corefx/issues/3217")]
@@ -331,17 +291,7 @@ namespace Tests.ExpressionCompiler.MemberAccess
                     Enumerable.Empty<ParameterExpression>());
             Func<int> f = e.Compile();
 
-            var err = default(Exception);
-            try
-            {
-                f();
-            }
-            catch (NullReferenceException ex)
-            {
-                err = ex;
-            }
-
-            Assert.NotNull(err);
+            Assert.Throws<NullReferenceException>(() => f());
         }
     }
 }
