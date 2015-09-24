@@ -1056,22 +1056,16 @@ namespace System.Net.Security
                         chain.ChainPolicy.ExtraStore.AddRange(remoteCertificateStore);
                     }
 
-                    if (!chain.Build(remoteCertificateEx)       // Build failed on handle or on policy.
-                        && chain.SafeHandle.DangerousGetHandle() == IntPtr.Zero)   // Build failed to generate a valid handle.
-                    {
-                        throw new CryptographicException(Marshal.GetLastWin32Error());
-                    }
+                    // Don't call chain.Build here in the common code, because the Windows version
+                    // is potentially going to check for GetLastWin32Error, and that call needs to be
+                    // guaranteed to be right after the call to chain.Build.
 
-                    if (_checkCertName)
-                    {
-                        sslPolicyErrors |= CertWrapper.VerifyRemoteCertName(chain, _serverMode, _hostName);
-                    }
-
-                    X509ChainStatus[] chainStatusArray = chain.ChainStatus;
-                    if (chainStatusArray != null && chainStatusArray.Length != 0)
-                    {
-                        sslPolicyErrors |= SslPolicyErrors.RemoteCertificateChainErrors;
-                    }
+                    sslPolicyErrors |= CertWrapper.VerifyCertificateProperties(
+                        chain,
+                        remoteCertificateEx,
+                        _checkCertName,
+                        _serverMode,
+                        _hostName);
                 }
 
                 if (remoteCertValidationCallback != null)

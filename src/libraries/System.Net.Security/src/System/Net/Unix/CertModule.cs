@@ -11,9 +11,16 @@ namespace System.Net
     internal partial class CertModule : CertInterface
     {
         #region internal Methods
-        internal override SslPolicyErrors VerifyRemoteCertName(X509Chain chain, bool isServer, string hostName)
+        internal override SslPolicyErrors VerifyCertificateProperties(X509Chain chain, X509Certificate2 certificate, bool checkCertName, bool isServer, string hostName)
         {
-            SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;         
+            SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
+
+            if (!chain.Build(certificate))
+            {
+                sslPolicyErrors |= SslPolicyErrors.RemoteCertificateChainErrors;
+            }
+
+            // TODO (3431): Ensure that the certificate is valid for the hostName context.
 
             return sslPolicyErrors;
         }
