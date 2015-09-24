@@ -10,6 +10,11 @@
 
 #include <config.h>
 
+/* enable pthread extensions */
+#ifdef TARGET_MACH
+#define _DARWIN_C_SOURCE
+#endif
+
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-semaphore.h>
 #include <mono/utils/mono-threads.h>
@@ -163,7 +168,15 @@ dump_threads (void)
 	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x?08\t- blocking with pending suspend (GOOD)\n");
 
 	FOREACH_THREAD_SAFE (info) {
+#ifdef TARGET_MACH
+		char thread_name [256] = { 0 };
+		pthread_getname_np (mono_thread_info_get_tid (info), thread_name, 255);
+
+		MOSTLY_ASYNC_SAFE_PRINTF ("--thread %p id %p [%p] (%s) state %x  %s\n", info, (void *) mono_thread_info_get_tid (info), (void*)(size_t)info->native_handle, thread_name, info->thread_state, info == cur ? "GC INITIATOR" : "" );
+#else
 		MOSTLY_ASYNC_SAFE_PRINTF ("--thread %p id %p [%p] state %x  %s\n", info, (void *) mono_thread_info_get_tid (info), (void*)(size_t)info->native_handle, info->thread_state, info == cur ? "GC INITIATOR" : "" );
+#endif
+
 	} END_FOREACH_THREAD_SAFE
 }
 

@@ -7,6 +7,13 @@
  * Copyright 2015 Xamarin, Inc (http://www.xamarin.com)
  */
 
+#include <config.h>
+
+/* enable pthread extensions */
+#ifdef TARGET_MACH
+#define _DARWIN_C_SOURCE
+#endif
+
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-semaphore.h>
 #include <mono/utils/mono-threads.h>
@@ -230,7 +237,7 @@ mono_threads_init_platform (void)
 void
 mono_threads_platform_free (MonoThreadInfo *info)
 {
-#ifdef TARGET_OSX
+#ifdef TARGET_MACH
 	mach_port_deallocate (current_task (), info->native_handle);
 #endif
 
@@ -240,8 +247,12 @@ mono_threads_platform_free (MonoThreadInfo *info)
 void
 mono_threads_platform_register (MonoThreadInfo *info)
 {
-#ifdef TARGET_OSX
+#ifdef TARGET_MACH
+	char thread_name [64];
+
 	info->native_handle = mach_thread_self ();
+	snprintf (thread_name, 64, "tid_%x", (int)info->native_handle);
+	pthread_setname_np (thread_name);
 #endif
 
 	//See the above for what's wrong here.
