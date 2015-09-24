@@ -359,6 +359,7 @@ namespace System.Linq.Expressions.Interpreter
 
             try
             {
+                NullCheck(instance);
                 return _target.Invoke(instance, args);
             }
             catch (TargetInvocationException e)
@@ -390,7 +391,9 @@ namespace System.Linq.Expressions.Interpreter
 
             try
             {
-                return _target.Invoke(args[0], SkipFirstArg(args));
+                var instance = args[0];
+                NullCheck(instance);
+                return _target.Invoke(instance, SkipFirstArg(args));
             }
             catch (TargetInvocationException e)
             {
@@ -492,6 +495,7 @@ namespace System.Linq.Expressions.Interpreter
                     {
                         try
                         {
+                            NullCheck(instance);
                             ret = _target.Invoke(instance, args);
                         }
                         catch (TargetInvocationException e)
