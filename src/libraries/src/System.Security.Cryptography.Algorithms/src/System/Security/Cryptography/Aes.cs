@@ -20,7 +20,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return (KeySizes[])(s_legalBlockSizes.Clone());
+                return s_legalBlockSizes.CloneKeySizesArray();
             }
         }
 
@@ -28,7 +28,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return (KeySizes[])(s_legalKeySizes.Clone());
+                return s_legalKeySizes.CloneKeySizesArray();
             }
         }
 

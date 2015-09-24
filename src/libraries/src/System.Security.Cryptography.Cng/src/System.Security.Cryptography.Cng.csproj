@@ -64,7 +64,9 @@
 
      <Compile Include="Microsoft\Win32\SafeHandles\NCryptSafeHandles.cs" />
 
-     <Compile Include="Internal\Cryptography\CngAsymmetricAlgorithmCore.cs" />
+     <Compile Include="Internal\Cryptography\CngAlgorithmCore.cs" />
+     <Compile Include="Internal\Cryptography\CngCommon.Hash.cs" />
+     <Compile Include="Internal\Cryptography\CngCommon.SignVerify.cs" />
      <Compile Include="Internal\Cryptography\Helpers.cs" />
      <Compile Include="Internal\Cryptography\KeyPropertyName.cs" />
      <Compile Include="Internal\Cryptography\ProviderPropertyName.cs" />

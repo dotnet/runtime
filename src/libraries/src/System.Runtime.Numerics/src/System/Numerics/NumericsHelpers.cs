@@ -156,143 +156,9 @@ namespace System.Numerics
             return ret;
         }
 
-        public static void Swap<T>(ref T a, ref T b)
-        {
-            T tmp = a;
-            a = b;
-            b = tmp;
-        }
-
-        public static uint GCD(uint u1, uint u2)
-        {
-            const int cvMax = 32;
-            if (u1 < u2)
-                goto LOther;
-            LTop:
-            Debug.Assert(u2 <= u1);
-            if (u2 == 0)
-                return u1;
-            for (int cv = cvMax; ;)
-            {
-                u1 -= u2;
-                if (u1 < u2)
-                    break;
-                if (--cv == 0)
-                {
-                    u1 %= u2;
-                    break;
-                }
-            }
-        LOther:
-            Debug.Assert(u1 < u2);
-            if (u1 == 0)
-                return u2;
-            for (int cv = cvMax; ;)
-            {
-                u2 -= u1;
-                if (u2 < u1)
-                    break;
-                if (--cv == 0)
-                {
-                    u2 %= u1;
-                    break;
-                }
-            }
-            goto LTop;
-        }
-
-        public static ulong GCD(ulong uu1, ulong uu2)
-        {
-            const int cvMax = 32;
-            if (uu1 < uu2)
-                goto LOther;
-            LTop:
-            Debug.Assert(uu2 <= uu1);
-            if (uu1 <= uint.MaxValue)
-                goto LSmall;
-            if (uu2 == 0)
-                return uu1;
-            for (int cv = cvMax; ;)
-            {
-                uu1 -= uu2;
-                if (uu1 < uu2)
-                    break;
-                if (--cv == 0)
-                {
-                    uu1 %= uu2;
-                    break;
-                }
-            }
-        LOther:
-            Debug.Assert(uu1 < uu2);
-            if (uu2 <= uint.MaxValue)
-                goto LSmall;
-            if (uu1 == 0)
-                return uu2;
-            for (int cv = cvMax; ;)
-            {
-                uu2 -= uu1;
-                if (uu2 < uu1)
-                    break;
-                if (--cv == 0)
-                {
-                    uu2 %= uu1;
-                    break;
-                }
-            }
-            goto LTop;
-
-        LSmall:
-            uint u1 = (uint)uu1;
-            uint u2 = (uint)uu2;
-            if (u1 < u2)
-                goto LOtherSmall;
-            LTopSmall:
-            Debug.Assert(u2 <= u1);
-            if (u2 == 0)
-                return u1;
-            for (int cv = cvMax; ;)
-            {
-                u1 -= u2;
-                if (u1 < u2)
-                    break;
-                if (--cv == 0)
-                {
-                    u1 %= u2;
-                    break;
-                }
-            }
-        LOtherSmall:
-            Debug.Assert(u1 < u2);
-            if (u1 == 0)
-                return u2;
-            for (int cv = cvMax; ;)
-            {
-                u2 -= u1;
-                if (u2 < u1)
-                    break;
-                if (--cv == 0)
-                {
-                    u2 %= u1;
-                    break;
-                }
-            }
-            goto LTopSmall;
-        }
-
         public static ulong MakeUlong(uint uHi, uint uLo)
         {
             return ((ulong)uHi << kcbitUint) | uLo;
-        }
-
-        public static uint GetLo(ulong uu)
-        {
-            return (uint)uu;
-        }
-
-        public static uint GetHi(ulong uu)
-        {
-            return (uint)(uu >> kcbitUint);
         }
 
         public static uint Abs(int a)
@@ -300,11 +166,6 @@ namespace System.Numerics
             uint mask = (uint)(a >> 31);
             return ((uint)a ^ mask) - mask;
         }
-
-        //    public static ulong Abs(long a) {
-        //      ulong mask = (ulong)(a >> 63);
-        //      return ((ulong)a ^ mask) - mask;
-        //    }
 
         public static uint CombineHash(uint u1, uint u2)
         {
@@ -315,6 +176,7 @@ namespace System.Numerics
         {
             return (int)CombineHash((uint)n1, (uint)n2);
         }
+
         public static int CbitHighZero(uint u)
         {
             if (u == 0)
@@ -342,37 +204,6 @@ namespace System.Numerics
                 u <<= 2;
             }
             if ((u & 0x80000000) == 0)
-                cbit += 1;
-            return cbit;
-        }
-
-        public static int CbitLowZero(uint u)
-        {
-            if (u == 0)
-                return 32;
-
-            int cbit = 0;
-            if ((u & 0x0000FFFF) == 0)
-            {
-                cbit += 16;
-                u >>= 16;
-            }
-            if ((u & 0x000000FF) == 0)
-            {
-                cbit += 8;
-                u >>= 8;
-            }
-            if ((u & 0x0000000F) == 0)
-            {
-                cbit += 4;
-                u >>= 4;
-            }
-            if ((u & 0x00000003) == 0)
-            {
-                cbit += 2;
-                u >>= 2;
-            }
-            if ((u & 0x00000001) == 0)
                 cbit += 1;
             return cbit;
         }

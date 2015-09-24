@@ -108,6 +108,14 @@ namespace System.Net.Http
             }
         }
 
+        internal bool SupportsRedirectConfiguration
+        {
+            get
+            {
+                return true;
+            }
+        }
+
         internal bool UseProxy
         {
             get
@@ -256,6 +264,19 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        ///   <b> UseDefaultCredentials is a no op on Unix </b>
+        /// </summary>
+        internal bool UseDefaultCredentials
+        {
+            get
+            {
+                return false;
+            }
+            set
+            {
+            }
+        }
         #endregion
 
         protected override void Dispose(bool disposing)
@@ -527,7 +548,7 @@ namespace System.Net.Http
 
             // Create the message and trace it out
             string msg = string.Format("[{0, -30}]{1, -16}: {2}", memberName, ids, text);
-            Interop.libc.printf("%s\n", msg);
+            Interop.Sys.PrintF("%s\n", msg);
         }
 
         [Conditional(VerboseDebuggingConditional)]

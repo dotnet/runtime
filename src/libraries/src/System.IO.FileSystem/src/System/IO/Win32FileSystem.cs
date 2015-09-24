@@ -47,13 +47,8 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]
         public override void CreateDirectory(string fullPath)
         {
-            int length = fullPath.Length;
-
-            // We need to trim the trailing slash or the code will try to create 2 directories of the same name.
-            if (length >= 2 && PathHelpers.EndsInDirectorySeparator(fullPath))
-                length--;
-
-            int lengthRoot = PathInternal.GetRootLength(fullPath);
+            if (PathInternal.IsDirectoryTooLong(fullPath))
+                throw new PathTooLongException(SR.IO_PathTooLong);
 
             // We can save a bunch of work if the directory we want to create already exists.  This also
             // saves us in the case where sub paths are inaccessible (due to ERROR_ACCESS_DENIED) but the
@@ -72,6 +67,14 @@ namespace System.IO
             // isn't threadsafe.
 
             bool somepathexists = false;
+
+            int length = fullPath.Length;
+
+            // We need to trim the trailing slash or the code will try to create 2 directories of the same name.
+            if (length >= 2 && PathHelpers.EndsInDirectorySeparator(fullPath))
+                length--;
+
+            int lengthRoot = PathInternal.GetRootLength(fullPath);
 
             if (length > lengthRoot)
             {
@@ -100,13 +103,13 @@ namespace System.IO
             bool r = true;
             int firstError = 0;
             String errorString = fullPath;
+
             // If all the security checks succeeded create all the directories
             while (stackDir.Count > 0)
             {
                 String name = stackDir[stackDir.Count - 1];
                 stackDir.RemoveAt(stackDir.Count - 1);
-                if (PathInternal.IsDirectoryTooLong(name))
-                    throw new PathTooLongException(SR.IO_PathTooLong);
+
                 r = Interop.mincore.CreateDirectory(name, ref secAttrs);
                 if (!r && (firstError == 0))
                 {

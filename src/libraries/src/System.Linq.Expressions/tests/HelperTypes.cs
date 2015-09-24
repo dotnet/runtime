@@ -221,6 +221,12 @@ namespace Tests.ExpressionCompiler
     {
         public int II { get; set; }
         public static int SI { get; set; }
+
+        public int this[int i]
+        {
+            get { return 1; }
+            set { }
+        }
     }
 
     public struct PS

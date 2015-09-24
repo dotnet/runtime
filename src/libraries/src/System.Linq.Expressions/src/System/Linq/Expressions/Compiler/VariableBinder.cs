@@ -82,8 +82,8 @@ namespace System.Linq.Expressions.Compiler
             // optimization: inline code for literal lambda's directly
             if (lambda != null)
             {
-                // visit the lambda, but treat it more like a scope
-                _scopes.Push(_tree.Scopes[lambda] = new CompilerScope(lambda, false));
+                // visit the lambda, but treat it like a scope associated with invocation
+                _scopes.Push(_tree.Scopes[node] = new CompilerScope(lambda, false));
                 Visit(MergeScopes(lambda));
                 _scopes.Pop();
                 // visit the invoke's arguments

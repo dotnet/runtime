@@ -25,3 +25,12 @@ extern "C" int32_t SNPrintF(char* string, int32_t size, const char* format, ...)
     va_end(arguments);
     return result;
 }
+
+extern "C" int32_t PrintF(const char* format, ...)
+{
+    va_list arguments;
+    va_start(arguments, format);
+    int result = vprintf(format, arguments);
+    va_end(arguments);
+    return result;
+}

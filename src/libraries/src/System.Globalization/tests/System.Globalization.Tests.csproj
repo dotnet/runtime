@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -18,6 +18,13 @@
   <ItemGroup>
     <Compile Include="CompareInfo.cs" />
     <Compile Include="CompareInfo.TestData.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoCurrencySymbol.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoNegativeInfinitySymbol.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoNumberDecimalDigits.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoNumberGroupSizes.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoNumberNegativePattern.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoPercentNegativePattern.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoPercentPositivePattern.cs" />
     <Compile Include="TextInfo.cs" />
     <Compile Include="CompareInfo\compareinfo.cs" />
     <Compile Include="CompareInfo\CompareInfoCompare.cs" />
@@ -28,6 +35,7 @@
     <Compile Include="CompareInfo\CompareInfoIsSuffix.cs" />
     <Compile Include="CompareInfo\CompareInfoLastIndexOf.cs" />
     <Compile Include="CultureInfo\CultureInfoAll.cs" />
+    <Compile Include="CultureInfo\CultureInfoCalendar.cs" />
     <Compile Include="CultureInfo\CultureInfoClone.cs" />
     <Compile Include="CultureInfo\CultureInfoCompareInfo.cs" />
     <Compile Include="CultureInfo\CultureInfoConstructor2.cs" />
@@ -43,7 +51,6 @@
     <Compile Include="CultureInfo\CultureInfoNativeName.cs" />
     <Compile Include="CultureInfo\CultureInfoParent.cs" />
     <Compile Include="CultureInfo\CultureInfoReadOnly.cs" />
-    <Compile Include="CultureInfo\CultureInfoTextInfo.cs" />
     <Compile Include="CultureInfo\CultureInfoToString.cs" />
     <Compile Include="CultureInfo\CultureInfoTwoLetterISOLanguageName.cs" />
     <Compile Include="CultureInfo\CurrentCulture.cs" />
@@ -54,6 +61,7 @@
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoAMDesignator.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoCalendarWeekRule.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoClone.cs" />
+    <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoData.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoDayNames.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoFirstDayOfWeek.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoFullDateTimePattern.cs" />
@@ -149,6 +157,7 @@
     <Compile Include="TextElementEnumerator\TextElementEnumeratorGetTextElement.cs" />
     <Compile Include="TextElementEnumerator\TextElementEnumeratorMoveNext.cs" />
     <Compile Include="TextElementEnumerator\TextElementEnumeratorReset.cs" />
+    <Compile Include="TextInfo\TestInfoIsRightToLeft.cs" />
     <Compile Include="TextInfo\TextInfoCultureName.cs" />
     <Compile Include="TextInfo\TextInfoEquals.cs" />
     <Compile Include="TextInfo\TextInfoGetHashCode.cs" />

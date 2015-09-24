@@ -391,8 +391,6 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
                 }
                 else if (ti.Task.IsCompleted && !CheckResult(ti.Result))
                     Assert.True(false, string.Format("Failed result verification in Task at Index = {0}", i));
-                else if (ti.Task.Status == TaskStatus.WaitingToRun && ti.Result != -1)
-                    Assert.True(false, string.Format("Result must remain uninitialized for unstarted task"));
             }
 
             if (!expCaught && _caughtException != null)

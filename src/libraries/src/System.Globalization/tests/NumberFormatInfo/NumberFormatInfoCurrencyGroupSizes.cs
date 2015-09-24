@@ -24,7 +24,8 @@ namespace System.Globalization.Tests
         public void PosTest2()
         {
             NumberFormatInfo nfi = new NumberFormatInfo();
-            int[] expected = { 2, 3, 4 };
+            nfi.CurrencyGroupSizes = new int[] { 2, 3, 4 };
+            int[] expected = nfi.CurrencyGroupSizes;
             Assert.Equal(3, expected.Length);
             Assert.Equal(2, expected[0]);
             Assert.Equal(3, expected[1]);
@@ -64,13 +65,30 @@ namespace System.Globalization.Tests
             });
         }
 
+        // TestCurrencyGroupSizesLocale: Verify value of property CurrencyGroupSizes for specific locales
+        [Theory]
+        [InlineData("en-US", 3, 0)]
+        [InlineData("ur-IN", 3, 2)]
+        public void TestCurrencyGroupSizesLocale(string locale, int primaryGroupSize, int secondaryGroupSize)
+        {
+            CultureInfo myTestCulture = new CultureInfo(locale);
+            NumberFormatInfo nfi = myTestCulture.NumberFormat;
+            int count = (secondaryGroupSize == 0) ? 1 : 2;
+
+            Assert.Equal(primaryGroupSize, nfi.CurrencyGroupSizes[0]);
+            Assert.Equal(count, nfi.CurrencyGroupSizes.Length);
+            if (count == 2)
+            {
+                Assert.Equal(secondaryGroupSize, nfi.CurrencyGroupSizes[1]);
+            }
+        }
+
         private void VerificationHelper<T>(int[] intArray) where T : Exception
         {
             NumberFormatInfo nfi = new NumberFormatInfo();
             Assert.Throws<T>(() =>
             {
                 nfi.CurrencyGroupSizes = intArray;
-                int actual = nfi.CurrencyDecimalDigits;
             });
         }
     }

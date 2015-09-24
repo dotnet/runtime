@@ -29,12 +29,18 @@ namespace System.Globalization.Tests
         [Fact]
         public void TestEnUS()
         {
-            DateTimeFormatInfo info = new CultureInfo("en-us").DateTimeFormat;
+            CultureInfo cultureInfo = new CultureInfo("en-us");
+            DateTimeFormatInfo info = cultureInfo.DateTimeFormat;
 
-            VerificationHelper(info, "A.D.", 1);
-            VerificationHelper(info, "a.d.", 1);
-            VerificationHelper(info, "AD", 1);
-            VerificationHelper(info, "ad", 1);
+            string eraName = DateTimeFormatInfoData.GetEraName(cultureInfo);
+            string lowerEraName = eraName.ToLower();
+            string abbrevEraName = DateTimeFormatInfoData.GetAbbreviatedEraName(cultureInfo);
+            string lowerAbbrevEraName = abbrevEraName.ToLower();
+
+            VerificationHelper(info, eraName, 1);
+            VerificationHelper(info, lowerEraName, 1);
+            VerificationHelper(info, abbrevEraName, 1);
+            VerificationHelper(info, lowerAbbrevEraName, 1);
 
             VerificationHelper(info, "C.E.", -1);
             VerificationHelper(info, "CE", -1);
@@ -45,7 +51,6 @@ namespace System.Globalization.Tests
 
         // PosTest3: Call GetEra when DateTimeFormatInfo created from fr-FR
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void TestFrFR()
         {
             DateTimeFormatInfo info = new CultureInfo("fr-FR").DateTimeFormat;

@@ -218,6 +218,11 @@ extern "C" int32_t Close(int32_t fd)
     return close(fd);
 }
 
+extern "C" int32_t Dup(int oldfd)
+{
+    return dup(oldfd);
+}
+
 extern "C" int32_t Unlink(const char* path)
 {
     return unlink(path);
@@ -689,8 +694,7 @@ extern "C" int32_t PosixFAdvise(int32_t fd, int64_t offset, int64_t length, File
 #if HAVE_POSIX_ADVISE
     return posix_fadvise(fd, offset, length, advice);
 #else
-    // Not supported on this platform; however, we don't want to #error here since
-    // currently, this isn't used on platforms where it isn't supported.
+    // Not supported on this platform. Caller can ignore this failure since it's just a hint.
     (void)fd, (void)offset, (void)length, (void)advice;
     return ENOTSUP;
 #endif

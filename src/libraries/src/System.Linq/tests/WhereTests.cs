@@ -10,6 +10,11 @@ namespace System.Linq.Tests
 {
     public class WhereTests
     {
+        private static bool IsEven(int num)
+        {
+            return num % 2 == 0;
+        }
+
         #region Null arguments
 
         [Fact]
@@ -519,6 +524,20 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void WhereSelectSelect_Array_ReturnsExpectedValues()
+        {
+            int[] source = new[] { 1, 2, 3, 4, 5 };
+            Func<int, bool> evenPredicate = (value) => value % 2 == 0;
+            Func<int, int> addSelector = (value) => value + 1;
+
+            IEnumerable<int> result = source.Where(evenPredicate).Select(i => i).Select(addSelector);
+
+            Assert.Equal(2, result.Count());
+            Assert.Equal(3, result.ElementAt(0));
+            Assert.Equal(5, result.ElementAt(1));
+        }
+
+        [Fact]
         public void WhereSelect_List_ReturnsExpectedValues()
         {
             List<int> source = new List<int> { 1, 2, 3, 4, 5 };
@@ -526,6 +545,20 @@ namespace System.Linq.Tests
             Func<int, int> addSelector = (value) => value + 1;
 
             IEnumerable<int> result = source.Where(evenPredicate).Select(addSelector);
+
+            Assert.Equal(2, result.Count());
+            Assert.Equal(3, result.ElementAt(0));
+            Assert.Equal(5, result.ElementAt(1));
+        }
+
+        [Fact]
+        public void WhereSelectSelect_List_ReturnsExpectedValues()
+        {
+            List<int> source = new List<int> { 1, 2, 3, 4, 5 };
+            Func<int, bool> evenPredicate = (value) => value % 2 == 0;
+            Func<int, int> addSelector = (value) => value + 1;
+
+            IEnumerable<int> result = source.Where(evenPredicate).Select(i => i).Select(addSelector);
 
             Assert.Equal(2, result.Count());
             Assert.Equal(3, result.ElementAt(0));
@@ -547,6 +580,20 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void WhereSelectSelect_IReadOnlyCollection_ReturnsExpectedValues()
+        {
+            IReadOnlyCollection<int> source = new ReadOnlyCollection<int>(new List<int> { 1, 2, 3, 4, 5 });
+            Func<int, bool> evenPredicate = (value) => value % 2 == 0;
+            Func<int, int> addSelector = (value) => value + 1;
+
+            IEnumerable<int> result = source.Where(evenPredicate).Select(i => i).Select(addSelector);
+
+            Assert.Equal(2, result.Count());
+            Assert.Equal(3, result.ElementAt(0));
+            Assert.Equal(5, result.ElementAt(1));
+        }
+
+        [Fact]
         public void WhereSelect_ICollection_ReturnsExpectedValues()
         {
             ICollection<int> source = new LinkedList<int>(new List<int> { 1, 2, 3, 4, 5 });
@@ -561,6 +608,20 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void WhereSelectSelect_ICollection_ReturnsExpectedValues()
+        {
+            ICollection<int> source = new LinkedList<int>(new List<int> { 1, 2, 3, 4, 5 });
+            Func<int, bool> evenPredicate = (value) => value % 2 == 0;
+            Func<int, int> addSelector = (value) => value + 1;
+
+            IEnumerable<int> result = source.Where(evenPredicate).Select(i => i).Select(addSelector);
+
+            Assert.Equal(2, result.Count());
+            Assert.Equal(3, result.ElementAt(0));
+            Assert.Equal(5, result.ElementAt(1));
+        }
+
+        [Fact]
         public void WhereSelect_IEnumerable_ReturnsExpectedValues()
         {
             IEnumerable<int> source = Enumerable.Range(1, 5);
@@ -568,6 +629,20 @@ namespace System.Linq.Tests
             Func<int, int> addSelector = (value) => value + 1;
 
             IEnumerable<int> result = source.Where(evenPredicate).Select(addSelector);
+
+            Assert.Equal(2, result.Count());
+            Assert.Equal(3, result.ElementAt(0));
+            Assert.Equal(5, result.ElementAt(1));
+        }
+
+        [Fact]
+        public void WhereSelectSelect_IEnumerable_ReturnsExpectedValues()
+        {
+            IEnumerable<int> source = Enumerable.Range(1, 5);
+            Func<int, bool> evenPredicate = (value) => value % 2 == 0;
+            Func<int, int> addSelector = (value) => value + 1;
+
+            IEnumerable<int> result = source.Where(evenPredicate).Select(i => i).Select(addSelector);
 
             Assert.Equal(2, result.Count());
             Assert.Equal(3, result.ElementAt(0));
@@ -864,6 +939,183 @@ namespace System.Linq.Tests
                 Assert.Same(result, enumerator1);
                 Assert.NotSame(enumerator1, enumerator2);
             }
+        }
+        [Fact]
+        public void SameResultsRepeatCallsIntQuery()
+        {
+            var q = from x in new[] { 9999, 0, 888, -1, 66, -777, 1, 2, -12345 }
+                    where x > Int32.MinValue
+                    select x;
+
+            Assert.Equal(q.Where(IsEven), q.Where(IsEven));
+
+        }
+
+        [Fact]
+        public void SameResultsRepeatCallsStringQuery()
+        {
+            var q = from x in new[] { "!@#$%^", "C", "AAA", "", "Calling Twice", null, "SoS", String.Empty }
+                    select x;
+
+            Assert.Equal(q.Where(string.IsNullOrEmpty), q.Where(string.IsNullOrEmpty));
+
+        }
+
+        [Fact]
+        public void SingleElementPredicateFalse()
+        {
+            int[] source = { 3 };
+            Assert.Empty(source.Where(IsEven));
+        }
+
+        [Fact]
+        public void PredicateFalseForAll()
+        {
+            int[] source = { 9, 7, 15, 3, 27 };
+            Assert.Empty(source.Where(IsEven));
+        }
+
+        [Fact]
+        public void PredicateTrueFirstOnly()
+        {
+            int[] source = { 10, 9, 7, 15, 3, 27 };
+            Assert.Equal(source.Take(1), source.Where(IsEven));
+        }
+
+        [Fact]
+        public void PredicateTrueLastOnly()
+        {
+            int[] source = { 9, 7, 15, 3, 27, 20 };
+            Assert.Equal(source.Skip(source.Length - 1), source.Where(IsEven));
+        }
+
+        [Fact]
+        public void PredicateTrueFirstThirdSixth()
+        {
+            int[] source = { 20, 7, 18, 9, 7, 10, 21 };
+            int[] expected = { 20, 18, 10 };
+            Assert.Equal(expected, source.Where(IsEven));
+        }
+
+        [Fact]
+        public void SourceAllNullsPredicateTrue()
+        {
+            int?[] source = { null, null, null, null };
+            Assert.Equal(source, source.Where(num => true));
+        }
+
+        [Fact]
+        public void SourceEmptyIndexedPredicate()
+        {
+            Assert.Empty(Enumerable.Empty<int>().Where((e, i) => i % 2 == 0));
+        }
+
+        [Fact]
+        public void SingleElementIndexedPredicateTrue()
+        {
+            int[] source = { 2 };
+            Assert.Equal(source, source.Where((e, i) => e % 2 == 0));
+        }
+
+        [Fact]
+        public void SingleElementIndexedPredicateFalse()
+        {
+            int[] source = { 3 };
+            Assert.Empty(source.Where((e, i) => e % 2 == 0));
+        }
+
+        [Fact]
+        public void IndexedPredicateFalseForAll()
+        {
+            int[] source = { 9, 7, 15, 3, 27 };
+            Assert.Empty(source.Where((e, i) => e % 2 == 0));
+        }
+
+        [Fact]
+        public void IndexedPredicateTrueFirstOnly()
+        {
+            int[] source = { 10, 9, 7, 15, 3, 27 };
+            Assert.Equal(source.Take(1), source.Where((e, i) => e % 2 == 0));
+        }
+
+        [Fact]
+        public void IndexedPredicateTrueLastOnly()
+        {
+            int[] source = { 9, 7, 15, 3, 27, 20 };
+            Assert.Equal(source.Skip(source.Length - 1), source.Where((e, i) => e % 2 == 0));
+        }
+
+        [Fact]
+        public void IndexedPredicateTrueFirstThirdSixth()
+        {
+            int[] source = { 20, 7, 18, 9, 7, 10, 21 };
+            int[] expected = { 20, 18, 10 };
+            Assert.Equal(expected, source.Where((e, i) => e % 2 == 0));
+        }
+
+        [Fact]
+        public void SourceAllNullsIndexedPredicateTrue()
+        {
+            int?[] source = { null, null, null, null };
+            Assert.Equal(source, source.Where((num, index) => true));
+        }
+
+        [Fact]
+        public void PredicateSelectsFirst()
+        {
+            int[] source = { -40, 20, 100, 5, 4, 9 };
+            Assert.Equal(source.Take(1), source.Where((e, i) => i == 0));
+        }
+
+        [Fact]
+        public void PredicateSelectsLast()
+        {
+            int[] source = { -40, 20, 100, 5, 4, 9 };
+            Assert.Equal(source.Skip(source.Length - 1), source.Where((e, i) => i == source.Length - 1));
+        }
+
+        private sealed class FastInfiniteEnumerator : IEnumerable<int>, IEnumerator<int>
+        {
+            public IEnumerator<int> GetEnumerator()
+            {
+                return this;
+            }
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return this;
+            }
+            public bool MoveNext()
+            {
+                return true;
+            }
+            public void Reset()
+            {
+            }
+            object IEnumerator.Current
+            {
+                get { return 0; }
+            }
+            public void Dispose()
+            {
+            }
+            public int Current
+            {
+                get { return 0; }
+            }
+        }
+
+        [Fact]
+        [OuterLoop]
+        public void IndexOverflows()
+        {
+            var infiniteWhere = new FastInfiniteEnumerator().Where((e, i) => true);
+            using (var en = infiniteWhere.GetEnumerator())
+                Assert.Throws<OverflowException>(() =>
+                {
+                    while (en.MoveNext())
+                    {
+                    }
+                });
         }
     }
 }

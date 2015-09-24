@@ -4,7 +4,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace System.Net.Http.WinHttpHandlerTests
+namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 {
     public class SendAsyncWinHttpMockHandler : WinHttpHandler
     {

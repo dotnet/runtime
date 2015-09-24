@@ -11,7 +11,6 @@ namespace System.Globalization.Tests
     {
         // PosTest1:Return the CurrencySymbol property in RegionInfo object 1
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void PosTest1()
         {
             CultureInfo myCulture = new CultureInfo("en-US");
@@ -22,12 +21,13 @@ namespace System.Globalization.Tests
 
         // PosTest2:Return the CurrencySymbol property in RegionInfo object 2
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void PosTest2()
         {
             RegionInfo regionInfo = new RegionInfo("zh-CN");
             string strCurrencySymbol = regionInfo.CurrencySymbol;
-            Assert.Equal(strCurrencySymbol, "\u00A5");
+            Assert.True(strCurrencySymbol.Equals("\u00A5") || strCurrencySymbol.Equals("\uffe5"));
+            // \u00A5 is Latin-1 Supplement (Windows), \uffe5 is Halfwidth and Fullwidth Forms (ICU)
+            // String.Normalize(NormalizationForm.FormKD) could also be used if it was ported
         }
     }
 }

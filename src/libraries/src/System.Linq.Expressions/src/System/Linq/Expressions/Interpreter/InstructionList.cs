@@ -963,10 +963,6 @@ namespace System.Linq.Expressions.Interpreter
             Emit(NullableMethodCallInstruction.Create(method.Name, parameters.Length, method));
         }
 
-        public void EmitNullCheck(int stackOffset)
-        {
-            Emit(NullCheckInstruction.Create(stackOffset));
-        }
         #endregion
 
         #region Control Flow

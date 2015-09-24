@@ -22,7 +22,7 @@ namespace System.Net.Http
 
         public virtual bool SupportsRedirectConfiguration
         {
-            get { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
+            get { return _curlHandler.SupportsRedirectConfiguration; }
         }
 
         public bool UseCookies
@@ -90,8 +90,8 @@ namespace System.Net.Http
 
         public bool UseDefaultCredentials
         {
-            get { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
-            set { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
+            get { return _curlHandler.UseDefaultCredentials; }
+            set { _curlHandler.UseDefaultCredentials = value; }
         }
 
         public ICredentials Credentials
@@ -128,8 +128,9 @@ namespace System.Net.Http
 
         public long MaxRequestContentBufferSize
         {
-            get { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
-            set { throw NotImplemented.ByDesignWithMessage("HTTP stack not implemented"); }
+            // See comments in HttpClientHandler.Windows.cs.  This behavior matches.
+            get { return 0; }
+            set { throw new PlatformNotSupportedException(); }
         }
 
         #endregion Properties

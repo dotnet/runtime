@@ -43,6 +43,7 @@ namespace Internal.Cryptography.Pal
             X509Certificate2 leaf,
             List<X509Certificate2> candidates,
             List<X509Certificate2> downloaded,
+            List<X509Certificate2> systemTrusted,
             OidCollection applicationPolicy,
             OidCollection certificatePolicy,
             X509RevocationMode revocationMode,
@@ -161,8 +162,10 @@ namespace Internal.Cryptography.Pal
                         // If the last cert is self signed then it's the root cert, do any extra checks.
                         if (i == maybeRootDepth && IsSelfSigned(elementCert))
                         {
-                            // If the root certificate was downloaded, it's untrusted.
-                            if (downloaded.Contains(elementCert))
+                            // If the root certificate was downloaded or the system
+                            // doesn't trust it, it's untrusted.
+                            if (downloaded.Contains(elementCert) ||
+                                !systemTrusted.Contains(elementCert))
                             {
                                 AddElementStatus(
                                     Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_CERT_UNTRUSTED,
@@ -365,6 +368,7 @@ namespace Internal.Cryptography.Pal
             X509Certificate2 leaf,
             X509Certificate2Collection extraStore,
             List<X509Certificate2> downloaded,
+            List<X509Certificate2> systemTrusted,
             ref TimeSpan remainingDownloadTime)
         {
             List<X509Certificate2> candidates = new List<X509Certificate2>();
@@ -385,6 +389,16 @@ namespace Internal.Cryptography.Pal
                 X509Certificate2Collection systemIntermediateCerts = systemIntermediateStore.Certificates;
                 X509Certificate2Collection userRootCerts = userRootStore.Certificates;
                 X509Certificate2Collection userIntermediateCerts = userIntermediateStore.Certificates;
+
+                // fill the system trusted collection
+                foreach (X509Certificate2 systemRootCert in systemRootCerts)
+                {
+                    systemTrusted.Add(systemRootCert);
+                }
+                foreach (X509Certificate2 userRootCert in userRootCerts)
+                {
+                    systemTrusted.Add(userRootCert);
+                }
 
                 X509Certificate2Collection[] storesToCheck =
                 {

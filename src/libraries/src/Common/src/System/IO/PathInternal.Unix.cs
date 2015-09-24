@@ -47,7 +47,7 @@ namespace System.IO
         /// </summary>
         internal static bool IsPathTooLong(string fullPath)
         {
-            return fullPath.Length >= Interop.libc.MaxPath;
+            return fullPath.Length >= Interop.Sys.MaxPath;
         }
 
         /// <summary>
@@ -55,7 +55,7 @@ namespace System.IO
         /// </summary>
         internal static bool IsDirectoryTooLong(string fullPath)
         {
-            return fullPath.Length >= Interop.libc.MaxPath;
+            return fullPath.Length >= Interop.Sys.MaxPath;
         }
     }
 }

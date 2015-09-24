@@ -2255,7 +2255,7 @@ namespace XmlWriterAPI.Test
                     wSettings.Encoding = Encoding.Unicode;
                     break;
             }
-            Stream writerStream = FilePathUtil.getStream("writer.out"); /*new FileStream("writer.out", FileMode.Create);*/
+            Stream writerStream = new MemoryStream();
             switch (CurVariation.Param.ToString())
             {
                 case "Stream":

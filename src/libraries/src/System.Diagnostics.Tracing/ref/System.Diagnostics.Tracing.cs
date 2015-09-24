@@ -116,7 +116,7 @@ namespace System.Diagnostics.Tracing
         public void EnableEvents(System.Diagnostics.Tracing.EventSource eventSource, System.Diagnostics.Tracing.EventLevel level) { }
         public void EnableEvents(System.Diagnostics.Tracing.EventSource eventSource, System.Diagnostics.Tracing.EventLevel level, System.Diagnostics.Tracing.EventKeywords matchAnyKeyword) { }
         public void EnableEvents(System.Diagnostics.Tracing.EventSource eventSource, System.Diagnostics.Tracing.EventLevel level, System.Diagnostics.Tracing.EventKeywords matchAnyKeyword, System.Collections.Generic.IDictionary<string, string> arguments) { }
-        protected static int EventSourceIndex(System.Diagnostics.Tracing.EventSource eventSource) { return default(int); }
+        public static int EventSourceIndex(System.Diagnostics.Tracing.EventSource eventSource) { return default(int); }
         protected internal virtual void OnEventSourceCreated(System.Diagnostics.Tracing.EventSource eventSource) { }
         protected internal abstract void OnEventWritten(System.Diagnostics.Tracing.EventWrittenEventArgs eventData);
     }
@@ -153,10 +153,11 @@ namespace System.Diagnostics.Tracing
         public EventSource(string eventSourceName, System.Diagnostics.Tracing.EventSourceSettings config) { }
         public EventSource(string eventSourceName, System.Diagnostics.Tracing.EventSourceSettings config, params string[] traits) { }
         public System.Exception ConstructionException { get { return default(System.Exception); } }
-        public static System.Guid CurrentThreadActivityId {[System.Security.SecurityCriticalAttribute]get { return default(System.Guid); } }
+        public static System.Guid CurrentThreadActivityId {[System.Security.SecuritySafeCriticalAttribute]get { return default(System.Guid); } }
         public System.Guid Guid { get { return default(System.Guid); } }
         public string Name { get { return default(string); } }
         public System.Diagnostics.Tracing.EventSourceSettings Settings { get { return default(System.Diagnostics.Tracing.EventSourceSettings); } }
+        public event EventHandler<EventCommandEventArgs> EventCommandExecuted { add {} remove {} }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         ~EventSource() { }

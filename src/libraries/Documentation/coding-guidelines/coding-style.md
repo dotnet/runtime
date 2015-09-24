@@ -1,7 +1,7 @@
 C# Coding Style
 ===============
 
-For C++ files (*.cpp and *.h), we use clang-format (version 3.6+) to ensure code styling. After changing any Cpp or H file and before merging, be sure to run ./formatCode.sh from within the Native directory; this script will ensure that all native code files adhere to the coding style guidelines.
+For C++ files (*.cpp and *.h), we use clang-format (version 3.6+) to ensure code styling. After changing any Cpp or H file and before merging, be sure to run src/Native/format-code.sh; this script will ensure that all native code files adhere to the coding style guidelines.
 
 For non code files (xml etc) our current best guidance is consistency. When editing files, keep new code and changes consistent with the style in the files. For new files, it should conform to the style for that component. Last, if there's a completely new component, anything that is reasonably broadly accepted is fine.
 
@@ -9,7 +9,7 @@ The general rule we follow is "use Visual Studio defaults".
 
 1. We use [Allman style](http://en.wikipedia.org/wiki/Indent_style#Allman_style) braces, where each brace begins on a new line. A single line statement block can go without braces but the block must be properly indented on its own line and it must not be nested in other statement blocks that use braces (See issue [381](https://github.com/dotnet/corefx/issues/381) for examples). 
 2. We use four spaces of indentation (no tabs).
-3. We use `_camelCase` for internal and private members and use `readonly` where possible. Prefix instance fields with `_`, static fields with `s_` and thread static fields with `t_`. 
+3. We use `_camelCase` for internal and private fields and use `readonly` where possible. Prefix instance fields with `_`, static fields with `s_` and thread static fields with `t_`. 
 4. We avoid `this.` unless absolutely necessary. 
 5. We always specify the visibility, even if it's the default (i.e.
    `private string _foo` not `string _foo`).

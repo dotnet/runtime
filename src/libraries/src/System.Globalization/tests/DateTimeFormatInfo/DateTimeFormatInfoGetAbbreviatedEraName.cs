@@ -14,10 +14,12 @@ namespace System.Globalization.Tests
         [Fact]
         public void PosTest1()
         {
-            DateTimeFormatInfo info = new CultureInfo("en-us").DateTimeFormat;
+            CultureInfo cultureInfo = new CultureInfo("en-us");
+            DateTimeFormatInfo info = cultureInfo.DateTimeFormat;
+            string abbreviatedEraName = DateTimeFormatInfoData.GetAbbreviatedEraName(cultureInfo);
 
-            VerificationHelper(info, 0, "AD");
-            VerificationHelper(info, 1, "AD");
+            VerificationHelper(info, 0, abbreviatedEraName);
+            VerificationHelper(info, 1, abbreviatedEraName);
         }
 
         // PosTest2: Call GetAbbreviatedEraName to get Era's abbreviated name on instance created from ctor
@@ -32,12 +34,12 @@ namespace System.Globalization.Tests
 
         // PosTest3: Call GetAbbreviatedEraName to get Era's abbreviated name on ja-JP culture
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)] 
         public void PosTest3()
         {
-            DateTimeFormatInfo info = new CultureInfo("ja-JP").DateTimeFormat;
-            //For Windows<Win7 and others, the default calendar is Gregorian Calendar, AD is expected to be the Era Name
-            String expectedEraName = "\u897F\u66A6";
+            CultureInfo cultureInfo = new CultureInfo("ja-JP");
+            DateTimeFormatInfo info = cultureInfo.DateTimeFormat;
+            string expectedEraName = DateTimeFormatInfoData.GetAbbreviatedEraName(cultureInfo);
+
             VerificationHelper(info, 1, expectedEraName);
         }
 
@@ -61,14 +63,6 @@ namespace System.Globalization.Tests
         {
             string actual = info.GetAbbreviatedEraName(era);
             Assert.Equal(expected, actual);
-        }
-
-        private String Hex(String str)
-        {
-            StringBuilder retValue = new StringBuilder();
-            foreach (Char ch in str)
-                retValue.Append(String.Format("\\u{0:X4}", (int)ch));
-            return retValue.ToString();
         }
     }
 }

@@ -1,14 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using Xunit;
 
-namespace Test
+namespace System.Linq.Parallel.Tests
 {
     public class SequenceEqualTests
     {
@@ -162,6 +160,17 @@ namespace Test
         public static void SequenceEqual_AggregateException(Labeled<ParallelQuery<int>> left, Labeled<ParallelQuery<int>> right, int count, int item)
         {
             Functions.AssertThrowsWrapped<DeliberateTestException>(() => left.Item.SequenceEqual(right.Item, new FailingEqualityComparer<int>()));
+        }
+
+        [Fact]
+        // Should not get the same setting from both operands.
+        public static void SequenceEqual_NoDuplicateSettings()
+        {
+            CancellationToken t = new CancellationTokenSource().Token;
+            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Range(0, 1).WithCancellation(t).SequenceEqual(ParallelEnumerable.Range(0, 1).WithCancellation(t)));
+            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Range(0, 1).WithDegreeOfParallelism(1).SequenceEqual(ParallelEnumerable.Range(0, 1).WithDegreeOfParallelism(1)));
+            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Range(0, 1).WithExecutionMode(ParallelExecutionMode.Default).SequenceEqual(ParallelEnumerable.Range(0, 1).WithExecutionMode(ParallelExecutionMode.Default)));
+            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Range(0, 1).WithMergeOptions(ParallelMergeOptions.Default).SequenceEqual(ParallelEnumerable.Range(0, 1).WithMergeOptions(ParallelMergeOptions.Default)));
         }
 
         [Fact]

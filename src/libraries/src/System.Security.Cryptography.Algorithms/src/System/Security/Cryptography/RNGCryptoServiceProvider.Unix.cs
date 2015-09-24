@@ -5,17 +5,14 @@ namespace System.Security.Cryptography
 {
     internal sealed class RNGCryptoServiceProvider : RandomNumberGenerator
     {
-        public sealed override unsafe void GetBytes(byte[] data)
+        public sealed override void GetBytes(byte[] data)
         {
             ValidateGetBytesArgs(data);
             if (data.Length > 0)
             {
-                fixed (byte* buf = data)
+                if (!Interop.Crypto.GetRandomBytes(data, data.Length))
                 {
-                    if (Interop.libcrypto.RAND_pseudo_bytes(buf, data.Length) == -1)
-                    {
-                        throw Interop.libcrypto.CreateOpenSslCryptographicException();
-                    }
+                    throw Interop.libcrypto.CreateOpenSslCryptographicException();
                 }
             }
         }

@@ -552,7 +552,7 @@ namespace System.IO
             if (PathInternal.IsDirectoryTooLong(destPath))
                 throw new PathTooLongException(SR.IO_PathTooLong);
 
-            StringComparison pathComparison = PathInternal.GetComparison();
+            StringComparison pathComparison = PathInternal.StringComparison;
 
             if (String.Equals(sourcePath, destPath, pathComparison))
                 throw new IOException(SR.IO_SourceDestMustBeDifferent);
