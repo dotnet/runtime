@@ -17,7 +17,7 @@ namespace Internal.Cryptography.Pal
     internal class DirectoryBasedStoreProvider : IStorePal
     {
         // {thumbprint}.1.pfx to {thumbprint}.9.pfx
-        private const int MaxSaveAttempts = 9; 
+        private const int MaxSaveAttempts = 9;
         private const string PfxExtension = ".pfx";
         // *.pfx ({thumbprint}.pfx or {thumbprint}.{ordinal}.pfx)
         private const string PfxWildcard = "*" + PfxExtension;
@@ -80,7 +80,7 @@ namespace Internal.Cryptography.Pal
                 _readOnly = true;
             }
         }
-        
+
         public void Dispose()
         {
             if (_watcher != null)
@@ -229,10 +229,13 @@ namespace Internal.Cryptography.Pal
                 // This may well be the first time that we've added something to this store.
                 Directory.CreateDirectory(_storePath);
 
+                uint userId = Interop.Sys.GetEUid();
+                EnsureDirectoryPermissions(_storePath, userId);
+
                 string thumbprint = copy.Thumbprint;
                 bool findOpenSlot;
 
-                // The odds are low that we'd have a thumbprint colission, but check anyways.
+                // The odds are low that we'd have a thumbprint collision, but check anyways.
                 string existingFilename = FindExistingFilename(copy, _storePath, out findOpenSlot);
 
                 if (existingFilename != null)
@@ -294,28 +297,10 @@ namespace Internal.Cryptography.Pal
 
                 using (FileStream stream = new FileStream(destinationFilename, mode))
                 {
+                    EnsureFilePermissions(stream, userId);
                     byte[] pkcs12 = copy.Export(X509ContentType.Pkcs12);
                     stream.Write(pkcs12, 0, pkcs12.Length);
                 }
-
-#if DEBUG
-                // Verify that we're creating files with u+rw and o-rw, g-rw.
-                const Interop.Sys.Permissions requiredPermissions =
-                    Interop.Sys.Permissions.S_IRUSR |
-                    Interop.Sys.Permissions.S_IWUSR;
-
-                const Interop.Sys.Permissions forbiddenPermissions =
-                    Interop.Sys.Permissions.S_IROTH |
-                    Interop.Sys.Permissions.S_IWOTH |
-                    Interop.Sys.Permissions.S_IRGRP |
-                    Interop.Sys.Permissions.S_IWGRP;
-
-                Interop.Sys.FileStatus stat;
-
-                Debug.Assert(Interop.Sys.Stat(destinationFilename, out stat) == 0);
-                Debug.Assert((stat.Mode & (int)requiredPermissions) == (int)requiredPermissions, "Created PFX has insufficient permissions to function");
-                Debug.Assert((stat.Mode & (int)forbiddenPermissions) == 0, "Created PFX has too broad of permissions");
-#endif
             }
 
             // Null out _certificates so the next call to get_Certificates causes a re-scan.
@@ -390,7 +375,7 @@ namespace Internal.Cryptography.Pal
             for (int i = 1; i <= MaxSaveAttempts; i++)
             {
                 pathBuilder.Length = prefixLength;
-                
+
                 pathBuilder.Append(i);
                 pathBuilder.Append(PfxExtension);
 
@@ -443,6 +428,88 @@ namespace Internal.Cryptography.Pal
             }
 
             return storeName.ToLowerInvariant();
+        }
+
+        /// <summary>
+        /// Checks the store directory has the correct permissions.
+        /// </summary>
+        /// <param name="path">
+        /// The path of the directory to check.
+        /// </param>
+        /// <param name="userId">
+        /// The current userId from GetEUid().
+        /// </param>
+        private static void EnsureDirectoryPermissions(string path, uint userId)
+        {
+            Interop.Sys.FileStatus dirStat;
+            if (Interop.Sys.Stat(path, out dirStat) != 0)
+            {
+                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                throw new CryptographicException(
+                    SR.Cryptography_FileStatusError,
+                    new IOException(error.GetErrorMessage(), error.RawErrno));
+            }
+
+            if (dirStat.Uid != userId)
+            {
+                throw new CryptographicException(SR.Format(SR.Cryptography_OwnerNotCurrentUser, path));
+            }
+
+            if ((dirStat.Mode & (int)Interop.Sys.Permissions.Mask) != (int)Interop.Sys.Permissions.S_IRWXU)
+            {
+                throw new CryptographicException(SR.Format(SR.Cryptography_InvalidDirectoryPermissions, path));
+            }
+        }
+
+        /// <summary>
+        /// Checks the file has the correct permissions.
+        /// </summary>
+        /// <param name="stream">
+        /// The file stream to check.
+        /// </param>
+        /// <param name="userId">
+        /// The current userId from GetEUid().
+        /// </param>
+        private static void EnsureFilePermissions(FileStream stream, uint userId)
+        {
+            // Verify that we're creating files with u+rw and o-rw, g-rw.
+            const Interop.Sys.Permissions requiredPermissions =
+                Interop.Sys.Permissions.S_IRUSR |
+                Interop.Sys.Permissions.S_IWUSR;
+
+            const Interop.Sys.Permissions forbiddenPermissions =
+                Interop.Sys.Permissions.S_IROTH |
+                Interop.Sys.Permissions.S_IWOTH |
+                Interop.Sys.Permissions.S_IRGRP |
+                Interop.Sys.Permissions.S_IWGRP;
+
+            // NOTE: no need to call DangerousAddRef here, since the FileStream is 
+            // held open outside of this method
+            int fileDescriptor = (int)stream.SafeFileHandle.DangerousGetHandle();
+
+            Interop.Sys.FileStatus stat;
+            if (Interop.Sys.FStat(fileDescriptor, out stat) != 0)
+            {
+                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                throw new CryptographicException(
+                    SR.Cryptography_FileStatusError,
+                    new IOException(error.GetErrorMessage(), error.RawErrno));
+            }
+
+            if (stat.Uid != userId)
+            {
+                throw new CryptographicException(SR.Format(SR.Cryptography_OwnerNotCurrentUser, stream.Name));
+            }
+
+            if ((stat.Mode & (int)requiredPermissions) != (int)requiredPermissions)
+            {
+                throw new CryptographicException(SR.Format(SR.Cryptography_InsufficientFilePermissions, stream.Name));
+            }
+
+            if ((stat.Mode & (int)forbiddenPermissions) != 0)
+            {
+                throw new CryptographicException(SR.Format(SR.Cryptography_TooBroadFilePermissions, stream.Name));
+            }
         }
     }
 }
