@@ -166,7 +166,7 @@ arch_sources += mach-support-arm.c
 endif
 
 if ARM64
-arch_sources += mach-support-arm.c
+arch_sources += mach-support-arm64.c
 endif
 
 else
