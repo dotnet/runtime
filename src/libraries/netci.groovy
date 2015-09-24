@@ -29,7 +29,7 @@ def prCCJob = job(Utilities.getFullJobName(project, 'code_coverage_windows', tru
 
 // For both jobs, archive the coverage info and publish an HTML report
 [rollingCCJob, prCCJob].each { newJob ->
-    Utilities.addHtmlPublisher(newJob, 'bin/tests/coverage', 'Code Coverage Report', 'index.html')
+    Utilities.addHtmlPublisher(newJob, 'bin/tests/coverage', 'Code Coverage Report', 'index.htm')
     Utilities.addArchival(newJob, '**/coverage/*,msbuild.log')
 }
 
