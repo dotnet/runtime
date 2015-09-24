@@ -27,15 +27,7 @@ namespace System.Net
         public SafeFreeCredentials AcquireCredentialsHandle(X509Certificate certificate,
             SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
-            SafeFreeCredentials retVal = new SafeFreeCredentials(certificate, protocols, policy);
-            if ((null != retVal) && !retVal.IsInvalid)
-            {
-                // Caller does a ref count decrement
-                bool ignore = false;
-                retVal.DangerousAddRef(ref ignore);
-                //TODO retVal is not getting released now, need to be fixed.
-            }
-            return retVal;
+            return new SafeFreeCredentials(certificate, protocols, policy);
         }
 
         public SecurityStatus AcceptSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteContext context,
@@ -194,7 +186,7 @@ namespace System.Net
                 {
                     long options = GetOptions(credential.Protocols);               
                     IntPtr contextPtr = Interop.OpenSsl.AllocateSslContext(options, credential.CertHandle, isServer, remoteCertRequired);                 
-                    context = new SafeDeleteContext(contextPtr);
+                    context = new SafeDeleteContext(contextPtr, credential);
                 }
 
                 context.DangerousAddRef(ref gotContextReference);
