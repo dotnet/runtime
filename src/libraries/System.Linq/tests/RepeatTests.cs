@@ -36,6 +36,15 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void Repeat_ToList_ProduceCorrectResult()
+        {
+            var list = Enumerable.Repeat(1, 100).ToList();
+            Assert.Equal(list.Count, 100);
+            for (var i = 0; i < list.Count; i++)
+                Assert.Equal(1, list[i]);
+        }
+
+        [Fact]
         public void Repeat_ProduceSameObject()
         {
             object objectInstance = new object();

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Tests.Helpers;
 using System.Text;
@@ -135,7 +136,79 @@ namespace System.Linq.Tests
             Assert.Equal(3, resultList[0]);
             Assert.Equal(4, resultList[0]);
         }
-        
+
+        [Theory]
+        [InlineData(new int[] { }, new string[] { })]
+        [InlineData(new int[] { 1 }, new string[] { "1" })]
+        [InlineData(new int[] { 1, 2, 3 }, new string[] { "1", "2", "3" })]
+        public void ToList_ArrayWhereSelect(int[] sourceIntegers, string[] convertedStrings)
+        {
+            var sourceList = new List<int>(sourceIntegers);
+            var convertedList = new List<string>(convertedStrings);
+
+            var emptyIntegersList = new List<int>();
+            var emptyStringsList = new List<string>();
+
+            Assert.Equal(convertedList, sourceIntegers.Select(i => i.ToString()).ToList());
+
+            Assert.Equal(sourceList, sourceIntegers.Where(i => true).ToList());
+            Assert.Equal(emptyIntegersList, sourceIntegers.Where(i => false).ToList());
+
+            Assert.Equal(convertedList, sourceIntegers.Where(i => true).Select(i => i.ToString()).ToList());
+            Assert.Equal(emptyStringsList, sourceIntegers.Where(i => false).Select(i => i.ToString()).ToList());
+
+            Assert.Equal(convertedList, sourceIntegers.Select(i => i.ToString()).Where(s => s != null).ToList());
+            Assert.Equal(emptyStringsList, sourceIntegers.Select(i => i.ToString()).Where(s => s == null).ToList());
+        }
+
+        [Theory]
+        [InlineData(new int[] { }, new string[] { })]
+        [InlineData(new int[] { 1 }, new string[] { "1" })]
+        [InlineData(new int[] { 1, 2, 3 }, new string[] { "1", "2", "3" })]
+        public void ToList_ListWhereSelect(int[] sourceIntegers, string[] convertedStrings)
+        {
+            var sourceList = new List<int>(sourceIntegers);
+            var convertedList = new List<string>(convertedStrings);
+
+            var emptyIntegersList = new List<int>();
+            var emptyStringsList = new List<string>();
+
+            Assert.Equal(convertedList, sourceList.Select(i => i.ToString()).ToList());
+
+            Assert.Equal(sourceList, sourceList.Where(i => true).ToList());
+            Assert.Equal(emptyIntegersList, sourceList.Where(i => false).ToList());
+
+            Assert.Equal(convertedList, sourceList.Where(i => true).Select(i => i.ToString()).ToList());
+            Assert.Equal(emptyStringsList, sourceList.Where(i => false).Select(i => i.ToString()).ToList());
+
+            Assert.Equal(convertedList, sourceList.Select(i => i.ToString()).Where(s => s != null).ToList());
+            Assert.Equal(emptyStringsList, sourceList.Select(i => i.ToString()).Where(s => s == null).ToList());
+        }
+
+        [Theory]
+        [InlineData(new int[] { }, new string[] { })]
+        [InlineData(new int[] { 1 }, new string[] { "1" })]
+        [InlineData(new int[] { 1, 2, 3 }, new string[] { "1", "2", "3" })]
+        public void ToList_IListWhereSelect(int[] sourceIntegers, string[] convertedStrings)
+        {
+            var sourceList = new ReadOnlyCollection<int>(sourceIntegers);
+            var convertedList = new ReadOnlyCollection<string>(convertedStrings);
+
+            var emptyIntegersList = new ReadOnlyCollection<int>(Array.Empty<int>());
+            var emptyStringsList = new ReadOnlyCollection<string>(Array.Empty<string>());
+
+            Assert.Equal(convertedList, sourceList.Select(i => i.ToString()).ToList());
+
+            Assert.Equal(sourceList, sourceList.Where(i => true).ToList());
+            Assert.Equal(emptyIntegersList, sourceList.Where(i => false).ToList());
+
+            Assert.Equal(convertedList, sourceList.Where(i => true).Select(i => i.ToString()).ToList());
+            Assert.Equal(emptyStringsList, sourceList.Where(i => false).Select(i => i.ToString()).ToList());
+
+            Assert.Equal(convertedList, sourceList.Select(i => i.ToString()).Where(s => s != null).ToList());
+            Assert.Equal(emptyStringsList, sourceList.Select(i => i.ToString()).Where(s => s == null).ToList());
+        }
+
         [Fact]
         public void SameResultsRepeatCallsFromWhereOnIntQuery()
         {
