@@ -52,16 +52,17 @@ namespace Mono.Linker {
 
 		readonly Dictionary<object, Dictionary<IMetadataTokenProvider, object>> custom_annotations = new Dictionary<object, Dictionary<IMetadataTokenProvider, object>> ();
 
-		readonly Stack<object> dependency_stack = new Stack<object> ();
+		Stack<object> dependency_stack;
 		System.Xml.XmlWriter writer;
 		GZipStream zipStream;
 
 		public void PrepareDependenciesDump ()
 		{
+			dependency_stack = new Stack<object> ();
 			System.Xml.XmlWriterSettings settings = new System.Xml.XmlWriterSettings();
 			settings.Indent = true;
 			settings.IndentChars = "\t";
-			var depsFile = File.OpenWrite ("linker-dependencies.xml.gz");
+			var depsFile = File.OpenWrite (string.Format ("linker-dependencies-{0}.xml.gz", DateTime.Now.Ticks));
 			zipStream = new GZipStream (depsFile, CompressionMode.Compress);
 
 			writer = System.Xml.XmlWriter.Create (zipStream, settings);
@@ -317,6 +318,7 @@ namespace Mono.Linker {
 			zipStream.Dispose ();
 			writer = null;
 			zipStream = null;
+			dependency_stack = null;
 		}
 	}
 }
