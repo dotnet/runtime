@@ -116,6 +116,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Fact]
         [ActiveIssue(1993, PlatformID.AnyUnix)]
+        [ActiveIssue(2667, PlatformID.Windows)]
         public static void TestLoadSignedFile()
         {
             // X509Certificate2 can also extract the certificate from a signed file.
