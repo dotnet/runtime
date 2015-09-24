@@ -1056,7 +1056,16 @@ namespace System.Net.Security
                         chain.ChainPolicy.ExtraStore.AddRange(remoteCertificateStore);
                     }
 
-                    sslPolicyErrors |= CertWrapper.VerifyCertificateProperties(chain, remoteCertificateEx, _checkCertName, _serverMode, _hostName);
+                    // Don't call chain.Build here in the common code, because the Windows version
+                    // is potentially going to check for GetLastWin32Error, and that call needs to be
+                    // guaranteed to be right after the call to chain.Build.
+
+                    sslPolicyErrors |= CertWrapper.VerifyCertificateProperties(
+                        chain,
+                        remoteCertificateEx,
+                        _checkCertName,
+                        _serverMode,
+                        _hostName);
                 }
 
                 if (remoteCertValidationCallback != null)
