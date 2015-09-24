@@ -5097,7 +5097,7 @@ void CodeGen::genCallInstruction(GenTreePtr node)
 #if defined(_TARGET_AMD64_) && defined(FEATURE_READYTORUN_COMPILER)
     else if (call->gtEntryPoint.addr != nullptr)
     {
-        genEmitCall(emitter::EC_FUNC_TOKEN_INDIR,
+        genEmitCall((call->gtEntryPoint.accessType == IAT_VALUE) ? emitter::EC_FUNC_TOKEN : emitter::EC_FUNC_TOKEN_INDIR,
                     methHnd,
                     INDEBUG_LDISASM_COMMA(sigInfo)
                     (void*) call->gtEntryPoint.addr,
