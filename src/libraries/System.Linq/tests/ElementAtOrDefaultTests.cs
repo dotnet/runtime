@@ -7,13 +7,8 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class ElementAtOrDefaultTests
+    public class ElementAtOrDefaultTests : EnumerableTests
     {
-        public static IEnumerable<int> NumberRangeGuaranteedNotCollectionType(int num, int count)
-        {
-            for (int i = 0; i < count; i++) yield return num + i;
-        }
-
         [Fact]
         public void SameResultsRepeatCallsIntQuery()
         {
@@ -129,6 +124,12 @@ namespace System.Linq.Tests
             IEnumerable<int> source = NumberRangeGuaranteedNotCollectionType(0, 0);
             
             Assert.Equal(default(int), source.ElementAtOrDefault(0));
+        }
+
+        [Fact]
+        public void NullSource()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).ElementAtOrDefault(2));
         }
     }
 }

@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class TakeTests
+    public class TakeTests : EnumerableTests
     {
         [Fact]
         public void SameResultsRepeatCallsIntQuery()
@@ -33,27 +33,21 @@ namespace System.Linq.Tests
         public void SourceEmptyCountPositive()
         {
             int[] source = { };
-            int[] expected = { };
-            
-            Assert.Equal(expected, source.Take(5));
+            Assert.Empty(source.Take(5));
         }
 
         [Fact]
         public void SourceNonEmptyCountNegative()
         {
             int[] source = { 2, 5, 9, 1 };
-            int[] expected = { };
-            
-            Assert.Equal(expected, source.Take(-5));
+            Assert.Empty(source.Take(-5));
         }
 
         [Fact]
         public void SourceNonEmptyCountZero()
         {
             int[] source = { 2, 5, 9, 1 };
-            int[] expected = { };
-            
-            Assert.Equal(expected, source.Take(0));
+            Assert.Empty(source.Take(0));
         }
 
         [Fact]
@@ -94,7 +88,16 @@ namespace System.Linq.Tests
         public void ThrowsOnNullSource()
         {
             int[] source = null;
-            Assert.Throws<ArgumentNullException>(() => source.Take(5));
+            Assert.Throws<ArgumentNullException>("source", () => source.Take(5));
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerate()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Take(2);
+            // Don't insist on this behaviour, but check its correct if it happens
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
         }
     }
 }

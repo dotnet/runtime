@@ -5,38 +5,14 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Linq.Tests.Helpers;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class ToListTests
+    public class ToListTests : EnumerableTests
     {
-        /// <summary>
-        /// Emulation of async collection change.
-        /// It adds a new element to the sequence each time the Count property touched,
-        /// so the further call of CopyTo method will fail.
-        /// </summary>
-        private class GrowingAfterCountReadCollection : TestCollection<int>
-        {
-            public GrowingAfterCountReadCollection(int[] items) : base(items) { }
-
-            public override int Count
-            {
-                get
-                {
-                    var result = base.Count;
-                    Array.Resize(ref Items, Items.Length + 1);
-                    return result;
-                }
-            }
-        }
-
-        // ============================
-
-
         [Fact]
         public void ToList_AlwaysCreateACopy()
         {
@@ -106,7 +82,7 @@ namespace System.Linq.Tests
         public void ToList_ThrowArgumentNullExceptionWhenSourceIsNull()
         {
             int[] source = null;
-            Assert.Throws<ArgumentNullException>(() => source.ToList());
+            Assert.Throws<ArgumentNullException>("source", () => source.ToList());
         }
 
 
@@ -233,12 +209,11 @@ namespace System.Linq.Tests
         public void SourceIsEmptyICollectionT()
         {
             int[] source = { };
-            int[] expected = { };
 
             ICollection<int> collection = source as ICollection<int>;
 
-            Assert.Equal(expected, source.ToList());
-            Assert.Equal(expected, collection.ToList());
+            Assert.Empty(source.ToList());
+            Assert.Empty(collection.ToList());
         }
 
         [Fact]
@@ -253,35 +228,17 @@ namespace System.Linq.Tests
             Assert.Equal(expected, collection.ToList());
         }
 
-        // Essentially Enumerable.Range(), but guaranteed not to become a collection
-        // type due to any changes in the future.
-        private static IEnumerable<int> NumList(int start, int count)
-        {
-            for (int i = 0; i < count; i++)
-                yield return start + i;
-        }
-
-        private static IEnumerable<int?> NullSeq(long num)
-        {
-            for (long i = 0; i < num; i++)
-                yield return null;
-        }
-
         [Fact]
         public void SourceNotICollectionAndIsEmpty()
         {
-            IEnumerable<int> source = NumList(-4, 0);
-            int[] expected = { };
-            
-            Assert.Null(source as ICollection<int>);
-
-            Assert.Equal(expected, source.ToList());
+            IEnumerable<int> source = NumberRangeGuaranteedNotCollectionType(-4, 0);
+            Assert.Empty(source.ToList());
         }
 
         [Fact]
         public void SourceNotICollectionAndHasElements()
         {
-            IEnumerable<int> source = NumList(-4, 10);
+            IEnumerable<int> source = NumberRangeGuaranteedNotCollectionType(-4, 10);
             int[] expected = { -4, -3, -2, -1, 0, 1, 2, 3, 4, 5 };
 
             Assert.Null(source as ICollection<int>);
@@ -292,7 +249,7 @@ namespace System.Linq.Tests
         [Fact]
         public void SourceNotICollectionAndAllNull()
         {
-            IEnumerable<int?> source = NullSeq(5);
+            IEnumerable<int?> source = RepeatedNullableNumberGuaranteedNotCollectionType(null, 5);
             int?[] expected = { null, null, null, null, null };
 
             Assert.Null(source as ICollection<int>);

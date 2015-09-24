@@ -7,37 +7,9 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class ExceptTests
+    public class ExceptTests : EnumerableTests
     {
         // Class which is passed as an argument for EqualityComparer
-        private class AnagramEqualityComparer : IEqualityComparer<string>
-        {
-            public bool Equals(string x, string y)
-            {
-                if (ReferenceEquals(x, y)) return true;
-                if (x == null | y == null) return false;
-                int length = x.Length;
-                if (length != y.Length) return false;
-                using (var en = x.OrderBy(i => i).GetEnumerator())
-                {
-                    foreach (char c in y.OrderBy(i => i))
-                    {
-                        en.MoveNext();
-                        if (c != en.Current) return false;
-                    }
-                }
-                return true;
-            }
-
-            public int GetHashCode(string obj)
-            {
-                int hash = 0;
-                foreach (char c in obj)
-                    hash ^= (int)c;
-                return hash;
-            }
-        }
-
         [Fact]
         public void SameResultsRepeatCallsIntQuery()
         {
@@ -68,9 +40,7 @@ namespace System.Linq.Tests
         {
             int[] first = { };
             int[] second = { };
-            int[] expected = { };
-
-            Assert.Equal(expected, first.Except(second));
+            Assert.Empty(first.Except(second));
         }
 
         [Fact]
@@ -108,9 +78,7 @@ namespace System.Linq.Tests
         {
             int[] first = { };
             int[] second = { -6, -8, -6, 2, 0, 0, 5, 6 };
-            int[] expected = { };
-
-            Assert.Equal(expected, first.Except(second));
+            Assert.Empty(first.Except(second));
         }
 
         [Fact]
@@ -189,6 +157,33 @@ namespace System.Linq.Tests
             string[] second = null;
 
             var ane = Assert.Throws<ArgumentNullException>("second", () => first.Except(second, new AnagramEqualityComparer()));
+        }
+
+        [Fact]
+        public void FirstNullNoComparer()
+        {
+            string[] first = null;
+            string[] second = { "bBo", "shriC" };
+
+            var ane = Assert.Throws<ArgumentNullException>("first", () => first.Except(second));
+        }
+
+        [Fact]
+        public void SecondNullNoComparer()
+        {
+            string[] first = { "Bob", "Tim", "Robert", "Chris" };
+            string[] second = null;
+
+            var ane = Assert.Throws<ArgumentNullException>("second", () => first.Except(second));
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerate()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Except(Enumerable.Range(0, 3));
+            // Don't insist on this behaviour, but check its correct if it happens
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
         }
     }
 }

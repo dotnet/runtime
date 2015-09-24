@@ -7,56 +7,8 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class ContainsTests
+    public class ContainsTests : EnumerableTests
     {
-        private class AnagramEqualityComparer : IEqualityComparer<string>
-        {
-            public bool Equals(string x, string y)
-            {
-                if (ReferenceEquals(x, y)) return true;
-                if (x == null | y == null) return false;
-                int length = x.Length;
-                if (length != y.Length) return false;
-                using (var en = x.OrderBy(i => i).GetEnumerator())
-                {
-                    foreach (char c in y.OrderBy(i => i))
-                    {
-                        en.MoveNext();
-                        if (c != en.Current) return false;
-                    }
-                }
-                return true;
-            }
-
-            public int GetHashCode(string obj)
-            {
-                int hash = 0;
-                foreach (char c in obj)
-                    hash ^= (int)c;
-                return hash;
-            }
-        }
-
-        public static IEnumerable<int> NumberRangeGuaranteedNotCollectionType(int num, int count)
-        {
-            for (int i = 0; i < count; i++) yield return num + i;
-        }
-
-        public static IEnumerable<int?> NullableNumberRangeGuaranteedNotCollectionType(int num, int count)
-        {
-            for (int i = 0; i < count; i++) yield return num + i;
-        }
-
-        public static IEnumerable<int> RepeatedNumberGuaranteedNotCollectionType(int num, long count)
-        {
-            for (long i = 0; i < count; i++) yield return num;
-        }
-
-        public static IEnumerable<int?> RepeatedNullableNumberGuaranteedNotCollectionType(int? num, long count)
-        {
-            for (long i = 0; i < count; i++) yield return num;
-        }
-
         [Fact]
         public void SameResultsRepeatCallsIntQuery()
         {
@@ -220,8 +172,8 @@ namespace System.Linq.Tests
         {
             IEnumerable<int> source = null;
             
-            Assert.Throws<ArgumentNullException>(() => source.Contains(42));
-            Assert.Throws<ArgumentNullException>(() => source.Contains(42, EqualityComparer<int>.Default));
+            Assert.Throws<ArgumentNullException>("source", () => source.Contains(42));
+            Assert.Throws<ArgumentNullException>("source", () => source.Contains(42, EqualityComparer<int>.Default));
         }
     }
 }
