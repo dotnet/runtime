@@ -529,7 +529,7 @@ namespace System.Linq
         }
 
 
-        internal sealed class SelectArrayIterator<TSource, TResult> : Iterator<TResult>, IArrayProvider<TResult>
+        internal sealed class SelectArrayIterator<TSource, TResult> : Iterator<TResult>, IArrayProvider<TResult>, IListProvider<TResult>
         {
             private readonly TSource[] _source;
             private readonly Func<TSource, TResult> _selector;
@@ -573,9 +573,20 @@ namespace System.Linq
                 }
                 return results;
             }
+
+            public List<TResult> ToList()
+            {
+                TSource[] source = _source;
+                var results = new List<TResult>(source.Length);
+                for (int i = 0; i < source.Length; i++)
+                {
+                    results.Add(_selector(source[i]));
+                }
+                return results;
+            }
         }
 
-        internal sealed class SelectListIterator<TSource, TResult> : Iterator<TResult>, IArrayProvider<TResult>
+        internal sealed class SelectListIterator<TSource, TResult> : Iterator<TResult>, IArrayProvider<TResult>, IListProvider<TResult>
         {
             private readonly List<TSource> _source;
             private readonly Func<TSource, TResult> _selector;
@@ -628,9 +639,20 @@ namespace System.Linq
                 }
                 return results;
             }
+
+            public List<TResult> ToList()
+            {
+                int count = _source.Count;
+                var results = new List<TResult>(count);
+                for (int i = 0; i < count; i++)
+                {
+                    results.Add(_selector(_source[i]));
+                }
+                return results;
+            }
         }
 
-        internal sealed class SelectIListIterator<TSource, TResult> : Iterator<TResult>, IArrayProvider<TResult>
+        internal sealed class SelectIListIterator<TSource, TResult> : Iterator<TResult>, IArrayProvider<TResult>, IListProvider<TResult>
         {
             private readonly IList<TSource> _source;
             private readonly Func<TSource, TResult> _selector;
@@ -690,6 +712,17 @@ namespace System.Linq
                 for (int i = 0; i < results.Length; i++)
                 {
                     results[i] = _selector(_source[i]);
+                }
+                return results;
+            }
+
+            public List<TResult> ToList()
+            {
+                int count = _source.Count;
+                var results = new List<TResult>(count);
+                for (int i = 0; i < count; i++)
+                {
+                    results.Add(_selector(_source[i]));
                 }
                 return results;
             }
@@ -1223,7 +1256,8 @@ namespace System.Linq
         public static List<TSource> ToList<TSource>(this IEnumerable<TSource> source)
         {
             if (source == null) throw Error.ArgumentNull("source");
-            return new List<TSource>(source);
+            IListProvider<TSource> listProvider = source as IListProvider<TSource>;
+            return listProvider != null ? listProvider.ToList() : new List<TSource>(source);
         }
 
         public static Dictionary<TKey, TSource> ToDictionary<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector)
@@ -1710,7 +1744,7 @@ namespace System.Linq
             return new RangeIterator(start, count);
         }
 
-        private sealed class RangeIterator : Iterator<int>, IArrayProvider<int>
+        private sealed class RangeIterator : Iterator<int>, IArrayProvider<int>, IListProvider<int>
         {
             private readonly int _start;
             private readonly int _end;
@@ -1760,6 +1794,17 @@ namespace System.Linq
 
                 return array;
             }
+
+            public List<int> ToList()
+            {
+                List<int> list = new List<int>(_end - _start);
+                for (int cur = _start; cur != _end; cur++)
+                {
+                    list.Add(cur);
+                }
+
+                return list;
+            }
         }
 
         public static IEnumerable<TResult> Repeat<TResult>(TResult element, int count)
@@ -1768,7 +1813,7 @@ namespace System.Linq
             return new RepeatIterator<TResult>(element, count);
         }
 
-        private sealed class RepeatIterator<TResult> : Iterator<TResult>, IArrayProvider<TResult>
+        private sealed class RepeatIterator<TResult> : Iterator<TResult>, IArrayProvider<TResult>, IListProvider<TResult>
         {
             private readonly int _count;
             private int _sent;
@@ -1810,6 +1855,14 @@ namespace System.Linq
                 }
 
                 return array;
+            }
+
+            public List<TResult> ToList()
+            {
+                List<TResult> list = new List<TResult>(_count);
+                for (int i = 0; i != _count; ++i) list.Add(current);
+
+                return list;
             }
         }
 
@@ -3137,6 +3190,18 @@ namespace System.Linq
         TElement[] ToArray();
     }
 
+    /// <summary>
+    /// An iterator that can produce a <see cref="List{TElement}"/> through an optimized path.
+    /// </summary>
+    internal interface IListProvider<TElement>
+    {
+        /// <summary>
+        /// Produce a <see cref="List{TElement}"/> of the sequence through an optimized path.
+        /// </summary>
+        /// <returns>The <see cref="List{TElement}"/>.</returns>
+        List<TElement> ToList();
+    }
+
     internal class IdentityFunction<TElement>
     {
         public static Func<TElement, TElement> Instance
@@ -3162,7 +3227,7 @@ namespace System.Linq
         bool Contains(TKey key);
     }
 
-    public class Lookup<TKey, TElement> : IEnumerable<IGrouping<TKey, TElement>>, ILookup<TKey, TElement>, IArrayProvider<IGrouping<TKey, TElement>>
+    public class Lookup<TKey, TElement> : IEnumerable<IGrouping<TKey, TElement>>, ILookup<TKey, TElement>, IArrayProvider<IGrouping<TKey, TElement>>, IListProvider<IGrouping<TKey, TElement>>
     {
         private IEqualityComparer<TKey> _comparer;
         private Grouping<TKey, TElement>[] _groupings;
@@ -3248,6 +3313,21 @@ namespace System.Linq
                 } while (g != _lastGrouping);
             }
             return array;
+        }
+
+        List<IGrouping<TKey, TElement>> IListProvider<IGrouping<TKey, TElement>>.ToList()
+        {
+            List<IGrouping<TKey, TElement>> list = new List<IGrouping<TKey, TElement>>(_count);
+            Grouping<TKey, TElement> g = _lastGrouping;
+            if (g != null)
+            {
+                do
+                {
+                    g = g.next;
+                    list.Add(g);
+                } while (g != _lastGrouping);
+            }
+            return list;
         }
 
         public IEnumerable<TResult> ApplyResultSelector<TResult>(Func<TKey, IEnumerable<TElement>, TResult> resultSelector)
@@ -3575,7 +3655,7 @@ namespace System.Linq
         }
     }
 
-    internal class GroupedEnumerable<TSource, TKey, TElement> : IEnumerable<IGrouping<TKey, TElement>>, IArrayProvider<IGrouping<TKey, TElement>>
+    internal class GroupedEnumerable<TSource, TKey, TElement> : IEnumerable<IGrouping<TKey, TElement>>, IArrayProvider<IGrouping<TKey, TElement>>, IListProvider<IGrouping<TKey, TElement>>
     {
         private IEnumerable<TSource> _source;
         private Func<TSource, TKey> _keySelector;
@@ -3608,9 +3688,15 @@ namespace System.Linq
             IArrayProvider<IGrouping<TKey, TElement>> lookup = Lookup<TKey, TElement>.Create<TSource>(_source, _keySelector, _elementSelector, _comparer);
             return lookup.ToArray();
         }
+
+        public List<IGrouping<TKey, TElement>> ToList()
+        {
+            IListProvider<IGrouping<TKey, TElement>> lookup = Lookup<TKey, TElement>.Create<TSource>(_source, _keySelector, _elementSelector, _comparer);
+            return lookup.ToList();
+        }
     }
 
-    internal abstract class OrderedEnumerable<TElement> : IOrderedEnumerable<TElement>, IArrayProvider<TElement>
+    internal abstract class OrderedEnumerable<TElement> : IOrderedEnumerable<TElement>, IArrayProvider<TElement>, IListProvider<TElement>
     {
         internal IEnumerable<TElement> source;
 
@@ -3641,6 +3727,20 @@ namespace System.Linq
             }
 
             return array;
+        }
+
+        public List<TElement> ToList()
+        {
+            Buffer<TElement> buffer = new Buffer<TElement>(source);
+            int count = buffer.count;
+            List<TElement> list = new List<TElement>(count);
+            if (count > 0)
+            {
+                int[] map = SortedMap(buffer);
+                for (int i = 0; i != count; i++) list.Add(buffer.items[map[i]]);
+            }
+
+            return list;
         }
 
         internal abstract EnumerableSorter<TElement> GetEnumerableSorter(EnumerableSorter<TElement> next);
