@@ -84,7 +84,6 @@
     <Compile Include="ThenByTests.cs" />
     <Compile Include="ToLookupTests.cs" />
     <Compile Include="AsEnumerableTests.cs" />
-    <Compile Include="LegacyTests\WhereTests.cs" />
     <Compile Include="ZipTests.cs" />
   </ItemGroup>
   <ItemGroup>
