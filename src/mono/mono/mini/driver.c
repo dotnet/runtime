@@ -1205,6 +1205,7 @@ mini_usage (void)
 		"                           Currently the only supported option is 'disable'.\n"
 		"    --llvm, --nollvm       Controls whenever the runtime uses LLVM to compile code.\n"
 	        "    --gc=[sgen,boehm]      Select SGen or Boehm GC (runs mono or mono-sgen)\n"
+		"    --arch=[32,64]         Select architecture (runs mono32 or mono64)\n"
 #ifdef HOST_WIN32
 	        "    --mixed-mode           Enable mixed-mode image support.\n"
 #endif
@@ -1462,6 +1463,36 @@ switch_gc (char* argv[], const char* target_gc)
 #endif
 }
 
+static void
+switch_arch (char* argv[], const char* target_arch)
+{
+	GString *path;
+
+	if ((strcmp (target_arch, "32") == 0 && strcmp (ARCHITECTURE, "x86") == 0) ||
+		(strcmp (target_arch, "64") == 0 && strcmp (ARCHITECTURE, "amd64") == 0)) {
+		return; /* matching arch loaded */
+	}
+
+	path = g_string_new (argv [0]);
+
+	/* Remove arch suffix if present */
+	if (strstr (argv [0], "32") || strstr (argv [0], "64")) {
+		g_string_truncate (path, path->len - 2);
+
+	}
+
+	g_string_append (path, target_arch);
+
+#ifdef HAVE_EXECVP
+	if (execvp (path->str, argv) < 0) {
+		fprintf (stderr, "Error: --arch=%s Failed to switch to '%s'.\n", target_arch, path->str);
+		exit (1);
+	}
+#else
+	fprintf (stderr, "Error: --arch=<NAME> option not supported on this platform.\n");
+#endif
+}
+
 /**
  * mono_main:
  * @argc: number of arguments in the argv array
@@ -1587,6 +1618,10 @@ mono_main (int argc, char* argv[])
 			switch_gc (argv, "sgen");
 		} else if (strcmp (argv [i], "--gc=boehm") == 0) {
 			switch_gc (argv, "boehm");
+		} else if (strcmp (argv [i], "--arch=32") == 0) {
+			switch_arch (argv, "32");
+		} else if (strcmp (argv [i], "--arch=64") == 0) {
+			switch_arch (argv, "64");
 		} else if (strcmp (argv [i], "--config") == 0) {
 			if (i +1 >= argc){
 				fprintf (stderr, "error: --config requires a filename argument\n");
