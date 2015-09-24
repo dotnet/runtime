@@ -1,17 +1,16 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections;
 using System.Collections.Generic;
+using System.Collections;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Runtime.InteropServices;
-using System.Threading;
-using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace System.Net.Sockets
 {
