@@ -1187,6 +1187,13 @@ namespace System.Linq.Expressions.Interpreter
                         Compile(node.Operand);
                         _instructions.EmitDecrement(node.Type);
                         break;
+                    case ExpressionType.UnaryPlus:
+                        Compile(node.Operand);
+                        break;
+                    case ExpressionType.IsTrue:
+                    case ExpressionType.IsFalse:
+                        EmitUnaryBoolCheck(node);
+                        break;
                     default:
                         throw new PlatformNotSupportedException(SR.Format(SR.UnsupportedExpressionType, node.NodeType));
                 }
@@ -1212,6 +1219,30 @@ namespace System.Linq.Expressions.Interpreter
             else
             {
                 _instructions.EmitCall(node.Method);
+            }
+        }
+
+        private void EmitUnaryBoolCheck(UnaryExpression node)
+        {
+            Compile(node.Operand);
+            if (node.IsLifted)
+            {
+                var notNull = _instructions.MakeLabel();
+                var computed = _instructions.MakeLabel();
+
+                _instructions.EmitCoalescingBranch(notNull);
+                _instructions.EmitBranch(computed);
+
+                _instructions.MarkLabel(notNull);
+                _instructions.EmitLoad(node.NodeType == ExpressionType.IsTrue);
+                _instructions.EmitEqual(typeof(bool));
+
+                _instructions.MarkLabel(computed);
+            }
+            else
+            {
+                _instructions.EmitLoad(node.NodeType == ExpressionType.IsTrue);
+                _instructions.EmitEqual(typeof(bool));
             }
         }
 
@@ -2107,13 +2138,6 @@ namespace System.Linq.Expressions.Interpreter
             }
             else
             {
-                if (!node.Method.IsStatic)
-                {
-                    // emit null check, our instructions don't always do this when they're
-                    // calling via a delegate.  
-                    _instructions.EmitNullCheck(node.Arguments.Count);
-                }
-
                 if (updaters == null)
                 {
                     _instructions.EmitCall(node.Method, parameters);

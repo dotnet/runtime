@@ -11,7 +11,9 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace System.Net.Http.WinHttpHandlerTests
+// Can't use "WinHttpHandler.Functional.Tests" in namespace as it won't compile.
+// WinHttpHandler is a class and not a namespace and can't be part of namespace paths.
+namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 {
     public class WinHttpHandlerTest
     {

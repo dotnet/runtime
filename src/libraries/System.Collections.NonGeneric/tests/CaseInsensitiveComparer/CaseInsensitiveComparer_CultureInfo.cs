@@ -140,6 +140,7 @@ public class CaseInsensitiveComparer_CultureInfo
 
 
     [Fact]
+    [ActiveIssue(2769, PlatformID.AnyUnix)]
     public static void ExecuteCaseInsensitiveComparer_CultureInfo()
     {
         bool bResult = false;

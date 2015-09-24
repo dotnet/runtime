@@ -88,9 +88,11 @@ namespace System.Linq.Expressions.Compiler
         /// </summary>
         private LambdaCompiler(AnalyzedTree tree, LambdaExpression lambda, MethodBuilder method)
         {
-            _hasClosureArgument = tree.Scopes[lambda].NeedsClosure;
+            var scope = tree.Scopes[lambda];
+            var hasClosureArgument = scope.NeedsClosure;
+
             Type[] paramTypes = GetParameterTypes(lambda);
-            if (_hasClosureArgument)
+            if (hasClosureArgument)
             {
                 paramTypes = paramTypes.AddFirst(typeof(Closure));
             }
@@ -99,7 +101,7 @@ namespace System.Linq.Expressions.Compiler
             method.SetParameters(paramTypes);
             var paramNames = lambda.Parameters.Map(p => p.Name);
             // parameters are index from 1, with closure argument we need to skip the first arg
-            int startIndex = _hasClosureArgument ? 2 : 1;
+            int startIndex = hasClosureArgument ? 2 : 1;
             for (int i = 0; i < paramNames.Length; i++)
             {
                 method.DefineParameter(i + startIndex, ParameterAttributes.None, paramNames[i]);
@@ -109,11 +111,12 @@ namespace System.Linq.Expressions.Compiler
             _lambda = lambda;
             _typeBuilder = (TypeBuilder)method.DeclaringType.GetTypeInfo();
             _method = method;
+            _hasClosureArgument = hasClosureArgument;
 
             _ilg = method.GetILGenerator();
 
             // These are populated by AnalyzeTree/VariableBinder
-            _scope = tree.Scopes[lambda];
+            _scope = scope;
             _boundConstants = tree.Constants[lambda];
 
             InitializeMethod();
@@ -122,7 +125,10 @@ namespace System.Linq.Expressions.Compiler
         /// <summary>
         /// Creates a lambda compiler for an inlined lambda
         /// </summary>
-        private LambdaCompiler(LambdaCompiler parent, LambdaExpression lambda)
+        private LambdaCompiler(
+            LambdaCompiler parent, 
+            LambdaExpression lambda, 
+            InvocationExpression invocation)
         {
             _tree = parent._tree;
             _lambda = lambda;
@@ -130,7 +136,8 @@ namespace System.Linq.Expressions.Compiler
             _ilg = parent._ilg;
             _hasClosureArgument = parent._hasClosureArgument;
             _typeBuilder = parent._typeBuilder;
-            _scope = _tree.Scopes[lambda];
+            // inlined scopes are associated with invocation, not with the lambda
+            _scope = _tree.Scopes[invocation];
             _boundConstants = parent._boundConstants;
         }
 

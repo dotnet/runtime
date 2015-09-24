@@ -1,13 +1,11 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using Xunit;
 
-namespace Test
+namespace System.Linq.Parallel.Tests
 {
     public class MinTests
     {
@@ -107,6 +105,10 @@ namespace Test
             Assert.Equal(0, query.Select(x => (float?)x).Min());
             Assert.Equal(min, query.Min(x => -(float)x));
             Assert.Equal(min, query.Min(x => -(float?)x));
+            Assert.Equal(float.NegativeInfinity, query.Select(x => x == count / 2 ? float.NegativeInfinity : x).Min());
+            Assert.Equal(float.NegativeInfinity, query.Select(x => x == count / 2 ? (float?)float.NegativeInfinity : x).Min());
+            Assert.Equal(float.NaN, query.Select(x => x == count / 2 ? float.NaN : x).Min());
+            Assert.Equal(float.NaN, query.Select(x => x == count / 2 ? (float?)float.NaN : x).Min());
         }
 
         [Theory]
@@ -127,6 +129,21 @@ namespace Test
         }
 
         [Theory]
+        [MemberData("MinData", (object)(new int[] { 3 }))]
+        public static void Min_Float_Special(Labeled<ParallelQuery<int>> labeled, int count, float min)
+        {
+            // Null is defined as 'least' when ordered, but is not the minimum.
+            Func<int, float?> translate = x =>
+                x % 3 == 0 ? (float?)null :
+                x % 3 == 1 ? float.MinValue :
+                float.NaN;
+
+            ParallelQuery<int> query = labeled.Item;
+            Assert.Equal(float.NaN, query.Select(x => x == count / 2 ? float.NaN : float.MinValue).Min());
+            Assert.Equal(float.NaN, query.Select(translate).Min());
+        }
+
+        [Theory]
         [MemberData("MinData", (object)(new int[] { 1, 2, 16 }))]
         public static void Min_Float_AllNull(Labeled<ParallelQuery<int>> labeled, int count, float min)
         {
@@ -144,6 +161,10 @@ namespace Test
             Assert.Equal(0, query.Select(x => (double?)x).Min());
             Assert.Equal(min, query.Min(x => -(double)x));
             Assert.Equal(min, query.Min(x => -(double?)x));
+            Assert.Equal(double.NegativeInfinity, query.Select(x => x == count / 2 ? double.NegativeInfinity : x).Min());
+            Assert.Equal(double.NegativeInfinity, query.Select(x => x == count / 2 ? (double?)double.NegativeInfinity : x).Min());
+            Assert.Equal(double.NaN, query.Select(x => x == count / 2 ? double.NaN : x).Min());
+            Assert.Equal(double.NaN, query.Select(x => x == count / 2 ? (double?)double.NaN : x).Min());
         }
 
         [Theory]
@@ -152,6 +173,21 @@ namespace Test
         public static void Min_Double_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, double min)
         {
             Min_Double(labeled, count, min);
+        }
+
+        [Theory]
+        [MemberData("MinData", (object)(new int[] { 3 }))]
+        public static void Min_Double_Special(Labeled<ParallelQuery<int>> labeled, int count, double min)
+        {
+            // Null is defined as 'least' when ordered, but is not the minimum.
+            Func<int, double?> translate = x =>
+                x % 3 == 0 ? (double?)null :
+                x % 3 == 1 ? double.MinValue :
+                double.NaN;
+
+            ParallelQuery<int> query = labeled.Item;
+            Assert.Equal(double.NaN, query.Select(x => x == count / 2 ? double.NaN : double.MinValue).Min());
+            Assert.Equal(double.NaN, query.Select(translate).Min());
         }
 
         [Theory]
@@ -261,7 +297,7 @@ namespace Test
             Assert.Null(labeled.Item.Min(x => (float?)x));
             Assert.Null(labeled.Item.Min(x => (double?)x));
             Assert.Null(labeled.Item.Min(x => (decimal?)x));
-            Assert.Null(labeled.Item.Min(x => new NotComparable(x)));
+            Assert.Null(labeled.Item.Min(x => new object()));
         }
 
         [Theory]
@@ -273,7 +309,7 @@ namespace Test
             Assert.Throws<InvalidOperationException>(() => labeled.Item.Min(x => (float)x));
             Assert.Throws<InvalidOperationException>(() => labeled.Item.Min(x => (double)x));
             Assert.Throws<InvalidOperationException>(() => labeled.Item.Min(x => (decimal)x));
-            Assert.Throws<InvalidOperationException>(() => labeled.Item.Min(x => KeyValuePair.Create(x, x)));
+            Assert.Throws<InvalidOperationException>(() => labeled.Item.Min(x => new NotComparable(x)));
         }
 
         [Theory]
@@ -298,7 +334,7 @@ namespace Test
             Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Min(x => (decimal)x));
             Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Min(x => (decimal?)x));
 
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Min(x => KeyValuePair.Create(x, x)));
+            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Min(x => new NotComparable(x)));
         }
 
         [Theory]
@@ -320,7 +356,7 @@ namespace Test
             Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.Min((Func<int, decimal>)(x => { throw new DeliberateTestException(); })));
             Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.Min((Func<int, decimal?>)(x => { throw new DeliberateTestException(); })));
 
-            Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.Min((Func<int, KeyValuePair<int, int>>)(x => { throw new DeliberateTestException(); })));
+            Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.Min((Func<int, NotComparable>)(x => { throw new DeliberateTestException(); })));
         }
 
         [Theory]
@@ -358,20 +394,10 @@ namespace Test
             Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<decimal?>)null).Min());
             Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Repeat((decimal?)0, 1).Min((Func<decimal?, decimal>)null));
 
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<KeyValuePair<int, int>>)null).Min());
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Repeat(0, 1).Min((Func<int, KeyValuePair<int, int>>)null));
+            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<NotComparable>)null).Min());
+            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Repeat(0, 1).Min((Func<int, NotComparable>)null));
             Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<object>)null).Min());
             Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Repeat(new object(), 1).Min((Func<object, object>)null));
-        }
-
-        private class NotComparable
-        {
-            private int x;
-
-            public NotComparable(int x)
-            {
-                this.x = x;
-            }
         }
     }
 }

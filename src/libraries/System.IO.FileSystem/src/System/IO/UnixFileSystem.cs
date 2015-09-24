@@ -12,9 +12,9 @@ namespace System.IO
     /// <summary>Provides an implementation of FileSystem for Unix systems.</summary>
     internal sealed partial class UnixFileSystem : FileSystem
     {
-        public override int MaxPath { get { return Interop.libc.MaxPath; } }
+        public override int MaxPath { get { return Interop.Sys.MaxPath; } }
 
-        public override int MaxDirectoryPath { get { return Interop.libc.MaxPath; } }
+        public override int MaxDirectoryPath { get { return Interop.Sys.MaxPath; } }
 
         public override FileStreamBase Open(string fullPath, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, FileStream parent)
         {
@@ -569,7 +569,7 @@ namespace System.IO
 
         public override string GetCurrentDirectory()
         {
-            return Interop.libc.getcwd();
+            return Interop.Sys.GetCwd();
         }
 
         public override void SetCurrentDirectory(string fullPath)

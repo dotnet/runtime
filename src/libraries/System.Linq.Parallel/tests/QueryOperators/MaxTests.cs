@@ -1,13 +1,11 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using Xunit;
 
-namespace Test
+namespace System.Linq.Parallel.Tests
 {
     public class MaxTests
     {
@@ -108,6 +106,8 @@ namespace Test
             Assert.Equal(max, query.Select(x => (float?)x).Max());
             Assert.Equal(0, query.Max(x => -(float)x));
             Assert.Equal(0, query.Max(x => -(float?)x));
+            Assert.Equal(float.PositiveInfinity, query.Select(x => x == count / 2 ? float.PositiveInfinity : x).Max());
+            Assert.Equal(float.PositiveInfinity, query.Select(x => x == count / 2 ? (float?)float.PositiveInfinity : x).Max());
         }
 
         [Theory]
@@ -145,6 +145,8 @@ namespace Test
             Assert.Equal(max, query.Select(x => (double?)x).Max());
             Assert.Equal(0, query.Max(x => -(double)x));
             Assert.Equal(0, query.Max(x => -(double?)x));
+            Assert.Equal(double.PositiveInfinity, query.Select(x => x == count / 2 ? double.PositiveInfinity : x).Max());
+            Assert.Equal(double.PositiveInfinity, query.Select(x => x == count / 2 ? (double?)double.PositiveInfinity : x).Max());
         }
 
         [Theory]
@@ -262,7 +264,7 @@ namespace Test
             Assert.Null(labeled.Item.Max(x => (float?)x));
             Assert.Null(labeled.Item.Max(x => (double?)x));
             Assert.Null(labeled.Item.Max(x => (decimal?)x));
-            Assert.Null(labeled.Item.Max(x => new NotComparable(x)));
+            Assert.Null(labeled.Item.Max(x => new object()));
         }
 
         [Theory]
@@ -274,7 +276,7 @@ namespace Test
             Assert.Throws<InvalidOperationException>(() => labeled.Item.Max(x => (float)x));
             Assert.Throws<InvalidOperationException>(() => labeled.Item.Max(x => (double)x));
             Assert.Throws<InvalidOperationException>(() => labeled.Item.Max(x => (decimal)x));
-            Assert.Throws<InvalidOperationException>(() => labeled.Item.Max(x => KeyValuePair.Create(x, x)));
+            Assert.Throws<InvalidOperationException>(() => labeled.Item.Max(x => new NotComparable(x)));
         }
 
         [Theory]
@@ -299,7 +301,7 @@ namespace Test
             Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Max(x => (decimal)x));
             Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Max(x => (decimal?)x));
 
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Max(x => KeyValuePair.Create(x, x)));
+            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Max(x => new NotComparable(x)));
         }
 
         [Theory]
@@ -321,7 +323,7 @@ namespace Test
             Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.Max((Func<int, decimal>)(x => { throw new DeliberateTestException(); })));
             Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.Max((Func<int, decimal?>)(x => { throw new DeliberateTestException(); })));
 
-            Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.Max((Func<int, KeyValuePair<int, int>>)(x => { throw new DeliberateTestException(); })));
+            Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.Max((Func<int, NotComparable>)(x => { throw new DeliberateTestException(); })));
         }
 
         [Theory]
@@ -359,20 +361,10 @@ namespace Test
             Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<decimal?>)null).Max());
             Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Repeat((decimal?)0, 1).Max((Func<decimal?, decimal>)null));
 
-            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<KeyValuePair<int, int>>)null).Max());
-            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Repeat(0, 1).Max((Func<int, KeyValuePair<int, int>>)null));
+            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<NotComparable>)null).Max());
+            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Repeat(0, 1).Max((Func<int, NotComparable>)null));
             Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<object>)null).Max());
             Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Repeat(new object(), 1).Max((Func<object, object>)null));
-        }
-
-        private class NotComparable
-        {
-            private int x;
-
-            public NotComparable(int x)
-            {
-                this.x = x;
-            }
         }
     }
 }

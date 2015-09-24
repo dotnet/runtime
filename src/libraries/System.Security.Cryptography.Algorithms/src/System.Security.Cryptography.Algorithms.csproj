@@ -10,6 +10,11 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLSCompliant>false</CLSCompliant>
+    <PackageTargetFramework>dotnet</PackageTargetFramework>
+    <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsOSX)' == 'true'">
+    <PackageTargetRuntime>osx.10.10</PackageTargetRuntime>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Release|AnyCPU' " />
@@ -28,6 +33,8 @@
   <ItemGroup>
     <Compile Include="System\Security\Cryptography\Aes.cs" />
     <Compile Include="System\Security\Cryptography\DeriveBytes.cs" />
+    <Compile Include="System\Security\Cryptography\DES.cs" />
+    <Compile Include="System\Security\Cryptography\DSAParameters.cs" />
     <Compile Include="System\Security\Cryptography\ECDsa.cs" />
     <Compile Include="System\Security\Cryptography\MD5.cs" />
     <Compile Include="System\Security\Cryptography\SHA1.cs" />
@@ -41,6 +48,7 @@
     <Compile Include="System\Security\Cryptography\HMACSHA512.cs" />
     <Compile Include="System\Security\Cryptography\IncrementalHash.cs" />
     <Compile Include="System\Security\Cryptography\RandomNumberGenerator.cs" />
+    <Compile Include="System\Security\Cryptography\RC2.cs" />
     <Compile Include="System\Security\Cryptography\Rfc2898DeriveBytes.cs" />
     <Compile Include="System\Security\Cryptography\RSA.cs" />
     <Compile Include="System\Security\Cryptography\RSAEncryptionPadding.cs" />
@@ -48,6 +56,7 @@
     <Compile Include="System\Security\Cryptography\RSAParameters.cs" />
     <Compile Include="System\Security\Cryptography\RSASignaturePadding.cs" />
     <Compile Include="System\Security\Cryptography\RSASignaturePaddingMode.cs" />
+    <Compile Include="System\Security\Cryptography\TripleDES.cs" />
     <Compile Include="Internal\Cryptography\AesImplementation.cs" />
     <Compile Include="Internal\Cryptography\AesNativeCryptoTransform.cs" />
     <Compile Include="Internal\Cryptography\Helpers.cs" />
@@ -145,8 +154,11 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.RAND.cs">
-      <Link>Common\Interop\Unix\libcrypto\Interop.RAND.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.RAND.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.RAND.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Hmac.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Hmac.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeEvpCipherCtxHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeEvpCipherCtxHandle.Unix.cs</Link>
@@ -154,20 +166,8 @@
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeEvpMdCtxHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeEvpMdCtxHandle.Unix.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsFreeBSD)' == 'true' ">
-    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.HMAC.cs">
-      <Link>Common\Interop\Unix\libcrypto\Interop.HMAC.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
-    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.HMAC.cs">
-      <Link>Common\Interop\Unix\libcrypto\Interop.HMAC.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
-    <Compile Include="$(CommonPath)\Interop\OSX\libcrypto\Interop.HMAC.cs">
-      <Link>Common\Interop\OSX\libcrypto\Interop.HMAC.cs</Link>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHmacCtxHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeHmacCtxHandle.Unix.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

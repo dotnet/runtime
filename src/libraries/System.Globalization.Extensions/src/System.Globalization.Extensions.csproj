@@ -9,6 +9,8 @@
     <AssemblyName>System.Globalization.Extensions</AssemblyName>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <ProjectGuid>{2B96AA10-84C0-4927-8611-8D2474B990E8}</ProjectGuid>
+    <PackageTargetFramework>dotnet</PackageTargetFramework>
+    <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU' " />
@@ -47,6 +49,15 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Globalization.Native\Interop.Normalization.cs">
+      <Link>Common\Interop\Unix\System.Globalization.Native\Interop.Normalization.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Globalization.Native\Interop.Idna.cs">
+      <Link>Common\Interop\Unix\System.Globalization.Native\Interop.Idna.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Globalization\IdnMapping.Unix.cs">
       <Link>Common\System\Globalization\IdnMapping.Unix.cs</Link>
     </Compile>

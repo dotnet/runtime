@@ -65,6 +65,7 @@
     <Compile Include="BinaryOperators\Comparison\BinaryNullableNotEqualTests.cs" />
     <Compile Include="BinaryOperators\Logical\BinaryLogicalTests.cs" />
     <Compile Include="BinaryOperators\Logical\BinaryNullableLogicalTests.cs" />
+    <Compile Include="Call\CallFactoryTests.cs" />
     <Compile Include="Cast\AsNullable.cs" />
     <Compile Include="Cast\AsTests.cs" />
     <Compile Include="Cast\CastNullableTests.cs" />
@@ -78,6 +79,8 @@
     <Compile Include="Convert\ConvertCheckedTests.cs" />
     <Compile Include="Convert\ConvertTests.cs" />
     <Compile Include="HelperTypes.cs" />
+    <Compile Include="Invoke\InvocationTests.cs" />
+    <Compile Include="Invoke\InvokeFactoryTests.cs" />
     <Compile Include="Lambda\LambdaAddNullableTests.cs" />
     <Compile Include="Lambda\LambdaAddTests.cs" />
     <Compile Include="Lambda\LambdaDivideNullableTests.cs" />
@@ -131,6 +134,12 @@
     <Compile Include="Unary\UnaryArithmeticNegateTests.cs" />
     <Compile Include="Unary\UnaryBitwiseNotNullableTests.cs" />
     <Compile Include="Unary\UnaryBitwiseNotTests.cs" />
+    <Compile Include="Unary\UnaryIsFalseNullableTests.cs" />
+    <Compile Include="Unary\UnaryIsFalseTests.cs" />
+    <Compile Include="Unary\UnaryIsTrueNullableTests.cs" />
+    <Compile Include="Unary\UnaryIsTrueTests.cs" />
+    <Compile Include="Unary\UnaryUnaryPlusNullableTests.cs" />
+    <Compile Include="Unary\UnaryUnaryPlusTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Linq.Expressions.csproj">

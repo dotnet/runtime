@@ -8,19 +8,8 @@ using Xunit;
 
 namespace System.Net.Http.WinHttpHandlerUnitTests
 {
-    public class SafeWinHttpHandleTest : IDisposable
+    public class SafeWinHttpHandleTest
     {
-        public SafeWinHttpHandleTest()
-        {
-        }
-
-        public void Dispose()
-        {
-            // This runs after every test and makes sure that we run any finalizers to free all eligible handles.
-            FakeSafeWinHttpHandle.ForceGarbageCollection();
-            Assert.Equal(0, FakeSafeWinHttpHandle.HandlesOpen);
-        }
-
         [Fact]
         public void CreateAddRefDispose_HandleIsNotClosed()
         {

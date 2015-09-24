@@ -13,6 +13,7 @@ namespace System.Collections.Specialized.Tests
         public const int MAX_LEN = 50;          // max length of random strings
 
         [Fact]
+        [ActiveIssue(2769, PlatformID.AnyUnix)]
         public void Test01()
         {
             IntlStrings intl;

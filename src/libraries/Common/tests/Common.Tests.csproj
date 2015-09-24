@@ -29,6 +29,9 @@
     <Compile Include="..\src\System\IO\PathInternal.cs">
       <Link>Common\System\IO\PathInternal.cs</Link>
     </Compile>
+    <Compile Include="..\src\System\IO\PathInternal.CaseSensitivity.cs">
+      <Link>Common\System\IO\PathInternal.CaseSensitivity.cs</Link>
+    </Compile>
     <Compile Include="..\src\System\IO\StringBuilderCache.cs">
       <Link>Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>
@@ -48,9 +51,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\IO\PathInternal.CaseSensitive.cs">
-      <Link>Common\System\IO\PathInternal.CaseSensitive.cs</Link>
-    </Compile>
     <Compile Include="Tests\System\IO\PathInternal.Windows.Tests.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetFullPathNameW.cs">
       <Link>Common\Interop\Windows\mincore\Interop.GetFullPathNameW.cs</Link>
@@ -60,29 +60,11 @@
     <Compile Include="..\src\System\IO\PathInternal.Unix.cs">
       <Link>Common\System\IO\PathInternal.Unix.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\IO\PathInternal.CaseInsensitive.cs">
-      <Link>Common\System\IO\PathInternal.CaseInsensitive.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.pathconf.cs">
-      <Link>Common\Interop\Unix\Interop.pathconf.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.PathConf.cs">
+      <Link>Common\Interop\Unix\Interop.PathConf.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.PathConfNames.cs">
-      <Link>Common\Interop\Linux\Interop.PathConfNames.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
-    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.PathConfNames.cs">
-      <Link>Common\Interop\OSX\Interop.PathConfNames.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsFreeBSD)' == 'true'">
-    <Compile Include="$(CommonPath)\Interop\FreeBSD\libc\Interop.PathConfNames.cs">
-      <Link>Common\Interop\FreeBSD\Interop.PathConfNames.cs</Link>
     </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

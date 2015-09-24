@@ -612,7 +612,7 @@ namespace System.Net.Http
             try
             {
                 Task.Factory.StartNew(
-                    StartRequest,
+                    s => ((RequestState)s).Handler.StartRequest(s),
                     state,
                     CancellationToken.None,
                     TaskCreationOptions.DenyChildAttach,

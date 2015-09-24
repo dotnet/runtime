@@ -13,6 +13,7 @@
 #include <openssl/asn1.h>
 #include <openssl/bio.h>
 #include <openssl/evp.h>
+#include <openssl/rand.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 
@@ -384,19 +385,29 @@ GetX509NameRawBytes(
         return 0;
     }
 
-// length is size_t on some platforms and int on others, so the comparisons
-// are not tautological everywhere. We can let the compiler optimize away
-// any part of the check that is.
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wtautological-compare"
-    if (x509Name->bytes->length < 0 || x509Name->bytes->length > INT_MAX)
+    /* 
+     * length is size_t on some platforms and int on others, so the comparisons
+     * are not tautological everywhere. We can let the compiler optimize away
+     * any part of the check that is. We split the size checks into two checks
+     * so we can get around the warnings on Linux where the Length is unsigned
+     * whereas Length is signed on OS X. The first check makes sure the variable 
+     * value is less than INT_MAX in it's native format; once we know it is not
+     * too large, we can safely cast to an int to make sure it is not negative
+     */
+    if (x509Name->bytes->length > INT_MAX)
     {
-        assert(!"Huge/negative-length X509_NAME");
+        assert(0 && "Huge length X509_NAME");
         return 0;
     }
-#pragma clang diagnostic pop
 
     int length = (int)(x509Name->bytes->length);
+
+    if (length < 0)
+    {
+        assert(0 && "Negative length X509_NAME");
+        return 0;
+    }
+
     if (!pBuf || cBuf < length)
     {
         return -length;
@@ -997,6 +1008,27 @@ GetPkcs7Certificates(
     return 0;
 }
 
+/*
+Function:
+GetRandomBytes
+
+Puts num cryptographically strong pseudo-random bytes into buf.
+
+Return values:
+Returns a bool to managed code.
+1 for success
+0 for failure
+*/
+int
+GetRandomBytes(
+    unsigned char* buf, 
+    int num)
+{
+    int ret = RAND_bytes(buf, num);
+
+    return ret == 1;
+}
+
 // Lock used to make sure EnsureopenSslInitialized itself is thread safe
 static pthread_mutex_t g_initLock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -1027,9 +1059,29 @@ LockingCallback(int mode, int n, const char* file, int line)
 
     if (result != 0)
     {
-        assert(!"LockingCallback failed.");
+        assert(0 && "LockingCallback failed.");
     }
 }
+
+#ifdef __APPLE__
+/*
+Function:
+GetCurrentThreadId
+
+Called back by OpenSSL to get the current thread id.
+
+This is necessary because OSX uses an earlier version of
+OpenSSL, which requires setting the CRYPTO_set_id_callback.
+*/
+static
+unsigned long
+GetCurrentThreadId()
+{
+    uint64_t tid;
+    pthread_threadid_np(pthread_self(), &tid);
+    return tid;
+}
+#endif // __APPLE__
 
 /*
 Function:
@@ -1047,6 +1099,7 @@ EnsureOpenSslInitialized()
     int ret = 0;
     int numLocks = 0;
     int locksInitialized = 0;
+    int randPollResult = 0;
 
     pthread_mutex_lock(&g_initLock);
 
@@ -1060,7 +1113,7 @@ EnsureOpenSslInitialized()
     numLocks = CRYPTO_num_locks();
     if (numLocks <= 0)
     {
-        assert(!"CRYPTO_num_locks returned invalid value.");
+        assert(0 && "CRYPTO_num_locks returned invalid value.");
         ret = 1;
         goto done;
     }
@@ -1069,7 +1122,7 @@ EnsureOpenSslInitialized()
     g_locks = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t) * (unsigned int)numLocks);
     if (g_locks == NULL)
     {
-        assert(!"malloc failed.");
+        assert(0 && "malloc failed.");
         ret = 2;
         goto done;
     }
@@ -1079,7 +1132,7 @@ EnsureOpenSslInitialized()
     {
         if (pthread_mutex_init(&g_locks[locksInitialized], NULL) != 0)
         {
-            assert(!"pthread_mutex_init failed.");
+            assert(0 && "pthread_mutex_init failed.");
             ret = 3;
             goto done;
         }
@@ -1087,6 +1140,20 @@ EnsureOpenSslInitialized()
 
     // Initialize the callback
     CRYPTO_set_locking_callback(LockingCallback);
+
+#ifdef __APPLE__
+    // OSX uses an earlier version of OpenSSL which requires setting the CRYPTO_set_id_callback
+    CRYPTO_set_id_callback(GetCurrentThreadId);
+#endif
+
+    // Initialize the random number generator seed
+    randPollResult = RAND_poll();
+    if (randPollResult < 1)
+    {
+        assert(0 && "RAND_poll() failed.");
+        ret = 4;
+        goto done;
+    }
 
 done:
     if (ret != 0)
@@ -1098,7 +1165,7 @@ done:
             {
                 if (pthread_mutex_destroy(&g_locks[i]) != 0)
                 {
-                    assert(!"Unable to pthread_mutex_destroy while cleaning up.");
+                    assert(0 && "Unable to pthread_mutex_destroy while cleaning up.");
                 }
             }
             free(g_locks);

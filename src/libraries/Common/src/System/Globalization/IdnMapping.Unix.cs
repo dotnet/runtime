@@ -5,35 +5,67 @@ namespace System.Globalization
 {
     sealed partial class IdnMapping
     {
-        // TODO: Rather than having a Unix-specific implementation, we could also consider having a purely
-        // managed implementation as is available in mscorlib for pre-Windows 8.  This would require including 
-        // the relevant data tables.
-
-        // NOTE: The "implementation" here actually fails for IDN'd names, but will pass ASCII stuff along just fine
-        // that's by design, since this code is hit in some common paths but the data is usually ASCII and we can do
-        // the right thing there.
-
         private string GetAsciiCore(string unicode)
         {
-            for (int i = 0; i < unicode.Length; i++)
+            char[] buf = new char[unicode.Length];
+
+            for (int attempts = 2; attempts > 0; attempts--)
             {
-                if (unicode[i] > 0x7F)
+                int realLen = Interop.GlobalizationNative.ToAscii(Flags, unicode, unicode.Length, buf, buf.Length);
+
+                if (realLen == 0)
                 {
-                    throw NotImplemented.ByDesign;
+                    break;
                 }
+
+                if (realLen <= buf.Length)
+                {
+                    return new string(buf, 0, realLen);
+                }
+
+                buf = new char[realLen];
             }
 
-            return unicode;
+            throw new ArgumentException(SR.Argument_IdnIllegalName, "unicode");
         }
 
         private string GetUnicodeCore(string ascii)
         {
-            if (ascii.Contains("xn--"))
+            char[] buf = new char[ascii.Length];
+
+            for (int attempts = 2; attempts > 0; attempts--)
             {
-                throw NotImplemented.ByDesign;
+                int realLen = Interop.GlobalizationNative.ToUnicode(Flags, ascii, ascii.Length, buf, buf.Length);
+
+                if (realLen == 0)
+                {
+                    break;
+                }
+
+                if (realLen <= buf.Length)
+                {
+                    return new string(buf, 0, realLen);
+                }
+
+                buf = new char[realLen];
             }
 
-            return ascii;
+            throw new ArgumentException(SR.Argument_IdnIllegalName, "ascii");
+        }
+
+        // -----------------------------
+        // ---- PAL layer ends here ----
+        // -----------------------------
+
+        private uint Flags
+        {
+            get
+            {
+                int flags =
+                    (AllowUnassigned ? Interop.GlobalizationNative.AllowUnassigned : 0) |
+                    (UseStd3AsciiRules ? Interop.GlobalizationNative.UseStd3AsciiRules : 0);
+                return (uint)flags;
+            }
         }
     }
 }

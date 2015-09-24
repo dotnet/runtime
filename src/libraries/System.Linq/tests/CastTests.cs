@@ -196,5 +196,13 @@ namespace System.Linq.Tests
             IEnumerable<long?> cast = source.Cast<long?>();
             Assert.Throws<InvalidCastException>(() => cast.ToList());
         }
+
+        [Fact]
+        public void CastingNullToNonnullableIsNullReferenceException()
+        {
+            int?[] source = new int?[] { -4, 1, null, 3 };
+            IEnumerable<int> cast = source.Cast<int>();
+            Assert.Throws<NullReferenceException>(() => cast.ToList());
+        }
     }
 }

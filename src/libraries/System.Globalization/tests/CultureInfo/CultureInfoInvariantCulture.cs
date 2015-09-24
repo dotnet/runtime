@@ -13,8 +13,8 @@ namespace System.Globalization.Tests
         public void PosTest1()
         {
             CultureInfo myCultureInfo = CultureInfo.InvariantCulture;
-            CultureInfo myExceptedCultureInfo = new CultureInfo("");
-            Assert.True(myCultureInfo.Equals(myExceptedCultureInfo));
+            CultureInfo myExpectedCultureInfo = new CultureInfo("");
+            Assert.True(myCultureInfo.Equals(myExpectedCultureInfo));
         }
     }
 }

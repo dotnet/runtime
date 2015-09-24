@@ -18,5 +18,14 @@ namespace System.Globalization.Tests
             string excepectedName = new CultureInfo(ci.Name).EnglishName;
             Assert.Equal(excepectedName, inFactenglish);
         }
+
+        [Theory]
+        [InlineData("en-US", "English (United States)")]
+        [InlineData("fr-FR", "French (France)")]
+        public void TestEnglishNameLocale(string locale, string expected)
+        {
+            CultureInfo myTestCulture = new CultureInfo(locale);
+            Assert.Equal(expected, myTestCulture.EnglishName);
+        }
     }
 }

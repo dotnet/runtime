@@ -1,14 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using Xunit;
 
-namespace Test
+namespace System.Linq.Parallel.Tests
 {
     public class OrderByThenByTests
     {
@@ -68,12 +66,15 @@ namespace Test
         [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void OrderBy(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            int prev = int.MinValue;
+            int prev = 0;
+            int seen = 0;
             foreach (int i in labeled.Item.OrderBy(x => x))
             {
-                Assert.True(i >= prev);
+                Assert.InRange(i, prev, count - 1);
                 prev = i;
+                seen++;
             }
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -92,12 +93,15 @@ namespace Test
         [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void OrderBy_Reversed(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            int prev = int.MaxValue;
+            int prev = count - 1;
+            int seen = 0;
             foreach (int i in labeled.Item.OrderBy(x => -x))
             {
-                Assert.True(i <= prev);
+                Assert.InRange(i, 0, prev);
                 prev = i;
+                seen++;
             }
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -116,12 +120,15 @@ namespace Test
         [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void OrderByDescending(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            int prev = int.MaxValue;
+            int prev = count - 1;
+            int seen = 0;
             foreach (int i in labeled.Item.OrderByDescending(x => x))
             {
-                Assert.True(i <= prev);
+                Assert.InRange(i, 0, prev);
                 prev = i;
+                seen++;
             }
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -140,12 +147,15 @@ namespace Test
         [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void OrderByDescending_Reversed(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            int prev = int.MinValue;
+            int prev = 0;
+            int seen = 0;
             foreach (int i in labeled.Item.OrderByDescending(x => -x))
             {
-                Assert.True(i >= prev);
+                Assert.InRange(i, prev, count - 1);
                 prev = i;
+                seen++;
             }
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -164,8 +174,10 @@ namespace Test
         [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void OrderBy_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            int prev = int.MinValue;
-            Assert.All(labeled.Item.OrderBy(x => x).ToList(), x => { Assert.True(x >= prev); prev = x; });
+            int prev = 0;
+            int seen = 0;
+            Assert.All(labeled.Item.OrderBy(x => x).ToList(), x => { Assert.InRange(x, prev, count - 1); ; prev = x; seen++; });
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -184,8 +196,10 @@ namespace Test
         [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void OrderBy_Reversed_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            int prev = int.MaxValue;
-            Assert.All(labeled.Item.OrderBy(x => -x).ToList(), x => { Assert.True(x <= prev); prev = x; });
+            int prev = count - 1;
+            int seen = 0;
+            Assert.All(labeled.Item.OrderBy(x => -x).ToList(), x => { Assert.InRange(x, 0, prev); prev = x; seen++; });
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -204,8 +218,10 @@ namespace Test
         [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void OrderByDescending_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            int prev = int.MaxValue;
-            Assert.All(labeled.Item.OrderByDescending(x => x).ToList(), x => { Assert.True(x <= prev); prev = x; });
+            int prev = count - 1;
+            int seen = 0;
+            Assert.All(labeled.Item.OrderByDescending(x => x).ToList(), x => { Assert.InRange(x, 0, prev); prev = x; seen++; });
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -224,8 +240,10 @@ namespace Test
         [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void OrderByDescending_Reversed_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            int prev = int.MinValue;
-            Assert.All(labeled.Item.OrderByDescending(x => -x).ToList(), x => { Assert.True(x >= prev); prev = x; });
+            int prev = 0;
+            int seen = 0;
+            Assert.All(labeled.Item.OrderByDescending(x => -x).ToList(), x => { Assert.InRange(x, prev, count - 1); prev = x; seen++; });
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -244,12 +262,15 @@ namespace Test
         [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void OrderBy_CustomComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            int prev = int.MaxValue;
+            int prev = count - 1;
+            int seen = 0;
             foreach (int i in labeled.Item.OrderBy(x => x, ReverseComparer.Instance))
             {
-                Assert.True(i <= prev);
+                Assert.InRange(i, 0, prev);
                 prev = i;
+                seen++;
             }
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -268,12 +289,15 @@ namespace Test
         [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void OrderByDescending_CustomComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            int prev = int.MinValue;
+            int prev = 0;
+            int seen = 0;
             foreach (int i in labeled.Item.OrderByDescending(x => x, ReverseComparer.Instance))
             {
-                Assert.True(i >= prev);
+                Assert.InRange(i, prev, count - 1);
                 prev = i;
+                seen++;
             }
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -292,8 +316,10 @@ namespace Test
         [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void OrderBy_NotPipelined_CustomComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            int prev = int.MaxValue;
-            Assert.All(labeled.Item.OrderBy(x => x, ReverseComparer.Instance).ToList(), x => { Assert.True(x <= prev); prev = x; });
+            int prev = count - 1;
+            int seen = 0;
+            Assert.All(labeled.Item.OrderBy(x => x, ReverseComparer.Instance).ToList(), x => { Assert.InRange(x, 0, prev); prev = x; seen++; });
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -312,8 +338,10 @@ namespace Test
         [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void OrderByDescending_NotPipelined_CustomComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            int prev = int.MinValue;
-            Assert.All(labeled.Item.OrderByDescending(x => x, ReverseComparer.Instance).ToList(), x => { Assert.True(x >= prev); prev = x; });
+            int prev = 0;
+            int seen = 0;
+            Assert.All(labeled.Item.OrderByDescending(x => x, ReverseComparer.Instance).ToList(), x => { Assert.InRange(x, prev, count - 1); prev = x; seen++; });
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -333,10 +361,10 @@ namespace Test
         // Regression test for the PLINQ version of #2239 - comparer returning max/min value.
         public static void OrderBy_ExtremeComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            int prev = int.MinValue;
+            int prev = 0;
             foreach (int i in labeled.Item.OrderBy(x => x, new ExtremeComparer<int>()))
             {
-                Assert.InRange(i, prev, int.MaxValue);
+                Assert.InRange(i, prev, count - 1);
                 prev = i;
             }
         }
@@ -348,21 +376,22 @@ namespace Test
         // Regression test for the PLINQ version of #2239 - comparer returning max/min value.
         public static void OrderByDescending_ExtremeComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            int prev = int.MaxValue;
+            int prev = count - 1;
             foreach (int i in labeled.Item.OrderByDescending(x => x, new ExtremeComparer<int>()))
             {
-                Assert.InRange(i, int.MinValue, prev);
+                Assert.InRange(i, 0, prev);
                 prev = i;
             }
         }
 
         [Theory]
         [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(Sources))]
+        [MemberData("OrderByRandomData", (object)(new[] { 0, 1, 2, 16 }))]
         [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void OrderBy_NotPipelined_ExtremeComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            int prev = int.MinValue;
-            Assert.All(labeled.Item.OrderBy(x => x, new ExtremeComparer<int>()).ToList(), x => { Assert.InRange(x, prev, int.MaxValue); prev = x; });
+            int prev = 0;
+            Assert.All(labeled.Item.OrderBy(x => x, new ExtremeComparer<int>()).ToList(), x => { Assert.InRange(x, prev, count - 1); prev = x; });
         }
 
         [Theory]
@@ -371,8 +400,82 @@ namespace Test
         [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void OrderByDescending_NotPipelined_ExtremeComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            int prev = int.MaxValue;
-            Assert.All(labeled.Item.OrderByDescending(x => x, new ExtremeComparer<int>()).ToList(), x => { Assert.InRange(x, int.MinValue, prev); prev = x; });
+            int prev = count - 1;
+            Assert.All(labeled.Item.OrderByDescending(x => x, new ExtremeComparer<int>()).ToList(), x => { Assert.InRange(x, 0, prev); prev = x; });
+        }
+
+        [Theory]
+        [MemberData("Ranges", (object)(new int[] { 2 }), MemberType = typeof(Sources))]
+        [MemberData("OrderByRandomData", (object)(new[] { 2 }))]
+        [MemberData("Ranges", (object)(new int[] { 2 }), MemberType = typeof(UnorderedSources))]
+        public static void OrderBy_NotComparable(Labeled<ParallelQuery<int>> labeled, int count)
+        {
+            ParallelQuery<int> query = labeled.Item.OrderBy(x => new NotComparable(x));
+            Functions.AssertThrowsWrapped<ArgumentException>(() => { foreach (int i in query) ; });
+            Functions.AssertThrowsWrapped<ArgumentException>(() => query.ToList());
+        }
+
+        [Theory]
+        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(Sources))]
+        [MemberData("OrderByRandomData", (object)(new[] { 0, 1, 2, 16 }))]
+        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        public static void OrderBy_NotComparable_Comparator(Labeled<ParallelQuery<int>> labeled, int count)
+        {
+            int prev = 0;
+            var comparer = Comparer<NotComparable>.Create((x, y) => ReverseComparer.Instance.Compare(x.Value, y.Value));
+            foreach (int i in labeled.Item.OrderBy(x => new NotComparable(-x), comparer))
+            {
+                Assert.InRange(i, prev, count - 1);
+                prev = i;
+            }
+        }
+
+        [Theory]
+        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(Sources))]
+        [MemberData("OrderByRandomData", (object)(new[] { 0, 1, 2, 16 }))]
+        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        public static void OrderBy_NotPipelined_NotComparable_Comparator(Labeled<ParallelQuery<int>> labeled, int count)
+        {
+            int prev = 0;
+            var comparer = Comparer<NotComparable>.Create((x, y) => ReverseComparer.Instance.Compare(x.Value, y.Value));
+            Assert.All(labeled.Item.OrderBy(x => new NotComparable(-x), comparer).ToList(), x => { Assert.InRange(x, prev, count - 1); prev = x; });
+        }
+
+        [Theory]
+        [MemberData("Ranges", (object)(new int[] { 2 }), MemberType = typeof(Sources))]
+        [MemberData("OrderByRandomData", (object)(new[] { 2 }))]
+        [MemberData("Ranges", (object)(new int[] { 2 }), MemberType = typeof(UnorderedSources))]
+        public static void OrderByDescending_NotComparable(Labeled<ParallelQuery<int>> labeled, int count)
+        {
+            ParallelQuery<int> query = labeled.Item.OrderByDescending(x => new NotComparable(x));
+            Functions.AssertThrowsWrapped<ArgumentException>(() => { foreach (int i in query) ; });
+            Functions.AssertThrowsWrapped<ArgumentException>(() => query.ToList());
+        }
+
+        [Theory]
+        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(Sources))]
+        [MemberData("OrderByRandomData", (object)(new[] { 0, 1, 2, 16 }))]
+        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        public static void OrderByDescending_NotComparable_Comparator(Labeled<ParallelQuery<int>> labeled, int count)
+        {
+            int prev = count - 1;
+            var comparer = Comparer<NotComparable>.Create((x, y) => ReverseComparer.Instance.Compare(x.Value, y.Value));
+            foreach (int i in labeled.Item.OrderByDescending(x => new NotComparable(-x), comparer))
+            {
+                Assert.InRange(i, 0, prev);
+                prev = i;
+            }
+        }
+
+        [Theory]
+        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(Sources))]
+        [MemberData("OrderByRandomData", (object)(new[] { 0, 1, 2, 16 }))]
+        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        public static void OrderByDescending_NotPipelined_NotComparable_Comparator(Labeled<ParallelQuery<int>> labeled, int count)
+        {
+            int prev = count - 1;
+            var comparer = Comparer<NotComparable>.Create((x, y) => ReverseComparer.Instance.Compare(x.Value, y.Value));
+            Assert.All(labeled.Item.OrderByDescending(x => new NotComparable(-x), comparer).ToList(), x => { Assert.InRange(x, 0, prev); prev = x; });
         }
 
         [Fact]
@@ -431,18 +534,21 @@ namespace Test
         public static void ThenBy(Labeled<ParallelQuery<int>> labeled, int count)
         {
             int prevPrimary = 0;
-            int prevSecondary = int.MaxValue;
+            int prevSecondary = count - 1;
+            int seen = 0;
             foreach (int i in labeled.Item.OrderBy(x => x % GroupFactor).ThenBy(x => -x))
             {
-                Assert.True(i % GroupFactor >= prevPrimary);
+                Assert.InRange(i % GroupFactor, prevPrimary, count - 1);
                 if (i % GroupFactor != prevPrimary)
                 {
                     prevPrimary = i % GroupFactor;
-                    prevSecondary = int.MaxValue;
+                    prevSecondary = count - 1;
                 }
-                Assert.True(i <= prevSecondary);
+                Assert.InRange(i, 0, prevSecondary);
                 prevSecondary = i;
+                seen++;
             }
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -463,17 +569,20 @@ namespace Test
         {
             int prevPrimary = GroupFactor - 1;
             int prevSecondary = 0;
+            int seen = 0;
             foreach (int i in labeled.Item.OrderBy(x => -x % GroupFactor).ThenBy(x => x))
             {
-                Assert.True(i % GroupFactor <= prevPrimary);
+                Assert.InRange(i % GroupFactor, 0, prevPrimary);
                 if (i % GroupFactor != prevPrimary)
                 {
                     prevPrimary = i % GroupFactor;
                     prevSecondary = 0;
                 }
-                Assert.True(i >= prevSecondary);
+                Assert.InRange(i, prevSecondary, count - 1);
                 prevSecondary = i;
+                seen++;
             }
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -494,17 +603,20 @@ namespace Test
         {
             int prevPrimary = GroupFactor - 1;
             int prevSecondary = 0;
+            int seen = 0;
             foreach (int i in labeled.Item.OrderByDescending(x => x % GroupFactor).ThenByDescending(x => -x))
             {
-                Assert.True(i % GroupFactor <= prevPrimary);
+                Assert.InRange(i % GroupFactor, 0, prevPrimary);
                 if (i % GroupFactor != prevPrimary)
                 {
                     prevPrimary = i % GroupFactor;
                     prevSecondary = 0;
                 }
-                Assert.True(i >= prevSecondary);
+                Assert.InRange(i, prevSecondary, count - 1);
                 prevSecondary = i;
+                seen++;
             }
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -524,18 +636,21 @@ namespace Test
         public static void ThenByDescending_Reversed(Labeled<ParallelQuery<int>> labeled, int count)
         {
             int prevPrimary = 0;
-            int prevSecondary = int.MaxValue;
+            int prevSecondary = count - 1;
+            int seen = 0;
             foreach (int i in labeled.Item.OrderByDescending(x => -x % GroupFactor).ThenByDescending(x => x))
             {
-                Assert.True(i % GroupFactor >= prevPrimary);
+                Assert.InRange(i % GroupFactor, prevPrimary, count - 1);
                 if (i % GroupFactor != prevPrimary)
                 {
                     prevPrimary = i % GroupFactor;
-                    prevSecondary = int.MaxValue;
+                    prevSecondary = count - 1;
                 }
-                Assert.True(i <= prevSecondary);
+                Assert.InRange(i, 0, prevSecondary);
                 prevSecondary = i;
+                seen++;
             }
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -555,19 +670,22 @@ namespace Test
         public static void ThenBy_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count)
         {
             int prevPrimary = 0;
-            int prevSecondary = int.MaxValue;
+            int prevSecondary = count - 1;
+            int seen = 0;
             Assert.All(labeled.Item.OrderBy(x => x % GroupFactor).ThenBy(x => -x).ToList(),
                 x =>
                 {
-                    Assert.True(x % GroupFactor >= prevPrimary);
+                    Assert.InRange(x % GroupFactor, prevPrimary, count - 1);
                     if (x % GroupFactor != prevPrimary)
                     {
                         prevPrimary = x % GroupFactor;
-                        prevSecondary = int.MaxValue;
+                        prevSecondary = count - 1;
                     }
-                    Assert.True(x <= prevSecondary);
+                    Assert.InRange(x, 0, prevSecondary);
                     prevSecondary = x;
+                    seen++;
                 });
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -588,18 +706,21 @@ namespace Test
         {
             int prevPrimary = GroupFactor - 1;
             int prevSecondary = 0;
+            int seen = 0;
             Assert.All(labeled.Item.OrderBy(x => -x % GroupFactor).ThenBy(x => x).ToList(),
                 x =>
                 {
-                    Assert.True(x % GroupFactor <= prevPrimary);
+                    Assert.InRange(x % GroupFactor, 0, prevPrimary);
                     if (x % GroupFactor != prevPrimary)
                     {
                         prevPrimary = x % GroupFactor;
                         prevSecondary = 0;
                     }
-                    Assert.True(x >= prevSecondary);
+                    Assert.InRange(x, prevSecondary, count - 1);
                     prevSecondary = x;
+                    seen++;
                 });
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -620,18 +741,21 @@ namespace Test
         {
             int prevPrimary = GroupFactor - 1;
             int prevSecondary = 0;
+            int seen = 0;
             Assert.All(labeled.Item.OrderByDescending(x => x % GroupFactor).ThenByDescending(x => -x).ToList(),
                 x =>
                 {
-                    Assert.True(x % GroupFactor <= prevPrimary);
+                    Assert.InRange(x % GroupFactor, 0, prevPrimary);
                     if (x % GroupFactor != prevPrimary)
                     {
                         prevPrimary = x % GroupFactor;
                         prevSecondary = 0;
                     }
-                    Assert.True(x >= prevSecondary);
+                    Assert.InRange(x, prevSecondary, count - 1);
                     prevSecondary = x;
+                    seen++;
                 });
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -651,19 +775,22 @@ namespace Test
         public static void ThenByDescending_Reversed_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count)
         {
             int prevPrimary = 0;
-            int prevSecondary = int.MaxValue;
+            int prevSecondary = count - 1;
+            int seen = 0;
             Assert.All(labeled.Item.OrderByDescending(x => -x % GroupFactor).ThenByDescending(x => x).ToList(),
                 x =>
                 {
-                    Assert.True(x % GroupFactor >= prevPrimary);
+                    Assert.InRange(x % GroupFactor, prevPrimary, count - 1);
                     if (x % GroupFactor != prevPrimary)
                     {
                         prevPrimary = x % GroupFactor;
-                        prevSecondary = int.MaxValue;
+                        prevSecondary = count - 1;
                     }
-                    Assert.True(x <= prevSecondary);
+                    Assert.InRange(x, 0, prevSecondary);
                     prevSecondary = x;
+                    seen++;
                 });
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -683,18 +810,21 @@ namespace Test
         public static void ThenBy_CustomComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
             int prevPrimary = 0;
-            int prevSecondary = int.MaxValue;
+            int prevSecondary = count - 1;
+            int seen = 0;
             foreach (int i in labeled.Item.OrderBy(x => x % GroupFactor).ThenBy(x => x, ReverseComparer.Instance))
             {
-                Assert.True(i % GroupFactor >= prevPrimary);
+                Assert.InRange(i % GroupFactor, prevPrimary, count - 1);
                 if (i % GroupFactor != prevPrimary)
                 {
                     prevPrimary = i % GroupFactor;
-                    prevSecondary = int.MaxValue;
+                    prevSecondary = count - 1;
                 }
-                Assert.True(i <= prevSecondary);
+                Assert.InRange(i, 0, prevSecondary);
                 prevSecondary = i;
+                seen++;
             }
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -715,17 +845,20 @@ namespace Test
         {
             int prevPrimary = GroupFactor - 1;
             int prevSecondary = 0;
+            int seen = 0;
             foreach (int i in labeled.Item.OrderByDescending(x => x % GroupFactor).ThenByDescending(x => x, ReverseComparer.Instance))
             {
-                Assert.True(i % GroupFactor <= prevPrimary);
+                Assert.InRange(i % GroupFactor, 0, prevPrimary);
                 if (i % GroupFactor != prevPrimary)
                 {
                     prevPrimary = i % GroupFactor;
                     prevSecondary = 0;
                 }
-                Assert.True(i >= prevSecondary);
+                Assert.InRange(i, prevSecondary, count - 1);
                 prevSecondary = i;
+                seen++;
             }
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -745,19 +878,22 @@ namespace Test
         public static void ThenBy_NotPipelined_CustomComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
             int prevPrimary = 0;
-            int prevSecondary = int.MaxValue;
+            int prevSecondary = count - 1;
+            int seen = 0;
             Assert.All(labeled.Item.OrderBy(x => x % GroupFactor).ThenBy(x => x, ReverseComparer.Instance).ToList(),
                 x =>
                 {
-                    Assert.True(x % GroupFactor >= prevPrimary);
+                    Assert.InRange(x % GroupFactor, prevPrimary, count - 1);
                     if (x % GroupFactor != prevPrimary)
                     {
                         prevPrimary = x % GroupFactor;
-                        prevSecondary = int.MaxValue;
+                        prevSecondary = count - 1;
                     }
-                    Assert.True(x <= prevSecondary);
+                    Assert.InRange(x, 0, prevSecondary);
                     prevSecondary = x;
+                    seen++;
                 });
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -778,18 +914,21 @@ namespace Test
         {
             int prevPrimary = GroupFactor - 1;
             int prevSecondary = 0;
+            int seen = 0;
             Assert.All(labeled.Item.OrderByDescending(x => x % GroupFactor).ThenByDescending(x => x, ReverseComparer.Instance).ToList(),
                 x =>
                 {
-                    Assert.True(x % GroupFactor <= prevPrimary);
+                    Assert.InRange(x % GroupFactor, 0, prevPrimary);
                     if (x % GroupFactor != prevPrimary)
                     {
                         prevPrimary = x % GroupFactor;
                         prevSecondary = 0;
                     }
-                    Assert.True(x >= prevSecondary);
+                    Assert.InRange(x, prevSecondary, count - 1);
                     prevSecondary = x;
+                    seen++;
                 });
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -809,10 +948,10 @@ namespace Test
         // Regression test for the PLINQ version of #2239 - comparer returning max/min value.
         public static void ThenBy_ExtremeComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            int prev = int.MinValue;
+            int prev = 0;
             foreach (int i in labeled.Item.OrderBy(x => 0).ThenBy(x => x, new ExtremeComparer<int>()))
             {
-                Assert.InRange(i, prev, int.MaxValue);
+                Assert.InRange(i, prev, count - 1);
                 prev = i;
             }
         }
@@ -824,10 +963,10 @@ namespace Test
         // Regression test for the PLINQ version of #2239 - comparer returning max/min value.
         public static void ThenByDescending_ExtremeComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            int prev = int.MaxValue;
+            int prev = count - 1;
             foreach (int i in labeled.Item.OrderBy(x => 0).ThenByDescending(x => x, new ExtremeComparer<int>()))
             {
-                Assert.InRange(i, int.MinValue, prev);
+                Assert.InRange(i, 0, prev);
                 prev = i;
             }
         }
@@ -837,8 +976,8 @@ namespace Test
         [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void ThenBy_NotPipelined_ExtremeComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            int prev = int.MinValue;
-            Assert.All(labeled.Item.OrderBy(x => 0).ThenBy(x => x, new ExtremeComparer<int>()).ToList(), x => { Assert.InRange(x, prev, int.MaxValue); prev = x; });
+            int prev = 0;
+            Assert.All(labeled.Item.OrderBy(x => 0).ThenBy(x => x, new ExtremeComparer<int>()).ToList(), x => { Assert.InRange(x, prev, count - 1); prev = x; });
         }
 
         [Theory]
@@ -847,8 +986,8 @@ namespace Test
         [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void ThenByDescending_NotPipelined_ExtremeComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            int prev = int.MaxValue;
-            Assert.All(labeled.Item.OrderBy(x => 0).ThenByDescending(x => x, new ExtremeComparer<int>()).ToList(), x => { Assert.InRange(x, int.MinValue, prev); prev = x; });
+            int prev = count - 1;
+            Assert.All(labeled.Item.OrderBy(x => 0).ThenByDescending(x => x, new ExtremeComparer<int>()).ToList(), x => { Assert.InRange(x, 0, prev); prev = x; });
         }
 
         // Recursive sort with nested ThenBy...s
@@ -861,14 +1000,15 @@ namespace Test
         public static void ThenBy_ThenBy(Labeled<ParallelQuery<int>> labeled, int count)
         {
             var prev = KeyValuePair.Create(0, KeyValuePair.Create(0, 0));
+            int seen = 0;
             foreach (var pOuter in labeled.Item.Select(x => KeyValuePair.Create(x % GroupFactor, KeyValuePair.Create((KeyFactor - 1) - x % KeyFactor, x)))
                 .OrderBy(o => o.Key).ThenBy(o => o.Value.Key).ThenBy(o => o.Value.Value))
             {
-                Assert.True(pOuter.Key >= prev.Key);
-                Assert.True(pOuter.Value.Key >= prev.Value.Key || pOuter.Key > prev.Key);
-                Assert.True(pOuter.Value.Value >= prev.Value.Value || pOuter.Value.Key > prev.Value.Key || pOuter.Key > prev.Key);
+                AssertLessThanOrEqual(prev, pOuter, count - 1);
                 prev = pOuter;
+                seen++;
             }
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -887,15 +1027,16 @@ namespace Test
         [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void ThenByDescending_ThenByDescending(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            var prev = KeyValuePair.Create(GroupFactor - 1, KeyValuePair.Create(KeyFactor - 1, int.MaxValue));
+            var prev = KeyValuePair.Create(GroupFactor - 1, KeyValuePair.Create(KeyFactor - 1, count - 1));
+            int seen = 0;
             foreach (var pOuter in labeled.Item.Select(x => KeyValuePair.Create(x % GroupFactor, KeyValuePair.Create((KeyFactor - 1) - x % KeyFactor, x)))
                 .OrderByDescending(o => o.Key).ThenByDescending(o => o.Value.Key).ThenByDescending(o => o.Value.Value))
             {
-                Assert.True(pOuter.Key <= prev.Key);
-                Assert.True(pOuter.Value.Key <= prev.Value.Key || pOuter.Key < prev.Key);
-                Assert.True(pOuter.Value.Value <= prev.Value.Value || pOuter.Value.Key < prev.Value.Key || pOuter.Key < prev.Key);
+                AssertGreaterOrEqual(prev, pOuter);
                 prev = pOuter;
+                seen++;
             }
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -915,15 +1056,16 @@ namespace Test
         public static void ThenBy_ThenBy_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count)
         {
             var prev = KeyValuePair.Create(0, KeyValuePair.Create(0, 0));
+            int seen = 0;
             Assert.All(labeled.Item.Select(x => KeyValuePair.Create(x % GroupFactor, KeyValuePair.Create((KeyFactor - 1) - x % KeyFactor, x)))
                 .OrderBy(o => o.Key).ThenBy(o => o.Value.Key).ThenBy(o => o.Value.Value).ToList(),
                 pOuter =>
                 {
-                    Assert.True(pOuter.Key >= prev.Key);
-                    Assert.True(pOuter.Value.Key >= prev.Value.Key || pOuter.Key > prev.Key);
-                    Assert.True(pOuter.Value.Value >= prev.Value.Value || pOuter.Value.Key > prev.Value.Key || pOuter.Key > prev.Key);
+                    AssertLessThanOrEqual(prev, pOuter, count - 1);
                     prev = pOuter;
+                    seen++;
                 });
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -942,16 +1084,17 @@ namespace Test
         [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void ThenByDescending_ThenByDescending_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            var prev = KeyValuePair.Create(GroupFactor - 1, KeyValuePair.Create(KeyFactor - 1, int.MaxValue));
+            var prev = KeyValuePair.Create(GroupFactor - 1, KeyValuePair.Create(KeyFactor - 1, count - 1));
+            int seen = 0;
             Assert.All(labeled.Item.Select(x => KeyValuePair.Create(x % GroupFactor, KeyValuePair.Create((KeyFactor - 1) - x % KeyFactor, x)))
                 .OrderByDescending(o => o.Key).ThenByDescending(o => o.Value.Key).ThenByDescending(o => o.Value.Value).ToList(),
                 pOuter =>
                 {
-                    Assert.True(pOuter.Key <= prev.Key);
-                    Assert.True(pOuter.Value.Key <= prev.Value.Key || pOuter.Key < prev.Key);
-                    Assert.True(pOuter.Value.Value <= prev.Value.Value || pOuter.Value.Key < prev.Value.Key || pOuter.Key < prev.Key);
+                    AssertGreaterOrEqual(prev, pOuter);
                     prev = pOuter;
+                    seen++;
                 });
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -962,6 +1105,80 @@ namespace Test
         public static void ThenByDescending_ThenByDescending_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ThenByDescending_ThenByDescending_NotPipelined(labeled, count);
+        }
+
+        [Theory]
+        [MemberData("Ranges", (object)(new int[] { 2 }), MemberType = typeof(Sources))]
+        [MemberData("OrderByRandomData", (object)(new[] { 2 }))]
+        [MemberData("Ranges", (object)(new int[] { 2 }), MemberType = typeof(UnorderedSources))]
+        public static void ThenBy_NotComparable(Labeled<ParallelQuery<int>> labeled, int count)
+        {
+            ParallelQuery<int> query = labeled.Item.OrderBy(x => 0).ThenBy(x => new NotComparable(x));
+            Functions.AssertThrowsWrapped<ArgumentException>(() => { foreach (int i in query) ; });
+            Functions.AssertThrowsWrapped<ArgumentException>(() => query.ToList());
+        }
+
+        [Theory]
+        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(Sources))]
+        [MemberData("OrderByRandomData", (object)(new[] { 0, 1, 2, 16 }))]
+        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        public static void ThenBy_NotComparable_Comparator(Labeled<ParallelQuery<int>> labeled, int count)
+        {
+            int prev = 0;
+            var comparer = Comparer<NotComparable>.Create((x, y) => ReverseComparer.Instance.Compare(x.Value, y.Value));
+            foreach (int i in labeled.Item.OrderBy(x => 0).ThenBy(x => new NotComparable(-x), comparer))
+            {
+                Assert.InRange(i, prev, count - 1);
+                prev = i;
+            }
+        }
+
+        [Theory]
+        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(Sources))]
+        [MemberData("OrderByRandomData", (object)(new[] { 0, 1, 2, 16 }))]
+        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        public static void ThenBy_NotPipelined_NotComparable_Comparator(Labeled<ParallelQuery<int>> labeled, int count)
+        {
+            int prev = 0;
+            var comparer = Comparer<NotComparable>.Create((x, y) => ReverseComparer.Instance.Compare(x.Value, y.Value));
+            Assert.All(labeled.Item.OrderBy(x => 0).ThenBy(x => new NotComparable(-x), comparer).ToList(), x => { Assert.InRange(x, prev, count - 1); prev = x; });
+        }
+
+        [Theory]
+        [MemberData("Ranges", (object)(new int[] { 2 }), MemberType = typeof(Sources))]
+        [MemberData("OrderByRandomData", (object)(new[] { 2 }))]
+        [MemberData("Ranges", (object)(new int[] { 2 }), MemberType = typeof(UnorderedSources))]
+        public static void ThenByDescending_NotComparable(Labeled<ParallelQuery<int>> labeled, int count)
+        {
+            ParallelQuery<int> query = labeled.Item.OrderBy(x => 0).ThenByDescending(x => new NotComparable(x));
+            Functions.AssertThrowsWrapped<ArgumentException>(() => { foreach (int i in query) ; });
+            Functions.AssertThrowsWrapped<ArgumentException>(() => query.ToList());
+        }
+
+        [Theory]
+        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(Sources))]
+        [MemberData("OrderByRandomData", (object)(new[] { 0, 1, 2, 16 }))]
+        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        public static void ThenByDescending_NotComparable_Comparator(Labeled<ParallelQuery<int>> labeled, int count)
+        {
+            int prev = count - 1;
+            var comparer = Comparer<NotComparable>.Create((x, y) => ReverseComparer.Instance.Compare(x.Value, y.Value));
+            foreach (int i in labeled.Item.OrderBy(x => 0).ThenByDescending(x => new NotComparable(-x), comparer))
+            {
+                Assert.InRange(i, 0, prev);
+                prev = i;
+            }
+        }
+
+        [Theory]
+        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(Sources))]
+        [MemberData("OrderByRandomData", (object)(new[] { 0, 1, 2, 16 }))]
+        [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        public static void ThenByDescending_NotPipelined_NotComparable_Comparator(Labeled<ParallelQuery<int>> labeled, int count)
+        {
+            int prev = count - 1;
+            var comparer = Comparer<NotComparable>.Create((x, y) => ReverseComparer.Instance.Compare(x.Value, y.Value));
+            Assert.All(labeled.Item.OrderBy(x => 0).ThenByDescending(x => new NotComparable(-x), comparer).ToList(), x => { Assert.InRange(x, 0, prev); prev = x; });
         }
 
         [Fact]
@@ -984,6 +1201,7 @@ namespace Test
 
         //
         // Stable Sort
+        // Ensures that indices issued during a query are stable, **not** that OrderBy returns a stable result on its own (it does not).
         //
         [Theory]
         [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(Sources))]
@@ -991,13 +1209,19 @@ namespace Test
         public static void StableSort(Labeled<ParallelQuery<int>> labeled, int count)
         {
             var prev = KeyValuePair.Create(0, KeyValuePair.Create(0, 0));
-            foreach (var pOuter in labeled.Item.Select((x, index) => KeyValuePair.Create(index, KeyValuePair.Create(x, (count - x) / Math.Max(count / GroupFactor, 1))))
+            int seen = 0;
+            foreach (var pOuter in labeled.Item.Select((x, index) => KeyValuePair.Create(index, KeyValuePair.Create(x, (count - x) / GroupFactor)))
                 .OrderBy(p => p.Value.Value).ThenBy(p => p.Value.Key))
             {
-                Assert.False(pOuter.Value.Value < prev.Value.Value);
-                Assert.False(pOuter.Value.Value == prev.Value.Value && pOuter.Key < prev.Key, "" + prev + "_" + pOuter);
+                Assert.InRange(pOuter.Value.Value, prev.Value.Value, count / GroupFactor);
+                if (pOuter.Value.Value == prev.Value.Value)
+                {
+                    Assert.InRange(pOuter.Key, prev.Key, count - 1);
+                }
                 prev = pOuter;
+                seen++;
             }
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -1015,14 +1239,20 @@ namespace Test
         public static void StableSort_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count)
         {
             var prev = KeyValuePair.Create(0, KeyValuePair.Create(0, 0));
-            Assert.All(labeled.Item.Select((x, index) => KeyValuePair.Create(index, KeyValuePair.Create(x, (count - x) / Math.Max(count / GroupFactor, 1))))
+            int seen = 0;
+            Assert.All(labeled.Item.Select((x, index) => KeyValuePair.Create(index, KeyValuePair.Create(x, (count - x) / GroupFactor)))
                 .OrderBy(p => p.Value.Value).ThenBy(p => p.Value.Key).ToList(),
                 pOuter =>
                 {
-                    Assert.False(pOuter.Value.Value < prev.Value.Value);
-                    Assert.False(pOuter.Value.Value == prev.Value.Value && pOuter.Key < prev.Key, "" + prev + "_" + pOuter);
+                    Assert.InRange(pOuter.Value.Value, prev.Value.Value, count / GroupFactor);
+                    if (pOuter.Value.Value == prev.Value.Value)
+                    {
+                        Assert.InRange(pOuter.Key, prev.Key, count - 1);
+                    }
                     prev = pOuter;
+                    seen++;
                 });
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -1039,14 +1269,21 @@ namespace Test
         [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void StableSort_Descending(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            var prev = KeyValuePair.Create(int.MaxValue, KeyValuePair.Create(int.MaxValue, int.MaxValue));
-            foreach (var pOuter in labeled.Item.Select((x, index) => KeyValuePair.Create(index, KeyValuePair.Create(x, (count - x) / Math.Max(count / GroupFactor, 1))))
+            var prev = KeyValuePair.Create(count, KeyValuePair.Create(count, count / GroupFactor));
+            int seen = 0;
+            foreach (var pOuter in labeled.Item.Select((x, index) => KeyValuePair.Create(index, KeyValuePair.Create(x, (count - x) / GroupFactor)))
                 .OrderByDescending(p => p.Value.Value).ThenByDescending(p => p.Value.Key))
             {
-                Assert.False(pOuter.Value.Value > prev.Value.Value);
-                Assert.False(pOuter.Value.Value == prev.Value.Value && pOuter.Key > prev.Key, "" + prev + "_" + pOuter);
+                Assert.InRange(pOuter.Value.Value, 0, prev.Value.Value);
+                if (pOuter.Value.Value == prev.Value.Value)
+                {
+                    Assert.InRange(pOuter.Key, 0, prev.Key);
+                }
+
                 prev = pOuter;
+                seen++;
             }
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -1063,15 +1300,21 @@ namespace Test
         [MemberData("Ranges", (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
         public static void StableSort_Descending_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            var prev = KeyValuePair.Create(int.MaxValue, KeyValuePair.Create(int.MaxValue, int.MaxValue));
-            Assert.All(labeled.Item.Select((x, index) => KeyValuePair.Create(index, KeyValuePair.Create(x, (count - x) / Math.Max(count / GroupFactor, 1))))
+            var prev = KeyValuePair.Create(count, KeyValuePair.Create(count, count / GroupFactor));
+            int seen = 0;
+            Assert.All(labeled.Item.Select((x, index) => KeyValuePair.Create(index, KeyValuePair.Create(x, (count - x) / GroupFactor)))
                 .OrderByDescending(p => p.Value.Value).ThenByDescending(p => p.Value.Key).ToList(),
                 pOuter =>
                 {
-                    Assert.False(pOuter.Value.Value > prev.Value.Value);
-                    Assert.False(pOuter.Value.Value == prev.Value.Value && pOuter.Key > prev.Key, "" + prev + "_" + pOuter);
+                    Assert.InRange(pOuter.Value.Value, 0, prev.Value.Value);
+                    if (pOuter.Value.Value == prev.Value.Value)
+                    {
+                        Assert.InRange(pOuter.Key, 0, prev.Key);
+                    }
                     prev = pOuter;
+                    seen++;
                 });
+            Assert.Equal(count, seen);
         }
 
         [Theory]
@@ -1081,6 +1324,32 @@ namespace Test
         public static void StableSort_Descending_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             StableSort_Descending_NotPipelined(labeled, count);
+        }
+
+        private static void AssertGreaterOrEqual(KeyValuePair<int, KeyValuePair<int, int>> greater, KeyValuePair<int, KeyValuePair<int, int>> actual)
+        {
+            Assert.InRange(actual.Key, 0, greater.Key);
+            if (greater.Key == actual.Key)
+            {
+                Assert.InRange(actual.Value.Key, 0, greater.Value.Key);
+                if (greater.Value.Key == actual.Value.Key)
+                {
+                    Assert.InRange(actual.Value.Value, 0, greater.Value.Value);
+                }
+            }
+        }
+
+        private static void AssertLessThanOrEqual(KeyValuePair<int, KeyValuePair<int, int>> lesser, KeyValuePair<int, KeyValuePair<int, int>> actual, int limit)
+        {
+            Assert.InRange(actual.Key, lesser.Key, GroupFactor - 1);
+            if (lesser.Key == actual.Key)
+            {
+                Assert.InRange(actual.Value.Key, lesser.Value.Key, KeyFactor - 1);
+                if (lesser.Value.Key == actual.Value.Key)
+                {
+                    Assert.InRange(actual.Value.Value, lesser.Value.Value, limit);
+                }
+            }
         }
     }
 }

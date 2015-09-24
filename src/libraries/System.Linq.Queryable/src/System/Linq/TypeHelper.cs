@@ -38,7 +38,11 @@ namespace System.Linq
 
         internal static Type[] GetGenericArguments(this Type type)
         {
-            return type.GetTypeInfo().GenericTypeArguments;
+            // Note that TypeInfo distinguishes between the type parameters of definitions 
+            // and the type arguments of instantiations, but we want to mimic the behavior
+            // of the old Type.GetGenericArguments() here.
+            TypeInfo t = type.GetTypeInfo();
+            return t.IsGenericTypeDefinition ? t.GenericTypeParameters : t.GenericTypeArguments;
         }
 
         internal static MethodInfo[] GetStaticMethods(this Type type)

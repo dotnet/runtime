@@ -20,11 +20,26 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AesCipherTests.Data.cs" />
-    <Compile Include="AesCipherTests.cs" />
-    <Compile Include="AesContractTests.cs" />
-    <Compile Include="AesModeTests.cs" />
-    <Compile Include="DecryptorReusability.cs" />
+    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\AES\AesCipherTests.Data.cs">
+      <Link>CommonTest\AlgorithmImplementations\AES\AesCipherTests.Data.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\AES\AesCipherTests.cs">
+      <Link>CommonTest\AlgorithmImplementations\AES\AesCipherTests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\AES\AesContractTests.cs">
+      <Link>CommonTest\AlgorithmImplementations\AES\AesContractTests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\AES\AesModeTests.cs">
+      <Link>CommonTest\AlgorithmImplementations\AES\AesModeTests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\AES\DecryptorReusability.cs">
+      <Link>CommonTest\AlgorithmImplementations\AES\DecryptorReusability.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\AES\AesFactory.cs">
+      <Link>CommonTest\AlgorithmImplementations\AES\AesFactory.cs</Link>
+    </Compile>
+    <Compile Include="AesProvider.cs" />
+    <Compile Include="DesTests.cs" />
     <Compile Include="HashAlgorithmTest.cs" />
     <Compile Include="InvalidUsageTests.cs" />
     <Compile Include="HmacMD5Tests.cs" />
@@ -36,6 +51,7 @@
     <Compile Include="IncrementalHashTests.cs" />
     <Compile Include="MD5Tests.cs" />
     <Compile Include="RandomNumberGeneratorTests.cs" />
+    <Compile Include="RC2Tests.cs" />
     <Compile Include="ReusabilityTests.cs" />
     <Compile Include="Rfc2202HmacTests.cs" />
     <Compile Include="Rfc2898Tests.cs" />
@@ -44,6 +60,7 @@
     <Compile Include="Sha256Tests.cs" />
     <Compile Include="Sha384Tests.cs" />
     <Compile Include="Sha512Tests.cs" />
+    <Compile Include="TripleDesTests.cs" />
     <Compile Include="$(CommonTestPath)\Cryptography\ByteUtils.cs">
       <Link>CommonTest\Cryptography\ByteUtils.cs</Link>
     </Compile>

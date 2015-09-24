@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Windows_Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{C85CF035-7804-41FF-9557-48B7C948B58D}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Net.Http.Functional.Tests</AssemblyName>
+    <UnsupportedPlatforms>FreeBSD</UnsupportedPlatforms>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />  
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\Net\HttpTestServers.cs">
+      <Link>Common\System\Net\HttpTestServers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\Streams\DelegateStream.cs">
+      <Link>Common\Streams\DelegateStream.cs</Link>
+    </Compile>
+    <Compile Include="ByteArrayContentTest.cs" />
+    <Compile Include="DelegatingHandlerTest.cs" />
+    <Compile Include="FormUrlEncodedContentTest.cs" />
+    <Compile Include="HttpClientHandlerTest.cs" />
+    <Compile Include="HttpClientTest.cs" />
+    <Compile Include="HttpContentTest.cs" />
+    <Compile Include="HttpMessageInvokerTest.cs" />
+    <Compile Include="HttpMethodTest.cs" />
+    <Compile Include="HttpRequestMessageTest.cs" />
+    <Compile Include="HttpResponseMessageTest.cs" />
+    <Compile Include="MessageProcessingHandlerTest.cs" />
+    <Compile Include="MultipartContentTest.cs" />
+    <Compile Include="MultipartFormDataContentTest.cs" />
+    <Compile Include="ResponseStreamTest.cs" />
+    <Compile Include="StreamContentTest.cs" />
+    <Compile Include="StringContentTest.cs" />
+    <Compile Include="XunitTestAssemblyAtrributes.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Net.Http.csproj">
+      <Project>{1D422B1D-D7C4-41B9-862D-EB3D98DF37DE}</Project>
+      <Name>System.Net.Http</Name>
+    </ProjectReference>
+  </ItemGroup>  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
