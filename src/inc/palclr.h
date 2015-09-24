@@ -91,6 +91,7 @@
 #define DIRECTORY_SEPARATOR_STR_W W("\\")
 
 #define PATH_SEPARATOR_CHAR_W W(';')
+#define PATH_SEPARATOR_STR_W W(";")
 
 // PAL Macros
 // Not all compilers support fully anonymous aggregate types, so the
