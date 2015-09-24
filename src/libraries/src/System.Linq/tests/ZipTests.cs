@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class ZipTests
+    public class ZipTests : EnumerableTests
     {
         [Fact]
         public void ImplicitTypeParameters()
@@ -36,7 +36,7 @@ namespace System.Linq.Tests
             IEnumerable<int> first = null;
             IEnumerable<int> second = new int[] { 2, 5, 9 };
             
-            Assert.Throws<ArgumentNullException>(() => first.Zip<int, int, int>(second, (x, y) => x + y));
+            Assert.Throws<ArgumentNullException>("first", () => first.Zip<int, int, int>(second, (x, y) => x + y));
         }
 
         [Fact]
@@ -45,7 +45,7 @@ namespace System.Linq.Tests
             IEnumerable<int> first = new int[] { 1, 2, 3 };
             IEnumerable<int> second = null;
             
-            Assert.Throws<ArgumentNullException>(() => first.Zip<int, int, int>(second, (x, y) => x + y));
+            Assert.Throws<ArgumentNullException>("second", () => first.Zip<int, int, int>(second, (x, y) => x + y));
         }
         
         [Fact]
@@ -55,44 +55,20 @@ namespace System.Linq.Tests
             IEnumerable<int> second = new int[] { 2, 4, 6 };
             Func<int, int, int> func = null;
             
-            Assert.Throws<ArgumentNullException>(() => first.Zip(second, func));
-        }
-
-        private class MyIEnum<T> : IEnumerable<T>
-        {
-            public IEnumerable<T> _data;
-
-            public MyIEnum(IEnumerable<T> source)
-            {
-                _data = source;
-            }
-
-            public IEnumerator<T> GetEnumerator()
-            {
-                foreach (var datum in _data)
-                {
-                    if (datum.Equals(2)) throw new Exception();
-                    yield return datum;
-                }
-            }
-
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return this.GetEnumerator();
-            }
+            Assert.Throws<ArgumentNullException>("resultSelector", () => first.Zip(second, func));
         }
 
         [Fact]
         public void ExceptionThrownFromFirstsEnumerator()
         {
-            MyIEnum<int> first = new MyIEnum<int>(new int[] { 1, 3, 3 });
+            ThrowsOnMatchEnumerable<int> first = new ThrowsOnMatchEnumerable<int>(new int[] { 1, 3, 3 }, 2);
             IEnumerable<int> second = new int[] { 2, 4, 6 };
             Func<int, int, int> func = (x, y) => x + y;
             IEnumerable<int> expected = new int[] { 3, 7, 9 };
             
             Assert.Equal(expected, first.Zip(second, func));
 
-            first = new MyIEnum<int>(new int[] { 1, 2, 3 });
+            first = new ThrowsOnMatchEnumerable<int>(new int[] { 1, 2, 3 }, 2);
             
             var zip = first.Zip(second, func);
             
@@ -102,14 +78,14 @@ namespace System.Linq.Tests
         [Fact]
         public void ExceptionThrownFromSecondsEnumerator()
         {
-            MyIEnum<int> second = new MyIEnum<int>(new int[] { 1, 3, 3 });
+            ThrowsOnMatchEnumerable<int> second = new ThrowsOnMatchEnumerable<int>(new int[] { 1, 3, 3 }, 2);
             IEnumerable<int> first = new int[] { 2, 4, 6 };
             Func<int, int, int> func = (x, y) => x + y;
             IEnumerable<int> expected = new int[] { 3, 7, 9 };
 
             Assert.Equal(expected, first.Zip(second, func));
 
-            second = new MyIEnum<int>(new int[] { 1, 2, 3 });
+            second = new ThrowsOnMatchEnumerable<int>(new int[] { 1, 2, 3 }, 2);
             
             var zip = first.Zip(second, func);
 
@@ -392,6 +368,15 @@ namespace System.Linq.Tests
             IEnumerable<int?> expected = new int?[] { null, null, null };
 
             Assert.Equal(expected, first.Zip(second, func));
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerate()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Zip(Enumerable.Range(0, 3), (x, y) => x + y);
+            // Don't insist on this behaviour, but check its correct if it happens
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
         }
     }
 }

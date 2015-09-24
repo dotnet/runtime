@@ -5,48 +5,14 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Tests.Helpers;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class ToArrayTests
+    public class ToArrayTests : EnumerableTests
     {
-        private class TestLargeSequence : IEnumerable<byte>
-        {
-            public long MaxSize = 2 * (long)int.MaxValue;
-            public IEnumerator<byte> GetEnumerator()
-            {
-                for (long i = 0; i < MaxSize; i++) yield return (byte)1;
-            }
-            IEnumerator IEnumerable.GetEnumerator() { return this.GetEnumerator(); }
-        }
-
-        /// <summary>
-        /// Emulation of async collection change.
-        /// It adds a new element to the sequence each time the Count property touched,
-        /// so the further call of CopyTo method will fail.
-        /// </summary>
-        private class GrowingAfterCountReadCollection : TestCollection<int>
-        {
-            public GrowingAfterCountReadCollection(int[] items) : base(items) { }
-
-            public override int Count
-            {
-                get
-                {
-                    var result = base.Count;
-                    Array.Resize(ref Items, Items.Length + 1);
-                    return result;
-                }
-            }
-        }
-
-        // =====================
-
-
         [Fact]
         public void ToArray_AlwaysCreateACopy()
         {
@@ -120,7 +86,7 @@ namespace System.Linq.Tests
         public void ToArray_ThrowArgumentNullExceptionWhenSourceIsNull()
         {
             int[] source = null;
-            Assert.Throws<ArgumentNullException>(() => source.ToArray());
+            Assert.Throws<ArgumentNullException>("source", () => source.ToArray());
         }
 
 
@@ -155,7 +121,7 @@ namespace System.Linq.Tests
         [ActiveIssue("Valid test but too intensive to enable even in OuterLoop")]
         public void ToArray_FailOnExtremelyLargeCollection()
         {
-            TestLargeSequence largeSeq = new TestLargeSequence();
+            var largeSeq = new FastInfiniteEnumerator<byte>();
             var thrownException = Assert.ThrowsAny<Exception>(() => { largeSeq.ToArray(); });
             Assert.True(thrownException.GetType() == typeof(OverflowException) || thrownException.GetType() == typeof(OutOfMemoryException));
         }
@@ -246,12 +212,11 @@ namespace System.Linq.Tests
         public void SourceIsEmptyICollectionT()
         {
             int[] source = { };
-            int[] expected = { };
 
             ICollection<int> collection = source as ICollection<int>;
 
-            Assert.Equal(expected, source.ToArray());
-            Assert.Equal(expected, collection.ToArray());
+            Assert.Empty(source.ToArray());
+            Assert.Empty(collection.ToArray());
         }
 
         [Fact]
@@ -266,35 +231,20 @@ namespace System.Linq.Tests
             Assert.Equal(expected, collection.ToArray());
         }
 
-        // Essentially Enumerable.Range(), but guaranteed not to become a collection
-        // type due to any changes in the future.
-        private static IEnumerable<int> NumList(int start, int count)
-        {
-            for (int i = 0; i < count; i++)
-                yield return start + i;
-        }
-
-        private static IEnumerable<int?> NullSeq(long num)
-        {
-            for (long i = 0; i < num; i++)
-                yield return null;
-        }
-
         [Fact]
         public void SourceNotICollectionAndIsEmpty()
         {
-            IEnumerable<int> source = NumList(-4, 0);
-            int[] expected = { };
+            IEnumerable<int> source = NumberRangeGuaranteedNotCollectionType(-4, 0);
             
             Assert.Null(source as ICollection<int>);
 
-            Assert.Equal(expected, source.ToArray());
+            Assert.Empty(source.ToArray());
         }
 
         [Fact]
         public void SourceNotICollectionAndHasElements()
         {
-            IEnumerable<int> source = NumList(-4, 10);
+            IEnumerable<int> source = NumberRangeGuaranteedNotCollectionType(-4, 10);
             int[] expected = { -4, -3, -2, -1, 0, 1, 2, 3, 4, 5 };
 
             Assert.Null(source as ICollection<int>);
@@ -305,7 +255,7 @@ namespace System.Linq.Tests
         [Fact]
         public void SourceNotICollectionAndAllNull()
         {
-            IEnumerable<int?> source = NullSeq(5);
+            IEnumerable<int?> source = RepeatedNullableNumberGuaranteedNotCollectionType(null, 5);
             int?[] expected = { null, null, null, null, null };
 
             Assert.Null(source as ICollection<int>);

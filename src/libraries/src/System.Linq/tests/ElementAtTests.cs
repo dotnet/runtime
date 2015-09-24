@@ -7,13 +7,8 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class ElementAtTests
+    public class ElementAtTests : EnumerableTests
     {
-        public static IEnumerable<int> NumberRangeGuaranteedNotCollectionType(int num, int count)
-        {
-            for (int i = 0; i < count; i++) yield return num + i;
-        }
-
         [Fact]
         public void SameResultsRepeatCallsIntQuery()
         {
@@ -39,7 +34,7 @@ namespace System.Linq.Tests
         {
             int?[] source = { 9, 8 };
             
-            Assert.Throws<ArgumentOutOfRangeException>(() => source.ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(-1));
         }
 
         [Fact]
@@ -71,7 +66,7 @@ namespace System.Linq.Tests
         {
             int[] source = { 1, 2, 3, 4 };
             
-            Assert.Throws<ArgumentOutOfRangeException>(() => source.ElementAt(source.Length));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(source.Length));
         }
 
         [Fact]
@@ -79,7 +74,7 @@ namespace System.Linq.Tests
         {
             int[] source = { };
             
-            Assert.Throws<ArgumentOutOfRangeException>(() => source.ElementAt(0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(0));
         }
 
         [Fact]
@@ -112,7 +107,7 @@ namespace System.Linq.Tests
         {
             IEnumerable<int> source = NumberRangeGuaranteedNotCollectionType(-4, 5);
             
-            Assert.Throws<ArgumentOutOfRangeException>(() => source.ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(-1));
         }
 
         [Fact]
@@ -120,7 +115,7 @@ namespace System.Linq.Tests
         {
             IEnumerable<int> source = NumberRangeGuaranteedNotCollectionType(5, 5);
             
-            Assert.Throws<ArgumentOutOfRangeException>(() => source.ElementAt(5));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(5));
         }
 
         [Fact]
@@ -128,7 +123,13 @@ namespace System.Linq.Tests
         {
             IEnumerable<int> source = NumberRangeGuaranteedNotCollectionType(0, 0);
             
-            Assert.Throws<ArgumentOutOfRangeException>(() => source.ElementAt(0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(0));
+        }
+
+        [Fact]
+        public void NullSource()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).ElementAt(2));
         }
     }
 }

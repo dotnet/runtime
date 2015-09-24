@@ -18,7 +18,6 @@
     <Compile Include="AnyTests.cs" />
     <Compile Include="AsEnumerableTests.cs" />
     <Compile Include="AverageTests.cs" />
-    <Compile Include="CachedEnumerator.cs" />
     <Compile Include="CastTests.cs" />
     <Compile Include="ConcatTests.cs" />
     <Compile Include="ContainsTests.cs" />
@@ -68,11 +67,6 @@
     <Compile Include="UnionTests.cs" />
     <Compile Include="WhereTests.cs" />
     <Compile Include="ZipTests.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Helpers\TestCollection.cs" />
-    <Compile Include="Helpers\TestEnumerable.cs" />
-    <Compile Include="Helpers\TestReadOnlyCollection.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Performance\CastPerf.cs" />
