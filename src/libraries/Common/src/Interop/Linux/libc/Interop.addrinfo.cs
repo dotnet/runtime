@@ -25,6 +25,18 @@ internal static partial class Interop
         public const int EAI_FAIL = -4;     // Non-recoverable failure in name resolution.
         public const int EAI_FAMILY = -5;   // 'ai_family' not supported.
 
+        public const int SOCK_STREAM = 1;
+        public const int SOCK_DGRAM = 2;
+        public const int SOCK_RAW = 3;
+        public const int SOCK_RDM = 4;
+        public const int SOCK_SEQPACKET = 5;
+
+        public const int PF_UNSPEC = 0; // Unspecified.
+        public const int PF_UNIX = 1;   // Local to host.
+        public const int PF_INET = 2;   // IP protocol family.
+        public const int PF_INET6 = 10; // IP version 6.
+
+#pragma warning disable 169, 649
         public unsafe struct addrinfo
         {
             public int ai_flags;
@@ -36,5 +48,6 @@ internal static partial class Interop
             public byte* ai_canonname;
             public addrinfo* ai_next;
         }
+#pragma warning restore 169, 649
     }
 }

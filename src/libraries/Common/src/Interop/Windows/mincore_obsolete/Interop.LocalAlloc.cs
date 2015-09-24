@@ -9,6 +9,8 @@ internal static partial class Interop
 {
     internal static partial class mincore_obsolete
     {
+        internal const int LMEM_FIXED = 0;
+
         [DllImport(Interop.Libraries.Heap, SetLastError = true)]
         internal static extern SafeLocalAllocHandle LocalAlloc(int uFlags, UIntPtr sizetdwBytes);
     }
