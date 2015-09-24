@@ -18,6 +18,27 @@
 
 #if defined(USE_MACH_SYSCALL_ABORT)
 
+#if defined(HOST_WATCHOS) || defined(HOST_TVOS)
+
+void
+mono_threads_init_abort_syscall (void)
+{
+}
+
+void
+mono_threads_core_abort_syscall (MonoThreadInfo *info)
+{
+
+}
+
+gboolean
+mono_threads_core_needs_abort_syscall (void)
+{
+	return FALSE;
+}
+
+#else
+
 void
 mono_threads_init_abort_syscall (void)
 {
@@ -53,5 +74,7 @@ mono_threads_core_needs_abort_syscall (void)
 {
 	return TRUE;
 }
+
+#endif
 
 #endif
