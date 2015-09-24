@@ -282,7 +282,7 @@ bool ComputeMscorlibPathFromTrustedPlatformAssemblies(LPWSTR pwzMscorlibPath, DW
 {
     LPWSTR wszTrustedPathCopy = new WCHAR[wcslen(pwzTrustedPlatformAssemblies) + 1];
     wcscpy_s(wszTrustedPathCopy, wcslen(pwzTrustedPlatformAssemblies) + 1, pwzTrustedPlatformAssemblies);
-    LPWSTR wszSingleTrustedPath = wcstok(wszTrustedPathCopy, W(";"));
+    LPWSTR wszSingleTrustedPath = wcstok(wszTrustedPathCopy, PATH_SEPARATOR_STR_W);
     
     while (wszSingleTrustedPath != NULL)
     {
@@ -294,12 +294,12 @@ bool ComputeMscorlibPathFromTrustedPlatformAssemblies(LPWSTR pwzMscorlibPath, DW
             wszSingleTrustedPath++;
         }
 
-        if (StringEndsWith(wszSingleTrustedPath, W("\\mscorlib.dll")) ||
-            StringEndsWith(wszSingleTrustedPath, W("\\mscorlib.ni.dll")))
+        if (StringEndsWith(wszSingleTrustedPath, DIRECTORY_SEPARATOR_STR_W W("mscorlib.dll")) ||
+            StringEndsWith(wszSingleTrustedPath, DIRECTORY_SEPARATOR_STR_W W("mscorlib.ni.dll")))
         {
             wcscpy_s(pwzMscorlibPath, cbMscorlibPath, wszSingleTrustedPath);
             
-            LPWSTR pwzSeparator = wcsrchr(pwzMscorlibPath, W('\\'));
+            LPWSTR pwzSeparator = wcsrchr(pwzMscorlibPath, DIRECTORY_SEPARATOR_CHAR_W);
             if (pwzSeparator == NULL)
             {
                 delete [] wszTrustedPathCopy;
@@ -311,7 +311,7 @@ bool ComputeMscorlibPathFromTrustedPlatformAssemblies(LPWSTR pwzMscorlibPath, DW
             return true;
         }
         
-        wszSingleTrustedPath = wcstok(NULL, W(";"));
+        wszSingleTrustedPath = wcstok(NULL, PATH_SEPARATOR_STR_W);
     }
     delete [] wszTrustedPathCopy;
 
@@ -370,7 +370,7 @@ void PopulateTPAList(SString path, LPCWSTR pwszMask, SString &refTPAList, bool f
                 if (fAddDelimiter)
                 {
                     // Add the path delimiter if we already have entries in the TPAList
-                    refTPAList.Append(W(";"));
+                    refTPAList.Append(PATH_SEPARATOR_CHAR_W);
                 }
                 // Add the path to the TPAList
                 refTPAList.Append(path);
@@ -400,7 +400,7 @@ void ComputeTPAListFromPlatformAssembliesPath(LPCWSTR pwzPlatformAssembliesPaths
         while (itr != end)
         {
             start = itr;
-            BOOL found = ssPlatformAssembliesPath.Find(itr, W(';'));
+            BOOL found = ssPlatformAssembliesPath.Find(itr, PATH_SEPARATOR_CHAR_W);
             if (!found)
             {
                 itr = end;
@@ -417,9 +417,9 @@ void ComputeTPAListFromPlatformAssembliesPath(LPCWSTR pwzPlatformAssembliesPaths
 
             if (len > 0)
             {
-                if (qualifiedPath[len-1]!='\\')
+                if (qualifiedPath[len-1]!=DIRECTORY_SEPARATOR_CHAR_W)
                 {
-                    qualifiedPath.Append('\\');
+                    qualifiedPath.Append(DIRECTORY_SEPARATOR_CHAR_W);
                 }
 
                 // Enumerate the EXE/DLL modules within this path and add them to the TPAList
