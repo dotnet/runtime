@@ -150,6 +150,9 @@
   <data name="Argument_InvalidOidValue" xml:space="preserve">
     <value>The OID value was invalid.</value>
   </data>
+  <data name="ArgumentOutOfRange_FileLengthTooBig" xml:space="preserve">
+    <value>Specified file length was too large for the file system.</value>
+  </data>
   <data name="ArgumentOutOfRange_Index" xml:space="preserve">
     <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
   </data>
@@ -201,6 +204,30 @@
   <data name="Cryptography_X509_StoreReadOnly" xml:space="preserve">
     <value>The X509 certificate store is read-only.</value>
   </data>
+  <data name="IO_FileExists_Name" xml:space="preserve">
+    <value>The file '{0}' already exists.</value>
+  </data>
+  <data name="IO_FileNotFound" xml:space="preserve">
+    <value>Unable to find the specified file.</value>
+  </data>
+  <data name="IO_FileNotFound_FileName" xml:space="preserve">
+    <value>Could not find file '{0}'.</value>
+  </data>
+  <data name="IO_PathNotFound_Path" xml:space="preserve">
+    <value>Could not find a part of the path '{0}'.</value>
+  </data>
+  <data name="IO_PathNotFound_NoPathName" xml:space="preserve">
+    <value>Could not find a part of the path.</value>
+  </data>
+  <data name="IO_PathTooLong" xml:space="preserve">
+    <value>The specified file name or path is too long, or a component of the specified path is too long.</value>
+  </data>
+  <data name="IO_SharingViolation_File" xml:space="preserve">
+    <value>The process cannot access the file '{0}' because it is being used by another process.</value>
+  </data>
+  <data name="IO_SharingViolation_NoFileName" xml:space="preserve">
+    <value>The process cannot access the file because it is being used by another process.</value>
+  </data>
   <data name="InvalidOperation_EnumNotStarted" xml:space="preserve">
     <value>Enumeration has not started.  Call MoveNext.</value>
   </data>
@@ -225,10 +252,31 @@
   <data name="Security_InvalidValue" xml:space="preserve">
     <value>The {0} value was invalid.</value>
   </data>
+  <data name="UnauthorizedAccess_IODenied_Path" xml:space="preserve">
+    <value>Access to the path '{0}' is denied.</value>
+  </data>
+  <data name="UnauthorizedAccess_IODenied_NoPathName" xml:space="preserve">
+    <value>Access to the path is denied.</value>
+  </data>
   <data name="Unknown_Error" xml:space="preserve">
     <value>Unknown error.</value>
   </data>
   <data name="WorkInProgress" xml:space="preserve">
     <value>WorkInProgress.</value>
+  </data>
+  <data name="Cryptography_FileStatusError" xml:space="preserve">
+    <value>Unable to get file status.</value>
+  </data>
+  <data name="Cryptography_InsufficientFilePermissions" xml:space="preserve">
+    <value>Invalid file permissions. The file '{0}' must be readable and writable by the owner.</value>
+  </data>
+  <data name="Cryptography_InvalidDirectoryPermissions" xml:space="preserve">
+    <value>Invalid directory permissions. The directory '{0}' must be readable, writable and executable by the owner. It must not be readable, writable or executable by anyone other than the owner.</value>
+  </data>
+  <data name="Cryptography_OwnerNotCurrentUser" xml:space="preserve">
+    <value>The owner of '{0}' is not the current user.</value>
+  </data>
+  <data name="Cryptography_TooBroadFilePermissions" xml:space="preserve">
+    <value>Invalid file permissions. The file '{0}' must not be readable or writable by anyone other than the owner.</value>
   </data>
 </root>
