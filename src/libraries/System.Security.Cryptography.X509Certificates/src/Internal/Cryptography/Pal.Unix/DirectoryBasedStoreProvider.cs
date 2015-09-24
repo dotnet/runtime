@@ -285,7 +285,6 @@ namespace Internal.Cryptography.Pal
                 {
                     destinationFilename = existingFilename;
                     mode = FileMode.Create;
-                    EnsureFilePermissions(destinationFilename, userId);
                 }
                 else if (findOpenSlot)
                 {
@@ -298,11 +297,10 @@ namespace Internal.Cryptography.Pal
 
                 using (FileStream stream = new FileStream(destinationFilename, mode))
                 {
+                    EnsureFilePermissions(stream, userId);
                     byte[] pkcs12 = copy.Export(X509ContentType.Pkcs12);
                     stream.Write(pkcs12, 0, pkcs12.Length);
                 }
-
-                EnsureFilePermissions(destinationFilename, userId);
             }
 
             // Null out _certificates so the next call to get_Certificates causes a re-scan.
@@ -443,8 +441,21 @@ namespace Internal.Cryptography.Pal
         /// </param>
         private static void EnsureDirectoryPermissions(string path, uint userId)
         {
-            int mode = GetFileMode(path, userId, isDirectory: true);
-            if ((mode & (int)Interop.Sys.Permissions.Mask) != (int)Interop.Sys.Permissions.S_IRWXU)
+            Interop.Sys.FileStatus dirStat;
+            if (Interop.Sys.Stat(path, out dirStat) != 0)
+            {
+                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                throw new CryptographicException(
+                    SR.Cryptography_FileStatusError,
+                    new IOException(error.GetErrorMessage(), error.RawErrno));
+            }
+
+            if (dirStat.Uid != userId)
+            {
+                throw new CryptographicException(SR.Format(SR.Cryptography_OwnerNotCurrentUser, path));
+            }
+
+            if ((dirStat.Mode & (int)Interop.Sys.Permissions.Mask) != (int)Interop.Sys.Permissions.S_IRWXU)
             {
                 throw new CryptographicException(SR.Format(SR.Cryptography_InvalidDirectoryPermissions, path));
             }
@@ -453,13 +464,13 @@ namespace Internal.Cryptography.Pal
         /// <summary>
         /// Checks the file has the correct permissions.
         /// </summary>
-        /// <param name="path">
-        /// The path of the file to check.
+        /// <param name="stream">
+        /// The file stream to check.
         /// </param>
         /// <param name="userId">
         /// The current userId from GetEUid().
         /// </param>
-        private static void EnsureFilePermissions(string path, uint userId)
+        private static void EnsureFilePermissions(FileStream stream, uint userId)
         {
             // Verify that we're creating files with u+rw and o-rw, g-rw.
             const Interop.Sys.Permissions requiredPermissions =
@@ -472,35 +483,33 @@ namespace Internal.Cryptography.Pal
                 Interop.Sys.Permissions.S_IRGRP |
                 Interop.Sys.Permissions.S_IWGRP;
 
-            int mode = GetFileMode(path, userId, isDirectory: false);
+            // NOTE: no need to call DangerousAddRef here, since the FileStream is 
+            // held open outside of this method
+            int fileDescriptor = (int)stream.SafeFileHandle.DangerousGetHandle();
 
-            if ((mode & (int)requiredPermissions) != (int)requiredPermissions)
-            {
-                throw new CryptographicException(SR.Format(SR.Cryptography_InsufficientFilePermissions, path));
-            }
-
-            if ((mode & (int)forbiddenPermissions) != 0)
-            {
-                throw new CryptographicException(SR.Format(SR.Cryptography_TooBroadFilePermissions, path));
-            }
-        }
-
-        private static int GetFileMode(string path, uint userId, bool isDirectory)
-        {
             Interop.Sys.FileStatus stat;
-            if (Interop.Sys.Stat(path, out stat) != 0)
+            if (Interop.Sys.FStat(fileDescriptor, out stat) != 0)
             {
+                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
                 throw new CryptographicException(
                     SR.Cryptography_FileStatusError,
-                    Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), path, isDirectory));
+                    new IOException(error.GetErrorMessage(), error.RawErrno));
             }
 
             if (stat.Uid != userId)
             {
-                throw new CryptographicException(SR.Format(SR.Cryptography_OwnerNotCurrentUser, path));
+                throw new CryptographicException(SR.Format(SR.Cryptography_OwnerNotCurrentUser, stream.Name));
             }
 
-            return stat.Mode;
+            if ((stat.Mode & (int)requiredPermissions) != (int)requiredPermissions)
+            {
+                throw new CryptographicException(SR.Format(SR.Cryptography_InsufficientFilePermissions, stream.Name));
+            }
+
+            if ((stat.Mode & (int)forbiddenPermissions) != 0)
+            {
+                throw new CryptographicException(SR.Format(SR.Cryptography_TooBroadFilePermissions, stream.Name));
+            }
         }
     }
 }
