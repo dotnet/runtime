@@ -1,18 +1,22 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace Microsoft.Win32.SafeHandles
+namespace System.Security.Cryptography
 {
-    internal sealed class SafeEvpPkeyHandle : SafeHandle
+    public sealed class SafeEvpPKeyHandle : SafeHandle
     {
-        internal static readonly SafeEvpPkeyHandle InvalidHandle = new SafeEvpPkeyHandle();
+        internal static readonly SafeEvpPKeyHandle InvalidHandle = new SafeEvpPKeyHandle();
 
-        private SafeEvpPkeyHandle() :
+        private SafeEvpPKeyHandle() :
             base(IntPtr.Zero, ownsHandle: true)
+        {
+        }
+
+        public SafeEvpPKeyHandle(IntPtr handle, bool ownsHandle)
+            : base(handle, ownsHandle)
         {
         }
 
@@ -28,15 +32,21 @@ namespace Microsoft.Win32.SafeHandles
             get { return handle == IntPtr.Zero; }
         }
 
-        internal static SafeEvpPkeyHandle DuplicateHandle(SafeEvpPkeyHandle handle)
+        /// <summary>
+        /// Create another instance of SafeEvpPKeyHandle which has an independent lifetime
+        /// from this instance, but tracks the same resource.
+        /// </summary>
+        /// <returns>An equivalent SafeEvpPKeyHandle with a different lifetime</returns>
+        public SafeEvpPKeyHandle DuplicateHandle()
         {
-            Debug.Assert(handle != null && !handle.IsInvalid);
+            if (IsInvalid)
+                throw new InvalidOperationException(SR.Cryptography_OpenInvalidHandle);
 
             // Reliability: Allocate the SafeHandle before calling UpRefEvpPkey so
             // that we don't lose a tracked reference in low-memory situations.
-            SafeEvpPkeyHandle safeHandle = new SafeEvpPkeyHandle();
+            SafeEvpPKeyHandle safeHandle = new SafeEvpPKeyHandle();
 
-            int newRefCount = Interop.Crypto.UpRefEvpPkey(handle);
+            int newRefCount = Interop.Crypto.UpRefEvpPkey(this);
 
             // UpRefEvpPkey returns the number of references to this key, if it's less than 2
             // (the incoming handle, and this one) then someone has already Disposed() this key
@@ -49,7 +59,7 @@ namespace Microsoft.Win32.SafeHandles
 
             // Since we didn't actually create a new handle, copy the handle
             // to the new SafeHandle.
-            safeHandle.SetHandle(handle.DangerousGetHandle());
+            safeHandle.SetHandle(handle);
             return safeHandle;
         }
     }
