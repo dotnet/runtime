@@ -218,11 +218,7 @@ namespace System {
         // Constructs a Decimal from a Currency value.
         //
         internal Decimal(Currency value) {
-            Decimal temp = Currency.ToDecimal(value);
-            this.lo = temp.lo;
-            this.mid = temp.mid;
-            this.hi = temp.hi;
-            this.flags = temp.flags;
+            this = Currency.ToDecimal(value);
         }
 
         // Don't remove these 2 methods below. They are required by the fx when the are dealing with Currency in their
