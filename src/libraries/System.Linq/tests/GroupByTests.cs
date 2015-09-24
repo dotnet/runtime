@@ -622,5 +622,41 @@ namespace System.Linq.Tests
             Assert.Equal(4, groupedArray.Length);
             Assert.Equal(source.GroupBy(r => r.Name, (r, e) => e), groupedArray);
         }
+
+        [Fact]
+        public void GroupingToList()
+        {
+            Record[] source = new Record[]
+            {
+                new Record { Name = "Tim", Score = 55 },
+                new Record { Name = "Chris", Score = 49 },
+                new Record { Name = "Robert", Score = -100 },
+                new Record { Name = "Chris", Score = 24 },
+                new Record { Name = "Prakash", Score = 9 },
+                new Record { Name = "Tim", Score = 25 }
+            };
+
+            List<IGrouping<string, Record>> groupedList = source.GroupBy(r => r.Name).ToList();
+            Assert.Equal(4, groupedList.Count);
+            Assert.Equal(source.GroupBy(r => r.Name), groupedList);
+        }
+
+        [Fact]
+        public void GroupingWithResultsToList()
+        {
+            Record[] source = new Record[]
+            {
+                new Record { Name = "Tim", Score = 55 },
+                new Record { Name = "Chris", Score = 49 },
+                new Record { Name = "Robert", Score = -100 },
+                new Record { Name = "Chris", Score = 24 },
+                new Record { Name = "Prakash", Score = 9 },
+                new Record { Name = "Tim", Score = 25 }
+            };
+
+            List<IEnumerable<Record>> groupedList = source.GroupBy(r => r.Name, (r, e) => e).ToList();
+            Assert.Equal(4, groupedList.Count);
+            Assert.Equal(source.GroupBy(r => r.Name, (r, e) => e), groupedList);
+        }
     }
 }

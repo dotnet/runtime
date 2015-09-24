@@ -35,6 +35,14 @@ namespace System.Linq.Tests
                 Assert.Equal(i + 1, array[i]);
         }
 
+        [Fact]
+        public void Range_ToList_ProduceCorrectResult()
+        {
+            var list = Enumerable.Range(1, 100).ToList();
+            Assert.Equal(list.Count, 100);
+            for (var i = 0; i < list.Count; i++)
+                Assert.Equal(i + 1, list[i]);
+        }
 
         [Fact]
         public void Range_ZeroCountLeadToEmptySequence()
