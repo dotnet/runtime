@@ -9900,6 +9900,7 @@
       <Member Name="get_Name" />
       <Member MemberType="Property" Name="ConstructionException" />
       <Member MemberType="Property" Name="CurrentThreadActivityId" />
+      <Member MemberType="Event" Name="EventCommandExecuted" />
       <Member Name="Dispose" />
       <Member Name="Dispose(System.Boolean)" />
       <Member Name="GenerateManifest(System.Type,System.String)" />
