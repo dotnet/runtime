@@ -46,87 +46,79 @@ void *
 mono_mach_arch_get_ip (thread_state_t state)
 {
 	/* Can't use unified_thread_state on !ARM64 since this has to compile on armv6 too */
-	arm_thread_state_t *arch_state = (arm_thread_state_t *) state;
+	arm_unified_thread_state_t *arch_state = (arm_unified_thread_state_t *) state;
 
-	return (void *) arch_state->__pc;
+	return (void *) arch_state->ts_64.__pc;
 }
 
 void *
 mono_mach_arch_get_sp (thread_state_t state)
 {
-	arm_thread_state_t *arch_state = (arm_thread_state_t *) state;
+	arm_unified_thread_state_t *arch_state = (arm_unified_thread_state_t *) state;
 
-	return (void *) arch_state->__sp;
+	return (void *) arch_state->ts_64.__sp;
 }
 
 int
 mono_mach_arch_get_mcontext_size ()
 {
-	return sizeof (struct __darwin_mcontext);
+	return sizeof (struct __darwin_mcontext64);
 }
 
 void
 mono_mach_arch_thread_state_to_mcontext (thread_state_t state, void *context)
 {
-	arm_thread_state_t *arch_state = (arm_thread_state_t *) state;
-	struct __darwin_mcontext *ctx = (struct __darwin_mcontext *) context;
+	arm_unified_thread_state_t *arch_state = (arm_unified_thread_state_t *) state;
+	struct __darwin_mcontext64 *ctx = (struct __darwin_mcontext64 *) context;
 
-	ctx->__ss = *arch_state;
+	ctx->__ss = arch_state->ts_64;
 }
 
 void
 mono_mach_arch_mcontext_to_thread_state (void *context, thread_state_t state)
 {
-	arm_thread_state_t *arch_state = (arm_thread_state_t *) state;
-	struct __darwin_mcontext *ctx = (struct __darwin_mcontext *) context;
+	arm_unified_thread_state_t *arch_state = (arm_unified_thread_state_t *) state;
+	struct __darwin_mcontext64 *ctx = (struct __darwin_mcontext64 *) context;
 
-	*arch_state = ctx->__ss;
+	arch_state->ts_64 = ctx->__ss;
 }
 
 void
 mono_mach_arch_thread_state_to_mono_context (thread_state_t state, MonoContext *context)
 {
 	int i;
-	arm_thread_state_t *arch_state = (x86_thread_state64_t *) state;
-	for (i = 0; i < 13; ++i)
-		context->regs [i] = arch_state->__r [i];
-	context->regs [ARMREG_R13] = arch_state->__sp;
-	context->regs [ARMREG_R14] = arch_state->__lr;
-	context->regs [ARMREG_R15] = arch_state->__pc;
-	context->pc = arch_state->__pc;
-	context->cpsr = arch_state->__cpsr;
+	arm_unified_thread_state_t *arch_state = (arm_unified_thread_state_t *) state;
+	for (i = 0; i < 29; ++i)
+		context->regs [i] = arch_state->uts.ts_64.__x [i];
+
+	context->regs [ARMREG_R29] = arch_state->uts.ts_64.__fp;
+	context->regs [ARMREG_R30] = arch_state->uts.ts_64.__lr;
+	context->regs [ARMREG_R31] = arch_state->uts.ts_64.__sp;
+	context->pc = arch_state->uts.ts_64.__pc;
 }
 
 int
 mono_mach_arch_get_thread_state_size ()
 {
-	return sizeof (arm_thread_state_t);
+	return sizeof (arm_unified_thread_state_t);
 }
 
 kern_return_t
 mono_mach_arch_get_thread_state (thread_port_t thread, thread_state_t state, mach_msg_type_number_t *count)
 {
-#if defined(HOST_WATCHOS)
-	g_error ("thread_get_state() is not supported by this platform");
-#else	
-	arm_thread_state_t *arch_state = (arm_thread_state_t *) state;
+	arm_unified_thread_state_t *arch_state = (arm_unified_thread_state_t *) state;
 	kern_return_t ret;
 
-	*count = ARM_THREAD_STATE_COUNT;
+	*count = ARM_UNIFIED_THREAD_STATE_COUNT;
 
-	ret = thread_get_state (thread, ARM_THREAD_STATE, (thread_state_t) arch_state, count);
+	ret = thread_get_state (thread, ARM_UNIFIED_THREAD_STATE, (thread_state_t) arch_state, count);
 	return ret;
-#endif
 }
 
 kern_return_t
 mono_mach_arch_set_thread_state (thread_port_t thread, thread_state_t state, mach_msg_type_number_t count)
 {
-#if defined(HOST_WATCHOS)
-	g_error ("thread_set_state() is not supported by this platform");
-#else
-	return thread_set_state (thread, ARM_THREAD_STATE, state, count);
-#endif
+	return thread_set_state (thread, ARM_UNIFIED_THREAD_STATE, state, count);
 }
 
 void *

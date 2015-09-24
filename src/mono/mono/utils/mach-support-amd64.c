@@ -18,6 +18,9 @@
 #include "utils/mono-sigcontext.h"
 #include "mach-support.h"
 
+//For reg numbers
+#include <mono/arch/amd64/amd64-codegen.h>
+
 /* Known offsets used for TLS storage*/
 
 /* All OSX versions up to 10.8 */
@@ -71,6 +74,28 @@ mono_mach_arch_mcontext_to_thread_state (void *context, thread_state_t state)
 	struct __darwin_mcontext64 *ctx = (struct __darwin_mcontext64 *) context;
 
 	*arch_state = ctx->__ss;
+}
+
+void
+mono_mach_arch_thread_state_to_mono_context (thread_state_t state, MonoContext *context)
+{
+	x86_thread_state64_t *arch_state = (x86_thread_state64_t *) state;
+	context->gregs [AMD64_RAX] = arch_state->__rax;
+	context->gregs [AMD64_RBX] = arch_state->__rbx;
+	context->gregs [AMD64_RCX] = arch_state->__rcx;
+	context->gregs [AMD64_RDX] = arch_state->__rdx;
+	context->gregs [AMD64_RDI] = arch_state->__rdi;
+	context->gregs [AMD64_RBP] = arch_state->__rbp;
+	context->gregs [AMD64_RSP] = arch_state->__rsp;
+	context->gregs [AMD64_R8] = arch_state->__r8;
+	context->gregs [AMD64_R9] = arch_state->__r9;
+	context->gregs [AMD64_R10] = arch_state->__r10;
+	context->gregs [AMD64_R11] = arch_state->__r11;
+	context->gregs [AMD64_R12] = arch_state->__r12;
+	context->gregs [AMD64_R13] = arch_state->__r13;
+	context->gregs [AMD64_R14] = arch_state->__r14;
+	context->gregs [AMD64_R15] = arch_state->__r15;
+	context->gregs [AMD64_RIP] = arch_state->__rip;
 }
 
 int

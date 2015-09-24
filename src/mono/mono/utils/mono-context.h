@@ -304,8 +304,14 @@ typedef struct {
 #if defined (HOST_APPLETVOS)
 
 #define MONO_CONTEXT_GET_CURRENT(ctx) do { \
-	fprintf (stderr, "MONO_CONTEXT_GET_CURRENT: Not implemented"); \
-	g_error ("MONO_CONTEXT_GET_CURRENT: Not implemented"); \
+	arm_unified_thread_state_t thread_state;	\
+	int state_flavor = ARM_UNIFIED_THREAD_STATE;	\
+	unsigned state_count = ARM_UNIFIED_THREAD_STATE_COUNT;	\
+	thread_port_t self = mach_thread_self ();	\
+	kern_return_t ret = thread_get_state (self, state_flavor, (thread_state_t) &thread_state, &state_count);	\
+	g_assert (ret == 0);	\
+	mono_mach_arch_thread_state_to_mono_context (&thread_state, &ctx);	\
+	mach_port_deallocate (current_task (), self);	\
 } while (0);
 
 #else
