@@ -243,6 +243,32 @@ namespace Tests.ExpressionCompiler.MemberAccess
         }
 
         [Fact] // [Issue(3217, "https://github.com/dotnet/corefx/issues/3217")]
+        public static void CheckMemberAccessClassInstanceFieldAssignNullReferenceTest()
+        {
+            Expression<Func<int>> e =
+                Expression.Lambda<Func<int>>(
+                    Expression.Assign(
+                        Expression.Field(
+                            Expression.Constant(null, typeof(FC)),
+                            "II"),
+                        Expression.Constant(1)),
+                    Enumerable.Empty<ParameterExpression>());
+            Func<int> f = e.Compile();
+
+            var err = default(Exception);
+            try
+            {
+                f();
+            }
+            catch (NullReferenceException ex)
+            {
+                err = ex;
+            }
+
+            Assert.NotNull(err);
+        }
+
+        [Fact] // [Issue(3217, "https://github.com/dotnet/corefx/issues/3217")]
         public static void CheckMemberAccessClassInstancePropertyNullReferenceTest()
         {
             Expression<Func<int>> e =
@@ -250,6 +276,58 @@ namespace Tests.ExpressionCompiler.MemberAccess
                     Expression.Property(
                         Expression.Constant(null, typeof(PC)),
                         "II"),
+                    Enumerable.Empty<ParameterExpression>());
+            Func<int> f = e.Compile();
+
+            var err = default(Exception);
+            try
+            {
+                f();
+            }
+            catch (NullReferenceException ex)
+            {
+                err = ex;
+            }
+
+            Assert.NotNull(err);
+        }
+
+        [Fact] // [Issue(3217, "https://github.com/dotnet/corefx/issues/3217")]
+        public static void CheckMemberAccessClassInstanceIndexerNullReferenceTest()
+        {
+            Expression<Func<int>> e =
+                Expression.Lambda<Func<int>>(
+                    Expression.Property(
+                        Expression.Constant(null, typeof(PC)),
+                        "Item",
+                        Expression.Constant(1)),
+                    Enumerable.Empty<ParameterExpression>());
+            Func<int> f = e.Compile();
+
+            var err = default(Exception);
+            try
+            {
+                f();
+            }
+            catch (NullReferenceException ex)
+            {
+                err = ex;
+            }
+
+            Assert.NotNull(err);
+        }
+
+        [Fact] // [Issue(3217, "https://github.com/dotnet/corefx/issues/3217")]
+        public static void CheckMemberAccessClassInstanceIndexerAssignNullReferenceTest()
+        {
+            Expression<Func<int>> e =
+                Expression.Lambda<Func<int>>(
+                    Expression.Assign(
+                        Expression.Property(
+                            Expression.Constant(null, typeof(PC)),
+                            "Item",
+                            Expression.Constant(1)),
+                        Expression.Constant(1)),
                     Enumerable.Empty<ParameterExpression>());
             Func<int> f = e.Compile();
 
