@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class RepeatTests
+    public class RepeatTests : EnumerableTests
     {
         [Fact]
         public void Repeat_ProduceCorrectSequence()
@@ -75,7 +75,7 @@ namespace System.Linq.Tests
         [Fact]
         public void Repeat_ThrowExceptionOnNegativeCount()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => Enumerable.Repeat(1, -1));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => Enumerable.Repeat(1, -1));
         }
 
 

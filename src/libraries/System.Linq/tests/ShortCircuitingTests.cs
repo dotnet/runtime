@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class ShortCircuitingTests
+    public class ShortCircuitingTests : EnumerableTests
     {
         private class TrackingEnumerable : IEnumerable<int>
         {

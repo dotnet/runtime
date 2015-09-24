@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class ConcatTests
+    public class ConcatTests : EnumerableTests
     {
         [Fact]
         public void SameResultsRepeatCallsIntQuery()
@@ -36,9 +36,7 @@ namespace System.Linq.Tests
         {
             int[] first = { };
             int[] second = { };
-            int[] expected = { };
-
-            Assert.Equal(expected, first.Concat(second));
+            Assert.Empty(first.Concat(second));
         }
 
         [Fact]
@@ -46,9 +44,8 @@ namespace System.Linq.Tests
         {
             int[] first = { };
             int[] second = { 2, 6, 4, 6, 2 };
-            int[] expected = { 2, 6, 4, 6, 2 };
 
-            Assert.Equal(expected, first.Concat(second));
+            Assert.Equal(second, first.Concat(second));
         }
 
         [Fact]
@@ -56,9 +53,8 @@ namespace System.Linq.Tests
         {
             int[] first = { 2, 6, 4, 6, 2 };
             int[] second = { };
-            int[] expected = { 2, 6, 4, 6, 2 };
 
-            Assert.Equal(expected, first.Concat(second));
+            Assert.Equal(first, first.Concat(second));
         }
 
         [Fact]
@@ -69,6 +65,27 @@ namespace System.Linq.Tests
             int?[] expected = { 2, null, 3, 5, 9, null, 8, 10 };
 
             Assert.Equal(expected, first.Concat(second));
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerate()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Concat(Enumerable.Range(0, 3));
+            // Don't insist on this behaviour, but check its correct if it happens
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
+        }
+
+        [Fact]
+        public void FirstNull()
+        {
+            Assert.Throws<ArgumentNullException>("first", () => ((IEnumerable<int>)null).Concat(Enumerable.Range(0, 0)));
+        }
+
+        [Fact]
+        public void SecondNull()
+        {
+            Assert.Throws<ArgumentNullException>("second", () => Enumerable.Range(0, 0).Concat(null));
         }
     }
 }

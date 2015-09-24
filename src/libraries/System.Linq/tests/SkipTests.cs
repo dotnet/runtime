@@ -7,7 +7,7 @@ using Xunit.Abstractions;
 
 namespace System.Linq.Tests
 {
-    public class SkipTests
+    public class SkipTests : EnumerableTests
     {
         [Fact]
         public void SkipSome()
@@ -36,7 +36,7 @@ namespace System.Linq.Tests
         [Fact]
         public void SkipThrowsOnNull()
         {
-            Assert.Throws<ArgumentNullException>(() => ((IEnumerable<DateTime>)null).Skip(3));
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<DateTime>)null).Skip(3));
         }
         
         [Fact]
@@ -96,9 +96,16 @@ namespace System.Linq.Tests
         public void SkipOneMoreThanAll()
         {
             int[] source = { 3, 100, 4, 10 };
-            int[] expected = { };
-            
-            Assert.Equal(expected, source.Skip(source.Length + 1));
+            Assert.Empty(source.Skip(source.Length + 1));
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerate()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Skip(2);
+            // Don't insist on this behaviour, but check its correct if it happens
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
         }
     }
 }

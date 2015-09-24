@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class SumTests
+    public class SumTests : EnumerableTests
     {
         #region SourceIsNull - ArgumentNullExceptionThrown
 

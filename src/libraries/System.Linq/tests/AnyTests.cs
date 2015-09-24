@@ -7,13 +7,8 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class AnyTests
+    public class AnyTests : EnumerableTests
     {
-        private static bool IsEven(int num)
-        {
-            return num % 2 == 0;
-        }
-
         [Fact]
         public void SameResultsRepeatCallsIntQuery()
         {
@@ -99,6 +94,34 @@ namespace System.Linq.Tests
             int[] source = { 5, 8, 9, 3, 7, 11 };
             
             Assert.True(source.Any(IsEven));
+        }
+
+        [Fact]
+        public void RangeWithinRange()
+        {
+            var array = Enumerable.Range(1, 10).ToArray();
+            for (var j = 0; j <= 9; j++)
+                Assert.True(array.Any(i => i > j));
+            Assert.False(array.Any(i => i > 10));
+        }
+
+        [Fact]
+        public void NullSource()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).Any());
+        }
+
+        [Fact]
+        public void NullSourcePredicateUsed()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).Any(i => i != 0));
+        }
+
+        [Fact]
+        public void NullPredicateUsed()
+        {
+            Func<int, bool> predicate = null;
+            Assert.Throws<ArgumentNullException>("predicate", () => Enumerable.Range(0, 3).Any(predicate));
         }
     }
 }
