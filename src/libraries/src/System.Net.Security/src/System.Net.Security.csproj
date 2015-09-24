@@ -18,13 +18,6 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
 
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
-    <ProjectReference Include="..\..\System.Security.Cryptography.OpenSsl\src\System.Security.Cryptography.OpenSsl.csproj">
-      <Project>{78452F3E-BA91-47E7-BB0F-02E8A5C116C4}</Project>
-      <Name>System.Security.Cryptography.OpenSsl</Name>
-    </ProjectReference>
-  </ItemGroup>
-
   <ItemGroup>
     <Compile Include="System\PinnableBufferCache.cs" />
     <Compile Include="System\Net\_SecurityBuffer.cs" />
