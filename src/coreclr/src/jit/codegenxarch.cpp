@@ -5094,13 +5094,16 @@ void CodeGen::genCallInstruction(GenTreePtr node)
                         genConsumeReg(target));
         }
     }
-#if defined(_TARGET_AMD64_) && defined(FEATURE_READYTORUN_COMPILER)
+#ifdef FEATURE_READYTORUN_COMPILER
     else if (call->gtEntryPoint.addr != nullptr)
     {
-        genEmitCall(emitter::EC_FUNC_TOKEN_INDIR,
+        genEmitCall((call->gtEntryPoint.accessType == IAT_VALUE) ? emitter::EC_FUNC_TOKEN : emitter::EC_FUNC_TOKEN_INDIR,
                     methHnd,
                     INDEBUG_LDISASM_COMMA(sigInfo)
                     (void*) call->gtEntryPoint.addr,
+#ifdef _TARGET_X86_
+                    stackArgBytes,
+#endif // _TARGET_X86_
                     retSize,
                     ilOffset);
     }
