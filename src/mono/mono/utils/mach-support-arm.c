@@ -87,7 +87,7 @@ void
 mono_mach_arch_thread_state_to_mono_context (thread_state_t state, MonoContext *context)
 {
 	int i;
-	arm_thread_state_t *arch_state = (x86_thread_state64_t *) state;
+	arm_thread_state_t *arch_state = (arm_thread_state_t *) state;
 	for (i = 0; i < 13; ++i)
 		context->regs [i] = arch_state->__r [i];
 	context->regs [ARMREG_R13] = arch_state->__sp;
