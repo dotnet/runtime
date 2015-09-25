@@ -35,7 +35,7 @@ namespace System.Globalization.Tests
 
         // PosTest2: Call GetInstance to get an DateTimeFormatInfo instance when provider is null reference
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)] // sporadic failure (#3421)
+        [ActiveIssue(3421, PlatformID.AnyUnix)] 
         public void PosTest2()
         {
             DateTimeFormatInfo info = DateTimeFormatInfo.GetInstance(null);
@@ -60,6 +60,7 @@ namespace System.Globalization.Tests
 
         // PosTest5: Call GetInstance to get an DateTimeFormatInfo instance when provider.GetFormat method does not support a DateTimeFormatInfo instance
         [Fact]
+        [ActiveIssue(3421, PlatformID.AnyUnix)]
         public void PosTest5()
         {
             DateTimeFormatInfo info = DateTimeFormatInfo.GetInstance(new TestIFormatProviderClass());
