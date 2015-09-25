@@ -32,6 +32,7 @@ add_compile_options(-fPIC)
 set(NATIVEGLOBALIZATION_SOURCES
     calendarData.cpp
     casing.cpp
+    collation.cpp
     idna.cpp
     locale.cpp
     localeNumberData.cpp
