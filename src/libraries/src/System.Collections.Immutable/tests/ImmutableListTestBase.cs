@@ -7,7 +7,7 @@ using Xunit;
 using Validation;
 using System.Diagnostics;
 
-namespace System.Collections.Immutable.Test
+namespace System.Collections.Immutable.Tests
 {
     public abstract class ImmutableListTestBase : SimpleElementImmutablesTestBase
     {
