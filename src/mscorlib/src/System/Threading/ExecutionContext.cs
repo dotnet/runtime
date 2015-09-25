@@ -67,10 +67,10 @@ namespace System.Threading
             m_localChangeNotifications = new List<IAsyncLocal>();
         }
 
-        private ExecutionContext(ExecutionContext other)
+        private ExecutionContext(Dictionary<IAsyncLocal, object> localValues, List<IAsyncLocal> localChangeNotifications)
         {
-            m_localValues = new Dictionary<IAsyncLocal, object>(other.m_localValues);
-            m_localChangeNotifications = new List<IAsyncLocal>(other.m_localChangeNotifications);
+            m_localValues = localValues;
+            m_localChangeNotifications = localChangeNotifications;
         }
 
         [SecuritySafeCritical]
@@ -191,18 +191,27 @@ namespace System.Threading
             if (previousValue == newValue)
                 return;
 
-            current = new ExecutionContext(current);
-            current.m_localValues[local] = newValue;
+            Dictionary<IAsyncLocal, object> newValues = new Dictionary<IAsyncLocal, object>(current.m_localValues);
+            newValues[local] = newValue;
 
-            t_currentMaybeNull = current;
-
+            List<IAsyncLocal> newChangeNotifications = current.m_localChangeNotifications;
             if (needChangeNotifications)
             {
                 if (hadPreviousValue)
-                    Contract.Assert(current.m_localChangeNotifications.Contains(local));
+                {
+                    Contract.Assert(newChangeNotifications.Contains(local));
+                }
                 else
-                    current.m_localChangeNotifications.Add(local);
+                {
+                    newChangeNotifications = new List<IAsyncLocal>(current.m_localChangeNotifications);
+                    newChangeNotifications.Add(local);
+                }
+            }
 
+            t_currentMaybeNull = new ExecutionContext(newValues, newChangeNotifications);
+
+            if (needChangeNotifications)
+            {
                 local.OnValueChanged(previousValue, newValue, false);
             }
         }
