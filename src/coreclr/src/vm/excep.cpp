@@ -8948,6 +8948,33 @@ LONG ReflectionInvocationExceptionFilter(
     }
 #endif // !FEATURE_PAL
 
+    // If the application has opted into triggering a failfast when a CorruptedStateException enters the Reflection system,
+    // then do the needful.
+    if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_FailFastOnCorruptedStateException) == 1)
+    {
+         // Get the thread and the managed exception object - they must exist at this point
+        Thread *pCurThread = GetThread();
+        _ASSERTE(pCurThread != NULL);
+
+        // Get the thread exception state
+        ThreadExceptionState * pCurTES = pCurThread->GetExceptionState();
+        _ASSERTE(pCurTES != NULL);
+
+        // Get the exception tracker for the current exception
+#ifdef WIN64EXCEPTIONS
+        PTR_ExceptionTracker pEHTracker = pCurTES->GetCurrentExceptionTracker();
+#elif _TARGET_X86_
+        PTR_ExInfo pEHTracker = pCurTES->GetCurrentExceptionTracker();
+#else // !(_WIN64 || _TARGET_X86_)
+#error Unsupported platform
+#endif // _WIN64
+        
+        if (pEHTracker->GetCorruptionSeverity() == ProcessCorrupting)
+        {
+            EEPolicy::HandleFatalError(COR_E_FAILFAST, reinterpret_cast<UINT_PTR>(pExceptionInfo->ExceptionRecord->ExceptionAddress), NULL, pExceptionInfo);
+        }
+    }
+
     return ret;
 } // LONG ReflectionInvocationExceptionFilter()
 
