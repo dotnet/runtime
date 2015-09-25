@@ -1,12 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Reflection;
-using System.Reflection.Compatibility.UnitTests;
 using Xunit;
 
-namespace System.Reflection.Compatibility.UnitTests.PropertyInfoTests
+namespace System.Reflection.Tests
 {
     /// <summary>
     /// System.Reflection.PropertyInfo.GetAccessors()

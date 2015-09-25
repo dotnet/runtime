@@ -1,22 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Reflection;
-using System.Reflection.Emit;
-using System;
 using System.Text;
 using Xunit;
 
-namespace System.Reflection.Compatibility.UnitTests.PropertyInfoTests
+namespace System.Reflection.Tests
 {
-    internal class Binding_Flags
-    {
-        internal static BindingFlags LookupAll = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
-        internal static BindingFlags DefaultLookup = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
-        internal static BindingFlags Default = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
-        internal static BindingFlags ConstructorLookupAll = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-    }
-
     public class Co4389GetAccessors
     {
         private static String s_strLoc = String.Empty;
@@ -64,7 +53,7 @@ namespace System.Reflection.Compatibility.UnitTests.PropertyInfoTests
 
 
             ///// [] Reflect on this class and set up propinfo structures
-            clObj = Type.GetType("System.Reflection.Compatibility.UnitTests.PropertyInfoTests.Co4389GetAccessors");
+            clObj = Type.GetType("System.Reflection.Tests.Co4389GetAccessors");
 
             pInfo = clObj.GetProperty("MyPropBB", Binding_Flags.DefaultLookup);
             pInfo2 = clObj.GetProperty("MyPropCC", BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
