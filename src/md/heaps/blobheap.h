@@ -83,7 +83,7 @@ public:
     
     __checkReturn 
     inline HRESULT GetAllData(
-        __out DataBlob *pData)
+        __inout DataBlob *pData)
     {
         return m_BlobPool.GetDataReadOnly(0, pData);
     }

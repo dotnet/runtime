@@ -516,7 +516,7 @@ HRESULT GetDebuggerSettingInfoWorker(__out_ecount_part_opt(*pcchDebuggerString, 
     }
 
     // Look in AeDebug key for "Debugger"; get the size of any value stored there.
-    DWORD valueType, valueSize;
+    DWORD valueType, valueSize = 0;
     ret = WszRegQueryValueEx(hKeyHolder, kUnmanagedDebuggerValue, 0, &valueType, 0, &valueSize);   
 
     _ASSERTE(pcchDebuggerString != NULL);

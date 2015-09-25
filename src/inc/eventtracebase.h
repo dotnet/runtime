@@ -385,7 +385,7 @@ namespace ETW
         friend class ETW::EnumerationLog;
 #ifdef FEATURE_EVENT_TRACE
         static VOID SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL bFireDomainModuleEvents=FALSE);
-        static ULONG SendModuleRange(Module *pModule, DWORD dwEventOptions);
+        static ULONG SendModuleRange(__in Module *pModule, __in DWORD dwEventOptions);
         static VOID SendAssemblyEvent(Assembly *pAssembly, DWORD dwEventOptions);
         static VOID SendDomainEvent(BaseDomain *pBaseDomain, DWORD dwEventOptions, LPCWSTR wszFriendlyName=NULL);
     public:

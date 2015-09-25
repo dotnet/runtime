@@ -333,7 +333,7 @@ protected:
 //  helper for extension segments.
 //*****************************************************************************
     __checkReturn 
-    FORCEINLINE HRESULT GetDataReadOnly(UINT32 nOffset, __in MetaData::DataBlob *pData)
+    FORCEINLINE HRESULT GetDataReadOnly(UINT32 nOffset, __inout MetaData::DataBlob *pData)
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(IsReadOnly());
@@ -375,7 +375,7 @@ protected:
 //  helper for extension segments.
 //*****************************************************************************
     __checkReturn 
-    virtual HRESULT GetData(UINT32 nOffset, __in MetaData::DataBlob *pData)
+    virtual HRESULT GetData(UINT32 nOffset, __inout MetaData::DataBlob *pData)
     {
         WRAPPER_NO_CONTRACT;
         return GetDataReadOnly(nOffset, pData);
