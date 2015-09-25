@@ -167,7 +167,7 @@ emit_bx (guint8* code, int reg)
 
 /* Stack size for trampoline function
  */
-#define STACK ALIGN_TO (sizeof (MonoLMF), 8)
+#define STACK ALIGN_TO (sizeof (MonoLMF), MONO_ARCH_FRAME_ALIGNMENT)
 
 /* Method-specific trampoline code fragment size */
 #define METHOD_TRAMPOLINE_SIZE 64
@@ -243,6 +243,18 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	}
 	ARM_LDR_IMM (code, ARMREG_V3, ARMREG_SP, lr_offset);
 
+	/* we build the MonoLMF structure on the stack - see mini-arm.h
+	 * The pointer to the struct is put in r1.
+	 * the iregs array is already allocated on the stack by push.
+	 */
+	code = mono_arm_emit_load_imm (code, ARMREG_R2, STACK - regsave_size);
+	ARM_SUB_REG_REG (code, ARMREG_SP, ARMREG_SP, ARMREG_R2);
+	cfa_offset += STACK - regsave_size;
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, cfa_offset);
+	/* V1 == lmf */
+	code = mono_arm_emit_load_imm (code, ARMREG_R2, STACK - sizeof (MonoLMF));
+	ARM_ADD_REG_REG (code, ARMREG_V1, ARMREG_SP, ARMREG_R2);
+
 	/* ok, now we can continue with the MonoLMF setup, mostly untouched 
 	 * from emit_prolog in mini-arm.c
 	 * This is a synthetized call to mono_get_lmf_addr ()
@@ -265,18 +277,6 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	}
 	ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
 	code = emit_bx (code, ARMREG_R0);
-
-	/* we build the MonoLMF structure on the stack - see mini-arm.h
-	 * The pointer to the struct is put in r1.
-	 * the iregs array is already allocated on the stack by push.
-	 */
-	code = mono_arm_emit_load_imm (code, ARMREG_R2, STACK - regsave_size);
-	ARM_SUB_REG_REG (code, ARMREG_SP, ARMREG_SP, ARMREG_R2);
-	cfa_offset += STACK - regsave_size;
-	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, cfa_offset);
-	/* V1 == lmf */
-	code = mono_arm_emit_load_imm (code, ARMREG_R2, STACK - sizeof (MonoLMF));
-	ARM_ADD_REG_REG (code, ARMREG_V1, ARMREG_SP, ARMREG_R2);
 
 	/*
 	 * The stack now looks like:
