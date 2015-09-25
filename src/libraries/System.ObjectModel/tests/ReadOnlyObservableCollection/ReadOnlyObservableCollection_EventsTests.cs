@@ -1,15 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Xunit;
-using System;
-using System.Collections;
-using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using Tests.Collections;
+using Xunit;
 
-namespace Test
+namespace System.Collections.ObjectModel.Tests
 {
     /// <summary>
     /// Tests that the INotifyCollectionChanged and IPropertyChanged events are fired 
