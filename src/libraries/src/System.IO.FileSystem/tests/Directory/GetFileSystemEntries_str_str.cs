@@ -4,7 +4,7 @@
 using System.Runtime.InteropServices;
 using Xunit;
 
-namespace System.IO.FileSystem.Tests
+namespace System.IO.Tests
 {
     public class Directory_GetFileSystemEntries_str_str : Directory_GetFileSystemEntries_str
     {

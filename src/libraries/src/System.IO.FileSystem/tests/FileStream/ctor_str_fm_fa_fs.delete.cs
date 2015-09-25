@@ -6,7 +6,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using Xunit;
 
-namespace System.IO.FileSystem.Tests
+namespace System.IO.Tests
 {
     public partial class FileStream_ctor_str_fm_fa_fs
     {
