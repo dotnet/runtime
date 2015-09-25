@@ -719,6 +719,225 @@ GetX509NameInfo(
 
 /*
 Function:
+CheckX509HostnameMatch
+
+Checks if a particular ASN1_STRING represents the entry in a certificate which would match against
+the requested hostname.
+
+Prameter sanRules: 0 for match rules against the subject CN, 1 for match rules against a SAN entry
+
+Return values:
+1 if the hostname is a match
+0 if the hostname is not a match
+Any negative number indicates an error in the arguments.
+*/
+static
+int
+CheckX509HostnameMatch(ASN1_STRING* candidate, const char* hostname, int cchHostname, char sanRules)
+{
+    assert(candidate);
+    assert(hostname);
+
+    if (!candidate->data || !candidate->length)
+    {
+        return 0;
+    }
+
+    // If the candidate is *.example.org then the smallest we would match is a.example.org, which is the same
+    // length. So anything longer than what we're matching against isn't valid.
+
+    // This assumption might not hold under IDNA, it might need to be more sophisticated
+    // "UTF character string length"
+    if (candidate->length > cchHostname)
+    {
+        return 0;
+    }
+
+    if (sanRules)
+    {
+        // RFC2818 says to use RFC2595 matching rules, but then gives an example that f*.com would match foo.com
+        // RFC2595 says that '*' may be used as the left name component, in which case it is a wildcard that does
+        // not match a '.'.
+        //
+        // In the interest of time, and the idea that it's better to err on the side of more restrictive,
+        // this implementation does not support mid-string wildcards.
+        //
+        // TODO (3444): Determine if we're too restrictive here.
+
+        char* candidateStr;
+        int i;
+        int hostnameFirstDot = -1;
+
+        // A GEN_DNS name is supposed to be a V_ASN1_IA5STRING.  If it isn't, we don't know how to read it.
+        if (candidate->type != V_ASN1_IA5STRING)
+        {
+            return 0;
+        }
+
+        // Great, candidateStr is just candidate->data!
+        candidateStr = (char*)candidate->data;
+
+        // First, verify that the string is alphanumeric, plus hyphens or periods and maybe starting with an asterisk.
+        for (i = 0; i < candidate->length; ++i)
+        {
+            char c = candidateStr[i];
+
+            if ((c < 'a' || c > 'z') &&
+                (c < '0' || c > '9') &&
+                (c != '.') &&
+                (c != '-') &&
+                (c != '*' || i != 0))
+            {
+                return 0;
+            }
+        }
+
+        if (candidateStr[0] != '*')
+        {
+            if (candidate->length != cchHostname)
+            {
+                return 0;
+            }
+
+            return !memcmp(candidateStr, hostname, (size_t)cchHostname);
+        }
+
+        for (i = 0; i < cchHostname; ++i)
+        {
+            if (hostname[i] == '.')
+            {
+                hostnameFirstDot = i;
+                break;
+            }
+        }
+
+        if (hostnameFirstDot < 0)
+        {
+            // It's possible that this should be considered a match if the entire SAN entry is '*',
+            // aka candidate->length == 1; but nothing talks about this case.
+            return 0;
+        }
+
+        {
+            // Determine how many characters exist after the portion the wildcard would match. For example,
+            // if hostname is 10 bytes long, and the '.' was at index 3, then we eliminate the first 3
+            // characters (www) from the match constraint.  This forces the wildcard to be the last
+            // character before the . in its match group.
+            int matchLength = cchHostname - hostnameFirstDot;
+
+            // If what's left over from hostname isn't as long as what's left over from the candidate
+            // after the first character was an asterisk, it can't match.
+            if (matchLength != (candidate->length - 1))
+            {
+                return 0;
+            }
+
+            return !memcmp(candidateStr + 1, hostname + hostnameFirstDot, (size_t)matchLength);
+        }
+    }
+
+    // Not SAN-rules, much simpler:
+
+    if (candidate->length != cchHostname)
+    {
+        return 0;
+    }
+
+    return !memcmp(candidate->data, hostname, (size_t)cchHostname);
+}
+
+/*
+Function:
+CheckX509Hostname
+
+Used by System.Net.Security's Unix CertModule to identify if the certificate presented by
+the server is applicable to the hostname requested.
+
+Return values:
+1 if the hostname is a match
+0 if the hostname is not a match
+Any negative number indicates an error in the arguments.
+*/
+int
+CheckX509Hostname(
+    X509* x509,
+    const char* hostname,
+    int cchHostname)
+{
+    if (!x509)
+        return -2;
+    if (cchHostname > 0 && !hostname)
+        return -3;
+    if (cchHostname < 0)
+        return -4;
+
+    int subjectNid = NID_commonName;
+    int sanGenType = GEN_DNS;
+    GENERAL_NAMES* san = X509_get_ext_d2i(x509, NID_subject_alt_name, NULL, NULL);
+    char readSubject = 1;
+    int success = 0;
+
+    // RFC2818 says that if ANY dNSName alternative name field is matched then we
+    // should ignore the subject common name.
+
+    // TODO (3445): Match an input IP Address against the iPAddress SAN entries
+    // TODO (3446): Match using IDNA rules.
+
+    if (san)
+    {
+        int i;
+        int count = sk_GENERAL_NAME_num(san);
+
+        for (i = 0; i < count; ++i)
+        {
+            GENERAL_NAME* sanEntry = sk_GENERAL_NAME_value(san, i);
+
+            if (sanEntry->type != sanGenType)
+            {
+                continue;
+            }
+
+            readSubject = 0;
+
+            if (CheckX509HostnameMatch(sanEntry->d.dNSName, hostname, cchHostname, 1))
+            {
+                success = 1;
+                break;
+            }
+        }
+
+        GENERAL_NAMES_free(san);
+    }
+
+    if (readSubject && !success)
+    {
+        // This is a shared/interor pointer, do not free!
+        X509_NAME* subject = X509_get_subject_name(x509);
+
+        if (subject)
+        {
+            int i = -1;
+
+            while ((i = X509_NAME_get_index_by_NID(subject, subjectNid, i)) >= 0)
+            {
+                // Shared/interior pointers, do not free!
+                X509_NAME_ENTRY* nameEnt = X509_NAME_get_entry(subject, i);
+                ASN1_STRING* cn = X509_NAME_ENTRY_get_data(nameEnt);
+
+                if (CheckX509HostnameMatch(cn, hostname, cchHostname, 0))
+                {
+                    success = 1;
+                    break;
+                }
+            }
+        }
+    }
+
+    return success;
+}
+
+/*
+Function:
 GetX509StackFieldCount
 
 Used by System.Security.Cryptography.X509Certificates' OpenSslX509ChainProcessor to identify the
