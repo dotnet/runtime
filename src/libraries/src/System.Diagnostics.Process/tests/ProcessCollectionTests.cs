@@ -5,7 +5,7 @@ using System.Collections;
 using System.Linq;
 using Xunit;
 
-namespace System.Diagnostics.ProcessTests
+namespace System.Diagnostics.Tests
 {
     public class ProcessCollectionTests : ProcessTestBase
     {

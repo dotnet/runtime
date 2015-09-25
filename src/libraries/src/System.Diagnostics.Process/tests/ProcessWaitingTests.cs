@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace System.Diagnostics.ProcessTests
+namespace System.Diagnostics.Tests
 {
     public class ProcessWaitingTests : ProcessTestBase
     {
