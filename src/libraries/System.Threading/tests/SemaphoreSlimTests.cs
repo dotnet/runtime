@@ -195,25 +195,13 @@ namespace System.Threading.Tests
             try
             {
                 SemaphoreSlim semaphore = new SemaphoreSlim(initial, maximum);
-                if (semaphore.CurrentCount != initial)
-                {
-                    Assert.True(false, string.Format(methodFailed + "Constructor test failed, expected " + initial + " actual " + semaphore.CurrentCount));
-                }
+                Assert.Equal(initial, semaphore.CurrentCount);
             }
             catch (Exception ex)
             {
+                Assert.NotNull(exceptionType);
+                Assert.IsType(exceptionType, ex);
                 exception = ex;
-            }
-            // The code threw excption and it is not expected because the excyptionType param is null
-            if (exceptionType == null && exception != null)
-            {
-                Assert.True(false, string.Format(methodFailed + "Constructor failed, the code threw an exception, and it is not supposed to."));
-            }
-
-            // Compare both exception types in case of the code threw exception
-            if (exception != null && !Type.Equals(exception.GetType(), exceptionType))
-            {
-                Assert.True(false, string.Format(methodFailed + "Constructor failed, Excption types do not match"));
             }
         }
 
@@ -230,8 +218,6 @@ namespace System.Threading.Tests
         private static void RunSemaphoreSlimTest1_Wait
             (int initial, int maximum, object timeout, bool returnValue, Type exceptionType)
         {
-            string methodFailed = "RunSemaphoreSlimTest1_Wait(" + initial + "," + maximum + "," + timeout + "): FAILED.  ";
-            Exception exception = null;
             SemaphoreSlim semaphore = new SemaphoreSlim(initial, maximum);
             try
             {
@@ -244,27 +230,16 @@ namespace System.Threading.Tests
                 {
                     result = semaphore.Wait((int)timeout);
                 }
-
-                if (result != returnValue ||
-                (result && semaphore.CurrentCount != initial - 1))
+                Assert.Equal(returnValue, result);
+                if (result)
                 {
-                    Assert.True(false, string.Format(methodFailed + "Wait failed, the method returned " + result + " and expected " + returnValue));
+                    Assert.Equal(initial - 1, semaphore.CurrentCount);
                 }
             }
             catch (Exception ex)
             {
-                exception = ex;
-            }
-            // The code threw excption and it is not expected because the excyptionType param is null
-            if (exceptionType == null && exception != null)
-            {
-                Assert.True(false, string.Format(methodFailed + "Wait failed, the code threw an exception, and it is not supposed to."));
-            }
-
-            // Compare both exception types in case of the code threw exception
-            if (exception != null && !Type.Equals(exception.GetType(), exceptionType))
-            {
-                Assert.True(false, string.Format(methodFailed + "Wait failed, Excption types do not match"));
+                Assert.NotNull(exceptionType);
+                Assert.IsType(exceptionType, ex);
             }
         }
 
@@ -281,8 +256,6 @@ namespace System.Threading.Tests
         private static void RunSemaphoreSlimTest1_WaitAsync
             (int initial, int maximum, object timeout, bool returnValue, Type exceptionType)
         {
-            string methodFailed = "RunSemaphoreSlimTest1_WaitAsync(" + initial + "," + maximum + "," + timeout + "):  FAILED.  ";
-            Exception exception = null;
             SemaphoreSlim semaphore = new SemaphoreSlim(initial, maximum);
             try
             {
@@ -295,31 +268,16 @@ namespace System.Threading.Tests
                 {
                     result = semaphore.WaitAsync((int)timeout).Result;
                 }
-
-                if (result != returnValue ||
-                (result && semaphore.CurrentCount != initial - 1))
+                Assert.Equal(returnValue, result);
+                if (result)
                 {
-                    Assert.True(false, string.Format(methodFailed + "WaitAsync failed, the method returned " + result + " and expected " + returnValue));
+                    Assert.Equal(initial - 1, semaphore.CurrentCount);
                 }
-            }
-            catch (AggregateException ex)
-            {
-                exception = ex.InnerException;
             }
             catch (Exception ex)
             {
-                exception = ex;
-            }
-            // The code threw excption and it is not expected because the excyptionType param is null
-            if (exceptionType == null && exception != null)
-            {
-                Assert.True(false, string.Format(methodFailed + "WaitAsync failed, the code threw an exception, and it is not supposed to."));
-            }
-
-            // Compare both exception types in case of the code threw exception
-            if (exception != null && !Type.Equals(exception.GetType(), exceptionType))
-            {
-                Assert.True(false, string.Format(methodFailed + "WaitAsync failed, Excption types do not match"));
+                Assert.NotNull(exceptionType);
+                Assert.IsType(exceptionType, ex);
             }
         }
 
@@ -358,7 +316,7 @@ namespace System.Threading.Tests
 
             mre.WaitOne();
 
-            Assert.True(!nonZeroObserved, "RunSemaphoreSlimTest1_WaitAsync2:  FAILED.  SemaphoreSlim.Release() seems to have synchronously invoked a continuation.");
+            Assert.False(nonZeroObserved, "RunSemaphoreSlimTest1_WaitAsync2:  FAILED.  SemaphoreSlim.Release() seems to have synchronously invoked a continuation.");
         }
 
         /// <summary>
@@ -373,36 +331,22 @@ namespace System.Threading.Tests
         private static void RunSemaphoreSlimTest2_Release
            (int initial, int maximum, int releaseCount, Type exceptionType)
         {
-            string methodFailed = "RunSemaphoreSlimTest2_Release(" + initial + "," + maximum + "," + releaseCount + "):  FAILED.  ";
-            Exception exception = null;
             SemaphoreSlim semaphore = new SemaphoreSlim(initial, maximum);
             try
             {
                 int oldCount = semaphore.Release(releaseCount);
-                if (semaphore.CurrentCount != initial + releaseCount || oldCount != initial)
-                {
-                    Assert.True(false, string.Format(methodFailed + "Release failed, the method returned " + oldCount + " and expected " + initial));
-                }
+                Assert.Equal(initial, oldCount);
+                Assert.Equal(initial + releaseCount, semaphore.CurrentCount);
             }
             catch (Exception ex)
             {
-                exception = ex;
-            }
-            // The code threw excption and it is not expected because the excyptionType param is null
-            if (exceptionType == null && exception != null)
-            {
-                Assert.True(false, string.Format(methodFailed + "Release failed, the code threw an exception, and it is not supposed to."));
-            }
-
-            // Compare both exception types in case of the code threw exception
-            if (exception != null && !Type.Equals(exception.GetType(), exceptionType))
-            {
-                Assert.True(false, string.Format(methodFailed + "Release failed, Excption types do not match"));
+                Assert.NotNull(exceptionType);
+                Assert.IsType(exceptionType, ex);
             }
         }
 
         /// <summary>
-        /// Call specific SemaphoreSlim method or property 
+        /// Call specific SemaphoreSlim method or property
         /// </summary>
         /// <param name="semaphore">The SemaphoreSlim instance</param>
         /// <param name="action">The action name</param>
@@ -473,7 +417,6 @@ namespace System.Threading.Tests
         /// <returns>True if the test succeeded, false otherwise</returns>
         private static void RunSemaphoreSlimTest4_Dispose(int initial, int maximum, SemaphoreSlimActions? action, Type exceptionType)
         {
-            Exception exception = null;
             SemaphoreSlim semaphore = new SemaphoreSlim(initial, maximum);
             try
             {
@@ -482,20 +425,8 @@ namespace System.Threading.Tests
             }
             catch (Exception ex)
             {
-                exception = ex;
-            }
-            // The code threw excption and it is not expected because the excyptionType param is null
-            if (exceptionType == null && exception != null)
-            {
-                string methodFailed = "RunSemaphoreSlimTest4_Dispose(" + initial + "," + maximum + "," + action + "): FAILED.  ";
-                Assert.True(false, string.Format(methodFailed + "Dispose failed, the code threw an exception, and it is not supposed to."));
-            }
-
-            // Compare both exception types in case of the code threw exception
-            if (exception != null && !Type.Equals(exception.GetType(), exceptionType))
-            {
-                string methodFailed = "RunSemaphoreSlimTest4_Dispose(" + initial + "," + maximum + "," + action + "): FAILED.  ";
-                Assert.True(false, string.Format(methodFailed + "Dispose failed, Excption types do not match"));
+                Assert.NotNull(exceptionType);
+                Assert.IsType(exceptionType, ex);
             }
         }
 
@@ -509,21 +440,15 @@ namespace System.Threading.Tests
         private static void RunSemaphoreSlimTest5_CurrentCount(int initial, int maximum, SemaphoreSlimActions? action)
         {
             SemaphoreSlim semaphore = new SemaphoreSlim(initial, maximum);
-            try
+
+            CallSemaphoreAction(semaphore, action, null);
+            if (action == null)
             {
-                CallSemaphoreAction(semaphore, action, null);
-                if ((action == SemaphoreSlimActions.Wait && semaphore.CurrentCount != initial - 1)
-                || (action == SemaphoreSlimActions.WaitAsync && semaphore.CurrentCount != initial - 1)
-                || (action == SemaphoreSlimActions.Release && semaphore.CurrentCount != initial + 1))
-                {
-                    string methodFailed = "RunSemaphoreSlimTest5_CurrentCount(" + initial + "," + maximum + "," + action + "): FAILED.  ";
-                    Assert.True(false, string.Format(methodFailed + "CurrentCount failed"));
-                }
+                Assert.Equal(initial, semaphore.CurrentCount);
             }
-            catch (Exception ex)
+            else
             {
-                string methodFailed = "RunSemaphoreSlimTest5_CurrentCount(" + initial + "," + maximum + "," + action + "): FAILED.  ";
-                Assert.True(false, string.Format(methodFailed + "CurrentCount failed, the code threw exception " + ex));
+                Assert.Equal(initial + (action == SemaphoreSlimActions.Release ? 1 : -1), semaphore.CurrentCount);
             }
         }
 
@@ -538,25 +463,10 @@ namespace System.Threading.Tests
         private static void RunSemaphoreSlimTest7_AvailableWaitHandle(int initial, int maximum, SemaphoreSlimActions? action, bool state)
         {
             SemaphoreSlim semaphore = new SemaphoreSlim(initial, maximum);
-            try
-            {
-                CallSemaphoreAction(semaphore, action, null);
-                if (semaphore.AvailableWaitHandle == null)
-                {
-                    string methodFailed = "RunSemaphoreSlimTest7_AvailableWaitHandle(" + initial + "," + maximum + "," + action + "): FAILED.  ";
-                    Assert.True(false, string.Format(methodFailed + "AvailableWaitHandle failed, handle is null."));
-                }
-                if (semaphore.AvailableWaitHandle.WaitOne(0) != state)
-                {
-                    string methodFailed = "RunSemaphoreSlimTest7_AvailableWaitHandle(" + initial + "," + maximum + "," + action + "): FAILED.  ";
-                    Assert.True(false, string.Format(methodFailed + "AvailableWaitHandle failed, expected " + state + " actual " + !state));
-                }
-            }
-            catch (Exception ex)
-            {
-                string methodFailed = "RunSemaphoreSlimTest7_AvailableWaitHandle(" + initial + "," + maximum + "," + action + "): FAILED.  ";
-                Assert.True(false, string.Format(methodFailed + "AvailableWaitHandle failed, the code threw exception " + ex));
-            }
+
+            CallSemaphoreAction(semaphore, action, null);
+            Assert.NotNull(semaphore.AvailableWaitHandle);
+            Assert.Equal(state, semaphore.AvailableWaitHandle.WaitOne(0));
         }
 
         /// <summary>
@@ -573,66 +483,52 @@ namespace System.Threading.Tests
         private static void RunSemaphoreSlimTest8_ConcWaitAndRelease(int initial, int maximum,
             int waitThreads, int releaseThreads, int succeededWait, int failedWait, int finalCount, int timeout)
         {
-            string methodFailed =
-                "RunSemaphoreSlimTest8_ConcWaitAndRelease("
-                + initial + "," + maximum + "," + waitThreads + ", " + releaseThreads + ", "
-                + succeededWait + ", " + failedWait + ", " + finalCount + ", " + timeout + "): FAILED.  ";
-            try
+            SemaphoreSlim semaphore = new SemaphoreSlim(initial, maximum);
+            Task[] threads = new Task[waitThreads + releaseThreads];
+            int succeeded = 0;
+            int failed = 0;
+            ManualResetEvent mre = new ManualResetEvent(false);
+            // launch threads
+            for (int i = 0; i < threads.Length; i++)
             {
-                SemaphoreSlim semaphore = new SemaphoreSlim(initial, maximum);
-                Task[] threads = new Task[waitThreads + releaseThreads];
-                int succeeded = 0;
-                int failed = 0;
-                ManualResetEvent mre = new ManualResetEvent(false);
-                // launch threads
-                for (int i = 0; i < threads.Length; i++)
+                if (i < waitThreads)
                 {
-                    if (i < waitThreads)
-                    {
-                        // We are creating the Task using TaskCreationOptions.LongRunning to
-                        // force usage of another thread (which will be the case on the default scheduler
-                        // with its current implementation).  Without this, the release tasks will likely get
-                        // queued behind the wait tasks in the pool, making it very likely that the wait tasks
-                        // will starve the very tasks that when run would unblock them.
-                        threads[i] = new Task(delegate ()
+                    // We are creating the Task using TaskCreationOptions.LongRunning to
+                    // force usage of another thread (which will be the case on the default scheduler
+                    // with its current implementation).  Without this, the release tasks will likely get
+                    // queued behind the wait tasks in the pool, making it very likely that the wait tasks
+                    // will starve the very tasks that when run would unblock them.
+                    threads[i] = new Task(delegate ()
+                       {
+                           mre.WaitOne();
+                           if (semaphore.Wait(timeout))
                            {
-                               mre.WaitOne();
-                               if (semaphore.Wait(timeout))
-                               {
-                                   Interlocked.Increment(ref succeeded);
-                               }
-                               else
-                               {
-                                   Interlocked.Increment(ref failed);
-                               }
-                           }, TaskCreationOptions.LongRunning);
-                    }
-                    else
-                    {
-                        threads[i] = new Task(delegate ()
+                               Interlocked.Increment(ref succeeded);
+                           }
+                           else
                            {
-                               mre.WaitOne();
-                               semaphore.Release();
-                           });
-                    }
-                    threads[i].Start(TaskScheduler.Default);
+                               Interlocked.Increment(ref failed);
+                           }
+                       }, TaskCreationOptions.LongRunning);
                 }
+                else
+                {
+                    threads[i] = new Task(delegate ()
+                       {
+                           mre.WaitOne();
+                           semaphore.Release();
+                       });
+                }
+                threads[i].Start(TaskScheduler.Default);
+            }
 
-                mre.Set();
-                //wait work to be done;
-                Task.WaitAll(threads);
-                //check the number of succeeded and failed wait
-                if (succeeded != succeededWait || failed != failedWait || semaphore.CurrentCount != finalCount)
-                {
-                    Debug.WriteLine(methodFailed + "ConcurrentWaitRelease failed. This might not be a bug, if the system was unstable during the test.");
-                    Assert.True(false, string.Format(methodFailed + "Expected succeeded={0}, failed={1}, count={2}, but got {3}, {4}, {5}",
-                        succeededWait, failedWait, finalCount, succeeded, failed, semaphore.CurrentCount));
-                }
-            }
-            catch (Exception ex)
-            {
-                Assert.True(false, string.Format(methodFailed + "ConcurrentWaitRelease failed, the code threw exception " + ex));
-            }
+            mre.Set();
+            //wait work to be done;
+            Task.WaitAll(threads);
+            //check the number of succeeded and failed wait
+            Assert.Equal(succeededWait, succeeded);
+            Assert.Equal(failedWait, failed);
+            Assert.Equal(finalCount, semaphore.CurrentCount);
         }
 
         /// <summary>
@@ -649,68 +545,51 @@ namespace System.Threading.Tests
         private static void RunSemaphoreSlimTest8_ConcWaitAsyncAndRelease(int initial, int maximum,
             int waitThreads, int releaseThreads, int succeededWait, int failedWait, int finalCount, int timeout)
         {
-            string methodFailed =
-                "RunSemaphoreSlimTest8_ConcWaitAsyncAndRelease(" + initial + "," + maximum + "," + waitThreads + ", " + releaseThreads + "):  FAILED. ";
-            try
+            SemaphoreSlim semaphore = new SemaphoreSlim(initial, maximum);
+            Task[] tasks = new Task[waitThreads + releaseThreads];
+            int succeeded = 0;
+            int failed = 0;
+            ManualResetEvent mre = new ManualResetEvent(false);
+            // launch threads
+            for (int i = 0; i < tasks.Length; i++)
             {
-                SemaphoreSlim semaphore = new SemaphoreSlim(initial, maximum);
-                Task[] tasks = new Task[waitThreads + releaseThreads];
-                int succeeded = 0;
-                int failed = 0;
-                ManualResetEvent mre = new ManualResetEvent(false);
-                // launch threads
-                for (int i = 0; i < tasks.Length; i++)
+                if (i < waitThreads)
                 {
-                    if (i < waitThreads)
+                    tasks[i] = Task.Run(async delegate
                     {
-                        tasks[i] = Task.Run(async delegate
+                        mre.WaitOne();
+                        if (await semaphore.WaitAsync(timeout))
                         {
-                            mre.WaitOne();
-                            if (await semaphore.WaitAsync(timeout))
-                            {
-                                Interlocked.Increment(ref succeeded);
-                            }
-                            else
-                            {
-                                Interlocked.Increment(ref failed);
-                            }
-                        });
-                    }
-                    else
-                    {
-                        tasks[i] = Task.Run(delegate
+                            Interlocked.Increment(ref succeeded);
+                        }
+                        else
                         {
-                            mre.WaitOne();
-                            semaphore.Release();
-                        });
-                    }
+                            Interlocked.Increment(ref failed);
+                        }
+                    });
                 }
-
-                mre.Set();
-                //wait work to be done;
-                Task.WaitAll(tasks);
-
-                //check the number of succeeded and failed wait
-                if (succeeded != succeededWait || failed != failedWait || semaphore.CurrentCount != finalCount)
+                else
                 {
-                    Assert.True(false, string.Format(methodFailed + "ConcurrentWaitAsyncAndRelease failed. This might not be a bug, if the system was unstable during the test."));
+                    tasks[i] = Task.Run(delegate
+                    {
+                        mre.WaitOne();
+                        semaphore.Release();
+                    });
                 }
             }
-            catch (Exception ex)
-            {
-                Assert.True(false, string.Format(methodFailed + "ConcurrentWaitAsyncAndRelease failed, the code threw exception " + ex));
-            }
+
+            mre.Set();
+            //wait work to be done;
+            Task.WaitAll(tasks);
+
+            Assert.Equal(succeededWait, succeeded);
+            Assert.Equal(failedWait, failed);
+            Assert.Equal(finalCount, semaphore.CurrentCount);
         }
 
         private static void TestConcurrentWaitAndWaitAsync(int syncWaiters, int asyncWaiters)
         {
-            string methodFailed = "ConcurrentWaitAndWaitAsync(" + syncWaiters + "," + asyncWaiters + "): FAILED.";
-
             int totalWaiters = syncWaiters + asyncWaiters;
-            if (totalWaiters < 2)
-            {
-                Assert.True(false, string.Format(methodFailed + " invalid waiter arguments... need at least 2 waiters"));
-            }
 
             var semaphore = new SemaphoreSlim(0);
             Task[] tasks = new Task[totalWaiters];

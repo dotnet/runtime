@@ -207,12 +207,8 @@ namespace SortedSetTests
         {
             var sortedSet = GetSortedSet();
             var hashSet = GetHashSet();
-
-            if (!sortedSet.SetEquals(hashSet))
-                Assert.True(false); //"Expected: Equal sets"
-
-            if (!hashSet.SetEquals(sortedSet))
-                Assert.True(false); //"Expected: Equal sets"
+            Assert.True(sortedSet.SetEquals(hashSet));
+            Assert.True(hashSet.SetEquals(sortedSet));
         }
 
         [Fact]

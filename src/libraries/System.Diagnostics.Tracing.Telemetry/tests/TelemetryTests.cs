@@ -621,7 +621,8 @@ namespace System.Diagnostics.Tracing.Telemetry.Tests
 
         public void OnError(Exception error)
         {
-            Assert.True(false, "Error happened on IObserver");
+            // No errors should be thrown.
+            throw new ShouldNotBeInvokedException();
         }
 
         public void OnNext(T value)

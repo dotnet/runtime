@@ -5,6 +5,7 @@ using Xunit;
 using System;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Linq;
 
 #pragma warning disable 0414
 #pragma warning disable 0067
@@ -91,22 +92,14 @@ namespace System.Reflection.Tests
             String str = typeof(Object).Name;
 
             TypeInfo ti = t.GetTypeInfo();
-            IEnumerator<TypeInfo> alltypes = ti.DeclaredNestedTypes.GetEnumerator();
-            bool found = false;
 
-            while (alltypes.MoveNext())
+            if (present)
             {
-                if (alltypes.Current.Name.Equals(name, StringComparison.CurrentCultureIgnoreCase))
-                    found = true;
+                Assert.True(ti.DeclaredNestedTypes.Any(item => item.Name.Equals(name, StringComparison.CurrentCultureIgnoreCase)));
             }
-
-            if (present && (!found))
+            else if (!present)
             {
-                Assert.False(true, String.Format("Nested Type {0} not found", name));
-            }
-            else if ((!present) && found)
-            {
-                Assert.False(true, String.Format("Nested Type {0} was not expected to be found", name));
+                Assert.All(ti.DeclaredNestedTypes, item => Assert.False(item.Name.Equals(name, StringComparison.CurrentCultureIgnoreCase)));
             }
         }
     }

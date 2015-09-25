@@ -617,17 +617,11 @@ namespace System.Numerics.Tests
             }
             else if (0 > expected)
             {
-                if (0 <= actual)
-                {
-                    Assert.True(false, string.Format(message + " expected result less than zero actual: {0}", actual));
-                }
+                Assert.InRange(actual, int.MinValue, -1);
             }
             else if (0 < expected)
             {
-                if (0 >= actual)
-                {
-                    Assert.True(false, string.Format(message + " expected result greater than zero actual: {0}", actual));
-                }
+                Assert.InRange(actual, 1, int.MaxValue);
             }
         }
 

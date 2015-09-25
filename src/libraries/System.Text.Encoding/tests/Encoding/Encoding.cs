@@ -154,22 +154,10 @@ namespace System.Text.EncodingTests
 
                     string name = encoding.EncodingName;
 
-                    if (string.IsNullOrEmpty(name))
-                    {
-                        Assert.False(true, "failed to get the display name of the encoding: " + encoding.WebName);
-                    }
+                    Assert.NotNull(name);
+                    Assert.NotEqual(string.Empty, name);
 
-                    for (int i = 0; i < name.Length; ++i)
-                    {
-                        int ch = (int)name[i];
-
-                        if (ch > 127)
-                        {
-                            Assert.False(true,
-                                string.Format("English name '{0}' for encoding '{1}' contains non-ASCII character: {2}",
-                                    name, encoding.WebName, ch));
-                        }
-                    }
+                    Assert.All(name, ch => Assert.InRange(ch, 0, 127));
                 }
             }
             finally

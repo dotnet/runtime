@@ -37,12 +37,7 @@ namespace List_List_InterfaceTests
 
             Assert.Equal(currentValue, default(T)); //"Err_282haie Expected Current to return defalut(T) when enumerator is positioned before the first item in the collection instead got:" + currentValue
 
-            try
-            {
-                currentValue = (T)((IEnumerator)enumerator).Current;
-                Assert.True(false); //"Err_231htyw Expected invalid operation exception not thrown"
-            }
-            catch (InvalidOperationException) { }
+            Assert.Throws<InvalidOperationException>(() => (T)((IEnumerator)enumerator).Current);
 
             for (int i = 0; i < items.Length; i++)
             {
@@ -60,12 +55,7 @@ namespace List_List_InterfaceTests
 
             Assert.Equal(default(T), currentValue); //"Err_051984ajied Expected Current to return defalut(T) when enumerator is positioned after the first item in the collection instead got:" + currentValue
 
-            try
-            {
-                currentValue = (T)((IEnumerator)enumerator).Current;
-                Assert.True(false); //"Err_751hryw Expected invalid operation exception not thrown"
-            }
-            catch (InvalidOperationException) { }
+            Assert.Throws<InvalidOperationException>(() => (T)((IEnumerator)enumerator).Current);
 
             IEnumerator<T> enumerator2 = list.GetEnumerator();
             ((IEnumerator)enumerator2).Reset(); ((IEnumerator)enumerator2).Reset(); ((IEnumerator)enumerator2).Reset();
@@ -121,12 +111,7 @@ namespace List_List_InterfaceTests
 
             Assert.Equal(currentValue, oldValue); //"18- Expected current to equal " + oldValue + ". Actually equalled " + currentValue
 
-            try
-            {
-                ((IEnumerator)enumerator2).Reset();
-                Assert.True(false); //"Err_901hrya Expected invalid operation exception not thrown"
-            }
-            catch (InvalidOperationException) { }
+            Assert.Throws<InvalidOperationException>(() => ((IEnumerator)enumerator2).Reset());
 
             enumerator.Dispose();
             enumerator2.Dispose();
@@ -158,18 +143,9 @@ namespace List_List_InterfaceTests
             }
             Assert.False(Enum.MoveNext()); //"cannot move past end of list."
             myList.Add(items[0]);
-            try
-            {
-                Enum.MoveNext();
-                Assert.True(false, "Err_848489aheid Expected InvalidOperationException from MoveNext() on modified collection and nothing was thrown");
-            }
-            catch (InvalidOperationException) { }
-            try
-            {
-                Enum.Reset();
-                Assert.True(false, "Err_587aujeid Expected InvalidOperationException from Reset() on modified collection and nothing was thrown");
-            }
-            catch (InvalidOperationException) { }
+
+            Assert.Throws<InvalidOperationException>(() => Enum.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => Enum.Reset());
         }
 
         public void GetEnumeratorValidations(T[] items)

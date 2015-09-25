@@ -86,13 +86,8 @@ namespace System.Reflection.Tests
             EventHandler myhandler = new EventHandler(MyEventHandler);
             BaseClass obj = new BaseClass();
             //Target is null and event is not static
-            // Win8P throws generic Exception         
-            try
-            {
-                ei.AddEventHandler(null, myhandler);
-                Assert.False(true, "Exception expected.");
-            }
-            catch (Exception) { }
+            // Win8P throws generic Exception
+            Assert.ThrowsAny<Exception>(() => ei.AddEventHandler(null, myhandler));
         }
 
         // Target null for RemoveEventHandler 
@@ -106,12 +101,7 @@ namespace System.Reflection.Tests
             ei.AddEventHandler(obj, myhandler);
             //Target is null and event is not static
             // Win8P throws generic Exception
-            try
-            {
-                ei.RemoveEventHandler(null, myhandler);
-                Assert.False(true, "Exception expected.");
-            }
-            catch (Exception) { }
+            Assert.ThrowsAny<Exception>(() => ei.RemoveEventHandler(null, myhandler));
         }
 
         // EventHandler null for AddEventHandler 
@@ -159,12 +149,7 @@ namespace System.Reflection.Tests
             String obj = "hello";
             //Target is wrong. 
             // Win8P throws generic Exception 
-            try
-            {
-                ei.AddEventHandler(obj, myhandler);
-                Assert.False(true, "Exception expected.");
-            }
-            catch (Exception) { }
+            Assert.ThrowsAny<Exception>(() => ei.AddEventHandler(obj, myhandler));
         }
 
         // Target null for RemoveEventHandler 
@@ -178,12 +163,7 @@ namespace System.Reflection.Tests
             ei.AddEventHandler(obj, myhandler);
             //Target is wrong.
             // Win8P throws generic Exception
-            try
-            {
-                ei.RemoveEventHandler((Object)"hello", myhandler);
-                Assert.False(true, "Exception expected.");
-            }
-            catch (Exception) { }
+            Assert.ThrowsAny<Exception>(() => ei.RemoveEventHandler((Object)"hello", myhandler));
         }
 
         // Test for Equals Method

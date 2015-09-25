@@ -181,15 +181,8 @@ Parallel.For(1L, 0L, delegate (long i, ParallelLoopState ps)
 
         private static void PLRcheck(ParallelLoopResult plr, string ttype, bool shouldComplete, Int32? expectedLBI)
         {
-            if ((plr.IsCompleted == shouldComplete) && (plr.LowestBreakIteration == expectedLBI))
-            {
-            }
-            else
-            {
-                string biString = "(null)";
-                if (plr.LowestBreakIteration != null) biString = plr.LowestBreakIteration.ToString();
-                Assert.False(true, String.Format("PLRcheck {0} test:  >> Failed. IsCompleted={1}, LowestBreakIteration={2}", ttype, plr.IsCompleted, biString));
-            }
+            Assert.Equal(shouldComplete, plr.IsCompleted);
+            Assert.Equal(expectedLBI, plr.LowestBreakIteration);
         }
 
         // Generalized test for testing For-loop results

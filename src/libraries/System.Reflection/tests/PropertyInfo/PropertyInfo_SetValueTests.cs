@@ -143,12 +143,7 @@ namespace System.Reflection.Tests
             Assert.Equal(pi.Name, propertyName);
 
             // Generic Exception is thrown in WP8 instead of TargetException
-            try
-            {
-                pi.SetValue(null, null, null);
-                Assert.False(true);
-            }
-            catch (Exception) { }
+            Assert.ThrowsAny<Exception>(() => pi.SetValue(null, null, null));
         }
 
 
@@ -164,12 +159,7 @@ namespace System.Reflection.Tests
             Assert.Equal(pi.Name, propertyName);
 
             // Generic Exception is thrown in WP8 instead of TargetException
-            try
-            {
-                pi.SetValue(twpObj, "foo", null);
-                Assert.False(true);
-            }
-            catch (Exception) { }
+            Assert.ThrowsAny<Exception>(() => pi.SetValue(twpObj, "foo", null));
         }
 
         //Try to set indexer Property
@@ -256,13 +246,7 @@ namespace System.Reflection.Tests
 
 
             Assert.Equal(pi.Name, propertyName);
-
-            try
-            {
-                pi.SetValue(null, "pw", new Object[] { 99, 2, "SOME string" });
-                Assert.False(true);
-            }
-            catch (Exception) { }
+            Assert.ThrowsAny<Exception>(() => pi.SetValue(null, "pw", new Object[] { 99, 2, "SOME string" }));
         }
 
 

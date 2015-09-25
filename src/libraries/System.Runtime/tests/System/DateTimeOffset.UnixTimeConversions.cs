@@ -68,24 +68,14 @@ public static class DateTimeOffsetUnixTimeConversionTests
     {
         long expectedMilliseconds = test.UnixTimeMilliseconds;
         long actualMilliseconds = test.DateTimeOffset.ToUnixTimeMilliseconds();
-        if (expectedMilliseconds != actualMilliseconds)
-        {
-            Assert.True(false,
-                string.Format("Unix time converted from DateTimeOffset {0} ticks is inaccurate, expected: {1} ms, actual: {2} ms",
-                    test.DateTimeOffset.UtcTicks, expectedMilliseconds, actualMilliseconds));
-        }
+        Assert.Equal(expectedMilliseconds, actualMilliseconds);
     }
 
     private static void TestToUnixTimeSeconds(TestTime test)
     {
         long expectedSeconds = test.UnixTimeSeconds;
         long actualSeconds = test.DateTimeOffset.ToUnixTimeSeconds();
-        if (expectedSeconds != actualSeconds)
-        {
-            Assert.True(false,
-                string.Format("Unix time converted from DateTimeOffset {0} ticks is inaccurate, expected: {1} seconds, actual: {2} seconds",
-                    test.DateTimeOffset.UtcTicks, expectedSeconds, actualSeconds));
-        }
+        Assert.Equal(expectedSeconds, actualSeconds);
     }
 
     [Fact]
@@ -103,15 +93,7 @@ public static class DateTimeOffsetUnixTimeConversionTests
         // Only assert that expected == actual up to millisecond precision for conversion from milliseconds
         long expectedTicks = (test.DateTimeOffset.UtcTicks / TimeSpan.TicksPerMillisecond) * TimeSpan.TicksPerMillisecond;
         long actualTicks = DateTimeOffset.FromUnixTimeMilliseconds(test.UnixTimeMilliseconds).UtcTicks;
-
-        if (expectedTicks != actualTicks)
-        {
-            Assert.True(false,
-                string.Format("DateTimeOffset converted from Unix time {0} ms is inaccurate, expected: {1} ticks, actual: {2} ticks",
-                    test.UnixTimeMilliseconds,
-                    expectedTicks,
-                    actualTicks));
-        }
+        Assert.Equal(expectedTicks, actualTicks);
     }
 
     private static void TestFromUnixTimeSeconds(TestTime test)
@@ -119,16 +101,7 @@ public static class DateTimeOffsetUnixTimeConversionTests
         // Only assert that expected == actual up to second precision for conversion from seconds
         long expectedTicks = (test.DateTimeOffset.UtcTicks / TimeSpan.TicksPerSecond) * TimeSpan.TicksPerSecond;
         long actualTicks = DateTimeOffset.FromUnixTimeSeconds(test.UnixTimeSeconds).UtcTicks;
-
-        if (expectedTicks != actualTicks)
-        {
-            Assert.True(false,
-                string.Format("DateTimeOffset converted from Unix time {0} seconds ({1} ms) is inaccurate, expected: {2} ticks, actual: {3} ticks",
-                    test.UnixTimeSeconds,
-                    test.UnixTimeMilliseconds,
-                    expectedTicks,
-                    actualTicks));
-        }
+        Assert.Equal(expectedTicks, actualTicks);
     }
 
     [Fact]

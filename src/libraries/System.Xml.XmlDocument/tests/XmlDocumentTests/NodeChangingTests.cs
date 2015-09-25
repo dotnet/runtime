@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Xunit;
+using System;
 using System.Xml;
 
 namespace XmlDocumentTests.XmlDocumentTests
@@ -29,7 +30,7 @@ namespace XmlDocumentTests.XmlDocumentTests
             var xmlDocument = new XmlDocument();
             xmlDocument.LoadXml(@"<root> <elem1>text1</elem1> <elem2>text2</elem2> </root>");
 
-            XmlNodeChangedEventHandler handler = (s, e) => Assert.True(false, "Handler should have been removed");
+            XmlNodeChangedEventHandler handler = (s, e) => { throw new ShouldNotBeInvokedException(); };
             xmlDocument.NodeChanging += handler;
             xmlDocument.NodeChanging -= handler;
 

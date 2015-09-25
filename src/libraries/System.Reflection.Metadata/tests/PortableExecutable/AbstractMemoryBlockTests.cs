@@ -21,14 +21,14 @@ namespace System.Reflection.Metadata.Tests
                 {
                     Assert.Equal(3, block.Size);
                     AssertEx.Equal(provider.Pointer, block.Pointer);
-                    AssertEx.Equal(array, block.GetContent());
+                    Assert.Equal(array, block.GetContent());
                 }
 
                 using (var block = provider.GetMemoryBlock(1, 2))
                 {
                     AssertEx.Equal(provider.Pointer + 1, block.Pointer);
                     Assert.Equal(2, block.Size);
-                    AssertEx.Equal(new byte[] { 2, 3 }, block.GetContent());
+                    Assert.Equal(new byte[] { 2, 3 }, block.GetContent());
                 }
             }
         }
@@ -45,14 +45,14 @@ namespace System.Reflection.Metadata.Tests
                     {
                         Assert.Equal(3, block.Size);
                         AssertEx.Equal(provider.Pointer, block.Pointer);
-                        AssertEx.Equal(array, block.GetContent());
+                        Assert.Equal(array, block.GetContent());
                     }
 
                     using (var block = provider.GetMemoryBlock(1, 2))
                     {
                         AssertEx.Equal(provider.Pointer + 1, block.Pointer);
                         Assert.Equal(2, block.Size);
-                        AssertEx.Equal(new byte[] { 2, 3 }, block.GetContent());
+                        Assert.Equal(new byte[] { 2, 3 }, block.GetContent());
                     }
                 }
             }
@@ -72,7 +72,7 @@ namespace System.Reflection.Metadata.Tests
                     {
                         Assert.IsType<NativeHeapMemoryBlock>(block);
                         Assert.Equal(3, block.Size);
-                        AssertEx.Equal(array, block.GetContent());
+                        Assert.Equal(array, block.GetContent());
                     }
 
                     Assert.Equal(3, stream.Position);
@@ -81,7 +81,7 @@ namespace System.Reflection.Metadata.Tests
                     {
                         Assert.IsType<NativeHeapMemoryBlock>(block);
                         Assert.Equal(2, block.Size);
-                        AssertEx.Equal(new byte[] { 2, 3 }, block.GetContent());
+                        Assert.Equal(new byte[] { 2, 3 }, block.GetContent());
                     }
 
                     Assert.Equal(3, stream.Position);
@@ -93,7 +93,7 @@ namespace System.Reflection.Metadata.Tests
                     {
                         Assert.IsType<NativeHeapMemoryBlock>(block);
                         Assert.Equal(3, block.Size);
-                        AssertEx.Equal(array, block.GetContent());
+                        Assert.Equal(array, block.GetContent());
                     }
 
                     Assert.Equal(3, stream.Position);
@@ -160,7 +160,7 @@ namespace System.Reflection.Metadata.Tests
                             {
                                 Assert.IsType<MemoryMappedFileBlock>(block);
                                 Assert.Equal(array.Length, block.Size);
-                                AssertEx.Equal(array, block.GetContent());
+                                Assert.Equal(array, block.GetContent());
                             }
 
                             // we didn't use the stream for reading
@@ -171,7 +171,7 @@ namespace System.Reflection.Metadata.Tests
                             {
                                 Assert.IsType<NativeHeapMemoryBlock>(block);
                                 Assert.Equal(2, block.Size);
-                                AssertEx.Equal(new byte[] { 0x12, 0x12 }, block.GetContent());
+                                Assert.Equal(new byte[] { 0x12, 0x12 }, block.GetContent());
                             }
 
                             Assert.Equal(3, stream.Position);
