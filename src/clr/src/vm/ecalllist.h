@@ -1524,6 +1524,12 @@ FCFuncStart(gTextInfoFuncs)
 FCFuncEnd()
 #endif // defined(FEATURE_LEGACYSURFACE) && !defined(FEATURE_COREFX_GLOBALIZATION)
 
+#ifdef FEATURE_COREFX_GLOBALIZATION
+FCFuncStart(gCompareInfoFuncs)
+    QCFuncElement("InternalHashSortKey", CoreFxGlobalization::HashSortKey)
+FCFuncEnd()
+#endif
+
 FCFuncStart(gArrayFuncs)
     FCFuncElement("get_Rank", ArrayNative::GetRank)
     FCFuncElement("GetLowerBound", ArrayNative::GetLowerBound)
@@ -2183,9 +2189,9 @@ FCClassElement("ChannelServices", "System.Runtime.Remoting.Channels", gChannelSe
 #ifdef FEATURE_CAS_POLICY
 FCClassElement("CodeAccessSecurityEngine", "System.Security", gCodeAccessSecurityEngineFuncs)
 #endif
-#if defined(FEATURE_LEGACYSURFACE) && !defined(FEATURE_COREFX_GLOBALIZATION)
+#if defined(FEATURE_LEGACYSURFACE) || defined(FEATURE_COREFX_GLOBALIZATION)
 FCClassElement("CompareInfo", "System.Globalization", gCompareInfoFuncs)
-#endif // defined(FEATURE_LEGACYSURFACE) && !defined(FEATURE_COREFX_GLOBALIZATION)
+#endif // defined(FEATURE_LEGACYSURFACE)
 FCClassElement("CompatibilitySwitch", "System.Runtime.Versioning", gCompatibilitySwitchFuncs)
 #ifdef FEATURE_COMPRESSEDSTACK    
 FCClassElement("CompressedStack", "System.Threading", gCompressedStackFuncs)

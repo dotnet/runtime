@@ -288,14 +288,6 @@ namespace System.Globalization
         {
             get
             {
-#if PLATFORM_UNIX
-                // UNIXTODO: This hack can be removed once collation works and the code after this correctly returns "false".
-                if (m_needsTurkishCasing)
-                {
-                    return false;
-                }
-#endif
-
                 if (m_IsAsciiCasingSameAsInvariant == null)
                 {
                     m_IsAsciiCasingSameAsInvariant = CultureInfo.GetCultureInfo(m_textInfoName).CompareInfo.Compare("abcdefghijklmnopqrstuvwxyz",

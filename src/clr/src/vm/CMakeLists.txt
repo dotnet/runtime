@@ -207,6 +207,7 @@ set(VM_SOURCES_WKS
     listlock.cpp
     managedmdimport.cpp
     marshalnative.cpp
+    marvin32.cpp
     mdaassistants.cpp
     message.cpp
     methodtablebuilder.cpp
@@ -276,7 +277,6 @@ set(VM_SOURCES_DAC_AND_WKS_WIN32
 
 list(APPEND VM_SOURCES_WKS 
     ${VM_SOURCES_DAC_AND_WKS_WIN32}
-    marvin32.cpp # move out of win32 when FEATURE_RANDOMIZED_STRING_HASHING is enabled for linux
     # These should not be included for Linux
     appxutil.cpp
     assemblynativeresource.cpp
