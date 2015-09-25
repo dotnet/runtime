@@ -802,10 +802,17 @@ namespace System.Net.Sockets
             return (SocketError)socketCount;
         }
 
-        public static SocketError Shutdown(SafeCloseSocket handle, bool isConnected, SocketShutdown how)
+        public static SocketError Shutdown(SafeCloseSocket handle, bool isConnected, bool isDisconnected, SocketShutdown how)
         {
             SocketError err = Interop.Winsock.shutdown(handle, (int)how);
-            return err == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
+            if (err != SocketError.SocketError)
+            {
+                return SocketError.Success;
+            }
+
+            err = GetLastSocketError();
+            Debug.Assert(err != SocketError.NotConnected || (!isConnected && !isDisconnected));
+            return err;
         }
 
         public static unsafe SocketError ConnectAsync(Socket socket, SafeCloseSocket handle, byte[] socketAddress, int socketAddressLen, ConnectOverlappedAsyncResult asyncResult)
