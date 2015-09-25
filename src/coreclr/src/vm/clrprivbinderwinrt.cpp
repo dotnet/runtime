@@ -390,7 +390,7 @@ HRESULT CLRPrivBinderWinRT::BindWinRTAssemblyByName(
             const WCHAR * wszFileName = pFileNameElem->GetValue();
             pAssembly = FindAssemblyByFileName(wszFileName);
             
-            WCHAR wszFileNameStripped[_MAX_PATH];
+            WCHAR wszFileNameStripped[_MAX_PATH] = {0};
             SplitPath(wszFileName, NULL, NULL, NULL, NULL, wszFileNameStripped, _MAX_PATH, NULL, NULL);
 
             if (pAssembly == nullptr)

@@ -84,10 +84,10 @@ STDMETHODIMP CLRDebuggingImpl::OpenVirtualProcess(
     HMODULE hDac = NULL;
     DWORD dbiTimestamp;
     DWORD dbiSizeOfImage;
-    WCHAR dbiName[MAX_PATH_FNAME];
+    WCHAR dbiName[MAX_PATH_FNAME] = {0};
     DWORD dacTimestamp;
     DWORD dacSizeOfImage;
-    WCHAR dacName[MAX_PATH_FNAME];
+    WCHAR dacName[MAX_PATH_FNAME] = {0};
     CLR_DEBUGGING_VERSION version;
     BOOL versionSupportedByCaller = FALSE;
     

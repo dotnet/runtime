@@ -5868,7 +5868,7 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
     }
 
     const int buf_size = 128;
-    WCHAR buf[buf_size];
+    WCHAR buf[buf_size] = {0};
 
     // See detailed explanation of this flag in threads.cpp.  But the basic idea is that we already
     // reported the exception in the AppDomain where it went unhandled, so we don't need to report
