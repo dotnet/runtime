@@ -17,10 +17,14 @@
     <Compile Include="ConnectExTest.cs" />
     <Compile Include="DnsEndPointTest.cs" />
     <Compile Include="DualModeSocketTest.cs" />
+    <Compile Include="Shutdown.cs" />
     <Compile Include="SocketTestServerAPMMock.cs" />
     <Compile Include="UdpClientTest.cs" />
     
     <!-- Common Sockets files -->
+    <Compile Include="$(CommonTestPath)\System.Net\Sockets\SocketTestExtensions.cs">
+      <Link>SocketCommon\SocketTestExtensions.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System.Net\Sockets\SocketTestServer.DefaultAsyncFactoryConfiguration.cs">
       <Link>SocketCommon\SocketTestServer.DefaultAsyncFactoryConfiguration.cs</Link>
     </Compile>

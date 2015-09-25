@@ -802,7 +802,7 @@ namespace System.Net.Sockets
             return (SocketError)socketCount;
         }
 
-        public static SocketError Shutdown(SafeCloseSocket handle, SocketShutdown how)
+        public static SocketError Shutdown(SafeCloseSocket handle, bool isConnected, SocketShutdown how)
         {
             SocketError err = Interop.Winsock.shutdown(handle, (int)how);
             return err == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
