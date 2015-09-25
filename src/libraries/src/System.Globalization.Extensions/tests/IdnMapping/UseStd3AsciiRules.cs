@@ -5,7 +5,7 @@ using Xunit;
 using System;
 using System.Globalization;
 
-namespace System.Globalization.Extensions.Tests
+namespace System.Globalization.Tests
 {
     /// <summary>
     /// According to the ToASCII algorithm, if the UseSTD3ASCIIRules flag is set, 
