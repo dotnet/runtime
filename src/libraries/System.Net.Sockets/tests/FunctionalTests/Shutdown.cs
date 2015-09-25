@@ -60,10 +60,17 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void Shutdown_TCP_CLOSED_Success()
         {
+            // NOTE: this value should technically be at least as long as the amount
+            //       of time that a TCP connection will stay in the TIME_WAIT state.
+            //       That value, however, is technically defined as 2 * MSL, which is
+            //       officially 4 minutes, and may differ between systems. In practice,
+            //       5 seconds has proved to be long enough.
+            const int TimeWaitTimeout = 5000;
+
             using (Socket server = new Socket(SocketType.Stream, ProtocolType.Tcp))
             using (Socket client = new Socket(SocketType.Stream, ProtocolType.Tcp))
             {
-                int port = server.Bind(IPAddress.IPv6Any);
+                int port = server.BindToAnonymousPort(IPAddress.IPv6Any);
                 server.Listen(1);
 
                 var args = new SocketAsyncEventArgs();
@@ -89,7 +96,7 @@ namespace System.Net.Sockets.Tests
 
                 // Wait for the underlying connection to transition from TIME_WAIT to
                 // CLOSED.
-                Task.Delay(5000).Wait();
+                Task.Delay(TimeWaitTimeout).Wait();
 
                 client.Shutdown(SocketShutdown.Both);
             }

@@ -1695,7 +1695,7 @@ namespace System.Net.Sockets
             return (SocketError)socketCount;
         }
 
-        public static SocketError Shutdown(SafeCloseSocket handle, bool isConnected, SocketShutdown how)
+        public static SocketError Shutdown(SafeCloseSocket handle, bool isConnected, bool isDisconnected, SocketShutdown how)
         {
             int err = Interop.libc.shutdown(handle.FileDescriptor, GetPlatformSocketShutdown(how));
             if (err != -1)
@@ -1705,10 +1705,10 @@ namespace System.Net.Sockets
 
             Interop.Error errno = Interop.Sys.GetLastError();
 
-            // If shutdown returns ENOTCONN but the socket we think that this socket is connected,
+            // If shutdown returns ENOTCONN and we think that this socket has ever been connected,
             // ignore the error. This can happen for TCP connections if the underlying connection
-            // has reached the CLOSE state.
-            if (errno == Interop.Error.ENOTCONN && isConnected)
+            // has reached the CLOSE state. Ignoring the error matches Winsock behavior.
+            if (errno == Interop.Error.ENOTCONN && (isConnected || isDisconnected))
             {
                 return SocketError.Success;
             }
