@@ -73,7 +73,7 @@ public:
     static FCDECL1(Object *,        InterfaceMarshaler__ConvertToManagedWithoutUnboxing, IUnknown *pNative);
 
     static FCDECL1(StringObject*,   UriMarshaler__GetRawUriFromNative, ABI::Windows::Foundation::IUriRuntimeClass* pIUriRC);
-    static FCDECL2(IUnknown*,       UriMarshaler__CreateNativeUriInstance, CLR_CHAR* pRawUriObj, UINT strLen);
+    static FCDECL2(IUnknown*,       UriMarshaler__CreateNativeUriInstance, __in_ecount(strLen) CLR_CHAR* pRawUriObj, UINT strLen);
 
     static ABI::Windows::UI::Xaml::Interop::INotifyCollectionChangedEventArgs* QCALLTYPE 
         EventArgsMarshaler__CreateNativeNCCEventArgsInstance
