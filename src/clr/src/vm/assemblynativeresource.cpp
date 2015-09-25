@@ -281,8 +281,8 @@ VOID Win32Res::WriteVerResource()
     WORD  cbStringBlocks;
     int i;
     bool bUseFileVer = false;
-    WCHAR       rcFile[_MAX_PATH];              // Name of file without path
-    WCHAR       rcFileExtension[_MAX_PATH];     // file extension
+    WCHAR       rcFile[_MAX_PATH] = {0};              // Name of file without path
+    WCHAR       rcFileExtension[_MAX_PATH] = {0};     // file extension
     WCHAR       rcFileName[_MAX_PATH];          // Name of file with extension but without path
     DWORD       cbTmp;
 

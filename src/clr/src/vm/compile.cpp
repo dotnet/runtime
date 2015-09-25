@@ -759,9 +759,9 @@ HRESULT CEECompileInfo::LoadTypeRefWinRT(
         Assembly *pAssembly;
 
         mdToken tkResolutionScope;
-        pAssemblyImport->GetResolutionScopeOfTypeRef(ref, &tkResolutionScope);
-        
-        if(TypeFromToken(tkResolutionScope) == mdtAssemblyRef)
+        if(FAILED(pAssemblyImport->GetResolutionScopeOfTypeRef(ref, &tkResolutionScope)))
+            hr = S_FALSE;
+        else if(TypeFromToken(tkResolutionScope) == mdtAssemblyRef)
         {
             DWORD dwAssemblyRefFlags;
             IfFailThrow(pAssemblyImport->GetAssemblyRefProps(tkResolutionScope, NULL, NULL,

@@ -52,7 +52,7 @@ public:
     __checkReturn 
     HRESULT GetData(
              UINT32    nDataIndex, 
-        __in DataBlob *pData);
+        __out DataBlob *pData);
     
     inline BOOL IsEmpty() const
         { return m_pHotHeapHeader == NULL; }

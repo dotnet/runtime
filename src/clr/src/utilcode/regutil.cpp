@@ -1130,8 +1130,8 @@ HRESULT REGUTIL::RegisterTypeLib(       // Return code.
     WCHAR       szID[64];               // The typelib ID to register.
     WCHAR       szTLBID[256];           // TypeLib\\szID.
     WCHAR       szHelpDir[_MAX_PATH];
-    WCHAR       szDrive[_MAX_DRIVE];
-    WCHAR       szDir[_MAX_DIR];
+    WCHAR       szDrive[_MAX_DRIVE] = {0};
+    WCHAR       szDir[_MAX_DIR] = {0};
     WCHAR       szVersion[64];
     LPWSTR      szTmp;
 

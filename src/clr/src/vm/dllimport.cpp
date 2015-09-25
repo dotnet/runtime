@@ -4031,7 +4031,7 @@ struct HiddenParameterInfo
 void CheckForHiddenParameters(DWORD cParamMarshalInfo,
                               __in_ecount(cParamMarshalInfo) MarshalInfo *pParamMarshalInfo,
                               __out DWORD *pcHiddenNativeParameters,
-                              __out_ecount(*pcHiddenNativeParameters) HiddenParameterInfo **ppHiddenNativeParameters)
+                              __out HiddenParameterInfo **ppHiddenNativeParameters)
 {
     CONTRACTL
     {

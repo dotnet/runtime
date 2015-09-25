@@ -277,10 +277,10 @@ void ExportTypeLibFromLoadedAssembly(
 
     TypeLibExporter exporter;           // Exporter object.
     LPCWSTR     szModule=0;             // Module filename.
-    WCHAR       rcDrive[_MAX_DRIVE];
-    WCHAR       rcDir[_MAX_DIR];
-    WCHAR       rcFile[_MAX_FNAME];
-    WCHAR       rcTlb[_MAX_PATH+5];     // Buffer for the tlb filename.
+    WCHAR       rcDrive[_MAX_DRIVE] = {0};
+    WCHAR       rcDir[_MAX_DIR] = {0};
+    WCHAR       rcFile[_MAX_FNAME] = {0};
+    WCHAR       rcTlb[_MAX_PATH+5] = {0};     // Buffer for the tlb filename.
     int         bDynamic=0;             // If true, dynamic module.
     Module      *pModule;               // The Assembly's SecurityModule.
     

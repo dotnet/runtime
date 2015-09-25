@@ -232,7 +232,7 @@ public:
 
 
     STDMETHOD(GetName)(
-        __out LPDWORD lpcwBuffer,
+        __inout LPDWORD lpcwBuffer,
         __out_ecount_opt(*lpcwBuffer) WCHAR *pwzName)
     {
         LIMITED_METHOD_CONTRACT;

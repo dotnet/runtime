@@ -42,6 +42,7 @@ VerQueryValueW_NoThrow(
 #endif
 
 #if defined(_WININET_) && !defined (CreateUrlCacheEntryW_NoThrow)
+__success(return) 
 BOOL 
 CreateUrlCacheEntryW_NoThrow(
         IN LPCWSTR lpszUrlName,

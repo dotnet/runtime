@@ -996,7 +996,11 @@ void MdaPInvokeLog::LogPInvoke(NDirectMethodDesc* pMD, HINSTANCE hMod)
         StackSString sszEntryPoint;
         sszEntryPoint.SetUTF8(pMD->GetEntrypointName());
 
-        WCHAR szDllFullName[_MAX_PATH], szDrive[_MAX_PATH], szPath[_MAX_PATH], szFileName[_MAX_PATH], szExt[_MAX_PATH];
+        WCHAR szDllFullName[_MAX_PATH] = {0};
+        WCHAR szDrive[_MAX_PATH] = {0};
+        WCHAR szPath[_MAX_PATH] = {0};
+        WCHAR szFileName[_MAX_PATH] = {0};
+        WCHAR szExt[_MAX_PATH] = {0};
         WszGetModuleFileName(hMod, szDllFullName, _MAX_PATH);      
         SplitPath(szDllFullName, szDrive, _MAX_PATH, szPath, _MAX_PATH, szFileName, _MAX_PATH, szExt, _MAX_PATH);
 
