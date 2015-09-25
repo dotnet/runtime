@@ -1,13 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
 using Xunit;
 
-namespace System.Collections.HashtableTests
+namespace System.Collections.Tests
 {
-    public class CloneTests
+    public class Hashtable_CloneTests
     {
         [Fact]
         public void TestCloneBasic()
@@ -156,14 +154,14 @@ namespace System.Collections.HashtableTests
             iclone1 = (Hashtable)hsh1.Clone();
             Assert.Equal(hsh1.Count, iclone1.Count);
         }
-    }
 
-    internal class Foo
-    {
-        internal string strValue;
-        internal Foo()
+        internal class Foo
         {
-            strValue = "Hello World";
+            internal string strValue;
+            internal Foo()
+            {
+                strValue = "Hello World";
+            }
         }
     }
 }

@@ -1,12 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Threading;
-using System.Collections;
 using Xunit;
 
-namespace System.Collections.NonGenericTests
+namespace System.Collections.Tests
 {
     public class ReadOnlyCollectionBaseTests
     {
@@ -174,114 +171,114 @@ namespace System.Collections.NonGenericTests
 
             Assert.Null(collectionBase.GetEnumerator());
         }
-    }
 
-    //ReadOnlyCollectionBase is provided to be used as the base class for strongly typed collections. Lets use one of our own here.
-    //This collection only allows the type Foo
-    public class MyReadOnlyCollectionBase : ReadOnlyCollectionBase
-    {
-        //we need a way of initializing this collection
-        public MyReadOnlyCollectionBase(Foo[] values)
+        //ReadOnlyCollectionBase is provided to be used as the base class for strongly typed collections. Lets use one of our own here.
+        //This collection only allows the type Foo
+        public class MyReadOnlyCollectionBase : ReadOnlyCollectionBase
         {
-            InnerList.AddRange(values);
-        }
-
-        public Foo this[int indx]
-        {
-            get { return (Foo)InnerList[indx]; }
-        }
-
-        public void CopyTo(Array array, int index)
-        {
-            ((ICollection)this).CopyTo(array, index);// Use the base class explicit implemenation of ICollection.CopyTo
-        }
-
-        public virtual object SyncRoot
-        {
-            get
+            //we need a way of initializing this collection
+            public MyReadOnlyCollectionBase(Foo[] values)
             {
-                return ((ICollection)this).SyncRoot;// Use the base class explicit implemenation of ICollection.SyncRoot
+                InnerList.AddRange(values);
+            }
+
+            public Foo this[int indx]
+            {
+                get { return (Foo)InnerList[indx]; }
+            }
+
+            public void CopyTo(Array array, int index)
+            {
+                ((ICollection)this).CopyTo(array, index);// Use the base class explicit implemenation of ICollection.CopyTo
+            }
+
+            public virtual object SyncRoot
+            {
+                get
+                {
+                    return ((ICollection)this).SyncRoot;// Use the base class explicit implemenation of ICollection.SyncRoot
+                }
+            }
+
+            public int IndexOf(Foo f)
+            {
+                return ((IList)InnerList).IndexOf(f);
+            }
+
+            public Boolean Contains(Foo f)
+            {
+                return ((IList)InnerList).Contains(f);
+            }
+
+            public Boolean IsFixedSize
+            {
+                get { return true; }
+            }
+
+            public Boolean IsReadOnly
+            {
+                get { return true; }
             }
         }
 
-        public int IndexOf(Foo f)
+        public class VirtualTestReadOnlyCollection : ReadOnlyCollectionBase
         {
-            return ((IList)InnerList).IndexOf(f);
-        }
-
-        public Boolean Contains(Foo f)
-        {
-            return ((IList)InnerList).Contains(f);
-        }
-
-        public Boolean IsFixedSize
-        {
-            get { return true; }
-        }
-
-        public Boolean IsReadOnly
-        {
-            get { return true; }
-        }
-    }
-
-    public class VirtualTestReadOnlyCollection : ReadOnlyCollectionBase
-    {
-        public override int Count
-        {
-            get
+            public override int Count
             {
-                return int.MinValue;
+                get
+                {
+                    return int.MinValue;
+                }
+            }
+
+            public override IEnumerator GetEnumerator()
+            {
+                return null;
             }
         }
 
-        public override IEnumerator GetEnumerator()
+        public class Foo
         {
-            return null;
-        }
-    }
+            private int _iValue;
+            private String _strValue;
 
-    public class Foo
-    {
-        private int _iValue;
-        private String _strValue;
+            public Foo()
+            {
+            }
 
-        public Foo()
-        {
-        }
+            public Foo(int i, String str)
+            {
+                _iValue = i;
+                _strValue = str;
+            }
 
-        public Foo(int i, String str)
-        {
-            _iValue = i;
-            _strValue = str;
-        }
+            public int IValue
+            {
+                get { return _iValue; }
+                set { _iValue = value; }
+            }
 
-        public int IValue
-        {
-            get { return _iValue; }
-            set { _iValue = value; }
-        }
+            public String SValue
+            {
+                get { return _strValue; }
+                set { _strValue = value; }
+            }
 
-        public String SValue
-        {
-            get { return _strValue; }
-            set { _strValue = value; }
-        }
-
-        public override Boolean Equals(object obj)
-        {
-            if (obj == null)
+            public override Boolean Equals(object obj)
+            {
+                if (obj == null)
+                    return false;
+                if (!(obj is Foo))
+                    return false;
+                if ((((Foo)obj).IValue == _iValue) && (((Foo)obj).SValue == _strValue))
+                    return true;
                 return false;
-            if (!(obj is Foo))
-                return false;
-            if ((((Foo)obj).IValue == _iValue) && (((Foo)obj).SValue == _strValue))
-                return true;
-            return false;
-        }
+            }
 
-        public override int GetHashCode()
-        {
-            return _iValue;
+            public override int GetHashCode()
+            {
+                return _iValue;
+            }
         }
     }
 }
