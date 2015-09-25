@@ -4432,7 +4432,7 @@ namespace System.Net.Sockets
             GlobalLog.Print("Socket#" + Logging.HashString(this) + "::Shutdown() how:" + how.ToString());
 
             // This can throw ObjectDisposedException.
-            SocketError errorCode = SocketPal.Shutdown(_handle, how);
+            SocketError errorCode = SocketPal.Shutdown(_handle, _isConnected, _isDisconnected, how);
 
             GlobalLog.Print("Socket#" + Logging.HashString(this) + "::Shutdown() Interop.Winsock.shutdown returns errorCode:" + errorCode);
 
@@ -5516,7 +5516,7 @@ namespace System.Net.Sockets
                     else
                     {
                         // Since our timeout is in ms and linger is in seconds, implement our own sortof linger here.
-                        errorCode = SocketPal.Shutdown(_handle, SocketShutdown.Send);
+                        errorCode = SocketPal.Shutdown(_handle, _isConnected, _isDisconnected, SocketShutdown.Send);
                         GlobalLog.Print("SafeCloseSocket::Dispose(handle:" + _handle.DangerousGetHandle().ToString("x") + ") shutdown():" + (errorCode == SocketError.SocketError ? SocketPal.GetLastSocketError() : errorCode).ToString());
 
                         // This should give us a timeout in milliseconds.
@@ -5604,7 +5604,7 @@ namespace System.Net.Sockets
 
             try
             {
-                SocketPal.Shutdown(_handle, how);
+                SocketPal.Shutdown(_handle, _isConnected, _isDisconnected, how);
             }
             catch (ObjectDisposedException) { }
         }
