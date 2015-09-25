@@ -4,6 +4,8 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -24,7 +26,7 @@ internal static partial class Interop
         #region internal methods
 
         //TODO Set remote certificate options
-        internal static IntPtr AllocateSslContext(long options, SafeX509Handle certHandle, bool isServer, bool remoteCertRequired)
+        internal static IntPtr AllocateSslContext(long options, SafeX509Handle certHandle, SafeEvpPKeyHandle certKeyHandle, bool isServer, bool remoteCertRequired)
         {
             IntPtr sslContextPtr = Marshal.AllocHGlobal(Marshal.SizeOf<SslContext>());
             SslContext sslContext = new SslContext
@@ -50,6 +52,11 @@ internal static partial class Interop
                 libssl.SSL_CTX_ctrl(contextPtr, libssl.SSL_CTRL_OPTIONS, options, IntPtr.Zero);
 
                 libssl.SSL_CTX_set_quiet_shutdown(contextPtr, 1);
+
+                if (certHandle != null && certKeyHandle != null)
+                {
+                    SetSslCertificate(contextPtr, certHandle, certKeyHandle);
+                }
 
                 sslContext.sslPtr = libssl.SSL_new(contextPtr);
 
@@ -228,39 +235,6 @@ internal static partial class Interop
             return cipher;
         }
 
-        internal static byte[] GetCertificateRawData(IntPtr certPtr)
-        {
-            byte[] buffer = null;
-            unsafe
-            {
-                byte* bufferPtr = null;
-                int len = libssl.i2d_X509(certPtr, ref bufferPtr);
-                if (len > 0)
-                {
-                    buffer = new byte[len];
-                    fixed (byte* pinnedBuffer = buffer)
-                    {
-                        bufferPtr = pinnedBuffer;   // TODO: creating temp var just in case
-                        len = libssl.i2d_X509(certPtr, ref bufferPtr);
-                    }
-                }
-                if (len <= 0)
-                {
-                    throw CreateSslException("Failed to get certificate raw data");
-                }
-            }
-
-            return buffer;
-        }
-
-        internal static void FreeCertificate(IntPtr certPtr)
-        {
-            if (IntPtr.Zero != certPtr)
-            {
-                libssl.X509_free(certPtr);
-            }
-        }
-
         internal static void FreeSslContext(IntPtr sslContextPtr)
         {
             if (IntPtr.Zero == sslContextPtr)
@@ -368,8 +342,11 @@ internal static partial class Interop
             return retVal;
         }
 
-        private static void SetSslCertificate(IntPtr contextPtr, IntPtr certPtr, IntPtr keyPtr)
+        private static void SetSslCertificate(IntPtr contextPtr, SafeX509Handle certPtr, SafeEvpPKeyHandle keyPtr)
         {
+            Debug.Assert(certPtr != null && !certPtr.IsInvalid, "certPtr != null && !certPtr.IsInvalid");
+            Debug.Assert(keyPtr != null && !keyPtr.IsInvalid, "keyPtr != null && !keyPtr.IsInvalid");
+
             int retVal = libssl.SSL_CTX_use_certificate(contextPtr, certPtr);
             if (1 != retVal)
             {
