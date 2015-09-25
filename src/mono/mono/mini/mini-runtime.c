@@ -658,6 +658,14 @@ register_opcode_emulation (int opcode, const char *name, const char *sigstr, gpo
 {
 #ifndef DISABLE_JIT
 	mini_register_opcode_emulation (opcode, name, sigstr, func, symbol, no_throw);
+#else
+	MonoMethodSignature *sig = mono_create_icall_signature (sigstr);
+
+	g_assert (!sig->hasthis);
+	g_assert (sig->param_count < 3);
+
+	/* Opcode emulation functions are assumed to don't call mono_raise_exception () */
+	mono_register_jit_icall_full (func, name, sig, no_throw, TRUE, symbol);
 #endif
 }
 
