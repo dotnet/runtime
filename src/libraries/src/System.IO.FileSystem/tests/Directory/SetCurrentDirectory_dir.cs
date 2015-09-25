@@ -4,7 +4,7 @@
 using System.Runtime.CompilerServices;
 using Xunit;
 
-namespace System.IO.FileSystem.Tests
+namespace System.IO.Tests
 {
     public class Directory_SetCurrentDirectory : FileSystemTest
     {

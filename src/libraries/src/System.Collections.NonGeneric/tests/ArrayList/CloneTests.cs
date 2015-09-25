@@ -1,13 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
 using Xunit;
 
-namespace System.Collections.ArrayListTests
+namespace System.Collections.Tests
 {
-    public class CloneTests
+    public class ArrayList_CloneTests
     {
         [Fact]
         public void TestCloneBasic()
@@ -83,15 +81,15 @@ namespace System.Collections.ArrayListTests
             strValue = "Hello World";
             Assert.Equal(strValue, ((Foo)alst2[0]).strValue);
         }
-    }
 
-    internal class Foo
-    {
-        internal String strValue;
-
-        internal Foo()
+        internal class Foo
         {
-            strValue = "Hello World";
+            internal String strValue;
+
+            internal Foo()
+            {
+                strValue = "Hello World";
+            }
         }
     }
 }

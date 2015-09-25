@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class WhereTests
+    public class WhereTests : EnumerableTests
     {
         #region Null arguments
 
@@ -19,8 +19,8 @@ namespace System.Linq.Tests
             Func<int, bool> simplePredicate = (value) => true;
             Func<int, int, bool> complexPredicate = (value, index) => true;
 
-            Assert.Throws<ArgumentNullException>(() => source.Where(simplePredicate));
-            Assert.Throws<ArgumentNullException>(() => source.Where(complexPredicate));
+            Assert.Throws<ArgumentNullException>("source", () => source.Where(simplePredicate));
+            Assert.Throws<ArgumentNullException>("source", () => source.Where(complexPredicate));
         }
 
         [Fact]
@@ -30,8 +30,8 @@ namespace System.Linq.Tests
             Func<int, bool> simplePredicate = null;
             Func<int, int, bool> complexPredicate = null;
 
-            Assert.Throws<ArgumentNullException>(() => source.Where(simplePredicate));
-            Assert.Throws<ArgumentNullException>(() => source.Where(complexPredicate));
+            Assert.Throws<ArgumentNullException>("predicate", () => source.Where(simplePredicate));
+            Assert.Throws<ArgumentNullException>("predicate", () => source.Where(complexPredicate));
         }
 
         #endregion
@@ -378,7 +378,13 @@ namespace System.Linq.Tests
             Assert.Equal(0, result.Count());
             Assert.False(wasSelectorCalled);
         }
-        
+
+        [Fact]
+        public void Where_EmptyEnumerable_ReturnsNoElementsWithIndex()
+        {
+            Assert.Empty(Enumerable.Empty<int>().Where((e, i) => true));
+        }
+
         [Fact]
         public void Where_Array_CurrentIsDefaultOfTAfterEnumeration()
         {
@@ -519,6 +525,20 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void WhereSelectSelect_Array_ReturnsExpectedValues()
+        {
+            int[] source = new[] { 1, 2, 3, 4, 5 };
+            Func<int, bool> evenPredicate = (value) => value % 2 == 0;
+            Func<int, int> addSelector = (value) => value + 1;
+
+            IEnumerable<int> result = source.Where(evenPredicate).Select(i => i).Select(addSelector);
+
+            Assert.Equal(2, result.Count());
+            Assert.Equal(3, result.ElementAt(0));
+            Assert.Equal(5, result.ElementAt(1));
+        }
+
+        [Fact]
         public void WhereSelect_List_ReturnsExpectedValues()
         {
             List<int> source = new List<int> { 1, 2, 3, 4, 5 };
@@ -526,6 +546,20 @@ namespace System.Linq.Tests
             Func<int, int> addSelector = (value) => value + 1;
 
             IEnumerable<int> result = source.Where(evenPredicate).Select(addSelector);
+
+            Assert.Equal(2, result.Count());
+            Assert.Equal(3, result.ElementAt(0));
+            Assert.Equal(5, result.ElementAt(1));
+        }
+
+        [Fact]
+        public void WhereSelectSelect_List_ReturnsExpectedValues()
+        {
+            List<int> source = new List<int> { 1, 2, 3, 4, 5 };
+            Func<int, bool> evenPredicate = (value) => value % 2 == 0;
+            Func<int, int> addSelector = (value) => value + 1;
+
+            IEnumerable<int> result = source.Where(evenPredicate).Select(i => i).Select(addSelector);
 
             Assert.Equal(2, result.Count());
             Assert.Equal(3, result.ElementAt(0));
@@ -547,6 +581,20 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void WhereSelectSelect_IReadOnlyCollection_ReturnsExpectedValues()
+        {
+            IReadOnlyCollection<int> source = new ReadOnlyCollection<int>(new List<int> { 1, 2, 3, 4, 5 });
+            Func<int, bool> evenPredicate = (value) => value % 2 == 0;
+            Func<int, int> addSelector = (value) => value + 1;
+
+            IEnumerable<int> result = source.Where(evenPredicate).Select(i => i).Select(addSelector);
+
+            Assert.Equal(2, result.Count());
+            Assert.Equal(3, result.ElementAt(0));
+            Assert.Equal(5, result.ElementAt(1));
+        }
+
+        [Fact]
         public void WhereSelect_ICollection_ReturnsExpectedValues()
         {
             ICollection<int> source = new LinkedList<int>(new List<int> { 1, 2, 3, 4, 5 });
@@ -561,6 +609,20 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void WhereSelectSelect_ICollection_ReturnsExpectedValues()
+        {
+            ICollection<int> source = new LinkedList<int>(new List<int> { 1, 2, 3, 4, 5 });
+            Func<int, bool> evenPredicate = (value) => value % 2 == 0;
+            Func<int, int> addSelector = (value) => value + 1;
+
+            IEnumerable<int> result = source.Where(evenPredicate).Select(i => i).Select(addSelector);
+
+            Assert.Equal(2, result.Count());
+            Assert.Equal(3, result.ElementAt(0));
+            Assert.Equal(5, result.ElementAt(1));
+        }
+
+        [Fact]
         public void WhereSelect_IEnumerable_ReturnsExpectedValues()
         {
             IEnumerable<int> source = Enumerable.Range(1, 5);
@@ -568,6 +630,20 @@ namespace System.Linq.Tests
             Func<int, int> addSelector = (value) => value + 1;
 
             IEnumerable<int> result = source.Where(evenPredicate).Select(addSelector);
+
+            Assert.Equal(2, result.Count());
+            Assert.Equal(3, result.ElementAt(0));
+            Assert.Equal(5, result.ElementAt(1));
+        }
+
+        [Fact]
+        public void WhereSelectSelect_IEnumerable_ReturnsExpectedValues()
+        {
+            IEnumerable<int> source = Enumerable.Range(1, 5);
+            Func<int, bool> evenPredicate = (value) => value % 2 == 0;
+            Func<int, int> addSelector = (value) => value + 1;
+
+            IEnumerable<int> result = source.Where(evenPredicate).Select(i => i).Select(addSelector);
 
             Assert.Equal(2, result.Count());
             Assert.Equal(3, result.ElementAt(0));
@@ -680,59 +756,6 @@ namespace System.Linq.Tests
             Assert.Equal(2, enumerator.Current);
         }
 
-        /// <summary>
-        /// Test enumerator - returns int values from 1 to 5 inclusive.
-        /// </summary>
-        private class TestEnumerator : IEnumerable<int>, IEnumerator<int>
-        {
-            private int _current = 0;
-
-            public virtual int Current { get { return _current; } }
-
-            object IEnumerator.Current { get { return Current; } }
-
-            public void Dispose() { }
-
-            public virtual IEnumerator<int> GetEnumerator()
-            {
-                return this;
-            }
-
-            public virtual bool MoveNext()
-            {
-                return _current++ < 5;
-            }
-
-            public void Reset()
-            {
-                throw new NotImplementedException();
-            }
-
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return GetEnumerator();
-            }
-        }
-
-        /// <summary>
-        /// A test enumerator that throws an InvalidOperationException when invoking Current after MoveNext has been called exactly once.
-        /// </summary>
-        private class ThrowsOnCurrentEnumerator : TestEnumerator
-        {
-            public override int Current
-            {
-                get
-                {
-                    var current = base.Current;
-                    if (current == 1)
-                    {
-                        throw new InvalidOperationException();
-                    }
-                    return current;
-                }
-            }
-        }
-
         [Fact]
         public void Where_SourceThrowsOnCurrent()
         {
@@ -747,23 +770,6 @@ namespace System.Linq.Tests
             // Ensure subsequent MoveNext calls succeed
             Assert.True(enumerator.MoveNext());
             Assert.Equal(2, enumerator.Current);
-        }
-
-        /// <summary>
-        /// A test enumerator that throws an InvalidOperationException when invoking MoveNext after MoveNext has been called exactly once.
-        /// </summary>
-        private class ThrowsOnMoveNext : TestEnumerator
-        {
-            public override bool MoveNext()
-            {
-                bool baseReturn = base.MoveNext();
-                if (base.Current == 1)
-                {
-                    throw new InvalidOperationException();
-                }
-
-                return baseReturn;
-            }
         }
 
         [Fact]
@@ -784,24 +790,6 @@ namespace System.Linq.Tests
             // Ensure subsequent MoveNext calls succeed
             Assert.True(enumerator.MoveNext());
             Assert.Equal(2, enumerator.Current);
-        }
-
-        /// <summary>
-        /// A test enumerator that throws an InvalidOperationException when GetEnumerator is called for the first time.
-        /// </summary>
-        private class ThrowsOnGetEnumerator : TestEnumerator
-        {
-            private int getEnumeratorCallCount;
-
-            public override IEnumerator<int> GetEnumerator()
-            {
-                if (getEnumeratorCallCount++ == 0)
-                {
-                    throw new InvalidOperationException();
-                }
-
-                return base.GetEnumerator();
-            }
         }
 
         [Fact]
@@ -864,6 +852,211 @@ namespace System.Linq.Tests
                 Assert.Same(result, enumerator1);
                 Assert.NotSame(enumerator1, enumerator2);
             }
+        }
+
+        [Fact]
+        public void SameResultsRepeatCallsIntQuery()
+        {
+            var q = from x in new[] { 9999, 0, 888, -1, 66, -777, 1, 2, -12345 }
+                    where x > Int32.MinValue
+                    select x;
+
+            Assert.Equal(q.Where(IsEven), q.Where(IsEven));
+
+        }
+
+        [Fact]
+        public void SameResultsRepeatCallsStringQuery()
+        {
+            var q = from x in new[] { "!@#$%^", "C", "AAA", "", "Calling Twice", null, "SoS", String.Empty }
+                    select x;
+
+            Assert.Equal(q.Where(string.IsNullOrEmpty), q.Where(string.IsNullOrEmpty));
+
+        }
+
+        [Fact]
+        public void SingleElementPredicateFalse()
+        {
+            int[] source = { 3 };
+            Assert.Empty(source.Where(IsEven));
+        }
+
+        [Fact]
+        public void PredicateFalseForAll()
+        {
+            int[] source = { 9, 7, 15, 3, 27 };
+            Assert.Empty(source.Where(IsEven));
+        }
+
+        [Fact]
+        public void PredicateTrueFirstOnly()
+        {
+            int[] source = { 10, 9, 7, 15, 3, 27 };
+            Assert.Equal(source.Take(1), source.Where(IsEven));
+        }
+
+        [Fact]
+        public void PredicateTrueLastOnly()
+        {
+            int[] source = { 9, 7, 15, 3, 27, 20 };
+            Assert.Equal(source.Skip(source.Length - 1), source.Where(IsEven));
+        }
+
+        [Fact]
+        public void PredicateTrueFirstThirdSixth()
+        {
+            int[] source = { 20, 7, 18, 9, 7, 10, 21 };
+            int[] expected = { 20, 18, 10 };
+            Assert.Equal(expected, source.Where(IsEven));
+        }
+
+        [Fact]
+        public void SourceAllNullsPredicateTrue()
+        {
+            int?[] source = { null, null, null, null };
+            Assert.Equal(source, source.Where(num => true));
+        }
+
+        [Fact]
+        public void SourceEmptyIndexedPredicate()
+        {
+            Assert.Empty(Enumerable.Empty<int>().Where((e, i) => i % 2 == 0));
+        }
+
+        [Fact]
+        public void SingleElementIndexedPredicateTrue()
+        {
+            int[] source = { 2 };
+            Assert.Equal(source, source.Where((e, i) => e % 2 == 0));
+        }
+
+        [Fact]
+        public void SingleElementIndexedPredicateFalse()
+        {
+            int[] source = { 3 };
+            Assert.Empty(source.Where((e, i) => e % 2 == 0));
+        }
+
+        [Fact]
+        public void IndexedPredicateFalseForAll()
+        {
+            int[] source = { 9, 7, 15, 3, 27 };
+            Assert.Empty(source.Where((e, i) => e % 2 == 0));
+        }
+
+        [Fact]
+        public void IndexedPredicateTrueFirstOnly()
+        {
+            int[] source = { 10, 9, 7, 15, 3, 27 };
+            Assert.Equal(source.Take(1), source.Where((e, i) => e % 2 == 0));
+        }
+
+        [Fact]
+        public void IndexedPredicateTrueLastOnly()
+        {
+            int[] source = { 9, 7, 15, 3, 27, 20 };
+            Assert.Equal(source.Skip(source.Length - 1), source.Where((e, i) => e % 2 == 0));
+        }
+
+        [Fact]
+        public void IndexedPredicateTrueFirstThirdSixth()
+        {
+            int[] source = { 20, 7, 18, 9, 7, 10, 21 };
+            int[] expected = { 20, 18, 10 };
+            Assert.Equal(expected, source.Where((e, i) => e % 2 == 0));
+        }
+
+        [Fact]
+        public void SourceAllNullsIndexedPredicateTrue()
+        {
+            int?[] source = { null, null, null, null };
+            Assert.Equal(source, source.Where((num, index) => true));
+        }
+
+        [Fact]
+        public void PredicateSelectsFirst()
+        {
+            int[] source = { -40, 20, 100, 5, 4, 9 };
+            Assert.Equal(source.Take(1), source.Where((e, i) => i == 0));
+        }
+
+        [Fact]
+        public void PredicateSelectsLast()
+        {
+            int[] source = { -40, 20, 100, 5, 4, 9 };
+            Assert.Equal(source.Skip(source.Length - 1), source.Where((e, i) => i == source.Length - 1));
+        }
+
+        [Fact]
+        [OuterLoop]
+        public void IndexOverflows()
+        {
+            var infiniteWhere = new FastInfiniteEnumerator<int>().Where((e, i) => true);
+            using (var en = infiniteWhere.GetEnumerator())
+                Assert.Throws<OverflowException>(() =>
+                {
+                    while (en.MoveNext())
+                    {
+                    }
+                });
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerate()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Where(i => true);
+            // Don't insist on this behaviour, but check its correct if it happens
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerateArray()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).ToArray().Where(i => true);
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerateList()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).ToList().Where(i => true);
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerateIndexed()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Where((e, i) => true);
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerateWhereSelect()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Where(i => true).Select(i => i);
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerateWhereSelectArray()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).ToArray().Where(i => true).Select(i => i);
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerateWhereSelectList()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).ToList().Where(i => true).Select(i => i);
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
         }
     }
 }

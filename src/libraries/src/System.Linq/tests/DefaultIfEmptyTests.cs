@@ -7,13 +7,8 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class DefaultIfEmptyTests
+    public class DefaultIfEmptyTests : EnumerableTests
     {
-        public static IEnumerable<int> NumberRangeGuaranteedNotCollectionType(int num, int count)
-        {
-            for (int i = 0; i < count; i++) yield return num + i;
-        }
-
         [Fact]
         public void SameResultsRepeatCallsNonEmptyQuery()
         {
@@ -109,8 +104,17 @@ namespace System.Linq.Tests
         {
             IEnumerable<int> source = null;
             
-            Assert.Throws<ArgumentNullException>(() => source.DefaultIfEmpty());
-            Assert.Throws<ArgumentNullException>(() => source.DefaultIfEmpty(42));
+            Assert.Throws<ArgumentNullException>("source", () => source.DefaultIfEmpty());
+            Assert.Throws<ArgumentNullException>("source", () => source.DefaultIfEmpty(42));
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerate()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).DefaultIfEmpty();
+            // Don't insist on this behaviour, but check its correct if it happens
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
         }
     }
 }

@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class SumTests
+    public class SumTests : EnumerableTests
     {
         #region SourceIsNull - ArgumentNullExceptionThrown
 
@@ -14,80 +14,80 @@ namespace System.Linq.Tests
         public void SumOfInt_SourceIsNull_ArgumentNullExceptionThrown()
         {
             IEnumerable<int> sourceInt = null;
-            Assert.Throws<ArgumentNullException>(() => sourceInt.Sum());
-            Assert.Throws<ArgumentNullException>(() => sourceInt.Sum(x => x));
+            Assert.Throws<ArgumentNullException>("source", () => sourceInt.Sum());
+            Assert.Throws<ArgumentNullException>("source", () => sourceInt.Sum(x => x));
         }
 
         [Fact]
         public void SumOfNullableOfInt_SourceIsNull_ArgumentNullExceptionThrown()
         {
             IEnumerable<int?> sourceNullableInt = null;
-            Assert.Throws<ArgumentNullException>(() => sourceNullableInt.Sum());
-            Assert.Throws<ArgumentNullException>(() => sourceNullableInt.Sum(x => x));
+            Assert.Throws<ArgumentNullException>("source", () => sourceNullableInt.Sum());
+            Assert.Throws<ArgumentNullException>("source", () => sourceNullableInt.Sum(x => x));
         }
 
         [Fact]
         public void SumOfLong_SourceIsNull_ArgumentNullExceptionThrown()
         {
             IEnumerable<long> sourceLong = null;
-            Assert.Throws<ArgumentNullException>(() => sourceLong.Sum());
-            Assert.Throws<ArgumentNullException>(() => sourceLong.Sum(x => x));
+            Assert.Throws<ArgumentNullException>("source", () => sourceLong.Sum());
+            Assert.Throws<ArgumentNullException>("source", () => sourceLong.Sum(x => x));
         }
 
         [Fact]
         public void SumOfNullableOfLong_SourceIsNull_ArgumentNullExceptionThrown()
         {
             IEnumerable<long?> sourceNullableLong = null;
-            Assert.Throws<ArgumentNullException>(() => sourceNullableLong.Sum());
-            Assert.Throws<ArgumentNullException>(() => sourceNullableLong.Sum(x => x));
+            Assert.Throws<ArgumentNullException>("source", () => sourceNullableLong.Sum());
+            Assert.Throws<ArgumentNullException>("source", () => sourceNullableLong.Sum(x => x));
         }
 
         [Fact]
         public void SumOfFloat_SourceIsNull_ArgumentNullExceptionThrown()
         {
             IEnumerable<float> sourceFloat = null;
-            Assert.Throws<ArgumentNullException>(() => sourceFloat.Sum());
-            Assert.Throws<ArgumentNullException>(() => sourceFloat.Sum(x => x));
+            Assert.Throws<ArgumentNullException>("source", () => sourceFloat.Sum());
+            Assert.Throws<ArgumentNullException>("source", () => sourceFloat.Sum(x => x));
         }
 
         [Fact]
         public void SumOfNullableOfFloat_SourceIsNull_ArgumentNullExceptionThrown()
         {
             IEnumerable<float?> sourceNullableFloat = null;
-            Assert.Throws<ArgumentNullException>(() => sourceNullableFloat.Sum());
-            Assert.Throws<ArgumentNullException>(() => sourceNullableFloat.Sum(x => x));
+            Assert.Throws<ArgumentNullException>("source", () => sourceNullableFloat.Sum());
+            Assert.Throws<ArgumentNullException>("source", () => sourceNullableFloat.Sum(x => x));
         }
 
         [Fact]
         public void SumOfDouble_SourceIsNull_ArgumentNullExceptionThrown()
         {
             IEnumerable<double> sourceDouble = null;
-            Assert.Throws<ArgumentNullException>(() => sourceDouble.Sum());
-            Assert.Throws<ArgumentNullException>(() => sourceDouble.Sum(x => x));
+            Assert.Throws<ArgumentNullException>("source", () => sourceDouble.Sum());
+            Assert.Throws<ArgumentNullException>("source", () => sourceDouble.Sum(x => x));
         }
 
         [Fact]
         public void SumOfNullableOfDouble_SourceIsNull_ArgumentNullExceptionThrown()
         {
             IEnumerable<double?> sourceNullableDouble = null;
-            Assert.Throws<ArgumentNullException>(() => sourceNullableDouble.Sum());
-            Assert.Throws<ArgumentNullException>(() => sourceNullableDouble.Sum(x => x));
+            Assert.Throws<ArgumentNullException>("source", () => sourceNullableDouble.Sum());
+            Assert.Throws<ArgumentNullException>("source", () => sourceNullableDouble.Sum(x => x));
         }
 
         [Fact]
         public void SumOfDecimal_SourceIsNull_ArgumentNullExceptionThrown()
         {
             IEnumerable<decimal> sourceDecimal = null;
-            Assert.Throws<ArgumentNullException>(() => sourceDecimal.Sum());
-            Assert.Throws<ArgumentNullException>(() => sourceDecimal.Sum(x => x));
+            Assert.Throws<ArgumentNullException>("source", () => sourceDecimal.Sum());
+            Assert.Throws<ArgumentNullException>("source", () => sourceDecimal.Sum(x => x));
         }
 
         [Fact]
         public void SumOfNullableOfDecimal_SourceIsNull_ArgumentNullExceptionThrown()
         {
             IEnumerable<decimal?> sourceNullableDecimal = null;
-            Assert.Throws<ArgumentNullException>(() => sourceNullableDecimal.Sum());
-            Assert.Throws<ArgumentNullException>(() => sourceNullableDecimal.Sum(x => x));
+            Assert.Throws<ArgumentNullException>("source", () => sourceNullableDecimal.Sum());
+            Assert.Throws<ArgumentNullException>("source", () => sourceNullableDecimal.Sum(x => x));
         }
 
         #endregion
@@ -99,7 +99,7 @@ namespace System.Linq.Tests
         {
             IEnumerable<int> sourceInt = Enumerable.Empty<int>();
             Func<int, int> selector = null;
-            Assert.Throws<ArgumentNullException>(() => sourceInt.Sum(selector));
+            Assert.Throws<ArgumentNullException>("selector", () => sourceInt.Sum(selector));
         }
 
         [Fact]
@@ -108,7 +108,7 @@ namespace System.Linq.Tests
 
             IEnumerable<int?> sourceNullableInt = Enumerable.Empty<int?>();
             Func<int?, int?> selector = null;
-            Assert.Throws<ArgumentNullException>(() => sourceNullableInt.Sum(selector));
+            Assert.Throws<ArgumentNullException>("selector", () => sourceNullableInt.Sum(selector));
         }
 
         [Fact]
@@ -116,7 +116,7 @@ namespace System.Linq.Tests
         {
             IEnumerable<long> sourceLong = Enumerable.Empty<long>();
             Func<long, long> selector = null;
-            Assert.Throws<ArgumentNullException>(() => sourceLong.Sum(selector));
+            Assert.Throws<ArgumentNullException>("selector", () => sourceLong.Sum(selector));
         }
 
         [Fact]
@@ -125,7 +125,7 @@ namespace System.Linq.Tests
 
             IEnumerable<long?> sourceNullableLong = Enumerable.Empty<long?>();
             Func<long?, long?> selector = null;
-            Assert.Throws<ArgumentNullException>(() => sourceNullableLong.Sum(selector));
+            Assert.Throws<ArgumentNullException>("selector", () => sourceNullableLong.Sum(selector));
         }
 
         [Fact]
@@ -133,7 +133,7 @@ namespace System.Linq.Tests
         {
             IEnumerable<float> sourceFloat = Enumerable.Empty<float>();
             Func<float, float> selector = null;
-            Assert.Throws<ArgumentNullException>(() => sourceFloat.Sum(selector));
+            Assert.Throws<ArgumentNullException>("selector", () => sourceFloat.Sum(selector));
         }
 
         [Fact]
@@ -142,7 +142,7 @@ namespace System.Linq.Tests
 
             IEnumerable<float?> sourceNullableFloat = Enumerable.Empty<float?>();
             Func<float?, float?> selector = null;
-            Assert.Throws<ArgumentNullException>(() => sourceNullableFloat.Sum(selector));
+            Assert.Throws<ArgumentNullException>("selector", () => sourceNullableFloat.Sum(selector));
         }
 
         [Fact]
@@ -150,7 +150,7 @@ namespace System.Linq.Tests
         {
             IEnumerable<double> sourceDouble = Enumerable.Empty<double>();
             Func<double, double> selector = null;
-            Assert.Throws<ArgumentNullException>(() => sourceDouble.Sum(selector));
+            Assert.Throws<ArgumentNullException>("selector", () => sourceDouble.Sum(selector));
         }
 
         [Fact]
@@ -159,7 +159,7 @@ namespace System.Linq.Tests
 
             IEnumerable<double?> sourceNullableDouble = Enumerable.Empty<double?>();
             Func<double?, double?> selector = null;
-            Assert.Throws<ArgumentNullException>(() => sourceNullableDouble.Sum(selector));
+            Assert.Throws<ArgumentNullException>("selector", () => sourceNullableDouble.Sum(selector));
         }
 
         [Fact]
@@ -167,7 +167,7 @@ namespace System.Linq.Tests
         {
             IEnumerable<decimal> sourceDecimal = Enumerable.Empty<decimal>();
             Func<decimal, decimal> selector = null;
-            Assert.Throws<ArgumentNullException>(() => sourceDecimal.Sum(selector));
+            Assert.Throws<ArgumentNullException>("selector", () => sourceDecimal.Sum(selector));
         }
 
         [Fact]
@@ -176,7 +176,7 @@ namespace System.Linq.Tests
 
             IEnumerable<decimal?> sourceNullableDecimal = Enumerable.Empty<decimal?>();
             Func<decimal?, decimal?> selector = null;
-            Assert.Throws<ArgumentNullException>(() => sourceNullableDecimal.Sum(selector));
+            Assert.Throws<ArgumentNullException>("selector", () => sourceNullableDecimal.Sum(selector));
         }
 
         #endregion
@@ -397,32 +397,32 @@ namespace System.Linq.Tests
         public void SumOfFloat_SourceSumsToOverflow_InfinityReturned()
         {
             IEnumerable<float> sourceFloat = new float[] { float.MaxValue, float.MaxValue };
-            Assert.True(float.IsInfinity(sourceFloat.Sum()));
-            Assert.True(float.IsInfinity(sourceFloat.Sum(x => x)));
+            Assert.True(float.IsPositiveInfinity(sourceFloat.Sum()));
+            Assert.True(float.IsPositiveInfinity(sourceFloat.Sum(x => x)));
         }
 
         [Fact]
         public void SumOfNullableOfFloat_SourceSumsToOverflow_InfinityReturned()
         {
             IEnumerable<float?> sourceNullableFloat = new float?[] { float.MaxValue, null, float.MaxValue };
-            Assert.True(float.IsInfinity(sourceNullableFloat.Sum().Value));
-            Assert.True(float.IsInfinity(sourceNullableFloat.Sum(x => x).Value));
+            Assert.True(float.IsPositiveInfinity(sourceNullableFloat.Sum().Value));
+            Assert.True(float.IsPositiveInfinity(sourceNullableFloat.Sum(x => x).Value));
         }
 
         [Fact]
         public void SumOfDouble_SourceSumsToOverflow_InfinityReturned()
         {
             IEnumerable<double> sourceDouble = new double[] { double.MaxValue, double.MaxValue };
-            Assert.True(double.IsInfinity(sourceDouble.Sum()));
-            Assert.True(double.IsInfinity(sourceDouble.Sum(x => x)));
+            Assert.True(double.IsPositiveInfinity(sourceDouble.Sum()));
+            Assert.True(double.IsPositiveInfinity(sourceDouble.Sum(x => x)));
         }
 
         [Fact]
         public void SumOfNullableOfDouble_SourceSumsToOverflow_InfinityReturned()
         {
             IEnumerable<double?> sourceNullableDouble = new double?[] { double.MaxValue, null, double.MaxValue };
-            Assert.True(double.IsInfinity(sourceNullableDouble.Sum().Value));
-            Assert.True(double.IsInfinity(sourceNullableDouble.Sum(x => x).Value));
+            Assert.True(double.IsPositiveInfinity(sourceNullableDouble.Sum().Value));
+            Assert.True(double.IsPositiveInfinity(sourceNullableDouble.Sum(x => x).Value));
         }
 
         [Fact]
@@ -442,5 +442,318 @@ namespace System.Linq.Tests
         }
 
         #endregion
+        [Fact]
+        public void SameResultsRepeatCallsIntQuery()
+        {
+            var q = from x in new int?[] { 9999, 0, 888, -1, 66, null, -777, 1, 2, -12345 }
+                    where x > Int32.MinValue
+                    select x;
+            Assert.Equal(q.Sum(), q.Sum());
+        }
+
+        [Fact]
+        public void SolitaryNullableSingle()
+        {
+            float?[] source = { 20.51f };
+            Assert.Equal(source.FirstOrDefault(), source.Sum());
+        }
+
+        [Fact]
+        public void NaNFromSingles()
+        {
+            float?[] source = { 20.45f, 0f, -10.55f, float.NaN };
+            Assert.True(float.IsNaN(source.Sum().Value));
+        }
+
+        [Fact]
+        public void NullableSingleAllNull()
+        {
+            Assert.Equal(0, Enumerable.Repeat(default(float?), 4).Sum().Value);
+        }
+
+        [Fact]
+        public void NullableSingleToNegativeInfinity()
+        {
+            float?[] source = { -float.MaxValue, -float.MaxValue };
+            Assert.True(float.IsNegativeInfinity(source.Sum().Value));
+        }
+
+        [Fact]
+        public void NullableSingleFromSelector()
+        {
+            var source = new[]{
+                new { name="Tim", num=(float?)9.5f },
+                new { name="John", num=default(float?) },
+                new { name="Bob", num=(float?)8.5f }
+            };
+            Assert.Equal(18.0f, source.Sum(e => e.num).Value);
+        }
+
+        [Fact]
+        public void SolitaryInt32()
+        {
+            int[] source = { 20 };
+            Assert.Equal(source.FirstOrDefault(), source.Sum());
+        }
+
+        [Fact]
+        public void OverflowInt32Negative()
+        {
+            int[] source = { -Int32.MaxValue, 0, -5, -20 };
+            Assert.Throws<OverflowException>(() => source.Sum());
+        }
+
+        [Fact]
+        public void Int32FromSelector()
+        {
+            var source = new[]
+            {
+                new { name="Tim", num=10 },
+                new { name="John", num=50 },
+                new { name="Bob", num=-30 }
+            };
+            Assert.Equal(30, source.Sum(e => e.num));
+        }
+
+        [Fact]
+        public void SolitaryNullableInt32()
+        {
+            int?[] source = { -9 };
+            Assert.Equal(source.FirstOrDefault(), source.Sum());
+        }
+
+        [Fact]
+        public void NullableInt32AllNull()
+        {
+            Assert.Equal(0, Enumerable.Repeat(default(int?), 5).Sum().Value);
+        }
+
+        [Fact]
+        public void NullableInt32NegativeOverflow()
+        {
+            int?[] source = { -Int32.MaxValue, 0, -5, null, null, -20 };
+            Assert.Throws<OverflowException>(() => source.Sum());
+        }
+
+        [Fact]
+        public void NullableInt32FromSelector()
+        {
+            var source = new[]
+            {
+                new { name="Tim", num=(int?)10 },
+                new { name="John", num=default(int?) },
+                new { name="Bob", num=(int?)-30 }
+            };
+            Assert.Equal(-20, source.Sum(e => e.num));
+        }
+
+        [Fact]
+        public void SolitaryInt64()
+        {
+            long[] source = { int.MaxValue + 20L };
+            Assert.Equal(source.FirstOrDefault(), source.Sum());
+        }
+
+        [Fact]
+        public void NullableInt64NegativeOverflow()
+        {
+            long[] source = { -Int64.MaxValue, 0, -5, 20, -16 };
+            Assert.Throws<OverflowException>(() => source.Sum());
+        }
+
+        [Fact]
+        public void Int64FromSelector()
+        {
+            var source = new[]{
+                new { name="Tim", num=10L },
+                new { name="John", num=(long)int.MaxValue },
+                new { name="Bob", num=40L }
+            };
+
+            Assert.Equal(int.MaxValue + 50L, source.Sum(e => e.num));
+        }
+
+        [Fact]
+        public void SolitaryNullableInt64()
+        {
+            long?[] source = { -int.MaxValue - 20L };
+            Assert.Equal(source.FirstOrDefault(), source.Sum());
+        }
+
+        [Fact]
+        public void NullableInt64AllNull()
+        {
+            Assert.Equal(0, Enumerable.Repeat(default(long?), 5).Sum().Value);
+        }
+
+        [Fact]
+        public void Int64NegativeOverflow()
+        {
+            long?[] source = { -Int64.MaxValue, 0, -5, -20, null, null };
+            Assert.Throws<OverflowException>(() => source.Sum());
+        }
+
+        [Fact]
+        public void NullableInt64FromSelector()
+        {
+            var source = new[]{
+                new { name="Tim", num=(long?)10L },
+                new { name="John", num=(long?)int.MaxValue },
+                new { name="Bob", num=default(long?) }
+            };
+
+            Assert.Equal(int.MaxValue + 10L, source.Sum(e => e.num));
+        }
+
+        [Fact]
+        public void SolitaryDouble()
+        {
+            double[] source = { 20.51 };
+            Assert.Equal(source.FirstOrDefault(), source.Sum());
+        }
+
+        [Fact]
+        public void DoubleWithNaN()
+        {
+            double[] source = { 20.45, 0, -10.55, Double.NaN };
+            Assert.True(double.IsNaN(source.Sum()));
+        }
+
+        [Fact]
+        public void DoubleToNegativeInfinity()
+        {
+            double[] source = { -Double.MaxValue, -Double.MaxValue };
+            Assert.True(double.IsNegativeInfinity(source.Sum()));
+        }
+
+        [Fact]
+        public void DoubleFromSelector()
+        {
+            var source = new[]
+            {
+                new { name="Tim", num=9.5 },
+                new { name="John", num=10.5 },
+                new { name="Bob", num=3.5 }
+            };
+
+            Assert.Equal(23.5, source.Sum(e => e.num));
+        }
+
+        [Fact]
+        public void SolitaryNullableDouble()
+        {
+            double?[] source = { 20.51 };
+            Assert.Equal(source.FirstOrDefault(), source.Sum());
+        }
+
+        [Fact]
+        public void NullableDoubleAllNull()
+        {
+            Assert.Equal(0, Enumerable.Repeat(default(double?), 4).Sum().Value);
+        }
+
+        [Fact]
+        public void NullableDoubleToNegativeInfinity()
+        {
+            double?[] source = { -double.MaxValue, -double.MaxValue };
+            Assert.True(double.IsNegativeInfinity(source.Sum().Value));
+        }
+
+        [Fact]
+        public void NullableDoubleFromSelector()
+        {
+            var source = new[]
+            {
+                new { name="Tim", num=(double?)9.5 },
+                new { name="John", num=default(double?) },
+                new { name="Bob", num=(double?)8.5 }
+            };
+            Assert.Equal(18.0, source.Sum(e => e.num).Value);
+        }
+
+        [Fact]
+        public void SolitaryDecimal()
+        {
+            decimal[] source = { 20.51m };
+            Assert.Equal(source.FirstOrDefault(), source.Sum());
+        }
+
+        [Fact]
+        public void DecimalNegativeOverflow()
+        {
+            decimal[] source = { -decimal.MaxValue, -decimal.MaxValue };
+            Assert.Throws<OverflowException>(() => source.Sum());
+        }
+
+        [Fact]
+        public void DecimalFromSelector()
+        {
+            var source = new[]
+            {
+                new {name="Tim", num=20.51m},
+                new {name="John", num=10m},
+                new {name="Bob", num=2.33m}
+            };
+            Assert.Equal(32.84m, source.Sum(e => e.num));
+        }
+
+        [Fact]
+        public void SolitaryNullableDecimal()
+        {
+            decimal?[] source = { 20.51m };
+            Assert.Equal(source.FirstOrDefault(), source.Sum());
+        }
+
+        [Fact]
+        public void NullableDecimalAllNull()
+        {
+            Assert.Equal(0, Enumerable.Repeat(default(long?), 3).Sum().Value);
+        }
+
+        [Fact]
+        public void NullableDecimalNegativeOverflow()
+        {
+            decimal?[] source = { -Decimal.MaxValue, -Decimal.MaxValue };
+            Assert.Throws<OverflowException>(() => source.Sum());
+        }
+
+        [Fact]
+        public void NullableDecimalFromSelector()
+        {
+            var source = new[]
+            {
+                new { name="Tim", num=(decimal?)20.51m },
+                new { name="John", num=default(decimal?) },
+                new { name="Bob", num=(decimal?)2.33m }
+            };
+            Assert.Equal(22.84m, source.Sum(e => e.num));
+        }
+
+        [Fact]
+        public void SolitarySingle()
+        {
+            float[] source = { 20.51f };
+            Assert.Equal(source.FirstOrDefault(), source.Sum());
+        }
+
+        [Fact]
+        public void SingleToNegativeInfinity()
+        {
+            float[] source = { -float.MaxValue, -float.MaxValue };
+            Assert.True(float.IsNegativeInfinity(source.Sum()));
+        }
+
+        [Fact]
+        public void SingleFromSelector()
+        {
+            var source = new[]
+            {
+                new { name="Tim", num=9.5f },
+                new { name="John", num=10.5f },
+                new { name="Bob", num=3.5f }
+            };
+            Assert.Equal(23.5f, source.Sum(e => e.num));
+        }
+
     }
 }

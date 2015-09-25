@@ -1,10 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Xunit;
-using System;
-using System.Reflection;
 using System.Collections.Generic;
+using Xunit;
 
 #pragma warning disable 0414
 
@@ -68,11 +66,22 @@ namespace System.Reflection.Tests
             TestSetValue_constantField("byteField", (object)byte.MaxValue);
         }
 
-        //Verify SetValue method does not set value for RO Field
+        //Verify SetValue method _does_ set value for RO Field
         [Fact]
         public void TestSetValue_roIntField()
         {
-            TestSetValue_constantField("rointField", (object)Int32.MinValue);
+            FieldInfo fi = typeof(FieldInfoConstantTests).GetTypeInfo().GetDeclaredField("rointField");
+            FieldInfoConstantTests myInstance = new FieldInfoConstantTests();
+
+            Assert.NotNull(fi);
+            Assert.NotNull(myInstance);
+
+            object current = fi.GetValue(myInstance);
+            Assert.Equal(1, current);
+
+            fi.SetValue(myInstance, Int32.MinValue);
+
+            Assert.Equal(Int32.MinValue, fi.GetValue(myInstance));
         }
 
         //Helper method to Verify constant Field can not be set using Reflection
@@ -83,13 +92,7 @@ namespace System.Reflection.Tests
 
             Assert.NotNull(fi);
             Assert.True(fi.Name.Equals(field));
-
-            try
-            {
-                fi.SetValue(myInstance, newvalue);
-                Assert.False(true, "Exception expected.");
-            }
-            catch (Exception) { }
+            Assert.Throws<FieldAccessException>(() => fi.SetValue(myInstance, newvalue));
         }
 
         private static FieldInfo GetField(string field)

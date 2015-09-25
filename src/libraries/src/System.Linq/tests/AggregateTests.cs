@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class AggregateTests
+    public class AggregateTests : EnumerableTests
     {
         [Fact]
         public void SameResultsRepeatCallsIntQuery()
@@ -143,6 +143,30 @@ namespace System.Linq.Tests
             long expected = -475;
 
             Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y, x => x + 5.0));
+        }
+
+        [Fact]
+        public void NullSource()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).Aggregate((x, y) => x + y));
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).Aggregate(0, (x, y) => x + y));
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).Aggregate(0, (x, y) => x + y, i => i));
+        }
+
+        [Fact]
+        public void NullFunc()
+        {
+            Func<int, int, int> func = null;
+            Assert.Throws<ArgumentNullException>("func", () => Enumerable.Range(0, 3).Aggregate(func));
+            Assert.Throws<ArgumentNullException>("func", () => Enumerable.Range(0, 3).Aggregate(0, func));
+            Assert.Throws<ArgumentNullException>("func", () => Enumerable.Range(0, 3).Aggregate(0, func, i => i));
+        }
+
+        [Fact]
+        public void NullResultSelector()
+        {
+            Func<int, int> resultSelector = null;
+            Assert.Throws<ArgumentNullException>("resultSelector", () => Enumerable.Range(0, 3).Aggregate(0, (x, y) => x + y, resultSelector));
         }
     }
 }

@@ -1,18 +1,18 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Microsoft.Win32;
+using Microsoft.Win32.SafeHandles;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
-using Microsoft.Win32;
-using Microsoft.Win32.SafeHandles;
 using Xunit;
 using System.Text;
 
-namespace System.Diagnostics.ProcessTests
+namespace System.Diagnostics.Tests
 {
     public class ProcessStartInfoTests : ProcessTestBase
     {
@@ -208,25 +208,21 @@ namespace System.Diagnostics.ProcessTests
 
                 // Validate against StartInfo.Environment.
                 var startInfoEnv = new HashSet<string>(p.StartInfo.Environment.Select(e => e.Key + "=" + e.Value));
-                if (!startInfoEnv.SetEquals(actualEnv))
-                {
-                    Assert.True(false, string.Format("Expected: {0}{1}Actual: {2}",
-                        string.Join(", ", startInfoEnv.Except(actualEnv)), 
+                Assert.True(startInfoEnv.SetEquals(actualEnv),
+                    string.Format("Expected: {0}{1}Actual: {2}",
+                        string.Join(", ", startInfoEnv.Except(actualEnv)),
                         Environment.NewLine,
                         string.Join(", ", actualEnv.Except(startInfoEnv))));
-                }
 
                 // Validate against current process. (Profilers / code coverage tools can add own environment variables 
                 // but we start child process without them. Thus the set of variables from the child process could
                 // be a subset of variables from current process.)
                 var envEnv = new HashSet<string>(Environment.GetEnvironmentVariables().Cast<DictionaryEntry>().Select(e => e.Key + "=" + e.Value));
-                if (!envEnv.IsSupersetOf(actualEnv))
-                {
-                    Assert.True(false, string.Format("Expected: {0}{1}Actual: {2}",
+                Assert.True(envEnv.IsSupersetOf(actualEnv),
+                    string.Format("Expected: {0}{1}Actual: {2}",
                         string.Join(", ", envEnv.Except(actualEnv)),
                         Environment.NewLine,
                         string.Join(", ", actualEnv.Except(envEnv))));
-                }
             }
             finally
             {

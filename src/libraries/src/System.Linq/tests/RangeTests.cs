@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class RangeTests
+    public class RangeTests : EnumerableTests
     {
         [Fact]
         public void Range_ProduceCorrectSequence()
@@ -35,6 +35,14 @@ namespace System.Linq.Tests
                 Assert.Equal(i + 1, array[i]);
         }
 
+        [Fact]
+        public void Range_ToList_ProduceCorrectResult()
+        {
+            var list = Enumerable.Range(1, 100).ToList();
+            Assert.Equal(list.Count, 100);
+            for (var i = 0; i < list.Count; i++)
+                Assert.Equal(i + 1, list[i]);
+        }
 
         [Fact]
         public void Range_ZeroCountLeadToEmptySequence()
@@ -50,16 +58,16 @@ namespace System.Linq.Tests
         [Fact]
         public void Range_ThrowExceptionOnNegativeCount()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => Enumerable.Range(1, -1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => Enumerable.Range(1, int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => Enumerable.Range(1, -1));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => Enumerable.Range(1, int.MinValue));
         }
 
         [Fact]
         public void Range_ThrowExceptionOnOverflow()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => Enumerable.Range(1000, int.MaxValue));
-            Assert.Throws<ArgumentOutOfRangeException>(() => Enumerable.Range(int.MaxValue, 1000));
-            Assert.Throws<ArgumentOutOfRangeException>(() => Enumerable.Range(Int32.MaxValue - 10, 20));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => Enumerable.Range(1000, int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => Enumerable.Range(int.MaxValue, 1000));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => Enumerable.Range(Int32.MaxValue - 10, 20));
         }
 
         [Fact]

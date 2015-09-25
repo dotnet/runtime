@@ -64,7 +64,7 @@ namespace System.Composition.UnitTests
         public void IfAnItemIsMissingMetadataAnInformativeExceptionIsThrown()
         {
             var container = CreateExtendedContainer(typeof(HasImportedItems), typeof(Item1), typeof(ItemWithoutOrder));
-            var x = AssertX.Throws<CompositionFailedException>(() => container.GetExport<HasImportedItems>());
+            var x = Assert.Throws<CompositionFailedException>(() => container.GetExport<HasImportedItems>());
             Assert.Equal("The metadata 'Order' cannot be used for ordering because it is missing from exports on part(s) 'ItemWithoutOrder'.", x.Message);
         }
 

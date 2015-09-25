@@ -231,7 +231,7 @@ namespace System.Numerics.Tests
             Single value;
 
             // Single Explicit Cast to BigInteger: Single.NegativeInfinity
-            VerifyException<OverflowException>(delegate () { BigInteger temp = (BigInteger)Single.NegativeInfinity; });
+            Assert.Throws<OverflowException>(() => { BigInteger temp = (BigInteger)Single.NegativeInfinity; });
 
             // Single Explicit Cast to BigInteger: Single.MinValue
             VerifySingleExplicitCastToBigInteger(Single.MinValue);
@@ -273,17 +273,17 @@ namespace System.Numerics.Tests
             VerifySingleExplicitCastToBigInteger(Single.MaxValue);
 
             // Single Explicit Cast to BigInteger: Single.PositiveInfinity
-            VerifyException<OverflowException>(delegate () { BigInteger temp = (BigInteger)Single.PositiveInfinity; });
+            Assert.Throws<OverflowException>(() => { BigInteger temp = (BigInteger)Single.PositiveInfinity; });
 
             // Single Explicit Cast to BigInteger: Single.Epsilon
             VerifySingleExplicitCastToBigInteger(Single.Epsilon);
 
             // Single Explicit Cast to BigInteger: Single.NaN
-            VerifyException<OverflowException>(delegate () { BigInteger temp = (BigInteger)Single.NaN; });
+            Assert.Throws<OverflowException>(() => { BigInteger temp = (BigInteger)Single.NaN; });
 
             //There are multiple ways to represent a NaN just try another one
             // Single Explicit Cast to BigInteger: Single.NaN 2
-            VerifyException<OverflowException>(delegate () { BigInteger temp = (BigInteger)ConvertInt32ToSingle(0x7FC00000); });
+            Assert.Throws<OverflowException>(() => { BigInteger temp = (BigInteger)ConvertInt32ToSingle(0x7FC00000); });
 
             // Single Explicit Cast to BigInteger: Smallest Exponent
             VerifySingleExplicitCastToBigInteger((Single)Math.Pow(2, -126));
@@ -319,7 +319,7 @@ namespace System.Numerics.Tests
             Double value;
 
             // Double Explicit Cast to BigInteger: Double.NegativeInfinity
-            VerifyException<OverflowException>(delegate () { BigInteger temp = (BigInteger)Double.NegativeInfinity; });
+            Assert.Throws<OverflowException>(() => { BigInteger temp = (BigInteger)Double.NegativeInfinity; });
 
             // Double Explicit Cast to BigInteger: Double.MinValue
             VerifyDoubleExplicitCastToBigInteger(Double.MinValue);
@@ -361,17 +361,17 @@ namespace System.Numerics.Tests
             VerifyDoubleExplicitCastToBigInteger(Double.MaxValue);
 
             // Double Explicit Cast to BigInteger: Double.PositiveInfinity
-            VerifyException<OverflowException>(delegate () { BigInteger temp = (BigInteger)Double.PositiveInfinity; });
+            Assert.Throws<OverflowException>(() => { BigInteger temp = (BigInteger)Double.PositiveInfinity; });
 
             // Double Explicit Cast to BigInteger: Double.Epsilon
             VerifyDoubleExplicitCastToBigInteger(Double.Epsilon);
 
             // Double Explicit Cast to BigInteger: Double.NaN
-            VerifyException<OverflowException>(delegate () { BigInteger temp = (BigInteger)Double.NaN; });
+            Assert.Throws<OverflowException>(() => { BigInteger temp = (BigInteger)Double.NaN; });
 
             //There are multiple ways to represent a NaN just try another one
             // Double Explicit Cast to BigInteger: Double.NaN 2
-            VerifyException<OverflowException>(delegate () { BigInteger temp = (BigInteger)ConvertInt64ToDouble(0x7FF8000000000000); });
+            Assert.Throws<OverflowException>(() => { BigInteger temp = (BigInteger)ConvertInt64ToDouble(0x7FF8000000000000); });
 
             // Double Explicit Cast to BigInteger: Smallest Exponent
             VerifyDoubleExplicitCastToBigInteger((Double)Math.Pow(2, -1022));
@@ -796,24 +796,6 @@ namespace System.Numerics.Tests
 
             // 1 * x = x
             Assert.Equal(bigInteger, BigInteger.One * bigInteger);
-        }
-        
-        public static void VerifyException<T>(ExceptionGenerator exceptionGenerator) where T : Exception
-        {
-            VerifyException(typeof(T), exceptionGenerator);
-
-        }
-        public static void VerifyException(Type expectedExceptionType, ExceptionGenerator exceptionGenerator)
-        {
-            try
-            {
-                exceptionGenerator();
-                Assert.True(false, String.Format("Err_05940iedz Expected exception of the type {0} to be thrown and nothing was thrown", expectedExceptionType));
-            }
-            catch (Exception exception)
-            {
-                Assert.Equal(expectedExceptionType, exception.GetType());
-            }
         }
     }
 }

@@ -55,6 +55,15 @@ namespace System.Linq.Expressions.Interpreter
         {
             return null;
         }
+
+        // throws NRE when o is null
+        protected static void NullCheck(object o)
+        {
+            if (o == null)
+            {
+                o.GetType();
+            }
+        }
     }
 
     internal abstract class NotInstruction : Instruction

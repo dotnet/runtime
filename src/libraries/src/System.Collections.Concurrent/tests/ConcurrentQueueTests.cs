@@ -123,12 +123,7 @@ namespace System.Collections.Concurrent.Tests
             {
                 count++;
             }
-
-            if (count != 10)
-            {
-                Console.WriteLine("* GetEnumerator should take snapshot at time of invoke not when MoveNext() is called");
-                Assert.False(true, "Failed! GetEnumerator should take snapshot at the time of invoke ");
-            }
+            Assert.Equal(10, count);
         }
 
         /// <summary>
@@ -183,12 +178,7 @@ namespace System.Collections.Concurrent.Tests
             Console.WriteLine("Waiting 15 seconds for both Queue/Dequeue and TryPeek tasks..");
             Task.WaitAll(peepTask, queueDequeueTask);
             Console.WriteLine("Finished waiting...");
-
-            if (peepTask.Result != null)
-            {
-                // means that the bug still exists.
-                Assert.False(true, "ERROR: " + peepTask.Result.Message);
-            }
+            Assert.Null(peepTask.Result);
         }
 
         private static void QueueDequeue(CancellationToken token)

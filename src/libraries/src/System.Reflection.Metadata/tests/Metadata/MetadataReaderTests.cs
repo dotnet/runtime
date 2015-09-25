@@ -1590,22 +1590,7 @@ namespace System.Reflection.Metadata.Tests
                 classes = modClasses;
             }
 
-            for (int i = 0; i < classes[0].Length; i++)
-            {
-                if (typeDef.RowId == classes[0][i])
-                {
-                    Assert.Equal(classes[1][i], rid);
-                    return;
-                }
-            }
-
-            Assert.False(true);
-            // for (uint i = 0; i < table.NumberOfRows; i++)
-            // {
-            //    var row = table[i + 1];
-            //    Assert.Equal(expNC[i], row.NestedClass);
-            //    Assert.Equal(expEC[i], row.EnclosingClass);
-            // }
+            Assert.Equal(rid, classes[1].Where((x, index) => classes[0][index] == typeDef.RowId).First());
         }
 
         /// <summary>
@@ -2299,7 +2284,7 @@ namespace System.Reflection.Metadata.Tests
             var propertyNames = (from p in reader.PropertyDefinitions
                                  select reader.GetString(reader.GetPropertyDefinition(p).Name)).ToArray();
 
-            AssertEx.Equal(methodNames, new[] {
+            Assert.Equal(new[] {
                     "MC1",
                     "MC2",
                     "add_EC1",
@@ -2320,9 +2305,9 @@ namespace System.Reflection.Metadata.Tests
                     "get_PE2",
                     "set_PE2",
                     ".ctor"
-                });
+            }, methodNames);
 
-            AssertEx.Equal(fieldNames, new[] {
+            Assert.Equal(new[] {
                     "EC1",
                     "EC2",
                     "EC3",
@@ -2332,20 +2317,20 @@ namespace System.Reflection.Metadata.Tests
                     "FE2",
                     "FE3",
                     "FE4",
-                });
+                }, fieldNames);
 
-            AssertEx.Equal(propertyNames, new[] {
+            Assert.Equal(new[] {
                     "PE1",
                     "PE1",
                     "PE2",
-                });
+                }, propertyNames);
 
-            AssertEx.Equal(eventNames, new[] {
+            Assert.Equal(new[] {
                     "EC1",
                     "EC2",
                     "EC3",
                     "ED1",
-                });
+                }, eventNames);
         }
 
         [Fact]
@@ -2367,10 +2352,10 @@ namespace System.Reflection.Metadata.Tests
             var propertyNames = (from p in typeModule.GetProperties()
                                  select reader.GetString(reader.GetPropertyDefinition(p).Name)).ToArray();
 
-            AssertEx.Equal(methodNames, new string[0]);
-            AssertEx.Equal(fieldNames, new string[0]);
-            AssertEx.Equal(propertyNames, new string[0]);
-            AssertEx.Equal(eventNames, new string[0]);
+            Assert.Equal(new string[0], methodNames);
+            Assert.Equal(new string[0], fieldNames);
+            Assert.Equal(new string[0], propertyNames);
+            Assert.Equal(new string[0], eventNames);
         }
 
         [Fact]
@@ -2391,7 +2376,7 @@ namespace System.Reflection.Metadata.Tests
             var propertyNames = (from p in typeC.GetProperties()
                                  select reader.GetString(reader.GetPropertyDefinition(p).Name)).ToArray();
 
-            AssertEx.Equal(methodNames, new[] {
+            Assert.Equal(new[] {
                     "MC1",
                     "MC2",
                     "add_EC1",
@@ -2401,21 +2386,21 @@ namespace System.Reflection.Metadata.Tests
                     "add_EC3",
                     "remove_EC3",
                     ".ctor",
-                });
+                }, methodNames);
 
-            AssertEx.Equal(fieldNames, new[] {
+            Assert.Equal(new[] {
                     "EC1",
                     "EC2",
                     "EC3",
-                });
+                }, fieldNames);
 
-            AssertEx.Equal(propertyNames, new string[0]);
+            Assert.Equal(new string[0], propertyNames);
 
-            AssertEx.Equal(eventNames, new[] {
+            Assert.Equal(new[] {
                     "EC1",
                     "EC2",
                     "EC3"
-                });
+                }, eventNames);
         }
 
         [Fact]
@@ -2437,27 +2422,27 @@ namespace System.Reflection.Metadata.Tests
             var propertyNames = (from p in typeE.GetProperties()
                                  select reader.GetString(reader.GetPropertyDefinition(p).Name)).ToArray();
 
-            AssertEx.Equal(methodNames, new[] {
+            Assert.Equal(new[] {
                     "get_PE1",
                     "set_PE1",
                     "get_PE2",
                     "set_PE2",
                     ".ctor"
-                });
+                }, methodNames);
 
-            AssertEx.Equal(fieldNames, new[] {
+            Assert.Equal(new[] {
                     "FE1",
                     "FE2",
                     "FE3",
                     "FE4",
-                });
+                }, fieldNames);
 
-            AssertEx.Equal(propertyNames, new[] {
+            Assert.Equal(new[] {
                     "PE1",
                     "PE2",
-                });
+                }, propertyNames);
 
-            AssertEx.Equal(eventNames, new string[0]);
+            Assert.Equal(new string[0], eventNames);
         }
 
         [Fact]
@@ -2483,7 +2468,7 @@ namespace System.Reflection.Metadata.Tests
             //
             using (var stream = GetTemporaryAssemblyLargeEnoughToBeMemoryMapped())
             {
-                Assert.True(stream.Length > StreamMemoryBlockProvider.MemoryMapThreshold);
+                Assert.InRange(stream.Length, StreamMemoryBlockProvider.MemoryMapThreshold + 1, int.MaxValue);
 
                 for (int i = 0; i < 1000; i++)
                 {

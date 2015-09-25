@@ -7,13 +7,8 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class LongCountTests
+    public class LongCountTests : EnumerableTests
     {
-        private static bool IsEven(int num)
-        {
-            return num % 2 == 0;
-        }
-
         [Fact]
         public void SameResultsRepeatCallsIntQuery()
         {
@@ -104,6 +99,25 @@ namespace System.Linq.Tests
             int expected = 6;
 
             Assert.Equal(expected, data.LongCount(IsEven));
+        }
+
+        [Fact]
+        public void NullSource()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).LongCount());
+        }
+
+        [Fact]
+        public void NullSourcePredicateUsed()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).LongCount(i => i != 0));
+        }
+
+        [Fact]
+        public void NullPredicateUsed()
+        {
+            Func<int, bool> predicate = null;
+            Assert.Throws<ArgumentNullException>("predicate", () => Enumerable.Range(0, 3).LongCount(predicate));
         }
     }
 }

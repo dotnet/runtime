@@ -2,12 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Xunit;
-using System;
-using System.Collections;
 
-namespace System.Collections.ArrayListTests
+namespace System.Collections.Tests
 {
-    public class RemoveTests
+    public class ArrayList_RemoveTests
     {
         [Fact]
         public void TestNullItems()

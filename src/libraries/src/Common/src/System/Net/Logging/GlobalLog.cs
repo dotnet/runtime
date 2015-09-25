@@ -11,18 +11,18 @@ namespace System.Net
     internal static class GlobalLog
     {
         [ThreadStatic]
-        private static Stack<ThreadKinds> t_ThreadKindStack;
+        private static Stack<ThreadKinds> t_threadKindStack;
 
         private static Stack<ThreadKinds> ThreadKindStack
         {
             get
             {
-                if (t_ThreadKindStack == null)
+                if (t_threadKindStack == null)
                 {
-                    t_ThreadKindStack = new Stack<ThreadKinds>();
+                    t_threadKindStack = new Stack<ThreadKinds>();
                 }
 
-                return t_ThreadKindStack;
+                return t_threadKindStack;
             }
         }
 

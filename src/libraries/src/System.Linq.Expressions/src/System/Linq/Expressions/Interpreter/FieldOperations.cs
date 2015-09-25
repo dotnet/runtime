@@ -54,11 +54,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             object self = frame.Pop();
 
-            if (self == null)
-            {
-                throw new NullReferenceException();
-            }
-
+            NullCheck(self);
             frame.Push(_field.GetValue(self));
             return +1;
         }
@@ -85,11 +81,7 @@ namespace System.Linq.Expressions.Interpreter
             object value = frame.Pop();
             object self = frame.Pop();
 
-            if (self == null)
-            {
-                throw new NullReferenceException();
-            }
-
+            NullCheck(self);
             _field.SetValue(self, value);
             return +1;
         }

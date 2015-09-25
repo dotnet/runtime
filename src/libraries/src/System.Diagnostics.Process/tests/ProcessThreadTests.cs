@@ -1,15 +1,11 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Generic;
-using System.Security;
-using System.IO;
-using Xunit;
-using System.Threading;
-using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
+using Xunit;
 
-namespace System.Diagnostics.ProcessTests
+namespace System.Diagnostics.Tests
 {
     public class ProcessThreadTests : ProcessTestBase
     {

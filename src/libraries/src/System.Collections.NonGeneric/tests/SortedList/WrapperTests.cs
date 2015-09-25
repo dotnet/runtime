@@ -1,18 +1,15 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
-using System.Text;
 using Xunit;
 
-namespace System.Collections.SortedListTests
+namespace System.Collections.Tests
 {
     /// <summary>
     /// The goal is to call the methods of the base class on the wrapper
     /// classes to ensure that the right thing is happening in SortedList
     /// </summary>
-    public class WrapperTests
+    public class SortedList_WrapperTests
     {
         [Fact]
         public void TestKeys()
@@ -79,220 +76,64 @@ namespace System.Collections.SortedListTests
         [Fact]
         public void TestIDictionaryEnumerator()
         {
-            object oValue;
-            DictionaryEntry dicEnt;
-
             var dic1 = new SortedList();
 
             for (int i = 0; i < 100; i++)
                 dic1.Add("Key_" + i, "Value_" + i);
 
             var idicTest = dic1.GetEnumerator();
-            var hsh1 = new Hashtable();
             var hsh2 = new Hashtable();
 
             //making sure that we throw if looking at values before MoveNext
-            try
-            {
-                oValue = idicTest.Key;
-                hsh1["Enumerator"] = "NoEXception";
-                Assert.False(true);
-            }
-            catch (InvalidOperationException)
-            {
-            }
-            catch (Exception ex)
-            {
-                hsh1["Enumerator"] = ex;
-            }
-            try
-            {
-                oValue = idicTest.Value;
-                hsh1["Enumerator"] = "NoEXception";
-            }
-            catch (InvalidOperationException)
-            {
-            }
-            catch (Exception ex)
-            {
-                hsh1["Enumerator"] = ex;
-            }
-            try
-            {
-                oValue = idicTest.Current;
-                hsh1["Enumerator"] = "NoEXception";
-            }
-            catch (InvalidOperationException)
-            {
-            }
-            catch (Exception ex)
-            {
-                hsh1["Enumerator"] = ex;
-            }
+            Assert.Throws<InvalidOperationException>(() => idicTest.Key);
+            Assert.Throws<InvalidOperationException>(() => idicTest.Value);
+            Assert.Throws<InvalidOperationException>(() => idicTest.Current);
 
             while (idicTest.MoveNext())
             {
-                if (!dic1.Contains(idicTest.Key))
-                    hsh1["IDictionaryEnumerator"] = "";
-                if (dic1[idicTest.Key] != idicTest.Value)
-                    hsh1["IDictionaryEnumerator"] = "";
+                Assert.True(dic1.Contains(idicTest.Key));
+                Assert.Equal(idicTest.Value, dic1[idicTest.Key]);
 
-                dicEnt = idicTest.Entry;
-                if (!dic1.Contains(dicEnt.Key))
-                    hsh1["IDictionaryEnumerator"] = "";
-                if (dic1[dicEnt.Key] != dicEnt.Value)
-                    hsh1["IDictionaryEnumerator"] = "";
+                DictionaryEntry dicEnt = idicTest.Entry;
+                Assert.True(dic1.Contains(dicEnt.Key));
+                Assert.Equal(dicEnt.Value, dic1[dicEnt.Key]);
 
-                try
-                {
-                    hsh2.Add(idicTest.Key, idicTest.Value);
-                }
-                catch (Exception)
-                {
-                    hsh1["IDictionaryEnumerator"] = "";
-                }
+                hsh2.Add(idicTest.Key, idicTest.Value);
 
                 dicEnt = (DictionaryEntry)idicTest.Current;
-                if (!dic1.Contains(dicEnt.Key))
-                    hsh1["IDictionaryEnumerator"] = "";
-                if (dic1[dicEnt.Key] != dicEnt.Value)
-                    hsh1["IDictionaryEnumerator"] = "";
+                Assert.True(dic1.Contains(dicEnt.Key));
+                Assert.Equal(dicEnt.Value, dic1[dicEnt.Key]);
             }
 
-            try
-            {
-                oValue = idicTest.Key;
-                hsh1["Enumerator"] = "NoEXception";
-            }
-            catch (InvalidOperationException)
-            {
-            }
-            catch (Exception ex)
-            {
-                hsh1["Enumerator"] = ex;
-            }
-            try
-            {
-                oValue = idicTest.Value;
-                hsh1["Enumerator"] = "NoEXception";
-            }
-            catch (InvalidOperationException)
-            {
-            }
-            catch (Exception ex)
-            {
-                hsh1["Enumerator"] = ex;
-            }
-            try
-            {
-                oValue = idicTest.Current;
-                hsh1["Enumerator"] = "NoEXception";
-            }
-            catch (InvalidOperationException)
-            {
-            }
-            catch (Exception ex)
-            {
-                hsh1["Enumerator"] = ex;
-            }
+            Assert.Throws<InvalidOperationException>(() => idicTest.Key);
+            Assert.Throws<InvalidOperationException>(() => idicTest.Value);
+            Assert.Throws<InvalidOperationException>(() => idicTest.Current);
 
             idicTest.Reset();
-            hsh2 = new Hashtable();
             while (idicTest.MoveNext())
             {
-                if (!dic1.Contains(idicTest.Key))
-                    hsh1["IDictionaryEnumerator"] = "";
-                if (dic1[idicTest.Key] != idicTest.Value)
-                    hsh1["IDictionaryEnumerator"] = "";
+                Assert.True(dic1.Contains(idicTest.Key));
+                Assert.Equal(idicTest.Value, dic1[idicTest.Key]);
 
-                dicEnt = idicTest.Entry;
-                if (!dic1.Contains(dicEnt.Key))
-                    hsh1["IDictionaryEnumerator"] = "";
-                if (dic1[dicEnt.Key] != dicEnt.Value)
-                    hsh1["IDictionaryEnumerator"] = "";
+                DictionaryEntry dicEnt = idicTest.Entry;
+                Assert.True(dic1.Contains(dicEnt.Key));
+                Assert.Equal(dicEnt.Value, dic1[dicEnt.Key]);
 
-                try
-                {
-                    hsh2.Add(idicTest.Key, idicTest.Value);
-                }
-                catch (Exception)
-                {
-                    hsh1["IDictionaryEnumerator"] = "";
-                }
+                Assert.Throws<ArgumentException>(() => hsh2.Add(idicTest.Key, idicTest.Value));
 
                 dicEnt = (DictionaryEntry)idicTest.Current;
-                if (!dic1.Contains(dicEnt.Key))
-                    hsh1["IDictionaryEnumerator"] = "";
-                if (dic1[dicEnt.Key] != dicEnt.Value)
-                    hsh1["IDictionaryEnumerator"] = "";
+                Assert.True(dic1.Contains(dicEnt.Key));
+                Assert.Equal(dicEnt.Value, dic1[dicEnt.Key]);
             }
 
             idicTest.Reset();
             dic1.Add("Key_Blah", "Value_Blah");
-            try
-            {
-                idicTest.MoveNext();
-                hsh1["Enumerator"] = "NoEXception";
-            }
-            catch (InvalidOperationException)
-            {
-            }
-            catch (Exception ex)
-            {
-                hsh1["Enumerator"] = ex;
-            }
 
-            try
-            {
-                object blah = idicTest.Current;
-                hsh1["Enumerator"] = "NoEXception";
-            }
-            catch (InvalidOperationException)
-            {
-            }
-            catch (Exception ex)
-            {
-                hsh1["Enumerator"] = ex;
-            }
-
-            try
-            {
-                idicTest.Reset();
-                hsh1["Enumerator"] = "NoEXception";
-            }
-            catch (InvalidOperationException)
-            {
-            }
-            catch (Exception ex)
-            {
-                hsh1["Enumerator"] = ex;
-            }
-
-            try
-            {
-                oValue = idicTest.Key;
-                hsh1["Enumerator"] = "NoEXception";
-            }
-            catch (InvalidOperationException)
-            {
-            }
-            catch (Exception ex)
-            {
-                hsh1["Enumerator"] = ex;
-            }
-
-            try
-            {
-                oValue = idicTest.Value;
-                hsh1["Enumerator"] = "NoEXception";
-            }
-            catch (InvalidOperationException)
-            {
-            }
-            catch (Exception ex)
-            {
-                hsh1["Enumerator"] = ex;
-            }
+            Assert.Throws<InvalidOperationException>(() => idicTest.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => idicTest.Current);
+            Assert.Throws<InvalidOperationException>(() => idicTest.Reset());
+            Assert.Throws<InvalidOperationException>(() => idicTest.Key);
+            Assert.Throws<InvalidOperationException>(() => idicTest.Value);
         }
 
         [Fact]

@@ -2,12 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Xunit;
-using System;
-using System.Collections;
 
-namespace System.Collections.HashtableTests
+namespace System.Collections.Tests
 {
-    public class EqualityComparerTests
+    public class Hashtable_EqualityComparerTests
     {
         [Fact]
         public void TestEqualityComparerBasic()
@@ -28,18 +26,23 @@ namespace System.Collections.HashtableTests
             Assert.Equal(ikc, hsh1.EqualityComparer);
             System.Globalization.CultureInfo.DefaultThreadCurrentCulture = prevCulture;
         }
-    }
 
-    public class MyHashtable : Hashtable
-    {
-        public MyHashtable() : base() { }
-        public MyHashtable(int capacity, float loadFactor, IEqualityComparer ikc) : base(capacity, loadFactor, ikc) { }
-
-        public new IEqualityComparer EqualityComparer
+        public class MyHashtable : Hashtable
         {
-            get
+            public MyHashtable() : base()
             {
-                return base.EqualityComparer;
+            }
+
+            public MyHashtable(int capacity, float loadFactor, IEqualityComparer ikc) : base(capacity, loadFactor, ikc)
+            {
+            }
+
+            public new IEqualityComparer EqualityComparer
+            {
+                get
+                {
+                    return base.EqualityComparer;
+                }
             }
         }
     }

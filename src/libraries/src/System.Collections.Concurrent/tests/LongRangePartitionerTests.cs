@@ -400,18 +400,8 @@ namespace System.Collections.Concurrent.Tests
                 if (range != desiredRangeSize)
                     rangesWithDifferentRangeSize.Add(range);
             }
-
-            if (rangesWithDifferentRangeSize.Count != 0)
-            {
-                foreach (var r in rangesWithDifferentRangeSize)
-                    Console.WriteLine("Invalid Range size: {0}", r);
-
-                Assert.False(true, String.Format("Expected all ranges (except last) to have size {0}. {1} ranges has different size",
-                    desiredRangeSize, rangesWithDifferentRangeSize));
-            }
-
-            var lastRange = rangeSizes[rangeSizes.Count - 1];
-            Assert.True(desiredRangeSize >= lastRange, String.Format("Expect={0}, Actual={1}", desiredRangeSize, lastRange));
+            Assert.Equal(0, rangesWithDifferentRangeSize.Count);
+            Assert.InRange(rangeSizes[rangeSizes.Count - 1], 0, desiredRangeSize);
         }
 
         /// <summary>

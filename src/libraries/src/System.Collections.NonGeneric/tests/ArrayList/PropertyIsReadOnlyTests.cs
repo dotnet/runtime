@@ -1,13 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
 using Xunit;
 
-namespace System.Collections.ArrayListTests
+namespace System.Collections.Tests
 {
-    public class IsReadOnlyTests
+    public class ArrayList_IsReadOnlyTests
     {
         [Fact]
         public void TestGetIsReadOnlyBasic()
@@ -72,10 +70,6 @@ namespace System.Collections.ArrayListTests
             alst3 = ArrayList.ReadOnly(alst2);
             Assert.True(alst2.IsReadOnly);
             Assert.True(alst3.IsReadOnly);
-            if (!alst3.IsReadOnly)
-            {
-                Assert.False(true, "Error, Expected value not returned, " + alst3.IsReadOnly);
-            }
 
             //[]we still cant access the 2nd one :)
             //we cant access remove or add to the readonly list

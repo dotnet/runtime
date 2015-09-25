@@ -1,14 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
-using System.Globalization;
 using Xunit;
 
-namespace System.Collections.HashtableTests
+namespace System.Collections.Tests
 {
-    public class CopyToTests
+    public class Hashtable_CopyToTests
     {
         [Fact]
         public void TestCopyToBasic()
@@ -35,7 +32,7 @@ namespace System.Collections.HashtableTests
                 new int [] { 1, 2, 3, 4, 5 },
                 new Hashtable(),
                 new Exception(),
-                new CopyToTests(),
+                new Hashtable_CopyToTests(),
                 null
             };
 

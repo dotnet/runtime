@@ -5,7 +5,7 @@ using Xunit;
 using System;
 using System.Globalization;
 
-namespace System.Globalization.Extensions.Tests
+namespace System.Globalization.Tests
 {
     /// <summary>
     /// According to the ToASCII algorithm, if the UseSTD3ASCIIRules flag is set, 
@@ -37,7 +37,6 @@ namespace System.Globalization.Extensions.Tests
         }
 
         [Fact]
-        [ActiveIssue(810, PlatformID.AnyUnix)]
         public void SanityCheck()
         {
             VerifyStd3AsciiRules("\u0020\u0061\u0062");
@@ -51,49 +50,49 @@ namespace System.Globalization.Extensions.Tests
         }
 
         [Fact]
-        [ActiveIssue(810, PlatformID.AnyUnix)]
+        [ActiveIssue(3406, PlatformID.AnyUnix)]
         public void LeadingHyphenMinus()
         {
             VerifyStd3AsciiRules("\u002D\u0061\u0062");
         }
 
         [Fact]
-        [ActiveIssue(810, PlatformID.AnyUnix)]
+        [ActiveIssue(3406, PlatformID.AnyUnix)]
         public void LeadingHyphenMinusInFirstLabel()
         {
             VerifyStd3AsciiRules("\u002D\u0061\u0062\u002E\u0063\u0064");
         }
 
         [Fact]
-        [ActiveIssue(810, PlatformID.AnyUnix)]
+        [ActiveIssue(3406, PlatformID.AnyUnix)]
         public void LeadingHyphenMinusInSecondLabel()
         {
             VerifyStd3AsciiRules("\u0061\u0062\u002E\u002D\u0063\u0064");
         }
 
         [Fact]
-        [ActiveIssue(810, PlatformID.AnyUnix)]
+        [ActiveIssue(3406, PlatformID.AnyUnix)]
         public void TrailingHyphenMinus()
         {
             VerifyStd3AsciiRules("\u0061\u0062\u002D");
         }
 
         [Fact]
-        [ActiveIssue(810, PlatformID.AnyUnix)]
+        [ActiveIssue(3406, PlatformID.AnyUnix)]
         public void TrailingHyphenMinusInFirstLabel()
         {
             VerifyStd3AsciiRules("\u0061\u0062\u002D\u002E\u0063\u0064");
         }
 
         [Fact]
-        [ActiveIssue(810, PlatformID.AnyUnix)]
+        [ActiveIssue(3406, PlatformID.AnyUnix)]
         public void TrailingHyphenMinusInSecondLabel()
         {
             VerifyStd3AsciiRules("\u0061\u0062\u002E\u0063\u0064\u002D");
         }
 
         [Fact]
-        [ActiveIssue(810, PlatformID.AnyUnix)]
+        [ActiveIssue(3406, PlatformID.AnyUnix)]
         public void LeadingAndTrailingHyphenMinus()
         {
             VerifyStd3AsciiRules("\u002D");
@@ -101,7 +100,7 @@ namespace System.Globalization.Extensions.Tests
         }
 
         [Fact]
-        [ActiveIssue(810, PlatformID.AnyUnix)]
+        [ActiveIssue(3406, PlatformID.AnyUnix)]
         public void NonLDH_ASCII_Codepoint()
         {
             var idnStd3False = new IdnMapping { UseStd3AsciiRules = false };

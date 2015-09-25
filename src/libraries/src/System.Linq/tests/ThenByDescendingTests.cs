@@ -7,17 +7,8 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class ThenByDescendingTests
-    {
-        private struct Record
-        {
-#pragma warning disable 0649
-            public string Name;
-            public string City;
-            public string Country;
-#pragma warning restore 0649
-        }
-        
+    public class ThenByDescendingTests : EnumerableTests
+    {        
         [Fact]
         public void SameResultsRepeatCallsIntQuery()
         {
@@ -49,55 +40,53 @@ namespace System.Linq.Tests
         public void SourceEmpty()
         {
             int[] source = { };
-            int[] expected = { };
-
-            Assert.Equal(expected, source.OrderBy(e => e).ThenByDescending(e => e));
+            Assert.Empty(source.OrderBy(e => e).ThenByDescending(e => e));
         }
 
         [Fact]
         public void AscendingKeyThenDescendingKey()
         {
-            Record[] source = new Record[]
+            var source = new[]
             {
-                new Record{ Name = "Jim", City = "Minneapolis", Country = "USA" },
-                new Record{ Name = "Tim", City = "Seattle", Country = "USA" },
-                new Record{ Name = "Philip", City = "Orlando", Country = "USA" },
-                new Record{ Name = "Chris", City = "London", Country = "UK" },
-                new Record{ Name = "Rob", City = "Kent", Country = "UK" }
+                new { Name = "Jim", City = "Minneapolis", Country = "USA" },
+                new { Name = "Tim", City = "Seattle", Country = "USA" },
+                new { Name = "Philip", City = "Orlando", Country = "USA" },
+                new { Name = "Chris", City = "London", Country = "UK" },
+                new { Name = "Rob", City = "Kent", Country = "UK" }
             };
-            Record[] expected = new Record[]
+            var expected = new[]
             {
-                new Record{ Name = "Chris", City = "London", Country = "UK" },
-                new Record{ Name = "Rob", City = "Kent", Country = "UK" },
-                new Record{ Name = "Tim", City = "Seattle", Country = "USA" },
-                new Record{ Name = "Philip", City = "Orlando", Country = "USA" },
-                new Record{ Name = "Jim", City = "Minneapolis", Country = "USA" }
+                new { Name = "Chris", City = "London", Country = "UK" },
+                new { Name = "Rob", City = "Kent", Country = "UK" },
+                new { Name = "Tim", City = "Seattle", Country = "USA" },
+                new { Name = "Philip", City = "Orlando", Country = "USA" },
+                new { Name = "Jim", City = "Minneapolis", Country = "USA" }
             };
 
-            Assert.Equal(expected, source.OrderBy((e) => e.Country).ThenByDescending((e) => e.City));
+            Assert.Equal(expected, source.OrderBy(e => e.Country).ThenByDescending(e => e.City));
         }
 
         [Fact]
         public void DescendingKeyThenDescendingKey()
         {
-            Record[] source = new Record[]
+            var source = new[]
             {
-                new Record{ Name = "Jim", City = "Minneapolis", Country = "USA" },
-                new Record{ Name = "Tim", City = "Seattle", Country = "USA" },
-                new Record{ Name = "Philip", City = "Orlando", Country = "USA" },
-                new Record{ Name = "Chris", City = "London", Country = "UK" },
-                new Record{ Name = "Rob", City = "Kent", Country = "UK" }
+                new { Name = "Jim", City = "Minneapolis", Country = "USA" },
+                new { Name = "Tim", City = "Seattle", Country = "USA" },
+                new { Name = "Philip", City = "Orlando", Country = "USA" },
+                new { Name = "Chris", City = "London", Country = "UK" },
+                new { Name = "Rob", City = "Kent", Country = "UK" }
             };
-            Record[] expected = new Record[]
+            var expected = new []
             {
-                new Record{ Name = "Tim", City = "Seattle", Country = "USA" },
-                new Record{ Name = "Philip", City = "Orlando", Country = "USA" },
-                new Record{ Name = "Jim", City = "Minneapolis", Country = "USA" },
-                new Record{ Name = "Chris", City = "London", Country = "UK" },
-                new Record{ Name = "Rob", City = "Kent", Country = "UK" }
+                new { Name = "Tim", City = "Seattle", Country = "USA" },
+                new { Name = "Philip", City = "Orlando", Country = "USA" },
+                new { Name = "Jim", City = "Minneapolis", Country = "USA" },
+                new { Name = "Chris", City = "London", Country = "UK" },
+                new { Name = "Rob", City = "Kent", Country = "UK" }
             };
 
-            Assert.Equal(expected, source.OrderByDescending((e) => e.Country).ThenByDescending((e) => e.City));
+            Assert.Equal(expected, source.OrderByDescending(e => e.Country).ThenByDescending(e => e.City));
         }
 
         [Fact]
@@ -132,12 +121,32 @@ And Immortality.".Split(new[] { ' ', '\n', '\r', '—' }, StringSplitOptions.Rem
             Assert.Equal(expected, source.OrderBy(word => char.IsUpper(word[0])).ThenByDescending(word => word.Length, Comparer<int>.Create((w1, w2) => w2.CompareTo(w1))));
         }
 
-
         [Fact]
         public void NullSource()
         {
             IOrderedEnumerable<int> source = null;
-            Assert.Throws<ArgumentNullException>(() => source.ThenByDescending(i => i));
+            Assert.Throws<ArgumentNullException>("source", () => source.ThenByDescending(i => i));
+        }
+
+        [Fact]
+        public void NullKeySelector()
+        {
+            Func<DateTime, int> keySelector = null;
+            Assert.Throws<ArgumentNullException>("keySelector", () => Enumerable.Empty<DateTime>().OrderBy(e => e).ThenByDescending(keySelector));
+        }
+
+        [Fact]
+        public void NullSourceComparer()
+        {
+            IOrderedEnumerable<int> source = null;
+            Assert.Throws<ArgumentNullException>("source", () => source.ThenByDescending(i => i, null));
+        }
+
+        [Fact]
+        public void NullKeySelectorComparer()
+        {
+            Func<DateTime, int> keySelector = null;
+            Assert.Throws<ArgumentNullException>("keySelector", () => Enumerable.Empty<DateTime>().OrderBy(e => e).ThenByDescending(keySelector, null));
         }
     }
 }

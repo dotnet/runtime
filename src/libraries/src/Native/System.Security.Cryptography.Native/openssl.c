@@ -1282,6 +1282,26 @@ LockingCallback(int mode, int n, const char* file, int line)
     }
 }
 
+#ifdef __APPLE__
+/*
+Function:
+GetCurrentThreadId
+
+Called back by OpenSSL to get the current thread id.
+
+This is necessary because OSX uses an earlier version of
+OpenSSL, which requires setting the CRYPTO_set_id_callback.
+*/
+static
+unsigned long
+GetCurrentThreadId()
+{
+    uint64_t tid;
+    pthread_threadid_np(pthread_self(), &tid);
+    return tid;
+}
+#endif // __APPLE__
+
 /*
 Function:
 EnsureOpenSslInitialized
@@ -1339,6 +1359,11 @@ EnsureOpenSslInitialized()
 
     // Initialize the callback
     CRYPTO_set_locking_callback(LockingCallback);
+
+#ifdef __APPLE__
+    // OSX uses an earlier version of OpenSSL which requires setting the CRYPTO_set_id_callback
+    CRYPTO_set_id_callback(GetCurrentThreadId);
+#endif
 
     // Initialize the random number generator seed
     randPollResult = RAND_poll();

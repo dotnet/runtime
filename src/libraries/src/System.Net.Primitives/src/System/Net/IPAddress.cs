@@ -54,7 +54,7 @@ namespace System.Net
         //   2: Brackets around IPv6 address when port is present
         //   6: Port (including colon)
         //   1: Terminating null byte
-        internal const int NumberOfLabels = IPAddressParser.IPv6AddressBytes / 2;
+        internal const int NumberOfLabels = IPAddressParserStatics.IPv6AddressBytes / 2;
 
         /// <devdoc>
         ///   <para>
@@ -83,7 +83,7 @@ namespace System.Net
                 throw new ArgumentNullException("address");
             }
 
-            if (address.Length != IPAddressParser.IPv6AddressBytes)
+            if (address.Length != IPAddressParserStatics.IPv6AddressBytes)
             {
                 throw new ArgumentException(SR.dns_bad_ip_address, "address");
             }
@@ -123,12 +123,12 @@ namespace System.Net
             {
                 throw new ArgumentNullException("address");
             }
-            if (address.Length != IPAddressParser.IPv4AddressBytes && address.Length != IPAddressParser.IPv6AddressBytes)
+            if (address.Length != IPAddressParserStatics.IPv4AddressBytes && address.Length != IPAddressParserStatics.IPv6AddressBytes)
             {
                 throw new ArgumentException(SR.dns_bad_ip_address, "address");
             }
 
-            if (address.Length == IPAddressParser.IPv4AddressBytes)
+            if (address.Length == IPAddressParserStatics.IPv4AddressBytes)
             {
                 _family = AddressFamily.InterNetwork;
                 Address = ((address[3] << 24 | address[2] << 16 | address[1] << 8 | address[0]) & 0x0FFFFFFFF);
@@ -188,7 +188,7 @@ namespace System.Net
             }
             else
             {
-                bytes = new byte[IPAddressParser.IPv4AddressBytes];
+                bytes = new byte[IPAddressParserStatics.IPv4AddressBytes];
                 bytes[0] = (byte)(Address);
                 bytes[1] = (byte)(Address >> 8);
                 bytes[2] = (byte)(Address >> 16);
@@ -326,22 +326,6 @@ namespace System.Net
             else
             {
                 return ((address.Address & IPAddress.LoopbackMask) == (IPAddress.Loopback.Address & IPAddress.LoopbackMask));
-            }
-        }
-
-        internal bool IsBroadcast
-        {
-            get
-            {
-                if (_family == AddressFamily.InterNetworkV6)
-                {
-                    // No such thing as a broadcast address for IPv6
-                    return false;
-                }
-                else
-                {
-                    return Address == Broadcast.Address;
-                }
             }
         }
 

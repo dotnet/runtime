@@ -1,14 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
 using System.Text;
 using Xunit;
 
-namespace System.Collections.HashtableTests
+namespace System.Collections.Tests
 {
-    public class AddTests
+    public class Hashtable_AddTests
     {
         [Fact]
         public void TestAddBasic()
@@ -241,40 +239,40 @@ namespace System.Collections.HashtableTests
                 Assert.Equal(i, (int)ht[i.ToString()]);
             }
         }
-    }
 
-    public class BadHashCode
-    {
-        private uint _value;
-
-        public BadHashCode(int value)
+        public class BadHashCode
         {
-            _value = (uint)value;
-        }
+            private uint _value;
 
-        public override bool Equals(object o)
-        {
-            BadHashCode rhValue = o as BadHashCode;
-
-            if (null != rhValue)
+            public BadHashCode(int value)
             {
-                return _value.Equals(rhValue);
+                _value = (uint)value;
             }
-            else
+
+            public override bool Equals(object o)
             {
-                throw new ArgumentException("o", "is not BadHashCode type actual " + o.GetType());
+                BadHashCode rhValue = o as BadHashCode;
+
+                if (null != rhValue)
+                {
+                    return _value.Equals(rhValue);
+                }
+                else
+                {
+                    throw new ArgumentException("o", "is not BadHashCode type actual " + o.GetType());
+                }
             }
-        }
 
-        public override int GetHashCode()
-        {
-            // Return 0 for everything to force hash collisions.
-            return 0;
-        }
+            public override int GetHashCode()
+            {
+                // Return 0 for everything to force hash collisions.
+                return 0;
+            }
 
-        public override string ToString()
-        {
-            return _value.ToString();
+            public override string ToString()
+            {
+                return _value.ToString();
+            }
         }
     }
 }

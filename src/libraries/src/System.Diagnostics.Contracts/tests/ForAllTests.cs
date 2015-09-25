@@ -20,9 +20,9 @@ namespace System.Diagnostics.Contracts.Tests
         [Fact]
         public static void EmptyInputReturnsTrue()
         {
-            Assert.True(Contract.ForAll(Enumerable.Empty<int>(), i => { Assert.True(false, "Should never be invoked"); return true; }));
-            Assert.True(Contract.ForAll(-2, -2, i => { Assert.True(false, "Should never be invoked"); return true; }));
-            Assert.True(Contract.ForAll(1, 1, i => { Assert.True(false, "Should never be invoked"); return true; }));
+            Assert.True(Contract.ForAll(Enumerable.Empty<int>(), i => { throw new ShouldNotBeInvokedException(); }));
+            Assert.True(Contract.ForAll(-2, -2, i => { throw new ShouldNotBeInvokedException(); }));
+            Assert.True(Contract.ForAll(1, 1, i => { throw new ShouldNotBeInvokedException(); }));
         }
 
         [Fact]

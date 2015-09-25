@@ -6,7 +6,7 @@ using System;
 using System.Text;
 using System.Globalization;
 
-namespace System.Globalization.Extensions.Tests
+namespace System.Globalization.Tests
 {
     public class NormalizationAll
     {

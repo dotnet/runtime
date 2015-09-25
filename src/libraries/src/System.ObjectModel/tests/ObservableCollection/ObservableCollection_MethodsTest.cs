@@ -1,15 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Xunit;
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using Xunit;
 
-namespace Test
+namespace System.Collections.ObjectModel.Tests
 {
     /// <summary>
     /// Tests the public methods in ObservableCollection<T> as well as verifies
@@ -83,13 +80,10 @@ namespace Test
 
             col.Clear();
             Assert.Equal(0, col.Count);
-            foreach (var item in col)
-            {
-                Assert.True(false, "Should not be able to iterate through an empty collection.");
-            }
+            Assert.Empty(col);
 
             Assert.Throws<ArgumentOutOfRangeException>(() => col[1]);
-            
+
             //tests that the collectionChanged events are fired.
             CollectionAndPropertyChangedTester helper = new CollectionAndPropertyChangedTester();
             col = new ObservableCollection<string>(anArray);
@@ -141,11 +135,7 @@ namespace Test
         {
             Guid[] anArray = { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
             ObservableCollection<Guid> collection = new ObservableCollection<Guid>(anArray);
-            collection.CollectionChanged += (o, e) =>
-            {
-                Assert.True(false, "Should not have thrown collection changed event when removing items from invalid indices");
-            };
-
+            collection.CollectionChanged += (o, e) => { throw new ShouldNotBeInvokedException(); };
             int[] iArrInvalidValues = new Int32[] { -1, -2, -100, -1000, -10000, -100000, -1000000, -10000000, -100000000, -1000000000, Int32.MinValue };
             foreach (var index in iArrInvalidValues)
             {
@@ -219,10 +209,7 @@ namespace Test
             foreach (var index in iArrInvalidValues)
             {
                 collection = new ObservableCollection<string>(anArray);
-                collection.CollectionChanged += (o, e) =>
-                {
-                    Assert.True(false, "Should not have thrown collection changed event when removing items from invalid indices");
-                };
+                collection.CollectionChanged += (o, e) => { throw new ShouldNotBeInvokedException(); };
 
                 // invalid startIndex, valid destination index.
                 Assert.Throws<ArgumentOutOfRangeException>(() => collection.Move(index, validIndex));
@@ -237,10 +224,7 @@ namespace Test
             foreach (var index in iArrLargeValues)
             {
                 collection = new ObservableCollection<string>(anArray);
-                collection.CollectionChanged += (o, e) =>
-                {
-                    Assert.True(false, "Should not have thrown collection changed event when removing items from invalid indices");
-                };
+                collection.CollectionChanged += (o, e) => { throw new ShouldNotBeInvokedException(); };
 
                 // invalid startIndex, valid destination index.
                 Assert.Throws<ArgumentOutOfRangeException>(() => collection.Move(index, validIndex));
@@ -297,10 +281,7 @@ namespace Test
         {
             Guid[] anArray = { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
             ObservableCollection<Guid> collection = new ObservableCollection<Guid>(anArray);
-            collection.CollectionChanged += (o, e) =>
-            {
-                Assert.True(false, "Should not have thrown collection changed event when removing items from invalid indices");
-            };
+            collection.CollectionChanged += (o, e) => { throw new ShouldNotBeInvokedException(); };
 
             Guid itemToInsert = Guid.NewGuid();
             int[] iArrInvalidValues = new Int32[] { -1, -2, -100, -1000, -10000, -100000, -1000000, -10000000, -100000000, -1000000000, Int32.MinValue };
@@ -700,18 +681,7 @@ namespace Test
             if (hasDuplicates)
                 return;
 
-            // ensuring that the item is not in the collection.
-            for (int i = 0; i < collection.Count; i++)
-            {
-                if (itemToRemove == collection[i])
-                {
-                    string itemsInCollection = "";
-                    foreach (var item in collection)
-                        itemsInCollection += item + ", ";
-
-                    Assert.True(false, "Found item (" + itemToRemove + ") that should not be in the collection because we tried to remove it. Collection: " + itemsInCollection);
-                }
-            }
+            Assert.DoesNotContain(itemToRemove, collection);
 
             collection.CollectionChanged -= Collection_CollectionChanged;
             collectionPropertyChanged.PropertyChanged -= Collection_PropertyChanged;

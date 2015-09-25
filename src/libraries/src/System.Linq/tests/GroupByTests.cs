@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class GroupByTests
+    public class GroupByTests : EnumerableTests
     {
         public static void AssertGroupingCorrect<TKey, TElement>(IEnumerable<TKey> keys, IEnumerable<TElement> elements, IEnumerable<IGrouping<TKey, TElement>> grouping)
         {
@@ -70,34 +70,6 @@ namespace System.Linq.Tests
             }
             Assert.Empty(dict);
             Assert.Empty(groupingForNullKeys);
-        }
-
-        private class AnagramEqualityComparer : IEqualityComparer<string>
-        {
-            public bool Equals(string x, string y)
-            {
-                if (ReferenceEquals(x, y)) return true;
-                if (x == null | y == null) return false;
-                int length = x.Length;
-                if (length != y.Length) return false;
-                using (var en = x.OrderBy(i => i).GetEnumerator())
-                {
-                    foreach (char c in y.OrderBy(i => i))
-                    {
-                        en.MoveNext();
-                        if (c != en.Current) return false;
-                    }
-                }
-                return true;
-            }
-
-            public int GetHashCode(string obj)
-            {
-                int hash = 0;
-                foreach (char c in obj)
-                    hash ^= (int)c;
-                return hash;
-            }
         }
 
         public struct Record
@@ -621,6 +593,42 @@ namespace System.Linq.Tests
             IEnumerable<Record>[] groupedArray = source.GroupBy(r => r.Name, (r, e) => e).ToArray();
             Assert.Equal(4, groupedArray.Length);
             Assert.Equal(source.GroupBy(r => r.Name, (r, e) => e), groupedArray);
+        }
+
+        [Fact]
+        public void GroupingToList()
+        {
+            Record[] source = new Record[]
+            {
+                new Record { Name = "Tim", Score = 55 },
+                new Record { Name = "Chris", Score = 49 },
+                new Record { Name = "Robert", Score = -100 },
+                new Record { Name = "Chris", Score = 24 },
+                new Record { Name = "Prakash", Score = 9 },
+                new Record { Name = "Tim", Score = 25 }
+            };
+
+            List<IGrouping<string, Record>> groupedList = source.GroupBy(r => r.Name).ToList();
+            Assert.Equal(4, groupedList.Count);
+            Assert.Equal(source.GroupBy(r => r.Name), groupedList);
+        }
+
+        [Fact]
+        public void GroupingWithResultsToList()
+        {
+            Record[] source = new Record[]
+            {
+                new Record { Name = "Tim", Score = 55 },
+                new Record { Name = "Chris", Score = 49 },
+                new Record { Name = "Robert", Score = -100 },
+                new Record { Name = "Chris", Score = 24 },
+                new Record { Name = "Prakash", Score = 9 },
+                new Record { Name = "Tim", Score = 25 }
+            };
+
+            List<IEnumerable<Record>> groupedList = source.GroupBy(r => r.Name, (r, e) => e).ToList();
+            Assert.Equal(4, groupedList.Count);
+            Assert.Equal(source.GroupBy(r => r.Name, (r, e) => e), groupedList);
         }
     }
 }

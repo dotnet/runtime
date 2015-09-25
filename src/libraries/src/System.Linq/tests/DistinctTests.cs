@@ -7,36 +7,8 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class DistinctTests
+    public class DistinctTests : EnumerableTests
     {
-        private class AnagramEqualityComparer : IEqualityComparer<string>
-        {
-            public bool Equals(string x, string y)
-            {
-                if (ReferenceEquals(x, y)) return true;
-                if (x == null | y == null) return false;
-                int length = x.Length;
-                if (length != y.Length) return false;
-                using (var en = x.OrderBy(i => i).GetEnumerator())
-                {
-                    foreach (char c in y.OrderBy(i => i))
-                    {
-                        en.MoveNext();
-                        if (c != en.Current) return false;
-                    }
-                }
-                return true;
-            }
-
-            public int GetHashCode(string obj)
-            {
-                int hash = 0;
-                foreach (char c in obj)
-                    hash ^= (int)c;
-                return hash;
-            }
-        }
-        
         [Fact]
         public void SameResultsRepeatCallsIntQuery()
         {
@@ -62,9 +34,7 @@ namespace System.Linq.Tests
         public void EmptySource()
         {
             int[] source = { };
-            int[] expected = { };
-
-            Assert.Equal(expected, source.Distinct());
+            Assert.Empty(source.Distinct());
         }
 
         [Fact]
@@ -153,7 +123,15 @@ namespace System.Linq.Tests
         {
             string[] source = null;
             
-            Assert.Throws<ArgumentNullException>(() => source.Distinct());
+            Assert.Throws<ArgumentNullException>("source", () => source.Distinct());
+        }
+
+        [Fact]
+        public void NullSourceCustomComparer()
+        {
+            string[] source = null;
+
+            Assert.Throws<ArgumentNullException>("source", () => source.Distinct(StringComparer.Ordinal));
         }
 
         [Fact]
@@ -163,6 +141,62 @@ namespace System.Linq.Tests
             string[] expected = { "Bob", "Tim", "Robert" };
 
             Assert.Equal(expected, source.Distinct(new AnagramEqualityComparer()), new AnagramEqualityComparer());
+        }
+
+        [Theory, MemberData("SequencesWithDuplicates")]
+        public void FindDistinctAndValidate<T>(T unusedArgumentToForceTypeInference, IEnumerable<T> original)
+        {
+            // Convert to list to avoid repeated enumerations of the enumerables.
+            var originalList = original.ToList();
+            var distinctList = originalList.Distinct().ToList();
+
+            // Ensure the result doesn't contain duplicates.
+            var hashSet = new HashSet<T>();
+            foreach (var i in distinctList)
+                Assert.True(hashSet.Add(i));
+
+            var originalSet = new HashSet<T>(original);
+            Assert.Superset(originalSet, hashSet);
+            Assert.Subset(originalSet, hashSet);
+        }
+
+        public static IEnumerable<object[]> SequencesWithDuplicates()
+        {
+            // Validate an array of different numeric data types.
+            yield return new object[] { 0, new int[] { 1, 1, 1, 2, 3, 5, 5, 6, 6, 10 } };
+            yield return new object[] { 0L, new long[] { 1, 1, 1, 2, 3, 5, 5, 6, 6, 10 } };
+            yield return new object[] { 0F, new float[] { 1, 1, 1, 2, 3, 5, 5, 6, 6, 10 } };
+            yield return new object[] { 0.0, new double[] { 1, 1, 1, 2, 3, 5, 5, 6, 6, 10 } };
+            yield return new object[] { 0M, new decimal[] { 1, 1, 1, 2, 3, 5, 5, 6, 6, 10 } };
+            // Try strings
+            yield return new object[] { "", new []
+                {
+                    "add",
+                    "add",
+                    "subtract",
+                    "multiply",
+                    "divide",
+                    "divide2",
+                    "subtract",
+                    "add",
+                    "power",
+                    "exponent",
+                    "hello",
+                    "class",
+                    "namespace",
+                    "namespace",
+                    "namespace",
+                }
+            };
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerate()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Distinct();
+            // Don't insist on this behaviour, but check its correct if it happens
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
         }
     }
 }

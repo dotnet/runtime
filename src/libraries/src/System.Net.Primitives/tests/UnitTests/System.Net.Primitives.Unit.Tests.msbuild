@@ -17,6 +17,12 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
+
+  <PropertyGroup>
+    <!-- SYSTEM_NET_PRIMITIVES_DLL is required to allow source-level code sharing for types defined within the 
+         System.Net.Internals namespace. -->
+    <DefineConstants>$(DefineConstants);SYSTEM_NET_PRIMITIVES_DLL</DefineConstants>
+  </PropertyGroup>
   
   <ItemGroup>
     <CompileItem Include="CookieContainerTest.cs" />
@@ -50,9 +56,6 @@
     <CompileItem Include="..\..\src\System\Net\IPEndPoint.cs" >
       <Link>ProductionCode\System\Net\IPEndPoint.cs</Link>
     </CompileItem>
-    <CompileItem Include="..\..\src\System\Net\Sockets\SocketAddress.cs" >
-      <Link>ProductionCode\System\Net\Sockets\SocketAddress.cs</Link>
-    </CompileItem>
     <CompileItem Include="..\..\src\System\Net\SocketException.cs" >
       <Link>ProductionCode\System\Net\SocketException.cs</Link>
     </CompileItem>
@@ -67,6 +70,12 @@
     </CompileItem>
     <CompileItem Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs" >
       <Link>ProductionCode\Common\System\Net\HttpKnownHeaderNames.cs</Link>
+    </CompileItem>
+    <CompileItem Include="$(CommonPath)\System\Net\IPAddressParserStatics.cs" >
+      <Link>ProductionCode\Common\System\Net\IPAddressParserStatics.cs</Link>
+    </CompileItem>
+    <CompileItem Include="$(CommonPath)\System\Net\SocketAddress.cs" >
+      <Link>ProductionCode\System\Net\SocketAddress.cs</Link>
     </CompileItem>
     <CompileItem Include="$(CommonPath)\System\Net\TcpValidationHelpers.cs" >
       <Link>ProductionCode\Common\System\Net\TcpValidationHelpers.cs</Link>
@@ -99,20 +108,22 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
-    <CompileItem Include="..\..\src\System\Net\SocketAddressPal.Windows.cs" >
-      <Link>ProductionCode\System\Net\SocketAddressPal.Unix.cs</Link>
-    </CompileItem>
     <CompileItem Include="..\..\src\System\Net\SocketException.Windows.cs" >
       <Link>ProductionCode\System\Net\SocketException.Unix.cs</Link>
+    </CompileItem>
+
+    <CompileItem Include="$(CommonPath)\System\Net\SocketAddressPal.Windows.cs" >
+      <Link>Common\System\Net\SocketAddressPal.Windows.cs</Link>
     </CompileItem>
   </ItemGroup>
   
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
-    <CompileItem Include="..\..\src\System\Net\SocketAddressPal.Unix.cs" >
-      <Link>ProductionCode\System\Net\SocketAddressPal.Unix.cs</Link>
-    </CompileItem>
     <CompileItem Include="..\..\src\System\Net\SocketException.Unix.cs" >
       <Link>ProductionCode\System\Net\SocketException.Unix.cs</Link>
+    </CompileItem>
+
+    <CompileItem Include="$(CommonPath)\System\Net\SocketAddressPal.Unix.cs" >
+      <Link>Common\System\Net\SocketAddressPal.Unix.cs</Link>
     </CompileItem>
 
     <CompileItem Include="$(CommonPath)\Interop\Interop.CheckedAccess.cs" >
@@ -120,12 +131,12 @@
     </CompileItem>
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' ">
-    <CompileItem Include="$(CommonPath)\Interop\Unix\libc\Interop.addrinfo.cs" >
-      <Link>ProductionCode\Common\Interop\Unix\libc\Interop.addrinfo.cs</Link>
+  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
+    <CompileItem Include="$(CommonPath)\Interop\Linux\libc\Interop.addrinfo.cs" >
+      <Link>ProductionCode\Common\Interop\Linux\libc\Interop.addrinfo.cs</Link>
     </CompileItem>
-    <CompileItem Include="$(CommonPath)\Interop\Unix\libc\Interop.sockaddr.cs" >
-      <Link>ProductionCode\Common\Interop\Unix\libc\Interop.sockaddr.cs</Link>
+    <CompileItem Include="$(CommonPath)\Interop\Linux\libc\Interop.sockaddr.cs" >
+      <Link>ProductionCode\Common\Interop\Linux\libc\Interop.sockaddr.cs</Link>
     </CompileItem>
   </ItemGroup>
 

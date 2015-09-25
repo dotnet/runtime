@@ -1,13 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Xunit;
-using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
+using Xunit;
 
-namespace Test
+namespace System.Collections.ObjectModel.Tests
 {
     /// <summary>
     /// Tests the public properties and constructor in ObservableCollection<T>.
@@ -71,10 +69,7 @@ namespace Test
             // Creating ObservableCollection with empty IEnumerable.
             actualCol = new ObservableCollection<string>(new string[] { });
             Assert.Equal(0, actualCol.Count);
-            foreach (var item in actualCol)
-            {
-                Assert.True(false, "Should not be able to iterate over an empty collection.");
-            }
+            Assert.Empty(actualCol);
         }
 
         /// <summary>

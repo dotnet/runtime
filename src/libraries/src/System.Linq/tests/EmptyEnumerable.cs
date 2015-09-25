@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public partial class EmptyEnumerableTest
+    public class EmptyEnumerableTest : EnumerableTests
     {
         private void TestEmptyCached<T>()
         {
@@ -30,8 +30,9 @@ namespace System.Linq.Tests
         {
             Assert.Equal(new T[0], Enumerable.Empty<T>());
             Assert.Equal(0, Enumerable.Empty<T>().Count());
+            Assert.Same(Enumerable.Empty<T>().GetEnumerator(), ((IList<T>)Enumerable.Empty<T>()).GetEnumerator());
         }
-        
+
         [Fact]
         public void EmptyEnumerableIsIndeedEmpty()
         {

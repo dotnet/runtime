@@ -15,14 +15,7 @@ namespace System.IO
         public TempFile(string path, long length = 0)
         {
             Path = path;
-            using (FileStream fs = File.Create(path))
-            {
-                if (length > 0)
-                {
-                    // Fill with zeros up to the desired length.
-                    fs.Write(new byte[length], 0, (int)length);
-                }
-            }
+            File.WriteAllBytes(path, new byte[length]);
         }
 
         ~TempFile() { DeleteFile(); }

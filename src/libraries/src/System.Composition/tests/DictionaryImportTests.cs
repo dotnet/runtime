@@ -94,7 +94,7 @@ namespace System.Composition.UnitTests
         public void WhenAMetadataKeyIsDuplicatedAnInformativeExceptionIsThrown()
         {
             var container = CreateContainer(typeof(ValueA), typeof(ValueA), typeof(Consumer));
-            var x = AssertX.Throws<CompositionFailedException>(() => container.GetExport<Consumer>());
+            var x = Assert.Throws<CompositionFailedException>(() => container.GetExport<Consumer>());
             Assert.Equal("The metadata 'Value' cannot be used as a dictionary import key because the value 'A' is associated with exports from parts 'ValueA' and 'ValueA'.", x.Message);
         }
 
@@ -102,7 +102,7 @@ namespace System.Composition.UnitTests
         public void WhenAMetadataKeyIsMissingAnInformativeExceptionIsThrown()
         {
             var container = CreateContainer(typeof(ValueA), typeof(ValueMissing), typeof(Consumer));
-            var x = AssertX.Throws<CompositionFailedException>(() => container.GetExport<Consumer>());
+            var x = Assert.Throws<CompositionFailedException>(() => container.GetExport<Consumer>());
             Assert.Equal("The metadata 'Value' cannot be used as a dictionary import key because it is missing from exports on part(s) 'ValueMissing'.", x.Message);
         }
 
@@ -110,7 +110,7 @@ namespace System.Composition.UnitTests
         public void WhenAMetadataValueIsOfTheWrongTypeAnInformativeExceptionIsThrown()
         {
             var container = CreateContainer(typeof(ValueA), typeof(NonStringValue), typeof(Consumer));
-            var x = AssertX.Throws<CompositionFailedException>(() => container.GetExport<Consumer>());
+            var x = Assert.Throws<CompositionFailedException>(() => container.GetExport<Consumer>());
             Assert.Equal("The metadata 'Value' cannot be used as a dictionary import key of type 'String' because the value(s) supplied by 'NonStringValue' are of the wrong type.", x.Message);
         }
 

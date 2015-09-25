@@ -5,7 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
 
-namespace System.IO.FileSystem.Tests
+namespace System.IO.Tests
 {
     public class File_Copy_str_str : FileSystemTest
     {

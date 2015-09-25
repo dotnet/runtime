@@ -7,37 +7,8 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class IntersectTests
+    public class IntersectTests : EnumerableTests
     {
-        // Class which is passed as an argument for EqualityComparer
-        private class AnagramEqualityComparer : IEqualityComparer<string>
-        {
-            public bool Equals(string x, string y)
-            {
-                if (ReferenceEquals(x, y)) return true;
-                if (x == null | y == null) return false;
-                int length = x.Length;
-                if (length != y.Length) return false;
-                using (var en = x.OrderBy(i => i).GetEnumerator())
-                {
-                    foreach (char c in y.OrderBy(i => i))
-                    {
-                        en.MoveNext();
-                        if (c != en.Current) return false;
-                    }
-                }
-                return true;
-            }
-
-            public int GetHashCode(string obj)
-            {
-                int hash = 0;
-                foreach (char c in obj)
-                    hash ^= (int)c;
-                return hash;
-            }
-        }
-
         [Fact]
         public void SameResultsRepeatCallsIntQuery()
         {
@@ -65,9 +36,7 @@ namespace System.Linq.Tests
         {
             int[] first = { };
             int[] second = { };
-            int[] expected = { };
-
-            Assert.Equal(expected, first.Intersect(second));
+            Assert.Empty(first.Intersect(second));
         }
 
         [Fact]
@@ -86,6 +55,24 @@ namespace System.Linq.Tests
             string[] second = null;
 
             var ane = Assert.Throws<ArgumentNullException>("second", () => first.Intersect(second, new AnagramEqualityComparer()));
+        }
+
+        [Fact]
+        public void FirstNullNoComparer()
+        {
+            string[] first = null;
+            string[] second = { "ekiM", "bBo" };
+
+            var ane = Assert.Throws<ArgumentNullException>("first", () => first.Intersect(second));
+        }
+
+        [Fact]
+        public void SecondNullNoComparer()
+        {
+            string[] first = { "Tim", "Bob", "Mike", "Robert" };
+            string[] second = null;
+
+            var ane = Assert.Throws<ArgumentNullException>("second", () => first.Intersect(second));
         }
 
         [Fact]
@@ -123,9 +110,7 @@ namespace System.Linq.Tests
         {
             int?[] first = { };
             int?[] second = { -5, 0, null, 1, 2, 9, 2 };
-            int?[] expected = { };
-
-            Assert.Equal(expected, first.Intersect(second));
+            Assert.Empty(first.Intersect(second));
         }
 
         [Fact]
@@ -133,9 +118,7 @@ namespace System.Linq.Tests
         {
             int?[] first = { -5, 0, 1, 2, null, 9, 2 };
             int?[] second = { };
-            int?[] expected = { };
-
-            Assert.Equal(expected, first.Intersect(second));
+            Assert.Empty(first.Intersect(second));
         }
 
         [Fact]
@@ -143,9 +126,7 @@ namespace System.Linq.Tests
         {
             int[] first = { -5, 3, -2, 6, 9 };
             int[] second = { 0, 5, 2, 10, 20 };
-            int[] expected = { };
-
-            Assert.Equal(expected, first.Intersect(second));
+            Assert.Empty(first.Intersect(second));
         }
 
         [Fact]
@@ -183,9 +164,7 @@ namespace System.Linq.Tests
         {
             string[] first = { "Tim", "Bob", "Mike", "Robert" };
             string[] second = { "ekiM", "bBo" };
-            string[] expected = { };
-
-            Assert.Equal(expected, first.Intersect(second));
+            Assert.Empty(first.Intersect(second));
         }
 
         [Fact]
@@ -196,6 +175,15 @@ namespace System.Linq.Tests
             string[] expected = { "Bob", "Mike" };
 
             Assert.Equal(expected, first.Intersect(second, new AnagramEqualityComparer()));
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerate()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Intersect(Enumerable.Range(0, 3));
+            // Don't insist on this behaviour, but check its correct if it happens
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
         }
     }
 }
