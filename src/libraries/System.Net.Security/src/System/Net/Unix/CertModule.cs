@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics;
 using Microsoft.Win32.SafeHandles;
 using System.Net.Security;
 using System.Runtime.InteropServices;
@@ -11,7 +12,12 @@ namespace System.Net
     internal partial class CertModule : CertInterface
     {
         #region internal Methods
-        internal override SslPolicyErrors VerifyCertificateProperties(X509Chain chain, X509Certificate2 certificate, bool checkCertName, bool isServer, string hostName)
+        internal override SslPolicyErrors VerifyCertificateProperties(
+            X509Chain chain,
+            X509Certificate2 certificate,
+            bool checkCertName,
+            bool isServer,
+            string hostName)
         {
             SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
 
@@ -20,7 +26,28 @@ namespace System.Net
                 sslPolicyErrors |= SslPolicyErrors.RemoteCertificateChainErrors;
             }
 
-            // TODO (3431): Ensure that the certificate is valid for the hostName context.
+            if (checkCertName)
+            {
+                if (string.IsNullOrEmpty(hostName))
+                {
+                    sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNameMismatch;
+                }
+                else
+                {
+                    int hostnameMatch;
+
+                    using (SafeX509Handle certHandle = Interop.libcrypto.X509_dup(certificate.Handle))
+                    {
+                        hostnameMatch = Interop.Crypto.CheckX509Hostname(certHandle, hostName, hostName.Length);
+                    }
+
+                    if (hostnameMatch != 1)
+                    {
+                        Debug.Assert(hostnameMatch == 0, "hostnameMatch should be (0,1) was " + hostnameMatch);
+                        sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNameMismatch;
+                    }
+                }
+            }
 
             return sslPolicyErrors;
         }
