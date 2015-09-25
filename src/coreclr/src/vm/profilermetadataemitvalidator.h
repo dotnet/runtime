@@ -460,6 +460,7 @@ public:
         mdTypeDef   *ptd);             // [OUT] Put the TypeDef token here.
 
     virtual HRESULT STDMETHODCALLTYPE GetScopeProps(               // S_OK or error.
+        __out_ecount(cchName)
         LPWSTR      szName,                 // [OUT] Put the name here.
         ULONG       cchName,                // [IN] Size of name buffer in wide chars.
         ULONG       *pchName,               // [OUT] Put size of name (wide chars) here.
@@ -470,6 +471,7 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE GetTypeDefProps(             // S_OK or error.
         mdTypeDef   td,                     // [IN] TypeDef token for inquiry.
+        __out_ecount(cchTypeDef)
         LPWSTR      szTypeDef,              // [OUT] Put name here.
         ULONG       cchTypeDef,             // [IN] size of name buffer in wide chars.
         ULONG       *pchTypeDef,            // [OUT] put size of name (wide chars) here.
@@ -484,6 +486,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetTypeRefProps(             // S_OK or error.
         mdTypeRef   tr,                     // [IN] TypeRef token.
         mdToken     *ptkResolutionScope,    // [OUT] Resolution scope, ModuleRef or AssemblyRef.
+        __out_ecount(cchName)
         LPWSTR      szName,                 // [OUT] Name of the TypeRef.
         ULONG       cchName,                // [IN] Size of buffer.
         ULONG       *pchName);         // [OUT] Size of Name.
@@ -597,6 +600,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetMethodProps(
         mdMethodDef mb,                     // The method for which to get props.
         mdTypeDef   *pClass,                // Put method's class here. 
+        __out_ecount(cchMethod)
         LPWSTR      szMethod,               // Put method's name here.
         ULONG       cchMethod,              // Size of szMethod buffer in wide chars.
         ULONG       *pchMethod,             // Put actual size here 
@@ -609,6 +613,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetMemberRefProps(           // S_OK or error.
         mdMemberRef mr,                     // [IN] given memberref 
         mdToken     *ptk,                   // [OUT] Put classref or classdef here. 
+        __out_ecount(cchMember)
         LPWSTR      szMember,               // [OUT] buffer to fill for member's name
         ULONG       cchMember,              // [IN] the count of char of szMember
         ULONG       *pchMember,             // [OUT] actual count of char in member name
@@ -715,6 +720,7 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE GetUserString(               // S_OK or error.
         mdString    stk,                    // [IN] String token.
+        __out_ecount(cchString)
         LPWSTR      szString,               // [OUT] Copy of string.
         ULONG       cchString,              // [IN] Max chars of room in szString.
         ULONG       *pchString);       // [OUT] How many chars in actual string.
@@ -722,6 +728,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetPinvokeMap(               // S_OK or error.
         mdToken     tk,                     // [IN] FieldDef or MethodDef.
         DWORD       *pdwMappingFlags,       // [OUT] Flags used for mapping.
+        __out_ecount(cchImportName)
         LPWSTR      szImportName,           // [OUT] Import name.
         ULONG       cchImportName,          // [IN] Size of the name buffer.
         ULONG       *pchImportName,         // [OUT] Actual number of characters stored.
@@ -773,6 +780,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetMemberProps(
         mdToken     mb,                     // The member for which to get props.
         mdTypeDef   *pClass,                // Put member's class here. 
+        __out_ecount(cchMember)
         LPWSTR      szMember,               // Put member's name here.
         ULONG       cchMember,              // Size of szMember buffer in wide chars.
         ULONG       *pchMember,             // Put actual size here 
@@ -788,6 +796,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetFieldProps(
         mdFieldDef  mb,                     // The field for which to get props.
         mdTypeDef   *pClass,                // Put field's class here.
+        __out_ecount(cchField)
         LPWSTR      szField,                // Put field's name here.
         ULONG       cchField,               // Size of szField buffer in wide chars.
         ULONG       *pchField,              // Put actual size here 
@@ -820,6 +829,7 @@ public:
         mdParamDef  tk,                     // [IN]The Parameter.
         mdMethodDef *pmd,                   // [OUT] Parent Method token.
         ULONG       *pulSequence,           // [OUT] Parameter sequence.
+        __out_ecount(cchName)
         LPWSTR      szName,                 // [OUT] Put name here.
         ULONG       cchName,                // [OUT] Size of name buffer.
         ULONG       *pchName,               // [OUT] Put actual size of name here.
@@ -864,6 +874,7 @@ public:
         DWORD        *pdwParamFlags,        // [OUT] Flags, for future use (e.g. variance)
         mdToken      *ptOwner,              // [OUT] Owner (TypeDef or MethodDef)
         DWORD       *reserved,              // [OUT] For future use (e.g. non-type parameters)
+        __out_ecount(cchName)
         LPWSTR       wzname,                // [OUT] Put name here
         ULONG        cchName,               // [IN] Size of buffer
         ULONG        *pchName);        // [OUT] Put size of name (wide chars) here.
@@ -891,6 +902,7 @@ public:
         DWORD* pdwMAchine);            // [OUT] Machine as defined in NT header
 
     virtual HRESULT STDMETHODCALLTYPE GetVersionString(            // S_OK or error.
+        __out_ecount(ccBufSize)
         LPWSTR      pwzBuf,                 // [OUT] Put version string here.
         DWORD       ccBufSize,              // [IN] size of the buffer, in wide chars
         DWORD       *pccBufSize);      // [OUT] Size of the version string, wide chars, including terminating nul.
@@ -909,7 +921,8 @@ public:
         const void  **ppbPublicKey,         // [OUT] Pointer to the public key.
         ULONG       *pcbPublicKey,          // [OUT] Count of bytes in the public key.
         ULONG       *pulHashAlgId,          // [OUT] Hash Algorithm.
-        LPWSTR  szName, // [OUT] Buffer to fill with assembly's simply name.
+        __out_ecount(cchName)
+        LPWSTR      szName,                 // [OUT] Buffer to fill with assembly's simply name.
         ULONG       cchName,                // [IN] Size of buffer in wide chars.
         ULONG       *pchName,               // [OUT] Actual # of wide chars in name.
         ASSEMBLYMETADATA *pMetaData,        // [OUT] Assembly MetaData.
@@ -919,7 +932,8 @@ public:
         mdAssemblyRef mdar,                 // [IN] The AssemblyRef for which to get the properties.
         const void  **ppbPublicKeyOrToken,  // [OUT] Pointer to the public key or token.
         ULONG       *pcbPublicKeyOrToken,   // [OUT] Count of bytes in the public key or token.
-        LPWSTR szName, // [OUT] Buffer to fill with name.
+        __out_ecount(cchName) 
+        LPWSTR      szName,                 // [OUT] Buffer to fill with name.
         ULONG       cchName,                // [IN] Size of buffer in wide chars.
         ULONG       *pchName,               // [OUT] Actual # of wide chars in name.
         ASSEMBLYMETADATA *pMetaData,        // [OUT] Assembly MetaData.
@@ -929,7 +943,8 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE GetFileProps(                // S_OK or error.
         mdFile      mdf,                    // [IN] The File for which to get the properties.
-        LPWSTR      szName, // [OUT] Buffer to fill with name.
+        __out_ecount(cchName)
+        LPWSTR      szName,                 // [OUT] Buffer to fill with name.
         ULONG       cchName,                // [IN] Size of buffer in wide chars.
         ULONG       *pchName,               // [OUT] Actual # of wide chars in name.
         const void  **ppbHashValue,         // [OUT] Pointer to the Hash Value Blob.
@@ -938,7 +953,8 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE GetExportedTypeProps(        // S_OK or error.
         mdExportedType   mdct,              // [IN] The ExportedType for which to get the properties.
-        LPWSTR      szName, // [OUT] Buffer to fill with name.
+        __out_ecount(cchName) 
+        LPWSTR      szName,                 // [OUT] Buffer to fill with name.
         ULONG       cchName,                // [IN] Size of buffer in wide chars.
         ULONG       *pchName,               // [OUT] Actual # of wide chars in name.
         mdToken     *ptkImplementation,     // [OUT] mdFile or mdAssemblyRef or mdExportedType.
@@ -947,7 +963,8 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE GetManifestResourceProps(    // S_OK or error.
         mdManifestResource  mdmr,           // [IN] The ManifestResource for which to get the properties.
-        LPWSTR      szName,  // [OUT] Buffer to fill with name.
+        __out_ecount(cchName)
+        LPWSTR      szName,                 // [OUT] Buffer to fill with name.
         ULONG       cchName,                // [IN] Size of buffer in wide chars.
         ULONG       *pchName,               // [OUT] Actual # of wide chars in name.
         mdToken     *ptkImplementation,     // [OUT] mdFile or mdAssemblyRef that provides the ManifestResource.
