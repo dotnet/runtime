@@ -30,21 +30,11 @@ public static class ArrayUtil
 
         if (comparer != null)
         {
-            if (comparer.Compare(firstValue, secondValue) != 0)
-            {
-                Assert.True(false,
-                    string.Format("Elements at index [" + index + "] of the arrays were not equal. Expected {0}, actual {1}",
-                    firstValue, secondValue));
-            }
+            Assert.Equal(0, comparer.Compare(firstValue, secondValue));
         }
         else
         {
-            if (!Equals(firstValue, second.GetValue(index)))
-            {
-                Assert.True(false,
-                    string.Format("Elements at index [" + index + "] of the arrays were not equal. Expected {0}, actual {1}",
-                        firstValue, secondValue));
-            }
+            Assert.Equal(firstValue, secondValue);
         }
     }
 

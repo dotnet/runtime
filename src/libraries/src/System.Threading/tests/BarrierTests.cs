@@ -38,27 +38,15 @@ namespace System.Threading.Tests
         /// <returns>Tru if the test succeeded, false otherwise</returns>
         private static void RunBarrierTest1_ctor(int initialCount, Type exceptionType)
         {
-            Exception exception = null;
             try
             {
                 Barrier b = new Barrier(initialCount);
-                if (b.ParticipantCount != initialCount)
-                {
-                    Assert.True(false, string.Format("BarrierTests:  Constructor failed, ParticipantCount doesn't match the initialCount."));
-                }
+                Assert.Equal(initialCount, b.ParticipantCount);
             }
             catch (Exception ex)
             {
-                exception = ex;
-            }
-
-            if (exception != null && exceptionType == null)
-            {
-                Assert.True(false, string.Format("BarrierTests:  Constructor failed, unexpected exception has been thrown."));
-            }
-            if (exception != null && !Type.Equals(exceptionType, exception.GetType()))
-            {
-                Assert.True(false, string.Format("BarrierTests:  Constructor failed, exceptions types do not match."));
+                Assert.NotNull(exceptionType);
+                Assert.IsType(exceptionType, ex);
             }
         }
 
@@ -88,34 +76,19 @@ namespace System.Threading.Tests
         private static void RunBarrierTest2_SignalAndWait(int initialCount, TimeSpan timeout, bool result, Type exceptionType)
         {
             Barrier b = new Barrier(initialCount);
-            Exception exception = null;
             try
             {
-                if (b.SignalAndWait(timeout) != result)
-                {
-                    Assert.True(false, string.Format("BarrierTests:  SignalAndWait failed, return value doesn't match the expected value"));
-                }
+                Assert.Equal(result, b.SignalAndWait(timeout));
                 if (result && b.CurrentPhaseNumber != 1)
                 {
-                    Assert.True(false, string.Format("BarrierTests:  SignalAndWait failed, CurrentPhaseNumber has not been incremented after SignalAndWait"));
-                }
-                if (result && b.ParticipantsRemaining != b.ParticipantCount)
-                {
-                    Assert.True(false, string.Format("BarrierTests:  SignalAndWait failed, ParticipantsRemaming does not equal the total participants"));
+                    Assert.Equal(1, b.CurrentPhaseNumber);
+                    Assert.Equal(b.ParticipantCount, b.ParticipantsRemaining);
                 }
             }
             catch (Exception ex)
             {
-                exception = ex;
-            }
-
-            if (exception != null && exceptionType == null)
-            {
-                Assert.True(false, string.Format("BarrierTests:  SignalAndWait failed, unexpected exception has been thrown."));
-            }
-            if (exception != null && !Type.Equals(exceptionType, exception.GetType()))
-            {
-                Assert.True(false, string.Format("BarrierTests:  SignalAndWait failed, exceptions types do not match."));
+                Assert.NotNull(exceptionType);
+                Assert.IsType(exceptionType, ex);
             }
         }
 
@@ -133,14 +106,8 @@ namespace System.Threading.Tests
             }
             b.SignalAndWait();
 
-            if (b.CurrentPhaseNumber != 1)
-            {
-                Assert.True(false, string.Format("BarrierTests:  SignalAndWait failed, CurrentPhaseNumber has not been incremented after SignalAndWait"));
-            }
-            if (b.ParticipantsRemaining != b.ParticipantCount)
-            {
-                Assert.True(false, string.Format("BarrierTests:  SignalAndWait failed, ParticipantsRemaming does not equal the total participants"));
-            }
+            Assert.Equal(1, b.CurrentPhaseNumber);
+            Assert.Equal(b.ParticipantCount, b.ParticipantsRemaining);
         }
 
         [Fact]
@@ -193,30 +160,15 @@ namespace System.Threading.Tests
         private static void RunBarrierTest4_AddParticipants(int initialCount, int participantsToAdd, Type exceptionType)
         {
             Barrier b = new Barrier(initialCount);
-            Exception exception = null;
             try
             {
-                if (b.AddParticipants(participantsToAdd) != 0)
-                {
-                    Assert.True(false, string.Format("BarrierTests:  AddParticipants failed, the return phase count is not correct"));
-                }
-                if (b.ParticipantCount != initialCount + participantsToAdd)
-                {
-                    Assert.True(false, string.Format("BarrierTests:  AddParticipants failed, total participant was not increased"));
-                }
+                Assert.Equal(0, b.AddParticipants(participantsToAdd));
+                Assert.Equal(initialCount + participantsToAdd, b.ParticipantCount);
             }
             catch (Exception ex)
             {
-                exception = ex;
-            }
-
-            if (exception != null && exceptionType == null)
-            {
-                Assert.True(false, string.Format("BarrierTests:  AddParticipants failed, unexpected exception has been thrown."));
-            }
-            if (exception != null && !Type.Equals(exceptionType, exception.GetType()))
-            {
-                Assert.True(false, string.Format("BarrierTests:  AddParticipants failed, exceptions types do not match."));
+                Assert.NotNull(exceptionType);
+                Assert.IsType(exceptionType, ex);
             }
         }
 
@@ -245,27 +197,15 @@ namespace System.Threading.Tests
         private static void RunBarrierTest5_RemoveParticipants(int initialCount, int participantsToRemove, Type exceptionType)
         {
             Barrier b = new Barrier(initialCount);
-            Exception exception = null;
             try
             {
                 b.RemoveParticipants(participantsToRemove);
-                if (b.ParticipantCount != initialCount - participantsToRemove)
-                {
-                    Assert.True(false, string.Format("BarrierTests:  RemoveParticipants failed, total participant was not decreased"));
-                }
+                Assert.Equal(initialCount - participantsToRemove, b.ParticipantCount);
             }
             catch (Exception ex)
             {
-                exception = ex;
-            }
-
-            if (exception != null && exceptionType == null)
-            {
-                Assert.True(false, string.Format("BarrierTests:  RemoveParticipants failed, unexpected exception has been thrown."));
-            }
-            if (exception != null && !Type.Equals(exceptionType, exception.GetType()))
-            {
-                Assert.True(false, string.Format("BarrierTests:  RemoveParticipants failed, exceptions types do not match."));
+                Assert.NotNull(exceptionType);
+                Assert.IsType(exceptionType, ex);
             }
         }
 
@@ -278,21 +218,13 @@ namespace System.Threading.Tests
         {
             Barrier b = new Barrier(1);
             b.Dispose();
-            try
-            {
-                b.SignalAndWait();
-                Assert.True(false, string.Format("BarrierTests:  Cancel failed, SignalAndWait didn't throw exceptions after Dispose."));
-            }
-            catch (ObjectDisposedException)
-            {
-            }
+            Assert.Throws<ObjectDisposedException>(() => b.SignalAndWait());
         }
 
         [Fact]
         public static void RunBarrierTest7a()
         {
-            bool failed = false;
-            for (int j = 0; j < 100 && !failed; j++)
+            for (int j = 0; j < 100; j++)
             {
                 Barrier b = new Barrier(0);
                 Action[] actions = new Action[4];
@@ -302,16 +234,8 @@ namespace System.Threading.Tests
                     {
                         for (int i = 0; i < 400; i++)
                         {
-                            try
-                            {
-                                b.AddParticipant();
-                                b.RemoveParticipant();
-                            }
-                            catch
-                            {
-                                failed = true;
-                                break;
-                            }
+                            b.AddParticipant();
+                            b.RemoveParticipant();
                         }
                     });
                 }
@@ -320,13 +244,7 @@ namespace System.Threading.Tests
                 for (int k = 0; k < tasks.Length; k++)
                     tasks[k] = Task.Factory.StartNew((index) => actions[(int)index](), k, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
                 Task.WaitAll(tasks);
-                if (b.ParticipantCount != 0)
-                    failed = true;
-            }
-
-            if (failed)
-            {
-                Assert.True(false, string.Format("BarrierTests:  RunBarrierTest7a failed"));
+                Assert.Equal(0, b.ParticipantCount);
             }
         }
 
@@ -367,15 +285,8 @@ namespace System.Threading.Tests
 
             foreach (Task t in threads)
                 t.Wait();
-            if (succeededCount != participants)
-            {
-                Assert.True(false, string.Format("BarrierTests:  Failed, Not all participants threw the exception, expected {0}, actual {1}", participants, succeededCount));
-            }
-            // make sure the phase count is incremented
-            if (barrier.CurrentPhaseNumber != 1)
-            {
-                Assert.True(false, string.Format("BarrierTests:  Failed, Expected phase count = 1, but did not match."));
-            }
+            Assert.Equal(participants, succeededCount);
+            Assert.Equal(1, barrier.CurrentPhaseNumber);
 
             // turn off the exception
             shouldThrow = false;
@@ -398,10 +309,7 @@ namespace System.Threading.Tests
             }
             foreach (Task t in threads)
                 t.Wait();
-            if (succeededCount != participants)
-            {
-                Assert.True(false, string.Format("BarrierTests:  Failed, At least one participant threw BarrierPostPhaseException."));
-            }
+            Assert.Equal(participants, succeededCount);
         }
 
         /// <summary>
@@ -485,20 +393,12 @@ namespace System.Threading.Tests
                 tasks[0] = Task.Run(() => b.SignalAndWait());
                 tasks[1] = Task.Run(() => b.SignalAndWait());
 
-
                 b.SignalAndWait();
                 b.Dispose();
 
                 GC.Collect();
 
-                try
-                {
-                    Task.WaitAll(tasks);
-                }
-                catch
-                {
-                    Assert.True(false, string.Format("RunBarrierTest10c:  Error: Only finished {0} iterations, before an exception was thrown.", j));
-                }
+                Task.WaitAll(tasks);
             }
         }
 
@@ -523,18 +423,8 @@ namespace System.Threading.Tests
         /// </summary>
         private static void EnsurePostPhaseThrew(Barrier barrier)
         {
-            try
-            {
-                barrier.SignalAndWait();
-                Assert.True(false, string.Format("BarrierTests:  PostPhaseException failed, Postphase action didn't throw."));
-            }
-            catch (BarrierPostPhaseException ex)
-            {
-                if (!ex.InnerException.GetType().Equals(typeof(InvalidOperationException)))
-                {
-                    Assert.True(false, string.Format("BarrierTests:  PostPhaseException failed, Postphase action didn't throw the correct exception."));
-                }
-            }
+            BarrierPostPhaseException be = Assert.Throws<BarrierPostPhaseException>(() => barrier.SignalAndWait());
+            Assert.IsType<InvalidOperationException>(be.InnerException);
         }
 
         #endregion

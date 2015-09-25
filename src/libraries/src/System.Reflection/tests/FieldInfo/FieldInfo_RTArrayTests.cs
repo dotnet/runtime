@@ -66,29 +66,10 @@ namespace System.Reflection.Tests
             A[] BTypeWithAllB_Contra = new FieldInfoArrayB[] { new FieldInfoArrayB(), new FieldInfoArrayB() };
 
             fi = getField(type, "bArray");
+            Assert.Throws<ArgumentException>(() => fi.SetValue(obj, ATypeWithMixedAB));
+            Assert.Throws<ArgumentException>(() => fi.SetValue(obj, ATypeWithAllA));
 
-            try
-            {
-                fi.SetValue(obj, ATypeWithMixedAB);
-                Assert.False(true, "Failed!! Expected ArgumentException.");
-            }
-            catch (Exception) { }
-
-            try
-            {
-                fi.SetValue(obj, ATypeWithAllA);
-                Assert.False(true, "Failed!! Expected ArgumentException.");
-            }
-            catch (Exception) { }
-
-            try
-            {
-                fi.SetValue(obj, ATypeWithAllB);
-                Assert.False(true, "Failed!! Expected ArgumentException.");
-            }
-            catch (Exception) { }
-
-
+            Assert.Throws<ArgumentException>(() => fi.SetValue(obj, ATypeWithAllB));
 
             fi.SetValue(obj, BTypeWithAllB);
             Assert.True((fi.GetValue(obj)).Equals(BTypeWithAllB), "Failed!! Could not set ArrayField bArray using FieldInfo");
@@ -134,12 +115,7 @@ namespace System.Reflection.Tests
             fi.SetValue(obj, mixedInt);
             Assert.True((fi.GetValue(obj)).Equals(mixedInt), "Failed!! Could not set ArrayField intArray using FieldInfo");
 
-            try
-            {
-                fi.SetValue(obj, allByte);
-                Assert.False(true, "Failed!! Expected ArgumentException.System.Byte[]' cannot be converted to type 'System.Int32[]");
-            }
-            catch (Exception) { }
+            Assert.Throws<ArgumentException>(() => fi.SetValue(obj, allByte));
         }
 
 
@@ -164,20 +140,8 @@ namespace System.Reflection.Tests
             fi.SetValue(obj, BTypeWithAllB_Contra);
 
             Assert.True((fi.GetValue(obj)).Equals(BTypeWithAllB_Contra), "Failed!! Could not set ArrayField objectArray using FieldInfo");
-
-            try
-            {
-                fi.SetValue(obj, mixedInt);
-                Assert.False(true, "Failed!! Expected ArgumentException.System.Int32[]' cannot be converted to type 'System.Object[]'");
-            }
-            catch (Exception) { }
-
-            try
-            {
-                fi.SetValue(obj, allByte);
-                Assert.False(true, "Failed!! Expected ArgumentException.System.Byte[]' cannot be converted to type 'System.Object[]");
-            }
-            catch (Exception) { }
+            Assert.Throws<ArgumentException>(() => fi.SetValue(obj, mixedInt));
+            Assert.Throws<ArgumentException>(() => fi.SetValue(obj, allByte));
         }
 
 

@@ -824,9 +824,7 @@ namespace System.Threading.Tasks.Test
         /// <returns></returns>
         private void ExceptionalVerification(ParallelLoopResult? loopResult)
         {
-            if (loopResult != null)
-                Assert.False(true,
-                    String.Format("ParallelLoopResult invalid, expecting null, actual: {0}, {1}", loopResult.Value.IsCompleted, loopResult.Value.LowestBreakIteration));
+            Assert.Null(loopResult);
         }
 
         #endregion

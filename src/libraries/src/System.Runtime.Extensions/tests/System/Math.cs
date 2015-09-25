@@ -9,9 +9,9 @@ public static class MathTests
     [Fact]
     public static void Cos()
     {
-        AssertSimilar(0.54030230586814, Math.Cos(1.0));
+        Assert.Equal(0.54030230586814, Math.Cos(1.0), 10);
         Assert.Equal(1.0, Math.Cos(0.0));
-        AssertSimilar(0.54030230586814, Math.Cos(-1.0));
+        Assert.Equal(0.54030230586814, Math.Cos(-1.0), 10);
         Assert.Equal(double.NaN, Math.Cos(double.NaN));
         Assert.Equal(double.NaN, Math.Cos(double.PositiveInfinity));
         Assert.Equal(double.NaN, Math.Cos(double.NegativeInfinity));
@@ -20,9 +20,9 @@ public static class MathTests
     [Fact]
     public static void Sin()
     {
-        AssertSimilar(0.841470984807897, Math.Sin(1.0));
+        Assert.Equal(0.841470984807897, Math.Sin(1.0), 10);
         Assert.Equal(0.0, Math.Sin(0.0));
-        AssertSimilar(-0.841470984807897, Math.Sin(-1.0));
+        Assert.Equal(-0.841470984807897, Math.Sin(-1.0), 10);
         Assert.Equal(double.NaN, Math.Sin(double.NaN));
         Assert.Equal(double.NaN, Math.Sin(double.PositiveInfinity));
         Assert.Equal(double.NaN, Math.Sin(double.NegativeInfinity));
@@ -31,9 +31,9 @@ public static class MathTests
     [Fact]
     public static void Tan()
     {
-        AssertSimilar(1.5574077246549, Math.Tan(1.0));
+        Assert.Equal(1.5574077246549, Math.Tan(1.0), 10);
         Assert.Equal(0.0, Math.Tan(0.0));
-        AssertSimilar(-1.5574077246549, Math.Tan(-1.0));
+        Assert.Equal(-1.5574077246549, Math.Tan(-1.0), 10);
         Assert.Equal(double.NaN, Math.Tan(double.NaN));
         Assert.Equal(double.NaN, Math.Tan(double.PositiveInfinity));
         Assert.Equal(double.NaN, Math.Tan(double.NegativeInfinity));
@@ -42,9 +42,9 @@ public static class MathTests
     [Fact]
     public static void Cosh()
     {
-        AssertSimilar(1.54308063481524, Math.Cosh(1.0));
+        Assert.Equal(1.54308063481524, Math.Cosh(1.0), 10);
         Assert.Equal(1.0, Math.Cosh(0.0));
-        AssertSimilar(1.54308063481524, Math.Cosh(-1.0));
+        Assert.Equal(1.54308063481524, Math.Cosh(-1.0), 10);
         Assert.Equal(double.NaN, Math.Cosh(double.NaN));
         Assert.Equal(double.PositiveInfinity, Math.Cosh(double.PositiveInfinity));
         Assert.Equal(double.PositiveInfinity, Math.Cosh(double.NegativeInfinity));
@@ -53,9 +53,9 @@ public static class MathTests
     [Fact]
     public static void Sinh()
     {
-        AssertSimilar(1.1752011936438, Math.Sinh(1.0));
+        Assert.Equal(1.1752011936438, Math.Sinh(1.0), 10);
         Assert.Equal(0.0, Math.Sinh(0.0));
-        AssertSimilar(-1.1752011936438, Math.Sinh(-1.0));
+        Assert.Equal(-1.1752011936438, Math.Sinh(-1.0), 10);
         Assert.Equal(double.NaN, Math.Sinh(double.NaN));
         Assert.Equal(double.PositiveInfinity, Math.Sinh(double.PositiveInfinity));
         Assert.Equal(double.NegativeInfinity, Math.Sinh(double.NegativeInfinity));
@@ -64,9 +64,9 @@ public static class MathTests
     [Fact]
     public static void Tanh()
     {
-        AssertSimilar(0.761594155955765, Math.Tanh(1.0));
+        Assert.Equal(0.761594155955765, Math.Tanh(1.0), 10);
         Assert.Equal(0.0, Math.Tanh(0.0));
-        AssertSimilar(-0.761594155955765, Math.Tanh(-1.0));
+        Assert.Equal(-0.761594155955765, Math.Tanh(-1.0), 10);
         Assert.Equal(double.NaN, Math.Tanh(double.NaN));
         Assert.Equal(1.0, Math.Tanh(double.PositiveInfinity));
         Assert.Equal(-1.0, Math.Tanh(double.NegativeInfinity));
@@ -76,8 +76,8 @@ public static class MathTests
     public static void Acos()
     {
         Assert.Equal(0.0, Math.Acos(1.0));
-        AssertSimilar(1.5707963267949, Math.Acos(0.0));
-        AssertSimilar(3.14159265358979, Math.Acos(-1.0));
+        Assert.Equal(1.5707963267949, Math.Acos(0.0), 10);
+        Assert.Equal(3.14159265358979, Math.Acos(-1.0), 10);
         Assert.Equal(double.NaN, Math.Acos(double.NaN));
         Assert.Equal(double.NaN, Math.Acos(double.PositiveInfinity));
         Assert.Equal(double.NaN, Math.Acos(double.NegativeInfinity));
@@ -86,9 +86,9 @@ public static class MathTests
     [Fact]
     public static void Asin()
     {
-        AssertSimilar(1.5707963267949, Math.Asin(1.0));
+        Assert.Equal(1.5707963267949, Math.Asin(1.0), 10);
         Assert.Equal(0.0, Math.Asin(0.0));
-        AssertSimilar(-1.5707963267949, Math.Asin(-1.0));
+        Assert.Equal(-1.5707963267949, Math.Asin(-1.0), 10);
         Assert.Equal(double.NaN, Math.Asin(double.NaN));
         Assert.Equal(double.NaN, Math.Asin(double.PositiveInfinity));
         Assert.Equal(double.NaN, Math.Asin(double.NegativeInfinity));
@@ -97,28 +97,28 @@ public static class MathTests
     [Fact]
     public static void Atan()
     {
-        AssertSimilar(0.785398163397448, Math.Atan(1.0));
+        Assert.Equal(0.785398163397448, Math.Atan(1.0), 10);
         Assert.Equal(0.0, Math.Atan(0.0));
-        AssertSimilar(-0.785398163397448, Math.Atan(-1.0));
+        Assert.Equal(-0.785398163397448, Math.Atan(-1.0), 10);
         Assert.Equal(double.NaN, Math.Atan(double.NaN));
-        AssertSimilar(1.5707963267949, Math.Atan(double.PositiveInfinity));
-        AssertSimilar(-1.5707963267949, Math.Atan(double.NegativeInfinity));
+        Assert.Equal(1.5707963267949, Math.Atan(double.PositiveInfinity), 4);
+        Assert.Equal(-1.5707963267949, Math.Atan(double.NegativeInfinity), 4);
     }
 
     [Fact]
     public static void Atan2()
     {
         Assert.Equal(0.0, Math.Atan2(0.0, 0.0));
-        AssertSimilar(1.5707963267949, Math.Atan2(1.0, 0.0));
-        AssertSimilar(0.588002603547568, Math.Atan2(2.0, 3.0));
+        Assert.Equal(1.5707963267949, Math.Atan2(1.0, 0.0), 10);
+        Assert.Equal(0.588002603547568, Math.Atan2(2.0, 3.0), 10);
         Assert.Equal(0.0, Math.Atan2(0.0, 3.0));
-        AssertSimilar(-0.588002603547568, Math.Atan2(-2.0, 3.0));
+        Assert.Equal(-0.588002603547568, Math.Atan2(-2.0, 3.0), 10);
         Assert.Equal(double.NaN, Math.Atan2(double.NaN, 1.0));
         Assert.Equal(double.NaN, Math.Atan2(1.0, double.NaN));
-        AssertSimilar(1.5707963267949, Math.Atan2(double.PositiveInfinity, 1.0));
-        AssertSimilar(-1.5707963267949, Math.Atan2(double.NegativeInfinity, 1.0));
+        Assert.Equal(1.5707963267949, Math.Atan2(double.PositiveInfinity, 1.0), 10);
+        Assert.Equal(-1.5707963267949, Math.Atan2(double.NegativeInfinity, 1.0), 10);
         Assert.Equal(0.0, Math.Atan2(1.0, double.PositiveInfinity));
-        AssertSimilar(3.14159265358979, Math.Atan2(1.0, double.NegativeInfinity));
+        Assert.Equal(3.14159265358979, Math.Atan2(1.0, double.NegativeInfinity), 10);
     }
 
     [Fact]
@@ -196,8 +196,8 @@ public static class MathTests
     [Fact]
     public static void Round_Double_Digits()
     {
-        AssertSimilar(3.422, Math.Round(3.42156, 3, MidpointRounding.AwayFromZero));
-        AssertSimilar(-3.422, Math.Round(-3.42156, 3, MidpointRounding.AwayFromZero));
+        Assert.Equal(3.422, Math.Round(3.42156, 3, MidpointRounding.AwayFromZero), 10);
+        Assert.Equal(-3.422, Math.Round(-3.42156, 3, MidpointRounding.AwayFromZero), 10);
         Assert.Equal(0.0, Math.Round(0.0, 3, MidpointRounding.AwayFromZero));
         Assert.Equal(double.NaN, Math.Round(double.NaN, 3, MidpointRounding.AwayFromZero));
         Assert.Equal(double.PositiveInfinity, Math.Round(double.PositiveInfinity, 3, MidpointRounding.AwayFromZero));
@@ -207,7 +207,7 @@ public static class MathTests
     [Fact]
     public static void Sqrt()
     {
-        AssertSimilar(1.73205080756888, Math.Sqrt(3.0));
+        Assert.Equal(1.73205080756888, Math.Sqrt(3.0), 10);
         Assert.Equal(0.0, Math.Sqrt(0.0));
         Assert.Equal(double.NaN, Math.Sqrt(-3.0));
         Assert.Equal(double.NaN, Math.Sqrt(double.NaN));
@@ -218,7 +218,7 @@ public static class MathTests
     [Fact]
     public static void Log()
     {
-        AssertSimilar(1.09861228866811, Math.Log(3.0));
+        Assert.Equal(1.09861228866811, Math.Log(3.0), 10);
         Assert.Equal(double.NegativeInfinity, Math.Log(0.0));
         Assert.Equal(double.NaN, Math.Log(-3.0));
         Assert.Equal(double.NaN, Math.Log(double.NaN));
@@ -230,7 +230,7 @@ public static class MathTests
     public static void LogWithBase()
     {
         Assert.Equal(1.0, Math.Log(3.0, 3.0));
-        AssertSimilar(2.40217350273, Math.Log(14, 3.0));
+        Assert.Equal(2.40217350273, Math.Log(14, 3.0), 10);
         Assert.Equal(double.NegativeInfinity, Math.Log(0.0, 3.0));
         Assert.Equal(double.NaN, Math.Log(-3.0, 3.0));
         Assert.Equal(double.NaN, Math.Log(double.NaN, 3.0));
@@ -241,7 +241,7 @@ public static class MathTests
     [Fact]
     public static void Log10()
     {
-        AssertSimilar(0.477121254719662, Math.Log10(3.0));
+        Assert.Equal(0.477121254719662, Math.Log10(3.0), 10);
         Assert.Equal(double.NegativeInfinity, Math.Log10(0.0));
         Assert.Equal(double.NaN, Math.Log10(-3.0));
         Assert.Equal(double.NaN, Math.Log10(double.NaN));
@@ -340,9 +340,9 @@ public static class MathTests
     [Fact]
     public static void Exp()
     {
-        AssertSimilar(20.0855369231877, Math.Exp(3.0));
+        Assert.Equal(20.0855369231877, Math.Exp(3.0), 10);
         Assert.Equal(1.0, Math.Exp(0.0));
-        AssertSimilar(0.0497870683678639, Math.Exp(-3.0));
+        Assert.Equal(0.0497870683678639, Math.Exp(-3.0), 10);
         Assert.Equal(double.NaN, Math.Exp(double.NaN));
         Assert.Equal(double.PositiveInfinity, Math.Exp(double.PositiveInfinity));
         Assert.Equal(0.0, Math.Exp(double.NegativeInfinity));
@@ -351,16 +351,16 @@ public static class MathTests
     [Fact]
     public static void IEEERemainder()
     {
-        AssertSimilar(-1.0, Math.IEEERemainder(3, 2));
-        AssertSimilar(0.0, Math.IEEERemainder(4, 2));
-        AssertSimilar(1.0, Math.IEEERemainder(10, 3));
-        AssertSimilar(-1.0, Math.IEEERemainder(11, 3));
-        AssertSimilar(-2.0, Math.IEEERemainder(28, 5));
-        AssertSimilar(1.8, Math.IEEERemainder(17.8, 4));
-        AssertSimilar(1.4, Math.IEEERemainder(17.8, 4.1));
-        AssertSimilar(0.0999999999999979, Math.IEEERemainder(-16.3, 4.1));
-        AssertSimilar(1.4, Math.IEEERemainder(17.8, -4.1));
-        AssertSimilar(-1.4, Math.IEEERemainder(-17.8, -4.1));
+        Assert.Equal(-1.0, Math.IEEERemainder(3, 2));
+        Assert.Equal(0.0, Math.IEEERemainder(4, 2));
+        Assert.Equal(1.0, Math.IEEERemainder(10, 3));
+        Assert.Equal(-1.0, Math.IEEERemainder(11, 3));
+        Assert.Equal(-2.0, Math.IEEERemainder(28, 5));
+        Assert.Equal(1.8, Math.IEEERemainder(17.8, 4), 10);
+        Assert.Equal(1.4, Math.IEEERemainder(17.8, 4.1), 10);
+        Assert.Equal(0.0999999999999979, Math.IEEERemainder(-16.3, 4.1), 10);
+        Assert.Equal(1.4, Math.IEEERemainder(17.8, -4.1), 10);
+        Assert.Equal(-1.4, Math.IEEERemainder(-17.8, -4.1), 10);
     }
 
     [Fact]
@@ -608,30 +608,5 @@ public static class MathTests
         Assert.Equal(0.0, Math.Truncate(0.12345));
         Assert.Equal(3.0, Math.Truncate(3.14159));
         Assert.Equal(-3.0, Math.Truncate(-3.14159));
-    }
-
-    private static void AssertSimilar(double expected, double actual)
-    {
-        if (expected == actual)
-            return;
-
-        if (double.IsNaN(expected) && double.IsNaN(actual))
-            return;
-
-        double delta = actual - expected;
-        if (delta < 0.0)
-            delta = -delta;
-
-        if (expected == 0.0 && delta < 0.00000001)
-            return;
-
-        // Assert that actual is within 0.01% of expected
-        double dividend = expected;
-        if (dividend < 0)
-            dividend = -dividend;
-        if (delta / dividend < 0.0001)
-            return;
-
-        Assert.True(false, string.Format("Doubles not equal: Expected [{0}] != Actual [{1}]", expected, actual));
     }
 }

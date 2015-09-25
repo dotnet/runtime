@@ -139,17 +139,7 @@ namespace Tools
                 op = operators.Dequeue();
             }
 
-            try
-            {
-                ret = new BigInteger(bytes.ToArray());
-            }
-            catch (IndexOutOfRangeException)
-            {
-                Assert.True(false, Print(bytes.ToArray()));
-                throw;
-            }
-
-            return ret;
+            return new BigInteger(bytes.ToArray());
         }
 
         private BigInteger DoUnaryOperatorSN(BigInteger num1, string op)
@@ -181,10 +171,8 @@ namespace Tools
                 case "u*":
                     return num1 * num1;
                 default:
-                    Assert.True(false, String.Format("Invalid operation found: {0}", op));
-                    break;
+                    throw new ArgumentException(String.Format("Invalid operation found: {0}", op));
             }
-            return new BigInteger();
         }
 
         private BigInteger DoBinaryOperatorSN(BigInteger num1, BigInteger num2, string op)
@@ -238,10 +226,8 @@ namespace Tools
                 case "bAdd":
                     return BigInteger.Add(num1, num2);
                 default:
-                    Assert.True(false, String.Format("Invalid operation found: {0}", op));
-                    break;
+                    throw new ArgumentException(String.Format("Invalid operation found: {0}", op));
             }
-            return new BigInteger();
         }
 
         private BigInteger DoTertanaryOperatorSN(BigInteger num1, BigInteger num2, BigInteger num3, string op)
@@ -251,10 +237,8 @@ namespace Tools
                 case "tModPow":
                     return BigInteger.ModPow(num1, num2, num3);
                 default:
-                    Assert.True(false, String.Format("Invalid operation found: {0}", op));
-                    break;
+                    throw new ArgumentException(String.Format("Invalid operation found: {0}", op));
             }
-            return new BigInteger();
         }
         
         private void SetSNOutCheck(BigInteger value)

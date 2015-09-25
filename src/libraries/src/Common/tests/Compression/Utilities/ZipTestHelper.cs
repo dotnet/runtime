@@ -113,10 +113,8 @@ namespace System.IO.Compression.Tests
                 ac = ast.Read(ad, 0, 4096);
                 bc = bst.Read(bd, 0, 4096);
 
-                if (ac != bc)
-                    Assert.True(false, "Stream sizes not equal (or error reading): " + ast.ToString() + ": " + ac + ", " + bst.ToString() + ": " + bc);
-                if (!ArraysEqual<Byte>(ad, bd, ac))
-                    Assert.True(false, "Stream contents not equal: " + ast.ToString() + ", " + bst.ToString());
+                Assert.Equal(ac, bc);
+                Assert.True(ArraysEqual<Byte>(ad, bd, ac), "Stream contents not equal: " + ast.ToString() + ", " + bst.ToString());
 
                 blocksRead++;
             } while (ac == 4096);
@@ -204,8 +202,10 @@ namespace System.IO.Compression.Tests
                                 f => f.IsFile &&
                                      (f.FullName.StartsWith(entryName, StringComparison.OrdinalIgnoreCase) ||
                                       f.FullName.StartsWith(entryNameOtherSlash, StringComparison.OrdinalIgnoreCase)));
-                            if ((!dontRequireExplicit || isEmtpy) && !entryName.Contains("emptydir"))
-                                Assert.True(false, String.Format("Folder Entry {0} in directory but not archive: {1}", entryName, directory));
+                            if (!dontRequireExplicit || isEmtpy)
+                            {
+                                Assert.Contains("emptydir", entryName);
+                            }
 
                             if ((dontRequireExplicit && !isEmtpy) || entryName.Contains("emptydir"))
                                 count--; //discount this entry

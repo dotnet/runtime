@@ -72,10 +72,6 @@ namespace System.Collections.ArrayListTests
             alst3 = ArrayList.ReadOnly(alst2);
             Assert.True(alst2.IsReadOnly);
             Assert.True(alst3.IsReadOnly);
-            if (!alst3.IsReadOnly)
-            {
-                Assert.False(true, "Error, Expected value not returned, " + alst3.IsReadOnly);
-            }
 
             //[]we still cant access the 2nd one :)
             //we cant access remove or add to the readonly list

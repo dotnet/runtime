@@ -5,6 +5,7 @@ using Xunit;
 using System;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Linq;
 
 #pragma warning disable 0414
 #pragma warning disable 0067
@@ -71,20 +72,8 @@ namespace System.Reflection.Tests
             String str = typeof(Object).Name;
 
             TypeInfo ti = t.GetTypeInfo();
-            IEnumerator<PropertyInfo> allprops = ti.DeclaredProperties.GetEnumerator();
-            bool found = false;
 
-            while (allprops.MoveNext())
-            {
-                if (allprops.Current.Name.Equals(name, StringComparison.CurrentCultureIgnoreCase))
-                {
-                    found = true;
-                    break;
-                }
-            }
-
-            if (!found)
-                Assert.False(true, String.Format("Property {0} not found in Type {1}", name, t.Name));
+            Assert.True(ti.DeclaredProperties.Any(item => item.Name.Equals(name, StringComparison.CurrentCultureIgnoreCase)));
         }
     } //end class
 

@@ -158,7 +158,7 @@ namespace System.Composition.UnitTests
         public void WhenABoundaryIsPresentBoundedPartsCannotBeCreatedOutsideIt()
         {
             var container = CreateContainer(typeof(DataConsistencyBoundaryProvider), typeof(SharedBoundedByDC));
-            var x = AssertX.Throws<CompositionFailedException>(() => container.GetExport<SharedBoundedByDC>());
+            var x = Assert.Throws<CompositionFailedException>(() => container.GetExport<SharedBoundedByDC>());
         }
 
         [Fact]

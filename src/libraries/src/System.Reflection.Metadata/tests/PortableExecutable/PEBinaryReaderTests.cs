@@ -30,8 +30,8 @@ namespace System.Reflection.Metadata.Tests.PortableExecutable
             var reader = new PEBinaryReader(stream, headerBytes.Length);
             var text = reader.ReadNullPaddedUTF8(PEFileConstants.SizeofSectionName);
 
-            AssertEx.AreEqual(3, text.Length, "PEBinaryReader.ReadNullPaddedUTF8 did not truncate null padding");
-            AssertEx.AreEqual("PPP", text);
+            Assert.Equal(3, text.Length);
+            Assert.Equal("PPP", text);
         }
 
         [Fact]
@@ -44,7 +44,7 @@ namespace System.Reflection.Metadata.Tests.PortableExecutable
             var reader = new PEBinaryReader(stream, headerBytes.Length);
             var text = reader.ReadNullPaddedUTF8(PEFileConstants.SizeofSectionName);
 
-            AssertEx.AreEqual(".abcdefg", text, "PEBinaryReader.ReadNullPaddedUTF8 erroneously truncated a section name");
+            Assert.Equal(".abcdefg", text);
         }
     }
 }
