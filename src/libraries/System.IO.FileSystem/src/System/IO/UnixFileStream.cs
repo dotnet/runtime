@@ -418,10 +418,7 @@ namespace System.IO
                         // Since we still have the file open, this will end up deleting
                         // it (assuming we're the only link to it) once it's closed, but the
                         // name will be removed immediatly.
-                        int result = Interop.Sys.Unlink(_path);
-                        Debug.Assert(result == 0,
-                            string.Format("unlink on {0} failed with result {1} and error {2}",
-                                _path, result, Interop.Sys.GetLastErrorInfo()));
+                        Interop.Sys.Unlink(_path); // ignore errors; it's valid that the path may no longer exist
                     }
                 }
             }
