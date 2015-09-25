@@ -284,8 +284,8 @@ namespace System.Net.Security
 
                     int chunkBytes = Math.Min(count, _SslState.MaxDataSize);
                     int encryptedBytes;
-                    Interop.SecurityStatus errorCode = _SslState.EncryptData(buffer, offset, chunkBytes, ref outBuffer, out encryptedBytes);
-                    if (errorCode != Interop.SecurityStatus.OK)
+                    SecurityStatus errorCode = _SslState.EncryptData(buffer, offset, chunkBytes, ref outBuffer, out encryptedBytes);
+                    if (errorCode != SecurityStatus.OK)
                     {
                         ProtocolToken message = new ProtocolToken(null, errorCode);
                         throw new IOException(SR.net_io_encrypt, message.GetException());
@@ -531,9 +531,9 @@ namespace System.Net.Security
             // Decrypt into internal buffer, change "readBytes" to count now _Decrypted Bytes_.
             int data_offset = 0;
 
-            Interop.SecurityStatus errorCode = _SslState.DecryptData(InternalBuffer, ref data_offset, ref readBytes);
+            SecurityStatus errorCode = _SslState.DecryptData(InternalBuffer, ref data_offset, ref readBytes);
 
-            if (errorCode != Interop.SecurityStatus.OK)
+            if (errorCode != SecurityStatus.OK)
             {
                 byte[] extraBuffer = null;
                 if (readBytes != 0)
@@ -581,7 +581,7 @@ namespace System.Net.Security
         //
         // Only processing SEC_I_RENEGOTIATE.
         //
-        private int ProcessReadErrorCode(Interop.SecurityStatus errorCode, byte[] buffer, int offset, int count, AsyncProtocolRequest asyncRequest, byte[] extraBuffer)
+        private int ProcessReadErrorCode(SecurityStatus errorCode, byte[] buffer, int offset, int count, AsyncProtocolRequest asyncRequest, byte[] extraBuffer)
         {
             // ERROR - examine what kind
             ProtocolToken message = new ProtocolToken(null, errorCode);
