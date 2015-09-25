@@ -36,7 +36,7 @@ namespace System.Net.Security
 
         private bool _handshakeCompleted;
         private bool _certValidationFailed;
-        private Interop.SecurityStatus _securityStatus;
+        private SecurityStatus _securityStatus;
         private Exception _exception;
 
         private enum CachedSessionStatus : byte
@@ -117,25 +117,17 @@ namespace System.Net.Security
             if (targetHost == null)
             {
                 throw new ArgumentNullException("targetHost");
-            }
-            
-            if (isServer)
-            {
-                enabledSslProtocols &= (SslProtocols)Interop.SChannel.ServerProtocolMask;
-                if (serverCertificate == null)
-                {
-                    throw new ArgumentNullException("serverCertificate");
-                }
-            }
-            else
-            {
-                enabledSslProtocols &= (SslProtocols)Interop.SChannel.ClientProtocolMask;
-            }
+            }            
 
             if ((int)enabledSslProtocols == 0)
             {
                 throw new ArgumentException(SR.Format(SR.net_invalid_enum, "SslProtocolType"), "sslProtocolType");
             }
+         
+            if (isServer && serverCertificate == null)
+            {  
+                throw new ArgumentNullException("serverCertificate");
+            }         
 
             if (clientCertificates == null)
             {
@@ -150,8 +142,8 @@ namespace System.Net.Security
             _exception = null;
             try
             {
-                _context = new SecureChannel(targetHost, isServer, (int)enabledSslProtocols, serverCertificate, clientCertificates, remoteCertRequired,
-                                                               checkCertName, checkCertRevocationStatus, _encryptionPolicy, _certSelectionDelegate);
+                _context = new SecureChannel(targetHost, isServer, enabledSslProtocols, serverCertificate, clientCertificates, remoteCertRequired,
+                                                                 checkCertName, checkCertRevocationStatus, _encryptionPolicy, _certSelectionDelegate);
             }
             catch (Win32Exception e)
             {
@@ -235,7 +227,7 @@ namespace System.Net.Security
             }
         }
 
-        internal Interop.SecurityStatus LastSecurityStatus
+        internal SecurityStatus LastSecurityStatus
         {
             get { return _securityStatus; }
         }
@@ -495,19 +487,19 @@ namespace System.Net.Security
             }
         }
 
-        internal Interop.SecurityStatus EncryptData(byte[] buffer, int offset, int count, ref byte[] outBuffer, out int outSize)
+        internal SecurityStatus EncryptData(byte[] buffer, int offset, int count, ref byte[] outBuffer, out int outSize)
         {
             CheckThrow(true);
             return Context.Encrypt(buffer, offset, count, ref outBuffer, out outSize);
         }
 
-        internal Interop.SecurityStatus DecryptData(byte[] buffer, ref int offset, ref int count)
+        internal SecurityStatus DecryptData(byte[] buffer, ref int offset, ref int count)
         {
             CheckThrow(true);
             return PrivateDecryptData(buffer, ref offset, ref count);
         }
 
-        private Interop.SecurityStatus PrivateDecryptData(byte[] buffer, ref int offset, ref int count)
+        private SecurityStatus PrivateDecryptData(byte[] buffer, ref int offset, ref int count)
         {
             return Context.Decrypt(buffer, ref offset, ref count);
         }
@@ -932,9 +924,9 @@ namespace System.Net.Security
             if (_pendingReHandshake)
             {
                 int offset = 0;
-                Interop.SecurityStatus status = PrivateDecryptData(buffer, ref offset, ref count);
+                SecurityStatus status = PrivateDecryptData(buffer, ref offset, ref count);
 
-                if (status == Interop.SecurityStatus.OK)
+                if (status == SecurityStatus.OK)
                 {
                     Exception e = EnqueueOldKeyDecryptedData(buffer, offset, count);
                     if (e != null)
@@ -947,7 +939,7 @@ namespace System.Net.Security
                     StartReceiveBlob(buffer, asyncRequest);
                     return;
                 }
-                else if (status != Interop.SecurityStatus.Renegotiate)
+                else if (status != SecurityStatus.Renegotiate)
                 {
                     // Fail re-handshake.
                     ProtocolToken message = new ProtocolToken(null, status);

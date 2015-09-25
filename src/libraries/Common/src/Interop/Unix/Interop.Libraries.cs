@@ -6,13 +6,15 @@ internal static partial class Interop
     private static partial class Libraries
     {
         internal const string Libc = "libc";                   // C library
-        internal const string LibCoreClr= "libcoreclr";        // CoreCLR runtime
+        internal const string LibCoreClr = "libcoreclr";        // CoreCLR runtime
         internal const string LibCrypto = "libcrypto";         // OpenSSL crypto library
+        internal const string LibSsl = "libssl";               // OpenSSL library
         internal const string Zlib = "libz";                   // zlib compression library
 
         // Shims
         internal const string SystemNative = "System.Native";
-        internal const string HttpNative   = "System.Net.Http.Native";
+        internal const string HttpNative = "System.Net.Http.Native";
+        internal const string SslNative = "System.Net.Security.Native";
         internal const string CryptoNative = "System.Security.Cryptography.Native";
         internal const string GlobalizationNative = "System.Globalization.Native";
     }

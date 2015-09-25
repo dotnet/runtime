@@ -111,6 +111,9 @@ internal static partial class Interop
             int second,
             [MarshalAs(UnmanagedType.Bool)] bool isDst);
 
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern int CheckX509Hostname(SafeX509Handle x509, string hostname, int cchHostname);
+
         internal static byte[] GetAsn1StringBytes(IntPtr asn1)
         {
             return GetDynamicBuffer((ptr, buf, i) => GetAsn1StringBytes(ptr, buf, i), asn1);
