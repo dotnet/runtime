@@ -232,12 +232,12 @@ ULONG SafeAddRefPreemp(IUnknown* pUnk);
 
 //--------------------------------------------------------------------------------
 // Release helper, enables and disables GC during call-outs
-HRESULT SafeVariantChangeType(VARIANT* pVarRes, VARIANT* pVarSrc,
+HRESULT SafeVariantChangeType(_Inout_ VARIANT* pVarRes, _In_ VARIANT* pVarSrc,
                               unsigned short wFlags, VARTYPE vt);
 
 //--------------------------------------------------------------------------------
 // Release helper, enables and disables GC during call-outs
-HRESULT SafeVariantChangeTypeEx(VARIANT* pVarRes, VARIANT* pVarSrc,
+HRESULT SafeVariantChangeTypeEx(_Inout_ VARIANT* pVarRes, _In_ VARIANT* pVarSrc,
                           LCID lcid, unsigned short wFlags, VARTYPE vt);
 
 //--------------------------------------------------------------------------------

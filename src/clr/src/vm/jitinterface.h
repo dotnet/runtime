@@ -1084,7 +1084,7 @@ public:
         );
 
     void freeStringConfigValue(
-        wchar_t *value
+        __in_z wchar_t *value
         );
 
     CEEInfo(MethodDesc * fd = NULL, bool fVerifyOnly = false) :
