@@ -143,13 +143,14 @@ namespace DownLevel
     // User /system defaults
     // TODO: I don't think we need all of these.
     int GetSystemDefaultLocaleName(__out_ecount(cchLocaleName) LPWSTR lpLocaleName, __in int cchLocaleName);
-    DWORD GetUserPreferredUILanguages (__in DWORD dwFlags, __out PULONG pulNumLanguages, __out_ecount_opt(*pcchLanguagesBuffer) PWSTR pwszLanguagesBuffer, __in PULONG pcchLanguagesBuffer);
+    __success(return == 1) DWORD GetUserPreferredUILanguages (__in DWORD dwFlags, __out PULONG pulNumLanguages, __out_ecount_opt(*pcchLanguagesBuffer) PWSTR pwszLanguagesBuffer, __in PULONG pcchLanguagesBuffer);
     int GetUserDefaultLocaleName(__out_ecount(cchLocaleName) LPWSTR lpLocaleName, __in int cchLocaleName);
 
     // Locale and calendar information
     int GetLocaleInfoEx (__in LPCWSTR lpLocaleName, __in LCTYPE LCType, __out_ecount_opt(cchData) LPWSTR lpLCData, __in int cchData);    
     int GetDateFormatEx(__in LPCWSTR lpLocaleName, __in DWORD dwFlags, __in_opt CONST SYSTEMTIME* lpDate, __in_opt LPCWSTR lpFormat, 
                              __out_ecount(cchDate) LPWSTR lpDateStr, __in int cchDate, __in_opt LPCWSTR lpCalendar);    
+    __success(return != 0)
     int GetCalendarInfoEx(__in LPCWSTR lpLocaleName,
                           __in CALID Calendar,
                           __in_opt LPCWSTR pReserved,
@@ -160,12 +161,13 @@ namespace DownLevel
 
     // Compareinfo type information
     int TurkishCompareStringIgnoreCase(LCID lcid, DWORD dwCmpFlags, LPCWSTR lpString1, int cchCount1, LPCWSTR lpString2, int cchCount2);
-    
-    int CompareStringEx(LPCWSTR lpLocaleName, DWORD dwCmpFlags, LPCWSTR lpString1, int cchCount1, LPCWSTR lpString2,
-                                                int cchCount2, LPNLSVERSIONINFO lpVersionInformation,  LPVOID lpReserved,  LPARAM lParam );
 
-    int CompareStringOrdinal(LPCWSTR lpString1, int cchCount1, LPCWSTR lpString2, int cchCount2, BOOL bIgnoreCase);
+    int CompareStringEx(__in LPCWSTR lpLocaleName, __in DWORD dwCmpFlags, __in_ecount(cchCount1) LPCWSTR lpString1, __in int cchCount1, __in_ecount(cchCount2) LPCWSTR lpString2,
+                                                __in int cchCount2, __in_opt LPNLSVERSIONINFO lpVersionInformation, __in_opt LPVOID lpReserved, __in_opt LPARAM lParam );
 
+    int CompareStringOrdinal(__in_ecount(cchCount1) LPCWSTR string1, __in int cchCount1, __in_ecount(cchCount2) LPCWSTR string2, __in int cchCount2, __in BOOL bIgnoreCase);
+
+    __success(return != 0)
     int LCMapStringEx(__in LPCWSTR lpLocaleName, 
                       __in DWORD dwMapFlags, 
                       __in_ecount(cchSrc) LPCWSTR lpSrcStr, 
@@ -176,6 +178,7 @@ namespace DownLevel
                       __in_opt LPVOID lpReserved, 
                       __in_opt LPARAM lParam);
 
+    __success(return != -1)
     int FindNLSStringEx(__in LPCWSTR lpLocaleName,
                         __in DWORD dwFindNLSStringFlags,
                         __in_ecount(cchSource) LPCWSTR lpStringSource,
@@ -200,6 +203,7 @@ namespace DownLevel
     // This is where we fudge data the OS doesn't know (even on Vista)
     namespace UplevelFallback
     {
+        __success(return != 0)
         int LCMapStringEx(__in LPCWSTR lpLocaleName, 
                           __in DWORD dwMapFlags, 
                           __in_ecount(cchSrc) LPCWSTR lpSrcStr, 
@@ -225,6 +229,7 @@ namespace DownLevel
     
     int ResolveLocaleName(__in LPCWSTR lpNameToResolve, __in_ecount_opt(cchLocaleName) LPWSTR lpLocaleName, __in int cchLocaleName);    
 
+    __success(return)
     BOOL GetThreadPreferredUILanguages( __in DWORD dwFlags,
                                         __out PULONG pulNumLanguages,
                                         __out_ecount_opt(*pcchLanguagesBuffer) PWSTR pwszLanguagesBuffer,

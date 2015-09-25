@@ -92,7 +92,7 @@ namespace clr
             // result is placed in wzBuffer and the number of chars written is placed in pcchBuffer on
             // success; otherwise an error HRESULT is returned.
             static HRESULT
-            Combine(LPCWSTR wzPathLeft, LPCWSTR wzPathRight, __out DWORD *pcchBuffer, __out_ecount(*pcchBuffer) LPWSTR wzBuffer)
+            Combine(LPCWSTR wzPathLeft, LPCWSTR wzPathRight, __in DWORD *pcchBuffer, __out_ecount(*pcchBuffer) LPWSTR wzBuffer)
             {
                 STATIC_CONTRACT_NOTHROW;
 

@@ -3068,7 +3068,7 @@ BOOL Module::IsRuntimeWrapExceptions()
         if (hr == S_OK)
         {
             CustomAttributeParser ca(pVal, cbVal);
-            CaNamedArg namedArgs[1];
+            CaNamedArg namedArgs[1] = {0};
             
             // First, the void constructor:
             IfFailGo(ParseKnownCaArgs(ca, NULL, 0));

@@ -277,8 +277,8 @@ private:
             }
 #endif // !FEATURE_CORESYSTEM
 
-            WCHAR objectName[MAX_LONGPATH];
-            WCHAR objectNamePrefix[MAX_LONGPATH];
+            WCHAR objectName[MAX_LONGPATH] = {0};
+            WCHAR objectNamePrefix[MAX_LONGPATH] = {0};
             GetObjectNamePrefix(processID, fromRuntime, objectNamePrefix);
             // if there is a non-empty name prefix, append a '\'
             if (objectNamePrefix[0] != '\0')

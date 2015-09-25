@@ -209,6 +209,7 @@ namespace SortVersioning
     }
 
     // Attempts to load a Sort DLL.  If this fails, the values of the __out parameters are unchanged.
+    __success(return)
     BOOL LoadSortDllAndPublish(
         __in  LPCWSTR sDllName, 
         __in  DWORD dwVersion, 
