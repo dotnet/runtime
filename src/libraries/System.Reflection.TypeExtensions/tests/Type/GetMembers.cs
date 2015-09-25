@@ -2,10 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Xunit;
-using System;
-using System.Reflection;
 
-namespace System.Reflection.Compatibility.UnitTests.TypeTests
+namespace System.Reflection.Tests
 {
     public class GetMembersTests
     {
@@ -86,48 +84,48 @@ namespace System.Reflection.Compatibility.UnitTests.TypeTests
         public void Test1()
         {
             BindingFlags allBindingFlags = BindingFlags.Public | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
-            TryGetMembers("System.Reflection.Compatibility.UnitTests.TypeTests.GenericClassUsingNestedInterfaces`2[System.String,System.Int32]", allBindingFlags, new string[] { "System.String ReturnAndSetFieldZero(System.String)", "Void SetFieldOne(Int32)", "Void SetFieldTwo(System.String)", "Int32 ReturnAndSetFieldThree(Int32)", "Void .ctor(System.String, System.String, Int32, Int32)", "System.String FieldZero", "System.String FieldOne", "Int32 FieldTwo", "Int32 FieldThree" });
+            TryGetMembers("System.Reflection.Tests.GenericClassUsingNestedInterfaces`2[System.String,System.Int32]", allBindingFlags, new string[] { "System.String ReturnAndSetFieldZero(System.String)", "Void SetFieldOne(Int32)", "Void SetFieldTwo(System.String)", "Int32 ReturnAndSetFieldThree(Int32)", "Void .ctor(System.String, System.String, Int32, Int32)", "System.String FieldZero", "System.String FieldOne", "Int32 FieldTwo", "Int32 FieldThree" });
         }
 
         [Fact]
         public void Test2()
         {
             BindingFlags allBindingFlags = BindingFlags.Public | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
-            TryGetMembers("System.Reflection.Compatibility.UnitTests.TypeTests.GenericClassWithInterface`1[System.Int32]", allBindingFlags, new string[] { "W GenericMethod[W](W)", "Int32 ReturnAndSetFieldZero(Int32)", "Void .ctor(Int32)", "Int32 field" });
+            TryGetMembers("System.Reflection.Tests.GenericClassWithInterface`1[System.Int32]", allBindingFlags, new string[] { "W GenericMethod[W](W)", "Int32 ReturnAndSetFieldZero(Int32)", "Void .ctor(Int32)", "Int32 field" });
         }
 
         [Fact]
         public void Test3()
         {
             BindingFlags allBindingFlags = BindingFlags.Public | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
-            TryGetMembers("System.Reflection.Compatibility.UnitTests.TypeTests.IGenericInterface`1", allBindingFlags, new string[] { "T ReturnAndSetFieldZero(T)" });
+            TryGetMembers("System.Reflection.Tests.IGenericInterface`1", allBindingFlags, new string[] { "T ReturnAndSetFieldZero(T)" });
         }
 
         [Fact]
         public void Test4()
         {
             BindingFlags allBindingFlags = BindingFlags.Public | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
-            TryGetMembers("System.Reflection.Compatibility.UnitTests.TypeTests.GenericArrayWrapperClass`1", allBindingFlags, new string[] { "Int32 get_myProperty()", "Void set_myProperty(Int32)", "T get_Item(Int32)", "Void set_Item(Int32, T)", "Void .ctor(T[])", "Int32 myProperty", "T Item [Int32]", "T[] _field", "Int32 _field1" });
+            TryGetMembers("System.Reflection.Tests.GenericArrayWrapperClass`1", allBindingFlags, new string[] { "Int32 get_myProperty()", "Void set_myProperty(Int32)", "T get_Item(Int32)", "Void set_Item(Int32, T)", "Void .ctor(T[])", "Int32 myProperty", "T Item [Int32]", "T[] _field", "Int32 _field1" });
         }
 
         [Fact]
         public void Test5()
         {
             BindingFlags allBindingFlags = BindingFlags.Public | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
-            TryGetMembers("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", allBindingFlags, new string[] { "Void add_WeightChanged(System.EventHandler)", "Void remove_WeightChanged(System.EventHandler)", "System.Object[] get_StuffConsumed()", "Void Eat(System.Object)", "System.Object[] Puke(Int32)", "Void .ctor()", "System.Object[] StuffConsumed", "System.EventHandler WeightChanged", "System.Collections.ArrayList _pStuffConsumed", "Void add_WeightStayedTheSame(System.EventHandler)", "Void remove_WeightStayedTheSame(System.EventHandler)", "System.EventHandler WeightStayedTheSame", "System.EventHandler WeightStayedTheSame", "System.EventHandler s_catDisappeared", "System.Collections.Generic.List`1[System.Object] _pStuffConsumed" });
+            TryGetMembers("System.Reflection.Tests.Cat`1[System.Int32]", allBindingFlags, new string[] { "Void add_WeightChanged(System.EventHandler)", "Void remove_WeightChanged(System.EventHandler)", "System.Object[] get_StuffConsumed()", "Void Eat(System.Object)", "System.Object[] Puke(Int32)", "Void .ctor()", "System.Object[] StuffConsumed", "System.EventHandler WeightChanged", "System.Collections.ArrayList _pStuffConsumed", "Void add_WeightStayedTheSame(System.EventHandler)", "Void remove_WeightStayedTheSame(System.EventHandler)", "System.EventHandler WeightStayedTheSame", "System.EventHandler WeightStayedTheSame", "System.EventHandler s_catDisappeared", "System.Collections.Generic.List`1[System.Object] _pStuffConsumed" });
         }
 
         [Fact]
         public void Test6()
         {
             BindingFlags allBindingFlags = BindingFlags.Public | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
-            TryGetMembers("System.Reflection.Compatibility.UnitTests.TypeTests.GenericArrayWrapperClass`1[System.String]", allBindingFlags, new string[] { "Int32 get_myProperty()", "Void set_myProperty(Int32)", "System.String get_Item(Int32)", "Void set_Item(Int32, System.String)", "Void .ctor(System.String[])", "Int32 myProperty", "System.String Item [Int32]", "System.String[] _field", "Int32 _field1" });
+            TryGetMembers("System.Reflection.Tests.GenericArrayWrapperClass`1[System.String]", allBindingFlags, new string[] { "Int32 get_myProperty()", "Void set_myProperty(Int32)", "System.String get_Item(Int32)", "Void set_Item(Int32, System.String)", "Void .ctor(System.String[])", "Int32 myProperty", "System.String Item [Int32]", "System.String[] _field", "Int32 _field1" });
         }
 
         [Fact]
         public void Test7()
         {
-            TryGetMembers("System.Reflection.Compatibility.UnitTests.TypeTests.GenericArrayWrapperClass`1[System.String]", new string[] { "Int32 get_myProperty()", "Void set_myProperty(Int32)", "System.String get_Item(Int32)", "Void set_Item(Int32, System.String)", "Void .ctor(System.String[])", "Int32 myProperty", "System.String Item [Int32]", "System.String ToString()", "Boolean Equals(System.Object)", "Int32 GetHashCode()", "System.Type GetType()" });
+            TryGetMembers("System.Reflection.Tests.GenericArrayWrapperClass`1[System.String]", new string[] { "Int32 get_myProperty()", "Void set_myProperty(Int32)", "System.String get_Item(Int32)", "Void set_Item(Int32, System.String)", "Void .ctor(System.String[])", "Int32 myProperty", "System.String Item [Int32]", "System.String ToString()", "Boolean Equals(System.Object)", "Int32 GetHashCode()", "System.Type GetType()" });
         }
     }
 }

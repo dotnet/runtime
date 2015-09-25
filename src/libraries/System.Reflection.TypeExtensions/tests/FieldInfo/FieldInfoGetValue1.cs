@@ -1,13 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Security;
-using System;
-using System.Reflection;
 using Xunit;
-using System.Reflection.Compatibility.UnitTests;
 
-namespace System.Reflection.Compatibility.UnitTests.FieldInfoTests
+namespace System.Reflection.Tests
 {
     // System.Reflection.FieldInfo.GetValue(System.Object)
     public class FieldInfoGetValue1

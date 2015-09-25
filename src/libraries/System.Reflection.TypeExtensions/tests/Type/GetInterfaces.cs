@@ -2,10 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Xunit;
-using System;
-using System.Reflection;
 
-namespace System.Reflection.Compatibility.UnitTests.TypeTests
+namespace System.Reflection.Tests
 {
     public class GetInterfacesTest
     {
@@ -55,55 +53,55 @@ namespace System.Reflection.Compatibility.UnitTests.TypeTests
         [Fact]
         public void Test1()
         {
-            TryGetInterfaces("System.Reflection.Compatibility.UnitTests.TypeTests.GenericClass`1[System.String]", new string[0]);
+            TryGetInterfaces("System.Reflection.Tests.GenericClass`1[System.String]", new string[0]);
         }
 
         [Fact]
         public void Test2()
         {
-            TryGetInterfaces("System.Reflection.Compatibility.UnitTests.TypeTests.IGenericInterface`1[System.String]", new string[0]);
+            TryGetInterfaces("System.Reflection.Tests.IGenericInterface`1[System.String]", new string[0]);
         }
 
         [Fact]
         public void Test3()
         {
-            TryGetInterfaces("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.String]", new string[] { "System.Reflection.Compatibility.UnitTests.TypeTests.IConsume" });
+            TryGetInterfaces("System.Reflection.Tests.Cat`1[System.String]", new string[] { "System.Reflection.Tests.IConsume" });
         }
 
         [Fact]
         public void Test4()
         {
-            TryGetInterfaces("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1", new string[] { "System.Reflection.Compatibility.UnitTests.TypeTests.IConsume" });
+            TryGetInterfaces("System.Reflection.Tests.Cat`1", new string[] { "System.Reflection.Tests.IConsume" });
         }
 
         [Fact]
         public void Test5()
         {
-            TryGetInterfaces("System.Reflection.Compatibility.UnitTests.TypeTests.PackOfCarnivores`1[[System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]]]", new string[0]);
+            TryGetInterfaces("System.Reflection.Tests.PackOfCarnivores`1[[System.Reflection.Tests.Cat`1[System.Int32]]]", new string[0]);
         }
 
         [Fact]
         public void Test6()
         {
-            TryGetInterfaces("System.Reflection.Compatibility.UnitTests.TypeTests.IGenericInterfaceInherits`2[System.Int32,System.String]", new string[] { "System.Reflection.Compatibility.UnitTests.TypeTests.IGenericInterface`1[System.Int32]", "System.Reflection.Compatibility.UnitTests.TypeTests.IGenericInterface2`2[System.String,System.Int32]" });
+            TryGetInterfaces("System.Reflection.Tests.IGenericInterfaceInherits`2[System.Int32,System.String]", new string[] { "System.Reflection.Tests.IGenericInterface`1[System.Int32]", "System.Reflection.Tests.IGenericInterface2`2[System.String,System.Int32]" });
         }
 
         [Fact]
         public void Test7()
         {
-            TryGetInterfaces("System.Reflection.Compatibility.UnitTests.TypeTests.GenericClassUsingNestedInterfaces`2[System.Int32,System.String]", new string[] { "System.Reflection.Compatibility.UnitTests.TypeTests.IGenericInterfaceInherits`2[System.Int32,System.String]", "System.Reflection.Compatibility.UnitTests.TypeTests.IGenericInterface`1[System.Int32]", "System.Reflection.Compatibility.UnitTests.TypeTests.IGenericInterface2`2[System.String,System.Int32]" });
+            TryGetInterfaces("System.Reflection.Tests.GenericClassUsingNestedInterfaces`2[System.Int32,System.String]", new string[] { "System.Reflection.Tests.IGenericInterfaceInherits`2[System.Int32,System.String]", "System.Reflection.Tests.IGenericInterface`1[System.Int32]", "System.Reflection.Tests.IGenericInterface2`2[System.String,System.Int32]" });
         }
 
         [Fact]
         public void Test8()
         {
-            TryGetInterfaces("System.Reflection.Compatibility.UnitTests.TypeTests.GenericClassWithInterface`1", new string[] { "System.Reflection.Compatibility.UnitTests.TypeTests.IGenericInterface`1[T]" });
+            TryGetInterfaces("System.Reflection.Tests.GenericClassWithInterface`1", new string[] { "System.Reflection.Tests.IGenericInterface`1[T]" });
         }
 
         [Fact]
         public void Test9()
         {
-            TryGetInterfaces("System.Reflection.Compatibility.UnitTests.TypeTests.NonGenericClassWithGenericInterface", new string[] { "System.Reflection.Compatibility.UnitTests.TypeTests.IGenericInterface`1[System.Int32]" });
+            TryGetInterfaces("System.Reflection.Tests.NonGenericClassWithGenericInterface", new string[] { "System.Reflection.Tests.IGenericInterface`1[System.Int32]" });
         }
     }
 }

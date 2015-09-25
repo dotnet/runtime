@@ -1,13 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
-using System.Reflection;
-using System.Reflection.Compatibility.UnitTests;
 using Xunit;
 
-namespace System.Reflection.Compatibility.UnitTests.PropertyInfoTests
+namespace System.Reflection.Tests
 {
     /// <summary>
     /// System.Reflection.PropertyInfo.GetAccessors(System.Boolean)
@@ -90,7 +86,7 @@ namespace System.Reflection.Compatibility.UnitTests.PropertyInfoTests
         [Fact]
         public void PosTest1()
         {
-            Type myType = Type.GetType("System.Reflection.Compatibility.UnitTests.PropertyInfoTests.MyProperty");
+            Type myType = Type.GetType("System.Reflection.Tests.MyProperty");
             PropertyInfo myPropertyInfo = myType.GetProperty("Property1", BindingFlags.Public | BindingFlags.Instance);
             MethodInfo[] myMethodInfos = myPropertyInfo.GetAccessors(false);
             Assert.Equal(2, myMethodInfos.Length);
@@ -102,7 +98,7 @@ namespace System.Reflection.Compatibility.UnitTests.PropertyInfoTests
         [Fact]
         public void PosTest2()
         {
-            Type myType = Type.GetType("System.Reflection.Compatibility.UnitTests.PropertyInfoTests.MyProperty");
+            Type myType = Type.GetType("System.Reflection.Tests.MyProperty");
             PropertyInfo myPropertyInfo = myType.GetProperty("Property1", BindingFlags.Public | BindingFlags.Instance);
             MethodInfo[] myMethodInfos = myPropertyInfo.GetAccessors(true);
             Assert.Equal(2, myMethodInfos.Length);
@@ -114,7 +110,7 @@ namespace System.Reflection.Compatibility.UnitTests.PropertyInfoTests
         [Fact]
         public void PosTest3()
         {
-            Type myType = Type.GetType("System.Reflection.Compatibility.UnitTests.PropertyInfoTests.MyProperty");
+            Type myType = Type.GetType("System.Reflection.Tests.MyProperty");
             PropertyInfo myPropertyInfo = myType.GetProperty("Property2", BindingFlags.NonPublic | BindingFlags.Instance);
             MethodInfo[] myMethodInfos = myPropertyInfo.GetAccessors(true);
             Assert.Equal(2, myMethodInfos.Length);
@@ -126,7 +122,7 @@ namespace System.Reflection.Compatibility.UnitTests.PropertyInfoTests
         [Fact]
         public void PosTest4()
         {
-            Type myType = Type.GetType("System.Reflection.Compatibility.UnitTests.PropertyInfoTests.MyProperty");
+            Type myType = Type.GetType("System.Reflection.Tests.MyProperty");
             PropertyInfo myPropertyInfo = myType.GetProperty("Property2", BindingFlags.NonPublic | BindingFlags.Instance);
             MethodInfo[] myMethodInfos = myPropertyInfo.GetAccessors(false);
             Assert.Equal(0, myMethodInfos.Length);
@@ -136,7 +132,7 @@ namespace System.Reflection.Compatibility.UnitTests.PropertyInfoTests
         [Fact]
         public void PosTest5()
         {
-            Type myType = Type.GetType("System.Reflection.Compatibility.UnitTests.PropertyInfoTests.MyProperty");
+            Type myType = Type.GetType("System.Reflection.Tests.MyProperty");
             PropertyInfo myPropertyInfo = myType.GetProperty("Property3", BindingFlags.Public | BindingFlags.Static);
             MethodInfo[] myMethodInfos = myPropertyInfo.GetAccessors(false);
             Assert.Equal(2, myMethodInfos.Length);
@@ -148,7 +144,7 @@ namespace System.Reflection.Compatibility.UnitTests.PropertyInfoTests
         [Fact]
         public void PosTest6()
         {
-            Type myType = Type.GetType("System.Reflection.Compatibility.UnitTests.PropertyInfoTests.MyProperty");
+            Type myType = Type.GetType("System.Reflection.Tests.MyProperty");
             PropertyInfo myPropertyInfo = myType.GetProperty("Property3", BindingFlags.Public | BindingFlags.Static);
             MethodInfo[] myMethodInfos = myPropertyInfo.GetAccessors(true);
             Assert.Equal(2, myMethodInfos.Length);
@@ -160,7 +156,7 @@ namespace System.Reflection.Compatibility.UnitTests.PropertyInfoTests
         [Fact]
         public void PosTest7()
         {
-            Type myType = Type.GetType("System.Reflection.Compatibility.UnitTests.PropertyInfoTests.MyProperty");
+            Type myType = Type.GetType("System.Reflection.Tests.MyProperty");
             PropertyInfo myPropertyInfo = myType.GetProperty("Property4", BindingFlags.NonPublic | BindingFlags.Static);
             MethodInfo[] myMethodInfos = myPropertyInfo.GetAccessors(false);
             Assert.Equal(0, myMethodInfos.Length);
@@ -170,7 +166,7 @@ namespace System.Reflection.Compatibility.UnitTests.PropertyInfoTests
         [Fact]
         public void PosTest8()
         {
-            Type myType = Type.GetType("System.Reflection.Compatibility.UnitTests.PropertyInfoTests.MyProperty");
+            Type myType = Type.GetType("System.Reflection.Tests.MyProperty");
             PropertyInfo myPropertyInfo = myType.GetProperty("Property4", BindingFlags.NonPublic | BindingFlags.Static);
             MethodInfo[] myMethodInfos = myPropertyInfo.GetAccessors(true);
             Assert.Equal(2, myMethodInfos.Length);

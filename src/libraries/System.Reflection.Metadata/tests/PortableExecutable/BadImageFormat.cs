@@ -2,11 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.IO;
-using System.Reflection.PortableExecutable;
-using TestUtilities;
 using Xunit;
 
-namespace System.Reflection.Metadata.Tests
+namespace System.Reflection.PortableExecutable.Tests
 {
     public class BadImageFormat
     {

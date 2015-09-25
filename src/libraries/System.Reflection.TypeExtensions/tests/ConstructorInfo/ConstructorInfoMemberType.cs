@@ -1,11 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Reflection;
 using Xunit;
 
-namespace System.Reflection.Compatibility.UnitTests
+namespace System.Reflection.Tests
 {
     // MemberType
     public class ConstructorInfoMemberType

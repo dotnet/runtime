@@ -1,11 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Reflection;
 using Xunit;
 
-namespace System.Reflection.Compatibility.UnitTests.MemberInfoTests
+namespace System.Reflection.Tests
 {
     // MemberInfo.MemberType Property  
     // When overridden in a derived class, gets a MemberTypes value indicating 

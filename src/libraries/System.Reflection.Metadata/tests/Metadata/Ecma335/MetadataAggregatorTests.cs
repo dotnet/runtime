@@ -2,12 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Reflection.Internal;
-using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using Xunit;
 using RowCounts = System.Reflection.Metadata.Ecma335.MetadataAggregator.RowCounts;
 
-namespace System.Reflection.Metadata.Tests
+namespace System.Reflection.Metadata.Ecma335.Tests
 {
     public class MetadataAggregatorTests
     {

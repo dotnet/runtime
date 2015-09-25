@@ -2,9 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.IO;
-using System.Reflection;
 
-namespace TestResources
+namespace System.Reflection.Metadata.Tests
 {
     internal static class Interop
     {
