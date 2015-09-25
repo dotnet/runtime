@@ -6,7 +6,7 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
 
-namespace System.Diagnostics.ProcessTests
+namespace System.Diagnostics.Tests
 {
     internal class Interop
     {

@@ -2165,43 +2165,6 @@ namespace System.Linq.Expressions.Interpreter
         }
     }
 
-    internal class NullCheckInstruction : Instruction
-    {
-        private readonly int _stackOffset;
-        private const int CacheSize = 12;
-        private static readonly NullCheckInstruction[] s_cache = new NullCheckInstruction[CacheSize];
-
-        public override int ConsumedStack { get { return 0; } }
-        public override int ProducedStack { get { return 0; } }
-        public override string InstructionName
-        {
-            get { return "NullCheck"; }
-        }
-        private NullCheckInstruction(int stackOffset)
-        {
-            _stackOffset = stackOffset;
-        }
-
-        public static Instruction Create(int stackOffset)
-        {
-            if (stackOffset < CacheSize)
-            {
-                return s_cache[stackOffset] ?? (s_cache[stackOffset] = new NullCheckInstruction(stackOffset));
-            }
-
-            return new NullCheckInstruction(stackOffset);
-        }
-
-        public override int Run(InterpretedFrame frame)
-        {
-            if (frame.Data[frame.StackIndex - 1 - _stackOffset] == null)
-            {
-                throw new NullReferenceException();
-            }
-            return +1;
-        }
-    }
-
 #if DEBUG
     internal class LogInstruction : Instruction
     {

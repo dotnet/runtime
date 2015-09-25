@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class OfTypeTests
+    public class OfTypeTests : EnumerableTests
     {
         [Fact]
         public void SameResultsRepeatCallsIntQuery()
@@ -33,18 +33,14 @@ namespace System.Linq.Tests
         public void EmptySource()
         {
             object[] source = { };
-            int[] expected = { };
-
-            Assert.Equal(expected, source.OfType<int>());
+            Assert.Empty(source.OfType<int>());
         }
 
         [Fact]
         public void LongSequenceFromIntSource()
         {
             int[] source = { 99, 45, 81 };
-            long[] expected = { };
-
-            Assert.Equal(expected, source.OfType<long>());
+            Assert.Empty(source.OfType<long>());
 
         }
 
@@ -52,9 +48,7 @@ namespace System.Linq.Tests
         public void HeterogenousSourceNoAppropriateElements()
         {
             object[] source = { "Hello", 3.5, "Test" };
-            int[] expected = { };
-
-            Assert.Equal(expected, source.OfType<int>());
+            Assert.Empty(source.OfType<int>());
         }
 
         [Fact]
@@ -106,18 +100,29 @@ namespace System.Linq.Tests
         public void NullableDecimalFromString()
         {
             string[] source = { "Test1", "Test2", "Test9" };
-            decimal?[] expected = { };
-
-            Assert.Equal(expected, source.OfType<decimal?>());
+            Assert.Empty(source.OfType<decimal?>());
         }
 
         [Fact]
         public void LongFromDouble()
         {
             long[] source = { 99L, 45L, 81L };
-            double[] expected = { };
+            Assert.Empty(source.OfType<double>());
+        }
 
-            Assert.Equal(expected, source.OfType<double>());
+        [Fact]
+        public void NullSource()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<object>)null).OfType<string>());
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerate()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).OfType<int>();
+            // Don't insist on this behaviour, but check its correct if it happens
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
         }
     }
 }

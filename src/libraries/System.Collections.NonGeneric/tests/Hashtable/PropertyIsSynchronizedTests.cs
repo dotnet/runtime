@@ -2,14 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Xunit;
-using System;
-using System.Threading;
-using System.Collections;
 using System.Threading.Tasks;
 
-namespace System.Collections.HashtableTests
+namespace System.Collections.Tests
 {
-    public class IsSynchronizedTests
+    public class Hashtable_IsSynchronizedTests
     {
         private Hashtable _hsh2;
         private int _iNumberOfElements = 20;

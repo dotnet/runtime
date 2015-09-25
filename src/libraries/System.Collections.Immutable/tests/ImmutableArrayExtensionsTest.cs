@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
-namespace System.Collections.Immutable.Test
+namespace System.Collections.Immutable.Tests
 {
     public class ImmutableArrayExtensionsTest
     {
@@ -126,7 +126,7 @@ namespace System.Collections.Immutable.Test
         public void AllEmpty()
         {
             Assert.Throws<ArgumentNullException>(() => ImmutableArrayExtensions.All(s_empty, null));
-            Assert.True(ImmutableArrayExtensions.All(s_empty, n => { Assert.True(false); return false; })); // predicate should never be invoked.
+            Assert.True(ImmutableArrayExtensions.All(s_empty, n => { throw new ShouldNotBeInvokedException(); })); // predicate should never be invoked.
         }
 
         [Fact]

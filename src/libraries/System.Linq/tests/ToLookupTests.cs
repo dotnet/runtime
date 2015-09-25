@@ -7,42 +7,8 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class ToLookupTests
+    public class ToLookupTests : EnumerableTests
     {
-        private class AnagramEqualityComparer : IEqualityComparer<string>
-        {
-            public bool Equals(string x, string y)
-            {
-                if (ReferenceEquals(x, y)) return true;
-                if (x == null | y == null) return false;
-                int length = x.Length;
-                if (length != y.Length) return false;
-                using (var en = x.OrderBy(i => i).GetEnumerator())
-                {
-                    foreach (char c in y.OrderBy(i => i))
-                    {
-                        en.MoveNext();
-                        if (c != en.Current) return false;
-                    }
-                }
-                return true;
-            }
-
-            public int GetHashCode(string obj)
-            {
-                int hash = 0;
-                foreach (char c in obj)
-                    hash ^= (int)c;
-                return hash;
-            }
-        }
-
-        private struct Record
-        {
-            public string Name;
-            public int Score;
-        }
-
         private static void AssertMatches<K, T>(IEnumerable<K> keys, IEnumerable<T> elements, System.Linq.ILookup<K, T> lookup)
         {
             Assert.NotNull(lookup);
@@ -82,7 +48,7 @@ namespace System.Linq.Tests
                     from x4 in q2
                     select new { a1 = x3, a2 = x4 };
             
-            Assert.Equal(q.ToLookup((e) => e.a1), q.ToLookup((e) => e.a1));
+            Assert.Equal(q.ToLookup(e => e.a1), q.ToLookup(e => e.a1));
         }
 
         [Fact]
@@ -90,14 +56,9 @@ namespace System.Linq.Tests
         {
             string[] key = { "Chris", "Bob", null, "Tim" };
             int[] element = { 50, 95, 55, 90 };
-            Record[] source = new Record[4];
+            var source = key.Zip(element, (k, e) => new { Name = k, Score = e });
 
-            source[0].Name = key[0]; source[0].Score = element[0];
-            source[1].Name = key[1]; source[1].Score = element[1];
-            source[2].Name = key[2]; source[2].Score = element[2];
-            source[3].Name = key[3]; source[3].Score = element[3];
-
-            AssertMatches(key, source, source.ToLookup((e) => e.Name));
+            AssertMatches(key, source, source.ToLookup(e => e.Name));
         }
 
         [Fact]
@@ -105,9 +66,9 @@ namespace System.Linq.Tests
         {
             string[] key = { "Chris" };
             int[] element = { 50 };
-            Record[] source = new [] { new Record{Name = "risCh", Score = 50} };
+            var source = new [] { new {Name = "risCh", Score = 50} };
 
-            AssertMatches(key, source, source.ToLookup((e) => e.Name, new AnagramEqualityComparer()));
+            AssertMatches(key, source, source.ToLookup(e => e.Name, new AnagramEqualityComparer()));
         }
 
         [Fact]
@@ -115,16 +76,16 @@ namespace System.Linq.Tests
         {
             string[] key = { "Chris", "Prakash", "Tim", "Robert", "Brian" };
             int[] element = { 50, 100, 95, 60, 80 };
-            Record[] source = new []
+            var source = new []
             {
-                new Record{ Name = key[0], Score = element[0] },
-                new Record{ Name = key[1], Score = element[1] },
-                new Record{ Name = key[2], Score = element[2] },
-                new Record{ Name = key[3], Score = element[3] },
-                new Record{ Name = key[4], Score = element[4] }
+                new { Name = key[0], Score = element[0] },
+                new { Name = key[1], Score = element[1] },
+                new { Name = key[2], Score = element[2] },
+                new { Name = key[3], Score = element[3] },
+                new { Name = key[4], Score = element[4] }
             };
 
-            AssertMatches(key, element, source.ToLookup((e) => e.Name, (e) => e.Score));
+            AssertMatches(key, element, source.ToLookup(e => e.Name, e => e.Score));
         }
 
         [Fact]
@@ -132,17 +93,17 @@ namespace System.Linq.Tests
         {
             string[] key = { "Chris", "Prakash", "Robert" };
             int[] element = { 50, 80, 100, 95, 99, 56 };
-            Record[] source = new []
+            var source = new []
             {
-                new Record{ Name = key[0], Score = element[0] },
-                new Record{ Name = key[1], Score = element[2] },
-                new Record{ Name = key[2], Score = element[5] },
-                new Record{ Name = key[1], Score = element[3] },
-                new Record{ Name = key[0], Score = element[1] },
-                new Record{ Name = key[1], Score = element[4] }
+                new { Name = key[0], Score = element[0] },
+                new { Name = key[1], Score = element[2] },
+                new { Name = key[2], Score = element[5] },
+                new { Name = key[1], Score = element[3] },
+                new { Name = key[0], Score = element[1] },
+                new { Name = key[1], Score = element[4] }
             };
 
-            AssertMatches(key, element, source.ToLookup((e) => e.Name, (e) => e.Score, new AnagramEqualityComparer()));
+            AssertMatches(key, element, source.ToLookup(e => e.Name, e => e.Score, new AnagramEqualityComparer()));
         }
 
         [Fact]
@@ -150,9 +111,9 @@ namespace System.Linq.Tests
         {
             string[] key = { };
             int[] element = { };
-            Record[] source = new Record[] { };
+            var source = key.Zip(element, (k, e) => new { Name = k, Score = e });
 
-            AssertMatches(key, element, source.ToLookup((e) => e.Name, (e) => e.Score, new AnagramEqualityComparer()));
+            AssertMatches(key, element, source.ToLookup(e => e.Name, e => e.Score, new AnagramEqualityComparer()));
         }
 
         [Fact]
@@ -162,7 +123,7 @@ namespace System.Linq.Tests
             string[] element = { null };
             string[] source = new string[] { null };
 
-            AssertMatches(key, element, source.ToLookup((e) => e, (e) => e, EqualityComparer<string>.Default));
+            AssertMatches(key, element, source.ToLookup(e => e, e => e, EqualityComparer<string>.Default));
         }
 
         [Fact]

@@ -47,11 +47,7 @@ public class CollectionTestBase
             {
                 for (IListApi i = (IListApi)1; i < IListApi.End; i = (IListApi)((int)i << 1))
                 {
-                    if ((_expectedApiCalls & i) == i &&
-                        (_calledMembers & i) != i)
-                    {
-                        Assert.True(false, string.Format("Expected IList API '{0}' to be called", i.ToString()));
-                    }
+                    Assert.Equal(_expectedApiCalls & i, _calledMembers & i);
                 }
             }
         }

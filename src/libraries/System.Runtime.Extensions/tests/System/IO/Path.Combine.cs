@@ -158,33 +158,23 @@ public class PathCombineTests
 
         Assert.Equal(expected, rVal);
 
-        //verify passed as elements case
+        //verify special cases
         switch (paths.Length)
         {
-            case 0:
-                rVal = Path.Combine();
-                break;
-            case 1:
-                rVal = Path.Combine(paths[0]);
-                break;
             case 2:
-                rVal = Path.Combine(paths[0], paths[1]);
+                // 2-element is not an array call
+                Assert.Equal(expected, Path.Combine(paths[0], paths[1]));
                 break;
+
             case 3:
-                rVal = Path.Combine(paths[0], paths[1], paths[2]);
+                // 3-element is not an array call
+                Assert.Equal(expected, Path.Combine(paths[0], paths[1], paths[2]));
                 break;
-            case 4:
-                rVal = Path.Combine(paths[0], paths[1], paths[2], paths[3]);
-                break;
-            case 5:
-                rVal = Path.Combine(paths[0], paths[1], paths[2], paths[3], paths[4]);
-                break;
+
             default:
-                Assert.True(false, String.Format("Test doesn't cover case with {0} items passed seperately, add it.", paths.Length));
+                // Nothing to do: everything else is pushed into an array
                 break;
         }
-
-        Assert.Equal(expected, rVal);
     }
 
     public static void CommonCases(string testing)

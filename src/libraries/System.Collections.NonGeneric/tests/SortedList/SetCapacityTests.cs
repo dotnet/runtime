@@ -2,13 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Xunit;
-using System;
-using System.Collections;
-using System.Globalization;
 
-namespace System.Collections.SortedListTests
+namespace System.Collections.Tests
 {
-    public class PropertyCapacityTests01
+    public class SortedList_PropertyCapacityTests01
     {
         [Fact]
         public void TestSetCapacityBasic()

@@ -8,8 +8,6 @@
     <OutputType>Library</OutputType>
     <ProjectGuid>{A8CF61F0-56EA-4b5f-9375-0723DF4250C0}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <PackageTargetFramework>dotnet</PackageTargetFramework>
-    <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />

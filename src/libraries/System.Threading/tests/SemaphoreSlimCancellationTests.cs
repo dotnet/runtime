@@ -53,12 +53,7 @@ namespace System.Threading.Tests
         {
             OperationCanceledException operationCanceledEx =
                 Assert.Throws<OperationCanceledException>(action);
-            // Failure Case: OperationCanceledException not thrown.
-
-            if (operationCanceledEx.CancellationToken != token)
-            {
-                Assert.True(false, string.Format("SemaphoreSlimCancellationTests: Failed.  " + message));
-            }
+            Assert.Equal(token, operationCanceledEx.CancellationToken);
         }
     }
 }

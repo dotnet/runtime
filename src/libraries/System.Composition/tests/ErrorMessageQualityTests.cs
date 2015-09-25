@@ -66,7 +66,7 @@ namespace System.Composition.UnitTests
         public void MissingTopLevelExportMessageIsInformative()
         {
             var cc = CreateContainer();
-            var x = AssertX.Throws<CompositionFailedException>(() => cc.GetExport<Unregistered>());
+            var x = Assert.Throws<CompositionFailedException>(() => cc.GetExport<Unregistered>());
             Assert.Equal("No export was found for the contract 'Unregistered'.", x.Message);
         }
 
@@ -74,7 +74,7 @@ namespace System.Composition.UnitTests
         public void MissingTopLevelNamedExportMessageIsInformative()
         {
             var cc = CreateContainer();
-            var x = AssertX.Throws<CompositionFailedException>(() => cc.GetExport<Unregistered>("unregistered"));
+            var x = Assert.Throws<CompositionFailedException>(() => cc.GetExport<Unregistered>("unregistered"));
             Assert.Equal("No export was found for the contract 'Unregistered \"unregistered\"'.", x.Message);
         }
 
@@ -82,7 +82,7 @@ namespace System.Composition.UnitTests
         public void MissingDependencyMessageIsInformative()
         {
             var cc = CreateContainer(typeof(UserOfUnregistered));
-            var x = AssertX.Throws<CompositionFailedException>(() => cc.GetExport<UserOfUnregistered>());
+            var x = Assert.Throws<CompositionFailedException>(() => cc.GetExport<UserOfUnregistered>());
             Assert.Equal("No export was found for the contract 'Unregistered'" + Environment.NewLine +
                             " -> required by import 'Unregistered' of part 'UserOfUnregistered'" + Environment.NewLine +
                             " -> required by initial request for contract 'UserOfUnregistered'", x.Message);
@@ -92,7 +92,7 @@ namespace System.Composition.UnitTests
         public void CycleMessageIsInformative()
         {
             var cc = CreateContainer(typeof(CycleA), typeof(CycleB), typeof(CycleC));
-            var x = AssertX.Throws<CompositionFailedException>(() => cc.GetExport<CycleA>());
+            var x = Assert.Throws<CompositionFailedException>(() => cc.GetExport<CycleA>());
             Assert.Equal("Detected an unsupported cycle for part 'CycleA'." +
                             " To construct a valid cycle, at least one part in the cycle must be shared, and at least one import in the cycle must be non-prerequisite (e.g. a property)." + Environment.NewLine +
                             " -> required by import 'A' of part 'CycleC'" + Environment.NewLine +
@@ -105,7 +105,7 @@ namespace System.Composition.UnitTests
         public void CardinalityViolationMessageIsInformative()
         {
             var cc = CreateContainer(typeof(ShouldBeOne), typeof(ButThereIsAnother), typeof(RequiresOnlyOne));
-            var x = AssertX.Throws<CompositionFailedException>(() => cc.GetExport<RequiresOnlyOne>());
+            var x = Assert.Throws<CompositionFailedException>(() => cc.GetExport<RequiresOnlyOne>());
             Assert.Equal("Only one export for the contract 'ShouldBeOne' is allowed, but the following parts: 'ButThereIsAnother', 'ShouldBeOne' export it." + Environment.NewLine +
                             " -> required by import 'One' of part 'RequiresOnlyOne'" + Environment.NewLine +
                             " -> required by initial request for contract 'RequiresOnlyOne'", x.Message);

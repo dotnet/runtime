@@ -7,18 +7,8 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class CountTests
+    public class CountTests : EnumerableTests
     {
-        private static bool IsEven(int num)
-        {
-            return num % 2 == 0;
-        }
-
-        public static IEnumerable<int> RepeatedNumberGuaranteedNotCollectionType(int num, long count)
-        {
-            for (long i = 0; i < count; i++) yield return num;
-        }
-
         [Fact]
         public void SameResultsRepeatCallsIntQuery()
         {
@@ -127,6 +117,54 @@ namespace System.Linq.Tests
             int expected = 6;
 
             Assert.Equal(expected, data.Count(IsEven));
+        }
+
+        [Theory, MemberData("CountsAndTallies")]
+        public void CountMatchesTally<T, TEn>(T unusedArgumentToForceTypeInference, int count, TEn enumerable)
+            where TEn : IEnumerable<T>
+        {
+            Assert.Equal(count, enumerable.Count());
+        }
+
+        private static IEnumerable<object[]> EnumerateCollectionTypesAndCounts<T>(int count, IEnumerable<T> enumerable)
+        {
+            yield return new object[] { default(T), count, enumerable };
+            yield return new object[] { default(T), count, enumerable.ToArray() };
+            yield return new object[] { default(T), count, enumerable.ToList() };
+            yield return new object[] { default(T), count, new Stack<T>(enumerable) };
+        }
+
+        public static IEnumerable<object[]> CountsAndTallies()
+        {
+            int count = 5;
+            var range = Enumerable.Range(1, count);
+            foreach (object[] variant in EnumerateCollectionTypesAndCounts(count, range))
+                yield return variant;
+            foreach (object[] variant in EnumerateCollectionTypesAndCounts(count, range.Select(i => (float)i)))
+                yield return variant;
+            foreach (object[] variant in EnumerateCollectionTypesAndCounts(count, range.Select(i => (double)i)))
+                yield return variant;
+            foreach (object[] variant in EnumerateCollectionTypesAndCounts(count, range.Select(i => (decimal)i)))
+                yield return variant;
+        }
+
+        [Fact]
+        public void NullSource()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).Count());
+        }
+
+        [Fact]
+        public void NullSourcePredicateUsed()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).Count(i => i != 0));
+        }
+
+        [Fact]
+        public void NullPredicateUsed()
+        {
+            Func<int, bool> predicate = null;
+            Assert.Throws<ArgumentNullException>("predicate", () => Enumerable.Range(0, 3).Count(predicate));
         }
     }
 }

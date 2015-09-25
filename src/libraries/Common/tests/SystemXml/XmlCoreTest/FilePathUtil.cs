@@ -147,30 +147,26 @@ namespace XmlCoreTest.Common
 
             string normalizedFileName = NormalizeFilePath(filename);
 
-            try
+            Stream s = s_XmlFileInMemoryCache[normalizedFileName];
+            if (s == null)
             {
-                Stream s = s_XmlFileInMemoryCache[normalizedFileName];
-                if (s.CanSeek)
-                {
-                    s.Position = 0;
-                }
-                else
-                {
-                    Stream msbak = s_XmlFileInMemoryCacheBackup[normalizedFileName];
-                    MemoryStream msnew = new MemoryStream();
-                    msbak.Position = 0;
-                    msbak.CopyTo(msnew);
-
-                    s_XmlFileInMemoryCache[normalizedFileName] = msnew;
-                    msnew.Position = 0;
-                    return msnew;
-                }
+                throw new FileNotFoundException("File Not Found: " + filename);
+            }
+            if (s.CanSeek)
+            {
+                s.Position = 0;
                 return s;
             }
-            catch (Exception e)
+            else
             {
-                Console.WriteLine("File Not Found: " + filename);
-                throw e;
+                Stream msbak = s_XmlFileInMemoryCacheBackup[normalizedFileName];
+                MemoryStream msnew = new MemoryStream();
+                msbak.Position = 0;
+                msbak.CopyTo(msnew);
+
+                s_XmlFileInMemoryCache[normalizedFileName] = msnew;
+                msnew.Position = 0;
+                return msnew;
             }
         }
 

@@ -4,9 +4,9 @@
 using System.Diagnostics;
 using Xunit;
 
-namespace System.Collections.ArrayListTests
+namespace System.Collections.Tests
 {
-    public class CtorTests
+    public class ArrayList_CtorTests
     {
         [Fact]
         public void CtorTest()

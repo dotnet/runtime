@@ -6,13 +6,8 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class SingleTests
+    public class SingleTests : EnumerableTests
     {
-        public static IEnumerable<int> RepeatedNumberGuaranteedNotCollectionType(int num, long count)
-        {
-            for (long i = 0; i < count; i++) yield return num;
-        }
-
         [Fact]
         public void SameResultsRepeatCallsIntQuery()
         {

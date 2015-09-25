@@ -2,15 +2,12 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Xunit;
-using System;
-using System.Globalization;
 
-namespace System.Globalization.Extensions.Tests
+namespace System.Globalization.Tests
 {
     public class GetAsciiTests
     {
         [Fact]
-        [ActiveIssue(810, PlatformID.AnyUnix)]
         public void SimpleValidationTests()
         {
             var idn = new IdnMapping();
@@ -25,7 +22,6 @@ namespace System.Globalization.Extensions.Tests
         }
 
         [Fact]
-        [ActiveIssue(810, PlatformID.AnyUnix)]
         public void SurrogatePairsConsecutive()
         {
             var idn = new IdnMapping();
@@ -34,7 +30,6 @@ namespace System.Globalization.Extensions.Tests
         }
 
         [Fact]
-        [ActiveIssue(810, PlatformID.AnyUnix)]
         public void SurrogatePairsSeparatedByAscii()
         {
             var idn = new IdnMapping();
@@ -43,7 +38,6 @@ namespace System.Globalization.Extensions.Tests
         }
 
         [Fact]
-        [ActiveIssue(810, PlatformID.AnyUnix)]
         public void SurrogatePairsSeparatedByNonAscii()
         {
             var idn = new IdnMapping();
@@ -52,7 +46,6 @@ namespace System.Globalization.Extensions.Tests
         }
 
         [Fact]
-        [ActiveIssue(810, PlatformID.AnyUnix)]
         public void SurrogatePairsSeparatedByAsciiAndNonAscii()
         {
             var idn = new IdnMapping();
@@ -61,7 +54,6 @@ namespace System.Globalization.Extensions.Tests
         }
 
         [Fact]
-        [ActiveIssue(810, PlatformID.AnyUnix)]
         public void FullyQualifiedDomainNameVsIndividualLabels()
         {
             var idn = new IdnMapping();
@@ -77,7 +69,7 @@ namespace System.Globalization.Extensions.Tests
         }
 
         [Fact]
-        [ActiveIssue(810, PlatformID.AnyUnix)]
+        [ActiveIssue(3406, PlatformID.AnyUnix)]
         public void EmbeddedNulls()
         {
             var idn = new IdnMapping();
@@ -111,7 +103,6 @@ namespace System.Globalization.Extensions.Tests
         /// with one.  This will cause an ArgumentException.
         /// </remarks>
         [Fact]
-        [ActiveIssue(810, PlatformID.AnyUnix)]
         public void EmbeddedDomainNameConversion()
         {
             var idn = new IdnMapping();

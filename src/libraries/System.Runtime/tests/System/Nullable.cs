@@ -13,88 +13,31 @@ public static unsafe class NullableTests
     {
         // Nullable and Nullable<T> are mostly verbatim ports so we don't test much here.
         Nullable<int> n = default(Nullable<int>);
-        bool b;
-        int v;
-        int h;
-        String s;
-        int i;
-
-        b = n.HasValue;
-        Assert.False(b);
-
-        try
-        {
-            v = n.Value;
-            Assert.True(false, "Nullable<>.Value should have thrown.");
-        }
-        catch (InvalidOperationException)
-        {
-        }
-
-        try
-        {
-            i = (int)n;
-            Assert.True(false, "Nullable<>.Value should have thrown.");
-        }
-        catch (InvalidOperationException)
-        {
-        }
-
-        b = n.Equals(null);
-        Assert.True(b);
-
-        b = n.Equals(7);
-        Assert.False(b);
-
-        h = n.GetHashCode();
-        Assert.Equal(h, 0);
-
-        s = n.ToString();
-        Assert.Equal(s, "");
-
-        v = n.GetValueOrDefault();
-        Assert.Equal(v, default(int));
-
-        v = n.GetValueOrDefault(999);
-        Assert.Equal(v, 999);
+        Assert.False(n.HasValue);
+        Assert.Throws<InvalidOperationException>(() => n.Value);
+        Assert.Throws<InvalidOperationException>(() => (int)n);
+        Assert.Equal(null, n);
+        Assert.NotEqual(7, n);
+        Assert.Equal(0, n.GetHashCode());
+        Assert.Equal("", n.ToString());
+        Assert.Equal(default(int), n.GetValueOrDefault());
+        Assert.Equal(999, n.GetValueOrDefault(999));
 
         n = new Nullable<int>(42);
-        b = n.HasValue;
-        Assert.True(b);
-
-        v = n.Value;
-        Assert.Equal(v, 42);
-
-        i = (int)n;
-        Assert.Equal(i, 42);
-
-        b = n.Equals(null);
-        Assert.False(b);
-
-        b = n.Equals(7);
-        Assert.False(b);
-
-        b = n.Equals(42);
-        Assert.True(b);
-
-        h = n.GetHashCode();
-        Assert.Equal(h, 42.GetHashCode());
-
-        s = n.ToString();
-        Assert.Equal(s, 42.ToString());
-
-        v = n.GetValueOrDefault();
-        Assert.Equal(v, 42);
-
-        v = n.GetValueOrDefault(999);
-        Assert.Equal(v, 42);
+        Assert.True(n.HasValue);
+        Assert.Equal(42, n.Value);
+        Assert.Equal(42, (int)n);
+        Assert.NotEqual(null, n);
+        Assert.NotEqual(7, n);
+        Assert.Equal(42, n);
+        Assert.Equal(42.GetHashCode(), n.GetHashCode());
+        Assert.Equal(42.ToString(), n.ToString());
+        Assert.Equal(42, n.GetValueOrDefault());
+        Assert.Equal(42, n.GetValueOrDefault(999));
 
         n = 88;
-        b = n.HasValue;
-        Assert.True(b);
-
-        v = n.Value;
-        Assert.Equal(v, 88);
+        Assert.True(n.HasValue);
+        Assert.Equal(88, n.Value);
     }
 
     [Fact]
@@ -107,11 +50,7 @@ public static unsafe class NullableTests
     private static void Foo(Object o)
     {
         Type t = o.GetType();
-
-        if (t == typeof(Nullable<int>))
-        {
-            Assert.True(false, "Compiler did not implement the special boxing/unboxing rules for Nullable<T>");
-        }
+        Assert.IsNotType<Nullable<int>>(t);
 
         Assert.Equal(t, typeof(int));
     }

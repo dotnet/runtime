@@ -1,12 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
-using System.Globalization;
 using Xunit;
 
-namespace System.Collections.StackTests
+namespace System.Collections.Tests
 {
     public class StackCloneTests
     {
@@ -64,20 +61,20 @@ namespace System.Collections.StackTests
                 Assert.True(stkClone.Contains(i));
             }
         }
-    }
 
-    class A
-    {
-        private int _i;
-        public A(int i)
+        private class A
         {
-            _i = i;
-        }
-        
-        internal int I
-        {
-            set { _i = value; }
-            get { return _i; }
+            private int _i;
+            public A(int i)
+            {
+                _i = i;
+            }
+
+            internal int I
+            {
+                set { _i = value; }
+                get { return _i; }
+            }
         }
     }
 }

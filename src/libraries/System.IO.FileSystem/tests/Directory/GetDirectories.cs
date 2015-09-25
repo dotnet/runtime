@@ -5,7 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
 
-namespace System.IO.FileSystem.Tests
+namespace System.IO.Tests
 {
     public class Directory_GetDirectories_str : Directory_GetFileSystemEntries_str
     {

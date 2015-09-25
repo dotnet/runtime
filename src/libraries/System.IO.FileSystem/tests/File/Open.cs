@@ -3,7 +3,7 @@
 
 using Xunit;
 
-namespace System.IO.FileSystem.Tests
+namespace System.IO.Tests
 {
     public class File_Open_str_fm : FileStream_ctor_str_fm
     {

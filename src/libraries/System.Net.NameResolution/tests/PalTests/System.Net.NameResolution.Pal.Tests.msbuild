@@ -167,11 +167,11 @@
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.gethostbyname_r.cs">
       <Link>Interop\Linux\libc\Interop.gethostbyname_r.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.addrinfo.cs">
-      <Link>Interop\Unix\libc\Interop.addrinfo.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.addrinfo.cs">
+      <Link>Interop\Linux\libc\Interop.addrinfo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.sockaddr.cs">
-      <Link>Interop\Unix\libc\Interop.sockaddr.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.sockaddr.cs">
+      <Link>Interop\Linux\libc\Interop.sockaddr.cs</Link>
     </Compile>
   </ItemGroup>
 

@@ -125,6 +125,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.FileDescriptors.cs">
       <Link>Common\Interop\Unix\Interop.FileDescriptors.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.FLock.cs">
+      <Link>Common\Interop\Unix\Interop.FLock.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.LSeek.cs">
       <Link>Common\Interop\Unix\Interop.LSeek.cs</Link>
     </Compile>

@@ -224,19 +224,12 @@ namespace System.Collections.Concurrent.Tests
                                 int val = 0;
                                 if (dict.TryGetValue(j, out val))
                                 {
-                                    if (j % 2 == 1 || j != val)
-                                    {
-                                        Console.WriteLine("* TestRead1(cLevel={0}, threads={1}, readsPerThread={2})", cLevel, threads, readsPerThread);
-                                        Assert.False(true, "  > FAILED. Invalid element in the dictionary.");
-                                    }
+                                    Assert.Equal(0, j % 2);
+                                    Assert.Equal(j, val);
                                 }
                                 else
                                 {
-                                    if (j % 2 == 0)
-                                    {
-                                        Console.WriteLine("* TestRead1(cLevel={0}, threads={1}, readsPerThread={2})", cLevel, threads, readsPerThread);
-                                        Assert.False(true, "  > FAILED. Element missing from the dictionary");
-                                    }
+                                    Assert.Equal(1, j % 2);
                                 }
                             }
                             if (Interlocked.Decrement(ref count) == 0) mre.Set();
@@ -653,10 +646,8 @@ namespace System.Collections.Concurrent.Tests
             IDictionary dictionary = new ConcurrentDictionary<string, int>();
             Assert.False(dictionary.IsReadOnly);
 
-            foreach (var entry in dictionary)
-            {
-                Assert.False(true, "TestIDictionary:  FAILED.  GetEnumerator retuned items when the dictionary is empty");
-            }
+            // Empty dictionary should not enumerate
+            Assert.Empty(dictionary);
 
             const int SIZE = 10;
             for (int i = 0; i < SIZE; i++)

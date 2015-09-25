@@ -220,7 +220,7 @@ extern "C" int32_t Close(int32_t fd)
 
 extern "C" int32_t Dup(int oldfd)
 {
-	return dup(oldfd);
+    return dup(oldfd);
 }
 
 extern "C" int32_t Unlink(const char* path)
@@ -382,6 +382,37 @@ extern "C" int32_t FcntlSetPipeSz(int32_t fd, int32_t size)
     errno = ENOTSUP;
     return -1;
 #endif
+}
+
+extern "C" int32_t FcntlGetIsNonBlocking(int32_t fd)
+{
+    int flags = fcntl(fd, F_GETFL);
+    if (flags == -1)
+    {
+        return -1;
+    }
+
+    return (flags & O_NONBLOCK) == O_NONBLOCK ? 1 : 0;
+}
+
+extern "C" int32_t FcntlSetIsNonBlocking(int32_t fd, int32_t isNonBlocking)
+{
+    int flags = fcntl(fd, F_GETFL);
+    if (flags == -1)
+    {
+        return -1;
+    }
+
+    if (isNonBlocking == 0)
+    {
+        flags &= ~O_NONBLOCK;
+    }
+    else
+    {
+        flags |= O_NONBLOCK;
+    }
+
+    return fcntl(fd, F_SETFL, flags);
 }
 
 extern "C" int32_t MkDir(const char* path, int32_t mode)

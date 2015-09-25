@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using Xunit;
 
-namespace System.IO.FileSystem.Tests
+namespace System.IO.Tests
 {
     public class File_ReadWriteAllLines : FileSystemTest
     {

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace System.Diagnostics.ProcessTests
+namespace System.Diagnostics.Tests
 {
     public class ProcessWaitingTests : ProcessTestBase
     {
@@ -178,8 +178,7 @@ namespace System.Diagnostics.ProcessTests
             Process child = CreateProcess(() =>
             {
                 Process.GetCurrentProcess().Kill();
-                Assert.False(true, "Shouldn't get here");
-                return SuccessExitCode;
+                throw new ShouldNotBeInvokedException();
             });
             child.Start();
             Assert.True(child.WaitForExit(WaitInMS));

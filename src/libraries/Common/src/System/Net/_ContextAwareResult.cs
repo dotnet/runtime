@@ -7,11 +7,10 @@ using System.Security.Principal;
 
 namespace System.Net
 {
-    //
     // This is used by ContextAwareResult to cache callback closures between similar calls.  Create one of these and
     // pass it in to FinishPostingAsyncOp() to prevent the context from being captured in every iteration of a looped async call.
     //
-    // I thought about making the delegate and state into weak references, but decided against it because:
+    // It was decided not to make the delegate and state into weak references because:
     //    - The delegate is very likely to be abandoned by the user right after calling BeginXxx, making caching it useless. There's
     //         no easy way to weakly reference just the target.
     //    - We want to support identifying state via object.Equals() (especially value types), which means we need to keep a
@@ -20,7 +19,6 @@ namespace System.Net
     //
     // For now the state is not included as part of the closure.  It is too common a pattern (for example with socket receive)
     // to have several pending IOs differentiated by their state object.  We don't want that pattern to break the cache.
-    //
     internal class CallbackClosure
     {
         private AsyncCallback _savedCallback;
@@ -69,10 +67,8 @@ namespace System.Net
         }
     }
 
-    //
     // This class will ensure that the correct context is restored on the thread before invoking
     // a user callback.
-    //
     internal class ContextAwareResult : LazyAsyncResult
     {
         [Flags]
@@ -87,10 +83,10 @@ namespace System.Net
         }
 
         // This needs to be volatile so it's sure to make it over to the completion thread in time.
-        private volatile ExecutionContext _Context;
-        private object _Lock;
-        private StateFlags _Flags;
-        private WindowsIdentity _Wi;
+        private volatile ExecutionContext _context;
+        private object _lock;
+        private StateFlags _flags;
+        private WindowsIdentity _windowsIdentity;
 
         internal ContextAwareResult(object myObject, object myState, AsyncCallback myCallBack) :
             this(false, false, myObject, myState, myCallBack)
@@ -111,106 +107,102 @@ namespace System.Net
         {
             if (forceCaptureContext)
             {
-                _Flags = StateFlags.CaptureContext;
+                _flags = StateFlags.CaptureContext;
             }
 
             if (captureIdentity)
             {
-                _Flags |= StateFlags.CaptureIdentity;
+                _flags |= StateFlags.CaptureIdentity;
             }
 
             if (threadSafeContextCopy)
             {
-                _Flags |= StateFlags.ThreadSafeContextCopy;
+                _flags |= StateFlags.ThreadSafeContextCopy;
             }
         }
 
         // Security: We need an assert for a call into WindowsIdentity.GetCurrent.
         private void SafeCaptureIdentity()
         {
-            _Wi = WindowsIdentity.GetCurrent();
+            _windowsIdentity = WindowsIdentity.GetCurrent();
         }
 
-        //
         // This can be used to establish a context during an async op for something like calling a delegate or demanding a permission.
         // May block briefly if the context is still being produced.
         //
         // Returns null if called from the posting thread.
-        //
         internal ExecutionContext ContextCopy
         {
             get
             {
-                GlobalLog.Assert(!InternalPeekCompleted || (_Flags & StateFlags.ThreadSafeContextCopy) != 0, "ContextAwareResult#{0}::ContextCopy|Called on completed result.", Logging.HashString(this));
+                GlobalLog.Assert(!InternalPeekCompleted || (_flags & StateFlags.ThreadSafeContextCopy) != 0, "ContextAwareResult#{0}::ContextCopy|Called on completed result.", Logging.HashString(this));
                 if (InternalPeekCompleted)
                 {
                     throw new InvalidOperationException(SR.net_completed_result);
                 }
 
-                ExecutionContext context = _Context;
+                ExecutionContext context = _context;
                 if (context != null)
                 {
                     return context.CreateCopy();
                 }
 
                 // Make sure the context was requested.
-                GlobalLog.Assert(AsyncCallback != null || (_Flags & StateFlags.CaptureContext) != 0, "ContextAwareResult#{0}::ContextCopy|No context captured - specify a callback or forceCaptureContext.", Logging.HashString(this));
+                GlobalLog.Assert(AsyncCallback != null || (_flags & StateFlags.CaptureContext) != 0, "ContextAwareResult#{0}::ContextCopy|No context captured - specify a callback or forceCaptureContext.", Logging.HashString(this));
 
                 // Just use the lock to block.  We might be on the thread that owns the lock which is great, it means we
                 // don't need a context anyway.
-                if ((_Flags & StateFlags.PostBlockFinished) == 0)
+                if ((_flags & StateFlags.PostBlockFinished) == 0)
                 {
-                    GlobalLog.Assert(_Lock != null, "ContextAwareResult#{0}::ContextCopy|Must lock (StartPostingAsyncOp()) { ... FinishPostingAsyncOp(); } when calling ContextCopy (unless it's only called after FinishPostingAsyncOp).", Logging.HashString(this));
-                    lock (_Lock) { }
+                    GlobalLog.Assert(_lock != null, "ContextAwareResult#{0}::ContextCopy|Must lock (StartPostingAsyncOp()) { ... FinishPostingAsyncOp(); } when calling ContextCopy (unless it's only called after FinishPostingAsyncOp).", Logging.HashString(this));
+                    lock (_lock) { }
                 }
 
-                GlobalLog.Assert(!InternalPeekCompleted || (_Flags & StateFlags.ThreadSafeContextCopy) != 0, "ContextAwareResult#{0}::ContextCopy|Result became completed during call.", Logging.HashString(this));
+                GlobalLog.Assert(!InternalPeekCompleted || (_flags & StateFlags.ThreadSafeContextCopy) != 0, "ContextAwareResult#{0}::ContextCopy|Result became completed during call.", Logging.HashString(this));
                 if (InternalPeekCompleted)
                 {
                     throw new InvalidOperationException(SR.net_completed_result);
                 }
 
-                context = _Context;
+                context = _context;
                 return context == null ? null : context.CreateCopy();
             }
         }
 
-        //
         // Just like ContextCopy.
-        //
         internal WindowsIdentity Identity
         {
             get
             {
-                GlobalLog.Assert(!InternalPeekCompleted || (_Flags & StateFlags.ThreadSafeContextCopy) != 0, "ContextAwareResult#{0}::Identity|Called on completed result.", Logging.HashString(this));
+                GlobalLog.Assert(!InternalPeekCompleted || (_flags & StateFlags.ThreadSafeContextCopy) != 0, "ContextAwareResult#{0}::Identity|Called on completed result.", Logging.HashString(this));
                 if (InternalPeekCompleted)
                 {
                     throw new InvalidOperationException(SR.net_completed_result);
                 }
 
-                if (_Wi != null)
+                if (_windowsIdentity != null)
                 {
-                    return _Wi;
+                    return _windowsIdentity;
                 }
 
                 // Make sure the identity was requested.
-                GlobalLog.Assert((_Flags & StateFlags.CaptureIdentity) != 0, "ContextAwareResult#{0}::Identity|No identity captured - specify captureIdentity.", Logging.HashString(this));
+                GlobalLog.Assert((_flags & StateFlags.CaptureIdentity) != 0, "ContextAwareResult#{0}::Identity|No identity captured - specify captureIdentity.", Logging.HashString(this));
 
                 // Just use the lock to block.  We might be on the thread that owns the lock which is great, it means we
                 // don't need an identity anyway.
-                if ((_Flags & StateFlags.PostBlockFinished) == 0)
+                if ((_flags & StateFlags.PostBlockFinished) == 0)
                 {
-                    GlobalLog.Assert(_Lock != null, "ContextAwareResult#{0}::Identity|Must lock (StartPostingAsyncOp()) { ... FinishPostingAsyncOp(); } when calling Identity (unless it's only called after FinishPostingAsyncOp).", Logging.HashString(this));
-                    lock (_Lock) { }
+                    GlobalLog.Assert(_lock != null, "ContextAwareResult#{0}::Identity|Must lock (StartPostingAsyncOp()) { ... FinishPostingAsyncOp(); } when calling Identity (unless it's only called after FinishPostingAsyncOp).", Logging.HashString(this));
+                    lock (_lock) { }
                 }
 
-                GlobalLog.Assert(!InternalPeekCompleted || (_Flags & StateFlags.ThreadSafeContextCopy) != 0, "ContextAwareResult#{0}::Identity|Result became completed during call.", Logging.HashString(this));
+                GlobalLog.Assert(!InternalPeekCompleted || (_flags & StateFlags.ThreadSafeContextCopy) != 0, "ContextAwareResult#{0}::Identity|Result became completed during call.", Logging.HashString(this));
                 if (InternalPeekCompleted)
                 {
                     throw new InvalidOperationException(SR.net_completed_result);
                 }
 
-                return _Wi;
+                return _windowsIdentity;
             }
         }
 
@@ -221,7 +213,7 @@ namespace System.Net
         {
             get
             {
-                return (_Flags & StateFlags.CaptureIdentity) != 0;
+                return (_flags & StateFlags.CaptureIdentity) != 0;
             }
         }
 #endif
@@ -231,52 +223,46 @@ namespace System.Net
             return StartPostingAsyncOp(true);
         }
 
-        //
         // If ContextCopy or Identity will be used, the return value should be locked until FinishPostingAsyncOp() is called
         // or the operation has been aborted (e.g. by BeginXxx throwing).  Otherwise, this can be called with false to prevent the lock
         // object from being created.
-        //
         internal object StartPostingAsyncOp(bool lockCapture)
         {
             GlobalLog.Assert(!InternalPeekCompleted, "ContextAwareResult#{0}::StartPostingAsyncOp|Called on completed result.", Logging.HashString(this));
 
             DebugProtectState(true);
 
-            _Lock = lockCapture ? new object() : null;
-            _Flags |= StateFlags.PostBlockStarted;
-            return _Lock;
+            _lock = lockCapture ? new object() : null;
+            _flags |= StateFlags.PostBlockStarted;
+            return _lock;
         }
 
-        //
         // Call this when returning control to the user.
-        //
         internal bool FinishPostingAsyncOp()
         {
             // Ignore this call if StartPostingAsyncOp() failed or wasn't called, or this has already been called.
-            if ((_Flags & (StateFlags.PostBlockStarted | StateFlags.PostBlockFinished)) != StateFlags.PostBlockStarted)
+            if ((_flags & (StateFlags.PostBlockStarted | StateFlags.PostBlockFinished)) != StateFlags.PostBlockStarted)
             {
                 return false;
             }
 
-            _Flags |= StateFlags.PostBlockFinished;
+            _flags |= StateFlags.PostBlockFinished;
 
             ExecutionContext cachedContext = null;
             return CaptureOrComplete(ref cachedContext, false);
         }
 
-        //
         // Call this when returning control to the user.  Allows a cached Callback Closure to be supplied and used
         // as appropriate, and replaced with a new one.
-        //
         internal bool FinishPostingAsyncOp(ref CallbackClosure closure)
         {
             // Ignore this call if StartPostingAsyncOp() failed or wasn't called, or this has already been called.
-            if ((_Flags & (StateFlags.PostBlockStarted | StateFlags.PostBlockFinished)) != StateFlags.PostBlockStarted)
+            if ((_flags & (StateFlags.PostBlockStarted | StateFlags.PostBlockFinished)) != StateFlags.PostBlockStarted)
             {
                 return false;
             }
 
-            _Flags |= StateFlags.PostBlockFinished;
+            _flags |= StateFlags.PostBlockFinished;
 
             // Need a copy of this ref argument since it can be used in many of these calls simultaneously.
             CallbackClosure closureCopy = closure;
@@ -318,31 +304,29 @@ namespace System.Net
             base.Cleanup();
 
             GlobalLog.Print("ContextAwareResult#" + Logging.HashString(this) + "::Cleanup()");
-            if (_Wi != null)
+            if (_windowsIdentity != null)
             {
-                _Wi.Dispose();
-                _Wi = null;
+                _windowsIdentity.Dispose();
+                _windowsIdentity = null;
             }
         }
 
-        //
         // This must be called right before returning the result to the user.  It might call the callback itself,
         // to avoid flowing context.  Even if the operation completes before this call, the callback won't have been
         // called.
         //
         // Returns whether the operation completed sync or not.
-        //
         private bool CaptureOrComplete(ref ExecutionContext cachedContext, bool returnContext)
         {
-            GlobalLog.Assert((_Flags & StateFlags.PostBlockStarted) != 0, "ContextAwareResult#{0}::CaptureOrComplete|Called without calling StartPostingAsyncOp.", Logging.HashString(this));
+            GlobalLog.Assert((_flags & StateFlags.PostBlockStarted) != 0, "ContextAwareResult#{0}::CaptureOrComplete|Called without calling StartPostingAsyncOp.", Logging.HashString(this));
 
             // See if we're going to need to capture the context.
-            bool capturingContext = AsyncCallback != null || (_Flags & StateFlags.CaptureContext) != 0;
+            bool capturingContext = AsyncCallback != null || (_flags & StateFlags.CaptureContext) != 0;
 
             // Peek if we've already completed, but don't fix CompletedSynchronously yet
             // Capture the identity if requested, unless we're going to capture the context anyway, unless
             // capturing the context won't be sufficient.
-            if ((_Flags & StateFlags.CaptureIdentity) != 0 && !InternalPeekCompleted && (!capturingContext))
+            if ((_flags & StateFlags.CaptureIdentity) != 0 && !InternalPeekCompleted && (!capturingContext))
             {
                 GlobalLog.Print("ContextAwareResult#" + Logging.HashString(this) + "::CaptureOrComplete() starting identity capture");
                 SafeCaptureIdentity();
@@ -362,15 +346,15 @@ namespace System.Net
                 {
                     if (!returnContext)
                     {
-                        _Context = cachedContext;
+                        _context = cachedContext;
                         cachedContext = null;
                     }
                     else
                     {
-                        _Context = cachedContext.CreateCopy();
+                        _context = cachedContext.CreateCopy();
                     }
                 }
-                GlobalLog.Print("ContextAwareResult#" + Logging.HashString(this) + "::CaptureOrComplete() _Context:" + Logging.HashString(_Context));
+                GlobalLog.Print("ContextAwareResult#" + Logging.HashString(this) + "::CaptureOrComplete() _Context:" + Logging.HashString(_context));
             }
             else
             {
@@ -395,15 +379,13 @@ namespace System.Net
             return false;
         }
 
-        //
-        // Is guaranteed to be called only once.  If called with a non-zero userToken, the context is not flowed.
-        //
+        // This method is guaranteed to be called only once.  If called with a non-zero userToken, the context is not flowed.
         protected override void Complete(IntPtr userToken)
         {
-            GlobalLog.Print("ContextAwareResult#" + Logging.HashString(this) + "::Complete() _Context(set):" + (_Context != null).ToString() + " userToken:" + userToken.ToString());
+            GlobalLog.Print("ContextAwareResult#" + Logging.HashString(this) + "::Complete() _Context(set):" + (_context != null).ToString() + " userToken:" + userToken.ToString());
 
             // If no flowing, just complete regularly.
-            if ((_Flags & StateFlags.PostBlockStarted) == 0)
+            if ((_flags & StateFlags.PostBlockStarted) == 0)
             {
                 base.Complete(userToken);
                 return;
@@ -416,7 +398,7 @@ namespace System.Net
                 return;
             }
 
-            ExecutionContext context = _Context;
+            ExecutionContext context = _context;
 
             // If the context is being abandoned or wasn't captured (SuppressFlow, null AsyncCallback), just
             // complete regularly, as long as CaptureOrComplete() has finished.
@@ -427,7 +409,7 @@ namespace System.Net
                 return;
             }
 
-            ExecutionContext.Run((_Flags & StateFlags.ThreadSafeContextCopy) != 0 ? context.CreateCopy() : context,
+            ExecutionContext.Run((_flags & StateFlags.ThreadSafeContextCopy) != 0 ? context.CreateCopy() : context,
                                  new ContextCallback(CompleteCallback), null);
         }
 

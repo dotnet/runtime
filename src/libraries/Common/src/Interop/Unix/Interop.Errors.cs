@@ -135,6 +135,13 @@ internal static partial class Interop
         {
             return Interop.Sys.StrError(RawErrno);
         }
+
+        public override string ToString()
+        {
+            return string.Format(
+                "RawErrno: {0} Error: {1} GetErrorMessage: {2}", // No localization required; text is member names used for debugging purposes
+                RawErrno, Error, GetErrorMessage());
+        }
     }
 
     internal partial class Sys

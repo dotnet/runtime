@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using Xunit;
 
-namespace System.Collections.Immutable.Test
+namespace System.Collections.Immutable.Tests
 {
     public class ImmutableListTest : ImmutableListTestBase
     {
@@ -390,7 +390,7 @@ namespace System.Collections.Immutable.Test
         public void RemoveRangeDoesNotEnumerateSequenceIfThisIsEmpty()
         {
             var list = ImmutableList<int>.Empty;
-            list.RemoveRange(Enumerable.Range(1, 1).Select(n => { Assert.False(true, "Sequence should not have been enumerated."); return n; }));
+            list.RemoveRange(Enumerable.Range(1, 1).Select<int, int>(n => { throw new ShouldNotBeInvokedException(); }));
         }
 
         [Fact]

@@ -74,7 +74,7 @@ namespace System.Reflection.Metadata.Tests
                 var md = reader.GetMetadataReader();
                 var il = reader.GetMethodBody(md.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(1)).RelativeVirtualAddress);
 
-                AssertEx.Equal(new byte[] { 0, 42 }, il.GetILBytes());
+                Assert.Equal(new byte[] { 0, 42 }, il.GetILBytes());
                 Assert.Equal(8, il.MaxStack);
             }
         }
@@ -88,7 +88,7 @@ namespace System.Reflection.Metadata.Tests
                 var md = reader.GetMetadataReader();
                 var il = reader.GetMethodBody(md.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(1)).RelativeVirtualAddress);
 
-                AssertEx.Equal(new byte[] { 0, 42 }, il.GetILBytes());
+                Assert.Equal(new byte[] { 0, 42 }, il.GetILBytes());
                 Assert.Equal(8, il.MaxStack);
             }
         }

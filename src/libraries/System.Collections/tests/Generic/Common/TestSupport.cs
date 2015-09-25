@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using TestSupport.Common_TestSupport;
+using Xunit;
 
 namespace TestSupport
 {
@@ -216,17 +217,12 @@ namespace TestSupport
                     OutputMessage(message);
                     ++m_numErrors;
 
-                    Xunit.Assert.True(false, message);
-
-                    //if(!_suppressStackOutput) {
-                    //	System.Diagnostics.StackTrace stackTrace = new System.Diagnostics.StackTrace(true);
-                    //	_outputWriter.WriteLine(stackTrace);
-                    //}
+                    Assert.True(expression, message);
 
                     m_outputWriter.WriteLine();
                 }
 
-                return expression;
+                return true;
             }
 
             /// <summary>

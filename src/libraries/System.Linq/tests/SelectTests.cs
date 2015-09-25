@@ -4,13 +4,138 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class SelectTests
+    public class SelectTests : EnumerableTests
     {
-        #region Null arguments
+        [Fact]
+        public void SameResultsRepeatCallsStringQuery()
+        {
+            var q1 = from x1 in new string[] { "Alen", "Felix", null, null, "X", "Have Space", "Clinton", "" }
+                     select x1; ;
+
+            var q2 = from x2 in new int[] { 55, 49, 9, -100, 24, 25, -1, 0 }
+                     select x2;
+
+            var q = from x3 in q1
+                    from x4 in q2
+                    select new { a1 = x3, a2 = x4 };
+
+            Assert.Equal(q.Select(e => e.a1), q.Select(e => e.a1));
+        }
+
+        [Fact]
+        public void SingleElement()
+        {
+            var source = new[]
+            {
+                new  { name = "Prakash", custID = 98088 }
+            };
+            string[] expected = { "Prakash" };
+
+            Assert.Equal(expected, source.Select(e => e.name));
+        }
+
+        [Fact]
+        public void SelectProperty()
+        {
+            var source = new []{
+                new { name="Prakash", custID=98088 },
+                new { name="Bob", custID=29099 },
+                new { name="Chris", custID=39033 },
+                new { name=(string)null, custID=30349 },
+                new { name="Prakash", custID=39030 }
+            };
+            string[] expected = { "Prakash", "Bob", "Chris", null, "Prakash" };
+            Assert.Equal(expected, source.Select(e => e.name));
+        }
+
+        [Fact]
+        public void EmptyWithIndexedSelector()
+        {
+            Assert.Equal(Enumerable.Empty<int>(), Enumerable.Empty<string>().Select((s, i) => s.Length + i));
+        }
+
+        [Fact]
+        public void EnumerateFromDifferentThread()
+        {
+            var selected = Enumerable.Range(0, 100).Where(i => i > 3).Select(i => i.ToString());
+            Task[] tasks = new Task[4];
+            for (int i = 0; i != 4; ++i)
+                tasks[i] = Task.Run(() => selected.ToList());
+            Task.WaitAll(tasks);
+        }
+
+        [Fact]
+        public void SingleElementIndexedSelector()
+        {
+            var source = new[]
+            {
+                new  { name = "Prakash", custID = 98088 }
+            };
+            string[] expected = { "Prakash" };
+
+            Assert.Equal(expected, source.Select((e, index) => e.name));
+        }
+
+        [Fact]
+        public void SelectPropertyPassingIndex()
+        {
+            var source = new[]{
+                new { name="Prakash", custID=98088 },
+                new { name="Bob", custID=29099 },
+                new { name="Chris", custID=39033 },
+                new { name=(string)null, custID=30349 },
+                new { name="Prakash", custID=39030 }
+            };
+            string[] expected = { "Prakash", "Bob", "Chris", null, "Prakash" };
+            Assert.Equal(expected, source.Select((e, i) => e.name));
+        }
+
+        [Fact]
+        public void SelectPropertyUsingIndex()
+        {
+            var source = new[]{
+                new { name="Prakash", custID=98088 },
+                new { name="Bob", custID=29099 },
+                new { name="Chris", custID=39033 }
+            };
+            string[] expected = { "Prakash", null, null };
+            Assert.Equal(expected, source.Select((e, i) => i == 0 ? e.name : null));
+        }
+
+        [Fact]
+        public void SelectPropertyPassingIndexOnLast()
+        {
+            var source = new[]{
+                new { name="Prakash", custID=98088},
+                new { name="Bob", custID=29099 },
+                new { name="Chris", custID=39033 },
+                new { name="Robert", custID=39033 },
+                new { name="Allen", custID=39033 },
+                new { name="Chuck", custID=39033 }
+            };
+            string[] expected = { null, null, null, null, null, "Chuck" };
+            Assert.Equal(expected, source.Select((e, i) => i == 5 ? e.name : null));
+        }
+
+        [Fact]
+        [OuterLoop]
+        public void Overflow()
+        {
+            var selected = new FastInfiniteEnumerator<int>().Select((e, i) => e);
+            using (var en = selected.GetEnumerator())
+                Assert.Throws<OverflowException>(() =>
+                {
+                    while (en.MoveNext())
+                    {
+
+                    }
+                });
+        }
 
         [Fact]
         public void Select_SourceIsNull_ArgumentNullExceptionThrown()
@@ -18,7 +143,25 @@ namespace System.Linq.Tests
             IEnumerable<int> source = null;
             Func<int, int> selector = i => i + 1;
 
-            Assert.Throws<ArgumentNullException>(() => source.Select(selector));
+            Assert.Throws<ArgumentNullException>("source", () => source.Select(selector));
+        }
+
+        [Fact]
+        public void Select_SelectorIsNull_ArgumentNullExceptionThrown_Indexed()
+        {
+            IEnumerable<int> source = Enumerable.Range(1, 10);
+            Func<int, int, int> selector = null;
+
+            Assert.Throws<ArgumentNullException>("selector", () => source.Select(selector));
+        }
+
+        [Fact]
+        public void Select_SourceIsNull_ArgumentNullExceptionThrown_Indexed()
+        {
+            IEnumerable<int> source = null;
+            Func<int, int, int> selector = (e, i) => i + 1;
+
+            Assert.Throws<ArgumentNullException>("source", () => source.Select(selector));
         }
 
         [Fact]
@@ -27,13 +170,8 @@ namespace System.Linq.Tests
             IEnumerable<int> source = Enumerable.Range(1, 10);
             Func<int, int> selector = null;
 
-            Assert.Throws<ArgumentNullException>(() => source.Select(selector));
+            Assert.Throws<ArgumentNullException>("selector", () => source.Select(selector));
         }
-
-        #endregion
-
-        #region Deferred execution
-
         [Fact]
         public void Select_SourceIsAnArray_ExecutionIsDeferred()
         {
@@ -133,10 +271,6 @@ namespace System.Linq.Tests
             IEnumerable<int> query = source.Select(d => d).Select(d => d());
             Assert.False(funcCalled);
         }
-
-        #endregion
-
-        #region Expected return value
 
         [Fact]
         public void Select_SourceIsAnArray_ReturnsExpectedValues()
@@ -418,10 +552,6 @@ namespace System.Linq.Tests
             Assert.False(wasSelectorCalled);
         }
 
-        #endregion
-
-        #region Exceptions
-
         [Fact]
         public void Select_ExceptionThrownFromSelector_ExceptionPropagatedToTheCaller()
         {
@@ -451,40 +581,6 @@ namespace System.Linq.Tests
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
             enumerator.MoveNext();
             Assert.Equal(3 /* 2 + 1 */, enumerator.Current);
-        }
-
-        /// <summary>
-        /// Test enumerator - returns int values from 1 to 5 included.
-        /// </summary>
-        private class TestEnumerator : IEnumerable<int>, IEnumerator<int>
-        {
-            private int _current = 0;
-
-            public virtual int Current { get { return _current; } }
-
-            object IEnumerator.Current { get { return Current; } }
-
-            public void Dispose() { }
-
-            public virtual IEnumerator<int> GetEnumerator()
-            {
-                return this;
-            }
-
-            public virtual bool MoveNext()
-            {
-                return _current++ < 5;
-            }
-
-            public void Reset()
-            {
-                throw new NotImplementedException();
-            }
-
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return GetEnumerator();
-            }
         }
 
         [Fact]
@@ -556,21 +652,6 @@ namespace System.Linq.Tests
             Assert.Equal(3 /* 2 + 1 */, enumerator.Current);
         }
 
-        /// <summary>
-        /// Test enumerator - throws InvalidOperationException on first call to MoveNext.
-        /// </summary>
-        private class ThrowsOnMoveNext : TestEnumerator
-        {
-            public override bool MoveNext()
-            {
-                bool baseReturn = base.MoveNext();
-                if (base.Current == 1)
-                    throw new InvalidOperationException();
-
-                return baseReturn;
-            }
-        }
-
         [Fact]
         public void Select_ExceptionThrownFromGetEnumeratorOnSource_ExceptionPropagatedToTheCaller()
         {
@@ -600,21 +681,6 @@ namespace System.Linq.Tests
             Assert.Equal("1", enumerator.Current);
         }
 
-        /// <summary>
-        /// Test enumerator - throws InvalidOperationException from GetEnumerator when called for the first time.
-        /// </summary>
-        private class ThrowsOnGetEnumerator : TestEnumerator
-        {
-            private int getEnumeratorCallCount;
-            public override IEnumerator<int> GetEnumerator()
-            {
-                if (getEnumeratorCallCount++ == 0)
-                    throw new InvalidOperationException();
-
-                return base.GetEnumerator();
-            }
-        }
-
         [Fact]
         public void Select_SourceListGetsModifiedDuringIteration_ExceptionIsPropagated()
         {
@@ -630,8 +696,6 @@ namespace System.Linq.Tests
             source.Add(6);
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
         }
-
-        #endregion
 
         [Fact]
         public void Select_GetEnumeratorCalledTwice_DifferentInstancesReturned()
@@ -659,6 +723,47 @@ namespace System.Linq.Tests
             var enumerator = result.GetEnumerator();
 
             Assert.Throws<NotSupportedException>(() => enumerator.Reset());
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerate()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Select(i => i);
+            // Don't insist on this behaviour, but check its correct if it happens
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerateIndexed()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Select((e, i) => i);
+            // Don't insist on this behaviour, but check its correct if it happens
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerateArray()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).ToArray().Select(i => i);
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerateList()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).ToList().Select(i => i);
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
+        }
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerateIList()
+        {
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).ToList().AsReadOnly().Select(i => i);
+            var en = iterator as IEnumerator<int>;
+            Assert.False(en != null && en.MoveNext());
         }
     }
 }

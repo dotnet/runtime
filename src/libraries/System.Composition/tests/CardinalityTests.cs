@@ -34,7 +34,7 @@ namespace System.Composition.UnitTests
         public void RequestingOneWhereMultipleArePresentFails()
         {
             var c = CreateContainer(typeof(LogA), typeof(LogB));
-            var x = AssertX.Throws<CompositionFailedException>(() =>
+            var x = Assert.Throws<CompositionFailedException>(() =>
                 c.GetExport<ILog>());
             Assert.True(x.Message.Contains("LogA"));
             Assert.True(x.Message.Contains("LogB"));
@@ -44,7 +44,7 @@ namespace System.Composition.UnitTests
         public void ImportingOneWhereMultipleArePresentFails()
         {
             var c = CreateContainer(typeof(LogA), typeof(LogB), typeof(UsesLog));
-            var x = AssertX.Throws<CompositionFailedException>(() =>
+            var x = Assert.Throws<CompositionFailedException>(() =>
                 c.GetExport<UsesLog>());
             Assert.True(x.Message.Contains("LogA"));
             Assert.True(x.Message.Contains("LogB"));

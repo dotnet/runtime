@@ -323,7 +323,7 @@ namespace System.Numerics
             Debug.Assert(value != null);
             Debug.Assert(value.Length != 0);
 
-            var bits = new uint[value.Length];
+            uint[] bits = new uint[value.Length];
             Array.Copy(value, 0, bits, 0, bits.Length);
             return bits;
         }
@@ -333,7 +333,7 @@ namespace System.Numerics
             if (value == 0)
                 return 32;
 
-            var count = 0;
+            int count = 0;
             if ((value & 0xFFFF0000) == 0)
             {
                 count += 16;

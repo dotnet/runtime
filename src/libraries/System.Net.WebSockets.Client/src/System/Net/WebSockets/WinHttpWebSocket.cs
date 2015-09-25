@@ -8,17 +8,25 @@ using System.Threading.Tasks;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace System.Net.WebSockets
 {
     internal class WinHttpWebSocket : WebSocket
     {
+        #region Constants
+        // TODO: This code needs to be shared with WinHttpClientHandler
+        private const string HeaderNameCookie = "Cookie";
+        private const string HeaderNameWebSocketProtocol = "Sec-WebSocket-Protocol";
+        #endregion
+
         // TODO (Issue 2503): move System.Net.* strings to resources as appropriate.
 
         // NOTE: All WinHTTP operations must be called while holding the _operation.Lock.
         // It is critical that no handle gets closed while a WinHTTP function is running.
         private WebSocketCloseStatus? _closeStatus = null;
         private string _closeStatusDescription = null;
+        private string _subProtocol = null;
         private bool _disposed = false;
 
         private WinHttpWebSocketState _operation = new WinHttpWebSocketState();
@@ -60,7 +68,7 @@ namespace System.Net.WebSockets
         {
             get
             {
-                throw NotImplemented.ByDesignWithMessage("This functionality is not yet implemented.");
+                return _subProtocol;
             }
         }
         #endregion
@@ -142,6 +150,8 @@ namespace System.Net.WebSockets
 
                     _operation.RequestHandle.AttachCallback();
 
+                    AddRequestHeaders(uri, options);
+
                     _operation.TcsUpgrade = new TaskCompletionSource<bool>();
                 }
 
@@ -151,6 +161,8 @@ namespace System.Net.WebSockets
 
                 lock (_operation.Lock)
                 {
+                    VerifyUpgradeResponse();
+
                     ThrowOnInvalidConnectState();
 
                     _operation.WebSocketHandle =
@@ -196,7 +208,7 @@ namespace System.Net.WebSockets
             Interop.WinHttp.SafeWinHttpHandle sessionHandle;
             sessionHandle = Interop.WinHttp.WinHttpOpen(
                            IntPtr.Zero,
-                           Interop.WinHttp.WINHTTP_ACCESS_TYPE_NO_PROXY,
+                           Interop.WinHttp.WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
                            null,
                            null,
                            (int)Interop.WinHttp.WINHTTP_FLAG_ASYNC);
@@ -563,6 +575,134 @@ namespace System.Net.WebSockets
 
                 return _operation.TcsCloseOutput.Task;
             }
+        }
+
+        private void VerifyUpgradeResponse()
+        {
+            // Check the status code
+            var statusCode = GetHttpStatusCode();
+            if (statusCode != HttpStatusCode.SwitchingProtocols)
+            {
+                Abort();
+                return;
+            }
+
+            _subProtocol = GetResponseHeaderStringInfo(HeaderNameWebSocketProtocol);
+        }
+
+        private void AddRequestHeaders(Uri uri, ClientWebSocketOptions options)
+        {
+            var requestHeadersBuffer = new StringBuilder();
+
+            // Manually add cookies.
+            if (options.Cookies != null)
+            {
+                string cookieHeader = GetCookieHeader(uri, options.Cookies);
+                if (!string.IsNullOrEmpty(cookieHeader))
+                {
+                    requestHeadersBuffer.AppendLine(cookieHeader);
+                }
+            }
+
+            // Serialize general request headers.
+            requestHeadersBuffer.AppendLine(options.RequestHeaders.ToString());
+
+            var subProtocols = options.RequestedSubProtocols;
+            if (subProtocols.Count > 0)
+            {
+                requestHeadersBuffer.AppendLine(string.Format("{0}: {1}", HeaderNameWebSocketProtocol,
+                    string.Join(", ", subProtocols)));
+            }
+            
+            // Add request headers to WinHTTP request handle.
+            if (!Interop.WinHttp.WinHttpAddRequestHeaders(
+                _operation.RequestHandle,
+                requestHeadersBuffer,
+                (uint)requestHeadersBuffer.Length,
+                Interop.WinHttp.WINHTTP_ADDREQ_FLAG_ADD))
+            {
+                WinHttpException.ThrowExceptionUsingLastError();
+            }
+        }
+
+        private static string GetCookieHeader(Uri uri, CookieContainer cookies)
+        {
+            string cookieHeader = null;
+
+            Debug.Assert(cookies != null);
+
+            string cookieValues = cookies.GetCookieHeader(uri);
+            if (!string.IsNullOrEmpty(cookieValues))
+            {
+                cookieHeader = string.Format(CultureInfo.InvariantCulture, "{0}: {1}", HeaderNameCookie, cookieValues);
+            }
+
+            return cookieHeader;
+        }
+
+        private HttpStatusCode GetHttpStatusCode()
+        {
+            uint infoLevel = Interop.WinHttp.WINHTTP_QUERY_STATUS_CODE | Interop.WinHttp.WINHTTP_QUERY_FLAG_NUMBER;
+            uint result = 0;
+            uint resultSize = sizeof(uint);
+
+            if (!Interop.WinHttp.WinHttpQueryHeaders(
+                _operation.RequestHandle,
+                infoLevel,
+                Interop.WinHttp.WINHTTP_HEADER_NAME_BY_INDEX,
+                ref result,
+                ref resultSize,
+                IntPtr.Zero))
+            {
+                WinHttpException.ThrowExceptionUsingLastError();
+            }
+
+            return (HttpStatusCode)result;
+        }
+
+        private string GetResponseHeaderStringInfo(string headerName)
+        {
+            uint bytesNeeded = 0;
+            bool results = false;
+
+            // Call WinHttpQueryHeaders once to obtain the size of the buffer needed.  The size is returned in
+            // bytes but the API actually returns Unicode characters.
+            if (!Interop.WinHttp.WinHttpQueryHeaders(
+                _operation.RequestHandle,
+                Interop.WinHttp.WINHTTP_QUERY_CUSTOM,
+                headerName,
+                null,
+                ref bytesNeeded,
+                IntPtr.Zero))
+            {
+                int lastError = Marshal.GetLastWin32Error();
+                if (lastError == Interop.WinHttp.ERROR_WINHTTP_HEADER_NOT_FOUND)
+                {
+                    return null;
+                }
+
+                if (lastError != Interop.WinHttp.ERROR_INSUFFICIENT_BUFFER)
+                {
+                    throw WinHttpException.CreateExceptionUsingError(lastError);
+                }
+            }
+
+            int charsNeeded = (int)bytesNeeded / sizeof(char);
+            var buffer = new StringBuilder(charsNeeded, charsNeeded);
+
+            results = Interop.WinHttp.WinHttpQueryHeaders(
+                _operation.RequestHandle,
+                Interop.WinHttp.WINHTTP_QUERY_CUSTOM,
+                headerName,
+                buffer,
+                ref bytesNeeded,
+                IntPtr.Zero);
+            if (!results)
+            {
+                WinHttpException.ThrowExceptionUsingLastError();
+            }
+
+            return buffer.ToString();
         }
 
         public override void Dispose()

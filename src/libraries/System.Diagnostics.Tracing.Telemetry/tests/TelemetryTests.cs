@@ -1,13 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
-using Xunit;
 using System.Threading.Tasks;
+using Xunit;
 using TelemData = System.Collections.Generic.KeyValuePair<string, object>;
 
-namespace System.Diagnostics.Tracing.Telemetry.Tests
+namespace System.Diagnostics.Tracing.Tests
 {
     /// <summary>
     /// Tests for TelemetrySource and TelemetryListener
@@ -621,7 +620,8 @@ namespace System.Diagnostics.Tracing.Telemetry.Tests
 
         public void OnError(Exception error)
         {
-            Assert.True(false, "Error happened on IObserver");
+            // No errors should be thrown.
+            throw new ShouldNotBeInvokedException();
         }
 
         public void OnNext(T value)

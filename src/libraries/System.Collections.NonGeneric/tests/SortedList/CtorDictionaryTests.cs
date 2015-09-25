@@ -1,47 +1,47 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
 using System.Text;
 using Xunit;
 
-namespace System.Collections.SortedListTests
+namespace System.Collections.Tests
 {
-    public class SortedListCtorTestClass : IComparable
+    public class SortedList_CtorDictionaryTests
     {
-        internal string str = null; //key value
-
-        public SortedListCtorTestClass() { }
-
-        public SortedListCtorTestClass(string tstr)
+        public class SortedListCtorTestClass : IComparable
         {
-            str = tstr;
+            internal string str = null; //key value
+
+            public SortedListCtorTestClass()
+            {
+            }
+
+            public SortedListCtorTestClass(string tstr)
+            {
+                str = tstr;
+            }
+
+            public virtual int CompareTo(Object obj)
+            {
+                return str.CompareTo(obj.ToString());
+            }
+
+            public override bool Equals(Object obj)
+            {
+                return str.Equals(obj.ToString());
+            }
+
+            public override int GetHashCode()
+            {
+                return str.GetHashCode();
+            }
+
+            public override string ToString()
+            {
+                return str.ToString();
+            }
         }
 
-        public virtual int CompareTo(Object obj)
-        {
-            return str.CompareTo(obj.ToString());
-        }
-
-        public override bool Equals(Object obj)
-        {
-            return str.Equals(obj.ToString());
-        }
-
-        public override int GetHashCode()
-        {
-            return str.GetHashCode();
-        }
-
-        public override string ToString()
-        {
-            return str.ToString();
-        }
-    }
-
-    public class CtorDictionaryTests
-    {
         [Fact]
         public void Test01()
         {

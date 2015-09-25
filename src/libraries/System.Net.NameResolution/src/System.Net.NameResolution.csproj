@@ -8,6 +8,8 @@
     <ProjectGuid>{1714448C-211E-48C1-8B7E-4EE667D336A1}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);FEATURE_CORECLR</DefineConstants>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dnxcore50</PackageTargetFramework>
+    <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
   </PropertyGroup>
 
   <!-- Help VS understand available configurations -->
@@ -187,11 +189,11 @@
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.gethostbyname_r.cs">
       <Link>Interop\Linux\libc\Interop.gethostbyname_r.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.addrinfo.cs">
-      <Link>Interop\Unix\libc\Interop.addrinfo.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.addrinfo.cs">
+      <Link>Interop\Linux\libc\Interop.addrinfo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.sockaddr.cs">
-      <Link>Interop\Unix\libc\Interop.sockaddr.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.sockaddr.cs">
+      <Link>Interop\Linux\libc\Interop.sockaddr.cs</Link>
     </Compile>
   </ItemGroup>
 

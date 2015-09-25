@@ -1,14 +1,12 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Xunit;
-using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
-using System.Text;
 
-namespace System.Globalization.Extensions.Tests
+namespace System.Globalization.Tests
 {
     public static class Factory
     {
@@ -27,16 +25,9 @@ namespace System.Globalization.Extensions.Tests
         /// </summary>
         private static Stream GetIdnaTestTxt()
         {
-            foreach (var name in typeof(Factory).GetTypeInfo().Assembly.GetManifestResourceNames())
-            {
-                if (name.EndsWith("IdnaTest.txt", StringComparison.Ordinal))
-                {
-                    return typeof(Factory).GetTypeInfo().Assembly.GetManifestResourceStream(name);
-                }
-            }
-
-            Assert.False(true, "Verify test file 'IdnaTest.txt' is included as an embedded resource");
-            return null;
+            // test file 'IdnaTest.txt' is included as an embedded resource
+            var name = typeof(Factory).GetTypeInfo().Assembly.GetManifestResourceNames().First(n => n.EndsWith("IdnaTest.txt", StringComparison.Ordinal));
+            return typeof(Factory).GetTypeInfo().Assembly.GetManifestResourceStream(name);
         }
 
         private static IEnumerable<IConformanceIdnaTest> ParseFile(Stream stream, Func<string, int, IConformanceIdnaTest> f)

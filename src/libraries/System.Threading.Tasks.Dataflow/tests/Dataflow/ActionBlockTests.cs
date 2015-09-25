@@ -386,12 +386,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                     ab.Post(i); // Post may return false, depending on race with ActionBlock faulting
                 }
 
-                try
-                {
-                    await ab.Completion;
-                    Assert.True(false, "Should always throw IOE");
-                }
-                catch (InvalidOperationException) { }
+                await Assert.ThrowsAsync<InvalidOperationException>(async () => await ab.Completion);
 
                 Assert.Equal(expected: 0, actual: ab.InputCount);
                 Assert.False(ab.Post(5));

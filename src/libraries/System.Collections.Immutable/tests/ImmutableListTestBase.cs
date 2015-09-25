@@ -7,7 +7,7 @@ using Xunit;
 using Validation;
 using System.Diagnostics;
 
-namespace System.Collections.Immutable.Test
+namespace System.Collections.Immutable.Tests
 {
     public abstract class ImmutableListTestBase : SimpleElementImmutablesTestBase
     {
@@ -57,7 +57,7 @@ namespace System.Collections.Immutable.Test
         [Fact]
         public void ForEachTest()
         {
-            this.GetListQuery(ImmutableList<int>.Empty).ForEach(n => Assert.True(false, "Empty list should not invoke this."));
+            this.GetListQuery(ImmutableList<int>.Empty).ForEach(n => { throw new ShouldNotBeInvokedException(); });
 
             var list = ImmutableList<int>.Empty.AddRange(Enumerable.Range(5, 3));
             var hitTest = new bool[list.Max() + 1];
@@ -105,11 +105,7 @@ namespace System.Collections.Immutable.Test
         [Fact]
         public void FindLastTest()
         {
-            Assert.Equal(0, this.GetListQuery(ImmutableList<int>.Empty).FindLast(n =>
-            {
-                Assert.True(false, "Predicate should not have been invoked.");
-                return true;
-            }));
+            Assert.Equal(0, this.GetListQuery(ImmutableList<int>.Empty).FindLast(n => { throw new ShouldNotBeInvokedException(); }));
             var list = ImmutableList<int>.Empty.AddRange(new[] { 2, 3, 4, 5, 6 });
             Assert.Equal(5, this.GetListQuery(list).FindLast(n => (n % 2) == 1));
         }

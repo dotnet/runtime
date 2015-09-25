@@ -16,6 +16,9 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
+      <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
+    </Compile>
     <Compile Include="XmlAttributeCollectionTests\AppendTests.cs" />
     <Compile Include="XmlAttributeCollectionTests\CollectionInterfaceTests.cs" />
     <Compile Include="XmlAttributeCollectionTests\CopyToTests.cs" />

@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class CastTests
+    public class CastTests : EnumerableTests
     {
         [Fact]
         public void CastIntToLongThrows()
@@ -35,9 +35,7 @@ namespace System.Linq.Tests
         public void EmptySource()
         {
             object[] source = { };
-            int[] expected = { };
-
-            Assert.Equal(expected, source.Cast<int>());
+            Assert.Empty(source.Cast<int>());
 
         }
 
@@ -203,6 +201,21 @@ namespace System.Linq.Tests
             int?[] source = new int?[] { -4, 1, null, 3 };
             IEnumerable<int> cast = source.Cast<int>();
             Assert.Throws<NullReferenceException>(() => cast.ToList());
+        }
+
+        [Fact]
+        public void NullSource()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<object>)null).Cast<string>());
+        }
+
+        [Fact]
+        public void ForcedToEnumeratorDoesntEnumerate()
+        {
+            var iterator = new object[0].Where(i => i != null).Cast<string>();
+            // Don't insist on this behaviour, but check its correct if it happens
+            var en = iterator as IEnumerator<string>;
+            Assert.False(en != null && en.MoveNext());
         }
     }
 }
