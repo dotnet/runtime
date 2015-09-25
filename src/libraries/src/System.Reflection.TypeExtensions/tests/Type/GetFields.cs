@@ -1,11 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Reflection;
 using Xunit;
 
-namespace System.Reflection.Compatibility.UnitTests.TypeTests
+namespace System.Reflection.Tests
 {
     public class GetFieldsTests
     {
@@ -70,31 +68,31 @@ namespace System.Reflection.Compatibility.UnitTests.TypeTests
         [Fact]
         public void Test1()
         {
-            TryGetFields("System.Reflection.Compatibility.UnitTests.TypeTests.GenericClassUsingNestedInterfaces`2[System.String,System.Int32]", new string[] { "System.String FieldZero", "System.String FieldOne", "Int32 FieldTwo", "Int32 FieldThree" });
+            TryGetFields("System.Reflection.Tests.GenericClassUsingNestedInterfaces`2[System.String,System.Int32]", new string[] { "System.String FieldZero", "System.String FieldOne", "Int32 FieldTwo", "Int32 FieldThree" });
         }
 
         [Fact]
         public void Test2()
         {
-            TryGetFields("System.Reflection.Compatibility.UnitTests.TypeTests.GenericStructWithInterface`1[System.String]", new string[] { "Int32 field2", "System.String field" });
+            TryGetFields("System.Reflection.Tests.GenericStructWithInterface`1[System.String]", new string[] { "Int32 field2", "System.String field" });
         }
 
         [Fact]
         public void Test3()
         {
-            TryGetFields("System.Reflection.Compatibility.UnitTests.TypeTests.NonGenericClassWithGenericInterface", new string[] { "Int32 field" });
+            TryGetFields("System.Reflection.Tests.NonGenericClassWithGenericInterface", new string[] { "Int32 field" });
         }
 
         [Fact]
         public void Test4()
         {
-            TryGetFields("System.Reflection.Compatibility.UnitTests.TypeTests.GenericStruct2TP`2[System.Int32,System.String]", new string[] { "System.String field2", "Int32 field" });
+            TryGetFields("System.Reflection.Tests.GenericStruct2TP`2[System.Int32,System.String]", new string[] { "System.String field2", "Int32 field" });
         }
 
         [Fact]
         public void Test5()
         {
-            TryGetFields("System.Reflection.Compatibility.UnitTests.TypeTests.GenericClassWithVarArgMethod`1", new string[] { "T field" });
+            TryGetFields("System.Reflection.Tests.GenericClassWithVarArgMethod`1", new string[] { "T field" });
         }
     }
 }

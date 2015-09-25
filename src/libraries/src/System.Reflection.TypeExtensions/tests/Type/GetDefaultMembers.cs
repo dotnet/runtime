@@ -1,12 +1,10 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
-using System.Reflection;
 using Xunit;
 
-namespace System.Reflection.Compatibility.UnitTests.TypeTests
+namespace System.Reflection.Tests
 {
     public class GenericGetDefaultMembersTest
     {
@@ -59,27 +57,27 @@ namespace System.Reflection.Compatibility.UnitTests.TypeTests
         [Fact]
         public void Test1()
         {
-            TryGetDefaultMembers("System.Reflection.Compatibility.UnitTests.TypeTests.GenericArrayWrapperClass`1[System.String]", new string[] { "System.String Item [Int32]" });
+            TryGetDefaultMembers("System.Reflection.Tests.GenericArrayWrapperClass`1[System.String]", new string[] { "System.String Item [Int32]" });
         }
 
         [Fact]
         public void Test2()
         {
-            TryGetDefaultMembers("System.Reflection.Compatibility.UnitTests.TypeTests.GenericArrayWrapperClass`1", new string[] { "T Item [Int32]" });
+            TryGetDefaultMembers("System.Reflection.Tests.GenericArrayWrapperClass`1", new string[] { "T Item [Int32]" });
         }
 
         [Fact]
         public void Test3()
         {
             //Test003
-            TryGetDefaultMembers("System.Reflection.Compatibility.UnitTests.TypeTests.GenericClass`1", new string[] { "T ReturnAndSetField(T)" });
+            TryGetDefaultMembers("System.Reflection.Tests.GenericClass`1", new string[] { "T ReturnAndSetField(T)" });
         }
 
         [Fact]
         public void Test4()
         {
             //Test004
-            TryGetDefaultMembers("System.Reflection.Compatibility.UnitTests.TypeTests.GenericClass`1[System.Int32]", new string[] { "Int32 ReturnAndSetField(Int32)" });
+            TryGetDefaultMembers("System.Reflection.Tests.GenericClass`1[System.Int32]", new string[] { "Int32 ReturnAndSetField(Int32)" });
         }
     }
 

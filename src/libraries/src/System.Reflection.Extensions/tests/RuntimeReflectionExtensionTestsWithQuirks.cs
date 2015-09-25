@@ -14,7 +14,7 @@ using Xunit;
 //   members from base classes.)
 //
 
-namespace System.Reflection.Extensions.Tests
+namespace System.Reflection.Tests
 {
     public class RuntimeReflectionExtensionsTestsWithQuirks
     {
@@ -75,7 +75,7 @@ namespace System.Reflection.Extensions.Tests
 
         private static TypeInfo[] GetTypes()
         {
-            Assembly asm = typeof(PropertyDefinitions.BaseClass).GetTypeInfo().Assembly;
+            Assembly asm = typeof(PropertyTestBaseClass).GetTypeInfo().Assembly;
             var list = new List<TypeInfo>();
             foreach (var t in asm.DefinedTypes)
             {

@@ -1,14 +1,10 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Reflection;
 using Xunit;
 
-namespace System.Reflection.Compatibility.UnitTests.FieldInfoTests
+namespace System.Reflection.Tests
 {
-    using System.Reflection.Compatibility.UnitTests.FieldInfoTests.HelperObjects;
-
     public class FieldInfoFieldType
     {
         private BindingFlags _allFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
@@ -101,11 +97,9 @@ namespace System.Reflection.Compatibility.UnitTests.FieldInfoTests
             Assert.Equal(expected, actual);
         }
     }
-}
 
-namespace System.Reflection.Compatibility.UnitTests.FieldInfoTests.HelperObjects
-{
     #region Helper Objects
+
     internal struct UserMadeStruct
     {
     }
@@ -128,5 +122,6 @@ namespace System.Reflection.Compatibility.UnitTests.FieldInfoTests.HelperObjects
         val1,
         val2
     }
+
     #endregion
 }

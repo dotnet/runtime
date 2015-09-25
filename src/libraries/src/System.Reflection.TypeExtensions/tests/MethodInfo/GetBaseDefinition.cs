@@ -1,14 +1,10 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Xunit;
-using System;
 using System.Diagnostics;
-using System.Reflection;
-using System.Reflection.Emit;
+using Xunit;
 
-
-namespace System.Reflection.Compatibility.UnitTests.MethodInfoTests
+namespace System.Reflection.Tests
 {
     internal class Binding_Flags
     {
@@ -33,7 +29,7 @@ namespace System.Reflection.Compatibility.UnitTests.MethodInfoTests
 
             // [A] Vanila: Class does not extend (other than Object)/implement
 
-            type = Type.GetType("System.Reflection.Compatibility.UnitTests.MethodInfoTests.Co4611_a3");
+            type = Type.GetType("System.Reflection.Tests.Co4611_a3");
             Assert.NotNull(type);
             Assert.Equal("Co4611_a3", type.Name);
 
@@ -81,7 +77,7 @@ namespace System.Reflection.Compatibility.UnitTests.MethodInfoTests
             MethodInfo mInfo = null;
             MethodInfo mInfo2 = null;
 
-            type = Type.GetType("System.Reflection.Compatibility.UnitTests.MethodInfoTests.Ab_Co4611_a1");
+            type = Type.GetType("System.Reflection.Tests.Ab_Co4611_a1");
             Assert.NotNull(type);
             Assert.Equal("Ab_Co4611_a1", type.Name);
 
@@ -116,7 +112,7 @@ namespace System.Reflection.Compatibility.UnitTests.MethodInfoTests
             MethodInfo mInfo2 = null;
 
             // Extended class Co4611_X1
-            type = Type.GetType("System.Reflection.Compatibility.UnitTests.MethodInfoTests.Co4611_X1");
+            type = Type.GetType("System.Reflection.Tests.Co4611_X1");
             Assert.NotNull(type);
             Assert.Equal("Co4611_X1", type.Name);
 
@@ -150,7 +146,7 @@ namespace System.Reflection.Compatibility.UnitTests.MethodInfoTests
             Type[] types = null;
             MethodInfo mInfo = null;
             MethodInfo mInfo2 = null;
-            type = Type.GetType("System.Reflection.Compatibility.UnitTests.MethodInfoTests.Co4611_a6");
+            type = Type.GetType("System.Reflection.Tests.Co4611_a6");
             Assert.NotNull(type);
             Assert.Equal("Co4611_a6", type.Name);
 
@@ -172,7 +168,7 @@ namespace System.Reflection.Compatibility.UnitTests.MethodInfoTests
             Type[] types = null;
             MethodInfo mInfo = null;
             MethodInfo mInfo2 = null;
-            type = Type.GetType("System.Reflection.Compatibility.UnitTests.MethodInfoTests.Co4611_a4");
+            type = Type.GetType("System.Reflection.Tests.Co4611_a4");
             Assert.NotNull(type);
             Assert.Equal("Co4611_a4", type.Name);
 
@@ -193,7 +189,7 @@ namespace System.Reflection.Compatibility.UnitTests.MethodInfoTests
             Type[] types = null;
             MethodInfo mInfo = null;
             MethodInfo mInfo2 = null;
-            type = Type.GetType("System.Reflection.Compatibility.UnitTests.MethodInfoTests.Co4611_a5");
+            type = Type.GetType("System.Reflection.Tests.Co4611_a5");
             Assert.NotNull(type);
             Assert.Equal("Co4611_a5", type.Name);
 
@@ -216,7 +212,7 @@ namespace System.Reflection.Compatibility.UnitTests.MethodInfoTests
             MethodInfo mInfo = null;
             MethodInfo mInfo2 = null;
             // interface I_Co4611_a2
-            type = Type.GetType("System.Reflection.Compatibility.UnitTests.MethodInfoTests.I_Co4611_a2");
+            type = Type.GetType("System.Reflection.Tests.I_Co4611_a2");
             Assert.NotNull(type);
             Assert.Equal("I_Co4611_a2", type.Name);
 
@@ -237,7 +233,7 @@ namespace System.Reflection.Compatibility.UnitTests.MethodInfoTests
             Type type = null;
             MethodInfo mInfo = null;
             MethodInfo mInfo2 = null;
-            type = Type.GetType("System.Reflection.Compatibility.UnitTests.MethodInfoTests.Co4611_X2");
+            type = Type.GetType("System.Reflection.Tests.Co4611_X2");
             Assert.NotNull(type);
             Assert.Equal("Co4611_X2", type.Name);
 
@@ -246,7 +242,7 @@ namespace System.Reflection.Compatibility.UnitTests.MethodInfoTests
             Assert.NotNull(mInfo);
             mInfo2 = mInfo.GetBaseDefinition();
             Assert.Equal("MethodA", mInfo2.Name);
-            Assert.Equal(Type.GetType("System.Reflection.Compatibility.UnitTests.MethodInfoTests.Co4611_X2"), mInfo2.DeclaringType);
+            Assert.Equal(Type.GetType("System.Reflection.Tests.Co4611_X2"), mInfo2.DeclaringType);
         }
     }
 

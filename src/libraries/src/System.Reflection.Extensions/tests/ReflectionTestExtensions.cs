@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 
-namespace System.Reflection.Extensions.Tests
+namespace System.Reflection.Tests
 {
     public static class Extensions
     {

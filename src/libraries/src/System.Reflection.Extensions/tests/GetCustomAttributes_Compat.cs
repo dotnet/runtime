@@ -4,7 +4,7 @@
 using System.Collections.Generic;
 using Xunit;
 
-namespace System.Reflection.Extensions.Tests
+namespace System.Reflection.Tests
 {
     public class GetCustomAttributes_Compat
     {
