@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Security
@@ -51,12 +52,18 @@ namespace System.Net.Security
     {
 #endif
         private SafeX509Handle _certHandle;
+        private SafeEvpPKeyHandle _certKeyHandle;
         private SslProtocols _protocols = SslProtocols.None;
         private EncryptionPolicy _policy;
 
         internal SafeX509Handle CertHandle
         {
             get { return _certHandle; }
+        }
+
+        internal SafeEvpPKeyHandle CertKeyHandle
+        {
+            get { return _certKeyHandle; }
         }
 
         internal SslProtocols Protocols
@@ -67,10 +74,33 @@ namespace System.Net.Security
         public SafeFreeCredentials(X509Certificate certificate, SslProtocols protocols, EncryptionPolicy policy)
             : base(IntPtr.Zero, true)
         {
-            if (null != certificate)
+            Debug.Assert(
+                certificate == null || certificate is X509Certificate2,
+                "Only X509Certificate2 certificates are supported at this time");
+
+            X509Certificate2 cert = (X509Certificate2)certificate;
+
+            if (cert != null)
             {
-                _certHandle = Interop.libcrypto.X509_dup(certificate.Handle);
-            }          
+                Debug.Assert(cert.HasPrivateKey, "cert.HasPrivateKey");
+
+                using (RSAOpenSsl rsa = (RSAOpenSsl)cert.GetRSAPrivateKey())
+                {
+                    if (rsa != null)
+                    {
+                        _certKeyHandle = rsa.DuplicateKeyHandle();
+                        Interop.libcrypto.CheckValidOpenSslHandle(_certKeyHandle);
+                    }
+                }
+
+                // TODO (3390): Add support for ECDSA.
+
+                Debug.Assert(_certKeyHandle != null, "Failed to extract a private key handle");
+
+                _certHandle = Interop.libcrypto.X509_dup(cert.Handle);
+                Interop.libcrypto.CheckValidOpenSslHandle(_certHandle);
+            }
+
             _protocols = protocols;
             _policy = policy;
         }
@@ -82,10 +112,16 @@ namespace System.Net.Security
 
         protected override bool ReleaseHandle()
         {
-            if ((null != _certHandle) && !_certHandle.IsInvalid)
+            if (_certHandle != null)
             {
                 _certHandle.Dispose();
             }
+
+            if (_certKeyHandle != null)
+            {
+                _certKeyHandle.Dispose();
+            }
+
             _protocols = SslProtocols.None;
             return true;
         }
