@@ -7,7 +7,7 @@ using System.IO;
 using System.IO.Pipes;
 using Xunit;
 
-namespace System.IO.FileSystem.Tests
+namespace System.IO.Tests
 {
     public partial class FileStream_CanSeek : FileSystemTest
     {

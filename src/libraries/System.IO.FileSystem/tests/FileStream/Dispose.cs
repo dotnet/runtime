@@ -6,7 +6,7 @@ using System;
 using System.IO;
 using Xunit;
 
-namespace System.IO.FileSystem.Tests
+namespace System.IO.Tests
 {
     public class FileStream_Dispose : FileSystemTest
     {

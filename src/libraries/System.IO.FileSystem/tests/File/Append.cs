@@ -4,7 +4,7 @@
 using System.Text;
 using Xunit;
 
-namespace System.IO.FileSystem.Tests
+namespace System.IO.Tests
 {
     public class File_AppendText : File_ReadWriteAllText
     {
