@@ -2,13 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Xunit;
-using System;
 using System.Text;
-using System.Collections;
 
-namespace System.Collections.HashtableTests
+namespace System.Collections.Tests
 {
-    public class CountTests
+    public class Hashtable_CountTests
     {
         [Fact]
         public void TestGetCountBasic()

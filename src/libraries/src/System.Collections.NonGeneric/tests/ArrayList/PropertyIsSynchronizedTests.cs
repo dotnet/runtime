@@ -1,15 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Threading;
-using System.Collections;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace System.Collections.ArrayListTests
+namespace System.Collections.Tests
 {
-    public class GetIsSynchronizedTests
+    public class ArrayList_GetIsSynchronizedTests
     {
         private ArrayList _alst2;
         private Int32 _iNumberOfElements = 10;

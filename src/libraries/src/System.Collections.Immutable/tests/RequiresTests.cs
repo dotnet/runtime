@@ -4,7 +4,7 @@
 using Validation;
 using Xunit;
 
-namespace System.Collections.Immutable.Test
+namespace System.Collections.Immutable.Tests
 {
     public class RequiresTests : ImmutablesTestBase
     {

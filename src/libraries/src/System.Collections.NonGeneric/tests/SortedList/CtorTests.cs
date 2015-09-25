@@ -1,57 +1,57 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
 using System.Diagnostics;
 using System.Text;
 using Xunit;
 
-namespace System.Collections.SortedListTests
+namespace System.Collections.Tests
 {
-    public class CtorTestClass : IComparable
+    public class SortedList_CtorTests
     {
-        internal string str = null;
-
-        public CtorTestClass() { }
-
-        public CtorTestClass(string tstr)
+        public class CtorTestClass : IComparable
         {
-            str = tstr;
+            internal string str = null;
+
+            public CtorTestClass()
+            {
+            }
+
+            public CtorTestClass(string tstr)
+            {
+                str = tstr;
+            }
+
+            public virtual int CompareTo(object obj2)
+            {
+                return str.CompareTo(obj2.ToString());
+            }
+
+            public override bool Equals(object obj)
+            {
+                return str.Equals(obj);
+            }
+
+            public override int GetHashCode()
+            {
+                return str.GetHashCode();
+            }
+
+            public override string ToString()
+            {
+                return str.ToString();
+            }
+
+            /// <summary>
+            /// named it as GetString() to distinguish it from ToString() even though the purpose is same
+            /// </summary>
+            /// <returns></returns>
+            public virtual string GetString()
+            {
+                return str.ToString();
+            }
         }
 
-        public virtual int CompareTo(object obj2)
-        {
-            return str.CompareTo(obj2.ToString());
-        }
-
-        public override bool Equals(object obj)
-        {
-            return str.Equals(obj);
-        }
-
-        public override int GetHashCode()
-        {
-            return str.GetHashCode();
-        }
-
-        public override string ToString()
-        {
-            return str.ToString();
-        }
-
-        /// <summary>
-        /// named it as GetString() to distinguish it from ToString() even though the purpose is same
-        /// </summary>
-        /// <returns></returns>
-        public virtual string GetString()
-        {
-            return str.ToString();
-        }
-    }
-
-    public class CtorTests
-    {
         [Fact]
         public void TestCtorDefault()
         {

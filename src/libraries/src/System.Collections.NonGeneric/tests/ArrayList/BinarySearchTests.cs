@@ -1,13 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
 using Xunit;
 
-namespace System.Collections.ArrayListTests
+namespace System.Collections.Tests
 {
-    public class BinarySearchTests : IComparer
+    public class ArrayList_BinarySearchTests : IComparer
     {
         #region "Test Data - Keep the data close to tests so it can vary independently from other tests"
 
@@ -200,7 +198,7 @@ namespace System.Collections.ArrayListTests
             for (int ii = 0; ii < strFindHeroes.Length; ++ii)
             {
                 // Locate item.
-                int ndx = list.BinarySearch(strFindHeroes[ii], new BinarySearchTests());
+                int ndx = list.BinarySearch(strFindHeroes[ii], new ArrayList_BinarySearchTests());
                 Assert.True(ndx < strHeroes.Length);
 
                 // Verify item.
@@ -216,10 +214,10 @@ namespace System.Collections.ArrayListTests
                 list.Add(i);
             list.Sort();
 
-            Assert.Equal(100, ~list.BinarySearch(150, new BinarySearchTests()));
+            Assert.Equal(100, ~list.BinarySearch(150, new ArrayList_BinarySearchTests()));
 
             //[]null - should return -1
-            Assert.Equal(-1, list.BinarySearch(null, new BinarySearchTests()));
+            Assert.Equal(-1, list.BinarySearch(null, new ArrayList_BinarySearchTests()));
 
             //[]we can add null as a value and then search it!!!
 
@@ -235,7 +233,7 @@ namespace System.Collections.ArrayListTests
             list.Sort();
 
             //remember this is BinarySeearch
-            Assert.Equal(49, list.BinarySearch(5, new BinarySearchTests()));
+            Assert.Equal(49, list.BinarySearch(5, new ArrayList_BinarySearchTests()));
 
             //[]IC as null
             list = new ArrayList();

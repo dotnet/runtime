@@ -7,7 +7,7 @@ using System.Linq;
 using Validation;
 using Xunit;
 
-namespace System.Collections.Immutable.Test
+namespace System.Collections.Immutable.Tests
 {
     public abstract class ImmutableDictionaryTestBase : ImmutablesTestBase
     {
