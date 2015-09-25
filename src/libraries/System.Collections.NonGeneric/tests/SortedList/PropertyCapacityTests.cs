@@ -1,15 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
-using System.Globalization;
-using System.Text;
 using Xunit;
 
-namespace System.Collections.SortedListTests
+namespace System.Collections.Tests
 {
-    public class CapacityTests
+    public class SortedList_CapacityTests
     {
         [Fact]
         public void TestGetCapacityBasic()

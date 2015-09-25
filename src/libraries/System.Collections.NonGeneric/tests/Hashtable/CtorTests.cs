@@ -4,9 +4,9 @@
 using System.Diagnostics;
 using Xunit;
 
-namespace System.Collections.HashtableTests
+namespace System.Collections.Tests
 {
-    public class CtorTests
+    public class Hashtable_CtorTests
     {
         [Fact]
         public void TestCtorDefault()

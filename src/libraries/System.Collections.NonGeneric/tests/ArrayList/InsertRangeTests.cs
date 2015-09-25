@@ -1,13 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
 using Xunit;
 
-namespace System.Collections.ArrayListTests
+namespace System.Collections.Tests
 {
-    public class InsertRangeTests
+    public class ArrayList_InsertRangeTests
     {
         #region "Test data - Keep the data close to tests so it can vary independently from other tests"
         string[] strHeroes =
@@ -298,69 +296,69 @@ namespace System.Collections.ArrayListTests
             }
 
         }
-    }
 
-    public class MyCollection : ICollection
-    {
-        private ICollection _collection;
-        private Array _array;
-        private int _startIndex;
-
-        public MyCollection(ICollection collection)
+        public class MyCollection : ICollection
         {
-            _collection = collection;
-        }
+            private ICollection _collection;
+            private Array _array;
+            private int _startIndex;
 
-        public Array Array
-        {
-            get
+            public MyCollection(ICollection collection)
             {
-                return _array;
+                _collection = collection;
             }
-        }
 
-        public int StartIndex
-        {
-            get
+            public Array Array
             {
-                return _startIndex;
+                get
+                {
+                    return _array;
+                }
             }
-        }
 
-        public int Count
-        {
-            get
+            public int StartIndex
             {
-                return _collection.Count;
+                get
+                {
+                    return _startIndex;
+                }
             }
-        }
 
-        public Object SyncRoot
-        {
-            get
+            public int Count
             {
-                return _collection.SyncRoot;
+                get
+                {
+                    return _collection.Count;
+                }
             }
-        }
 
-        public bool IsSynchronized
-        {
-            get
+            public Object SyncRoot
             {
-                return _collection.IsSynchronized;
+                get
+                {
+                    return _collection.SyncRoot;
+                }
             }
-        }
 
-        public void CopyTo(Array array, int startIndex)
-        {
-            _array = array;
-            _startIndex = startIndex;
-            _collection.CopyTo(array, startIndex);
-        }
+            public bool IsSynchronized
+            {
+                get
+                {
+                    return _collection.IsSynchronized;
+                }
+            }
 
-        public IEnumerator GetEnumerator()
-        {
-            throw new NotSupportedException();
+            public void CopyTo(Array array, int startIndex)
+            {
+                _array = array;
+                _startIndex = startIndex;
+                _collection.CopyTo(array, startIndex);
+            }
+
+            public IEnumerator GetEnumerator()
+            {
+                throw new NotSupportedException();
+            }
         }
     }
 }

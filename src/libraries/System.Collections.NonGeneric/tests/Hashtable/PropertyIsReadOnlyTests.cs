@@ -2,12 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Xunit;
-using System;
-using System.Collections;
 
-namespace System.Collections.HashtableTests
+namespace System.Collections.Tests
 {
-    public class IsReadOnlyTests
+    public class Hashtable_IsReadOnlyTests
     {
         [Fact]
         public void TestGetIsReadOnlyBasic()

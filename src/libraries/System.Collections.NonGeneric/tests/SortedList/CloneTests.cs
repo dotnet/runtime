@@ -2,12 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Xunit;
-using System;
-using System.Collections;
 
-namespace System.Collections.SortedListTests
+namespace System.Collections.Tests
 {
-    public class CloneTests
+    public class SortedList_CloneTests
     {
         [Fact]
         public void TestCloneBasic()
@@ -80,14 +78,14 @@ namespace System.Collections.SortedListTests
             strValue = "Hello World";
             Assert.Equal(strValue, ((Foo)hsh2[0]).strValue);
         }
-    }
 
-    internal class Foo
-    {
-        internal string strValue;
-        internal Foo()
+        internal class Foo
         {
-            strValue = "Hello World";
+            internal string strValue;
+            internal Foo()
+            {
+                strValue = "Hello World";
+            }
         }
     }
 }

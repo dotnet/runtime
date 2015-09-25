@@ -1,14 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
 using System.Text;
 using Xunit;
 
-namespace System.Collections.SortedListTests
+namespace System.Collections.Tests
 {
-    public class CtorIComparerTests : IComparer
+    public class SortedList_CtorIComparerTests : IComparer
     {
         public virtual int Compare(object obj1, object obj2)  // ICompare satisfier.
         {
