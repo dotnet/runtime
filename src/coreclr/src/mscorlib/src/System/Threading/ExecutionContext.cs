@@ -191,9 +191,21 @@ namespace System.Threading
             if (previousValue == newValue)
                 return;
 
-            Dictionary<IAsyncLocal, object> newValues = new Dictionary<IAsyncLocal, object>(current.m_localValues);
+            //
+            // Allocate a new Dictionary containing a copy of the old values, plus the new value.  We have to do this manually to 
+            // minimize allocations of IEnumeartors, etc.
+            //
+            Dictionary<IAsyncLocal, object> newValues = new Dictionary<IAsyncLocal, object>(current.m_localValues.Count + (hadPreviousValue ? 0 : 1));
+
+            foreach (KeyValuePair<IAsyncLocal, object> pair in current.m_localValues)
+                newValues.Add(pair.Key, pair.Value);
+
             newValues[local] = newValue;
 
+            //
+            // Either copy the change notification list, or create a new one, depending on whether we need to add a new item.
+            // Again, we do this manually to minimize allocations.
+            //
             List<IAsyncLocal> newChangeNotifications = current.m_localChangeNotifications;
             if (needChangeNotifications)
             {
@@ -203,7 +215,11 @@ namespace System.Threading
                 }
                 else
                 {
-                    newChangeNotifications = new List<IAsyncLocal>(current.m_localChangeNotifications);
+                    newChangeNotifications = new List<IAsyncLocal>(current.m_localChangeNotifications.Count + 1);
+
+                    foreach (IAsyncLocal notification in current.m_localChangeNotifications)
+                        newChangeNotifications.Add(notification);
+
                     newChangeNotifications.Add(local);
                 }
             }
