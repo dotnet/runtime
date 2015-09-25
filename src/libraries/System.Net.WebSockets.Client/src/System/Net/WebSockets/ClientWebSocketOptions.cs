@@ -42,6 +42,8 @@ namespace System.Net.WebSockets
 
         internal WebHeaderCollection RequestHeaders { get { return _requestHeaders; } }
 
+        internal List<string> RequestedSubProtocols {  get { return _requestedSubProtocols;} }
+
         public ICredentials Credentials
         {
             get
