@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 
-namespace System.Collections.Immutable.Test
+namespace System.Collections.Immutable.Tests
 {
     /// <summary>
     /// An equality comparer that considers all values to be equal.

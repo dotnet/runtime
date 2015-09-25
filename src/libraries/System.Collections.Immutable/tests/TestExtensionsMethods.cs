@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using Validation;
 using Xunit;
 
-namespace System.Collections.Immutable.Test
+namespace System.Collections.Immutable.Tests
 {
     internal static class TestExtensionsMethods
     {
