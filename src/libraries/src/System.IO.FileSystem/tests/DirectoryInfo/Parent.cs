@@ -3,7 +3,7 @@
 
 using Xunit;
 
-namespace System.IO.FileSystem.Tests
+namespace System.IO.Tests
 {
     public class DirectoryInfo_Parent : Directory_GetParent
     {
