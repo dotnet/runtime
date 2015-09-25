@@ -1,18 +1,15 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
-using System.Text;
 using Xunit;
 
-namespace System.Collections.SortedListTests
+namespace System.Collections.Tests
 {
     /// <summary>
     /// The goal is to call the methods of the base class on the wrapper
     /// classes to ensure that the right thing is happening in SortedList
     /// </summary>
-    public class WrapperTests
+    public class SortedList_WrapperTests
     {
         [Fact]
         public void TestKeys()

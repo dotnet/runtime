@@ -1,13 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
 using Xunit;
 
-namespace System.Collections.ArrayListTests
+namespace System.Collections.Tests
 {
-    public class GetEnumeratorTests
+    public class ArrayList_GetEnumeratorTests
     {
         #region "Test Data - Keep the data close to tests so it can vary independently from other tests"
 
@@ -376,10 +374,12 @@ namespace System.Collections.ArrayListTests
                 });
             }
         }
-    }
 
-    public class MyArrayList : ArrayList
-    {
-        public MyArrayList(ICollection c) : base(c) { }
+        public class MyArrayList : ArrayList
+        {
+            public MyArrayList(ICollection c) : base(c)
+            {
+            }
+        }
     }
 }

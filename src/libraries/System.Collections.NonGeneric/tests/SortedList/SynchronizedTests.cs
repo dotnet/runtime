@@ -1,15 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace System.Collections.SortedListTests
+namespace System.Collections.Tests
 {
-    public class SynchronizedTests
+    public class SortedList_SynchronizedTests
     {
         private SortedList _slst2;
         private Int32 _iNumberOfElements = 20;

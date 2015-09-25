@@ -2,13 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Xunit;
-using System.Text;
-using System;
-using System.Collections;
 
-namespace System.Collections.HashtableTests
+namespace System.Collections.Tests
 {
-    public class RemoveTests
+    public class Hashtable_RemoveTests
     {
         [Fact]
         public void TestRemove()

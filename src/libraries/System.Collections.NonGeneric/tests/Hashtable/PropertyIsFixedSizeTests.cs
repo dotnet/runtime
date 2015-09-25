@@ -2,12 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Xunit;
-using System;
-using System.Collections;
 
-namespace System.Collections.HashtableTests
+namespace System.Collections.Tests
 {
-    public class IsFixedSizeTests
+    public class Hashtable_IsFixedSizeTests
     {
         [Fact]
         public void TestGetFixedSizeBasic()

@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace System.Collections.HashtableTests
+namespace System.Collections.Tests
 {
-    public partial class AddStressTests
+    public partial class HashTable_AddStressTests
     {
         private static readonly long[] s_AddStressInputData = new long[] {
 16869846,16869847,13803764,16869848,16869849,
