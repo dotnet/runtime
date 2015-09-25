@@ -2,13 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Xunit;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace System.Reflection.Compatibility.UnitTests.AssemblyTests
+namespace System.Reflection.Tests
 {
     public class AssemblyExtensionTests
     {

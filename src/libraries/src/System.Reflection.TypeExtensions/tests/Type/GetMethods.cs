@@ -2,10 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Xunit;
-using System;
-using System.Reflection;
 
-namespace System.Reflection.Compatibility.UnitTests.TypeTests
+namespace System.Reflection.Tests
 {
     public class GetMethodsTests
     {
@@ -70,35 +68,35 @@ namespace System.Reflection.Compatibility.UnitTests.TypeTests
         public void Test1()
         {
             BindingFlags declaredPublicInstanceBindingFlags = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance;
-            TryGetMethods("System.Reflection.Compatibility.UnitTests.TypeTests.GenericClass`1[System.String]", declaredPublicInstanceBindingFlags, new string[] { "System.String ReturnAndSetField(System.String)" });
+            TryGetMethods("System.Reflection.Tests.GenericClass`1[System.String]", declaredPublicInstanceBindingFlags, new string[] { "System.String ReturnAndSetField(System.String)" });
         }
 
         [Fact]
         public void Test2()
         {
             BindingFlags declaredPublicInstanceBindingFlags = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance;
-            TryGetMethods("System.Reflection.Compatibility.UnitTests.TypeTests.GenericClassUsingNestedInterfaces`2[System.String,System.Int32]", declaredPublicInstanceBindingFlags, new string[] { "System.String ReturnAndSetFieldZero(System.String)", "Void SetFieldOne(Int32)", "Void SetFieldTwo(System.String)", "Int32 ReturnAndSetFieldThree(Int32)" });
+            TryGetMethods("System.Reflection.Tests.GenericClassUsingNestedInterfaces`2[System.String,System.Int32]", declaredPublicInstanceBindingFlags, new string[] { "System.String ReturnAndSetFieldZero(System.String)", "Void SetFieldOne(Int32)", "Void SetFieldTwo(System.String)", "Int32 ReturnAndSetFieldThree(Int32)" });
         }
 
         [Fact]
         public void Test3()
         {
             BindingFlags declaredPublicInstanceBindingFlags = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance;
-            TryGetMethods("System.Reflection.Compatibility.UnitTests.TypeTests.GenericClassWithInterface`1", declaredPublicInstanceBindingFlags, new string[] { "W GenericMethod[W](W)", "T ReturnAndSetFieldZero(T)" });
+            TryGetMethods("System.Reflection.Tests.GenericClassWithInterface`1", declaredPublicInstanceBindingFlags, new string[] { "W GenericMethod[W](W)", "T ReturnAndSetFieldZero(T)" });
         }
 
         [Fact]
         public void Test4()
         {
             BindingFlags declaredPublicInstanceBindingFlags = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance;
-            TryGetMethods("System.Reflection.Compatibility.UnitTests.TypeTests.GenericClassWithInterface`1[System.Int32]", declaredPublicInstanceBindingFlags, new string[] { "W GenericMethod[W](W)", "Int32 ReturnAndSetFieldZero(Int32)" });
+            TryGetMethods("System.Reflection.Tests.GenericClassWithInterface`1[System.Int32]", declaredPublicInstanceBindingFlags, new string[] { "W GenericMethod[W](W)", "Int32 ReturnAndSetFieldZero(Int32)" });
         }
 
         [Fact]
         public void Test5()
         {
             BindingFlags declaredPublicInstanceBindingFlags = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance;
-            TryGetMethods("System.Reflection.Compatibility.UnitTests.TypeTests.GenericClassWithVarArgMethod`1", declaredPublicInstanceBindingFlags, new string[] { "T get_publicField()", "Void set_publicField(T)", "T ReturnAndSetField(T, T[])" });
+            TryGetMethods("System.Reflection.Tests.GenericClassWithVarArgMethod`1", declaredPublicInstanceBindingFlags, new string[] { "T get_publicField()", "Void set_publicField(T)", "T ReturnAndSetField(T, T[])" });
         }
 
         [Fact]

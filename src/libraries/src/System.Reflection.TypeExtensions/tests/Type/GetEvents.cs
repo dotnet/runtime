@@ -1,12 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Reflection;
 using Xunit;
 
-
-namespace System.Reflection.Compatibility.UnitTests.TypeTests
+namespace System.Reflection.Tests
 {
     public class GetEventsTests
     {
@@ -89,391 +86,391 @@ namespace System.Reflection.Compatibility.UnitTests.TypeTests
         [Fact]
         public void Test1()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged" });
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged" });
         }
 
         [Fact]
         public void Test2()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase);
         }
 
         [Fact]
         public void Test3()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.DeclaredOnly);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.DeclaredOnly);
         }
 
         [Fact]
         public void Test4()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly);
         }
 
         [Fact]
         public void Test5()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.Instance);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.Instance);
         }
 
         [Fact]
         public void Test6()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.Instance);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.Instance);
         }
 
         [Fact]
         public void Test7()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.DeclaredOnly | BindingFlags.Instance);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.DeclaredOnly | BindingFlags.Instance);
         }
 
         [Fact]
         public void Test8()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Instance);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Instance);
         }
 
         [Fact]
         public void Test9()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.Static);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.Static);
         }
 
         [Fact]
         public void Test10()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.Static);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.Static);
         }
 
         [Fact]
         public void Test11()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.DeclaredOnly | BindingFlags.Static);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.DeclaredOnly | BindingFlags.Static);
         }
 
         [Fact]
         public void Test12()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Static);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Static);
         }
 
         [Fact]
         public void Test13()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.Instance | BindingFlags.Static);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.Instance | BindingFlags.Static);
         }
 
         [Fact]
         public void Test14()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Static);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Static);
         }
 
         [Fact]
         public void Test15()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static);
         }
 
         [Fact]
         public void Test16()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static);
         }
 
         [Fact]
         public void Test17()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.Public);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.Public);
         }
 
         [Fact]
         public void Test18()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.Public);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.Public);
         }
 
         [Fact]
         public void Test19()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.DeclaredOnly | BindingFlags.Public);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.DeclaredOnly | BindingFlags.Public);
         }
 
         [Fact]
         public void Test20()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Public);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Public);
         }
 
         [Fact]
         public void Test21()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", }, BindingFlags.Instance | BindingFlags.Public);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", }, BindingFlags.Instance | BindingFlags.Public);
         }
 
         [Fact]
         public void Test22()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", }, BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Public);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", }, BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Public);
         }
 
         [Fact]
         public void Test23()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", }, BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", }, BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public);
         }
 
         [Fact]
         public void Test24()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public);
         }
 
         [Fact]
         public void Test25()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.Static | BindingFlags.Public);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.Static | BindingFlags.Public);
         }
 
         [Fact]
         public void Test26()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.Static | BindingFlags.Public);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.Static | BindingFlags.Public);
         }
 
         [Fact]
         public void Test27()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.DeclaredOnly | BindingFlags.Static | BindingFlags.Public);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.DeclaredOnly | BindingFlags.Static | BindingFlags.Public);
         }
 
         [Fact]
         public void Test28()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Static | BindingFlags.Public);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Static | BindingFlags.Public);
         }
 
         [Fact]
         public void Test29()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", }, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", }, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public);
         }
 
         [Fact]
         public void Test30()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", }, BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", }, BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public);
         }
 
         [Fact]
         public void Test31()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", }, BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", }, BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public);
         }
 
         [Fact]
         public void Test32()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public);
         }
 
         [Fact]
         public void Test33()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test34()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test35()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.DeclaredOnly | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.DeclaredOnly | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test36()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test37()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightStayedTheSame", }, BindingFlags.Instance | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightStayedTheSame", }, BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test38()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightStayedTheSame", }, BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightStayedTheSame", }, BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test39()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightStayedTheSame", }, BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightStayedTheSame", }, BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test40()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightStayedTheSame", }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightStayedTheSame", }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test41()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.Static | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.Static | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test42()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.Static | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.Static | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test43()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.DeclaredOnly | BindingFlags.Static | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.DeclaredOnly | BindingFlags.Static | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test44()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Static | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Static | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test45()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightStayedTheSame", }, BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightStayedTheSame", }, BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test46()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightStayedTheSame", }, BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightStayedTheSame", }, BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test47()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightStayedTheSame", }, BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightStayedTheSame", }, BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test48()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightStayedTheSame", }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightStayedTheSame", }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test49()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.Public | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.Public | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test50()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test51()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test52()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test53()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", "System.EventHandler WeightStayedTheSame", }, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", "System.EventHandler WeightStayedTheSame", }, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test54()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", "System.EventHandler WeightStayedTheSame", }, BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", "System.EventHandler WeightStayedTheSame", }, BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test55()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", "System.EventHandler WeightStayedTheSame", }, BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", "System.EventHandler WeightStayedTheSame", }, BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test56()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", "System.EventHandler WeightStayedTheSame", }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", "System.EventHandler WeightStayedTheSame", }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test57()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test58()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test59()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.DeclaredOnly | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.DeclaredOnly | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test60()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test61()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", "System.EventHandler WeightStayedTheSame", }, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", "System.EventHandler WeightStayedTheSame", }, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test62()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", "System.EventHandler WeightStayedTheSame", }, BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", "System.EventHandler WeightStayedTheSame", }, BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test63()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", "System.EventHandler WeightStayedTheSame", }, BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", "System.EventHandler WeightStayedTheSame", }, BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test64()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", "System.EventHandler WeightStayedTheSame", }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { "System.EventHandler WeightChanged", "System.EventHandler WeightStayedTheSame", }, BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
         }
 
         [Fact]
         public void Test65()
         {
-            TryGetEvents("System.Reflection.Compatibility.UnitTests.TypeTests.Cat`1[System.Int32]", new string[] { }, BindingFlags.FlattenHierarchy);
+            TryGetEvents("System.Reflection.Tests.Cat`1[System.Int32]", new string[] { }, BindingFlags.FlattenHierarchy);
         }
     }
 }
