@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 
-namespace System.Diagnostics.ProcessTests
+namespace System.Diagnostics.Tests
 {
     public class ProcessStandardConsoleTests : ProcessTestBase
     {
