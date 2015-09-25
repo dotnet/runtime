@@ -194,6 +194,7 @@ namespace System.Globalization.Tests
         public void Test52() { TestOrd(CultureInfo.InvariantCulture, "'\u3000'", "' '", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test53() { TestOrd(CultureInfo.InvariantCulture, "'\u3000'", "''", 1, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
@@ -412,6 +413,7 @@ namespace System.Globalization.Tests
         public void Test115() { Test(CultureInfo.InvariantCulture, "'\u3000'", "' '", 1, CompareOptions.None); }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test116() { Test(CultureInfo.InvariantCulture, "'\u3000'", "''", 1, CompareOptions.None); }
 
         [Fact]
