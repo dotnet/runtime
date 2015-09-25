@@ -4,7 +4,7 @@
 using System.Linq;
 using Xunit;
 
-namespace System.IO.FileSystem.Tests
+namespace System.IO.Tests
 {
     public class DirectoryInfo_GetDirectories : Directory_GetDirectories_str
     {
