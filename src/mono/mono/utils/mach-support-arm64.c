@@ -89,12 +89,12 @@ mono_mach_arch_thread_state_to_mono_context (thread_state_t state, MonoContext *
 	int i;
 	arm_unified_thread_state_t *arch_state = (arm_unified_thread_state_t *) state;
 	for (i = 0; i < 29; ++i)
-		context->regs [i] = arch_state->uts.ts_64.__x [i];
+		context->regs [i] = arch_state->ts_64.__x [i];
 
-	context->regs [ARMREG_R29] = arch_state->uts.ts_64.__fp;
-	context->regs [ARMREG_R30] = arch_state->uts.ts_64.__lr;
-	context->regs [ARMREG_R31] = arch_state->uts.ts_64.__sp;
-	context->pc = arch_state->uts.ts_64.__pc;
+	context->regs [ARMREG_R29] = arch_state->ts_64.__fp;
+	context->regs [ARMREG_R30] = arch_state->ts_64.__lr;
+	context->regs [ARMREG_SP] = arch_state->ts_64.__sp;
+	context->pc = arch_state->ts_64.__pc;
 }
 
 int
