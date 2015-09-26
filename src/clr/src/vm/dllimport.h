@@ -78,7 +78,8 @@ public:
     static HRESULT HasNAT_LAttribute(IMDInternalImport *pInternalImport, mdToken token, DWORD dwMemberAttrs);
 
     static LPVOID NDirectGetEntryPoint(NDirectMethodDesc *pMD, HINSTANCE hMod);
-    static HINSTANCE LoadLibraryModule( NDirectMethodDesc * pMD, LoadLibErrorTracker *pErrorTracker);
+    static HMODULE LoadLibraryFromPath(LPCWSTR libraryPath);
+    static HINSTANCE LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracker *pErrorTracker);
     
 #ifndef FEATURE_CORECLR
     static VOID CheckUnificationList(NDirectMethodDesc * pMD, DWORD * pDllImportSearchPathFlag, BOOL * pSearchAssemblyDirectory);
@@ -133,7 +134,7 @@ private:
     NDirect() {LIMITED_METHOD_CONTRACT;};     // prevent "new"'s on this class
 
 #if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
-    static  HMODULE LoadLibraryModuleViaHost(NDirectMethodDesc * pMD, AppDomain* pDomain, const wchar_t* wszLibName);
+    static HMODULE LoadLibraryModuleViaHost(NDirectMethodDesc * pMD, AppDomain* pDomain, const wchar_t* wszLibName);
 #endif //defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
 #if !defined(FEATURE_CORESYSTEM)

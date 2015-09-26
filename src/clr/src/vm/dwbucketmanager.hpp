@@ -513,7 +513,7 @@ void BaseBucketParamsManager::GetAppVersion(__out_ecount(maxLength) WCHAR* targe
     WCHAR appPath[MAX_LONGPATH];
     DWORD cchAppPath = NumItems(appPath);
 
-    WCHAR verBuf[23];
+    WCHAR verBuf[23] = {0};
     USHORT major, minor, build, revision;
 
     if ((GetCurrentModuleFileName(appPath, &cchAppPath) == S_OK) && SUCCEEDED(DwGetFileVersionInfo(appPath, major, minor, build, revision)))

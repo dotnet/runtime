@@ -217,10 +217,12 @@ HRESULT CheckUseWow6432Node(REGSAM samDesired, bool * fResult)
 // lpRedirectedKey is allocated and returned from this method.  Caller owns the new string and
 // should release
 //
+__success(return == ERROR_SUCCESS)
 HRESULT RedirectKey(REGSAM samDesired, HKEY hKey, LPCWSTR lpKey, __deref_out_z LPWSTR * lpRedirectedKey)
 {
     if (hKey != kRegistryRootHive || _wcsnicmp(lpKey, kRegistryRootKey, wcslen(kRegistryRootKey)) != 0)
     {
+        *lpRedirectedKey = NULL;
         return ERROR_SUCCESS;
     }
     

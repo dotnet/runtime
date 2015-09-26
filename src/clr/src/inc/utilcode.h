@@ -5600,6 +5600,7 @@ namespace Clr { namespace Util
 namespace Reg
 {
     HRESULT ReadStringValue(HKEY hKey, LPCWSTR wszSubKey, LPCWSTR wszName, SString & ssValue);
+    __success(return == S_OK)
     HRESULT ReadStringValue(HKEY hKey, LPCWSTR wszSubKey, LPCWSTR wszName, __deref_out __deref_out_z LPWSTR* pwszValue);
 }
 
@@ -5625,6 +5626,7 @@ namespace Win32
         SString & ssFileName,
         bool fAllowLongFileNames = false);
 
+    __success(return == S_OK)
     HRESULT GetModuleFileName(
         HMODULE hModule,
         __deref_out_z LPWSTR * pwszFileName,
