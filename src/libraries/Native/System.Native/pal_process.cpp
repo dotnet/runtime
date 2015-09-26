@@ -389,12 +389,20 @@ extern "C" int32_t GetPriority(PriorityWhich which, int32_t who)
 {
     // GetPriority uses errno 0 to show succes to make sure we don't have a stale value
     errno = 0;
+#if PRIORITY_REQUIRES_INT_WHO
+    return getpriority(which, who);
+#else
     return getpriority(which, static_cast<id_t>(who));
+#endif
 }
 
 extern "C" int32_t SetPriority(PriorityWhich which, int32_t who, int32_t nice)
 {
+#if PRIORITY_REQUIRES_INT_WHO
+    return setpriority(which, who, nice);
+#else
     return setpriority(which, static_cast<id_t>(who), nice);
+#endif
 }
 
 extern "C" char* GetCwd(char* buffer, int32_t bufferSize)
