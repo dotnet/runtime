@@ -199,6 +199,30 @@ namespace System.Runtime.Loader
             return assembly;
 
         }
+
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [SuppressUnmanagedCodeSecurity]
+        private static extern IntPtr InternalLoadUnmanagedDllFromPath(string unmanagedDllPath);
+
+        // This method provides a way for overriders of LoadUnmanagedDll() to load an unmanaged DLL from a specific path in a
+        // platform-independent way. The DLL is loaded with default load flags.
+        protected IntPtr LoadUnmanagedDllFromPath(string unmanagedDllPath)
+        {
+            if (unmanagedDllPath == null)
+            {
+                throw new ArgumentNullException("unmanagedDllPath");
+            }
+            if (unmanagedDllPath.Length == 0)
+            {
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"), "unmanagedDllPath");
+            }
+            if (Path.IsRelative(unmanagedDllPath))
+            {
+                throw new ArgumentException(Environment.GetResourceString("Argument_AbsolutePathRequired"), "unmanagedDllPath");
+            }
+
+            return InternalLoadUnmanagedDllFromPath(unmanagedDllPath);
+        }
         
         // Custom AssemblyLoadContext implementations can override this
         // method to perform the load of unmanaged native dll
