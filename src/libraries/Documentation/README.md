@@ -23,6 +23,7 @@ Project Docs
 ============
 
 - [Developer Guide](project-docs/developer-guide.md)
+- [Performance Testing](project-docs/performance-tests.md)
 - [Project priorities](https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/project-priorities.md)
 - [Contributing to CoreFX](project-docs/contributing.md)
 - [Contributing to .NET Core](https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/contributing.md)
