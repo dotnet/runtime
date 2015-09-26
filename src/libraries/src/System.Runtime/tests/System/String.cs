@@ -8,6 +8,8 @@ using Xunit;
 
 public static unsafe class StringTests
 {
+    private const string c_SoftHyphen = "\u00AD";
+
     [Fact]
     public static void TestWithEmptyString()
     {
@@ -1137,42 +1139,54 @@ public static unsafe class StringTests
         return;
     }
 
-    [Fact]
-    public static void TestStartsWith()
+    [Theory]
+    [InlineData(StringComparison.CurrentCulture, "Hello", "Hel",  true)]
+    [InlineData(StringComparison.CurrentCulture, "Hello", "Hello", true)]
+    [InlineData(StringComparison.CurrentCulture, "Hello", "", true)]
+    [InlineData(StringComparison.CurrentCulture, "Hello", "HELLO", false)]
+    [InlineData(StringComparison.CurrentCulture, "Hello", "Abc", false)]
+    [InlineData(StringComparison.CurrentCulture, "Hello", c_SoftHyphen + "Hel", true)]
+    [InlineData(StringComparison.CurrentCultureIgnoreCase, "Hello", "Hel", true)]
+    [InlineData(StringComparison.CurrentCultureIgnoreCase, "Hello", "Hello", true)]
+    [InlineData(StringComparison.CurrentCultureIgnoreCase, "Hello", "", true)]
+    [InlineData(StringComparison.CurrentCultureIgnoreCase, "Hello", "HEL", true)]
+    [InlineData(StringComparison.CurrentCultureIgnoreCase, "Hello", "Abc", false)]
+    [InlineData(StringComparison.CurrentCultureIgnoreCase, "Hello", c_SoftHyphen + "Hel", true)]
+    [InlineData(StringComparison.Ordinal, "Hello", "H", true)]
+    [InlineData(StringComparison.Ordinal, "Hello", "Hel", true)]
+    [InlineData(StringComparison.Ordinal, "Hello", "Hello", true)]
+    [InlineData(StringComparison.Ordinal, "Hello", "Hello Larger", false)]
+    [InlineData(StringComparison.Ordinal, "Hello", "", true)]
+    [InlineData(StringComparison.Ordinal, "Hello", "HEL", false)]
+    [InlineData(StringComparison.Ordinal, "Hello", "Abc", false)]
+    [InlineData(StringComparison.Ordinal, "Hello", c_SoftHyphen + "Hel", false)]
+    [InlineData(StringComparison.OrdinalIgnoreCase, "Hello", "Hel", true)]
+    [InlineData(StringComparison.OrdinalIgnoreCase, "Hello", "Hello", true)]
+    [InlineData(StringComparison.OrdinalIgnoreCase, "Hello", "Hello Larger", false)]
+    [InlineData(StringComparison.OrdinalIgnoreCase, "Hello", "", true)]
+    [InlineData(StringComparison.OrdinalIgnoreCase, "Hello", "HEL", true)]
+    [InlineData(StringComparison.OrdinalIgnoreCase, "Hello", "Abc", false)]
+    [InlineData(StringComparison.OrdinalIgnoreCase, "Hello", c_SoftHyphen + "Hel", false)]
+    public static void TestStartsWith(StringComparison comparisonType, string text, string value, bool expected)
     {
-        String s = "Hello";
-        bool b;
-        b = s.StartsWith("Hel");
-        Assert.True(b);
-        b = s.StartsWith("Hello");
-        Assert.True(b);
-        b = s.StartsWith("");
-        Assert.True(b);
-        b = s.StartsWith("HELLO");
-        Assert.False(b);
+        if (comparisonType == StringComparison.CurrentCulture)
+        {
+            Assert.Equal(expected, text.StartsWith(value));
+        }
+        Assert.Equal(expected, text.StartsWith(value, comparisonType));
+    }
 
-        Assert.Throws<ArgumentNullException>(
-            delegate ()
-            {
-                s.StartsWith(null);
-            });
+    [Fact]
+    public static void TestStartsWithInvalid()
+    {
+        string s = "Hello";
 
-        b = s.StartsWith("Hel", StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(b);
-        b = s.StartsWith("Hello", StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(b);
-        b = s.StartsWith("", StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(b);
-        b = s.StartsWith("HEL", StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(b);
-        b = s.StartsWith("Goodbye", StringComparison.CurrentCultureIgnoreCase);
-        Assert.False(b);
-
-        Assert.Throws<ArgumentNullException>(
-            delegate ()
-            {
-                s.StartsWith(null, StringComparison.CurrentCultureIgnoreCase);
-            });
+        Assert.Throws<ArgumentException>(() => s.StartsWith("H", (StringComparison.CurrentCulture - 1)));
+        Assert.Throws<ArgumentException>(() => s.StartsWith("H", (StringComparison.OrdinalIgnoreCase + 1)));
+        Assert.Throws<ArgumentNullException>(() => s.StartsWith(null));
+        Assert.Throws<ArgumentNullException>(() => s.StartsWith(null, StringComparison.CurrentCultureIgnoreCase));
+        Assert.Throws<ArgumentNullException>(() => s.StartsWith(null, StringComparison.Ordinal));
+        Assert.Throws<ArgumentNullException>(() => s.StartsWith(null, StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -1287,10 +1301,6 @@ public static unsafe class StringTests
     {
         int Local_282_0 = String.Compare("{Policy_PS_Nothing}", 0, "<NamedPermissionSets><PermissionSet class=\u0022System.Security.NamedPermissionSet\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022 Name=\u0022FullTrust\u0022 Description=\u0022{Policy_PS_FullTrust}\u0022/><PermissionSet class=\u0022System.Security.NamedPermissionSet\u0022version=\u00221\u0022 Name=\u0022Everything\u0022 Description=\u0022{Policy_PS_Everything}\u0022><Permission class=\u0022System.Security.Permissions.IsolatedStorageFilePermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><Permission class=\u0022System.Security.Permissions.EnvironmentPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><Permission class=\u0022System.Security.Permissions.FileIOPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><Permission class=\u0022System.Security.Permissions.FileDialogPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><Permission class=\u0022System.Security.Permissions.ReflectionPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><Permission class=\u0022System.Security.Permissions.SecurityPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Flags=\u0022Assertion, UnmanagedCode, Execution, ControlThread, ControlEvidence, ControlPolicy, ControlAppDomain, SerializationFormatter, ControlDomainPolicy, ControlPrincipal, RemotingConfiguration, Infrastructure, BindingRedirects\u0022/><Permission class=\u0022System.Security.Permissions.UIPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Net.SocketPermission, System, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Net.WebPermission, System, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Net.DnsPermission, System, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Security.Permissions.KeyContainerPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><Permission class=\u0022System.Security.Permissions.RegistryPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Drawing.Printing.PrintingPermission, System.Drawing, Version={VERSION}, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Diagnostics.EventLogPermission, System, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Security.Permissions.StorePermission, System, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022 version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Diagnostics.PerformanceCounterPermission, System, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Data.OleDb.OleDbPermission, System.Data, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022 version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Data.SqlClient.SqlClientPermission, System.Data, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022 version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Security.Permissions.DataProtectionPermission, System.Security, Version={VERSION}, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a\u0022 version=\u00221\u0022 Unrestricted=\u0022true\u0022/></PermissionSet><PermissionSet class=\u0022System.Security.NamedPermissionSet\u0022version=\u00221\u0022 Name=\u0022Nothing\u0022 Description=\u0022{Policy_PS_Nothing}\u0022/><PermissionSet class=\u0022System.Security.NamedPermissionSet\u0022version=\u00221\u0022 Name=\u0022Execution\u0022 Description=\u0022{Policy_PS_Execution}\u0022><Permission class=\u0022System.Security.Permissions.SecurityPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Flags=\u0022Execution\u0022/></PermissionSet><PermissionSet class=\u0022System.Security.NamedPermissionSet\u0022version=\u00221\u0022 Name=\u0022SkipVerification\u0022 Description=\u0022{Policy_PS_SkipVerification}\u0022><Permission class=\u0022System.Security.Permissions.SecurityPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Flags=\u0022SkipVerification\u0022/></PermissionSet></NamedPermissionSets>", 4380, 19, StringComparison.Ordinal);
         Assert.True(Local_282_0 < 0);
-
-        String Param_4_2312 = "/PUGETSOUNDTRAFFICMAP;COMPONENT/TRAFFICMAPWINDOW.XAML";
-        bool Local_4_1 = Param_4_2312.StartsWith("/PUGETSOUNDTRAFFICMAP;COMPONENT/APP.XAML", StringComparison.Ordinal);
-        Assert.False(Local_4_1);
     }
 }
 
