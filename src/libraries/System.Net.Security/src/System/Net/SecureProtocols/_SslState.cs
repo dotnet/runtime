@@ -117,18 +117,18 @@ namespace System.Net.Security
             if (targetHost == null)
             {
                 throw new ArgumentNullException("targetHost");
-            }            
+            }
+
+            if (isServer && serverCertificate == null)
+            {
+                throw new ArgumentNullException("serverCertificate");
+            }
 
             if ((int)enabledSslProtocols == 0)
             {
                 throw new ArgumentException(SR.Format(SR.net_invalid_enum, "SslProtocolType"), "sslProtocolType");
             }
          
-            if (isServer && serverCertificate == null)
-            {  
-                throw new ArgumentNullException("serverCertificate");
-            }         
-
             if (clientCertificates == null)
             {
                 clientCertificates = new X509CertificateCollection();
