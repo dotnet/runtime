@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "Microsoft.DotNet.xunit.performance": "1.0.0-*",
     "System.Collections": "4.0.10",
     "System.Console": "4.0.0-beta-*",
     "System.Diagnostics.Debug": "4.0.10",
@@ -13,12 +14,13 @@
     "System.Runtime.Handles": "4.0.0",
     "System.Runtime.InteropServices": "4.0.20",
     "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-beta-*",
+    "System.Security.Cryptography.Algorithms": "4.0.0-beta-*",
     "System.Text.Encoding": "4.0.10",
     "System.Threading.Overlapped": "4.0.0",
     "System.Threading.Tasks": "4.0.10",
     "System.Threading.ThreadPool": "4.0.10-beta-*",
     "System.IO.Compression.TestData": "1.0.0-prerelease",
-    "xunit": "2.1.0-beta3-*",
+    "xunit": "2.1.0-rc1-*",
     "xunit.netcore.extensions": "1.0.0-prerelease-*"
   },
   "frameworks": {
