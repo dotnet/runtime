@@ -6578,6 +6578,25 @@ public:
         return m_hr;
     }
 
+    void DECLSPEC_NORETURN Throw(SString &libraryNameOrPath)
+    {
+        STANDARD_VM_CONTRACT;
+
+        HRESULT theHRESULT = GetHR();
+        if (theHRESULT == HRESULT_FROM_WIN32(ERROR_BAD_EXE_FORMAT))
+        {
+            COMPlusThrow(kBadImageFormatException);
+        }
+        else
+        {
+            SString hrString;
+            GetHRMsg(theHRESULT, hrString);
+            COMPlusThrow(kDllNotFoundException, IDS_EE_NDIRECT_LOADLIB, libraryNameOrPath.GetUnicode(), hrString);
+        }
+
+        __UNREACHABLE();
+    }
+
 private:
     void UpdateHR(DWORD priority, HRESULT hr)
     {
@@ -6593,7 +6612,7 @@ private:
 };  // class LoadLibErrorTracker
 
 
-//  Local helper function for the LoadLibraryModule below
+//  Local helper function for the LoadLibraryModule function below
 static HMODULE LocalLoadLibraryHelper( LPCWSTR name, DWORD flags, LoadLibErrorTracker *pErrorTracker )
 {
     STANDARD_VM_CONTRACT;
@@ -6634,6 +6653,27 @@ static HMODULE LocalLoadLibraryHelper( LPCWSTR name, DWORD flags, LoadLibErrorTr
     }
     
     return hmod;
+}
+
+//  Local helper function for the LoadLibraryFromPath function below
+static HMODULE LocalLoadLibraryDirectHelper(LPCWSTR name, DWORD flags, LoadLibErrorTracker *pErrorTracker)
+{
+    STANDARD_VM_CONTRACT;
+
+#ifndef FEATURE_PAL
+    return LocalLoadLibraryHelper(name, flags, pErrorTracker);
+#else // !FEATURE_PAL
+    // Load the library directly, and don't register it yet with PAL. The system library handle is required here, not the PAL
+    // handle. The system library handle is registered with PAL to get a PAL handle in LoadLibraryModuleViaHost().
+    HMODULE hmod = PAL_LoadLibraryDirect(name);
+
+    if (hmod == NULL)
+    {
+        pErrorTracker->TrackErrorCode(GetLastError());
+    }
+
+    return hmod;
+#endif // !FEATURE_PAL
 }
 
 
@@ -6771,6 +6811,22 @@ VOID NDirect::CheckUnificationList(NDirectMethodDesc * pMD, DWORD * pDllImportSe
 }
 #endif // !FEATURE_CORECLR
 
+// static
+HMODULE NDirect::LoadLibraryFromPath(LPCWSTR libraryPath)
+{
+    STANDARD_VM_CONTRACT;
+
+    LoadLibErrorTracker errorTracker;
+    const HMODULE systemModuleHandle =
+        LocalLoadLibraryDirectHelper(libraryPath, GetLoadWithAlteredSearchPathFlag(), &errorTracker);
+    if (systemModuleHandle == nullptr)
+    {
+        SString libraryPathSString(libraryPath);
+        errorTracker.Throw(libraryPathSString);
+    }
+    return systemModuleHandle;
+}
+
 #if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 /* static */
 HMODULE NDirect::LoadLibraryModuleViaHost(NDirectMethodDesc * pMD, AppDomain* pDomain, const wchar_t* wszLibName)
@@ -6848,6 +6904,14 @@ HMODULE NDirect::LoadLibraryModuleViaHost(NDirectMethodDesc * pMD, AppDomain* pD
     CALL_MANAGED_METHOD(hmod,LPVOID,args);
 
     GCPROTECT_END();
+
+#ifdef FEATURE_PAL
+    if (hmod != nullptr)
+    {
+        // Register the system library handle with PAL and get a PAL library handle
+        hmod = PAL_RegisterLibraryDirect(hmod, wszLibName);
+    }
+#endif // FEATURE_PAL
 
     return (HMODULE)hmod;
 }
@@ -7250,17 +7314,7 @@ VOID NDirect::NDirectLink(NDirectMethodDesc *pMD)
 
         if (!hmod)
         {
-            HRESULT theHRESULT = errorTracker.GetHR();
-            if (theHRESULT == HRESULT_FROM_WIN32(ERROR_BAD_EXE_FORMAT))
-            {
-                COMPlusThrow(kBadImageFormatException);
-            }
-            else
-            {
-                SString hrString;
-                GetHRMsg(theHRESULT, hrString);
-                COMPlusThrow(kDllNotFoundException, IDS_EE_NDIRECT_LOADLIB, ssLibName.GetUnicode(), hrString);
-            }
+            errorTracker.Throw(ssLibName);
         }
 
         WCHAR wszEPName[50];
