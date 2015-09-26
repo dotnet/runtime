@@ -1834,7 +1834,7 @@ TokenSecurityDescriptorFlags ParseAptcaAttribute(const BYTE *pbAptcaBlob, DWORD 
         aptcaFlags |= TokenSecurityDescriptorFlags_APTCA;
 
         // Look for the PartialTrustVisibilityLevel named argument
-        CaNamedArg namedArgs[1];
+        CaNamedArg namedArgs[1] = {{0}};
         namedArgs[0].InitI4FieldEnum(g_PartialTrustVisibilityLevel, g_SecurityPartialTrustVisibilityLevel);
 
         if (SUCCEEDED(ParseKnownCaNamedArgs(cap, namedArgs, _countof(namedArgs))))

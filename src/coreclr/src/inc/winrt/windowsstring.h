@@ -324,7 +324,7 @@ namespace clr
             //
             // if the HRESULT indicates failure, does nothing
             //
-            static HRESULT FreeAndAssignOnSuccess(HRESULT hr, HSTRING newValue, __out HSTRING *target)
+            static HRESULT FreeAndAssignOnSuccess(HRESULT hr, HSTRING newValue, __inout HSTRING *target)
             {
                 STATIC_CONTRACT_LIMITED_METHOD;
                 if (SUCCEEDED(hr))
