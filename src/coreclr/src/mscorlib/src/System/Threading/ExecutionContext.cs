@@ -59,15 +59,15 @@ namespace System.Threading
         static ExecutionContext t_currentMaybeNull;
 
         private readonly Dictionary<IAsyncLocal, object> m_localValues;
-        private readonly List<IAsyncLocal> m_localChangeNotifications;
+        private readonly IAsyncLocal[] m_localChangeNotifications;
 
         private ExecutionContext()
         {
             m_localValues = new Dictionary<IAsyncLocal, object>();
-            m_localChangeNotifications = new List<IAsyncLocal>();
+            m_localChangeNotifications = Array.Empty<IAsyncLocal>();
         }
 
-        private ExecutionContext(Dictionary<IAsyncLocal, object> localValues, List<IAsyncLocal> localChangeNotifications)
+        private ExecutionContext(Dictionary<IAsyncLocal, object> localValues, IAsyncLocal[] localChangeNotifications)
         {
             m_localValues = localValues;
             m_localChangeNotifications = localChangeNotifications;
@@ -203,24 +203,20 @@ namespace System.Threading
             newValues[local] = newValue;
 
             //
-            // Either copy the change notification list, or create a new one, depending on whether we need to add a new item.
-            // Again, we do this manually to minimize allocations.
+            // Either copy the change notification array, or create a new one, depending on whether we need to add a new item.
             //
-            List<IAsyncLocal> newChangeNotifications = current.m_localChangeNotifications;
+            IAsyncLocal[] newChangeNotifications = current.m_localChangeNotifications;
             if (needChangeNotifications)
             {
                 if (hadPreviousValue)
                 {
-                    Contract.Assert(newChangeNotifications.Contains(local));
+                    Contract.Assert(Array.IndexOf(newChangeNotifications, local) >= 0);
                 }
                 else
                 {
-                    newChangeNotifications = new List<IAsyncLocal>(current.m_localChangeNotifications.Count + 1);
-
-                    foreach (IAsyncLocal notification in current.m_localChangeNotifications)
-                        newChangeNotifications.Add(notification);
-
-                    newChangeNotifications.Add(local);
+                    int newNotificationIndex = newChangeNotifications.Length;
+                    Array.Resize(ref newChangeNotifications, newNotificationIndex + 1);
+                    newChangeNotifications[newNotificationIndex] = local;
                 }
             }
 
