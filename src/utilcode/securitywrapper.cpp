@@ -412,13 +412,14 @@ void SidBuffer::InitFromProcess(DWORD pid)
 HRESULT SidBuffer::InitFromProcessAppContainerSidNoThrow(DWORD pid)
 {
     HRESULT hr = S_OK;
+    HANDLE hToken = NULL;
+
     HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pid);
     if (hProcess == NULL)
     {
         hr = HRESULT_FROM_GetLastError();
         goto exit;
     }
-    HANDLE hToken = NULL;
     if (!OpenProcessToken(hProcess, TOKEN_QUERY, &hToken))
     {
         hr = HRESULT_FROM_GetLastError();

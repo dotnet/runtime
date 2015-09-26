@@ -103,7 +103,7 @@ class AssemblyVersion
         inline AssemblyVersion(AssemblyVersion& version);
         
         // Init
-        HRESULT Init(LPCWSTR pwzVersion, BOOL bStartsWithV);
+        HRESULT Init(__in_z LPCWSTR pwzVersion, BOOL bStartsWithV);
         inline HRESULT Init(WORD major, WORD minor, WORD build, WORD revision);
 
         // Mofifiers.

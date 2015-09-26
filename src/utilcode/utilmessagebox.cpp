@@ -190,7 +190,7 @@ int MessageBoxImpl(
         mustUseMessageBox = (pfnTaskDialogIndirect == NULL);
     }
 
-    int result;
+    int result = MB_OK;
     if (mustUseMessageBox) {
         result = WszMessageBox(hWnd, message, title, uType);
     }

@@ -3783,6 +3783,7 @@ namespace Com
 {
     namespace __imp
     {
+        __success(return == S_OK)
         static
         HRESULT FindSubKeyDefaultValueForCLSID(REFCLSID rclsid, LPCWSTR wszSubKeyName, SString & ssValue)
         {
@@ -3803,6 +3804,7 @@ namespace Com
             return Clr::Util::Reg::ReadStringValue(HKEY_CLASSES_ROOT, ssKeyName.GetUnicode(), NULL, ssValue);
         }
 
+        __success(return == S_OK)
         static
         HRESULT FindSubKeyDefaultValueForCLSID(REFCLSID rclsid, LPCWSTR wszSubKeyName, __deref_out __deref_out_z LPWSTR* pwszValue)
         {

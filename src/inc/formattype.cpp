@@ -93,7 +93,7 @@ const PCCOR_SIGNATURE PrettyPrintSignature(
     const char* name,                   // can be "", the name of the method for this sig 0 means local var sig 
     CQuickBytes *out,                   // where to put the pretty printed string   
     IMDInternalImport *pIMDI,           // ptr to IMDInternalImport class with ComSig
-    __in_opt const char* inlabel,       // prefix for names (NULL if no names required)
+	_In_opt_z_ const char* inlabel,       // prefix for names (NULL if no names required)
     BOOL printTyArity=FALSE);
 
 

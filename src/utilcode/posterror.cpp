@@ -256,7 +256,7 @@ HRESULT FillErrorInfo(                  // Return status.
     }
     CONTRACTL_END;
 
-    ICreateErrorInfo *pICreateErr;      // Error info creation Iface pointer.
+    ICreateErrorInfo *pICreateErr = NULL;      // Error info creation Iface pointer.
     IErrorInfo *pIErrInfo = NULL;       // The IErrorInfo interface.
     HRESULT     hr;                     // Return status.
 
