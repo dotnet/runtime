@@ -1017,6 +1017,7 @@
     <Member Name="Resolve(System.IntPtr,System.Reflection.AssemblyName)" />
     <Member Name="ResolveUnmanagedDll(System.String,System.IntPtr)" />
     <Member Name="LoadUnmanagedDll(System.String)" />
+    <Member Name="LoadUnmanagedDllFromPath(System.String)" />
     <Member Name="get_Default" />
     <Member Name="SetProfileOptimizationRoot(System.String)" />
     <Member Name="StartProfileOptimization(System.String)" />
