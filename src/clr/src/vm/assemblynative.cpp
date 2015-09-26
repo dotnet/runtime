@@ -25,6 +25,7 @@
 #include "asm.h"
 #endif
 #include "assemblynative.hpp"
+#include "dllimport.h"
 #include "field.h"
 #include "assemblyname.hpp"
 #include "eeconfig.h"
@@ -878,6 +879,22 @@ void QCALLTYPE AssemblyNative::LoadFromPath(INT_PTR ptrNativeAssemblyLoadContext
             "\tLoaded assembly from a file\n"));
     
     END_QCALL;
+}
+
+// static
+INT_PTR QCALLTYPE AssemblyNative::InternalLoadUnmanagedDllFromPath(LPCWSTR unmanagedLibraryPath)
+{
+    QCALL_CONTRACT;
+
+    HMODULE moduleHandle = nullptr;
+
+    BEGIN_QCALL;
+
+    moduleHandle = NDirect::LoadLibraryFromPath(unmanagedLibraryPath);
+
+    END_QCALL;
+
+    return reinterpret_cast<INT_PTR>(moduleHandle);
 }
 
 /*static */
