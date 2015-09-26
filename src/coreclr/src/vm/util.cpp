@@ -31,7 +31,7 @@
 // Called again with a nonnull *pdstout to fill in the actual buffer.
 //
 // Returns the # of arguments.
-static UINT ParseCommandLine(LPCWSTR psrc, __out LPWSTR *pdstout)
+static UINT ParseCommandLine(LPCWSTR psrc, __inout LPWSTR *pdstout)
 {
     CONTRACTL
     {

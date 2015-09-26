@@ -1810,6 +1810,7 @@ namespace DownLevel
         return cchSrc;
     }
 
+	__success(return != 0)
     int LinguisticCaseString(__in LCID lcid,__in DWORD flags,
                       __in_ecount(cchSrc) const WCHAR * source,
                       __in int cchSrc,

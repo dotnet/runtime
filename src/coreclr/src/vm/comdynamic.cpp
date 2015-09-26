@@ -1404,7 +1404,7 @@ HRESULT COMDynamicWrite::EmitDebugInfoBegin(Module *pModule,
     // and fill out the debug directory and save off the symbols now.
     if (pWriter != NULL)
     {
-        IMAGE_DEBUG_DIRECTORY  debugDirIDD;
+        IMAGE_DEBUG_DIRECTORY  debugDirIDD = {0};
         DWORD                  debugDirDataSize;
         BYTE                  *debugDirData;
 

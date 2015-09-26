@@ -67,6 +67,7 @@ public:
     // Returns FALSE if the value cannot be encoded as compressed integer, doesn't fill *pcbEncodingSize 
     // then.
     __checkReturn 
+    __success(return)
     static inline BOOL GetEncodingSize(
               UINT32  nValue, 
         __out UINT32 *pcbEncodingSize);
@@ -74,6 +75,7 @@ public:
     // *pcbEncodingSize with 1, 2 or 4 and *pnEncodedValue with the encoded value.
     // Returns FALSE if the value cannot be encoded as compressed integer, doesn't fill *pcbEncodingSize 
     // nor *pnEncodedValue then.
+    __success(return)
     static inline BOOL Encode(
               UINT32  nValue, 
         __out UINT32 *pnEncodedValue, 
