@@ -193,7 +193,7 @@ namespace System.Threading
 
             //
             // Allocate a new Dictionary containing a copy of the old values, plus the new value.  We have to do this manually to 
-            // minimize allocations of IEnumeartors, etc.
+            // minimize allocations of IEnumertors, etc.
             //
             Dictionary<IAsyncLocal, object> newValues = new Dictionary<IAsyncLocal, object>(current.m_localValues.Count + (hadPreviousValue ? 0 : 1));
 
