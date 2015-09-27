@@ -139,10 +139,10 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetPriorityClass.cs">
       <Link>Common\Interop\Windows\Interop.SetPriorityClass.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Ntdll\Interop.NtQueryInformationProcess.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.NtQueryInformationProcess.cs">
       <Link>Common\Interop\Windows\Interop.NtQueryInformationProcess.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Ntdll\Interop.NtQuerySystemInformation.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs">
       <Link>Common\Interop\Windows\Interop.NtQuerySystemInformation.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.DuplicateHandle_SafeProcessHandle.cs">
