@@ -6,7 +6,7 @@ include(CheckPrototypeDefinition)
 
 #CMake does not include /usr/local/include into the include search path
 #thus add it manually. This is required on FreeBSD.
-include_directories(/usr/local/include)
+include_directories(SYSTEM /usr/local/include)
 
 check_function_exists(
     stat64
