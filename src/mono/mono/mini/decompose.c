@@ -307,10 +307,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 	gboolean emulate = FALSE;
 
 	/* FIXME: Instead of = NOP, don't emit the original ins at all */
-
-#ifdef MONO_ARCH_HAVE_DECOMPOSE_OPTS
 	mono_arch_decompose_opts (cfg, ins);
-#endif
 
 	/*
 	 * The code below assumes that we are called immediately after emitting 
@@ -446,7 +443,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 		cfg->exception_message = g_strdup_printf ("float conv.ovf.un opcodes not supported.");
 		break;
 
-#if defined(MONO_ARCH_EMULATE_DIV) && defined(MONO_ARCH_HAVE_OPCODE_NEEDS_EMULATION)
+#if defined(MONO_ARCH_EMULATE_DIV)
 	case OP_IDIV:
 	case OP_IREM:
 	case OP_IDIV_UN:
@@ -639,10 +636,7 @@ mono_decompose_long_opts (MonoCompile *cfg)
 		cfg->cbb->code = cfg->cbb->last_ins = NULL;
 
 		while (tree) {
-
-#ifdef MONO_ARCH_HAVE_DECOMPOSE_LONG_OPTS
 			mono_arch_decompose_long_opts (cfg, tree);
-#endif
 
 			switch (tree->opcode) {
 			case OP_I8CONST:

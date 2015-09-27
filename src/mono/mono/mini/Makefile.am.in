@@ -423,7 +423,8 @@ common_sources = \
 	xdebug.c			\
 	mini-llvm-cpp.h	\
 	alias-analysis.c	\
-	mini-cross-helpers.c
+	mini-cross-helpers.c \
+	arch-stubs.c
 
 test_sources = 			\
 	basic-calls.cs 		\
