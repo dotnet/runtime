@@ -1729,6 +1729,22 @@ mono_arch_fill_argument_info (MonoCompile *cfg)
 		}
 	}
 }
+
+/*
+ * mono_arch_init_compile:
+ *
+ *   Set architecture specific flags in CFG.
+ */
+void
+mono_arch_init_compile (MonoCompile *cfg)
+{
+	cfg->have_card_table_wb = 1;
+	cfg->have_op_generic_class_init = 1;
+	cfg->have_generalized_imt_thunk = 1;
+	cfg->gshared_supported = 1;
+	cfg->have_tls_get = mono_amd64_have_tls_get ();
+	cfg->have_liverange_ops = 1;
+}
  
 void
 mono_arch_allocate_vars (MonoCompile *cfg)
