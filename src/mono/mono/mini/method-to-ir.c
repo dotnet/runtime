@@ -5148,14 +5148,6 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	if (cfg->inline_depth > 10)
 		return FALSE;
 
-#ifdef MONO_ARCH_HAVE_LMF_OPS
-	if (((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-		 (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) &&
-	    !MONO_TYPE_ISSTRUCT (signature->ret) && !mini_class_is_system_array (method->klass))
-		return TRUE;
-#endif
-
-
 	if (!mono_method_get_header_summary (method, &header))
 		return FALSE;
 
@@ -12152,11 +12144,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			case CEE_MONO_SAVE_LMF:
 			case CEE_MONO_RESTORE_LMF:
-#ifdef MONO_ARCH_HAVE_LMF_OPS
-				MONO_INST_NEW (cfg, ins, (ip [1] == CEE_MONO_SAVE_LMF) ? OP_SAVE_LMF : OP_RESTORE_LMF);
-				MONO_ADD_INS (cfg->cbb, ins);
-				cfg->need_lmf_area = TRUE;
-#endif
 				ip += 2;
 				break;
 			case CEE_MONO_CLASSCONST:
