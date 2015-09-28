@@ -2,11 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Net.Http;
-using System.Net.Tests;
 
 using Xunit;
 
-namespace System.Net.Requests.Test
+namespace System.Net.Tests
 {
     public class HttpWebResponseTest
     {
