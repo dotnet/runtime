@@ -1,72 +1,68 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace System.Globalization {
-    using System.Text;
-    using System.Runtime.Remoting;
-    using System;
-    using System.Security;
-
+namespace System.Globalization
+{
     [Serializable]
     internal class CodePageDataItem
     {
-        // TODO: Implement this fully.
-        private readonly string _webName;
+        private readonly int _codePage;
         private readonly int _uiFamilyCodePage;
-        private readonly string _headerName;
-        private readonly string _bodyName;
+        private readonly string _webName;
         private readonly uint _flags;
+        private string _displayNameResourceKey;
 
-        [SecurityCritical]
-        unsafe internal CodePageDataItem(
-            string webName, int uiFamilyCodePage, string headerName,
-            string bodyName, uint flags) {
-            // TODO: Implement this fully.
-            _webName = webName;
+        internal CodePageDataItem(int codePage, int uiFamilyCodePage, string webName, uint flags)
+        {
+            _codePage = codePage;
             _uiFamilyCodePage = uiFamilyCodePage;
-            _headerName = headerName;
-            _bodyName = bodyName;
+            _webName = webName;
             _flags = flags;
         }
 
-        unsafe public String WebName {
-            [System.Security.SecuritySafeCritical]  // auto-generated
-            get {
-                // TODO: Implement this fully.
-                return _webName;
-            }
+        public int CodePage
+        {
+            get { return _codePage; }
         }
-    
-        public virtual int UIFamilyCodePage {
-            get {
-                // TODO: Implement this fully.
-                return _uiFamilyCodePage;
-            }
-        }
-    
-        unsafe public String HeaderName {
-            [System.Security.SecuritySafeCritical]  // auto-generated
-            get {
-                // TODO: Implement this fully.
-                return _headerName;
-            }
-        }
-    
-        unsafe public String BodyName {
-            [System.Security.SecuritySafeCritical]  // auto-generated
-            get {
-                // TODO: Implement this fully.
-                return _bodyName;
-            }
-        }    
 
-        unsafe public uint Flags {
-            get {
-                // TODO: Implement this fully.
-                return _flags;
-            }
+        public int UIFamilyCodePage
+        {
+            get { return _uiFamilyCodePage; }
+        }
+
+        public String WebName
+        {
+            get { return _webName; }
+        }
+
+        public String HeaderName
+        {
+            get { return _webName; } // all the code pages used on unix only have a single name
+        }
+
+        public String BodyName
+        {
+            get { return _webName; } // all the code pages used on unix only have a single name
+        }
+
+        public uint Flags
+        {
+            get { return _flags; }
         }
 
         // PAL ends here
+
+        public string DisplayNameResourceKey
+        {
+            get
+            {
+                if (_displayNameResourceKey == null)
+                {
+                    _displayNameResourceKey = "Globalization.cp_" + CodePage;
+                }
+
+                return _displayNameResourceKey;
+            }
+        }
     }
 }
