@@ -3,7 +3,7 @@
   "version": 1,
   "targets": {
     ".NETPlatform,Version=v5.0": {
-      "Microsoft.Win32.Registry/4.0.0-beta-23311": {
+      "Microsoft.Win32.Registry/4.0.0-beta-23328": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0",
@@ -117,12 +117,12 @@
           "ref/dotnet/System.Runtime.InteropServices.dll": {}
         }
       },
-      "System.Security.AccessControl/4.0.0-beta-23311": {
+      "System.Security.AccessControl/4.0.0-beta-23328": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0",
           "System.Runtime.Handles": "4.0.0",
-          "System.Security.Principal.Windows": "4.0.0-beta-23311"
+          "System.Security.Principal.Windows": "4.0.0-beta-23328"
         },
         "compile": {
           "ref/dotnet/System.Security.AccessControl.dll": {}
@@ -159,7 +159,7 @@
           "lib/dotnet/System.Security.Principal.dll": {}
         }
       },
-      "System.Security.Principal.Windows/4.0.0-beta-23311": {
+      "System.Security.Principal.Windows/4.0.0-beta-23328": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0",
@@ -192,28 +192,28 @@
     }
   },
   "libraries": {
-    "Microsoft.Win32.Registry/4.0.0-beta-23311": {
+    "Microsoft.Win32.Registry/4.0.0-beta-23328": {
       "type": "package",
       "serviceable": true,
-      "sha512": "W3zUZ8Fb00S5qqWie6K9PAJ9jRsYxz2xSQPL2Kvn1/7gBuqRpsZjBZV8AWGD7e6IPn9t+W6StmoXyK5BqczmXw==",
+      "sha512": "NWSfCjVwtRsUpQApE6QcASDatxR6p6XOZ1jew8WddkdBuWsz0SBp87euvkwUCkBDW6KunxQ0vXEG3rnalOzevw==",
       "files": [
-        "de/Microsoft.Win32.Registry.xml",
-        "es/Microsoft.Win32.Registry.xml",
-        "fr/Microsoft.Win32.Registry.xml",
-        "it/Microsoft.Win32.Registry.xml",
-        "ja/Microsoft.Win32.Registry.xml",
-        "ko/Microsoft.Win32.Registry.xml",
+        "lib/DNXCore50/de/Microsoft.Win32.Registry.xml",
+        "lib/DNXCore50/es/Microsoft.Win32.Registry.xml",
+        "lib/DNXCore50/fr/Microsoft.Win32.Registry.xml",
+        "lib/DNXCore50/it/Microsoft.Win32.Registry.xml",
+        "lib/DNXCore50/ja/Microsoft.Win32.Registry.xml",
+        "lib/DNXCore50/ko/Microsoft.Win32.Registry.xml",
         "lib/DNXCore50/Microsoft.Win32.Registry.dll",
+        "lib/DNXCore50/Microsoft.Win32.Registry.xml",
+        "lib/DNXCore50/ru/Microsoft.Win32.Registry.xml",
+        "lib/DNXCore50/zh-hans/Microsoft.Win32.Registry.xml",
+        "lib/DNXCore50/zh-hant/Microsoft.Win32.Registry.xml",
         "lib/net46/Microsoft.Win32.Registry.dll",
-        "Microsoft.Win32.Registry.4.0.0-beta-23311.nupkg",
-        "Microsoft.Win32.Registry.4.0.0-beta-23311.nupkg.sha512",
+        "Microsoft.Win32.Registry.4.0.0-beta-23328.nupkg",
+        "Microsoft.Win32.Registry.4.0.0-beta-23328.nupkg.sha512",
         "Microsoft.Win32.Registry.nuspec",
-        "Microsoft.Win32.Registry.xml",
         "ref/dotnet/Microsoft.Win32.Registry.dll",
-        "ref/net46/Microsoft.Win32.Registry.dll",
-        "ru/Microsoft.Win32.Registry.xml",
-        "zh-hans/Microsoft.Win32.Registry.xml",
-        "zh-hant/Microsoft.Win32.Registry.xml"
+        "ref/net46/Microsoft.Win32.Registry.dll"
       ]
     },
     "System.Collections/4.0.0": {
@@ -700,28 +700,28 @@
         "System.Runtime.InteropServices.nuspec"
       ]
     },
-    "System.Security.AccessControl/4.0.0-beta-23311": {
+    "System.Security.AccessControl/4.0.0-beta-23328": {
       "type": "package",
       "serviceable": true,
-      "sha512": "KJULC0b8IaJH3N9Sfr4M3EZnO7MZRb8iz85ClsgPgByF7v++j4LDTbwabqlmmLpRtL02/ozu9W93Sgk3gUkHQA==",
+      "sha512": "awtY3eZg6sXL4mABvVQvvhlpRdN8Vr+dQdD7w2Euf5spkitfjDIiGBUnl7gusoOhJgKlUh3tvsy+wcDVxOrzTw==",
       "files": [
-        "de/System.Security.AccessControl.xml",
-        "es/System.Security.AccessControl.xml",
-        "fr/System.Security.AccessControl.xml",
-        "it/System.Security.AccessControl.xml",
-        "ja/System.Security.AccessControl.xml",
-        "ko/System.Security.AccessControl.xml",
+        "lib/DNXCore50/de/System.Security.AccessControl.xml",
+        "lib/DNXCore50/es/System.Security.AccessControl.xml",
+        "lib/DNXCore50/fr/System.Security.AccessControl.xml",
+        "lib/DNXCore50/it/System.Security.AccessControl.xml",
+        "lib/DNXCore50/ja/System.Security.AccessControl.xml",
+        "lib/DNXCore50/ko/System.Security.AccessControl.xml",
+        "lib/DNXCore50/ru/System.Security.AccessControl.xml",
         "lib/DNXCore50/System.Security.AccessControl.dll",
+        "lib/DNXCore50/System.Security.AccessControl.xml",
+        "lib/DNXCore50/zh-hans/System.Security.AccessControl.xml",
+        "lib/DNXCore50/zh-hant/System.Security.AccessControl.xml",
         "lib/net46/System.Security.AccessControl.dll",
         "ref/dotnet/System.Security.AccessControl.dll",
         "ref/net46/System.Security.AccessControl.dll",
-        "ru/System.Security.AccessControl.xml",
-        "System.Security.AccessControl.4.0.0-beta-23311.nupkg",
-        "System.Security.AccessControl.4.0.0-beta-23311.nupkg.sha512",
-        "System.Security.AccessControl.nuspec",
-        "System.Security.AccessControl.xml",
-        "zh-hans/System.Security.AccessControl.xml",
-        "zh-hant/System.Security.AccessControl.xml"
+        "System.Security.AccessControl.4.0.0-beta-23328.nupkg",
+        "System.Security.AccessControl.4.0.0-beta-23328.nupkg.sha512",
+        "System.Security.AccessControl.nuspec"
       ]
     },
     "System.Security.Claims/4.0.0": {
@@ -789,28 +789,28 @@
         "System.Security.Principal.nuspec"
       ]
     },
-    "System.Security.Principal.Windows/4.0.0-beta-23311": {
+    "System.Security.Principal.Windows/4.0.0-beta-23328": {
       "type": "package",
       "serviceable": true,
-      "sha512": "6prP/ZgRLLvcAJyM0AqRHSmGGWuLJTnIB4aVw3f1ffM5L+m0G/5REKcLytubqOxIAAEy5kUPfKQaS+SQBdmtfg==",
+      "sha512": "MoUswJNXFQZiQNpU3AUOKDpBb5AzsPttwE1WkFww7VwfR+PNL/tT9Lw5jqhlWWSFfNDLVGNMMkGmqhD2RGkPBQ==",
       "files": [
-        "de/System.Security.Principal.Windows.xml",
-        "es/System.Security.Principal.Windows.xml",
-        "fr/System.Security.Principal.Windows.xml",
-        "it/System.Security.Principal.Windows.xml",
-        "ja/System.Security.Principal.Windows.xml",
-        "ko/System.Security.Principal.Windows.xml",
+        "lib/DNXCore50/de/System.Security.Principal.Windows.xml",
+        "lib/DNXCore50/es/System.Security.Principal.Windows.xml",
+        "lib/DNXCore50/fr/System.Security.Principal.Windows.xml",
+        "lib/DNXCore50/it/System.Security.Principal.Windows.xml",
+        "lib/DNXCore50/ja/System.Security.Principal.Windows.xml",
+        "lib/DNXCore50/ko/System.Security.Principal.Windows.xml",
+        "lib/DNXCore50/ru/System.Security.Principal.Windows.xml",
         "lib/DNXCore50/System.Security.Principal.Windows.dll",
+        "lib/DNXCore50/System.Security.Principal.Windows.xml",
+        "lib/DNXCore50/zh-hans/System.Security.Principal.Windows.xml",
+        "lib/DNXCore50/zh-hant/System.Security.Principal.Windows.xml",
         "lib/net46/System.Security.Principal.Windows.dll",
         "ref/dotnet/System.Security.Principal.Windows.dll",
         "ref/net46/System.Security.Principal.Windows.dll",
-        "ru/System.Security.Principal.Windows.xml",
-        "System.Security.Principal.Windows.4.0.0-beta-23311.nupkg",
-        "System.Security.Principal.Windows.4.0.0-beta-23311.nupkg.sha512",
-        "System.Security.Principal.Windows.nuspec",
-        "System.Security.Principal.Windows.xml",
-        "zh-hans/System.Security.Principal.Windows.xml",
-        "zh-hant/System.Security.Principal.Windows.xml"
+        "System.Security.Principal.Windows.4.0.0-beta-23328.nupkg",
+        "System.Security.Principal.Windows.4.0.0-beta-23328.nupkg.sha512",
+        "System.Security.Principal.Windows.nuspec"
       ]
     },
     "System.Text.Encoding/4.0.0": {
