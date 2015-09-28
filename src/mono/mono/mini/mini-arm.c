@@ -6315,7 +6315,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			code = mono_arm_emit_load_imm (code, ARMREG_R0, (guint32)cfg->method);
 		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, "mono_arm_unaligned_stack");
 		code = emit_call_seq (cfg, code);
-		code = emit_call_reg (code, ARMREG_LR);
 		arm_patch (buf [0], code);
 	}
 	*/
