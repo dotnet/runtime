@@ -768,6 +768,11 @@ namespace Internal.Cryptography.Pal.Native
         // Predefined verify chain policies
         CERT_CHAIN_POLICY_BASE = 1,
     }
+
+    internal enum CryptAcquireFlags : int
+    {
+        CRYPT_ACQUIRE_ONLY_NCRYPT_KEY_FLAG = 0x00040000,
+    }
 }
 
 

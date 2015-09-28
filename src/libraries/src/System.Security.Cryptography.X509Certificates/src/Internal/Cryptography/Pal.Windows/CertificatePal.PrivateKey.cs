@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using Microsoft.Win32.SafeHandles;
 
 using Internal.Cryptography.Pal.Native;
 
@@ -58,6 +59,13 @@ namespace Internal.Cryptography.Pal
 
         private T GetPrivateKey<T>(Func<CspParameters, T> createCsp, Func<CngKey, T> createCng) where T : AsymmetricAlgorithm
         {
+            SafeNCryptKeyHandle ncryptKey = TryAcquireCngPrivateKey(CertContext);
+            if (ncryptKey != null)
+            {
+                CngKey cngKey = CngKey.Open(ncryptKey, CngKeyHandleOpenOptions.None);
+                return createCng(cngKey);
+            }
+ 
             CspParameters cspParameters = GetPrivateKey();
             if (cspParameters == null)
                 return null;
@@ -86,6 +94,48 @@ namespace Internal.Cryptography.Pal
                 cspParameters.Flags |= CspProviderFlags.UseExistingKey;
                 return createCsp(cspParameters);
 #endif
+            }
+        }
+
+        private static SafeNCryptKeyHandle TryAcquireCngPrivateKey(SafeCertContextHandle certificateContext)
+        {
+            Debug.Assert(certificateContext != null, "certificateContext != null");
+            Debug.Assert(!certificateContext.IsClosed && !certificateContext.IsInvalid,
+                         "!certificateContext.IsClosed && !certificateContext.IsInvalid");
+
+            bool freeKey = true;
+            SafeNCryptKeyHandle privateKey = null;
+            try
+            {
+                int keySpec = 0;
+                if (!Interop.crypt32.CryptAcquireCertificatePrivateKey(
+                        certificateContext,
+                        CryptAcquireFlags.CRYPT_ACQUIRE_ONLY_NCRYPT_KEY_FLAG,
+                        IntPtr.Zero,
+                        out privateKey,
+                        out keySpec,
+                        out freeKey))
+                {
+                    return null;
+                }
+
+                return privateKey;
+            }
+            finally
+            {
+                // If we're not supposed to release the key handle, then we need to bump the reference count
+                // on the safe handle to correspond to the reference that Windows is holding on to.  This will
+                // prevent the CLR from freeing the object handle.
+                // 
+                // This is certainly not the ideal way to solve this problem - it would be better for
+                // SafeNCryptKeyHandle to maintain an internal bool field that we could toggle here and
+                // have that suppress the release when the CLR calls the ReleaseHandle override.  However, that
+                // field does not currently exist, so we'll use this hack instead.
+                if (privateKey != null && !freeKey)
+                {
+                    bool addedRef = false;
+                    privateKey.DangerousAddRef(ref addedRef);
+                }
             }
         }
 
