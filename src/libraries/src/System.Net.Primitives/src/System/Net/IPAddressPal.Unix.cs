@@ -18,15 +18,7 @@ namespace System.Net
             Debug.Assert(buffer != null);
             Debug.Assert(buffer.Capacity >= IPAddressParser.INET_ADDRSTRLEN);
 
-            var sockaddr = new Interop.libc.sockaddr_in {
-                sin_family = Interop.libc.AF_INET,
-                sin_port = 0
-            };
-
-            sockaddr.sin_addr.s_addr = address.NetworkBytesToNetworkUInt32(0);
-
-            int err = Interop.libc.getnameinfo((Interop.libc.sockaddr*)&sockaddr, (uint)sizeof(Interop.libc.sockaddr_in), buffer, (uint)buffer.Capacity, null, 0, Interop.libc.NI_NUMERICHOST);
-            return unchecked((uint)err);
+            return Interop.Sys.IpAddressToString(address, false, buffer);
         }
 
         public static unsafe uint Ipv6AddressToString(byte[] address, uint scopeId, StringBuilder buffer)
@@ -36,58 +28,16 @@ namespace System.Net
             Debug.Assert(buffer != null);
             Debug.Assert(buffer.Capacity >= IPAddressParser.INET6_ADDRSTRLEN);
 
-            var sockaddr = new Interop.libc.sockaddr_in6 {
-                sin6_family = Interop.libc.AF_INET6,
-                sin6_port = 0,
-                sin6_scope_id = scopeId
-            };
-
-            Debug.Assert(sizeof(Interop.libc.in6_addr) == IPAddressParserStatics.IPv6AddressBytes);
-            for (int i = 0; i < IPAddressParserStatics.IPv6AddressBytes; i++)
-            {
-                sockaddr.sin6_addr.s6_addr[i] = address[i];
-            }
-
-            int err = Interop.libc.getnameinfo((Interop.libc.sockaddr*)&sockaddr, (uint)sizeof(Interop.libc.sockaddr_in6), buffer, (uint)buffer.Capacity, null, 0, Interop.libc.NI_NUMERICHOST);
-            return unchecked((uint)err);
+            return Interop.Sys.IpAddressToString(address, true, buffer, scopeId);
         }
 
         public static unsafe uint Ipv4StringToAddress(string ipString, byte[] bytes, out ushort port)
         {
             Debug.Assert(ipString != null);
             Debug.Assert(bytes != null);
-            Debug.Assert(bytes.Length == IPAddressParserStatics.IPv4AddressBytes);
+            Debug.Assert(bytes.Length >= IPAddressParserStatics.IPv4AddressBytes);
 
-            port = 0;
-
-            var hints = new Interop.libc.addrinfo {
-                ai_flags = Interop.libc.AI_NUMERICHOST | Interop.libc.AI_NUMERICSERV,
-                ai_family = Interop.libc.AF_INET,
-                ai_socktype = 0,
-                ai_protocol = 0
-            };
-
-            Interop.libc.addrinfo* addrinfo = null;
-            int err = Interop.libc.getaddrinfo(ipString, null, &hints, &addrinfo);
-            if (err != 0)
-            {
-                Debug.Assert(addrinfo == null);
-                return unchecked((uint)err);
-            }
-
-            Debug.Assert(addrinfo != null);
-            Debug.Assert(addrinfo->ai_addr != null);
-            Debug.Assert(addrinfo->ai_addr->sa_family == Interop.libc.AF_INET);
-
-            Interop.libc.sockaddr_in* sockaddr = (Interop.libc.sockaddr_in*)addrinfo->ai_addr;
-
-            sockaddr->sin_addr.s_addr.NetworkToNetworkBytes(bytes, 0);
-            port = sockaddr->sin_port;
-
-            Interop.libc.freeaddrinfo(addrinfo);
-
-            Debug.Assert(err == 0);
-            return 0;
+            return unchecked((uint)Interop.Sys.Ipv4StringToAddress(ipString, bytes, bytes.Length, out port));
         }
 
         private static bool IsHexString(string input, int startIndex)
@@ -175,50 +125,16 @@ namespace System.Net
         {
             Debug.Assert(ipString != null);
             Debug.Assert(bytes != null);
-            Debug.Assert(bytes.Length == IPAddressParserStatics.IPv6AddressBytes);
+            Debug.Assert(bytes.Length >= IPAddressParserStatics.IPv6AddressBytes);
 
             string host, port;
             if (!TryPreprocessIPv6Address(ipString, out host, out port))
             {
                 scope = 0;
-                return unchecked((uint)Interop.libc.EAI_NONAME);
+                return unchecked((uint)Interop.Sys.GetAddrInfoErrorFlags.EAI_NONAME);
             }
 
-            var hints = new Interop.libc.addrinfo {
-                ai_flags = Interop.libc.AI_NUMERICHOST | Interop.libc.AI_NUMERICSERV,
-                ai_family = Interop.libc.AF_INET6,
-                ai_socktype = 0,
-                ai_protocol = 0
-            };
-
-            Interop.libc.addrinfo* addrinfo = null;
-            int err = Interop.libc.getaddrinfo(host, port, &hints, &addrinfo);
-            if (err != 0)
-            {
-                Debug.Assert(addrinfo == null);
-
-                scope = 0;
-                return unchecked((uint)err);
-            }
-
-            Debug.Assert(addrinfo != null);
-            Debug.Assert(addrinfo->ai_addr != null);
-            Debug.Assert(addrinfo->ai_addr->sa_family == Interop.libc.AF_INET6);
-
-            Interop.libc.sockaddr_in6* sockaddr = (Interop.libc.sockaddr_in6*)addrinfo->ai_addr;
-
-            Debug.Assert(sizeof(Interop.libc.in6_addr) == IPAddressParserStatics.IPv6AddressBytes);
-            for (int i = 0; i < IPAddressParserStatics.IPv6AddressBytes; i++)
-            {
-                bytes[i] = sockaddr->sin6_addr.s6_addr[i];
-            }
-
-            scope = sockaddr->sin6_scope_id;
-
-            Interop.libc.freeaddrinfo(addrinfo);
-
-            Debug.Assert(err == 0);
-            return 0;
+            return unchecked((uint)Interop.Sys.Ipv6StringToAddress(host, port, bytes, bytes.Length, out scope));
         }
 
         public static SocketError GetSocketErrorForErrorCode(uint status)
@@ -227,8 +143,8 @@ namespace System.Net
             {
                 case 0:
                     return SocketError.Success;
-                case Interop.libc.EAI_BADFLAGS:
-                case Interop.libc.EAI_NONAME:
+                case (int)Interop.Sys.GetAddrInfoErrorFlags.EAI_BADFLAGS:
+                case (int)Interop.Sys.GetAddrInfoErrorFlags.EAI_NONAME:
                     return SocketError.InvalidArgument;
                 default:
                     return (SocketError)status;
