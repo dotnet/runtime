@@ -792,7 +792,12 @@ BOOL PAL_GetPALDirectory(__out_ecount(cchBuffer) LPWSTR pbuffer,
 
     HRESULT hr = S_OK;
 
-    WCHAR pPath[MAX_LONGPATH];
+    WCHAR * pPath = new (nothrow) WCHAR[MAX_LONGPATH];
+    if (pPath == NULL)
+    {
+        return FALSE;
+    }
+    
     DWORD dwPath = MAX_LONGPATH;
 
 #ifndef CROSSGEN_COMPILE
@@ -800,6 +805,7 @@ BOOL PAL_GetPALDirectory(__out_ecount(cchBuffer) LPWSTR pbuffer,
 #endif
 
     dwPath = WszGetModuleFileName(g_pMSCorEE, pPath, dwPath);
+    
     if(dwPath == 0)
     {
         hr = HRESULT_FROM_GetLastErrorNA();
@@ -809,7 +815,9 @@ BOOL PAL_GetPALDirectory(__out_ecount(cchBuffer) LPWSTR pbuffer,
         DWORD dwLength;
         hr = CopySystemDirectory(pPath, pbuffer, cchBuffer, &dwLength);
     }
-
+  
+    delete [] pPath;
+    
     return (hr == S_OK);
 }
 
@@ -1002,7 +1010,6 @@ ErrExit:
 //    S_OK - Output buffer contains the version string.
 //    HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER) - *pdwLength contains required size of the buffer in 
 //                                                    characters.
-//
 
 STDAPI GetCORVersionInternal(
 __out_ecount_z_opt(cchBuffer) LPWSTR pBuffer, 
@@ -1115,44 +1122,10 @@ __out_ecount_z_opt(cchBuffer) LPWSTR pBuffer,
 
 }
 
-
 #ifndef CROSSGEN_COMPILE
+#ifndef FEATURE_CORECLR
 STDAPI LoadLibraryShimInternal(LPCWSTR szDllName, LPCWSTR szVersion, LPVOID pvReserved, HMODULE *phModDll)
 {
-#ifdef FEATURE_CORECLR
-
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(szDllName, NULL_OK));
-        PRECONDITION(CheckPointer(szVersion, NULL_OK));
-        PRECONDITION(CheckPointer(pvReserved, NULL_OK));
-        PRECONDITION(CheckPointer(phModDll));
-    } CONTRACTL_END;
-
-    if (szDllName == NULL)
-        return E_POINTER;
-
-    HRESULT hr = S_OK;
-    
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    WCHAR szDllPath[MAX_LONGPATH+1];
-
-    if (!PAL_GetPALDirectoryW(szDllPath, MAX_LONGPATH)) {
-        IfFailGo(HRESULT_FROM_GetLastError());
-    }
-    wcsncat_s(szDllPath, MAX_LONGPATH+1, szDllName, MAX_LONGPATH - wcslen(szDllPath));
-
-    if ((*phModDll = WszLoadLibrary(szDllPath)) == NULL)
-        IfFailGo(HRESULT_FROM_GetLastError());
-
-ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
-
-#else // FEATURE_CORECLR
-
     // Simply forward the call to the ICLRRuntimeInfo implementation.
     STATIC_CONTRACT_WRAPPER;
     if (g_pCLRRuntime)
@@ -1163,7 +1136,7 @@ ErrExit:
     {
         // no runtime info, probably loaded directly (e.g. from Fusion)
         // just look next to ourselves.
-        WCHAR wszPath[MAX_LONGPATH];
+        WCHAR wszPath[MAX_PATH];
         DWORD dwLength = WszGetModuleFileName(g_hThisInst, wszPath,NumItems(wszPath));
             
 
@@ -1188,15 +1161,12 @@ ErrExit:
         }
         return S_OK;
     }
-
-#endif // FEATURE_CORECLR
-
 }
-
-#endif // CROSSGEN_COMPILE
+#endif
+#endif 
 
 static DWORD g_dwSystemDirectory = 0;
-static WCHAR g_pSystemDirectory[MAX_LONGPATH + 1];
+static WCHAR * g_pSystemDirectory = NULL;
 
 HRESULT GetInternalSystemDirectory(__out_ecount_part_opt(*pdwLength,*pdwLength) LPWSTR buffer, __inout DWORD* pdwLength)
 {
@@ -1263,17 +1233,30 @@ HRESULT SetInternalSystemDirectory()
         DWORD len;
 
         // use local buffer for thread safety
-        WCHAR wzSystemDirectory[COUNTOF(g_pSystemDirectory)];
+        NewArrayHolder<WCHAR> wzSystemDirectory(new (nothrow) WCHAR[MAX_LONGPATH+1]);
+        if (wzSystemDirectory == NULL)
+        {
+            return HRESULT_FROM_WIN32(ERROR_NOT_ENOUGH_MEMORY);
+        }
         
-        hr = GetCORSystemDirectoryInternal(wzSystemDirectory, COUNTOF(wzSystemDirectory), &len);
+        hr = GetCORSystemDirectoryInternal(wzSystemDirectory, MAX_LONGPATH+1, &len);
 
         if(FAILED(hr)) {
-            wzSystemDirectory[0] = W('\0');
+            *wzSystemDirectory = W('\0');
             len = 1;
         }
-
+        
+        WCHAR * pSystemDirectory = new (nothrow) WCHAR[len];
+        if (pSystemDirectory == NULL)
+        {
+            return HRESULT_FROM_WIN32(ERROR_NOT_ENOUGH_MEMORY);
+        }
+        
+        wcscpy_s(pSystemDirectory, len, wzSystemDirectory);
+        
         // publish results idempotently with correct memory ordering
-        memcpy(g_pSystemDirectory, wzSystemDirectory, len * sizeof(WCHAR));
+        g_pSystemDirectory = pSystemDirectory;
+        
         (void)InterlockedExchange((LONG *)&g_dwSystemDirectory, len);
     }
 
@@ -1283,10 +1266,21 @@ HRESULT SetInternalSystemDirectory()
 #if defined(CROSSGEN_COMPILE) && defined(FEATURE_CORECLR)
 void SetMscorlibPath(LPCWSTR wzSystemDirectory)
 {
-    wcscpy_s(g_pSystemDirectory, COUNTOF(g_pSystemDirectory), wzSystemDirectory);
-
-    DWORD len = (DWORD)wcslen(g_pSystemDirectory);
-
+    DWORD len = (DWORD)wcslen(wzSystemDirectory);
+    if (g_dwSystemDirectory < len+1)
+    {
+        delete [] g_pSystemDirectory;
+        g_pSystemDirectory = new (nothrow) WCHAR[len+1];
+        
+        if (g_pSystemDirectory == NULL)
+        {
+            SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+            return;
+        }
+    }
+    
+    wcscpy_s(g_pSystemDirectory, len+1, wzSystemDirectory);
+    
     if(g_pSystemDirectory[len-1] != '\\')
     {
         g_pSystemDirectory[len] = W('\\');
@@ -1294,6 +1288,8 @@ void SetMscorlibPath(LPCWSTR wzSystemDirectory)
         g_dwSystemDirectory = len + 1;
     }
     else
+    {
         g_dwSystemDirectory = len;
+    }
 }
 #endif
