@@ -113,7 +113,7 @@ namespace System.Collections.Tests
         public void DebuggerAttributeTests()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(new SortedList());
-            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(new SortedList());
+            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(new SortedList() { { "a", 1 }, { "b", 2 } });
         }
     }
 }

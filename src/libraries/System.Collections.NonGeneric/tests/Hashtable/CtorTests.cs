@@ -311,7 +311,7 @@ namespace System.Collections.Tests
         public void DebuggerAttributeTests()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(new Hashtable());
-            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(new Hashtable());
+            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(new Hashtable() { { "a", 1 }, { "b", 2 } });
         }
     }
 }
