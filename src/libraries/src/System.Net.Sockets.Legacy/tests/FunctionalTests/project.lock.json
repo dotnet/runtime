@@ -410,7 +410,7 @@
           "lib/dotnet/System.Threading.Tasks.Parallel.dll": {}
         }
       },
-      "System.Threading.ThreadPool/4.0.10-beta-23324": {
+      "System.Threading.ThreadPool/4.0.10-beta-23328": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0",
@@ -1455,10 +1455,10 @@
         "System.Threading.Tasks.Parallel.nuspec"
       ]
     },
-    "System.Threading.ThreadPool/4.0.10-beta-23324": {
+    "System.Threading.ThreadPool/4.0.10-beta-23328": {
       "type": "package",
       "serviceable": true,
-      "sha512": "G4SjGmiV72HBiv8wkfnKFGTieekrACU1m43VaeJ6vDeSyb08eEFusVH1UWZpOsUF25meCuzpda0ezus24b4rKA==",
+      "sha512": "kty/6e0CbGmZp02bi3SsxePIuySysChzbvcusVM3f4crBJHiSCOMnbfefURmGUTbi9V95zcF6IrGnuQ7q3mr5w==",
       "files": [
         "lib/DNXCore50/System.Threading.ThreadPool.dll",
         "lib/MonoAndroid10/_._",
@@ -1472,8 +1472,8 @@
         "ref/net46/System.Threading.ThreadPool.dll",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "System.Threading.ThreadPool.4.0.10-beta-23324.nupkg",
-        "System.Threading.ThreadPool.4.0.10-beta-23324.nupkg.sha512",
+        "System.Threading.ThreadPool.4.0.10-beta-23328.nupkg",
+        "System.Threading.ThreadPool.4.0.10-beta-23328.nupkg.sha512",
         "System.Threading.ThreadPool.nuspec"
       ]
     },

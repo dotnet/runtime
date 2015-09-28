@@ -82,10 +82,10 @@
           "lib/DNXCore50/System.Diagnostics.Contracts.dll": {}
         }
       },
-      "System.Diagnostics.Debug/4.0.10": {
+      "System.Diagnostics.Debug/4.0.10-beta-23127": {
         "type": "package",
         "dependencies": {
-          "System.Runtime": "4.0.0"
+          "System.Runtime": "4.0.0-beta-23127"
         },
         "compile": {
           "ref/dotnet/System.Diagnostics.Debug.dll": {}
@@ -359,12 +359,12 @@
           "lib/dotnet/System.Security.Claims.dll": {}
         }
       },
-      "System.Security.Cryptography.Algorithms/4.0.0-beta-23324": {
+      "System.Security.Cryptography.Algorithms/4.0.0-beta-23328": {
         "type": "package",
         "dependencies": {
           "System.IO": "4.0.0",
           "System.Runtime": "4.0.0",
-          "System.Security.Cryptography.Primitives": "4.0.0-beta-23324"
+          "System.Security.Cryptography.Primitives": "4.0.0-beta-23328"
         },
         "compile": {
           "ref/dotnet/System.Security.Cryptography.Algorithms.dll": {}
@@ -409,16 +409,15 @@
           "lib/DNXCore50/System.Security.Cryptography.Encoding.dll": {}
         }
       },
-      "System.Security.Cryptography.OpenSsl/4.0.0-beta-23325": {
+      "System.Security.Cryptography.OpenSsl/4.0.0-beta-23328": {
         "type": "package",
         "dependencies": {
-          "System.Diagnostics.Debug": "4.0.10",
           "System.IO": "4.0.10",
           "System.Resources.ResourceManager": "4.0.0",
           "System.Runtime": "4.0.20",
           "System.Runtime.Handles": "4.0.0",
-          "System.Security.Cryptography.Algorithms": "4.0.0-beta-23314",
-          "System.Security.Cryptography.Primitives": "4.0.0-beta-23314"
+          "System.Security.Cryptography.Algorithms": "4.0.0-beta-23328",
+          "System.Security.Cryptography.Primitives": "4.0.0-beta-23328"
         },
         "compile": {
           "lib/DNXCore50/System.Security.Cryptography.OpenSsl.dll": {}
@@ -427,7 +426,7 @@
           "lib/DNXCore50/System.Security.Cryptography.OpenSsl.dll": {}
         }
       },
-      "System.Security.Cryptography.Primitives/4.0.0-beta-23324": {
+      "System.Security.Cryptography.Primitives/4.0.0-beta-23328": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.0",
@@ -810,10 +809,10 @@
         "System.Diagnostics.Contracts.nuspec"
       ]
     },
-    "System.Diagnostics.Debug/4.0.10": {
+    "System.Diagnostics.Debug/4.0.10-beta-23127": {
       "type": "package",
       "serviceable": true,
-      "sha512": "pi2KthuvI2LWV2c2V+fwReDsDiKpNl040h6DcwFOb59SafsPT/V1fCy0z66OKwysurJkBMmp5j5CBe3Um+ub0g==",
+      "sha512": "n1wYReuu+uj36Lyu8FGkxGBsuQH6o1wCRMMd0z1daTiDS38MFvq8zGJdY7zv/s9S5dHRLHpTJSMFL56ByU+Ujg==",
       "files": [
         "lib/DNXCore50/System.Diagnostics.Debug.dll",
         "lib/MonoAndroid10/_._",
@@ -839,8 +838,8 @@
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtimes/win8-aot/lib/netcore50/System.Diagnostics.Debug.dll",
-        "System.Diagnostics.Debug.4.0.10.nupkg",
-        "System.Diagnostics.Debug.4.0.10.nupkg.sha512",
+        "System.Diagnostics.Debug.4.0.10-beta-23127.nupkg",
+        "System.Diagnostics.Debug.4.0.10-beta-23127.nupkg.sha512",
         "System.Diagnostics.Debug.nuspec"
       ]
     },
@@ -1420,10 +1419,10 @@
         "System.Security.Claims.nuspec"
       ]
     },
-    "System.Security.Cryptography.Algorithms/4.0.0-beta-23324": {
+    "System.Security.Cryptography.Algorithms/4.0.0-beta-23328": {
       "type": "package",
       "serviceable": true,
-      "sha512": "Mt6LwMj8hPp0+xZHcV6grZ7wSWhgycGkdZ6DQ9XvUY9NguUsvb/+fu2cMdrC7XsnpvwIROByp+p2dSjqBn3E2Q==",
+      "sha512": "25LZE9MSAs9/S2JxL3r0B7NmeGitGN++zCUvW/TAqsO5CMl/Ysse/q6F2783EHczGdCo+RJSkLgcxOJ6KGj1Qg==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -1437,8 +1436,8 @@
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtime.json",
-        "System.Security.Cryptography.Algorithms.4.0.0-beta-23324.nupkg",
-        "System.Security.Cryptography.Algorithms.4.0.0-beta-23324.nupkg.sha512",
+        "System.Security.Cryptography.Algorithms.4.0.0-beta-23328.nupkg",
+        "System.Security.Cryptography.Algorithms.4.0.0-beta-23328.nupkg.sha512",
         "System.Security.Cryptography.Algorithms.nuspec"
       ]
     },
@@ -1496,21 +1495,21 @@
         "System.Security.Cryptography.Encoding.nuspec"
       ]
     },
-    "System.Security.Cryptography.OpenSsl/4.0.0-beta-23325": {
+    "System.Security.Cryptography.OpenSsl/4.0.0-beta-23328": {
       "type": "package",
       "serviceable": true,
-      "sha512": "vRreape0Y1N4fsuRKvAFZOTjIzvPUlVN6RBWkWB2brss/4JNGC5tGfGaaDbN4ZiC3VPM7nRPQ2oVA4iZN3vLcQ==",
+      "sha512": "jNrSpwsQWcV+6nJTgve+RSFoRzhg83P1A8Nh7ByI0jA7s1hTHV6FPIea4qeys+nw0EbgoEAM0/S2g7fp6CbMrg==",
       "files": [
         "lib/DNXCore50/System.Security.Cryptography.OpenSsl.dll",
-        "System.Security.Cryptography.OpenSsl.4.0.0-beta-23325.nupkg",
-        "System.Security.Cryptography.OpenSsl.4.0.0-beta-23325.nupkg.sha512",
+        "System.Security.Cryptography.OpenSsl.4.0.0-beta-23328.nupkg",
+        "System.Security.Cryptography.OpenSsl.4.0.0-beta-23328.nupkg.sha512",
         "System.Security.Cryptography.OpenSsl.nuspec"
       ]
     },
-    "System.Security.Cryptography.Primitives/4.0.0-beta-23324": {
+    "System.Security.Cryptography.Primitives/4.0.0-beta-23328": {
       "type": "package",
       "serviceable": true,
-      "sha512": "ETZxelIX51Di4FTytd8ohSpN6Ym/32aWIX9E2NCFkd91qdexn2Dkysn80b6n4gX6jG+oL0UHQDtD/fYq8C65oQ==",
+      "sha512": "qfy2ZTRu7Xd0zlh/4dnpbPm38zZLcE8e1/e+Go3P9L9iPZARSOJWEja60ceIIrfSOS9wUGQwbdHetIjIq0rjkw==",
       "files": [
         "lib/dotnet/System.Security.Cryptography.Primitives.dll",
         "lib/MonoAndroid10/_._",
@@ -1524,8 +1523,8 @@
         "ref/net46/System.Security.Cryptography.Primitives.dll",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "System.Security.Cryptography.Primitives.4.0.0-beta-23324.nupkg",
-        "System.Security.Cryptography.Primitives.4.0.0-beta-23324.nupkg.sha512",
+        "System.Security.Cryptography.Primitives.4.0.0-beta-23328.nupkg",
+        "System.Security.Cryptography.Primitives.4.0.0-beta-23328.nupkg.sha512",
         "System.Security.Cryptography.Primitives.nuspec"
       ]
     },
@@ -1861,8 +1860,7 @@
       "System.Diagnostics.Contracts >= 4.0.0-*",
       "System.Threading >= 4.0.0-*",
       "System.Net.Primitives >= 4.0.10-beta-*",
-      "System.Security.Cryptography.Algorithms >= 4.0.0-beta-23324",
-      "System.Security.Cryptography.OpenSsl >= 4.0.0-beta-23325"
+      "System.Security.Cryptography.OpenSsl >= 4.0.0-beta-*"
     ],
     "DNXCore,Version=v5.0": []
   }

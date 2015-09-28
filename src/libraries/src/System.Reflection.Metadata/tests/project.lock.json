@@ -152,25 +152,18 @@
           "lib/dotnet/System.IO.FileSystem.Primitives.dll": {}
         }
       },
-      "System.IO.MemoryMappedFiles/4.0.0-beta-23311": {
+      "System.IO.MemoryMappedFiles/4.0.0-beta-23328": {
         "type": "package",
         "dependencies": {
-          "System.IO": "4.0.10",
           "System.IO.FileSystem": "4.0.0",
           "System.IO.FileSystem.Primitives": "4.0.0",
           "System.IO.UnmanagedMemoryStream": "4.0.0",
-          "System.Resources.ResourceManager": "4.0.0",
-          "System.Runtime": "4.0.20",
+          "System.Runtime": "4.0.0",
           "System.Runtime.Handles": "4.0.0",
-          "System.Runtime.InteropServices": "4.0.20",
-          "System.Threading": "4.0.10",
-          "System.Threading.Tasks": "4.0.10"
+          "System.Runtime.InteropServices": "4.0.20"
         },
         "compile": {
           "ref/dotnet/System.IO.MemoryMappedFiles.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.IO.MemoryMappedFiles.dll": {}
         }
       },
       "System.IO.UnmanagedMemoryStream/4.0.0": {
@@ -802,18 +795,11 @@
         "System.IO.FileSystem.Primitives.nuspec"
       ]
     },
-    "System.IO.MemoryMappedFiles/4.0.0-beta-23311": {
+    "System.IO.MemoryMappedFiles/4.0.0-beta-23328": {
       "type": "package",
       "serviceable": true,
-      "sha512": "7ggEpbHoxlE9rB4byck6VW53jmBoJnr9d8OgIoWM8llqnBIH0LLQMhbj12ejQs6vVFZ3fFnSc4Eo1SCSNXLiYg==",
+      "sha512": "DQV/zhsjjRteqU8V1KMjpxxO7E2Rv1tB1nO/bDPDpLNgf6bGnXsqiFRFV5HzlVPlrChMDqdmDjvJIi+UpzKtAA==",
       "files": [
-        "de/System.IO.MemoryMappedFiles.xml",
-        "es/System.IO.MemoryMappedFiles.xml",
-        "fr/System.IO.MemoryMappedFiles.xml",
-        "it/System.IO.MemoryMappedFiles.xml",
-        "ja/System.IO.MemoryMappedFiles.xml",
-        "ko/System.IO.MemoryMappedFiles.xml",
-        "lib/DNXCore50/System.IO.MemoryMappedFiles.dll",
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
         "lib/net46/System.IO.MemoryMappedFiles.dll",
@@ -825,13 +811,10 @@
         "ref/net46/System.IO.MemoryMappedFiles.dll",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "ru/System.IO.MemoryMappedFiles.xml",
-        "System.IO.MemoryMappedFiles.4.0.0-beta-23311.nupkg",
-        "System.IO.MemoryMappedFiles.4.0.0-beta-23311.nupkg.sha512",
-        "System.IO.MemoryMappedFiles.nuspec",
-        "System.IO.MemoryMappedFiles.xml",
-        "zh-hans/System.IO.MemoryMappedFiles.xml",
-        "zh-hant/System.IO.MemoryMappedFiles.xml"
+        "runtime.json",
+        "System.IO.MemoryMappedFiles.4.0.0-beta-23328.nupkg",
+        "System.IO.MemoryMappedFiles.4.0.0-beta-23328.nupkg.sha512",
+        "System.IO.MemoryMappedFiles.nuspec"
       ]
     },
     "System.IO.UnmanagedMemoryStream/4.0.0": {

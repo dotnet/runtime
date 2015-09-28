@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "Microsoft.NETCore.Platforms": "1.0.1-beta-*",
     "System.Diagnostics.TraceSource": "4.0.0-beta-*",
     "System.Globalization": "4.0.10",
     "System.IO": "4.0.10",
@@ -17,5 +18,9 @@
   },
   "frameworks": {
     "dnxcore50": {}
+  },
+  "runtimes": {
+    "win7-x86": {},
+    "win7-x64": {}
   }
 }

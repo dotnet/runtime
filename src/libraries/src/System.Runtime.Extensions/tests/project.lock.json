@@ -45,7 +45,7 @@
           "lib/DNXCore50/System.Collections.dll": {}
         }
       },
-      "System.Console/4.0.0-beta-23316": {
+      "System.Console/4.0.0-beta-23328": {
         "type": "package",
         "dependencies": {
           "System.IO": "4.0.0",
@@ -289,17 +289,13 @@
           "lib/DNXCore50/System.Runtime.InteropServices.dll": {}
         }
       },
-      "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23316": {
+      "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23328": {
         "type": "package",
         "dependencies": {
-          "System.Resources.ResourceManager": "4.0.0",
-          "System.Runtime": "4.0.20"
+          "System.Runtime": "4.0.0"
         },
         "compile": {
           "ref/dotnet/System.Runtime.InteropServices.RuntimeInformation.dll": {}
-        },
-        "runtime": {
-          "lib/dotnet/System.Runtime.InteropServices.RuntimeInformation.dll": {}
         }
       },
       "System.Text.Encoding/4.0.10": {
@@ -550,10 +546,10 @@
         "System.Collections.nuspec"
       ]
     },
-    "System.Console/4.0.0-beta-23316": {
+    "System.Console/4.0.0-beta-23328": {
       "type": "package",
       "serviceable": true,
-      "sha512": "pYDflUHKD2oIllR+HsbgfkbwNsjivEgYsFjM3eZWS6KVqa5vYVMl93OvC+WfB0Va3Q9gAZYzxXQJUv6gWoJGLw==",
+      "sha512": "UY0x6h5pWZG2met7eg059RS6kLet0jUoUZ0Dy8glRf+B4Hl3xsbMrslpkus+VojTV3kQqHoUDxSsm7/Tv8szow==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -567,8 +563,8 @@
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtime.json",
-        "System.Console.4.0.0-beta-23316.nupkg",
-        "System.Console.4.0.0-beta-23316.nupkg.sha512",
+        "System.Console.4.0.0-beta-23328.nupkg",
+        "System.Console.4.0.0-beta-23328.nupkg.sha512",
         "System.Console.nuspec"
       ]
     },
@@ -1187,12 +1183,11 @@
         "System.Runtime.InteropServices.nuspec"
       ]
     },
-    "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23316": {
+    "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23328": {
       "type": "package",
       "serviceable": true,
-      "sha512": "3iuy8asS4InpTBRCWcSx6/gzPJWnwXQitPa83mMBBrdNoXm05YpTVVR/XYeCMOMFLRlprzl9Mw9FbOHiQpsQyw==",
+      "sha512": "4EzxM2zKR5RfSF00FKwHyTavUx+c5/yXLyn3BygpCttvDaMwSwlkxdT17Cww6TyUl2TRg1POa0/QGV8LXWOMdg==",
       "files": [
-        "lib/dotnet/System.Runtime.InteropServices.RuntimeInformation.dll",
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
         "lib/xamarinios10/_._",
@@ -1202,8 +1197,9 @@
         "ref/MonoTouch10/_._",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23316.nupkg",
-        "System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23316.nupkg.sha512",
+        "runtime.json",
+        "System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23328.nupkg",
+        "System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23328.nupkg.sha512",
         "System.Runtime.InteropServices.RuntimeInformation.nuspec"
       ]
     },
