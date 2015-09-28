@@ -983,7 +983,7 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	/* Restore registers from ctx */
 	for (i = 0; i < AMD64_NREG; ++i) {
 		if (i != AMD64_RIP && i != AMD64_RSP && i != AMD64_RBP)
-			amd64_mov_reg_membase (code, AMD64_RSP, i, gregs_offset + (i * sizeof (mgreg_t)), sizeof (mgreg_t));
+			amd64_mov_reg_membase (code, i, AMD64_RSP, gregs_offset + (i * sizeof (mgreg_t)), sizeof (mgreg_t));
 	}
 	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RSP, gregs_offset + (AMD64_RBP * sizeof (mgreg_t)), sizeof (mgreg_t));
 	amd64_mov_membase_reg (code, AMD64_RBP, 0, AMD64_R11, sizeof (mgreg_t));

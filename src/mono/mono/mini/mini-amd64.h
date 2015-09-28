@@ -209,10 +209,9 @@ typedef struct MonoCompileArch {
 	gpointer seq_point_info_var;
 	gpointer ss_trigger_page_var;
 	gpointer ss_tramp_var;
+	gpointer bp_tramp_var;
 	gpointer lmf_var;
 } MonoCompileArch;
-
-
 
 #ifdef TARGET_WIN32
 #define PARAM_REGS 4

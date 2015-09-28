@@ -65,26 +65,11 @@ static gboolean optimize_for_xen = TRUE;
 #define mono_mini_arch_unlock() mono_mutex_unlock (&mini_arch_mutex)
 static mono_mutex_t mini_arch_mutex;
 
-/*
- * The code generated for sequence points reads from this location, which is
- * made read-only when single stepping is enabled.
- */
-static gpointer ss_trigger_page;
-
-/* Enabled breakpoints read from this trigger page */
-static gpointer bp_trigger_page;
-
-/* The size of the breakpoint sequence */
-static int breakpoint_size;
-
-/* The size of the breakpoint instruction causing the actual fault */
-static int breakpoint_fault_size;
-
-/* The size of the single step instruction causing the actual fault */
-static int single_step_fault_size;
-
 /* The single step trampoline */
 static gpointer ss_trampoline;
+
+/* The breakpoint trampoline */
+static gpointer bp_trampoline;
 
 /* Offset between fp and the first argument in the callee */
 #define ARGS_OFFSET 16
@@ -1325,8 +1310,6 @@ mono_arch_cpu_init (void)
 void
 mono_arch_init (void)
 {
-	int flags;
-
 	mono_mutex_init_recursive (&mini_arch_mutex);
 #if defined(__native_client_codegen__)
 	mono_native_tls_alloc (&nacl_instruction_depth, NULL);
@@ -1335,29 +1318,13 @@ mono_arch_init (void)
 	mono_native_tls_alloc (&nacl_legacy_prefix_tag, NULL);
 #endif
 
-#ifdef MONO_ARCH_NOMAP32BIT
-	flags = MONO_MMAP_READ;
-	/* amd64_mov_reg_imm () + amd64_mov_reg_membase () */
-	breakpoint_size = 13;
-	breakpoint_fault_size = 3;
-#else
-	flags = MONO_MMAP_READ|MONO_MMAP_32BIT;
-	/* amd64_mov_reg_mem () */
-	breakpoint_size = 8;
-	breakpoint_fault_size = 8;
-#endif
-
-	/* amd64_alu_membase_imm_size (code, X86_CMP, AMD64_R11, 0, 0, 4); */
-	single_step_fault_size = 4;
-
-	ss_trigger_page = mono_valloc (NULL, mono_pagesize (), flags);
-	bp_trigger_page = mono_valloc (NULL, mono_pagesize (), flags);
-	mono_mprotect (bp_trigger_page, mono_pagesize (), 0);
-
 	mono_aot_register_jit_icall ("mono_amd64_throw_exception", mono_amd64_throw_exception);
 	mono_aot_register_jit_icall ("mono_amd64_throw_corlib_exception", mono_amd64_throw_corlib_exception);
 	mono_aot_register_jit_icall ("mono_amd64_resume_unwind", mono_amd64_resume_unwind);
 	mono_aot_register_jit_icall ("mono_amd64_get_original_ip", mono_amd64_get_original_ip);
+
+	if (!mono_aot_only)
+		bp_trampoline = mini_get_breakpoint_trampoline ();
 }
 
 /*
@@ -1992,15 +1959,14 @@ mono_arch_create_vars (MonoCompile *cfg)
 			MonoInst *ins = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
 			ins->flags |= MONO_INST_VOLATILE;
 			cfg->arch.seq_point_info_var = ins;
-
-			ins = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
-			ins->flags |= MONO_INST_VOLATILE;
-			cfg->arch.ss_tramp_var = ins;
 		}
-
-	    ins = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+		ins = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
 		ins->flags |= MONO_INST_VOLATILE;
-		cfg->arch.ss_trigger_page_var = ins;
+		cfg->arch.ss_tramp_var = ins;
+
+		ins = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+		ins->flags |= MONO_INST_VOLATILE;
+		cfg->arch.bp_tramp_var = ins;
 	}
 
 	if (cfg->method->save_lmf)
@@ -4186,35 +4152,21 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mono_add_seq_point (cfg, bb, ins, code - cfg->native_code);
 			break;
 		case OP_SEQ_POINT: {
-			int i;
-
 			if (ins->flags & MONO_INST_SINGLE_STEP_LOC) {
-				if (cfg->compile_aot) {
-					MonoInst *var = cfg->arch.ss_tramp_var;
-					guint8 *label;
+				MonoInst *var = cfg->arch.ss_tramp_var;
+				guint8 *label;
 
-					/* Load ss_tramp_var */
-					amd64_mov_reg_membase (code, AMD64_R11, var->inst_basereg, var->inst_offset, 8);
-					/* Load the trampoline address */
-					amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 0, 8);
-					/* Call it if it is non-null */
-					amd64_test_reg_reg (code, AMD64_R11, AMD64_R11);
-					label = code;
-					amd64_branch8 (code, X86_CC_Z, 0, FALSE);
-					amd64_call_reg (code, AMD64_R11);
-					amd64_patch (label, code);
-				} else {
-					/* 
-					 * Read from the single stepping trigger page. This will cause a
-					 * SIGSEGV when single stepping is enabled.
-					 * We do this _before_ the breakpoint, so single stepping after
-					 * a breakpoint is hit will step to the next IL offset.
-					 */
-					MonoInst *var = cfg->arch.ss_trigger_page_var;
-
-					amd64_mov_reg_membase (code, AMD64_R11, var->inst_basereg, var->inst_offset, 8);
-					amd64_alu_membase_imm_size (code, X86_CMP, AMD64_R11, 0, 0, 4);
-				}
+				/* Load ss_tramp_var */
+				/* This is equal to &ss_trampoline */
+				amd64_mov_reg_membase (code, AMD64_R11, var->inst_basereg, var->inst_offset, 8);
+				/* Load the trampoline address */
+				amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 0, 8);
+				/* Call it if it is non-null */
+				amd64_test_reg_reg (code, AMD64_R11, AMD64_R11);
+				label = code;
+				amd64_branch8 (code, X86_CC_Z, 0, FALSE);
+				amd64_call_reg (code, AMD64_R11);
+				amd64_patch (label, code);
 			}
 
 			/* 
@@ -4240,12 +4192,26 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_call_reg (code, AMD64_R11);
 				amd64_patch (label, code);
 			} else {
-				/* 
-				 * A placeholder for a possible breakpoint inserted by
-				 * mono_arch_set_breakpoint ().
+				MonoInst *var = cfg->arch.bp_tramp_var;
+				guint8 *label;
+
+				/*
+				 * Emit a test+branch against a constant, the constant will be overwritten
+				 * by mono_arch_set_breakpoint () to cause the test to fail.
 				 */
-				for (i = 0; i < breakpoint_size; ++i)
-					x86_nop (code);
+				amd64_mov_reg_imm (code, AMD64_R11, 0);
+				amd64_test_reg_reg (code, AMD64_R11, AMD64_R11);
+				label = code;
+				amd64_branch8 (code, X86_CC_Z, 0, FALSE);
+
+				g_assert (var);
+				g_assert (var->opcode == OP_REGOFFSET);
+				/* Load bp_tramp_var */
+				/* This is equal to &bp_trampoline */
+				amd64_mov_reg_membase (code, AMD64_R11, var->inst_basereg, var->inst_offset, 8);
+				/* Call the trampoline */
+				amd64_call_membase (code, AMD64_R11, 0);
+				amd64_patch (label, code);
 			}
 			/*
 			 * Add an additional nop so skipping the bp doesn't cause the ip to point
@@ -7213,12 +7179,18 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, MONO_STRUCT_OFFSET (SeqPointInfo, ss_tramp_addr), 8);
 			amd64_mov_membase_reg (code, ins->inst_basereg, ins->inst_offset, AMD64_R11, 8);
 		} else {
-			/* Initialize ss_trigger_page_var */
-			ins = cfg->arch.ss_trigger_page_var;
-
+			/* Initialize ss_tramp_var */
+			ins = cfg->arch.ss_tramp_var;
 			g_assert (ins->opcode == OP_REGOFFSET);
 
-			amd64_mov_reg_imm (code, AMD64_R11, (guint64)ss_trigger_page);
+			amd64_mov_reg_imm (code, AMD64_R11, (guint64)&ss_trampoline);
+			amd64_mov_membase_reg (code, ins->inst_basereg, ins->inst_offset, AMD64_R11, 8);
+
+			/* Initialize bp_tramp_var */
+			ins = cfg->arch.bp_tramp_var;
+			g_assert (ins->opcode == OP_REGOFFSET);
+
+			amd64_mov_reg_imm (code, AMD64_R11, (guint64)&bp_trampoline);
 			amd64_mov_membase_reg (code, ins->inst_basereg, ins->inst_offset, AMD64_R11, 8);
 		}
 	}
@@ -8471,7 +8443,6 @@ void
 mono_arch_set_breakpoint (MonoJitInfo *ji, guint8 *ip)
 {
 	guint8 *code = ip;
-	guint8 *orig_code = code;
 
 	if (ji->from_aot) {
 		guint32 native_offset = ip - (guint8*)ji->code_start;
@@ -8480,20 +8451,10 @@ mono_arch_set_breakpoint (MonoJitInfo *ji, guint8 *ip)
 		g_assert (info->bp_addrs [native_offset] == 0);
 		info->bp_addrs [native_offset] = mini_get_breakpoint_trampoline ();
 	} else {
-		/* 
-		 * In production, we will use int3 (has to fix the size in the md 
-		 * file). But that could confuse gdb, so during development, we emit a SIGSEGV
-		 * instead.
-		 */
-		g_assert (code [0] == 0x90);
-		if (breakpoint_size == 8) {
-			amd64_mov_reg_mem (code, AMD64_R11, (guint64)bp_trigger_page, 4);
-		} else {
-			amd64_mov_reg_imm_size (code, AMD64_R11, (guint64)bp_trigger_page, 8);
-			amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 0, 4);
-		}
-
-		g_assert (code - orig_code == breakpoint_size);
+		/* ip points to a mov r11, 0 */
+		g_assert (code [0] == 0x41);
+		g_assert (code [1] == 0xbb);
+		amd64_mov_reg_imm (code, AMD64_R11, 1);
 	}
 }
 
@@ -8506,7 +8467,6 @@ void
 mono_arch_clear_breakpoint (MonoJitInfo *ji, guint8 *ip)
 {
 	guint8 *code = ip;
-	int i;
 
 	if (ji->from_aot) {
 		guint32 native_offset = ip - (guint8*)ji->code_start;
@@ -8514,28 +8474,15 @@ mono_arch_clear_breakpoint (MonoJitInfo *ji, guint8 *ip)
 
 		info->bp_addrs [native_offset] = NULL;
 	} else {
-		for (i = 0; i < breakpoint_size; ++i)
-			x86_nop (code);
+		amd64_mov_reg_imm (code, AMD64_R11, 0);
 	}
 }
 
 gboolean
 mono_arch_is_breakpoint_event (void *info, void *sigctx)
 {
-#ifdef HOST_WIN32
-	EXCEPTION_RECORD* einfo = ((EXCEPTION_POINTERS*)info)->ExceptionRecord;
-	if (einfo->ExceptionCode == EXCEPTION_ACCESS_VIOLATION && (gpointer)einfo->ExceptionInformation [1] == bp_trigger_page)
-		return TRUE;
-	else
-		return FALSE;
-#else
-	siginfo_t* sinfo = (siginfo_t*) info;
-	/* Sometimes the address is off by 4 */
-	if (sinfo->si_addr >= bp_trigger_page && (guint8*)sinfo->si_addr <= (guint8*)bp_trigger_page + 128)
-		return TRUE;
-	else
-		return FALSE;
-#endif
+	/* We use soft breakpoints on amd64 */
+	return FALSE;
 }
 
 /*
@@ -8547,11 +8494,7 @@ mono_arch_is_breakpoint_event (void *info, void *sigctx)
 void
 mono_arch_skip_breakpoint (MonoContext *ctx, MonoJitInfo *ji)
 {
-	if (ji->from_aot) {
-		/* The breakpoint instruction is a call */
-	} else {
-		MONO_CONTEXT_SET_IP (ctx, (guint8*)MONO_CONTEXT_GET_IP (ctx) + breakpoint_fault_size);
-	}
+	g_assert_not_reached ();
 }
 	
 /*
@@ -8562,7 +8505,6 @@ mono_arch_skip_breakpoint (MonoContext *ctx, MonoJitInfo *ji)
 void
 mono_arch_start_single_stepping (void)
 {
-	mono_mprotect (ss_trigger_page, mono_pagesize (), 0);
 	ss_trampoline = mini_get_single_step_trampoline ();
 }
 	
@@ -8574,7 +8516,6 @@ mono_arch_start_single_stepping (void)
 void
 mono_arch_stop_single_stepping (void)
 {
-	mono_mprotect (ss_trigger_page, mono_pagesize (), MONO_MMAP_READ);
 	ss_trampoline = NULL;
 }
 
@@ -8587,20 +8528,8 @@ mono_arch_stop_single_stepping (void)
 gboolean
 mono_arch_is_single_step_event (void *info, void *sigctx)
 {
-#ifdef HOST_WIN32
-	EXCEPTION_RECORD* einfo = ((EXCEPTION_POINTERS*)info)->ExceptionRecord;
-	if (einfo->ExceptionCode == EXCEPTION_ACCESS_VIOLATION && (gpointer)einfo->ExceptionInformation [1] == ss_trigger_page)
-		return TRUE;
-	else
-		return FALSE;
-#else
-	siginfo_t* sinfo = (siginfo_t*) info;
-	/* Sometimes the address is off by 4 */
-	if (sinfo->si_addr >= ss_trigger_page && (guint8*)sinfo->si_addr <= (guint8*)ss_trigger_page + 128)
-		return TRUE;
-	else
-		return FALSE;
-#endif
+	/* We use soft breakpoints on amd64 */
+	return FALSE;
 }
 
 /*
@@ -8612,7 +8541,7 @@ mono_arch_is_single_step_event (void *info, void *sigctx)
 void
 mono_arch_skip_single_step (MonoContext *ctx)
 {
-	MONO_CONTEXT_SET_IP (ctx, (guint8*)MONO_CONTEXT_GET_IP (ctx) + single_step_fault_size);
+	g_assert_not_reached ();
 }
 
 /*
