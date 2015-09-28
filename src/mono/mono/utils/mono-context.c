@@ -143,7 +143,7 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	printf("WARNING: mono_arch_sigctx_to_monoctx() called!\n");
 #endif
 
-#if defined(MONO_SIGNAL_USE_SIGACTION)
+#if defined(UCONTEXT_REG_RAX)
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 
 	mctx->gregs [AMD64_RAX] = UCONTEXT_REG_RAX (ctx);
@@ -184,25 +184,7 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	mctx->gregs [AMD64_R14] = context->R14;
 	mctx->gregs [AMD64_R15] = context->R15;
 #else
-	MonoContext *ctx = (MonoContext *)sigctx;
-
-	mctx->gregs [AMD64_RAX] = ctx->gregs [AMD64_RAX];
-	mctx->gregs [AMD64_RBX] = ctx->gregs [AMD64_RBX];
-	mctx->gregs [AMD64_RCX] = ctx->gregs [AMD64_RCX];
-	mctx->gregs [AMD64_RDX] = ctx->gregs [AMD64_RDX];
-	mctx->gregs [AMD64_RBP] = ctx->gregs [AMD64_RBP];
-	mctx->gregs [AMD64_RSP] = ctx->gregs [AMD64_RSP];
-	mctx->gregs [AMD64_RSI] = ctx->gregs [AMD64_RSI];
-	mctx->gregs [AMD64_RDI] = ctx->gregs [AMD64_RDI];
-	mctx->gregs [AMD64_R8] = ctx->gregs [AMD64_R8];
-	mctx->gregs [AMD64_R9] = ctx->gregs [AMD64_R9];
-	mctx->gregs [AMD64_R10] = ctx->gregs [AMD64_R10];
-	mctx->gregs [AMD64_R11] = ctx->gregs [AMD64_R11];
-	mctx->gregs [AMD64_R12] = ctx->gregs [AMD64_R12];
-	mctx->gregs [AMD64_R13] = ctx->gregs [AMD64_R13];
-	mctx->gregs [AMD64_R14] = ctx->gregs [AMD64_R14];
-	mctx->gregs [AMD64_R15] = ctx->gregs [AMD64_R15];
-	mctx->gregs [AMD64_RIP] = ctx->gregs [AMD64_RIP];
+	g_assert_not_reached ();
 #endif
 }
 
@@ -213,7 +195,7 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
   printf("WARNING: mono_arch_monoctx_to_sigctx() called!\n");
 #endif
 
-#if defined(MONO_SIGNAL_USE_SIGACTION)
+#if defined(UCONTEXT_REG_RAX)
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 
 	UCONTEXT_REG_RAX (ctx) = mctx->gregs [AMD64_RAX];
@@ -254,25 +236,7 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 	context->R14 = mctx->gregs [AMD64_R14];
 	context->R15 = mctx->gregs [AMD64_R15];
 #else
-	MonoContext *ctx = (MonoContext *)sigctx;
-
-	ctx->gregs [AMD64_RAX] = mctx->gregs [AMD64_RAX];
-	ctx->gregs [AMD64_RBX] = mctx->gregs [AMD64_RBX];
-	ctx->gregs [AMD64_RCX] = mctx->gregs [AMD64_RCX];
-	ctx->gregs [AMD64_RDX] = mctx->gregs [AMD64_RDX];
-	ctx->gregs [AMD64_RBP] = mctx->gregs [AMD64_RBP];
-	ctx->gregs [AMD64_RSP] = mctx->gregs [AMD64_RSP];
-	ctx->gregs [AMD64_RSI] = mctx->gregs [AMD64_RSI];
-	ctx->gregs [AMD64_RDI] = mctx->gregs [AMD64_RDI];
-	ctx->gregs [AMD64_R8] = mctx->gregs [AMD64_R8];
-	ctx->gregs [AMD64_R9] = mctx->gregs [AMD64_R9];
-	ctx->gregs [AMD64_R10] = mctx->gregs [AMD64_R10];
-	ctx->gregs [AMD64_R11] = mctx->gregs [AMD64_R11];
-	ctx->gregs [AMD64_R12] = mctx->gregs [AMD64_R12];
-	ctx->gregs [AMD64_R13] = mctx->gregs [AMD64_R13];
-	ctx->gregs [AMD64_R14] = mctx->gregs [AMD64_R14];
-	ctx->gregs [AMD64_R15] = mctx->gregs [AMD64_R15];
-	ctx->gregs [AMD64_RIP] = mctx->gregs [AMD64_RIP];
+	g_assert_not_reached ();
 #endif
 }
 
