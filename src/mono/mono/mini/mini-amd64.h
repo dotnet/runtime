@@ -220,6 +220,7 @@ typedef struct MonoCompileArch {
 #endif
 
 typedef struct {
+	int dummy;
 } GSharedVtCallInfo;
 
 /* Structure used by the sequence points in AOTed code */
