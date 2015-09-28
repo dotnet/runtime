@@ -42,6 +42,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue(3447, PlatformID.Windows)]
         public void BeginSend_AsyncOperationCompletes_Success()
         {
             UdpClient udpClient = new UdpClient();
