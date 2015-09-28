@@ -45,6 +45,7 @@
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-tls.h>
+#include <mono/utils/mono-path.h>
 
 MonoDefaults mono_defaults;
 
@@ -1431,7 +1432,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	const char *new_scope;
 	char *error_msg;
 	char *full_name, *file_name, *found_name = NULL;
-	int i;
+	int i,j;
 	MonoDl *module = NULL;
 	gboolean cached = FALSE;
 
@@ -1579,23 +1580,85 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 		}
 
 		if (!module && !is_absolute) {
-			void *iter = NULL;
-			char *mdirname = g_path_get_dirname (image->name);
-			while ((full_name = mono_dl_build_path (mdirname, file_name, &iter))) {
-				module = cached_module_load (full_name, MONO_DL_LAZY, &error_msg);
-				if (!module) {
-					mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
-						"DllImport error loading library '%s': '%s'.",
-								full_name, error_msg);
-					g_free (error_msg);
-				} else {
-					found_name = g_strdup (full_name);
+			void *iter;
+			char *mdirname;
+
+			for (j = 0; j < 3; ++j) {
+				iter = NULL;
+				mdirname = NULL;
+				switch (j) {
+					case 0:
+						mdirname = g_path_get_dirname (image->name);
+						break;
+					case 1: /* @executable_path@/../lib */
+					{
+						char buf [4096];
+						int binl;
+						binl = mono_dl_get_executable_path (buf, sizeof (buf));
+						if (binl != -1) {
+							char *base, *newbase;
+							char *resolvedname;
+							buf [binl] = 0;
+							resolvedname = mono_path_resolve_symlinks (buf);
+
+							base = g_path_get_dirname (resolvedname);
+							newbase = g_path_get_dirname(base);
+							mdirname = g_strdup_printf ("%s/lib", newbase);
+
+							g_free (resolvedname);
+							g_free (base);
+							g_free (newbase);
+						}
+						break;
+					}
+#ifdef __MACH__
+					case 2: /* @executable_path@/../Libraries */
+					{
+						char buf [4096];
+						int binl;
+						binl = mono_dl_get_executable_path (buf, sizeof (buf));
+						if (binl != -1) {
+							char *base, *newbase;
+							char *resolvedname;
+							buf [binl] = 0;
+							resolvedname = mono_path_resolve_symlinks (buf);
+
+							base = g_path_get_dirname (resolvedname);
+							newbase = g_path_get_dirname(base);
+							mdirname = g_strdup_printf ("%s/Libraries", newbase);
+
+							g_free (resolvedname);
+							g_free (base);
+							g_free (newbase);
+						}
+						break;
+					}
+#endif
 				}
-				g_free (full_name);
+
+				if (!mdirname)
+					continue;
+
+				while ((full_name = mono_dl_build_path (mdirname, file_name, &iter))) {
+					module = cached_module_load (full_name, MONO_DL_LAZY, &error_msg);
+					if (!module) {
+						mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
+							"DllImport error loading library '%s': '%s'.",
+									full_name, error_msg);
+						g_free (error_msg);
+					} else {
+						found_name = g_strdup (full_name);
+					}
+					g_free (full_name);
+					if (module)
+						break;
+
+				}
+				g_free (mdirname);
 				if (module)
 					break;
 			}
-			g_free (mdirname);
+
 		}
 
 		if (!module) {
