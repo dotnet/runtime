@@ -143,14 +143,21 @@
 
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\Net\NameResolutionPal.Unix.cs" />
-
+    <Compile Include="$(CommonPath)\System\Net\SocketAddressPal.Unix.cs">
+      <Link>Common\System\Net\Internals\SocketAddressPal.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Interop.CheckedAccess.cs">
+      <Link>Common\System\Net\Internals\Interop.CheckedAccess.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\ByteOrder.cs">
+      <Link>Common\System\Net\Internals\ByteOrder.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Internals\SocketException.Unix.cs">
       <Link>Common\System\Net\Internals\SocketException.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\SocketProtocolSupportPal.Unix.cs">
       <Link>Common\System\Net\SocketProtocolSupportPal.Unix</Link>
     </Compile>
-
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
       <Link>Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
@@ -160,20 +167,17 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Close.cs">
       <Link>Interop\Unix\System.Native\Interop.Close.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.freeaddrinfo.cs">
-      <Link>Interop\Unix\libc\Interop.freeaddrinfo.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetHostName.cs">
+      <Link>Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getaddrinfo.cs">
-      <Link>Interop\Unix\libc\Interop.getaddrinfo.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gethostname.cs">
-      <Link>Interop\Unix\libc\Interop.gethostname.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getnameinfo.cs">
-      <Link>Interop\Unix\libc\Interop.getnameinfo.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetNameInfo.cs">
+      <Link>Interop\Unix\System.Native\Interop.GetNameInfo.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.hostent.cs">
       <Link>Interop\Unix\libc\Interop.hostent.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.HostEntries.cs">
+      <Link>Interop\Unix\System.Native\Interop.HostEntries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.socket.cs">
       <Link>Interop\Unix\libc\Interop.socket.cs</Link>
@@ -189,9 +193,6 @@
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.gethostbyname_r.cs">
       <Link>Interop\Linux\libc\Interop.gethostbyname_r.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.addrinfo.cs">
-      <Link>Interop\Linux\libc\Interop.addrinfo.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.sockaddr.cs">
       <Link>Interop\Linux\libc\Interop.sockaddr.cs</Link>
     </Compile>
@@ -202,9 +203,6 @@
 
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.Errors.cs">
       <Link>Interop\OSX\Interop.Errors.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.addrinfo.cs">
-      <Link>Interop\OSX\libc\Interop.addrinfo.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.gethostbyaddr.cs">
       <Link>Interop\OSX\libc\Interop.gethostbyaddr.cs</Link>

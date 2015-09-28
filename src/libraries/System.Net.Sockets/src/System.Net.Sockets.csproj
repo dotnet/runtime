@@ -418,9 +418,6 @@
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.SocketOptionName.cs">
       <Link>Interop\Linux\libc\Interop.SocketOptionName.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.addrinfo.cs">
-      <Link>Interop\Linux\libc\Interop.addrinfo.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.cmsghdr.cs">
       <Link>Interop\Linux\libc\Interop.cmsghdr.cs</Link>
     </Compile>
@@ -480,9 +477,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.SocketOptionName.cs">
       <Link>Interop\OSX\libc\Interop.SocketOptionName.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.addrinfo.cs">
-      <Link>Interop\OSX\libc\Interop.addrinfo.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.cmsghdr.cs">
       <Link>Interop\OSX\libc\Interop.cmsghdr.cs</Link>

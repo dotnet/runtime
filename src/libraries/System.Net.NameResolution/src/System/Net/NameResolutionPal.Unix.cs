@@ -16,13 +16,13 @@ namespace System.Net
             {
                 case 0:
                     return SocketError.Success;
-                case Interop.libc.HOST_NOT_FOUND:
+                case (int)Interop.Sys.GetHostErrorCodes.HOST_NOT_FOUND:
                     return SocketError.HostNotFound;
-                case Interop.libc.NO_DATA:
+                case (int)Interop.Sys.GetHostErrorCodes.NO_DATA:
                     return SocketError.NoData;
-                case Interop.libc.NO_RECOVERY:
+                case (int)Interop.Sys.GetHostErrorCodes.NO_RECOVERY:
                     return SocketError.NoRecovery;
-                case Interop.libc.TRY_AGAIN:
+                case (int)Interop.Sys.GetHostErrorCodes.TRY_AGAIN:
                     return SocketError.TryAgain;
                 default:
                     Debug.Fail("Unexpected errno: " + errno.ToString());
@@ -36,15 +36,15 @@ namespace System.Net
             {
                 case 0:
                     return SocketError.Success;
-                case Interop.libc.EAI_AGAIN:
+                case (int)Interop.Sys.GetAddrInfoErrorFlags.EAI_AGAIN:
                     return SocketError.TryAgain;
-                case Interop.libc.EAI_BADFLAGS:
+                case (int)Interop.Sys.GetAddrInfoErrorFlags.EAI_BADFLAGS:
                     return SocketError.InvalidArgument;
-                case Interop.libc.EAI_FAIL:
+                case (int)Interop.Sys.GetAddrInfoErrorFlags.EAI_FAIL:
                     return SocketError.NoRecovery;
-                case Interop.libc.EAI_FAMILY:
+                case (int)Interop.Sys.GetAddrInfoErrorFlags.EAI_FAMILY:
                     return SocketError.AddressFamilyNotSupported;
-                case Interop.libc.EAI_NONAME:
+                case (int)Interop.Sys.GetAddrInfoErrorFlags.EAI_NONAME:
                     return SocketError.HostNotFound;
                 default:
                     Debug.Fail("Unexpected error: " + error.ToString());
@@ -110,134 +110,100 @@ namespace System.Net
 
         public static unsafe SocketError TryGetAddrInfo(string name, out IPHostEntry hostinfo, out int nativeErrorCode)
         {
-            var hints = new Interop.libc.addrinfo
+            Interop.Sys.HostEntry* entry = null;
+            int result = Interop.Sys.GetHostEntriesForName(name, &entry);
+            if (result != 0)
             {
-                ai_family = Interop.libc.AF_UNSPEC, // Get all address families
-                ai_flags = Interop.libc.AI_CANONNAME
-            };
+                hostinfo = NameResolutionUtilities.GetUnresolvedAnswer(name);
+                nativeErrorCode = result;
+                return GetSocketErrorForNativeError(result);
+            }
 
-            Interop.libc.addrinfo* addrinfo = null;
-            string canonicalName = null;
-            IPAddress[] ipAddresses;
             try
             {
-                int errorCode = Interop.libc.getaddrinfo(name, null, &hints, &addrinfo);
-                if (errorCode != 0)
-                {
-                    hostinfo = NameResolutionUtilities.GetUnresolvedAnswer(name);
-                    nativeErrorCode = errorCode;
-                    return GetSocketErrorForNativeError(errorCode);
-                }
+                string canonicalName = Marshal.PtrToStringAnsi((IntPtr)entry->CanonicalName);
 
-                int numAddresses = 0;
-                for (Interop.libc.addrinfo* ai = addrinfo; ai != null; ai = ai->ai_next)
+                hostinfo = new IPHostEntry
                 {
-                    if (canonicalName == null && ai->ai_canonname != null)
+                    HostName = string.IsNullOrEmpty(canonicalName) ? name : canonicalName,
+                    Aliases = Array.Empty<string>(),
+                    AddressList = new IPAddress[entry->Count]
+                };
+
+                // Clean this up when fixing #3570
+                var buffer = new byte[SocketAddressPal.IPv6AddressSize];
+                for (int i = 0; i < entry->Count; i++)
+                {
+                    SocketAddress sockaddr;
+                    IPEndPoint factory;
+                    int bufferLength;
+                    if (entry->Addresses[i].IsIpv6)
                     {
-                        canonicalName = Marshal.PtrToStringAnsi((IntPtr)ai->ai_canonname);
+                        sockaddr = new SocketAddress(AddressFamily.InterNetworkV6);
+                        factory = IPEndPointStatics.IPv6Any;
+                        bufferLength = SocketAddressPal.IPv6AddressSize;
+
+                        SocketAddressPal.SetAddressFamily(buffer, AddressFamily.InterNetworkV6);
+                        SocketAddressPal.SetIPv6Address(buffer, entry->Addresses[i].Address, entry->Addresses[i].Count, 0);
+                        SocketAddressPal.SetPort(buffer, 0);
+                    }
+                    else
+                    {
+                        sockaddr = new SocketAddress(AddressFamily.InterNetwork);
+                        factory = IPEndPointStatics.Any;
+                        bufferLength = SocketAddressPal.IPv4AddressSize;
+
+                        SocketAddressPal.SetAddressFamily(buffer, AddressFamily.InterNetwork);
+                        SocketAddressPal.SetIPv4Address(buffer, entry->Addresses[i].Address);
+                        SocketAddressPal.SetPort(buffer, 0);
                     }
 
-                    if ((ai->ai_family != Interop.libc.AF_INET) &&
-                        (ai->ai_family != Interop.libc.AF_INET6 || !SocketProtocolSupportPal.OSSupportsIPv6))
+                    for (int d = 0; d < bufferLength; d++)
                     {
-                        continue;
+                        sockaddr[d] = buffer[d];
                     }
 
-                    numAddresses++;
-                }
-
-                if (numAddresses == 0)
-                {
-                    ipAddresses = Array.Empty<IPAddress>();
-                }
-                else
-                {
-                    ipAddresses = new IPAddress[numAddresses];
-                    Interop.libc.addrinfo* ai = addrinfo;
-                    for (int i = 0; i < numAddresses; ai = ai->ai_next)
-                    {
-                        Debug.Assert(ai != null);
-
-                        if ((ai->ai_family != Interop.libc.AF_INET) &&
-                            (ai->ai_family != Interop.libc.AF_INET6 || !SocketProtocolSupportPal.OSSupportsIPv6))
-                        {
-                            continue;
-                        }
-
-                        var sockaddr = new SocketAddress(
-                            ai->ai_family == Interop.libc.AF_INET ? AddressFamily.InterNetwork : AddressFamily.InterNetworkV6,
-                            checked((int)ai->ai_addrlen));
-                        for (int d = 0; d < ai->ai_addrlen; d++)
-                        {
-                            sockaddr[d] = ((byte*)ai->ai_addr)[d];
-                        }
-
-                        if (ai->ai_family == Interop.libc.AF_INET)
-                        {
-                            ipAddresses[i] = ((IPEndPoint)IPEndPointStatics.Any.Create(sockaddr)).Address;
-                        }
-                        else
-                        {
-                            ipAddresses[i] = ((IPEndPoint)IPEndPointStatics.IPv6Any.Create(sockaddr)).Address;
-                        }
-
-                        i++;
-                    }
+                    hostinfo.AddressList[i] = ((IPEndPoint)factory.Create(sockaddr)).Address;
                 }
             }
             finally
             {
-                if (addrinfo != null)
-                {
-                    Interop.libc.freeaddrinfo(addrinfo);
-                }
+                Interop.Sys.FreeHostEntriesForName(entry);
             }
 
-            hostinfo = new IPHostEntry
-            {
-                HostName = canonicalName ?? name,
-                Aliases = Array.Empty<string>(),
-                AddressList = ipAddresses
-            };
             nativeErrorCode = 0;
             return SocketError.Success;
         }
 
         public static unsafe string TryGetNameInfo(IPAddress addr, out SocketError socketError, out int nativeErrorCode)
         {
-            SocketAddress address = (new IPEndPoint(addr, 0)).Serialize();
-
-            // TODO #2894: Consider using stackalloc or StringBuilderCache:
-            StringBuilder hostname = new StringBuilder(Interop.libc.NI_MAXHOST);
+            byte* buffer = stackalloc byte[Interop.Sys.NI_MAXHOST + 1 /*for null*/];
 
             // TODO #2891: Remove the copying step to improve performance. This requires a change in the contracts.
-            byte[] addressBuffer = new byte[address.Size];
-            for (int i = 0; i < address.Size; i++)
-            {
-                addressBuffer[i] = address[i];
-            }
+            byte[] addressBuffer = addr.GetAddressBytes();
 
             int error;
             fixed (byte* rawAddress = addressBuffer)
             {
-                error = Interop.libc.getnameinfo(
-                    (Interop.libc.sockaddr*)rawAddress,
+                error = Interop.Sys.GetNameInfo(
+                    rawAddress,
                     unchecked((uint)addressBuffer.Length),
-                    hostname,
-                    unchecked((uint)hostname.Capacity),
+                    addr.AddressFamily == AddressFamily.InterNetworkV6,
+                    buffer,
+                    Interop.Sys.NI_MAXHOST,
                     null,
                     0,
-                    Interop.libc.NI_NAMEREQD);
+                    Interop.Sys.GetNameInfoFlags.NI_NAMEREQD);
             }
 
             socketError = GetSocketErrorForNativeError(error);
             nativeErrorCode = error;
-            return socketError != SocketError.Success ? null : hostname.ToString();
+           return socketError != SocketError.Success ? null : Marshal.PtrToStringAnsi((IntPtr)buffer);
         }
 
         public static string GetHostName()
         {
-            return Interop.libc.gethostname();
+            return Interop.Sys.GetHostName();
         }
 
         public static void EnsureSocketsAreInitialized()

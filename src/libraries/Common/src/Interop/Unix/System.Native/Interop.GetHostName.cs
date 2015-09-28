@@ -4,22 +4,21 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Text;
 
 internal static partial class Interop
 {
-    internal static partial class libc
+    internal static partial class Sys
     {
-        [DllImport(Libraries.Libc, SetLastError = true)]
-        private static extern unsafe int gethostname(byte* name, int len);
+        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        private unsafe static extern int GetHostName(byte* name, int nameLength);
 
-        internal static unsafe string gethostname()
+        internal static unsafe string GetHostName()
         {
-            const int HOST_NAME_MAX = 255; // man gethostname
+            const int HOST_NAME_MAX = 255;
             const int ArrLength = HOST_NAME_MAX + 1;
 
             byte* name = stackalloc byte[ArrLength];
-            int err = gethostname(name, ArrLength);
+            int err = GetHostName(name, ArrLength);
             if (err != 0)
             {
                 // This should never happen.  According to the man page,
@@ -31,7 +30,6 @@ internal static partial class Interop
                 throw new InvalidOperationException(string.Format("gethostname returned {0}", err));
             }
 
-            // Marshal.PtrToStringAnsi uses UTF8 on Unix.
             return Marshal.PtrToStringAnsi((IntPtr)name);
         }
     }
