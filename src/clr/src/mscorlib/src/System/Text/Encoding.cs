@@ -107,10 +107,10 @@ namespace System.Text
         // The following values are from mlang.idl.  These values
         // should be in sync with those in mlang.idl.
         //
-        private const int MIMECONTF_MAILNEWS          = 0x00000001;
-        private const int MIMECONTF_BROWSER           = 0x00000002;
-        private const int MIMECONTF_SAVABLE_MAILNEWS  = 0x00000100;
-        private const int MIMECONTF_SAVABLE_BROWSER   = 0x00000200;
+        internal const int MIMECONTF_MAILNEWS          = 0x00000001;
+        internal const int MIMECONTF_BROWSER           = 0x00000002;
+        internal const int MIMECONTF_SAVABLE_MAILNEWS  = 0x00000100;
+        internal const int MIMECONTF_SAVABLE_BROWSER   = 0x00000200;
 
         // Special Case Code Pages
         private const int CodePageDefault       = 0;
