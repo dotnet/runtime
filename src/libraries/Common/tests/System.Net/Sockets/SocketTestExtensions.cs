@@ -11,5 +11,14 @@ namespace System.Net.Sockets.Tests
             socket.Bind(new IPEndPoint(address, 0));
             return ((IPEndPoint)socket.LocalEndPoint).Port;
         }
+
+        // Binds to an OS-assigned port.
+        public static TcpListener CreateAndStartTcpListenerOnAnonymousPort(out int port)
+        {
+            TcpListener listener = TcpListener.Create(0);
+            listener.Start();
+            port = ((IPEndPoint)listener.LocalEndpoint).Port;
+            return listener;
+        }
     }
 }

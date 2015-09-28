@@ -15,7 +15,6 @@
   <ItemGroup>
     <Compile Include="AcceptAsync.cs" />
     <Compile Include="AgnosticListenerTest.cs" />
-    <Compile Include="APMServer.TestPortBases.cs" />
     <Compile Include="ConnectAsync.cs" />
     <Compile Include="ConnectExTest.cs" />
     <Compile Include="Disconnect.cs" />
@@ -31,6 +30,9 @@
     <Compile Include="UdpClientTest.cs" />
 
     <!-- Common Sockets files -->
+    <Compile Include="$(CommonTestPath)\System.Net\Sockets\SocketTestExtensions.cs">
+      <Link>SocketCommon\SocketTestExtensions.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System.Net\Sockets\SocketTestServer.DefaultAPMFactoryConfiguration.cs">
       <Link>SocketCommon\SocketTestServer.DefaultAsyncFactoryConfiguration.cs</Link>
     </Compile>
