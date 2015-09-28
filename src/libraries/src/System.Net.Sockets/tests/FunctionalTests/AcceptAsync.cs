@@ -11,7 +11,6 @@ namespace System.Net.Sockets.Tests
 {
     public class AcceptAsync
     {
-        private const int TestPortBase = 7000;
         private readonly ITestOutputHelper _log;
 
         public AcceptAsync(ITestOutputHelper output)
@@ -43,7 +42,7 @@ namespace System.Net.Sockets.Tests
 
             using (Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                sock.Bind(new IPEndPoint(IPAddress.Loopback, TestPortBase));
+                int port = sock.BindToAnonymousPort(IPAddress.Loopback);
                 sock.Listen(1);
 
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
@@ -56,7 +55,7 @@ namespace System.Net.Sockets.Tests
                 using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
                 {
                     SocketAsyncEventArgs argsClient = new SocketAsyncEventArgs();
-                    argsClient.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, TestPortBase);
+                    argsClient.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, port);
                     argsClient.Completed += OnConnectCompleted;
                     argsClient.UserToken = completedClient;
                     client.ConnectAsync(argsClient);
@@ -84,7 +83,7 @@ namespace System.Net.Sockets.Tests
 
             using (Socket sock = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp))
             {
-                sock.Bind(new IPEndPoint(IPAddress.IPv6Loopback, TestPortBase));
+                int port = sock.BindToAnonymousPort(IPAddress.IPv6Loopback);
                 sock.Listen(1);
 
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
@@ -97,7 +96,7 @@ namespace System.Net.Sockets.Tests
                 using (Socket client = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp))
                 {
                     SocketAsyncEventArgs argsClient = new SocketAsyncEventArgs();
-                    argsClient.RemoteEndPoint = new IPEndPoint(IPAddress.IPv6Loopback, TestPortBase);
+                    argsClient.RemoteEndPoint = new IPEndPoint(IPAddress.IPv6Loopback, port);
                     argsClient.Completed += OnConnectCompleted;
                     argsClient.UserToken = completedClient;
                     client.ConnectAsync(argsClient);

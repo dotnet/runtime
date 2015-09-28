@@ -26,20 +26,30 @@ namespace System.Net.Sockets.Performance.Tests
             SocketImplementationType clientType, 
             int iterations, 
             int bufferSize, 
-            int socket_instances, 
+            int socketInstances, 
             long expectedMilliseconds)
         {
             long milliseconds;
 
 #if arm
-        iterations /= 100;
+            iterations /= 100;
 #endif
 
-            using (SocketTestServer.SocketTestServerFactory(
-                serverType,
-                socket_instances * 5,
-                bufferSize * 2,
-                new IPEndPoint(IPAddress.IPv6Loopback, port)))
+            int numConnections = socketInstances * 5;
+            int receiveBufferSize = bufferSize * 2;
+            IPAddress address = IPAddress.IPv6Loopback;
+
+            SocketTestServer server;
+            if (port == 0)
+            {
+                server = SocketTestServer.SocketTestServerFactory(serverType, numConnections, receiveBufferSize, address, out port);
+            }
+            else
+            {
+                server = SocketTestServer.SocketTestServerFactory(serverType, numConnections, receiveBufferSize, new IPEndPoint(address, port));
+            }
+
+            using (server)
             {
                 milliseconds = RunClient(
                     clientType,
@@ -47,12 +57,23 @@ namespace System.Net.Sockets.Performance.Tests
                     port,
                     iterations,
                     bufferSize,
-                    socket_instances);
+                    socketInstances);
             }
 
             Assert.True(
                 milliseconds < expectedMilliseconds,
                 "Test execution is expected to be shorter than " + expectedMilliseconds + " but was " + milliseconds);
+        }
+
+        public void ClientServerTest(
+            SocketImplementationType serverType, 
+            SocketImplementationType clientType, 
+            int iterations, 
+            int bufferSize, 
+            int socketInstances, 
+            long expectedMilliseconds)
+        {
+            ClientServerTest(0, serverType, clientType, iterations, bufferSize, socketInstances, expectedMilliseconds);
         }
 
         public long RunClient(
@@ -61,7 +82,7 @@ namespace System.Net.Sockets.Performance.Tests
             int port,
             int iterations, 
             int bufferSize,
-            int socket_instances)
+            int socketInstances)
         {
             _log.WriteLine(
                 _format,
@@ -75,7 +96,7 @@ namespace System.Net.Sockets.Performance.Tests
                 "Close(ms)",
                 "Total time");
 
-            Task[] tasks = new Task[socket_instances];
+            Task[] tasks = new Task[socketInstances];
 
             char[] charBuffer = new char[bufferSize];
 
@@ -94,7 +115,7 @@ namespace System.Net.Sockets.Performance.Tests
 
             Parallel.For(
                 0,
-                socket_instances,
+                socketInstances,
                 (i) =>
                 {
                     var test = SocketTestClient.SocketTestClientFactory(

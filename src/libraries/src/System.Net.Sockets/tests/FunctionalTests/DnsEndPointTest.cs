@@ -15,7 +15,9 @@ namespace System.Net.Sockets.Tests
         //       once this code is merged into corefx/master.
         private const int DummyLoopbackV6Issue = 123456;
 
-        private const int TestPortBase = 7080;
+        // Port 8 is unassigned as per https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt
+        private const int UnusedPort = 8;
+
         private readonly ITestOutputHelper _log;
 
         public DnsEndPointTest(ITestOutputHelper output)
@@ -35,11 +37,11 @@ namespace System.Net.Sockets.Tests
         {
             Assert.True(Capability.IPv4Support());
 
-            SocketTestServer server = SocketTestServer.SocketTestServerFactory(
-                new IPEndPoint(IPAddress.Loopback, TestPortBase));
+            int port;
+            SocketTestServer server = SocketTestServer.SocketTestServerFactory(IPAddress.Loopback, out port);
 
             SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-            args.RemoteEndPoint = new DnsEndPoint("localhost", TestPortBase);
+            args.RemoteEndPoint = new DnsEndPoint("localhost", port);
             args.Completed += OnConnectAsyncCompleted;
 
             ManualResetEvent complete = new ManualResetEvent(false);
@@ -65,7 +67,7 @@ namespace System.Net.Sockets.Tests
             Assert.True(Capability.IPv4Support());
 
             SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-            args.RemoteEndPoint = new DnsEndPoint("notahostname.invalid.corp.microsoft.com", TestPortBase + 1);
+            args.RemoteEndPoint = new DnsEndPoint("notahostname.invalid.corp.microsoft.com", UnusedPort);
             args.Completed += OnConnectAsyncCompleted;
 
             ManualResetEvent complete = new ManualResetEvent(false);
@@ -89,7 +91,7 @@ namespace System.Net.Sockets.Tests
             Assert.True(Capability.IPv4Support());
 
             SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-            args.RemoteEndPoint = new DnsEndPoint("localhost", TestPortBase + 2);
+            args.RemoteEndPoint = new DnsEndPoint("localhost", UnusedPort);
             args.Completed += OnConnectAsyncCompleted;
 
             ManualResetEvent complete = new ManualResetEvent(false);
@@ -116,14 +118,14 @@ namespace System.Net.Sockets.Tests
         {
             Assert.True(Capability.IPv4Support() && Capability.IPv6Support());
 
-            SocketTestServer server4 = SocketTestServer.SocketTestServerFactory(
-                new IPEndPoint(IPAddress.Loopback, TestPortBase + 3));
+            int port;
+            SocketTestServer server4 = SocketTestServer.SocketTestServerFactory(IPAddress.Loopback, out port);
 
-            SocketTestServer server6 = SocketTestServer.SocketTestServerFactory(
-                new IPEndPoint(IPAddress.IPv6Loopback, TestPortBase + 4));
+            int port6;
+            SocketTestServer server6 = SocketTestServer.SocketTestServerFactory(IPAddress.IPv6Loopback, out port6);
 
             SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-            args.RemoteEndPoint = new DnsEndPoint("localhost", TestPortBase + 3);
+            args.RemoteEndPoint = new DnsEndPoint("localhost", port);
             args.Completed += OnConnectAsyncCompleted;
 
             ManualResetEvent complete = new ManualResetEvent(false);
@@ -141,7 +143,7 @@ namespace System.Net.Sockets.Tests
 
             args.ConnectSocket.Dispose();
 
-            args.RemoteEndPoint = new DnsEndPoint("localhost", TestPortBase + 4);
+            args.RemoteEndPoint = new DnsEndPoint("localhost", port6);
             complete.Reset();
 
             Assert.True(Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, args));
@@ -164,7 +166,7 @@ namespace System.Net.Sockets.Tests
         public void Socket_StaticConnectAsync_HostNotFound()
         {
             SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-            args.RemoteEndPoint = new DnsEndPoint("notahostname.invalid.corp.microsoft.com", TestPortBase + 5);
+            args.RemoteEndPoint = new DnsEndPoint("notahostname.invalid.corp.microsoft.com", UnusedPort);
             args.Completed += OnConnectAsyncCompleted;
 
             ManualResetEvent complete = new ManualResetEvent(false);
@@ -185,7 +187,7 @@ namespace System.Net.Sockets.Tests
         public void Socket_StaticConnectAsync_ConnectionRefused()
         {
             SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-            args.RemoteEndPoint = new DnsEndPoint("localhost", TestPortBase + 6);
+            args.RemoteEndPoint = new DnsEndPoint("localhost", UnusedPort);
             args.Completed += OnConnectAsyncCompleted;
 
             ManualResetEvent complete = new ManualResetEvent(false);
@@ -215,7 +217,7 @@ namespace System.Net.Sockets.Tests
             Assert.True(Capability.IPv6Support());
 
             SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-            args.RemoteEndPoint = new DnsEndPoint("127.0.0.1", TestPortBase + 7, AddressFamily.InterNetworkV6);
+            args.RemoteEndPoint = new DnsEndPoint("127.0.0.1", UnusedPort, AddressFamily.InterNetworkV6);
             args.Completed += CallbackThatShouldNotBeCalled;
 
             Assert.False(Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, args));

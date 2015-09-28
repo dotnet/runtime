@@ -5,33 +5,35 @@ using System.Net.Test.Common;
 
 namespace System.Net.Sockets.Tests
 {
-    // Provides a dummy socket server that accepts connections and echoes data sent
+    // Provides a dummy _socket server that accepts connections and echoes data sent
     public class SocketTestServerAPM : SocketTestServer
     {
         private VerboseTestLogging _log;
 
-        private Socket socket;
+        private Socket _socket;
         private int _receiveBufferSize;
-        private volatile bool disposed = false;
+        private volatile bool _disposed = false;
+
+        protected sealed override int Port { get { return ((IPEndPoint)_socket.LocalEndPoint).Port; } }
 
         public SocketTestServerAPM(int numConnections, int receiveBufferSize, EndPoint localEndPoint) 
         {
             _log = VerboseTestLogging.GetInstance();
             _receiveBufferSize = receiveBufferSize;
 
-            socket = new Socket(localEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            socket.Bind(localEndPoint);
-            socket.Listen(numConnections);
+            _socket = new Socket(localEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            _socket.Bind(localEndPoint);
+            _socket.Listen(numConnections);
             
-            socket.BeginAccept(OnAccept, null);
+            _socket.BeginAccept(OnAccept, null);
         }
 
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                socket.Dispose();
-                disposed = true;
+                _socket.Dispose();
+                _disposed = true;
             }
         }
 
@@ -39,18 +41,18 @@ namespace System.Net.Sockets.Tests
         {
             Socket client = null;
 
-            if (disposed)
+            if (_disposed)
             {
                 return;
             }
 
             try
             {
-                client = socket.EndAccept(result);
+                client = _socket.EndAccept(result);
             }
             catch (SocketException e)
             {
-                if (disposed ||
+                if (_disposed ||
                     e.SocketErrorCode == SocketError.OperationAborted || 
                     e.SocketErrorCode == SocketError.Interrupted)
                 {
@@ -75,11 +77,11 @@ namespace System.Net.Sockets.Tests
 
             try
             {
-                socket.BeginAccept(OnAccept, null);
+                _socket.BeginAccept(OnAccept, null);
             }
             catch (SocketException e)
             {
-                if (disposed ||
+                if (_disposed ||
                     e.SocketErrorCode == SocketError.OperationAborted || 
                     e.SocketErrorCode == SocketError.Interrupted)
                 {
@@ -154,25 +156,25 @@ namespace System.Net.Sockets.Tests
         // TODO: Cache and reuse ServerSocketState objects.
         private class ServerSocketState
         {
-            private Socket _socket;
+            private Socket __socket;
             private byte[] _buffer;
 
-            public ServerSocketState(Socket socket, int bufferSize)
+            public ServerSocketState(Socket _socket, int bufferSize)
             {
-                _socket = socket;
+                __socket = _socket;
                 _buffer = new byte[bufferSize];
             }
 
             public ServerSocketState(ServerSocketState original, int count)
             {
-                _socket = original._socket;
+                __socket = original.__socket;
                 _buffer = new byte[count];
                 Buffer.BlockCopy(original._buffer, 0, _buffer, 0, count);
             }
 
             public Socket Socket
             {
-                get { return _socket; } 
+                get { return __socket; } 
             }
 
             public byte[] TransferBuffer
