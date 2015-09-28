@@ -1,15 +1,13 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace System.Runtime.Extensions.Tests
+namespace System.Tests
 {
     public class EnvironmentStackTrace
     {
@@ -21,10 +19,10 @@ namespace System.Runtime.Extensions.Tests
             //arrange
             List<string> knownFrames = new List<string>()
             {
-                "System.Runtime.Extensions.Tests.EnvironmentStackTrace.StaticFrame(Object obj)",
-                "System.Runtime.Extensions.Tests.EnvironmentStackTrace.TestClass..ctor()",
-                "System.Runtime.Extensions.Tests.EnvironmentStackTrace.GenericFrame[T1,T2](T1 t1, T2 t2)",
-                "System.Runtime.Extensions.Tests.EnvironmentStackTrace.TestFrame()"
+                "System.Tests.EnvironmentStackTrace.StaticFrame(Object obj)",
+                "System.Tests.EnvironmentStackTrace.TestClass..ctor()",
+                "System.Tests.EnvironmentStackTrace.GenericFrame[T1,T2](T1 t1, T2 t2)",
+                "System.Tests.EnvironmentStackTrace.TestFrame()"
             };
 
             //act
@@ -32,7 +30,7 @@ namespace System.Runtime.Extensions.Tests
 
             //assert
             int index = 0;
-            foreach(string frame in knownFrames)
+            foreach (string frame in knownFrames)
             {
                 index = s_stackTrace.IndexOf(frame, index);
                 Assert.True(index > -1);
