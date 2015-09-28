@@ -4,7 +4,7 @@
 using System.Threading;
 using Xunit;
 
-namespace System.Runtime.Tests
+namespace System.Tests
 {
     public static class LazyOfTMetadataTests
     {
