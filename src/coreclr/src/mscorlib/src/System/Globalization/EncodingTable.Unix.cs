@@ -1,101 +1,177 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Generic;
+using System.Diagnostics.Contracts;
+using System.Text;
+
 namespace System.Globalization
 {
-    using System;
-    using System.Text;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.InteropServices;
-    using System.Runtime.Versioning;
-    using System.Security;
-    using System.Threading;
-    using System.Diagnostics.Contracts;
-
     internal static class EncodingTable
     {
         // Return a list of all EncodingInfo objects describing all of our encodings
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        internal static unsafe EncodingInfo[] GetEncodings()
+        internal static EncodingInfo[] GetEncodings()
         {
-            // TODO: Implement this fully.
-            return new EncodingInfo[] {
-                new EncodingInfo(CodePageUtf7, "utf-7", "Unicode (UTF-7)"),
-                new EncodingInfo(CodePageUtf8, "utf-8", "Unicode (UTF-8)"),
-                new EncodingInfo(CodePageUtf16, "utf-16", "Unicode"),
-                new EncodingInfo(CodePageUtf16BE, "utf-16BE", "Unicode (Big-Endian)"),
-                new EncodingInfo(CodePageUtf32, "utf-32", "Unicode (UTF-32)"),
-            };
-        }
-    
-        /*=================================GetCodePageFromName==========================
-        **Action: Given a encoding name, return the correct code page number for this encoding.
-        **Returns: The code page for the encoding.
-        **Arguments:
-        **  name    the name of the encoding
-        **Exceptions:
-        **  ArgumentNullException if name is null.
-        **  internalGetCodePageFromName will throw ArgumentException if name is not a valid encoding name.
-        ============================================================================*/
-        
-        internal static int GetCodePageFromName(String name)
-        {
-            // TODO: Implement this fully.
-            switch (name)
+            EncodingInfo[] arrayEncodingInfo = new EncodingInfo[s_encodingDataTableItems.Length];
+
+            for (int i = 0; i < s_encodingDataTableItems.Length; i++)
             {
-                case "utf-7":
-                    return CodePageUtf7; 
+                CodePageDataItem dataItem = s_encodingDataTableItems[i];
 
-                case "utf-8":
-                    return CodePageUtf8;
-
-                case "utf-16":
-                    return CodePageUtf16;
-
-                case "utf-16BE":
-                    return CodePageUtf16BE;
-
-                case "utf-32":
-                    return CodePageUtf32;
-
-                default:
-                    return CodePageUtf8;
+                arrayEncodingInfo[i] = new EncodingInfo(dataItem.CodePage, dataItem.WebName,
+                    Environment.GetResourceString(dataItem.DisplayNameResourceKey));
             }
+
+            return arrayEncodingInfo;
         }
-    
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        unsafe internal static CodePageDataItem GetCodePageDataItem(int codepage) {
-            // TODO: Implement this fully.
+
+        internal static int GetCodePageFromName(string name)
+        {
+            if (name == null)
+            {
+                throw new ArgumentNullException("name");
+            }
+            Contract.EndContractBlock();
+
+            ushort codePage;
+            if (s_encodingDataTable.TryGetValue(name, out codePage))
+            {
+                return codePage;
+            }
+
+            // The encoding name is not valid.
+            throw new ArgumentException(
+                string.Format(
+                    CultureInfo.CurrentCulture,
+                    Environment.GetResourceString("Argument_EncodingNotSupported"), name), "name");
+        }
+
+        internal static CodePageDataItem GetCodePageDataItem(int codepage)
+        {
+            CodePageDataItem item;
+
             switch (codepage)
             {
-                case CodePageUtf7:
-                    return new CodePageDataItem("utf-7", CodePageUtf7, "utf-7", "utf-7", 771);
-
-                case CodePageUtf8:
-                    return new CodePageDataItem("utf-8", CodePageUtf8, "utf-8", "utf-8", 771);
-
-                case CodePageUtf16:
-                    return new CodePageDataItem("utf-16", CodePageUtf16, "utf-16", "utf-16", 771);
-
-                case CodePageUtf16BE:
-                    return new CodePageDataItem("utf-16BE", CodePageUtf16BE, "utf-16BE", "utf-16BE", 771);
-
-                case CodePageUtf32:
-                    return new CodePageDataItem("utf-32", CodePageUtf32, "utf-32", "utf-32", 771);
-
+                case 1200:
+                    item = s_encodingDataTableItems[0];
+                    break;
+                case 1201:
+                    item = s_encodingDataTableItems[1];
+                    break;
+                case 12000:
+                    item = s_encodingDataTableItems[2];
+                    break;
+                case 12001:
+                    item = s_encodingDataTableItems[3];
+                    break;
+                case 20127:
+                    item = s_encodingDataTableItems[4];
+                    break;
+                case 28591:
+                    item = s_encodingDataTableItems[5];
+                    break;
+                case 65000:
+                    item = s_encodingDataTableItems[6];
+                    break;
+                case 65001:
+                    item = s_encodingDataTableItems[7];
+                    break;
                 default:
-                    return new CodePageDataItem("utf-8", CodePageUtf8, "utf-8", "utf-8", 771);
+                    item = null;
+                    break;
             }
+
+            Contract.Assert(item == null || item.CodePage == codepage, "item.CodePage needs to equal the specified codepage");
+            return item;
         }
 
         // PAL ends here.
 
-        const int CodePageUtf7 = 65000;
-        const int CodePageUtf8 = 65001;
-        const int CodePageUtf16 = 1200;
-        const int CodePageUtf16BE = 1201;
-        const int CodePageUtf32 = 12000;
+#if DEBUG
+        static EncodingTable()
+        {
+            Contract.Assert(
+                s_encodingDataTable.Count == EncodingTableCapacity,
+                string.Format(CultureInfo.InvariantCulture,
+                    "EncodingTable s_encodingDataTable's initial capacity (EncodingTableCapacity) is incorrect.{0}Expected (s_encodingDataTable.Count): {1}, Actual (EncodingTableCapacity): {2}",
+                    Environment.NewLine,
+                    s_encodingDataTable.Count,
+                    EncodingTableCapacity));
+        }
+#endif
+
+        // NOTE: the following two lists were taken from ~\src\classlibnative\nls\encodingdata.cpp
+        // and should be kept in sync with those lists
+
+        private const int EncodingTableCapacity = 42;
+        private readonly static Dictionary<string, ushort> s_encodingDataTable =
+            new Dictionary<string, ushort>(EncodingTableCapacity, StringComparer.OrdinalIgnoreCase)
+        {
+            { "ANSI_X3.4-1968", 20127 },
+            { "ANSI_X3.4-1986", 20127 },
+            { "ascii", 20127 },
+            { "cp367", 20127 },
+            { "cp819", 28591 },
+            { "csASCII", 20127 },
+            { "csISOLatin1", 28591 },
+            { "csUnicode11UTF7", 65000 },
+            { "IBM367", 20127 },
+            { "ibm819", 28591 },
+            { "ISO-10646-UCS-2", 1200 },
+            { "iso-8859-1", 28591 },
+            { "iso-ir-100", 28591 },
+            { "iso-ir-6", 20127 },
+            { "ISO646-US", 20127 },
+            { "iso8859-1", 28591 },
+            { "ISO_646.irv:1991", 20127 },
+            { "iso_8859-1", 28591 },
+            { "iso_8859-1:1987", 28591 },
+            { "l1", 28591 },
+            { "latin1", 28591 },
+            { "ucs-2", 1200 },
+            { "unicode", 1200},
+            { "unicode-1-1-utf-7", 65000 },
+            { "unicode-1-1-utf-8", 65001 },
+            { "unicode-2-0-utf-7", 65000 },
+            { "unicode-2-0-utf-8", 65001 },
+            // People get confused about the FFFE here.  We can't change this because it'd break existing apps.
+            // This has been this way for a long time, including in Mlang.
+            // Big Endian, BOM seems backwards, think of the BOM in little endian order.
+            { "unicodeFFFE", 1201},
+            { "us", 20127 },
+            { "us-ascii", 20127 },
+            { "utf-16", 1200 },
+            { "UTF-16BE", 1201},
+            { "UTF-16LE", 1200},
+            { "utf-32", 12000 },
+            { "UTF-32BE", 12001 },
+            { "UTF-32LE", 12000 },
+            { "utf-7", 65000 },
+            { "utf-8", 65001 },
+            { "x-unicode-1-1-utf-7", 65000 },
+            { "x-unicode-1-1-utf-8", 65001 },
+            { "x-unicode-2-0-utf-7", 65000 },
+            { "x-unicode-2-0-utf-8", 65001 },
+        };
+
+        // redeclaring these constants here for readability below
+        private const uint MIMECONTF_MAILNEWS = Encoding.MIMECONTF_MAILNEWS;
+        private const uint MIMECONTF_BROWSER = Encoding.MIMECONTF_BROWSER;
+        private const uint MIMECONTF_SAVABLE_MAILNEWS = Encoding.MIMECONTF_SAVABLE_MAILNEWS;
+        private const uint MIMECONTF_SAVABLE_BROWSER = Encoding.MIMECONTF_SAVABLE_BROWSER;
+
+        // keep this array sorted by code page, so the order is consistent for GetEncodings()
+        // Remember to update GetCodePageDataItem() if this list is updated
+        private readonly static CodePageDataItem[] s_encodingDataTableItems = new[]
+        {
+            new CodePageDataItem(1200, 1200, "utf-16", MIMECONTF_SAVABLE_BROWSER), // "Unicode"
+            new CodePageDataItem(1201, 1200, "utf-16BE", 0), // Big Endian, old FFFE BOM seems backwards, think of the BOM in little endian order.
+            new CodePageDataItem(12000, 1200, "utf-32", 0), // "Unicode (UTF-32)"
+            new CodePageDataItem(12001, 1200, "utf-32BE", 0), // "Unicode (UTF-32 Big Endian)"
+            new CodePageDataItem(20127, 1252, "us-ascii", MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS), // "US-ASCII"
+            new CodePageDataItem(28591, 1252, "iso-8859-1", MIMECONTF_MAILNEWS | MIMECONTF_BROWSER | MIMECONTF_SAVABLE_MAILNEWS | MIMECONTF_SAVABLE_BROWSER), // "Western European (ISO)"
+            new CodePageDataItem(65000, 1200, "utf-7", MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS), // "Unicode (UTF-7)"
+            new CodePageDataItem(65001, 1200, "utf-8", MIMECONTF_MAILNEWS | MIMECONTF_BROWSER | MIMECONTF_SAVABLE_MAILNEWS | MIMECONTF_SAVABLE_BROWSER), // "Unicode (UTF-8)"
+        };
     }
 }
