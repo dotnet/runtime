@@ -12,7 +12,9 @@ namespace System.Net.Sockets.Tests
 {
     public class UDPClientTest
     {
-        private const int TestPortBase = TestPortBases.UDPClient;
+        // Port 8 is unassigned as per https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt
+        private const int UnusedPort = 8;
+
         private ManualResetEvent _waitHandle = new ManualResetEvent(false);
 
         [Fact]
@@ -20,7 +22,7 @@ namespace System.Net.Sockets.Tests
         {
             UdpClient udpClient = new UdpClient();
             byte[] sendBytes = new byte[1];
-            IPEndPoint remoteServer = new IPEndPoint(IPAddress.Loopback, TestPortBase);
+            IPEndPoint remoteServer = new IPEndPoint(IPAddress.Loopback, UnusedPort);
 
             Assert.Throws<ArgumentOutOfRangeException>("bytes", () =>
             {
@@ -33,7 +35,7 @@ namespace System.Net.Sockets.Tests
         {
             UdpClient udpClient = new UdpClient();
             byte[] sendBytes = new byte[1];
-            IPEndPoint remoteServer = new IPEndPoint(IPAddress.Loopback, TestPortBase + 1);
+            IPEndPoint remoteServer = new IPEndPoint(IPAddress.Loopback, UnusedPort);
 
             Assert.Throws<ArgumentOutOfRangeException>("bytes", () =>
             {
@@ -46,7 +48,7 @@ namespace System.Net.Sockets.Tests
         {
             UdpClient udpClient = new UdpClient();
             byte[] sendBytes = new byte[1];
-            IPEndPoint remoteServer = new IPEndPoint(IPAddress.Loopback, TestPortBase + 2);
+            IPEndPoint remoteServer = new IPEndPoint(IPAddress.Loopback, UnusedPort);
             _waitHandle.Reset();
             udpClient.BeginSend(sendBytes, sendBytes.Length, remoteServer, new AsyncCallback(AsyncCompleted), udpClient);
 

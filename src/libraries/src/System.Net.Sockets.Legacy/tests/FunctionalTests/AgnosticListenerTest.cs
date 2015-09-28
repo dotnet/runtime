@@ -13,8 +13,6 @@ namespace System.Net.Sockets.Tests
     /// </summary>
     public class AgnosticListenerTest
     {
-        private const int TestPortBase = TestPortBases.AgnosticListener;
-
         public AgnosticListenerTest(ITestOutputHelper _log)
         {
             Assert.True(Capability.IPv4Support() && Capability.IPv6Support());
@@ -23,7 +21,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void Create_Success()
         {
-            TcpListener listener = TcpListener.Create(TestPortBase);
+            TcpListener listener = TcpListener.Create(0);
             listener.Start();
             listener.Stop();
         }
@@ -31,12 +29,12 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void ConnectWithV4_Success()
         {
-            TcpListener listener = TcpListener.Create(TestPortBase + 1);
-            listener.Start();
+            int port;
+            TcpListener listener = SocketTestExtensions.CreateAndStartTcpListenerOnAnonymousPort(out port);
             IAsyncResult asyncResult = listener.BeginAcceptTcpClient(null, null);
 
             TcpClient client = new TcpClient(AddressFamily.InterNetwork);
-            client.Connect(new IPEndPoint(IPAddress.Loopback, TestPortBase + 1));
+            client.Connect(new IPEndPoint(IPAddress.Loopback, port));
 
             TcpClient acceptedClient = listener.EndAcceptTcpClient(asyncResult);
             client.Dispose();
@@ -47,12 +45,12 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void ConnectWithV6_Success()
         {
-            TcpListener listener = TcpListener.Create(TestPortBase + 2);
-            listener.Start();
+            int port;
+            TcpListener listener = SocketTestExtensions.CreateAndStartTcpListenerOnAnonymousPort(out port);
             IAsyncResult asyncResult = listener.BeginAcceptTcpClient(null, null);
 
             TcpClient client = new TcpClient(AddressFamily.InterNetworkV6);
-            client.Connect(new IPEndPoint(IPAddress.IPv6Loopback, TestPortBase + 2));
+            client.Connect(new IPEndPoint(IPAddress.IPv6Loopback, port));
 
             TcpClient acceptedClient = listener.EndAcceptTcpClient(asyncResult);
             client.Dispose();
@@ -63,12 +61,12 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void ConnectWithV4AndV6_Success()
         {
-            TcpListener listener = TcpListener.Create(TestPortBase + 3);
-            listener.Start();
+            int port;
+            TcpListener listener = SocketTestExtensions.CreateAndStartTcpListenerOnAnonymousPort(out port);
             IAsyncResult asyncResult = listener.BeginAcceptTcpClient(null, null);
 
             TcpClient v6Client = new TcpClient(AddressFamily.InterNetworkV6);
-            v6Client.Connect(new IPEndPoint(IPAddress.IPv6Loopback, TestPortBase + 3));
+            v6Client.Connect(new IPEndPoint(IPAddress.IPv6Loopback, port));
 
             TcpClient acceptedV6Client = listener.EndAcceptTcpClient(asyncResult);
             Assert.Equal(AddressFamily.InterNetworkV6, acceptedV6Client.Client.RemoteEndPoint.AddressFamily);
@@ -77,7 +75,7 @@ namespace System.Net.Sockets.Tests
             asyncResult = listener.BeginAcceptTcpClient(null, null);
 
             TcpClient v4Client = new TcpClient(AddressFamily.InterNetwork);
-            v4Client.Connect(new IPEndPoint(IPAddress.Loopback, TestPortBase + 3));
+            v4Client.Connect(new IPEndPoint(IPAddress.Loopback, port));
 
             TcpClient acceptedV4Client = listener.EndAcceptTcpClient(asyncResult);
             Assert.Equal(AddressFamily.InterNetworkV6, acceptedV4Client.Client.RemoteEndPoint.AddressFamily);
