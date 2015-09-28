@@ -4,7 +4,7 @@
 using System.IO;
 using Microsoft.Xunit.Performance;
 
-namespace System.Runtime.Extensions.Tests
+namespace System.IO.Tests
 {
     public class Perf_Path
     {
