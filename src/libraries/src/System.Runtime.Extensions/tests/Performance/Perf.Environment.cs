@@ -4,7 +4,7 @@
 using Microsoft.Xunit.Performance;
 using System.Runtime.InteropServices;
 
-namespace System.Runtime.Extensions.Tests
+namespace System.Tests
 {
     public class Perf_Environment
     {
