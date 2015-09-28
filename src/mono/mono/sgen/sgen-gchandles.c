@@ -156,8 +156,7 @@ static HandleData gc_handles [] = {
 static HandleData *
 gc_handles_for_type (GCHandleType type)
 {
-	g_assert (type < HANDLE_TYPE_MAX);
-	return &gc_handles [type];
+	return type < HANDLE_TYPE_MAX ? &gc_handles [type] : NULL;
 }
 
 /* This assumes that the world is stopped. */
@@ -439,6 +438,9 @@ mono_gchandle_get_target (guint32 gchandle)
 	guint index = MONO_GC_HANDLE_SLOT (gchandle);
 	guint type = MONO_GC_HANDLE_TYPE (gchandle);
 	HandleData *handles = gc_handles_for_type (type);
+	/* Invalid handles are possible; accessing one should produce NULL. (#34276) */
+	if (!handles)
+		return NULL;
 	guint bucket, offset;
 	g_assert (index < handles->capacity);
 	bucketize (index, &bucket, &offset);
@@ -451,6 +453,8 @@ sgen_gchandle_set_target (guint32 gchandle, GCObject *obj)
 	guint index = MONO_GC_HANDLE_SLOT (gchandle);
 	guint type = MONO_GC_HANDLE_TYPE (gchandle);
 	HandleData *handles = gc_handles_for_type (type);
+	if (!handles)
+		return;
 	guint bucket, offset;
 	gpointer slot;
 
@@ -499,6 +503,8 @@ sgen_gchandle_get_metadata (guint32 gchandle)
 	guint index = MONO_GC_HANDLE_SLOT (gchandle);
 	guint type = MONO_GC_HANDLE_TYPE (gchandle);
 	HandleData *handles = gc_handles_for_type (type);
+	if (!handles)
+		return NULL;
 	guint bucket, offset;
 	if (index >= handles->capacity)
 		return NULL;
@@ -520,6 +526,8 @@ mono_gchandle_free (guint32 gchandle)
 	guint index = MONO_GC_HANDLE_SLOT (gchandle);
 	guint type = MONO_GC_HANDLE_TYPE (gchandle);
 	HandleData *handles = gc_handles_for_type (type);
+	if (!handles)
+		return;
 	guint bucket, offset;
 	gpointer slot;
 	bucketize (index, &bucket, &offset);
