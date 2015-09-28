@@ -90,7 +90,6 @@ namespace BINDER_SPACE
                                        kCount2.u.HighPart);
 
                     PlatformPath(logFilePath);
-                    CanonicalizePath(logFilePath);
                 }
 
                 fFileExists = (FileOrDirectoryExists(logFilePath) == S_OK);

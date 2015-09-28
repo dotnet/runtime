@@ -260,37 +260,6 @@ namespace BINDER_SPACE
         BINDER_LOG_LEAVE(W("Utils::PlatformPath"));
     }
 
-    void CanonicalizePath(SString &path, BOOL fAppendPathSeparator)
-    {
-        BINDER_LOG_ENTER(W("Utils::CanonicalizePath"));
-        BINDER_LOG_STRING(W("input path"), path);
-
-        if (!path.IsEmpty())
-        {
-            WCHAR wszCanonicalPath[MAX_LONGPATH];
-            PlatformPath(path);
-
-            // This is also defined in rotor pal
-            if (PathCanonicalizeW(wszCanonicalPath, path))
-            {
-                path.Set(wszCanonicalPath);
-            }
-
-            if (fAppendPathSeparator)
-            {
-                SString platformPathSeparator(SString::Literal, GetPlatformPathSeparator());
-
-                if (!path.EndsWith(platformPathSeparator))
-                {
-                    path.Append(platformPathSeparator);
-                }
-            }
-        }
-
-        BINDER_LOG_STRING(W("canonicalized path"), path);
-        BINDER_LOG_LEAVE(W("Utils::CanonicalizePath"));
-    }
-
     void CombinePath(SString &pathA,
                      SString &pathB,
                      SString &combinedPath)
@@ -300,16 +269,15 @@ namespace BINDER_SPACE
         BINDER_LOG_STRING(W("path A"), pathA);
         BINDER_LOG_STRING(W("path B"), pathB);
 
-        WCHAR tempResultPath[MAX_LONGPATH];
-        if (PathCombineW(tempResultPath, pathA, pathB))
+        SString platformPathSeparator(SString::Literal, GetPlatformPathSeparator());
+        combinedPath.Set(pathA);
+        
+        if (!combinedPath.EndsWith(platformPathSeparator))
         {
-            combinedPath.Set(tempResultPath);
-            BINDER_LOG_STRING(W("combined path"), tempResultPath);
+            combinedPath.Append(platformPathSeparator);
         }
-        else
-        {
-            combinedPath.Clear();
-        }
+        
+        combinedPath.Append(pathB);
         
         BINDER_LOG_LEAVE(W("Utils::CombinePath"));
     }
