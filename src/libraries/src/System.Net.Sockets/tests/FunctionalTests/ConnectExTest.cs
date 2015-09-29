@@ -11,7 +11,6 @@ namespace System.Net.Sockets.Tests
 {
     public class ConnectExTest
     {
-        private const int TestPortBase = 7030;
         private readonly ITestOutputHelper _log;
 
         public ConnectExTest(ITestOutputHelper output)
@@ -32,18 +31,17 @@ namespace System.Net.Sockets.Tests
         {
             Assert.True(Capability.IPv4Support() && Capability.IPv6Support());
 
-            SocketTestServer server = SocketTestServer.SocketTestServerFactory(
-                        new IPEndPoint(IPAddress.Loopback, TestPortBase));
+            int port;
+            SocketTestServer server = SocketTestServer.SocketTestServerFactory(IPAddress.Loopback, out port);
 
-            SocketTestServer server6 = SocketTestServer.SocketTestServerFactory(
-                        new IPEndPoint(IPAddress.IPv6Loopback, TestPortBase));
+            SocketTestServer server6 = SocketTestServer.SocketTestServerFactory(new IPEndPoint(IPAddress.IPv6Loopback, port));
 
             Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
             try
             {
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-                args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, TestPortBase);
+                args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, port);
                 args.Completed += OnConnectAsyncCompleted;
 
                 ManualResetEvent complete = new ManualResetEvent(false);
@@ -56,7 +54,7 @@ namespace System.Net.Sockets.Tests
                 sock.Dispose();
 
                 sock = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
-                args.RemoteEndPoint = new IPEndPoint(IPAddress.IPv6Loopback, TestPortBase);
+                args.RemoteEndPoint = new IPEndPoint(IPAddress.IPv6Loopback, port);
                 complete.Reset();
 
                 Assert.True(sock.ConnectAsync(args));
