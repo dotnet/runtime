@@ -382,6 +382,12 @@ HeapReAlloc(
         goto done;
     }
 
+    if(numberOfBytes == 0)
+    {
+        // PAL's realloc behaves like free for a requested size of zero bytes. Force a nonzero size to get a valid pointer.
+        numberOfBytes = 1;
+    }
+
 #ifdef __APPLE__
     // This is patterned off of InternalRealloc in malloc.cpp.
     {
