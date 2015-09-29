@@ -10,7 +10,7 @@
 
   <!-- Build Tools Versions -->
   <PropertyGroup>
-    <BuildToolsVersion>1.0.25-prerelease-00095</BuildToolsVersion>
+    <BuildToolsVersion>1.0.25-prerelease-00097</BuildToolsVersion>
     <DnxVersion>1.0.0-beta7</DnxVersion>
     <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'!='Unix'">dnx-coreclr-win-x86.$(DnxVersion)</DnxPackageName>
     <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'=='Unix'">dnx-mono.$(DnxVersion)</DnxPackageName>
@@ -67,6 +67,7 @@
   <!-- list of nuget package sources passed to dnu -->
   <ItemGroup>
     <!-- Need to escape double forward slash (%2F) or MSBuild will normalize to one slash on Unix. -->
+
     <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-core/" />
     <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-coreclr/" />
     <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-corefxtestdata/" />
