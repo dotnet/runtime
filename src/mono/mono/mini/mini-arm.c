@@ -103,6 +103,7 @@ static gboolean v5_supported = FALSE;
 static gboolean v6_supported = FALSE;
 static gboolean v7_supported = FALSE;
 static gboolean v7s_supported = FALSE;
+static gboolean v7k_supported = FALSE;
 static gboolean thumb_supported = FALSE;
 static gboolean thumb2_supported = FALSE;
 /*
