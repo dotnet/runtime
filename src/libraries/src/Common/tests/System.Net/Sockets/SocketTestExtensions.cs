@@ -20,5 +20,18 @@ namespace System.Net.Sockets.Tests
             port = ((IPEndPoint)listener.LocalEndpoint).Port;
             return listener;
         }
+
+        public static void DoAsyncCall(
+            this Socket socket,
+            Func<Socket, SocketAsyncEventArgs, bool> call,
+            EventHandler<SocketAsyncEventArgs> callback,
+            SocketAsyncEventArgs args)
+        {
+            bool willRaiseEvent = call(socket, args);
+            if (!willRaiseEvent)
+            {
+                callback(null, args);
+            }
+        }
     }
 }
