@@ -763,22 +763,6 @@ int main(void)
   unlink(szFileName);
   exit(ret);
 }" UNGETC_NOT_RETURN_EOF)
-check_cxx_source_runs("
-#include <stdlib.h>
-
-int main(void)
-{
-  void *p;
-
-  p = malloc(0);
-
-  if (p == NULL)
-  {
-    exit(0);
-  }
-
-  exit(1);
-}" MALLOC_ZERO_RETURNS_NULL)
 set(CMAKE_REQUIRED_LIBRARIES pthread)
 check_cxx_source_runs("
 #include <stdlib.h>
