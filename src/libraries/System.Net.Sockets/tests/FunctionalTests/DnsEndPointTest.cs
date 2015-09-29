@@ -74,9 +74,12 @@ namespace System.Net.Sockets.Tests
             args.UserToken = complete;
 
             Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            sock.DoAsyncCall((s, a) => s.ConnectAsync(a), OnConnectAsyncCompleted, args);
 
-            complete.WaitOne();
+            bool willRaiseEvent = sock.ConnectAsync(args);
+            if (willRaiseEvent)
+            {
+                complete.WaitOne();
+            }
 
             AssertHostNotFoundOrNoData(args);
 
@@ -98,9 +101,12 @@ namespace System.Net.Sockets.Tests
             args.UserToken = complete;
 
             Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            sock.DoAsyncCall((s, a) => s.ConnectAsync(a), OnConnectAsyncCompleted, args);
 
-            complete.WaitOne();
+            bool willRaiseEvent = sock.ConnectAsync(args);
+            if (willRaiseEvent)
+            {
+                complete.WaitOne();
+            }
 
             Assert.Equal(SocketError.ConnectionRefused, args.SocketError);
             Assert.True(args.ConnectByNameError is SocketException);
