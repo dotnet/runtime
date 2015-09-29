@@ -453,7 +453,6 @@ namespace Test
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void TestDefaultEncodings()
         {
             ValidateDefaultEncodings();
