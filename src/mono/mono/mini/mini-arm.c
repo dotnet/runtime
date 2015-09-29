@@ -970,6 +970,7 @@ mono_arch_init (void)
 	v6_supported = mono_hwcap_arm_is_v6;
 	v7_supported = mono_hwcap_arm_is_v7;
 	v7s_supported = mono_hwcap_arm_is_v7s;
+	v7k_supported = mono_hwcap_arm_is_v7k;
 
 #if defined(__APPLE__)
 	/* iOS is special-cased here because we don't yet
@@ -991,6 +992,7 @@ mono_arch_init (void)
 			v6_supported = cpu_arch [4] >= '6';
 			v7_supported = cpu_arch [4] >= '7';
 			v7s_supported = strncmp (cpu_arch, "armv7s", 6) == 0;
+			v7k_supported = strncmp (cpu_arch, "armv7k", 6) == 0;
 		}
 
 		thumb_supported = strstr (cpu_arch, "thumb") != NULL;
@@ -7678,6 +7680,9 @@ mono_arch_set_target (char *mtriple)
 	}
 	if (strstr (mtriple, "armv7s")) {
 		v7s_supported = TRUE;
+	}
+	if (strstr (mtriple, "armv7k")) {
+		v7k_supported = TRUE;
 	}
 	if (strstr (mtriple, "thumbv7s")) {
 		v5_supported = TRUE;

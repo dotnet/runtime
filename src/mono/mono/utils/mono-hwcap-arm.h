@@ -7,6 +7,7 @@ extern gboolean mono_hwcap_arm_is_v5;
 extern gboolean mono_hwcap_arm_is_v6;
 extern gboolean mono_hwcap_arm_is_v7;
 extern gboolean mono_hwcap_arm_is_v7s;
+extern gboolean mono_hwcap_arm_is_v7k;
 extern gboolean mono_hwcap_arm_has_vfp;
 extern gboolean mono_hwcap_arm_has_vfp3;
 extern gboolean mono_hwcap_arm_has_vfp3_d16;
