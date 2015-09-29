@@ -36,6 +36,16 @@ namespace System.Net.Tests
             return new Uri("http://" + Host + "/basic-auth/" + userName + "/" + password);
         }
 
+        public static Uri RedirectUriForDestinationUri(Uri destinationUri)
+        {
+            return new Uri(string.Format("http://{0}/redirect-to?url={1}", Host, destinationUri.AbsoluteUri));
+        }
+
+        public static Uri SecureRedirectUriForDestinationUri(Uri destinationUri)
+        {
+            return new Uri(string.Format("https://{0}/redirect-to?url={1}", Host, destinationUri.AbsoluteUri));
+        }
+
         public static Uri RedirectUriForCreds(string userName, string password)
         {
             return new Uri("http://" + Host + "/redirect-to?url=http://" + Host + "/basic-auth/" + userName + "/" + password);
