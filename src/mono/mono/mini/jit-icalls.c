@@ -1469,7 +1469,9 @@ mono_resolve_vcall (MonoObject *this, int slot, MonoMethod *imt_method)
 		m = mono_class_inflate_generic_method_checked (declaring, &context, &error);
 		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 		/* FIXME: only do this if the method is sharable */
-		need_rgctx_tramp = TRUE;
+		// FIXME:
+		g_assert_not_reached ();
+		//need_rgctx_tramp = TRUE;
 	}
 
 	if (generic_virtual) {
