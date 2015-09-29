@@ -118,7 +118,11 @@
 
 #define MONO_ARCH_INST_REGPAIR_REG2(desc,hreg1) ((desc) == 'l' || (desc) == 'f' || (desc) == 'g' ? ARM_MSW_REG : -1)
 
+#ifdef TARGET_WATCHOS
+#define MONO_ARCH_FRAME_ALIGNMENT 16
+#else
 #define MONO_ARCH_FRAME_ALIGNMENT 8
+#endif
 
 /* fixme: align to 16byte instead of 32byte (we align to 32byte to get 
  * reproduceable results for benchmarks */
