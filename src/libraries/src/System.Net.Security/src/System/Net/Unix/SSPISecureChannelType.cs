@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Net
 {
@@ -27,15 +28,7 @@ namespace System.Net
         public SafeFreeCredentials AcquireCredentialsHandle(X509Certificate certificate,
             SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
-            SafeFreeCredentials retVal = new SafeFreeCredentials(certificate, protocols, policy);
-            if (null != retVal)
-            {
-                // Caller does a ref count decrement
-                bool ignore = false;
-                retVal.DangerousAddRef(ref ignore);
-                // TODO (Issue #3362) retVal is not getting released now, need to be fixed.
-            }
-            return retVal;
+            return new SafeFreeCredentials(certificate, protocols, policy);
         }
 
         public SecurityStatus AcceptSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteContext context,
@@ -97,12 +90,10 @@ namespace System.Net
 
         public int QueryContextConnectionInfo(SafeDeleteContext securityContext, out SslConnectionInfo connectionInfo)
         {
-            bool gotReference = false;
             connectionInfo = null;
             try
             {
-                securityContext.DangerousAddRef(ref gotReference);
-                Interop.libssl.SSL_CIPHER cipher = Interop.OpenSsl.GetConnectionInfo(securityContext.DangerousGetHandle());
+                Interop.libssl.SSL_CIPHER cipher = Interop.OpenSsl.GetConnectionInfo(securityContext.SslContext);
                 connectionInfo =  new SslConnectionInfo(cipher);
                 return 0;
             }
@@ -110,36 +101,21 @@ namespace System.Net
             {
                 return -1;
             }
-            finally
-            {
-                if (gotReference)
-                {
-                    securityContext.DangerousRelease();
-                }
-            }
         }
 
         public int QueryContextRemoteCertificate(SafeDeleteContext securityContext, out SafeFreeCertContext remoteCertContext)
         {
-            bool gotReference = false;
             remoteCertContext = null;
             try
             {
-                securityContext.DangerousAddRef(ref gotReference);
-                IntPtr certPtr = Interop.OpenSsl.GetPeerCertificate(securityContext.DangerousGetHandle());
-                remoteCertContext = new SafeFreeCertContext(certPtr);
+                SafeX509Handle remoteCertificate = Interop.OpenSsl.GetPeerCertificate(securityContext.SslContext);
+                // Note that cert ownership is transferred to SafeFreeCertContext
+                remoteCertContext = new SafeFreeCertContext(remoteCertificate);
                 return 0;
             }
             catch
             {
                 return -1;
-            }
-            finally
-            {
-                if (gotReference)
-                {
-                    securityContext.DangerousRelease();
-                }
             }
         }
 
@@ -183,36 +159,22 @@ namespace System.Net
             SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, bool isServer, bool remoteCertRequired)
         {
             Debug.Assert(!credential.IsInvalid);
-            bool gotCredReference = false;
-            bool gotContextReference = false;
 
             try
             {
-                credential.DangerousAddRef(ref gotCredReference);
-
                 if ((null == context) || context.IsInvalid)
                 {
                     long options = GetOptions(credential.Protocols);
-
-                    IntPtr contextPtr = Interop.OpenSsl.AllocateSslContext(
-                        options,
-                        credential.CertHandle,
-                        credential.CertKeyHandle,
-                        isServer,
-                        remoteCertRequired);                 
-
-                    context = new SafeDeleteContext(contextPtr, credential);
+                    context = new SafeDeleteContext(credential, options, isServer, remoteCertRequired);
                 }
 
-                context.DangerousAddRef(ref gotContextReference);
-           
                 IntPtr inputPtr = IntPtr.Zero, outputPtr = IntPtr.Zero;
                 int outputSize;
                 bool done;
 
                 if (null == inputBuffer)
                 {
-                    done = Interop.OpenSsl.DoSslHandshake(context.DangerousGetHandle(), inputPtr, 0, out outputPtr, out outputSize);
+                    done = Interop.OpenSsl.DoSslHandshake(context.SslContext, inputPtr, 0, out outputPtr, out outputSize);
                 }
                 else
                 {
@@ -221,7 +183,7 @@ namespace System.Net
                         fixed (byte* tokenPtr = inputBuffer.token)
                         {
                             inputPtr = new IntPtr(tokenPtr + inputBuffer.offset);
-                            done = Interop.OpenSsl.DoSslHandshake(context.DangerousGetHandle(), inputPtr, inputBuffer.size, out outputPtr, out outputSize);
+                            done = Interop.OpenSsl.DoSslHandshake(context.SslContext, inputPtr, inputBuffer.size, out outputPtr, out outputSize);
                         }
                     }
                 }
@@ -251,28 +213,14 @@ namespace System.Net
                 Debug.Fail("Exception Caught. - " + ex);
                 return SecurityStatus.InternalError;             
             }
-            finally
-            {
-                if (gotContextReference)
-                {
-                    context.DangerousRelease();
-                }
-                if (gotCredReference)
-                {
-                    credential.DangerousRelease();
-                }
-            }
         }
 
 
         private SecurityStatus EncryptDecryptHelper(SafeDeleteContext securityContext, byte[] buffer, int offset, int size, int headerSize, int trailerSize, bool encrypt, out int resultSize)
         {
-            bool gotReference = false;
             resultSize = 0;
             try
             {
-                securityContext.DangerousAddRef(ref gotReference);
-
                 Interop.libssl.SslErrorCode errorCode = Interop.libssl.SslErrorCode.SSL_ERROR_NONE;
 
                 unsafe
@@ -281,7 +229,7 @@ namespace System.Net
                     {
                         IntPtr inputPtr = new IntPtr(bufferPtr);
 
-                        IntPtr scHandle = securityContext.DangerousGetHandle();
+                        Interop.libssl.SafeSslHandle scHandle = securityContext.SslContext;
 
                         resultSize = encrypt ?
                             Interop.OpenSsl.Encrypt(scHandle, inputPtr, offset, size, buffer.Length, out errorCode) :
@@ -306,13 +254,6 @@ namespace System.Net
             {
                 Debug.Fail("Exception Caught. - " + ex);
                 return SecurityStatus.InternalError;
-            }
-            finally
-            {
-                if (gotReference)
-                {
-                    securityContext.DangerousRelease();
-                }
             }
         }
     }
