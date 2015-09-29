@@ -16,15 +16,7 @@ namespace System.IO
         internal static bool HasIllegalCharacters(string path, bool checkAdditional = false)
         {
             Debug.Assert(path != null);
-
-            foreach (char c in path)
-            {
-                // Same as InvalidPathChars, unrolled here for performance
-                if (c == InvalidPathChar)
-                    return true;
-            }
-
-            return false;
+            return path.IndexOf(InvalidPathChar) >= 0;
         }
 
         internal static int GetRootLength(string path)
