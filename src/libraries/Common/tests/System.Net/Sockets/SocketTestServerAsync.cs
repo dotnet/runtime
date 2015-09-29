@@ -18,20 +18,23 @@ namespace System.Net.Sockets.Tests
     // is continued until the client disconnects. 
     public class SocketTestServerAsync : SocketTestServer
     {
+        private const int OpsToPreAlloc = 2;  // Read, write (don't alloc buffer space for accepts).
+
         private VerboseTestLogging _log;
 
         private int _maxNumConnections;       // The maximum number of connections the sample is designed to handle simultaneously.
         private int _receiveBufferSize;       // Buffer size to use for each socket I/O operation.
         private BufferManager _bufferManager; // Represents a large reusable set of buffers for all socket operations.
-        private const int opsToPreAlloc = 2;  // Read, write (don't alloc buffer space for accepts).
-        private Socket listenSocket;          // The socket used to listen for incoming connection requests.
+        private Socket _listenSocket;          // The socket used to listen for incoming connection requests.
         private SocketAsyncEventArgsPool _readWritePool; // Pool of reusable SocketAsyncEventArgs objects for write, read and accept socket operations.
         private int _totalBytesRead;          // Counter of the total # bytes received by the server.
         private int _numConnectedSockets;     // The total number of clients connected to the server.
         private Semaphore _maxNumberAcceptedClientsSemaphore;
         private int _acceptRetryCount = 10;
 
-        private object listenSocketLock = new object();
+        private object _listenSocketLock = new object();
+
+        protected sealed override int Port { get { return ((IPEndPoint)_listenSocket.LocalEndPoint).Port; } }
 
         public SocketTestServerAsync(int numConnections, int receiveBufferSize, EndPoint localEndPoint)
         {
@@ -43,7 +46,7 @@ namespace System.Net.Sockets.Tests
 
             // Allocate buffers such that the maximum number of sockets can have one outstanding read and  
             // write posted to the socket simultaneously.
-            _bufferManager = new BufferManager(receiveBufferSize * numConnections * opsToPreAlloc,
+            _bufferManager = new BufferManager(receiveBufferSize * numConnections * OpsToPreAlloc,
                 receiveBufferSize);
 
             _readWritePool = new SocketAsyncEventArgsPool(numConnections);
@@ -55,14 +58,14 @@ namespace System.Net.Sockets.Tests
         protected override void Dispose(bool disposing)
         {
             _log.WriteLine(this.GetHashCode() + " Dispose (_numConnectedSockets={0})", _numConnectedSockets);
-            if (disposing && (listenSocket != null))
+            if (disposing && (_listenSocket != null))
             {
-                lock (listenSocketLock)
+                lock (_listenSocketLock)
                 {
-                    if (listenSocket != null)
+                    if (_listenSocket != null)
                     {
-                        listenSocket.Dispose();
-                        listenSocket = null;
+                        _listenSocket.Dispose();
+                        _listenSocket = null;
                     }
                 }
             }
@@ -106,11 +109,11 @@ namespace System.Net.Sockets.Tests
         private void Start(EndPoint localEndPoint)
         {
             // Create the socket which listens for incoming connections.
-            listenSocket = new Socket(localEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            listenSocket.Bind(localEndPoint);
+            _listenSocket = new Socket(localEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            _listenSocket.Bind(localEndPoint);
 
             // Start the server with a listen backlog of 100 connections.
-            listenSocket.Listen(100);
+            _listenSocket.Listen(100);
 
             // Post accepts on the listening socket.
             StartAccept(null);
@@ -136,18 +139,18 @@ namespace System.Net.Sockets.Tests
             _log.WriteLine(this.GetHashCode() + " StartAccept(_numConnectedSockets={0})", _numConnectedSockets);
             _maxNumberAcceptedClientsSemaphore.WaitOne();
 
-            if (listenSocket == null)
+            if (_listenSocket == null)
             {
                 return;
             }
 
             bool willRaiseEvent = false;
 
-            lock (listenSocketLock)
+            lock (_listenSocketLock)
             {
-                if (listenSocket != null)
+                if (_listenSocket != null)
                 {
-                    willRaiseEvent = listenSocket.AcceptAsync(acceptEventArg);
+                    willRaiseEvent = _listenSocket.AcceptAsync(acceptEventArg);
                 }
                 else
                 {

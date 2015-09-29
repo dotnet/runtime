@@ -11,7 +11,6 @@ namespace System.Net.Sockets.Tests
 {
     public class ConnectAsync
     {
-        private const int TestPortBase = 7020;
         private readonly ITestOutputHelper _log;
 
         public ConnectAsync(ITestOutputHelper output)
@@ -34,11 +33,12 @@ namespace System.Net.Sockets.Tests
 
             AutoResetEvent completed = new AutoResetEvent(false);
 
-            using (SocketTestServer.SocketTestServerFactory(new IPEndPoint(IPAddress.Loopback, TestPortBase)))
+            int port;
+            using (SocketTestServer.SocketTestServerFactory(IPAddress.Loopback, out port))
             {
 
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-                args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, TestPortBase);
+                args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, port);
                 args.Completed += OnConnectCompleted;
                 args.UserToken = completed;
 
@@ -59,10 +59,11 @@ namespace System.Net.Sockets.Tests
 
             AutoResetEvent completed = new AutoResetEvent(false);
 
-            using (SocketTestServer.SocketTestServerFactory(new IPEndPoint(IPAddress.IPv6Loopback, TestPortBase)))
+            int port;
+            using (SocketTestServer.SocketTestServerFactory(IPAddress.IPv6Loopback, out port))
             {
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-                args.RemoteEndPoint = new IPEndPoint(IPAddress.IPv6Loopback, TestPortBase);
+                args.RemoteEndPoint = new IPEndPoint(IPAddress.IPv6Loopback, port);
                 args.Completed += OnConnectCompleted;
                 args.UserToken = completed;
 
