@@ -9,6 +9,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Tests;
+using System.Security.Authentication.ExtendedProtection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,6 +19,8 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
+    // Note:  Disposing the HttpClient object automatically disposes the handler within. So, it is not necessary
+    // to separately Dispose (or have a 'using' statement) for the handler.
     public class HttpClientHandlerTest
     {
         readonly ITestOutputHelper _output;
@@ -33,7 +36,7 @@ namespace System.Net.Http.Functional.Tests
         {
             // TODO: Align with the rest of tests w.r.t response parsing once the test server is finalized.
             // Currently not adding any new dependencies
-            var pattern = string.Format(@"""{0}"": ""{1}""", key, value);
+            string pattern = string.Format(@"""{0}"": ""{1}""", key, value);
             return message.Contains(pattern);
         }
 
@@ -86,34 +89,28 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public async void SendAsync_SimpleGet_Success()
+        public async Task SendAsync_SimpleGet_Success()
         {
-            using (var handler = new HttpClientHandler())
+            using (var client = new HttpClient())
             {
-                using (var client = new HttpClient(handler))
-                {
-                    // TODO: This is a placeholder until GitHub Issue #2383 gets resolved.
-                    HttpResponseMessage response = await client.GetAsync(HttpTestServers.RemoteGetServer);
-                    await AssertSuccessfulGetResponse(response, HttpTestServers.RemoteGetServer, _output);
-                }
+                // TODO: This is a placeholder until GitHub Issue #2383 gets resolved.
+                HttpResponseMessage response = await client.GetAsync(HttpTestServers.RemoteGetServer);
+                await AssertSuccessfulGetResponse(response, HttpTestServers.RemoteGetServer, _output);
             }
         }
 
         [Fact]
-        public async void SendAsync_SimpleHttpsGet_Success()
+        public async Task SendAsync_SimpleHttpsGet_Success()
         {
-            using (var handler = new HttpClientHandler())
+            using (var client = new HttpClient())
             {
-                using (var client = new HttpClient(handler))
-                {
-                    HttpResponseMessage response = await client.GetAsync(HttpTestServers.SecureRemoteGetServer);
-                    await AssertSuccessfulGetResponse(response, HttpTestServers.SecureRemoteGetServer, _output);
-                }
+                HttpResponseMessage response = await client.GetAsync(HttpTestServers.SecureRemoteGetServer);
+                await AssertSuccessfulGetResponse(response, HttpTestServers.SecureRemoteGetServer, _output);
             }
         }
 
         [Fact]
-        public async void GetAsync_ResponseContentAfterClientAndHandlerDispose_Success()
+        public async Task GetAsync_ResponseContentAfterClientAndHandlerDispose_Success()
         {
             HttpResponseMessage response = null;
             using (var handler = new HttpClientHandler())
@@ -126,160 +123,173 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public async Task GetAsync_Cancel_CancellationTokenPropagates()
+        public async Task SendAsync_Cancel_CancellationTokenPropagates()
         {
             var cts = new CancellationTokenSource();
             cts.Cancel();
-            try
+            using (var client = new HttpClient())
             {
-                var client = new HttpClient();
-                Task <HttpResponseMessage> task = client.GetAsync(HttpTestServers.RemoteGetServer, cts.Token);
-                await task;
-
-                Assert.True(false, "Expected TaskCanceledException to be thrown.");
-            }
-            catch (TaskCanceledException ex)
-            {
-                Assert.True(cts.Token.IsCancellationRequested,
-                    "Expected cancellation requested on original token.");
-
-                Assert.True(ex.CancellationToken.IsCancellationRequested,
-                    "Expected cancellation requested on token attached to exception.");
+                var request = new HttpRequestMessage(HttpMethod.Post, HttpTestServers.RemoteGetServer);
+                TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() =>
+                    client.SendAsync(request, cts.Token));
+                Assert.True(cts.Token.IsCancellationRequested, "cts token IsCancellationRequested");
+                Assert.True(ex.CancellationToken.IsCancellationRequested, "exception token IsCancellationRequested");
             }
         }
 
         [Fact]
-        public async void GetAsync_DefaultAutomaticDecompression_ContentDecompressed()
+        public async Task GetAsync_DefaultAutomaticDecompression_ContentDecompressed()
         {
-            using (var handler = new HttpClientHandler())
+            using (var client = new HttpClient())
             {
-                using (var client = new HttpClient(handler))
-                {
-                    HttpResponseMessage response = await client.GetAsync(HttpTestServers.RemoteServerGzipUri);
-                    string responseContent = await response.Content.ReadAsStringAsync();
-                    Assert.True(responseContent.Contains(DecompressedContentPart));
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                }
+                HttpResponseMessage response = await client.GetAsync(HttpTestServers.RemoteServerGzipUri);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                Assert.True(responseContent.Contains(DecompressedContentPart));
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             }
         }
 
         [Fact]
-        public async void GetAsync_SetCredential_StatusCodeOK()
+        public async Task GetAsync_SetCredential_StatusCodeOK()
         {
-            Uri uri = HttpTestServers.BasicAuthUriForCreds(Username, Password);
-            using (var handler = new HttpClientHandler())
+            var handler = new HttpClientHandler();
+            handler.Credentials = _credential;
+            using (var client = new HttpClient(handler))
             {
-                handler.Credentials = _credential;
-                using (var client = new HttpClient(handler))
-                {
-                    HttpResponseMessage response = await client.GetAsync(uri);
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                }
+                Uri uri = HttpTestServers.BasicAuthUriForCreds(Username, Password);
+                HttpResponseMessage response = await client.GetAsync(uri);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             }
         }
 
         [Fact]
-        public async void GetAsync_AllowRedirectFalse_StatusCodeRedirect()
+        public async Task GetAsync_AllowAutoRedirectFalse_RedirectFromHttpToHttp_StatusCodeRedirect()
         {
-            using (var handler = new HttpClientHandler())
+            var handler = new HttpClientHandler();
+            handler.AllowAutoRedirect = false;
+            using (var client = new HttpClient(handler))
             {
-                handler.AllowAutoRedirect = false;
-                using (var client = new HttpClient(handler))
-                {
-                    HttpResponseMessage response = await client.GetAsync(HttpTestServers.RemoteServerRedirectUri);
-                    Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
-                }
+                Uri uri = HttpTestServers.RedirectUriForDestinationUri(HttpTestServers.RemoteGetServer);
+                _output.WriteLine("Uri: {0}", uri);
+                HttpResponseMessage response = await client.GetAsync(uri);
+                Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
             }
         }
 
         [Fact]
-        public async void GetAsync_AllowRedirectDefault_StatusCodeOK()
+        public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpToHttp_StatusCodeOK()
         {
-            using (var handler = new HttpClientHandler())
+            var handler = new HttpClientHandler();
+            handler.AllowAutoRedirect = true;
+            using (var client = new HttpClient(handler))
             {
-                using (var client = new HttpClient(handler))
-                {
-                    HttpResponseMessage response = await client.GetAsync(HttpTestServers.RemoteServerRedirectUri);
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                }
+                Uri uri = HttpTestServers.RedirectUriForDestinationUri(HttpTestServers.RemoteGetServer);
+                _output.WriteLine("Uri: {0}", uri);
+                HttpResponseMessage response = await client.GetAsync(uri);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }
+        }
+
+        [Fact]
+        public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpToHttps_StatusCodeOK()
+        {
+            var handler = new HttpClientHandler();
+            handler.AllowAutoRedirect = true;
+            using (var client = new HttpClient(handler))
+            {
+                Uri uri = HttpTestServers.RedirectUriForDestinationUri(HttpTestServers.SecureRemoteGetServer);
+                _output.WriteLine("Uri: {0}", uri);
+                HttpResponseMessage response = await client.GetAsync(uri);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }
+        }
+
+        [Fact]
+        [ActiveIssue(3555, PlatformID.AnyUnix)]
+        public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpsToHttp_StatusCodeRedirect()
+        {
+            var handler = new HttpClientHandler();
+            handler.AllowAutoRedirect = true;
+            using (var client = new HttpClient(handler))
+            {
+                Uri uri = HttpTestServers.SecureRedirectUriForDestinationUri(HttpTestServers.RemoteGetServer);
+                _output.WriteLine("Uri: {0}", uri);
+                HttpResponseMessage response = await client.GetAsync(uri);
+                Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
             }
         }
 
         [Theory]
         [InlineData(6)]
-        public async void GetAsync_MaxAutomaticRedirectionsNServerHopsNPlus1_Throw(int hops)
+        public async Task GetAsync_MaxAutomaticRedirectionsNServerHopsNPlus1_Throw(int hops)
         {
-            using (var handler = new HttpClientHandler())
+            var handler = new HttpClientHandler();
+            handler.MaxAutomaticRedirections = hops;
+            using (var client = new HttpClient(handler))
             {
-                handler.MaxAutomaticRedirections = hops;
-                var client = new HttpClient(handler);
                 await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(HttpTestServers.RedirectUriHops(hops + 1)));
             }
         }
 
         [Fact]
-        public async void GetAsync_CredentialIsNetworkCredentialUriRedirect_StatusCodeUnauthorized()
+        public async Task GetAsync_CredentialIsNetworkCredentialUriRedirect_StatusCodeUnauthorized()
         {
-            Uri redirectUri = HttpTestServers.RedirectUriForCreds(Username, Password);
-            using (var handler = new HttpClientHandler())
+            var handler = new HttpClientHandler();
+            handler.Credentials = _credential;
+            using (var client = new HttpClient(handler))
             {
-                handler.Credentials = _credential;
-                var client = new HttpClient(handler);
+                Uri redirectUri = HttpTestServers.RedirectUriForCreds(Username, Password);
                 HttpResponseMessage unAuthResponse = await client.GetAsync(redirectUri);
                 Assert.Equal(HttpStatusCode.Unauthorized, unAuthResponse.StatusCode);
             }
        }
 
         [Fact]
-        public void GetAsync_CredentialIsCredentialCacheUriRedirect_HttpStatusCodeOK()
+        [ActiveIssue(3557, PlatformID.AnyUnix)]
+        public async Task GetAsync_CredentialIsCredentialCacheUriRedirect_StatusCodeOK()
         {
             Uri uri = HttpTestServers.BasicAuthUriForCreds(Username, Password);
             Uri redirectUri = HttpTestServers.RedirectUriForCreds(Username, Password);
             var credentialCache = new CredentialCache();
             credentialCache.Add(uri, "Basic", _credential);
 
-            using (var handler = new HttpClientHandler())
+            var handler = new HttpClientHandler();
+            handler.Credentials = credentialCache;
+            using (var client = new HttpClient(handler))
             {
-                handler.Credentials = credentialCache;
-                var client = new HttpClient(handler);
-                var response = client.GetAsync(uri).Result;
+                HttpResponseMessage response = await client.GetAsync(redirectUri);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             }
         }
 
         [Theory]
         [InlineData("cookiename", "cookievalue")]
-        public async void GetAsync_SetCookieContainer_CookieSent(string name, string value)
+        public async Task GetAsync_SetCookieContainer_CookieSent(string name, string value)
         {
-            using (var handler = new HttpClientHandler())
+            var handler = new HttpClientHandler();
+            var cookieContainer = new CookieContainer();
+            cookieContainer.Add(HttpTestServers.RemoteServerCookieUri, new Cookie(name, value));
+            handler.CookieContainer = cookieContainer;
+            using (var client = new HttpClient(handler))
             {
-                var cookieContainer = new CookieContainer();
-                cookieContainer.Add(HttpTestServers.RemoteServerCookieUri, new Cookie(name, value));
-                handler.CookieContainer = cookieContainer;
-                using (var client = new HttpClient(handler))
-                {
-                    HttpResponseMessage httpResponse = await client.GetAsync(HttpTestServers.RemoteServerCookieUri);
-                    Assert.Equal(httpResponse.StatusCode, HttpStatusCode.OK);
-                    string responseText = await httpResponse.Content.ReadAsStringAsync();
-                    Assert.True(JsonMessageContainsKeyValue(responseText, name, value));
-                }
+                HttpResponseMessage httpResponse = await client.GetAsync(HttpTestServers.RemoteServerCookieUri);
+                Assert.Equal(httpResponse.StatusCode, HttpStatusCode.OK);
+                string responseText = await httpResponse.Content.ReadAsStringAsync();
+                Assert.True(JsonMessageContainsKeyValue(responseText, name, value));
             }
         }
 
         [Theory]
         [InlineData("X-Cust-Header","x-value")]
-        public async void GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(string name, string value)
+        public async Task GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(string name, string value)
         {
-            using (var handler = new HttpClientHandler())
+            using (var client = new HttpClient())
             {
-                using (var client = new HttpClient(handler))
-                {
-                    client.DefaultRequestHeaders.Add(name, value);
-                    HttpResponseMessage httpResponse = await client.GetAsync(HttpTestServers.RemoteServerHeadersUri);
-                    httpResponse.EnsureSuccessStatusCode();
-                    string responseText = await httpResponse.Content.ReadAsStringAsync();
-                    Assert.True(JsonMessageContainsKeyValue(responseText, name, value));
-                }
+                client.DefaultRequestHeaders.Add(name, value);
+                HttpResponseMessage httpResponse = await client.GetAsync(HttpTestServers.RemoteServerHeadersUri);
+                httpResponse.EnsureSuccessStatusCode();
+                string responseText = await httpResponse.Content.ReadAsStringAsync();
+                Assert.True(JsonMessageContainsKeyValue(responseText, name, value));
             }
         }
 
@@ -302,7 +312,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public async void SendAsync_HttpRequestMsgResponseHeadersRead_StatusCodeOK()
+        public async Task SendAsync_HttpRequestMsgResponseHeadersRead_StatusCodeOK()
         {
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, HttpTestServers.SecureRemoteGetServer);
             using (var client = new HttpClient())
@@ -317,38 +327,32 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData("PostServers")]
         public async Task PostAsync_CallMethod_StringContent(Uri remoteServer)
         {
-            using (var handler = new HttpClientHandler())
+            using (var client = new HttpClient())
             {
-                using (var client = new HttpClient(handler))
-                {
-                    var data = "Test String";
-                    var stringContent = new StringContent(data, Encoding.UTF8, mediaTypeJson);
-                    HttpResponseMessage response =
-                        await client.PostAsync(remoteServer, stringContent);
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    var responseContent = await response.Content.ReadAsStringAsync();
-                    Assert.True(JsonMessageContainsKeyValue(responseContent, dataKey, data));
-                    _output.WriteLine(responseContent);
-                }
+                string data = "Test String";
+                var stringContent = new StringContent(data, Encoding.UTF8, mediaTypeJson);
+                HttpResponseMessage response =
+                    await client.PostAsync(remoteServer, stringContent);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                Assert.True(JsonMessageContainsKeyValue(responseContent, dataKey, data));
+                _output.WriteLine(responseContent);
             }
         }
 
         [Theory, MemberData("PostServers")]
         public async Task PostAsync_CallMethod_FormUrlEncodedContent(Uri remoteServer)
         {
-            using (var handler = new HttpClientHandler())
+            using (var client = new HttpClient())
             {
-                using (var client = new HttpClient(handler))
-                {
-                    var values = new Dictionary<string, string> { { "thing1", "hello" }, { "thing2", "world" } };
-                    var content = new FormUrlEncodedContent(values);
-                    HttpResponseMessage response = await client.PostAsync(remoteServer, content);
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    var responseContent = await response.Content.ReadAsStringAsync();
-                    Assert.True(JsonMessageContainsKeyValue(responseContent, "thing1", "hello"));
-                    Assert.True(JsonMessageContainsKeyValue(responseContent, "thing2", "world"));
-                    _output.WriteLine(responseContent);
-                }
+                var values = new Dictionary<string, string> { { "thing1", "hello" }, { "thing2", "world" } };
+                var content = new FormUrlEncodedContent(values);
+                HttpResponseMessage response = await client.PostAsync(remoteServer, content);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                Assert.True(JsonMessageContainsKeyValue(responseContent, "thing1", "hello"));
+                Assert.True(JsonMessageContainsKeyValue(responseContent, "thing2", "world"));
+                _output.WriteLine(responseContent);
             }
         }
 
@@ -369,25 +373,23 @@ namespace System.Net.Http.Functional.Tests
                     fs.Write(author, 0, author.Length);
                 }
 
-                using (var handler = new HttpClientHandler())
+                using (var client = new HttpClient())
                 {
-                    using (var client = new HttpClient(handler))
+                    var form = new MultipartFormDataContent();
+                    var stream = new FileStream(fileName, FileMode.Open, FileAccess.Read);
+                    var content = new StreamContent(stream);
+                    content.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
                     {
-                        var form = new MultipartFormDataContent();
-                        var stream = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-                        var content = new StreamContent(stream);
-                        content.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
-                        {
-                            Name = fileTitle,
-                            FileName = fileName
-                        };
-                        form.Add(content);
-                        HttpResponseMessage response = await client.PostAsync(remoteServer, form);
-                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                        var responseContent = await response.Content.ReadAsStringAsync();
-                        Assert.True(JsonMessageContainsKeyValue(responseContent, fileTitle, fileContent));
-                        _output.WriteLine(responseContent);
-                    }
+                        Name = fileTitle,
+                        FileName = fileName
+                    };
+                    
+                    form.Add(content);
+                    HttpResponseMessage response = await client.PostAsync(remoteServer, form);
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    string responseContent = await response.Content.ReadAsStringAsync();
+                    Assert.True(JsonMessageContainsKeyValue(responseContent, fileTitle, fileContent));
+                    _output.WriteLine(responseContent);
                 }
             }
             finally
@@ -402,51 +404,45 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData("PostServers")]
         public async Task PostAsync_CallMethodTwice_StringContent(Uri remoteServer)
         {
-            using (var handler = new HttpClientHandler())
+            using (var client = new HttpClient())
             {
-                using (var client = new HttpClient(handler))
-                {
-                    var data = "Test String";
-                    var stringContent = new StringContent(data, Encoding.UTF8, mediaTypeJson);
-                    HttpResponseMessage response =
-                        await client.PostAsync(remoteServer, stringContent);
-                    var responseContent = await response.Content.ReadAsStringAsync();
-                    _output.WriteLine(responseContent);
+                string data = "Test String";
+                var stringContent = new StringContent(data, Encoding.UTF8, mediaTypeJson);
+                HttpResponseMessage response =
+                    await client.PostAsync(remoteServer, stringContent);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                _output.WriteLine(responseContent);
 
-                    //Repeat call
-                    stringContent = new StringContent(data, Encoding.UTF8, mediaTypeJson);
-                    response = await client.PostAsync(remoteServer, stringContent);
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    responseContent = await response.Content.ReadAsStringAsync();
-                    Assert.True(JsonMessageContainsKeyValue(responseContent, dataKey, data));
-                    _output.WriteLine(responseContent);
-                }
+                // Repeat call.
+                stringContent = new StringContent(data, Encoding.UTF8, mediaTypeJson);
+                response = await client.PostAsync(remoteServer, stringContent);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                responseContent = await response.Content.ReadAsStringAsync();
+                Assert.True(JsonMessageContainsKeyValue(responseContent, dataKey, data));
+                _output.WriteLine(responseContent);
             }
         }
 
         [Theory, MemberData("PostServers")]
         public async Task PostAsync_CallMethod_UnicodeStringContent(Uri remoteServer)
         {
-            using (var handler = new HttpClientHandler())
+            using (var client = new HttpClient())
             {
-                using (var client = new HttpClient(handler))
-                {
-
-                    var stringContent = new StringContent("\ub4f1\uffc7\u4e82\u67ab4\uc6d4\ud1a0\uc694\uc77c\uffda3\u3155\uc218\uffdb", Encoding.UTF8,
-                        mediaTypeJson);
-                    HttpResponseMessage response = await client.PostAsync(remoteServer, stringContent);
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    var responseContent = await response.Content.ReadAsStringAsync();
-                    _output.WriteLine(responseContent);
-                }
+                var stringContent = new StringContent(
+                    "\ub4f1\uffc7\u4e82\u67ab4\uc6d4\ud1a0\uc694\uc77c\uffda3\u3155\uc218\uffdb",
+                    Encoding.UTF8,
+                    mediaTypeJson);
+                HttpResponseMessage response = await client.PostAsync(remoteServer, stringContent);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                _output.WriteLine(responseContent);
             }
         }
 
         [Theory, MemberData("PostServersStreamsAndExpectedData")]
         public async Task PostAsync_CallMethod_StreamContent(Uri remoteServer, Stream requestContentStream, byte[] expectedData)
         {
-            var handler = new HttpClientHandler();
-            using (var client = new HttpClient(handler))
+            using (var client = new HttpClient())
             {
                 HttpContent content = new StreamContent(requestContentStream);
                 HttpResponseMessage response = await client.PostAsync(remoteServer, content);
@@ -526,30 +522,41 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData("PostServers")]
         public async Task PostAsync_CallMethod_NullContent(Uri remoteServer)
         {
-            using (var handler = new HttpClientHandler())
+            using (var client = new HttpClient())
             {
-                using (var client = new HttpClient(handler))
-                {
-                    HttpContent obj = new StringContent(String.Empty);
-                    HttpResponseMessage response = await client.PostAsync(remoteServer, null);
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    var responseContent = await response.Content.ReadAsStringAsync();
-                    Assert.True(JsonMessageContainsKeyValue(responseContent, dataKey, String.Empty));
-                    _output.WriteLine(responseContent);
-                }
+                HttpContent obj = new StringContent(String.Empty);
+                HttpResponseMessage response = await client.PostAsync(remoteServer, null);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                Assert.True(JsonMessageContainsKeyValue(responseContent, dataKey, String.Empty));
+                _output.WriteLine(responseContent);
             }
         }
 
         [Fact]
         public async Task PostAsync_IncorrectUri_MethodNotAllowed()
         {
-            using (var handler = new HttpClientHandler())
+            using (var client = new HttpClient())
             {
-                using (var client = new HttpClient(handler))
-                {
-                    HttpResponseMessage response = await client.PostAsync(HttpTestServers.RemoteGetServer, null);
-                    Assert.Equal(HttpStatusCode.MethodNotAllowed, response.StatusCode);
-                }
+                HttpResponseMessage response = await client.PostAsync(HttpTestServers.RemoteGetServer, null);
+                Assert.Equal(HttpStatusCode.MethodNotAllowed, response.StatusCode);
+            }
+        }
+
+        [Fact]
+        [ActiveIssue(3565, PlatformID.AnyUnix)]
+        public async Task PostAsync_Post_ChannelBindingHasExpectedValue()
+        {
+            using (var client = new HttpClient())
+            {
+                string expectedContent = "Test contest";
+                var content = new ChannelBindingAwareContent(expectedContent);
+                HttpResponseMessage response = await client.PostAsync(HttpTestServers.SecureRemotePostServer, content);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                ChannelBinding channelBinding = content.ChannelBinding;
+                Assert.NotNull(channelBinding);
+                _output.WriteLine("Channel Binding: {0}", channelBinding);
             }
         }
 
@@ -560,50 +567,40 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData("PutServers")]
         public async Task PutAsync_CallMethod_StringContent(Uri remoteServer)
         {
-            using (var handler = new HttpClientHandler())
+            using (var client = new HttpClient())
             {
-                using (var client = new HttpClient(handler))
-                {
-                    var stringContent = new StringContent("{ \"firstName\": \"John\" }", Encoding.UTF32,
-                        mediaTypeJson);
-                    HttpResponseMessage response = await client.PutAsync(remoteServer, stringContent);
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    var responseContent = await response.Content.ReadAsStringAsync();
-                    _output.WriteLine(responseContent);
-                }
+                var stringContent = new StringContent("{ \"firstName\": \"John\" }", Encoding.UTF32,
+                    mediaTypeJson);
+                HttpResponseMessage response = await client.PutAsync(remoteServer, stringContent);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                _output.WriteLine(responseContent);
             }
         }
 
         [Theory, MemberData("PutServers")]
         public async Task PutAsync_CallMethod_NullContent(Uri remoteServer)
         {
-            using (var handler = new HttpClientHandler())
+            using (var client = new HttpClient())
             {
-                using (var client = new HttpClient(handler))
-                {
-                    HttpResponseMessage response = await client.PutAsync(remoteServer, null);
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    var responseContent = await response.Content.ReadAsStringAsync();
-                    Assert.True(JsonMessageContainsKeyValue(responseContent, dataKey, String.Empty));
-                    _output.WriteLine(responseContent);
-                }
+                HttpResponseMessage response = await client.PutAsync(remoteServer, null);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                Assert.True(JsonMessageContainsKeyValue(responseContent, dataKey, String.Empty));
+                _output.WriteLine(responseContent);
             }
         }
 
         [Fact]
         public async Task PutAsync_IncorrectUri_MethodNotAllowed()
         {
-            using (var handler = new HttpClientHandler())
+            using (var client = new HttpClient())
             {
-                using (var client = new HttpClient(handler))
-                {
-                    HttpResponseMessage response = await client.PutAsync(HttpTestServers.RemoteGetServer, null);
-                    Assert.Equal(HttpStatusCode.MethodNotAllowed, response.StatusCode);
-                }
+                HttpResponseMessage response = await client.PutAsync(HttpTestServers.RemoteGetServer, null);
+                Assert.Equal(HttpStatusCode.MethodNotAllowed, response.StatusCode);
             }
         }
 
         #endregion
-
     }
 }
