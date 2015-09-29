@@ -49,6 +49,7 @@
     <Compile Include="Generic\Common\GenericIListTest.cs" />
     <Compile Include="Generic\Common\IEnumerableTest.cs" />
     <Compile Include="Generic\Common\TestSupport.cs" />
+    <Compile Include="Generic\Dictionary\DictionaryTests.cs" />
     <Compile Include="Generic\Dictionary\HashCollisionScenarios\InputData.cs" />
     <Compile Include="Generic\Dictionary\HashCollisionScenarios\OutOfBoundsRegression.cs" />
     <Compile Include="Generic\HashSet\HashSetTestSupport.cs" />
