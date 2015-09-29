@@ -16,10 +16,9 @@ namespace System.Net.Sockets.Tests
         //       merged into corefx.
         private const int DummySendPacketsIssue = 123456;
 
-        private const int TestPortBase = TestPortBases.SendPacketsAsync;
         private readonly ITestOutputHelper _log;
 
-        private IPEndPoint Server = new IPEndPoint(IPAddress.IPv6Loopback, 8080); 
+        private IPAddress ServerAddress = IPAddress.IPv6Loopback;
         // In the current directory
         private const string TestFileName = "NCLTest.Socket.SendPacketsAsync.testpayload";
         private static int TestFileSize = 1024;
@@ -61,11 +60,12 @@ namespace System.Net.Sockets.Tests
         [ActiveIssue(DummySendPacketsIssue, PlatformID.AnyUnix)]
         public void Disposed_Throw()
         {
-            using (SocketTestServer.SocketTestServerFactory(Server))
+            int port;
+            using (SocketTestServer.SocketTestServerFactory(ServerAddress, out port))
             {
                 using (Socket sock = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp))
                 {
-                    sock.Connect(Server);
+                    sock.Connect(new IPEndPoint(ServerAddress, port));
                     sock.Dispose();
 
                     Assert.Throws<ObjectDisposedException>(() =>
@@ -80,11 +80,12 @@ namespace System.Net.Sockets.Tests
         [ActiveIssue(DummySendPacketsIssue, PlatformID.AnyUnix)]
         public void NullArgs_Throw()
         {
-            using (SocketTestServer.SocketTestServerFactory(Server))
+            int port;
+            using (SocketTestServer.SocketTestServerFactory(ServerAddress, out port))
             {
                 using (Socket sock = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp))
                 {
-                    sock.Connect(Server);
+                    sock.Connect(new IPEndPoint(ServerAddress, port));
 
                     ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() =>
                     {
@@ -196,11 +197,12 @@ namespace System.Net.Sockets.Tests
             
             EventWaitHandle completed = new ManualResetEvent(false);
 
-            using (SocketTestServer.SocketTestServerFactory(Server))
+            int port;
+            using (SocketTestServer.SocketTestServerFactory(ServerAddress, out port))
             {
                 using (Socket sock = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp))
                 {
-                    sock.Connect(Server);
+                    sock.Connect(new IPEndPoint(ServerAddress, port));
                     using (SocketAsyncEventArgs args = new SocketAsyncEventArgs())
                     {
                         args.Completed += OnCompleted;
@@ -382,11 +384,12 @@ namespace System.Net.Sockets.Tests
 
             EventWaitHandle completed = new ManualResetEvent(false);
 
-            using (SocketTestServer.SocketTestServerFactory(Server))
+            int port;
+            using (SocketTestServer.SocketTestServerFactory(ServerAddress, out port))
             {
                 using (Socket sock = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp))
                 {
-                    sock.Connect(Server);
+                    sock.Connect(new IPEndPoint(ServerAddress, port));
                     using (SocketAsyncEventArgs args = new SocketAsyncEventArgs())
                     {
                         args.Completed += OnCompleted;

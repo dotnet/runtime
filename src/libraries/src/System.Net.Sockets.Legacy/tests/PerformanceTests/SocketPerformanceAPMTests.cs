@@ -14,7 +14,6 @@ namespace System.Net.Sockets.Performance.Tests
     {
         private const int DummyOSXPerfIssue = 123456;
 
-        private const int TestPortBase = 9300;
         private readonly ITestOutputHelper _log;
 
         public SocketPerformanceAPMTests(ITestOutputHelper output)
@@ -25,7 +24,6 @@ namespace System.Net.Sockets.Performance.Tests
         [Fact]
         public void SocketPerformance_SingleSocketClientAPM_LocalHostServerAPM()
         {
-            int port = TestPortBase + 0;
             SocketImplementationType serverType = SocketImplementationType.APM;
             SocketImplementationType clientType = SocketImplementationType.APM;
             int iterations = 5000;
@@ -36,7 +34,6 @@ namespace System.Net.Sockets.Performance.Tests
             var test = new SocketPerformanceTests(_log);
 
             test.ClientServerTest(
-                port,
                 serverType,
                 clientType,
                 iterations,
@@ -49,7 +46,6 @@ namespace System.Net.Sockets.Performance.Tests
         [ActiveIssue(DummyOSXPerfIssue, PlatformID.OSX)]
         public void SocketPerformance_MultipleSocketClientAPM_LocalHostServerAPM()
         {
-            int port = TestPortBase + 1;
             SocketImplementationType serverType = SocketImplementationType.APM;
             SocketImplementationType clientType = SocketImplementationType.APM;
             int iterations = 1000;
@@ -60,7 +56,6 @@ namespace System.Net.Sockets.Performance.Tests
             var test = new SocketPerformanceTests(_log);
 
             test.ClientServerTest(
-                port,
                 serverType,
                 clientType,
                 iterations,
@@ -72,7 +67,6 @@ namespace System.Net.Sockets.Performance.Tests
         [Fact]
         public void SocketPerformance_SingleSocketClientAPM_LocalHostServerAsync()
         {
-            int port = TestPortBase + 2;
             SocketImplementationType serverType = SocketImplementationType.Async;
             SocketImplementationType clientType = SocketImplementationType.APM;
             int iterations = 5000;
@@ -83,7 +77,6 @@ namespace System.Net.Sockets.Performance.Tests
             var test = new SocketPerformanceTests(_log);
 
             test.ClientServerTest(
-                port,
                 serverType,
                 clientType,
                 iterations,
@@ -96,7 +89,6 @@ namespace System.Net.Sockets.Performance.Tests
         [ActiveIssue(DummyOSXPerfIssue, PlatformID.OSX)]
         public void SocketPerformance_MultipleSocketClientAPM_LocalHostServerAsync()
         {
-            int port = TestPortBase + 3;
             SocketImplementationType serverType = SocketImplementationType.Async;
             SocketImplementationType clientType = SocketImplementationType.APM;
             int iterations = 1000;
@@ -107,7 +99,6 @@ namespace System.Net.Sockets.Performance.Tests
             var test = new SocketPerformanceTests(_log);
 
             test.ClientServerTest(
-                port,
                 serverType,
                 clientType,
                 iterations,
@@ -119,7 +110,6 @@ namespace System.Net.Sockets.Performance.Tests
         [Fact]
         public void SocketPerformance_SingleSocketClientAsync_LocalHostServerAPM()
         {
-            int port = TestPortBase + 4;
             SocketImplementationType serverType = SocketImplementationType.APM;
             SocketImplementationType clientType = SocketImplementationType.Async;
             int iterations = 5000;
@@ -130,7 +120,6 @@ namespace System.Net.Sockets.Performance.Tests
             var test = new SocketPerformanceTests(_log);
 
             test.ClientServerTest(
-                port,
                 serverType,
                 clientType,
                 iterations,
@@ -143,7 +132,6 @@ namespace System.Net.Sockets.Performance.Tests
         [ActiveIssue(DummyOSXPerfIssue, PlatformID.OSX)]
         public void SocketPerformance_MultipleSocketClientAsync_LocalHostServerAPM()
         {
-            int port = TestPortBase + 5;
             SocketImplementationType serverType = SocketImplementationType.APM;
             SocketImplementationType clientType = SocketImplementationType.Async;
             int iterations = 1000;
@@ -154,7 +142,6 @@ namespace System.Net.Sockets.Performance.Tests
             var test = new SocketPerformanceTests(_log);
 
             test.ClientServerTest(
-                port,
                 serverType,
                 clientType,
                 iterations,
