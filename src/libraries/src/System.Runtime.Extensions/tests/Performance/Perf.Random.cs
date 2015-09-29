@@ -13,11 +13,12 @@ namespace System.Runtime.Extensions.Tests
         {
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                {
-                    new Random(); new Random(); new Random();
-                    new Random(); new Random(); new Random();
-                    new Random(); new Random(); new Random();
-                }
+                    for (int i = 0; i < 40000; i++)
+                    {
+                        new Random(); new Random(); new Random();
+                        new Random(); new Random(); new Random();
+                        new Random(); new Random(); new Random();
+                    }
         }
 
         [Benchmark]
@@ -25,14 +26,13 @@ namespace System.Runtime.Extensions.Tests
         {
             Random rand = new Random(123456);
             foreach (var iteration in Benchmark.Iterations)
-            {
                 using (iteration.StartMeasurement())
-                {
-                    rand.Next(10000); rand.Next(10000); rand.Next(10000);
-                    rand.Next(10000); rand.Next(10000); rand.Next(10000);
-                    rand.Next(10000); rand.Next(10000); rand.Next(10000);
-                }
-            }
+                    for (int i = 0; i < 40000; i++)
+                    {
+                        rand.Next(10000); rand.Next(10000); rand.Next(10000);
+                        rand.Next(10000); rand.Next(10000); rand.Next(10000);
+                        rand.Next(10000); rand.Next(10000); rand.Next(10000);
+                    }
         }
 
         [Benchmark]
@@ -40,14 +40,13 @@ namespace System.Runtime.Extensions.Tests
         {
             Random rand = new Random(123456);
             foreach (var iteration in Benchmark.Iterations)
-            {
                 using (iteration.StartMeasurement())
-                {
-                    rand.Next(100, 10000); rand.Next(100, 10000); rand.Next(100, 10000);
-                    rand.Next(100, 10000); rand.Next(100, 10000); rand.Next(100, 10000);
-                    rand.Next(100, 10000); rand.Next(100, 10000); rand.Next(100, 10000);
-                }
-            }
+                    for (int i = 0; i < 40000; i++)
+                    {
+                        rand.Next(100, 10000); rand.Next(100, 10000); rand.Next(100, 10000);
+                        rand.Next(100, 10000); rand.Next(100, 10000); rand.Next(100, 10000);
+                        rand.Next(100, 10000); rand.Next(100, 10000); rand.Next(100, 10000);
+                    }
         }
     }
 }

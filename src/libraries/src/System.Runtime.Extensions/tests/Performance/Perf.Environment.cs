@@ -11,7 +11,8 @@ namespace System.Runtime.Extensions.Tests
         [Benchmark]
         public void GetEnvironmentVariable()
         {
-            string env = PerfUtils.CreateString(15);
+            PerfUtils utils = new PerfUtils();
+            string env = utils.CreateString(15);
             try
             {
                 // setup the environment variable so we can read it
@@ -19,14 +20,13 @@ namespace System.Runtime.Extensions.Tests
 
                 // read the valid environment variable for the test
                 foreach (var iteration in Benchmark.Iterations)
-                {
                     using (iteration.StartMeasurement())
-                    {
-                        Environment.GetEnvironmentVariable(env); Environment.GetEnvironmentVariable(env); Environment.GetEnvironmentVariable(env);
-                        Environment.GetEnvironmentVariable(env); Environment.GetEnvironmentVariable(env); Environment.GetEnvironmentVariable(env);
-                        Environment.GetEnvironmentVariable(env); Environment.GetEnvironmentVariable(env); Environment.GetEnvironmentVariable(env);
-                    }
-                }
+                        for (int i = 0; i < 40000; i++)
+                        {
+                            Environment.GetEnvironmentVariable(env); Environment.GetEnvironmentVariable(env); Environment.GetEnvironmentVariable(env);
+                            Environment.GetEnvironmentVariable(env); Environment.GetEnvironmentVariable(env); Environment.GetEnvironmentVariable(env);
+                            Environment.GetEnvironmentVariable(env); Environment.GetEnvironmentVariable(env); Environment.GetEnvironmentVariable(env);
+                        }
             }
             finally
             {
@@ -38,7 +38,8 @@ namespace System.Runtime.Extensions.Tests
         [Benchmark]
         public void ExpandEnvironmentVariables()
         {
-            string env = PerfUtils.CreateString(15);
+            PerfUtils utils = new PerfUtils();
+            string env = utils.CreateString(15);
             string inputEnv = "%" + env + "%";
             try
             {
@@ -47,16 +48,15 @@ namespace System.Runtime.Extensions.Tests
 
                 // read the valid environment variable
                 foreach (var iteration in Benchmark.Iterations)
-                {
                     using (iteration.StartMeasurement())
-                    {
-                        Environment.ExpandEnvironmentVariables(inputEnv); Environment.ExpandEnvironmentVariables(inputEnv);
-                        Environment.ExpandEnvironmentVariables(inputEnv); Environment.ExpandEnvironmentVariables(inputEnv);
-                        Environment.ExpandEnvironmentVariables(inputEnv); Environment.ExpandEnvironmentVariables(inputEnv);
-                        Environment.ExpandEnvironmentVariables(inputEnv); Environment.ExpandEnvironmentVariables(inputEnv);
-                        Environment.ExpandEnvironmentVariables(inputEnv); Environment.ExpandEnvironmentVariables(inputEnv);
-                    }
-                }
+                        for (int i = 0; i < 40000; i++)
+                        {
+                            Environment.ExpandEnvironmentVariables(inputEnv); Environment.ExpandEnvironmentVariables(inputEnv);
+                            Environment.ExpandEnvironmentVariables(inputEnv); Environment.ExpandEnvironmentVariables(inputEnv);
+                            Environment.ExpandEnvironmentVariables(inputEnv); Environment.ExpandEnvironmentVariables(inputEnv);
+                            Environment.ExpandEnvironmentVariables(inputEnv); Environment.ExpandEnvironmentVariables(inputEnv);
+                            Environment.ExpandEnvironmentVariables(inputEnv); Environment.ExpandEnvironmentVariables(inputEnv);
+                        }
             }
             finally
             {
