@@ -22544,7 +22544,7 @@ void gc_heap::make_free_lists (int condemned_gen_number)
 
 void gc_heap::make_free_list_in_brick (BYTE* tree, make_free_args* args)
 {
-    assert ((tree >= 0));
+    assert ((tree != NULL));
     {
         int  right_node = node_right_child (tree);
         int left_node = node_left_child (tree);
@@ -23282,7 +23282,7 @@ void gc_heap::relocate_survivors_in_plug (BYTE* plug, BYTE* plug_end,
 
 void gc_heap::relocate_survivors_in_brick (BYTE* tree, relocate_args* args)
 {
-    assert ((tree != 0));
+    assert ((tree != NULL));
 
     dprintf (3, ("tree: %Ix, args->last_plug: %Ix, left: %Ix, right: %Ix, gap(t): %Ix",
         tree, args->last_plug, 
@@ -23463,7 +23463,7 @@ void gc_heap::walk_plug (BYTE* plug, size_t size, BOOL check_last_object_p, walk
 
 void gc_heap::walk_relocation_in_brick (BYTE* tree, walk_relocate_args* args, size_t profiling_context)
 {
-    assert ((tree != 0));
+    assert ((tree != NULL));
     if (node_left_child (tree))
     {
         walk_relocation_in_brick (tree + node_left_child (tree), args, profiling_context);
@@ -24041,7 +24041,7 @@ void gc_heap::compact_plug (BYTE* plug, size_t size, BOOL check_last_object_p, c
 
 void gc_heap::compact_in_brick (BYTE* tree, compact_args* args)
 {
-    assert (tree >= 0);
+    assert (tree != NULL);
     int   left_node = node_left_child (tree);
     int   right_node = node_right_child (tree);
     ptrdiff_t relocation = node_relocation_distance (tree);
@@ -27497,7 +27497,7 @@ void gc_heap::count_plug (size_t last_plug_size, BYTE*& last_plug)
 
 void gc_heap::count_plugs_in_brick (BYTE* tree, BYTE*& last_plug)
 {
-    assert ((tree != 0));
+    assert ((tree != NULL));
     if (node_left_child (tree))
     {
         count_plugs_in_brick (tree + node_left_child (tree), last_plug);
@@ -28518,7 +28518,7 @@ void gc_heap::realloc_in_brick (BYTE* tree, BYTE*& last_plug,
                                 unsigned int& active_new_gen_number,
                                 BYTE*& last_pinned_gap, BOOL& leftp)
 {
-    assert (tree >= 0);
+    assert (tree != NULL);
     int   left_node = node_left_child (tree);
     int   right_node = node_right_child (tree);
 
