@@ -970,8 +970,6 @@ mono_arch_init (void)
 	v5_supported = mono_hwcap_arm_is_v5;
 	v6_supported = mono_hwcap_arm_is_v6;
 	v7_supported = mono_hwcap_arm_is_v7;
-	v7s_supported = mono_hwcap_arm_is_v7s;
-	v7k_supported = mono_hwcap_arm_is_v7k;
 
 #if defined(__APPLE__)
 	/* iOS is special-cased here because we don't yet
