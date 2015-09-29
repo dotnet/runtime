@@ -6038,10 +6038,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	// Sort clauses into groups
 	GPtrArray *grouped_clauses = g_ptr_array_sized_new (cfg->header->num_clauses);
 	ctx->grouped_clauses = grouped_clauses;
-
-	for (int i=0; i < cfg->header->num_clauses; i++)
-		grouped_clauses->pdata [i] = &cfg->header->clauses[i];
-
+	for (int i = 0; i < cfg->header->num_clauses; i++)
+		g_ptr_array_add (grouped_clauses, &cfg->header->clauses [i]);
 	g_ptr_array_sort (grouped_clauses, (GCompareFunc) clause_group_compare_func);
 
 	size_t group_index = 0;
