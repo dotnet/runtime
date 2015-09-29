@@ -45,6 +45,8 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	mctx->esi = 0xDEADBEEF;
 	mctx->edi = 0xDEADBEEF;
 	mctx->eip = 0xDEADBEEF;
+#elif MONO_CROSS_COMPILE
+	g_assert_not_reached ();
 #elif defined(MONO_SIGNAL_USE_SIGACTION)
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 	
@@ -89,6 +91,8 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 {
 #if defined(__native_client__) || defined(HOST_WATCHOS)
 	printf("WARNING: mono_arch_monoctx_to_sigctx() called!\n");
+#elif MONO_CROSS_COMPILE
+	g_assert_not_reached ();
 #elif defined(MONO_SIGNAL_USE_SIGACTION)
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 
@@ -143,7 +147,9 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	printf("WARNING: mono_arch_sigctx_to_monoctx() called!\n");
 #endif
 
-#if defined(UCONTEXT_REG_RAX)
+#ifdef MONO_CROSS_COMPILE
+	g_assert_not_reached ();
+#elif defined(UCONTEXT_REG_RAX)
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 
 	mctx->gregs [AMD64_RAX] = UCONTEXT_REG_RAX (ctx);
@@ -195,7 +201,9 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
   printf("WARNING: mono_arch_monoctx_to_sigctx() called!\n");
 #endif
 
-#if defined(UCONTEXT_REG_RAX)
+#ifdef MONO_CROSS_COMPILE
+	g_assert_not_reached ();
+#elif defined(UCONTEXT_REG_RAX)
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 
 	UCONTEXT_REG_RAX (ctx) = mctx->gregs [AMD64_RAX];
