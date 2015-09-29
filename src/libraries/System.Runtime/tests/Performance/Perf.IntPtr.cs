@@ -12,11 +12,12 @@ namespace System.Runtime.Tests
         {
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                {
-                    new IntPtr(0); new IntPtr(0); new IntPtr(0);
-                    new IntPtr(0); new IntPtr(0); new IntPtr(0);
-                    new IntPtr(0); new IntPtr(0); new IntPtr(0);
-                }
+                    for (int i = 0; i < 10000; i++)
+                    {
+                        new IntPtr(0); new IntPtr(0); new IntPtr(0);
+                        new IntPtr(0); new IntPtr(0); new IntPtr(0);
+                        new IntPtr(0); new IntPtr(0); new IntPtr(0);
+                    }
         }
 
         [Benchmark]
@@ -27,11 +28,12 @@ namespace System.Runtime.Tests
             IntPtr ptr2 = new IntPtr(0);
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                {
-                    res = ptr1 == ptr2; res = ptr1 == ptr2; res = ptr1 == ptr2;
-                    res = ptr1 == ptr2; res = ptr1 == ptr2; res = ptr1 == ptr2;
-                    res = ptr1 == ptr2; res = ptr1 == ptr2; res = ptr1 == ptr2;
-                }
+                    for (int i = 0; i < 10000; i++)
+                    {
+                        res = ptr1 == ptr2; res = ptr1 == ptr2; res = ptr1 == ptr2;
+                        res = ptr1 == ptr2; res = ptr1 == ptr2; res = ptr1 == ptr2;
+                        res = ptr1 == ptr2; res = ptr1 == ptr2; res = ptr1 == ptr2;
+                    }
         }
     }
 }

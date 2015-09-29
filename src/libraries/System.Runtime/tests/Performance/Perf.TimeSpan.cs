@@ -12,11 +12,12 @@ namespace System.Runtime.Tests
         {
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                {
-                    new TimeSpan(7, 8, 10); new TimeSpan(7, 8, 10); new TimeSpan(7, 8, 10);
-                    new TimeSpan(7, 8, 10); new TimeSpan(7, 8, 10); new TimeSpan(7, 8, 10);
-                    new TimeSpan(7, 8, 10); new TimeSpan(7, 8, 10); new TimeSpan(7, 8, 10);
-                }
+                    for (int i = 0; i < 10000; i++)
+                    {
+                        new TimeSpan(7, 8, 10); new TimeSpan(7, 8, 10); new TimeSpan(7, 8, 10);
+                        new TimeSpan(7, 8, 10); new TimeSpan(7, 8, 10); new TimeSpan(7, 8, 10);
+                        new TimeSpan(7, 8, 10); new TimeSpan(7, 8, 10); new TimeSpan(7, 8, 10);
+                    }
         }
 
         [Benchmark]
@@ -24,11 +25,12 @@ namespace System.Runtime.Tests
         {
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                {
-                    TimeSpan.FromSeconds(50); TimeSpan.FromSeconds(50); TimeSpan.FromSeconds(50);
-                    TimeSpan.FromSeconds(50); TimeSpan.FromSeconds(50); TimeSpan.FromSeconds(50);
-                    TimeSpan.FromSeconds(50); TimeSpan.FromSeconds(50); TimeSpan.FromSeconds(50);
-                }
+                    for (int i = 0; i < 10000; i++)
+                    {
+                        TimeSpan.FromSeconds(50); TimeSpan.FromSeconds(50); TimeSpan.FromSeconds(50);
+                        TimeSpan.FromSeconds(50); TimeSpan.FromSeconds(50); TimeSpan.FromSeconds(50);
+                        TimeSpan.FromSeconds(50); TimeSpan.FromSeconds(50); TimeSpan.FromSeconds(50);
+                    }
         }
     }
 }

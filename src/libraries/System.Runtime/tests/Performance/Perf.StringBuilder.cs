@@ -15,11 +15,12 @@ namespace System.Runtime.Tests
             StringBuilder builder;
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                {
-                    builder = new StringBuilder(); builder = new StringBuilder(); builder = new StringBuilder();
-                    builder = new StringBuilder(); builder = new StringBuilder(); builder = new StringBuilder();
-                    builder = new StringBuilder(); builder = new StringBuilder(); builder = new StringBuilder();
-                }
+                    for (int i = 0; i < 10000; i++)
+                    {
+                        builder = new StringBuilder(); builder = new StringBuilder(); builder = new StringBuilder();
+                        builder = new StringBuilder(); builder = new StringBuilder(); builder = new StringBuilder();
+                        builder = new StringBuilder(); builder = new StringBuilder(); builder = new StringBuilder();
+                    }
         }
 
         [Benchmark]
@@ -27,15 +28,17 @@ namespace System.Runtime.Tests
         [InlineData(200)]
         public void Append(int length)
         {
+            PerfUtils utils = new PerfUtils();
             foreach (var iteration in Benchmark.Iterations)
             {
                 // Setup - Create a string of the specified length
-                string builtString = PerfUtils.CreateString(length);
+                string builtString = utils.CreateString(length);
                 StringBuilder empty = new StringBuilder();
 
                 // Actual perf testing
                 using (iteration.StartMeasurement())
-                    empty.Append(builtString); // Appends a string of length "length" to an empty StringBuilder object
+                    for (int i = 0; i < 10000; i++)
+                        empty.Append(builtString); // Appends a string of length "length" to an increasingly large StringBuilder
             }
         }
     }

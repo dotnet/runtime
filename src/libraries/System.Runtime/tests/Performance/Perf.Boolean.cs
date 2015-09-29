@@ -13,11 +13,12 @@ namespace System.Runtime.Tests
         {
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                {
-                    Boolean.Parse("True"); Boolean.Parse("True"); Boolean.Parse("True");
-                    Boolean.Parse("True"); Boolean.Parse("True"); Boolean.Parse("True");
-                    Boolean.Parse("True"); Boolean.Parse("True"); Boolean.Parse("True");
-                }
+                    for (int i = 0; i < 10000; i++)
+                    {
+                        Boolean.Parse("True"); Boolean.Parse("True"); Boolean.Parse("True");
+                        Boolean.Parse("True"); Boolean.Parse("True"); Boolean.Parse("True");
+                        Boolean.Parse("True"); Boolean.Parse("True"); Boolean.Parse("True");
+                    }
         }
 
         [Benchmark]
@@ -26,11 +27,12 @@ namespace System.Runtime.Tests
             Boolean boo = true;
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                {
-                    boo.ToString(); boo.ToString(); boo.ToString();
-                    boo.ToString(); boo.ToString(); boo.ToString();
-                    boo.ToString(); boo.ToString(); boo.ToString();
-                }
+                    for (int i = 0; i < 10000; i++)
+                    {
+                        boo.ToString(); boo.ToString(); boo.ToString();
+                        boo.ToString(); boo.ToString(); boo.ToString();
+                        boo.ToString(); boo.ToString(); boo.ToString();
+                    }
         }
     }
 }

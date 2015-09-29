@@ -18,11 +18,12 @@ namespace System.Runtime.Tests
         {
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                {
-                    Enum.Parse(typeof(testEnum), "Red"); Enum.Parse(typeof(testEnum), "Red"); Enum.Parse(typeof(testEnum), "Red");
-                    Enum.Parse(typeof(testEnum), "Red"); Enum.Parse(typeof(testEnum), "Red"); Enum.Parse(typeof(testEnum), "Red");
-                    Enum.Parse(typeof(testEnum), "Red"); Enum.Parse(typeof(testEnum), "Red"); Enum.Parse(typeof(testEnum), "Red");
-                }
+                    for (int i = 0; i < 10000; i++)
+                    {
+                        Enum.Parse(typeof(testEnum), "Red"); Enum.Parse(typeof(testEnum), "Red"); Enum.Parse(typeof(testEnum), "Red");
+                        Enum.Parse(typeof(testEnum), "Red"); Enum.Parse(typeof(testEnum), "Red"); Enum.Parse(typeof(testEnum), "Red");
+                        Enum.Parse(typeof(testEnum), "Red"); Enum.Parse(typeof(testEnum), "Red"); Enum.Parse(typeof(testEnum), "Red");
+                    }
         }
     }
 }
