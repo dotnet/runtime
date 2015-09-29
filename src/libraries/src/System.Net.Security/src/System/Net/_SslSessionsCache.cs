@@ -53,7 +53,7 @@ namespace System.Net.Security
 
                 _HashCode ^= allowedProtocols;
                 _HashCode ^= (int)encryptionPolicy;
-                _HashCode ^= serverMode ? 5 : 7; //TODO used a prime number here as it's a XOR. Figure out appropriate value.
+                _HashCode ^= serverMode ? 5 : 7; //TODO (Issue #3362) used a prime number here as it's a XOR. Figure out appropriate value.
                 _AllowedProtocols = allowedProtocols;               
                 _EncryptionPolicy = encryptionPolicy;
                 isServerMode = serverMode;
@@ -135,15 +135,15 @@ namespace System.Net.Security
 
             SafeCredentialReference cached = s_CachedCreds[key] as SafeCredentialReference;
 
-            if (cached == null || cached.IsClosed || cached._Target.IsInvalid)
+            if (cached == null || cached.IsClosed || cached.Target.IsInvalid)
             {
                 GlobalLog.Print("TryCachedCredential() Not found or invalid, Current Cache Count = " + s_CachedCreds.Count);
                 return null;
             }
 
-            GlobalLog.Print("TryCachedCredential() Found a cached Handle = " + cached._Target.ToString());
+            GlobalLog.Print("TryCachedCredential() Found a cached Handle = " + cached.Target.ToString());
 
-            return cached._Target;
+            return cached.Target;
         }
 
         //
@@ -164,7 +164,7 @@ namespace System.Net.Security
 
             SafeCredentialReference cached = s_CachedCreds[key] as SafeCredentialReference;
 
-            if (cached == null || cached.IsClosed || cached._Target.IsInvalid)
+            if (cached == null || cached.IsClosed || cached.Target.IsInvalid)
             {
                 lock (s_CachedCreds)
                 {
@@ -204,7 +204,7 @@ namespace System.Net.Security
 
                                 if (cached != null)
                                 {
-                                    creds = cached._Target;
+                                    creds = cached.Target;
                                     cached.Dispose();
 
                                     if (!creds.IsClosed && !creds.IsInvalid && (cached = SafeCredentialReference.CreateReference(creds)) != null)
@@ -222,13 +222,13 @@ namespace System.Net.Security
                     }
                     else
                     {
-                        GlobalLog.Print("CacheCredential() (locked retry) Found already cached Handle = " + cached._Target.ToString());
+                        GlobalLog.Print("CacheCredential() (locked retry) Found already cached Handle = " + cached.Target.ToString());
                     }
                 }
             }
             else
             {
-                GlobalLog.Print("CacheCredential() Ignoring incoming handle = " + creds.ToString() + " since found already cached Handle = " + cached._Target.ToString());
+                GlobalLog.Print("CacheCredential() Ignoring incoming handle = " + creds.ToString() + " since found already cached Handle = " + cached.Target.ToString());
             }
         }
     }
