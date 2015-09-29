@@ -21,6 +21,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void Create_Success()
         {
+            // NOTE: the '0' below will cause the TcpListener to bind to an anonymous port.
             TcpListener listener = TcpListener.Create(0);
             listener.Start();
             listener.Stop();
