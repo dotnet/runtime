@@ -3,7 +3,7 @@
   "version": 1,
   "targets": {
     "DNXCore,Version=v5.0": {
-      "System.Console/4.0.0-beta-23311": {
+      "System.Console/4.0.0-beta-23328": {
         "type": "package",
         "dependencies": {
           "System.IO": "4.0.0",
@@ -95,10 +95,10 @@
     }
   },
   "libraries": {
-    "System.Console/4.0.0-beta-23311": {
+    "System.Console/4.0.0-beta-23328": {
       "type": "package",
       "serviceable": true,
-      "sha512": "aCYId/+628/CuOEBKx7sGxQ9fpqvLDqkOMuc0rqWRUCAIgNLtLd5htaQo58aXjzrP8D4/X35xVC+PQoHHis4Mg==",
+      "sha512": "UY0x6h5pWZG2met7eg059RS6kLet0jUoUZ0Dy8glRf+B4Hl3xsbMrslpkus+VojTV3kQqHoUDxSsm7/Tv8szow==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -112,8 +112,8 @@
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtime.json",
-        "System.Console.4.0.0-beta-23311.nupkg",
-        "System.Console.4.0.0-beta-23311.nupkg.sha512",
+        "System.Console.4.0.0-beta-23328.nupkg",
+        "System.Console.4.0.0-beta-23328.nupkg.sha512",
         "System.Console.nuspec"
       ]
     },
