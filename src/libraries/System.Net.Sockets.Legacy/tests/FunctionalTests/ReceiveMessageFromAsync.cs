@@ -13,8 +13,6 @@ namespace System.Net.Sockets.Tests
         // This is a stand-in for an issue to be filed when this code is merged into corefx.
         private const int DummyOSXPacketInfoIssue = 123456;
 
-        private const int TestPortBase = TestPortBases.ReceiveMessageFromAsync;
-
         public void OnCompleted(object sender, SocketAsyncEventArgs args)
         {
             EventWaitHandle handle = (EventWaitHandle)args.UserToken;
@@ -31,12 +29,12 @@ namespace System.Net.Sockets.Tests
             {
                 using (Socket receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
                 {
-                    receiver.Bind(new IPEndPoint(IPAddress.Loopback, TestPortBase));
+                    int port = receiver.BindToAnonymousPort(IPAddress.Loopback);
                     receiver.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.PacketInformation, true);
 
                     Socket sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
                     sender.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-                    sender.SendTo(new byte[1024], new IPEndPoint(IPAddress.Loopback, TestPortBase));
+                    sender.SendTo(new byte[1024], new IPEndPoint(IPAddress.Loopback, port));
                     
                     SocketAsyncEventArgs args = new SocketAsyncEventArgs();
                     args.RemoteEndPoint = new IPEndPoint(IPAddress.Any, 0);

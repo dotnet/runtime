@@ -9,8 +9,6 @@ namespace System.Net.Sockets.Tests
 {
     public class ConnectAsync
     {
-        private const int TestPortBase = TestPortBases.ConnectAsync;
-
         public void OnConnectCompleted(object sender, SocketAsyncEventArgs args)
         {
             EventWaitHandle handle = (EventWaitHandle)args.UserToken;
@@ -24,10 +22,11 @@ namespace System.Net.Sockets.Tests
 
             if (Socket.OSSupportsIPv4)
             {
-                using (SocketTestServer.SocketTestServerFactory(new IPEndPoint(IPAddress.Loopback, TestPortBase)))
+                int port;
+                using (SocketTestServer.SocketTestServerFactory(IPAddress.Loopback, out port))
                 {
                     SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-                    args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, TestPortBase);
+                    args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, port);
                     args.Completed += OnConnectCompleted;
                     args.UserToken = completed;
 
@@ -44,10 +43,11 @@ namespace System.Net.Sockets.Tests
 
             if (Socket.OSSupportsIPv6)
             {
-                using (SocketTestServer.SocketTestServerFactory(new IPEndPoint(IPAddress.IPv6Loopback, TestPortBase)))
+                int port;
+                using (SocketTestServer.SocketTestServerFactory(IPAddress.IPv6Loopback, out port))
                 {
                     SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-                    args.RemoteEndPoint = new IPEndPoint(IPAddress.IPv6Loopback, TestPortBase);
+                    args.RemoteEndPoint = new IPEndPoint(IPAddress.IPv6Loopback, port);
                     args.Completed += OnConnectCompleted;
                     args.UserToken = completed;
 

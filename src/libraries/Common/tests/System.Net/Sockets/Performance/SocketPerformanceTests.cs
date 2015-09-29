@@ -73,6 +73,7 @@ namespace System.Net.Sockets.Performance.Tests
             int socketInstances, 
             long expectedMilliseconds)
         {
+            // NOTE: port '0' below indicates that the server should bind to an anonymous port.
             ClientServerTest(0, serverType, clientType, iterations, bufferSize, socketInstances, expectedMilliseconds);
         }
 
