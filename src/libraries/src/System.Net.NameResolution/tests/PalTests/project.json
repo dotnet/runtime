@@ -20,9 +20,8 @@
     "System.Diagnostics.Debug": "4.0.10",
     "System.Collections.NonGeneric": "4.0.0",
     "System.Security.Claims": "4.0.0",
-    "System.Security.SecureString": "4.0.0-*",
     "Microsoft.Win32.Primitives": "4.0.0",
-    "xunit": "2.1.0-beta3-*",
+    "xunit": "2.1.0-rc1-*",
     "xunit.netcore.extensions": "1.0.0-prerelease-*"
   },
   "frameworks": {
