@@ -9,6 +9,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     public static class ChainTests
     {
         [Fact]
+        [ActiveIssue(3475, PlatformID.OSX)]
         public static void BuildChain()
         {
             using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
