@@ -2556,10 +2556,12 @@ namespace System {
                     return CultureInfo.InvariantCulture.CompareInfo.IsPrefix(this, value, CompareOptions.IgnoreCase);                    
 
                 case StringComparison.Ordinal:
-                    if( this.Length < value.Length) {
+                    if( this.Length < value.Length || m_firstChar != value.m_firstChar) {
                         return false;
                     }
-                    return (nativeCompareOrdinalEx(this, 0, value, 0, value.Length) == 0);
+                    return (value.Length == 1) ?
+                            true :                 // First char is the same and thats all there is to compare
+                            (nativeCompareOrdinalEx(this, 0, value, 0, value.Length) == 0);
 
                 case StringComparison.OrdinalIgnoreCase:
                     if( this.Length < value.Length) {
