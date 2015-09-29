@@ -112,12 +112,13 @@ CorUnix::InternalMalloc(
 {
     void *pvMem;
     pthrCurrent->suspensionInfo.EnterUnsafeRegion();
-#if MALLOC_ZERO_RETURNS_NULL
+
     if (szSize == 0)
     {
+        // malloc may return null for a requested size of zero bytes. Force a nonzero size to get a valid pointer.
         szSize = 1;
     }
-#endif
+
     pvMem = (void*)malloc(szSize);
     pthrCurrent->suspensionInfo.LeaveUnsafeRegion();
     return pvMem;
