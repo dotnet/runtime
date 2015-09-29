@@ -1,0 +1,1728 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+
+
+//------------------------------------------------------------------------------
+
+using System.Collections.Generic;
+using System.Data.Common;
+using System.Data.ProviderBase;
+using System.Diagnostics;
+using System.Globalization;
+using System.Threading;
+using System.Diagnostics.CodeAnalysis;
+using System.Threading.Tasks;
+
+namespace System.Data.SqlClient
+{
+    internal class SessionStateRecord
+    {
+        internal bool _recoverable;
+        internal UInt32 _version;
+        internal Int32 _dataLength;
+        internal byte[] _data;
+    }
+
+    internal class SessionData
+    {
+        internal const int _maxNumberOfSessionStates = 256;
+        internal UInt32 _tdsVersion;
+        internal bool _encrypted;
+
+        internal string _database;
+        internal SqlCollation _collation;
+        internal string _language;
+
+        internal string _initialDatabase;
+        internal SqlCollation _initialCollation;
+        internal string _initialLanguage;
+
+        internal byte _unrecoverableStatesCount = 0;
+        internal Dictionary<string, Tuple<string, string>> _resolvedAliases;
+
+#if DEBUG
+        internal bool _debugReconnectDataApplied;
+#endif
+
+        internal SessionStateRecord[] _delta = new SessionStateRecord[_maxNumberOfSessionStates];
+        internal bool _deltaDirty = false;
+        internal byte[][] _initialState = new byte[_maxNumberOfSessionStates][];
+
+        public SessionData(SessionData recoveryData)
+        {
+            _initialDatabase = recoveryData._initialDatabase;
+            _initialCollation = recoveryData._initialCollation;
+            _initialLanguage = recoveryData._initialLanguage;
+            _resolvedAliases = recoveryData._resolvedAliases;
+
+            for (int i = 0; i < _maxNumberOfSessionStates; i++)
+            {
+                if (recoveryData._initialState[i] != null)
+                {
+                    _initialState[i] = (byte[])recoveryData._initialState[i].Clone();
+                }
+            }
+        }
+
+        public SessionData()
+        {
+            _resolvedAliases = new Dictionary<string, Tuple<string, string>>(2);
+        }
+
+        public void Reset()
+        {
+            _database = null;
+            _collation = null;
+            _language = null;
+            if (_deltaDirty)
+            {
+                _delta = new SessionStateRecord[_maxNumberOfSessionStates];
+                _deltaDirty = false;
+            }
+            _unrecoverableStatesCount = 0;
+        }
+
+        [Conditional("DEBUG")]
+        public void AssertUnrecoverableStateCountIsCorrect()
+        {
+            byte unrecoverableCount = 0;
+            foreach (var state in _delta)
+            {
+                if (state != null && !state._recoverable)
+                    unrecoverableCount++;
+            }
+            Debug.Assert(unrecoverableCount == _unrecoverableStatesCount, "Unrecoverable count does not match");
+        }
+    }
+
+    sealed internal class SqlInternalConnectionTds : SqlInternalConnection, IDisposable
+    {
+        // CONNECTION AND STATE VARIABLES
+        private readonly SqlConnectionPoolGroupProviderInfo _poolGroupProviderInfo; // will only be null when called for ChangePassword, or creating SSE User Instance
+        private TdsParser _parser;
+        private SqlLoginAck _loginAck;
+
+        // Connection Resiliency
+        private bool _sessionRecoveryRequested;
+        internal bool _sessionRecoveryAcknowledged;
+        internal SessionData _currentSessionData; // internal for use from TdsParser only, otehr should use CurrentSessionData property that will fix database and language
+        private SessionData _recoverySessionData;
+
+        internal SessionData CurrentSessionData
+        {
+            get
+            {
+                if (_currentSessionData != null)
+                {
+                    _currentSessionData._database = CurrentDatabase;
+                    _currentSessionData._language = _currentLanguage;
+                }
+                return _currentSessionData;
+            }
+        }
+
+        // FOR POOLING
+        private bool _fConnectionOpen = false;
+
+        // FOR CONNECTION RESET MANAGEMENT
+        private bool _fResetConnection;
+        private string _originalDatabase;
+        private string _currentFailoverPartner;                     // only set by ENV change from server
+        private string _originalLanguage;
+        private string _currentLanguage;
+        private int _currentPacketSize;
+        private int _asyncCommandCount; // number of async Begins minus number of async Ends.
+
+        // FOR SSE
+        private string _instanceName = String.Empty;
+
+        // FOR NOTIFICATIONS
+        private DbConnectionPoolIdentity _identity; // Used to lookup info for notification matching Start().
+
+        // FOR SYNCHRONIZATION IN TdsParser
+        // How to use these locks:
+        // 1. Whenever writing to the connection (with the exception of Cancellation) the _parserLock MUST be taken
+        // 2. _parserLock will also be taken during close (to prevent closing in the middle of a write)
+        // 3. Whenever you have the _parserLock and are calling a method that would cause the connection to close if it failed (with the exception of any writing method), you MUST set ThreadHasParserLockForClose to true
+        //      * This is to prevent the connection deadlocking with itself (since you already have the _parserLock, and Closing the connection will attempt to re-take that lock)
+        //      * It is safe to set ThreadHasParserLockForClose to true when writing as well, but it is unneccesary
+        //      * If you have a method that takes _parserLock, it is a good idea check ThreadHasParserLockForClose first (if you don't expect _parserLock to be taken by something higher on the stack, then you should at least assert that it is false)
+        // 4. ThreadHasParserLockForClose is thread-specific - this means that you must set it to false before returning a Task, and set it back to true in the continuation
+        // 5. ThreadHasParserLockForClose should only be modified if you currently own the _parserLock
+        // 6. Reading ThreadHasParserLockForClose is thread-safe
+        internal class SyncAsyncLock
+        {
+            private SemaphoreSlim _semaphore = new SemaphoreSlim(1);
+
+            internal void Wait(bool canReleaseFromAnyThread)
+            {
+                Monitor.Enter(_semaphore); // semaphore is used as lock object, no relation to SemaphoreSlim.Wait/Release methods
+                if (canReleaseFromAnyThread || _semaphore.CurrentCount == 0)
+                {
+                    _semaphore.Wait();
+                    if (canReleaseFromAnyThread)
+                    {
+                        Monitor.Exit(_semaphore);
+                    }
+                    else
+                    {
+                        _semaphore.Release();
+                    }
+                }
+            }
+
+            internal void Wait(bool canReleaseFromAnyThread, int timeout, ref bool lockTaken)
+            {
+                lockTaken = false;
+                bool hasMonitor = false;
+                try
+                {
+                    Monitor.TryEnter(_semaphore, timeout, ref hasMonitor); // semaphore is used as lock object, no relation to SemaphoreSlim.Wait/Release methods
+                    if (hasMonitor)
+                    {
+                        if ((canReleaseFromAnyThread) || (_semaphore.CurrentCount == 0))
+                        {
+                            if (_semaphore.Wait(timeout))
+                            {
+                                if (canReleaseFromAnyThread)
+                                {
+                                    Monitor.Exit(_semaphore);
+                                    hasMonitor = false;
+                                }
+                                else
+                                {
+                                    _semaphore.Release();
+                                }
+                                lockTaken = true;
+                            }
+                        }
+                        else
+                        {
+                            lockTaken = true;
+                        }
+                    }
+                }
+                finally
+                {
+                    if ((!lockTaken) && (hasMonitor))
+                    {
+                        Monitor.Exit(_semaphore);
+                    }
+                }
+            }
+
+            internal void Release()
+            {
+                if (_semaphore.CurrentCount == 0)
+                {  //  semaphore methods were used for locking                   
+                    _semaphore.Release();
+                }
+                else
+                {
+                    Monitor.Exit(_semaphore);
+                }
+            }
+
+
+            internal bool CanBeReleasedFromAnyThread
+            {
+                get
+                {
+                    return _semaphore.CurrentCount == 0;
+                }
+            }
+
+            // Necessary but not sufficient condition for thread to have lock (since sempahore may be obtained by any thread)            
+            internal bool ThreadMayHaveLock()
+            {
+                return Monitor.IsEntered(_semaphore) || _semaphore.CurrentCount == 0;
+            }
+        }
+
+
+        internal SyncAsyncLock _parserLock = new SyncAsyncLock();
+        private int _threadIdOwningParserLock = -1;
+
+        private SqlConnectionTimeoutErrorInternal _timeoutErrorInternal;
+
+        internal SqlConnectionTimeoutErrorInternal TimeoutErrorInternal
+        {
+            get { return _timeoutErrorInternal; }
+        }
+
+        // OTHER STATE VARIABLES AND REFERENCES
+
+        internal Guid _clientConnectionId = Guid.Empty;
+
+        // Routing information (ROR)
+        private RoutingInfo _routingInfo = null;
+        private Guid _originalClientConnectionId = Guid.Empty;
+        private string _routingDestination = null;
+
+        // although the new password is generally not used it must be passed to the c'tor
+        // the new Login7 packet will always write out the new password (or a length of zero and no bytes if not present)
+        //
+        internal SqlInternalConnectionTds(
+                DbConnectionPoolIdentity identity,
+                SqlConnectionString connectionOptions,
+                object providerInfo,
+                bool redirectedUserInstance,
+                SqlConnectionString userConnectionOptions = null, // NOTE: userConnectionOptions may be different to connectionOptions if the connection string has been expanded (see SqlConnectionString.Expand)
+                SessionData reconnectSessionData = null) : base(connectionOptions)
+        {
+#if DEBUG
+            if (reconnectSessionData != null)
+            {
+                reconnectSessionData._debugReconnectDataApplied = true;
+            }
+#endif
+            Debug.Assert(reconnectSessionData == null || connectionOptions.ConnectRetryCount > 0, "Reconnect data supplied with CR turned off");
+
+            if (connectionOptions.ConnectRetryCount > 0)
+            {
+                _recoverySessionData = reconnectSessionData;
+                if (reconnectSessionData == null)
+                {
+                    _currentSessionData = new SessionData();
+                }
+                else
+                {
+                    _currentSessionData = new SessionData(_recoverySessionData);
+                    _originalDatabase = _recoverySessionData._initialDatabase;
+                    _originalLanguage = _recoverySessionData._initialLanguage;
+                }
+            }
+
+
+            _identity = identity;
+
+            _poolGroupProviderInfo = (SqlConnectionPoolGroupProviderInfo)providerInfo;
+            _fResetConnection = connectionOptions.ConnectionReset;
+            if (_fResetConnection && _recoverySessionData == null)
+            {
+                _originalDatabase = connectionOptions.InitialCatalog;
+                _originalLanguage = connectionOptions.CurrentLanguage;
+            }
+
+            _timeoutErrorInternal = new SqlConnectionTimeoutErrorInternal();
+
+            _parserLock.Wait(canReleaseFromAnyThread: false);
+            ThreadHasParserLockForClose = true;   // In case of error, let ourselves know that we already own the parser lock
+            try
+            {
+                var timeout = TimeoutTimer.StartSecondsTimeout(connectionOptions.ConnectTimeout);
+                OpenLoginEnlist(timeout, connectionOptions, redirectedUserInstance);
+            }
+            finally
+            {
+                ThreadHasParserLockForClose = false;
+                _parserLock.Release();
+            }
+        }
+
+        internal Guid ClientConnectionId
+        {
+            get
+            {
+                return _clientConnectionId;
+            }
+        }
+
+        internal Guid OriginalClientConnectionId
+        {
+            get
+            {
+                return _originalClientConnectionId;
+            }
+        }
+
+        internal string RoutingDestination
+        {
+            get
+            {
+                return _routingDestination;
+            }
+        }
+
+        override internal SqlInternalTransaction CurrentTransaction
+        {
+            get
+            {
+                return _parser.CurrentTransaction;
+            }
+        }
+
+        override internal SqlInternalTransaction AvailableInternalTransaction
+        {
+            get
+            {
+                return _parser._fResetConnection ? null : CurrentTransaction;
+            }
+        }
+
+
+
+        internal DbConnectionPoolIdentity Identity
+        {
+            get
+            {
+                return _identity;
+            }
+        }
+
+        internal string InstanceName
+        {
+            get
+            {
+                return _instanceName;
+            }
+        }
+
+        override internal bool IsLockedForBulkCopy
+        {
+            get
+            {
+                return (!Parser.MARSOn && Parser._physicalStateObj.BcpLock);
+            }
+        }
+
+
+        override internal bool IsKatmaiOrNewer
+        {
+            get
+            {
+                return _parser.IsKatmaiOrNewer;
+            }
+        }
+
+        internal int PacketSize
+        {
+            get
+            {
+                return _currentPacketSize;
+            }
+        }
+
+        internal TdsParser Parser
+        {
+            get
+            {
+                return _parser;
+            }
+        }
+
+        internal string ServerProvidedFailOverPartner
+        {
+            get
+            {
+                return _currentFailoverPartner;
+            }
+        }
+
+        internal SqlConnectionPoolGroupProviderInfo PoolGroupProviderInfo
+        {
+            get
+            {
+                return _poolGroupProviderInfo;
+            }
+        }
+
+
+        override public string ServerVersion
+        {
+            get
+            {
+                return (String.Format((IFormatProvider)null, "{0:00}.{1:00}.{2:0000}", _loginAck.majorVersion,
+                       (short)_loginAck.minorVersion, _loginAck.buildNum));
+            }
+        }
+
+
+
+        ////////////////////////////////////////////////////////////////////////////////////////
+        // GENERAL METHODS
+        ////////////////////////////////////////////////////////////////////////////////////////
+        [SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters")] // copied from Triaged.cs
+        override protected void ChangeDatabaseInternal(string database)
+        {
+            // Add brackets around database
+            database = SqlConnection.FixupDatabaseTransactionName(database);
+            Task executeTask = _parser.TdsExecuteSQLBatch("use " + database, ConnectionOptions.ConnectTimeout, _parser._physicalStateObj, sync: true);
+            Debug.Assert(executeTask == null, "Shouldn't get a task when doing sync writes");
+            _parser.Run(RunBehavior.UntilDone, null, null, null, _parser._physicalStateObj);
+        }
+
+        override public void Dispose()
+        {
+            try
+            {
+                TdsParser parser = Interlocked.Exchange(ref _parser, null);  // guard against multiple concurrent dispose calls -- Delegated Transactions might cause this.
+
+                Debug.Assert(parser != null && _fConnectionOpen || parser == null && !_fConnectionOpen, "Unexpected state on dispose");
+                if (null != parser)
+                {
+                    parser.Disconnect();
+                }
+            }
+            finally
+            {
+                // close will always close, even if exception is thrown
+                // remember to null out any object references
+                _loginAck = null;
+                _fConnectionOpen = false; // mark internal connection as closed
+            }
+            base.Dispose();
+        }
+
+        override internal void ValidateConnectionForExecute(SqlCommand command)
+        {
+            TdsParser parser = _parser;
+            if ((parser == null) || (parser.State == TdsParserState.Broken) || (parser.State == TdsParserState.Closed))
+            {
+                throw ADP.ClosedConnectionError();
+            }
+            else
+            {
+                SqlDataReader reader = null;
+                if (parser.MARSOn)
+                {
+                    if (null != command)
+                    { // command can't have datareader already associated with it
+                        reader = FindLiveReader(command);
+                    }
+                }
+                else
+                { // single execution/datareader per connection
+                    if (_asyncCommandCount > 0)
+                    {
+                        throw SQL.MARSUnspportedOnConnection();
+                    }
+
+                    reader = FindLiveReader(null);
+                }
+                if (null != reader)
+                {
+                    // if MARS is on, then a datareader associated with the command exists
+                    // or if MARS is off, then a datareader exists
+                    throw ADP.OpenReaderExists();
+                }
+                else if (!parser.MARSOn && parser._physicalStateObj._pendingData)
+                {
+                    parser.DrainData(parser._physicalStateObj);
+                }
+                Debug.Assert(!parser._physicalStateObj._pendingData, "Should not have a busy physicalStateObject at this point!");
+
+                parser.RollbackOrphanedAPITransactions();
+            }
+        }
+
+
+        internal override bool IsConnectionAlive(bool throwOnException)
+        {
+            bool isAlive = false;
+            isAlive = _parser._physicalStateObj.IsConnectionAlive(throwOnException);
+            return isAlive;
+        }
+
+        ////////////////////////////////////////////////////////////////////////////////////////
+        // POOLING METHODS
+        ////////////////////////////////////////////////////////////////////////////////////////
+
+        override protected void Activate()
+        {
+        }
+
+        override protected void InternalDeactivate()
+        {
+            // When we're deactivated, the user must have called End on all
+            // the async commands, or we don't know that we're in a state that
+            // we can recover from.  We doom the connection in this case, to
+            // prevent odd cases when we go to the wire.
+            if (0 != _asyncCommandCount)
+            {
+                DoomThisConnection();
+            }
+
+            // If we're deactivating with a delegated transaction, we 
+            // should not be cleaning up the parser just yet, that will
+            // cause our transaction to be rolled back and the connection
+            // to be reset.  We'll get called again once the delegated
+            // transaction is completed and we can do it all then.
+            Debug.Assert(null != _parser || IsConnectionDoomed, "Deactivating a disposed connection?");
+            if (_parser != null)
+            {
+                _parser.Deactivate(IsConnectionDoomed);
+
+                if (!IsConnectionDoomed)
+                {
+                    ResetConnection();
+                }
+            }
+        }
+
+        [SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters")] // copied from Triaged.cs
+        private void ResetConnection()
+        {
+            // For implicit pooled connections, if connection reset behavior is specified,
+            // reset the database and language properties back to default.  It is important
+            // to do this on activate so that the hashtable is correct before SqlConnection
+            // obtains a clone.
+
+            Debug.Assert(!HasLocalTransactionFromAPI, "Upon ResetConnection SqlInternalConnectionTds has a currently ongoing local transaction.");
+            Debug.Assert(!_parser._physicalStateObj._pendingData, "Upon ResetConnection SqlInternalConnectionTds has pending data.");
+
+            if (_fResetConnection)
+            {
+                // Ensure we are either going against shiloh, or we are not enlisted in a
+                // distributed transaction - otherwise don't reset!
+                // Prepare the parser for the connection reset - the next time a trip
+                // to the server is made.
+                _parser.PrepareResetConnection();
+
+                // Reset hashtable values, since calling reset will not send us env_changes.
+                CurrentDatabase = _originalDatabase;
+                _currentLanguage = _originalLanguage;
+            }
+        }
+
+        internal void DecrementAsyncCount()
+        {
+            Interlocked.Decrement(ref _asyncCommandCount);
+        }
+
+        internal void IncrementAsyncCount()
+        {
+            Interlocked.Increment(ref _asyncCommandCount);
+        }
+
+
+        ////////////////////////////////////////////////////////////////////////////////////////
+        // LOCAL TRANSACTION METHODS
+        ////////////////////////////////////////////////////////////////////////////////////////
+
+        override internal void DisconnectTransaction(SqlInternalTransaction internalTransaction)
+        {
+            TdsParser parser = Parser;
+
+            if (null != parser)
+            {
+                parser.DisconnectTransaction(internalTransaction);
+            }
+        }
+
+        override internal void ExecuteTransaction(TransactionRequest transactionRequest, string name, IsolationLevel iso, SqlInternalTransaction internalTransaction)
+        {
+            if (IsConnectionDoomed)
+            {  // doomed means we can't do anything else...
+                if (transactionRequest == TransactionRequest.Rollback
+                 || transactionRequest == TransactionRequest.IfRollback)
+                {
+                    return;
+                }
+                throw SQL.ConnectionDoomed();
+            }
+
+            if (transactionRequest == TransactionRequest.Commit
+             || transactionRequest == TransactionRequest.Rollback
+             || transactionRequest == TransactionRequest.IfRollback)
+            {
+                if (!Parser.MARSOn && Parser._physicalStateObj.BcpLock)
+                {
+                    throw SQL.ConnectionLockedForBcpEvent();
+                }
+            }
+
+            string transactionName = (null == name) ? String.Empty : name;
+
+            ExecuteTransactionYukon(transactionRequest, transactionName, iso, internalTransaction);
+        }
+
+
+        internal void ExecuteTransactionYukon(
+                    TransactionRequest transactionRequest,
+                    string transactionName,
+                    IsolationLevel iso,
+                    SqlInternalTransaction internalTransaction
+        )
+        {
+            TdsEnums.TransactionManagerRequestType requestType = TdsEnums.TransactionManagerRequestType.Begin;
+            TdsEnums.TransactionManagerIsolationLevel isoLevel = TdsEnums.TransactionManagerIsolationLevel.ReadCommitted;
+
+            switch (iso)
+            {
+                case IsolationLevel.Unspecified:
+                    isoLevel = TdsEnums.TransactionManagerIsolationLevel.Unspecified;
+                    break;
+                case IsolationLevel.ReadCommitted:
+                    isoLevel = TdsEnums.TransactionManagerIsolationLevel.ReadCommitted;
+                    break;
+                case IsolationLevel.ReadUncommitted:
+                    isoLevel = TdsEnums.TransactionManagerIsolationLevel.ReadUncommitted;
+                    break;
+                case IsolationLevel.RepeatableRead:
+                    isoLevel = TdsEnums.TransactionManagerIsolationLevel.RepeatableRead;
+                    break;
+                case IsolationLevel.Serializable:
+                    isoLevel = TdsEnums.TransactionManagerIsolationLevel.Serializable;
+                    break;
+                case IsolationLevel.Snapshot:
+                    isoLevel = TdsEnums.TransactionManagerIsolationLevel.Snapshot;
+                    break;
+                case IsolationLevel.Chaos:
+                    throw SQL.NotSupportedIsolationLevel(iso);
+                default:
+                    throw ADP.InvalidIsolationLevel(iso);
+            }
+
+            TdsParserStateObject stateObj = _parser._physicalStateObj;
+            TdsParser parser = _parser;
+            bool mustPutSession = false;
+            bool releaseConnectionLock = false;
+
+            Debug.Assert(!ThreadHasParserLockForClose || _parserLock.ThreadMayHaveLock(), "Thread claims to have parser lock, but lock is not taken");
+            if (!ThreadHasParserLockForClose)
+            {
+                _parserLock.Wait(canReleaseFromAnyThread: false);
+                ThreadHasParserLockForClose = true;   // In case of error, let the connection know that we already own the parser lock
+                releaseConnectionLock = true;
+            }
+            try
+            {
+                switch (transactionRequest)
+                {
+                    case TransactionRequest.Begin:
+                        requestType = TdsEnums.TransactionManagerRequestType.Begin;
+                        break;
+                    case TransactionRequest.Commit:
+                        requestType = TdsEnums.TransactionManagerRequestType.Commit;
+                        break;
+                    case TransactionRequest.IfRollback:
+                    // Map IfRollback to Rollback since with Yukon and beyond we should never need
+                    // the if since the server will inform us when transactions have completed
+                    // as a result of an error on the server.
+                    case TransactionRequest.Rollback:
+                        requestType = TdsEnums.TransactionManagerRequestType.Rollback;
+                        break;
+                    case TransactionRequest.Save:
+                        requestType = TdsEnums.TransactionManagerRequestType.Save;
+                        break;
+                    default:
+                        Debug.Assert(false, "Unknown transaction type");
+                        break;
+                }
+
+                // only restore if connection lock has been taken within the function
+                if (internalTransaction != null && internalTransaction.RestoreBrokenConnection && releaseConnectionLock)
+                {
+                    Task reconnectTask = internalTransaction.Parent.Connection.ValidateAndReconnect(() =>
+                    {
+                        ThreadHasParserLockForClose = false;
+                        _parserLock.Release();
+                        releaseConnectionLock = false;
+                    }, 0);
+                    if (reconnectTask != null)
+                    {
+                        AsyncHelper.WaitForCompletion(reconnectTask, 0); // there is no specific timeout for BeginTransaction, uses ConnectTimeout
+                        internalTransaction.ConnectionHasBeenRestored = true;
+                        return;
+                    }
+                }
+
+
+
+
+                //  _parser may be nulled out during TdsExecuteTrannsactionManagerRequest.
+                //  Only use local variable after this call.
+                _parser.TdsExecuteTransactionManagerRequest(null, requestType, transactionName, isoLevel,
+                    ConnectionOptions.ConnectTimeout, internalTransaction, stateObj
+                    );
+            }
+            finally
+            {
+                if (mustPutSession)
+                {
+                    parser.PutSession(stateObj);
+                }
+
+                if (releaseConnectionLock)
+                {
+                    ThreadHasParserLockForClose = false;
+                    _parserLock.Release();
+                }
+            }
+        }
+
+        ////////////////////////////////////////////////////////////////////////////////////////
+        // DISTRIBUTED TRANSACTION METHODS
+        ////////////////////////////////////////////////////////////////////////////////////////
+
+
+        ////////////////////////////////////////////////////////////////////////////////////////
+        // LOGIN-RELATED METHODS
+        ////////////////////////////////////////////////////////////////////////////////////////
+
+        private void CompleteLogin(bool enlistOK)
+        {
+            _parser.Run(RunBehavior.UntilDone, null, null, null, _parser._physicalStateObj);
+
+            if (_routingInfo == null)
+            { // ROR should not affect state of connection recovery
+                if (!_sessionRecoveryAcknowledged)
+                {
+                    _currentSessionData = null;
+                    if (_recoverySessionData != null)
+                    {
+                        throw SQL.CR_NoCRAckAtReconnection(this);
+                    }
+                }
+                if (_currentSessionData != null && _recoverySessionData == null)
+                {
+                    _currentSessionData._initialDatabase = CurrentDatabase;
+                    _currentSessionData._initialCollation = _currentSessionData._collation;
+                    _currentSessionData._initialLanguage = _currentLanguage;
+                }
+                bool isEncrypted = _parser.EncryptionOptions == EncryptionOptions.ON;
+                if (_recoverySessionData != null)
+                {
+                    if (_recoverySessionData._encrypted != isEncrypted)
+                    {
+                        throw SQL.CR_EncryptionChanged(this);
+                    }
+                }
+                if (_currentSessionData != null)
+                {
+                    _currentSessionData._encrypted = isEncrypted;
+                }
+                _recoverySessionData = null;
+            }
+
+            Debug.Assert(SniContext.Snix_Login == Parser._physicalStateObj.SniContext, String.Format((IFormatProvider)null, "SniContext should be Snix_Login; actual Value: {0}", Parser._physicalStateObj.SniContext));
+            _parser._physicalStateObj.SniContext = SniContext.Snix_EnableMars;
+            _parser.EnableMars();
+
+            _fConnectionOpen = true; // mark connection as open
+
+            _parser._physicalStateObj.SniContext = SniContext.Snix_Login;
+        }
+
+        private void Login(ServerInfo server, TimeoutTimer timeout)
+        {
+            // create a new login record
+            SqlLogin login = new SqlLogin();
+
+            // gather all the settings the user set in the connection string or
+            // properties and do the login
+            CurrentDatabase = server.ResolvedDatabaseName;
+            _currentPacketSize = ConnectionOptions.PacketSize;
+            _currentLanguage = ConnectionOptions.CurrentLanguage;
+
+            int timeoutInSeconds = 0;
+
+            // If a timeout tick value is specified, compute the timeout based
+            // upon the amount of time left in seconds.
+            if (!timeout.IsInfinite)
+            {
+                long t = timeout.MillisecondsRemaining / 1000;
+                if ((long)Int32.MaxValue > t)
+                {
+                    timeoutInSeconds = (int)t;
+                }
+            }
+
+            login.timeout = timeoutInSeconds;
+            login.userInstance = ConnectionOptions.UserInstance;
+            login.hostName = ConnectionOptions.ObtainWorkstationId();
+            login.userName = ConnectionOptions.UserID;
+            login.password = ConnectionOptions.Password;
+            login.applicationName = ConnectionOptions.ApplicationName;
+
+            login.language = _currentLanguage;
+            if (!login.userInstance)
+            { // Do not send attachdbfilename or database to SSE primary instance
+                login.database = CurrentDatabase; ;
+                login.attachDBFilename = ConnectionOptions.AttachDBFilename;
+            }
+
+            // VSTS#795621 - Ensure ServerName is Sent During TdsLogin To Enable Sql Azure Connectivity.
+            // Using server.UserServerName (versus ConnectionOptions.DataSource) since TdsLogin requires 
+            // serverName to always be non-null.
+            login.serverName = server.UserServerName;
+
+            login.useReplication = ConnectionOptions.Replication;
+            login.useSSPI = ConnectionOptions.IntegratedSecurity;
+            login.packetSize = _currentPacketSize;
+            login.readOnlyIntent = ConnectionOptions.ApplicationIntent == ApplicationIntent.ReadOnly;
+
+            TdsEnums.FeatureExtension requestedFeatures = TdsEnums.FeatureExtension.None;
+            if (ConnectionOptions.ConnectRetryCount > 0)
+            {
+                requestedFeatures |= TdsEnums.FeatureExtension.SessionRecovery;
+                _sessionRecoveryRequested = true;
+            }
+
+            _parser.TdsLogin(login, requestedFeatures, _recoverySessionData);
+        }
+
+        private void LoginFailure()
+        {
+            // If the parser was allocated and we failed, then we must have failed on
+            // either the Connect or Login, either way we should call Disconnect.
+            // Disconnect can be called if the connection is already closed - becomes
+            // no-op, so no issues there.
+            if (_parser != null)
+            {
+                _parser.Disconnect();
+            }
+        }
+
+        private void OpenLoginEnlist(TimeoutTimer timeout,
+                                    SqlConnectionString connectionOptions,
+                                    bool redirectedUserInstance)
+        {
+            bool useFailoverPartner; // should we use primary or secondary first
+            ServerInfo dataSource = new ServerInfo(connectionOptions);
+            string failoverPartner;
+
+            if (null != PoolGroupProviderInfo)
+            {
+                useFailoverPartner = PoolGroupProviderInfo.UseFailoverPartner;
+                failoverPartner = PoolGroupProviderInfo.FailoverPartner;
+            }
+            else
+            {
+                // Only ChangePassword or SSE User Instance comes through this code path.
+                useFailoverPartner = false;
+                failoverPartner = ConnectionOptions.FailoverPartner;
+            }
+
+            _timeoutErrorInternal.SetInternalSourceType(useFailoverPartner ? SqlConnectionInternalSourceType.Failover : SqlConnectionInternalSourceType.Principle);
+
+            bool hasFailoverPartner = !ADP.IsEmpty(failoverPartner);
+
+            // Open the connection and Login
+            try
+            {
+                _timeoutErrorInternal.SetAndBeginPhase(SqlConnectionTimeoutErrorPhase.PreLoginBegin);
+                if (hasFailoverPartner)
+                {
+                    _timeoutErrorInternal.SetFailoverScenario(true); // this is a failover scenario
+                    LoginWithFailover(
+                                useFailoverPartner,
+                                dataSource,
+                                failoverPartner,
+                                redirectedUserInstance,
+                                connectionOptions,
+                                timeout);
+                }
+                else
+                {
+                    _timeoutErrorInternal.SetFailoverScenario(false); // not a failover scenario
+                    LoginNoFailover(
+                            dataSource,
+                            redirectedUserInstance,
+                            connectionOptions,
+                            timeout);
+                }
+                _timeoutErrorInternal.EndPhase(SqlConnectionTimeoutErrorPhase.PostLogin);
+            }
+            catch (Exception e)
+            {
+                if (ADP.IsCatchableExceptionType(e))
+                {
+                    LoginFailure();
+                }
+                throw;
+            }
+            _timeoutErrorInternal.SetAllCompleteMarker();
+
+#if DEBUG
+            _parser._physicalStateObj.InvalidateDebugOnlyCopyOfSniContext();
+#endif
+        }
+
+        // Is the given Sql error one that should prevent retrying
+        //   to connect.
+        private bool IsDoNotRetryConnectError(SqlException exc)
+        {
+            return (TdsEnums.LOGON_FAILED == exc.Number) // actual logon failed, i.e. bad password
+                || (TdsEnums.PASSWORD_EXPIRED == exc.Number) // actual logon failed, i.e. password isExpired
+                || (TdsEnums.IMPERSONATION_FAILED == exc.Number)  // Insuficient privelege for named pipe, among others
+                || exc._doNotReconnect; // Exception explicitly supressed reconnection attempts
+        }
+
+        // Attempt to login to a host that does not have a failover partner
+        //
+        //  Will repeatedly attempt to connect, but back off between each attempt so as not to clog the network.
+        //  Back off period increases for first few failures: 100ms, 200ms, 400ms, 800ms, then 1000ms for subsequent attempts
+        //
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        //  DEVNOTE: The logic in this method is paralleled by the logic in LoginWithFailover.
+        //           Changes to either one should be examined to see if they need to be reflected in the other
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        private void LoginNoFailover(ServerInfo serverInfo,
+                                bool redirectedUserInstance,
+                                    SqlConnectionString connectionOptions,
+                                TimeoutTimer timeout)
+        {
+            Debug.Assert(object.ReferenceEquals(connectionOptions, this.ConnectionOptions), "ConnectionOptions argument and property must be the same"); // consider removing the argument
+            int routingAttempts = 0;
+            ServerInfo originalServerInfo = serverInfo; // serverInfo may end up pointing to new object due to routing, original object is used to set CurrentDatasource
+
+            int sleepInterval = 100;  //milliseconds to sleep (back off) between attempts.
+
+            ResolveExtendedServerName(serverInfo, !redirectedUserInstance, connectionOptions);
+
+            long timeoutUnitInterval = 0;
+
+            if (connectionOptions.MultiSubnetFailover)
+            {
+                // Determine unit interval
+                if (timeout.IsInfinite)
+                {
+                    timeoutUnitInterval = checked((long)(ADP.FailoverTimeoutStep * (1000L * ADP.DefaultConnectionTimeout)));
+                }
+                else
+                {
+                    timeoutUnitInterval = checked((long)(ADP.FailoverTimeoutStep * timeout.MillisecondsRemaining));
+                }
+            }
+            // Only three ways out of this loop:
+            //  1) Successfully connected
+            //  2) Parser threw exception while main timer was expired
+            //  3) Parser threw logon failure-related exception 
+            //  4) Parser threw exception in post-initial connect code,
+            //      such as pre-login handshake or during actual logon. (parser state != Closed)
+            //
+            //  Of these methods, only #1 exits normally. This preserves the call stack on the exception 
+            //  back into the parser for the error cases.
+            int attemptNumber = 0;
+            TimeoutTimer intervalTimer = null;
+            while (true)
+            {
+                if (connectionOptions.MultiSubnetFailover)
+                {
+                    attemptNumber++;
+                    // Set timeout for this attempt, but don't exceed original timer                
+                    long nextTimeoutInterval = checked(timeoutUnitInterval * attemptNumber);
+                    long milliseconds = timeout.MillisecondsRemaining;
+                    if (nextTimeoutInterval > milliseconds)
+                    {
+                        nextTimeoutInterval = milliseconds;
+                    }
+                    intervalTimer = TimeoutTimer.StartMillisecondsTimeout(nextTimeoutInterval);
+                }
+
+                // Re-allocate parser each time to make sure state is known
+                // RFC 50002652 - if parser was created by previous attempt, dispose it to properly close the socket, if created
+                if (_parser != null)
+                    _parser.Disconnect();
+
+                _parser = new TdsParser(ConnectionOptions.MARS, ConnectionOptions.Asynchronous);
+                Debug.Assert(SniContext.Undefined == Parser._physicalStateObj.SniContext, String.Format((IFormatProvider)null, "SniContext should be Undefined; actual Value: {0}", Parser._physicalStateObj.SniContext));
+
+                try
+                {
+                    AttemptOneLogin(serverInfo,
+                                    !connectionOptions.MultiSubnetFailover,    // ignore timeout for SniOpen call unless MSF 
+                                        connectionOptions.MultiSubnetFailover ? intervalTimer : timeout);
+
+                    if (connectionOptions.MultiSubnetFailover && null != ServerProvidedFailOverPartner)
+                    {
+                        // connection succeeded: trigger exception if server sends failover partner and MultiSubnetFailover is used
+                        throw SQL.MultiSubnetFailoverWithFailoverPartner(serverProvidedFailoverPartner: true, internalConnection: this);
+                    }
+
+                    if (_routingInfo != null)
+                    {
+                        if (routingAttempts > 0)
+                        {
+                            throw SQL.ROR_RecursiveRoutingNotSupported(this);
+                        }
+
+                        if (timeout.IsExpired)
+                        {
+                            throw SQL.ROR_TimeoutAfterRoutingInfo(this);
+                        }
+
+                        serverInfo = new ServerInfo(ConnectionOptions, _routingInfo, serverInfo.ResolvedServerName);
+                        _timeoutErrorInternal.SetInternalSourceType(SqlConnectionInternalSourceType.RoutingDestination);
+                        _originalClientConnectionId = _clientConnectionId;
+                        _routingDestination = serverInfo.UserServerName;
+
+                        // restore properties that could be changed by the environment tokens
+                        _currentPacketSize = ConnectionOptions.PacketSize;
+                        _currentLanguage = _originalLanguage = ConnectionOptions.CurrentLanguage;
+                        CurrentDatabase = _originalDatabase = ConnectionOptions.InitialCatalog;
+                        _currentFailoverPartner = null;
+                        _instanceName = String.Empty;
+
+                        routingAttempts++;
+
+                        continue; // repeat the loop, but skip code reserved for failed connections (after the catch)
+                    }
+                    else
+                    {
+                        break; // leave the while loop -- we've successfully connected
+                    }
+                }
+                catch (SqlException sqlex)
+                {
+                    if (null == _parser
+                            || TdsParserState.Closed != _parser.State
+                            || IsDoNotRetryConnectError(sqlex)
+                            || timeout.IsExpired)
+                    {       // no more time to try again
+                        throw;  // Caller will call LoginFailure()
+                    }
+
+                    // Check sleep interval to make sure we won't exceed the timeout
+                    //  Do this in the catch block so we can re-throw the current exception
+                    if (timeout.MillisecondsRemaining <= sleepInterval)
+                    {
+                        throw;
+                    }
+                }
+
+                // We only get here when we failed to connect, but are going to re-try
+
+                // Switch to failover logic if the server provided a partner
+                if (null != ServerProvidedFailOverPartner)
+                {
+                    if (connectionOptions.MultiSubnetFailover)
+                    {
+                        // connection failed: do not allow failover to server-provided failover partner if MultiSubnetFailover is set
+                        throw SQL.MultiSubnetFailoverWithFailoverPartner(serverProvidedFailoverPartner: true, internalConnection: this);
+                    }
+                    Debug.Assert(ConnectionOptions.ApplicationIntent != ApplicationIntent.ReadOnly, "FAILOVER+AppIntent=RO: Should already fail (at LOGSHIPNODE in OnEnvChange)");
+
+                    _timeoutErrorInternal.ResetAndRestartPhase();
+                    _timeoutErrorInternal.SetAndBeginPhase(SqlConnectionTimeoutErrorPhase.PreLoginBegin);
+                    _timeoutErrorInternal.SetInternalSourceType(SqlConnectionInternalSourceType.Failover);
+                    _timeoutErrorInternal.SetFailoverScenario(true); // this is a failover scenario
+                    LoginWithFailover(
+                                true,   // start by using failover partner, since we already failed to connect to the primary
+                                serverInfo,
+                                ServerProvidedFailOverPartner,
+                            redirectedUserInstance,
+                                connectionOptions,
+                            timeout);
+                    return; // LoginWithFailover successfully connected and handled entire connection setup
+                }
+
+                // Sleep for a bit to prevent clogging the network with requests, 
+                //  then update sleep interval for next iteration (max 1 second interval)
+                Thread.Sleep(sleepInterval);
+                sleepInterval = (sleepInterval < 500) ? sleepInterval * 2 : 1000;
+            }
+
+            if (null != PoolGroupProviderInfo)
+            {
+                // We must wait for CompleteLogin to finish for to have the
+                // env change from the server to know its designated failover 
+                // partner; save this information in _currentFailoverPartner.
+                PoolGroupProviderInfo.FailoverCheck(this, false, connectionOptions, ServerProvidedFailOverPartner);
+            }
+            CurrentDataSource = originalServerInfo.UserServerName;
+        }
+
+        // Attempt to login to a host that has a failover partner
+        //
+        // Connection & timeout sequence is
+        //      First target, timeout = interval * 1
+        //      second target, timeout = interval * 1
+        //      sleep for 100ms
+        //      First target, timeout = interval * 2
+        //      Second target, timeout = interval * 2
+        //      sleep for 200ms
+        //      First Target, timeout = interval * 3
+        //      etc.
+        //
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        //  DEVNOTE: The logic in this method is paralleled by the logic in LoginNoFailover.
+        //           Changes to either one should be examined to see if they need to be reflected in the other
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        private void LoginWithFailover(
+                bool useFailoverHost,
+                ServerInfo primaryServerInfo,
+                string failoverHost,
+            bool redirectedUserInstance,
+                SqlConnectionString connectionOptions,
+            TimeoutTimer timeout
+            )
+        {
+            Debug.Assert(!connectionOptions.MultiSubnetFailover, "MultiSubnetFailover should not be set if failover partner is used");
+
+            int sleepInterval = 100;  //milliseconds to sleep (back off) between attempts.
+            long timeoutUnitInterval;
+
+            ServerInfo failoverServerInfo = new ServerInfo(connectionOptions, failoverHost);
+
+            ResolveExtendedServerName(primaryServerInfo, !redirectedUserInstance, connectionOptions);
+            if (null == ServerProvidedFailOverPartner)
+            {
+                ResolveExtendedServerName(failoverServerInfo, !redirectedUserInstance && failoverHost != primaryServerInfo.UserServerName, connectionOptions);
+            }
+
+            // Determine unit interval
+            if (timeout.IsInfinite)
+            {
+                timeoutUnitInterval = checked((long)ADP.FailoverTimeoutStep * ADP.TimerFromSeconds(ADP.DefaultConnectionTimeout));
+            }
+            else
+            {
+                timeoutUnitInterval = checked((long)(ADP.FailoverTimeoutStep * timeout.MillisecondsRemaining));
+            }
+
+            // Initialize loop variables
+            int attemptNumber = 0;
+
+            // Only three ways out of this loop:
+            //  1) Successfully connected
+            //  2) Parser threw exception while main timer was expired
+            //  3) Parser threw logon failure-related exception (LOGON_FAILED, PASSWORD_EXPIRED, etc)
+            //
+            //  Of these methods, only #1 exits normally. This preserves the call stack on the exception 
+            //  back into the parser for the error cases.
+            while (true)
+            {
+                // Set timeout for this attempt, but don't exceed original timer
+                long nextTimeoutInterval = checked(timeoutUnitInterval * ((attemptNumber / 2) + 1));
+                long milliseconds = timeout.MillisecondsRemaining;
+                if (nextTimeoutInterval > milliseconds)
+                {
+                    nextTimeoutInterval = milliseconds;
+                }
+
+                TimeoutTimer intervalTimer = TimeoutTimer.StartMillisecondsTimeout(nextTimeoutInterval);
+
+                // Re-allocate parser each time to make sure state is known
+                // RFC 50002652 - if parser was created by previous attempt, dispose it to properly close the socket, if created
+                if (_parser != null)
+                    _parser.Disconnect();
+
+                _parser = new TdsParser(ConnectionOptions.MARS, ConnectionOptions.Asynchronous);
+                Debug.Assert(SniContext.Undefined == Parser._physicalStateObj.SniContext, String.Format((IFormatProvider)null, "SniContext should be Undefined; actual Value: {0}", Parser._physicalStateObj.SniContext));
+
+                ServerInfo currentServerInfo;
+                if (useFailoverHost)
+                {
+                    // Primary server may give us a different failover partner than the connection string indicates.  Update it
+                    if (null != ServerProvidedFailOverPartner && failoverServerInfo.ResolvedServerName != ServerProvidedFailOverPartner)
+                    {
+                        failoverServerInfo.SetDerivedNames(string.Empty, ServerProvidedFailOverPartner);
+                    }
+                    currentServerInfo = failoverServerInfo;
+                    _timeoutErrorInternal.SetInternalSourceType(SqlConnectionInternalSourceType.Failover);
+                }
+                else
+                {
+                    currentServerInfo = primaryServerInfo;
+                    _timeoutErrorInternal.SetInternalSourceType(SqlConnectionInternalSourceType.Principle);
+                }
+
+                try
+                {
+                    // Attempt login.  Use timerInterval for attempt timeout unless infinite timeout was requested.
+                    AttemptOneLogin(
+                            currentServerInfo,
+                        false,          // Use timeout in SniOpen
+                            intervalTimer,
+                            withFailover: true
+                            );
+
+                    if (_routingInfo != null)
+                    {
+                        // We are in login with failover scenation and server sent routing information
+                        // If it is read-only routing - we did not supply AppIntent=RO (it should be checked before)
+                        // If it is something else, not known yet (future server) - this client is not designed to support this.                    
+                        // In any case, server should not have sent the routing info.
+                        throw SQL.ROR_UnexpectedRoutingInfo(this);
+                    }
+
+                    break; // leave the while loop -- we've successfully connected
+                }
+                catch (SqlException sqlex)
+                {
+                    if (IsDoNotRetryConnectError(sqlex)
+                            || timeout.IsExpired)
+                    {       // no more time to try again
+                        throw;  // Caller will call LoginFailure()
+                    }
+
+                    if (IsConnectionDoomed)
+                    {
+                        throw;
+                    }
+
+                    if (1 == attemptNumber % 2)
+                    {
+                        // Check sleep interval to make sure we won't exceed the original timeout
+                        //  Do this in the catch block so we can re-throw the current exception
+                        if (timeout.MillisecondsRemaining <= sleepInterval)
+                        {
+                            throw;
+                        }
+                    }
+                }
+
+                // We only get here when we failed to connect, but are going to re-try
+
+                // After trying to connect to both servers fails, sleep for a bit to prevent clogging 
+                //  the network with requests, then update sleep interval for next iteration (max 1 second interval)
+                if (1 == attemptNumber % 2)
+                {
+                    Thread.Sleep(sleepInterval);
+                    sleepInterval = (sleepInterval < 500) ? sleepInterval * 2 : 1000;
+                }
+
+                // Update attempt number and target host
+                attemptNumber++;
+                useFailoverHost = !useFailoverHost;
+            }
+
+            // If we get here, connection/login succeeded!  Just a few more checks & record-keeping
+
+            // if connected to failover host, but said host doesn't have DbMirroring set up, throw an error
+            if (useFailoverHost && null == ServerProvidedFailOverPartner)
+            {
+                throw SQL.InvalidPartnerConfiguration(failoverHost, CurrentDatabase);
+            }
+
+            if (null != PoolGroupProviderInfo)
+            {
+                // We must wait for CompleteLogin to finish for to have the
+                // env change from the server to know its designated failover 
+                // partner; save this information in _currentFailoverPartner.
+                PoolGroupProviderInfo.FailoverCheck(this, useFailoverHost, connectionOptions, ServerProvidedFailOverPartner);
+            }
+            CurrentDataSource = (useFailoverHost ? failoverHost : primaryServerInfo.UserServerName);
+        }
+
+        private void ResolveExtendedServerName(ServerInfo serverInfo, bool aliasLookup, SqlConnectionString options)
+        {
+            if (serverInfo.ExtendedServerName == null)
+            {
+                string host = serverInfo.UserServerName;
+                string protocol = serverInfo.UserProtocol;
+
+
+                serverInfo.SetDerivedNames(protocol, host);
+            }
+        }
+
+        // Common code path for making one attempt to establish a connection and log in to server.
+        private void AttemptOneLogin(ServerInfo serverInfo,
+                                bool ignoreSniOpenTimeout,
+                                    TimeoutTimer timeout,
+                                    bool withFailover = false)
+        {
+            _routingInfo = null; // forget routing information 
+
+            _parser._physicalStateObj.SniContext = SniContext.Snix_Connect;
+
+            _parser.Connect(serverInfo,
+                            this,
+                            ignoreSniOpenTimeout,
+                            timeout.LegacyTimerExpire,
+                            ConnectionOptions.Encrypt,
+                            ConnectionOptions.TrustServerCertificate,
+                            ConnectionOptions.IntegratedSecurity,
+                            withFailover);
+
+            _timeoutErrorInternal.EndPhase(SqlConnectionTimeoutErrorPhase.ConsumePreLoginHandshake);
+            _timeoutErrorInternal.SetAndBeginPhase(SqlConnectionTimeoutErrorPhase.LoginBegin);
+
+            _parser._physicalStateObj.SniContext = SniContext.Snix_Login;
+            this.Login(serverInfo, timeout);
+
+            _timeoutErrorInternal.EndPhase(SqlConnectionTimeoutErrorPhase.ProcessConnectionAuth);
+            _timeoutErrorInternal.SetAndBeginPhase(SqlConnectionTimeoutErrorPhase.PostLogin);
+
+            CompleteLogin(!ConnectionOptions.Pooling);
+
+            _timeoutErrorInternal.EndPhase(SqlConnectionTimeoutErrorPhase.PostLogin);
+        }
+
+
+
+        ////////////////////////////////////////////////////////////////////////////////////////
+        // PREPARED COMMAND METHODS
+        ////////////////////////////////////////////////////////////////////////////////////////
+
+        protected override object ObtainAdditionalLocksForClose()
+        {
+            bool obtainParserLock = !ThreadHasParserLockForClose;
+            Debug.Assert(obtainParserLock || _parserLock.ThreadMayHaveLock(), "Thread claims to have lock, but lock is not taken");
+            if (obtainParserLock)
+            {
+                _parserLock.Wait(canReleaseFromAnyThread: false);
+                ThreadHasParserLockForClose = true;
+            }
+            return obtainParserLock;
+        }
+
+        protected override void ReleaseAdditionalLocksForClose(object lockToken)
+        {
+            Debug.Assert(lockToken is bool, "Lock token should be boolean");
+            if ((bool)lockToken)
+            {
+                ThreadHasParserLockForClose = false;
+                _parserLock.Release();
+            }
+        }
+
+        // called by SqlConnection.RepairConnection which is a relatevly expensive way of repair inner connection
+        // prior to execution of request, used from EnlistTransaction, EnlistDistributedTransaction and ChangeDatabase
+        internal bool GetSessionAndReconnectIfNeeded(SqlConnection parent, int timeout = 0)
+        {
+            Debug.Assert(!ThreadHasParserLockForClose, "Cannot call this method if caller has parser lock");
+            if (ThreadHasParserLockForClose)
+            {
+                return false; // we cannot restore if we cannot release lock
+            }
+
+            _parserLock.Wait(canReleaseFromAnyThread: false);
+            ThreadHasParserLockForClose = true;   // In case of error, let the connection know that we already own the parser lock
+            bool releaseConnectionLock = true;
+
+            try
+            {
+                Task reconnectTask = parent.ValidateAndReconnect(() =>
+                {
+                    ThreadHasParserLockForClose = false;
+                    _parserLock.Release();
+                    releaseConnectionLock = false;
+                }, timeout);
+                if (reconnectTask != null)
+                {
+                    AsyncHelper.WaitForCompletion(reconnectTask, timeout);
+                    return true;
+                }
+                return false;
+            }
+            finally
+            {
+                if (releaseConnectionLock)
+                {
+                    ThreadHasParserLockForClose = false;
+                    _parserLock.Release();
+                }
+            }
+        }
+
+        ////////////////////////////////////////////////////////////////////////////////////////
+        // PARSER CALLBACKS
+        ////////////////////////////////////////////////////////////////////////////////////////
+
+        internal void BreakConnection()
+        {
+            var connection = Connection;
+            DoomThisConnection();   // Mark connection as unusable, so it will be destroyed
+            if (null != connection)
+            {
+                connection.Close();
+            }
+        }
+
+        internal bool IgnoreEnvChange
+        { // true if we are only draining environment change tokens, used by TdsParser
+            get
+            {
+                return _routingInfo != null; // connection was routed, ignore rest of env change
+            }
+        }
+
+        internal void OnEnvChange(SqlEnvChange rec)
+        {
+            Debug.Assert(!IgnoreEnvChange, "This function should not be called if IgnoreEnvChange is set!");
+            switch (rec.type)
+            {
+                case TdsEnums.ENV_DATABASE:
+                    // If connection is not open and recovery is not in progresss, store the server value as the original.
+                    if (!_fConnectionOpen && _recoverySessionData == null)
+                    {
+                        _originalDatabase = rec.newValue;
+                    }
+
+                    CurrentDatabase = rec.newValue;
+                    break;
+
+                case TdsEnums.ENV_LANG:
+                    // If connection is not open and recovery is not in progresss, store the server value as the original.
+                    if (!_fConnectionOpen && _recoverySessionData == null)
+                    {
+                        _originalLanguage = rec.newValue;
+                    }
+
+                    _currentLanguage = rec.newValue;
+                    break;
+
+                case TdsEnums.ENV_PACKETSIZE:
+                    _currentPacketSize = Int32.Parse(rec.newValue, CultureInfo.InvariantCulture);
+                    break;
+
+                case TdsEnums.ENV_COLLATION:
+                    if (_currentSessionData != null)
+                    {
+                        _currentSessionData._collation = rec.newCollation;
+                    }
+                    break;
+
+                case TdsEnums.ENV_CHARSET:
+                case TdsEnums.ENV_LOCALEID:
+                case TdsEnums.ENV_COMPFLAGS:
+                case TdsEnums.ENV_BEGINTRAN:
+                case TdsEnums.ENV_COMMITTRAN:
+                case TdsEnums.ENV_ROLLBACKTRAN:
+                    // only used on parser
+                    break;
+
+                case TdsEnums.ENV_LOGSHIPNODE:
+                    if (ConnectionOptions.ApplicationIntent == ApplicationIntent.ReadOnly)
+                    {
+                        throw SQL.ROR_FailoverNotSupportedServer(this);
+                    }
+                    _currentFailoverPartner = rec.newValue;
+                    break;
+
+
+                case TdsEnums.ENV_SPRESETCONNECTIONACK:
+                    // connection is being reset 
+                    if (_currentSessionData != null)
+                    {
+                        _currentSessionData.Reset();
+                    }
+                    break;
+
+                case TdsEnums.ENV_USERINSTANCE:
+                    _instanceName = rec.newValue;
+                    break;
+
+                case TdsEnums.ENV_ROUTING:
+                    if (string.IsNullOrEmpty(rec.newRoutingInfo.ServerName) || rec.newRoutingInfo.Protocol != 0 || rec.newRoutingInfo.Port == 0)
+                    {
+                        throw SQL.ROR_InvalidRoutingInfo(this);
+                    }
+                    _routingInfo = rec.newRoutingInfo;
+                    break;
+
+                // ENVCHANGE tokens not supported by Project K\CoreCLR
+                case TdsEnums.ENV_ENLISTDTC:
+                case TdsEnums.ENV_DEFECTDTC:
+                case TdsEnums.ENV_TRANSACTIONENDED:
+                case TdsEnums.ENV_PROMOTETRANSACTION:
+                case TdsEnums.ENV_TRANSACTIONMANAGERADDRESS:
+                    Debug.Assert(false, "Unsupported tokens were passed to OnEnvChange - TdsParser should have failed these");
+                    break;
+
+                default:
+                    Debug.Assert(false, "Missed token in EnvChange!");
+                    break;
+            }
+        }
+
+        internal void OnLoginAck(SqlLoginAck rec)
+        {
+            _loginAck = rec;
+            if (_recoverySessionData != null)
+            {
+                if (_recoverySessionData._tdsVersion != rec.tdsVersion)
+                {
+                    throw SQL.CR_TDSVersionNotPreserved(this);
+                }
+            }
+            if (_currentSessionData != null)
+            {
+                _currentSessionData._tdsVersion = rec.tdsVersion;
+            }
+        }
+
+        internal void OnFeatureExtAck(int featureId, byte[] data)
+        {
+            if (_routingInfo != null)
+            {
+                return;
+            }
+            switch (featureId)
+            {
+                case TdsEnums.FEATUREEXT_SRECOVERY:
+                    {
+                        // Session recovery not requested
+                        if (!_sessionRecoveryRequested)
+                        {
+                            throw SQL.ParsingError();
+                        }
+                        _sessionRecoveryAcknowledged = true;
+
+#if DEBUG
+                        foreach (var s in _currentSessionData._delta)
+                        {
+                            Debug.Assert(s == null, "Delta should be null at this point");
+                        }
+#endif
+                        Debug.Assert(_currentSessionData._unrecoverableStatesCount == 0, "Unrecoverable states count should be 0");
+
+                        int i = 0;
+                        while (i < data.Length)
+                        {
+                            byte stateId = data[i]; i++;
+                            int len;
+                            byte bLen = data[i]; i++;
+                            if (bLen == 0xFF)
+                            {
+                                len = BitConverter.ToInt32(data, i); i += 4;
+                            }
+                            else
+                            {
+                                len = bLen;
+                            }
+                            byte[] stateData = new byte[len];
+                            Buffer.BlockCopy(data, i, stateData, 0, len); i += len;
+                            if (_recoverySessionData == null)
+                            {
+                                _currentSessionData._initialState[stateId] = stateData;
+                            }
+                            else
+                            {
+                                _currentSessionData._delta[stateId] = new SessionStateRecord { _data = stateData, _dataLength = len, _recoverable = true, _version = 0 };
+                                _currentSessionData._deltaDirty = true;
+                            }
+                        }
+                        break;
+                    }
+                default:
+                    {
+                        // Unknown feature ack 
+                        throw SQL.ParsingError();
+                    }
+            }
+        }
+
+        ////////////////////////////////////////////////////////////////////////////////////////
+        // Helper methods for Locks
+        ////////////////////////////////////////////////////////////////////////////////////////
+
+        // Indicates if the current thread claims to hold the parser lock
+        internal bool ThreadHasParserLockForClose
+        {
+            get
+            {
+                return _threadIdOwningParserLock == Thread.CurrentThread.ManagedThreadId;
+            }
+            set
+            {
+                Debug.Assert(_parserLock.ThreadMayHaveLock(), "Should not modify ThreadHasParserLockForClose without taking the lock first");
+                Debug.Assert(_threadIdOwningParserLock == -1 || _threadIdOwningParserLock == Thread.CurrentThread.ManagedThreadId, "Another thread already claims to own the parser lock");
+
+                if (value)
+                {
+                    // If setting to true, then the thread owning the lock is the current thread
+                    _threadIdOwningParserLock = Thread.CurrentThread.ManagedThreadId;
+                }
+                else if (_threadIdOwningParserLock == Thread.CurrentThread.ManagedThreadId)
+                {
+                    // If setting to false and currently owns the lock, then no-one owns the lock
+                    _threadIdOwningParserLock = -1;
+                }
+                // else This thread didn't own the parser lock and doesn't claim to own it, so do nothing
+            }
+        }
+
+        internal override bool TryReplaceConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource<DbConnectionInternal> retry, DbConnectionOptions userOptions)
+        {
+            return base.TryOpenConnectionInternal(outerConnection, connectionFactory, retry, userOptions);
+        }
+    }
+
+    internal sealed class ServerInfo
+    {
+        internal string ExtendedServerName { get; private set; } // the resolved servername with protocol
+        internal string ResolvedServerName { get; private set; } // the resolved servername only
+        internal string ResolvedDatabaseName { get; private set; } // name of target database after resolution
+        internal string UserProtocol { get; private set; } // the user specified protocol        
+
+        // The original user-supplied server name from the connection string.
+        // If connection string has no Data Source, the value is set to string.Empty.
+        // In case of routing, will be changed to routing destination
+        internal string UserServerName
+        {
+            get
+            {
+                return _userServerName;
+            }
+            private set
+            {
+                _userServerName = value;
+            }
+        }
+        private string _userServerName;
+
+        internal readonly string PreRoutingServerName;
+
+        // Initialize server info from connection options, 
+        internal ServerInfo(SqlConnectionString userOptions) : this(userOptions, userOptions.DataSource) { }
+
+        // Initialize server info from connection options, but override DataSource with given server name
+        internal ServerInfo(SqlConnectionString userOptions, string serverName)
+        {
+            //-----------------
+            // Preconditions
+            Debug.Assert(null != userOptions);
+
+            //-----------------
+            //Method body
+
+            Debug.Assert(serverName != null, "server name should never be null");
+            UserServerName = (serverName ?? string.Empty); // ensure user server name is not null
+
+            UserProtocol = string.Empty;
+            ResolvedDatabaseName = userOptions.InitialCatalog;
+            PreRoutingServerName = null;
+        }
+
+
+        // Initialize server info from connection options, but override DataSource with given server name
+        internal ServerInfo(SqlConnectionString userOptions, RoutingInfo routing, string preRoutingServerName)
+        {
+            //-----------------
+            // Preconditions
+            Debug.Assert(null != userOptions && null != routing);
+
+            //-----------------
+            //Method body
+            Debug.Assert(routing.ServerName != null, "server name should never be null");
+            if (routing == null || routing.ServerName == null)
+            {
+                UserServerName = string.Empty; // ensure user server name is not null
+            }
+            else
+            {
+                UserServerName = string.Format(CultureInfo.InvariantCulture, "{0},{1}", routing.ServerName, routing.Port);
+            }
+            PreRoutingServerName = preRoutingServerName;
+            UserProtocol = TdsEnums.TCP;
+            SetDerivedNames(UserProtocol, UserServerName);
+            ResolvedDatabaseName = userOptions.InitialCatalog;
+        }
+
+        internal void SetDerivedNames(string protocol, string serverName)
+        {
+            // The following concatenates the specified netlib network protocol to the host string, if netlib is not null
+            // and the flag is on.  This allows the user to specify the network protocol for the connection - but only
+            // when using the Dbnetlib dll.  If the protocol is not specified, the netlib will
+            // try all protocols in the order listed in the Client Network Utility.  Connect will
+            // then fail if all protocols fail.
+            if (!ADP.IsEmpty(protocol))
+            {
+                ExtendedServerName = protocol + ":" + serverName;
+            }
+            else
+            {
+                ExtendedServerName = serverName;
+            }
+            ResolvedServerName = serverName;
+        }
+    }
+}
+
