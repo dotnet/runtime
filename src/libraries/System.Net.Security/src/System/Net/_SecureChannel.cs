@@ -976,7 +976,7 @@ namespace System.Net.Security
 
             SecurityStatus secStatus = SSPIWrapper.EncryptMessage(GlobalSSPI.SSPISecureChannel, _securityContext, writeBuffer, size, _headerSize, _trailerSize, out resultSize);
 
-            if (secStatus != 0)
+            if (secStatus != SecurityStatus.OK)
             {
                 GlobalLog.Leave("SecureChannel#" + Logging.HashString(this) + "::Encrypt ERROR", secStatus.ToString("x"));
             }
