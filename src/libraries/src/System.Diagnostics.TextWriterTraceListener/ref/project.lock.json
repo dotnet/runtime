@@ -3,7 +3,7 @@
   "version": 1,
   "targets": {
     ".NETPlatform,Version=v5.0": {
-      "System.Diagnostics.TraceSource/4.0.0-beta-23311": {
+      "System.Diagnostics.TraceSource/4.0.0-beta-23328": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0"
@@ -50,18 +50,11 @@
     }
   },
   "libraries": {
-    "System.Diagnostics.TraceSource/4.0.0-beta-23311": {
+    "System.Diagnostics.TraceSource/4.0.0-beta-23328": {
       "type": "package",
       "serviceable": true,
-      "sha512": "DImRs9P3eJD21ZZtty5bWo4htuT+jA7e+v7tf1DM4vkhB0zOtIFFWWw+nnQeQ9x6vFo7xxKBWeC7m6sBQEBt1g==",
+      "sha512": "u2YIvNdRFgFW94skYsyR+vOzJ6f7jpmQHG7vRFv7Br3gigUl3UUiqFotInyCTgfme/U25EizmcN5+pOHPUs/wg==",
       "files": [
-        "de/System.Diagnostics.TraceSource.xml",
-        "es/System.Diagnostics.TraceSource.xml",
-        "fr/System.Diagnostics.TraceSource.xml",
-        "it/System.Diagnostics.TraceSource.xml",
-        "ja/System.Diagnostics.TraceSource.xml",
-        "ko/System.Diagnostics.TraceSource.xml",
-        "lib/DNXCore50/System.Diagnostics.TraceSource.dll",
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
         "lib/net46/System.Diagnostics.TraceSource.dll",
@@ -73,13 +66,10 @@
         "ref/net46/System.Diagnostics.TraceSource.dll",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "ru/System.Diagnostics.TraceSource.xml",
-        "System.Diagnostics.TraceSource.4.0.0-beta-23311.nupkg",
-        "System.Diagnostics.TraceSource.4.0.0-beta-23311.nupkg.sha512",
-        "System.Diagnostics.TraceSource.nuspec",
-        "System.Diagnostics.TraceSource.xml",
-        "zh-hans/System.Diagnostics.TraceSource.xml",
-        "zh-hant/System.Diagnostics.TraceSource.xml"
+        "runtime.json",
+        "System.Diagnostics.TraceSource.4.0.0-beta-23328.nupkg",
+        "System.Diagnostics.TraceSource.4.0.0-beta-23328.nupkg.sha512",
+        "System.Diagnostics.TraceSource.nuspec"
       ]
     },
     "System.IO/4.0.0": {

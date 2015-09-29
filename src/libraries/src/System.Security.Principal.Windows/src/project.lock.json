@@ -33,7 +33,7 @@
           "ref/dotnet/System.Diagnostics.Debug.dll": {}
         }
       },
-      "System.Diagnostics.Process/4.0.0-beta-23321": {
+      "System.Diagnostics.Process/4.0.0-beta-23328": {
         "type": "package",
         "dependencies": {
           "System.IO": "4.0.0",
@@ -362,10 +362,10 @@
         "System.Diagnostics.Debug.nuspec"
       ]
     },
-    "System.Diagnostics.Process/4.0.0-beta-23321": {
+    "System.Diagnostics.Process/4.0.0-beta-23328": {
       "type": "package",
       "serviceable": true,
-      "sha512": "9BlHIfc+G2RmGaPCGmkZoczoxcB3thbuSujBAxI/jW7aLabeikfgsSMETPtfU53rK+wpNnPPuCFRimVjsnpfgQ==",
+      "sha512": "Y7gUuCDkoGRNKijIz/enWZLFqPJPrLA5uJa5Y+69ABnHPGYxsrszRTH6OpZDWaI2gd0jlMifm6dLOlTtNPnEWA==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -399,8 +399,8 @@
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtime.json",
-        "System.Diagnostics.Process.4.0.0-beta-23321.nupkg",
-        "System.Diagnostics.Process.4.0.0-beta-23321.nupkg.sha512",
+        "System.Diagnostics.Process.4.0.0-beta-23328.nupkg",
+        "System.Diagnostics.Process.4.0.0-beta-23328.nupkg.sha512",
         "System.Diagnostics.Process.nuspec"
       ]
     },

@@ -82,7 +82,7 @@
           "lib/dotnet/System.Linq.dll": {}
         }
       },
-      "System.Net.WebSockets/4.0.0-beta-23311": {
+      "System.Net.WebSockets/4.0.0-beta-23328": {
         "type": "package",
         "dependencies": {
           "Microsoft.Win32.Primitives": "4.0.0",
@@ -94,7 +94,7 @@
           "ref/dotnet/System.Net.WebSockets.dll": {}
         },
         "runtime": {
-          "lib/DNXCore50/System.Net.WebSockets.dll": {}
+          "lib/dotnet/System.Net.WebSockets.dll": {}
         }
       },
       "System.Private.Uri/4.0.0": {
@@ -533,18 +533,22 @@
         "System.Linq.nuspec"
       ]
     },
-    "System.Net.WebSockets/4.0.0-beta-23311": {
+    "System.Net.WebSockets/4.0.0-beta-23328": {
       "type": "package",
       "serviceable": true,
-      "sha512": "gt7nwSj87Xnx4kKAFXV1h0XzeP2VUXOTldob7lOXP0h4bEamxVGXxjv4f0DCaDUp1yZm0/qiWp963upMj0dSvA==",
+      "sha512": "7fcSKZwQFx3Ux2J2lSLeQJhMvWh+BDKMHykeQ9hp1bGOKFf1g17v8zZZwaHRH4tqOrL6lazGNGoA5werc7mEVw==",
       "files": [
-        "de/System.Net.WebSockets.xml",
-        "es/System.Net.WebSockets.xml",
-        "fr/System.Net.WebSockets.xml",
-        "it/System.Net.WebSockets.xml",
-        "ja/System.Net.WebSockets.xml",
-        "ko/System.Net.WebSockets.xml",
-        "lib/DNXCore50/System.Net.WebSockets.dll",
+        "lib/dotnet/de/System.Net.WebSockets.xml",
+        "lib/dotnet/es/System.Net.WebSockets.xml",
+        "lib/dotnet/fr/System.Net.WebSockets.xml",
+        "lib/dotnet/it/System.Net.WebSockets.xml",
+        "lib/dotnet/ja/System.Net.WebSockets.xml",
+        "lib/dotnet/ko/System.Net.WebSockets.xml",
+        "lib/dotnet/ru/System.Net.WebSockets.xml",
+        "lib/dotnet/System.Net.WebSockets.dll",
+        "lib/dotnet/System.Net.WebSockets.xml",
+        "lib/dotnet/zh-hans/System.Net.WebSockets.xml",
+        "lib/dotnet/zh-hant/System.Net.WebSockets.xml",
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
         "lib/net46/System.Net.WebSockets.dll",
@@ -556,13 +560,9 @@
         "ref/net46/System.Net.WebSockets.dll",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "ru/System.Net.WebSockets.xml",
-        "System.Net.WebSockets.4.0.0-beta-23311.nupkg",
-        "System.Net.WebSockets.4.0.0-beta-23311.nupkg.sha512",
-        "System.Net.WebSockets.nuspec",
-        "System.Net.WebSockets.xml",
-        "zh-hans/System.Net.WebSockets.xml",
-        "zh-hant/System.Net.WebSockets.xml"
+        "System.Net.WebSockets.4.0.0-beta-23328.nupkg",
+        "System.Net.WebSockets.4.0.0-beta-23328.nupkg.sha512",
+        "System.Net.WebSockets.nuspec"
       ]
     },
     "System.Private.Uri/4.0.0": {

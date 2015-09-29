@@ -3,37 +3,6 @@
   "version": 1,
   "targets": {
     "DNXCore,Version=v5.0": {
-      "Microsoft.Win32.Primitives/4.0.0": {
-        "type": "package",
-        "dependencies": {
-          "System.Runtime": "4.0.20",
-          "System.Runtime.InteropServices": "4.0.20"
-        },
-        "compile": {
-          "ref/dotnet/Microsoft.Win32.Primitives.dll": {}
-        },
-        "runtime": {
-          "lib/dotnet/Microsoft.Win32.Primitives.dll": {}
-        }
-      },
-      "Microsoft.Win32.Registry/4.0.0-beta-23311": {
-        "type": "package",
-        "dependencies": {
-          "System.Collections": "4.0.10",
-          "System.Globalization": "4.0.10",
-          "System.Resources.ResourceManager": "4.0.0",
-          "System.Runtime": "4.0.20",
-          "System.Runtime.Extensions": "4.0.10",
-          "System.Runtime.Handles": "4.0.0",
-          "System.Runtime.InteropServices": "4.0.20"
-        },
-        "compile": {
-          "ref/dotnet/Microsoft.Win32.Registry.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/Microsoft.Win32.Registry.dll": {}
-        }
-      },
       "System.Collections/4.0.10": {
         "type": "package",
         "dependencies": {
@@ -58,40 +27,22 @@
           "lib/DNXCore50/System.Diagnostics.Debug.dll": {}
         }
       },
-      "System.Diagnostics.Process/4.0.0-beta-23311": {
+      "System.Diagnostics.Process/4.0.0-beta-23328": {
         "type": "package",
         "dependencies": {
-          "Microsoft.Win32.Primitives": "4.0.0",
-          "Microsoft.Win32.Registry": "4.0.0-beta-23311",
-          "System.Collections": "4.0.10",
-          "System.Diagnostics.Debug": "4.0.10",
-          "System.Globalization": "4.0.10",
-          "System.IO": "4.0.10",
-          "System.IO.FileSystem": "4.0.0",
-          "System.IO.FileSystem.Primitives": "4.0.0",
-          "System.Resources.ResourceManager": "4.0.0",
-          "System.Runtime": "4.0.20",
-          "System.Runtime.Extensions": "4.0.10",
+          "System.IO": "4.0.0",
+          "System.Runtime": "4.0.0",
           "System.Runtime.Handles": "4.0.0",
-          "System.Runtime.InteropServices": "4.0.20",
-          "System.Text.Encoding": "4.0.10",
-          "System.Text.Encoding.Extensions": "4.0.10",
-          "System.Threading": "4.0.10",
-          "System.Threading.Tasks": "4.0.10",
-          "System.Threading.Thread": "4.0.0-beta-23311",
-          "System.Threading.ThreadPool": "4.0.10-beta-23311"
+          "System.Text.Encoding": "4.0.0"
         },
         "compile": {
           "ref/dotnet/System.Diagnostics.Process.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Diagnostics.Process.dll": {}
         }
       },
-      "System.Diagnostics.TextWriterTraceListener/4.0.0-beta-23311": {
+      "System.Diagnostics.TextWriterTraceListener/4.0.0-beta-23328": {
         "type": "package",
         "dependencies": {
-          "System.Diagnostics.TraceSource": "4.0.0-beta-23311",
+          "System.Diagnostics.TraceSource": "4.0.0-beta-23328",
           "System.Globalization": "4.0.10",
           "System.IO": "4.0.10",
           "System.Resources.ResourceManager": "4.0.0",
@@ -105,22 +56,13 @@
           "lib/DNXCore50/System.Diagnostics.TextWriterTraceListener.dll": {}
         }
       },
-      "System.Diagnostics.TraceSource/4.0.0-beta-23311": {
+      "System.Diagnostics.TraceSource/4.0.0-beta-23328": {
         "type": "package",
         "dependencies": {
-          "System.Collections": "4.0.10",
-          "System.Diagnostics.Debug": "4.0.10",
-          "System.Globalization": "4.0.10",
-          "System.Resources.ResourceManager": "4.0.0",
-          "System.Runtime": "4.0.20",
-          "System.Runtime.Extensions": "4.0.10",
-          "System.Threading": "4.0.10"
+          "System.Runtime": "4.0.0"
         },
         "compile": {
           "ref/dotnet/System.Diagnostics.TraceSource.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Diagnostics.TraceSource.dll": {}
         }
       },
       "System.Globalization/4.0.10": {
@@ -377,31 +319,6 @@
           "lib/DNXCore50/System.Threading.Tasks.dll": {}
         }
       },
-      "System.Threading.Thread/4.0.0-beta-23311": {
-        "type": "package",
-        "dependencies": {
-          "System.Runtime": "4.0.0"
-        },
-        "compile": {
-          "ref/dotnet/System.Threading.Thread.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Threading.Thread.dll": {}
-        }
-      },
-      "System.Threading.ThreadPool/4.0.10-beta-23311": {
-        "type": "package",
-        "dependencies": {
-          "System.Runtime": "4.0.0",
-          "System.Runtime.InteropServices": "4.0.0"
-        },
-        "compile": {
-          "ref/dotnet/System.Threading.ThreadPool.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Threading.ThreadPool.dll": {}
-        }
-      },
       "xunit/2.1.0-beta3-build3029": {
         "type": "package",
         "dependencies": {
@@ -488,62 +405,6 @@
     }
   },
   "libraries": {
-    "Microsoft.Win32.Primitives/4.0.0": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "CypEz9/lLOup8CEhiAmvr7aLs1zKPYyEU1sxQeEr6G0Ci8/F0Y6pYR1zzkROjM8j8Mq0typmbu676oYyvErQvg==",
-      "files": [
-        "lib/dotnet/Microsoft.Win32.Primitives.dll",
-        "lib/MonoAndroid10/_._",
-        "lib/MonoTouch10/_._",
-        "lib/net46/Microsoft.Win32.Primitives.dll",
-        "lib/xamarinios10/_._",
-        "lib/xamarinmac20/_._",
-        "Microsoft.Win32.Primitives.4.0.0.nupkg",
-        "Microsoft.Win32.Primitives.4.0.0.nupkg.sha512",
-        "Microsoft.Win32.Primitives.nuspec",
-        "ref/dotnet/de/Microsoft.Win32.Primitives.xml",
-        "ref/dotnet/es/Microsoft.Win32.Primitives.xml",
-        "ref/dotnet/fr/Microsoft.Win32.Primitives.xml",
-        "ref/dotnet/it/Microsoft.Win32.Primitives.xml",
-        "ref/dotnet/ja/Microsoft.Win32.Primitives.xml",
-        "ref/dotnet/ko/Microsoft.Win32.Primitives.xml",
-        "ref/dotnet/Microsoft.Win32.Primitives.dll",
-        "ref/dotnet/Microsoft.Win32.Primitives.xml",
-        "ref/dotnet/ru/Microsoft.Win32.Primitives.xml",
-        "ref/dotnet/zh-hans/Microsoft.Win32.Primitives.xml",
-        "ref/dotnet/zh-hant/Microsoft.Win32.Primitives.xml",
-        "ref/MonoAndroid10/_._",
-        "ref/MonoTouch10/_._",
-        "ref/net46/Microsoft.Win32.Primitives.dll",
-        "ref/xamarinios10/_._",
-        "ref/xamarinmac20/_._"
-      ]
-    },
-    "Microsoft.Win32.Registry/4.0.0-beta-23311": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "W3zUZ8Fb00S5qqWie6K9PAJ9jRsYxz2xSQPL2Kvn1/7gBuqRpsZjBZV8AWGD7e6IPn9t+W6StmoXyK5BqczmXw==",
-      "files": [
-        "de/Microsoft.Win32.Registry.xml",
-        "es/Microsoft.Win32.Registry.xml",
-        "fr/Microsoft.Win32.Registry.xml",
-        "it/Microsoft.Win32.Registry.xml",
-        "ja/Microsoft.Win32.Registry.xml",
-        "ko/Microsoft.Win32.Registry.xml",
-        "lib/DNXCore50/Microsoft.Win32.Registry.dll",
-        "lib/net46/Microsoft.Win32.Registry.dll",
-        "Microsoft.Win32.Registry.4.0.0-beta-23311.nupkg",
-        "Microsoft.Win32.Registry.4.0.0-beta-23311.nupkg.sha512",
-        "Microsoft.Win32.Registry.nuspec",
-        "Microsoft.Win32.Registry.xml",
-        "ref/dotnet/Microsoft.Win32.Registry.dll",
-        "ref/net46/Microsoft.Win32.Registry.dll",
-        "ru/Microsoft.Win32.Registry.xml",
-        "zh-hans/Microsoft.Win32.Registry.xml",
-        "zh-hant/Microsoft.Win32.Registry.xml"
-      ]
-    },
     "System.Collections/4.0.10": {
       "type": "package",
       "serviceable": true,
@@ -612,50 +473,64 @@
         "System.Diagnostics.Debug.nuspec"
       ]
     },
-    "System.Diagnostics.Process/4.0.0-beta-23311": {
+    "System.Diagnostics.Process/4.0.0-beta-23328": {
       "type": "package",
       "serviceable": true,
-      "sha512": "kVHkARDhdgHVUKqNGWsi6wb2cDH8jdLGeshid+puHAZrG/WsHO7Gbj4bh1uI6xD5v5qkFIrV40zDN+CdvK0HbA==",
+      "sha512": "Y7gUuCDkoGRNKijIz/enWZLFqPJPrLA5uJa5Y+69ABnHPGYxsrszRTH6OpZDWaI2gd0jlMifm6dLOlTtNPnEWA==",
       "files": [
-        "de/System.Diagnostics.Process.xml",
-        "es/System.Diagnostics.Process.xml",
-        "fr/System.Diagnostics.Process.xml",
-        "it/System.Diagnostics.Process.xml",
-        "ja/System.Diagnostics.Process.xml",
-        "ko/System.Diagnostics.Process.xml",
-        "lib/DNXCore50/System.Diagnostics.Process.dll",
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
+        "lib/net46/de/System.Diagnostics.Process.xml",
+        "lib/net46/es/System.Diagnostics.Process.xml",
+        "lib/net46/fr/System.Diagnostics.Process.xml",
+        "lib/net46/it/System.Diagnostics.Process.xml",
+        "lib/net46/ja/System.Diagnostics.Process.xml",
+        "lib/net46/ko/System.Diagnostics.Process.xml",
+        "lib/net46/ru/System.Diagnostics.Process.xml",
         "lib/net46/System.Diagnostics.Process.dll",
+        "lib/net46/System.Diagnostics.Process.xml",
+        "lib/net46/zh-hans/System.Diagnostics.Process.xml",
+        "lib/net46/zh-hant/System.Diagnostics.Process.xml",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
         "ref/dotnet/System.Diagnostics.Process.dll",
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
+        "ref/net46/de/System.Diagnostics.Process.xml",
+        "ref/net46/es/System.Diagnostics.Process.xml",
+        "ref/net46/fr/System.Diagnostics.Process.xml",
+        "ref/net46/it/System.Diagnostics.Process.xml",
+        "ref/net46/ja/System.Diagnostics.Process.xml",
+        "ref/net46/ko/System.Diagnostics.Process.xml",
+        "ref/net46/ru/System.Diagnostics.Process.xml",
         "ref/net46/System.Diagnostics.Process.dll",
+        "ref/net46/System.Diagnostics.Process.xml",
+        "ref/net46/zh-hans/System.Diagnostics.Process.xml",
+        "ref/net46/zh-hant/System.Diagnostics.Process.xml",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "ru/System.Diagnostics.Process.xml",
-        "System.Diagnostics.Process.4.0.0-beta-23311.nupkg",
-        "System.Diagnostics.Process.4.0.0-beta-23311.nupkg.sha512",
-        "System.Diagnostics.Process.nuspec",
-        "System.Diagnostics.Process.xml",
-        "zh-hans/System.Diagnostics.Process.xml",
-        "zh-hant/System.Diagnostics.Process.xml"
+        "runtime.json",
+        "System.Diagnostics.Process.4.0.0-beta-23328.nupkg",
+        "System.Diagnostics.Process.4.0.0-beta-23328.nupkg.sha512",
+        "System.Diagnostics.Process.nuspec"
       ]
     },
-    "System.Diagnostics.TextWriterTraceListener/4.0.0-beta-23311": {
+    "System.Diagnostics.TextWriterTraceListener/4.0.0-beta-23328": {
       "type": "package",
       "serviceable": true,
-      "sha512": "4w7WKRZU7IljZE+pw6hcnZ6ZTwsyFWlSPQbwf7CObov9E+j3/si/FQhBOYHDx6+PlmoccANNmDKsl76RFGDJVA==",
+      "sha512": "8wX3n6frpJhFQXVyi3edMfXRHdhKEogl4HQmZYaEwcmsRwSvtS13SU1uNbjJ3JCI4v07vSa3hmOemfrKrfyKwg==",
       "files": [
-        "de/System.Diagnostics.TextWriterTraceListener.xml",
-        "es/System.Diagnostics.TextWriterTraceListener.xml",
-        "fr/System.Diagnostics.TextWriterTraceListener.xml",
-        "it/System.Diagnostics.TextWriterTraceListener.xml",
-        "ja/System.Diagnostics.TextWriterTraceListener.xml",
-        "ko/System.Diagnostics.TextWriterTraceListener.xml",
+        "lib/DNXCore50/de/System.Diagnostics.TextWriterTraceListener.xml",
+        "lib/DNXCore50/es/System.Diagnostics.TextWriterTraceListener.xml",
+        "lib/DNXCore50/fr/System.Diagnostics.TextWriterTraceListener.xml",
+        "lib/DNXCore50/it/System.Diagnostics.TextWriterTraceListener.xml",
+        "lib/DNXCore50/ja/System.Diagnostics.TextWriterTraceListener.xml",
+        "lib/DNXCore50/ko/System.Diagnostics.TextWriterTraceListener.xml",
+        "lib/DNXCore50/ru/System.Diagnostics.TextWriterTraceListener.xml",
         "lib/DNXCore50/System.Diagnostics.TextWriterTraceListener.dll",
+        "lib/DNXCore50/System.Diagnostics.TextWriterTraceListener.xml",
+        "lib/DNXCore50/zh-hans/System.Diagnostics.TextWriterTraceListener.xml",
+        "lib/DNXCore50/zh-hant/System.Diagnostics.TextWriterTraceListener.xml",
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
         "lib/net46/System.Diagnostics.TextWriterTraceListener.dll",
@@ -667,27 +542,16 @@
         "ref/net46/System.Diagnostics.TextWriterTraceListener.dll",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "ru/System.Diagnostics.TextWriterTraceListener.xml",
-        "System.Diagnostics.TextWriterTraceListener.4.0.0-beta-23311.nupkg",
-        "System.Diagnostics.TextWriterTraceListener.4.0.0-beta-23311.nupkg.sha512",
-        "System.Diagnostics.TextWriterTraceListener.nuspec",
-        "System.Diagnostics.TextWriterTraceListener.xml",
-        "zh-hans/System.Diagnostics.TextWriterTraceListener.xml",
-        "zh-hant/System.Diagnostics.TextWriterTraceListener.xml"
+        "System.Diagnostics.TextWriterTraceListener.4.0.0-beta-23328.nupkg",
+        "System.Diagnostics.TextWriterTraceListener.4.0.0-beta-23328.nupkg.sha512",
+        "System.Diagnostics.TextWriterTraceListener.nuspec"
       ]
     },
-    "System.Diagnostics.TraceSource/4.0.0-beta-23311": {
+    "System.Diagnostics.TraceSource/4.0.0-beta-23328": {
       "type": "package",
       "serviceable": true,
-      "sha512": "DImRs9P3eJD21ZZtty5bWo4htuT+jA7e+v7tf1DM4vkhB0zOtIFFWWw+nnQeQ9x6vFo7xxKBWeC7m6sBQEBt1g==",
+      "sha512": "u2YIvNdRFgFW94skYsyR+vOzJ6f7jpmQHG7vRFv7Br3gigUl3UUiqFotInyCTgfme/U25EizmcN5+pOHPUs/wg==",
       "files": [
-        "de/System.Diagnostics.TraceSource.xml",
-        "es/System.Diagnostics.TraceSource.xml",
-        "fr/System.Diagnostics.TraceSource.xml",
-        "it/System.Diagnostics.TraceSource.xml",
-        "ja/System.Diagnostics.TraceSource.xml",
-        "ko/System.Diagnostics.TraceSource.xml",
-        "lib/DNXCore50/System.Diagnostics.TraceSource.dll",
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
         "lib/net46/System.Diagnostics.TraceSource.dll",
@@ -699,13 +563,10 @@
         "ref/net46/System.Diagnostics.TraceSource.dll",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "ru/System.Diagnostics.TraceSource.xml",
-        "System.Diagnostics.TraceSource.4.0.0-beta-23311.nupkg",
-        "System.Diagnostics.TraceSource.4.0.0-beta-23311.nupkg.sha512",
-        "System.Diagnostics.TraceSource.nuspec",
-        "System.Diagnostics.TraceSource.xml",
-        "zh-hans/System.Diagnostics.TraceSource.xml",
-        "zh-hant/System.Diagnostics.TraceSource.xml"
+        "runtime.json",
+        "System.Diagnostics.TraceSource.4.0.0-beta-23328.nupkg",
+        "System.Diagnostics.TraceSource.4.0.0-beta-23328.nupkg.sha512",
+        "System.Diagnostics.TraceSource.nuspec"
       ]
     },
     "System.Globalization/4.0.10": {
@@ -1302,50 +1163,6 @@
         "System.Threading.Tasks.4.0.10.nupkg",
         "System.Threading.Tasks.4.0.10.nupkg.sha512",
         "System.Threading.Tasks.nuspec"
-      ]
-    },
-    "System.Threading.Thread/4.0.0-beta-23311": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "OgH6KflP3rlBmtrqE2xVcufOTIF3zQb/JN9aCl3rok0GZ8xnGS2xQy+F9hh6UHxQCkl0xWMhmvfdudvwvBkECw==",
-      "files": [
-        "lib/DNXCore50/System.Threading.Thread.dll",
-        "lib/MonoAndroid10/_._",
-        "lib/MonoTouch10/_._",
-        "lib/net46/System.Threading.Thread.dll",
-        "lib/xamarinios10/_._",
-        "lib/xamarinmac20/_._",
-        "ref/dotnet/System.Threading.Thread.dll",
-        "ref/MonoAndroid10/_._",
-        "ref/MonoTouch10/_._",
-        "ref/net46/System.Threading.Thread.dll",
-        "ref/xamarinios10/_._",
-        "ref/xamarinmac20/_._",
-        "System.Threading.Thread.4.0.0-beta-23311.nupkg",
-        "System.Threading.Thread.4.0.0-beta-23311.nupkg.sha512",
-        "System.Threading.Thread.nuspec"
-      ]
-    },
-    "System.Threading.ThreadPool/4.0.10-beta-23311": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "KF1vm7tZIPslDE262oI6FXlKlXOoz5K4HMR1V6DlZIstkL6CyLISv8c6vhdj3R0k2vmmVKcp2GyF4sOWbD0Y2A==",
-      "files": [
-        "lib/DNXCore50/System.Threading.ThreadPool.dll",
-        "lib/MonoAndroid10/_._",
-        "lib/MonoTouch10/_._",
-        "lib/net46/System.Threading.ThreadPool.dll",
-        "lib/xamarinios10/_._",
-        "lib/xamarinmac20/_._",
-        "ref/dotnet/System.Threading.ThreadPool.dll",
-        "ref/MonoAndroid10/_._",
-        "ref/MonoTouch10/_._",
-        "ref/net46/System.Threading.ThreadPool.dll",
-        "ref/xamarinios10/_._",
-        "ref/xamarinmac20/_._",
-        "System.Threading.ThreadPool.4.0.10-beta-23311.nupkg",
-        "System.Threading.ThreadPool.4.0.10-beta-23311.nupkg.sha512",
-        "System.Threading.ThreadPool.nuspec"
       ]
     },
     "xunit/2.1.0-beta3-build3029": {
