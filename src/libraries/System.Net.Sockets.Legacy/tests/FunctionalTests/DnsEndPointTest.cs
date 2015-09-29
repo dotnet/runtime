@@ -155,7 +155,7 @@ namespace System.Net.Sockets.Tests
             args.UserToken = complete;
 
             Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            Assert.True(sock.ConnectAsync(args));
+            sock.DoAsyncCall((s, a) => s.ConnectAsync(a), OnConnectAsyncCompleted, args);
 
             complete.WaitOne();
 
@@ -178,7 +178,7 @@ namespace System.Net.Sockets.Tests
             args.UserToken = complete;
 
             Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            Assert.True(sock.ConnectAsync(args));
+            sock.DoAsyncCall((s, a) => s.ConnectAsync(a), OnConnectAsyncCompleted, args);
 
             complete.WaitOne();
 
@@ -199,7 +199,7 @@ namespace System.Net.Sockets.Tests
             args.UserToken = complete;
 
             Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            Assert.True(sock.ConnectAsync(args));
+            sock.DoAsyncCall((s, a) => s.ConnectAsync(a), OnConnectAsyncCompleted, args);
 
             complete.WaitOne();
 
@@ -270,7 +270,11 @@ namespace System.Net.Sockets.Tests
             ManualResetEvent complete = new ManualResetEvent(false);
             args.UserToken = complete;
 
-            Assert.True(Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, args));
+            bool willRaiseEvent = Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, args);
+            if (!willRaiseEvent)
+            {
+                OnConnectAsyncCompleted(null, args);
+            }
 
             complete.WaitOne();
 
@@ -291,7 +295,11 @@ namespace System.Net.Sockets.Tests
             ManualResetEvent complete = new ManualResetEvent(false);
             args.UserToken = complete;
 
-            Assert.True(Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, args));
+            bool willRaiseEvent = Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, args);
+            if (!willRaiseEvent)
+            {
+                OnConnectAsyncCompleted(null, args);
+            }
 
             complete.WaitOne();
 
