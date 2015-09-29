@@ -23,7 +23,6 @@ namespace System.Linq
             // check for args changed
             if (obj != m.Object || args != m.Arguments)
             {
-                Expression[] argArray = args.ToArray();
                 Type[] typeArgs = (m.Method.IsGenericMethod) ? m.Method.GetGenericArguments() : null;
 
                 if ((m.Method.IsStatic || m.Method.DeclaringType.IsAssignableFrom(obj.Type))
