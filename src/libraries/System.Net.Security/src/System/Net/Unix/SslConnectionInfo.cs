@@ -21,7 +21,7 @@ namespace System.Net
             DataCipherAlg = (int) MapCipherAlgorithmType(cipher.algorithm_enc);
             KeyExchangeAlg = (int) MapExchangeAlgorithmType(cipher.algorithm_mkey);
             DataHashAlg = (int) MapHashAlgorithmType(cipher.algorithm_mac);
-            // TODO: map key sizes
+            // TODO (Issue #3362) map key sizes
         }
 
         private static SslProtocols MapProtocol(long algorithm)
@@ -37,7 +37,7 @@ namespace System.Net
                 case 4:
                     return SslProtocols.Tls12;
                 default:
-                    // TODO: Figure out correct value for this
+                    // TODO (Issue #3362) Figure out correct value for this
                     return SslProtocols.Tls;
             }
         }
@@ -63,7 +63,7 @@ namespace System.Net
                 case 128:
                     return CipherAlgorithmType.Aes256;
                 default:
-                    //TODO Handle other values
+                    // TODO (Issue #3362) Handle other values
                     return CipherAlgorithmType.None;
             }
         }
@@ -79,7 +79,7 @@ namespace System.Net
                 case 128:
                     return ExchangeAlgorithmType.DiffieHellman;
                 default:
-                    //TODO Handle other values
+                    // TODO (Issue #3362) Handle other values
                     return ExchangeAlgorithmType.None;
             }
         }
@@ -93,7 +93,7 @@ namespace System.Net
                 case 2:
                     return HashAlgorithmType.Sha1;
                 default:
-                    //TODO Handle other values
+                    // TODO (Issue #3362) Handle other values
                     return HashAlgorithmType.None;
             }
         }
