@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <openssl/asn1.h>
 #include <openssl/bio.h>
+#include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
 #include <openssl/x509.h>
@@ -1246,6 +1247,72 @@ GetRandomBytes(
     int ret = RAND_bytes(buf, num);
 
     return ret == 1;
+}
+
+/*
+Function:
+LookupFriendlyNameByOid
+
+Looks up the FriendlyName value for a given OID in string representation.
+For example, "1.3.14.3.2.26" => "sha1".
+
+Return values:
+1 indicates that *friendlyName contains a pointer to the friendly name value
+0 indicates that the OID was not found, or no friendly name exists for that OID
+-1 indicates OpenSSL signalled an error, CryptographicException should be raised.
+-2 indicates an error in the input arguments
+*/
+int
+LookupFriendlyNameByOid(
+    const char* oidValue,
+    const char** friendlyName)
+{
+    ASN1_OBJECT* oid;
+    int nid;
+    const char* ln;
+
+    if (!oidValue || !friendlyName)
+    {
+        return -2;
+    }
+
+    // Do a lookup with no_name set. The purpose of this function is to map only the
+    // dotted decimal to the friendly name. "sha1" in should not result in "sha1" out.
+    oid = OBJ_txt2obj(oidValue, 1);
+
+    if (!oid)
+    {
+        unsigned long err = ERR_peek_last_error();
+
+        // If the most recent error pushed onto the error queue is NOT from OID parsing
+        // then signal for an exception to be thrown.
+        if (err != 0 && ERR_GET_FUNC(err) != ASN1_F_A2D_ASN1_OBJECT)
+        {
+            return -1;
+        }
+
+        return 0;
+    }
+
+    // Look in the predefined, and late-registered, OIDs list to get the lookup table
+    // identifier for this OID.  The OBJ_txt2obj object will not have ln set.
+    nid = OBJ_obj2nid(oid);
+
+    if (nid == NID_undef)
+    {
+        return 0;
+    }
+
+    // Get back a shared pointer to the long name from the registration table.
+    ln = OBJ_nid2ln(nid);
+
+    if (ln)
+    {
+        *friendlyName = ln;
+        return 1;
+    }
+
+    return 0;
 }
 
 // Lock used to make sure EnsureopenSslInitialized itself is thread safe

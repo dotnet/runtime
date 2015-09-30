@@ -1,68 +1,97 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.IO;
-using System.Text;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Security.Cryptography.Encoding.Tests
 {
-    public class OidTests
+    public static class OidTests
     {
-        [Fact]
-        public static void TestStrConstructor()
+        [Theory]
+        [MemberData("ValidOidFriendlyNamePairs")]
+        public static void LookupOidByValue_Ctor(string oidValue, string friendlyName)
         {
-            Oid oid;
+            Oid oid = new Oid(oidValue);
 
-            Assert.Throws<ArgumentNullException>(() => oid = new Oid((string)null));
+            Assert.Equal(oidValue, oid.Value);
+            Assert.Equal(friendlyName, oid.FriendlyName);
+        }
 
-            oid = new Oid(SHA1_Oid);
-            Assert.Equal(SHA1_Name, oid.FriendlyName);
-            Assert.Equal(SHA1_Oid, oid.Value);
+        [Theory]
+        [MemberData("ValidOidFriendlyNamePairs")]
+        public static void LookupOidByFriendlyName_Ctor(string oidValue, string friendlyName)
+        {
+            Oid oid = new Oid(friendlyName);
 
-            // Though the parameter is supposed to be an OID, the constructor will also accept a friendly name.
-            oid = new Oid(SHA1_Name);
-            Assert.Equal(SHA1_Name, oid.FriendlyName);
-            Assert.Equal(SHA1_Oid, oid.Value);
-
-            // No validation done on OID (other than the null check.) 
-            oid = new Oid(Bogus_Name);
-            Assert.Equal(null, oid.FriendlyName);
-            Assert.Equal(Bogus_Name, oid.Value);
-
-            return;
+            Assert.Equal(oidValue, oid.Value);
+            Assert.Equal(friendlyName, oid.FriendlyName);
         }
 
         [Fact]
-        public static void TestStrStrConstructor()
+        public static void LookupNullOid()
         {
-            Oid oid;
+            Assert.Throws<ArgumentNullException>(() => new Oid((string)null));
+        }
 
+        [Fact]
+        public static void LookupUnknownOid()
+        {
+            Oid oid = new Oid(Bogus_Name);
+
+            Assert.Equal(Bogus_Name, oid.Value);
+            Assert.Null(oid.FriendlyName);
+        }
+
+        [Fact]
+        public static void Oid_StringString_BothNull()
+        {
             // No validation at all.
-            oid = new Oid((string)null, (string)null);
-            Assert.Equal(null, oid.FriendlyName);
-            Assert.Equal(null, oid.Value);
+            Oid oid = new Oid(null, null);
 
+            Assert.Null(oid.Value);
+            Assert.Null(oid.FriendlyName);
+        }
+
+        [Theory]
+        [MemberData("ValidOidFriendlyNamePairs")]
+        public static void Oid_StringString_NullFriendlyName(string oidValue, string expectedFriendlyName)
+        {
             // Can omit friendly-name - FriendlyName property demand-computes it.
-            oid = new Oid(SHA1_Oid, (string)null);
-            Assert.Equal(SHA1_Name, oid.FriendlyName);
-            Assert.Equal(SHA1_Oid, oid.Value);
+            Oid oid = new Oid(oidValue, null);
 
-            oid = new Oid(SHA1_Oid, "BOGUS-NAME");
-            Assert.Equal("BOGUS-NAME", oid.FriendlyName);
-            Assert.Equal(SHA1_Oid, oid.Value);
+            Assert.Equal(oidValue, oid.Value);
+            Assert.Equal(expectedFriendlyName, oid.FriendlyName);
+        }
 
+        [Theory]
+        [InlineData(SHA1_Name)]
+        [InlineData(SHA256_Name)]
+        [InlineData(Bogus_Name)]
+        public static void Oid_StringString_NullValue(string friendlyName)
+        {
             // Can omit oid, Value property does no on-demand conversion.
-            oid = new Oid((string)null, SHA1_Name);
-            Assert.Equal(SHA1_Name, oid.FriendlyName);
-            Assert.Equal(null, oid.Value);
+            Oid oid = new Oid(null, friendlyName);
 
-            oid = new Oid("BOGUS-OID", SHA1_Name);
-            Assert.Equal(SHA1_Name, oid.FriendlyName);
-            Assert.Equal("BOGUS-OID", oid.Value);
+            Assert.Null(oid.Value);
+            Assert.Equal(friendlyName, oid.FriendlyName);
+        }
 
+        [Theory]
+        [InlineData(SHA1_Oid, SHA256_Name)]
+        [InlineData(SHA256_Oid, SHA1_Name)]
+        [InlineData(SHA256_Name, SHA1_Name)]
+        [InlineData(SHA256_Name, Bogus_Name)]
+        [InlineData(Bogus_Name, SHA256_Oid)]
+        public static void Oid_StringString_BothSpecified(string oidValue, string friendlyName)
+        {
+            // The values are taken as true, not verified at all.
+            // The data for this test series should be mismatched OID-FriendlyName pairs, and
+            // sometimes the OID isn't a legal OID.
+            Oid oid = new Oid(oidValue, friendlyName);
 
-            return;
+            Assert.Equal(oidValue, oid.Value);
+            Assert.Equal(friendlyName, oid.FriendlyName);
         }
 
         [Fact]
@@ -77,8 +106,6 @@ namespace System.Security.Cryptography.Encoding.Tests
 
             oid.Value = null;
             Assert.Equal(null, oid.Value);
-
-            return;
         }
 
         [Fact]
@@ -116,79 +143,187 @@ namespace System.Security.Cryptography.Encoding.Tests
             Assert.Equal(SHA256_Name, oid.FriendlyName);
             Assert.Equal(SHA256_Oid, oid.Value);
         }
-
-        [Fact]
-        [ActiveIssue(1863, PlatformID.AnyUnix)]
-        public static void TestFromFriendlyName()
+        
+        [Theory]
+        [MemberData("ValidOidFriendlyNameHashAlgorithmPairs")]
+        public static void LookupOidByValue_Method_HashAlgorithm(string oidValue, string friendlyName)
         {
-            Oid oid;
+            Oid oid = Oid.FromOidValue(oidValue, OidGroup.HashAlgorithm);
 
-            oid = Oid.FromFriendlyName(SHA1_Name, OidGroup.HashAlgorithm);
-            Assert.Equal(SHA1_Name, oid.FriendlyName);
-            Assert.Equal(SHA1_Oid, oid.Value);
+            Assert.Equal(oidValue, oid.Value);
+            Assert.Equal(friendlyName, oid.FriendlyName);
+        }
 
-            oid = Oid.FromFriendlyName(SHA256_Name, OidGroup.HashAlgorithm);
-            Assert.Equal(SHA256_Name, oid.FriendlyName);
-            Assert.Equal(SHA256_Oid, oid.Value);
+        [Theory]
+        [MemberData("ValidOidFriendlyNameEncryptionAlgorithmPairs")]
+        public static void LookupOidByValue_Method_EncryptionAlgorithm(string oidValue, string friendlyName)
+        {
+            Oid oid = Oid.FromOidValue(oidValue, OidGroup.EncryptionAlgorithm);
 
-            Assert.Throws<ArgumentNullException>(() => Oid.FromFriendlyName(null, OidGroup.HashAlgorithm));
-            Assert.Throws<CryptographicException>(() => Oid.FromFriendlyName(Bogus_Name, OidGroup.HashAlgorithm));
+            Assert.Equal(oidValue, oid.Value);
+            Assert.Equal(friendlyName, oid.FriendlyName);
+        }
 
+        [Theory]
+        [MemberData("ValidOidFriendlyNameHashAlgorithmPairs")]
+        [PlatformSpecific(PlatformID.Windows)]
+        public static void LookupOidByValue_Method_WrongGroup(string oidValue, string friendlyName)
+        {
             // Oid group is implemented strictly - no fallback to OidGroup.All as with many other parts of Crypto.
-            Assert.Throws<CryptographicException>(() => Oid.FromFriendlyName(SHA1_Name, OidGroup.Policy));
+            Assert.Throws<CryptographicException>(() => Oid.FromOidValue(oidValue, OidGroup.EncryptionAlgorithm));
         }
 
         [Fact]
-        [ActiveIssue(1863, PlatformID.AnyUnix)]
-        public static void TestFromOidValue()
+        public static void LookupOidByValue_Method_NullInput()
         {
-            Oid oid;
-
-            oid = Oid.FromOidValue(SHA1_Oid, OidGroup.HashAlgorithm);
-            Assert.Equal(SHA1_Name, oid.FriendlyName);
-            Assert.Equal(SHA1_Oid, oid.Value);
-
-            oid = Oid.FromOidValue(SHA256_Oid, OidGroup.HashAlgorithm);
-            Assert.Equal(SHA256_Name, oid.FriendlyName);
-            Assert.Equal(SHA256_Oid, oid.Value);
-
             Assert.Throws<ArgumentNullException>(() => Oid.FromOidValue(null, OidGroup.HashAlgorithm));
-            Assert.Throws<CryptographicException>(() => Oid.FromOidValue(Bogus_Name, OidGroup.HashAlgorithm));
+        }
 
+        [Theory]
+        [InlineData(SHA1_Name)] // Friendly names are not coerced into OID values from the method.
+        [InlineData(Bogus_Name)]
+        public static void LookupOidByValue_Method_BadInput(string badInput)
+        {
+            Assert.Throws<CryptographicException>(() => Oid.FromOidValue(badInput, OidGroup.HashAlgorithm));
+        }
+
+        [Theory]
+        [MemberData("ValidOidFriendlyNameHashAlgorithmPairs")]
+        public static void LookupOidByFriendlyName_Method_HashAlgorithm(string oidValue, string friendlyName)
+        {
+            Oid oid = Oid.FromFriendlyName(friendlyName, OidGroup.HashAlgorithm);
+
+            Assert.Equal(oidValue, oid.Value);
+            Assert.Equal(friendlyName, oid.FriendlyName);
+        }
+
+        [Theory]
+        [MemberData("ValidOidFriendlyNameEncryptionAlgorithmPairs")]
+        public static void LookupOidByFriendlyName_Method_EncryptionAlgorithm(string oidValue, string friendlyName)
+        {
+            Oid oid = Oid.FromFriendlyName(friendlyName, OidGroup.EncryptionAlgorithm);
+
+            Assert.Equal(oidValue, oid.Value);
+            Assert.Equal(friendlyName, oid.FriendlyName);
+        }
+
+        [Theory]
+        [MemberData("ValidOidFriendlyNamePairs")]
+        public static void LookupOidByFriendlyName_Method_InverseCase(string oidValue, string friendlyName)
+        {
+            // Note that oid lookup is case-insensitive, and we store the name in the form it was
+            // input to the constructor (rather than "normalizing" it to the official casing.)
+            string inverseCasedName = InvertCase(friendlyName);
+            Oid oid = Oid.FromFriendlyName(inverseCasedName, OidGroup.All);
+
+            Assert.Equal(oidValue, oid.Value);
+            Assert.Equal(inverseCasedName, oid.FriendlyName);
+        }
+
+        [Theory]
+        [MemberData("ValidOidFriendlyNameHashAlgorithmPairs")]
+        [PlatformSpecific(PlatformID.Windows)]
+        public static void LookupOidByFriendlyName_Method_WrongGroup(string oidValue, string friendlyName)
+        {
             // Oid group is implemented strictly - no fallback to OidGroup.All as with many other parts of Crypto.
-            Assert.Throws<CryptographicException>(() => Oid.FromOidValue(SHA1_Oid, OidGroup.Policy));
+            Assert.Throws<CryptographicException>(() => Oid.FromFriendlyName(friendlyName, OidGroup.EncryptionAlgorithm));
         }
 
         [Fact]
-        [ActiveIssue(1863, PlatformID.AnyUnix)]
-        public static void TestKnownValues()
+        public static void LookupOidByFriendlyName_Method_NullInput()
         {
-            Oid oid;
-            oid = Oid.FromFriendlyName(SHA1_Name, OidGroup.All);
-            Assert.Equal(SHA1_Name, oid.FriendlyName);
-            Assert.Equal(SHA1_Oid, oid.Value);
+            Assert.Throws<ArgumentNullException>(() => Oid.FromFriendlyName(null, OidGroup.HashAlgorithm));
+        }
 
-            oid = Oid.FromFriendlyName(SHA256_Name, OidGroup.All);
-            Assert.Equal(SHA256_Name, oid.FriendlyName);
-            Assert.Equal(SHA256_Oid, oid.Value);
+        [Theory]
+        [InlineData(SHA1_Oid)] // OIDs are not coerced into friendly names values from the method.
+        [InlineData(Bogus_Name)]
+        public static void LookupOidByFriendlyName_Method_BadInput(string badInput)
+        {
+            Assert.Throws<CryptographicException>(() => Oid.FromFriendlyName(badInput, OidGroup.HashAlgorithm));
+        }
 
-            // Note that oid lookup is case-insensitive, and we store the name in the form it was input to the constructor (rather than "normalizing" it 
-            // to the official casing.)
-            oid = Oid.FromFriendlyName("MD5", OidGroup.All);
-            Assert.Equal("MD5", oid.FriendlyName);
-            Assert.Equal("1.2.840.113549.2.5", oid.Value);
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public static void LookupOidByValue_Method_UnixOnly()
+        {
+            // This needs to be an OID not in the static lookup table.  The purpose is to verify the
+            // NativeOidToFriendlyName fallback for Unix.  For Windows this is accomplished by
+            // using FromOidValue with an OidGroup other than OidGroup.All.
+            
+            Oid oid = Oid.FromOidValue(ObsoleteSmime3desWrap_Oid, OidGroup.All);
 
-            oid = Oid.FromFriendlyName("sha384", OidGroup.All);
-            Assert.Equal("sha384", oid.FriendlyName);
-            Assert.Equal("2.16.840.1.101.3.4.2.2", oid.Value);
+            Assert.Equal(ObsoleteSmime3desWrap_Oid, oid.Value);
+            Assert.Equal(ObsoleteSmime3desWrap_Name, oid.FriendlyName);
+        }
 
-            oid = Oid.FromFriendlyName("sha512", OidGroup.All);
-            Assert.Equal("sha512", oid.FriendlyName);
-            Assert.Equal("2.16.840.1.101.3.4.2.3", oid.Value);
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public static void LookupOidByFriendlyName_Method_UnixOnly()
+        {
+            // This needs to be a name not in the static lookup table.  The purpose is to verify the
+            // NativeFriendlyNameToOid fallback for Unix.  For Windows this is accomplished by
+            // using FromOidValue with an OidGroup other than OidGroup.All.
+            Oid oid = Oid.FromFriendlyName(ObsoleteSmime3desWrap_Name, OidGroup.All);
 
-            oid = Oid.FromFriendlyName("3des", OidGroup.All);
-            Assert.Equal("3des", oid.FriendlyName);
-            Assert.Equal("1.2.840.113549.3.7", oid.Value);
+            Assert.Equal(ObsoleteSmime3desWrap_Oid, oid.Value);
+            Assert.Equal(ObsoleteSmime3desWrap_Name, oid.FriendlyName);
+        }
+
+        public static IEnumerable<string[]> ValidOidFriendlyNamePairs
+        {
+            get
+            {
+                List<string[]> data = new List<string[]>(ValidOidFriendlyNameHashAlgorithmPairs);
+                data.AddRange(ValidOidFriendlyNameEncryptionAlgorithmPairs);
+
+                return data;
+            }
+        }
+
+        public static IEnumerable<string[]> ValidOidFriendlyNameHashAlgorithmPairs
+        {
+            get
+            {
+                return new[]
+                {
+                    new[] { SHA1_Oid, SHA1_Name },
+                    new[] { SHA256_Oid, SHA256_Name },
+                    new[] { "1.2.840.113549.2.5", "md5" },
+                    new[] { "2.16.840.1.101.3.4.2.2", "sha384" },
+                    new[] { "2.16.840.1.101.3.4.2.3", "sha512" },
+                };
+            }
+        }
+
+        public static IEnumerable<string[]> ValidOidFriendlyNameEncryptionAlgorithmPairs
+        {
+            get
+            {
+                return new[]
+                {
+                    new[] { "1.2.840.113549.3.7", "3des" },
+                };
+            }
+        }
+
+        private static string InvertCase(string existing)
+        {
+            char[] chars = existing.ToCharArray();
+
+            for (int i = 0; i < chars.Length; i++)
+            {
+                if (char.IsUpper(chars[i]))
+                {
+                    chars[i] = char.ToLowerInvariant(chars[i]);
+                }
+                else if (char.IsLower(chars[i]))
+                {
+                    chars[i] = char.ToUpperInvariant(chars[i]);
+                }
+            }
+
+            return new string(chars);
         }
 
         private const string SHA1_Name = "sha1";
@@ -198,5 +333,8 @@ namespace System.Security.Cryptography.Encoding.Tests
         private const string SHA256_Oid = "2.16.840.1.101.3.4.2.1";
 
         private const string Bogus_Name = "BOGUS_BOGUS_BOGUS_BOGUS";
+
+        private const string ObsoleteSmime3desWrap_Oid = "1.2.840.113549.1.9.16.3.3";
+        private const string ObsoleteSmime3desWrap_Name = "id-smime-alg-3DESwrap";
     }
 }
