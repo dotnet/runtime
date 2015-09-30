@@ -76,6 +76,33 @@ namespace System.Net
                     remoteContext.DangerousAddRef(ref gotReference);
                     result = new X509Certificate2(remoteContext.DangerousGetHandle());
                 }
+
+                remoteCertificateStore = new X509Certificate2Collection();
+
+                SafeSharedX509StackHandle chainStack =
+                    Interop.OpenSsl.GetPeerCertificateChain(securityContext.DangerousGetHandle());
+
+                GC.KeepAlive(securityContext);
+
+                using (chainStack)
+                {
+                    if (!chainStack.IsInvalid)
+                    {
+                        int count = Interop.Crypto.GetX509StackFieldCount(chainStack);
+
+                        for (int i = 0; i < count; i++)
+                        {
+                            IntPtr certPtr = Interop.Crypto.GetX509StackField(chainStack, i);
+
+                            if (certPtr != IntPtr.Zero)
+                            {
+                                // X509Certificate2(IntPtr) calls X509_dup, so the reference is appropriately tracked.
+                                X509Certificate2 chainCert = new X509Certificate2(certPtr);
+                                remoteCertificateStore.Add(chainCert);
+                            }
+                        }
+                    }
+                }
             }
             finally
             {
@@ -88,9 +115,6 @@ namespace System.Net
                 {
                     remoteContext.Dispose();
                 }
-
-                // TODO (Issue #3362) Fetch remoteCertificateStore, if applicable for unix
-				remoteCertificateStore = new X509Certificate2Collection();
             }
 
             if (Logging.On)
