@@ -155,9 +155,12 @@ namespace System.Net.Sockets.Tests
             args.UserToken = complete;
 
             Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            Assert.True(sock.ConnectAsync(args));
 
-            complete.WaitOne();
+            bool willRaiseEvent = sock.ConnectAsync(args);
+            if (willRaiseEvent)
+            {
+                complete.WaitOne();
+            }
 
             Assert.Equal(SocketError.Success, args.SocketError);
             Assert.Null(args.ConnectByNameError);
@@ -178,9 +181,12 @@ namespace System.Net.Sockets.Tests
             args.UserToken = complete;
 
             Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            Assert.True(sock.ConnectAsync(args));
 
-            complete.WaitOne();
+            bool willRaiseEvent = sock.ConnectAsync(args);
+            if (willRaiseEvent)
+            {
+                complete.WaitOne();
+            }
 
             AssertHostNotFoundOrNoData(args);
 
@@ -199,9 +205,12 @@ namespace System.Net.Sockets.Tests
             args.UserToken = complete;
 
             Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            Assert.True(sock.ConnectAsync(args));
 
-            complete.WaitOne();
+            bool willRaiseEvent = sock.ConnectAsync(args);
+            if (willRaiseEvent)
+            {
+                complete.WaitOne();
+            }
 
             Assert.Equal(SocketError.ConnectionRefused, args.SocketError);
             Assert.True(args.ConnectByNameError is SocketException);
@@ -270,7 +279,11 @@ namespace System.Net.Sockets.Tests
             ManualResetEvent complete = new ManualResetEvent(false);
             args.UserToken = complete;
 
-            Assert.True(Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, args));
+            bool willRaiseEvent = Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, args);
+            if (!willRaiseEvent)
+            {
+                OnConnectAsyncCompleted(null, args);
+            }
 
             complete.WaitOne();
 
@@ -291,7 +304,11 @@ namespace System.Net.Sockets.Tests
             ManualResetEvent complete = new ManualResetEvent(false);
             args.UserToken = complete;
 
-            Assert.True(Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, args));
+            bool willRaiseEvent = Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, args);
+            if (!willRaiseEvent)
+            {
+                OnConnectAsyncCompleted(null, args);
+            }
 
             complete.WaitOne();
 
