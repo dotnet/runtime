@@ -1,0 +1,122 @@
+using System.Security;
+using System;
+using System.IO;
+
+[SecuritySafeCritical]
+public class ConsoleSetOut
+{
+    #region Private Fields
+    private const string c_TEST_TXT_FILE = "ConsoleSetOut.txt";
+    private const int c_MIN_STRING_LENGTH = 1;
+    private const int c_MAX_STRING_LENGTH = 256;
+    #endregion
+
+    #region Public Methods
+    public bool RunTests()
+    {
+        bool retVal = true;
+
+        TestLibrary.TestFramework.LogInformation("[Positive]");
+        retVal = PosTest1() && retVal;
+
+        TestLibrary.TestFramework.LogInformation("[Negative]");
+        retVal = NegTest1() && retVal;
+
+        return retVal;
+    }
+
+    #region Positive Test Cases
+    public bool PosTest1()
+    {
+        bool retVal = true;
+        TextWriter saved = Console.Out;
+
+        TestLibrary.TestFramework.BeginScenario("PosTest1: Call SetOut to set a new standard output");
+
+        try
+        {
+            string randValue = TestLibrary.Generator.GetString(-55, true, c_MIN_STRING_LENGTH, c_MAX_STRING_LENGTH);
+
+            using (TextWriter reader = new StreamWriter(new FileStream(c_TEST_TXT_FILE, FileMode.Create, FileAccess.Write, FileShare.Read)))
+            {
+                Console.SetOut(reader);
+
+                Console.WriteLine(randValue);
+            }
+
+            using (TextReader verifyReader = new StreamReader(new FileStream(c_TEST_TXT_FILE, FileMode.Open, FileAccess.Read, FileShare.Read)))
+            {
+                string actual = verifyReader.ReadLine();
+
+                if (actual != randValue)
+                {
+                    TestLibrary.TestFramework.LogError("001.0", "Call SetOut failed to set a new standard output");
+                    TestLibrary.TestFramework.LogInformation("WARNING [LOCAL VARIABLE] actual = " + actual + ", randValue = " + randValue);
+                    retVal = false;
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            TestLibrary.TestFramework.LogError("001.0", "Unexpected exception: " + e);
+            TestLibrary.TestFramework.LogInformation(e.StackTrace);
+            retVal = false;
+        }
+        finally
+        {
+            Console.SetOut(saved);
+        }
+
+        return retVal;
+    }
+    #endregion
+
+    #region Nagetive Test Cases
+    public bool NegTest1()
+    {
+        bool retVal = true;
+
+        TestLibrary.TestFramework.BeginScenario("NegTest1: ArgumentNullException should be thrown when newOut is a null reference");
+
+        try
+        {
+            Console.SetOut(null);
+
+            TestLibrary.TestFramework.LogError("101.1", "ArgumentNullException is not thrown when newOut is a null reference");
+            retVal = false;
+        }
+        catch (ArgumentNullException)
+        {
+        }
+        catch (Exception e)
+        {
+            TestLibrary.TestFramework.LogError("101", "Unexpected exception: " + e);
+            TestLibrary.TestFramework.LogInformation(e.StackTrace);
+            retVal = false;
+        }
+
+        return retVal;
+    }
+    #endregion
+    #endregion
+
+    public static int Main()
+    {
+        ConsoleSetOut test = new ConsoleSetOut();
+
+        TestLibrary.TestFramework.BeginTestCase("ConsoleSetOut");
+
+        if (test.RunTests())
+        {
+            TestLibrary.TestFramework.EndTestCase();
+            TestLibrary.TestFramework.LogInformation("PASS");
+            return 100;
+        }
+        else
+        {
+            TestLibrary.TestFramework.EndTestCase();
+            TestLibrary.TestFramework.LogInformation("FAIL");
+            return 0;
+        }
+    }
+}
