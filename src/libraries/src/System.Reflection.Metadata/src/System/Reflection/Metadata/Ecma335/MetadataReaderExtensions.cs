@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
@@ -29,7 +29,7 @@ namespace System.Reflection.Metadata.Ecma335
                 Throw.TableIndexOutOfRange();
             }
 
-            return (int)reader.TableRowCounts[(int)tableIndex];
+            return reader.TableRowCounts[(int)tableIndex];
         }
 
         /// <summary>
@@ -91,6 +91,16 @@ namespace System.Reflection.Metadata.Ecma335
                 case TableIndex.GenericParam: return reader.GenericParamTable.RowSize;
                 case TableIndex.MethodSpec: return reader.MethodSpecTable.RowSize;
                 case TableIndex.GenericParamConstraint: return reader.GenericParamConstraintTable.RowSize;
+
+                // debug tables
+                case TableIndex.Document: return reader.DocumentTable.RowSize;
+                case TableIndex.MethodBody: return reader.MethodBodyTable.RowSize;
+                case TableIndex.LocalScope: return reader.LocalScopeTable.RowSize;
+                case TableIndex.LocalVariable: return reader.LocalVariableTable.RowSize;
+                case TableIndex.LocalConstant: return reader.LocalConstantTable.RowSize;
+                case TableIndex.ImportScope: return reader.ImportScopeTable.RowSize;
+                case TableIndex.StateMachineMethod: return reader.StateMachineMethodTable.RowSize;
+                case TableIndex.CustomDebugInformation: return reader.CustomDebugInformationTable.RowSize;
 
                 default:
                     throw new ArgumentOutOfRangeException("tableIndex");
@@ -163,6 +173,16 @@ namespace System.Reflection.Metadata.Ecma335
                 case TableIndex.GenericParam: return reader.GenericParamTable.Block;
                 case TableIndex.MethodSpec: return reader.MethodSpecTable.Block;
                 case TableIndex.GenericParamConstraint: return reader.GenericParamConstraintTable.Block;
+
+                // debug tables
+                case TableIndex.Document: return reader.DocumentTable.Block;
+                case TableIndex.MethodBody: return reader.MethodBodyTable.Block;
+                case TableIndex.LocalScope: return reader.LocalScopeTable.Block;
+                case TableIndex.LocalVariable: return reader.LocalVariableTable.Block;
+                case TableIndex.LocalConstant: return reader.LocalConstantTable.Block;
+                case TableIndex.ImportScope: return reader.ImportScopeTable.Block;
+                case TableIndex.StateMachineMethod: return reader.StateMachineMethodTable.Block;
+                case TableIndex.CustomDebugInformation: return reader.CustomDebugInformationTable.Block;
 
                 default:
                     throw new ArgumentOutOfRangeException("tableIndex");

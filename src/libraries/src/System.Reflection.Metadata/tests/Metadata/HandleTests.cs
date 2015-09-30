@@ -408,11 +408,13 @@ namespace System.Reflection.Metadata.Tests
             Assert.False(BlobHandle.FromOffset(1).IsNil);
             Assert.False(UserStringHandle.FromOffset(1).IsNil);
             Assert.False(GuidHandle.FromIndex(1).IsNil);
+            Assert.False(DocumentNameBlobHandle.FromOffset(1).IsNil);
 
             Assert.False(((Handle)StringHandle.FromOffset(1)).IsNil);
             Assert.False(((Handle)BlobHandle.FromOffset(1)).IsNil);
             Assert.False(((Handle)UserStringHandle.FromOffset(1)).IsNil);
             Assert.False(((Handle)GuidHandle.FromIndex(1)).IsNil);
+            Assert.False(((BlobHandle)DocumentNameBlobHandle.FromOffset(1)).IsNil);
 
             Assert.True(ModuleDefinitionHandle.FromRowId(0).IsNil);
             Assert.True(AssemblyDefinitionHandle.FromRowId(0).IsNil);
@@ -481,11 +483,13 @@ namespace System.Reflection.Metadata.Tests
             Assert.True(BlobHandle.FromOffset(0).IsNil);
             Assert.True(UserStringHandle.FromOffset(0).IsNil);
             Assert.True(GuidHandle.FromIndex(0).IsNil);
+            Assert.True(DocumentNameBlobHandle.FromOffset(0).IsNil);
 
             Assert.True(((Handle)StringHandle.FromOffset(0)).IsNil);
             Assert.True(((Handle)BlobHandle.FromOffset(0)).IsNil);
             Assert.True(((Handle)UserStringHandle.FromOffset(0)).IsNil);
             Assert.True(((Handle)GuidHandle.FromIndex(0)).IsNil);
+            Assert.True(((BlobHandle)DocumentNameBlobHandle.FromOffset(0)).IsNil);
 
             // virtual:
             Assert.False(AssemblyReferenceHandle.FromVirtualIndex(0).IsNil);
