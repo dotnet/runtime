@@ -53,6 +53,9 @@ namespace System.Data
         {
             get
             {
+#if MANAGED_SNI
+                return IntPtr.Zero;
+#else
                 if (s_userInstanceDLLHandle == IntPtr.Zero)
                 {
                     bool lockTaken = false;
@@ -80,6 +83,7 @@ namespace System.Data
                     }
                 }
                 return s_userInstanceDLLHandle;
+#endif // MANAGED_SNI
             }
         }
 
