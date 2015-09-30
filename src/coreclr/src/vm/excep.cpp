@@ -8242,28 +8242,6 @@ bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSaf
     imageBase = pCodeInfo->GetModuleBase();
     pUnwindInfo = (PUNWIND_INFO)(imageBase+ funcEntry->UnwindData);
 
-#if defined(_DEBUG)
-    // In debug builds, assert our invariant that jitted code always have the managed personality routine
-    // specified in the unwindInfo. For this, get an IP that is inside the method body. For this case,
-    // we calculate the first address comprising the method body.
-    PCODE ipInMethodBody = pCodeInfo->GetStartAddress()+pUnwindInfo->SizeOfProlog;
-
-    ZeroMemory(&tempContext, sizeof(CONTEXT));
-    CopyOSContext(&tempContext, pContextToCheck);
-
-    // TODO: Explain the context mismatch issue here and why the unwind is still okay.
-    personalityRoutine = RtlVirtualUnwind(UNW_FLAG_EHANDLER,     // HandlerType
-                     imageBase,
-                     ipInMethodBody,
-                     funcEntry,
-                     &tempContext,
-                     &HandlerData,
-                     &establisherFrame,
-                     NULL);
-
-    _ASSERTE(personalityRoutine != NULL);
-#endif // _DEBUG
-
     ZeroMemory(&tempContext, sizeof(CONTEXT));
     CopyOSContext(&tempContext, pContextToCheck);
     KNONVOLATILE_CONTEXT_POINTERS ctxPtrs;
