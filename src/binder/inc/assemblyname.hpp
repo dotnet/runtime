@@ -31,7 +31,7 @@ namespace BINDER_SPACE
             INCLUDE_ARCHITECTURE                = 0x02,
             INCLUDE_RETARGETABLE                = 0x04, 
             INCLUDE_CONTENT_TYPE                = 0x08,
-            EXCLUDE_PUBLIC_KEY_TOKEN_IF_MISSING = 0x10,
+            INCLUDE_PUBLIC_KEY_TOKEN            = 0x10,
             EXCLUDE_CULTURE                     = 0x20
         } INCLUDE_FLAGS;
 
