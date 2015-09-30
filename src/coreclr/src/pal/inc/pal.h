@@ -3892,14 +3892,6 @@ HeapCreate(
 	       IN SIZE_T dwMaximumSize);
 
 PALIMPORT
-SIZE_T
-PALAPI
-HeapSize(
-    HANDLE hHeap,
-    DWORD dwFlags,
-    LPCVOID lpMem);
-
-PALIMPORT
 LPVOID
 PALAPI
 HeapAlloc(
