@@ -5220,6 +5220,9 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	case MONO_PATCH_INFO_METHOD_CODE_SLOT:
 		encode_method_ref (acfg, patch_info->data.method, p, &p);
 		break;
+	case MONO_PATCH_INFO_AOT_JIT_INFO:
+		encode_value (patch_info->data.index, p, &p);
+		break;
 	case MONO_PATCH_INFO_INTERNAL_METHOD:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR: {
 		guint32 len = strlen (patch_info->data.name);
@@ -5613,6 +5616,12 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg, gboolean stor
 			} else {
 				encode_value (0, p, &p);
 			}
+
+			/* Emit the IL ranges too, since they might not be available at runtime */
+			encode_value (clause->try_offset, p, &p);
+			encode_value (clause->try_len, p, &p);
+			encode_value (clause->handler_offset, p, &p);
+			encode_value (clause->handler_len, p, &p);
 
 			/* Emit a list of nesting clauses */
 			for (i = 0; i < header->num_clauses; ++i) {

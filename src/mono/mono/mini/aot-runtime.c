@@ -2685,7 +2685,7 @@ alloc0_jit_info_data (MonoDomain *domain, int size, gboolean async_context)
 static MonoJitInfo*
 decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain, 
 							 MonoMethod *method, guint8* ex_info,
-							 guint8 *code, guint32 code_len, gboolean skeleton)
+							 guint8 *code, guint32 code_len)
 {
 	int i, buf_len, num_clauses, len;
 	MonoJitInfo *jinfo;
@@ -2765,6 +2765,11 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 
 			ei->clause_index = i;
 
+			ei->try_offset = decode_value (p, &p);
+			ei->try_len = decode_value (p, &p);
+			ei->handler_offset = decode_value (p, &p);
+			ei->handler_len = decode_value (p, &p);
+
 			/* Read the list of nesting clauses */
 			while (TRUE) {
 				int nesting_index = decode_value (p, &p);
@@ -2780,9 +2785,6 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 		for (i = 0; i < num_clauses; ++i)
 			g_slist_free (nesting [i]);
 		g_free (nesting);
- 		// Fields are NULL
- 		if (skeleton)
- 			return jinfo;
 	} else {
 		len = mono_jit_info_size (flags, num_clauses, num_holes);
 		jinfo = alloc0_jit_info_data (domain, len, async);
@@ -2944,26 +2946,6 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 	}
 
 	return jinfo;
-}
-
-MonoJitInfo*
-mono_get_jit_info_llvm_sparse (gpointer opaque_amodule, int method_index)
-{
-	MonoAotModule *amodule = (MonoAotModule *)opaque_amodule;
-	guint8 *ex_info = &amodule->blob [mono_aot_get_offset (amodule->ex_info_offsets, method_index)];
-	guint8 *code = amodule->methods [method_index];
-	int code_len;
-
-	if (method_index == amodule->sorted_methods_len - 1) {
-		code_len = amodule->llvm_code_end - code;
-	} else {
-		code_len = (guint8*)amodule->methods [method_index + 1] - code;
-	}
-
-	// FIXME: This allocates a jit_info in the domain pool that isn't in the table,
-	// and so won't be freed.
-	return decode_exception_debug_info (amodule, mono_domain_get (), NULL, ex_info,
-					code, code_len, TRUE);
 }
 
 static gboolean
@@ -3242,7 +3224,7 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 
 	//printf ("F: %s\n", mono_method_full_name (method, TRUE));
 
-	jinfo = decode_exception_debug_info (amodule, domain, method, ex_info, code, code_len, FALSE);
+	jinfo = decode_exception_debug_info (amodule, domain, method, ex_info, code, code_len);
 
 	g_assert ((guint8*)addr >= (guint8*)jinfo->code_start);
 
@@ -3543,6 +3525,9 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		break;
 	}
 	case MONO_PATCH_INFO_GC_SAFE_POINT_FLAG:
+		break;
+	case MONO_PATCH_INFO_AOT_JIT_INFO:
+		ji->data.index = decode_value (p, &p);
 		break;
 	default:
 		g_warning ("unhandled type %d", ji->type);
@@ -3989,6 +3974,13 @@ init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, M
 
 					g_assert (context);
 					ji->data.method = mono_class_inflate_generic_method_checked (ji->data.method, context, &error);
+				}
+				/* This cannot be resolved in mono_resolve_patch_target () */
+				if (ji->type == MONO_PATCH_INFO_AOT_JIT_INFO) {
+					// FIXME: Lookup using the index
+					jinfo = mono_aot_find_jit_info (domain, amodule->assembly->image, code);
+					ji->type = MONO_PATCH_INFO_ABS;
+					ji->data.target = jinfo;
 				}
 				addr = mono_resolve_patch_target (method, domain, code, ji, TRUE);
 				if (ji->type == MONO_PATCH_INFO_METHOD_JUMP)

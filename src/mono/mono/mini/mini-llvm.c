@@ -1248,10 +1248,8 @@ mono_llvm_clear_exception (void)
 
 
 gint32
-mono_llvm_match_exception (gpointer amodule, guint32 aot_method_index,
-	guint32 region_start, guint32 region_end)
+mono_llvm_match_exception (MonoJitInfo *jinfo, guint32 region_start, guint32 region_end)
 {
-	MonoJitInfo *jinfo = mono_get_jit_info_llvm_sparse (amodule, aot_method_index);
 	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
 	MonoObject *exc = mono_gchandle_get_target (jit_tls->thrown_exc);
 
@@ -1260,7 +1258,7 @@ mono_llvm_match_exception (gpointer amodule, guint32 aot_method_index,
 	for (int i=0; i < jinfo->num_clauses; i++) {
 		MonoJitExceptionInfo *ei = &jinfo->clauses [i];
 
-		if (! (ei->try_start == region_start && ei->try_end == region_end) )
+		if (! (ei->try_offset == region_start && ei->try_offset + ei->try_len == region_end) )
 			continue;
 
 		// FIXME: Handle edge cases handled in get_exception_catch_class
@@ -3282,20 +3280,13 @@ mono_llvm_emit_match_exception_call (EmitContext *ctx, LLVMBuilderRef builder, g
 
 	ctx->builder = builder;
 
-	const int num_args = 4;
-
+	const int num_args = 3;
 	LLVMValueRef args [num_args];
-	args [0] = convert (ctx, get_aotconst (ctx, MONO_PATCH_INFO_AOT_MODULE, NULL), IntPtrType ());
-	args [1] = LLVMConstInt (LLVMInt32Type (), ctx->cfg->method_index, 0);
-	args [2] = LLVMConstInt (LLVMInt32Type (), region_start, 0);
-	args [3] = LLVMConstInt (LLVMInt32Type (), region_end, 0);
+	args [0] = convert (ctx, get_aotconst (ctx, MONO_PATCH_INFO_AOT_JIT_INFO, GINT_TO_POINTER (ctx->cfg->method_index)), IntPtrType ());
+	args [1] = LLVMConstInt (LLVMInt32Type (), region_start, 0);
+	args [2] = LLVMConstInt (LLVMInt32Type (), region_end, 0);
 
-	LLVMTypeRef argTypes [num_args];
-	for (int i=0; i < num_args; i++) {
-		argTypes [i] = LLVMTypeOf (args [i]);
-	}
-
-	LLVMTypeRef match_sig = LLVMFunctionType (LLVMInt32Type (), argTypes, num_args, FALSE);
+	LLVMTypeRef match_sig = LLVMFunctionType3 (LLVMInt32Type (), IntPtrType (), LLVMInt32Type (), LLVMInt32Type (), FALSE);
 	LLVMValueRef callee = ctx->lmodule->match_exc;
 
 	if (!callee) {
@@ -3450,7 +3441,7 @@ emit_landing_pad (MonoCompile *cfg, EmitContext *ctx, MonoExceptionClause **grou
 		// During that match, we need to compare against the handler types for the current
 		// protected region. We send the try start and end so that we can only check against
 		// handlers for this lexical protected region.
-		LLVMValueRef match = mono_llvm_emit_match_exception_call (ctx, lpadBuilder, CLAUSE_START(group_start), CLAUSE_END(group_start));
+		LLVMValueRef match = mono_llvm_emit_match_exception_call (ctx, lpadBuilder, group_start [0]->try_offset, group_start [0]->try_offset + group_start [0]->try_len);
 
 		// if returns -1, resume
 		LLVMValueRef switch_ins = LLVMBuildSwitch (lpadBuilder, match, resume_bb, group_size);
@@ -3459,15 +3450,14 @@ emit_landing_pad (MonoCompile *cfg, EmitContext *ctx, MonoExceptionClause **grou
 		for (int i=0; i < group_size; i++) {
 			MonoExceptionClause *clause = group_start [i];
 			int clause_index = clause - cfg->header->clauses;
-			MonoBasicBlock *handler_bb = g_hash_table_lookup (ctx->clause_to_handler, clause_index);
+			MonoBasicBlock *handler_bb = g_hash_table_lookup (ctx->clause_to_handler, GINT_TO_POINTER (clause_index));
 			g_assert (handler_bb);
 			g_assert (ctx->bblocks [handler_bb->block_num].call_handler_target_bb);
 			LLVMAddCase (switch_ins, LLVMConstInt (LLVMInt32Type (), clause_index, FALSE), ctx->bblocks [handler_bb->block_num].call_handler_target_bb);
 		}
 	} else {
-		GSList *singleton_finally = *group_start;
 		int clause_index = group_start [0] - cfg->header->clauses;
-		MonoBasicBlock *finally_bb = g_hash_table_lookup (ctx->clause_to_handler, clause_index);
+		MonoBasicBlock *finally_bb = g_hash_table_lookup (ctx->clause_to_handler, GINT_TO_POINTER (clause_index));
 		g_assert (finally_bb);
 
 		LLVMBuildBr (ctx->builder, ctx->bblocks [finally_bb->block_num].call_handler_target_bb);
@@ -5578,7 +5568,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_ENDFINALLY: {
 			LLVMBasicBlockRef resume_bb;
 			MonoBasicBlock *handler_bb;
-			LLVMValueRef val, switch_ins, callee;
+			LLVMValueRef val, switch_ins;
 			GSList *bb_list;
 			BBInfo *info;
 
@@ -6054,7 +6044,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			cursor++;
 		}
 
-		LLVMBasicBlockRef lpad_bb = emit_landing_pad (cfg, ctx, &grouped_clauses->pdata [group_index], count);
+		LLVMBasicBlockRef lpad_bb = emit_landing_pad (cfg, ctx, (MonoExceptionClause**)&grouped_clauses->pdata [group_index], count);
 		intptr_t key = CLAUSE_END(grouped_clauses->pdata [group_index]);
 		g_hash_table_insert (ctx->exc_meta, (gpointer)key, lpad_bb);
 
@@ -6124,8 +6114,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			PhiNode *node = l->data;
 			MonoInst *phi = node->phi;
 			LLVMValueRef phi_ins = values [phi->dreg];
-			int sreg1 = node->sreg;
-			LLVMBasicBlockRef in_bb;
 
 			if (!phi_ins)
 				/* Already removed */
