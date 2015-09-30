@@ -568,10 +568,10 @@ Exit:
             {
                 fEquals = EqualsCaseInsensitive(GetNormalizedCulture(), pAssemblyName->GetNormalizedCulture());
             }
-            if (fEquals && ((dwIncludeFlags & EXCLUDE_PUBLIC_KEY_TOKEN_IF_MISSING) == 0 ||
-                (pAssemblyName->Have(AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY_TOKEN))))
+
+            if (fEquals && (dwIncludeFlags & INCLUDE_PUBLIC_KEY_TOKEN) != 0)
             {
-                    fEquals = (GetPublicKeyTokenBLOB().Equals(pAssemblyName->GetPublicKeyTokenBLOB()));
+                fEquals = (GetPublicKeyTokenBLOB().Equals(pAssemblyName->GetPublicKeyTokenBLOB()));
             }
             
             if (fEquals && ((dwIncludeFlags & INCLUDE_ARCHITECTURE) != 0))
