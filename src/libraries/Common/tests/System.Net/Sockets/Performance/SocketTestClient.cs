@@ -21,12 +21,12 @@ namespace System.Net.Sockets.Performance.Tests
         protected string _server;
         protected int _port;
         protected EndPoint _endpoint;
-        
+
         protected Socket _s;
 
         protected byte[] _sendBuffer;
         protected int _sendBufferIndex = 0;
-        
+
         protected byte[] _recvBuffer;
         protected int _recvBufferIndex = 0;
 
@@ -40,19 +40,19 @@ namespace System.Net.Sockets.Performance.Tests
 
         private int _send_iterations = 0;
         private int _receive_iterations = 0;
-        
-        Stopwatch _timeConnect = new Stopwatch();
-        Stopwatch _timeSendRecv = new Stopwatch();
-        Stopwatch _timeClose = new Stopwatch();
 
-        TaskCompletionSource<long> tcs = new TaskCompletionSource<long>();
+        private Stopwatch _timeConnect = new Stopwatch();
+        private Stopwatch _timeSendRecv = new Stopwatch();
+        private Stopwatch _timeClose = new Stopwatch();
+
+        private TaskCompletionSource<long> _tcs = new TaskCompletionSource<long>();
 
         public SocketTestClient(
             ITestOutputHelper log,
-            string server, 
-            int port, 
-            int iterations, 
-            string message, 
+            string server,
+            int port,
+            int iterations,
+            string message,
             Stopwatch timeProgramStart)
         {
             _log = log;
@@ -80,9 +80,9 @@ namespace System.Net.Sockets.Performance.Tests
             ITestOutputHelper log,
             SocketImplementationType type,
             string server,
-            int port, 
-            int iterations, 
-            string message, 
+            int port,
+            int iterations,
+            string message,
             Stopwatch timeProgramStart)
         {
             switch (type)
@@ -250,10 +250,10 @@ namespace System.Net.Sockets.Performance.Tests
             }
 
             _log.WriteLine(
-                this.GetHashCode() + " OnClose() setting tcs result : {0}", 
+                this.GetHashCode() + " OnClose() setting tcs result : {0}",
                 _timeSendRecv.ElapsedMilliseconds);
 
-            tcs.TrySetResult(_timeSendRecv.ElapsedMilliseconds);
+            _tcs.TrySetResult(_timeSendRecv.ElapsedMilliseconds);
         }
 
         public Task<long> RunTest()
@@ -261,7 +261,7 @@ namespace System.Net.Sockets.Performance.Tests
             _timeConnect.Start();
             Connect(OnConnect);
 
-            return tcs.Task;
+            return _tcs.Task;
         }
 
         protected abstract string ImplementationName();

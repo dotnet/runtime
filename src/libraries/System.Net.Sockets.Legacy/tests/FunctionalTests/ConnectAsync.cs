@@ -12,7 +12,7 @@ namespace System.Net.Sockets.Tests
         public void OnConnectCompleted(object sender, SocketAsyncEventArgs args)
         {
             EventWaitHandle handle = (EventWaitHandle)args.UserToken;
-            handle.Set();            
+            handle.Set();
         }
 
         [Fact]

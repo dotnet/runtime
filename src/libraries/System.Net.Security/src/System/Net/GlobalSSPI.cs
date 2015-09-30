@@ -6,7 +6,6 @@ namespace System.Net
     // Need a global so we can pass the interfaces as variables.
     internal static class GlobalSSPI
     {
-        internal static SSPIInterface SSPISecureChannel = new SSPISecureChannelType();      
+        internal static SSPIInterface SSPISecureChannel = new SSPISecureChannelType();
     }
-
 }

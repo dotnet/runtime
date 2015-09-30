@@ -10,11 +10,11 @@ namespace System.Net.Sockets.Performance.Tests
     public class SocketTestClientAPM : SocketTestClient
     {
         public SocketTestClientAPM(
-            ITestOutputHelper log, 
-            string server, 
-            int port, 
-            int iterations, 
-            string message, 
+            ITestOutputHelper log,
+            string server,
+            int port,
+            int iterations,
+            string message,
             Stopwatch timeProgramStart) : base(log, server, port, iterations, message, timeProgramStart)
         {
         }
@@ -50,11 +50,11 @@ namespace System.Net.Sockets.Performance.Tests
         public override void Receive(Action<int, SocketError> onReceiveCallback)
         {
             _s.BeginReceive(
-                _recvBuffer, 
-                _recvBufferIndex, 
-                _recvBuffer.Length - _recvBufferIndex, 
-                SocketFlags.None, 
-                OnReceive, 
+                _recvBuffer,
+                _recvBufferIndex,
+                _recvBuffer.Length - _recvBufferIndex,
+                SocketFlags.None,
+                OnReceive,
                 onReceiveCallback);
         }
 
@@ -79,7 +79,7 @@ namespace System.Net.Sockets.Performance.Tests
         public override void Send(Action<int, SocketError> onSendCallback)
         {
             _s.BeginSend(
-                _sendBuffer, 
+                _sendBuffer,
                 _sendBufferIndex,
                 _sendBuffer.Length - _sendBufferIndex,
                 SocketFlags.None,

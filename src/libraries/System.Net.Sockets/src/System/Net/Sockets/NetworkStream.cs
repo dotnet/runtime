@@ -228,7 +228,7 @@ namespace System.Net.Sockets
 
         // Set/Get WriteTimeout, note of a strange behavior, 0 timeout == infinite for sockets,
         // so we map this to -1, and if you set 0, we cannot support it
-	    public override int WriteTimeout
+        public override int WriteTimeout
         {
             get
             {

@@ -1728,7 +1728,7 @@ namespace System.Net
 
     internal sealed class CookieComparer : IComparer<Cookie>
     {
-        private CookieComparer() {}
+        private CookieComparer() { }
 
         private static CookieComparer s_instance;
 

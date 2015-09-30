@@ -1,11 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Threading;
 using Microsoft.Win32.SafeHandles;
+
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System.Net.Sockets
 {
@@ -13,10 +14,9 @@ namespace System.Net.Sockets
     internal sealed class SafeOverlappedFree : DebugSafeHandle
     {
 #else
-    internal sealed class SafeOverlappedFree : SafeHandleZeroOrMinusOneIsInvalid {
+    internal sealed class SafeOverlappedFree : SafeHandleZeroOrMinusOneIsInvalid
+    {
 #endif
-        private const int LPTR = 0x0040;
-
         private static readonly SafeOverlappedFree s_zero = new SafeOverlappedFree(false);
 
         private SafeCloseSocket _socketHandle;
@@ -28,12 +28,16 @@ namespace System.Net.Sockets
 
         public static SafeOverlappedFree Alloc()
         {
-            SafeOverlappedFree result = Interop.mincore_obsolete.LocalAlloc(LPTR, (UIntPtr)Win32.OverlappedSize);
+            SafeOverlappedFree result = Interop.mincore_obsolete.LocalAlloc_SafeOverlappedFree(
+                                            Interop.mincore_obsolete.LPTR,
+                                            (UIntPtr)Interop.mincore_obsolete.OverlappedSize);
+
             if (result.IsInvalid)
             {
                 result.SetHandleAsInvalid();
                 throw new OutOfMemoryException();
             }
+
             return result;
         }
 
@@ -50,6 +54,7 @@ namespace System.Net.Sockets
             {
                 _socketHandle = null;
             }
+
             Dispose();
         }
 

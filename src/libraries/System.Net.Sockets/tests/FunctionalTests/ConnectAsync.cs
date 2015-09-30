@@ -36,7 +36,6 @@ namespace System.Net.Sockets.Tests
             int port;
             using (SocketTestServer.SocketTestServerFactory(IPAddress.Loopback, out port))
             {
-
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
                 args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, port);
                 args.Completed += OnConnectCompleted;

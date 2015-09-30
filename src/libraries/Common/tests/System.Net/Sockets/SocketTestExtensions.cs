@@ -3,7 +3,7 @@
 
 namespace System.Net.Sockets.Tests
 {
-    static class SocketTestExtensions
+    internal static class SocketTestExtensions
     {
         // Binds to an IP address and OS-assigned port. Returns the chosen port.
         public static int BindToAnonymousPort(this Socket socket, IPAddress address)

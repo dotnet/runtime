@@ -2458,7 +2458,7 @@ namespace System.Net.Sockets.Tests
                 port = _server.BindToAnonymousPort(address);
 
                 IPAddress remoteAddress = address.AddressFamily == AddressFamily.InterNetwork ? IPAddress.Any : IPAddress.IPv6Any;
-                EndPoint remote = new IPEndPoint(remoteAddress , 0);
+                EndPoint remote = new IPEndPoint(remoteAddress, 0);
                 _server.BeginReceiveFrom(new byte[1], 0, 1, SocketFlags.None, ref remote, Received, null);
             }
 

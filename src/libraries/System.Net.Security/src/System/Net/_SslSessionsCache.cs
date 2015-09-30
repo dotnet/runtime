@@ -19,7 +19,7 @@ namespace System.Net.Security
         {
             private byte[] _CertThumbPrint;
             private int _AllowedProtocols;
-            private bool isServerMode;
+            private bool _isServerMode;
             private EncryptionPolicy _EncryptionPolicy;
             private readonly int _HashCode;
 
@@ -54,9 +54,9 @@ namespace System.Net.Security
                 _HashCode ^= allowedProtocols;
                 _HashCode ^= (int)encryptionPolicy;
                 _HashCode ^= serverMode ? 5 : 7; //TODO (Issue #3362) used a prime number here as it's a XOR. Figure out appropriate value.
-                _AllowedProtocols = allowedProtocols;               
+                _AllowedProtocols = allowedProtocols;
                 _EncryptionPolicy = encryptionPolicy;
-                isServerMode = serverMode;
+                _isServerMode = serverMode;
             }
 
             public override int GetHashCode()
@@ -100,7 +100,7 @@ namespace System.Net.Security
                     return false;
                 }
 
-                if (isServerMode != other.isServerMode)
+                if (_isServerMode != other._isServerMode)
                 {
                     return false;
                 }

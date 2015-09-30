@@ -10,7 +10,9 @@ internal static partial class Interop
 {
     internal static partial class mincore_obsolete
     {
-        [DllImport(Interop.Libraries.Heap, SetLastError = true)]
-        internal static extern SafeOverlappedFree LocalAlloc(int uFlags, UIntPtr sizetdwBytes);
+        internal static int OverlappedSize = IntPtr.Size * 3 + 8;
+
+        [DllImport(Interop.Libraries.Heap, EntryPoint = "LocalAlloc", SetLastError = true)]
+        internal static extern SafeOverlappedFree LocalAlloc_SafeOverlappedFree(int uFlags, UIntPtr sizetdwBytes);
     }
 }
