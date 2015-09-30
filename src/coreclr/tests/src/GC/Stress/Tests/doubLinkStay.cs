@@ -1,4 +1,9 @@
+
+
+using System;
 // Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
@@ -11,60 +16,58 @@
 /*objects' life time is longer than DoubLinkGen.
 /******************************************************************/
 
-namespace DoubLink {
-    using System;
-
+namespace DoubLink
+{
     public class DoubLinkStay
     {
         internal DoubLink[] Mv_Doub;
 
-        public static int Main(System.String [] Args)
+        public static int Main(System.String[] Args)
         {
             int iRep = 100;
             int iObj = 10;
             Console.WriteLine("Test should return with ExitCode 100 ...");
 
-            switch( Args.Length )
+            switch (Args.Length)
             {
                 case 1:
-                    if (!Int32.TryParse( Args[0], out iRep ))
+                    if (!Int32.TryParse(Args[0], out iRep))
                     {
                         iRep = 100;
                     }
-                break;
+                    break;
 
                 case 2:
-                    if (!Int32.TryParse( Args[0], out iRep ))
+                    if (!Int32.TryParse(Args[0], out iRep))
                     {
                         iRep = 100;
                     }
-                    if (!Int32.TryParse( Args[1], out iObj ))
+                    if (!Int32.TryParse(Args[1], out iObj))
                     {
                         iObj = 10;
                     }
-                break;
+                    break;
 
                 default:
                     iRep = 100;
                     iObj = 10;
-                break;
+                    break;
             }
 
             DoubLinkStay Mv_Leak = new DoubLinkStay();
-            if(Mv_Leak.runTest(iRep, iObj ))
+            if (Mv_Leak.runTest(iRep, iObj))
             {
                 Console.WriteLine("Test Passed");
                 return 100;
             }
             Console.WriteLine("Test Failed");
             return 1;
-
         }
 
         public bool runTest(int iRep, int iObj)
         {
             Mv_Doub = new DoubLink[iRep];
-            for(int i=0; i<20; i++)
+            for (int i = 0; i < 20; i++)
             {
                 SetLink(iRep, iObj);
                 MakeLeak(iRep);
@@ -79,29 +82,25 @@ namespace DoubLink {
 
             Console.Write(DLinkNode.FinalCount);
             Console.WriteLine(" DLinkNodes finalized");
-            return (DLinkNode.FinalCount==iRep*iObj*20);
-
+            return (DLinkNode.FinalCount == iRep * iObj * 20);
         }
 
         public void SetLink(int iRep, int iObj)
         {
-
-            for(int i=0; i<iRep; i++)
+            for (int i = 0; i < iRep; i++)
             {
                 Mv_Doub[i] = new DoubLink(iObj);
             }
-
         }
 
 
         public void MakeLeak(int iRep)
         {
-            for(int i=0; i<iRep; i++)
+            for (int i = 0; i < iRep; i++)
             {
                 Mv_Doub[i] = null;
             }
         }
-
     }
 
     public class DoubLink
@@ -115,7 +114,6 @@ namespace DoubLink {
 
         public DoubLink(int Num, bool large)
         {
-
             Mv_DLink = new DLinkNode[Num];
 
             if (Num == 0)
@@ -165,7 +163,6 @@ namespace DoubLink {
                 Mv_DLink[index] = value;
             }
         }
-
     }
 
     public class DLinkNode

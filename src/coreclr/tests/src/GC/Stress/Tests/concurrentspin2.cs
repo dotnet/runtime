@@ -1,73 +1,74 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
 using System;
 using System.Diagnostics;
 using System.Threading;
 
-class PriorityTest
+internal class PriorityTest
 {
-    private byte[][] old;
-    private byte[][] med;
-    private Random rand;
+    private byte[][] _old;
+    private byte[][] _med;
+    private Random _rand;
 
-    private int oldDataSize;
-    private int medDataSize;
-    private int iterCount;
-    private int meanAllocSize;
-    private int medTime;
-    private int youngTime;
+    private int _oldDataSize;
+    private int _medDataSize;
+    private int _iterCount;
+    private int _meanAllocSize;
+    private int _medTime;
+    private int _youngTime;
 
 
     public PriorityTest(int oldDataSize, int medDataSize,
                         int iterCount, int meanAllocSize,
                         int medTime, int youngTime)
     {
-        rand = new Random(314159);
-        this.oldDataSize = oldDataSize;
-        this.medDataSize = medDataSize;
-        this.iterCount = iterCount;
-        this.meanAllocSize = meanAllocSize;
-        this.medTime = medTime;
-        this.youngTime = youngTime;
+        _rand = new Random(314159);
+        _oldDataSize = oldDataSize;
+        _medDataSize = medDataSize;
+        _iterCount = iterCount;
+        _meanAllocSize = meanAllocSize;
+        _medTime = medTime;
+        _youngTime = youngTime;
     }
 
     // creates initial arrays
-    void AllocTest(int oldDataSize, int medDataSize, int meanAllocSize)
+    private void AllocTest(int oldDataSize, int medDataSize, int meanAllocSize)
     {
-        old = new byte[oldDataSize][];
-        med = new byte[medDataSize][];
+        _old = new byte[oldDataSize][];
+        _med = new byte[medDataSize][];
 
-        for (int i = 0; i < old.Length; i++)
+        for (int i = 0; i < _old.Length; i++)
         {
-            old[i] = new byte[meanAllocSize];
+            _old[i] = new byte[meanAllocSize];
         }
 
-        for (int i = 0; i < med.Length; i++)
+        for (int i = 0; i < _med.Length; i++)
         {
-            med[i] = new byte[meanAllocSize];
+            _med[i] = new byte[meanAllocSize];
         }
     }
 
     // churns data in the heap by replacing byte arrays with new ones of random length
     // this should induce concurrent GCs
-    void SteadyState(int oldDataSize, int medDataSize,
+    private void SteadyState(int oldDataSize, int medDataSize,
                         int iterCount, int meanAllocSize,
                         int medTime, int youngTime)
     {
-
         for (int i = 0; i < iterCount; i++)
         {
             byte[] newarray = new byte[meanAllocSize];
 
             if ((i % medTime) == 0)
             {
-                old[rand.Next(0, old.Length)] = newarray;
+                _old[_rand.Next(0, _old.Length)] = newarray;
             }
             if ((i % youngTime) == 0)
             {
-                med[rand.Next(0, med.Length)] = newarray;
+                _med[_rand.Next(0, _med.Length)] = newarray;
             }
             //if (((i % 5000) == 0) && (Thread.CurrentThread.Priority != ThreadPriority.Lowest))
             //{
@@ -79,26 +80,23 @@ class PriorityTest
     // method that runs the test
     public void RunTest()
     {
-        for (int iteration = 0; iteration < iterCount; iteration++)
+        for (int iteration = 0; iteration < _iterCount; iteration++)
         {
-            AllocTest(oldDataSize, medDataSize, meanAllocSize);
+            AllocTest(_oldDataSize, _medDataSize, _meanAllocSize);
 
-            SteadyState(oldDataSize, medDataSize,
-                iterCount, meanAllocSize,
-                medTime, youngTime);
+            SteadyState(_oldDataSize, _medDataSize,
+                _iterCount, _meanAllocSize,
+                _medTime, _youngTime);
 
             if (((iteration + 1) % 20) == 0)
                 Console.WriteLine("Thread: {1} Finished iteration {0}", iteration, System.Threading.Thread.CurrentThread.Name);
         }
-
     }
-
 }
 
 
-class ConcurrentRepro
+internal class ConcurrentRepro
 {
-
     public static void Usage()
     {
         Console.WriteLine("Usage:");
@@ -143,7 +141,6 @@ class ConcurrentRepro
 
     public static int Main(string[] args)
     {
-
         // parse arguments
         int[] parameters = ParseArgs(args);
         if (parameters == null)

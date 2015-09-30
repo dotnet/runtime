@@ -1,49 +1,53 @@
+
+
+using System.Threading;
+using System;
+using System.IO;
 // Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
-namespace LGen {
-    using System.Threading;
-    using System;
-    using System.IO;
-
+namespace LGen
+{
     public class LeakGenThrd
     {
         internal int myObj;
         internal int Cv_iCounter = 0;
         internal int Cv_iRep;
 
-        public static int Main(System.String [] Args)
+        public static int Main(System.String[] Args)
         {
             int iRep = 2;
             int iObj = 15; //the number of MB memory will be allocted in MakeLeak()
 
-            switch( Args.Length )
+            switch (Args.Length)
             {
                 case 1:
-                    if (!Int32.TryParse( Args[0], out iRep ))
+                    if (!Int32.TryParse(Args[0], out iRep))
                     {
                         iRep = 2;
                     }
-                break;
+                    break;
                 case 2:
-                    if (!Int32.TryParse( Args[0], out iRep ))
+                    if (!Int32.TryParse(Args[0], out iRep))
                     {
                         iRep = 2;
                     }
-                    if (!Int32.TryParse( Args[1], out iObj ))
+                    if (!Int32.TryParse(Args[1], out iObj))
                     {
                         iObj = 15;
                     }
-                break;
+                    break;
                 default:
                     iRep = 2;
                     iObj = 15;
-                break;
+                    break;
             }
 
             LeakGenThrd Mv_Leak = new LeakGenThrd();
-            if(Mv_Leak.runTest(iRep, iObj ))
+            if (Mv_Leak.runTest(iRep, iObj))
             {
                 Console.WriteLine("Test Passed");
                 return 100;
@@ -62,9 +66,9 @@ namespace LGen {
             myObj = iObj;
 
             Thread Mv_Thread = new Thread(new ThreadStart(this.ThreadStart));
-            Mv_Thread.Start( );
+            Mv_Thread.Start();
 
-            for(int i = 0; i<iRep; i++)
+            for (int i = 0; i < iRep; i++)
             {
                 MakeLeak(iObj);
             }
@@ -74,37 +78,31 @@ namespace LGen {
 
 
 
-        public void ThreadStart( )
+        public void ThreadStart()
         {
-
-            if( Cv_iCounter < Cv_iRep )
+            if (Cv_iCounter < Cv_iRep)
             {
-                LeakObject []Mv_Obj = new LeakObject[myObj];
-                for(int i=0; i<myObj; i++)
+                LeakObject[] Mv_Obj = new LeakObject[myObj];
+                for (int i = 0; i < myObj; i++)
                 {
                     Mv_Obj[i] = new LeakObject(i);
                 }
 
                 Cv_iCounter += 1;
 
-                Thread Mv_Thread = new Thread( new ThreadStart(this.ThreadStart) );
-                Mv_Thread.Start( );
-
+                Thread Mv_Thread = new Thread(new ThreadStart(this.ThreadStart));
+                Mv_Thread.Start();
             }
-
         }
 
         public void MakeLeak(int iObj)
         {
-
-            LeakObject []Mv_Obj = new LeakObject[iObj];
-            for(int i=0; i<iObj; i++)
+            LeakObject[] Mv_Obj = new LeakObject[iObj];
+            for (int i = 0; i < iObj; i++)
             {
                 Mv_Obj[i] = new LeakObject(i);
             }
-
         }
-
     }
 
     public class LeakObject
@@ -123,5 +121,4 @@ namespace LGen {
             LeakObject.icFinal++;
         }
     }
-
 }

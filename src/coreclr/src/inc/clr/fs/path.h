@@ -36,6 +36,25 @@ namespace clr
         class Path
         {
         public:
+#if !PLATFORM_UNIX
+            static const CHAR DirectorySeparatorChar = '\\';
+#else // PLATFORM_UNIX
+            static const CHAR DirectorySeparatorChar = '/';
+#endif
+
+#if !PLATFORM_UNIX
+            static const CHAR PathSeparatorChar = ';';
+#else // PLATFORM_UNIX
+            static const CHAR PathSeparatorChar = ':';
+#endif // !PLATFORM_UNIX
+
+#if !PLATFORM_UNIX
+            static const CHAR VolumeSeparatorChar = ':';
+#else // PLATFORM_UNIX
+            static const CHAR VolumeSeparatorChar = '/';
+#endif // !PLATFORM_UNIX
+
+        public:
             //-----------------------------------------------------------------------------------------
             static inline bool
             Exists(
