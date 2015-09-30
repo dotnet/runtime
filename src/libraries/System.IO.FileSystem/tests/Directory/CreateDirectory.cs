@@ -219,6 +219,17 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
+        public void PathWithInvalidColons_ThrowsNotSupportedException()
+        {
+            var paths = IOInputs.GetPathsWithInvalidColons();
+            Assert.All(paths, (path) =>
+            {
+                Assert.Throws<NotSupportedException>(() => Create(path));
+            });
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
         public void DirectoryLongerThanMaxPath_Succeeds()
         {
             var paths = IOInputs.GetPathsLongerThanMaxPath(GetTestFilePath());

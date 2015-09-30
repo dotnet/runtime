@@ -44,7 +44,6 @@
     <Compile Include="Tests\System\IO\PathInternal.Tests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
-    <Compile Include="Tests\Interop\Windows\mincore\GetFullPathName.Tests.cs" />
     <Compile Include="..\src\System\IO\PathInternal.Windows.cs">
       <Link>Common\System\IO\PathInternal.Windows.cs</Link>
     </Compile>
