@@ -1,5 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
 #define USE_INSTRUMENTATION
@@ -13,51 +15,51 @@ using System.Collections.Generic;
 /// <summary>
 /// Classed used for all logging infrastructure
 /// </summary>
-class RFLogging
+internal class RFLogging
 #if !PROJECTK_BUILD
     : MarshalByRefObject
 #endif
 {
-    Queue<string> messageQueue;
-    Queue<string> instrumentationMessageQueue;
-    Thread loggingThread;
-    volatile bool closeLogFile;
+    private Queue<string> _messageQueue;
+    private Queue<string> _instrumentationMessageQueue;
+    private Thread _loggingThread;
+    private volatile bool _closeLogFile;
 
-    ASCIIEncoding encoding = new ASCIIEncoding();
-    bool noStatusWarningDisplayed = false;    
-    FileStream logFile = null;
-    bool reportResults = true;
+    private ASCIIEncoding _encoding = new ASCIIEncoding();
+    private bool _noStatusWarningDisplayed = false;
+    private FileStream _logFile = null;
+    private bool _reportResults = true;
 #if USE_INSTRUMENTATION
-    FileStream instrumentationLogFile = null;
+    private FileStream _instrumentationLogFile = null;
 #endif
 
-    const string logDirectory = "Logs";
+    private const string logDirectory = "Logs";
 
     public RFLogging()
     {
         CreateInstrumentationLog();
 
-        messageQueue = new Queue<string>(25000);
-        instrumentationMessageQueue = new Queue<string>(25000);
-        closeLogFile = false;
-        loggingThread = new Thread(new ThreadStart(LogWorker));
-        loggingThread.IsBackground = true;
+        _messageQueue = new Queue<string>(25000);
+        _instrumentationMessageQueue = new Queue<string>(25000);
+        _closeLogFile = false;
+        _loggingThread = new Thread(new ThreadStart(LogWorker));
+        _loggingThread.IsBackground = true;
 #if !PROJECTK_BUILD
         loggingThread.Priority = ThreadPriority.Highest;
 #endif
-        loggingThread.Start();
+        _loggingThread.Start();
     }
 
     private void LogWorker()
-    {        
+    {
         while (true)
         {
-            bool cachedCloseLogFile = closeLogFile; // The CloseLog method will set closeLogFile to true indicating we should close the log file
-                                                                          // This value is cached here so we can write all of the remaining messages to log before closing it
-            int messageQueueCount = messageQueue.Count;
-            int instrumentationQueueCount = instrumentationMessageQueue.Count;
+            bool cachedCloseLogFile = _closeLogFile; // The CloseLog method will set closeLogFile to true indicating we should close the log file
+                                                    // This value is cached here so we can write all of the remaining messages to log before closing it
+            int messageQueueCount = _messageQueue.Count;
+            int instrumentationQueueCount = _instrumentationMessageQueue.Count;
 
-            if (logFile != null && messageQueueCount > 0)
+            if (_logFile != null && messageQueueCount > 0)
             {
                 try
                 {
@@ -66,20 +68,20 @@ class RFLogging
                     {
                         try
                         {
-                            lock (messageQueue)
+                            lock (_messageQueue)
                             {
-                                text = messageQueue.Dequeue();
+                                text = _messageQueue.Dequeue();
                             }
                         }
                         catch (InvalidOperationException) { text = null; }
 
                         if (!String.IsNullOrEmpty(text))
                         {
-                            logFile.Write(encoding.GetBytes(text), 0, text.Length);
+                            _logFile.Write(_encoding.GetBytes(text), 0, text.Length);
                             text = null;
                         }
                     }
-                    logFile.Flush();  
+                    _logFile.Flush();
                 }
                 catch (IOException e)
                 {
@@ -89,17 +91,19 @@ class RFLogging
             }
 
 
-            if(cachedCloseLogFile) {
-                if(null != logFile) {
+            if (cachedCloseLogFile)
+            {
+                if (null != _logFile)
+                {
 #if !PROJECTK_BUILD
                     logFile.Close();
 #endif
-                    logFile = null;
+                    _logFile = null;
                 }
-                closeLogFile = false;
+                _closeLogFile = false;
             }
 
-            if (instrumentationLogFile != null && instrumentationQueueCount > 0)
+            if (_instrumentationLogFile != null && instrumentationQueueCount > 0)
             {
                 try
                 {
@@ -108,20 +112,20 @@ class RFLogging
                     {
                         try
                         {
-                            lock (instrumentationMessageQueue)
+                            lock (_instrumentationMessageQueue)
                             {
-                                text = instrumentationMessageQueue.Dequeue();
+                                text = _instrumentationMessageQueue.Dequeue();
                             }
                         }
                         catch (InvalidOperationException) { text = null; }
 
                         if (!String.IsNullOrEmpty(text))
                         {
-                            instrumentationLogFile.Write(encoding.GetBytes(text), 0, text.Length);                            
+                            _instrumentationLogFile.Write(_encoding.GetBytes(text), 0, text.Length);
                             text = null;
                         }
                     }
-                    instrumentationLogFile.Flush();                    
+                    _instrumentationLogFile.Flush();
                 }
                 catch (IOException e)
                 {
@@ -133,7 +137,7 @@ class RFLogging
 
     private void CreateInstrumentationLog()
     {
-        if (instrumentationLogFile == null)
+        if (_instrumentationLogFile == null)
         {
             try
             {
@@ -143,11 +147,11 @@ class RFLogging
                     logFilename = logDirectory + "\\instrmentation.log-" + DateTime.Now.ToString().Replace('/', '-').Replace(':', '.');
                 }
 
-                instrumentationLogFile = File.Open(logFilename, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite);
+                _instrumentationLogFile = File.Open(logFilename, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite);
             }
             catch
             {
-                instrumentationLogFile = null;
+                _instrumentationLogFile = null;
                 return;
             }
         }
@@ -160,12 +164,12 @@ class RFLogging
     /// </summary>
     public void OpenLog(string name)
     {
-        if (logFile != null)
+        if (_logFile != null)
         {
 #if !PROJECTK_BUILD
             logFile.Close();
 #endif
-            logFile = null;
+            _logFile = null;
         }
         // open the log file if the user hasn't disabled it.
         string filename = null;
@@ -187,7 +191,7 @@ class RFLogging
                 }
                 try
                 {
-                    logFile = File.Open(filename, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite);
+                    _logFile = File.Open(filename, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite);
                 }
                 catch (IOException e)
                 {
@@ -201,28 +205,28 @@ class RFLogging
         catch (ArgumentException)
         {
             Console.WriteLine("RFLogging - Blank or Empty FriendlyName, logging is disabled: {0}", name);
-            logFile = null;
+            _logFile = null;
         }
         catch (PathTooLongException)
         {
             Console.WriteLine("RFLogging - FriendlyName is too long, logging is disabled: {0}", name);
-            logFile = null;
+            _logFile = null;
         }
         catch (DirectoryNotFoundException ex)
         {
             Console.WriteLine(ex.ToString());
             Console.WriteLine("RFLogging - Friendly name contains drive or directory specifiers, logging is disabled: {0} {1}", name, filename);
-            logFile = null;
+            _logFile = null;
         }
         catch (UnauthorizedAccessException)
         {
             Console.WriteLine("RFLogging - Unauthorized access to log file, please change the test name or fix the current directory: {0}.log", name);
-            logFile = null;
+            _logFile = null;
         }
         catch (NotSupportedException)
         {
             Console.WriteLine("RFLogging - The friendly test name contains a : in the string, try again: {0}", name);
-            logFile = null;
+            _logFile = null;
         }
     }
 
@@ -231,18 +235,18 @@ class RFLogging
     /// </summary>
     public void CloseLog()
     {
-        if (null != logFile)
+        if (null != _logFile)
         {
             WriteToLog("</TestRun>\r\n");
-      
-            closeLogFile = true;
 
-            for(int i=0; i<60 && closeLogFile; ++i) 
+            _closeLogFile = true;
+
+            for (int i = 0; i < 60 && _closeLogFile; ++i)
             {
                 Thread.Sleep(100);
             }
 
-            if(closeLogFile) 
+            if (_closeLogFile)
             {
                 throw new InvalidOperationException("Log was not closed after waiting 1 minute.");
             }
@@ -346,17 +350,17 @@ class RFLogging
     /// This writes a line of text to the log file.  If the log file is not opened no action is taken.
     /// </summary>
     /// <param name="text">the text to write to the logfile</param>
-    void WriteToLog(string text)
+    private void WriteToLog(string text)
     {
         WriteToReport();
 
-        if (logFile != null)
+        if (_logFile != null)
         {
             try
             {
-                lock (messageQueue)
+                lock (_messageQueue)
                 {
-                    messageQueue.Enqueue(text);
+                    _messageQueue.Enqueue(text);
                 }
             }
             catch (IOException) { /*Eat exceptions for IO */ }
@@ -386,9 +390,9 @@ class RFLogging
                     }
                     p.Dispose();
                 }
-                else if (!noStatusWarningDisplayed)
+                else if (!_noStatusWarningDisplayed)
                 {
-                    noStatusWarningDisplayed = true;
+                    _noStatusWarningDisplayed = true;
                     Console.WriteLine("WARNING: record.js does not exist, not updating status...");
                 }
             }
@@ -405,19 +409,19 @@ class RFLogging
     {
         get
         {
-            return (reportResults);
+            return (_reportResults);
         }
         set
         {
-            reportResults = value;
+            _reportResults = value;
         }
     }
 
     public void LogNoResultReporter(bool fReportResults)
     {
-        if (!noStatusWarningDisplayed)
+        if (!_noStatusWarningDisplayed)
         {
-            noStatusWarningDisplayed = true;
+            _noStatusWarningDisplayed = true;
             if (fReportResults)
             {
                 Console.WriteLine("WARNING: record.js does not exist, not updating status...");
@@ -438,15 +442,14 @@ class RFLogging
             str = String.Format("[{0} {2}] {1}\r\n", DateTime.Now.ToString(), str, Thread.CurrentThread.ManagedThreadId);
             try
             {
-                lock (instrumentationMessageQueue)
+                lock (_instrumentationMessageQueue)
                 {
-                    instrumentationMessageQueue.Enqueue(str);
+                    _instrumentationMessageQueue.Enqueue(str);
                 }
             }
-            catch (IOException) { /*Eat exceptions for IO */ }                       
-            catch (InvalidOperationException) { /*Eat exceptions if we can't queue */}            
+            catch (IOException) { /*Eat exceptions for IO */ }
+            catch (InvalidOperationException) { /*Eat exceptions if we can't queue */}
         }
     }
-
 }
 

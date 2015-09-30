@@ -4,7 +4,6 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <AssemblyName>mainv1</AssemblyName>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{7DECC55A-B584-4456-83BA-6C42A5B3B3CB}</ProjectGuid>
     <OutputType>exe</OutputType>
@@ -14,6 +13,7 @@
     <ReferencePath>$(ProgramFiles)\Common Files\microsoft shared\VSTT\11.0\UITestExtensionPackages</ReferencePath>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
     <NuGetPackageImportStamp>7a9bfb7d</NuGetPackageImportStamp>
     <DefineConstants>$(DefineConstants);STATIC;CORECLR</DefineConstants>
   </PropertyGroup>
@@ -28,7 +28,7 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="testv1\testv1.csproj">
+    <ProjectReference Include="testv1\test.csproj">
        <Project>{F74F55A1-DFCF-4C7C-B462-E96E1D0BB667}</Project>
     </ProjectReference>
   </ItemGroup>
@@ -48,13 +48,13 @@
     </Reference>
   </ItemGroup>
   <PropertyGroup>
-    <_CLRTestPreCommands><![CDATA[
-$(_CLRTestPreCommands)
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
 IF not exist NI mkdir NI
 COPY /Y testv1\test.dll test.dll
 %Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out NI\test.ni.dll test.dll 
 %Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out NI\mainv1.ni.exe mainv1.exe
-]]></_CLRTestPreCommands>
+]]></CLRTestBatchPreCommands>
   </PropertyGroup>  
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

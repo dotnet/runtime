@@ -41,7 +41,6 @@
       <Output TaskParameter="ResolvedReferences" ItemName="Reference" />
       <Output TaskParameter="ResolvedCopyLocalItems" ItemName="RunTimeCopyLocal" />
     </PrereleaseResolveNuGetPackageAssets>
-
     <ItemGroup>
       <RunTimeDependecyExclude Include="$(CORE_ROOT)\**\*.*"  />
       <RunTimeDependecyExcludeFiles Include="@(RunTimeDependecyExclude -> '%(FileName)%(Extension)')" />
