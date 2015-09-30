@@ -206,21 +206,6 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
-        public void WindowsRemoveExtraneousWhitespace()
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string testFile1 = Path.Combine(testDir.FullName, GetTestFileName());
-            string testFile2 = Path.Combine(" ", testDir.FullName, " ", GetTestFileName());
-            using (Create(string.Format(" {0}", testFile1)))
-            using (Create(testFile2))
-            {
-                Assert.True(File.Exists(testFile1));
-                Assert.True(File.Exists(testFile2));
-            }
-        }
-
-        [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
         public void WindowsWhitespacePath()
         {
             Assert.Throws<ArgumentException>(() => Create("         "));

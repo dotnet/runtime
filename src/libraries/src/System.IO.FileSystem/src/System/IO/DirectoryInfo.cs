@@ -18,7 +18,7 @@ namespace System.IO
             Contract.EndContractBlock();
 
             OriginalPath = PathHelpers.ShouldReviseDirectoryPathToCurrent(path) ? "." : path;
-            FullPath = PathHelpers.GetFullPathInternal(path);
+            FullPath = Path.GetFullPath(path);
             DisplayPath = GetDisplayName(OriginalPath, FullPath);
         }
 
@@ -382,7 +382,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyFileName, "destDirName");
             Contract.EndContractBlock();
 
-            String fullDestDirName = PathHelpers.GetFullPathInternal(destDirName);
+            String fullDestDirName = Path.GetFullPath(destDirName);
             if (fullDestDirName[fullDestDirName.Length - 1] != Path.DirectorySeparatorChar)
                 fullDestDirName = fullDestDirName + PathHelpers.DirectorySeparatorCharAsString;
 

@@ -51,4 +51,22 @@ public class PathInternal_Windows_Tests
 
         Assert.Equal(expected, PathInternal.IsRelative(path));
     }
+
+    [Theory,
+        InlineData(@"", 0),
+        InlineData(@"  :", 0),
+        InlineData(@"  C:", 2),
+        InlineData(@"   C:\", 3),
+        InlineData(@"C:\", 0),
+        InlineData(@"  ", 0),
+        InlineData(@"  \", 0),
+        InlineData(@"  8:", 0),
+        InlineData(@"    \\", 4),
+        InlineData(@"\\", 0),
+        ]
+    [PlatformSpecific(PlatformID.Windows)]
+    public void PathStartSkipTest(string path, int expected)
+    {
+        Assert.Equal(expected, PathInternal.PathStartSkip(path));
+    }
 }

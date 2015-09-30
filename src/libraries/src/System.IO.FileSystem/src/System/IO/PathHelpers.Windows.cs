@@ -35,23 +35,6 @@ namespace System.IO
             }
         }
 
-        internal static string GetFullPathInternal(string path)
-        {
-            if (path == null)
-                throw new ArgumentNullException("path");
-
-            if (PathInternal.IsExtended(path))
-            {
-                // Don't want to trim extended paths
-                return Path.GetFullPath(path);
-            }
-            else
-            {
-                string pathTrimmed = path.TrimStart(TrimStartChars).TrimEnd(TrimEndChars);
-                return Path.GetFullPath(Path.IsPathRooted(pathTrimmed) ? pathTrimmed : path);
-            }
-        }
-
         // this is a lightweight version of GetDirectoryName that doesn't renormalize
         internal static string GetDirectoryNameInternal(string path)
         {
