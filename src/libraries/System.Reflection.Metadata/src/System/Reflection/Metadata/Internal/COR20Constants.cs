@@ -17,6 +17,7 @@ namespace System.Reflection.Metadata.Ecma335
         internal const string CompressedMetadataTableStreamName = "#~";
         internal const string UncompressedMetadataTableStreamName = "#-";
         internal const string MinimalDeltaMetadataTableStreamName = "#JTD";
+        internal const string StandalonePdbStreamName = "#Pdb";
         internal const int LargeStreamHeapSize = 0x0001000;
     }
 }

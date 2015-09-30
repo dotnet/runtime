@@ -57,15 +57,25 @@ namespace System.Reflection.Metadata
 
         public bool Equals(StringHandle handle, string value)
         {
+            return Equals(handle, value, ignoreCase: false);
+        }
+
+        public bool Equals(StringHandle handle, string value, bool ignoreCase)
+        {
             if (value == null)
             {
                 Throw.ValueArgumentNull();
             }
 
-            return _reader.StringStream.Equals(handle, value, _reader.utf8Decoder);
+            return _reader.StringStream.Equals(handle, value, _reader.utf8Decoder, ignoreCase);
         }
 
         public bool Equals(NamespaceDefinitionHandle handle, string value)
+        {
+            return Equals(handle, value, ignoreCase: false);
+        }
+
+        public bool Equals(NamespaceDefinitionHandle handle, string value, bool ignoreCase)
         {
             if (value == null)
             {
@@ -74,20 +84,40 @@ namespace System.Reflection.Metadata
 
             if (handle.HasFullName)
             {
-                return _reader.StringStream.Equals(handle.GetFullName(), value, _reader.utf8Decoder);
+                return _reader.StringStream.Equals(handle.GetFullName(), value, _reader.utf8Decoder, ignoreCase);
             }
 
             return value == _reader.namespaceCache.GetFullName(handle);
         }
 
-        public bool StartsWith(StringHandle handle, string value)
+        public bool Equals(DocumentNameBlobHandle handle, string value)
+        {
+            return Equals(handle, value, ignoreCase: false);
+        }
+
+        public bool Equals(DocumentNameBlobHandle handle, string value, bool ignoreCase)
         {
             if (value == null)
             {
                 Throw.ValueArgumentNull();
             }
 
-            return _reader.StringStream.StartsWith(handle, value, _reader.utf8Decoder);
+            return _reader.BlobStream.DocumentNameEquals(handle, value, ignoreCase);
+        }
+
+        public bool StartsWith(StringHandle handle, string value)
+        {
+            return StartsWith(handle, value, ignoreCase: false);
+        }
+
+        public bool StartsWith(StringHandle handle, string value, bool ignoreCase)
+        {
+            if (value == null)
+            {
+                Throw.ValueArgumentNull();
+            }
+
+            return _reader.StringStream.StartsWith(handle, value, _reader.utf8Decoder, ignoreCase);
         }
     }
 }

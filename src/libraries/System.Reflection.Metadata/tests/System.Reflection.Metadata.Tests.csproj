@@ -45,6 +45,7 @@
     <Compile Include="Metadata\MetadataReaderTests.cs" />
     <Compile Include="Metadata\MethodImportRow.cs" />
     <Compile Include="Metadata\TagToTokenTests.cs" />
+    <Compile Include="Metadata\PortablePdb\DocumentNameTests.cs" />
     <Compile Include="PortableExecutable\AbstractMemoryBlockTests.cs" />
     <Compile Include="PortableExecutable\BadImageFormat.cs" />
     <Compile Include="PortableExecutable\PEBinaryReaderTests.cs" />
@@ -54,6 +55,7 @@
     <Compile Include="Resources\TestResources.cs" />
     <Compile Include="TestUtilities\AssertEx.cs" />
     <Compile Include="TestUtilities\DiffUtil.cs" />
+    <Compile Include="Utilities\StringUtilsTests.cs" />
     <Compile Include="Utilities\BlobReaderTests.cs" />
     <Compile Include="Utilities\CompressedIntegerTests.cs" />
     <Compile Include="Utilities\ImmutableByteArrayInteropTest.cs" />

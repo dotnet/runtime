@@ -28,7 +28,7 @@ namespace System.Reflection.PortableExecutable
             Debug.Assert(size >= 0 && size <= (stream.Length - stream.Position));
 
             _startOffset = stream.Position;
-            _maxOffset = _startOffset + (uint)size;
+            _maxOffset = _startOffset + size;
             _reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
         }
 
@@ -61,9 +61,9 @@ namespace System.Reflection.PortableExecutable
             return _reader.ReadInt16();
         }
 
-        public UInt16 ReadUInt16()
+        public ushort ReadUInt16()
         {
-            CheckBounds(sizeof(UInt16));
+            CheckBounds(sizeof(ushort));
             return _reader.ReadUInt16();
         }
 
@@ -120,7 +120,7 @@ namespace System.Reflection.PortableExecutable
 
             if (size.HasValue)
             {
-                if (unchecked((uint)size.Value) > maxSize)
+                if (unchecked(size.Value) > maxSize)
                 {
                     throw new ArgumentOutOfRangeException("size");
                 }

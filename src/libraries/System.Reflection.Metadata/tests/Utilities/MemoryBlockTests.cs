@@ -204,7 +204,7 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal(0, bytesRead);
         }
 
-        private unsafe void TestComparisons(string heapValue, int offset, string value, bool unicode = false)
+        private unsafe void TestComparisons(string heapValue, int offset, string value, bool unicode = false, bool ignoreCase = false)
         {
             byte[] heap;
             MetadataStringDecoder decoder = MetadataStringDecoder.DefaultUTF8;
@@ -222,16 +222,26 @@ namespace System.Reflection.Metadata.Tests
                     Assert.Equal(Math.Sign(expectedCmp), Math.Sign(actualCmp));
                 }
 
-                // equals:
-                bool actualEq = block.Utf8NullTerminatedEquals(offset, value, decoder);
-                bool expectedEq = StringComparer.Ordinal.Equals(heapSubstr, value);
-                Assert.Equal(expectedEq, actualEq);
+                if (!ignoreCase)
+                {
+                    TestComparison(block, offset, value, heapSubstr, decoder, ignoreCase: true);
+                }
 
-                // starts with:
-                bool actualSW = block.Utf8NullTerminatedStartsWith(offset, value, decoder);
-                bool expectedSW = heapSubstr.StartsWith(value, StringComparison.Ordinal);
-                Assert.Equal(actualSW, expectedSW);
+                TestComparison(block, offset, value, heapSubstr, decoder, ignoreCase);
             }
+        }
+
+        private static unsafe void TestComparison(MemoryBlock block, int offset, string value, string heapSubstr, MetadataStringDecoder decoder, bool ignoreCase)
+        {
+            // equals:
+            bool actualEq = block.Utf8NullTerminatedEquals(offset, value, decoder, terminator: '\0', ignoreCase: ignoreCase);
+            bool expectedEq = string.Equals(heapSubstr, value, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+            Assert.Equal(expectedEq, actualEq);
+
+            // starts with:
+            bool actualSW = block.Utf8NullTerminatedStartsWith(offset, value, decoder, terminator: '\0', ignoreCase: ignoreCase);
+            bool expectedSW = heapSubstr.StartsWith(value, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+            Assert.Equal(actualSW, expectedSW);
         }
 
         [Fact]
@@ -244,20 +254,20 @@ namespace System.Reflection.Metadata.Tests
             fixed (byte* ptr = (buffer = new byte[] { 0xC0 }))
             {
                 var block = new MemoryBlock(ptr, buffer.Length);
-                Assert.False(block.Utf8NullTerminatedStartsWith(0, new string((char)0xC0, 1), decoder));
-                Assert.False(block.Utf8NullTerminatedEquals(0, new string((char)0xC0, 1), decoder));
-                Assert.True(block.Utf8NullTerminatedStartsWith(0, "\uFFFD", decoder));
-                Assert.True(block.Utf8NullTerminatedEquals(0, "\uFFFD", decoder));
+                Assert.False(block.Utf8NullTerminatedStartsWith(0, new string((char)0xC0, 1), decoder, terminator: '\0', ignoreCase: false));
+                Assert.False(block.Utf8NullTerminatedEquals(0, new string((char)0xC0, 1), decoder, terminator: '\0', ignoreCase: false));
+                Assert.True(block.Utf8NullTerminatedStartsWith(0, "\uFFFD", decoder, terminator: '\0', ignoreCase: false));
+                Assert.True(block.Utf8NullTerminatedEquals(0, "\uFFFD", decoder, terminator: '\0', ignoreCase: false));
             }
 
             // overlong encoding
             fixed (byte* ptr = (buffer = new byte[] { (byte)'a', 0xC0, 0xAF, (byte)'b', 0x0 }))
             {
                 var block = new MemoryBlock(ptr, buffer.Length);
-                Assert.False(block.Utf8NullTerminatedStartsWith(0, "a\\", decoder));
-                Assert.False(block.Utf8NullTerminatedEquals(0, "a\\b", decoder));
-                Assert.True(block.Utf8NullTerminatedStartsWith(0, "a\uFFFD", decoder));
-                Assert.True(block.Utf8NullTerminatedEquals(0, "a\uFFFD\uFFFDb", decoder));
+                Assert.False(block.Utf8NullTerminatedStartsWith(0, "a\\", decoder, terminator: '\0', ignoreCase: false));
+                Assert.False(block.Utf8NullTerminatedEquals(0, "a\\b", decoder, terminator: '\0', ignoreCase: false));
+                Assert.True(block.Utf8NullTerminatedStartsWith(0, "a\uFFFD", decoder, terminator: '\0', ignoreCase: false));
+                Assert.True(block.Utf8NullTerminatedEquals(0, "a\uFFFD\uFFFDb", decoder, terminator: '\0', ignoreCase: false));
             }
         }
 
@@ -298,6 +308,66 @@ namespace System.Reflection.Metadata.Tests
             TestComparisons("abc\u1234", 0, "abc\u1235", unicode: true);
             TestComparisons("abc\u1234", 0, "abcd", unicode: true);
             TestComparisons("abcd", 0, "abc\u1234", unicode: true);
+            TestComparisons("AAaa\0", 0, "aAAa");
+            TestComparisons("A\0", 0, "a", ignoreCase: true);
+            TestComparisons("AAaa\0", 0, "aAAa", ignoreCase: true);
+            TestComparisons("matrix3d\0", 0, "Matrix3D", ignoreCase: true);
+        }
+
+        [Fact]
+        public unsafe void Utf8NullTerminatedFastCompare()
+        {
+            byte[] heap;
+            MetadataStringDecoder decoder = MetadataStringDecoder.DefaultUTF8;
+            const bool HonorCase = false;
+            const bool IgnoreCase = true;
+            const char terminator_0 = '\0';
+            const char terminator_F = 'F';
+            const char terminator_X = 'X';
+            const char terminator_x = 'x';
+
+            fixed (byte* heapPtr = (heap = new byte[] { (byte)'F', 0, (byte)'X', (byte)'Y', /* U+12345 (\ud808\udf45) */ 0xf0, 0x92, 0x8d, 0x85 }))
+            {
+                var block = new MemoryBlock(heapPtr, heap.Length);
+
+                TestUtf8NullTerminatedFastCompare(block, 0, terminator_0, "F", 0, HonorCase, MemoryBlock.FastComparisonResult.Equal, 1);
+                TestUtf8NullTerminatedFastCompare(block, 0, terminator_0, "f", 0, IgnoreCase, MemoryBlock.FastComparisonResult.Equal, 1);
+
+                TestUtf8NullTerminatedFastCompare(block, 0, terminator_F, "", 0, IgnoreCase, MemoryBlock.FastComparisonResult.Equal, 0);
+                TestUtf8NullTerminatedFastCompare(block, 0, terminator_F, "*", 1, IgnoreCase, MemoryBlock.FastComparisonResult.Equal, 1);
+
+                TestUtf8NullTerminatedFastCompare(block, 0, terminator_0, "FF", 0, HonorCase, MemoryBlock.FastComparisonResult.TextStartsWithBytes, 1);
+                TestUtf8NullTerminatedFastCompare(block, 0, terminator_0, "fF", 0, IgnoreCase, MemoryBlock.FastComparisonResult.TextStartsWithBytes, 1);
+                TestUtf8NullTerminatedFastCompare(block, 0, terminator_0, "F\0", 0, HonorCase, MemoryBlock.FastComparisonResult.TextStartsWithBytes, 1);
+                TestUtf8NullTerminatedFastCompare(block, 0, terminator_X, "F\0", 0, HonorCase, MemoryBlock.FastComparisonResult.TextStartsWithBytes, 1);
+
+                TestUtf8NullTerminatedFastCompare(block, 2, terminator_0, "X", 0, HonorCase, MemoryBlock.FastComparisonResult.BytesStartWithText, 1);
+                TestUtf8NullTerminatedFastCompare(block, 2, terminator_0, "x", 0, IgnoreCase, MemoryBlock.FastComparisonResult.BytesStartWithText, 1);
+                TestUtf8NullTerminatedFastCompare(block, 2, terminator_x, "XY", 0, IgnoreCase, MemoryBlock.FastComparisonResult.BytesStartWithText, 2);
+
+                TestUtf8NullTerminatedFastCompare(block, 3, terminator_0, "yZ", 0, IgnoreCase, MemoryBlock.FastComparisonResult.Unequal, 1);
+                TestUtf8NullTerminatedFastCompare(block, 4, terminator_0, "a", 0, HonorCase, MemoryBlock.FastComparisonResult.Unequal, 0);
+                TestUtf8NullTerminatedFastCompare(block, 4, terminator_0, "\ud808", 0, HonorCase, MemoryBlock.FastComparisonResult.Inconclusive, 0);
+                TestUtf8NullTerminatedFastCompare(block, 4, terminator_0, "\ud808\udf45", 0, HonorCase, MemoryBlock.FastComparisonResult.Inconclusive, 0);
+
+            }
+        }
+
+        private void TestUtf8NullTerminatedFastCompare(
+            MemoryBlock block,
+            int offset,
+            char terminator,
+            string comparand,
+            int comparandOffset,
+            bool ignoreCase,
+            MemoryBlock.FastComparisonResult expectedResult,
+            int expectedFirstDifferenceIndex)
+        {
+            int actualFirstDifferenceIndex;
+            var actualResult = block.Utf8NullTerminatedFastCompare(offset, comparand, comparandOffset, out actualFirstDifferenceIndex, terminator, ignoreCase);
+
+            Assert.Equal(expectedResult, actualResult);
+            Assert.Equal(expectedFirstDifferenceIndex, actualFirstDifferenceIndex);
         }
 
         private unsafe void TestSearch(string heapValue, int offset, string[] values)
