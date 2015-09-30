@@ -19,7 +19,7 @@ Module Name:
 // We pack the dynamic tuning for deciding which gen to condemn in a DWORD.
 // We assume that 2 bits are enough to represent the generation. 
 #define bits_generation 2
-#define generation_mask (~(~0 << bits_generation))
+#define generation_mask (~(~0u << bits_generation))
 //=======================note !!!===================================//
 // If you add stuff to this enum, remember to update total_gen_reasons
 // and record_condemn_gen_reasons below.
