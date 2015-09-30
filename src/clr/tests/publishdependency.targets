@@ -2,7 +2,6 @@
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <UsingTask TaskName="PrereleaseResolveNuGetPackageAssets" AssemblyFile="$(ToolsDir)Microsoft.DotNet.Build.Tasks.dll"/>
-
   <ItemGroup>
     <TestTargetFramework Include="DNXCore,Version=v5.0">
       <Folder>dnxcore50</Folder>
@@ -27,7 +26,7 @@
     <ItemGroup>
       <ProjectLockJsonFiles Include="@(AllProjectJsonLockFiles)"  Exclude="@(ProjectJsonLockFileExclude)"/>
     </ItemGroup>
-    
+
     <!-- This will use the overridden PrereleaseResolveNuGetPackageAssets, which outputs copy local items
          for the xunit wrapper projects -->
     <PrereleaseResolveNuGetPackageAssets AllowFallbackOnTargetSelection="true"
