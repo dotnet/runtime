@@ -14,7 +14,7 @@
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <ReferencePath>$(ProgramFiles)\Common Files\microsoft shared\VSTT\11.0\UITestExtensionPackages</ReferencePath>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
-
+    <CLRTestKind>BuildOnly</CLRTestKind>
     <NuGetPackageImportStamp>7a9bfb7d</NuGetPackageImportStamp>
     <DefineConstants>$(DefineConstants);STATIC;PROJECTK_BUILD</DefineConstants>
     <!--This test is to be run manually for now -->
@@ -51,8 +51,13 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+  
+  <ItemGroup>
+    <StressTests Include="..\Tests\*.csproj" />
+  </ItemGroup>
+  
   <Target Name="AfterBuild">
-    <MSBuild Projects="..\Tests\GC_Stress_tests_collection.csproj" />
+    <MSBuild Projects="@(StressTests)" />
     <MakeDir Directories="$(OutDir)\Tests" />
     <ItemGroup>
       <TestExesToCopy Include="$(OutDir)..\Tests\*.*" />

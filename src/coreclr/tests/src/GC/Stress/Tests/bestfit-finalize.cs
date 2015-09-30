@@ -1,9 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
 //This is modeled after a server executing requests
 //which pin some of their newly allocated objects.
+
 using System;
 using System.Threading;
 using System.Runtime.InteropServices;
@@ -14,63 +17,60 @@ namespace Fragment
     [SecuritySafeCritical]
     public class Request
     {
-        Object[] survivors;
-        GCHandle pin;
+        private Object[] _survivors;
+        private GCHandle _pin;
 
         [SecuritySafeCritical]
         public Request()
         {
-            survivors = new Object[1 + (int)(Test.AllocationVolume*Test.SurvivalRate)/100];
+            _survivors = new Object[1 + (int)(Test.AllocationVolume * Test.SurvivalRate) / 100];
             int i = 0;
             int volume = 0;
 
             //allocate half of the request size.
-            while (volume < Test.AllocationVolume/2)
+            while (volume < Test.AllocationVolume / 2)
             {
                 volume += AllocHalfVolume(++i, Test.SurvivalRate);
             }
 
             //allocate one pinned buffer
-            pin = GCHandle.Alloc(new byte[100], GCHandleType.Pinned);
+            _pin = GCHandle.Alloc(new byte[100], GCHandleType.Pinned);
 
             //allocate the rest of the request
             while (volume < Test.AllocationVolume)
             {
                 volume += AllocHalfVolume(++i, Test.SurvivalRate);
             }
-
         }
 
         // unpins and releases the pinned buffer
         [SecuritySafeCritical]
         ~Request()
         {
-            pin.Free();
+            _pin.Free();
         }
 
         [SecuritySafeCritical]
         private int AllocHalfVolume(int index, float survFraction)
         {
-            int allocSurv = Test.Rand.Next(100, 2000 + 2*index);
+            int allocSurv = Test.Rand.Next(100, 2000 + 2 * index);
             int alloc = (int)(allocSurv / survFraction) - allocSurv;
 
             // create garbage
-            int garbage=0;
+            int garbage = 0;
             while (garbage < alloc)
             {
-                int size = Test.Rand.Next(10, 200+2*garbage);
+                int size = Test.Rand.Next(10, 200 + 2 * garbage);
                 Object x = new byte[size];
-                garbage+=size;
+                garbage += size;
             }
-            survivors[index] = new byte[allocSurv];
+            _survivors[index] = new byte[allocSurv];
             return allocSurv + alloc;
         }
-
     }
 
     public class Test
     {
-
         public static Random Rand;
         public static int NumRequests = 0;
         public static int AllocationVolume = 0;
@@ -104,9 +104,9 @@ namespace Fragment
                     if (nreqsToSteady == 0)
                     {
                         nreqsToSteady = totalReqs;
-                        Console.WriteLine ("Took {0} iterations to reach steady state", nreqsToSteady);
+                        Console.WriteLine("Took {0} iterations to reach steady state", nreqsToSteady);
                     }
-                    else if (totalReqs == steadyStateFactor*nreqsToSteady)
+                    else if (totalReqs == steadyStateFactor * nreqsToSteady)
                     {
                         done = true;
                     }
@@ -117,7 +117,6 @@ namespace Fragment
             {
                 requests[i] = null;
             }
-
         }
 
 
@@ -128,7 +127,7 @@ namespace Fragment
         }
 
 
-        static public int Main (String[] args)
+        static public int Main(String[] args)
         {
             int numIterations = 0;
             int randomSeed = 0;
@@ -146,14 +145,14 @@ namespace Fragment
                     break;
                 case 3:
                 case 4:
-                    if ( (!Int32.TryParse(args[0], out numIterations)) ||
+                    if ((!Int32.TryParse(args[0], out numIterations)) ||
                          (!Int32.TryParse(args[1], out NumRequests)) ||
-                         (!Int32.TryParse(args[2], out AllocationVolume)) )
+                         (!Int32.TryParse(args[2], out AllocationVolume)))
                     {
                         goto default;
                     }
 
-                    if (args.Length==4)
+                    if (args.Length == 4)
                     {
                         if (!Int32.TryParse(args[3], out randomSeed))
                         {
@@ -171,12 +170,12 @@ namespace Fragment
                     return 1;
             }
 
-            Console.WriteLine("Using random seed: {0}", randomSeed );
+            Console.WriteLine("Using random seed: {0}", randomSeed);
             Rand = new Random(randomSeed);
 
             try
             {
-                for (int j=0; j<numIterations; j++)
+                for (int j = 0; j < numIterations; j++)
                 {
                     Test t = new Test();
                     t.Go();
