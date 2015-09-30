@@ -25,8 +25,7 @@ namespace System.Linq.Tests
             IQueryable<int> query = new EnumerableQuery<int>((IEnumerable<int>)null);
             var exp = (ConstantExpression)query.Expression;
             Assert.Same(query, exp.Value);
-            //FIXME: query.GetEnumerator() will now throw StackOverflowException which cannot be usefully caught.
-            //Issue #3546
+            Assert.Throws<InvalidOperationException>(() => query.GetEnumerator());
         }
 
         [Fact]

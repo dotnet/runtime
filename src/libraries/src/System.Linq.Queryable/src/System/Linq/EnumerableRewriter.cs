@@ -144,7 +144,9 @@ namespace System.Linq
                     Type t = GetPublicType(sq.Enumerable.GetType());
                     return Expression.Constant(sq.Enumerable, t);
                 }
-                return this.Visit(sq.Expression);
+                Expression exp = sq.Expression;
+                if (exp != c)
+                    return Visit(exp);
             }
             return c;
         }

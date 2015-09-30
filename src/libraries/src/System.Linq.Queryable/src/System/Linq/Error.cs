@@ -44,5 +44,10 @@ namespace System.Linq
         {
             return new InvalidOperationException(Strings.NoMethodOnTypeMatchingArguments(name, type));
         }
+
+        internal static Exception EnumeratingNullEnumerableExpression()
+        {
+            return new InvalidOperationException(Strings.EnumeratingNullEnumerableExpression());
+        }
     }
 }
