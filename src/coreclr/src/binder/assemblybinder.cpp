@@ -1228,17 +1228,9 @@ namespace BINDER_SPACE
 #ifdef FEATURE_LEGACYNETCF
         fWindowsPhone7 = RuntimeIsLegacyNetCF(pApplicationContext->GetAppDomainId()) == TRUE;
 #endif
-        //
-        // Windows Phone 7 Quirk:
-        //
-        // NetCF allows partial binds to platform assemblies.  If we are running a
-        // Mango application, skip the PKT check if no Ref version is provided,
-        // since there are apps in the Marketplace that do Assembly.Load("System")
-        //
+
         if (!tpaListAssembly || (fWindowsPhone7 && tpaListAssembly))
         {
-            dwIncludeFlags |= AssemblyName::EXCLUDE_PUBLIC_KEY_TOKEN_IF_MISSING;
-
             //
             // On Windows Phone 7, exclude culture comparisons when requesting an uncultured
             // assembly for app compat reasons (there are main app assemblies with spurious cultures)
