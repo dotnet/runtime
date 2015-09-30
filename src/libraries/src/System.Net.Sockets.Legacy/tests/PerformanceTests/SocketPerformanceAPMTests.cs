@@ -22,6 +22,7 @@ namespace System.Net.Sockets.Performance.Tests
         }
 
         [Fact]
+        [OuterLoop]
         public void SocketPerformance_SingleSocketClientAPM_LocalHostServerAPM()
         {
             SocketImplementationType serverType = SocketImplementationType.APM;
@@ -43,6 +44,7 @@ namespace System.Net.Sockets.Performance.Tests
         }
 
         [Fact]
+        [OuterLoop]
         [ActiveIssue(DummyOSXPerfIssue, PlatformID.OSX)]
         public void SocketPerformance_MultipleSocketClientAPM_LocalHostServerAPM()
         {
@@ -65,6 +67,7 @@ namespace System.Net.Sockets.Performance.Tests
         }
 
         [Fact]
+        [OuterLoop]
         public void SocketPerformance_SingleSocketClientAPM_LocalHostServerAsync()
         {
             SocketImplementationType serverType = SocketImplementationType.Async;
@@ -86,6 +89,7 @@ namespace System.Net.Sockets.Performance.Tests
         }
 
         [Fact]
+        [OuterLoop]
         [ActiveIssue(DummyOSXPerfIssue, PlatformID.OSX)]
         public void SocketPerformance_MultipleSocketClientAPM_LocalHostServerAsync()
         {
@@ -108,6 +112,7 @@ namespace System.Net.Sockets.Performance.Tests
         }
 
         [Fact]
+        [OuterLoop]
         public void SocketPerformance_SingleSocketClientAsync_LocalHostServerAPM()
         {
             SocketImplementationType serverType = SocketImplementationType.APM;
@@ -129,6 +134,7 @@ namespace System.Net.Sockets.Performance.Tests
         }
 
         [Fact]
+        [OuterLoop]
         [ActiveIssue(DummyOSXPerfIssue, PlatformID.OSX)]
         public void SocketPerformance_MultipleSocketClientAsync_LocalHostServerAPM()
         {
