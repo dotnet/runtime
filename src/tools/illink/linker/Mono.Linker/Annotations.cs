@@ -58,11 +58,16 @@ namespace Mono.Linker {
 
 		public void PrepareDependenciesDump ()
 		{
+			PrepareDependenciesDump ("linker-dependencies.xml.gz");
+		}
+
+		public void PrepareDependenciesDump (string filename)
+		{
 			dependency_stack = new Stack<object> ();
 			System.Xml.XmlWriterSettings settings = new System.Xml.XmlWriterSettings();
 			settings.Indent = true;
 			settings.IndentChars = "\t";
-			var depsFile = File.OpenWrite (string.Format ("linker-dependencies-{0}.xml.gz", DateTime.Now.Ticks));
+			var depsFile = File.OpenWrite (filename);
 			zipStream = new GZipStream (depsFile, CompressionMode.Compress);
 
 			writer = System.Xml.XmlWriter.Create (zipStream, settings);
