@@ -5,6 +5,8 @@
 
 //------------------------------------------------------------------------------
 
+#if MANAGED_SNI
+#else
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -297,4 +299,5 @@ namespace System.Data.SqlClient
         }
     }
 }
+#endif // MANAGED_SNI
 
