@@ -1,15 +1,16 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Threading;
 using Microsoft.Win32.SafeHandles;
+
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System.Net.Sockets
 {
-    internal sealed partial class SafeCloseSocket :
+    internal partial class SafeCloseSocket :
 #if DEBUG
         DebugSafeHandleMinusOneIsInvalid
 #else

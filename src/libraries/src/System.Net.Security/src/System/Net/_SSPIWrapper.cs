@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
+
 namespace System.Net
 {
     internal static class SSPIWrapper
@@ -75,7 +76,7 @@ namespace System.Net
             }
 
             SecurityStatus errorCode = SecModule.InitializeSecurityContext(credential, ref context, targetName, inputBuffers, outputBuffer);
-           
+
             return errorCode;
         }
 
@@ -107,8 +108,8 @@ namespace System.Net
             GlobalLog.Enter("QueryContextChannelBinding", contextAttribute.ToString());
 
             SafeFreeContextBufferChannelBinding result;
-            
-            int errorCode = SecModule.QueryContextChannelBinding(securityContext, contextAttribute , out result);
+
+            int errorCode = SecModule.QueryContextChannelBinding(securityContext, contextAttribute, out result);
 
             if (result != null)
             {
@@ -137,7 +138,5 @@ namespace System.Net
         {
             return SecModule.QueryContextIssuerList(securityContext, out issuerList);
         }
-      
     }
-
 }

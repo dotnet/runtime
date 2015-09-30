@@ -606,12 +606,12 @@ namespace System.Net.Sockets
 
         public static SocketError GetSockOpt(SafeCloseSocket handle, SocketOptionLevel optionLevel, SocketOptionName optionName, byte[] optionValue, ref int optionLength)
         {
-             SocketError errorCode = Interop.Winsock.getsockopt(
-                handle,
-                optionLevel,
-                optionName,
-                optionValue,
-                ref optionLength);
+            SocketError errorCode = Interop.Winsock.getsockopt(
+               handle,
+               optionLevel,
+               optionName,
+               optionValue,
+               ref optionLength);
             return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
         }
 
@@ -665,7 +665,7 @@ namespace System.Net.Sockets
                 optionName,
                 out ipmr,
                 ref optlen);
-            
+
             if (errorCode == SocketError.SocketError)
             {
                 optionValue = default(IPv6MulticastOption);
@@ -817,7 +817,7 @@ namespace System.Net.Sockets
             int ignoreBytesSent;
             if (!socket.ConnectEx(
                 handle,
-                Marshal.UnsafeAddrOfPinnedArrayElement(socketAddress, 0), 
+                Marshal.UnsafeAddrOfPinnedArrayElement(socketAddress, 0),
                 socketAddressLen,
                 IntPtr.Zero,
                 0,

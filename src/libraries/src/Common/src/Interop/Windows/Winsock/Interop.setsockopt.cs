@@ -2,8 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Runtime.InteropServices;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
@@ -16,7 +16,7 @@ internal static partial class Interop
             [In] SocketOptionName optionName,
             [In] ref Linger linger,
             [In] int optionLength);
-        
+
         [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static extern SocketError setsockopt(
             [In] SafeCloseSocket socketHandle,

@@ -287,7 +287,7 @@ namespace System.Net
 
             // Start the resolve.
             Task.Factory.StartNew(
-                s => ResolveCallback(s), 
+                s => ResolveCallback(s),
                 asyncResult,
                 CancellationToken.None,
                 TaskCreationOptions.DenyChildAttach,
@@ -390,17 +390,17 @@ namespace System.Net
         {
             return Task<IPHostEntry>.Factory.FromAsync(
                 (arg, requestCallback, stateObject) => BeginGetHostEntry(arg, requestCallback, stateObject),
-                asyncResult => EndGetHostEntry(asyncResult), 
-                address, 
+                asyncResult => EndGetHostEntry(asyncResult),
+                address,
                 null);
         }
 
         public static Task<IPHostEntry> GetHostEntryAsync(string hostNameOrAddress)
         {
             return Task<IPHostEntry>.Factory.FromAsync(
-                (arg, requestCallback, stateObject) => BeginGetHostEntry(arg, requestCallback, stateObject), 
-                asyncResult => EndGetHostEntry(asyncResult), 
-                hostNameOrAddress, 
+                (arg, requestCallback, stateObject) => BeginGetHostEntry(arg, requestCallback, stateObject),
+                asyncResult => EndGetHostEntry(asyncResult),
+                hostNameOrAddress,
                 null);
         }
     }

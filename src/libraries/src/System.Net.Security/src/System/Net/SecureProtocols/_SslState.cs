@@ -128,7 +128,7 @@ namespace System.Net.Security
             {
                 throw new ArgumentException(SR.Format(SR.net_invalid_enum, "SslProtocolType"), "sslProtocolType");
             }
-         
+
             if (clientCertificates == null)
             {
                 clientCertificates = new X509CertificateCollection();

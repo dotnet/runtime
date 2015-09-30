@@ -85,6 +85,9 @@
     <Compile Include="$(CommonPath)\System\Net\Internals\SocketException.Windows.cs">
       <Link>Common\System\Net\Internals\SocketException.Windows.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Sockets\SocketType.cs">
+      <Link>Common\System\Net\Sockets\SocketType.cs</Link>
+    </Compile>
 
     <Compile Include="$(CommonPath)\System\Net\SocketProtocolSupportPal.Windows.cs">
       <Link>Common\System\Net\SocketProtocolSupportPal.Windows</Link>
@@ -132,9 +135,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\ProtocolFamily.cs">
       <Link>Interop\Windows\Winsock\ProtocolFamily.cs</Link>
-    </Compile>    
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\SocketType.cs">
-      <Link>Interop\Windows\Winsock\SocketType.cs</Link>
     </Compile>    
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\SafeFreeAddrInfo.cs">
       <Link>Interop\Windows\Winsock\SafeFreeAddrInfo.cs</Link>
