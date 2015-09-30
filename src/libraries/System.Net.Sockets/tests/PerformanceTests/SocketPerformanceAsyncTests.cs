@@ -22,6 +22,7 @@ namespace System.Net.Sockets.Performance.Tests
         }
 
         [Fact]
+        [OuterLoop]
         public void SocketPerformance_SingleSocketClientAsync_LocalHostServerAsync()
         {
             SocketImplementationType serverType = SocketImplementationType.Async;
@@ -43,6 +44,7 @@ namespace System.Net.Sockets.Performance.Tests
         }
 
         [Fact]
+        [OuterLoop]
         [ActiveIssue(DummyOSXPerfIssue, PlatformID.OSX)]
         public void SocketPerformance_MultipleSocketClientAsync_LocalHostServerAsync()
         {
