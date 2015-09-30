@@ -16,6 +16,7 @@
     <ItemGroup>
       <DisabledProjects Include="TestWrappers*\*\*.csproj" />
       <DisabledProjects Include="*\**\cs_template.csproj" />
+      <DisabledProjects Include="Common\Coreclr.TestWrapper\Coreclr.TestWrapper.csproj" />
     </ItemGroup>
     
     <ItemGroup>
