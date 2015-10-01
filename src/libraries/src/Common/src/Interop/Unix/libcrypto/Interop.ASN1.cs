@@ -41,8 +41,16 @@ internal static partial class Interop
         [DllImport(Libraries.LibCrypto, CharSet = CharSet.Ansi)]
         internal static extern int OBJ_sn2nid(string sn);
 
-        [DllImport(Libraries.LibCrypto, CharSet = CharSet.Ansi)]
-        internal static extern string OBJ_nid2ln(int n);
+        internal static string OBJ_nid2ln(int n)
+        {
+            IntPtr ptr = OBJ_nid2ln_private(n);
+            return ptr != null ?
+                Marshal.PtrToStringAnsi(ptr) :
+                null;
+        }
+
+        [DllImport(Libraries.LibCrypto, EntryPoint = "OBJ_nid2ln")]
+        private static extern IntPtr OBJ_nid2ln_private(int n);
 
         // Returns shared pointers, should not be tracked as a SafeHandle.
         [DllImport(Libraries.LibCrypto)]

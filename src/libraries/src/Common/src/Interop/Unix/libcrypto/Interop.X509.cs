@@ -119,8 +119,16 @@ internal static partial class Interop
         [DllImport(Libraries.LibCrypto)]
         internal static extern int X509_STORE_CTX_get_error_depth(SafeX509StoreCtxHandle ctx);
 
-        [DllImport(Libraries.LibCrypto)]
-        internal static extern string X509_verify_cert_error_string(X509VerifyStatusCode n);
+        internal static string X509_verify_cert_error_string(X509VerifyStatusCode n)
+        {
+            IntPtr ptr = X509_verify_cert_error_string_private(n);
+            return ptr != null ?
+                Marshal.PtrToStringAnsi(ptr) :
+                null;
+        }
+
+        [DllImport(Libraries.LibCrypto, EntryPoint = "X509_verify_cert_error_string")]
+        private static extern IntPtr X509_verify_cert_error_string_private(X509VerifyStatusCode n);
         
         [DllImport(Libraries.LibCrypto)]
         internal static extern void X509_CRL_free(IntPtr a);
