@@ -109,6 +109,7 @@ namespace System.Runtime.Loader.Tests
             Assert.NotNull(context);
         }
 
+        [ActiveIssue(3569, PlatformID.AnyUnix)]
         [Fact]
         public static void InitializeDefaultContextTest()
         {
