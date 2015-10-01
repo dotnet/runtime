@@ -23,7 +23,7 @@ namespace System.Net.Sockets.Tests
         {
             const int DatagramSize = 256;
             const int DatagramsToSend = 256;
-            const int AckTimeout = 500;
+            const int AckTimeout = 1000;
             const int TestTimeout = 30000;
 
             var left = new Socket(leftAddress.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
@@ -240,7 +240,8 @@ namespace System.Net.Sockets.Tests
                             sentChecksum.Add(sendBuffer, 0, sent);
 
                             remaining -= sent;
-                            if (remaining <= 0 || sent == 0)
+                            Assert.True(remaining >= 0);
+                            if (remaining == 0 || sent == 0)
                             {
                                 client.LingerState = new LingerOption(true, LingerTime);
                                 client.Dispose();
@@ -295,6 +296,7 @@ namespace System.Net.Sockets.Tests
                         {
                             random.NextBytes(sendBuffers[i].Array);
                         }
+
                         client.SendAsync(clientEventArgs, sendBuffers, SocketFlags.None, sendHandler);
                     };
                 }
@@ -309,42 +311,36 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [OuterLoop]
         public void SendToRecvFromAsync_Single_Datagram_UDP_IPv6()
         {
             SendToRecvFromAsync_Datagram_UDP(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
         }
 
         [Fact]
-        [OuterLoop]
         public void SendToRecvFromAsync_Single_Datagram_UDP_IPv4()
         {
             SendToRecvFromAsync_Datagram_UDP(IPAddress.Loopback, IPAddress.Loopback);
         }
 
         [Fact]
-        [OuterLoop]
         public void SendRecvAsync_Multiple_Stream_TCP_IPv6()
         {
             SendRecvAsync_Stream_TCP(IPAddress.IPv6Loopback, useMultipleBuffers: true);
         }
 
         [Fact]
-        [OuterLoop]
         public void SendRecvAsync_Single_Stream_TCP_IPv6()
         {
             SendRecvAsync_Stream_TCP(IPAddress.IPv6Loopback, useMultipleBuffers: false);
         }
 
         [Fact]
-        [OuterLoop]
         public void SendRecvAsync_Multiple_Stream_TCP_IPv4()
         {
             SendRecvAsync_Stream_TCP(IPAddress.Loopback, useMultipleBuffers: true);
         }
 
         [Fact]
-        [OuterLoop]
         public void SendRecvAsync_Single_Stream_TCP_IPv4()
         {
             SendRecvAsync_Stream_TCP(IPAddress.Loopback, useMultipleBuffers: false);
